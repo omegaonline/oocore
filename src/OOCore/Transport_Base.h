@@ -30,9 +30,6 @@ class OOCore_Export OOCore_Transport_Base
 public:
 	typedef void (*OnTransportClose_t)(OOCore_Transport_Base* transport, void* param);
 
-	int register_close_callback(OnTransportClose_t pfn, void* param);
-	int unregister_close_callback(OnTransportClose_t pfn);
-
 	int open_channel(const OOObj::char_t* service, OOCore_Channel** channel);
 	int create_object(const OOObj::char_t* service, const OOObj::GUID& iid, OOObj::Object** ppVal);
 
@@ -60,8 +57,7 @@ private:
 		OnTransportClose_t	pfnCallback;
 		void*				param;
 	};
-	std::list<callback_s> m_callback_list;
-
+	
 	enum
 	{
 		NOT_CONNECTED,

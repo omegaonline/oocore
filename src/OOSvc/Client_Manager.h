@@ -6,10 +6,10 @@
 #include "../OOCore/Binding.h"
 
 #include "./Shutdown.h"
-#include "./Client_Connection.h"
+#include "./Client_Acceptor.h"
 
 class OOSvc_Client_Manager : 
-	public ACE_Acceptor<OOSvc_Client_Connection, ACE_MEM_ACCEPTOR>,
+	public ACE_Acceptor<OOSvc_Client_Acceptor, ACE_MEM_ACCEPTOR>,
 	public OOSvc_Shutdown_Observer
 {
 public:

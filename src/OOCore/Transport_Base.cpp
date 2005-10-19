@@ -21,42 +21,10 @@ OOCore_Transport_Base::~OOCore_Transport_Base(void)
 		m_curr_block->release();
 }
 
-int OOCore_Transport_Base::register_close_callback(OnTransportClose_t pfn, void* param)
-{
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-	for (std::list<callback_s>::iterator i=m_callback_list.begin();i!=m_callback_list.end();++i)
-	{
-		if (i->pfnCallback == pfn)
-			return -1;
-	}
-	
-	callback_s s;
-	s.param = param;
-	s.pfnCallback = pfn;
-	m_callback_list.push_back(s);
-
-	return 0;
-}
-
-int OOCore_Transport_Base::unregister_close_callback(OnTransportClose_t pfn)
-{
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-	for (std::list<callback_s>::iterator i=m_callback_list.begin();i!=m_callback_list.end();++i)
-	{
-		if (i->pfnCallback == pfn)
-		{
-			m_callback_list.erase(i);
-			return 0;
-		}
-	}
-
-	return -1;
-}
-
 int OOCore_Transport_Base::close_transport()
 {
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
 	if (close_all_channels() != 0)
 		return -1;
 
@@ -68,13 +36,7 @@ int OOCore_Transport_Base::close_transport()
 
 	if (m_connected == CONNECTED)
 	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
 		m_connected = NOT_CONNECTED;
-		for (std::list<callback_s>::iterator i=m_callback_list.begin();i!=m_callback_list.end();++i)
-		{
-			i->pfnCallback(this,i->param);
-		}
 	}
 
 	return 0;

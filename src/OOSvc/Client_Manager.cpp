@@ -87,8 +87,8 @@ int OOSvc_Client_Manager::fini(void)
 
 #if defined (ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION)
 template class ACE_DLL_Singleton_T<OOSvc_Client_Manager,ACE_Thread_Mutex>;
-template class ACE_Acceptor<OOSvc_Client_Connection, ACE_MEM_ACCEPTOR>;
+template class ACE_Acceptor<OOSvc_Client_Acceptor, ACE_MEM_ACCEPTOR>;
 #elif defined (ACE_HAS_TEMPLATE_INSTANTIATION_PRAGMA)
 #pragma instantiate ACE_DLL_Singleton_T<OOSvc_Client_Manager,ACE_Thread_Mutex>
-#pragma instantiate ACE_Acceptor<OOSvc_Client_Connection, ACE_MEM_ACCEPTOR>
+#pragma instantiate ACE_Acceptor<OOSvc_Client_Acceptor, ACE_MEM_ACCEPTOR>
 #endif /* ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION */

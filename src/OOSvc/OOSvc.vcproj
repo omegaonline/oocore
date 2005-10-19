@@ -130,7 +130,7 @@
 				RelativePath=".\Channel_Acceptor.cpp">
 			</File>
 			<File
-				RelativePath=".\Client_Connection.cpp">
+				RelativePath=".\Client_Acceptor.cpp">
 			</File>
 			<File
 				RelativePath=".\Client_Manager.cpp">
@@ -162,7 +162,7 @@
 				RelativePath=".\Channel_Acceptor.h">
 			</File>
 			<File
-				RelativePath=".\Client_Connection.h">
+				RelativePath=".\Client_Acceptor.h">
 			</File>
 			<File
 				RelativePath=".\Client_Manager.h">

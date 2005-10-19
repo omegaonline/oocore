@@ -9,7 +9,7 @@ class OOCore_Transport_Svc_Handler :
 	public ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH>,
 	public Transport
 {
-	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> baseclass;
+	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
 public:
 	OOCore_Transport_Svc_Handler(void)
@@ -18,7 +18,7 @@ public:
 
 	virtual int open(void* p = 0)
 	{
-		if (baseclass::open(p)!=0)
+		if (svc_class::open(p)!=0)
 			return -1;
 
 		if (Transport::open()!=0)
@@ -64,7 +64,7 @@ public:
 		if (close_transport() != 0)
 			return -1;
 
-		return baseclass::handle_close(fd,mask);
+		return svc_class::handle_close(fd,mask);
 	}
 
 protected:

@@ -6,8 +6,7 @@
 // Declare the service
 ACE_FACTORY_DEFINE(OOSvc,OOSvc_Client_Manager)
 
-OOSvc_Client_Manager::OOSvc_Client_Manager(void) :
-	ACE_Task<ACE_MT_SYNCH>()
+OOSvc_Client_Manager::OOSvc_Client_Manager(void)
 {
 }
 
@@ -52,12 +51,12 @@ int OOSvc_Client_Manager::init(int argc, ACE_TCHAR *argv[])
 	}
 	
 	ACE_MEM_Addr port_addr(uPort);
-	if (m_acceptor.open(port_addr) == -1)
+	if (open(port_addr) == -1)
 	{
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	}
 
-	if (m_acceptor.acceptor().get_local_addr(port_addr)==-1)
+	if (acceptor().get_local_addr(port_addr)==-1)
 		return -1;
 	
 	uPort = port_addr.get_port_number();
@@ -76,7 +75,7 @@ void OOSvc_Client_Manager::handle_shutdown()
 {
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("OOSvc_Client_Manager::shutdown\n")));
 
-	m_acceptor.close();
+	close();
 }
 
 int OOSvc_Client_Manager::fini(void)

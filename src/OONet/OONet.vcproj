@@ -149,9 +149,6 @@
 			<File
 				RelativePath=".\TcpIp_Manager.h">
 			</File>
-			<File
-				RelativePath=".\TcpIp_Svc_Handler.h">
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

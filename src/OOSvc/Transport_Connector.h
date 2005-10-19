@@ -4,6 +4,9 @@
 
 #include "./OOSvc_export.h"
 
+// This class is the bi-directional implementation of
+// OOCore_Transport_Connector
+
 class OOSvc_Export OOSvc_Transport_Connector : 
 	public OOCore_Transport_Connector,
 	public OOCore_Transport_Service

@@ -14,7 +14,6 @@ public:
 	virtual int StopPending(OOObj::bool_t* pending);
 	virtual int StayAlive();
 
-
 	// Test members
 	virtual int Array_Test_In(OOObj::uint32_t count, OOObj::uint16_t* pArray);
 	virtual int Array_Test_Out(OOObj::uint32_t* count, OOObj::uint16_t** pArray);

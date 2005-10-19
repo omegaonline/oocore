@@ -206,9 +206,6 @@
 				RelativePath=".\Client_Service.h">
 			</File>
 			<File
-				RelativePath=".\Client_Svc_Handler.h">
-			</File>
-			<File
 				RelativePath=".\Connection_Manager.h">
 			</File>
 			<File

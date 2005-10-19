@@ -1,16 +1,18 @@
 #pragma once
 
-#include "../OOCore/Client_Svc_Handler.h"
+#include <ace/MEM_Stream.h>
+
 #include "../OOCore/Client_Service.h"
+#include "../OOCore/Transport_Svc_Handler.h"
 
 #include "./Transport_Acceptor.h"
 #include "./Shutdown.h"
 
 class OOSvc_Client_Connection : 
-	public OOCore_Client_Svc_Handler<OOSvc_Transport_Acceptor>,
+	public OOCore_Transport_Svc_Handler<OOSvc_Transport_Acceptor,ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER>,
 	public OOSvc_Shutdown_Observer
 {
-	typedef OOCore_Client_Svc_Handler<OOSvc_Transport_Acceptor> svc_base;
+	typedef OOCore_Transport_Svc_Handler<OOSvc_Transport_Acceptor,ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER> svc_base;
 
 protected:
 	bool is_local_transport()

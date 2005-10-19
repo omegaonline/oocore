@@ -14,7 +14,6 @@
 ACE_FACTORY_DEFINE(OONet,OONet_TcpIp_Manager)
 
 OONet_TcpIp_Manager::OONet_TcpIp_Manager(void) :
-	ACE_Task<ACE_MT_SYNCH>(),
 	OOSvc_Transport_Protocol("tcp")
 {
 }
@@ -50,16 +49,16 @@ int OONet_TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 	}
 
 	ACE_INET_Addr port_addr(uPort);
-	if (m_acceptor.open(port_addr) == -1)
+	if (open(port_addr) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	
 	// Confirm we have a connection
-	if (m_acceptor.acceptor().get_local_addr(port_addr)==-1)
+	if (acceptor().get_local_addr(port_addr)==-1)
 		return -1;
 
 	if (TRANSPORT_MANAGER::instance()->register_protocol(this) != 0)
 	{
-		m_acceptor.close();
+		close();
 		return -1;
 	}
 	
@@ -72,7 +71,7 @@ void OONet_TcpIp_Manager::handle_shutdown()
 {
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("OONet_TcpIp_Manager::shutdown\n")));
 
-	m_acceptor.close();
+	close();
 	TRANSPORT_MANAGER::instance()->unregister_protocol(protocol_name());
 }
 

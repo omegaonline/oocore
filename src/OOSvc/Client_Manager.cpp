@@ -6,7 +6,8 @@
 // Declare the service
 ACE_FACTORY_DEFINE(OOSvc,OOSvc_Client_Manager)
 
-OOSvc_Client_Manager::OOSvc_Client_Manager(void)
+OOSvc_Client_Manager::OOSvc_Client_Manager(void) :
+	OOSvc_Transport_Protocol("local")
 {
 }
 
@@ -83,6 +84,11 @@ int OOSvc_Client_Manager::fini(void)
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("OOSvc_Client_Manager::fini\n")));
 
 	return 0;
+}
+
+int OOSvc_Client_Manager::connect_transport(const char* remote_host, OOCore_Transport_Base*& transport)
+{
+	return -1;
 }
 
 #if defined (ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION)

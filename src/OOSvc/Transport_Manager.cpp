@@ -42,7 +42,7 @@ int OOSvc_Transport_Manager::unregister_protocol(const char* name)
 	return 0;
 }
 
-int OOSvc_Transport_Manager::connect_transport(const char* remote_url, ACE_CString& channel_part, OOCore_Transport_Base*& transport)
+int OOSvc_Transport_Manager::open_transport(const char* remote_url, ACE_CString& channel_part, OOCore_Transport_Base*& transport)
 {
 	// URL format = <protocol>://<protocol_specific_address>/<channel_name>
 	ACE_CString strURL(remote_url);
@@ -70,7 +70,7 @@ int OOSvc_Transport_Manager::connect_transport(const char* remote_url, ACE_CStri
 	if (m_network_map.find(strProtocol,protocol) != 0)
 		return -1;
 
-	if (protocol->connect_transport(strAddress.c_str(),transport) != 0)
+	if (protocol->open_transport(strAddress.c_str(),transport) != 0)
 		return -1;
 
 	return 0;
@@ -81,7 +81,7 @@ int OOSvc_Transport_Manager::open_remote_channel(const char* remote_url, OOCore_
 	ACE_CString channel_part;
 	OOCore_Transport_Base* transport = 0;
 
-	if (OOSvc_Transport_Manager::connect_transport(remote_url,channel_part,transport) != 0)
+	if (OOSvc_Transport_Manager::open_transport(remote_url,channel_part,transport) != 0)
 		return -1;
 
 	return transport->open_channel(channel_part.c_str(),channel);
@@ -92,7 +92,7 @@ int OOSvc_Transport_Manager::create_remote_object(const char* remote_url, const 
 	ACE_CString channel_part;
 	OOCore_Transport_Base* transport = 0;
 
-	if (OOSvc_Transport_Manager::connect_transport(remote_url,channel_part,transport) != 0)
+	if (OOSvc_Transport_Manager::open_transport(remote_url,channel_part,transport) != 0)
 		return -1;
 
 	return transport->create_object(channel_part.c_str(),iid,ppVal);

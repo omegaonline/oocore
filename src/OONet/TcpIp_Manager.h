@@ -23,5 +23,6 @@ public:
 
 private:
 	void handle_shutdown();
-	bool AddressIsEqual(const char* addr1, const char* addr2);
+	bool address_is_equal(const char* addr1, const char* addr2);
+	int connect_transport(const char* remote_host, OOCore_Transport_Base*& transport);
 };

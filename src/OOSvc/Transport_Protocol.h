@@ -16,12 +16,21 @@ public:
 	virtual ~OOSvc_Transport_Protocol(void);
 
 	const char* protocol_name();
-	int connect_transport(const char* remote_host, OOCore_Transport_Base*& transport);
+	int open_transport(const char* remote_host, OOCore_Transport_Base*& transport);
+	void transport_closed(OOCore_Transport_Base* transport);
 
 protected:
-	virtual bool AddressIsEqual(const char* addr1, const char* addr2) = 0;
+	virtual bool address_is_equal(const char* addr1, const char* addr2);
+	virtual int connect_transport(const char* remote_host, OOCore_Transport_Base*& transport) = 0;
 
 private:
+	ACE_Thread_Mutex m_lock;
 	const char* m_name;
-	ACE_Hash_Map_Manager<ACE_CString,OOCore_Transport_Base*,ACE_RW_Thread_Mutex> m_transport_map;
+	std::map<ACE_CString,OOCore_Transport_Base*> m_transport_map;
+
+	void handle_shutdown();
 };
+
+template <class SVC_HANDLER, ACE_PEER_ACCEPTOR_1>
+class OOSvc_Transport_Protocol_Impl :
+	public

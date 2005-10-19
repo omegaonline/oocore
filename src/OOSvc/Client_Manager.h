@@ -10,7 +10,8 @@
 
 class OOSvc_Client_Manager : 
 	public ACE_Acceptor<OOSvc_Client_Acceptor, ACE_MEM_ACCEPTOR>,
-	public OOSvc_Shutdown_Observer
+	public OOSvc_Shutdown_Observer,
+	public OOSvc_Transport_Protocol
 {
 public:
 	OOSvc_Client_Manager(void);
@@ -21,4 +22,5 @@ public:
 
 private:
 	void handle_shutdown();
+	int connect_transport(const char* remote_host, OOCore_Transport_Base*& transport);
 };

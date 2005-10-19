@@ -31,7 +31,7 @@ public:
 private:
 	ACE_Hash_Map_Manager<ACE_CString,OOSvc_Transport_Protocol*,ACE_RW_Thread_Mutex> m_network_map;
 
-	int connect_transport(const char* remote_url, ACE_CString& channel_part, OOCore_Transport_Base*& transport);
+	int open_transport(const char* remote_url, ACE_CString& channel_part, OOCore_Transport_Base*& transport);
 };
 
 typedef ACE_DLL_Singleton_T<OOSvc_Transport_Manager, ACE_Thread_Mutex> TRANSPORT_MANAGER;

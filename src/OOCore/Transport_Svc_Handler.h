@@ -12,10 +12,6 @@ class OOCore_Transport_Svc_Handler :
 	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
 public:
-	OOCore_Transport_Svc_Handler(void)
-	{
-	}
-
 	virtual int open(void* p = 0)
 	{
 		if (svc_class::open(p)!=0)
@@ -54,7 +50,7 @@ public:
 		return (this->msg_queue()->is_empty()) ? -1 : 0;
 	}
 
-	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
+	virtual int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
 	{
 		if (mask == ACE_Event_Handler::WRITE_MASK)
 		{

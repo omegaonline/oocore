@@ -171,6 +171,9 @@
 				RelativePath=".\OOSvc_export.h">
 			</File>
 			<File
+				RelativePath=".\Protocol_Acceptor.h">
+			</File>
+			<File
 				RelativePath=".\resource.h">
 			</File>
 			<File
@@ -190,6 +193,9 @@
 			</File>
 			<File
 				RelativePath=".\Transport_Protocol.h">
+			</File>
+			<File
+				RelativePath=".\Transport_Protocol_Impl.h">
 			</File>
 		</Filter>
 		<Filter

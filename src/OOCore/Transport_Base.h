@@ -28,8 +28,6 @@ class OOCore_Export OOCore_Transport_Base
 	friend class OOCore_Transport_Handler;
 
 public:
-	typedef void (*OnTransportClose_t)(OOCore_Transport_Base* transport, void* param);
-
 	int open_channel(const OOObj::char_t* service, OOCore_Channel** channel);
 	int create_object(const OOObj::char_t* service, const OOObj::GUID& iid, OOObj::Object** ppVal);
 
@@ -52,12 +50,6 @@ protected:
 	virtual int connect_channel(const OOObj::char_t* name, OOCore_Transport_Base::ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel) = 0;
 	
 private:
-	struct callback_s
-	{
-		OnTransportClose_t	pfnCallback;
-		void*				param;
-	};
-	
 	enum
 	{
 		NOT_CONNECTED,

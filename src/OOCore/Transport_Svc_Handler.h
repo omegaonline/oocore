@@ -16,7 +16,7 @@ public:
 	{
 	}
 
-	int open(void* p = 0)
+	virtual int open(void* p = 0)
 	{
 		if (baseclass::open(p)!=0)
 			return -1;

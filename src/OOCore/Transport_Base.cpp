@@ -254,7 +254,7 @@ int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 	m_conn_channel = channel;
 		
 	// Spin waiting for a response
-	ACE_Time_Value wait(30);
+	ACE_Time_Value wait(4);
 	ACE_Countdown_Time countdown(&wait);
 	while (wait != ACE_Time_Value::zero)
 	{

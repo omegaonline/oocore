@@ -1,18 +1,15 @@
 #pragma once
 
-#include <ace/Acceptor.h>
 #include <ace/SOCK_Acceptor.h>
 
-#include "../OOCore/Binding.h"
-#include "../OOSvc/Shutdown.h"
 #include "../OOSvc/Transport_Protocol.h"
 
 #include "./TcpIp_Acceptor.h"
 
 class OONet_TcpIp_Manager : 
+	public ACE_Acceptor<OONet_TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>,
 	public OOSvc_Shutdown_Observer,
-	public OOSvc_Transport_Protocol,
-	public ACE_Acceptor<OONet_TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>
+	public OOSvc_Transport_Protocol
 {
 public:
 	OONet_TcpIp_Manager(void);
@@ -22,7 +19,7 @@ public:
 	int fini(void);
 
 private:
-	void handle_shutdown();
 	bool address_is_equal(const char* addr1, const char* addr2);
 	int connect_transport(const char* remote_host, OOCore_Transport_Base*& transport);
+	void handle_shutdown();
 };

@@ -8,6 +8,8 @@
 #include "../OOCore/Binding.h"
 #include "../OOSvc/Transport_Manager.h"
 
+#include "./TcpIp_Connector.h"
+
 #include "./OONet_export.h"
 
 // Declare the service
@@ -67,13 +69,6 @@ int OONet_TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 	return 0;
 }
 
-void OONet_TcpIp_Manager::handle_shutdown()
-{
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("OONet_TcpIp_Manager::shutdown\n")));
-
-	close();
-}
-
 int OONet_TcpIp_Manager::fini(void)
 {
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("OONet_TcpIp_Manager::fini\n")));
@@ -83,6 +78,11 @@ int OONet_TcpIp_Manager::fini(void)
 	return 0;
 }
 
+void OONet_TcpIp_Manager::handle_shutdown()
+{
+	close();
+}
+
 bool OONet_TcpIp_Manager::address_is_equal(const char* addr1, const char* addr2)
 {
 	return ACE_INET_Addr(addr1) == ACE_INET_Addr(addr2);
@@ -90,20 +90,20 @@ bool OONet_TcpIp_Manager::address_is_equal(const char* addr1, const char* addr2)
 
 int OONet_TcpIp_Manager::connect_transport(const char* remote_host, OOCore_Transport_Base*& transport)
 {
-	/*// Sort out address
+	// Sort out address
 	ACE_INET_Addr addr;
-	if (addr.set(connect_string) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Bad tcp address format: %s"),connect_string),-1);
+	if (addr.set(remote_host) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Bad tcp address format: %s"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
 
 	// Connect to this
-	OONet_TcpIp_Connector* pThis = this;
+	OONet_TcpIp_Connector* conn;
 	ACE_Connector<OONet_TcpIp_Connector, ACE_SOCK_CONNECTOR> connector;
-	if (connector.connect(pThis,addr)!=0)
+	if (connector.connect(conn,addr)!=0)
 		return -1;
 
+	transport = conn;
+
 	return 0;
-*/
-	return -1;
 }
 
 #if defined (ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION)

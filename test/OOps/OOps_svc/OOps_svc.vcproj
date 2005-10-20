@@ -34,7 +34,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACEd.lib"
-				OutputFile="$(OutDir)/OOps_svc.dll"
+				OutputFile="../../../bin/OOps_svcd.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
 				GenerateDebugInformation="TRUE"
@@ -84,7 +84,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACE.lib"
-				OutputFile="$(OutDir)/OOps_svc.dll"
+				OutputFile="../../../bin/OOps_svc.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
 				GenerateDebugInformation="TRUE"

@@ -1,5 +1,8 @@
 #include "./OOCore.h"
 
+#include <ace/CDR_Stream.h>
+#include <ace/Active_Map_Manager.h>
+
 ACE_CDR::Boolean operator >>(ACE_InputCDR& input, ACE_Active_Map_Manager_Key& key)
 {
 	// Read the channel key
@@ -38,31 +41,27 @@ ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_CDR::Boolean& val)
 #include "./Transport_Service.h"
 #include "./Client_Service.h"
 
-int OOCore_Export CreateStub(const OOObj::GUID& iid, OOObj::Object* obj, OOCore_Object_Stub_Base** stub)
+extern "C" int OOCore_Export CreateStub(const OOObj::GUID& iid, OOObj::Object* obj, OOCore_Object_Stub_Base** stub)
 {
 	if (iid==OOCore_Transport_Service::IID)
 		ACE_NEW_RETURN(*stub,OOCore_Transport_Service_Stub(obj),-1);
 	else if (iid==OOObj::Client_Service::IID)
 		ACE_NEW_RETURN(*stub,OOObj::Client_Service_Stub(obj),-1);
 	else
-	{
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid Stub IID\n")),-1);
-	}
-
+	
 	return 0;
 }
 
-int OOCore_Export CreateProxy(const OOObj::GUID& iid, const OOObj::cookie_t& key, OOCore_ProxyStub_Handler* handler, OOObj::Object** proxy)
+extern "C" int OOCore_Export CreateProxy(const OOObj::GUID& iid, const OOObj::cookie_t& key, OOCore_ProxyStub_Handler* handler, OOObj::Object** proxy)
 {
 	if (iid==OOCore_Transport_Service::IID)
 		ACE_NEW_RETURN(*proxy,OOCore_Transport_Service_Proxy(key,handler),-1);
 	else if (iid==OOObj::Client_Service::IID)
 		ACE_NEW_RETURN(*proxy,OOObj::Client_Service_Proxy(key,handler),-1);
 	else
-	{
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid Proxy IID\n")),-1);
-	}
-
+	
 	(*proxy)->AddRef();
 	return 0;
 }

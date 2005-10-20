@@ -2,7 +2,7 @@
 
 DEFINE_IID(OOps_Remote_Service,6CBD7088-5D2C-49d8-889A-AF99BA63B084);
 
-REGISTER_PROXYSTUB_NO_NAMESPACE(OOps_Remote_Service,OOps);
+REGISTER_PROXYSTUB_NO_NAMESPACE(OOps_Remote_Service,OOps_svc);
 
 OOps_Remote_Service_Impl::OOps_Remote_Service_Impl(void)
 {

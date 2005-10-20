@@ -6,7 +6,7 @@
 
 DEFINE_IID(OOps_Local_Service,5475B7AB-258A-4c06-86A2-F29091358D58);
 
-REGISTER_PROXYSTUB_NO_NAMESPACE(OOps_Local_Service,OOps);
+REGISTER_PROXYSTUB_NO_NAMESPACE(OOps_Local_Service,OOps_svc);
 
 OOps_Local_Service_Impl::OOps_Local_Service_Impl(void)
 {

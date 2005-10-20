@@ -7,6 +7,9 @@
 #include "./Channel.h"
 #include "./Marshaller.h"
 
+extern "C" int OOCore_Export CreateProxy(const OOObj::GUID& iid, const OOObj::cookie_t& key, OOCore_ProxyStub_Handler* handler, OOObj::Object** proxy);
+extern "C" int OOCore_Export CreateStub(const OOObj::GUID& iid, OOObj::Object* obj, OOCore_Object_Stub_Base** stub);
+
 OOCore_ProxyStub_Handler::proxystub_node OOCore_ProxyStub_Handler::m_core_node = {ACE_DLL(), &CreateProxy, &CreateStub};
 OOCore_Proxy_Marshaller OOCore_ProxyStub_Handler::m_failmshl;
 

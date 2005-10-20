@@ -126,6 +126,9 @@
 				RelativePath=".\Local_Service_Impl.cpp">
 			</File>
 			<File
+				RelativePath=".\OOps_svc.cpp">
+			</File>
+			<File
 				RelativePath=".\Remote_Service_Impl.cpp">
 			</File>
 			<File

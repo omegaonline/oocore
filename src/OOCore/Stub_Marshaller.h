@@ -10,6 +10,7 @@
 
 #include "./Marshaller.h"
 #include "./Object_Impl.h"
+#include "./Array_Marshaller.h"
 
 #include "./OOCore_export.h"
 

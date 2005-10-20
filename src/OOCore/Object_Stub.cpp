@@ -1,5 +1,6 @@
 #include "./Object_Stub.h"
 
+#include "./OOCore_Impl.h"
 #include "./Array_Marshaller.h"
 
 OOCore_Object_Stub_Base::OOCore_Object_Stub_Base(OOObj::Object* object) :

@@ -96,7 +96,7 @@ int OONet_TcpIp_Manager::connect_transport(const char* remote_host, OOCore_Trans
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Bad tcp address format: %s"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
 
 	// Connect to this
-	OONet_TcpIp_Connector* conn;
+	OONet_TcpIp_Connector* conn = 0;
 	ACE_Connector<OONet_TcpIp_Connector, ACE_SOCK_CONNECTOR> connector;
 	if (connector.connect(conn,addr)!=0)
 		return -1;

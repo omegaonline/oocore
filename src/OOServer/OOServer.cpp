@@ -40,8 +40,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 	// Run the reactor loop...
 	ACE_Reactor::instance()->owner(ACE_Thread::self());
-	ACE_Reactor::instance()->run_reactor_event_loop();
-
+	OOCore_RunReactor();
+	
 	// Wait for all the threads to finish
 	ACE_Thread_Manager::instance()->wait();
 

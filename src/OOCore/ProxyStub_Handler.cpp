@@ -397,6 +397,32 @@ int OOCore_ProxyStub_Handler::recv_response(ACE_InputCDR* input)
 	return 0;
 }
 
+bool OOCore_ProxyStub_Handler::await_response(void* p)
+{
+	response_wait* rw = static_cast<response_wait*>(p);
+
+	return rw->pThis->await_response_i(rw->trans_key,rw->input);
+}
+
+bool OOCore_ProxyStub_Handler::await_response_i(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input)
+{
+	if (closed())
+		return true;
+
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	std::map<ACE_Active_Map_Manager_Key,ACE_InputCDR*>::iterator i = m_response_map.find(trans_key);
+	guard.release();
+
+	if (i!=m_response_map.end())
+	{
+		input = i->second;
+		m_response_map.erase(i);
+        return true;
+	}
+
+	return false;
+}
+
 int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input, ACE_Time_Value* wait)
 {
 	// Default the timeout to 30 secs
@@ -405,35 +431,10 @@ int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& tra
 		wait3 = wait;
 	else
 		wait3 = &wait2;
+
+	response_wait rw(this,trans_key,input);
 	
-	// Spin waiting for a response
-	ACE_Countdown_Time countdown(wait3);
-	while (*wait3 != ACE_Time_Value::zero && !closed())
-	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-		std::map<ACE_Active_Map_Manager_Key,ACE_InputCDR*>::iterator i = m_response_map.find(trans_key);
-		guard.release();
-
-		if (i!=m_response_map.end())
-		{
-			input = i->second;
-			m_response_map.erase(i);
-            return 0;
-		}
-		
-		int work = ACE_Reactor::instance()->work_pending();
-		if (work==1)
-			ACE_Reactor::instance()->handle_events();
-		else if (work==-1)
-		{
-			ACE_Time_Value t(0,1000);
-			ACE_Reactor::instance()->handle_events(t);
-		}
-
-		countdown.update();
-	}
-
-	return -1;
+	return OOCore_RunReactorEx(wait3,OOCore_ProxyStub_Handler::await_response,&rw);
 }
 
 int OOCore_ProxyStub_Handler::handle_close()

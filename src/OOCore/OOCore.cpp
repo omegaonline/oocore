@@ -2,6 +2,8 @@
 
 #include <ace/CDR_Stream.h>
 #include <ace/Active_Map_Manager.h>
+#include <ace/Reactor.h>
+#include <ace/Countdown_Time.h>
 
 ACE_CDR::Boolean operator >>(ACE_InputCDR& input, ACE_Active_Map_Manager_Key& key)
 {
@@ -74,4 +76,64 @@ OOCore_Export void* OOCore_Alloc(size_t size)
 OOCore_Export void OOCore_Free(void* p)
 {
 	ACE_OS::free(p);
+}
+
+int OOCore_PostRequest(ACE_Method_Request* req)
+{
+	return (ACE_Singleton<ACE_Activation_Queue,ACE_Thread_Mutex>::instance()->enqueue(req)==-1 ? -1 : 0);
+}
+
+static int OOCore_Reactor_Event_Hook(ACE_Reactor * reactor)
+{
+	ACE_Activation_Queue* activ_queue = ACE_Singleton<ACE_Activation_Queue,ACE_Thread_Mutex>::instance();
+	while (!activ_queue->is_empty())
+	{
+		ACE_Method_Request* req_ = activ_queue->dequeue();
+		if (!req_ && errno!=EWOULDBLOCK)
+			return -1;
+
+		std::auto_ptr<ACE_Method_Request> req(req_);
+		if (req->call() != 0)
+			return -1;
+	}
+	return 0;
+}
+
+int OOCore_Export OOCore_RunReactor(ACE_Time_Value* timeout)
+{
+	return OOCore_RunReactorEx(timeout);
+}
+
+int OOCore_RunReactorEx(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* p)
+{
+	if (!cond_fn)
+	{
+		if (timeout)
+			return ACE_Reactor::instance()->run_reactor_event_loop(*timeout,&OOCore_Reactor_Event_Hook);
+		else
+			return ACE_Reactor::instance()->run_reactor_event_loop(&OOCore_Reactor_Event_Hook);
+	}
+	else
+	{
+		if (!timeout)
+			return -1;
+
+		ACE_Countdown_Time countdown(timeout);
+		while (timeout->usec() > 0)
+		{
+			if (cond_fn(p))
+				return 0;
+					
+			int result = ACE_Reactor::instance()->handle_events(*timeout);
+			if (OOCore_Reactor_Event_Hook(ACE_Reactor::instance()))
+				continue;
+			else if (result == -1)
+				return -1;
+
+			countdown.update();
+		}
+
+		errno = EWOULDBLOCK;
+		return -1;
+	}
 }

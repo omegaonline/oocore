@@ -7,6 +7,9 @@
 
 class OOCore_Channel_Handler;
 
+// TODO This should not be using ACE_Message_Queue notification
+// it should be using OOCore_PostRequest
+
 class OOCore_Export OOCore_Channel
 {
 	friend class OOCore_Channel_Handler;	// for bind_handler()

@@ -41,6 +41,18 @@ private:
 		OOObj::CreateProxy_Function proxy_fn;
 		OOObj::CreateStub_Function stub_fn;
 	};
+
+	struct response_wait
+	{
+		response_wait(OOCore_ProxyStub_Handler* t, const ACE_Active_Map_Manager_Key& k, ACE_InputCDR*& i) :
+			pThis(t), trans_key(k), input(i)
+		{ }
+
+		OOCore_ProxyStub_Handler* pThis;
+		const ACE_Active_Map_Manager_Key& trans_key;
+		ACE_InputCDR*& input;
+	};
+
 	std::map<OOObj::GUID,ACE_Active_Map_Manager_Key> m_proxystub_map;
 	ACE_Active_Map_Manager<proxystub_node*> m_dll_map;
 	ACE_Active_Map_Manager<OOCore_Proxy_Marshaller*> m_transaction_map;
@@ -60,4 +72,7 @@ private:
 	int recv_response(ACE_InputCDR* input);
 	int handle_close();
 	int handle_connect(ACE_InputCDR& input);
+
+	static bool await_response(void* p);
+	bool await_response_i(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input);
 };

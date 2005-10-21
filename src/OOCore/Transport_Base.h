@@ -69,6 +69,8 @@ private:
 	int connect_channel_i(const OOObj::char_t* name, OOCore_Channel** channel);
 	int process_msg(const OOCore_Transport_MsgHeader& header, ACE_InputCDR& input);
 	int connect_secondary_channel(ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel, ACE_Message_Block* mb = 0);
+
+	static bool await_connect(void* p);
 };
 
 class OOCore_Transport_MsgHeader

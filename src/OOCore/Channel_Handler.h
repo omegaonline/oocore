@@ -6,6 +6,8 @@
 
 #include "./OOCore_export.h"
 
+// TODO This should not be an event_handler, it should be using OOCore_PostRequest
+
 class OOCore_Export OOCore_Channel_Handler : public ACE_Event_Handler
 {
 	friend class OOCore_Channel;

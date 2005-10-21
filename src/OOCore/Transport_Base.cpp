@@ -245,6 +245,13 @@ int OOCore_Transport_Base::connect_channel_i(const OOObj::char_t* name, OOCore_C
 	return 0;
 }
 
+bool OOCore_Transport_Base::await_connect(void* p)
+{
+	OOCore_Transport_Base* pThis = static_cast<OOCore_Transport_Base*>(p);
+
+	return (pThis->m_connected==CONNECTED);
+}
+
 int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 {
 	if (m_connected != NOT_CONNECTED)
@@ -255,25 +262,7 @@ int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 		
 	// Spin waiting for a response
 	ACE_Time_Value wait(4);
-	ACE_Countdown_Time countdown(&wait);
-	while (wait != ACE_Time_Value::zero)
-	{
-		if (m_connected==CONNECTED)
-			break;
-				
-		int work = ACE_Reactor::instance()->work_pending();
-		if (work==1)
-			ACE_Reactor::instance()->handle_events();
-		else if (work==-1)
-		{
-			ACE_Time_Value t(0,1000);
-			ACE_Reactor::instance()->handle_events(t);
-		}
-
-		countdown.update();
-	}
-
-	return (m_connected==CONNECTED ? 0 : -1);
+	return OOCore_RunReactorEx(&wait,&OOCore_Transport_Base::await_connect,this);
 }
 
 int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel, ACE_Message_Block* mb)

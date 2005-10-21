@@ -1,8 +1,12 @@
 #pragma once
 
 #include <ace/Svc_Handler.h>
+#include <ace/Message_Queue.h>
+#include <ace/Reactor_Notification_Strategy.h>
 
 #include "./Transport_Base.h"
+
+// TODO This should not using a ACE_Message_Queue, it should be using OOCore_PostRequest
 
 template <class Transport, ACE_PEER_STREAM_1, const int Buffer_Size>
 class OOCore_Transport_Svc_Handler :
@@ -12,6 +16,18 @@ class OOCore_Transport_Svc_Handler :
 	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
 public:
+	OOCore_Transport_Svc_Handler()
+	{
+		ACE_Reactor_Notification_Strategy* strategy = 0;
+		ACE_NEW(strategy,ACE_Reactor_Notification_Strategy(ACE_Reactor::instance(),this,ACE_Event_Handler::EXCEPT_MASK));
+		m_msg_queue.notification_strategy(strategy);
+	}
+
+	virtual ~OOCore_Transport_Svc_Handler()
+	{
+		delete m_msg_queue.notification_strategy();
+	}
+
 	virtual int open(void* p = 0)
 	{
 		if (svc_class::open(p)!=0)
@@ -39,7 +55,7 @@ public:
 
 		mb->wr_ptr(recv_cnt);
 
-		return Transport::recv(mb);
+		return (m_msg_queue.enqueue_tail(mb) == -1 ? -1 : 0);
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -48,6 +64,16 @@ public:
 			return -1;
 
 		return (this->msg_queue()->is_empty()) ? -1 : 0;
+	}
+
+	int handle_exception(ACE_HANDLE fd = ACE_INVALID_HANDLE)
+	{
+		// We use this to handle internal message posting
+		ACE_Message_Block* mb;
+		if (m_msg_queue.dequeue_head(mb) == -1)
+			return -1;
+
+		return Transport::recv(mb);
 	}
 
 	virtual int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
@@ -85,11 +111,12 @@ protected:
 	}
 
 private:
-	ACE_Thread_Mutex _lock;
+	ACE_Thread_Mutex m_lock;
+	ACE_Message_Queue<ACE_MT_SYNCH> m_msg_queue;
 
 	int send_i()
 	{
-		ACE_Guard<ACE_Thread_Mutex> guard(_lock);
+		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 		ACE_Message_Block *mb,*mb_start;
 		ACE_Time_Value nowait(ACE_OS::gettimeofday());

@@ -25,7 +25,7 @@ int OOSvc_Transport_Acceptor::open()
 	ACE_NEW_RETURN(sh,OOCore_ProxyStub_Handler(channel),-1);
 	if (sh->create_first_stub(OOCore_Transport_Service::IID,this) != 0)
 	{
-		channel->close(true);
+		channel->close();
 		return -1;
 	}
 
@@ -64,13 +64,13 @@ int OOSvc_Transport_Acceptor::close_all_channels()
 
 	for (ACE_Active_Map_Manager<OOCore_Channel*>::iterator i=m_channel_map.begin();i!=m_channel_map.end();++i)
 	{
-		(*i).int_id_->close(true);
+		(*i).int_id_->close();
 	}
 	m_channel_map.close();
 
 	m_closing = false;
 
-	return (m_refcount==0 ? 0 : -1);
+	return 0;//return (m_refcount==0 ? 0 : -1);
 }
 
 bool OOSvc_Transport_Acceptor::is_local_transport()
@@ -89,7 +89,7 @@ int OOSvc_Transport_Acceptor::connect_channel(const OOObj::char_t* name, ACE_Act
 	
 	if (m_interface->OpenChannel(name,&key) != 0)
 	{
-		(*channel)->close(false);
+		(*channel)->close();
 		return -1;
 	}
 
@@ -135,7 +135,7 @@ int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_
 	// Ask the service manager to connect to the channel
 	if (SERVICE_MANAGER::instance()->connect_service(name,is_local_transport(),channel) != 0)
 	{
-		channel->close(false);
+		channel->close();
 		return -1;
 	}
 

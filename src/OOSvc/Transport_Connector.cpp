@@ -59,7 +59,7 @@ int OOSvc_Transport_Connector::OpenChannel(const OOObj::char_t* name, OOObj::coo
 	// Ask the service manager to connect to the channel
 	if (SERVICE_MANAGER::instance()->connect_service(name,false,channel) != 0)
 	{
-		channel->close(false);
+		channel->close();
 		return -1;
 	}
 

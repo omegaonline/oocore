@@ -19,14 +19,14 @@ int OOCore_Transport_Connector::open()
 	ACE_NEW_NORETURN(ph,OOCore_ProxyStub_Handler(channel));
 	if (ph == 0)
 	{
-		channel->close(true);
+		channel->close();
 		return -1;
 	}
 
 	// Try to create the first proxy on it
 	if (ph->create_first_proxy(reinterpret_cast<OOObj::Object**>(&m_interface)) != 0)
 	{
-		channel->close(true);
+		channel->close();
 		return -1;
 	}
 
@@ -76,7 +76,7 @@ int OOCore_Transport_Connector::close_all_channels()
 
 	for (map_type::iterator i=m_channel_map.begin();i!=m_channel_map.end();++i)
 	{
-		i->second->close(true);
+		i->second->close();
 	}
 	m_channel_map.clear();
 

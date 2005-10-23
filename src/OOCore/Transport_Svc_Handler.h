@@ -6,8 +6,6 @@
 
 #include "./Transport_Base.h"
 
-// TODO This should not using a ACE_Message_Queue, it should be using OOCore_PostRequest
-
 template <class Transport, ACE_PEER_STREAM_1, const int Buffer_Size>
 class OOCore_Transport_Svc_Handler :
 	public ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH>,
@@ -16,18 +14,6 @@ class OOCore_Transport_Svc_Handler :
 	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
 public:
-	OOCore_Transport_Svc_Handler()
-	{
-		ACE_Reactor_Notification_Strategy* strategy = 0;
-		ACE_NEW(strategy,ACE_Reactor_Notification_Strategy(ACE_Reactor::instance(),this,ACE_Event_Handler::EXCEPT_MASK));
-		m_msg_queue.notification_strategy(strategy);
-	}
-
-	virtual ~OOCore_Transport_Svc_Handler()
-	{
-		delete m_msg_queue.notification_strategy();
-	}
-
 	virtual int open(void* p = 0)
 	{
 		if (svc_class::open(p)!=0)
@@ -43,7 +29,7 @@ public:
 	{
 		ACE_Message_Block* mb;
 		ACE_NEW_RETURN(mb,ACE_Message_Block(Buffer_Size),-1);
-			
+
 		// Recv some data
 		ssize_t recv_cnt = this->peer().recv(mb->wr_ptr(),Buffer_Size);
 		if (recv_cnt <= 0)
@@ -55,7 +41,15 @@ public:
 
 		mb->wr_ptr(recv_cnt);
 
-		return (m_msg_queue.enqueue_tail(mb) == -1 ? -1 : 0);
+		RecvRequest* req = 0;
+		ACE_NEW_NORETURN(req,RecvRequest(this,mb));
+		if (req==0)
+		{
+			mb->release();
+			return -1;
+		}	
+
+		return (OOCore_PostRequest(req) == -1 ? -1 : 0);
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -64,16 +58,6 @@ public:
 			return -1;
 
 		return (this->msg_queue()->is_empty()) ? -1 : 0;
-	}
-
-	int handle_exception(ACE_HANDLE fd = ACE_INVALID_HANDLE)
-	{
-		// We use this to handle internal message posting
-		ACE_Message_Block* mb;
-		if (m_msg_queue.dequeue_head(mb) == -1)
-			return -1;
-
-		return Transport::recv(mb);
 	}
 
 	virtual int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
@@ -112,8 +96,24 @@ protected:
 
 private:
 	ACE_Thread_Mutex m_lock;
-	ACE_Message_Queue<ACE_MT_SYNCH> m_msg_queue;
 
+	class RecvRequest : public ACE_Method_Request
+	{
+	public:
+		RecvRequest(OOCore_Transport_Svc_Handler<Transport,ACE_PEER_STREAM_2,Buffer_Size>* p, ACE_Message_Block* m) : 
+		  mb(m), pt(p)
+		{}
+
+		int call()
+		{
+			return pt->recv_i(mb);
+		}
+
+		OOCore_Transport_Svc_Handler<Transport,ACE_PEER_STREAM_2,Buffer_Size>* pt;
+		ACE_Message_Block* mb;
+	};
+	friend class RecvRequest;
+	
 	int send_i()
 	{
 		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
@@ -149,5 +149,11 @@ private:
 		}
 
 		return 0;
+	}
+
+	int recv_i(ACE_Message_Block* mb)
+	{
+		// We use this to handle internal message posting
+		return Transport::recv(mb);
 	}
 };

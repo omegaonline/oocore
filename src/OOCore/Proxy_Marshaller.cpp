@@ -61,8 +61,8 @@ int OOCore_Proxy_Marshaller::send_and_recv(ACE_Time_Value* wait)
 	if (m_sync)
 	{
 		// Wait for the response
-		ACE_InputCDR* input;
-		if (m_handler->get_response(m_trans_key,input,wait) != 0)
+		ACE_InputCDR* input = 0;
+		if (m_handler->get_response(m_trans_key,input,wait) != 0 || input==0)
 			return -1;
 
 		// Read the response code

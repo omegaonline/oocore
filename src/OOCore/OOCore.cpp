@@ -78,9 +78,16 @@ OOCore_Export void OOCore_Free(void* p)
 	ACE_OS::free(p);
 }
 
-int OOCore_PostRequest(ACE_Method_Request* req)
+int OOCore_Export OOCore_PostRequest(ACE_Method_Request* req, ACE_Time_Value* wait)
 {
-	return (ACE_Singleton<ACE_Activation_Queue,ACE_Thread_Mutex>::instance()->enqueue(req)==-1 ? -1 : 0);
+	int ret = (ACE_Singleton<ACE_Activation_Queue,ACE_Thread_Mutex>::instance()->enqueue(req,wait)==-1 ? -1 : 0);
+	if (ret==0)
+	{
+		// Wake up one thread
+		ACE_Reactor::instance()->notify();
+	}
+
+	return ret;
 }
 
 static int OOCore_Reactor_Event_Hook(ACE_Reactor * reactor)
@@ -118,8 +125,11 @@ int OOCore_RunReactorEx(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* p)
 		if (!timeout)
 			return -1;
 
+		if (ACE_Reactor::instance()->reactor_event_loop_done ())
+			return 0;
+
 		ACE_Countdown_Time countdown(timeout);
-		while (timeout->usec() > 0)
+		while (*timeout != ACE_Time_Value::zero)
 		{
 			if (cond_fn(p))
 				return 0;

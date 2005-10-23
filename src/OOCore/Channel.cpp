@@ -4,10 +4,13 @@
 #include <ace/Reactor.h>
 
 #include "./Channel_Handler.h"
+#include "./OOCore.h"
 
 OOCore_Channel::OOCore_Channel() :
 	m_sibling(0),
-	m_handler(0)
+	m_handler(0),
+	m_refcount(1),
+	m_closed(false)
 {
 }
 
@@ -21,7 +24,7 @@ int OOCore_Channel::create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& h
 	ACE_NEW_NORETURN(handler_channel,OOCore_Channel);
 	if (handler_channel == 0)
 	{
-		delete acceptor_channel;
+		acceptor_channel->release();
 		return -1;
 	}
 
@@ -33,70 +36,126 @@ int OOCore_Channel::create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& h
 
 int OOCore_Channel::bind_handler(OOCore_Channel_Handler* handler)
 {
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
 	if (m_handler != 0)
 		return -1;
 
-    // Create a new strategy
-	ACE_Reactor_Notification_Strategy* strategy;
-	ACE_NEW_RETURN(strategy,ACE_Reactor_Notification_Strategy(ACE_Reactor::instance(),handler,ACE_Event_Handler::READ_MASK),-1);
-	m_msg_queue.notification_strategy(strategy);
-	
 	m_handler = handler;
 	m_handler->addref();
 
-	return 0;
-}
-
-int OOCore_Channel::recv(ACE_Message_Block*& mb, ACE_Time_Value* wait)
-{
-	if (m_msg_queue.dequeue_head(mb,wait) == -1)
-		return -1;
-
-	if (mb->msg_type()==ACE_Message_Block::MB_HANGUP)
+	while (!m_msg_queue.is_empty())
 	{
-		mb->release();
-		m_sibling = 0;
-		return -1;
+		ACE_Message_Block* mb = 0;
+		if (m_msg_queue.dequeue_head(mb) != -1)
+		{
+			if (post_msg(mb,0) != 0)
+				mb->release();
+		}
 	}
-	
+
 	return 0;
 }
 
 int OOCore_Channel::send(ACE_Message_Block* mb, ACE_Time_Value* wait)
 {
-	return (m_sibling->m_msg_queue.enqueue_prio(mb,wait) == -1 ? -1 : 0);
+	if (!m_sibling)
+		return -1;
+
+	return m_sibling->post_msg(mb,wait);
 }
 
-int OOCore_Channel::close(bool immediate)
+void OOCore_Channel::release()
 {
-	if (m_sibling != 0)
+	if (--m_refcount==0)
+		delete this;
+}
+
+int OOCore_Channel::post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait)
+{
+	if (m_handler)
 	{
-		if (!immediate)
+		msg_param* p;
+		ACE_NEW_RETURN(p,msg_param,-1);
+
+		p->mb = mb;
+		p->pt = this;
+
+		++m_refcount;
+
+		if (OOCore_PostRequest(p,wait)!=0)
 		{
-			ACE_Message_Block* mb;
-			ACE_NEW_RETURN(mb,ACE_Message_Block(0,ACE_Message_Block::MB_HANGUP),-1);
-			
-			if (m_sibling->m_msg_queue.enqueue_tail(mb) == -1)
-			{
-				mb->release();
-				return -1;
-			}
+			release();
+			delete p;
+			return -1;
+		}
+
+		return 0;
+	}
+	else
+	{
+		return (m_msg_queue.enqueue_head(mb,wait)==-1 ? -1 : 0);
+	}
+}
+
+int OOCore_Channel::recv_i(ACE_Message_Block* mb)
+{
+	int res = -1;
+
+	if (m_handler)
+	{
+		if (mb->msg_type() == ACE_Message_Block::MB_HANGUP)
+		{
+			m_sibling = 0;
+			res = close();
+			mb->release();
 		}
 		else
 		{
-			m_sibling->m_sibling = 0;
-			m_sibling->close(true);
+			res = m_handler->handle_recv(mb);
 		}
+	}
+	else
+	{	
+		mb->release();
+	}
+
+	release();
+	
+	return res;
+}
+
+int OOCore_Channel::close()
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	if (m_closed)
+		return -1;
+
+	if (m_sibling != 0)
+	{
+		ACE_Message_Block* mb;
+		ACE_NEW_RETURN(mb,ACE_Message_Block(0,ACE_Message_Block::MB_HANGUP),-1);
+
+		if (m_sibling->post_msg(mb,0) != 0)
+		{
+			mb->release();
+			return -1;
+		}		
 	}
 
 	if (m_handler != 0)
 	{
-		delete m_msg_queue.notification_strategy();
-		m_msg_queue.notification_strategy(0);
 		m_handler->handle_close();
 		m_handler->release();
+		m_handler = 0;
 	}
-	delete this;
+
+	m_closed = true;
+
+	guard.release();
+
+	release();
 
 	return 0;
 }

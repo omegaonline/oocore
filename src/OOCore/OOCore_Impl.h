@@ -43,4 +43,3 @@ ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_CDR::Boolean& val)
 
 typedef bool (*CONDITION_FN)(void*);
 int OOCore_RunReactorEx(ACE_Time_Value* timeout = 0, CONDITION_FN cond_fn = 0, void* p = 0);
-int OOCore_PostRequest(ACE_Method_Request* req);

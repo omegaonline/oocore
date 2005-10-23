@@ -112,7 +112,7 @@ public:
 private:
 	virtual ~OOCore_Transport_Handler() {};
 
-	int handle_recv(ACE_Time_Value* wait = 0);
+	int handle_recv(ACE_Message_Block* mb);
 	int handle_close();
 };
 

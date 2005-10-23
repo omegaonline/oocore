@@ -67,12 +67,13 @@ private:
 	bool m_connected;
 		
 	int load_proxy_stub(const OOObj::GUID& iid, proxystub_node*& node);
-	int handle_recv(ACE_Time_Value* wait = 0);
+	int handle_recv(ACE_Message_Block* mb);
 	int recv_request(ACE_InputCDR* input);
 	int recv_response(ACE_InputCDR* input);
 	int handle_close();
 	int handle_connect(ACE_InputCDR& input);
 
+	static bool await_connect(void * p);
 	static bool await_response(void* p);
 	bool await_response_i(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input);
 };

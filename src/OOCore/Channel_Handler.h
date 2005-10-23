@@ -6,9 +6,7 @@
 
 #include "./OOCore_export.h"
 
-// TODO This should not be an event_handler, it should be using OOCore_PostRequest
-
-class OOCore_Export OOCore_Channel_Handler : public ACE_Event_Handler
+class OOCore_Export OOCore_Channel_Handler
 {
 	friend class OOCore_Channel;
 
@@ -39,7 +37,7 @@ public:
 protected:
 	virtual ~OOCore_Channel_Handler() {};
 
-	virtual int handle_recv(ACE_Time_Value* wait = 0)
+	virtual int handle_recv(ACE_Message_Block* mb)
 	{
 		return -1;
 	}
@@ -55,23 +53,4 @@ private:
 	bool m_closed;
 	OOCore_Channel* m_channel;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
-
-	int handle_input(ACE_HANDLE fd = ACE_INVALID_HANDLE)
-	{
-		addref();
-
-		// Just call handle_recv
-		int ret = handle_recv();
-		if (ret==0)
-			release();
-
-		return ret;
-	}
-
-	int handle_close(ACE_HANDLE fd, ACE_Reactor_Mask close_mask)
-	{
-		release();
-
-		return 0;
-	}
 };

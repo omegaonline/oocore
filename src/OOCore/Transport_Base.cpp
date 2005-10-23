@@ -169,7 +169,7 @@ int OOCore_Transport_Base::create_object(const OOObj::char_t* service, const OOO
 	ACE_NEW_NORETURN(ph,OOCore_ProxyStub_Handler(channel));
 	if (ph == 0)
 	{
-		channel->close(true);
+		channel->close();
 		return -1;
 	}
 
@@ -177,14 +177,14 @@ int OOCore_Transport_Base::create_object(const OOObj::char_t* service, const OOO
 	OOObj::Object_Ptr<OOObj::Object> obj;
 	if (ph->create_first_proxy(&obj) != 0)
 	{
-		channel->close(true);
+		channel->close();
 		return -1;
 	}
 
 	// QI for the requested interface
 	if (obj->QueryInterface(iid,ppVal) == -1)
 	{
-		channel->close(true);
+		channel->close();
 		return -1;
 	}
 
@@ -276,14 +276,14 @@ int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key&
 	// Add the channel to the map
 	if (add_channel(our_channel,key) == -1)
 	{
-		our_channel->close(true);
+		our_channel->close();
 		return -1;
 	}
 
 	// Send mb to the new channel
 	if (mb!=0 && our_channel->send(mb) != 0)
 	{
-		our_channel->close(true);
+		our_channel->close();
 		return -1;
 	}
 
@@ -395,14 +395,8 @@ int OOCore_Transport_MsgHeader::write(ACE_OutputCDR& output)
 	return 0;
 }
 
-int OOCore_Transport_Handler::handle_recv(ACE_Time_Value* wait)
+int OOCore_Transport_Handler::handle_recv(ACE_Message_Block* mb)
 {
-	// Recv the message
-	ACE_Message_Block* mb;
-	OOCore_Channel* ch = channel();
-	if (channel==0 || ch->recv(mb,wait)==-1)
-		return -1;
-	
 	// Build the header block
 	OOCore_Transport_MsgHeader header;
 	header.msg_size = mb->total_length();

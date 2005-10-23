@@ -202,6 +202,13 @@ int OOCore_ProxyStub_Handler::create_proxy(const OOObj::GUID& iid, const OOObj::
 	return 0;
 }
 
+bool OOCore_ProxyStub_Handler::await_connect(void * p)
+{
+	OOCore_ProxyStub_Handler* pThis = static_cast<OOCore_ProxyStub_Handler*>(p);
+
+	return pThis->m_connected;
+}
+
 int OOCore_ProxyStub_Handler::create_first_proxy(OOObj::Object** proxy)
 {
 	if (m_conn_proxy != 0)
@@ -210,9 +217,8 @@ int OOCore_ProxyStub_Handler::create_first_proxy(OOObj::Object** proxy)
 	m_conn_proxy = proxy;
 	
 	// We call this synchronously, 'cos the data should already be there
-	ACE_Time_Value wait(ACE_OS::gettimeofday());
-	wait += 5;
-	if (handle_recv(&wait) != 0)
+	ACE_Time_Value wait(50);
+	if (OOCore_RunReactorEx(&wait,await_connect,this) != 0)
 	{
 		m_conn_proxy = 0;
 		return -1;
@@ -242,14 +248,8 @@ int OOCore_ProxyStub_Handler::handle_connect(ACE_InputCDR& input)
 	return 0;
 }
 
-int OOCore_ProxyStub_Handler::handle_recv(ACE_Time_Value* wait)
+int OOCore_ProxyStub_Handler::handle_recv(ACE_Message_Block* mb)
 {
-	// Recv the message
-	ACE_Message_Block* mb;
-	OOCore_Channel* ch = channel();
-	if (ch==0 || ch->recv(mb,wait)==-1)
-		return -1;
-
 	// Create an input stream on the message block
 	// (this makes a copy of the block)
 	ACE_InputCDR* input;
@@ -440,14 +440,14 @@ int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& tra
 int OOCore_ProxyStub_Handler::handle_close()
 {
 	// Close down the stubs we control
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	/*ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 	for (ACE_Active_Map_Manager<OOCore_Object_Stub_Base*>::iterator l=m_stub_map.begin();l!=m_stub_map.end();++l)
 	{
 		(*l).int_id_->close();
 	}
 	m_stub_map.close();
 
-	guard.release();
+	guard.release();*/
 	
 	return OOCore_Channel_Handler::handle_close();
 }

@@ -440,14 +440,14 @@ int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& tra
 int OOCore_ProxyStub_Handler::handle_close()
 {
 	// Close down the stubs we control
-	/*ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 	for (ACE_Active_Map_Manager<OOCore_Object_Stub_Base*>::iterator l=m_stub_map.begin();l!=m_stub_map.end();++l)
 	{
 		(*l).int_id_->close();
 	}
 	m_stub_map.close();
 
-	guard.release();*/
+	guard.release();
 	
 	return OOCore_Channel_Handler::handle_close();
 }

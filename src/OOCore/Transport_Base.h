@@ -40,6 +40,8 @@ protected:
 	int connect_primary_channel(OOCore_Channel** channel);
 	int accept_channel(OOCore_Channel*& channel, ACE_Active_Map_Manager_Key& key);
 	int close_transport();
+	int addref();
+	int release();
 		
 	// All Transports must implement the following functions
 	virtual int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0) = 0;
@@ -54,9 +56,11 @@ private:
 	{
 		NOT_CONNECTED,
 		CONNECTING,
-		CONNECTED
+		CONNECTED,
+		CLOSED
 	} m_connected;
 	
+	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	ACE_Thread_Mutex m_lock;
 	ACE_Message_Block* m_curr_block;
 	OOCore_Channel** m_conn_channel;

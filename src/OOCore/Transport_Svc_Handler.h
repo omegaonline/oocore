@@ -67,10 +67,7 @@ public:
 			return 0;
 		}
 
-		if (close_transport() != 0)
-			return -1;
-
-		return svc_class::handle_close(fd,mask);
+		return close_transport();
 	}
 
 protected:

@@ -26,6 +26,9 @@ int OOCore_Connection_Manager::init(void)
 	if (connector.connect(pThis,addr)!=0)
 		return -1;
 
+	// Keep us alive artifically because we are a singleton
+	CONNECTION_MANAGER::instance()->addref();
+
 	return 0;
 }
 

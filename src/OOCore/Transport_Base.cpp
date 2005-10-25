@@ -10,7 +10,8 @@
 OOCore_Transport_Base::OOCore_Transport_Base(void) :
 	m_connected(NOT_CONNECTED),
 	m_curr_block(0),
-	m_conn_count(0)
+	m_conn_count(0),
+	m_refcount(0)
 {
 	BINDING::instance()->rebind(OOCore_Transport_Service::IID.to_string().c_str(),ACE_TEXT_WIDE("OOCore"));
 }
@@ -21,9 +22,29 @@ OOCore_Transport_Base::~OOCore_Transport_Base(void)
 		m_curr_block->release();
 }
 
+int OOCore_Transport_Base::addref()
+{
+	++m_refcount;
+	return 0;
+}
+
+int OOCore_Transport_Base::release()
+{
+	if (--m_refcount < 0)
+		return -1;
+
+	if (m_refcount==0)
+		delete this;
+
+	return 0;
+}
+
 int OOCore_Transport_Base::close_transport()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	if (m_connected == CLOSED)
+		return 0;
 
 	if (close_all_channels() != 0)
 		return -1;
@@ -36,10 +57,10 @@ int OOCore_Transport_Base::close_transport()
 
 	if (m_connected == CONNECTED)
 	{
-		m_connected = NOT_CONNECTED;
+		m_connected = CLOSED;
 	}
 
-	return 0;
+	return release();
 }
 
 int OOCore_Transport_Base::recv(ACE_Message_Block* in_block)
@@ -255,7 +276,7 @@ bool OOCore_Transport_Base::await_connect(void* p)
 int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 {
 	if (m_connected != NOT_CONNECTED)
-		return 0;
+		return -1;
 
 	m_connected = CONNECTING;
 	m_conn_channel = channel;

@@ -22,16 +22,12 @@ int OOSvc_Transport_Connector::open(void)
 
 int OOSvc_Transport_Connector::AddRef()
 {
-	++m_refcount;
-	return 0;
+	return addref();
 }
 
 int OOSvc_Transport_Connector::Release()
 {
-	if (--m_refcount < 0)
-		return -1;
-
-	return 0;
+	return release();
 }
 
 int OOSvc_Transport_Connector::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)

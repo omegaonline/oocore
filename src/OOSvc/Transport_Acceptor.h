@@ -22,7 +22,6 @@ private:
 	ACE_Active_Map_Manager<OOCore_Channel*> m_channel_map;
 	ACE_RW_Thread_Mutex m_lock;
 	bool m_closing;
-	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	OOCore_Transport_Service* m_interface;
 
 	int find_channel(const ACE_Active_Map_Manager_Key& key, OOCore_Channel*& channel);

@@ -15,7 +15,7 @@ class OOCore_Export OOCore_Transport_Connector :
 {
 protected:
 	OOCore_Transport_Connector(void);
-	virtual ~OOCore_Transport_Connector(void) {};
+	virtual ~OOCore_Transport_Connector(void);
 
 	virtual int open();
 

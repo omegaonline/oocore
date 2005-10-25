@@ -8,7 +8,7 @@
 #include "./Service_Manager.h"
 
 OOSvc_Transport_Acceptor::OOSvc_Transport_Acceptor(void) : 
-	m_refcount(0), m_closing(false), m_interface(0)
+	m_closing(false), m_interface(0)
 {
 }
 
@@ -28,6 +28,8 @@ int OOSvc_Transport_Acceptor::open()
 		channel->close();
 		return -1;
 	}
+
+	addref();
 
 	return 0;
 }
@@ -98,16 +100,12 @@ int OOSvc_Transport_Acceptor::connect_channel(const OOObj::char_t* name, ACE_Act
 
 int OOSvc_Transport_Acceptor::AddRef()
 {
-	++m_refcount;
-	return 0;
+	return addref();
 }
 
 int OOSvc_Transport_Acceptor::Release()
 {
-	if (--m_refcount < 0)
-		return -1;
-
-	return 0;
+	return release();
 }
 
 int OOSvc_Transport_Acceptor::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)

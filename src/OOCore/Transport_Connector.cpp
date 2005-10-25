@@ -8,6 +8,12 @@ OOCore_Transport_Connector::OOCore_Transport_Connector(void) :
 {
 }
 
+OOCore_Transport_Connector::~OOCore_Transport_Connector(void) 
+{
+	if (m_interface != 0)
+		m_interface->Release();
+};
+
 int OOCore_Transport_Connector::open()
 {
 	OOCore_Channel* channel;
@@ -29,6 +35,8 @@ int OOCore_Transport_Connector::open()
 		channel->close();
 		return -1;
 	}
+
+	addref();
 
 	return 0;
 }
@@ -81,18 +89,6 @@ int OOCore_Transport_Connector::close_all_channels()
 	m_channel_map.clear();
 
 	m_closing = false;
-
-	OOCore_Transport_Service* inter = 0;
-	if (m_interface)
-	{
-		inter = m_interface;
-		m_interface = 0;
-	}
-
-	guard.release();
-
-	if (inter != 0)
-		inter->Release();
 
 	return 0;
 }

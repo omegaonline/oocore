@@ -35,6 +35,10 @@ void OOCore_Export OOClient_Term()
 	CONNECTION_MANAGER::instance()->close();
 	CONNECTION_MANAGER::instance()->shutdown();
 
+	// Let the last messages pass through
+	ACE_Time_Value wait(0);
+	OOCore_RunReactorEx(&wait);
+	
 	ACE::fini();
 }
 

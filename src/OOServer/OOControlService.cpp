@@ -7,7 +7,7 @@
 
 OOControlService::OOControlService() :
 	OOSvc_Object_Acceptor<OOObj::Client_Service,OOControlClient::Create>("control_service"),
-	m_stayalive(false)
+	m_stayalive(true)
 {
 }
 

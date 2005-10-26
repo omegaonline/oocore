@@ -11,6 +11,7 @@
 
 #include "./Marshaller.h"
 #include "./OOCore.h"
+#include "./OOCore_Impl.h"
 
 template <class TYPE>
 class OOCore_Array_Marshaller
@@ -74,9 +75,9 @@ public:
 		{
 			OOObj::uint32_t count = 0;
 			if (m_dataref == &m_node->m_data)
-				count = mshl.param<OOObj::uint32_t>(m_index)->value();
+				count = mshl.EXPLICIT_TEMPLATE(param,OOObj::uint32_t)(m_index)->value();
 			else
-				count = *mshl.param<OOObj::uint32_t*>(m_index)->value();
+				count = *mshl.EXPLICIT_TEMPLATE(param,OOObj::uint32_t*)(m_index)->value();
 
 			for (OOObj::uint32_t i=0;i<count;++i)
 				if (!write_param(&mshl,output,(*m_dataref)[i],response))
@@ -106,10 +107,11 @@ public:
 		if ((!response && m_in) || (response && m_out))
 		{
 			OOObj::uint32_t count;
+			
 			if (!response)
-				count = mshl.param<OOObj::uint32_t>(m_index)->value();
+				count = mshl.EXPLICIT_TEMPLATE(param,OOObj::uint32_t)(m_index)->value();
 			else
-				count = *mshl.param<OOObj::uint32_t*>(m_index)->value();
+				count = *mshl.EXPLICIT_TEMPLATE(param,OOObj::uint32_t*)(m_index)->value();
 
 			if (count>0 && m_node->m_data == 0)
 			{

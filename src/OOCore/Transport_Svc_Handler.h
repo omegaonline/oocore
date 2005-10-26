@@ -99,7 +99,7 @@ private:
 	{
 	public:
 		RecvRequest(OOCore_Transport_Svc_Handler<Transport,ACE_PEER_STREAM_2,Buffer_Size>* p, ACE_Message_Block* m) : 
-		  mb(m), pt(p)
+		  pt(p), mb(m)
 		{}
 
 		int call()

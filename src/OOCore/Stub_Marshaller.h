@@ -35,23 +35,6 @@ public:
 		return t;
 	}
 
-	template <> const OOObj::GUID& unpack()
-	{
-		OOObj::GUID t;
-		if (!m_failed)
-			m_failed = !(*m_input >> t);
-
-		if (!m_failed)
-		{
-			OOCore_Marshalled_Param_Holder<OOObj::GUID>* p = pack_param(t,false);
-			if (p==0)
-				m_failed = true;
-			else
-				return p->value();	
-		}
-		return OOObj::GUID::GUID_NIL;
-	}
-
 private:
 	ACE_InputCDR* m_input;
 	
@@ -170,5 +153,22 @@ private:
 	bool unpack_object_pp(OOObj::Object**& val, const OOObj::GUID& iid);
 	bool unpack_i(const ACE_CDR::Char*& val);
 };
+
+template <> inline const OOObj::GUID& OOCore_Stub_Marshaller::unpack()
+{
+	OOObj::GUID t;
+	if (!m_failed)
+		m_failed = !(*m_input >> t);
+
+	if (!m_failed)
+	{
+		OOCore_Marshalled_Param_Holder<OOObj::GUID>* p = pack_param(t,false);
+		if (p==0)
+			m_failed = true;
+		else
+			return p->value();	
+	}
+	return OOObj::GUID::GUID_NIL;
+}
 
 #endif // _OOCORE_STUB_MARSHALLER_H_INCLUDED_

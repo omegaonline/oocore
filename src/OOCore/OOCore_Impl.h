@@ -48,4 +48,11 @@ ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_CDR::Boolean& val)
 typedef bool (*CONDITION_FN)(void*);
 int OOCore_RunReactorEx(ACE_Time_Value* timeout = 0, CONDITION_FN cond_fn = 0, void* p = 0);
 
+// This is a shoddy fixup for compilers with broken explicit template specialisation
+#if (__GNUC__) && (__GNUC__ <= 3)
+	#define EXPLICIT_TEMPLATE(m,t)	template m<t>
+#else
+	#define EXPLICIT_TEMPLATE(m,t)	m<t>
+#endif
+
 #endif // _OOCORE_OOCORE_IMPL_H_INCLUDED_

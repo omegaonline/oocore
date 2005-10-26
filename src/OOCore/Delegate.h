@@ -10,6 +10,7 @@
 #define _OOCORE_DELEGATE_H_INCLUDED_
 
 #include "./Stub_Marshaller.h"
+#include "./OOCore_Impl.h"
 
 namespace OOObj
 {
@@ -77,7 +78,7 @@ public:
 
 	int invoke(OOCore_Stub_Marshaller& mshl) const
 	{
-		P1 p1(mshl.unpack<P1>());
+		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
 		return (*stub_ptr)(object_ptr,p1);
 	}
 
@@ -111,8 +112,8 @@ public:
 
 	int invoke(OOCore_Stub_Marshaller& mshl) const
 	{
-		P1 p1(mshl.unpack<P1>());
-		P2 p2(mshl.unpack<P2>());
+		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
+		P2 p2(mshl.EXPLICIT_TEMPLATE(unpack,P2)());
 		return (*stub_ptr)(object_ptr,p1,p2);
 	}
 
@@ -146,9 +147,9 @@ public:
 
 	int invoke(OOCore_Stub_Marshaller& mshl) const
 	{
-		P1 p1(mshl.unpack<P1>());
-		P2 p2(mshl.unpack<P2>());
-		P3 p3(mshl.unpack<P3>());
+		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
+		P2 p2(mshl.EXPLICIT_TEMPLATE(unpack,P2)());
+		P3 p3(mshl.EXPLICIT_TEMPLATE(unpack,P3)());
 		return (*stub_ptr)(object_ptr,p1,p2,p3);
 	}
 
@@ -182,10 +183,10 @@ public:
 
 	int invoke(OOCore_Stub_Marshaller& mshl) const
 	{
-		P1 p1(mshl.unpack<P1>());
-		P2 p2(mshl.unpack<P2>());
-		P3 p3(mshl.unpack<P3>());
-		P4 p4(mshl.unpack<P4>());
+		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
+		P2 p2(mshl.EXPLICIT_TEMPLATE(unpack,P2)());
+		P3 p3(mshl.EXPLICIT_TEMPLATE(unpack,P3)());
+		P4 p4(mshl.EXPLICIT_TEMPLATE(unpack,P4)());
 		return (*stub_ptr)(object_ptr,p1,p2,p3,p4);
 	}
 

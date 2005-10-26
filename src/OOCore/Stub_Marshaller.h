@@ -35,7 +35,7 @@ public:
 		return t;
 	}
 
-	const OOObj::GUID& unpack()
+	template <> const OOObj::GUID& unpack()
 	{
 		OOObj::GUID t;
 		if (!m_failed)

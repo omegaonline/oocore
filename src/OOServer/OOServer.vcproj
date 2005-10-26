@@ -24,7 +24,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -41,7 +41,7 @@
 				AdditionalDependencies="shlwapi.lib ACEd.lib"
 				OutputFile="../../bin/OOServer.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOServer.pdb"
 				SubSystem="1"
@@ -75,7 +75,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -90,7 +90,7 @@
 				AdditionalDependencies="shlwapi.lib ACE.lib"
 				OutputFile="../../bin/OOServer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="FALSE"
 				SubSystem="1"
 				OptimizeReferences="2"

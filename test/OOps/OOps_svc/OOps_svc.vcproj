@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.6&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.7&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OOPS_BUILD_DLL"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -36,7 +36,7 @@
 				AdditionalDependencies="ACEd.lib"
 				OutputFile="../../../bin/OOps_svcd.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOps_svc.pdb"
 				SubSystem="2"
@@ -71,7 +71,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.6&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.7&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;OOPS_BUILD_DLL"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -86,7 +86,7 @@
 				AdditionalDependencies="ACE.lib"
 				OutputFile="../../../bin/OOps_svc.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"

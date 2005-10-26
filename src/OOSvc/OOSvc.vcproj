@@ -23,7 +23,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OOSVC_BUILD_DLL"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -40,7 +40,7 @@
 				AdditionalDependencies="shlwapi.lib ACEd.lib"
 				OutputFile="../../bin/OOSvcd.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOSvc.pdb"
 				SubSystem="2"
@@ -75,7 +75,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;OOSVC_BUILD_DLL;OOSVC_NTRACE=0"
 				RuntimeLibrary="2"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -90,7 +90,7 @@
 				AdditionalDependencies="shlwapi.lib ACE.lib"
 				OutputFile="../../bin/OOSvc.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.6\lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"

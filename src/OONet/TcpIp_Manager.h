@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OONET_TCPIP_MANAGER_H_INCLUDED_
+#define _OONET_TCPIP_MANAGER_H_INCLUDED_
 
 #include <ace/SOCK_Acceptor.h>
 
@@ -23,3 +24,5 @@ private:
 	int connect_transport(const char* remote_host, OOCore_Transport_Base*& transport);
 	void handle_shutdown();
 };
+
+#endif // _OONET_TCPIP_MANAGER_H_INCLUDED_

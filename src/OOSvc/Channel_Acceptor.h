@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_CHANNEL_ACCEPTOR_H_INCLUDED_
+#define _OOSVC_CHANNEL_ACCEPTOR_H_INCLUDED_
 
 #include "../OOCore/ProxyStub_Handler.h"
 
@@ -68,3 +69,5 @@ public:
 		return 0;
 	}
 };
+
+#endif // _OOSVC_CHANNEL_ACCEPTOR_H_INCLUDED_

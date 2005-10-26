@@ -6,6 +6,7 @@
 #include <ace/Service_Repository.h>
 #include <ace/Reactor.h>
 #include <ace/NT_Service.h>
+#include <ace/Thread_Manager.h>
 
 #if !defined (ACE_WIN32)
 // Only use TP_Reactor when not on Windows

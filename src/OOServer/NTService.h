@@ -1,8 +1,9 @@
-#pragma once
+#ifndef _OOSERVER_NT_SERVICE_H_INCLUDED_
+#define _OOSERVER_NT_SERVICE_H_INCLUDED_
 
 #include <ace/NT_Service.h>
 
-#if defined (ACE_NT_SERVICE_DEFINE)
+#ifdef ACE_NT_SERVICE_DEFINE
 
 #include <ace/Event.h>
 
@@ -50,4 +51,6 @@ private:
 	bool m_our_close;
 };
 
-#endif // defined (ACE_NT_SERVICE_DEFINE)
+#endif // ACE_NT_SERVICE_DEFINE
+
+#endif // _OOSERVER_NT_SERVICE_H_INCLUDED_

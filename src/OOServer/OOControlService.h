@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSERVER_OOCONTROLSERVICE_H_INCLUDED_
+#define _OOSERVER_OOCONTROLSERVICE_H_INCLUDED_
 
 #include <list>
 
@@ -29,3 +30,5 @@ private:
 };
 
 typedef ACE_Singleton<OOControlService, ACE_Thread_Mutex> OOCONTROL_SERVICE;
+
+#endif // _OOSERVER_OOCONTROLSERVICE_H_INCLUDED_

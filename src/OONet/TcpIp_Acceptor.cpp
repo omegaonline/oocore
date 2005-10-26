@@ -26,4 +26,3 @@ void OONet_TcpIp_Acceptor::handle_shutdown()
 {
 	close();
 }
-

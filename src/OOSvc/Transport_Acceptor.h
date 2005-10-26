@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_TRANSPORT_ACCEPTOR_H_INCLUDED_
+#define _OOSVC_TRANSPORT_ACCEPTOR_H_INCLUDED_
 
 #include "../OOCore/Transport_Base.h"
 #include "../OOCore/Transport_Service.h"
@@ -41,3 +42,5 @@ public:
 	int OpenChannel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key* channel_key);
 	int SetReverse(OOCore_Transport_Service* reverse);
 };
+
+#endif // _OOSVC_TRANSPORT_ACCEPTOR_H_INCLUDED_

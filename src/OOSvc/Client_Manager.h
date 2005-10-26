@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_CLIENT_MANAGER_H_INCLUDED_
+#define _OOSVC_CLIENT_MANAGER_H_INCLUDED_
 
 #include <ace/Acceptor.h>
 #include <ace/MEM_Acceptor.h>
@@ -20,3 +21,5 @@ public:
 private:
 	void handle_shutdown();
 };
+
+#endif // _OOSVC_CLIENT_MANAGER_H_INCLUDED_

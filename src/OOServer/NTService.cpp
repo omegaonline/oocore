@@ -1,6 +1,6 @@
 #include "./NTService.h"
 
-#if defined (ACE_NT_SERVICE_DEFINE)
+#ifdef ACE_NT_SERVICE_DEFINE
 
 #include <ace/OS.h>
 #include <ace/SString.h>
@@ -281,4 +281,4 @@ template class ACE_Singleton<NTService, ACE_Thread_Mutex>;
 #pragma instantiate ACE_Singleton<NTService, ACE_Thread_Mutex>
 #endif /* ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION */
 
-#endif // defined (ACE_NT_SERVICE_DEFINE)
+#endif // ACE_NT_SERVICE_DEFINE

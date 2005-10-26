@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_SERVICE_MANAGER_H_INCLUDED_
+#define _OOSVC_SERVICE_MANAGER_H_INCLUDED_
 
 #include <ace/Singleton.h>
 #include <ace/Thread_Mutex.h>
@@ -39,3 +40,5 @@ private:
 
 typedef ACE_DLL_Singleton_T<OOSvc_Service_Manager, ACE_Thread_Mutex> SERVICE_MANAGER;
 OOSVC_SINGLETON_DECLARE(ACE_DLL_Singleton_T,OOSvc_Service_Manager,ACE_Thread_Mutex);
+
+#endif // _OOSVC_SERVICE_MANAGER_H_INCLUDED_

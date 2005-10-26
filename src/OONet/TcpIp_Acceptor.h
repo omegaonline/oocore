@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OONET_TCPIP_ACCEPTOR_H_INCLUDED_
+#define _OONET_TCPIP_ACCEPTOR_H_INCLUDED_
 
 #include <ace/Acceptor.h>
 #include <ace/SOCK_Stream.h>
@@ -26,3 +27,5 @@ private:
 
 	OONet_TcpIp_Manager* m_protocol;
 };
+
+#endif // _OONET_TCPIP_ACCEPTOR_H_INCLUDED_

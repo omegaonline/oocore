@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_TRANSPORT_PROTOCOL_H_INCLUDED_
+#define _OOSVC_TRANSPORT_PROTOCOL_H_INCLUDED_
 
 #include <ace/Thread_Mutex.h>
 #include <ace/Recursive_Thread_Mutex.h>
@@ -28,3 +29,5 @@ private:
 	const char* m_name;
 	std::map<ACE_CString,OOCore_Transport_Base*> m_transport_map;
 };
+
+#endif // _OOSVC_TRANSPORT_PROTOCOL_H_INCLUDED_

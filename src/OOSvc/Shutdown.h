@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_SHUTDOWN_H_INCLUDED_
+#define _OOSVC_SHUTDOWN_H_INCLUDED_
 
 #include <ace/Singleton.h>
 #include <ace/Thread_Mutex.h>
@@ -22,3 +23,5 @@ protected:
 private:
 	static bool m_signalled;
 };
+
+#endif // _OOSVC_SHUTDOWN_H_INCLUDED_

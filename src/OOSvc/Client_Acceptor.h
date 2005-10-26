@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSVC_CLIENT_ACCEPTOR_H_INCLUDED_
+#define _OOSVC_CLIENT_ACCEPTOR_H_INCLUDED_
 
 #include <ace/MEM_Stream.h>
 
@@ -16,3 +17,5 @@ protected:
 private:
 	void handle_shutdown();
 };
+
+#endif // _OOSVC_CLIENT_ACCEPTOR_H_INCLUDED_

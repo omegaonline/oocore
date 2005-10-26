@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOSERVER_OOCONTROLCLIENT_H_INCLUDED_
+#define _OOSERVER_OOCONTROLCLIENT_H_INCLUDED_
 
 #include "../OOCore/Client_Service.h"
 
@@ -27,3 +28,5 @@ private:
 
 	OOControlService* m_service;
 };
+
+#endif // _OOSERVER_OOCONTROLCLIENT_H_INCLUDED_

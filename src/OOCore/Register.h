@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_REGISTER_H_INCLUDED_
+#define _OOCORE_REGISTER_H_INCLUDED_
 
 #include "./Object.h"
 #include "./Binding.h"
@@ -16,3 +17,5 @@ public:
 
 #define REGISTER_PROXYSTUB(ns,cls,dll_name) static OOCore_Register register_##cls(ns::cls::IID,#dll_name);
 #define REGISTER_PROXYSTUB_NO_NAMESPACE(cls,dll_name) static OOCore_Register register_##cls(cls::IID,#dll_name);
+
+#endif // _OOCORE_REGISTER_H_INCLUDED_

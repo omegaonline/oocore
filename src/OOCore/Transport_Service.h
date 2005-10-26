@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_TRANSPORT_SERVICE_H_INCLUDED_
+#define _OOCORE_TRANSPORT_SERVICE_H_INCLUDED_
 
 #include "./Object.h"
 #include "./Transport_Base.h"
@@ -48,3 +49,5 @@ private:
 	OOObj::Delegate::D2<const OOObj::char_t*,OOObj::cookie_t*> OpenChannel;
 	OOObj::Delegate::D1<OOCore_Transport_Service*> SetReverse;
 };
+
+#endif // _OOCORE_TRANSPORT_SERVICE_H_INCLUDED_

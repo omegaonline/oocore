@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_DELEGATE_H_INCLUDED_
+#define _OOCORE_DELEGATE_H_INCLUDED_
 
 #include "./Stub_Marshaller.h"
 
@@ -203,3 +204,5 @@ private:
 
 };
 };
+
+#endif // _OOCORE_DELEGATE_H_INCLUDED_

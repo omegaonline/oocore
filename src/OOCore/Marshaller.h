@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_MARSHALLER_H_INCLUDED_
+#define _OOCORE_MARSHALLER_H_INCLUDED_
 
 #include <ace/Active_Map_Manager.h>
 #include <ace/Vector_T.h>
@@ -100,8 +101,7 @@ private:
 class OOCore_Marshaller_Base
 {
 public:
-	template <class T>
-	OOCore_Marshalled_Param_Holder<T>* param(unsigned int index)
+	template <class T> OOCore_Marshalled_Param_Holder<T>* param(unsigned int index)
 	{
 		return static_cast<OOCore_Marshalled_Param_Holder<T>*>(m_params[index]);
 	}
@@ -137,8 +137,10 @@ protected:
 	OOCore_Marshaller_Base(OOCore_ProxyStub_Handler* handler, bool sync, bool failed = false);
 	virtual ~OOCore_Marshaller_Base();
 
-	bool m_failed;
-	bool m_sync;
 	OOCore_ProxyStub_Handler* m_handler;
+	bool m_sync;
+	bool m_failed;
 	ACE_Vector<OOCore_Marshalled_Param_Holder_Base*,16> m_params;
 };
+
+#endif // _OOCORE_MARSHALLER_H_INCLUDED_

@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_OBJECT_STUB_H_INCLUDED_
+#define _OOCORE_OBJECT_STUB_H_INCLUDED_
 
 #include <ace/Vector_T.h>
 
@@ -59,3 +60,5 @@ private:
 };
 
 };
+
+#endif // _OOCORE_OBJECT_STUB_H_INCLUDED_

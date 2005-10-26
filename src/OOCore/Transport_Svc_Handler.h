@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
+#define _OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
 
 #include <ace/Svc_Handler.h>
 #include <ace/Message_Queue.h>
@@ -154,3 +155,5 @@ private:
 		return Transport::recv(mb);
 	}
 };
+
+#endif // _OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_

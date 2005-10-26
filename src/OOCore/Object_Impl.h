@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_OBJECT_IMPL_H_INCLUDED_
+#define _OOCORE_OBJECT_IMPL_H_INCLUDED_
 
 #include <ace/Atomic_Op.h>
 #include <ace/Active_Map_Manager.h>
@@ -127,3 +128,5 @@ namespace OOObj
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	};
 };
+
+#endif // _OOCORE_OBJECT_IMPL_H_INCLUDED_

@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_OOCORE_IMPL_H_INCLUDED_
+#define _OOCORE_OOCORE_IMPL_H_INCLUDED_
 
 #include <ace/Active_Map_Manager.h>
 #include <ace/Functor_String.h>
@@ -26,14 +27,17 @@ public:
 
 #include <functional>
 
+namespace std
+{
 template<>
-struct std::less<ACE_Active_Map_Manager_Key>
+struct less<ACE_Active_Map_Manager_Key>
 {
 	bool operator () (const ACE_Active_Map_Manager_Key &lhs, const ACE_Active_Map_Manager_Key &rhs) const
 	{
 		return (lhs.slot_index() < rhs.slot_index() ||
 				lhs.slot_generation() < rhs.slot_generation());
 	}
+};
 };
 
 ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_Active_Map_Manager_Key& key);
@@ -43,3 +47,5 @@ ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_CDR::Boolean& val)
 
 typedef bool (*CONDITION_FN)(void*);
 int OOCore_RunReactorEx(ACE_Time_Value* timeout = 0, CONDITION_FN cond_fn = 0, void* p = 0);
+
+#endif // _OOCORE_OOCORE_IMPL_H_INCLUDED_

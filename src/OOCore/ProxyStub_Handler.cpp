@@ -74,13 +74,13 @@ int OOCore_ProxyStub_Handler::load_proxy_stub(const OOObj::GUID& iid, proxystub_
 		if (new_node->dll.open(ACE_TEXT_WCHAR_TO_TCHAR(dll_name.c_str())) != 0)
 			return -1;
 		
-		// Bind to the CreateStub function
-		new_node->stub_fn = static_cast<OOObj::CreateStub_Function>(new_node->dll.symbol(ACE_TEXT("CreateStub")));
+		// Bind to the CreateStub function - C-style cast to please gcc
+		new_node->stub_fn = (OOObj::CreateStub_Function)(new_node->dll.symbol(ACE_TEXT("CreateStub")));
 		if (new_node->stub_fn == 0)
 			return -1;
 
-		// Bind to the CreateProxy function
-		new_node->proxy_fn = static_cast<OOObj::CreateProxy_Function>(new_node->dll.symbol(ACE_TEXT("CreateProxy")));
+		// Bind to the CreateProxy function - C-style cast to please gcc
+		new_node->proxy_fn = (OOObj::CreateProxy_Function)(new_node->dll.symbol(ACE_TEXT("CreateProxy")));
 		if (new_node->proxy_fn == 0)
 			return -1;
 

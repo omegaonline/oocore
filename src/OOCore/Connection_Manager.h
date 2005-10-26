@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_CONNECTION_MANAGER_H_INCLUDED_
+#define _OOCORE_CONNECTION_MANAGER_H_INCLUDED_
 
 #include <ace/Singleton.h>
 #include <ace/Thread_Mutex.h>
@@ -18,3 +19,5 @@ public:
 };
 
 typedef ACE_Singleton<OOCore_Connection_Manager, ACE_Thread_Mutex> CONNECTION_MANAGER;
+
+#endif // _OOCORE_CONNECTION_MANAGER_H_INCLUDED_

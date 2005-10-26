@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_PROXYSTUB_HANDLER_H_INCLUDED_
+#define _OOCORE_PROXYSTUB_HANDLER_H_INCLUDED_
 
 #include <map>
 
@@ -32,9 +33,10 @@ public:
 
 	int get_response(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input, ACE_Time_Value* wait);
 
-private:
+protected:
 	virtual ~OOCore_ProxyStub_Handler(void);
 
+private:
 	struct proxystub_node
 	{
 		ACE_DLL dll;
@@ -77,3 +79,5 @@ private:
 	static bool await_response(void* p);
 	bool await_response_i(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input);
 };
+
+#endif // _OOCORE_PROXYSTUB_HANDLER_H_INCLUDED_

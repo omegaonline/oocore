@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_CLIENT_SERVICE_H_INCLUDED_
+#define _OOCORE_CLIENT_SERVICE_H_INCLUDED_
 
 #include "./Object.h"
 
@@ -89,3 +90,5 @@ private:
 };
 
 };
+
+#endif // _OOCORE_CLIENT_SERVICE_H_INCLUDED_

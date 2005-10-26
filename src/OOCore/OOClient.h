@@ -1,4 +1,7 @@
-#include "../OOCore/Object.h"
+#ifndef _OOCORE_OOCLIENT_H_INCLUDED_
+#define _OOCORE_OOCLIENT_H_INCLUDED_
+
+#include "./Object.h"
 
 #include "./OOCore_export.h"
 
@@ -12,3 +15,5 @@ int OOClient_CreateObject(const OOObj::char_t* service_name, T** ppVal)
 {
 	return OOClient_CreateObject(service_name,T::IID,reinterpret_cast<OOObj::Object**>(ppVal));
 }
+
+#endif // _OOCORE_OOCLIENT_H_INCLUDED_

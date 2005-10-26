@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_ARRAY_MARSHALLER_H_INCLUDED_
+#define _OOCORE_ARRAY_MARSHALLER_H_INCLUDED_
 
 #include "./Marshaller.h"
 #include "./OOCore.h"
@@ -35,7 +36,7 @@ public:
 	}
 
 	OOCore_Array_Marshaller(const OOCore_Array_Marshaller& rhs) :
-		m_index(rhs.m_index), m_node(rhs.m_node), m_in(rhs.m_in), m_out(rhs.m_out), m_dataref(rhs.m_dataref)
+		m_index(rhs.m_index), m_in(rhs.m_in), m_out(rhs.m_out), m_node(rhs.m_node), m_dataref(rhs.m_dataref)
 	{
 		if (m_node)
 			++m_node->m_refcount;
@@ -159,9 +160,9 @@ private:
 	};
 
 	const OOObj::uint32_t m_index;
-	data_node* m_node;
 	bool m_in;
 	bool m_out;
+	data_node* m_node;
 	TYPE** m_dataref;
 };
 
@@ -182,3 +183,5 @@ bool arg_responds(const OOCore_Array_Marshaller<T>& val)
 {
 	return val.responds();
 }
+
+#endif // _OOCORE_ARRAY_MARSHALLER_H_INCLUDED_

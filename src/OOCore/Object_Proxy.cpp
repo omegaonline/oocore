@@ -5,8 +5,8 @@
 
 OOCore_Object_Proxy_Base::OOCore_Object_Proxy_Base(const OOObj::cookie_t& key, 
 												   OOCore_ProxyStub_Handler* handler) :
+    m_key(key),
 	m_handler(handler),
-	m_key(key),
 	m_refcount(0)
 {
 	m_handler->addref();

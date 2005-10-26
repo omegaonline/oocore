@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_TRANSPORT_CONNECTOR_H_INCLUDED_
+#define _OOCORE_TRANSPORT_CONNECTOR_H_INCLUDED_
 
 #include <list>
 #include <map>
@@ -35,3 +36,5 @@ private:
 	int close_all_channels();
 	int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel);
 };
+
+#endif // _OOCORE_TRANSPORT_CONNECTOR_H_INCLUDED_

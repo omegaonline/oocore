@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_OBJECT_TYPES_H_INCLUDED_
+#define _OOCORE_OBJECT_TYPES_H_INCLUDED_
 
 namespace OOObj
 {
@@ -23,3 +24,5 @@ namespace OOObj
 	typedef ACE_CDR::Double				real8_t;
 	typedef ACE_Active_Map_Manager_Key	cookie_t;
 };
+
+#endif // _OOCORE_OBJECT_TYPES_H_INCLUDED_

@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_TRANSPORT_BASE_H_INCLUDED_
+#define _OOCORE_TRANSPORT_BASE_H_INCLUDED_
 
 #include <list>
 
@@ -49,7 +50,7 @@ protected:
 	virtual int bind_channel(OOCore_Channel* channel, ACE_Active_Map_Manager_Key& key) = 0;
 	virtual int unbind_channel(const ACE_Active_Map_Manager_Key& key) = 0;
 	virtual int close_all_channels() = 0;
-	virtual int connect_channel(const OOObj::char_t* name, OOCore_Transport_Base::ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel) = 0;
+	virtual int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel) = 0;
 	
 private:
 	enum
@@ -60,11 +61,11 @@ private:
 		CLOSED
 	} m_connected;
 	
-	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	ACE_Thread_Mutex m_lock;
 	ACE_Message_Block* m_curr_block;
 	OOCore_Channel** m_conn_channel;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_conn_count;
+	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	std::multimap<ACE_Active_Map_Manager_Key,ACE_Message_Block*>  m_pending_list;
 	
 	int add_channel(OOCore_Channel* channel, ACE_Active_Map_Manager_Key& key);
@@ -113,14 +114,12 @@ public:
 	OOCore_Transport_Base* m_transport;
 	ACE_Active_Map_Manager_Key m_key;
 
-private:
+protected:
 	virtual ~OOCore_Transport_Handler() {};
-
+	
+private:
 	int handle_recv(ACE_Message_Block* mb);
 	int handle_close();
 };
 
-
-
-
-
+#endif // _OOCORE_TRANSPORT_BASE_H_INCLUDED_

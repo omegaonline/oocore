@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_GUID_H_INCLUDED_
+#define _OOCORE_GUID_H_INCLUDED_
 
 #include <ace/UUID.h>
 #include <ace/CDR_Stream.h>
@@ -42,3 +43,5 @@ namespace OOObj
 		void init_i(ACE_Utils::UUID& guid);
 	};
 };
+
+#endif // _OOCORE_GUID_H_INCLUDED_

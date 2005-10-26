@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_CHANNEL_HANDLER_H_INCLUDED_
+#define _OOCORE_CHANNEL_HANDLER_H_INCLUDED_
 
 #include <ace/Event_Handler.h>
 
@@ -50,7 +51,9 @@ protected:
 	}
 
 private:
-	bool m_closed;
 	OOCore_Channel* m_channel;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
+	bool m_closed;
 };
+
+#endif // _OOCORE_CHANNEL_HANDLER_H_INCLUDED_

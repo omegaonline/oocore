@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_CHANNEL_H_INCLUDED_
+#define _OOCORE_CHANNEL_H_INCLUDED_
 
 #include <ace/Condition_Thread_Mutex.h>
 #include <ace/Method_Request.h>
@@ -47,3 +48,5 @@ private:
 	
 	static int create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel);
 };
+
+#endif // _OOCORE_CHANNEL_H_INCLUDED_

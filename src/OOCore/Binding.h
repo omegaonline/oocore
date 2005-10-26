@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _OOCORE_BINDING_H_INCLUDED_
+#define _OOCORE_BINDING_H_INCLUDED_
 
 #include <ace/Naming_Context.h>
 #include <ace/Singleton.h>
@@ -34,3 +35,5 @@ private:
 
 typedef ACE_DLL_Singleton_T<OOCore_Binding, ACE_Thread_Mutex> BINDING;
 OOCORE_SINGLETON_DECLARE(ACE_DLL_Singleton_T,OOCore_Binding,ACE_Thread_Mutex);
+
+#endif // _OOCORE_BINDING_H_INCLUDED_

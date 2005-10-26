@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_OBJECT_PROXY_H_INCLUDED_
+#define _OOCORE_OBJECT_PROXY_H_INCLUDED_
 
 #include "./Proxy_Marshaller.h"
 #include "./Object_Impl.h"
@@ -75,3 +76,5 @@ public:
 };
 
 };
+
+#endif // _OOCORE_OBJECT_PROXY_H_INCLUDED_

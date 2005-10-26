@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_OBJECT_MARSHALLER_H_INCLUDED_
+#define _OOCORE_OBJECT_MARSHALLER_H_INCLUDED_
 
 #include "./Marshaller.h"
 #include "./OOCore_Impl.h"
@@ -98,13 +99,15 @@ private:
 		unsigned long m_refcount;
 	};
 	
-	data_node* m_node;
 	OOObj::GUID m_iid;
+	data_node* m_node;
+	OOObj::Object** m_objref;
 	bool m_in;
 	bool m_out;
-	OOObj::Object** m_objref;
 };
 
 bool read_param(OOCore_Marshaller_Base* mshl, ACE_InputCDR& input, OOCore_Object_Marshaller& val, bool response);
 bool write_param(OOCore_Marshaller_Base* mshl, ACE_OutputCDR& output, const OOCore_Object_Marshaller& val, bool response);
 bool arg_responds(const OOCore_Object_Marshaller& val);
+
+#endif // _OOCORE_OBJECT_MARSHALLER_H_INCLUDED_

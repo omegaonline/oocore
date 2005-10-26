@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_PROXY_MARSHALLER_H_INCLUDED_
+#define _OOCORE_PROXY_MARSHALLER_H_INCLUDED_
 
 #include "./Marshaller.h"
 
@@ -68,3 +69,5 @@ private:
 
 	int send_and_recv(ACE_Time_Value* wait);
 };
+
+#endif // _OOCORE_PROXY_MARSHALLER_H_INCLUDED_

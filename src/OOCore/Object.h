@@ -1,5 +1,3 @@
-#pragma once
-
 #include "./Object_Impl.h"
 #include "./Object_Proxy.h"
 #include "./Object_Stub.h"

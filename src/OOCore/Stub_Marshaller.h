@@ -6,7 +6,8 @@
 //
 //////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _OOCORE_STUB_MARSHALLER_H_INCLUDED_
+#define _OOCORE_STUB_MARSHALLER_H_INCLUDED_
 
 #include "./Marshaller.h"
 #include "./Object_Impl.h"
@@ -34,7 +35,7 @@ public:
 		return t;
 	}
 
-	template<> const OOObj::GUID& unpack()
+	const OOObj::GUID& unpack()
 	{
 		OOObj::GUID t;
 		if (!m_failed)
@@ -169,3 +170,5 @@ private:
 	bool unpack_object_pp(OOObj::Object**& val, const OOObj::GUID& iid);
 	bool unpack_i(const ACE_CDR::Char*& val);
 };
+
+#endif // _OOCORE_STUB_MARSHALLER_H_INCLUDED_

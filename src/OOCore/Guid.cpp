@@ -12,7 +12,8 @@ OOObj::GUID::GUID()
 
 OOObj::GUID::GUID(const ACE_CString& uuidString)
 {
-	init_i(ACE_Utils::UUID(uuidString));
+	ACE_Utils::UUID uuid(uuidString);
+	init_i(uuid);
 }
 
 void OOObj::GUID::init_i(ACE_Utils::UUID& uuid)

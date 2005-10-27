@@ -55,7 +55,7 @@ int OOSvc_Transport_Acceptor::unbind_channel(const ACE_Active_Map_Manager_Key& k
 
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	return m_channel_map.unbind(key);
+	return (m_channel_map.unbind(key) == 0 ? m_channel_map.current_size() : -1);
 }
 
 int OOSvc_Transport_Acceptor::close_all_channels()
@@ -148,8 +148,8 @@ int OOSvc_Transport_Acceptor::SetReverse(OOCore_Transport_Service* reverse)
 
 		if (m_interface==0)
 		{
-			// Don't AddRef, its irrelevant
 			m_interface = reverse;
+			m_interface->AddRef();
 			
 			return 0;
 		}

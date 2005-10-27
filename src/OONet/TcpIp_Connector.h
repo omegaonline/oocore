@@ -9,6 +9,7 @@
 class OONet_TcpIp_Connector :
 	public OOCore_Transport_Svc_Handler<OOSvc_Transport_Connector,ACE_SOCK_STREAM,2048>
 {
+	// TODO Needs a handle close!
 };
 
 #endif // _OONET_TCPIP_CONNECTOR_H_INCLUDED_

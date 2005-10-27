@@ -138,15 +138,22 @@ int OOCore_ProxyStub_Handler::create_stub(const OOObj::GUID& iid, OOObj::Object*
 
 int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 {
-	OOCore_Object_Stub_Base* stub;
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-		if (m_stub_map.unbind(key,stub) != 0)
-			return -1;
-	}
+	OOCore_Object_Stub_Base* stub;
+	if (m_stub_map.unbind(key,stub) != 0)
+		return -1;
+	
+	bool bClose = (m_stub_map.current_size()==0);
+
+	guard.release();
 
 	stub->close();
+
+	if (bClose)
+	{
+		channel()->close();
+	}
 
 	return 0;
 }

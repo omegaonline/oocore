@@ -92,6 +92,13 @@ protected:
 		return 0;
 	}
 
+	int on_close()
+	{
+		return svc_class::close();
+
+		//return Transport::close_transport();
+	}
+
 private:
 	ACE_Thread_Mutex m_lock;
 

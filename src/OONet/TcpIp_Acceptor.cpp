@@ -10,6 +10,8 @@ OONet_TcpIp_Acceptor::OONet_TcpIp_Acceptor() :
 int OONet_TcpIp_Acceptor::open(void* p)
 {
 	m_protocol = reinterpret_cast<OONet_TcpIp_Manager*>(p);
+
+	// TODO Needs to register with the protocol
 	
 	return acceptor_base::open(p);
 }

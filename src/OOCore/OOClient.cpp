@@ -32,9 +32,9 @@ int OOCore_Export OOClient_Init()
 void OOCore_Export OOClient_Term()
 {
 	// Perform our termination here
-	CONNECTION_MANAGER::instance()->close();
 	CONNECTION_MANAGER::instance()->shutdown();
-
+	CONNECTION_MANAGER::instance()->close();
+	
 	// Let the last messages pass through
 	ACE_Time_Value wait(0);
 	OOCore_RunReactorEx(&wait);

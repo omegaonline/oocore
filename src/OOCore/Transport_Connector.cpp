@@ -73,7 +73,7 @@ int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key&
 
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	return (m_channel_map.erase(key) == 1 ? 0 : -1);
+	return (m_channel_map.erase(key) == 1 ? m_channel_map.size() : -1);
 }
 
 int OOCore_Transport_Connector::close_all_channels()

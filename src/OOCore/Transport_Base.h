@@ -40,9 +40,9 @@ protected:
 	int recv(ACE_Message_Block* mb);
 	int connect_primary_channel(OOCore_Channel** channel);
 	int accept_channel(OOCore_Channel*& channel, ACE_Active_Map_Manager_Key& key);
-	int close_transport();
 	int addref();
 	int release();
+	int close_transport();
 		
 	// All Transports must implement the following functions
 	virtual int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0) = 0;
@@ -52,6 +52,9 @@ protected:
 	virtual int close_all_channels() = 0;
 	virtual int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel) = 0;
 	
+	// And optionally these...
+	virtual int on_close();
+
 private:
 	enum
 	{

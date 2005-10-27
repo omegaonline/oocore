@@ -39,6 +39,11 @@ int OOCore_Transport_Base::release()
 	return 0;
 }
 
+int OOCore_Transport_Base::on_close()
+{
+	return close_transport();
+}
+
 int OOCore_Transport_Base::close_transport()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
@@ -453,7 +458,10 @@ int OOCore_Transport_Handler::handle_recv(ACE_Message_Block* mb)
 
 int OOCore_Transport_Handler::handle_close()
 {
-	m_transport->unbind_channel(m_key);
+	if (m_transport->unbind_channel(m_key) == 1)
+	{
+		m_transport->on_close();
+	}
 
 	return OOCore_Channel_Handler::handle_close();
 }

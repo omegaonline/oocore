@@ -1,5 +1,7 @@
 #include "./Shutdown.h"
 
+#include "..\OOCore\OOCore.h"
+
 typedef ACE_Singleton<ACE_Future<int>, ACE_Thread_Mutex> SHUTDOWN;
 
 bool OOSvc_Shutdown_Observer::m_signalled = false;
@@ -7,6 +9,9 @@ bool OOSvc_Shutdown_Observer::m_signalled = false;
 void OOSvc_Export OOSvc_Shutdown()
 {
 	SHUTDOWN::instance()->set(1);
+
+	ACE_Time_Value wait(0);
+	OOCore_RunReactor(&wait);
 
 	ACE_Reactor::instance()->end_reactor_event_loop();
 }

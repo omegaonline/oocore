@@ -39,7 +39,7 @@ int OOCore_Channel::bind_handler(OOCore_Channel_Handler* handler)
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 	if (m_handler != 0)
-		return -1;
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Trying to bind NULL channel handler\n")),-1);
 
 	m_handler = handler;
 	m_handler->addref();
@@ -68,7 +68,9 @@ int OOCore_Channel::send(ACE_Message_Block* mb, ACE_Time_Value* wait)
 void OOCore_Channel::release()
 {
 	if (--m_refcount==0)
+	{
 		delete this;
+	}
 }
 
 int OOCore_Channel::post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait)
@@ -94,7 +96,10 @@ int OOCore_Channel::post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait)
 	}
 	else
 	{
-		return (m_msg_queue.enqueue_head(mb,wait)==-1 ? -1 : 0);
+		if (m_msg_queue.enqueue_head(mb,wait)==-1)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed enqueue channel message\n")),-1);
+			
+		return 0;
 	}
 }
 
@@ -106,7 +111,6 @@ int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 	{
 		if (mb->msg_type() == ACE_Message_Block::MB_HANGUP)
 		{
-			m_sibling = 0;
 			res = close();
 			mb->release();
 		}
@@ -130,18 +134,25 @@ int OOCore_Channel::close()
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 	if (m_closed)
-		return -1;
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Attempting to close channel twice\n")),0);
+
+	m_closed = true;
 
 	if (m_sibling != 0)
 	{
+		OOCore_Channel* sibling(m_sibling);
+
+		m_sibling = 0;
+		sibling->m_sibling = 0;
+
 		ACE_Message_Block* mb;
 		ACE_NEW_RETURN(mb,ACE_Message_Block(0,ACE_Message_Block::MB_HANGUP),-1);
 
-		if (m_sibling->post_msg(mb,0) != 0)
+		if (sibling->post_msg(mb,0) != 0)
 		{
 			mb->release();
 			return -1;
-		}		
+		}
 	}
 
 	if (m_handler != 0)
@@ -150,8 +161,6 @@ int OOCore_Channel::close()
 		m_handler->release();
 		m_handler = 0;
 	}
-
-	m_closed = true;
 
 	guard.release();
 

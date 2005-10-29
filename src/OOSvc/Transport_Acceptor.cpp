@@ -14,6 +14,8 @@ OOSvc_Transport_Acceptor::OOSvc_Transport_Acceptor(void) :
 
 int OOSvc_Transport_Acceptor::open()
 {
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ open\n"),this));
+
 	// Accept the first channel
 	OOCore_Channel* channel;
 	ACE_Active_Map_Manager_Key key;

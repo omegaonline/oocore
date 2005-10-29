@@ -44,14 +44,20 @@ int OOCore_Proxy_Marshaller::operator ()(ACE_Time_Value* wait)
 
 int OOCore_Proxy_Marshaller::send_and_recv(ACE_Time_Value* wait)
 {
-	if (m_failed || m_handler==0)
+	if (m_handler==0 || m_failed)
 		return -1;
 
 	// Send the request
 	ACE_Message_Block* mb = m_output.begin()->duplicate();
 
 	OOCore_Channel* ch = m_handler->channel();
-	if (ch==0 || ch->send(mb,wait) == -1)
+	if (ch==0)
+	{
+		mb->release();
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Marshaller channel is NULL\n")),-1);
+	}
+
+	if (ch->send(mb,wait) == -1)
 	{
 		mb->release();
 		return -1;
@@ -63,12 +69,12 @@ int OOCore_Proxy_Marshaller::send_and_recv(ACE_Time_Value* wait)
 		// Wait for the response
 		ACE_InputCDR* input = 0;
 		if (m_handler->get_response(m_trans_key,input,wait) != 0 || input==0)
-			return -1;
-
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No response recieved\n")),-1);
+		
 		// Read the response code
 		ACE_CDR::Long ret_code;
 		if (!input->read_long(ret_code))
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read return code\n")),-1);
 
 		if (ret_code != 0)
 		{

@@ -16,12 +16,6 @@ int OOCore_Export OOClient_Init()
 	{
 		// Open a client connection
 		ret = OOCore_Connection_Manager::init();
-		if (ret==0)
-		{
-			// Perform our initialisation here
-			ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Connected\n")));
-		}
-				
 		if (ret!=0)
             ACE::fini();
 	}
@@ -31,12 +25,14 @@ int OOCore_Export OOClient_Init()
 
 void OOCore_Export OOClient_Term()
 {
+	ACE_Time_Value wait(0);
+	OOCore_RunReactor(&wait);
+
 	// Perform our termination here
-	CONNECTION_MANAGER::instance()->shutdown();
 	CONNECTION_MANAGER::instance()->close();
+	CONNECTION_MANAGER::instance()->shutdown();
 	
 	// Let the last messages pass through
-	ACE_Time_Value wait(0);
 	OOCore_RunReactorEx(&wait);
 	
 	ACE::fini();

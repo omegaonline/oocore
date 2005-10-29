@@ -18,7 +18,7 @@ public:
 	virtual int open(void* p = 0)
 	{
 		if (svc_class::open(p)!=0)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 
 		if (Transport::open()!=0)
 			return -1;
@@ -61,7 +61,7 @@ public:
 		return (this->msg_queue()->is_empty()) ? -1 : 0;
 	}
 
-	virtual int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
+	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
 	{
 		if (mask == ACE_Event_Handler::WRITE_MASK)
 		{
@@ -75,11 +75,8 @@ protected:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0)
 	{
 		if (this->putq(mb,wait) == -1)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) %p; discarding data\n"),ACE_TEXT("enqueue failed")));
-			return -1;
-		}
-
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %p; discarding data\n"),ACE_TEXT("enqueue failed")),-1);
+		
 		if (send_i() != 0)
 			return -1;
 		
@@ -92,11 +89,9 @@ protected:
 		return 0;
 	}
 
-	int on_close()
+	virtual int on_close()
 	{
 		return svc_class::close();
-
-		//return Transport::close_transport();
 	}
 
 private:
@@ -127,6 +122,8 @@ private:
 		ACE_Time_Value nowait(ACE_OS::gettimeofday());
 		while (-1 != getq(mb_start, &nowait))
 		{
+			// TODO make this use peer()->send_n() instead!
+
 			for (mb=mb_start;mb!=0;mb=mb->cont())
 			{
 				if (mb->length()==0)
@@ -159,7 +156,13 @@ private:
 	int recv_i(ACE_Message_Block* mb)
 	{
 		// We use this to handle internal message posting
-		return Transport::recv(mb);
+		if (Transport::recv(mb) != 0)
+		{
+			close();
+			return -1;
+		}
+
+		return 0;
 	}
 };
 

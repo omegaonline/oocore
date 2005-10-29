@@ -19,6 +19,7 @@ public:
 	const char* protocol_name();
 	int open_transport(const char* remote_host, OOCore_Transport_Base*& transport);
 	void transport_closed(OOCore_Transport_Base* transport);
+	int transport_accepted(OOCore_Transport_Base* transport, const ACE_TCHAR* remote_host);
 
 protected:
 	virtual bool address_is_equal(const char* addr1, const char* addr2);

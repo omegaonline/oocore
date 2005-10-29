@@ -33,6 +33,9 @@ public:
 
 	int get_response(const ACE_Active_Map_Manager_Key& trans_key, ACE_InputCDR*& input, ACE_Time_Value* wait);
 
+	void PS_addref();
+	void PS_release();
+
 protected:
 	virtual ~OOCore_ProxyStub_Handler(void);
 
@@ -67,6 +70,7 @@ private:
 
 	OOObj::Object** m_conn_proxy;
 	bool m_connected;
+	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 		
 	int load_proxy_stub(const OOObj::GUID& iid, proxystub_node*& node);
 	int handle_recv(ACE_Message_Block* mb);

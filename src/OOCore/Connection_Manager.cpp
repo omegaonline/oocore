@@ -13,7 +13,7 @@ int OOCore_Connection_Manager::init(void)
 	// Get the port number from the binding
 	ACE_NS_WString strPort;
 	if (BINDING::instance()->find(ACE_TEXT("local_port"),strPort) != 0)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No local port registered\n")),-1);
 	
 	u_short uPort = ACE_OS::atoi(strPort.c_str());
 	
@@ -24,7 +24,7 @@ int OOCore_Connection_Manager::init(void)
 	ACE_Connector<OOCore_Connection_Manager, ACE_MEM_CONNECTOR> connector;
 	OOCore_Connection_Manager* pThis = CONNECTION_MANAGER::instance();
 	if (connector.connect(pThis,addr)!=0)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to connect to server\n")),-1);
 
 	// Keep us alive artifically because we are a singleton
 	CONNECTION_MANAGER::instance()->addref();

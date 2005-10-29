@@ -107,16 +107,16 @@ int OOCore_Binding::launch_server()
 	// Spawn the process
 	ACE_Process process;
 	if (process.spawn(options)==ACE_INVALID_PID)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to spawn server process\n")),-1);
 
 	// Wait 1 second for the process to launch, if it takes more than 1 second its probably okay
 	ACE_exitcode exitcode;
 	int ret = process.wait(ACE_Time_Value(1),&exitcode);
 	if (ret==-1)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed retrieve process exit code\n")),-1);
 
 	if (ret!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Process exited with code %d.\n"),exitcode),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Process exited with code %d.\n"),exitcode),-1);
 
     return 0;
 }

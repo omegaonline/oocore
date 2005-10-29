@@ -97,7 +97,7 @@ static int OOCore_Reactor_Event_Hook(ACE_Reactor * reactor)
 	{
 		ACE_Method_Request* req_ = activ_queue->dequeue();
 		if (!req_ && errno!=EWOULDBLOCK)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to dequeue async request\n")),-1);
 
 		std::auto_ptr<ACE_Method_Request> req(req_);
 		if (req->call() != 0)
@@ -123,7 +123,7 @@ int OOCore_RunReactorEx(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* p)
 	else
 	{
 		if (!timeout)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) RunReactorEx with condition requires a timeout\n")),-1);
 
 		if (ACE_Reactor::instance()->reactor_event_loop_done ())
 			return 0;

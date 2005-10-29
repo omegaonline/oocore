@@ -138,7 +138,7 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 
 		// Do the ServiceMain in a seperate thread
 		if (ACE_Thread_Manager::instance()->spawn(NTService::start_service)==-1)
-			return -1;
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed spawn service thread\n")),-1);
 	}
 
 	// Install ConsoleCtrlHandler for Ctrl+C
@@ -211,9 +211,7 @@ BOOL WINAPI NTService::ctrlc_handler(DWORD dwCtrlType)
 {
 	ACE_UNUSED_ARG(dwCtrlType);
 
-	OOSvc_Shutdown();
-	
-	return TRUE;
+	return (OOSvc_Shutdown()==0 ? TRUE : FALSE);
 }
 
 int NTService::svc(void)

@@ -41,6 +41,16 @@ int OOSvc_Transport_Protocol::open_transport(const char* remote_host, OOCore_Tra
 	return 0;
 }
 
+int OOSvc_Transport_Protocol::transport_accepted(OOCore_Transport_Base* transport, const ACE_TCHAR* remote_host)
+{
+	if (transport == 0 || remote_host==0)
+		return -1;
+
+	m_transport_map[remote_host] = transport;
+	
+	return 0;
+}
+
 void OOSvc_Transport_Protocol::transport_closed(OOCore_Transport_Base* transport)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);

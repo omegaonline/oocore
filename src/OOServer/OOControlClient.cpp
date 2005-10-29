@@ -30,7 +30,7 @@ int OOControlClient::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVa
 		return 0;
 	}
 
-	return -1;
+	ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) QI for unsupported interface\n")),-1);
 }
 
 int OOControlClient::Stop(OOObj::bool_t force, OOObj::uint16_t* remaining)

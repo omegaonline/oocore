@@ -45,8 +45,7 @@ int OOCore_Object_Stub_Base::invoke(unsigned int method, int& ret_code, OOCore_S
 		const OOObj::Delegate::Base* del;
 		if (dispatch_tbl.get(del,method) != 0)
 		{
-			ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid method index %ul\n"),method));
-			return -1;
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid method index %ul\n"),method),-1);
 		}
 
 		ret_code = del->invoke(mshl);

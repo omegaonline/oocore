@@ -38,11 +38,7 @@ public:
 protected:
 	virtual ~OOCore_Channel_Handler() {};
 
-	virtual int handle_recv(ACE_Message_Block* mb)
-	{
-		return -1;
-	}
-
+	virtual int handle_recv(ACE_Message_Block* mb) = 0;
 	virtual int handle_close()
 	{
 		m_closed = true;

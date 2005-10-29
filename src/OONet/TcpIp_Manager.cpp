@@ -101,8 +101,9 @@ int OONet_TcpIp_Manager::connect_transport(const char* remote_host, OOCore_Trans
 	if (connector.connect(conn,addr)!=0)
 		return -1;
 
+	conn->set_protocol(this);
 	transport = conn;
-
+	
 	return 0;
 }
 

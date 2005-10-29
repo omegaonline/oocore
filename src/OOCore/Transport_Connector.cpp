@@ -16,6 +16,8 @@ OOCore_Transport_Connector::~OOCore_Transport_Connector(void)
 
 int OOCore_Transport_Connector::open()
 {
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ open\n"),this));
+
 	OOCore_Channel* channel;
 	if (connect_primary_channel(&channel) != 0)
 		return -1;
@@ -63,7 +65,10 @@ int OOCore_Transport_Connector::bind_channel(OOCore_Channel* channel, ACE_Active
 {
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	return (m_channel_map.insert(map_type::value_type(key,channel)).second ? 0 : -1);
+	if (!m_channel_map.insert(map_type::value_type(key,channel)).second)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to insert channel key\n")),-1);
+		
+	return 0;
 }
 
 int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key& key)
@@ -73,7 +78,10 @@ int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key&
 
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	return (m_channel_map.erase(key) == 1 ? m_channel_map.size() : -1);
+	if (m_channel_map.erase(key) == 1)
+		return m_channel_map.size();
+	
+	ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
 }
 
 int OOCore_Transport_Connector::close_all_channels()
@@ -96,7 +104,7 @@ int OOCore_Transport_Connector::close_all_channels()
 int OOCore_Transport_Connector::connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel)
 {
 	if (!m_interface)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connecting channel with no transport interface\n")),-1);
 
 	if (m_interface->OpenChannel(name,&key) != 0)
 		return -1;
@@ -105,5 +113,4 @@ int OOCore_Transport_Connector::connect_channel(const OOObj::char_t* name, ACE_A
 		return -1;
 	
 	return 0;
-
 }

@@ -107,7 +107,9 @@ public:
 	OOCore_Transport_Handler(OOCore_Channel* channel, OOCore_Transport_Base* transport) :
 		OOCore_Channel_Handler(channel),
 		m_transport(transport)
-	{}
+	{
+		m_transport->addref();
+	}
 
 	void channel_key(const ACE_Active_Map_Manager_Key& key)
 	{
@@ -118,7 +120,10 @@ public:
 	ACE_Active_Map_Manager_Key m_key;
 
 protected:
-	virtual ~OOCore_Transport_Handler() {};
+	virtual ~OOCore_Transport_Handler() 
+	{
+		m_transport->release();
+	};
 	
 private:
 	int handle_recv(ACE_Message_Block* mb);

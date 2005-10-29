@@ -16,7 +16,8 @@ OOCore_Proxy_Marshaller OOCore_ProxyStub_Handler::m_failmshl;
 OOCore_ProxyStub_Handler::OOCore_ProxyStub_Handler(OOCore_Channel* channel) :
 	OOCore_Channel_Handler(channel),
 	m_conn_proxy(0),
-	m_connected(false)
+	m_connected(false),
+	m_refcount(0)
 {
 }
 
@@ -41,6 +42,25 @@ OOCore_ProxyStub_Handler::~OOCore_ProxyStub_Handler(void)
 	{
 		(*l).int_id_->close();
 	}
+}
+
+void OOCore_ProxyStub_Handler::PS_addref()
+{
+	++m_refcount;
+
+	addref();
+}
+
+void OOCore_ProxyStub_Handler::PS_release()
+{
+	if (--m_refcount==0)
+	{
+		OOCore_Channel* ch = channel();
+		if (ch)
+			ch->close();
+	}
+
+	release();
 }
 
 int OOCore_ProxyStub_Handler::load_proxy_stub(const OOObj::GUID& iid, proxystub_node*& node)
@@ -77,22 +97,22 @@ int OOCore_ProxyStub_Handler::load_proxy_stub(const OOObj::GUID& iid, proxystub_
 		// Bind to the CreateStub function - C-style cast to please gcc
 		new_node->stub_fn = (OOObj::CreateStub_Function)(new_node->dll.symbol(ACE_TEXT("CreateStub")));
 		if (new_node->stub_fn == 0)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) CreateStub function missing from library\n")),-1);
 
 		// Bind to the CreateProxy function - C-style cast to please gcc
 		new_node->proxy_fn = (OOObj::CreateProxy_Function)(new_node->dll.symbol(ACE_TEXT("CreateProxy")));
 		if (new_node->proxy_fn == 0)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) CreateProxy function missing from library\n")),-1);
 
 		ACE_Guard<ACE_Thread_Mutex> guard2(m_lock);
 
 		// Add the node info to the map
 		if (m_dll_map.bind(new_node,key) != 0)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind proxy/stub info\n")),-1);
 	
 		// Add the key to the other map
 		if (!m_proxystub_map.insert(std::map<OOObj::GUID,ACE_Active_Map_Manager_Key>::value_type(iid,key)).second)
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind proxy/stub info\n")),-1);
 	}
 	else
 	{
@@ -122,7 +142,7 @@ int OOCore_ProxyStub_Handler::create_stub(const OOObj::GUID& iid, OOObj::Object*
 
 		// Call CreateStub
 		if ((node->stub_fn)(iid,obj,&stub) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) CreateStub failed\n")),-1);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) CreateStub failed\n")),-1);
 	}
 
 	// Insert the stub into the map
@@ -130,8 +150,10 @@ int OOCore_ProxyStub_Handler::create_stub(const OOObj::GUID& iid, OOObj::Object*
 	if (m_stub_map.bind(stub,key) != 0)
 	{
 		stub->close();
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind stub info\n")),-1);
 	}
+
+	PS_addref();
 
 	return 0;
 }
@@ -142,18 +164,13 @@ int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 
 	OOCore_Object_Stub_Base* stub;
 	if (m_stub_map.unbind(key,stub) != 0)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub\n")),-1);
 	
-	bool bClose = (m_stub_map.current_size()==0);
-
 	guard.release();
 
 	stub->close();
 
-	if (bClose)
-	{
-		channel()->close();
-	}
+	PS_release();
 
 	return 0;
 }
@@ -171,13 +188,19 @@ int OOCore_ProxyStub_Handler::create_first_stub(const OOObj::GUID& iid, OOObj::O
 		!(output << key))
 	{
 		remove_stub(key);
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write iid and key\n")),-1);
 	}
 
 	// Send the message back
 	ACE_Message_Block* mb = output.begin()->duplicate();
 	OOCore_Channel* ch = channel();
-	if (ch==0 || ch->send(mb) == -1)
+	if (ch==0)
+	{
+		mb->release();
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Proxy/Stub handler has NULL channel\n")),-1);
+	}
+		
+	if (ch->send(mb) == -1)
 	{
 		mb->release();
 		return -1;
@@ -203,7 +226,7 @@ int OOCore_ProxyStub_Handler::create_proxy(const OOObj::GUID& iid, const OOObj::
 
 		// Call CreateProxy
 		if ((node->proxy_fn)(iid,key,this,proxy) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) CreateProxy failed\n")),-1);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) CreateProxy failed\n")),-1);
 	}
 
 	return 0;
@@ -219,7 +242,7 @@ bool OOCore_ProxyStub_Handler::await_connect(void * p)
 int OOCore_ProxyStub_Handler::create_first_proxy(OOObj::Object** proxy)
 {
 	if (m_conn_proxy != 0)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to create a proxy incorrectly\n")),-1);
 
 	m_conn_proxy = proxy;
 	
@@ -228,7 +251,7 @@ int OOCore_ProxyStub_Handler::create_first_proxy(OOObj::Object** proxy)
 	if (OOCore_RunReactorEx(&wait,await_connect,this) != 0)
 	{
 		m_conn_proxy = 0;
-		return -1;
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy creation timed out and gave up\n")),-1);
 	}
 
 	// We never use m_conn_proxy again, but use its value as a flag;
@@ -240,12 +263,12 @@ int OOCore_ProxyStub_Handler::handle_connect(ACE_InputCDR& input)
 	// Read the iid
 	OOObj::GUID iid;
 	if (!(input >> iid))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read iid\n")),-1);
 	
 	// Read the object key
 	OOObj::cookie_t key;
 	if (!(input >> key))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read key\n")),-1);
 	
 	if (create_proxy(iid,key,m_conn_proxy) != 0)
 		return -1;
@@ -278,7 +301,7 @@ int OOCore_ProxyStub_Handler::handle_recv(ACE_Message_Block* mb)
 	if (!input->read_boolean(request))
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read request status\n")),-1);
 	}
 
 	if (request)
@@ -294,7 +317,7 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 	if (!(*input >> trans_key))
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read transaction key\n")),-1);
 	}
 
 	// Read the stub key
@@ -302,7 +325,7 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 	if (!(*input >> key))
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read request key\n")),-1);
 	}
 
 	// Read the method number
@@ -310,7 +333,7 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 	if (!input->read_ulong(method))
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
 	}
 
 	// Read the sync state
@@ -318,7 +341,7 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 	if (!input->read_boolean(sync))
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read sync flag\n")),-1);
 	}
 
 	// Find the stub
@@ -327,7 +350,7 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 	if (m_stub_map.find(key,stub) != 0)
 	{
 		delete input;
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid Object key\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid object key\n")),-1);
 	}
 	guard.release();
 
@@ -347,15 +370,15 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 
 		// Write that we are a response
 		if (!output.write_boolean(false))
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
 	
 		// Write the transaction id
 		if (!(output << trans_key))
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write transaction key\n")),-1);
 
 		// Write the response code
 		if (!output.write_long(ret_code))
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1);
 
 		if (ret_code==0)
 		{
@@ -367,7 +390,13 @@ int OOCore_ProxyStub_Handler::recv_request(ACE_InputCDR* input)
 		// Send the response
 		ACE_Message_Block* mb = output.begin()->duplicate();
 		OOCore_Channel* ch = channel();
-		if (ch==0 || ch->send(mb) != 0)
+		if (ch==0)
+		{
+			mb->release();
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Proxy/stub handler has NULL channel\n")),-1);
+		}
+
+		if (ch->send(mb) != 0)
 		{
 			mb->release();
 			return -1;
@@ -390,7 +419,7 @@ int OOCore_ProxyStub_Handler::recv_response(ACE_InputCDR* input)
 	if (!(*input >> trans_key))
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read transaction key\n")),-1);
 	}
 
 	// Put in the response map
@@ -398,7 +427,7 @@ int OOCore_ProxyStub_Handler::recv_response(ACE_InputCDR* input)
 	if (!m_response_map.insert(std::map<ACE_Active_Map_Manager_Key,ACE_InputCDR*>::value_type(trans_key,input)).second)
 	{
 		delete input;
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to insert into response map\n")),-1);
 	}
 
 	return 0;
@@ -451,11 +480,11 @@ int OOCore_ProxyStub_Handler::handle_close()
 	for (ACE_Active_Map_Manager<OOCore_Object_Stub_Base*>::iterator l=m_stub_map.begin();l!=m_stub_map.end();++l)
 	{
 		(*l).int_id_->close();
+		release();
 	}
+	m_refcount -= m_stub_map.current_size();
 	m_stub_map.close();
 
-	guard.release();
-	
 	return OOCore_Channel_Handler::handle_close();
 }
 
@@ -475,6 +504,7 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 	if (ret!=0)
 	{
 		mshl->fail();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind transaction key\n")));
 		return *mshl;
 	}
 
@@ -482,6 +512,7 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 	if (!mshl->m_output.write_boolean(true))
 	{
 		mshl->fail();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write request flag\n")));
 		return *mshl;
 	}
 
@@ -489,6 +520,7 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 	if (!(mshl->m_output << mshl->m_trans_key))
 	{
 		mshl->fail();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to spawn server process\n")));
 		return *mshl;
 	}
 
@@ -496,6 +528,7 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 	if (!(mshl->m_output << key))
 	{
 		mshl->fail();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write transaction key\n")));
 		return *mshl;
 	}
 
@@ -503,6 +536,7 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 	if (!mshl->m_output.write_ulong(method))
 	{
 		mshl->fail();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write method ordinal\n")));
 		return *mshl;
 	}
 
@@ -510,6 +544,7 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 	if (!mshl->m_output.write_boolean(sync))
 	{
 		mshl->fail();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write sync status\n")));
 		return *mshl;
 	}
 
@@ -523,7 +558,7 @@ int OOCore_ProxyStub_Handler::remove_marshaller(const ACE_Active_Map_Manager_Key
 	OOCore_Proxy_Marshaller* mshl;
 	if (m_transaction_map.unbind(trans_key,mshl) != 0)
 	{
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind transaction key\n")),-1);
 	}
 	guard.release();
 

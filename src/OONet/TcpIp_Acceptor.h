@@ -22,7 +22,7 @@ public:
 	int open(void* p);
 
 private:
-	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+	int on_close();
 	void handle_shutdown();
 
 	OONet_TcpIp_Manager* m_protocol;

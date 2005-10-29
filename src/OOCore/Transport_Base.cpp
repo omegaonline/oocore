@@ -31,7 +31,7 @@ int OOCore_Transport_Base::addref()
 int OOCore_Transport_Base::release()
 {
 	if (--m_refcount < 0)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Refcount has gone negative\n")),-1);
 
 	if (m_refcount==0)
 		delete this;
@@ -64,6 +64,8 @@ int OOCore_Transport_Base::close_transport()
 	{
 		m_connected = CLOSED;
 	}
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close\n"),this));
 
 	return release();
 }
@@ -122,7 +124,7 @@ int OOCore_Transport_Base::recv(ACE_Message_Block* in_block)
 int OOCore_Transport_Base::bad_channel(const OOCore_Transport_MsgHeader& header, ACE_InputCDR& input)
 {
 	if (header.msg_size == 0 || m_conn_count==0)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid channel key received\n")),-1);
 
 	// Save the payload for later 
 	ACE_Message_Block* mb = input.start()->duplicate();
@@ -132,7 +134,7 @@ int OOCore_Transport_Base::bad_channel(const OOCore_Transport_MsgHeader& header,
 	if (!input.skip_bytes(header.msg_size))
 	{
 		mb->release();
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to skip header bytes\n")),-1);
 	}
 
 	// Lock is already held
@@ -173,7 +175,7 @@ int OOCore_Transport_Base::process_msg(const OOCore_Transport_MsgHeader& header,
 
 		// Skip the bytes of the message
 		if (!input.skip_bytes(header.msg_size))
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to skip header bytes\n")),-1);
 	}
 		
 	return 0;
@@ -281,7 +283,7 @@ bool OOCore_Transport_Base::await_connect(void* p)
 int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 {
 	if (m_connected != NOT_CONNECTED)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Attempting to connect an already connected transport\n")),-1);
 
 	m_connected = CONNECTING;
 	m_conn_channel = channel;
@@ -297,7 +299,7 @@ int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key&
 	OOCore_Channel* our_channel;
 	OOCore_Channel* their_channel;
 	if (OOCore_Channel::create(our_channel,their_channel) == -1)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to create channel\n")),-1);
 
 	// Add the channel to the map
 	if (add_channel(our_channel,key) == -1)
@@ -305,6 +307,8 @@ int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key&
 		our_channel->close();
 		return -1;
 	}
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ open channel %u:%u\n"),this,key.slot_index(),key.slot_generation()));
 
 	// Send mb to the new channel
 	if (mb!=0 && our_channel->send(mb) != 0)
@@ -327,7 +331,7 @@ int OOCore_Transport_Base::connect_first_channel_i(const OOCore_Transport_MsgHea
 	if (!input.skip_bytes(header.msg_size))
 	{
 		mb->release();
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to skip header bytes\n")),-1);
 	}
 
 	ACE_Active_Map_Manager_Key key2 = header.key;
@@ -371,13 +375,13 @@ int OOCore_Transport_MsgHeader::read(ACE_InputCDR& input)
 	if (input.length() < sizeof(this->header_size))
 		return 1;
 	if (!input.read_ushort(this->header_size))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to reader header size\n")),-1);
 
 	// Check the header size
 	if (this->header_size != OOCore_Transport_MsgHeader::v1_size() /*&&
 		this->header_size != OOCore_Transport_MsgHeader::v2_size()*/ )
 	{
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Bad header\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad header\n")),-1);
 	}
 
 	// Check the header length
@@ -388,11 +392,11 @@ int OOCore_Transport_MsgHeader::read(ACE_InputCDR& input)
 
 	// Read the message length
 	if (!input.read_ulong(this->msg_size))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read message length\n")),-1);
 
 	// Read the channel key
 	if (!(input >> this->key))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read channel key\n")),-1);
 
 	/*// Read the v2 header
 	if (this->header_size == OOCore_Transport_MsgHeader::v2_size())
@@ -410,13 +414,13 @@ int OOCore_Transport_MsgHeader::write(ACE_OutputCDR& output)
 {
 	// Init a client header
 	if (!output.write_ushort(this->v1_size()))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write header size\n")),-1);
 
 	if (!output.write_ulong(this->msg_size))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write message size\n")),-1);
 
 	if (!(output << key))
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write channel key\n")),-1);
 	
 	return 0;
 }
@@ -458,9 +462,12 @@ int OOCore_Transport_Handler::handle_recv(ACE_Message_Block* mb)
 
 int OOCore_Transport_Handler::handle_close()
 {
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close channel %u:%u\n"),m_transport,m_key.slot_index(),m_key.slot_generation()));
+
 	if (m_transport->unbind_channel(m_key) == 1)
 	{
-		m_transport->on_close();
+		// TODO Delay this...
+		//m_transport->on_close();
 	}
 
 	return OOCore_Channel_Handler::handle_close();

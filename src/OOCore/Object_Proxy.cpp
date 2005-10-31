@@ -9,12 +9,12 @@ OOCore_Object_Proxy_Base::OOCore_Object_Proxy_Base(const OOObj::cookie_t& key,
 	m_handler(handler),
 	m_refcount(0)
 {
-	m_handler->PS_addref();
+	m_handler->addref();
 }
 
 OOCore_Object_Proxy_Base::~OOCore_Object_Proxy_Base(void)
 {
-	m_handler->PS_release();
+	m_handler->release();
 }
 
 OOCore_Proxy_Marshaller& OOCore_Object_Proxy_Base::marshaller(unsigned int method, bool sync)

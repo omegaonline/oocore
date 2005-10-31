@@ -116,7 +116,14 @@ int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 		}
 		else
 		{
-			res = m_handler->handle_recv(mb);
+			if (!m_closed)
+			{
+				res = m_handler->handle_recv(mb);
+			}
+			else
+			{
+				mb->release();
+			}
 		}
 	}
 	else

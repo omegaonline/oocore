@@ -36,6 +36,11 @@ int OOSvc_Transport_Acceptor::open()
 	return 0;
 }
 
+int OOSvc_Transport_Acceptor::request_close()
+{
+	return close_transport();
+}
+
 int OOSvc_Transport_Acceptor::find_channel(const ACE_Active_Map_Manager_Key& key, OOCore_Channel*& channel)
 {
 	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
@@ -52,12 +57,15 @@ int OOSvc_Transport_Acceptor::bind_channel(OOCore_Channel* channel, ACE_Active_M
 
 int OOSvc_Transport_Acceptor::unbind_channel(const ACE_Active_Map_Manager_Key& key)
 {
-	if (m_closing)
+	if (!m_closing)
 		return 0;
 
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-
-	return (m_channel_map.unbind(key) == 0 ? m_channel_map.current_size() : -1);
+	
+	if (m_channel_map.unbind(key) == 1)
+		return 0;
+	
+	ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
 }
 
 int OOSvc_Transport_Acceptor::close_all_channels()

@@ -1,6 +1,6 @@
 #include "./Shutdown.h"
 
-#include "..\OOCore\OOCore.h"
+#include "../OOCore/OOCore.h"
 
 typedef ACE_Singleton<ACE_Future<int>, ACE_Thread_Mutex> SHUTDOWN;
 

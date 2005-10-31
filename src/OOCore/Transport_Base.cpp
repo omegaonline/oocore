@@ -39,11 +39,6 @@ int OOCore_Transport_Base::release()
 	return 0;
 }
 
-int OOCore_Transport_Base::on_close()
-{
-	return close_transport();
-}
-
 int OOCore_Transport_Base::close_transport()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
@@ -464,11 +459,7 @@ int OOCore_Transport_Handler::handle_close()
 {
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close channel %u:%u\n"),m_transport,m_key.slot_index(),m_key.slot_generation()));
 
-	if (m_transport->unbind_channel(m_key) == 1)
-	{
-		// TODO Delay this...
-		//m_transport->on_close();
-	}
+	m_transport->unbind_channel(m_key);
 
 	return OOCore_Channel_Handler::handle_close();
 }

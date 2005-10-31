@@ -16,8 +16,7 @@ OOCore_Proxy_Marshaller OOCore_ProxyStub_Handler::m_failmshl;
 OOCore_ProxyStub_Handler::OOCore_ProxyStub_Handler(OOCore_Channel* channel) :
 	OOCore_Channel_Handler(channel),
 	m_conn_proxy(0),
-	m_connected(false),
-	m_refcount(0)
+	m_connected(false)
 {
 }
 
@@ -42,25 +41,6 @@ OOCore_ProxyStub_Handler::~OOCore_ProxyStub_Handler(void)
 	{
 		(*l).int_id_->close();
 	}
-}
-
-void OOCore_ProxyStub_Handler::PS_addref()
-{
-	++m_refcount;
-
-	addref();
-}
-
-void OOCore_ProxyStub_Handler::PS_release()
-{
-	if (--m_refcount==0)
-	{
-		OOCore_Channel* ch = channel();
-		if (ch)
-			ch->close();
-	}
-
-	release();
 }
 
 int OOCore_ProxyStub_Handler::load_proxy_stub(const OOObj::GUID& iid, proxystub_node*& node)
@@ -153,8 +133,6 @@ int OOCore_ProxyStub_Handler::create_stub(const OOObj::GUID& iid, OOObj::Object*
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind stub info\n")),-1);
 	}
 
-	PS_addref();
-
 	return 0;
 }
 
@@ -170,7 +148,12 @@ int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 
 	stub->close();
 
-	PS_release();
+	if (m_stub_map.current_size() == 0)
+	{
+		OOCore_Channel* ch = channel();
+		if (ch)
+			ch->close();
+	}
 
 	return 0;
 }
@@ -480,9 +463,7 @@ int OOCore_ProxyStub_Handler::handle_close()
 	for (ACE_Active_Map_Manager<OOCore_Object_Stub_Base*>::iterator l=m_stub_map.begin();l!=m_stub_map.end();++l)
 	{
 		(*l).int_id_->close();
-		release();
 	}
-	m_refcount -= m_stub_map.current_size();
 	m_stub_map.close();
 
 	return OOCore_Channel_Handler::handle_close();

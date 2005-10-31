@@ -52,9 +52,6 @@ protected:
 	virtual int close_all_channels() = 0;
 	virtual int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel) = 0;
 	
-	// And optionally these...
-	virtual int on_close();
-
 private:
 	enum
 	{

@@ -18,6 +18,7 @@ protected:
 	int open();
 
 	virtual bool is_local_transport();
+	virtual int request_close();
 	
 private:
 	ACE_Active_Map_Manager<OOCore_Channel*> m_channel_map;

@@ -14,7 +14,7 @@ int OOSvc_Transport_Connector::open(void)
 	{
 		ret = get_interface()->SetReverse(this);
 		if (ret!=0)
-			on_close();
+			close_transport();
 	}
 
 	return ret;

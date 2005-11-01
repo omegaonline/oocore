@@ -28,12 +28,12 @@ int OONet_TcpIp_Acceptor::open(void* p)
 	return 0;
 }
 
-int OONet_TcpIp_Acceptor::on_close()
+int OONet_TcpIp_Acceptor::request_close()
 {
 	if (m_protocol)
 		m_protocol->transport_closed(this);
 
-	return acceptor_base::on_close();
+	return acceptor_base::request_close();
 }
 
 void OONet_TcpIp_Acceptor::handle_shutdown()

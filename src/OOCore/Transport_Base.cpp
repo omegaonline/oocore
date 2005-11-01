@@ -364,6 +364,31 @@ int OOCore_Transport_Base::add_channel(OOCore_Channel* channel, ACE_Active_Map_M
 	return 0;
 }
 
+int OOCore_Transport_Base::AddRef()
+{
+	return addref();
+}
+
+int OOCore_Transport_Base::Release()
+{
+	return release();
+}
+
+int OOCore_Transport_Base::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
+{
+	if (iid == OOCore_Transport_Service::IID ||
+		iid == OOObj::Object::IID)
+	{
+		*ppVal = this;
+		(*ppVal)->AddRef();
+		return 0;
+	}
+	
+	*ppVal = 0;
+	
+	return -1;
+}
+
 int OOCore_Transport_MsgHeader::read(ACE_InputCDR& input)
 {
 	// Read the header size

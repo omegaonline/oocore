@@ -158,7 +158,7 @@ private:
 		// We use this to handle internal message posting
 		if (Transport::recv(mb) != 0)
 		{
-			close();
+			svc_class::close();
 			return -1;
 		}
 

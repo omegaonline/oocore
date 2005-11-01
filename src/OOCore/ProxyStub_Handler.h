@@ -61,12 +61,13 @@ private:
 	ACE_Active_Map_Manager<OOCore_Object_Stub_Base*> m_stub_map;
 	std::map<ACE_Active_Map_Manager_Key,ACE_InputCDR*> m_response_map; 
 	ACE_Thread_Mutex m_lock;
-
-	static proxystub_node m_core_node;
-	static OOCore_Proxy_Marshaller m_failmshl;
-
 	OOObj::Object** m_conn_proxy;
 	bool m_connected;
+	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_depthcount;
+	bool m_close_channel;
+	
+	static proxystub_node m_core_node;
+	static OOCore_Proxy_Marshaller m_failmshl;
 		
 	int load_proxy_stub(const OOObj::GUID& iid, proxystub_node*& node);
 	int handle_recv(ACE_Message_Block* mb);

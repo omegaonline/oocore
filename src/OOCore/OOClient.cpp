@@ -25,15 +25,12 @@ int OOCore_Export OOClient_Init()
 
 void OOCore_Export OOClient_Term()
 {
-	ACE_Time_Value wait(0);
-	OOCore_RunReactor(&wait);
-
 	// Perform our termination here
 	CONNECTION_MANAGER::instance()->close();
-	CONNECTION_MANAGER::instance()->shutdown();
-	
+		
 	// Let the last messages pass through
-	OOCore_RunReactorEx(&wait);
+	ACE_Time_Value wait(0,500);
+	OOCore_RunReactor(&wait);
 	
 	ACE::fini();
 }

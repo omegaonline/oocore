@@ -8,7 +8,7 @@
 #include "./Service_Manager.h"
 
 OOSvc_Transport_Acceptor::OOSvc_Transport_Acceptor(void) : 
-	m_closing(false), m_interface(0)
+	m_interface(0)
 {
 }
 
@@ -57,32 +57,39 @@ int OOSvc_Transport_Acceptor::bind_channel(OOCore_Channel* channel, ACE_Active_M
 
 int OOSvc_Transport_Acceptor::unbind_channel(const ACE_Active_Map_Manager_Key& key)
 {
-	if (!m_closing)
-		return 0;
-
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 	
-	if (m_channel_map.unbind(key) == 1)
-		return 0;
-	
-	ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
+	if (m_channel_map.unbind(key) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
+
+	OOCore_Transport_Service* i = m_interface;
+	size_t n = m_channel_map.current_size();
+
+	guard.release();
+
+	if (n!=0 && i!=0)
+	{
+		if (i->CloseChannel(key) != 0)
+			return -1;
+	}
+	else if (n==0)
+	{
+		return request_close();
+	}
+		
+	return 0;
 }
 
 int OOSvc_Transport_Acceptor::close_all_channels()
 {
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	m_closing = true;
-
 	for (ACE_Active_Map_Manager<OOCore_Channel*>::iterator i=m_channel_map.begin();i!=m_channel_map.end();++i)
 	{
 		(*i).int_id_->close();
 	}
-	m_channel_map.close();
-
-	m_closing = false;
-
-	return 0;//return (m_refcount==0 ? 0 : -1);
+	
+	return 0;
 }
 
 bool OOSvc_Transport_Acceptor::is_local_transport()
@@ -108,31 +115,6 @@ int OOSvc_Transport_Acceptor::connect_channel(const OOObj::char_t* name, ACE_Act
 	return 0;
 }
 
-int OOSvc_Transport_Acceptor::AddRef()
-{
-	return addref();
-}
-
-int OOSvc_Transport_Acceptor::Release()
-{
-	return release();
-}
-
-int OOSvc_Transport_Acceptor::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
-{
-	if (iid == OOCore_Transport_Service::IID ||
-		iid == OOObj::Object::IID)
-	{
-		*ppVal = this;
-		(*ppVal)->AddRef();
-		return 0;
-	}
-	
-	*ppVal = 0;
-	
-	return -1;
-}
-
 int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key* channel_key)
 {
 	// Add a channel to ourselves
@@ -148,6 +130,12 @@ int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_
 	}
 
 	return 0;
+}
+
+int OOSvc_Transport_Acceptor::CloseChannel(OOObj::cookie_t channel_key)
+{
+	// We are the acceptor, we don't respond to close!
+	return -1;
 }
 
 int OOSvc_Transport_Acceptor::SetReverse(OOCore_Transport_Service* reverse)

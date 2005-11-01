@@ -22,7 +22,7 @@ public:
 	int open(void* p);
 
 private:
-	int on_close();
+	int request_close();
 	void handle_shutdown();
 
 	OONet_TcpIp_Manager* m_protocol;

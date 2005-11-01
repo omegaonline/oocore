@@ -4,14 +4,13 @@
 #include "./Channel.h"
 
 OOCore_Transport_Connector::OOCore_Transport_Connector(void) :
-	m_interface(0), m_closing(false)
+	m_interface(0)
 {
 }
 
 OOCore_Transport_Connector::~OOCore_Transport_Connector(void) 
 {
-	if (m_interface != 0)
-		m_interface->Release();
+	close();
 };
 
 int OOCore_Transport_Connector::open()
@@ -38,14 +37,33 @@ int OOCore_Transport_Connector::open()
 		return -1;
 	}
 
+	if (m_interface->SetReverse(this) != 0)
+	{
+		m_interface->Release();
+		m_interface = 0;
+		channel->close();
+		return -1;
+	}
+
 	addref();
 
 	return 0;
 }
 
-OOCore_Transport_Service* OOCore_Transport_Connector::get_interface()
+int OOCore_Transport_Connector::close()
 {
-	return m_interface;
+	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+
+	OOCore_Transport_Service* i = m_interface;
+
+	m_interface = 0;
+
+	guard.release();
+
+	if (i != 0)
+		i->Release();
+	
+	return close_transport();
 }
 
 int OOCore_Transport_Connector::find_channel(const ACE_Active_Map_Manager_Key& key, OOCore_Channel*& channel)
@@ -73,9 +91,6 @@ int OOCore_Transport_Connector::bind_channel(OOCore_Channel* channel, ACE_Active
 
 int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key& key)
 {
-	if (m_closing)
-		return 0;
-
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
 	if (m_channel_map.erase(key) == 1)
@@ -88,16 +103,11 @@ int OOCore_Transport_Connector::close_all_channels()
 {
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	m_closing = true;
-
 	for (map_type::iterator i=m_channel_map.begin();i!=m_channel_map.end();++i)
 	{
 		i->second->close();
 	}
-	m_channel_map.clear();
-
-	m_closing = false;
-
+	
 	return 0;
 }
 
@@ -113,4 +123,31 @@ int OOCore_Transport_Connector::connect_channel(const OOObj::char_t* name, ACE_A
 		return -1;
 	
 	return 0;
+}
+
+int OOCore_Transport_Connector::CloseChannel(OOObj::cookie_t channel_key)
+{
+	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+
+	map_type::iterator i = m_channel_map.find(channel_key);
+	if (i==m_channel_map.end())
+		return -1;
+
+	OOCore_Channel* ch = i->second;
+
+	guard.release();
+	
+	return ch->close();
+}
+
+int OOCore_Transport_Connector::OpenChannel(const OOObj::char_t* name, OOObj::cookie_t* channel_key)
+{
+	// No! We are a uni-directional
+	return -1;
+}
+
+int OOCore_Transport_Connector::SetReverse(OOCore_Transport_Service* reverse)
+{
+	// No! We are a connector
+	return -1;
 }

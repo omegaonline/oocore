@@ -39,12 +39,12 @@ private:
 	OOCore_Channel_Handler* m_handler;
 	ACE_Message_Queue<ACE_MT_SYNCH>	m_msg_queue;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
-	bool m_closed;
-
+		
 	int bind_handler(OOCore_Channel_Handler* handler);
 	int post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait);
 	int recv_i(ACE_Message_Block* mb);
 	void release();
+	int close_i();
 	
 	static int create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel);
 };

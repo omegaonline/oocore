@@ -16,6 +16,11 @@ class OOCore_Connection_Manager :
 
 public:
 	static int init(void);
+
+	int close(u_long flags = 0)
+	{
+		return OOCore_Transport_Connector::close();
+	}
 };
 
 typedef ACE_Singleton<OOCore_Connection_Manager, ACE_Thread_Mutex> CONNECTION_MANAGER;

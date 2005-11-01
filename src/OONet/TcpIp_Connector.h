@@ -18,6 +18,11 @@ public:
 
 	void set_protocol(OONet_TcpIp_Manager* p);
 
+	int close(u_long flags = 0)
+	{
+		return OOSvc_Transport_Connector::close();
+	}
+
 private:
 	OONet_TcpIp_Manager* m_protocol;
 

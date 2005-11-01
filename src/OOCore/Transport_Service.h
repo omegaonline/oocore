@@ -2,13 +2,13 @@
 #define _OOCORE_TRANSPORT_SERVICE_H_INCLUDED_
 
 #include "./Object.h"
-#include "./Transport_Base.h"
 
 class OOCore_Transport_Service :
 	public OOObj::Object
 {
 public:
 	virtual int OpenChannel(const OOObj::char_t* name, OOObj::cookie_t* channel_key) = 0;
+	virtual int CloseChannel(OOObj::cookie_t channel_key) = 0;
 	virtual int SetReverse(OOCore_Transport_Service* reverse) = 0;
 		
 	DECLARE_IID(OOCore_Export);
@@ -28,9 +28,14 @@ public:
 		return (marshaller(3) << name << channel_key)();
 	}
 
+	int CloseChannel(OOObj::cookie_t channel_key)
+	{
+		return (marshaller(4) << channel_key)();
+	}
+
 	int SetReverse(OOCore_Transport_Service* reverse)
 	{
-		return (marshaller(4) << OOCore_Object_Marshaller(reverse))();
+		return (marshaller(5) << OOCore_Object_Marshaller(reverse))();
 	}
 };
 
@@ -42,11 +47,13 @@ public:
 	  OOObj::Object_Stub(obj)
 	{
 		add_delegate(3,OpenChannel.bind<OOCore_Transport_Service,&OOCore_Transport_Service::OpenChannel>(obj));
-		add_delegate(4,SetReverse.bind<OOCore_Transport_Service,&OOCore_Transport_Service::SetReverse>(obj));
+		add_delegate(4,CloseChannel.bind<OOCore_Transport_Service,&OOCore_Transport_Service::CloseChannel>(obj));
+		add_delegate(5,SetReverse.bind<OOCore_Transport_Service,&OOCore_Transport_Service::SetReverse>(obj));
 	}
 
 private:
 	OOObj::Delegate::D2<const OOObj::char_t*,OOObj::cookie_t*> OpenChannel;
+	OOObj::Delegate::D1<OOObj::cookie_t> CloseChannel;
 	OOObj::Delegate::D1<OOCore_Transport_Service*> SetReverse;
 };
 

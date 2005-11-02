@@ -11,9 +11,6 @@
 class OOCore_Export OOCore_Binding
 {
 public:
-	OOCore_Binding();
-	virtual ~OOCore_Binding();
-
 	// Returns:
 	// 0 (not running),
 	// 1 (other process running)
@@ -27,6 +24,11 @@ public:
 	const ACE_TCHAR* name(void);
 	
 private:
+	friend class ACE_DLL_Singleton_T<OOCore_Binding, ACE_Thread_Mutex>;
+
+	OOCore_Binding();
+	virtual ~OOCore_Binding();
+
 	bool m_unbind_pid;
 	ACE_Naming_Context m_context;
 	

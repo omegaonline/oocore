@@ -16,9 +16,7 @@ OOCore_Proxy_Marshaller OOCore_ProxyStub_Handler::m_failmshl;
 OOCore_ProxyStub_Handler::OOCore_ProxyStub_Handler(OOCore_Channel* channel) :
 	OOCore_Channel_Handler(channel),
 	m_conn_proxy(0),
-	m_connected(false),
-	m_depthcount(0),
-	m_close_channel(false)
+	m_connected(false)
 {
 }
 
@@ -149,14 +147,7 @@ int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 	OOCore_Channel* ch = 0;
 	if (m_stub_map.current_size()==0)
 	{
-		if (m_depthcount>0)
-		{
-			m_close_channel = true;
-		}
-		else 
-		{
-			ch = channel();
-		}
+		ch = channel();
 	}
 
 	guard.release();
@@ -462,25 +453,13 @@ int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& tra
 	else
 		wait3 = &wait2;
 
-	m_depthcount++;
+	OOCore_Channel::inc_call_depth();
 
 	response_wait rw(this,trans_key,input);
 	
 	int ret = OOCore_RunReactorEx(wait3,OOCore_ProxyStub_Handler::await_response,&rw);
 
-	if (--m_depthcount==0 && m_close_channel)
-	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-		m_close_channel = false;
-
-		OOCore_Channel* ch = channel();
-
-		guard.release();
-
-		if (ch)
-			ch->close();
-	}
+	OOCore_Channel::dec_call_depth();
 
 	return ret;
 }

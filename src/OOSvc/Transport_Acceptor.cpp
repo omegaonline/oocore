@@ -8,7 +8,8 @@
 #include "./Service_Manager.h"
 
 OOSvc_Transport_Acceptor::OOSvc_Transport_Acceptor(void) : 
-	m_interface(0)
+	m_interface(0),
+	m_refcount(0)
 {
 }
 
@@ -30,8 +31,6 @@ int OOSvc_Transport_Acceptor::open()
 		channel->close();
 		return -1;
 	}
-
-	addref();
 
 	return 0;
 }
@@ -115,6 +114,52 @@ int OOSvc_Transport_Acceptor::connect_channel(const OOObj::char_t* name, ACE_Act
 	return 0;
 }
 
+int OOSvc_Transport_Acceptor::AddRef()
+{
+	++m_refcount;
+
+	addref();
+
+	return 0;
+}
+
+int OOSvc_Transport_Acceptor::Release()
+{
+	if (--m_refcount==0)
+	{
+		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+
+		if (m_interface)
+		{
+			OOCore_Transport_Service* i = m_interface;
+			m_interface = 0;
+		
+			guard.release();
+
+			i->Release();
+		}
+	}
+
+	release();
+
+	return 0;
+}
+
+int OOSvc_Transport_Acceptor::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
+{
+	if (iid == OOCore_Transport_Service::IID ||
+		iid == OOObj::Object::IID)
+	{
+		*ppVal = this;
+		(*ppVal)->AddRef();
+		return 0;
+	}
+	
+	*ppVal = 0;
+	
+	return -1;
+}
+
 int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key* channel_key)
 {
 	// Add a channel to ourselves
@@ -140,18 +185,13 @@ int OOSvc_Transport_Acceptor::CloseChannel(OOObj::cookie_t channel_key)
 
 int OOSvc_Transport_Acceptor::SetReverse(OOCore_Transport_Service* reverse)
 {
-	if (m_interface==0)
-	{
-		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-		if (m_interface==0)
-		{
-			m_interface = reverse;
-			m_interface->AddRef();
+	if (m_interface!=0)
+		return -1;
+
+	m_interface = reverse;
+	m_interface->AddRef();
 			
-			return 0;
-		}
-	}
-
-	return -1;
+	return 0;
 }

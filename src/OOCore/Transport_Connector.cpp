@@ -45,9 +45,19 @@ int OOCore_Transport_Connector::open()
 		return -1;
 	}
 
-	addref();
-
 	return 0;
+}
+
+bool OOCore_Transport_Connector::await_close(void* p)
+{
+	OOCore_Transport_Connector* pThis = static_cast<OOCore_Transport_Connector*>(p);
+
+	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(pThis->m_lock);
+
+	if (pThis->m_channel_map.empty())
+		return true;
+
+	return false;
 }
 
 int OOCore_Transport_Connector::close()
@@ -55,13 +65,15 @@ int OOCore_Transport_Connector::close()
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
 	OOCore_Transport_Service* i = m_interface;
-
 	m_interface = 0;
 
 	guard.release();
 
 	if (i != 0)
 		i->Release();
+
+	ACE_Time_Value wait(5);
+	OOCore_RunReactorEx(&wait,await_close,this);
 	
 	return close_transport();
 }
@@ -123,6 +135,35 @@ int OOCore_Transport_Connector::connect_channel(const OOObj::char_t* name, ACE_A
 		return -1;
 	
 	return 0;
+}
+
+int OOCore_Transport_Connector::AddRef()
+{
+	addref();
+
+	return 0;
+}
+
+int OOCore_Transport_Connector::Release()
+{
+	release();
+
+	return 0;
+}
+
+int OOCore_Transport_Connector::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
+{
+	if (iid == OOCore_Transport_Service::IID ||
+		iid == OOObj::Object::IID)
+	{
+		*ppVal = this;
+		(*ppVal)->AddRef();
+		return 0;
+	}
+	
+	*ppVal = 0;
+	
+	return -1;
 }
 
 int OOCore_Transport_Connector::CloseChannel(OOObj::cookie_t channel_key)

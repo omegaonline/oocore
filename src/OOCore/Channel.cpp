@@ -6,6 +6,10 @@
 #include "./Channel_Handler.h"
 #include "./OOCore.h"
 
+ACE_Atomic_Op<ACE_Thread_Mutex,long> OOCore_Channel::m_depthcount(0);
+ACE_Thread_Mutex OOCore_Channel::m_close_lock;
+std::list<OOCore_Channel*> OOCore_Channel::m_channel_close_list;
+
 OOCore_Channel::OOCore_Channel() :
 	m_sibling(0),
 	m_handler(0),
@@ -101,7 +105,7 @@ int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 	int res = -1;
 	if (mb->msg_type() == ACE_Message_Block::MB_HANGUP)
 	{
-		res = close_i();
+		res = close_handler();
 		mb->release();
 	}
 	else
@@ -123,7 +127,7 @@ int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 	return res;
 }
 
-int OOCore_Channel::close()
+int OOCore_Channel::close_i()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -150,7 +154,7 @@ int OOCore_Channel::close()
 	return 0;
 }
 
-int OOCore_Channel::close_i()
+int OOCore_Channel::close_handler()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -165,4 +169,42 @@ int OOCore_Channel::close_i()
 		delete this;
 
 	return 0;
+}
+
+void OOCore_Channel::inc_call_depth()
+{
+	++m_depthcount;
+}
+
+void OOCore_Channel::dec_call_depth()
+{
+	if (--m_depthcount==0)
+	{
+		ACE_Guard<ACE_Thread_Mutex> guard(m_close_lock);
+
+		for (std::list<OOCore_Channel*>::iterator i=m_channel_close_list.begin();i!=m_channel_close_list.end();++i)
+		{
+			(*i)->close_i();
+			if (--(*i)->m_refcount==0)
+				delete (*i);
+		}
+		m_channel_close_list.clear();
+	}
+}
+
+int OOCore_Channel::close()
+{
+	if (m_depthcount==0)
+	{
+		return close_i();
+	}
+	else
+	{
+		ACE_Guard<ACE_Thread_Mutex> guard(m_close_lock);
+
+		m_channel_close_list.push_back(this);
+		++this->m_refcount;
+
+		return 0;
+	}
 }

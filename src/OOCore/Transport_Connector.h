@@ -7,11 +7,13 @@
 #include <ace/RW_Thread_Mutex.h>
 
 #include "./Transport_Base.h"
+#include "./Transport_Service.h"
 
 #include "./OOCore_export.h"
 
 class OOCore_Export OOCore_Transport_Connector :
-	public OOCore_Transport_Base
+	public OOCore_Transport_Base,
+	public OOCore_Transport_Service
 {
 protected:
 	OOCore_Transport_Connector(void);
@@ -32,6 +34,14 @@ private:
 	int unbind_channel(const ACE_Active_Map_Manager_Key& key);
 	int close_all_channels();
 	int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel);
+
+	static bool await_close(void* p);
+
+// OOObj::Object interface
+public:
+	int AddRef();
+	int Release();
+	int QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal);
 
 // OOCore_Transport_Service
 public:

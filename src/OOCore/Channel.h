@@ -1,6 +1,8 @@
 #ifndef _OOCORE_CHANNEL_H_INCLUDED_
 #define _OOCORE_CHANNEL_H_INCLUDED_
 
+#include <list>
+
 #include <ace/Condition_Thread_Mutex.h>
 #include <ace/Method_Request.h>
 #include <ace/Message_Queue.h>
@@ -15,8 +17,11 @@ class OOCore_Export OOCore_Channel
 	friend class OOCore_Transport_Base;
 
 public:
-	virtual int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
-	virtual int close();
+	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
+	int close();
+
+	static void inc_call_depth();
+	static void dec_call_depth();
 
 private:
 	OOCore_Channel();
@@ -45,7 +50,12 @@ private:
 	int recv_i(ACE_Message_Block* mb);
 	void release();
 	int close_i();
+	int close_handler();
 	
+	static ACE_Atomic_Op<ACE_Thread_Mutex,long> m_depthcount;
+	static ACE_Thread_Mutex m_close_lock;
+	static std::list<OOCore_Channel*> m_channel_close_list;
+
 	static int create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel);
 };
 

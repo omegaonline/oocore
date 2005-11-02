@@ -63,8 +63,6 @@ private:
 	ACE_Thread_Mutex m_lock;
 	OOObj::Object** m_conn_proxy;
 	bool m_connected;
-	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_depthcount;
-	bool m_close_channel;
 	
 	static proxystub_node m_core_node;
 	static OOCore_Proxy_Marshaller m_failmshl;

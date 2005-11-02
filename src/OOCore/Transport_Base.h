@@ -17,15 +17,13 @@
 #include "./Channel_Handler.h"
 #include "./OOCore.h"
 #include "./Object.h"
-#include "./Transport_Service.h"
 
 #include "./OOCore_export.h"
 
 class OOCore_Transport_MsgHeader;
 class OOCore_ProxyStub_Handler;
 
-class OOCore_Export OOCore_Transport_Base :
-	public OOCore_Transport_Service
+class OOCore_Export OOCore_Transport_Base
 {
 	friend class OOCore_Transport_MsgHeader;
 	friend class OOCore_Transport_Handler;
@@ -42,8 +40,8 @@ protected:
 	int recv(ACE_Message_Block* mb);
 	int connect_primary_channel(OOCore_Channel** channel);
 	int accept_channel(OOCore_Channel*& channel, ACE_Active_Map_Manager_Key& key);
-	int addref();
-	int release();
+	void addref();
+	void release();
 	int close_transport();
 		
 	// All Transports must implement the following functions
@@ -78,12 +76,6 @@ private:
 	int connect_secondary_channel(ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel, ACE_Message_Block* mb = 0);
 
 	static bool await_connect(void* p);
-
-// OOObj::Object interface
-public:
-	int AddRef();
-	int Release();
-	int QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal);
 };
 
 class OOCore_Transport_MsgHeader

@@ -22,21 +22,15 @@ OOCore_Transport_Base::~OOCore_Transport_Base(void)
 		m_curr_block->release();
 }
 
-int OOCore_Transport_Base::addref()
+void OOCore_Transport_Base::addref()
 {
 	++m_refcount;
-	return 0;
 }
 
-int OOCore_Transport_Base::release()
+void OOCore_Transport_Base::release()
 {
-	if (--m_refcount < 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Refcount has gone negative\n")),-1);
-
-	if (m_refcount==0)
+	if (--m_refcount==0)
 		delete this;
-
-	return 0;
 }
 
 int OOCore_Transport_Base::close_transport()
@@ -62,7 +56,7 @@ int OOCore_Transport_Base::close_transport()
 
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close\n"),this));
 
-	return release();
+	return 0;
 }
 
 int OOCore_Transport_Base::recv(ACE_Message_Block* in_block)
@@ -362,31 +356,6 @@ int OOCore_Transport_Base::add_channel(OOCore_Channel* channel, ACE_Active_Map_M
 	handler->channel_key(key);
 
 	return 0;
-}
-
-int OOCore_Transport_Base::AddRef()
-{
-	return addref();
-}
-
-int OOCore_Transport_Base::Release()
-{
-	return release();
-}
-
-int OOCore_Transport_Base::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
-{
-	if (iid == OOCore_Transport_Service::IID ||
-		iid == OOObj::Object::IID)
-	{
-		*ppVal = this;
-		(*ppVal)->AddRef();
-		return 0;
-	}
-	
-	*ppVal = 0;
-	
-	return -1;
 }
 
 int OOCore_Transport_MsgHeader::read(ACE_InputCDR& input)

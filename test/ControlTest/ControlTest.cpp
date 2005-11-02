@@ -27,7 +27,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				OOCore_Free(parr);
 
 				OOObj::uint16_t remaining = 0;
-				//pObj->Stop(false,&remaining);
+				pObj->Stop(false,&remaining);
 			}
 		}
 				

@@ -453,13 +453,13 @@ int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& tra
 	else
 		wait3 = &wait2;
 
-	OOCore_Channel::inc_call_depth();
+	OOCore_IncCallDepth();
 
 	response_wait rw(this,trans_key,input);
 	
 	int ret = OOCore_RunReactorEx(wait3,OOCore_ProxyStub_Handler::await_response,&rw);
 
-	OOCore_Channel::dec_call_depth();
+	OOCore_DecCallDepth();
 
 	return ret;
 }

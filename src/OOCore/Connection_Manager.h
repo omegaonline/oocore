@@ -19,7 +19,12 @@ public:
 
 	int close(u_long flags = 0)
 	{
-		return OOCore_Transport_Connector::close();
+		if (OOCore_Transport_Connector::close() != 0)
+			return -1;
+
+		shutdown();
+
+		return 0;
 	}
 };
 

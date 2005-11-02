@@ -7,5 +7,5 @@ bool OOSvc_Client_Acceptor::is_local_transport()
 
 void OOSvc_Client_Acceptor::handle_shutdown()
 {
-	close();
+	request_close();
 }

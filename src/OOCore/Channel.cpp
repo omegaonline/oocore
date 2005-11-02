@@ -6,14 +6,11 @@
 #include "./Channel_Handler.h"
 #include "./OOCore.h"
 
-ACE_Atomic_Op<ACE_Thread_Mutex,long> OOCore_Channel::m_depthcount(0);
-ACE_Thread_Mutex OOCore_Channel::m_close_lock;
-std::list<OOCore_Channel*> OOCore_Channel::m_channel_close_list;
-
 OOCore_Channel::OOCore_Channel() :
 	m_sibling(0),
 	m_handler(0),
-	m_refcount(1)
+	m_refcount(1),
+	m_closing(false)
 {
 }
 
@@ -84,27 +81,34 @@ int OOCore_Channel::post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait)
 
 		if (OOCore_PostRequest(p,wait)!=0)
 		{
-			if (--m_refcount==0)
-				delete this;
-
+			--m_refcount;
 			delete p;
 			return -1;
 		}
 	}
 	else
 	{
-		if (m_msg_queue.enqueue_head(mb,wait)==-1)
+		if (m_msg_queue.enqueue_tail(mb,wait)==-1)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed enqueue channel message\n")),-1);
 	}
-
+	
 	return 0;
 }
 
 int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 {
 	int res = -1;
-	if (mb->msg_type() == ACE_Message_Block::MB_HANGUP)
+	if (mb->msg_type() == ACE_Message_Block::MB_STOP)
 	{
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Channel %@ stop\n"),this));
+
+		res = close_i();
+		mb->release();
+	}
+	else if (mb->msg_type() == ACE_Message_Block::MB_HANGUP)
+	{
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Channel %@ hangup\n"),this));
+
 		res = close_handler();
 		mb->release();
 	}
@@ -131,27 +135,26 @@ int OOCore_Channel::close_i()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	if (m_sibling==0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Attempting to close channel twice\n")),0);
-
-	ACE_Message_Block* mb;
-	ACE_NEW_RETURN(mb,ACE_Message_Block(0,ACE_Message_Block::MB_HANGUP),-1);
-
-	if (m_sibling->post_msg(mb,0) != 0)
+	if (m_sibling!=0)
 	{
-		mb->release();
-		return -1;
-	}
-	m_sibling = 0;
+		ACE_Message_Block* mb;
+		ACE_NEW_RETURN(mb,ACE_Message_Block(0,ACE_Message_Block::MB_HANGUP),-1);
 
-	mb = mb->duplicate();
-	if (post_msg(mb,0) != 0)
-	{
-		mb->release();
-		return -1;
+		if (m_sibling->post_msg(mb,0) != 0)
+		{
+			mb->release();
+			return -1;
+		}
+		
+		m_sibling->m_closing = true;
+		m_sibling = 0;
 	}
+	else
+		ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Attempting to close channel twice\n")));
 
-	return 0;
+	guard.release();
+
+	return close_handler();
 }
 
 int OOCore_Channel::close_handler()
@@ -165,46 +168,46 @@ int OOCore_Channel::close_handler()
 		m_handler = 0;
 	}
 
+	guard.release();
+
 	if (--m_refcount==0)
 		delete this;
 
 	return 0;
 }
 
-void OOCore_Channel::inc_call_depth()
-{
-	++m_depthcount;
-}
-
-void OOCore_Channel::dec_call_depth()
-{
-	if (--m_depthcount==0)
-	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_close_lock);
-
-		for (std::list<OOCore_Channel*>::iterator i=m_channel_close_list.begin();i!=m_channel_close_list.end();++i)
-		{
-			(*i)->close_i();
-			if (--(*i)->m_refcount==0)
-				delete (*i);
-		}
-		m_channel_close_list.clear();
-	}
-}
-
 int OOCore_Channel::close()
 {
-	if (m_depthcount==0)
-	{
-		return close_i();
-	}
-	else
-	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_close_lock);
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-		m_channel_close_list.push_back(this);
-		++this->m_refcount;
+	if (m_sibling && !m_closing)
+	{
+		ACE_Message_Block* mb;
+		ACE_NEW_RETURN(mb,ACE_Message_Block(0,ACE_Message_Block::MB_STOP),-1);
 
-		return 0;
+		msg_param* p;
+		ACE_NEW_NORETURN(p,msg_param);
+		if (p==0)
+		{
+			mb->release();
+			return -1;
+		}
+
+		p->mb = mb;
+		p->pt = this;
+
+		++m_refcount;
+
+		guard.release();
+
+		if (OOCore_PostCloseRequest(p) != 0)
+		{
+			--m_refcount;
+			p->mb->release();
+			delete p;
+			return -1;
+		}
 	}
+
+	return 0;
 }

@@ -27,7 +27,7 @@ void OOCore_Export OOClient_Term()
 {
 	// Perform our termination here
 	CONNECTION_MANAGER::instance()->close();
-		
+
 	ACE::fini();
 }
 

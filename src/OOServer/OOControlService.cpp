@@ -30,6 +30,8 @@ void OOControlService::remove_client(OOControlClient* client)
 
 	if (m_client_list.empty() && !m_stayalive)
 	{
+		guard.release();
+
 		// Tell the reactor to stop
 		OOSvc_Shutdown();
 	}

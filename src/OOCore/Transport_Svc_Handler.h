@@ -89,11 +89,6 @@ protected:
 		return 0;
 	}
 
-	virtual int on_close()
-	{
-		return svc_class::close();
-	}
-
 private:
 	ACE_Thread_Mutex m_lock;
 

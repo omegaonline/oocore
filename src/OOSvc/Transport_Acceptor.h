@@ -32,6 +32,8 @@ private:
 	int close_all_channels();
 	int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel);
 
+	static bool await_close(void* p);
+
 // OOObj::Object interface
 public:
 	int AddRef();

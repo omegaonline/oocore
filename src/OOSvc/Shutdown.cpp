@@ -11,7 +11,7 @@ int OOSvc_Export OOSvc_Shutdown()
 	OOSvc_Shutdown_Request* req;
 	ACE_NEW_RETURN(req,OOSvc_Shutdown_Request,-1);
 	
-	return OOCore_PostRequest(req);
+	return OOCore_PostCloseRequest(req);
 }
 
 OOSvc_Shutdown_Observer::OOSvc_Shutdown_Observer(void) : 
@@ -37,9 +37,6 @@ void OOSvc_Shutdown_Observer::update(const ACE_Future<int>& val)
 int OOSvc_Shutdown_Request::call()
 {
 	SHUTDOWN::instance()->set(1);
-
-	ACE_Time_Value wait(0);
-	OOCore_RunReactor(&wait);
 
 	return ACE_Reactor::instance()->end_reactor_event_loop();
 }

@@ -45,8 +45,8 @@ ACE_CDR::Boolean operator >>(ACE_InputCDR& input, ACE_Active_Map_Manager_Key& ke
 ACE_CDR::Boolean operator >>(ACE_InputCDR& input, ACE_CDR::Boolean& val);
 ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_CDR::Boolean& val);
 
-typedef bool (*CONDITION_FN)(void*);
-int OOCore_RunReactorEx(ACE_Time_Value* timeout = 0, CONDITION_FN cond_fn = 0, void* p = 0);
+void OOCore_IncCallDepth();
+int OOCore_DecCallDepth();
 
 // This is a shoddy fixup for compilers with broken explicit template specialisation
 #if (__GNUC__) && (__GNUC__ <= 3)

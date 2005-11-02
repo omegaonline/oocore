@@ -35,8 +35,33 @@ int OOSvc_Transport_Acceptor::open()
 	return 0;
 }
 
+bool OOSvc_Transport_Acceptor::await_close(void* p)
+{
+	OOSvc_Transport_Acceptor* pThis = static_cast<OOSvc_Transport_Acceptor*>(p);
+
+	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(pThis->m_lock);
+
+	if (pThis->m_channel_map.current_size()==0)
+		return true;
+
+	return false;
+}
+
 int OOSvc_Transport_Acceptor::request_close()
 {
+	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+
+	OOCore_Transport_Service* i = m_interface;
+	m_interface = 0;
+
+	guard.release();
+
+	if (i != 0)
+		i->Release();
+
+	//ACE_Time_Value wait(5);
+	//OOCore_RunReactorEx(&wait,await_close,this);
+	
 	return close_transport();
 }
 

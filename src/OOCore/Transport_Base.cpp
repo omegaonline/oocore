@@ -49,10 +49,7 @@ int OOCore_Transport_Base::close_transport()
 		m_curr_block = 0;
 	}
 
-	if (m_connected == CONNECTED)
-	{
-		m_connected = CLOSED;
-	}
+	m_connected = CLOSED;
 
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close\n"),this));
 

@@ -20,9 +20,6 @@ public:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
 	int close();
 
-	static void inc_call_depth();
-	static void dec_call_depth();
-
 private:
 	OOCore_Channel();
 	virtual ~OOCore_Channel();
@@ -44,6 +41,7 @@ private:
 	OOCore_Channel_Handler* m_handler;
 	ACE_Message_Queue<ACE_MT_SYNCH>	m_msg_queue;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
+	bool m_closing;
 		
 	int bind_handler(OOCore_Channel_Handler* handler);
 	int post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait);
@@ -51,10 +49,6 @@ private:
 	void release();
 	int close_i();
 	int close_handler();
-	
-	static ACE_Atomic_Op<ACE_Thread_Mutex,long> m_depthcount;
-	static ACE_Thread_Mutex m_close_lock;
-	static std::list<OOCore_Channel*> m_channel_close_list;
 
 	static int create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel);
 };

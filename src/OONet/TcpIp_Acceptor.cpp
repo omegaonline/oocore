@@ -38,5 +38,5 @@ int OONet_TcpIp_Acceptor::request_close()
 
 void OONet_TcpIp_Acceptor::handle_shutdown()
 {
-	close();
+	request_close();
 }

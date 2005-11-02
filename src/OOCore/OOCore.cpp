@@ -78,9 +78,11 @@ OOCore_Export void OOCore_Free(void* p)
 	ACE_OS::free(p);
 }
 
+static ACE_Activation_Queue activ_queue;
+
 int OOCore_Export OOCore_PostRequest(ACE_Method_Request* req, ACE_Time_Value* wait)
 {
-	int ret = (ACE_Singleton<ACE_Activation_Queue,ACE_Thread_Mutex>::instance()->enqueue(req,wait)==-1 ? -1 : 0);
+	int ret = activ_queue.enqueue(req,wait)==-1 ? -1 : 0;
 	if (ret==0)
 	{
 		// Wake up one thread
@@ -92,10 +94,9 @@ int OOCore_Export OOCore_PostRequest(ACE_Method_Request* req, ACE_Time_Value* wa
 
 static int OOCore_Reactor_Event_Hook(ACE_Reactor * reactor)
 {
-	ACE_Activation_Queue* activ_queue = ACE_Singleton<ACE_Activation_Queue,ACE_Thread_Mutex>::instance();
-	while (!activ_queue->is_empty())
+	while (!activ_queue.is_empty())
 	{
-		ACE_Method_Request* req_ = activ_queue->dequeue();
+		ACE_Method_Request* req_ = activ_queue.dequeue();
 		if (!req_ && errno!=EWOULDBLOCK)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to dequeue async request\n")),-1);
 
@@ -111,7 +112,7 @@ int OOCore_Export OOCore_RunReactor(ACE_Time_Value* timeout)
 	return OOCore_RunReactorEx(timeout);
 }
 
-int OOCore_RunReactorEx(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* p)
+int OOCore_Export OOCore_RunReactorEx(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* p)
 {
 	if (!cond_fn)
 	{
@@ -145,5 +146,47 @@ int OOCore_RunReactorEx(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* p)
 
 		errno = EWOULDBLOCK;
 		return -1;
+	}
+}
+
+static ACE_Atomic_Op<ACE_Thread_Mutex,long> depthcount(0);
+static ACE_Activation_Queue close_queue;
+
+void OOCore_IncCallDepth()
+{
+	++depthcount;
+}
+
+int OOCore_DecCallDepth()
+{
+	if (--depthcount==0)
+	{
+		while (!close_queue.is_empty())
+		{
+			ACE_Method_Request* req_ = close_queue.dequeue();
+			if (!req_ && errno!=EWOULDBLOCK)
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to dequeue close request\n")),-1);
+
+			std::auto_ptr<ACE_Method_Request> req(req_);
+			if (req->call() != 0)
+				return -1;
+		}
+	}
+
+	return 0;
+}
+
+int OOCore_Export OOCore_PostCloseRequest(ACE_Method_Request* req, ACE_Time_Value* wait)
+{
+	if (depthcount==0)
+	{
+		/*int ret = req->call();
+		delete req;
+		return ret;*/
+		return OOCore_PostRequest(req,wait);
+	}
+	else
+	{
+		return close_queue.enqueue(req,wait)==-1 ? -1 : 0;
 	}
 }

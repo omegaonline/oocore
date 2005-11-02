@@ -21,6 +21,10 @@ int _tmain(int argc, _TCHAR* argv[])
 				OOObj::uint32_t count = 12;
 				OOObj::uint16_t* parr = arr;
 				pObj->Array_Test_InOut(&count,&parr);
+
+				// Crash test dummy!
+				//exit(-1);
+
 				OOCore_Free(parr);
 
 				pObj->Array_Test_Out(&count,&parr);

@@ -20,6 +20,12 @@ public:
 
 	int close(u_long flags = 0);
 
+protected:
+	ssize_t send_n(ACE_Message_Block* mb)
+	{
+		return peer().send_n(mb);
+	}
+
 private:
 	OONet_TcpIp_Manager* m_protocol;
 

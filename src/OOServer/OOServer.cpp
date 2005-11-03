@@ -16,6 +16,11 @@
 #include "./NTService.h"
 #include "./OOControlService.h"
 
+static ACE_THR_FUNC_RETURN worker_fn(void * p)
+{
+	return static_cast<ACE_THR_FUNC_RETURN>(OOCore_RunReactor());
+}
+
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	// Check for custom reactor usage, before ACE_Service_Config::open()
@@ -41,6 +46,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 	// Run the reactor loop...
 	ACE_Reactor::instance()->owner(ACE_Thread::self());
+
+	// Spawn off some extra threads
+	ACE_Thread_Manager::instance()->spawn_n(3,worker_fn);
+
 	OOCore_RunReactor();
 	
 	// Wait for all the threads to finish

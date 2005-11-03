@@ -64,6 +64,8 @@ int OOCore_Transport_Base::recv(ACE_Message_Block* in_block)
 	// Append the new data
 	if (m_curr_block)
 	{
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport appends data\n")));
+
 		// Append the message block
 		m_curr_block->cont(in_block);	
 	}
@@ -90,6 +92,8 @@ int OOCore_Transport_Base::recv(ACE_Message_Block* in_block)
 
 		if (ret==1) // More data required
 		{
+			//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport requires more data\n")));
+
 			// Update m_curr_block to input's message block
 			m_curr_block = input.start()->duplicate();
 

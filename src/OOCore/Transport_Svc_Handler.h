@@ -33,6 +33,10 @@ public:
 
 		// Recv some data
 		ssize_t recv_cnt = this->peer().recv(mb->wr_ptr(),Buffer_Size);
+		
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) socket recv'ed %d bytes\n"),recv_cnt));
+
+		// See if we got anything
 		if (recv_cnt <= 0)
 		{
 			// Connection closed
@@ -42,7 +46,9 @@ public:
 
 		mb->wr_ptr(recv_cnt);
 
-		RecvRequest* req = 0;
+		return Transport::recv(mb);
+
+		/*RecvRequest* req = 0;
 		ACE_NEW_NORETURN(req,RecvRequest(this,mb));
 		if (req==0)
 		{
@@ -50,7 +56,7 @@ public:
 			return -1;
 		}	
 
-		return (OOCore_PostRequest(req) == -1 ? -1 : 0);
+		return (OOCore_PostRequest(req) == -1 ? -1 : 0);*/
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -74,6 +80,8 @@ public:
 protected:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0)
 	{
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport sends %d bytes\n"),mb->length()));
+
 		if (this->putq(mb,wait) == -1)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %p; discarding data\n"),ACE_TEXT("enqueue failed")),-1);
 		
@@ -89,9 +97,9 @@ protected:
 		return 0;
 	}
 
-private:
-	ACE_Thread_Mutex m_lock;
+	virtual ssize_t send_n(ACE_Message_Block* mb) = 0;
 
+private:
 	class RecvRequest : public ACE_Method_Request
 	{
 	public:
@@ -111,38 +119,29 @@ private:
 	
 	int send_i()
 	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-		ACE_Message_Block *mb,*mb_start;
+		ACE_Message_Block *mb;
 		ACE_Time_Value nowait(ACE_OS::gettimeofday());
-		while (-1 != getq(mb_start, &nowait))
+		while (-1 != getq(mb, &nowait))
 		{
-			// TODO make this use peer()->send_n() instead!
+			// Send the data
+			ssize_t send_cnt = send_n(mb);
+			
+			//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) socket actually sends %d bytes\n"),send_cnt));
 
-			for (mb=mb_start;mb!=0;mb=mb->cont())
+			if (send_cnt == -1 && ACE_OS::last_error() != EWOULDBLOCK)
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %p\n"),ACE_TEXT("send")),-1);
+			
+			if (send_cnt == -1)
+				send_cnt = 0;
+			
+			if (mb->total_length() > static_cast<size_t>(send_cnt))
 			{
-				if (mb->length()==0)
-					continue;
-
-				ssize_t send_cnt = this->peer().send(mb->rd_ptr(), mb->length());
-				if (send_cnt == -1 && ACE_OS::last_error() != EWOULDBLOCK)
-					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %p\n"),ACE_TEXT("send")),-1);
-				else
-				{
-					if (send_cnt == -1)
-					{
-						send_cnt = 0;
-					}
-					mb->rd_ptr(static_cast<size_t>(send_cnt));
-				}
-
-				if (mb->length() > 0)
-				{
-					ungetq(mb_start);
-					return 0;
-				}
+				ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) SPARE!!\n")));
+				ungetq(mb);
+				return 0;
 			}
-			mb_start->release();
+			
+			mb->release();
 		}
 
 		return 0;
@@ -150,6 +149,8 @@ private:
 
 	int recv_i(ACE_Message_Block* mb)
 	{
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport recv'ed %d bytes\n"),mb->length()));
+
 		// We use this to handle internal message posting
 		if (Transport::recv(mb) != 0)
 		{

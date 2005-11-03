@@ -12,8 +12,14 @@ class OOSvc_Client_Acceptor :
 	public OOSvc_Shutdown_Observer
 {
 	typedef OOCore_Transport_Svc_Handler<OOSvc_Transport_Acceptor,ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER> svc_base;
+
 protected:
 	bool is_local_transport();
+
+	ssize_t send_n(ACE_Message_Block* mb)
+	{
+		return this->peer().send(mb,0);
+	}
 
 private:
 	void handle_shutdown();

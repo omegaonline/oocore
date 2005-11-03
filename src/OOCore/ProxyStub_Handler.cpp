@@ -93,13 +93,13 @@ int OOCore_ProxyStub_Handler::load_proxy_stub(const OOObj::GUID& iid, proxystub_
 		// Add the key to the other map
 		if (!m_proxystub_map.insert(std::map<OOObj::GUID,ACE_Active_Map_Manager_Key>::value_type(iid,key)).second)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind proxy/stub info\n")),-1);
+
+		guard.acquire();
 	}
 	else
 	{
 		key = i->second;
 	}
-
-	guard.acquire();
 
 	return m_dll_map.find(key,node);
 }
@@ -155,7 +155,7 @@ int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 	stub->close();
 
 	if (ch)
-		ch->close();
+		ch->close(true);
 
 	return 0;
 }
@@ -542,13 +542,12 @@ OOCore_Proxy_Marshaller& OOCore_ProxyStub_Handler::create_marshaller(const ACE_A
 
 int OOCore_ProxyStub_Handler::remove_marshaller(const ACE_Active_Map_Manager_Key& trans_key)
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
 	OOCore_Proxy_Marshaller* mshl;
+
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 	if (m_transaction_map.unbind(trans_key,mshl) != 0)
-	{
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind transaction key\n")),-1);
-	}
+	
 	guard.release();
 
 	delete mshl;

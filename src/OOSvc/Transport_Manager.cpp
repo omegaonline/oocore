@@ -50,16 +50,16 @@ int OOSvc_Transport_Manager::open_transport(const char* remote_url, ACE_CString&
 	// Find the first colon
 	ssize_t colon = strURL.find(':');
 	if (colon==-1)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad remote transport address %s\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_url)),-1);
 
 	// Check next 2 chars are //
 	if (strURL.substr(colon+1,2) != "//")
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad remote transport address %s\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_url)),-1);
 
 	// Find the next /
 	ssize_t slash = strURL.find('/',colon+3);
 	if (slash==-1)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad remote transport address %s\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_url)),-1);
 
 	ACE_CString strProtocol = strURL.substr(0,colon);
 	ACE_CString strAddress = strURL.substr(colon+3,slash - colon - 3);

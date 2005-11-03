@@ -16,6 +16,12 @@ OOCore_Channel::OOCore_Channel() :
 
 OOCore_Channel::~OOCore_Channel()
 {
+	if (m_handler != 0)
+	{
+		m_handler->handle_close();
+		m_handler->release();
+		m_handler = 0;
+	}
 }
 
 int OOCore_Channel::create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel)
@@ -159,24 +165,13 @@ int OOCore_Channel::close_i()
 
 int OOCore_Channel::close_handler()
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-	if (m_handler != 0)
-	{
-		m_handler->handle_close();
-		m_handler->release();
-		m_handler = 0;
-	}
-
-	guard.release();
-
 	if (--m_refcount==0)
 		delete this;
 
 	return 0;
 }
 
-int OOCore_Channel::close()
+int OOCore_Channel::close(bool wait)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -200,7 +195,8 @@ int OOCore_Channel::close()
 
 		guard.release();
 
-		if (OOCore_PostCloseRequest(p) != 0)
+		if ((wait && OOCore_PostCloseRequest(p) != 0) ||
+			(!wait && OOCore_PostRequest(p) != 0))
 		{
 			--m_refcount;
 			p->mb->release();
@@ -208,6 +204,6 @@ int OOCore_Channel::close()
 			return -1;
 		}
 	}
-
+	
 	return 0;
 }

@@ -18,8 +18,8 @@ class OOCore_Export OOCore_Channel
 
 public:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
-	int close();
-
+	int close(bool wait = false);
+	
 private:
 	OOCore_Channel();
 	virtual ~OOCore_Channel();

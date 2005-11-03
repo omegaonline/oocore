@@ -26,6 +26,12 @@ public:
 
 		return 0;
 	}
+
+protected:
+	ssize_t send_n(ACE_Message_Block* mb)
+	{
+		return this->peer().send(mb,0);
+	}
 };
 
 typedef ACE_Singleton<OOCore_Connection_Manager, ACE_Thread_Mutex> CONNECTION_MANAGER;

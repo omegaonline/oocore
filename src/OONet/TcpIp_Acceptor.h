@@ -21,6 +21,12 @@ public:
 
 	int open(void* p);
 
+protected:
+	ssize_t send_n(ACE_Message_Block* mb)
+	{
+		return peer().send_n(mb);
+	}
+
 private:
 	int request_close();
 	void handle_shutdown();

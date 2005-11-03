@@ -93,7 +93,7 @@ int OONet_TcpIp_Manager::connect_transport(const char* remote_host, OOCore_Trans
 	// Sort out address
 	ACE_INET_Addr addr;
 	if (addr.set(remote_host) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Bad tcp address format: %s"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to resolve address: tcp://%p\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
 
 	// Connect to this
 	OONet_TcpIp_Connector* conn = 0;

@@ -1,6 +1,6 @@
 #include "./Shutdown.h"
 
-#include "../OOCore/OOCore.h"
+#include "../OOCore/Engine.h"
 
 typedef ACE_Singleton<ACE_Future<int>, ACE_Thread_Mutex> SHUTDOWN;
 
@@ -11,7 +11,7 @@ int OOSvc_Export OOSvc_Shutdown()
 	OOSvc_Shutdown_Request* req;
 	ACE_NEW_RETURN(req,OOSvc_Shutdown_Request,-1);
 	
-	return OOCore_PostCloseRequest(req);
+	return ENGINE::instance()->post_request(req);
 }
 
 OOSvc_Shutdown_Observer::OOSvc_Shutdown_Observer(void) : 
@@ -36,7 +36,5 @@ void OOSvc_Shutdown_Observer::update(const ACE_Future<int>& val)
 
 int OOSvc_Shutdown_Request::call()
 {
-	SHUTDOWN::instance()->set(1);
-
-	return ACE_Reactor::instance()->end_reactor_event_loop();
+	return SHUTDOWN::instance()->set(1);
 }

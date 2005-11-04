@@ -6,6 +6,7 @@
 #include <ace/Reactor_Notification_Strategy.h>
 
 #include "./Transport_Base.h"
+#include "./Engine.h"
 
 template <class Transport, ACE_PEER_STREAM_1, const int Buffer_Size>
 class OOCore_Transport_Svc_Handler :
@@ -22,6 +23,8 @@ public:
 
 		if (Transport::open()!=0)
 			return -1;
+
+		addref();
 
 		return 0;
 	}
@@ -46,9 +49,7 @@ public:
 
 		mb->wr_ptr(recv_cnt);
 
-		return Transport::recv(mb);
-
-		/*RecvRequest* req = 0;
+		RecvRequest* req = 0;
 		ACE_NEW_NORETURN(req,RecvRequest(this,mb));
 		if (req==0)
 		{
@@ -56,7 +57,9 @@ public:
 			return -1;
 		}	
 
-		return (OOCore_PostRequest(req) == -1 ? -1 : 0);*/
+		return (ENGINE::instance()->post_request(req) == -1 ? -1 : 0);
+
+		//return Transport::recv(mb);
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -70,11 +73,14 @@ public:
 	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK)
 	{
 		if (mask == ACE_Event_Handler::WRITE_MASK)
-		{
 			return 0;
-		}
+		
+		if (close_transport() != 0)
+			return -1;
 
-		return close_transport();
+		release();
+
+		return 0;
 	}
 
 protected:
@@ -154,7 +160,6 @@ private:
 		// We use this to handle internal message posting
 		if (Transport::recv(mb) != 0)
 		{
-			svc_class::close();
 			return -1;
 		}
 

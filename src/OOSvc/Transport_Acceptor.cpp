@@ -60,7 +60,7 @@ int OOSvc_Transport_Acceptor::request_close()
 		i->Release();
 
 	//ACE_Time_Value wait(5);
-	//OOCore_RunReactorEx(&wait,await_close,this);
+	//ENGINE::instance()->pump_requests(&wait,await_close,this);
 	
 	return close_transport();
 }

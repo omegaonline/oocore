@@ -6,6 +6,7 @@
 #include <ace/Connector.h>
 
 #include "../OOCore/Binding.h"
+#include "../OOCore/Engine.h"
 #include "../OOSvc/Transport_Manager.h"
 
 #include "./TcpIp_Connector.h"
@@ -16,6 +17,7 @@
 ACE_FACTORY_DEFINE(OONet,OONet_TcpIp_Manager)
 
 OONet_TcpIp_Manager::OONet_TcpIp_Manager(void) :
+	ACE_Acceptor<OONet_TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>(ENGINE::instance()->reactor()),
 	OOSvc_Transport_Protocol("tcp")
 {
 }
@@ -51,7 +53,7 @@ int OONet_TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 	}
 
 	ACE_INET_Addr port_addr(uPort);
-	if (open(port_addr) == -1)
+	if (open(port_addr,ENGINE::instance()->reactor()) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	
 	// Confirm we have a connection
@@ -93,11 +95,11 @@ int OONet_TcpIp_Manager::connect_transport(const char* remote_host, OOCore_Trans
 	// Sort out address
 	ACE_INET_Addr addr;
 	if (addr.set(remote_host) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to resolve address: tcp://%p\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to resolve address: tcp://%s - %m\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
 
 	// Connect to this
 	OONet_TcpIp_Connector* conn = 0;
-	ACE_Connector<OONet_TcpIp_Connector, ACE_SOCK_CONNECTOR> connector;
+	ACE_Connector<OONet_TcpIp_Connector, ACE_SOCK_CONNECTOR> connector(ENGINE::instance()->reactor());
 	if (connector.connect(conn,addr)!=0)
 		return -1;
 

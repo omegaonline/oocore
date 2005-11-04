@@ -45,9 +45,6 @@ ACE_CDR::Boolean operator >>(ACE_InputCDR& input, ACE_Active_Map_Manager_Key& ke
 ACE_CDR::Boolean operator >>(ACE_InputCDR& input, ACE_CDR::Boolean& val);
 ACE_CDR::Boolean operator <<(ACE_OutputCDR& output, const ACE_CDR::Boolean& val);
 
-void OOCore_IncCallDepth();
-int OOCore_DecCallDepth();
-
 // This is a shoddy fixup for compilers with broken explicit template specialisation
 #if (__GNUC__) && (__GNUC__ <= 3)
 	#define EXPLICIT_TEMPLATE(m,t)	template m<t>

@@ -1,11 +1,9 @@
 #include "./ProxyStub_Handler.h"
 
-#include <ace/Reactor.h>
-#include <ace/Countdown_Time.h>
-
 #include "./Binding.h"
 #include "./Channel.h"
 #include "./Marshaller.h"
+#include "./Engine.h"
 
 extern "C" int OOCore_Export CreateProxy(const OOObj::GUID& iid, const OOObj::cookie_t& key, OOCore_ProxyStub_Handler* handler, OOObj::Object** proxy);
 extern "C" int OOCore_Export CreateStub(const OOObj::GUID& iid, OOObj::Object* obj, OOCore_Object_Stub_Base** stub);
@@ -155,7 +153,7 @@ int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 	stub->close();
 
 	if (ch)
-		ch->close(true);
+		ch->close();
 
 	return 0;
 }
@@ -233,7 +231,7 @@ int OOCore_ProxyStub_Handler::create_first_proxy(OOObj::Object** proxy)
 	
 	// We call this synchronously, 'cos the data should already be there
 	ACE_Time_Value wait(5);
-	if (OOCore_RunReactorEx(&wait,await_connect,this) != 0)
+	if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
 	{
 		m_conn_proxy = 0;
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy creation timed out and gave up\n")),-1);
@@ -453,15 +451,8 @@ int OOCore_ProxyStub_Handler::get_response(const ACE_Active_Map_Manager_Key& tra
 	else
 		wait3 = &wait2;
 
-	OOCore_IncCallDepth();
-
 	response_wait rw(this,trans_key,input);
-	
-	int ret = OOCore_RunReactorEx(wait3,OOCore_ProxyStub_Handler::await_response,&rw);
-
-	OOCore_DecCallDepth();
-
-	return ret;
+	return ENGINE::instance()->pump_requests(wait3,OOCore_ProxyStub_Handler::await_response,&rw);
 }
 
 int OOCore_ProxyStub_Handler::handle_close()

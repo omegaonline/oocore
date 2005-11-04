@@ -18,7 +18,7 @@ class OOCore_Export OOCore_Channel
 
 public:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
-	int close(bool wait = false);
+	int close();
 	
 private:
 	OOCore_Channel();
@@ -41,15 +41,22 @@ private:
 	OOCore_Channel_Handler* m_handler;
 	ACE_Message_Queue<ACE_MT_SYNCH>	m_msg_queue;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
-	bool m_closing;
-		
+
+	enum close_flags
+	{
+		NOT_CLOSED = 0,
+		SEND_CLOSED = 1,
+		RECV_CLOSED = 2,
+		READY_TO_CLOSE = (SEND_CLOSED | RECV_CLOSED),
+		CLOSED = 4
+	};
+	unsigned int m_close_flags;
+			
 	int bind_handler(OOCore_Channel_Handler* handler);
 	int post_msg(ACE_Message_Block* mb, ACE_Time_Value* wait);
 	int recv_i(ACE_Message_Block* mb);
-	void release();
-	int close_i();
-	int close_handler();
-
+	int close_i(bool bRecv);
+	
 	static int create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel);
 };
 

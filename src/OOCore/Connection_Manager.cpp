@@ -4,6 +4,7 @@
 #include <ace/Connector.h>
 
 #include "../OOCore/Binding.h"
+#include "../OOCore/Engine.h"
 
 int OOCore_Connection_Manager::init(void)
 {
@@ -20,14 +21,14 @@ int OOCore_Connection_Manager::init(void)
 	// Sort out addresses
 	ACE_INET_Addr addr(uPort,ACE_MEM_Addr().get_ip_address());
 
-	// Connect to an instance of OOCore_Connection_Manager
-	ACE_Connector<OOCore_Connection_Manager, ACE_MEM_CONNECTOR> connector;
-	OOCore_Connection_Manager* pThis = CONNECTION_MANAGER::instance();
-	if (connector.connect(pThis,addr)!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to connect to server\n")),-1);
-
 	// Keep us alive artifically because we are a singleton
 	CONNECTION_MANAGER::instance()->addref();
+
+	// Connect to an instance of OOCore_Connection_Manager
+	ACE_Connector<OOCore_Connection_Manager, ACE_MEM_CONNECTOR> connector(ENGINE::instance()->reactor());
+	OOCore_Connection_Manager* pThis = CONNECTION_MANAGER::instance();
+	if (connector.connect(pThis,addr)!=0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to connect to server: %m\n")),-1);
 
 	return 0;
 }

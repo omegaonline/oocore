@@ -3,10 +3,13 @@
 #include <ace/Service_Config.h>
 #include <ace/Get_Opt.h>
 
+#include "../OOCore/Engine.h"
+
 // Declare the service
 ACE_FACTORY_DEFINE(OOSvc,OOSvc_Client_Manager)
 
-OOSvc_Client_Manager::OOSvc_Client_Manager(void)
+OOSvc_Client_Manager::OOSvc_Client_Manager(void) :
+	ACE_Acceptor<OOSvc_Client_Acceptor, ACE_MEM_ACCEPTOR>(ENGINE::instance()->reactor())
 {
 }
 
@@ -51,7 +54,7 @@ int OOSvc_Client_Manager::init(int argc, ACE_TCHAR *argv[])
 	}
 	
 	ACE_MEM_Addr port_addr(uPort);
-	if (open(port_addr) == -1)
+	if (open(port_addr,ENGINE::instance()->reactor()) == -1)
 	{
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	}

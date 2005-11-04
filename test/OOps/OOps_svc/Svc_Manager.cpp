@@ -27,7 +27,6 @@ int OOps_Svc_Manager::init(int argc, ACE_TCHAR *argv[])
 	// Parse cmd line first
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":"),0);
 	int option;
-	u_short uPort = 0;
 	while ((option = cmd_opts()) != EOF)
 	{
 		switch (option)

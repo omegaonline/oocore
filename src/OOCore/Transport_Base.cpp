@@ -1,9 +1,7 @@
 #include "./Transport_Base.h"
 
-#include <ace/Reactor.h>
-#include <ace/Countdown_Time.h>
-
 #include "./Channel.h"
+#include "./Engine.h"
 #include "./Binding.h"
 #include "./Transport_Service.h"
 
@@ -279,8 +277,8 @@ int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 	m_conn_channel = channel;
 		
 	// Spin waiting for a response
-	ACE_Time_Value wait(4);
-	return OOCore_RunReactorEx(&wait,&OOCore_Transport_Base::await_connect,this);
+	ACE_Time_Value wait(5);
+	return ENGINE::instance()->pump_requests(&wait,&OOCore_Transport_Base::await_connect,this);
 }
 
 int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel, ACE_Message_Block* mb)

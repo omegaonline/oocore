@@ -2,6 +2,7 @@
 
 #include "./ProxyStub_Handler.h"
 #include "./Channel.h"
+#include "./Engine.h"
 
 OOCore_Transport_Connector::OOCore_Transport_Connector(void) :
 	m_interface(0)
@@ -73,7 +74,7 @@ int OOCore_Transport_Connector::close()
 		i->Release();
 
 	ACE_Time_Value wait(5);
-	OOCore_RunReactorEx(&wait,await_close,this);
+	ENGINE::instance()->pump_requests(&wait,await_close,this);
 	
 	return close_transport();
 }
@@ -105,10 +106,10 @@ int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key&
 {
 	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
-	if (m_channel_map.erase(key) == 1)
-		return 0;
-	
-	ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
+	if (m_channel_map.erase(key) != 1)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
+
+	return 0;
 }
 
 int OOCore_Transport_Connector::close_all_channels()

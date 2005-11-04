@@ -144,6 +144,9 @@
 				RelativePath=".\Connection_Manager.cpp">
 			</File>
 			<File
+				RelativePath=".\Engine.cpp">
+			</File>
+			<File
 				RelativePath=".\Guid.cpp">
 			</File>
 			<File
@@ -210,6 +213,9 @@
 			</File>
 			<File
 				RelativePath=".\Delegate.h">
+			</File>
+			<File
+				RelativePath=".\Engine.h">
 			</File>
 			<File
 				RelativePath=".\Guid.h">

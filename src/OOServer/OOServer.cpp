@@ -13,22 +13,23 @@
 #include <ace/TP_Reactor.h>
 #endif
 
+#include "../OOCore/Engine.h"
+
 #include "./NTService.h"
 #include "./OOControlService.h"
 
 static ACE_THR_FUNC_RETURN worker_fn(void * p)
 {
-	return static_cast<ACE_THR_FUNC_RETURN>(OOCore_RunReactor());
+	ENGINE::instance()->pump_requests();
+
+	return (errno != ESHUTDOWN ? -1 : 0);
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
-	// Check for custom reactor usage, before ACE_Service_Config::open()
-#if !defined (ACE_WIN32)
-	ACE_TP_Reactor* tp_reactor = new ACE_TP_Reactor;
-	ACE_Reactor* new_reactor = new ACE_Reactor(tp_reactor,1);
-	ACE_Reactor::instance(new_reactor,1);
-#endif // !ACE_WIN32
+	// Start the engine
+	if (ENGINE::instance()->open(argc,argv) != 0)
+		return -1;
 
 #if defined (ACE_NT_SERVICE_DEFINE)
 	int ret;
@@ -44,14 +45,17 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (OOCONTROL_SERVICE::instance()->open(true) != 0)
 		return -1;
 
-	// Run the reactor loop...
-	ACE_Reactor::instance()->owner(ACE_Thread::self());
-
 	// Spawn off some extra threads
 	ACE_Thread_Manager::instance()->spawn_n(3,worker_fn);
 
-	OOCore_RunReactor();
-	
+	// Run the reactor loop...  
+	// This is needed to make ACE_Service_Config work
+	ACE_Reactor::instance()->owner(ACE_Thread::self());
+	ACE_Reactor::instance()->run_reactor_event_loop();
+
+	// Stop the engine
+	ENGINE::instance()->shutdown();
+
 	// Wait for all the threads to finish
 	ACE_Thread_Manager::instance()->wait();
 

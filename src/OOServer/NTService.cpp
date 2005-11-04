@@ -141,6 +141,9 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed spawn service thread\n")),-1);
 	}
 
+	// Enusre we are instantiated
+	NTSERVICE::instance();
+
 	// Install ConsoleCtrlHandler for Ctrl+C
 	if (!SetConsoleCtrlHandler(ctrlc_handler,TRUE))
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),-1);
@@ -211,7 +214,9 @@ BOOL WINAPI NTService::ctrlc_handler(DWORD dwCtrlType)
 {
 	ACE_UNUSED_ARG(dwCtrlType);
 
-	return (OOSvc_Shutdown()==0 ? TRUE : FALSE);
+	ACE_DEBUG ((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
+
+	return (ACE_Reactor::instance()->notify(NTSERVICE::instance(),ACE_Event_Handler::EXCEPT_MASK)==0 ? TRUE : FALSE);
 }
 
 int NTService::svc(void)
@@ -219,9 +224,7 @@ int NTService::svc(void)
 	report_status(SERVICE_RUNNING, 0);
 
 	// Just wait here until we are told to stop
-	m_finished.wait();
-
-	return 0;
+	return m_finished.wait();
 }
 
 void NTService::handle_control(DWORD control_code)
@@ -262,13 +265,16 @@ int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
 		}
 		else
 		{
-			ACE_DEBUG((LM_INFO,ACE_TEXT("Multiple stops requested.\n")));
-			ACE_Reactor::instance()->end_reactor_event_loop();
+			// This prevents us getting totally stuck!
+			ACE_OS::abort();
 		}
 	}
 
 	// Tell the service thread to stop
 	m_finished.signal();
+
+	// Tell the main reactor to stop
+	//ACE_Reactor::instance()->end_reactor_event_loop();
 	
 	return ACE_NT_Service::handle_close(handle,mask);
 }

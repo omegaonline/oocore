@@ -21,6 +21,8 @@ protected:
 		return this->peer().send(mb,0);
 	}
 
+	int request_close();
+
 private:
 	void handle_shutdown();
 };

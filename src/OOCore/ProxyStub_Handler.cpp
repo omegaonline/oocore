@@ -14,7 +14,8 @@ OOCore_Proxy_Marshaller OOCore_ProxyStub_Handler::m_failmshl;
 OOCore_ProxyStub_Handler::OOCore_ProxyStub_Handler(OOCore_Channel* channel) :
 	OOCore_Channel_Handler(channel),
 	m_conn_proxy(0),
-	m_connected(false)
+	m_connected(false),
+	m_proxy_count(0)
 {
 }
 
@@ -142,18 +143,9 @@ int OOCore_ProxyStub_Handler::remove_stub(const OOObj::cookie_t& key)
 	if (m_stub_map.unbind(key,stub) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub\n")),-1);
 	
-	OOCore_Channel* ch = 0;
-	if (m_stub_map.current_size()==0)
-	{
-		ch = channel();
-	}
-
 	guard.release();
 
 	stub->close();
-
-	if (ch)
-		ch->close();
 
 	return 0;
 }
@@ -210,6 +202,32 @@ int OOCore_ProxyStub_Handler::create_proxy(const OOObj::GUID& iid, const OOObj::
 		// Call CreateProxy
 		if ((node->proxy_fn)(iid,key,this,proxy) != 0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) CreateProxy failed\n")),-1);
+	}
+
+	++m_proxy_count;
+
+	return 0;
+}
+
+int OOCore_ProxyStub_Handler::remove_proxy()
+{
+	if (--m_proxy_count==0)
+	{
+		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+		OOCore_Channel* ch = 0;
+		if (m_stub_map.current_size()==0)
+		{
+			ch = channel();
+		}
+
+		guard.release();
+
+		if (ch)
+		{
+			ACE_Time_Value wait(5);
+			return ch->close(&wait);
+		}
 	}
 
 	return 0;

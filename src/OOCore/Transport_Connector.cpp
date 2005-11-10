@@ -63,15 +63,11 @@ bool OOCore_Transport_Connector::await_close(void* p)
 
 int OOCore_Transport_Connector::close()
 {
-	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-
-	OOCore_Transport_Service* i = m_interface;
-	m_interface = 0;
-
-	guard.release();
-
-	if (i != 0)
-		i->Release();
+	if (m_interface)
+	{
+		m_interface->Release();
+        m_interface = 0;
+	}
 
 	ACE_Time_Value wait(5);
 	ENGINE::instance()->pump_requests(&wait,await_close,this);
@@ -109,6 +105,21 @@ int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key&
 	if (m_channel_map.erase(key) != 1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
 
+	OOCore_Transport_Service* i = m_interface;
+	size_t n = m_channel_map.size();
+
+	guard.release();
+
+	if (n!=0 && i!=0)
+	{
+		if (i->CloseChannel(key) != 0)
+			return -1;
+	}
+	/*else if (n==0)
+	{
+		return request_close();
+	}*/
+
 	return 0;
 }
 
@@ -120,6 +131,7 @@ int OOCore_Transport_Connector::close_all_channels()
 	{
 		i->second->close();
 	}
+	m_channel_map.clear();
 	
 	return 0;
 }
@@ -169,22 +181,13 @@ int OOCore_Transport_Connector::QueryInterface(const OOObj::GUID& iid, OOObj::Ob
 
 int OOCore_Transport_Connector::CloseChannel(OOObj::cookie_t channel_key)
 {
-	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-
-	map_type::iterator i = m_channel_map.find(channel_key);
-	if (i==m_channel_map.end())
-		return -1;
-
-	OOCore_Channel* ch = i->second;
-
-	guard.release();
-	
-	return ch->close();
+	// We are uni-directional, we don't respond to close!
+	return -1;
 }
 
 int OOCore_Transport_Connector::OpenChannel(const OOObj::char_t* name, OOObj::cookie_t* channel_key)
 {
-	// No! We are a uni-directional
+	// No! We are uni-directional
 	return -1;
 }
 

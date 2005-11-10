@@ -46,7 +46,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		return -1;
 
 	// Spawn off some extra threads
-	ACE_Thread_Manager::instance()->spawn_n(3,worker_fn);
+	ACE_Thread_Manager::instance()->spawn_n(1,worker_fn);
 
 	// Run the reactor loop...  
 	// This is needed to make ACE_Service_Config work

@@ -18,7 +18,7 @@ class OOCore_Export OOCore_Channel
 
 public:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
-	int close();
+	int close(ACE_Time_Value* wait = 0);
 	
 private:
 	OOCore_Channel();
@@ -58,6 +58,7 @@ private:
 	int close_i(bool bRecv);
 	
 	static int create(OOCore_Channel*& acceptor_channel, OOCore_Channel*& handler_channel);
+	static bool await_close(void* p);
 };
 
 #endif // _OOCORE_CHANNEL_H_INCLUDED_

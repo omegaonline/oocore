@@ -58,8 +58,6 @@ public:
 		}	
 
 		return (ENGINE::instance()->post_request(req) == -1 ? -1 : 0);
-
-		//return Transport::recv(mb);
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -158,11 +156,8 @@ private:
 		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport recv'ed %d bytes\n"),mb->length()));
 
 		// We use this to handle internal message posting
-		if (Transport::recv(mb) != 0)
-		{
-			return -1;
-		}
-
+		Transport::recv(mb);
+		
 		return 0;
 	}
 };

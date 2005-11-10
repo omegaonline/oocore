@@ -34,6 +34,9 @@ int OOCore_Object_Proxy_Base::Release_i()
 	if (--m_refcount == 0)
 	{
 		marshaller(1)();
+
+		m_handler->remove_proxy();
+
 		delete this;
 	}
 

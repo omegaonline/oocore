@@ -22,6 +22,9 @@ public:
 		if (OOCore_Transport_Connector::close() != 0)
 			return -1;
 
+		//ACE_Time_Value wait(1);
+		//ENGINE::instance()->pump_requests(&wait);
+	
 		shutdown();
 
 		return 0;

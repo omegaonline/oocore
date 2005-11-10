@@ -25,6 +25,8 @@ public:
 	int create_first_proxy(OOObj::Object** proxy);
 
 	int create_proxy(const OOObj::GUID& iid, const OOObj::cookie_t& key, OOObj::Object** proxy);
+	int remove_proxy();
+
 	int create_stub(const OOObj::GUID& iid, OOObj::Object* obj, OOObj::cookie_t& key);
 	int remove_stub(const OOObj::cookie_t& key);
 	
@@ -63,6 +65,7 @@ private:
 	ACE_Thread_Mutex m_lock;
 	OOObj::Object** m_conn_proxy;
 	bool m_connected;
+	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_proxy_count;
 	
 	static proxystub_node m_core_node;
 	static OOCore_Proxy_Marshaller m_failmshl;

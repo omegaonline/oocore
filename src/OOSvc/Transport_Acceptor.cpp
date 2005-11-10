@@ -4,6 +4,7 @@
 #include <ace/Countdown_Time.h>
 
 #include "../OOCore/Channel.h"
+#include "../OOCore/Engine.h"
 
 #include "./Service_Manager.h"
 
@@ -59,8 +60,8 @@ int OOSvc_Transport_Acceptor::request_close()
 	if (i != 0)
 		i->Release();
 
-	//ACE_Time_Value wait(5);
-	//ENGINE::instance()->pump_requests(&wait,await_close,this);
+	ACE_Time_Value wait(5);
+	ENGINE::instance()->pump_requests(&wait,await_close,this);
 	
 	return close_transport();
 }
@@ -86,21 +87,6 @@ int OOSvc_Transport_Acceptor::unbind_channel(const ACE_Active_Map_Manager_Key& k
 	if (m_channel_map.unbind(key) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
 
-	OOCore_Transport_Service* i = m_interface;
-	size_t n = m_channel_map.current_size();
-
-	guard.release();
-
-	if (n!=0 && i!=0)
-	{
-		if (i->CloseChannel(key) != 0)
-			return -1;
-	}
-	else if (n==0)
-	{
-		return request_close();
-	}
-		
 	return 0;
 }
 
@@ -112,6 +98,7 @@ int OOSvc_Transport_Acceptor::close_all_channels()
 	{
 		(*i).int_id_->close();
 	}
+	m_channel_map.close();
 	
 	return 0;
 }
@@ -204,8 +191,15 @@ int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_
 
 int OOSvc_Transport_Acceptor::CloseChannel(OOObj::cookie_t channel_key)
 {
-	// We are the acceptor, we don't respond to close!
-	return -1;
+	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+
+	OOCore_Channel* ch;
+	if (m_channel_map.find(channel_key,ch) != 0)
+		return -1;
+
+	guard.release();
+	
+	return ch->close();
 }
 
 int OOSvc_Transport_Acceptor::SetReverse(OOCore_Transport_Service* reverse)

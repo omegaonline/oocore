@@ -64,9 +64,22 @@ int OOCore_Channel::send(ACE_Message_Block* mb, ACE_Time_Value* wait)
 	return m_sibling->post_msg(mb,wait);
 }
 
-int OOCore_Channel::close()
+bool OOCore_Channel::await_close(void* p)
 {
-	return close_i(false);
+	OOCore_Channel* pThis = static_cast<OOCore_Channel*>(p);
+
+	return (pThis->m_close_flags==CLOSED);
+}
+
+int OOCore_Channel::close(ACE_Time_Value* wait)
+{
+	if (close_i(false) != 0)
+		return -1;
+
+	if (wait)
+		return ENGINE::instance()->pump_requests(wait,await_close,this);
+	else
+		return 0;
 }
 
 int OOCore_Channel::close_i(bool bRecv)
@@ -167,7 +180,13 @@ int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 		}
 		else 
 		{
-			res = m_handler->handle_recv(mb);
+			OOCore_Channel_Handler* h = m_handler;
+
+			h->addref();
+
+			res = h->handle_recv(mb);
+
+			h->release();
 		}
 	}
 	else
@@ -179,6 +198,6 @@ int OOCore_Channel::recv_i(ACE_Message_Block* mb)
 
 	if (--m_refcount==0)
 		delete this;
-
-	return res;
+	
+	return 0;
 }

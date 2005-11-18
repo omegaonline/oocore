@@ -2,17 +2,16 @@
 //
 // This header file is for internal use only
 //
-// #include "Object.h" instead
+// #include "ProxyStub.h" instead
 //
 //////////////////////////////////////////////////////
 
-#ifndef _OOCORE_DELEGATE_H_INCLUDED_
-#define _OOCORE_DELEGATE_H_INCLUDED_
+#ifndef OOCORE_DELEGATE_H_INCLUDED_
+#define OOCORE_DELEGATE_H_INCLUDED_
 
-#include "./Stub_Marshaller.h"
 #include "./OOCore_Impl.h"
 
-namespace OOObj
+namespace Impl
 {
 namespace Delegate
 {
@@ -20,7 +19,7 @@ namespace Delegate
 class Base
 {
 public:
-	virtual int invoke(OOCore_Stub_Marshaller& mshl) const = 0;
+	virtual OOObj::int32_t invoke(Stub_Marshaller& mshl) const = 0;
 };
 
 #define DELEG_CONSTRUCTOR(c) \
@@ -36,14 +35,14 @@ public:
 	DELEG_CONSTRUCTOR(D0)
 
     template <class T, int (T::*TMethod)(void)>
-    const Base* bind(OOObj::Object* obj)
+    Base* bind(OOObj::Object* obj)
     {
-        object_ptr = obj;
+		object_ptr = obj;
         stub_ptr = &method_stub<T, TMethod>;
 		return this;
     }
 
-	int invoke(OOCore_Stub_Marshaller& mshl) const
+	int invoke(Stub_Marshaller& mshl) const
 	{
 		return (*stub_ptr)(object_ptr);
 	}
@@ -54,7 +53,7 @@ private:
     DELEG_DATA_DECL
 
     template <class T, int (T::*TMethod)(void)>
-    static int method_stub(void* object_ptr)
+    static OOObj::int32_t method_stub(void* object_ptr)
     {
         T* p = static_cast<T*>(object_ptr);
         return (p->*TMethod)();
@@ -68,27 +67,27 @@ class D1 :
 public:
 	DELEG_CONSTRUCTOR(D1)
 
-    template <class T, int (T::*TMethod)(P1)>
-	const Base* bind(OOObj::Object* obj)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1)>
+	Base* bind(OOObj::Object* obj)
     {
-        object_ptr = obj;
+		object_ptr = obj;
         stub_ptr = &method_stub<T, TMethod>;
 		return this;
     }
 
-	int invoke(OOCore_Stub_Marshaller& mshl) const
+	OOObj::int32_t invoke(Stub_Marshaller& mshl) const
 	{
 		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
 		return (*stub_ptr)(object_ptr,p1);
 	}
 
 private:
-    typedef int (*stub_type)(void* object_ptr, P1);
+    typedef OOObj::int32_t (*stub_type)(void* object_ptr, P1);
 
     DELEG_DATA_DECL
 
-    template <class T, int (T::*TMethod)(P1)>
-    static int method_stub(void* object_ptr, P1 p1)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1)>
+    static OOObj::int32_t method_stub(void* object_ptr, P1 p1)
     {
         T* p = static_cast<T*>(object_ptr);
         return (p->*TMethod)(p1);
@@ -102,15 +101,15 @@ class D2 :
 public:
 	DELEG_CONSTRUCTOR(D2)
 
-    template <class T, int (T::*TMethod)(P1,P2)>
-    const Base* bind(OOObj::Object* obj)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1,P2)>
+    Base* bind(OOObj::Object* obj)
     {
-        object_ptr = obj;
+		object_ptr = obj;
         stub_ptr = &method_stub<T, TMethod>;
 		return this;
     }
 
-	int invoke(OOCore_Stub_Marshaller& mshl) const
+	OOObj::int32_t invoke(Stub_Marshaller& mshl) const
 	{
 		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
 		P2 p2(mshl.EXPLICIT_TEMPLATE(unpack,P2)());
@@ -118,12 +117,12 @@ public:
 	}
 
 private:
-    typedef int (*stub_type)(void* object_ptr, P1, P2);
+    typedef OOObj::int32_t (*stub_type)(void* object_ptr, P1, P2);
 
     DELEG_DATA_DECL
 
-    template <class T, int (T::*TMethod)(P1,P2)>
-    static int method_stub(void* object_ptr, P1 p1, P2 p2)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1,P2)>
+    static OOObj::int32_t method_stub(void* object_ptr, P1 p1, P2 p2)
     {
         T* p = static_cast<T*>(object_ptr);
         return (p->*TMethod)(p1,p2);
@@ -137,15 +136,15 @@ class D3 :
 public:
 	DELEG_CONSTRUCTOR(D3)
 
-    template <class T, int (T::*TMethod)(P1,P2,P3)>
-    const Base* bind(OOObj::Object* obj)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1,P2,P3)>
+    Base* bind(OOObj::Object* obj)
     {
-        object_ptr = obj;
+		object_ptr = obj;
         stub_ptr = &method_stub<T, TMethod>;
 		return this;
     }
 
-	int invoke(OOCore_Stub_Marshaller& mshl) const
+	OOObj::int32_t invoke(Stub_Marshaller& mshl) const
 	{
 		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
 		P2 p2(mshl.EXPLICIT_TEMPLATE(unpack,P2)());
@@ -154,12 +153,12 @@ public:
 	}
 
 private:
-    typedef int (*stub_type)(void* object_ptr, P1, P2, P3);
+    typedef OOObj::int32_t (*stub_type)(void* object_ptr, P1, P2, P3);
 
     DELEG_DATA_DECL
 
-    template <class T, int (T::*TMethod)(P1,P2,P3)>
-    static int method_stub(void* object_ptr, P1 p1, P2 p2, P3 p3)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1,P2,P3)>
+    static OOObj::int32_t method_stub(void* object_ptr, P1 p1, P2 p2, P3 p3)
     {
         T* p = static_cast<T*>(object_ptr);
         return (p->*TMethod)(p1,p2,p3);
@@ -173,15 +172,15 @@ class D4 :
 public:
 	DELEG_CONSTRUCTOR(D4)
 
-    template <class T, int (T::*TMethod)(P1,P2,P3,P4)>
-    const Base* bind(OOObj::Object* obj)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1,P2,P3,P4)>
+    Base* bind(OOObj::Object* obj)
     {
-        object_ptr = obj;
+		object_ptr = obj;
         stub_ptr = &method_stub<T, TMethod>;
 		return this;
     }
 
-	int invoke(OOCore_Stub_Marshaller& mshl) const
+	OOObj::int32_t invoke(Stub_Marshaller& mshl) const
 	{
 		P1 p1(mshl.EXPLICIT_TEMPLATE(unpack,P1)());
 		P2 p2(mshl.EXPLICIT_TEMPLATE(unpack,P2)());
@@ -191,12 +190,12 @@ public:
 	}
 
 private:
-    typedef int (*stub_type)(void* object_ptr, P1, P2, P3, P4);
+    typedef OOObj::int32_t (*stub_type)(void* object_ptr, P1, P2, P3, P4);
 
     DELEG_DATA_DECL
 
-    template <class T, int (T::*TMethod)(P1,P2,P3,P4)>
-	static int method_stub(void* object_ptr, P1 p1, P2 p2, P3 p3, P4 p4)
+    template <class T, OOObj::int32_t (T::*TMethod)(P1,P2,P3,P4)>
+	static OOObj::int32_t method_stub(void* object_ptr, P1 p1, P2 p2, P3 p3, P4 p4)
     {
         T* p = static_cast<T*>(object_ptr);
         return (p->*TMethod)(p1,p2,p3,p4);
@@ -206,4 +205,4 @@ private:
 };
 };
 
-#endif // _OOCORE_DELEGATE_H_INCLUDED_
+#endif // OOCORE_DELEGATE_H_INCLUDED_

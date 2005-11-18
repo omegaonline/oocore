@@ -3,10 +3,11 @@
 #include <ace/MEM_Connector.h>
 #include <ace/Connector.h>
 
-#include "../OOCore/Binding.h"
-#include "../OOCore/Engine.h"
+#include "./Binding.h"
+#include "./Engine.h"
 
-int OOCore_Connection_Manager::init(void)
+int 
+Impl::Connection_Manager::init(void)
 {
 	if (BINDING::instance()->launch(false) != 0)
 		return -1;
@@ -22,15 +23,19 @@ int OOCore_Connection_Manager::init(void)
 	ACE_INET_Addr addr(uPort,ACE_MEM_Addr().get_ip_address());
 
 	// Keep us alive artifically because we are a singleton
-	CONNECTION_MANAGER::instance()->addref();
+	CONNECTION_MANAGER::instance()->AddRef();
 
 	// Connect to an instance of OOCore_Connection_Manager
-	ACE_Connector<OOCore_Connection_Manager, ACE_MEM_CONNECTOR> connector(ENGINE::instance()->reactor());
-	OOCore_Connection_Manager* pThis = CONNECTION_MANAGER::instance();
+	ACE_Connector<Connection_Manager, ACE_MEM_CONNECTOR> connector(OOCore::ENGINE::instance()->reactor());
+	Connection_Manager* pThis = CONNECTION_MANAGER::instance();
 	if (connector.connect(pThis,addr)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to connect to server: %m\n")),-1);
 
 	return 0;
 }
 
-
+ssize_t 
+Impl::Connection_Manager::send_n(ACE_Message_Block* mb)
+{
+	return this->peer().send(mb,0);
+}

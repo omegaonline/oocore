@@ -6,42 +6,20 @@
 //
 //////////////////////////////////////////////////////
 
-#ifndef _OOCORE_GUID_H_INCLUDED_
-#define _OOCORE_GUID_H_INCLUDED_
+#ifndef OOCORE_GUID_H_INCLUDED_
+#define OOCORE_GUID_H_INCLUDED_
 
 #include <ace/UUID.h>
 #include <ace/CDR_Stream.h>
 
-#include "./OOCore_export.h"
+#include "./Object_Types.h"
 
-namespace OOObj
+namespace Impl
 {
-	class OOCore_Export GUID 
-	{
-		friend ACE_CDR::Boolean OOCore_Export operator >>(ACE_InputCDR& input, OOObj::GUID& guid);
-		friend ACE_CDR::Boolean OOCore_Export operator <<(ACE_OutputCDR& output, const OOObj::GUID& guid);
+	OOObj::guid_t create_guid(const ACE_CString& uuidString);
+	OOObj::guid_t create_guid(const ACE_Utils::UUID& uuid);
 
-	public:
-		GUID();
-		GUID(const ACE_CString& uuidString);
-		GUID(const ACE_Utils::UUID& uuid);
-
-		bool operator ==(const GUID& rhs) const;
-		bool operator !=(const GUID& rhs) const;
-		bool operator <(const GUID& rhs) const;
-
-		ACE_TString to_string() const;
-
-		static const GUID GUID_NIL;
-
-	private:
-		ACE_UINT32 Data1;
-		ACE_UINT16 Data2;
-		ACE_UINT16 Data3;
-		ACE_UINT8  Data4[8];
-
-		void init_i(ACE_Utils::UUID& guid);
-	};
+	ACE_TString guid_to_string(const OOObj::guid_t& guid);
 };
 
-#endif // _OOCORE_GUID_H_INCLUDED_
+#endif // OOCORE_GUID_H_INCLUDED_

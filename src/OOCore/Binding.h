@@ -1,5 +1,13 @@
-#ifndef _OOCORE_BINDING_H_INCLUDED_
-#define _OOCORE_BINDING_H_INCLUDED_
+//////////////////////////////////////////////////////
+//
+// This header file is for internal use only
+//
+// #include "OOCore.h" instead
+//
+//////////////////////////////////////////////////////
+
+#ifndef OOCORE_BINDING_H_INCLUDED_
+#define OOCORE_BINDING_H_INCLUDED_
 
 #include <ace/Naming_Context.h>
 #include <ace/Singleton.h>
@@ -7,14 +15,12 @@
 
 #include "./OOCore_export.h"
 
-// This is a class conatining statics used as a wrapper for exporting
-class OOCore_Export OOCore_Binding
+namespace Impl
+{
+
+class Binding
 {
 public:
-	// Returns:
-	// 0 (not running),
-	// 1 (other process running)
-	// -1 (error)
 	int launch(bool bAsServer = false);
 	
 	int find(const ACE_TCHAR* name, ACE_NS_WString& value);
@@ -24,10 +30,10 @@ public:
 	const ACE_TCHAR* name(void);
 	
 private:
-	friend class ACE_DLL_Singleton_T<OOCore_Binding, ACE_Thread_Mutex>;
+	friend class ACE_Singleton<Binding, ACE_Thread_Mutex>;
 
-	OOCore_Binding();
-	virtual ~OOCore_Binding();
+	Binding();
+	virtual ~Binding();
 
 	bool m_unbind_pid;
 	ACE_Naming_Context m_context;
@@ -35,7 +41,8 @@ private:
 	int launch_server();
 };
 
-typedef ACE_DLL_Singleton_T<OOCore_Binding, ACE_Thread_Mutex> BINDING;
-OOCORE_SINGLETON_DECLARE(ACE_DLL_Singleton_T,OOCore_Binding,ACE_Thread_Mutex);
+typedef ACE_Singleton<Binding, ACE_Thread_Mutex> BINDING;
+
+};
 
 #endif // _OOCORE_BINDING_H_INCLUDED_

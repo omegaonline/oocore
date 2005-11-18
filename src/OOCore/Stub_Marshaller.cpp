@@ -1,42 +1,27 @@
 #include "./Stub_Marshaller.h"
 
 #include "./Object_Marshaller.h"
-#include "./Array_Marshaller.h"
 
-OOCore_Stub_Marshaller::OOCore_Stub_Marshaller(OOCore_ProxyStub_Handler* handler, ACE_InputCDR* input, bool sync) :
-	OOCore_Marshaller_Base(handler,sync),
+Impl::Stub_Marshaller::Stub_Marshaller(OOCore::ProxyStubManager* manager, OOCore::InputStream* input) :
+	Marshaller_Base(manager),
 	m_input(input)
 {
+	if (!m_input)
+		m_failed = true;
 }
 
-OOCore_Stub_Marshaller::~OOCore_Stub_Marshaller()
+Impl::Stub_Marshaller::~Stub_Marshaller()
 {
-	delete m_input;
 }
 
-// Special for strings
-bool OOCore_Stub_Marshaller::unpack_i(const ACE_CDR::Char*& val)
+bool 
+Impl::Stub_Marshaller::unpack_object_p(OOObj::Object*& val, const OOObj::guid_t& iid)
 {
-	ACE_CString strVal;
-	if (!m_input->read_string(strVal))
-		return false;
-	
-	OOCore_Marshalled_Param_Holder<ACE_CString>* p = pack_param(strVal,false);
-	if (p == 0)
-		return false;
-	
-	// Pass out value
-	val = p->value().c_str();
-	return true;
-}
-
-bool OOCore_Stub_Marshaller::unpack_object_p(OOObj::Object*& val, const OOObj::GUID& iid)
-{
-	OOCore_Object_Marshaller obm;
-	if (!obm.read(*this,*m_input,false))
+	Object_Marshaller obm;
+	if (!obm.read(*this,m_input,false))
 		return false;
 
-	OOCore_Marshalled_Param_Holder<OOCore_Object_Marshaller>* p = pack_param(obm,false);
+	Marshalled_Param_Holder<Object_Marshaller>* p = pack_param(obm,false);
 	if (p == 0)
 		return false;
 	
@@ -45,17 +30,30 @@ bool OOCore_Stub_Marshaller::unpack_object_p(OOObj::Object*& val, const OOObj::G
 	return true;
 }
 
-bool OOCore_Stub_Marshaller::unpack_object_pp(OOObj::Object**& val, const OOObj::GUID& iid)
+bool 
+Impl::Stub_Marshaller::unpack_object_pp(OOObj::Object**& val, const OOObj::guid_t& iid)
 {
-	OOCore_Object_Marshaller obm;
-	if (!obm.read(*this,*m_input,false))
+	Object_Marshaller obm;
+	if (!obm.read(*this,m_input,false))
 		return false;
 
-	OOCore_Marshalled_Param_Holder<OOCore_Object_Marshaller>* p = pack_param(obm,true);
+	Marshalled_Param_Holder<Object_Marshaller>* p = pack_param(obm,true);
 	if (p == 0)
 		return false;
 	
 	// Pass out value
 	val = p->value().objref();
 	return true;
+}
+
+bool 
+Impl::IOWrappers::read_param(Marshaller_Base* mshl, OOCore::InputStream* input, StringHolder& val, bool response)
+{
+	return false;
+}
+
+bool 
+Impl::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const StringHolder& val, bool response)
+{
+	return false;
 }

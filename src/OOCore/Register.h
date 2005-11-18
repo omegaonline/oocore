@@ -1,21 +1,24 @@
-#ifndef _OOCORE_REGISTER_H_INCLUDED_
-#define _OOCORE_REGISTER_H_INCLUDED_
+#ifndef OOCORE_REGISTER_H_INCLUDED_
+#define OOCORE_REGISTER_H_INCLUDED_
 
 #include "./Object.h"
-#include "./Binding.h"
 
 #include "./OOCore_export.h"
 
-class OOCore_Export OOCore_Register
+namespace Impl
+{
+
+class Register
 {
 public:
-	OOCore_Register(const OOObj::GUID& iid, const OOObj::char_t* dll_name)
+	Register(const OOObj::guid_t& iid, const char* dll_name)
 	{
-		BINDING::instance()->rebind(iid.to_string().c_str(),ACE_TEXT_ALWAYS_WCHAR(dll_name));
+		OOObj::RegisterProxyStub(iid,dll_name);
 	}
 };
 
-#define REGISTER_PROXYSTUB(ns,cls,dll_name) static OOCore_Register register_##cls(ns::cls::IID,#dll_name);
-#define REGISTER_PROXYSTUB_NO_NAMESPACE(cls,dll_name) static OOCore_Register register_##cls(cls::IID,#dll_name);
+};
 
-#endif // _OOCORE_REGISTER_H_INCLUDED_
+#define REGISTER_PROXYSTUB(ns,cls,dll_name) static Impl::Register cls##_register(ns::cls::IID,#dll_name);
+
+#endif // OOCORE_REGISTER_H_INCLUDED_

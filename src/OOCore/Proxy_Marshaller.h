@@ -2,72 +2,70 @@
 //
 // This header file is for internal use only
 //
-// #include "Object.h" instead
+// #include "ProxyStub.h" instead
 //
 //////////////////////////////////////////////////////
 
-#ifndef _OOCORE_PROXY_MARSHALLER_H_INCLUDED_
-#define _OOCORE_PROXY_MARSHALLER_H_INCLUDED_
+#ifndef OOCORE_PROXY_MARSHALLER_H_INCLUDED_
+#define OOCORE_PROXY_MARSHALLER_H_INCLUDED_
 
 #include "./Marshaller.h"
+#include "./Array_Marshaller.h"
 
-#include "./OOCore_export.h"
-
-class OOCore_Export OOCore_Proxy_Marshaller : public OOCore_Marshaller_Base
+namespace Impl
 {
-	friend class OOCore_ProxyStub_Handler;
 
+class Proxy_Marshaller : public Marshaller_Base
+{
 public:
+	Proxy_Marshaller();
+	Proxy_Marshaller(OOCore::ProxyStubManager* manager, OOObj::bool_t sync, OOCore::OutputStream* output, OOObj::uint32_t trans_id);
+
 	template <class T>
-	OOCore_Proxy_Marshaller& operator <<(const T& val)
+	Proxy_Marshaller& operator <<(const T& val)
 	{
         if (!m_failed)
-			m_failed = !write_param(this,m_output,val,false);
+			m_failed = !IOWrappers::write_param(this,m_output,val,false);
 		
 		if (!m_failed)
-			m_failed = (pack_param(val,arg_responds(val)) == 0);
+			m_failed = (pack_param(val,IOWrappers::arg_responds(val)) == 0);
 
 		return *this;
 	}
 
 	template <class T>
-	OOCore_Proxy_Marshaller& operator <<(T* val)
+	Proxy_Marshaller& operator <<(T* val)
 	{
 		if (val == 0)
 			m_failed = true;
 
 		if (!m_failed)
-			m_failed = !m_output.write_ulong(-1);
+			m_failed = (m_output->WriteULong(-1)==0 ? false : true);
 		
 		if (!m_failed)
-			m_failed = !write_param(this,m_output,val,false);
+			m_failed = !IOWrappers::write_param(this,m_output,val,false);
 
 		if (!m_failed)
 			m_failed = (pack_param(val,true) == 0);
 
 		return *this;
 	}
-
-	// Specials
-	OOCore_Proxy_Marshaller& operator <<(const ACE_CDR::Char* val);
 	
 	// Do the work
 	int operator ()(ACE_Time_Value& wait);
 	int operator ()(ACE_Time_Value* wait = 0);
 
-	ACE_OutputCDR& output()
+	/*ACE_OutputCDR& output()
 	{
 		return m_output;
-	}
+	}*/
 
 private:
-	OOCore_Proxy_Marshaller();
-	OOCore_Proxy_Marshaller(OOCore_ProxyStub_Handler* handler, bool sync);
-
-	ACE_OutputCDR m_output;
-	ACE_Active_Map_Manager_Key m_trans_key;
-
-	int send_and_recv(ACE_Time_Value* wait);
+	OOCore::Object_Ptr<OOCore::OutputStream> m_output;
+	OOObj::uint32_t m_trans_id;
+	OOObj::bool_t m_sync;
 };
 
-#endif // _OOCORE_PROXY_MARSHALLER_H_INCLUDED_
+};
+
+#endif // OOCORE_PROXY_MARSHALLER_H_INCLUDED_

@@ -1,37 +1,42 @@
 #include "./Guid.h"
 
-OOObj::GUID::GUID(const ACE_Utils::UUID& uuid)
+#include "./OOCore.h"
+
+const OOObj::guid_t OOObj::guid_t::NIL = {0};
+
+static OOObj::guid_t init_i(ACE_Utils::UUID& uuid)
 {
-	init_i(const_cast<ACE_Utils::UUID&>(uuid));
+	OOObj::guid_t ret;
+
+	ret.Data1 = uuid.timeLow();
+	ret.Data2 = uuid.timeMid();
+	ret.Data3 = uuid.timeHiAndVersion();
+	ret.Data4[0] = uuid.clockSeqHiAndReserved();
+	ret.Data4[1] = uuid.clockSeqLow();
+	ret.Data4[2] = uuid.node()->nodeID()[0];
+	ret.Data4[3] = uuid.node()->nodeID()[1];
+	ret.Data4[4] = uuid.node()->nodeID()[2];
+	ret.Data4[5] = uuid.node()->nodeID()[3];
+	ret.Data4[6] = uuid.node()->nodeID()[4];
+	ret.Data4[7] = uuid.node()->nodeID()[5];
+
+	return ret;
 }
 
-OOObj::GUID::GUID()
+OOObj::guid_t 
+Impl::create_guid(const ACE_Utils::UUID& uuid)
 {
-	init_i(ACE_Utils::UUID::NIL_UUID);
+	return init_i(const_cast<ACE_Utils::UUID&>(uuid));
 }
 
-OOObj::GUID::GUID(const ACE_CString& uuidString)
+OOObj::guid_t 
+Impl::create_guid(const ACE_CString& uuidString)
 {
-	ACE_Utils::UUID uuid(uuidString);
-	init_i(uuid);
+	return init_i(ACE_Utils::UUID(uuidString));
 }
 
-void OOObj::GUID::init_i(ACE_Utils::UUID& uuid)
-{
-	Data1 = uuid.timeLow();
-	Data2 = uuid.timeMid();
-	Data3 = uuid.timeHiAndVersion();
-	Data4[0] = uuid.clockSeqHiAndReserved();
-	Data4[1] = uuid.clockSeqLow();
-	Data4[2] = uuid.node()->nodeID()[0];
-	Data4[3] = uuid.node()->nodeID()[1];
-	Data4[4] = uuid.node()->nodeID()[2];
-	Data4[5] = uuid.node()->nodeID()[3];
-	Data4[6] = uuid.node()->nodeID()[4];
-	Data4[7] = uuid.node()->nodeID()[5];
-}
-
-bool OOObj::GUID::operator ==(const GUID& rhs) const
+bool 
+OOObj::guid_t::operator ==(const OOObj::guid_t& rhs) const
 {
 	return (Data1==rhs.Data1 &&
 			Data2==rhs.Data2 &&
@@ -39,12 +44,8 @@ bool OOObj::GUID::operator ==(const GUID& rhs) const
 			ACE_OS::memcmp(Data4,rhs.Data4,8)==0);
 }
 
-bool OOObj::GUID::operator !=(const GUID& rhs) const
-{
-	return !(*this==rhs);
-}
-
-bool OOObj::GUID::operator <(const GUID& rhs) const
+bool 
+OOObj::guid_t::operator <(const OOObj::guid_t& rhs) const
 {
 	if (Data1>rhs.Data1)
 		return false;
@@ -58,42 +59,23 @@ bool OOObj::GUID::operator <(const GUID& rhs) const
 	return ACE_OS::memcmp(Data4,rhs.Data4,8)<0;
 }
 
-ACE_TString OOObj::GUID::to_string() const
+ACE_TString 
+Impl::guid_to_string(const OOObj::guid_t& guid)
 {
 	ACE_TCHAR buf[37];
 	ACE_OS::sprintf(buf,
         ACE_TEXT("%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x"),
-        this->Data1,
-        this->Data2,
-        this->Data3,
-        this->Data4[0],
-        this->Data4[1],
-		this->Data4[2],
-		this->Data4[3],
-		this->Data4[4],
-		this->Data4[5],
-		this->Data4[6],
-		this->Data4[7]);
+        guid.Data1,
+        guid.Data2,
+        guid.Data3,
+        guid.Data4[0],
+        guid.Data4[1],
+		guid.Data4[2],
+		guid.Data4[3],
+		guid.Data4[4],
+		guid.Data4[5],
+		guid.Data4[6],
+		guid.Data4[7]);
 
 	return ACE_TString(buf);
-}
-
-ACE_CDR::Boolean OOCore_Export OOObj::operator >>(ACE_InputCDR& input, OOObj::GUID& guid)
-{
-	input.read_ulong(guid.Data1);
-	input.read_ushort(guid.Data2);
-	input.read_ushort(guid.Data3);
-	input.read_octet_array(guid.Data4,8);
-
-	return input.good_bit();
-}
-
-ACE_CDR::Boolean OOCore_Export OOObj::operator <<(ACE_OutputCDR& output, const OOObj::GUID& guid)
-{
-	output << guid.Data1;
-	output << guid.Data2;
-	output << guid.Data3;
-	output.write_octet_array(guid.Data4,8);
-
-	return output.good_bit();
 }

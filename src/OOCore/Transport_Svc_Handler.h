@@ -1,17 +1,17 @@
-#ifndef _OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
-#define _OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
+#ifndef OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
+#define OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
 
 #include <ace/Svc_Handler.h>
-#include <ace/Message_Queue.h>
-#include <ace/Reactor_Notification_Strategy.h>
 
-#include "./Transport_Base.h"
-#include "./Engine.h"
+#include "./Transport_Impl.h"
 
-template <class Transport, ACE_PEER_STREAM_1, const int Buffer_Size>
-class OOCore_Transport_Svc_Handler :
+namespace OOCore
+{
+
+template <ACE_PEER_STREAM_1, const int Buffer_Size>
+class Transport_Svc_Handler :
 	public ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH>,
-	public Transport
+	public Transport_Impl
 {
 	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
@@ -21,43 +21,18 @@ public:
 		if (svc_class::open(p)!=0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 
-		if (Transport::open()!=0)
+		if (open_transport()!=0)
 			return -1;
 
-		addref();
+		// Raise our ref count while we are open
+		AddRef();
 
 		return 0;
 	}
 
 	int handle_input(ACE_HANDLE fd = ACE_INVALID_HANDLE)
 	{
-		ACE_Message_Block* mb;
-		ACE_NEW_RETURN(mb,ACE_Message_Block(Buffer_Size),-1);
-
-		// Recv some data
-		ssize_t recv_cnt = this->peer().recv(mb->wr_ptr(),Buffer_Size);
-		
-		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) socket recv'ed %d bytes\n"),recv_cnt));
-
-		// See if we got anything
-		if (recv_cnt <= 0)
-		{
-			// Connection closed
-			mb->release();
-			return -1;
-		}
-
-		mb->wr_ptr(recv_cnt);
-
-		RecvRequest* req = 0;
-		ACE_NEW_NORETURN(req,RecvRequest(this,mb));
-		if (req==0)
-		{
-			mb->release();
-			return -1;
-		}	
-
-		return (ENGINE::instance()->post_request(req) == -1 ? -1 : 0);
+		return handle_recv();
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -73,11 +48,13 @@ public:
 		if (mask == ACE_Event_Handler::WRITE_MASK)
 			return 0;
 		
-		if (close_transport(true) != 0)
+		if (close_transport() != 0)
 			return -1;
 
-		release();
+		// Release our own ref count - we are closed
+		Release();
 
+		// Do not call svc_class::handle_close() it calls delete!
 		return 0;
 	}
 
@@ -101,26 +78,30 @@ protected:
 		return 0;
 	}
 
+	int recv(ACE_Message_Block*& mb, ACE_Time_Value* wait = 0)
+	{
+        ACE_NEW_RETURN(mb,ACE_Message_Block(Buffer_Size),-1);
+
+		// Recv some data
+		ssize_t recv_cnt = this->peer().recv(mb->wr_ptr(),Buffer_Size);
+		
+		// See if we got anything
+		if (recv_cnt <= 0)
+		{
+			// Connection closed
+			mb->release();
+			return -1;
+		}
+
+		// Set the wr_ptr to the end
+		mb->wr_ptr(recv_cnt);
+
+		return 0;
+	}
+
 	virtual ssize_t send_n(ACE_Message_Block* mb) = 0;
 
 private:
-	class RecvRequest : public ACE_Method_Request
-	{
-	public:
-		RecvRequest(OOCore_Transport_Svc_Handler<Transport,ACE_PEER_STREAM_2,Buffer_Size>* p, ACE_Message_Block* m) : 
-		  pt(p), mb(m)
-		{}
-
-		int call()
-		{
-			return pt->recv_i(mb);
-		}
-
-		OOCore_Transport_Svc_Handler<Transport,ACE_PEER_STREAM_2,Buffer_Size>* pt;
-		ACE_Message_Block* mb;
-	};
-	friend class RecvRequest;
-	
 	int send_i()
 	{
 		ACE_Message_Block *mb;
@@ -150,16 +131,8 @@ private:
 
 		return 0;
 	}
-
-	int recv_i(ACE_Message_Block* mb)
-	{
-		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport recv'ed %d bytes\n"),mb->length()));
-
-		// We use this to handle internal message posting
-		Transport::recv(mb);
-		
-		return 0;
-	}
 };
 
-#endif // _OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_
+};
+
+#endif // OOCORE_TRANSPORT_SVC_HANDLER_H_INCLUDED_

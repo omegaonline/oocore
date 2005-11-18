@@ -4,31 +4,37 @@
 
 #include <ace/Get_Opt.h>
 #include <ace/WFMO_Reactor.h>
+#include <ace/OS.h>
 
-OOCore_Engine::OOCore_Engine(void) :
+OOCore::Engine::Engine(void) :
 	m_activ_queue(msg_queue()),
 	m_reactor(0),
 	m_stop(false)
 {
+	// Because the object manager uses rand()
+	ACE_OS::srand(static_cast<u_int>(ACE_OS::time()));
 }
 
-OOCore_Engine::~OOCore_Engine(void)
+OOCore::Engine::~Engine(void)
 {
 	if (m_reactor)
 		delete m_reactor;
 }
 
-const ACE_TCHAR* OOCore_Engine::dll_name()
+const ACE_TCHAR* 
+OOCore::Engine::dll_name()
 {
 	return ACE_TEXT("OOCore");
 }
 
-const ACE_TCHAR* OOCore_Engine::name()
+const ACE_TCHAR* 
+OOCore::Engine::name()
 {
-	return ACE_TEXT("OOCore_Engine");
+	return ACE_TEXT("Engine");
 }
 
-int OOCore_Engine::open(int argc, ACE_TCHAR* argv[])
+int 
+OOCore::Engine::open(int argc, ACE_TCHAR* argv[])
 {
 	// Parse cmd line first
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":"));
@@ -49,7 +55,8 @@ int OOCore_Engine::open(int argc, ACE_TCHAR* argv[])
 	return open();
 }
 
-int OOCore_Engine::open()
+int 
+OOCore::Engine::open()
 {
 	if (m_reactor)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Engine already open\n")),-1);
@@ -69,7 +76,8 @@ int OOCore_Engine::open()
 	return activate();
 }
 
-int OOCore_Engine::shutdown()
+int 
+OOCore::Engine::shutdown()
 {
 	if (!m_reactor)
 		return -1;
@@ -89,17 +97,20 @@ int OOCore_Engine::shutdown()
 	return wait();
 }
 
-int OOCore_Engine::svc()
+int 
+OOCore::Engine::svc()
 {
 	return m_reactor->run_reactor_event_loop();
 }
 
-ACE_Reactor* OOCore_Engine::reactor()
+ACE_Reactor* 
+OOCore::Engine::reactor()
 {
 	return m_reactor;
 }
 
-int OOCore_Engine::pump_requests(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* cond_fn_args)
+int 
+OOCore::Engine::pump_requests(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* cond_fn_args)
 {
 	ACE_Countdown_Time countdown(timeout);
 	while ((timeout && *timeout != ACE_Time_Value::zero) || !timeout)
@@ -117,7 +128,8 @@ int OOCore_Engine::pump_requests(ACE_Time_Value* timeout, CONDITION_FN cond_fn, 
 	return -1;
 }
 
-int OOCore_Engine::pump_request_i(ACE_Time_Value* timeout)
+int 
+OOCore::Engine::pump_request_i(ACE_Time_Value* timeout)
 {
 	ACE_Method_Request* req_;
 
@@ -143,7 +155,8 @@ int OOCore_Engine::pump_request_i(ACE_Time_Value* timeout)
 	return req->call();
 }
 
-int OOCore_Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
+int 
+OOCore::Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
 {
 	if (m_stop)
 		return -1;

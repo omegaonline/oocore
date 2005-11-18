@@ -132,15 +132,6 @@
 				RelativePath=".\Binding.cpp">
 			</File>
 			<File
-				RelativePath=".\Channel.cpp">
-			</File>
-			<File
-				RelativePath=".\Channel_Handler.cpp">
-			</File>
-			<File
-				RelativePath=".\Client_Service.cpp">
-			</File>
-			<File
 				RelativePath=".\Connection_Manager.cpp">
 			</File>
 			<File
@@ -150,19 +141,16 @@
 				RelativePath=".\Guid.cpp">
 			</File>
 			<File
-				RelativePath=".\Marshaller.cpp">
+				RelativePath=".\InputStream_CDR.cpp">
 			</File>
 			<File
-				RelativePath=".\Object.cpp">
+				RelativePath=".\Marshaller.cpp">
 			</File>
 			<File
 				RelativePath=".\Object_Marshaller.cpp">
 			</File>
 			<File
-				RelativePath=".\Object_Proxy.cpp">
-			</File>
-			<File
-				RelativePath=".\Object_Stub.cpp">
+				RelativePath=".\ObjectManager.cpp">
 			</File>
 			<File
 				RelativePath=".\OOClient.cpp">
@@ -171,22 +159,22 @@
 				RelativePath=".\OOCore.cpp">
 			</File>
 			<File
+				RelativePath=".\OutputStream_CDR.cpp">
+			</File>
+			<File
 				RelativePath=".\Proxy_Marshaller.cpp">
 			</File>
 			<File
-				RelativePath=".\ProxyStub_Handler.cpp">
+				RelativePath=".\Proxy_Stub_Factory.cpp">
+			</File>
+			<File
+				RelativePath=".\ProxyStub.cpp">
 			</File>
 			<File
 				RelativePath=".\Stub_Marshaller.cpp">
 			</File>
 			<File
-				RelativePath=".\Transport_Base.cpp">
-			</File>
-			<File
-				RelativePath=".\Transport_Connector.cpp">
-			</File>
-			<File
-				RelativePath=".\Transport_Service.cpp">
+				RelativePath=".\Transport_Impl.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -198,15 +186,6 @@
 			</File>
 			<File
 				RelativePath=".\Binding.h">
-			</File>
-			<File
-				RelativePath=".\Channel.h">
-			</File>
-			<File
-				RelativePath=".\Channel_Handler.h">
-			</File>
-			<File
-				RelativePath=".\Client_Service.h">
 			</File>
 			<File
 				RelativePath=".\Connection_Manager.h">
@@ -221,28 +200,22 @@
 				RelativePath=".\Guid.h">
 			</File>
 			<File
+				RelativePath=".\InputStream_CDR.h">
+			</File>
+			<File
 				RelativePath=".\Marshaller.h">
 			</File>
 			<File
 				RelativePath=".\Object.h">
 			</File>
 			<File
-				RelativePath=".\Object_Impl.h">
-			</File>
-			<File
 				RelativePath=".\Object_Marshaller.h">
-			</File>
-			<File
-				RelativePath=".\Object_Proxy.h">
-			</File>
-			<File
-				RelativePath=".\Object_Stub.h">
 			</File>
 			<File
 				RelativePath=".\Object_Types.h">
 			</File>
 			<File
-				RelativePath=".\OOClient.h">
+				RelativePath=".\ObjectManager.h">
 			</File>
 			<File
 				RelativePath=".\OOCore.h">
@@ -254,10 +227,22 @@
 				RelativePath=".\OOCore_Impl.h">
 			</File>
 			<File
+				RelativePath=".\OOCore_PS.h">
+			</File>
+			<File
+				RelativePath=".\OOCore_Util.h">
+			</File>
+			<File
+				RelativePath=".\OutputStream_CDR.h">
+			</File>
+			<File
 				RelativePath=".\Proxy_Marshaller.h">
 			</File>
 			<File
-				RelativePath=".\ProxyStub_Handler.h">
+				RelativePath=".\Proxy_Stub_Factory.h">
+			</File>
+			<File
+				RelativePath=".\ProxyStub.h">
 			</File>
 			<File
 				RelativePath=".\Register.h">
@@ -266,16 +251,16 @@
 				RelativePath=".\resource.h">
 			</File>
 			<File
+				RelativePath=".\String_Marshalling.h">
+			</File>
+			<File
 				RelativePath=".\Stub_Marshaller.h">
 			</File>
 			<File
-				RelativePath=".\Transport_Base.h">
+				RelativePath=".\Test.h">
 			</File>
 			<File
-				RelativePath=".\Transport_Connector.h">
-			</File>
-			<File
-				RelativePath=".\Transport_Service.h">
+				RelativePath=".\Transport_Impl.h">
 			</File>
 			<File
 				RelativePath=".\Transport_Svc_Handler.h">

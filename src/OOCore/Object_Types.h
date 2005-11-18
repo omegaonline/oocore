@@ -6,8 +6,13 @@
 //
 //////////////////////////////////////////////////////
 
-#ifndef _OOCORE_OBJECT_TYPES_H_INCLUDED_
-#define _OOCORE_OBJECT_TYPES_H_INCLUDED_
+#ifndef OOCORE_OBJECT_TYPES_H_INCLUDED_
+#define OOCORE_OBJECT_TYPES_H_INCLUDED_
+
+#include <ace/Active_Map_Manager.h>
+#include <ace/CDR_Stream.h>
+
+#include "./OOCore_export.h"
 
 namespace OOObj
 {
@@ -23,6 +28,20 @@ namespace OOObj
 	typedef ACE_CDR::Float				real4_t;
 	typedef ACE_CDR::Double				real8_t;
 	typedef ACE_Active_Map_Manager_Key	cookie_t;
+	typedef ACE_CDR::Char*				string_t;
+
+	struct OOCore_Export guid_t
+	{
+		uint32_t	Data1;
+		uint16_t	Data2;
+		uint16_t	Data3;
+		byte_t		Data4[8];
+
+		bool operator==(const OOObj::guid_t& rhs) const;
+		bool operator<(const OOObj::guid_t& rhs) const;
+
+		static const guid_t NIL;
+	};
 };
 
-#endif // _OOCORE_OBJECT_TYPES_H_INCLUDED_
+#endif // OOCORE_OBJECT_TYPES_H_INCLUDED_

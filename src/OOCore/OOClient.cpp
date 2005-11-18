@@ -1,25 +1,27 @@
-#include "./OOClient.h"
+#include "./Object.h"
 
 #include <ace/Init_ACE.h>
-#include <ace/Singleton.h>
-#include <ace/Thread_Mutex.h>
 
 #include "./Connection_Manager.h"
 #include "./Engine.h"
+#include "./Binding.h"
 
-int OOCore_Export OOClient_Init()
+OOCore_Export int 
+OOObj::Init()
 {
 	int ret = 0;
 
 	// Make sure ACE is loaded
 	if ((ret = (ACE::init()==-1 ? -1 : 0)) == 0)
 	{
-		if ((ret = ENGINE::instance()->open()) == 0)
+		if ((ret = OOCore::ENGINE::instance()->open()) == 0)
 		{
-			ret = OOCore_Connection_Manager::init();
+			if ((ret = Impl::Connection_Manager::init()) == 0)
+			{
+			}
 
 			if (ret!=0)
-				ENGINE::instance()->shutdown();
+				OOCore::ENGINE::instance()->shutdown();
 		}
 
 		if (ret!=0)
@@ -29,16 +31,36 @@ int OOCore_Export OOClient_Init()
 	return ret;
 }
 
-void OOCore_Export OOClient_Term()
+OOCore_Export void 
+OOObj::Term()
 {
-	CONNECTION_MANAGER::instance()->close();
+	Impl::CONNECTION_MANAGER::instance()->close();
 
-	ENGINE::instance()->shutdown();
+	OOCore::ENGINE::instance()->shutdown();
 
 	ACE::fini();
 }
 
-int OOCore_Export OOClient_CreateObject(const OOObj::char_t* object, const OOObj::GUID& iid, OOObj::Object** ppVal)
+OOCore_Export int 
+OOObj::CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
 {
-	return CONNECTION_MANAGER::instance()->create_object(object,iid,ppVal);
+	return Impl::CONNECTION_MANAGER::instance()->CreateObject(class_name,iid,ppVal);
+}
+
+OOCore_Export void* 
+OOObj::Alloc(size_t size)
+{
+	return ACE_OS::malloc(size);
+}
+
+OOCore_Export void 
+OOObj::Free(void* p)
+{
+	ACE_OS::free(p);
+}
+
+OOCore_Export int 
+OOObj::RegisterProxyStub(const OOObj::guid_t& iid, const char* dll_name)
+{
+	return Impl::BINDING::instance()->rebind(Impl::guid_to_string(iid).c_str(),ACE_TEXT_ALWAYS_WCHAR(dll_name));
 }

@@ -2,28 +2,24 @@
 //
 // This header file is for internal use only
 //
-// #include "Object.h" instead
+// #include "ProxyStub.h" instead
 //
 //////////////////////////////////////////////////////
 
-#ifndef _OOCORE_STUB_MARSHALLER_H_INCLUDED_
-#define _OOCORE_STUB_MARSHALLER_H_INCLUDED_
+#ifndef OOCORE_STUB_MARSHALLER_H_INCLUDED_
+#define OOCORE_STUB_MARSHALLER_H_INCLUDED_
 
-#include "./Marshaller.h"
-#include "./Object_Impl.h"
 #include "./Array_Marshaller.h"
+#include "./String_Marshalling.h"
 
-#include "./OOCore_export.h"
-
-class OOCore_Transport_Service;
-
-class OOCore_Export OOCore_Stub_Marshaller : public OOCore_Marshaller_Base
+namespace Impl
 {
-	friend class OOCore_ProxyStub_Handler;
 
+class Stub_Marshaller : public Marshaller_Base
+{
 public:
-	OOCore_Stub_Marshaller(OOCore_ProxyStub_Handler* handler, ACE_InputCDR* input, bool sync);
-	virtual ~OOCore_Stub_Marshaller();
+	Stub_Marshaller(OOCore::ProxyStubManager* manager, OOCore::InputStream* input);
+	virtual ~Stub_Marshaller();
 
 	template <class T> T unpack()
 	{
@@ -36,11 +32,11 @@ public:
 	}
 
 private:
-	ACE_InputCDR* m_input;
+	OOCore::Object_Ptr<OOCore::InputStream> m_input;
 	
 	template <class T> bool unpack_i(T& val)
 	{
-		if (!read_param(this,*m_input,val,false))
+		if (!IOWrappers::read_param(this,m_input,val,false))
 			return false;
 		
 		return (pack_param(val,false) != 0);
@@ -50,18 +46,18 @@ private:
 	{
 		// Get the index
 		OOObj::uint32_t index;
-		if (!m_input->read_ulong(index))
+		if (m_input->ReadULong(index) != 0)
 			return false;
 
 		if (index == static_cast<OOObj::uint32_t>(-1))
 		{
 			// Just a pointer
 			T t;
-			if (!read_param(this,*m_input,t,false))
+			if (!IOWrappers::read_param(this,m_input,t,false))
 				return false;
 
 			// Put in map
-			OOCore_Marshalled_Param_Holder<T>* p = pack_param(t,true);
+			Marshalled_Param_Holder<T>* p = pack_param(t,true);
 			if (p == 0)
 				return false;
 			
@@ -72,14 +68,14 @@ private:
 		else
 		{
 			// Array!
-			if (m_params.size()<index)
+			if (param_size()<index)
 				return false;
 
-			OOCore_Array_Marshaller<T> arr(index);
-			if (!arr.read(*this,*m_input,false))
+			Array_Marshaller<T> arr(index);
+			if (!arr.read(*this,m_input,false))
 				return false;
 
-			OOCore_Marshalled_Param_Holder<OOCore_Array_Marshaller<T> >* p = pack_param(arr,true);
+			Marshalled_Param_Holder<Array_Marshaller<T> >* p = pack_param(arr,true);
 			if (p == 0)
 				return false;
 			
@@ -93,18 +89,18 @@ private:
 	{
 		// Get the index
 		OOObj::uint32_t index;
-		if (!m_input->read_ulong(index))
+		if (m_input->ReadULong(index) != 0)
 			return false;
 
 		// Check the index
-		if (m_params.size()<index)
+		if (param_size()<index)
 			return false;
 
-		OOCore_Array_Marshaller<T> arr(index);
-		if (!arr.read(*this,*m_input,false))
+		Array_Marshaller<T> arr(index);
+		if (!arr.read(*this,m_input,false))
 			return false;
 
-		OOCore_Marshalled_Param_Holder<OOCore_Array_Marshaller<T> >* p = pack_param(arr,true);
+		Marshalled_Param_Holder<Array_Marshaller<T> >* p = pack_param(arr,true);
 		if (p == 0)
 			return false;
 		
@@ -113,29 +109,27 @@ private:
 		return true;
 	}
 
-	bool unpack_i(ACE_Active_Map_Manager_Key*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Boolean*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Char*& val) { return unpack_i_t(val); }
-	//bool unpack_i(ACE_CDR::Octet*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Short*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::UShort*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Long*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::ULong*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::LongLong*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::ULongLong*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Float*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Double*& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Boolean**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Char**& val) { return unpack_i_t(val); }
-	//bool unpack_i(ACE_CDR::Octet**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Short**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::UShort**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Long**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::ULong**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::LongLong**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::ULongLong**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Float**& val) { return unpack_i_t(val); }
-	bool unpack_i(ACE_CDR::Double**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::cookie_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::bool_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::char_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::int16_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::uint16_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::int32_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::uint32_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::int64_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::uint64_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::real4_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::real8_t*& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::bool_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::char_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::int16_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::uint16_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::int32_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::uint32_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::int64_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::uint64_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::real4_t**& val) { return unpack_i_t(val); }
+	bool unpack_i(OOObj::real8_t**& val) { return unpack_i_t(val); }
 
 	template <class T> bool unpack_i(T*& val)
 	{
@@ -149,26 +143,105 @@ private:
 		return unpack_object_pp(reinterpret_cast<OOObj::Object**&>(val),T::IID);
 	}
 	
-	bool unpack_object_p(OOObj::Object*& val, const OOObj::GUID& iid);
-	bool unpack_object_pp(OOObj::Object**& val, const OOObj::GUID& iid);
-	bool unpack_i(const ACE_CDR::Char*& val);
+	bool unpack_object_p(OOObj::Object*& val, const OOObj::guid_t& iid);
+	bool unpack_object_pp(OOObj::Object**& val, const OOObj::guid_t& iid);
 };
 
-template <> inline const OOObj::GUID& OOCore_Stub_Marshaller::unpack()
+template <> inline const OOObj::guid_t& Stub_Marshaller::unpack()
 {
-	OOObj::GUID t;
+	OOObj::guid_t t;
 	if (!m_failed)
-		m_failed = !(*m_input >> t);
+		m_failed = (m_input->ReadGuid(t)==0 ? false : true);
 
 	if (!m_failed)
 	{
-		OOCore_Marshalled_Param_Holder<OOObj::GUID>* p = pack_param(t,false);
+		Marshalled_Param_Holder<OOObj::guid_t>* p = pack_param(t,false);
 		if (p==0)
 			m_failed = true;
 		else
 			return p->value();	
 	}
-	return OOObj::GUID::GUID_NIL;
+	return OOObj::guid_t::NIL;
 }
 
-#endif // _OOCORE_STUB_MARSHALLER_H_INCLUDED_
+template <> inline const OOObj::string_t& Stub_Marshaller::unpack()
+{
+	static const OOObj::string_t null_string = 0;
+
+	OOObj::uint32_t len;
+	if (m_input->ReadULong(len) != 0)
+	{
+		m_failed = true;
+		return null_string;
+	}
+
+	OOObj::byte_t* buf=0;
+	ACE_NEW_NORETURN(buf,OOObj::byte_t[len+1]);
+	if (buf==0)
+	{
+		m_failed = true;
+		return null_string;
+	}
+
+	StringHolder str(reinterpret_cast<OOObj::char_t*>(buf));
+	
+	if (m_input->ReadBytes(buf,len))
+	{
+		m_failed = true;
+		return null_string;
+	}
+	buf[len] = 0;
+
+	Marshalled_Param_Holder<StringHolder>* p = pack_param(str,false);
+	if (p == 0)
+	{
+		m_failed = true;
+		return null_string;
+	}
+	
+	// Pass out value
+	return p->value().const_ref();
+}
+
+template <> inline const OOObj::string_t Stub_Marshaller::unpack()
+{
+	static const OOObj::string_t null_string = 0;
+
+	OOObj::uint32_t len;
+	if (m_input->ReadULong(len) != 0)
+	{
+		m_failed = true;
+		return null_string;
+	}
+
+	OOObj::byte_t* buf=0;
+	ACE_NEW_NORETURN(buf,OOObj::byte_t[len+1]);
+	if (buf==0)
+	{
+		m_failed = true;
+		return null_string;
+	}
+
+	StringHolder str(reinterpret_cast<OOObj::char_t*>(buf));
+	
+	if (m_input->ReadBytes(buf,len))
+	{
+		m_failed = true;
+		return null_string;
+	}
+	buf[len] = 0;
+
+	Marshalled_Param_Holder<StringHolder>* p = pack_param(str,false);
+	if (p == 0)
+	{
+		m_failed = true;
+		return null_string;
+	}
+	
+	// Pass out value
+	return p->value().const_ref();
+}
+
+};
+
+#endif // OOCORE_STUB_MARSHALLER_H_INCLUDED_

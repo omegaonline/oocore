@@ -224,10 +224,7 @@ int OOCore_ProxyStub_Handler::remove_proxy()
 		guard.release();
 
 		if (ch)
-		{
-			ACE_Time_Value wait(5);
-			return ch->close(&wait);
-		}
+			return ch->close();
 	}
 
 	return 0;

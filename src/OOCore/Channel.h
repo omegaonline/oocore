@@ -18,7 +18,7 @@ class OOCore_Export OOCore_Channel
 
 public:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0);
-	int close(ACE_Time_Value* wait = 0);
+	int close();
 	
 private:
 	OOCore_Channel();

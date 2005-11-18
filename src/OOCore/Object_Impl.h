@@ -34,10 +34,10 @@ namespace OOObj
 	class Object_Ptr
 	{
 	public:
-		Object_Ptr(OBJECT* obj = 0) :
+		Object_Ptr(OBJECT* obj = 0, bool addref = true) :
 			m_ptr(obj)
 		{
-			if (m_ptr)
+			if (m_ptr && addref)
 				m_ptr->AddRef();
 		}
 
@@ -93,6 +93,11 @@ namespace OOObj
 		operator OBJECT*()
 		{
 			return m_ptr;
+		}
+
+		operator bool() const
+		{
+			return (m_ptr != 0);
 		}
 			
 	private:

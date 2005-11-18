@@ -71,14 +71,14 @@ bool OOCore_Channel::await_close(void* p)
 	return (pThis->m_close_flags==CLOSED);
 }
 
-int OOCore_Channel::close(ACE_Time_Value* wait)
+int OOCore_Channel::close()
 {
 	if (close_i(false) != 0)
 		return -1;
 
-	if (wait)
+	/*if (wait)
 		return ENGINE::instance()->pump_requests(wait,await_close,this);
-	else
+	else*/
 		return 0;
 }
 

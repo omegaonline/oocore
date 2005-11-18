@@ -4,8 +4,7 @@
 #include "./Channel.h"
 #include "./Engine.h"
 
-OOCore_Transport_Connector::OOCore_Transport_Connector(void) :
-	m_interface(0)
+OOCore_Transport_Connector::OOCore_Transport_Connector(void)
 {
 }
 
@@ -32,21 +31,21 @@ int OOCore_Transport_Connector::open()
 	}
 
 	// Try to create the first proxy on it
-	if (ph->create_first_proxy(reinterpret_cast<OOObj::Object**>(&m_interface)) != 0)
+	OOCore_Transport_Service* inter;
+	if (ph->create_first_proxy(reinterpret_cast<OOObj::Object**>(&inter)) != 0)
 	{
 		channel->close();
 		return -1;
 	}
 
-	if (m_interface->SetReverse(this) != 0)
+	if (inter->Connect(this) != 0)
 	{
-		m_interface->Release();
-		m_interface = 0;
+		inter->Release();
 		channel->close();
 		return -1;
 	}
 
-	return 0;
+	return interface(inter);
 }
 
 bool OOCore_Transport_Connector::await_close(void* p)
@@ -63,16 +62,11 @@ bool OOCore_Transport_Connector::await_close(void* p)
 
 int OOCore_Transport_Connector::close()
 {
-	if (m_interface)
-	{
-		m_interface->Release();
-        m_interface = 0;
-	}
+	if (close_transport(false) != 0)
+		return -1;
 
 	ACE_Time_Value wait(5);
-	ENGINE::instance()->pump_requests(&wait,await_close,this);
-	
-	return close_transport();
+	return ENGINE::instance()->pump_requests(&wait,await_close,this);	
 }
 
 int OOCore_Transport_Connector::find_channel(const ACE_Active_Map_Manager_Key& key, OOCore_Channel*& channel)
@@ -105,7 +99,7 @@ int OOCore_Transport_Connector::unbind_channel(const ACE_Active_Map_Manager_Key&
 	if (m_channel_map.erase(key) != 1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to unbind channel key\n")),-1);
 
-	OOCore_Transport_Service* i = m_interface;
+	/*OOCore_Transport_Service* i = m_interface;
 	size_t n = m_channel_map.size();
 
 	guard.release();
@@ -138,61 +132,16 @@ int OOCore_Transport_Connector::close_all_channels()
 
 int OOCore_Transport_Connector::connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel)
 {
-	if (!m_interface)
+	OOObj::Object_Ptr<OOCore_Transport_Service> inter = interface();
+
+	if (!inter)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connecting channel with no transport interface\n")),-1);
 
-	if (m_interface->OpenChannel(name,&key) != 0)
+	if (inter->OpenChannel(name,&key) != 0)
 		return -1;
 
 	if (accept_channel(*channel,key) != 0)
 		return -1;
 	
 	return 0;
-}
-
-int OOCore_Transport_Connector::AddRef()
-{
-	addref();
-
-	return 0;
-}
-
-int OOCore_Transport_Connector::Release()
-{
-	release();
-
-	return 0;
-}
-
-int OOCore_Transport_Connector::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
-{
-	if (iid == OOCore_Transport_Service::IID ||
-		iid == OOObj::Object::IID)
-	{
-		*ppVal = this;
-		(*ppVal)->AddRef();
-		return 0;
-	}
-	
-	*ppVal = 0;
-	
-	return -1;
-}
-
-int OOCore_Transport_Connector::CloseChannel(OOObj::cookie_t channel_key)
-{
-	// We are uni-directional, we don't respond to close!
-	return -1;
-}
-
-int OOCore_Transport_Connector::OpenChannel(const OOObj::char_t* name, OOObj::cookie_t* channel_key)
-{
-	// No! We are uni-directional
-	return -1;
-}
-
-int OOCore_Transport_Connector::SetReverse(OOCore_Transport_Service* reverse)
-{
-	// No! We are a connector
-	return -1;
 }

@@ -73,7 +73,7 @@ public:
 		if (mask == ACE_Event_Handler::WRITE_MASK)
 			return 0;
 		
-		if (close_transport() != 0)
+		if (close_transport(true) != 0)
 			return -1;
 
 		release();

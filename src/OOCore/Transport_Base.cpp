@@ -6,8 +6,9 @@
 #include "./Transport_Service.h"
 
 OOCore_Transport_Base::OOCore_Transport_Base(void) :
-	m_connected(NOT_CONNECTED),
+	m_connected(CLOSED),
 	m_curr_block(0),
+	m_conn_channel(0),
 	m_conn_count(0),
 	m_refcount(0)
 {
@@ -31,25 +32,59 @@ void OOCore_Transport_Base::release()
 		delete this;
 }
 
-int OOCore_Transport_Base::close_transport()
+int OOCore_Transport_Base::close_transport(bool bRecv)
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
 	if (m_connected == CLOSED)
 		return 0;
 
-	if (close_all_channels() != 0)
-		return -1;
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	if (m_curr_block)
+	// If we are not closed for send, send a HANGUP message
+	if ((m_connected & SEND_CLOSED) == 0)
 	{
-		m_curr_block->release();
-		m_curr_block = 0;
+		ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ send close\n"),this));
+
+		// Remember we have sent this
+		m_connected |= SEND_CLOSED;
+
+		OOObj::Object_Ptr<OOCore_Transport_Service> inter(m_interface);
+		if (inter)
+		{
+			guard.release();
+		
+			inter->Disconnect();
+		
+			guard.acquire();
+		}
 	}
 
-	m_connected = CLOSED;
+	if (bRecv && (m_connected & RECV_CLOSED)==0)
+	{
+		ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ recv close\n"),this));
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close\n"),this));
+		// Remember we have sent this
+		m_connected |= RECV_CLOSED;
+
+		guard.release();
+
+		if (close_all_channels() != 0)
+			return -1;
+
+		guard.acquire();
+	}
+
+	if ((m_connected & (SEND_CLOSED | RECV_CLOSED)) == (SEND_CLOSED | RECV_CLOSED))
+	{
+		ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ all done\n"),this));
+
+		if (m_curr_block)
+		{
+			m_curr_block->release();
+			m_curr_block = 0;
+		}
+
+		m_connected = CLOSED;
+	}
 
 	return 0;
 }
@@ -169,11 +204,6 @@ int OOCore_Transport_Base::process_msg(const OOCore_Transport_MsgHeader& header,
 	return 0;
 }
 
-int OOCore_Transport_Base::open_channel(const OOObj::char_t* service, OOCore_Channel** channel)
-{
-	return connect_channel_i(service,channel);
-}
-
 int OOCore_Transport_Base::create_object(const OOObj::char_t* service, const OOObj::GUID& iid, OOObj::Object** ppVal)
 {
 	OOCore_Channel* channel;
@@ -207,7 +237,7 @@ int OOCore_Transport_Base::create_object(const OOObj::char_t* service, const OOO
 	return 0;
 }
 
-int OOCore_Transport_Base::connect_channel_i(const OOObj::char_t* name, OOCore_Channel** channel)
+int OOCore_Transport_Base::open_channel(const OOObj::char_t* name, OOCore_Channel** channel)
 {
 	++m_conn_count;
 
@@ -270,15 +300,25 @@ bool OOCore_Transport_Base::await_connect(void* p)
 
 int OOCore_Transport_Base::connect_primary_channel(OOCore_Channel** channel)
 {
-	if (m_connected != NOT_CONNECTED)
+	if (m_connected != CLOSED)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Attempting to connect an already connected transport\n")),-1);
+
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 	m_connected = CONNECTING;
 	m_conn_channel = channel;
+
+	guard.release();
 		
 	// Spin waiting for a response
 	ACE_Time_Value wait(5);
-	return ENGINE::instance()->pump_requests(&wait,&OOCore_Transport_Base::await_connect,this);
+	int ret = ENGINE::instance()->pump_requests(&wait,&OOCore_Transport_Base::await_connect,this);
+
+	guard.acquire();
+
+	m_conn_channel = 0;
+		
+	return ret;
 }
 
 int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel, ACE_Message_Block* mb)
@@ -312,6 +352,9 @@ int OOCore_Transport_Base::connect_secondary_channel(ACE_Active_Map_Manager_Key&
 
 int OOCore_Transport_Base::connect_first_channel_i(const OOCore_Transport_MsgHeader& header, ACE_InputCDR& input)
 {
+	if (!m_conn_channel)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Unexpected connection info\n")),-1);
+
 	OOCore_Channel* their_channel;
 	ACE_Message_Block* mb = input.start()->duplicate();
 	
@@ -326,7 +369,7 @@ int OOCore_Transport_Base::connect_first_channel_i(const OOCore_Transport_MsgHea
 	if (connect_secondary_channel(key2,&their_channel,mb) != 0)
 	{
 		mb->release();
-		m_connected = NOT_CONNECTED;
+		m_connected = CLOSED;
 		return -1;
 	}
 
@@ -338,7 +381,11 @@ int OOCore_Transport_Base::connect_first_channel_i(const OOCore_Transport_MsgHea
 
 int OOCore_Transport_Base::accept_channel(OOCore_Channel*& channel, ACE_Active_Map_Manager_Key& key)
 {
-	return connect_secondary_channel(key,&channel);
+	int ret = connect_secondary_channel(key,&channel);
+	if (ret==0)
+		m_connected = CONNECTED;
+	
+	return ret;
 }
 
 int OOCore_Transport_Base::add_channel(OOCore_Channel* channel, ACE_Active_Map_Manager_Key& key)
@@ -351,10 +398,168 @@ int OOCore_Transport_Base::add_channel(OOCore_Channel* channel, ACE_Active_Map_M
 	if (bind_channel(channel,key) != 0)
 		return -1;
 
+	// Set the flags
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	if (!m_channel_flags.insert(std::map<ACE_Active_Map_Manager_Key,unsigned int>::value_type(key,CONNECTED)).second)
+	{
+		unbind_channel(key);
+		return -1;
+	}
+	guard.release();
+
 	// Set the handler's key
 	handler->channel_key(key);
 
 	return 0;
+}
+
+int OOCore_Transport_Base::close_channel(const ACE_Active_Map_Manager_Key& key, bool bRecv)
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	
+	std::map<ACE_Active_Map_Manager_Key,unsigned int>::iterator i = m_channel_flags.find(key);
+	if (i==m_channel_flags.end())
+		return 0;
+
+	// If we are not closed for send, send a HANGUP message
+	if ((i->second & SEND_CLOSED) == 0)
+	{
+		// Remember we have sent this
+		i->second |= SEND_CLOSED;
+
+		OOObj::Object_Ptr<OOCore_Transport_Service> inter = interface();
+		if (inter)
+		{
+			guard.release();
+
+			if (inter->CloseChannel(key) != 0)
+				return -1;
+			
+			guard.acquire();
+
+			// Do the lookup again
+			i = m_channel_flags.find(key);
+			if (i==m_channel_flags.end())
+				return 0;
+		}
+	}
+
+	if (bRecv && (i->second & RECV_CLOSED)==0)
+	{
+		// Remember we have recieved this
+		i->second |= RECV_CLOSED;
+
+		OOCore_Channel* ch;
+		if (find_channel(key,ch) != 0)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to close an unknown channel\n")),-1);
+
+		guard.release();
+
+		if (ch->close() != 0)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to close an unknown channel\n")),-1);
+
+		guard.acquire();
+
+		// Do the lookup again
+		i = m_channel_flags.find(key);
+		if (i==m_channel_flags.end())
+			return 0;
+	}
+
+	if ((i->second & (SEND_CLOSED | RECV_CLOSED)) == (SEND_CLOSED | RECV_CLOSED))
+	{
+		m_channel_flags.erase(i);
+
+		return unbind_channel(key);
+	}
+
+	return 0;
+}
+
+OOObj::Object_Ptr<OOCore_Transport_Service> OOCore_Transport_Base::interface()
+{
+	m_lock.acquire();
+
+	OOObj::Object_Ptr<OOCore_Transport_Service> i(m_interface);
+
+	m_lock.release();
+
+	return i;
+}
+
+int OOCore_Transport_Base::interface(OOCore_Transport_Service* i)
+{
+	if (m_interface)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Setting transport interface more than once\n")),-1);
+
+	m_lock.acquire();
+
+	m_interface = i;
+
+	m_lock.release();
+	
+	return 0;
+}
+
+int OOCore_Transport_Base::AddRef()
+{
+	addref();
+
+	return 0;
+}
+
+int OOCore_Transport_Base::Release()
+{
+	release();
+
+	return 0;
+}
+
+int OOCore_Transport_Base::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
+{
+	if (iid == OOCore_Transport_Service::IID ||
+		iid == OOObj::Object::IID)
+	{
+		*ppVal = this;
+		(*ppVal)->AddRef();
+		return 0;
+	}
+	
+	*ppVal = 0;
+	
+	return -1;
+}
+
+int OOCore_Transport_Base::OpenChannel(const OOObj::char_t* name, OOObj::cookie_t* channel_key)
+{
+	return -1;
+}
+
+int OOCore_Transport_Base::CloseChannel(OOObj::cookie_t channel_key)
+{
+	return close_channel(channel_key,true);
+}
+
+int OOCore_Transport_Base::Connect(OOCore_Transport_Service* reverse)
+{
+	return -1;
+}
+
+int OOCore_Transport_Base::Disconnect()
+{
+	if (m_interface)
+	{
+		m_lock.acquire();
+
+		OOObj::Object_Ptr<OOCore_Transport_Service> inter(m_interface);
+		m_interface = 0;
+
+		m_lock.release();
+
+		return 0;
+	}
+	
+	return -1;
 }
 
 int OOCore_Transport_MsgHeader::read(ACE_InputCDR& input)
@@ -452,7 +657,7 @@ int OOCore_Transport_Handler::handle_close()
 {
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) Transport %@ close channel %u:%u\n"),m_transport,m_key.slot_index(),m_key.slot_generation()));
 
-	m_transport->unbind_channel(m_key);
+	m_transport->close_channel(m_key,false);
 
 	return OOCore_Channel_Handler::handle_close();
 }

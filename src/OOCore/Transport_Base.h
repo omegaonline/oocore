@@ -15,15 +15,15 @@
 #include <ace/CDR_Stream.h>
 
 #include "./Channel_Handler.h"
-#include "./OOCore.h"
-#include "./Object.h"
+#include "./Transport_Service.h"
 
 #include "./OOCore_export.h"
 
 class OOCore_Transport_MsgHeader;
 class OOCore_ProxyStub_Handler;
 
-class OOCore_Export OOCore_Transport_Base
+class OOCore_Export OOCore_Transport_Base :
+	public OOCore_Transport_Service
 {
 	friend class OOCore_Transport_MsgHeader;
 	friend class OOCore_Transport_Handler;
@@ -35,15 +35,17 @@ public:
 protected:
 	OOCore_Transport_Base(void);
 	virtual ~OOCore_Transport_Base(void);
-
+	
 	// Transports should use the following functions
 	int recv(ACE_Message_Block* mb);
 	int connect_primary_channel(OOCore_Channel** channel);
 	int accept_channel(OOCore_Channel*& channel, ACE_Active_Map_Manager_Key& key);
 	void addref();
 	void release();
-	int close_transport();
-		
+	int close_transport(bool bRecv);
+	OOObj::Object_Ptr<OOCore_Transport_Service> interface();
+	int interface(OOCore_Transport_Service* i);
+
 	// All Transports must implement the following functions
 	virtual int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0) = 0;
 	virtual int find_channel(const ACE_Active_Map_Manager_Key& key, OOCore_Channel*& channel) = 0;
@@ -53,29 +55,45 @@ protected:
 	virtual int connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel) = 0;
 	
 private:
-	enum
+	enum connection_flags
 	{
-		NOT_CONNECTED,
-		CONNECTING,
-		CONNECTED,
-		CLOSED
-	} m_connected;
-	
+		CLOSED = 0,
+		CONNECTING = 1,
+		CONNECTED = 2,
+		SEND_CLOSED = 4,
+		RECV_CLOSED = 8	
+	};
+	unsigned int m_connected;		
 	ACE_Thread_Mutex m_lock;
 	ACE_Message_Block* m_curr_block;
 	OOCore_Channel** m_conn_channel;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_conn_count;
 	ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	std::multimap<ACE_Active_Map_Manager_Key,ACE_Message_Block*>  m_pending_list;
+	OOObj::Object_Ptr<OOCore_Transport_Service> m_interface;
+	std::map<ACE_Active_Map_Manager_Key,unsigned int>  m_channel_flags;
 	
 	int add_channel(OOCore_Channel* channel, ACE_Active_Map_Manager_Key& key);
 	int connect_first_channel_i(const OOCore_Transport_MsgHeader& header, ACE_InputCDR& input);
 	int bad_channel(const OOCore_Transport_MsgHeader& header, ACE_InputCDR& input);
-	int connect_channel_i(const OOObj::char_t* name, OOCore_Channel** channel);
 	int process_msg(const OOCore_Transport_MsgHeader& header, ACE_InputCDR& input);
 	int connect_secondary_channel(ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel, ACE_Message_Block* mb = 0);
+	int close_channel(const ACE_Active_Map_Manager_Key& key, bool bRecv);
 
 	static bool await_connect(void* p);
+
+// OOObj::Object interface
+public:
+	int AddRef();
+	int Release();
+	int QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal);
+
+// OOCore_Transport_Service
+public:
+	virtual int OpenChannel(const OOObj::char_t* name, OOObj::cookie_t* channel_key);
+	int CloseChannel(OOObj::cookie_t channel_key);
+	virtual int Connect(OOCore_Transport_Service* reverse);
+	int Disconnect();
 };
 
 class OOCore_Transport_MsgHeader

@@ -8,9 +8,7 @@
 
 #include "./Service_Manager.h"
 
-OOSvc_Transport_Acceptor::OOSvc_Transport_Acceptor(void) : 
-	m_interface(0),
-	m_refcount(0)
+OOSvc_Transport_Acceptor::OOSvc_Transport_Acceptor(void)
 {
 }
 
@@ -50,7 +48,7 @@ bool OOSvc_Transport_Acceptor::await_close(void* p)
 
 int OOSvc_Transport_Acceptor::request_close()
 {
-	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+	/*ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 
 	OOCore_Transport_Service* i = m_interface;
 	m_interface = 0;
@@ -61,9 +59,9 @@ int OOSvc_Transport_Acceptor::request_close()
 		i->Release();
 
 	ACE_Time_Value wait(5);
-	ENGINE::instance()->pump_requests(&wait,await_close,this);
+	ENGINE::instance()->pump_requests(&wait,await_close,this);*/
 	
-	return close_transport();
+	return close_transport(false);
 }
 
 int OOSvc_Transport_Acceptor::find_channel(const ACE_Active_Map_Manager_Key& key, OOCore_Channel*& channel)
@@ -98,7 +96,7 @@ int OOSvc_Transport_Acceptor::close_all_channels()
 	{
 		(*i).int_id_->close();
 	}
-	m_channel_map.close();
+	m_channel_map.unbind_all();
 	
 	return 0;
 }
@@ -110,66 +108,22 @@ bool OOSvc_Transport_Acceptor::is_local_transport()
 
 int OOSvc_Transport_Acceptor::connect_channel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key& key, OOCore_Channel** channel)
 {
-	if (!m_interface)
-		return -1;
-
+	OOObj::Object_Ptr<OOCore_Transport_Service> inter = interface();
+	
+	if (!inter)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connecting channel with no transport interface\n")),-1);
+	
 	// Add a channel to ourselves
 	if (accept_channel(*channel,key) != 0)
 		return -1;
 	
-	if (m_interface->OpenChannel(name,&key) != 0)
+	if (inter->OpenChannel(name,&key) != 0)
 	{
 		(*channel)->close();
 		return -1;
 	}
 
 	return 0;
-}
-
-int OOSvc_Transport_Acceptor::AddRef()
-{
-	++m_refcount;
-
-	addref();
-
-	return 0;
-}
-
-int OOSvc_Transport_Acceptor::Release()
-{
-	if (--m_refcount==0)
-	{
-		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-
-		if (m_interface)
-		{
-			OOCore_Transport_Service* i = m_interface;
-			m_interface = 0;
-		
-			guard.release();
-
-			i->Release();
-		}
-	}
-
-	release();
-
-	return 0;
-}
-
-int OOSvc_Transport_Acceptor::QueryInterface(const OOObj::GUID& iid, OOObj::Object** ppVal)
-{
-	if (iid == OOCore_Transport_Service::IID ||
-		iid == OOObj::Object::IID)
-	{
-		*ppVal = this;
-		(*ppVal)->AddRef();
-		return 0;
-	}
-	
-	*ppVal = 0;
-	
-	return -1;
 }
 
 int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_Map_Manager_Key* channel_key)
@@ -189,28 +143,7 @@ int OOSvc_Transport_Acceptor::OpenChannel(const OOObj::char_t* name, ACE_Active_
 	return 0;
 }
 
-int OOSvc_Transport_Acceptor::CloseChannel(OOObj::cookie_t channel_key)
+int OOSvc_Transport_Acceptor::Connect(OOCore_Transport_Service* reverse)
 {
-	ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-
-	OOCore_Channel* ch;
-	if (m_channel_map.find(channel_key,ch) != 0)
-		return -1;
-
-	guard.release();
-	
-	return ch->close();
-}
-
-int OOSvc_Transport_Acceptor::SetReverse(OOCore_Transport_Service* reverse)
-{
-	ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-
-	if (m_interface!=0)
-		return -1;
-
-	m_interface = reverse;
-	m_interface->AddRef();
-			
-	return 0;
+	return interface(reverse);
 }

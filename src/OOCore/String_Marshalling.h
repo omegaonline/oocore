@@ -9,7 +9,7 @@
 #ifndef OOCORE_STRING_MARSHALLING_H_INCLUDED_
 #define OOCORE_STRING_MARSHALLING_H_INCLUDED_
 
-namespace Impl
+namespace Marshall_A
 {
 
 class StringHolder

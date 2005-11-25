@@ -1,6 +1,6 @@
 #include "./ProxyStub.h"
 
-Impl::ProxyStub_Base::ProxyStub_Base(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) :
+Marshall_A::ProxyStub_Base::ProxyStub_Base(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) :
 	m_bStub(false),
     m_key(key),
 	m_manager(manager),
@@ -8,7 +8,7 @@ Impl::ProxyStub_Base::ProxyStub_Base(OOCore::ProxyStubManager* manager, const OO
 {
 }
 
-Impl::ProxyStub_Base::ProxyStub_Base(OOCore::ProxyStubManager* manager, OOObj::Object* obj) :
+Marshall_A::ProxyStub_Base::ProxyStub_Base(OOCore::ProxyStubManager* manager, OOObj::Object* obj) :
 	m_bStub(true),
 	m_object(obj),
  	m_manager(manager),
@@ -16,36 +16,36 @@ Impl::ProxyStub_Base::ProxyStub_Base(OOCore::ProxyStubManager* manager, OOObj::O
 {
 	add_delegate(offsetof(ProxyStub_Base,addref_id),NULL);
 	add_delegate(offsetof(ProxyStub_Base,release_id),NULL);
-	add_delegate(offsetof(ProxyStub_Base,qi_id),(new Impl::Delegate::D2<const OOObj::guid_t&,OOObj::Object**>())->bind<OOObj::Object,&OOObj::Object::QueryInterface>(obj));
+	add_delegate(offsetof(ProxyStub_Base,qi_id),(new Delegate::D2<const OOObj::guid_t&,OOObj::Object**>())->bind<OOObj::Object,&OOObj::Object::QueryInterface>(obj));
 }
 
-Impl::ProxyStub_Base::~ProxyStub_Base()
+Marshall_A::ProxyStub_Base::~ProxyStub_Base()
 {
 	for (std::map<size_t,Delegate::Base*>::iterator i = dispatch_tbl.begin();i!=dispatch_tbl.end();++i)
 		delete i->second;
 }
 
 OOObj::int32_t 
-Impl::ProxyStub_Base::AddRef_i()
+Marshall_A::ProxyStub_Base::AddRef_i()
 {
 	++m_refcount;
 	return 0;
 }
 
 OOObj::int32_t 
-Impl::ProxyStub_Base::Release_i()
+Marshall_A::ProxyStub_Base::Release_i()
 {
 	return (m_bStub ? Release_stub() : Release_proxy());
 }
 
 OOObj::int32_t 
-Impl::ProxyStub_Base::QueryInterface_i(const OOObj::guid_t& iid, OOObj::Object** ppVal)
+Marshall_A::ProxyStub_Base::QueryInterface_i(const OOObj::guid_t& iid, OOObj::Object** ppVal)
 {
 	return (method(offsetof(ProxyStub_Base,qi_id)) << iid << object(iid,ppVal))();
 }
 
 OOObj::int32_t 
-Impl::ProxyStub_Base::Release_proxy()
+Marshall_A::ProxyStub_Base::Release_proxy()
 {
 	if (--m_refcount == 0)
 	{
@@ -57,7 +57,7 @@ Impl::ProxyStub_Base::Release_proxy()
 }
 
 OOObj::int32_t 
-Impl::ProxyStub_Base::Release_stub()
+Marshall_A::ProxyStub_Base::Release_stub()
 {
 	if (--m_refcount == 0)
 		delete this;
@@ -65,8 +65,8 @@ Impl::ProxyStub_Base::Release_stub()
 	return 0;
 }
 
-Impl::Proxy_Marshaller
-Impl::ProxyStub_Base::method(size_t m, OOObj::bool_t sync)
+Marshall_A::Proxy_Marshaller
+Marshall_A::ProxyStub_Base::method(size_t m, OOObj::bool_t sync)
 {
 	OOObj::uint32_t method = static_cast<OOObj::uint32_t>(m);
 	OOObj::uint32_t trans_id;
@@ -78,20 +78,20 @@ Impl::ProxyStub_Base::method(size_t m, OOObj::bool_t sync)
 	return Proxy_Marshaller(m_manager,sync,output,trans_id);
 }
 
-Impl::Object_Marshaller 
-Impl::ProxyStub_Base::object(const OOObj::guid_t& iid, OOObj::Object** ppObj, bool in)
+Marshall_A::Object_Marshaller 
+Marshall_A::ProxyStub_Base::object(const OOObj::guid_t& iid, OOObj::Object** ppObj, bool in)
 {
 	return Object_Marshaller(iid,ppObj,in);
 }
 
-Impl::Object_Marshaller 
-Impl::ProxyStub_Base::object(const OOObj::guid_t& iid, OOObj::Object* pObj)
+Marshall_A::Object_Marshaller 
+Marshall_A::ProxyStub_Base::object(const OOObj::guid_t& iid, OOObj::Object* pObj)
 {
 	return Object_Marshaller(iid,pObj);
 }
 
 int 
-Impl::ProxyStub_Base::Invoke_i(OOObj::uint32_t method, OOObj::int32_t& ret_code, OOCore::InputStream* input, OOCore::OutputStream* output)
+Marshall_A::ProxyStub_Base::Invoke_i(OOObj::uint32_t method, OOObj::int32_t& ret_code, OOCore::InputStream* input, OOCore::OutputStream* output)
 {
 	Stub_Marshaller mshl(m_manager,input);
 
@@ -110,7 +110,7 @@ Impl::ProxyStub_Base::Invoke_i(OOObj::uint32_t method, OOObj::int32_t& ret_code,
 }
 
 int 
-Impl::ProxyStub_Base::invoke(OOObj::uint32_t method, OOObj::int32_t& ret_code, Stub_Marshaller& mshl)
+Marshall_A::ProxyStub_Base::invoke(OOObj::uint32_t method, OOObj::int32_t& ret_code, Stub_Marshaller& mshl)
 {
 	ret_code = 0;
 
@@ -133,7 +133,7 @@ Impl::ProxyStub_Base::invoke(OOObj::uint32_t method, OOObj::int32_t& ret_code, S
 }
 
 void 
-Impl::ProxyStub_Base::add_delegate(size_t method, Delegate::Base* del)
+Marshall_A::ProxyStub_Base::add_delegate(size_t method, Delegate::Base* del)
 {
 	if (!dispatch_tbl.insert(std::map<size_t,Delegate::Base*>::value_type(method,del)).second)
 	{

@@ -14,7 +14,7 @@
 
 #include "./OOCore_Util.h"
 
-namespace Impl
+namespace Marshall_A
 {
 
 class Marshaller_Base;

@@ -2,7 +2,7 @@
 
 #include "./Object_Marshaller.h"
 
-Impl::Stub_Marshaller::Stub_Marshaller(OOCore::ProxyStubManager* manager, OOCore::InputStream* input) :
+Marshall_A::Stub_Marshaller::Stub_Marshaller(OOCore::ProxyStubManager* manager, OOCore::InputStream* input) :
 	Marshaller_Base(manager),
 	m_input(input)
 {
@@ -10,12 +10,12 @@ Impl::Stub_Marshaller::Stub_Marshaller(OOCore::ProxyStubManager* manager, OOCore
 		m_failed = true;
 }
 
-Impl::Stub_Marshaller::~Stub_Marshaller()
+Marshall_A::Stub_Marshaller::~Stub_Marshaller()
 {
 }
 
 bool 
-Impl::Stub_Marshaller::unpack_object_p(OOObj::Object*& val, const OOObj::guid_t& iid)
+Marshall_A::Stub_Marshaller::unpack_object_p(OOObj::Object*& val, const OOObj::guid_t& iid)
 {
 	Object_Marshaller obm;
 	if (!obm.read(*this,m_input,false))
@@ -31,7 +31,7 @@ Impl::Stub_Marshaller::unpack_object_p(OOObj::Object*& val, const OOObj::guid_t&
 }
 
 bool 
-Impl::Stub_Marshaller::unpack_object_pp(OOObj::Object**& val, const OOObj::guid_t& iid)
+Marshall_A::Stub_Marshaller::unpack_object_pp(OOObj::Object**& val, const OOObj::guid_t& iid)
 {
 	Object_Marshaller obm;
 	if (!obm.read(*this,m_input,false))
@@ -47,13 +47,13 @@ Impl::Stub_Marshaller::unpack_object_pp(OOObj::Object**& val, const OOObj::guid_
 }
 
 bool 
-Impl::IOWrappers::read_param(Marshaller_Base* mshl, OOCore::InputStream* input, StringHolder& val, bool response)
+Marshall_A::IOWrappers::read_param(Marshaller_Base* mshl, OOCore::InputStream* input, StringHolder& val, bool response)
 {
 	return false;
 }
 
 bool 
-Impl::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const StringHolder& val, bool response)
+Marshall_A::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const StringHolder& val, bool response)
 {
 	return false;
 }

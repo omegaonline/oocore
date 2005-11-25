@@ -11,7 +11,7 @@
 
 #include "./OOCore_Impl.h"
 
-namespace Impl
+namespace Marshall_A
 {
 namespace Delegate
 {

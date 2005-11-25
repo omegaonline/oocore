@@ -28,8 +28,7 @@ namespace OOObj
 	typedef ACE_CDR::Float				real4_t;
 	typedef ACE_CDR::Double				real8_t;
 	typedef ACE_Active_Map_Manager_Key	cookie_t;
-	typedef ACE_CDR::Char*				string_t;
-
+	
 	struct OOCore_Export guid_t
 	{
 		uint32_t	Data1;

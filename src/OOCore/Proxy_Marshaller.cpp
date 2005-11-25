@@ -1,11 +1,11 @@
 #include "./Proxy_Marshaller.h"
 
-Impl::Proxy_Marshaller::Proxy_Marshaller() :
+Marshall_A::Proxy_Marshaller::Proxy_Marshaller() :
 	Marshaller_Base(0,true)
 {
 }
 
-Impl::Proxy_Marshaller::Proxy_Marshaller(OOCore::ProxyStubManager* manager, OOObj::bool_t sync, OOCore::OutputStream* output, OOObj::uint32_t trans_id) :
+Marshall_A::Proxy_Marshaller::Proxy_Marshaller(OOCore::ProxyStubManager* manager, OOObj::bool_t sync, OOCore::OutputStream* output, OOObj::uint32_t trans_id) :
 	Marshaller_Base(manager),
 	m_output(output),
 	m_trans_id(trans_id),
@@ -13,8 +13,8 @@ Impl::Proxy_Marshaller::Proxy_Marshaller(OOCore::ProxyStubManager* manager, OOOb
 {
 }
 
-/*Impl::Proxy_Marshaller& 
-Impl::Proxy_Marshaller::operator <<(const ACE_CDR::Char* val)
+/*Marshall_A::Proxy_Marshaller& 
+Marshall_A::Proxy_Marshaller::operator <<(const ACE_CDR::Char* val)
 {
 	ACE_CString strVal(val);
 
@@ -28,13 +28,13 @@ Impl::Proxy_Marshaller::operator <<(const ACE_CDR::Char* val)
 }*/
 
 int 
-Impl::Proxy_Marshaller::operator ()(ACE_Time_Value& wait)
+Marshall_A::Proxy_Marshaller::operator ()(ACE_Time_Value& wait)
 {
 	return (*this)(&wait);
 }
 
 int 
-Impl::Proxy_Marshaller::operator ()(ACE_Time_Value* wait)
+Marshall_A::Proxy_Marshaller::operator ()(ACE_Time_Value* wait)
 {
 	if (!m_sync)
 	{

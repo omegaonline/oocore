@@ -12,7 +12,7 @@
 #include "./Array_Marshaller.h"
 #include "./String_Marshalling.h"
 
-namespace Impl
+namespace Marshall_A
 {
 
 class Stub_Marshaller : public Marshaller_Base

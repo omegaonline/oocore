@@ -52,7 +52,7 @@ namespace OOCore
 	class Stub : public OOObj::Object
 	{
 	public:
-		virtual int Invoke(OOObj::uint32_t method, OOObj::int32_t& ret_code, InputStream* input, OutputStream* output) = 0;
+		virtual int Invoke(unsigned int method, OOObj::int32_t& ret_code, InputStream* input, OutputStream* output) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};

@@ -1,25 +1,25 @@
 #include "./Object_Marshaller.h"
 
 bool 
-Impl::IOWrappers::read_param(Marshaller_Base* mshl, OOCore::InputStream* input, Object_Marshaller& val, bool response)
+Marshall_A::IOWrappers::read_param(Marshaller_Base* mshl, OOCore::InputStream* input, Object_Marshaller& val, bool response)
 {
 	return val.read(*mshl,input,response);
 }
 
 bool 
-Impl::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const Object_Marshaller& val, bool response)
+Marshall_A::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const Object_Marshaller& val, bool response)
 {
 	return val.write(*mshl,output,response);
 }
 
 bool 
-Impl::IOWrappers::arg_responds(const Object_Marshaller& val)
+Marshall_A::IOWrappers::arg_responds(const Object_Marshaller& val)
 {
 	return val.responds();
 }
 
 ACE_CDR::Boolean 
-Impl::Object_Marshaller::read(Marshaller_Base& mshl, OOCore::InputStream* input, bool response)
+Marshall_A::Object_Marshaller::read(Marshaller_Base& mshl, OOCore::InputStream* input, bool response)
 {
 	if (m_node==0)
 		return false;
@@ -51,7 +51,7 @@ Impl::Object_Marshaller::read(Marshaller_Base& mshl, OOCore::InputStream* input,
 }
 
 ACE_CDR::Boolean 
-Impl::Object_Marshaller::write(Marshaller_Base& mshl, OOCore::OutputStream* output, bool response) const
+Marshall_A::Object_Marshaller::write(Marshaller_Base& mshl, OOCore::OutputStream* output, bool response) const
 {
 	if (m_node==0)
 		return false;

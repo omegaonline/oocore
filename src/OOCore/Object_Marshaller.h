@@ -11,7 +11,7 @@
 
 #include "./Marshaller.h"
 
-namespace Impl
+namespace Marshall_A
 {
 
 class Object_Marshaller

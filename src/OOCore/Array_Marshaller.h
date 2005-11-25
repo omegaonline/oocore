@@ -12,7 +12,7 @@
 #include "./Marshaller.h"
 #include "./OOCore_Impl.h"
 
-namespace Impl
+namespace Marshall_A
 {
 
 template <class TYPE>

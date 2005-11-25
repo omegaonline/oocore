@@ -8,7 +8,7 @@
 #include "./Delegate.h"
 #include "./Object_Marshaller.h"
 
-namespace Impl
+namespace Marshall_A
 {
 	class ProxyStub_Base
 	{
@@ -79,11 +79,11 @@ namespace Impl
 	};
 };
 
-namespace Impl
+namespace Marshall_A
 {
 	template <class OBJECT>
 	class ProxyStub_Impl : 
-		public Impl::ProxyStub_Base,
+		public ProxyStub_Base,
 		public OBJECT,
 		public OOCore::Stub
 	{
@@ -146,6 +146,7 @@ namespace Impl
 	};
 };
 
+// Proxy Stub macros
 #define CREATE_AUTO_STUB(iface,manager,obj) \
 	iface##_ProxyStub::create_stub(manager,obj)
 
@@ -153,12 +154,12 @@ namespace Impl
 	iface##_ProxyStub::create_proxy(manager,key)
 
 #define BEGIN_DECLARE_AUTO_PROXY_STUB(iface) \
-	class iface##_ProxyStub : public Impl::ProxyStub_Impl<iface> { \
+	class iface##_ProxyStub : public Marshall_A::ProxyStub_Impl<iface> { \
 	public: static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) { iface##_ProxyStub* proxy; ACE_NEW_RETURN(proxy,iface##_ProxyStub(manager,key),0); return proxy;} \
 	static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, OOObj::Object* obj) { iface##_ProxyStub* stub; ACE_NEW_RETURN(stub,iface##_ProxyStub(manager,obj),0); return stub;} \
 	private: typedef iface iface_class; typedef iface##_ProxyStub this_class; \
-	iface##_ProxyStub(OOCore::ProxyStubManager* manager, OOObj::Object* obj) : Impl::ProxyStub_Impl<iface>(manager,obj) { init_delegates(obj); } \
-	iface##_ProxyStub(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) : 	Impl::ProxyStub_Impl<iface>(manager,key) {}
+	iface##_ProxyStub(OOCore::ProxyStubManager* manager, OOObj::Object* obj) : Marshall_A::ProxyStub_Impl<iface>(manager,obj) { init_delegates(obj); } \
+	iface##_ProxyStub(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) : 	Marshall_A::ProxyStub_Impl<iface>(manager,key) {}
 #define END_DECLARE_AUTO_PROXY_STUB() };
 
 #define BEGIN_PROXY_MAP()
@@ -186,15 +187,15 @@ namespace Impl
 #define BEGIN_STUB_MAP() \
 	private: void init_delegates(OOObj::Object* obj) {
 #define STUB_ENTRY_0(function) \
-	add_delegate(offsetof(this_class,function##_id),(new Impl::Delegate::D0())->bind<iface_class,&iface_class::function>(obj));
+	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D0())->bind<iface_class,&iface_class::function>(obj));
 #define STUB_ENTRY_1(function,p1) \
-	add_delegate(offsetof(this_class,function##_id),(new Impl::Delegate::D1<p1>())->bind<iface_class,&iface_class::function>(obj));
+	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D1<p1>())->bind<iface_class,&iface_class::function>(obj));
 #define STUB_ENTRY_2(function,p1,p2) \
-	add_delegate(offsetof(this_class,function##_id),(new Impl::Delegate::D2<p1,p2>())->bind<iface_class,&iface_class::function>(obj));
+	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D2<p1,p2>())->bind<iface_class,&iface_class::function>(obj));
 #define STUB_ENTRY_3(function,p1,p2,p3) \
-	add_delegate(offsetof(this_class,function##_id),(new Impl::Delegate::D3<p1,p2,p3>())->bind<iface_class,&iface_class::function>(obj));
+	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D3<p1,p2,p3>())->bind<iface_class,&iface_class::function>(obj));
 #define STUB_ENTRY_4(function,p1,p2,p3,p4) \
-	add_delegate(offsetof(this_class,function##_id),(new Impl::Delegate::D4<p1,p2,p3,p4>())->bind<iface_class,&iface_class::function>(obj));
+	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D4<p1,p2,p3,p4>())->bind<iface_class,&iface_class::function>(obj));
 #define END_STUB_MAP() }
 
 #endif // OOCORE_PROXYSTUB_H_INCLUDED_

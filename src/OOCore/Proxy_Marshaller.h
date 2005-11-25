@@ -12,7 +12,7 @@
 #include "./Marshaller.h"
 #include "./Array_Marshaller.h"
 
-namespace Impl
+namespace Marshall_A
 {
 
 class Proxy_Marshaller : public Marshaller_Base

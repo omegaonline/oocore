@@ -157,7 +157,7 @@ Marshall_A::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream*
 }
 
 bool 
-Marshall_A::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::string_t val, bool response)
+Marshall_A::IOWrappers::write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::char_t* val, bool response)
 {
 	OOObj::uint32_t len = ACE_OS::strlen(val);
 

@@ -20,7 +20,7 @@ public:
 	int Open(Transport* transport, OOObj::bool_t AsServer);
 	int Close();
 	int ProcessMessage(InputStream* input);
-	OOObj::int32_t CreateRemoteObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
+	OOObj::int32_t CreateRemoteObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
 
 private:
 	virtual ~ObjectManager(void);
@@ -63,7 +63,7 @@ END_INTERFACE_MAP()
 
 // OOCore::RemoteObjectFactory
 public:
-	OOObj::int32_t CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
+	OOObj::int32_t CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
 	OOObj::int32_t SetReverse(RemoteObjectFactory* pRemote);
 
 // OOCore::ProxyStubManager

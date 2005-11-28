@@ -42,7 +42,7 @@ OOObj::Term()
 }
 
 OOCore_Export int 
-OOObj::CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
+OOObj::CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
 {
 	return Impl::CONNECTION_MANAGER::instance()->CreateObject(class_name,iid,ppVal);
 }

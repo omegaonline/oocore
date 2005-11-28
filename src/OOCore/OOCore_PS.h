@@ -5,16 +5,20 @@
 
 namespace OOCore
 {
-	BEGIN_DECLARE_AUTO_PROXY_STUB(RemoteObjectFactory)
+
+	BEGIN_AUTO_PROXY_STUB(RemoteObjectFactory)
+		METHOD(CreateObject,3,((in)(string),const OOObj::char_t*,class_name,(in),const OOObj::guid_t&,iid,(out)(iid_is(iid)),OOObj::Object**,ppVal))
+		METHOD(SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
+	END_AUTO_PROXY_STUB()
+
+
+/*	BEGIN_DECLARE_AUTO_PROXY_STUB(RemoteObjectFactory)
 		BEGIN_PROXY_MAP()
-			PROXY_ENTRY_3(CreateObject,const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal) 
-				PROXY_PARAMS_3(class_name,iid,object(iid,ppVal))
-			PROXY_ENTRY_1(SetReverse,RemoteObjectFactory* pRemote) 
-				PROXY_PARAMS_1(object(pRemote))
+			
 		END_PROXY_MAP()
 		
 		BEGIN_STUB_MAP()
-			STUB_ENTRY_3(CreateObject,const OOObj::string_t, const OOObj::guid_t&, OOObj::Object**)
+			STUB_ENTRY_3(CreateObject,const OOObj::char_t*, const OOObj::guid_t&, OOObj::Object**)
 			STUB_ENTRY_1(SetReverse,RemoteObjectFactory*)
 		END_STUB_MAP()
 	END_DECLARE_AUTO_PROXY_STUB()
@@ -33,7 +37,7 @@ namespace OOCore
 			STUB_ENTRY_1(StopPending,OOObj::bool_t*)
 			STUB_ENTRY_0(StayAlive)
 		END_STUB_MAP()
-	END_DECLARE_AUTO_PROXY_STUB()
+	END_DECLARE_AUTO_PROXY_STUB()*/
 };
 
 #endif // OOCORE_OOCORE_PS_H_INCLUDED_

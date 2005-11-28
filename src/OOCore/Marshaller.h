@@ -48,7 +48,7 @@ namespace IOWrappers
 	bool write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::real8_t& val, bool response);
 	bool write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::cookie_t& val, bool response);
 	bool write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::guid_t& val, bool response);
-	bool write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::string_t val, bool response);
+	bool write_param(Marshaller_Base* mshl, OOCore::OutputStream* output, const OOObj::char_t* val, bool response);
 
 	template <class T>
 	bool read_param(Marshaller_Base* mshl, OOCore::InputStream* input, T* val, bool response)

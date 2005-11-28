@@ -21,7 +21,7 @@ public:
 	int open_transport();
 	int close_transport();
 
-	OOObj::int32_t CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
+	OOObj::int32_t CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
 	
 protected:
 	virtual ~Transport_Impl(void);

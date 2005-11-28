@@ -154,7 +154,7 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 }
 
 OOObj::int32_t 
-OOCore::Transport_Impl::CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
+OOCore::Transport_Impl::CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 

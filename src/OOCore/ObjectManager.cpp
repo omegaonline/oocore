@@ -436,7 +436,7 @@ OOCore::ObjectManager::SendAndReceive(OutputStream* output, OOObj::uint32_t tran
 }
 
 OOObj::int32_t 
-OOCore::ObjectManager::CreateRemoteObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
+OOCore::ObjectManager::CreateRemoteObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -451,7 +451,7 @@ OOCore::ObjectManager::CreateRemoteObject(const OOObj::string_t class_name, cons
 }
 
 OOObj::int32_t 
-OOCore::ObjectManager::CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
+OOCore::ObjectManager::CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
 {
 	// DO THE BLACK MAGIC HERE!
 

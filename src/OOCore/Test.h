@@ -17,7 +17,13 @@ namespace OOCore
 		DECLARE_IID(OOCore_Export);
 	};
 
-	BEGIN_DECLARE_AUTO_PROXY_STUB(Test)
+	BEGIN_AUTO_PROXY_STUB(Test)
+		METHOD(Array_Test_Out,2,((out),OOObj::uint32_t*,count,(out)(size_is(count)),OOObj::uint16_t**,pArray))
+		METHOD(Array_Test_In,2,((in),OOObj::uint32_t,count,(in)(size_is(count)),OOObj::uint16_t*,pArray))	
+		METHOD(Array_Test_InOut,2,((in)(out),OOObj::uint32_t*,count,(in)(out)(size_is(count)),OOObj::uint16_t**,pArray))
+	END_AUTO_PROXY_STUB()
+
+/*	BEGIN_DECLARE_AUTO_PROXY_STUB(Test)
 		BEGIN_PROXY_MAP()
 			PROXY_ENTRY_2(Array_Test_In,OOObj::uint32_t count,OOObj::uint16_t* pArray)
 				PROXY_PARAMS_2(count,array(pArray,0))
@@ -32,7 +38,7 @@ namespace OOCore
 			STUB_ENTRY_2(Array_Test_Out,OOObj::uint32_t*,OOObj::uint16_t**)
 			STUB_ENTRY_2(Array_Test_InOut,OOObj::uint32_t*,OOObj::uint16_t**)
 		END_STUB_MAP()
-	END_DECLARE_AUTO_PROXY_STUB()
+	END_DECLARE_AUTO_PROXY_STUB()*/
 
 };
 

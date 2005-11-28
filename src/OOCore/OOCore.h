@@ -81,7 +81,7 @@ namespace OOCore
 	class RemoteObjectFactory : public OOObj::Object
 	{
 	public:
-		virtual OOObj::int32_t CreateObject(const OOObj::string_t class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal) = 0;
+		virtual OOObj::int32_t CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal) = 0;
 		virtual OOObj::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
 
 		DECLARE_IID(OOCore_Export);

@@ -15,7 +15,7 @@ namespace Marshall_A
 class StringHolder
 {
 public:
-	StringHolder(OOObj::string_t str) :
+	StringHolder(OOObj::char_t* str) :
 		m_str(str)
 	{
 		ACE_NEW_NORETURN(m_node,node);
@@ -38,7 +38,7 @@ public:
 		}
 	}
 
-	const OOObj::string_t& const_ref() const
+	const OOObj::char_t*& const_ref() const
 	{
 		return m_node->m_str;
 	}
@@ -48,12 +48,12 @@ private:
 
 	struct node
 	{
-		OOObj::string_t m_str;
+		OOObj::char_t* m_str;
 		unsigned long m_refcount;
 	};
 
 	node* m_node;
-	OOObj::string_t m_str;
+	OOObj::char_t* m_str;
 };
 
 namespace IOWrappers

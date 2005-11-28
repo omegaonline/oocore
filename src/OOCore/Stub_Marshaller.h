@@ -164,9 +164,9 @@ template <> inline const OOObj::guid_t& Stub_Marshaller::unpack()
 	return OOObj::guid_t::NIL;
 }
 
-template <> inline const OOObj::string_t& Stub_Marshaller::unpack()
+template <> inline const OOObj::char_t*& Stub_Marshaller::unpack()
 {
-	static const OOObj::string_t null_string = 0;
+	static const OOObj::char_t* null_string = 0;
 
 	OOObj::uint32_t len;
 	if (m_input->ReadULong(len) != 0)
@@ -203,9 +203,9 @@ template <> inline const OOObj::string_t& Stub_Marshaller::unpack()
 	return p->value().const_ref();
 }
 
-template <> inline const OOObj::string_t Stub_Marshaller::unpack()
+template <> inline const OOObj::char_t* Stub_Marshaller::unpack()
 {
-	static const OOObj::string_t null_string = 0;
+	static const OOObj::char_t* null_string = 0;
 
 	OOObj::uint32_t len;
 	if (m_input->ReadULong(len) != 0)

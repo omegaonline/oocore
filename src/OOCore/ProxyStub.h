@@ -3,6 +3,11 @@
 
 #include <map>
 
+#include <boost/preprocessor.hpp> 
+#include <boost/mpl/equal_to.hpp>
+#include <boost/mpl/comparison.hpp>
+#include <boost/mpl/int.hpp>
+
 #include "./Proxy_Marshaller.h"
 #include "./Stub_Marshaller.h"
 #include "./Delegate.h"
@@ -79,36 +84,60 @@ namespace Marshall_A
 	};
 };
 
-namespace Marshall_A
+#include "./ProxyStub_Macros.h"
+#include "./ProxyStub_Types.h"
+
+namespace OOCore
+{
+namespace Proxy_Stub
 {
 	template <class OBJECT>
 	class ProxyStub_Impl : 
-		public ProxyStub_Base,
 		public OBJECT,
 		public OOCore::Stub
 	{
 	public:
 		// Proxy constructor
 		ProxyStub_Impl(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) :
-			ProxyStub_Base(manager,key)
+			m_bStub(false),
+			m_key(key),
+			m_manager(manager),
+			m_refcount(0)
 		{}
 
 		// Stub constructor
 		ProxyStub_Impl(OOCore::ProxyStubManager* manager, OOObj::Object* obj) :
-			ProxyStub_Base(manager,obj)
+			m_bStub(true),
+			m_object(obj),
+ 			m_manager(manager),
+			m_refcount(0)
 		{}
 
 		OOObj::int32_t AddRef()
 		{
-			return AddRef_i();
+			++m_refcount;
+			return 0;
 		}
 
-		OOObj::int32_t Release()
+		OOObj::int32_t Release_i(int id)
 		{
-			return Release_i();
+			if (m_bStub)
+			{
+				if (--m_refcount == 0)
+					delete this;
+			}
+			else
+			{
+				if (--m_refcount == 0)
+				{
+					method(id).send_and_recv();
+					delete this;
+				}
+			}
+			return 0;
 		}
 
-		OOObj::int32_t QueryInterface(const OOObj::guid_t& iid, OOObj::Object** ppVal)
+		OOObj::int32_t QueryInterface_i(int id, const OOObj::guid_t& iid, OOObj::Object** ppVal)
 		{
 			if (!ppVal)
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
@@ -135,7 +164,12 @@ namespace Marshall_A
 					return 0;
 				}
 
-				return QueryInterface_i(iid,ppVal);
+				Proxy_Stub::object_t<OOObj::Object**> ppVal_stub(ppVal,iid);
+				marshaller_t qi_mshl(method(id));
+				qi_mshl << iid;
+				OOObj::int32_t ret = qi_mshl.send_and_recv();
+				qi_mshl >> ppVal_stub;
+				return ret;
 			}
 		}
 
@@ -143,59 +177,18 @@ namespace Marshall_A
 		{
 			return Invoke_i(method,ret_code,input,output);
 		}
+
+	protected:
+		marshaller_t method(int id	/* TODO Extra flags here! */);
+
+	private:
+		const bool m_bStub;
+		OOObj::cookie_t m_key;
+		OOCore::Object_Ptr<OOObj::Object> m_object;
+		OOCore::Object_Ptr<OOCore::ProxyStubManager> m_manager;
+		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	};
 };
-
-// Proxy Stub macros
-#define CREATE_AUTO_STUB(iface,manager,obj) \
-	iface##_ProxyStub::create_stub(manager,obj)
-
-#define CREATE_AUTO_PROXY(iface,manager,key) \
-	iface##_ProxyStub::create_proxy(manager,key)
-
-#define BEGIN_DECLARE_AUTO_PROXY_STUB(iface) \
-	class iface##_ProxyStub : public Marshall_A::ProxyStub_Impl<iface> { \
-	public: static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) { iface##_ProxyStub* proxy; ACE_NEW_RETURN(proxy,iface##_ProxyStub(manager,key),0); return proxy;} \
-	static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, OOObj::Object* obj) { iface##_ProxyStub* stub; ACE_NEW_RETURN(stub,iface##_ProxyStub(manager,obj),0); return stub;} \
-	private: typedef iface iface_class; typedef iface##_ProxyStub this_class; \
-	iface##_ProxyStub(OOCore::ProxyStubManager* manager, OOObj::Object* obj) : Marshall_A::ProxyStub_Impl<iface>(manager,obj) { init_delegates(obj); } \
-	iface##_ProxyStub(OOCore::ProxyStubManager* manager, const OOObj::cookie_t& key) : 	Marshall_A::ProxyStub_Impl<iface>(manager,key) {}
-#define END_DECLARE_AUTO_PROXY_STUB() };
-
-#define BEGIN_PROXY_MAP()
-
-#define PROXY_ENTRY_0(function) \
-	private: char function##_id; public: OOObj::int32_t function(void) { return (method(offsetof(this_class,function##_id)))(); }
-
-#define PROXY_ENTRY_1(function,p1) \
-	private: char function##_id; public: OOObj::int32_t function(p1) { return (method(offsetof(this_class,function##_id))
-#define PROXY_PARAMS_1(m1) <<m1)(); } 
-
-#define PROXY_ENTRY_2(function,p1,p2) \
-	private: char function##_id; public: OOObj::int32_t function(p1,p2) { return (method(offsetof(this_class,function##_id))
-#define PROXY_PARAMS_2(m1,m2) <<m1<<m2)(); } 
-
-#define PROXY_ENTRY_3(function,p1,p2,p3) \
-	private: char function##_id; public: OOObj::int32_t function(p1,p2,p3) { return (method(offsetof(this_class,function##_id))
-#define PROXY_PARAMS_3(m1,m2,m3) <<m1<<m2<<m3)(); } 
-
-#define PROXY_ENTRY_4(function,p1,p2,p3,p4) \
-	private: char function##_id; public: OOObj::int32_t function(p1,p2,p3,p4) { return (method(offsetof(this_class,function##_id))
-#define PROXY_PARAMS_4(m1,m2,m3,m4) <<m1<<m2<<m3<<m4)(); } 
-#define END_PROXY_MAP()
-
-#define BEGIN_STUB_MAP() \
-	private: void init_delegates(OOObj::Object* obj) {
-#define STUB_ENTRY_0(function) \
-	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D0())->bind<iface_class,&iface_class::function>(obj));
-#define STUB_ENTRY_1(function,p1) \
-	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D1<p1>())->bind<iface_class,&iface_class::function>(obj));
-#define STUB_ENTRY_2(function,p1,p2) \
-	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D2<p1,p2>())->bind<iface_class,&iface_class::function>(obj));
-#define STUB_ENTRY_3(function,p1,p2,p3) \
-	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D3<p1,p2,p3>())->bind<iface_class,&iface_class::function>(obj));
-#define STUB_ENTRY_4(function,p1,p2,p3,p4) \
-	add_delegate(offsetof(this_class,function##_id),(new Marshall_A::Delegate::D4<p1,p2,p3,p4>())->bind<iface_class,&iface_class::function>(obj));
-#define END_STUB_MAP() }
+};
 
 #endif // OOCORE_PROXYSTUB_H_INCLUDED_

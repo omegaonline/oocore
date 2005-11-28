@@ -26,11 +26,11 @@ namespace OOObj
 	OOCore_Export void Term();	
 	OOCore_Export void* Alloc(size_t size);
 	OOCore_Export void Free(void* p);
-	OOCore_Export OOObj::int32_t CreateObject(const string_t service_name, const guid_t& iid, Object** ppVal);
+	OOCore_Export OOObj::int32_t CreateObject(const char_t* service_name, const guid_t& iid, Object** ppVal);
 	OOCore_Export int RegisterProxyStub(const OOObj::guid_t& iid, const char* dll_name);
 	
 	template <class T>
-	int CreateObject(const string_t service_name, T** ppVal)
+	int CreateObject(const char_t* service_name, T** ppVal)
 	{
 		return CreateObject(service_name,T::IID,reinterpret_cast<Object**>(ppVal));
 	}

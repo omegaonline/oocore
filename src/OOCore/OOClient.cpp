@@ -7,7 +7,7 @@
 #include "./Binding.h"
 
 OOCore_Export int 
-OOObj::Init()
+OOObject::Init()
 {
 	int ret = 0;
 
@@ -16,7 +16,7 @@ OOObj::Init()
 	{
 		if ((ret = OOCore::ENGINE::instance()->open()) == 0)
 		{
-			if ((ret = Impl::Connection_Manager::init()) == 0)
+			if ((ret = OOCore::Impl::Connection_Manager::init()) == 0)
 			{
 			}
 
@@ -32,9 +32,9 @@ OOObj::Init()
 }
 
 OOCore_Export void 
-OOObj::Term()
+OOObject::Term()
 {
-	Impl::CONNECTION_MANAGER::instance()->close();
+	OOCore::Impl::CONNECTION_MANAGER::instance()->close();
 
 	OOCore::ENGINE::instance()->shutdown();
 
@@ -42,25 +42,27 @@ OOObj::Term()
 }
 
 OOCore_Export int 
-OOObj::CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
+OOObject::CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return Impl::CONNECTION_MANAGER::instance()->CreateObject(class_name,iid,ppVal);
+	return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateObject(class_name,iid,ppVal);
 }
 
 OOCore_Export void* 
-OOObj::Alloc(size_t size)
+OOObject::Alloc(size_t size)
 {
 	return ACE_OS::malloc(size);
 }
 
 OOCore_Export void 
-OOObj::Free(void* p)
+OOObject::Free(void* p)
 {
 	ACE_OS::free(p);
 }
 
 OOCore_Export int 
-OOObj::RegisterProxyStub(const OOObj::guid_t& iid, const char* dll_name)
+OOObject::RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
 {
-	return Impl::BINDING::instance()->rebind(Impl::guid_to_string(iid).c_str(),ACE_TEXT_ALWAYS_WCHAR(dll_name));
+	ACE_TString value(OOCore::Impl::guid_to_string(iid));
+
+	return OOCore::Impl::BINDING::instance()->rebind(value.c_str(),ACE_TEXT_ALWAYS_WCHAR(dll_name));
 }

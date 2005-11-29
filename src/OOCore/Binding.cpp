@@ -3,7 +3,7 @@
 #include <ace/OS.h>
 #include <ace/Process.h>
 
-Impl::Binding::Binding() :
+OOCore::Impl::Binding::Binding() :
 	m_unbind_pid(false)
 {
 #if (defined (ACE_WIN32) && defined (UNICODE))
@@ -15,7 +15,7 @@ Impl::Binding::Binding() :
 	m_context.open(m_context.name_options()->context(),1);
 }
 
-Impl::Binding::~Binding()
+OOCore::Impl::Binding::~Binding()
 {
 	if (m_unbind_pid)
 		m_context.unbind(ACE_TEXT("pid"));
@@ -24,7 +24,7 @@ Impl::Binding::~Binding()
 }
 
 int 
-Impl::Binding::launch(bool bAsServer)
+OOCore::Impl::Binding::launch(bool bAsServer)
 {
 	// Get the stored pid
 	ACE_TCHAR* pszType = NULL;
@@ -73,7 +73,7 @@ Impl::Binding::launch(bool bAsServer)
 }
 
 int 
-Impl::Binding::launch_server()
+OOCore::Impl::Binding::launch_server()
 {
 	// Find what the server is called
 	ACE_TString exe_name;
@@ -124,19 +124,19 @@ Impl::Binding::launch_server()
 }
 
 const ACE_TCHAR* 
-Impl::Binding::dll_name(void)
+OOCore::Impl::Binding::dll_name(void)
 {
 	return ACE_TEXT("OOCore");
 }
 
 const ACE_TCHAR* 
-Impl::Binding::name(void)
+OOCore::Impl::Binding::name(void)
 {
 	return ACE_TEXT("Binding");
 }
 
 int 
-Impl::Binding::find(const ACE_TCHAR* name, ACE_NS_WString& value)
+OOCore::Impl::Binding::find(const ACE_TCHAR* name, ACE_NS_WString& value)
 {
 	ACE_TCHAR* pszType = NULL;
 	int ret = m_context.resolve(name,value,pszType);
@@ -145,7 +145,7 @@ Impl::Binding::find(const ACE_TCHAR* name, ACE_NS_WString& value)
 }
 
 int 
-Impl::Binding::rebind(const ACE_TCHAR* name, const ACE_NS_WString& value)
+OOCore::Impl::Binding::rebind(const ACE_TCHAR* name, const ACE_NS_WString& value)
 {
 	// Use our port
 	return m_context.rebind(name,value);

@@ -72,13 +72,13 @@ namespace OOCore
 		Object_Impl() : m_refcount(0) 
 		{ }
 
-		OOObj::int32_t AddRef()
+		OOObject::int32_t AddRef()
 		{
 			++m_refcount;
 			return 0;
 		}
 
-		OOObj::int32_t Release()
+		OOObject::int32_t Release()
 		{
 			if (--m_refcount==0)
 				delete this;
@@ -86,12 +86,12 @@ namespace OOCore
 			return 0;
 		}
 
-		OOObj::int32_t QueryInterface(const OOObj::guid_t& iid, OOObj::Object** ppVal)
+		OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal)
 		{
 			if (!ppVal)
 				return -1;
 
-			if (iid==OOObj::Object::IID ||
+			if (iid==OOObject::Object::IID ||
 				iid==OBJECT::IID)
 			{
 				++m_refcount;
@@ -120,13 +120,13 @@ namespace OOCore
 		virtual ~Object_Root()
 		{}
 
-		OOObj::int32_t Internal_AddRef()
+		OOObject::int32_t Internal_AddRef()
 		{
 			++m_refcount;
 			return 0;
 		}
 
-		OOObj::int32_t Internal_Release()
+		OOObject::int32_t Internal_Release()
 		{
 			if (--m_refcount==0)
 				delete this;
@@ -134,17 +134,17 @@ namespace OOCore
 			return 0;
 		}
 
-		OOObj::int32_t Internal_QueryInterface(const OOObj::guid_t& iid, OOObj::Object** ppVal)
+		OOObject::int32_t Internal_QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal)
 		{
 			if (!ppVal)
 				return -1;
 
-			for (const OOObj::guid_t* g=getQIEntries();g!=0;++g)
+			for (const OOObject::guid_t* g=getQIEntries();g!=0;++g)
 			{
 				if (*g == iid)
 				{
 					Internal_AddRef();
-					*ppVal = reinterpret_cast<OOObj::Object*>(this);
+					*ppVal = reinterpret_cast<OOObject::Object*>(this);
 					return 0;
 				}
 			}
@@ -152,7 +152,7 @@ namespace OOCore
 			return -1;
 		}
 
-		virtual const OOObj::guid_t* getQIEntries() = 0;
+		virtual const OOObject::guid_t* getQIEntries() = 0;
 		
 	private:
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
@@ -161,11 +161,11 @@ namespace OOCore
 
 #define BEGIN_INTERFACE_MAP(cls) \
 	public: \
-	OOObj::int32_t AddRef() {return Internal_AddRef();} \
-	OOObj::int32_t Release() {return Internal_Release();} \
-	OOObj::int32_t QueryInterface(const OOObj::guid_t& iid, OOObj::Object** ppVal) {return Internal_QueryInterface(iid,ppVal);} \
+	OOObject::int32_t AddRef() {return Internal_AddRef();} \
+	OOObject::int32_t Release() {return Internal_Release();} \
+	OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) {return Internal_QueryInterface(iid,ppVal);} \
 	private: \
-	const OOObj::guid_t* getQIEntries() {static const OOObj::guid_t* QIEntries[] = { &OOObj::Object::IID,
+	const OOObject::guid_t* getQIEntries() {static const OOObject::guid_t* QIEntries[] = { &OOObject::Object::IID,
 
 #define INTERFACE_ENTRY(object) \
 	&object::IID,

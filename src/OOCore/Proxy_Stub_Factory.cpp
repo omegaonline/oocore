@@ -2,11 +2,13 @@
 
 #include "./Binding.h"
 
-Impl::Proxy_Stub_Factory::proxystub_node Impl::Proxy_Stub_Factory::m_core_node = {ACE_DLL(), &Impl::Proxy_Stub_Factory::CreateProxy, &Impl::Proxy_Stub_Factory::CreateStub};
+OOCore::Impl::Proxy_Stub_Factory::proxystub_node OOCore::Impl::Proxy_Stub_Factory::m_core_node = {ACE_DLL(), &Impl::Proxy_Stub_Factory::CreateProxy, &Impl::Proxy_Stub_Factory::CreateStub};
 
 int 
-Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, const OOObj::cookie_t& cookie, OOObj::Object** proxy)
+OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy)
 {
+	// TODO optimize this by reusing Proxies
+
 	// Get the proxy/stub node
 	proxystub_node* node;
 	if (load_proxy_stub(iid,node) != 0)
@@ -20,8 +22,10 @@ Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const 
 }
 
 int 
-Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, OOObj::Object* obj, OOCore::Stub** ppStub)
+OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::Stub** ppStub)
 {
+	// TODO optimize this by reusing Stubs
+
 	// Get the proxy/stub node
 	proxystub_node* node;
 	if (load_proxy_stub(iid,node) != 0)
@@ -35,16 +39,16 @@ Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const O
 }
 
 int 
-Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObj::guid_t& iid, proxystub_node*& node)
+OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, proxystub_node*& node)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	std::map<OOObj::guid_t,proxystub_node*>::const_iterator i=m_dll_map.find(iid);
+	std::map<OOObject::guid_t,proxystub_node*>::const_iterator i=m_dll_map.find(iid);
 	if (i==m_dll_map.end())
 	{
 		// Find the stub DLL name
 		ACE_NS_WString dll_name;
-		if (BINDING::instance()->find(Impl::guid_to_string(iid).c_str(),dll_name) != 0)
+		if (BINDING::instance()->find(OOCore::Impl::guid_to_string(iid).c_str(),dll_name) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) No proxy/stub registered\n")),-1);
 			
 		// Check if it's us
@@ -81,7 +85,7 @@ Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObj::guid_t& iid, proxystub_no
 		}
 
 		// Add the node info to the map
-		if (!m_dll_map.insert(std::map<OOObj::guid_t,proxystub_node*>::value_type(iid,new_node)).second)
+		if (!m_dll_map.insert(std::map<OOObject::guid_t,proxystub_node*>::value_type(iid,new_node)).second)
 		{
 			delete new_node;
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind proxy/stub info\n")),-1);
@@ -104,7 +108,7 @@ Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObj::guid_t& iid, proxystub_no
 #endif
 
 int 
-Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, const OOObj::cookie_t& key, OOObj::Object** proxy)
+OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy)
 {
 	if (iid==OOCore::RemoteObjectFactory::IID)
 		*proxy = CREATE_AUTO_PROXY(OOCore::RemoteObjectFactory,manager,key);
@@ -125,7 +129,7 @@ Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const O
 }
 
 int 
-Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, OOObj::Object* obj, OOCore::Stub** stub)
+OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::Stub** stub)
 {
 	if (iid==OOCore::RemoteObjectFactory::IID)
 		*stub = CREATE_AUTO_STUB(OOCore::RemoteObjectFactory,manager,obj);
@@ -139,7 +143,7 @@ Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OO
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid Stub IID\n")),-1);
 	
 	if (*stub==0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy create failed\n")),-1);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Stub create failed\n")),-1);
 
 	(*stub)->AddRef();
 	return 0;

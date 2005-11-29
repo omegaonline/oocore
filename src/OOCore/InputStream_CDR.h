@@ -13,6 +13,8 @@
 
 #include "./OOCore_Util.h"
 
+namespace OOCore
+{
 namespace Impl
 {
 
@@ -32,24 +34,22 @@ private:
 		return ((*this >> val) ? 0 : -1);
 	}
 
-// OOObj::InputStream members
+// OOObject::InputStream members
 public:
-	int ReadBoolean(OOObj::bool_t& val);
-	int ReadChar(OOObj::char_t& val);
-	int ReadByte(OOObj::byte_t& val);
-	int ReadShort(OOObj::int16_t& val);
-	int ReadUShort(OOObj::uint16_t& val);
-	int ReadLong(OOObj::int32_t& val);
-	int ReadULong(OOObj::uint32_t& val);
-	int ReadLongLong(OOObj::int64_t& val);
-	int ReadULongLong(OOObj::uint64_t& val);
-	int ReadFloat(OOObj::real4_t& val);
-	int ReadDouble(OOObj::real8_t& val);
-	int ReadCookie(OOObj::cookie_t& val);
-	int ReadGuid(OOObj::guid_t& val);
-	int ReadBytes(OOObj::byte_t* val, OOObj::uint32_t len);
+	int ReadBoolean(OOObject::bool_t& val);
+	int ReadChar(OOObject::char_t& val);
+	int ReadByte(OOObject::byte_t& val);
+	int ReadShort(OOObject::int16_t& val);
+	int ReadUShort(OOObject::uint16_t& val);
+	int ReadLong(OOObject::int32_t& val);
+	int ReadULong(OOObject::uint32_t& val);
+	int ReadLongLong(OOObject::int64_t& val);
+	int ReadULongLong(OOObject::uint64_t& val);
+	int ReadFloat(OOObject::real4_t& val);
+	int ReadDouble(OOObject::real8_t& val);
 };
 
+};
 };
 
 #endif // OOCORE_INPUTSTREAM_CDR_H_INCLUDED_

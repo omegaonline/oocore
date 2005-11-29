@@ -15,6 +15,8 @@
 
 #include "./OOCore_export.h"
 
+namespace OOCore
+{
 namespace Impl
 {
 
@@ -43,6 +45,7 @@ private:
 
 typedef ACE_Singleton<Binding, ACE_Thread_Mutex> BINDING;
 
+};
 };
 
 #endif // _OOCORE_BINDING_H_INCLUDED_

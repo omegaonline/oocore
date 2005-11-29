@@ -5,59 +5,53 @@
 
 namespace OOCore
 {
-	class InputStream : public OOObj::Object
+	class InputStream : public OOObject::Object
 	{
 	public:
-		virtual int ReadBoolean(OOObj::bool_t& val) = 0;
-		virtual int ReadChar(OOObj::char_t& val) = 0;
-		virtual int ReadByte(OOObj::byte_t& val) = 0;
-		virtual int ReadShort(OOObj::int16_t& val) = 0;
-		virtual int ReadUShort(OOObj::uint16_t& val) = 0;
-		virtual int ReadLong(OOObj::int32_t& val) = 0;
-		virtual int ReadULong(OOObj::uint32_t& val) = 0;
-		virtual int ReadLongLong(OOObj::int64_t& val) = 0;
-		virtual int ReadULongLong(OOObj::uint64_t& val) = 0;
-		virtual int ReadFloat(OOObj::real4_t& val) = 0;
-		virtual int ReadDouble(OOObj::real8_t& val) = 0;
-		virtual int ReadCookie(OOObj::cookie_t& val) = 0;
-		virtual int ReadGuid(OOObj::guid_t& val) = 0;
-		virtual int ReadBytes(OOObj::byte_t* val, OOObj::uint32_t len) = 0;
-
+		virtual int ReadBoolean(OOObject::bool_t& val) = 0;
+		virtual int ReadChar(OOObject::char_t& val) = 0;
+		virtual int ReadByte(OOObject::byte_t& val) = 0;
+		virtual int ReadShort(OOObject::int16_t& val) = 0;
+		virtual int ReadUShort(OOObject::uint16_t& val) = 0;
+		virtual int ReadLong(OOObject::int32_t& val) = 0;
+		virtual int ReadULong(OOObject::uint32_t& val) = 0;
+		virtual int ReadLongLong(OOObject::int64_t& val) = 0;
+		virtual int ReadULongLong(OOObject::uint64_t& val) = 0;
+		virtual int ReadFloat(OOObject::real4_t& val) = 0;
+		virtual int ReadDouble(OOObject::real8_t& val) = 0;
+		
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class OutputStream : public OOObj::Object
+	class OutputStream : public OOObject::Object
 	{
 	public:
 		virtual int Append(OutputStream* add) = 0;
 
-		virtual int WriteBoolean(OOObj::bool_t val) = 0;
-		virtual int WriteChar(OOObj::char_t val) = 0;
-		virtual int WriteByte(OOObj::byte_t val) = 0;
-		virtual int WriteShort(OOObj::int16_t val) = 0;
-		virtual int WriteUShort(OOObj::uint16_t val) = 0;
-		virtual int WriteLong(OOObj::int32_t val) = 0;
-		virtual int WriteULong(OOObj::uint32_t val) = 0;
-		virtual int WriteLongLong(OOObj::int64_t val) = 0;
-		virtual int WriteULongLong(OOObj::uint64_t val) = 0;
-		virtual int WriteFloat(OOObj::real4_t val) = 0;
-		virtual int WriteDouble(OOObj::real8_t val) = 0;
-		virtual int WriteCookie(const OOObj::cookie_t& val) = 0;
-		virtual int WriteGuid(const OOObj::guid_t& val) = 0;
-		virtual int WriteBytes(const OOObj::byte_t* val, OOObj::uint32_t len) = 0;
-
+		virtual int WriteBoolean(OOObject::bool_t val) = 0;
+		virtual int WriteChar(OOObject::char_t val) = 0;
+		virtual int WriteByte(OOObject::byte_t val) = 0;
+		virtual int WriteShort(OOObject::int16_t val) = 0;
+		virtual int WriteUShort(OOObject::uint16_t val) = 0;
+		virtual int WriteLong(OOObject::int32_t val) = 0;
+		virtual int WriteULong(OOObject::uint32_t val) = 0;
+		virtual int WriteLongLong(OOObject::int64_t val) = 0;
+		virtual int WriteULongLong(OOObject::uint64_t val) = 0;
+		virtual int WriteFloat(OOObject::real4_t val) = 0;
+		virtual int WriteDouble(OOObject::real8_t val) = 0;
+				
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class Stub : public OOObj::Object
+	class Stub : public OOObject::Object
 	{
 	public:
-		virtual int Invoke(unsigned int method, OOObj::int32_t& ret_code, InputStream* input, OutputStream* output) = 0;
+		virtual int Invoke(unsigned int method, OOObject::int32_t& ret_code, InputStream* input, OutputStream* output) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
 	
-	class Transport : public OOObj::Object
+	class Transport : public OOObject::Object
 	{
 	public:
 		virtual int CreateOutputStream(OutputStream** ppStream) = 0;
@@ -66,41 +60,41 @@ namespace OOCore
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class ProxyStubManager : public OOObj::Object
+	class ProxyStubManager : public OOObject::Object
 	{
 	public:
-		virtual int CreateProxy(const OOObj::guid_t& iid, const OOObj::cookie_t& key, OOObj::Object** ppVal) = 0;
-		virtual int CreateStub(const OOObj::guid_t& iid, OOObj::Object* pObj, OutputStream* output) = 0;
-		virtual int CreateRequest(const OOObj::cookie_t& proxy_key, OOObj::uint32_t method, OOObj::bool_t sync, OOObj::uint32_t* trans_id, OutputStream** output) = 0;
-		virtual int CancelRequest(OOObj::uint32_t trans_id) = 0;
-		virtual int SendAndReceive(OutputStream* output, OOObj::uint32_t trans_id, InputStream** input) = 0;
+		virtual int CreateProxy(const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** ppVal) = 0;
+		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OutputStream* output) = 0;
+		virtual int CreateRequest(const OOObject::cookie_t& proxy_key, OOObject::uint32_t method, OOObject::bool_t sync, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
+		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
+		virtual int SendAndReceive(OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
 		
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class RemoteObjectFactory : public OOObj::Object
+	class RemoteObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual OOObj::int32_t CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal) = 0;
-		virtual OOObj::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
+		virtual OOObject::int32_t CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class Server : public OOObj::Object
+	class Server : public OOObject::Object
 	{
 	public:
-		virtual OOObj::int32_t Stop(OOObj::bool_t force, OOObj::uint16_t* remaining) = 0;
-		virtual OOObj::int32_t StopPending(OOObj::bool_t* pending) = 0;
-		virtual OOObj::int32_t StayAlive() = 0;
+		virtual OOObject::int32_t Stop(OOObject::bool_t force, OOObject::uint16_t* remaining) = 0;
+		virtual OOObject::int32_t StopPending(OOObject::bool_t* pending) = 0;
+		virtual OOObject::int32_t StayAlive() = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
 	
-	typedef OOCore_Export int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObj::guid_t& iid, const OOObj::cookie_t& key, OOObj::Object** proxy);
-	typedef OOCore_Export int (*CreateStub_Function)(ProxyStubManager* manager, const OOObj::guid_t& iid, OOObj::Object* obj, Stub** stub);
+	typedef OOCore_Export int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
+	typedef OOCore_Export int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, Stub** stub);
 
-	OOCore_Export int LaunchServer();
+	OOCore_Export int InitAsServer();
 };
 
 #endif // OOCORE_OOCORE_H_INCLUDED_

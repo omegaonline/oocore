@@ -14,7 +14,7 @@
 
 #include "./OOCore_export.h"
 
-namespace OOObj
+namespace OOObject
 {
 	typedef ACE_CDR::Boolean			bool_t;
 	typedef ACE_CDR::Char				char_t;
@@ -36,8 +36,8 @@ namespace OOObj
 		uint16_t	Data3;
 		byte_t		Data4[8];
 
-		bool operator==(const OOObj::guid_t& rhs) const;
-		bool operator<(const OOObj::guid_t& rhs) const;
+		bool operator==(const OOObject::guid_t& rhs) const;
+		bool operator<(const OOObject::guid_t& rhs) const;
 
 		static const guid_t NIL;
 	};

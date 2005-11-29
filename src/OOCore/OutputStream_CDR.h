@@ -13,6 +13,8 @@
 
 #include "./OOCore_Util.h"
 
+namespace OOCore
+{
 namespace Impl
 {
 
@@ -38,22 +40,20 @@ private:
 
 public:
 	int Append(OutputStream* add);
-	int WriteBoolean(OOObj::bool_t val);
-	int WriteChar(OOObj::char_t val);
-	int WriteByte(OOObj::byte_t val);
-	int WriteShort(OOObj::int16_t val);
-	int WriteUShort(OOObj::uint16_t val);
-	int WriteLong(OOObj::int32_t val);
-	int WriteULong(OOObj::uint32_t val);
-	int WriteLongLong(OOObj::int64_t val);
-	int WriteULongLong(OOObj::uint64_t val);
-	int WriteFloat(OOObj::real4_t val);
-	int WriteDouble(OOObj::real8_t val);
-	int WriteCookie(const OOObj::cookie_t& val);
-	int WriteGuid(const OOObj::guid_t& val);
-	int WriteBytes(const OOObj::byte_t* val, OOObj::uint32_t len);
+	int WriteBoolean(OOObject::bool_t val);
+	int WriteChar(OOObject::char_t val);
+	int WriteByte(OOObject::byte_t val);
+	int WriteShort(OOObject::int16_t val);
+	int WriteUShort(OOObject::uint16_t val);
+	int WriteLong(OOObject::int32_t val);
+	int WriteULong(OOObject::uint32_t val);
+	int WriteLongLong(OOObject::int64_t val);
+	int WriteULongLong(OOObject::uint64_t val);
+	int WriteFloat(OOObject::real4_t val);
+	int WriteDouble(OOObject::real8_t val);
 };
 
+};
 };
 
 #endif // OOCORE_OUTPUTSTREAM_CDR_H_INCLUDED_

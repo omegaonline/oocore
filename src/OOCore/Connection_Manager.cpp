@@ -7,7 +7,7 @@
 #include "./Engine.h"
 
 int 
-Impl::Connection_Manager::init(void)
+OOCore::Impl::Connection_Manager::init(void)
 {
 	if (BINDING::instance()->launch(false) != 0)
 		return -1;
@@ -35,7 +35,7 @@ Impl::Connection_Manager::init(void)
 }
 
 ssize_t 
-Impl::Connection_Manager::send_n(ACE_Message_Block* mb)
+OOCore::Impl::Connection_Manager::send_n(ACE_Message_Block* mb)
 {
 	return this->peer().send(mb,0);
 }

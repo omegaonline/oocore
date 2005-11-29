@@ -16,6 +16,8 @@
 #include "./Transport_Svc_Handler.h"
 #include "./ObjectManager.h"
 
+namespace OOCore
+{
 namespace Impl
 {
 
@@ -37,6 +39,7 @@ private:
 
 typedef ACE_Singleton<Connection_Manager, ACE_Thread_Mutex> CONNECTION_MANAGER;
 
+};
 };
 
 #endif // OOCORE_CONNECTION_MANAGER_H_INCLUDED_

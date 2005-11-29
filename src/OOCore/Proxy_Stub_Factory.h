@@ -17,14 +17,16 @@
 
 #include "./OOCore.h"
 
+namespace OOCore
+{
 namespace Impl
 {
 
 class Proxy_Stub_Factory
 {
 public:
-	int create_proxy(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, const OOObj::cookie_t& cookie, OOObj::Object** proxy);
-	int create_stub(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, OOObj::Object* obj, OOCore::Stub** ppStub);
+	int create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy);
+	int create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::Stub** ppStub);
 
 private:
 	Proxy_Stub_Factory(void) {}
@@ -37,19 +39,20 @@ private:
 		OOCore::CreateProxy_Function proxy_fn;
 		OOCore::CreateStub_Function stub_fn;
 	};
-	std::map<OOObj::guid_t,proxystub_node*> m_dll_map;
+	std::map<OOObject::guid_t,proxystub_node*> m_dll_map;
 	ACE_Thread_Mutex m_lock;
 
 	static proxystub_node m_core_node;
 	
-	static int CreateProxy(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, const OOObj::cookie_t& key, OOObj::Object** proxy);
-	static int CreateStub(OOCore::ProxyStubManager* manager, const OOObj::guid_t& iid, OOObj::Object* obj, OOCore::Stub** stub);
+	static int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
+	static int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::Stub** stub);
 
-	int load_proxy_stub(const OOObj::guid_t& iid, proxystub_node*& node);
+	int load_proxy_stub(const OOObject::guid_t& iid, proxystub_node*& node);
 };
 
 typedef ACE_Singleton<Proxy_Stub_Factory, ACE_Thread_Mutex> PROXY_STUB_FACTORY;
 
+};
 };
 
 #endif // OOCORE_PROXY_STUB_FACTORY_H_INCLUDED_

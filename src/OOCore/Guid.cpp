@@ -2,11 +2,20 @@
 
 #include "./OOCore.h"
 
-const OOObj::guid_t OOObj::guid_t::NIL = {0};
+const OOObject::guid_t OOObject::guid_t::NIL = {0};
 
-static OOObj::guid_t init_i(ACE_Utils::UUID& uuid)
+namespace OOCore
 {
-	OOObj::guid_t ret;
+	namespace Impl
+	{
+		static OOObject::guid_t init_guid(ACE_Utils::UUID& uuid);
+	};
+};
+
+static OOObject::guid_t 
+OOCore::Impl::init_guid(ACE_Utils::UUID& uuid)
+{
+	OOObject::guid_t ret;
 
 	ret.Data1 = uuid.timeLow();
 	ret.Data2 = uuid.timeMid();
@@ -23,20 +32,20 @@ static OOObj::guid_t init_i(ACE_Utils::UUID& uuid)
 	return ret;
 }
 
-OOObj::guid_t 
-Impl::create_guid(const ACE_Utils::UUID& uuid)
+OOObject::guid_t 
+OOCore::Impl::create_guid(const ACE_Utils::UUID& uuid)
 {
-	return init_i(const_cast<ACE_Utils::UUID&>(uuid));
+	return init_guid(const_cast<ACE_Utils::UUID&>(uuid));
 }
 
-OOObj::guid_t 
-Impl::create_guid(const ACE_CString& uuidString)
+OOObject::guid_t 
+OOCore::Impl::create_guid(const ACE_CString& uuidString)
 {
-	return init_i(ACE_Utils::UUID(uuidString));
+	return init_guid(ACE_Utils::UUID(uuidString));
 }
 
 bool 
-OOObj::guid_t::operator ==(const OOObj::guid_t& rhs) const
+OOObject::guid_t::operator ==(const OOObject::guid_t& rhs) const
 {
 	return (Data1==rhs.Data1 &&
 			Data2==rhs.Data2 &&
@@ -45,7 +54,7 @@ OOObj::guid_t::operator ==(const OOObj::guid_t& rhs) const
 }
 
 bool 
-OOObj::guid_t::operator <(const OOObj::guid_t& rhs) const
+OOObject::guid_t::operator <(const OOObject::guid_t& rhs) const
 {
 	if (Data1>rhs.Data1)
 		return false;
@@ -60,7 +69,7 @@ OOObj::guid_t::operator <(const OOObj::guid_t& rhs) const
 }
 
 ACE_TString 
-Impl::guid_to_string(const OOObj::guid_t& guid)
+OOCore::Impl::guid_to_string(const OOObject::guid_t& guid)
 {
 	ACE_TCHAR buf[37];
 	ACE_OS::sprintf(buf,

@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 
-#include "./OOCore_Util.h"
+#include "./OOCore_Impl.h"
 
 namespace OOCore
 {
@@ -17,22 +17,22 @@ class OOCore_Export ObjectManager :
 public:
 	ObjectManager(void);
 	
-	int Open(Transport* transport, OOObj::bool_t AsServer);
+	int Open(Transport* transport, OOObject::bool_t AsServer);
 	int Close();
 	int ProcessMessage(InputStream* input);
-	OOObj::int32_t CreateRemoteObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
+	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 private:
 	virtual ~ObjectManager(void);
 
 	struct response_wait
 	{
-		response_wait(ObjectManager* t, OOObj::uint32_t k, InputStream** i) :
+		response_wait(ObjectManager* t, OOObject::uint32_t k, InputStream** i) :
 			pThis(t), trans_id(k), input(i)
 		{ }
 
 		Object_Ptr<ObjectManager> pThis;
-		OOObj::uint32_t trans_id;
+		OOObject::uint32_t trans_id;
 		InputStream** input;
 	};
 
@@ -41,17 +41,17 @@ private:
 	ACE_Active_Map_Manager<Stub*> m_stub_map;
 	Object_Ptr<RemoteObjectFactory> m_ptrRemoteFactory;
 	Object_Ptr<Transport> m_ptrTransport;
-	std::map<OOObj::uint32_t,Object_Ptr<InputStream> > m_response_map;
-	OOObj::uint32_t m_next_trans_id;
-	std::set<OOObj::uint32_t> m_transaction_set;
+	std::map<OOObject::uint32_t,Object_Ptr<InputStream> > m_response_map;
+	OOObject::uint32_t m_next_trans_id;
+	std::set<OOObject::uint32_t> m_transaction_set;
 	
 	int connect();
 	int accept();
-	int process_request(InputStream* input);
-	int process_response(InputStream* input);
-	int process_connect(InputStream* input);
-	int remove_stub(const OOObj::cookie_t& key);
-	bool await_response_i(OOObj::uint32_t trans_id, InputStream** input);
+	int process_request(Impl::InputStream_Wrapper& input);
+	int process_response(Impl::InputStream_Wrapper& input);
+	int process_connect(Impl::InputStream_Wrapper& input);
+	int remove_stub(const OOObject::cookie_t& key);
+	bool await_response_i(OOObject::uint32_t trans_id, InputStream** input);
 
 	static bool await_response(void* p);
 	static bool await_connect(void * p);
@@ -63,16 +63,16 @@ END_INTERFACE_MAP()
 
 // OOCore::RemoteObjectFactory
 public:
-	OOObj::int32_t CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal);
-	OOObj::int32_t SetReverse(RemoteObjectFactory* pRemote);
+	OOObject::int32_t CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote);
 
 // OOCore::ProxyStubManager
 public:
-	int CreateProxy(const OOObj::guid_t& iid, const OOObj::cookie_t& key, OOObj::Object** ppVal);
-	int CreateStub(const OOObj::guid_t& iid, OOObj::Object* pObj, OutputStream* output);
-	int CreateRequest(const OOObj::cookie_t& proxy_key, OOObj::uint32_t method, OOObj::bool_t sync, OOObj::uint32_t* trans_id, OutputStream** output);
-	int CancelRequest(OOObj::uint32_t trans_id);
-	int SendAndReceive(OutputStream* output, OOObj::uint32_t trans_id, InputStream** input);
+	int CreateProxy(const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** ppVal);
+	int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OutputStream* output);
+	int CreateRequest(const OOObject::cookie_t& proxy_key, OOObject::uint32_t method, OOObject::bool_t sync, OOObject::uint32_t* trans_id, OutputStream** output);
+	int CancelRequest(OOObject::uint32_t trans_id);
+	int SendAndReceive(OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
 };
 
 };

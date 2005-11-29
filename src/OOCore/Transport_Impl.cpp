@@ -1,6 +1,6 @@
 #include "./Transport_Impl.h"
 
-#include "./OOCore_Impl.h"
+//#include "./OOCore_Impl.h"
 #include "./Object.h"
 #include "./Engine.h"
 #include "./OutputStream_CDR.h"
@@ -153,8 +153,8 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 	return 0;
 }
 
-OOObj::int32_t 
-OOCore::Transport_Impl::CreateObject(const OOObj::char_t* class_name, const OOObj::guid_t& iid, OOObj::Object** ppVal)
+OOObject::int32_t 
+OOCore::Transport_Impl::CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 

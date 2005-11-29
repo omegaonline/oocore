@@ -144,12 +144,6 @@
 				RelativePath=".\InputStream_CDR.cpp">
 			</File>
 			<File
-				RelativePath=".\Marshaller.cpp">
-			</File>
-			<File
-				RelativePath=".\Object_Marshaller.cpp">
-			</File>
-			<File
 				RelativePath=".\ObjectManager.cpp">
 			</File>
 			<File
@@ -162,16 +156,10 @@
 				RelativePath=".\OutputStream_CDR.cpp">
 			</File>
 			<File
-				RelativePath=".\Proxy_Marshaller.cpp">
-			</File>
-			<File
 				RelativePath=".\Proxy_Stub_Factory.cpp">
 			</File>
 			<File
 				RelativePath=".\ProxyStub.cpp">
-			</File>
-			<File
-				RelativePath=".\Stub_Marshaller.cpp">
 			</File>
 			<File
 				RelativePath=".\Transport_Impl.cpp">
@@ -182,16 +170,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\Array_Marshaller.h">
-			</File>
-			<File
 				RelativePath=".\Binding.h">
 			</File>
 			<File
 				RelativePath=".\Connection_Manager.h">
-			</File>
-			<File
-				RelativePath=".\Delegate.h">
 			</File>
 			<File
 				RelativePath=".\Engine.h">
@@ -203,13 +185,7 @@
 				RelativePath=".\InputStream_CDR.h">
 			</File>
 			<File
-				RelativePath=".\Marshaller.h">
-			</File>
-			<File
 				RelativePath=".\Object.h">
-			</File>
-			<File
-				RelativePath=".\Object_Marshaller.h">
 			</File>
 			<File
 				RelativePath=".\Object_Types.h">
@@ -236,9 +212,6 @@
 				RelativePath=".\OutputStream_CDR.h">
 			</File>
 			<File
-				RelativePath=".\Proxy_Marshaller.h">
-			</File>
-			<File
 				RelativePath=".\Proxy_Stub_Factory.h">
 			</File>
 			<File
@@ -255,12 +228,6 @@
 			</File>
 			<File
 				RelativePath=".\resource.h">
-			</File>
-			<File
-				RelativePath=".\String_Marshalling.h">
-			</File>
-			<File
-				RelativePath=".\Stub_Marshaller.h">
 			</File>
 			<File
 				RelativePath=".\Test.h">

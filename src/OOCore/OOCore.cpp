@@ -1,9 +1,9 @@
 #include "./OOCore.h"
-#include "./OOCore_Impl.h"
+//#include "./OOCore_Impl.h"
 #include "./Register.h"
 #include "./Binding.h"
 
-DEFINE_IID(OOObj::Object,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
+DEFINE_IID(OOObject::Object,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
 DEFINE_IID(OOCore::Stub,D8B1513D-967B-429e-8403-31650213DA21);
 DEFINE_IID(OOCore::InputStream,86F468DB-953F-4be0-A8EB-D9A344C104E3);
 DEFINE_IID(OOCore::OutputStream,0FA60065-8C8A-463b-9B01-D080E03EF39F);
@@ -22,7 +22,7 @@ REGISTER_PROXYSTUB(OOCore,Test,OOCore)
 #endif
 
 OOCore_Export int 
-OOCore::LaunchServer()
+OOCore::InitAsServer()
 {
 	return Impl::BINDING::instance()->launch(true);
 }

@@ -1,7 +1,7 @@
 #ifndef _OOSVC_TRANSPORT_ACCEPTOR_H_INCLUDED_
 #define _OOSVC_TRANSPORT_ACCEPTOR_H_INCLUDED_
 
-#include "../OOCore/Transport_Base.h"
+//#include "../OOCore/Transport_Base.h"
 
 #include "./OOSvc_export.h"
 

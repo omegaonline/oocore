@@ -7,7 +7,7 @@
 #include <ace/Hash_Map_Manager_T.h>
 #include <ace/SString.h>
 
-#include "../OOCore/Channel.h"
+//#include "../OOCore/Channel.h"
 #include "../OOCore/Object.h"
 
 #include "./Transport_Protocol.h"

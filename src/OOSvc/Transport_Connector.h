@@ -1,7 +1,7 @@
 #ifndef _OOSVC_TRANSPORT_CONNECTOR_H_INCLUDED_
 #define _OOSVC_TRANSPORT_CONNECTOR_H_INCLUDED_
 
-#include "../OOCore/Transport_Connector.h"
+//#include "../OOCore/Transport_Connector.h"
 
 #include "./OOSvc_export.h"
 

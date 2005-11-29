@@ -6,7 +6,7 @@
 #include <ace/Hash_Map_Manager_T.h>
 #include <ace/SString.h>
 
-#include "../OOCore/Transport_Base.h"
+//#include "../OOCore/Transport_Base.h"
 
 #include "./OOSvc_export.h"
 

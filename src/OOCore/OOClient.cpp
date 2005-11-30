@@ -42,9 +42,9 @@ OOObject::Term()
 }
 
 OOCore_Export int 
-OOObject::CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOObject::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateObject(class_name,iid,ppVal);
+	return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateObject(clsid,iid,ppVal);
 }
 
 OOCore_Export void* 

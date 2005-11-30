@@ -154,7 +154,7 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 }
 
 OOObject::int32_t 
-OOCore::Transport_Impl::CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -165,7 +165,7 @@ OOCore::Transport_Impl::CreateObject(const OOObject::char_t* class_name, const O
 	if (!ptrOM)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No server\n")),-1);
 
-	return ptrOM->CreateObject(class_name,iid,ppVal);
+	return ptrOM->CreateObject(clsid,iid,ppVal);
 }
 
 int 

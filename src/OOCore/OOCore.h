@@ -75,22 +75,31 @@ namespace OOCore
 	class RemoteObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class Server : public OOObject::Object
+	class Constructor : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t Stop(OOObject::bool_t force, OOObject::uint16_t* remaining) = 0;
-		virtual OOObject::int32_t StopPending(OOObject::bool_t* pending) = 0;
-		virtual OOObject::int32_t StayAlive() = 0;
+		virtual int GetTypeInfo() = 0;
+		virtual int Create(const OOObject::guid_t& iid, OOObject::Object** ppVal, OOCore::InputStream* in, OOCore::OutputStream* out) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
-	
+
+	class Library : public OOObject::Object
+	{
+	public:
+		virtual int CreateProxy(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy) = 0;
+		virtual int CreateStub(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, Stub** stub) = 0;
+		virtual int GetObjectConstructor(const OOObject::guid_t& clsid, Constructor** ppConstructor) = 0;
+
+		DECLARE_IID(OOCore_Export);
+	};
+
 	typedef OOCore_Export int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
 	typedef OOCore_Export int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, Stub** stub);
 

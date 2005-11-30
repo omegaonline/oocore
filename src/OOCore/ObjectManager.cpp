@@ -439,7 +439,7 @@ OOCore::ObjectManager::SendAndReceive(OutputStream* output, OOObject::uint32_t t
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateRemoteObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -450,11 +450,11 @@ OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* class_name, co
 	if (!fact)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No remote object factory\n")),-1);
 
-	return fact->CreateObject(class_name,iid,ppVal);
+	return fact->CreateObject(clsid,iid,ppVal);
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::CreateObject(const OOObject::char_t* class_name, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	// DO THE BLACK MAGIC HERE!
 

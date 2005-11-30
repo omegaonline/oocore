@@ -26,13 +26,13 @@ namespace OOObject
 	OOCore_Export void Term();	
 	OOCore_Export void* Alloc(const size_t size);
 	OOCore_Export void Free(void* p);
-	OOCore_Export OOObject::int32_t CreateObject(const char_t* service_name, const guid_t& iid, Object** ppVal);
+	OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, const guid_t& iid, Object** ppVal);
 	OOCore_Export int RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
 	
 	template <class T>
-	int CreateObject(const char_t* service_name, T** ppVal)
+	int CreateObject(const guid_t& clsid, T** ppVal)
 	{
-		return CreateObject(service_name,T::IID,reinterpret_cast<Object**>(ppVal));
+		return CreateObject(clsid,T::IID,reinterpret_cast<Object**>(ppVal));
 	}
 };
 

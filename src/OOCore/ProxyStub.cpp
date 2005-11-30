@@ -1,17 +1,17 @@
 #include "./ProxyStub.h"
 
-OOProxyStub::Impl::marshaller_t::marshaller_t() :
+OOCore::Impl::marshaller_t::marshaller_t() :
 	m_in(0), m_out(0), m_failed(true), m_sync(true), m_trans_id(0)
 {
 }
 
-OOProxyStub::Impl::marshaller_t::marshaller_t(OOCore::ProxyStubManager* manager, OOObject::bool_t sync, OOCore::OutputStream* output, OOObject::uint32_t trans_id) :
+OOCore::Impl::marshaller_t::marshaller_t(OOCore::ProxyStubManager* manager, OOObject::bool_t sync, OOCore::OutputStream* output, OOObject::uint32_t trans_id) :
 	m_in(0), m_out(output), m_failed(false), m_manager(manager), m_sync(sync), m_trans_id(trans_id)
 {
 }
 
 OOObject::int32_t 
-OOProxyStub::Impl::marshaller_t::send_and_recv()
+OOCore::Impl::marshaller_t::send_and_recv()
 {
 	if (m_failed)
 		return -1;

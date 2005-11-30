@@ -1,18 +1,105 @@
 #ifndef OOCORE_PROXYSTUB_H_INCLUDED_
 #define OOCORE_PROXYSTUB_H_INCLUDED_
 
-#include <map>
-
-#include <boost/preprocessor.hpp> 
-#include <boost/mpl/equal_to.hpp>
-#include <boost/mpl/comparison.hpp>
-#include <boost/mpl/int.hpp>
-
-#include "./ProxyStub_Macros.h"
 #include "./ProxyStub_Types.h"
+#include "./ProxyStub_Macros.h"
 
-namespace OOProxyStub
+namespace OOCore
 {
+namespace Impl
+{
+	class invoker_t
+	{
+	public:
+		template <class T, class I>
+			static int Invoke(T* pT, I* iface, OOCore::ProxyStubManager* manager, OOObject::uint32_t method, OOObject::int32_t& ret_code, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output)
+		{
+			OOCORE_PS_DECLARE_INVOKE_TABLE()
+		}
+	};
+
+	class marshaller_t
+	{
+	public:
+		marshaller_t();
+		marshaller_t(OOCore::ProxyStubManager* manager, OOObject::bool_t sync, OOCore::OutputStream* output, OOObject::uint32_t trans_id);
+
+		template <class T>
+		marshaller_t& operator <<(const T& val)
+		{
+			if (!m_failed)
+				m_failed = (m_out.write(val)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator <<(T* val)
+		{
+			if (!m_failed)
+				m_failed = (m_out.write(*val)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator <<(array_t<T>& val)
+		{
+			if (!m_failed)
+				m_failed = (val.write(m_out)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator <<(string_t<T>& val)
+		{
+			if (!m_failed)
+				m_failed = (val.write(m_out)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator <<(object_t<T*>& val)
+		{
+			if (!m_failed)
+				m_failed = (val.write(m_manager,m_out)!=0);
+			return *this;
+		}
+		
+		template <class T>
+		marshaller_t& operator >>(T* val)
+		{
+			if (!m_failed)
+				m_failed = (m_in.read(*val)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator >>(array_t<T**>& val)
+		{
+			if (!m_failed)
+				m_failed = (val.read(m_in)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator >>(object_t<T**>& val)
+		{
+			if (!m_failed)
+				m_failed = (val.read(m_manager,m_in)!=0);
+			return *this;
+		}
+
+		OOObject::int32_t send_and_recv();
+
+	private:
+		OOCore::Impl::InputStream_Wrapper	m_in;
+		OOCore::Impl::OutputStream_Wrapper	m_out;
+		bool								m_failed;
+		OOCore::Object_Ptr<OOCore::ProxyStubManager> m_manager;
+		const OOObject::bool_t			m_sync;
+		const OOObject::uint32_t		m_trans_id;
+	};
+};
+
 	template <class OBJECT>
 	class ProxyStub_Impl : 
 		public OBJECT,
@@ -97,7 +184,7 @@ namespace OOProxyStub
 
 		int Invoke(OOObject::uint32_t method, OOObject::int32_t& ret_code, OOCore::InputStream* input, OOCore::OutputStream* output)
 		{
-			return invoke_i(m_object,method,m_manager,ret_code,input,output);
+			return invoke_i(m_object,method,m_manager,ret_code,OOCore::Impl::InputStream_Wrapper(input),OOCore::Impl::OutputStream_Wrapper(output));
 		}
 
 	protected:
@@ -113,7 +200,7 @@ namespace OOProxyStub
 			return Impl::marshaller_t(m_manager,sync,output,trans_id);
 		}
 
-		virtual int invoke_i(OBJECT* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, OOCore::InputStream* input, OOCore::OutputStream* output) = 0;
+		virtual int invoke_i(OBJECT* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) = 0;
 
 	private:
 		const bool m_bStub;

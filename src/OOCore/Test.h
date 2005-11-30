@@ -3,11 +3,28 @@
 
 #include "./Object.h"
 #include "./ProxyStub.h"
+#include "./Constructor.h"
 
 namespace OOCore
 {
-	class Test :
-		public OOObject::Object
+	// TODO: MOVE THIS ELSEWHERE!
+	class Server : public OOObject::Object
+	{
+	public:
+		virtual OOObject::int32_t Stop(OOObject::bool_t force, OOObject::uint16_t* remaining) = 0;
+		virtual OOObject::int32_t StopPending(OOObject::bool_t* pending) = 0;
+		virtual OOObject::int32_t StayAlive() = 0;
+
+		DECLARE_IID(OOCore_Export);
+	};
+
+	BEGIN_AUTO_PROXY_STUB(Server)
+		METHOD(Stop,2,((in),OOObject::bool_t,force,(out),OOObject::uint16_t*,remaining))
+		METHOD(StopPending,1,((out),OOObject::bool_t*,pending))
+		METHOD(StayAlive,0,())
+	END_AUTO_PROXY_STUB()
+
+	class Test : public OOObject::Object
 	{
 	public:
 		virtual int Array_Test_In(OOObject::uint32_t count, OOObject::uint16_t* pArray) = 0;
@@ -29,23 +46,55 @@ namespace OOCore
 		METHOD(Object_Test_In,2,((in),const OOObject::guid_t&,iid,(in)(iid_is(iid)),OOObject::Object*,pObj))
 	END_AUTO_PROXY_STUB()
 
-/*	BEGIN_DECLARE_AUTO_PROXY_STUB(Test)
-		BEGIN_PROXY_MAP()
-			PROXY_ENTRY_2(Array_Test_In,OOObject::uint32_t count,OOObject::uint16_t* pArray)
-				PROXY_PARAMS_2(count,array(pArray,0))
-			PROXY_ENTRY_2(Array_Test_Out,OOObject::uint32_t* count,OOObject::uint16_t** pArray)
-				PROXY_PARAMS_2(count,array(pArray,0))
-			PROXY_ENTRY_2(Array_Test_InOut,OOObject::uint32_t* count,OOObject::uint16_t** pArray)
-				PROXY_PARAMS_2(count,array(pArray,0,true))
-		END_PROXY_MAP()
-		
-		BEGIN_STUB_MAP()
-			STUB_ENTRY_2(Array_Test_In,OOObject::uint32_t,OOObject::uint16_t*)
-			STUB_ENTRY_2(Array_Test_Out,OOObject::uint32_t*,OOObject::uint16_t**)
-			STUB_ENTRY_2(Array_Test_InOut,OOObject::uint32_t*,OOObject::uint16_t**)
-		END_STUB_MAP()
-	END_DECLARE_AUTO_PROXY_STUB()*/
+	/*class Test_CONSTRUCTOR : public OOCore::Constructor_Impl<Test>
+	{
+	private:
+		friend class OOCore::Impl::creator_t;
 
+		int create_i(int method, const OOObject::guid_t& iid, OOObject::Object** ppVal, OOCore::Impl::InputStream_Wrapper& in, OOCore::Impl::OutputStream_Wrapper& out)
+		{
+			return OOCore::Impl::creator_t::create_i(method,this,iid,ppVal,in,out);
+		}
+
+	// Per method stuff
+	public:
+		static int create_object(const OOObject::guid_t& iid, OOObject::Object** ppVal)
+		{
+			OOCore::Impl::constructor_t cons = constructor(0);
+			int ret = cons.send_and_recv(iid,ppVal);
+			return ret;
+		}
+	private:
+		int create_i(boost::mpl::int_<0>&,const OOObject::guid_t& iid, OOObject::Object** ppVal, OOCore::Impl::InputStream_Wrapper& in, OOCore::Impl::OutputStream_Wrapper& out)
+		{
+			// Unpack
+
+			CLASS* pClass;
+			ACE_NEW_RETURN(pClass,CLASS,-1);
+			int ret_code = pClass->QueryInterface(iid,ppVal);
+			if (ret_code==0)
+			{
+				// return ?!?!
+			}
+			
+			return ret_code
+
+			return 0;
+		}
+
+	public:
+		static int create_object(const OOObject::guid_t& iid, OOObject::Object** ppVal, int in, int* out)
+		{
+            OOCore::Impl::constructor_t cons = constructor(0);
+			cons << in;
+			int ret = cons.send_and_recv(iid,ppVal);
+			if (ret==0)
+			{
+				cons >> out;
+			}
+			return ret;
+		}
+	};*/
 };
 
 #endif // OOCORE_TEST_H_INCLUDED_

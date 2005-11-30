@@ -135,9 +135,6 @@
 				RelativePath=".\Connection_Manager.cpp">
 			</File>
 			<File
-				RelativePath=".\Constructor.cpp">
-			</File>
-			<File
 				RelativePath=".\Engine.cpp">
 			</File>
 			<File
@@ -177,9 +174,6 @@
 			</File>
 			<File
 				RelativePath=".\Connection_Manager.h">
-			</File>
-			<File
-				RelativePath=".\Constructor.h">
 			</File>
 			<File
 				RelativePath=".\Engine.h">

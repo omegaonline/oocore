@@ -202,7 +202,7 @@ namespace Impl
 			return m_obj;
 		}
 
-		int read_ps(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
 		{
 			OOObject::cookie_t key;
 			if (in.read(key) != 0) 
@@ -211,7 +211,7 @@ namespace Impl
 			return manager->CreateProxy(m_iid,key,reinterpret_cast<OOObject::Object**>(&m_obj));
 		}
 
-		int write_ps(OOCore::ProxyStubManager* manager, OOCore::OutputStream* out)
+		int write(OOCore::ProxyStubManager* manager, OOCore::OutputStream* out)
 		{
 			return manager->CreateStub(m_iid,m_obj,out);
 		}
@@ -238,7 +238,7 @@ namespace Impl
 			return &m_obj;
 		}
 
-		int read_ps(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
 		{
 			OOObject::cookie_t key;
 			if (in.read(key) != 0) 
@@ -247,7 +247,7 @@ namespace Impl
 			return manager->CreateProxy(m_iid,key,&m_obj);
 		}
 		
-		int write_ps(OOCore::ProxyStubManager* manager, OOCore::OutputStream* out)
+		int write(OOCore::ProxyStubManager* manager, OOCore::OutputStream* out)
 		{
 			return manager->CreateStub(m_iid,m_obj,out);
 		}
@@ -412,7 +412,7 @@ namespace Impl
 		param_t(OOCore::InputStream* input, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid) :
 		  m_obj(iid), m_failed(false)
 		{
-			m_failed = (m_obj.read_ps(manager,OOCore::Impl::InputStream_Wrapper(input))!=0);
+			m_failed = (m_obj.read(manager,OOCore::Impl::InputStream_Wrapper(input))!=0);
 		}
 
 		operator T*()
@@ -445,7 +445,7 @@ namespace Impl
 
 		int respond(OOCore::OutputStream* output, OOCore::ProxyStubManager* manager)
 		{
-			return m_obj.write_ps(manager,output);
+			return m_obj.write(manager,output);
 		}
 
 	private:

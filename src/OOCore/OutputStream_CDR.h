@@ -18,14 +18,17 @@ namespace OOCore
 namespace Impl
 {
 
+class InputStream_CDR;
+
 class OutputStream_CDR :
 	public OOCore::Object_Impl<OOCore::OutputStream>,
 	public ACE_OutputCDR
 {
 public:
-	OutputStream_CDR(unsigned long magic);
+	OutputStream_CDR(size_t magic);
 
-	unsigned long get_magic() const;
+	size_t get_magic() const;
+	int copy_from(InputStream_CDR* in);
 
 private:
 	virtual ~OutputStream_CDR(void);

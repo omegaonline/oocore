@@ -1,6 +1,7 @@
 #include "./OutputStream_CDR.h"
+#include "./InputStream_CDR.h"
 
-OOCore::Impl::OutputStream_CDR::OutputStream_CDR(unsigned long magic) :
+OOCore::Impl::OutputStream_CDR::OutputStream_CDR(size_t magic) :
 	m_magic(magic)
 {
 }
@@ -9,10 +10,16 @@ OOCore::Impl::OutputStream_CDR::~OutputStream_CDR(void)
 {
 }
 
-unsigned long 
+size_t 
 OOCore::Impl::OutputStream_CDR::get_magic() const
 {
 	return m_magic;
+}
+
+int 
+OOCore::Impl::OutputStream_CDR::copy_from(InputStream_CDR* in)
+{
+	return (write_octet_array_mb(in->start()) ? 0 : -1);
 }
 
 int 

@@ -113,7 +113,7 @@
 													)
 
 // Stub function declaration
-#define OOCORE_PS_DECLARE_STUB_FN(id)				private: int invoke(const id&, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, iface_class* obj, OOCore::InputStream* input, OOCore::OutputStream* output )
+#define OOCORE_PS_DECLARE_STUB_FN(id)				private: int invoke(const id&, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, iface_class* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output )
 
 // Stub function implementation
 #define OOCORE_PS_IMPL_STUB_FN(fn,n,params)			{ OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_DECL_IMPL) ret_code=obj->fn( OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_CALL_IMPL) ); \
@@ -181,19 +181,19 @@
 #define OOCORE_PS_BEGIN_AUTO_PROXY_I(iface,name)	class name : public OOCore::ProxyStub_Impl<iface> { \
 													friend class OOCore::Impl::invoker_t; \
 													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { return -1; } \
-													name(OOCore::ProxyStubManager* manager, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,obj) {} \
+													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
 													friend OOCore::Impl::unused_t BOOST_PP_CAT(Method_Id_Gen_,PS)(name*,...); \
 													int invoke_i(iface* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) { \
 													return OOCore::Impl::invoker_t::Invoke(this,obj,manager,method,ret_code,input,output); } \
 													public: typedef name this_class; typedef iface iface_class; \
 													static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) { name* proxy; ACE_NEW_RETURN(proxy,this_class(manager,key),0); return proxy;} \
-													static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, iface* obj) { name* stub; ACE_NEW_RETURN(stub,this_class(manager,obj),0); return stub;} \
+													static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, iface* obj) { name* stub; ACE_NEW_RETURN(stub,this_class(manager,key,obj),0); return stub;} \
 													OOCORE_PS_DECLARE_RELEASE() OOCORE_PS_DECLARE_QI()
 												
-#define END_AUTO_PROXY_STUB()					};
+#define END_AUTO_PROXY_STUB()						};
 
-#define CREATE_AUTO_STUB(iface,manager,obj)		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_stub(manager,static_cast<iface*>(obj)))
-#define CREATE_AUTO_PROXY(iface,manager,key) 	BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_proxy(manager,key))
+#define CREATE_AUTO_STUB(iface,manager,key,obj)		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_stub(manager,key,static_cast<iface*>(obj)))
+#define CREATE_AUTO_PROXY(iface,manager,key) 		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_proxy(manager,key))
 
 #endif // OOCORE_PROXYSTUB_MACROS_H_INCLUDED_

@@ -9,6 +9,9 @@
 OOCore_Export int 
 OOObject::Init()
 {
+	if (g_IsServer)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Already initialized as server!\n")),-1);
+
 	int ret = 0;
 
 	// Make sure ACE is loaded
@@ -34,17 +37,28 @@ OOObject::Init()
 OOCore_Export void 
 OOObject::Term()
 {
-	OOCore::Impl::CONNECTION_MANAGER::instance()->close();
+	if (g_IsServer)
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Already initialized as server!\n")));
+	else
+	{
+		OOCore::Impl::CONNECTION_MANAGER::instance()->close();
 
-	OOCore::ENGINE::instance()->shutdown();
+		OOCore::ENGINE::instance()->shutdown();
 
-	ACE::fini();
+		ACE::fini();
+	}
 }
 
 OOCore_Export int 
 OOObject::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateObject(clsid,iid,ppVal);
+	if (g_IsServer)
+	{
+	}
+	else
+	{
+		return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateObject(clsid,iid,ppVal);
+	}
 }
 
 OOCore_Export void* 
@@ -60,7 +74,7 @@ OOObject::Free(void* p)
 }
 
 OOCore_Export int 
-OOObject::RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
+OOCore::RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
 {
 	ACE_TString value(OOCore::Impl::guid_to_string(iid));
 

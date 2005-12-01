@@ -64,7 +64,9 @@ namespace OOCore
 	{
 	public:
 		virtual int CreateProxy(const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** ppVal) = 0;
-		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OutputStream* output) = 0;
+		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOObject::cookie_t* key) = 0;
+		virtual int ReleaseProxy(const OOObject::cookie_t& key) = 0;
+		virtual int ReleaseStub(const OOObject::cookie_t& key) = 0;
 		virtual int CreateRequest(const OOObject::cookie_t& proxy_key, OOObject::uint32_t method, OOObject::bool_t sync, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
 		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
 		virtual int SendAndReceive(OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
@@ -72,37 +74,20 @@ namespace OOCore
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class RemoteObjectFactory : public OOObject::Object
+	class ObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
-		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
-
-		DECLARE_IID(OOCore_Export);
-	};
-
-	class Constructor : public OOObject::Object
-	{
-	public:
-		virtual int GetTypeInfo() = 0;
-		virtual int Create(const OOObject::guid_t& iid, OOObject::Object** ppVal, OOCore::InputStream* in, OOCore::OutputStream* out) = 0;
-
-		DECLARE_IID(OOCore_Export);
-	};
-
-	class Library : public OOObject::Object
-	{
-	public:
-		virtual int CreateProxy(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy) = 0;
-		virtual int CreateStub(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, Stub** stub) = 0;
-		virtual int GetObjectConstructor(const OOObject::guid_t& clsid, Constructor** ppConstructor) = 0;
+		virtual int CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
 
 	typedef OOCore_Export int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
-	typedef OOCore_Export int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, Stub** stub);
+	typedef OOCore_Export int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, Stub** stub);
 
+	OOCore_Export int RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
+	OOCore_Export OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory);
+	OOCore_Export OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 	OOCore_Export int InitAsServer();
 };
 

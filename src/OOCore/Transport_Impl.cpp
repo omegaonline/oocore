@@ -100,7 +100,7 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 		{
 			// Clone and post the input
 			Object_Ptr<Impl::InputStream_CDR> i;
-			ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(input,msg_size)),-1);
+			ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(input,msg_size),reinterpret_cast<size_t>(this)),-1);
 
 			msg_param* p;
 			ACE_NEW_RETURN(p,msg_param(m_ptrOM,i),-1);
@@ -157,15 +157,39 @@ OOObject::int32_t
 OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
-
 	guard.release();
 
 	if (!ptrOM)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No server\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
 
 	return ptrOM->CreateObject(clsid,iid,ppVal);
+}
+
+OOObject::int32_t 
+OOCore::Transport_Impl::AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory)
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
+	guard.release();
+
+	if (!ptrOM)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
+
+	return ptrOM->AddObjectFactory(clsid,pFactory);
+}
+
+OOObject::int32_t 
+OOCore::Transport_Impl::RemoveObjectFactory(const OOObject::guid_t& clsid)
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
+	guard.release();
+
+	if (!ptrOM)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
+
+	return ptrOM->RemoveObjectFactory(clsid);
 }
 
 int 
@@ -175,7 +199,7 @@ OOCore::Transport_Impl::CreateOutputStream(OutputStream** ppStream)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
 
 	Impl::OutputStream_CDR* pStream;
-	ACE_NEW_RETURN(pStream,Impl::OutputStream_CDR(reinterpret_cast<unsigned long>(this)),-1);
+	ACE_NEW_RETURN(pStream,Impl::OutputStream_CDR(reinterpret_cast<size_t>(this)),-1);
 
 	*ppStream = pStream;
 	(*ppStream)->AddRef();

@@ -9,6 +9,8 @@
 #ifndef OOCORE_OOCORE_IMPL_H_INCLUDED_
 #define OOCORE_OOCORE_IMPL_H_INCLUDED_
 
+#include "./OOCore_Util.h"
+
 // This is a shoddy fixup for compilers with broken explicit template specialisation
 /*#if (__GNUC__) && (__GNUC__ <= 3)
 	#define EXPLICIT_TEMPLATE(m,t)	template m<t>
@@ -16,7 +18,17 @@
 	#define EXPLICIT_TEMPLATE(m,t)	m<t>
 #endif*/
 
-#include "./OOCore_Util.h"
+#include <functional>
+
+template<>
+struct std::less<OOObject::cookie_t> : public std::binary_function <OOObject::cookie_t, OOObject::cookie_t, bool> 
+{
+	bool operator()(const OOObject::cookie_t& _Left, const OOObject::cookie_t& _Right) const
+	{
+		return (_Left.slot_generation() <= _Right.slot_generation() &&
+				_Left.slot_index() < _Right.slot_index());
+	}
+};
 
 namespace OOCore
 {
@@ -139,5 +151,7 @@ namespace Impl
 	};
 };
 };
+
+extern bool g_IsServer;
 
 #endif // OOCORE_OOCORE_IMPL_H_INCLUDED_

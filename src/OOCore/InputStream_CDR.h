@@ -22,8 +22,12 @@ class InputStream_CDR :
 	public OOCore::Object_Impl<OOCore::InputStream>,
 	public ACE_InputCDR
 {
+	friend class OutputStream_CDR;
+
 public:
-	InputStream_CDR(ACE_InputCDR& in);
+	InputStream_CDR(ACE_InputCDR& in, size_t magic);
+
+	size_t get_magic() const;
 	
 private:
 	virtual ~InputStream_CDR() {};
@@ -33,6 +37,8 @@ private:
 	{
 		return ((*this >> val) ? 0 : -1);
 	}
+
+	const unsigned long m_magic;
 
 // OOObject::InputStream members
 public:

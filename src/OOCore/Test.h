@@ -3,7 +3,6 @@
 
 #include "./Object.h"
 #include "./ProxyStub.h"
-#include "./Constructor.h"
 
 namespace OOCore
 {
@@ -46,55 +45,6 @@ namespace OOCore
 		METHOD(Object_Test_In,2,((in),const OOObject::guid_t&,iid,(in)(iid_is(iid)),OOObject::Object*,pObj))
 	END_AUTO_PROXY_STUB()
 
-	/*class Test_CONSTRUCTOR : public OOCore::Constructor_Impl<Test>
-	{
-	private:
-		friend class OOCore::Impl::creator_t;
-
-		int create_i(int method, const OOObject::guid_t& iid, OOObject::Object** ppVal, OOCore::Impl::InputStream_Wrapper& in, OOCore::Impl::OutputStream_Wrapper& out)
-		{
-			return OOCore::Impl::creator_t::create_i(method,this,iid,ppVal,in,out);
-		}
-
-	// Per method stuff
-	public:
-		static int create_object(const OOObject::guid_t& iid, OOObject::Object** ppVal)
-		{
-			OOCore::Impl::constructor_t cons = constructor(0);
-			int ret = cons.send_and_recv(iid,ppVal);
-			return ret;
-		}
-	private:
-		int create_i(boost::mpl::int_<0>&,const OOObject::guid_t& iid, OOObject::Object** ppVal, OOCore::Impl::InputStream_Wrapper& in, OOCore::Impl::OutputStream_Wrapper& out)
-		{
-			// Unpack
-
-			CLASS* pClass;
-			ACE_NEW_RETURN(pClass,CLASS,-1);
-			int ret_code = pClass->QueryInterface(iid,ppVal);
-			if (ret_code==0)
-			{
-				// return ?!?!
-			}
-			
-			return ret_code
-
-			return 0;
-		}
-
-	public:
-		static int create_object(const OOObject::guid_t& iid, OOObject::Object** ppVal, int in, int* out)
-		{
-            OOCore::Impl::constructor_t cons = constructor(0);
-			cons << in;
-			int ret = cons.send_and_recv(iid,ppVal);
-			if (ret==0)
-			{
-				cons >> out;
-			}
-			return ret;
-		}
-	};*/
 };
 
 #endif // OOCORE_TEST_H_INCLUDED_

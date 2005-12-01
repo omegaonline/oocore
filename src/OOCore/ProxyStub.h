@@ -115,8 +115,9 @@ namespace Impl
 		{}
 
 		// Stub constructor
-		ProxyStub_Impl(OOCore::ProxyStubManager* manager, OBJECT* obj) :
+		ProxyStub_Impl(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, OBJECT* obj) :
 			m_bStub(true),
+			m_key(key),
 			m_object(obj),
  			m_manager(manager),
 			m_refcount(0)
@@ -133,13 +134,18 @@ namespace Impl
 			if (m_bStub)
 			{
 				if (--m_refcount == 0)
+				{
+					m_manager->ReleaseStub(m_key);
 					delete this;
+					return 1;
+				}
 			}
 			else
 			{
 				if (--m_refcount == 0)
 				{
 					method(id).send_and_recv();
+					m_manager->ReleaseProxy(m_key);
 					delete this;
 				}
 			}

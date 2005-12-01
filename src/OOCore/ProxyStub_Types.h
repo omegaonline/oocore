@@ -211,9 +211,13 @@ namespace Impl
 			return manager->CreateProxy(m_iid,key,reinterpret_cast<OOObject::Object**>(&m_obj));
 		}
 
-		int write(OOCore::ProxyStubManager* manager, OOCore::OutputStream* out)
+		int write(OOCore::ProxyStubManager* manager, OOCore::Impl::OutputStream_Wrapper& out)
 		{
-			return manager->CreateStub(m_iid,m_obj,out);
+			OOObject::cookie_t key;
+			if (manager->CreateStub(m_iid,m_obj,&key)!=0)
+				return -1;
+
+			return out.write(key);
 		}
 
 	private:
@@ -247,9 +251,13 @@ namespace Impl
 			return manager->CreateProxy(m_iid,key,&m_obj);
 		}
 		
-		int write(OOCore::ProxyStubManager* manager, OOCore::OutputStream* out)
+		int write(OOCore::ProxyStubManager* manager, OOCore::Impl::OutputStream_Wrapper& out)
 		{
-			return manager->CreateStub(m_iid,m_obj,out);
+			OOObject::cookie_t key;
+			if (manager->CreateStub(m_iid,m_obj,&key) != 0)
+				return -1;
+
+			return out.write(key);
 		}
 		
 	private:
@@ -261,9 +269,9 @@ namespace Impl
 	class param_t
 	{
 	public:
-		param_t(OOCore::InputStream* input)
+		param_t(OOCore::Impl::InputStream_Wrapper& input)
 		{
-			m_failed = (OOCore::Impl::InputStream_Wrapper(input).read(m_t)!=0);
+			m_failed = (input.read(m_t)!=0);
 		}
 
 		operator T()
@@ -292,9 +300,9 @@ namespace Impl
 		  m_failed(false)
 		{ }
 
-		param_t(OOCore::InputStream* input)
+		param_t(OOCore::Impl::InputStream_Wrapper& input)
 		{
-			m_failed = (OOCore::Impl::InputStream_Wrapper(input).read(m_t)!=0);
+			m_failed = (input.read(m_t)!=0);
 		}
 
 		operator T*()
@@ -307,9 +315,9 @@ namespace Impl
 			return m_failed;
 		}
 
-		int respond(OOCore::OutputStream* output)
+		int respond(OOCore::Impl::OutputStream_Wrapper& output)
 		{
-			return OOCore::Impl::OutputStream_Wrapper(output).write(m_t);
+			return output.write(m_t);
 		}
 		
 	private:
@@ -321,10 +329,10 @@ namespace Impl
 	class param_t<array_t<T*> >
 	{
 	public:
-		param_t(OOCore::InputStream* input, const OOObject::uint32_t c) :
+		param_t(OOCore::Impl::InputStream_Wrapper& input, const OOObject::uint32_t c) :
 		  m_arr(c), m_failed(false)
 		{
-			m_failed = (m_arr.read(OOCore::Impl::InputStream_Wrapper(input))!=0);
+			m_failed = (m_arr.read(input)!=0);
 		}
 		
 		operator T*()
@@ -350,10 +358,10 @@ namespace Impl
 		  m_arr(c), m_failed(false)
 		{ }
 
-		param_t(OOCore::InputStream* input, param_t<OOObject::uint32_t*>& c) :
+		param_t(OOCore::Impl::InputStream_Wrapper& input, param_t<OOObject::uint32_t*>& c) :
 		  m_arr(c), m_failed(false)
 		{
-			m_failed = (m_arr.read(OOCore::Impl::InputStream_Wrapper(input))!=0);
+			m_failed = (m_arr.read(input)!=0);
 		}		
 
 		operator T**()
@@ -366,9 +374,9 @@ namespace Impl
 			return m_failed;
 		}
 
-		int respond(OOCore::OutputStream* output)
+		int respond(OOCore::Impl::OutputStream_Wrapper& output)
 		{
-			return m_arr.write(OOCore::Impl::OutputStream_Wrapper(output));
+			return m_arr.write(output);
 		}
 
 	private:
@@ -380,10 +388,10 @@ namespace Impl
 	class param_t<string_t<T> >
 	{
 	public:
-		param_t(OOCore::InputStream* input) :
+		param_t(OOCore::Impl::InputStream_Wrapper& input) :
 		  m_failed(false)
 		{
-			m_failed = (m_str.read(OOCore::Impl::InputStream_Wrapper(input))!=0);
+			m_failed = (m_str.read(input)!=0);
 		}
 
 		operator T()
@@ -409,10 +417,10 @@ namespace Impl
 		  m_obj(iid), m_failed(false)
 		{ }
 
-		param_t(OOCore::InputStream* input, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid) :
+		param_t(OOCore::Impl::InputStream_Wrapper& input, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid) :
 		  m_obj(iid), m_failed(false)
 		{
-			m_failed = (m_obj.read(manager,OOCore::Impl::InputStream_Wrapper(input))!=0);
+			m_failed = (m_obj.read(manager,input)!=0);
 		}
 
 		operator T*()
@@ -443,7 +451,7 @@ namespace Impl
 			return m_obj;
 		}
 
-		int respond(OOCore::OutputStream* output, OOCore::ProxyStubManager* manager)
+		int respond(OOCore::Impl::OutputStream_Wrapper& output, OOCore::ProxyStubManager* manager)
 		{
 			return m_obj.write(manager,output);
 		}

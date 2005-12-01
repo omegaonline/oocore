@@ -27,7 +27,6 @@ namespace OOObject
 	OOCore_Export void* Alloc(const size_t size);
 	OOCore_Export void Free(void* p);
 	OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, const guid_t& iid, Object** ppVal);
-	OOCore_Export int RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
 	
 	template <class T>
 	int CreateObject(const guid_t& clsid, T** ppVal)

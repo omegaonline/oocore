@@ -1,8 +1,15 @@
 #include "./InputStream_CDR.h"
 
-OOCore::Impl::InputStream_CDR::InputStream_CDR(ACE_InputCDR& in) :
-	ACE_InputCDR(in)
+OOCore::Impl::InputStream_CDR::InputStream_CDR(ACE_InputCDR& in, size_t magic) :
+	ACE_InputCDR(in),
+	m_magic(magic)
 {
+}
+
+size_t 
+OOCore::Impl::InputStream_CDR::get_magic() const
+{
+	return m_magic;
 }
 
 int

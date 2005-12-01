@@ -156,6 +156,9 @@
 				RelativePath=".\OutputStream_CDR.cpp">
 			</File>
 			<File
+				RelativePath=".\PassThruStub.cpp">
+			</File>
+			<File
 				RelativePath=".\Proxy_Stub_Factory.cpp">
 			</File>
 			<File
@@ -210,6 +213,9 @@
 			</File>
 			<File
 				RelativePath=".\OutputStream_CDR.h">
+			</File>
+			<File
+				RelativePath=".\PassThruStub.h">
 			</File>
 			<File
 				RelativePath=".\Proxy_Stub_Factory.h">

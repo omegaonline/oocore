@@ -22,6 +22,8 @@ public:
 	int close_transport();
 
 	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory);
+	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 	
 protected:
 	virtual ~Transport_Impl(void);

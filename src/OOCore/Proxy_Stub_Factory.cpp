@@ -2,13 +2,17 @@
 
 #include "./Binding.h"
 
-OOCore::Impl::Proxy_Stub_Factory::proxystub_node OOCore::Impl::Proxy_Stub_Factory::m_core_node = {ACE_DLL(), &Impl::Proxy_Stub_Factory::CreateProxy, &Impl::Proxy_Stub_Factory::CreateStub};
+OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
+OOCore::Impl::Proxy_Stub_Factory::m_core_node = 
+	{
+		ACE_DLL(), 
+		&Impl::Proxy_Stub_Factory::CreateProxy, 
+		&Impl::Proxy_Stub_Factory::CreateStub
+	};
 
 int 
 OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy)
 {
-	// TODO optimize this by reusing Proxies
-
 	// Get the proxy/stub node
 	proxystub_node* node;
 	if (load_proxy_stub(iid,node) != 0)
@@ -22,17 +26,15 @@ OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::Stub** ppStub)
+OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** ppStub)
 {
-	// TODO optimize this by reusing Stubs
-
 	// Get the proxy/stub node
 	proxystub_node* node;
 	if (load_proxy_stub(iid,node) != 0)
 		return -1;
 
 	// Call CreateProxy
-	if ((node->stub_fn)(manager,iid,obj,ppStub) != 0)
+	if ((node->stub_fn)(manager,iid,obj,key,ppStub) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) CreateStub failed\n")),-1);
 	
 	return 0;
@@ -62,7 +64,7 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 		proxystub_node* new_node;
 		ACE_NEW_RETURN(new_node,proxystub_node,-1);
 
-		if (new_node->dll.open(ACE_TEXT_WCHAR_TO_TCHAR(dll_name.c_str())) != 0)
+		if (new_node->dll.open(ACE_TEXT_WCHAR_TO_TCHAR(dll_name.c_str()),RTLD_NOW) != 0)
 		{
 			delete new_node;
 			return -1;
@@ -102,6 +104,7 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 }
 
 #include "./OOCore_PS.h"
+#include "./ObjectManager.h"
 
 #ifdef _DEBUG
 #include "./Test.h"
@@ -110,8 +113,8 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 int 
 OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy)
 {
-	if (iid==OOCore::RemoteObjectFactory::IID)
-		*proxy = CREATE_AUTO_PROXY(OOCore::RemoteObjectFactory,manager,key);
+	if (iid==OOCore::Impl::RemoteObjectFactory::IID)
+		*proxy = CREATE_AUTO_PROXY(OOCore::Impl::RemoteObjectFactory,manager,key);
 
 #ifdef OOCORE_TEST_H_INCLUDED_
 	else if (iid==OOCore::Test::IID)
@@ -129,14 +132,14 @@ OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager,
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::Stub** stub)
+OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub)
 {
-	if (iid==OOCore::RemoteObjectFactory::IID)
-		*stub = CREATE_AUTO_STUB(OOCore::RemoteObjectFactory,manager,obj);
+	if (iid==OOCore::Impl::RemoteObjectFactory::IID)
+		*stub = CREATE_AUTO_STUB(OOCore::Impl::RemoteObjectFactory,manager,key,obj);
 		
 #ifdef OOCORE_TEST_H_INCLUDED_
 	else if (iid==OOCore::Test::IID)
-		*stub = CREATE_AUTO_STUB(OOCore::Test,manager,obj);
+		*stub = CREATE_AUTO_STUB(OOCore::Test,manager,key,obj);
 #endif
 
 	else

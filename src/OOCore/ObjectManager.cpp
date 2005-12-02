@@ -127,14 +127,16 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 		return process_connect(input);
 	
 	// Read the message ident
-	OOObject::bool_t request;
+	OOObject::byte_t request;
 	if (input.read(request) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request status\n")),-1);
 	
-	if (request)
+	if (request == 0)
 		return process_request(input);
-	else
+	else if (request == 1)
 		return process_response(input);
+	else
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid request status\n")),-1);
 }
 
 int 
@@ -164,16 +166,6 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 	if (input.read(key) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request key\n")),-1);
 	
-	// Read the method number
-	OOObject::uint32_t method;
-	if (input.read(method) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
-	
-	// Read the sync state
-	OOObject::bool_t sync;
-	if (input.read(sync) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read sync flag\n")),-1);
-	
 	// Find the stub
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 	Stub* st;
@@ -183,50 +175,38 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 	Object_Ptr<Stub> stub(st);
 	Object_Ptr<Transport> transport = m_ptrTransport;
 	guard.release();
-
+	
 	if (!transport)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
 
-	// Create the output streams
-	Object_Ptr<OutputStream> output1,output2;
-	if (sync)
-	{
-		if (transport->CreateOutputStream(&output1) != 0 ||
-			transport->CreateOutputStream(&output2) != 0)
-		{
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
-		}
-	}
+	// Read the sync state
+	OOObject::uint32_t flags_i;
+	if (input.read(flags_i) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read sync flag\n")),-1);
+
+	Marshall_Flags flags = static_cast<Marshall_Flags>(flags_i);
+
+	// Create the output stream
+	Object_Ptr<OutputStream> output;
+	if (transport->CreateOutputStream(&output) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
+		
+	// Write that we are a response
+	if (output->WriteByte(0) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
+
+	// Write the transaction id
+	if (output->WriteULong(trans_id) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
 
 	// Invoke the method on the stub
-	OOObject::int32_t ret_code;
-	int inv_code = stub->Invoke(method,ret_code,input,output2);
-	if (inv_code != 0 && inv_code != 1)
-		ret_code = static_cast<OOObject::int32_t>(inv_code);
-		
-	if (sync)
+	if (stub->Invoke(flags,5,input,output) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed\n")),-1);
+
+	if (flags & SYNC)
 	{
-		// Write that we are a response
-		if (output1->WriteBoolean(false) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
-	
-		// Write the transaction id
-		if (output1->WriteULong(trans_id) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
-
-		// Write the response code
-		if (output1->WriteLong(ret_code) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1);
-
-		if (ret_code==0)
-		{
-			// Write results
-			if (output1->Append(output2) != 0)
-				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to append output\n")),-1);
-		}
-
 		// Send the response
-		if (transport->Send(output1) != 0)
+		if (transport->Send(output) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to send output\n")),-1);
 	}
 
@@ -322,10 +302,9 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 			m_stub_map.unbind(*key);
 			return -1;
 		}
-
 	}
-	// else		
-	if (Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
+	// Create one from the factory
+	else if (Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
 	{
 		m_stub_map.unbind(*key);
 		return -1;
@@ -383,7 +362,7 @@ OOCore::ObjectManager::ReleaseStub(const OOObject::cookie_t& key)
 }
 
 int 
-OOCore::ObjectManager::CreateRequest(const OOObject::cookie_t& proxy_key, OOObject::uint32_t method, OOObject::bool_t sync, OOObject::uint32_t* trans_id, OutputStream** output_stream)
+OOCore::ObjectManager::CreateRequest(Marshall_Flags flags, const OOObject::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
 {
 	if (!trans_id || !output_stream)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
@@ -414,7 +393,7 @@ OOCore::ObjectManager::CreateRequest(const OOObject::cookie_t& proxy_key, OOObje
 	Impl::OutputStream_Wrapper output(ptrOutput);
 	
 	// Write message ident (request)
-	if (output.write(true) != 0)
+	if (output.write(OOObject::byte_t(1)) != 0)
 	{
 		CancelRequest(*trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write request flag\n")),-1);
@@ -434,15 +413,8 @@ OOCore::ObjectManager::CreateRequest(const OOObject::cookie_t& proxy_key, OOObje
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write proxy key\n")),-1);
 	}
 
-	// Write the method number
-	if (output.write(method) != 0)
-	{
-		CancelRequest(*trans_id);
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write method ordinal\n")),-1);
-	}
-		
-	// Write the sync state
-	if (output.write(sync) != 0)
+	// Write the flags
+	if (output.write(static_cast<OOObject::uint16_t>(flags)) != 0)
 	{
 		CancelRequest(*trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write sync status\n")),-1);
@@ -491,7 +463,7 @@ OOCore::ObjectManager::await_response_i(OOObject::uint32_t trans_id, InputStream
 }
 
 int 
-OOCore::ObjectManager::SendAndReceive(OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
+OOCore::ObjectManager::SendAndReceive(Marshall_Flags flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
@@ -505,10 +477,9 @@ OOCore::ObjectManager::SendAndReceive(OutputStream* output, OOObject::uint32_t t
 	if (transport->Send(output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Send failed\n")),-1);
 	
-	if (input)
+	if (flags & SYNC)
 	{
-		// Default the timeout to 5 secs
-		ACE_Time_Value wait(5);
+		ACE_Time_Value wait(wait_secs);
 
 		response_wait rw(this,trans_id,input);
 		return ENGINE::instance()->pump_requests(&wait,await_response,&rw);
@@ -565,7 +536,7 @@ OOCore::ObjectManager::AddObjectFactory(const OOObject::guid_t& clsid, OOCore::O
 	if (!g_IsServer)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) AddRemoteObject should not be called on a client\n")),-1);
 
-	return -1;
+	return OOCore::AddObjectFactory(clsid,pFactory);
 }
 
 OOObject::int32_t 
@@ -574,5 +545,5 @@ OOCore::ObjectManager::RemoveObjectFactory(const OOObject::guid_t& clsid)
 	if (!g_IsServer)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) RemoveRemoteObject should not be called on a client\n")),-1);
 
-	return -1;
+	return OOCore::RemoveObjectFactory(clsid);
 }

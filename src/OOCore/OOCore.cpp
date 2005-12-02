@@ -2,6 +2,7 @@
 #include "./Register.h"
 #include "./Binding.h"
 #include "./Connection_Manager.h"
+#include "./Object_Factory.h"
 
 DEFINE_IID(OOObject::Object,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
 DEFINE_IID(OOCore::Stub,D8B1513D-967B-429e-8403-31650213DA21);
@@ -41,6 +42,7 @@ OOCore::AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory)
 {
 	if (g_IsServer)
 	{
+		return Impl::OBJECT_FACTORY::instance()->add_object_factory(clsid,pFactory);
 	}
 	else
 	{
@@ -53,6 +55,7 @@ OOCore::RemoveObjectFactory(const OOObject::guid_t& clsid)
 {
 	if (g_IsServer)
 	{
+		return Impl::OBJECT_FACTORY::instance()->remove_object_factory(clsid);
 	}
 	else
 	{

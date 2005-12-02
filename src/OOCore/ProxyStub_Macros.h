@@ -24,7 +24,7 @@
 #define PROXY_STUB_MAX_METHODS			20
 
 #define OOCORE_PS_DECLARE_INVOKE_TABLE()			switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_INVOKE_TABLE_I,_) default:	return -1; }
-#define OOCORE_PS_DECLARE_INVOKE_TABLE_I(z,n,d)		case n:	return pT->invoke(boost::mpl::int_< n >(),manager,ret_code,iface,input,output);
+#define OOCORE_PS_DECLARE_INVOKE_TABLE_I(z,n,d)		case n:	return pT->invoke(boost::mpl::int_< n >(),manager,iface,input,output);
 
 // IDL style attribute macros
 #define OOCORE_PS_ATTRIB_in			(0)
@@ -113,10 +113,12 @@
 													)
 
 // Stub function declaration
-#define OOCORE_PS_DECLARE_STUB_FN(id)				private: int invoke(const id&, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, iface_class* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output )
+#define OOCORE_PS_DECLARE_STUB_FN(id)				private: int invoke(const id&, OOCore::ProxyStubManager* manager, iface_class* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output )
 
 // Stub function implementation
-#define OOCORE_PS_IMPL_STUB_FN(fn,n,params)			{ OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_DECL_IMPL) ret_code=obj->fn( OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_CALL_IMPL) ); \
+#define OOCORE_PS_IMPL_STUB_FN(fn,n,params)			{ OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_DECL_IMPL) \
+													OOObject::int32_t ret_code=obj->fn( OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_CALL_IMPL) ); \
+													if (output.write(ret_code) != 0) return -1; \
 													if (ret_code==0) { OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_OUT_IMPL) } return 0; }
 
 #define OOCORE_PS_STUB_PARAM_DECL_IMPL(n,param)		OOCore::Impl::param_t< \
@@ -180,12 +182,12 @@
 #define BEGIN_AUTO_PROXY_STUB(iface)				OOCORE_PS_BEGIN_AUTO_PROXY_I(iface,BOOST_PP_CAT(iface,_Proxy_Stub_Impl))
 #define OOCORE_PS_BEGIN_AUTO_PROXY_I(iface,name)	class name : public OOCore::ProxyStub_Impl<iface> { \
 													friend class OOCore::Impl::invoker_t; \
-													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { return -1; } \
+													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { return -1; } \
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
 													friend OOCore::Impl::unused_t BOOST_PP_CAT(Method_Id_Gen_,PS)(name*,...); \
-													int invoke_i(iface* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) { \
-													return OOCore::Impl::invoker_t::Invoke(this,obj,manager,method,ret_code,input,output); } \
+													int invoke_i(iface* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) { \
+													return OOCore::Impl::invoker_t::Invoke(this,obj,manager,method,input,output); } \
 													public: typedef name this_class; typedef iface iface_class; \
 													static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) { name* proxy; ACE_NEW_RETURN(proxy,this_class(manager,key),0); return proxy;} \
 													static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, iface* obj) { name* stub; ACE_NEW_RETURN(stub,this_class(manager,key,obj),0); return stub;} \

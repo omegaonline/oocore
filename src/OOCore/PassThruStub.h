@@ -16,7 +16,7 @@ public:
 
 // Stub members
 public:
-	int Invoke(unsigned int method, OOObject::int32_t& ret_code, InputStream* input, OutputStream* output);
+	int Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output);
 
 private:
 	OOCore::Object_Ptr<OOCore::ProxyStubManager> m_manager;

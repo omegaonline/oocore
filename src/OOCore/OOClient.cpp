@@ -3,6 +3,7 @@
 #include <ace/Init_ACE.h>
 
 #include "./Connection_Manager.h"
+#include "./Object_Factory.h"
 #include "./Engine.h"
 #include "./Binding.h"
 
@@ -49,11 +50,12 @@ OOObject::Term()
 	}
 }
 
-OOCore_Export int 
+OOCore_Export OOObject::int32_t 
 OOObject::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	if (g_IsServer)
 	{
+		return OOCore::Impl::OBJECT_FACTORY::instance()->create_object(clsid,iid,ppVal);
 	}
 	else
 	{

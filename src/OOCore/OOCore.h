@@ -43,19 +43,24 @@ namespace OOCore
 		DECLARE_IID(OOCore_Export);
 	};
 
-	class Stub : public OOObject::Object
-	{
-	public:
-		virtual int Invoke(unsigned int method, OOObject::int32_t& ret_code, InputStream* input, OutputStream* output) = 0;
-
-		DECLARE_IID(OOCore_Export);
-	};
-	
 	class Transport : public OOObject::Object
 	{
 	public:
 		virtual int CreateOutputStream(OutputStream** ppStream) = 0;
 		virtual int Send(OutputStream* output) = 0;
+
+		DECLARE_IID(OOCore_Export);
+	};
+
+	enum Marshall_Flags
+	{
+		SYNC = 1,
+	};
+
+	class Stub : public OOObject::Object
+	{
+	public:
+		virtual int Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};
@@ -67,9 +72,9 @@ namespace OOCore
 		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOObject::cookie_t* key) = 0;
 		virtual int ReleaseProxy(const OOObject::cookie_t& key) = 0;
 		virtual int ReleaseStub(const OOObject::cookie_t& key) = 0;
-		virtual int CreateRequest(const OOObject::cookie_t& proxy_key, OOObject::uint32_t method, OOObject::bool_t sync, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
+		virtual int CreateRequest(Marshall_Flags flags, const OOObject::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
 		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
-		virtual int SendAndReceive(OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
+		virtual int SendAndReceive(Marshall_Flags flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
 		
 		DECLARE_IID(OOCore_Export);
 	};
@@ -77,7 +82,7 @@ namespace OOCore
 	class ObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual int CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 
 		DECLARE_IID(OOCore_Export);
 	};

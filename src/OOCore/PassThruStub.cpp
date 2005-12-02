@@ -10,45 +10,51 @@ OOCore::Impl::PassThruStub::PassThruStub(OOCore::ProxyStubManager* manager, cons
 }
 
 int 
-OOCore::Impl::PassThruStub::Invoke(unsigned int method, OOObject::int32_t& ret_code, InputStream* input, OutputStream* output)
+OOCore::Impl::PassThruStub::Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
 {
 	// Create a request output stream
 	OOObject::uint32_t trans_id;
 	OOCore::Object_Ptr<OOCore::OutputStream> req_output;
-	OOObject::bool_t sync = (output!=0);
-
-	if (m_manager->CreateRequest(m_proxy_key,method,sync,&trans_id,&req_output) != 0)
+	
+	if (m_manager->CreateRequest(flags,m_proxy_key,&trans_id,&req_output) != 0)
 		return -1;
 
 	// Copy input to req_output
 	if (copy(input,req_output) != 0)
 	{
 		m_manager->CancelRequest(trans_id);
-		return -1;
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
 	}
 
 	// Send the request
 	OOCore::Object_Ptr<OOCore::InputStream> req_input;
-	ret_code = m_manager->SendAndReceive(req_output,trans_id,sync ? &req_input : 0);
-	if (ret_code!=0 && ret_code!=1)
+	if (m_manager->SendAndReceive(flags,wait_secs,req_output,trans_id,&req_input) != 0)
 		return -1;
 
-	if (ret_code==0 && sync)
+	if (flags & SYNC)
 	{
+		// Read the response code
+		OOObject::int32_t ret_code;
+		if (req_input->ReadLong(ret_code) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read return code\n")),-1);
+
+		// Write it out
+		if (output->WriteLong(ret_code) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1);
+
 		// Copy req_input to output
 		if (copy(req_input,output) != 0)
-			ret_code = -1;
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
+		
+		if (ret_code==1)
+		{
+			// Remote stub has gone!
+			m_manager->ReleaseStub(m_stub_key);
+			Release();
+		}
 	}
-
-	if (ret_code==1)
-	{
-		// Remote stub has gone!
-		m_manager->ReleaseStub(m_stub_key);
-		Release();
-		ret_code = 0;
-	}
-
-	return ret_code;
+	
+	return 0;
 }
 
 int 

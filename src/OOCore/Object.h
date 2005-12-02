@@ -29,7 +29,7 @@ namespace OOObject
 	OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, const guid_t& iid, Object** ppVal);
 	
 	template <class T>
-	int CreateObject(const guid_t& clsid, T** ppVal)
+	OOObject::int32_t CreateObject(const guid_t& clsid, T** ppVal)
 	{
 		return CreateObject(clsid,T::IID,reinterpret_cast<Object**>(ppVal));
 	}

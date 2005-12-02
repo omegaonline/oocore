@@ -12,7 +12,7 @@ namespace Impl
 	{
 	public:
 		template <class T, class I>
-			static int Invoke(T* pT, I* iface, OOCore::ProxyStubManager* manager, OOObject::uint32_t method, OOObject::int32_t& ret_code, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output)
+			static int Invoke(T* pT, I* iface, OOCore::ProxyStubManager* manager, OOObject::uint32_t method, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output)
 		{
 			OOCORE_PS_DECLARE_INVOKE_TABLE()
 		}
@@ -22,7 +22,7 @@ namespace Impl
 	{
 	public:
 		marshaller_t();
-		marshaller_t(OOCore::ProxyStubManager* manager, OOObject::bool_t sync, OOCore::OutputStream* output, OOObject::uint32_t trans_id);
+		marshaller_t(OOCore::ProxyStubManager* manager, Marshall_Flags flags, OOObject::uint16_t wait_secs, OOCore::OutputStream* output, OOObject::uint32_t trans_id);
 
 		template <class T>
 		marshaller_t& operator <<(const T& val)
@@ -95,8 +95,9 @@ namespace Impl
 		OOCore::Impl::OutputStream_Wrapper	m_out;
 		bool								m_failed;
 		OOCore::Object_Ptr<OOCore::ProxyStubManager> m_manager;
-		const OOObject::bool_t			m_sync;
-		const OOObject::uint32_t		m_trans_id;
+		const Marshall_Flags				m_flags;
+		const OOObject::uint32_t			m_trans_id;
+		const OOObject::uint16_t			m_wait_secs;
 	};
 };
 
@@ -188,25 +189,38 @@ namespace Impl
 			}
 		}
 
-		int Invoke(OOObject::uint32_t method, OOObject::int32_t& ret_code, OOCore::InputStream* input, OOCore::OutputStream* output)
+		int Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, OOCore::InputStream* input, OOCore::OutputStream* output)
 		{
-			return invoke_i(m_object,method,m_manager,ret_code,OOCore::Impl::InputStream_Wrapper(input),OOCore::Impl::OutputStream_Wrapper(output));
+			// Read the method number
+			OOObject::uint32_t method;
+			if (input->ReadULong(method) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
+			
+			return invoke_i(m_object,method,m_manager,OOCore::Impl::InputStream_Wrapper(input),OOCore::Impl::OutputStream_Wrapper(output));
 		}
 
 	protected:
-		Impl::marshaller_t method(int id, OOObject::bool_t sync = true	/* TODO Extra flags here! */)
+		Impl::marshaller_t method(int id, Marshall_Flags flags = SYNC, OOObject::uint16_t wait_secs = 5)
 		{
 			OOObject::uint32_t method = static_cast<OOObject::uint32_t>(id);
 			OOObject::uint32_t trans_id;
 			OOCore::Object_Ptr<OOCore::OutputStream> output;
 
-			if (m_bStub || m_manager->CreateRequest(m_key,method,sync,&trans_id,&output) != 0)
+			if (m_bStub || m_manager->CreateRequest(flags,m_key,&trans_id,&output) != 0)
 				return Impl::marshaller_t();
+
+			// Write the method number
+			if (output->WriteULong(method) != 0)
+			{
+				m_manager->CancelRequest(trans_id);
+				ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write method ordinal\n")));
+				return Impl::marshaller_t();
+			}
 			
-			return Impl::marshaller_t(m_manager,sync,output,trans_id);
+			return Impl::marshaller_t(m_manager,flags,wait_secs,output,trans_id);
 		}
 
-		virtual int invoke_i(OBJECT* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOObject::int32_t& ret_code, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) = 0;
+		virtual int invoke_i(OBJECT* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) = 0;
 
 	private:
 		const bool m_bStub;

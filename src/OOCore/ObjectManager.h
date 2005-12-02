@@ -98,9 +98,9 @@ public:
 	int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOObject::cookie_t* key);
 	int ReleaseProxy(const OOObject::cookie_t& key);
 	int ReleaseStub(const OOObject::cookie_t& key);	
-	int CreateRequest(const OOObject::cookie_t& proxy_key, OOObject::uint32_t method, OOObject::bool_t sync, OOObject::uint32_t* trans_id, OutputStream** output);
+	int CreateRequest(Marshall_Flags flags, const OOObject::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
 	int CancelRequest(OOObject::uint32_t trans_id);
-	int SendAndReceive(OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
+	int SendAndReceive(Marshall_Flags flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
 };
 
 };

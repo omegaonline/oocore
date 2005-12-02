@@ -144,6 +144,9 @@
 				RelativePath=".\InputStream_CDR.cpp">
 			</File>
 			<File
+				RelativePath=".\Object_Factory.cpp">
+			</File>
+			<File
 				RelativePath=".\ObjectManager.cpp">
 			</File>
 			<File
@@ -189,6 +192,9 @@
 			</File>
 			<File
 				RelativePath=".\Object.h">
+			</File>
+			<File
+				RelativePath=".\Object_Factory.h">
 			</File>
 			<File
 				RelativePath=".\Object_Types.h">

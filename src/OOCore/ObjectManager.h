@@ -38,7 +38,7 @@ class OOCore_Export ObjectManager :
 public:
 	ObjectManager(void);
 	
-	int Open(Transport* transport, OOObject::bool_t AsServer);
+	int Open(Transport* transport, const bool AsAcceptor);
 	int Close();
 	int ProcessMessage(InputStream* input);
 	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);

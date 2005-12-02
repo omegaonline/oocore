@@ -42,7 +42,6 @@ private:
 	const unsigned long m_magic;
 
 public:
-	int Append(OutputStream* add);
 	int WriteBoolean(OOObject::bool_t val);
 	int WriteChar(OOObject::char_t val);
 	int WriteByte(OOObject::byte_t val);

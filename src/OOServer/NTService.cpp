@@ -261,7 +261,8 @@ int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
 		if (!m_our_close)
 		{
 			m_our_close = true;
-			OOSvc_Shutdown();
+//			OOSvc_Shutdown();
+			ACE_Reactor::instance()->end_reactor_event_loop();
 		}
 		else
 		{

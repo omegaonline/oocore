@@ -8,7 +8,7 @@
 namespace OOCore
 {
 
-template <ACE_PEER_STREAM_1, const int Buffer_Size>
+template <const bool bAcceptor, ACE_PEER_STREAM_1, const int Buffer_Size>
 class Transport_Svc_Handler :
 	public ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH>,
 	public Transport_Impl
@@ -16,13 +16,18 @@ class Transport_Svc_Handler :
 	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
 public:
+	Transport_Svc_Handler() : m_bOpen(false)
+	{ }
+
 	virtual int open(void* p = 0)
 	{
 		if (svc_class::open(p)!=0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 
-		if (open_transport()!=0)
+		if (open_transport(bAcceptor)!=0)
 			return -1;
+
+		m_bOpen = true;
 
 		// Raise our ref count while we are open
 		AddRef();
@@ -48,11 +53,14 @@ public:
 		if (mask == ACE_Event_Handler::WRITE_MASK)
 			return 0;
 		
-		if (close_transport() != 0)
-			return -1;
+		if (m_bOpen)
+		{
+			if (close_transport() != 0)
+				return -1;
 
-		// Release our own ref count - we are closed
-		Release();
+			// Release our own ref count - we are closed
+			Release();
+		}
 
 		// Do not call svc_class::handle_close() it calls delete!
 		return 0;
@@ -102,6 +110,8 @@ protected:
 	virtual ssize_t send_n(ACE_Message_Block* mb) = 0;
 
 private:
+	bool m_bOpen;
+
 	int send_i()
 	{
 		ACE_Message_Block *mb;

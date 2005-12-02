@@ -19,7 +19,7 @@ OOCore::ObjectManager::~ObjectManager(void)
 }
 
 int 
-OOCore::ObjectManager::Open(Transport* transport, OOObject::bool_t AsServer)
+OOCore::ObjectManager::Open(Transport* transport, const bool AsAcceptor)
 {
 	if (m_ptrTransport)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling open repeatedly on an ObjectManager!\n")),-1);
@@ -27,7 +27,7 @@ OOCore::ObjectManager::Open(Transport* transport, OOObject::bool_t AsServer)
 	m_ptrTransport = transport;
 
 	int res;
-	if (AsServer)
+	if (AsAcceptor)
 		res = accept();
 	else
 		res = connect();

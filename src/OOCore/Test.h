@@ -35,6 +35,7 @@ namespace OOCore
 		
 		DECLARE_IID(OOCore_Export);
 	};
+	DECLARE_CLSID(OOCore_Export,CLSID_Test);
 
 	BEGIN_AUTO_PROXY_STUB(Test)
 		METHOD(Array_Test_Out,2,((out),OOObject::uint32_t*,count,(out)(size_is(count)),OOObject::uint16_t**,pArray))

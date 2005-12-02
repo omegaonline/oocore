@@ -24,7 +24,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -75,7 +75,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -126,13 +126,10 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\Client_Connection.cpp">
+			</File>
+			<File
 				RelativePath=".\NTService.cpp">
-			</File>
-			<File
-				RelativePath=".\OOControlClient.cpp">
-			</File>
-			<File
-				RelativePath=".\OOControlService.cpp">
 			</File>
 			<File
 				RelativePath=".\OOServer.cpp">
@@ -155,13 +152,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
+				RelativePath=".\Client_Connection.h">
+			</File>
+			<File
 				RelativePath=".\NTService.h">
-			</File>
-			<File
-				RelativePath=".\OOControlClient.h">
-			</File>
-			<File
-				RelativePath=".\OOControlService.h">
 			</File>
 			<File
 				RelativePath=".\resource.h">

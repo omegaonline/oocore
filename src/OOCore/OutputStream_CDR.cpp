@@ -23,16 +23,6 @@ OOCore::Impl::OutputStream_CDR::copy_from(InputStream_CDR* in)
 }
 
 int 
-OOCore::Impl::OutputStream_CDR::Append(OutputStream* add)
-{
-	OutputStream_CDR* append = reinterpret_cast<OutputStream_CDR*>(add);
-	if (!append || append->get_magic()!=m_magic)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream passed in to Append\n")),-1);
-
-	return (write_octet_array_mb(append->begin()) ? 0 : -1);
-}
-
-int 
 OOCore::Impl::OutputStream_CDR::WriteBoolean(OOObject::bool_t val)
 {
 	return (write_boolean(val) ? 0 : -1);

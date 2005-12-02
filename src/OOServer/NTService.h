@@ -11,11 +11,10 @@
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Service")
 #define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online system")
 
-#include "../OOSvc/Shutdown.h"
+//#include "../OOSvc/Shutdown.h"
 
 class NTService : 
-	public ACE_NT_Service,
-	public OOSvc_Shutdown_Observer
+	public ACE_NT_Service
 {
 public:
 	NTService(void);

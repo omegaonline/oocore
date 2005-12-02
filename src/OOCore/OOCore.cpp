@@ -21,6 +21,8 @@ REGISTER_PROXYSTUB(OOCore,Server,OOCore)
 DEFINE_IID(OOCore::Test,6AAE8C33-699A-4414-AF84-25E74E693207);
 REGISTER_PROXYSTUB(OOCore,Test,OOCore)
 
+DEFINE_CLSID(OOCore::CLSID_Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
+
 #endif
 
 bool g_IsServer = false;
@@ -35,6 +37,17 @@ OOCore::InitAsServer()
 		return 0;
 	}
 	return -1;
+}
+
+OOCore_Export int
+OOCore::SetServerPort(OOObject::uint16_t uPort)
+{
+	ACE_TCHAR szBuf[24];
+	ACE_OS::sprintf(szBuf,ACE_TEXT("%u"),uPort);
+	if (Impl::BINDING::instance()->rebind(ACE_TEXT("local_port"),szBuf)==-1)
+		return -1;
+
+	return 0;
 }
 
 OOCore_Export OOObject::int32_t  

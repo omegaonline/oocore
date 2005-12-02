@@ -2,7 +2,7 @@
 #include "./OutputStream_CDR.h"
 #include "./InputStream_CDR.h"
 
-OOCore::Impl::PassThruStub::PassThruStub(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& proxy_key, const OOObject::cookie_t& stub_key) :
+OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const OOObject::cookie_t& proxy_key, const OOObject::cookie_t& stub_key) :
 	m_manager(manager),
 	m_proxy_key(proxy_key),
 	m_stub_key(stub_key)

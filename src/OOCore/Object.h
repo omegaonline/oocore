@@ -9,6 +9,9 @@
 #define DECLARE_IID(export)			static const export OOObject::guid_t IID;
 #define DEFINE_IID(type,val)		const OOObject::guid_t type::IID(OOCore::Impl::create_guid(#val));
 
+#define DECLARE_CLSID(export,cls)	export extern const OOObject::guid_t cls;
+#define DEFINE_CLSID(cls,val)		const OOObject::guid_t cls(OOCore::Impl::create_guid(#val));
+
 namespace OOObject
 {
 	class Object

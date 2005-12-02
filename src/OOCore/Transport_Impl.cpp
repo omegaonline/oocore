@@ -15,14 +15,14 @@ OOCore::Transport_Impl::~Transport_Impl(void)
 }
 
 int 
-OOCore::Transport_Impl::open_transport()
+OOCore::Transport_Impl::open_transport(const bool bAcceptor)
 {
 	if (m_ptrOM)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Transport already open!\n")),-1);
 
 	ACE_NEW_RETURN(m_ptrOM,OOCore::ObjectManager,-1);
 
-	return m_ptrOM->Open(this,false);
+	return m_ptrOM->Open(this,bAcceptor);
 }
 
 int 
@@ -216,6 +216,9 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream passed in to transport\n")),-1);
 
 	ACE_Message_Block* mb = pStream->begin()->duplicate();
+
+	//CREATE A FUCKING HEADER!!
+
 	if (send(mb) != 0)
 	{
 		mb->release();

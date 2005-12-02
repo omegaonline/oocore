@@ -18,7 +18,7 @@ class OOCore_Export Transport_Impl :
 public:
 	Transport_Impl(void);
 	
-	int open_transport();
+	int open_transport(const bool bAcceptor);
 	int close_transport();
 
 	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);

@@ -26,8 +26,6 @@ namespace OOCore
 	class OutputStream : public OOObject::Object
 	{
 	public:
-		virtual int Append(OutputStream* add) = 0;
-
 		virtual int WriteBoolean(OOObject::bool_t val) = 0;
 		virtual int WriteChar(OOObject::char_t val) = 0;
 		virtual int WriteByte(OOObject::byte_t val) = 0;
@@ -94,6 +92,7 @@ namespace OOCore
 	OOCore_Export OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory);
 	OOCore_Export OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 	OOCore_Export int InitAsServer();
+	OOCore_Export int SetServerPort(OOObject::uint16_t uPort);
 };
 
 #endif // OOCORE_OOCORE_H_INCLUDED_

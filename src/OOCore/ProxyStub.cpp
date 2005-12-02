@@ -41,7 +41,7 @@ OOCore::Impl::marshaller_t::send_and_recv()
 		if (ret_code != 0)
 			return ret_code;
 
-		m_in = OOCore::Impl::InputStream_Wrapper(ptrIn);
+		m_in = ptrIn;
 	}
 
 	m_failed = false;

@@ -132,9 +132,9 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request status\n")),-1);
 	
 	if (request == 0)
-		return process_request(input);
-	else if (request == 1)
 		return process_response(input);
+	else if (request == 1)
+		return process_request(input);
 	else
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid request status\n")),-1);
 }

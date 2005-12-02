@@ -42,6 +42,12 @@ namespace Impl
 		  m_in(input)
 		{ }
 
+		InputStream_Wrapper& operator = (OOCore::InputStream* input)
+		{
+			m_in = input;
+			return *this;
+		}
+
 		int read(OOObject::bool_t& in) { return m_in->ReadBoolean(in); }
 		int read(OOObject::char_t& in) { return m_in->ReadChar(in); }
 		int read(OOObject::byte_t& in) { return m_in->ReadByte(in); }

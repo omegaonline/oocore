@@ -100,7 +100,7 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 		{
 			// Clone and post the input
 			Object_Ptr<Impl::InputStream_CDR> i;
-			ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(input,msg_size),reinterpret_cast<size_t>(this)),-1);
+			ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(input.start()),reinterpret_cast<size_t>(this)),-1);
 
 			msg_param* p;
 			ACE_NEW_RETURN(p,msg_param(m_ptrOM,i),-1);
@@ -215,10 +215,19 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 	if (pStream->get_magic() != reinterpret_cast<unsigned long>(this))
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream passed in to transport\n")),-1);
 
-	ACE_Message_Block* mb = pStream->begin()->duplicate();
+	// Write a header
+    ACE_OutputCDR header;
+	if (!header.write_ushort(sizeof(ACE_CDR::UShort) + sizeof(ACE_CDR::ULong)) ||
+		!header.write_ulong(pStream->begin()->total_length()))
+	{
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to compose header\n")),-1);
+	}
 
-	//CREATE A FUCKING HEADER!!
-
+	// Append the data
+	ACE_Message_Block* mb = header.begin()->duplicate();
+	mb->cont(pStream->begin()->duplicate());
+		
+	// Send the data
 	if (send(mb) != 0)
 	{
 		mb->release();

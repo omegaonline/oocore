@@ -1,5 +1,10 @@
 #include "./Client_Connection.h"
 
+#include <ace/Acceptor.h>
+#include <ace/MEM_Acceptor.h>
+#include <ace/Singleton.h>
+#include <ace/Mutex.h>
+
 #include "../OOCore/Engine.h"
 
 int 
@@ -15,14 +20,11 @@ Client_Connection::init(void)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),-1);
 	}
 
-	acceptor_type* acceptor;
-	ACE_NEW_RETURN(acceptor,acceptor_type(OOCore::ENGINE::instance()->reactor()),-1);
-
 	ACE_MEM_Addr port_addr((u_short)0);
-	if (acceptor->open(port_addr,OOCore::ENGINE::instance()->reactor()) == -1)
+	if (ACE_Singleton<ACE_Acceptor<Client_Connection, ACE_MEM_ACCEPTOR>, ACE_Thread_Mutex>::instance()->open(port_addr,OOCore::ENGINE::instance()->reactor()) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	
-	if (acceptor->acceptor().get_local_addr(port_addr)==-1)
+	if (ACE_Singleton<ACE_Acceptor<Client_Connection, ACE_MEM_ACCEPTOR>, ACE_Thread_Mutex>::instance()->acceptor().get_local_addr(port_addr)==-1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")),-1);
 	
 	OOObject::uint16_t uPort = port_addr.get_port_number();

@@ -52,7 +52,8 @@ namespace OOCore
 
 	enum Marshall_Flags
 	{
-		SYNC = 1,
+		ASYNC = 0,
+		SYNC = 1
 	};
 
 	class Stub : public OOObject::Object

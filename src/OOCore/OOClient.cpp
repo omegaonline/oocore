@@ -7,6 +7,10 @@
 #include "./Engine.h"
 #include "./Binding.h"
 
+#ifdef _DEBUG
+#include "./Test.h"
+#endif
+
 OOCore_Export int 
 OOObject::Init()
 {
@@ -18,6 +22,11 @@ OOObject::Init()
 	// Make sure ACE is loaded
 	if ((ret = (ACE::init()==-1 ? -1 : 0)) == 0)
 	{
+		#ifdef _DEBUG
+			OOCore::RegisterProxyStub(OOCore::Server::IID,"OOCore");
+			OOCore::RegisterProxyStub(OOCore::Test::IID,"OOCore");
+		#endif
+
 		if ((ret = OOCore::ENGINE::instance()->open()) == 0)
 		{
 			if ((ret = OOCore::Impl::Connection_Manager::init()) == 0)

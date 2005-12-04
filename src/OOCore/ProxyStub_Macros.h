@@ -23,7 +23,7 @@
 // Limits
 #define PROXY_STUB_MAX_METHODS			20
 
-#define OOCORE_PS_DECLARE_INVOKE_TABLE()			switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_INVOKE_TABLE_I,_) default:	return -1; }
+#define OOCORE_PS_DECLARE_INVOKE_TABLE()			switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_INVOKE_TABLE_I,_) default:	ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),method),-1); }
 #define OOCORE_PS_DECLARE_INVOKE_TABLE_I(z,n,d)		case n:	return pT->invoke(boost::mpl::int_< n >(),manager,iface,input,output);
 
 // IDL style attribute macros
@@ -118,7 +118,7 @@
 // Stub function implementation
 #define OOCORE_PS_IMPL_STUB_FN(fn,n,params)			{ OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_DECL_IMPL) \
 													OOObject::int32_t ret_code=obj->fn( OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_CALL_IMPL) ); \
-													if (output.write(ret_code) != 0) return -1; \
+													if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
 													if (ret_code==0) { OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_OUT_IMPL) } return 0; }
 
 #define OOCORE_PS_STUB_PARAM_DECL_IMPL(n,param)		OOCore::Impl::param_t< \
@@ -140,7 +140,7 @@
 																(input,manager,OOCORE_PS_PARAM_ATTRIB_ELEM(param,iid_is,0)), \
 																(input) \
 															) \
-														) ; if (OOCORE_PS_PARAM_VAR(param).failed()) return -1, \
+														) ; if (OOCORE_PS_PARAM_VAR(param).failed()) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read in param\n")),-1), \
 														BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,iid_is), \
 															(OOCORE_PS_PARAM_ATTRIB_ELEM(param,iid_is,0)), \
 															BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
@@ -158,7 +158,7 @@
 															(output,manager), \
 															(output) \
 														) \
-														!=0 ) return -1;, \
+														!=0 ) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write out param\n")),-1);, \
 														BOOST_PP_EMPTY() \
 													)
 
@@ -169,7 +169,8 @@
 
 // Default fn implementation
 #define OOCORE_PS_DECLARE_RELEASE()				OOCORE_PS_DECLARE_RELEASE_I(OOCORE_PS_GENERATE_UNIQUE_ID(Release,0))
-#define OOCORE_PS_DECLARE_RELEASE_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOObject::int32_t Release() { return Release_i(id::value); }
+#define OOCORE_PS_DECLARE_RELEASE_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOObject::int32_t Release() { return Release_i(id::value); } \
+												OOCORE_PS_DECLARE_STUB_FN(id) OOCORE_PS_IMPL_STUB_FN(Release,0,())
 
 #define OOCORE_PS_DECLARE_QI()					OOCORE_PS_DECLARE_QI_I(OOCORE_PS_GENERATE_UNIQUE_ID(QueryInterface,2))
 #define OOCORE_PS_DECLARE_QI_I(id)				OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) \
@@ -182,7 +183,7 @@
 #define BEGIN_AUTO_PROXY_STUB(iface)				OOCORE_PS_BEGIN_AUTO_PROXY_I(iface,BOOST_PP_CAT(iface,_Proxy_Stub_Impl))
 #define OOCORE_PS_BEGIN_AUTO_PROXY_I(iface,name)	class name : public OOCore::ProxyStub_Impl<iface> { \
 													friend class OOCore::Impl::invoker_t; \
-													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { return -1; } \
+													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
 													friend OOCore::Impl::unused_t BOOST_PP_CAT(Method_Id_Gen_,PS)(name*,...); \

@@ -138,14 +138,13 @@ namespace Impl
 				{
 					m_manager->ReleaseStub(m_key);
 					delete this;
-					return 1;
 				}
 			}
 			else
 			{
 				if (--m_refcount == 0)
 				{
-					method(id).send_and_recv();
+					method(id,ASYNC).send_and_recv();
 					m_manager->ReleaseProxy(m_key);
 					delete this;
 				}

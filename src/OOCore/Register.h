@@ -15,7 +15,7 @@ class Register
 public:
 	Register(const OOObject::guid_t& iid, const char* dll_name)
 	{
-		//OOCore::RegisterProxyStub(iid,dll_name);
+		OOCore::RegisterProxyStub(iid,dll_name);
 	}
 };
 

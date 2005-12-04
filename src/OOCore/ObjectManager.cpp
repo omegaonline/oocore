@@ -6,12 +6,12 @@
 #include "./PassThruStub.h"
 
 DEFINE_IID(OOCore::Impl::RemoteObjectFactory,B1BC71BE-4DCC-4f0f-8483-A75D35126D2A);
-REGISTER_PROXYSTUB(OOCore::Impl,RemoteObjectFactory,OOCore)
 
 OOCore::ObjectManager::ObjectManager(void) :
 	m_bIsAcceptor(false),
 	m_next_trans_id(static_cast<OOObject::uint32_t>(ACE_OS::rand()))
 {
+	OOCore::RegisterProxyStub(Impl::RemoteObjectFactory::IID,"OOCore");
 }
 
 OOCore::ObjectManager::~ObjectManager(void)
@@ -41,6 +41,7 @@ OOCore::ObjectManager::Open(Transport* transport, const bool AsAcceptor)
 int
 OOCore::ObjectManager::Close()
 {
+	m_ptrRemoteFactory = 0;
 	m_ptrTransport = 0;
 
 	return 0;

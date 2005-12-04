@@ -16,10 +16,7 @@ DEFINE_IID(OOCore::ObjectFactory,E2760ABA-1BAA-4c7b-89B2-466320296D1D);
 #include "./Test.h"
 
 DEFINE_IID(OOCore::Server,B4B5BF71-58DF-4001-BD0B-72496463E3C3);
-REGISTER_PROXYSTUB(OOCore,Server,OOCore)
-
 DEFINE_IID(OOCore::Test,6AAE8C33-699A-4414-AF84-25E74E693207);
-REGISTER_PROXYSTUB(OOCore,Test,OOCore)
 
 DEFINE_CLSID(OOCore::CLSID_Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
 
@@ -30,6 +27,11 @@ bool g_IsServer = false;
 OOCore_Export int 
 OOCore::InitAsServer()
 {
+#ifdef _DEBUG
+	RegisterProxyStub(Server::IID,"OOCore");
+	RegisterProxyStub(Test::IID,"OOCore");
+#endif
+
 	if (Impl::BINDING::instance()->launch(true) == 0)
 	{
 		// This is the only place this is set!

@@ -159,15 +159,14 @@ namespace Impl
 
 			if (m_bStub)
 			{
-				if (iid == OOObject::Object::IID ||
-					iid == OOCore::Stub::IID)
+				if (iid == OOCore::Stub::IID)
 				{
 					AddRef();
 					*ppVal = static_cast<OOCore::Stub*>(this);
 					return 0;
 				}
 
-				return -1;
+				return m_object->QueryInterface(iid,ppVal);
 			}
 			else
 			{

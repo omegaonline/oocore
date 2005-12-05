@@ -174,7 +174,13 @@
 
 #define OOCORE_PS_DECLARE_QI()					OOCORE_PS_DECLARE_QI_I(OOCORE_PS_GENERATE_UNIQUE_ID(QueryInterface,2))
 #define OOCORE_PS_DECLARE_QI_I(id)				OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) \
-												{ return QueryInterface_i(id::value,iid,ppVal); }
+												{ return QueryInterface_i(id::value,iid,ppVal); } \
+												OOCORE_PS_DECLARE_STUB_FN(id) { OOCore::Impl::param_t<const OOObject::guid_t&> iid(input); \
+												if (iid.failed()) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read in param\n")),-1); \
+												OOCore::Impl::param_t<OOCore::Impl::object_t<OOObject::Object**> > ppVal(iid); \
+												OOObject::int32_t ret_code=QueryInterface_i(id::value,iid,ppVal); \
+												if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
+												if (ret_code==0) { if (ppVal.respond(output,manager)!=0 ) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write out param\n")),-1); } return 0; }
 
 // Method declaration macros
 #define METHOD(fn,n,p)							OOCORE_PS_METHOD_I(fn,n,BOOST_PP_TUPLE_TO_SEQ(BOOST_PP_MUL(n,3),p),OOCORE_PS_GENERATE_UNIQUE_ID(fn,n))

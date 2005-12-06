@@ -34,6 +34,10 @@ int _tmain(int argc, _TCHAR* argv[])
 				//OOObject::uint16_t remaining = 0;
 				//pObj->Stop(false,&remaining);
 			}
+			else
+			{
+				ACE_ERROR((LM_DEBUG,ACE_TEXT("Failed to create object: %m.\n")));
+			}
 		}
 				
 		OOObject::Term();

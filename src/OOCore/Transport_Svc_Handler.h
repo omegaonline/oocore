@@ -69,8 +69,6 @@ public:
 protected:
 	int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0)
 	{
-		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport sends %d bytes\n"),mb->length()));
-
 		if (this->putq(mb,wait) == -1)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %p; discarding data\n"),ACE_TEXT("enqueue failed")),-1);
 		
@@ -120,9 +118,6 @@ private:
 		{
 			// Send the data
 			ssize_t send_cnt = send_n(mb);
-			
-			//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) socket actually sends %d bytes\n"),send_cnt));
-
 			if (send_cnt == -1 && ACE_OS::last_error() != EWOULDBLOCK)
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %p\n"),ACE_TEXT("send")),-1);
 			
@@ -131,7 +126,6 @@ private:
 			
 			if (mb->total_length() > static_cast<size_t>(send_cnt))
 			{
-				ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) SPARE!!\n")));
 				ungetq(mb);
 				return 0;
 			}

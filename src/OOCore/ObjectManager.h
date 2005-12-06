@@ -60,7 +60,7 @@ private:
 	};
 
 	bool m_bIsAcceptor;
-	bool m_bOpen;
+	bool m_bOpened;
 	ACE_Recursive_Thread_Mutex m_lock;
 	std::map<OOObject::cookie_t,OOObject::Object*> m_proxy_map;
 	std::map<OOObject::Object*,OOObject::cookie_t> m_rev_proxy_map;

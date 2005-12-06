@@ -9,7 +9,7 @@ DEFINE_IID(OOCore::Impl::RemoteObjectFactory,B1BC71BE-4DCC-4f0f-8483-A75D35126D2
 
 OOCore::ObjectManager::ObjectManager(void) :
 	m_bIsAcceptor(false),
-	m_bOpen(false),
+	m_bOpened(false),
 	m_next_trans_id(static_cast<OOObject::uint32_t>(ACE_OS::rand()))
 {
 	OOCore::RegisterProxyStub(Impl::RemoteObjectFactory::IID,"OOCore");
@@ -134,7 +134,7 @@ OOCore::ObjectManager::accept()
 		return -1;
 
 	m_bIsAcceptor = true;
-	m_bOpen = true;
+	m_bOpened = true;
 	
 	return 0;
 }
@@ -157,7 +157,7 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 	Impl::InputStream_Wrapper input(input_stream);
 
 	// Check for the connect state first 
-	if (!m_bIsAcceptor && !m_bOpen)
+	if (!m_bIsAcceptor && !m_bOpened)
 		return process_connect(input);
 	
 	// Read the message ident
@@ -186,7 +186,7 @@ OOCore::ObjectManager::process_connect(Impl::InputStream_Wrapper& input)
 	
 	int ret = CreateProxy(RemoteObjectFactory::IID,key,reinterpret_cast<OOObject::Object**>(&m_ptrRemoteFactory));
 	if (ret == 0)
-		m_bOpen = true;
+		m_bOpened = true;
 	
 	return ret;
 }

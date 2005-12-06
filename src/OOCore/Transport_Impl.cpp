@@ -12,17 +12,37 @@ OOCore::Transport_Impl::Transport_Impl(void) :
 
 OOCore::Transport_Impl::~Transport_Impl(void)
 {
+	while (!m_init_queue.empty())
+	{
+		m_init_queue.front()->release();
+		m_init_queue.pop();
+	}
 }
 
 int 
 OOCore::Transport_Impl::open_transport(const bool bAcceptor)
 {
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
 	if (m_ptrOM)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Transport already open!\n")),-1);
 
 	ACE_NEW_RETURN(m_ptrOM,OOCore::ObjectManager,-1);
+	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
 
-	return m_ptrOM->Open(this,bAcceptor);
+	while (!m_init_queue.empty())
+	{
+		if (process_block(m_init_queue.front()) != 0)
+		{
+			m_ptrOM = 0;
+			return -1;
+		}
+		m_init_queue.pop();
+	}
+
+	guard.release();
+
+	return ptrOM->Open(this,bAcceptor);
 }
 
 int 
@@ -59,11 +79,13 @@ OOCore::Transport_Impl::handle_recv()
 int
 OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 {
-	// THIS IS VERY NASTY!
-	while (!m_ptrOM)
-	{};
-
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	if (!m_ptrOM)
+	{
+		m_init_queue.push(mb);
+		return 0;
+	}
 
 	// Append the new data
 	if (m_curr_block)
@@ -94,8 +116,6 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 
 		if (ret==1) // More data required
 		{
-			//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) transport requires more data\n")));
-
 			// Update m_curr_block to input's message block
 			m_curr_block = input.start()->duplicate();
 
@@ -107,10 +127,11 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 
 		if (msg_size>0)
 		{
-			// Clone and post the input
+			// Clone the input
 			Object_Ptr<Impl::InputStream_CDR> i;
 			ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(input.start()),reinterpret_cast<size_t>(this)),-1);
 
+			// Try to post it
 			msg_param* p;
 			ACE_NEW_RETURN(p,msg_param(m_ptrOM,i),-1);
 			if (ENGINE::instance()->post_request(p) != 0)

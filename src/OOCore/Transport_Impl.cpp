@@ -28,15 +28,20 @@ OOCore::Transport_Impl::open_transport(const bool bAcceptor)
 int 
 OOCore::Transport_Impl::close_transport()
 {
+	// Get the object manager
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
-	m_ptrOM = 0;
-
-	guard.release();
-
+	
 	if (ptrOM)
+	{
+		guard.release();
+
+		// Call close
 		ptrOM->Close();
+
+		guard.acquire();
+		m_ptrOM = 0;
+	}
 
 	return 0;
 }
@@ -54,6 +59,10 @@ OOCore::Transport_Impl::handle_recv()
 int
 OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 {
+	// THIS IS VERY NASTY!
+	while (!m_ptrOM)
+	{};
+
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 	// Append the new data

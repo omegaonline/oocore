@@ -51,7 +51,8 @@ private:
 
 		int call()
 		{
-			return OM->ProcessMessage(input);
+			OM->ProcessMessage(input);
+			return 0;
 		}
 	};
 	

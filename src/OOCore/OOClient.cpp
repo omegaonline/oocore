@@ -52,7 +52,8 @@ OOObject::Term()
 	else
 	{
 		OOCore::Impl::CONNECTION_MANAGER::instance()->close();
-
+		OOCore::Impl::CONNECTION_MANAGER::instance()->shutdown();
+		
 		OOCore::ENGINE::instance()->shutdown();
 
 		ACE::fini();

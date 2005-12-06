@@ -33,25 +33,9 @@ OOCore::Impl::PassThruStub::Invoke(Marshall_Flags flags, OOObject::uint16_t wait
 
 	if (flags & SYNC)
 	{
-		// Read the response code
-		OOObject::int32_t ret_code;
-		if (req_input->ReadLong(ret_code) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read return code\n")),-1);
-
-		// Write it out
-		if (output->WriteLong(ret_code) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1);
-
 		// Copy req_input to output
 		if (copy(req_input,output) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
-		
-		if (ret_code==1)
-		{
-			// Remote stub has gone!
-			m_manager->ReleaseStub(m_stub_key);
-			Release();
-		}
 	}
 	
 	return 0;

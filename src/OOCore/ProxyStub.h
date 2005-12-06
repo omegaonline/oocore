@@ -130,15 +130,17 @@ namespace Impl
 			return 0;
 		}
 
-		OOObject::int32_t Release_i(int id)
+		OOObject::int32_t Release_i(int id, bool external_call)
 		{
 			if (m_bStub)
 			{
-				if (--m_refcount == 0)
+				if (external_call)
 				{
-					m_manager->ReleaseStub(m_key);
-					delete this;
+					return m_manager->ReleaseStub(m_key);
 				}
+
+				if (--m_refcount == 0)
+					delete this;
 			}
 			else
 			{

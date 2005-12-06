@@ -9,6 +9,7 @@ DEFINE_IID(OOCore::Impl::RemoteObjectFactory,B1BC71BE-4DCC-4f0f-8483-A75D35126D2
 
 OOCore::ObjectManager::ObjectManager(void) :
 	m_bIsAcceptor(false),
+	m_bOpen(false),
 	m_next_trans_id(static_cast<OOObject::uint32_t>(ACE_OS::rand()))
 {
 	OOCore::RegisterProxyStub(Impl::RemoteObjectFactory::IID,"OOCore");
@@ -21,6 +22,8 @@ OOCore::ObjectManager::~ObjectManager(void)
 int 
 OOCore::ObjectManager::Open(Transport* transport, const bool AsAcceptor)
 {
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+
 	if (m_ptrTransport)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling open repeatedly on an ObjectManager!\n")),-1);
 
@@ -38,10 +41,42 @@ OOCore::ObjectManager::Open(Transport* transport, const bool AsAcceptor)
 	return res;
 }
 
+bool 
+OOCore::ObjectManager::await_close(void * p)
+{
+	ObjectManager* pThis = static_cast<ObjectManager*>(p);
+
+	return (pThis->m_stub_map.current_size()==0);
+}
+
 int
 OOCore::ObjectManager::Close()
 {
-	m_ptrRemoteFactory = 0;
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+
+	if (m_ptrRemoteFactory)
+	{
+		// Inform the other end we are leaving
+		m_ptrRemoteFactory->RemoteClose();
+		m_ptrRemoteFactory = 0;
+	}
+
+	// Wait until all stubs have gone
+	ACE_Time_Value wait(5);
+	if (ENGINE::instance()->pump_requests(&wait,await_close,this) != 0)
+	{
+		// Close all the stubs
+		for (std::map<OOObject::cookie_t,OOObject::Object*>::iterator i=m_rev_stub_obj_map.begin();i!=m_rev_stub_obj_map.end();++i)
+		{
+			Stub* stub;
+			if (m_stub_map.unbind(i->first,stub) == 0)
+				stub->Release();
+		}
+
+		m_rev_stub_obj_map.clear();
+		m_stub_obj_map.clear();
+	}
+
 	m_ptrTransport = 0;
 
 	return 0;
@@ -60,6 +95,7 @@ OOCore::ObjectManager::connect()
 
 	if (m_ptrRemoteFactory->SetReverse(this) != 0)
 	{
+		m_ptrRemoteFactory->RemoteClose();
 		m_ptrRemoteFactory = 0;
 		return -1;
 	}
@@ -74,11 +110,7 @@ OOCore::ObjectManager::accept()
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) ObjectManager already connected\n")),-1);
 
 	// Write out the interface info
-	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
-	Object_Ptr<Transport> transport = m_ptrTransport;
-	guard.release();
-
-	if (!transport)
+	if (!m_ptrTransport)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
 	
 	// Create the stub
@@ -87,7 +119,7 @@ OOCore::ObjectManager::accept()
 		return -1;
 
 	Object_Ptr<OutputStream> output;
-	if (transport->CreateOutputStream(&output) != 0)
+	if (m_ptrTransport->CreateOutputStream(&output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 
 	// Write out the key
@@ -98,10 +130,11 @@ OOCore::ObjectManager::accept()
 	}
 
 	// Send the message back
-	if (transport->Send(output) != 0)
+	if (m_ptrTransport->Send(output) != 0)
 		return -1;
 
 	m_bIsAcceptor = true;
+	m_bOpen = true;
 	
 	return 0;
 }
@@ -124,7 +157,7 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 	Impl::InputStream_Wrapper input(input_stream);
 
 	// Check for the connect state first 
-	if (!m_bIsAcceptor && !m_ptrRemoteFactory)
+	if (!m_bIsAcceptor && !m_bOpen)
 		return process_connect(input);
 	
 	// Read the message ident
@@ -151,7 +184,11 @@ OOCore::ObjectManager::process_connect(Impl::InputStream_Wrapper& input)
 	if (input.read(key) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read key\n")),-1);
 	
-	return CreateProxy(RemoteObjectFactory::IID,key,reinterpret_cast<OOObject::Object**>(&m_ptrRemoteFactory));
+	int ret = CreateProxy(RemoteObjectFactory::IID,key,reinterpret_cast<OOObject::Object**>(&m_ptrRemoteFactory));
+	if (ret == 0)
+		m_bOpen = true;
+	
+	return ret;
 }
 
 int 
@@ -274,14 +311,8 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	std::map<OOObject::Object*,OOObject::cookie_t>::iterator i=m_stub_obj_map.find(obj);
 	if (i!=m_stub_obj_map.end())
 	{
-		// Yes we have, AddRef it!
-		Stub* stub;
-		if (m_stub_map.find(i->second,stub) != 0)
-			return -1;
-
+		// Yes we have, return the key
 		*key = i->second;
-
-		stub->AddRef();
 		return 0;
 	}
 
@@ -358,6 +389,8 @@ OOCore::ObjectManager::ReleaseStub(const OOObject::cookie_t& key)
 		m_stub_obj_map.erase(i->second);
 		m_rev_stub_obj_map.erase(i);
 	}
+
+	stub->Release();
 	
 	return 0;
 }
@@ -527,6 +560,16 @@ OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to set reverse object factory multiple times\n")),-1);
 
 	m_ptrRemoteFactory = pRemote;
+
+	return 0;
+}
+
+OOObject::int32_t 
+OOCore::ObjectManager::RemoteClose()
+{
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+
+	m_ptrRemoteFactory = 0;
 
 	return 0;
 }

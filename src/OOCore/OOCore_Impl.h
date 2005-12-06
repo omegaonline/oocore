@@ -88,6 +88,11 @@ namespace Impl
 			return m_in;
 		}
 
+		OOCore::InputStream* operator ->()
+		{
+			return m_in;
+		}
+
 	private:
 		OOCore::Object_Ptr<OOCore::InputStream> m_in;
 
@@ -139,6 +144,11 @@ namespace Impl
 		}
 
 		operator OOCore::OutputStream*()
+		{
+			return m_out;
+		}
+
+		OOCore::OutputStream* operator ->()
 		{
 			return m_out;
 		}

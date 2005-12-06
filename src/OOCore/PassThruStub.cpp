@@ -48,7 +48,10 @@ OOCore::Impl::PassThruStub::copy(OOCore::InputStream* in, OOCore::OutputStream* 
 	OutputStream_CDR* out_cdr = reinterpret_cast<OutputStream_CDR*>(out);
 	InputStream_CDR* in_cdr = reinterpret_cast<InputStream_CDR*>(in);
 	if (out_cdr->get_magic()!=in_cdr->get_magic())
+	{
+		errno = EFAULT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid input or output stream\n")),-1);
+	}
 
 	return out_cdr->copy_from(in_cdr);
 }

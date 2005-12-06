@@ -28,7 +28,10 @@ OOCore::Impl::Object_Factory::create_object(const OOObject::guid_t& clsid, const
 	guard.release();
 
 	if (i==m_factory_map.end())
+	{
+		errno = ENOENT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No class factory\n")),-1);
+	}
 
 	return i->second->CreateObject(clsid,iid,ppVal);
 }

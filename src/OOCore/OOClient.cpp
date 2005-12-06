@@ -15,7 +15,10 @@ OOCore_Export int
 OOObject::Init()
 {
 	if (g_IsServer)
+	{
+		errno = EACCES;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Already initialized as server!\n")),-1);
+	}
 
 	int ret = 0;
 

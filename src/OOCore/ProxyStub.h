@@ -157,7 +157,10 @@ namespace Impl
 		OOObject::int32_t QueryInterface_i(int id, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 		{
 			if (!ppVal)
+			{
+				errno = EINVAL;
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+			}
 
 			if (m_bStub)
 			{

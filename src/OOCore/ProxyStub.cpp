@@ -39,7 +39,15 @@ OOCore::Impl::marshaller_t::send_and_recv()
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read return code\n")),-1);
 
 		if (ret_code != 0)
+		{
+			OOObject::int32_t error_no;
+			if (ptrIn->ReadLong(error_no) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read errno\n")),-1);
+
+			errno = error_no;
+
 			return ret_code;
+		}
 
 		m_in = ptrIn;
 	}

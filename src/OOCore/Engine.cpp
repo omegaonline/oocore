@@ -44,6 +44,7 @@ OOCore::Engine::open(int argc, ACE_TCHAR* argv[])
 		switch (option)
 		{
 		case ACE_TEXT(':'):
+			errno = EINVAL;
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n"),cmd_opts.opt_opt()),-1);
 			break;
 
@@ -59,7 +60,10 @@ int
 OOCore::Engine::open()
 {
 	if (m_reactor)
+	{
+		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Engine already open\n")),-1);
+	}
 
 	// Create the correct reactor impl
 	ACE_Reactor_Impl* reactor_impl;

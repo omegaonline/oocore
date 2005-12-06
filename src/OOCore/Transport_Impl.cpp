@@ -25,7 +25,10 @@ OOCore::Transport_Impl::open_transport(const bool bAcceptor)
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 	if (m_ptrOM)
+	{
+		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Transport already open!\n")),-1);
+	}
 
 	ACE_NEW_RETURN(m_ptrOM,OOCore::ObjectManager,-1);
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
@@ -162,7 +165,10 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 
 	// Check the header size
 	if (header_size != sizeof(header_size) + sizeof(ACE_CDR::ULong))
+	{
+		errno = EFAULT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad header\n")),-1);
+	}
 	
 	// Check the header length
 	if (input.length() < header_size - sizeof(header_size))
@@ -191,7 +197,10 @@ OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, const OOObje
 	guard.release();
 
 	if (!ptrOM)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
+	}
 
 	return ptrOM->CreateObject(clsid,iid,ppVal);
 }
@@ -204,7 +213,10 @@ OOCore::Transport_Impl::AddObjectFactory(const OOObject::guid_t& clsid, ObjectFa
 	guard.release();
 
 	if (!ptrOM)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
+	}
 
 	return ptrOM->AddObjectFactory(clsid,pFactory);
 }
@@ -217,7 +229,10 @@ OOCore::Transport_Impl::RemoveObjectFactory(const OOObject::guid_t& clsid)
 	guard.release();
 
 	if (!ptrOM)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
+	}
 
 	return ptrOM->RemoveObjectFactory(clsid);
 }
@@ -226,7 +241,10 @@ int
 OOCore::Transport_Impl::CreateOutputStream(OutputStream** ppStream)
 {
 	if (!ppStream)
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
 
 	Impl::OutputStream_CDR* pStream;
 	ACE_NEW_RETURN(pStream,Impl::OutputStream_CDR(reinterpret_cast<size_t>(this)),-1);
@@ -243,7 +261,10 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 	Impl::OutputStream_CDR* pStream = reinterpret_cast<Impl::OutputStream_CDR*>(output);
 
 	if (pStream->get_magic() != reinterpret_cast<unsigned long>(this))
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream passed in to transport\n")),-1);
+	}
 
 	// Write a header
     ACE_OutputCDR header;

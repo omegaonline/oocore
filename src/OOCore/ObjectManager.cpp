@@ -25,7 +25,10 @@ OOCore::ObjectManager::Open(Transport* transport, const bool AsAcceptor)
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (m_ptrTransport)
+	{
+		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling open repeatedly on an ObjectManager!\n")),-1);
+	}
 
 	m_ptrTransport = transport;
 
@@ -86,12 +89,15 @@ int
 OOCore::ObjectManager::connect()
 {
 	if (m_ptrRemoteFactory || m_bIsAcceptor)
+	{
+		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) ObjectManager already connected\n")),-1);
+	}
 
 	// We call this synchronously, 'cos the data should already be there
 	ACE_Time_Value wait(5);
 	if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy creation timed out and gave up\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Proxy creation timed out and gave up\n")),-1);
 
 	if (m_ptrRemoteFactory->SetReverse(this) != 0)
 	{
@@ -107,11 +113,17 @@ int
 OOCore::ObjectManager::accept()
 {
 	if (m_ptrRemoteFactory || m_bIsAcceptor)
+	{
+		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) ObjectManager already connected\n")),-1);
+	}
 
 	// Write out the interface info
 	if (!m_ptrTransport)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
+	}
 	
 	// Create the stub
 	OOObject::cookie_t key;
@@ -152,7 +164,10 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 {
 	// Check we have input
 	if (!input_stream)
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling process msg with a NULL message!\n")),-1);
+	}
 
 	Impl::InputStream_Wrapper input(input_stream);
 
@@ -170,14 +185,20 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 	else if (request == 1)
 		return process_request(input);
 	else
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid request status\n")),-1);
+	{
+		errno = EINVAL;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid request status\n")),-1);
+	}
 }
 
 int 
 OOCore::ObjectManager::process_connect(Impl::InputStream_Wrapper& input)
 {
 	if (!m_ptrTransport)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connect with no transport!\n")),-1);
+	}
 
 	// Read the object key
 	OOObject::cookie_t key;
@@ -208,14 +229,20 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 	Stub* st;
 	if (m_stub_map.find(key,st) != 0)
+	{
+		errno = ENOENT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid stub key\n")),-1);
+	}
 
 	Object_Ptr<Stub> stub(st);
 	Object_Ptr<Transport> transport = m_ptrTransport;
 	guard.release();
 	
 	if (!transport)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
+	{
+		errno = ENOTCONN;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
+	}
 
 	// Read the sync state
 	OOObject::uint32_t flags_i;
@@ -302,7 +329,10 @@ int
 OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object* obj, OOObject::cookie_t* key)
 {
 	if (!key)
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
 
 	// Aquire lock first
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
@@ -399,13 +429,19 @@ int
 OOCore::ObjectManager::CreateRequest(Marshall_Flags flags, const OOObject::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
 {
 	if (!trans_id || !output_stream)
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
 
 	// Put it in the transaction map
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_ptrTransport)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) CreateRequest called on closed ObjectManager\n")),-1);
+	}
 
 	Object_Ptr<Transport> transport = m_ptrTransport;
 
@@ -448,7 +484,7 @@ OOCore::ObjectManager::CreateRequest(Marshall_Flags flags, const OOObject::cooki
 	}
 
 	// Write the flags
-	if (output.write(static_cast<OOObject::uint16_t>(flags)) != 0)
+	if (output->WriteUShort(flags) != 0)
 	{
 		CancelRequest(*trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write sync status\n")),-1);
@@ -502,7 +538,10 @@ OOCore::ObjectManager::SendAndReceive(Marshall_Flags flags, OOObject::uint16_t w
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_ptrTransport)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Calling send and receive on a closed object manager\n")),-1);
+	{
+		errno = ENOTCONN;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling send and receive on a closed object manager\n")),-1);
+	}
 
 	Object_Ptr<Transport> transport = m_ptrTransport;
 
@@ -530,7 +569,10 @@ OOCore::ObjectManager::CreateObject(const OOObject::guid_t& clsid, const OOObjec
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_ptrRemoteFactory)
+	{
+		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No remote object factory\n")),-1);
+	}
 
 	Object_Ptr<RemoteObjectFactory> fact = m_ptrRemoteFactory;
 
@@ -549,15 +591,24 @@ OOObject::int32_t
 OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 {
 	if (!pRemote)
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
 
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_bIsAcceptor)
+	{
+		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to set reverse object factory for acceptor!\n")),-1);
+	}
 
 	if (m_ptrRemoteFactory)
+	{
+		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to set reverse object factory multiple times\n")),-1);
+	}
 
 	m_ptrRemoteFactory = pRemote;
 
@@ -578,7 +629,10 @@ OOObject::int32_t
 OOCore::ObjectManager::AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory)
 {
 	if (!g_IsServer)
+	{
+		errno = EOPNOTSUPP;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) AddRemoteObject should not be called on a client\n")),-1);
+	}
 
 	return OOCore::AddObjectFactory(clsid,pFactory);
 }
@@ -587,7 +641,10 @@ OOObject::int32_t
 OOCore::ObjectManager::RemoveObjectFactory(const OOObject::guid_t& clsid)
 {
 	if (!g_IsServer)
+	{
+		errno = EOPNOTSUPP;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) RemoveRemoteObject should not be called on a client\n")),-1);
+	}
 
 	return OOCore::RemoveObjectFactory(clsid);
 }

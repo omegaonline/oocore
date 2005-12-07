@@ -36,8 +36,10 @@ class OOCore_Export ObjectManager :
 	public Impl::RemoteObjectFactory,
 	public ProxyStubManager
 {
+	friend class shutup_gcc_warnings;
+	
 public:
-	ObjectManager(void);
+	ObjectManager();
 	
 	int Open(Transport* transport, const bool AsAcceptor);
 	int Close();
@@ -45,7 +47,7 @@ public:
 	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 private:
-	virtual ~ObjectManager(void);
+	virtual ~ObjectManager();
 
 	struct response_wait
 	{

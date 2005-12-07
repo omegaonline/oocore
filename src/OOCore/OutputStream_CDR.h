@@ -24,6 +24,8 @@ class OutputStream_CDR :
 	public OOCore::Object_Impl<OOCore::OutputStream>,
 	public ACE_OutputCDR
 {
+	friend class InputStream_CDR;
+	
 public:
 	OutputStream_CDR(size_t magic);
 
@@ -31,7 +33,7 @@ public:
 	int copy_from(InputStream_CDR* in);
 
 private:
-	virtual ~OutputStream_CDR(void);
+	virtual ~OutputStream_CDR() {}
 
 	template <class T>
 	int WriteVar(const T& val)

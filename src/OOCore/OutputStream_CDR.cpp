@@ -6,10 +6,6 @@ OOCore::Impl::OutputStream_CDR::OutputStream_CDR(size_t magic) :
 {
 }
 
-OOCore::Impl::OutputStream_CDR::~OutputStream_CDR(void)
-{
-}
-
 size_t 
 OOCore::Impl::OutputStream_CDR::get_magic() const
 {

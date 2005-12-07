@@ -31,7 +31,7 @@ public:
 private:
 	Proxy_Stub_Factory(void) {}
 	virtual ~Proxy_Stub_Factory(void) {}
-	friend ACE_Singleton<Proxy_Stub_Factory, ACE_Thread_Mutex>;
+	friend class ACE_Singleton<Proxy_Stub_Factory, ACE_Thread_Mutex>;
 
 	struct proxystub_node
 	{

@@ -41,11 +41,11 @@
 #define OOCORE_PS_PARAM_VAR(param)				BOOST_PP_SEQ_ELEM(2,param)
 #define OOCORE_PS_PARAM_NAME(param)				BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_VAR(param))
 
-#define OOCORE_PS_PARAM_ATTRIB_IS(param,type)		BOOST_PP_EQUAL(BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),-1)),2)
+#define OOCORE_PS_PARAM_ATTRIB_IS(param,type)		BOOST_PP_EQUAL(BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),99)),2)
 #define OOCORE_PS_PARAM_ATTRIB_IS_I(s,type,a)		BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,type)))
 
 #define OOCORE_PS_PARAM_ATTRIB_ELEM_I(n,seq)		BOOST_PP_ARRAY_ELEM(BOOST_PP_ADD(n,1),BOOST_PP_SEQ_TO_ARRAY(seq))
-#define OOCORE_PS_PARAM_ATTRIB_ELEM(param,type,n)	OOCORE_PS_PARAM_ATTRIB_ELEM_I(n,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,BOOST_PP_SEQ_ELEM(0,BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),-1))))
+#define OOCORE_PS_PARAM_ATTRIB_ELEM(param,type,n)	OOCORE_PS_PARAM_ATTRIB_ELEM_I(n,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,BOOST_PP_SEQ_ELEM(0,BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),99))))
 
 #define OOCORE_PS_PARSE_PARAMS(n,params,m)			BOOST_PP_REPEAT_FROM_TO(0,n,OOCORE_PS_PARSE_PARAMS_I,(params,m))
 #define OOCORE_PS_PARSE_PARAMS_I(z,n,d)				BOOST_PP_TUPLE_ELEM(2,1,d)(n,BOOST_PP_SEQ_SUBSEQ(BOOST_PP_TUPLE_ELEM(2,0,d),BOOST_PP_MUL(n,3),3))
@@ -71,10 +71,10 @@
 
 // Proxy function implementation
 #define OOCORE_PS_IMPL_PROXY_FN(id,n,seq)			{ OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_DECL_IMPL) \
-													OOCore::Impl::marshaller_t method_PROXY_FUNC(method(BOOST_PP_CAT(id,::value))); \
+													OOCore::Impl::marshaller_t method_PROXY_FUNC(method(id::value)); \
 													method_PROXY_FUNC OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_IN_IMPL); \
 													OOObject::int32_t method_PROXY_FUNC_RESULT = method_PROXY_FUNC.send_and_recv(); \
-													method_PROXY_FUNC OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_OUT_IMPL); return method_PROXY_FUNC_RESULT; }
+													OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_OUT_IMPL) return method_PROXY_FUNC_RESULT; }
 
 #define OOCORE_PS_PROXY_PARAM_DECL_IMPL(n,param)	BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
 														OOCore::Impl::array_t < OOCORE_PS_PARAM_TYPE(param) > BOOST_PP_CAT(PROXY_ARRAY_,OOCORE_PS_PARAM_VAR(param)) BOOST_PP_LPAREN() OOCORE_PS_PARAM_VAR(param) BOOST_PP_COMMA() OOCORE_PS_PARAM_ATTRIB_ELEM(param,size_is,0) BOOST_PP_RPAREN();, \
@@ -102,13 +102,13 @@
 													) 
 
 #define OOCORE_PS_PROXY_PARAM_OUT_IMPL(n,param)		BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,out), \
-														>> BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
+														method_PROXY_FUNC >> BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
 															BOOST_PP_CAT(PROXY_ARRAY_,OOCORE_PS_PARAM_VAR(param)), \
 															BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,iid_is), \
 																BOOST_PP_CAT(PROXY_OBJECT_,OOCORE_PS_PARAM_VAR(param)), \
 																OOCORE_PS_PARAM_VAR(param) \
 															) \
-														), \
+														;), \
 														BOOST_PP_EMPTY() \
 													)
 
@@ -199,7 +199,7 @@
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
 													name(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
 													friend OOCore::Impl::unused_t BOOST_PP_CAT(Method_Id_Gen_,PS)(name*,...); \
-													int invoke_i(iface* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) { \
+													int invoke_i(iface* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::Impl::InputStream_Wrapper input, OOCore::Impl::OutputStream_Wrapper output) { \
 													return OOCore::Impl::invoker_t::Invoke(this,obj,manager,method,input,output); } \
 													public: typedef name this_class; typedef iface iface_class; \
 													static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOObject::cookie_t& key) { name* proxy; ACE_NEW_RETURN(proxy,this_class(manager,key),0); return proxy;} \

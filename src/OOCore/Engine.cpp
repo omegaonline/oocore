@@ -3,7 +3,11 @@
 #include <memory>
 
 #include <ace/Get_Opt.h>
+#ifdef ACE_WIN32
 #include <ace/WFMO_Reactor.h>
+#else
+#include <ace/TP_Reactor.h>
+#endif
 #include <ace/OS.h>
 
 OOCore::Engine::Engine(void) :
@@ -83,10 +87,10 @@ OOCore::Engine::open(unsigned int nThreads)
 
 	// Create the correct reactor impl
 	ACE_Reactor_Impl* reactor_impl;
-#if !defined (ACE_WIN32)
-	ACE_NEW_RETURN(reactor_impl,ACE_TP_Reactor,-1);
-#else
+#ifdef ACE_WIN32
 	ACE_NEW_RETURN(reactor_impl,ACE_WFMO_Reactor,-1);
+#else
+	ACE_NEW_RETURN(reactor_impl,ACE_TP_Reactor,-1);
 #endif // !ACE_WIN32
 
 	ACE_NEW_NORETURN(m_reactor,ACE_Reactor(reactor_impl,1));

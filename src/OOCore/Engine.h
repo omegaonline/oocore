@@ -31,7 +31,7 @@ public:
 private:
 	Engine(void);
 	virtual ~Engine(void);
-	friend ACE_DLL_Singleton_T<Engine, ACE_Thread_Mutex>;
+	friend class ACE_DLL_Singleton_T<Engine, ACE_Thread_Mutex>;
 
 	ACE_Activation_Queue m_activ_queue;
 	ACE_Reactor* m_reactor;

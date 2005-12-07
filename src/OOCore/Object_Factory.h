@@ -22,7 +22,7 @@ public:
 private:
 	Object_Factory(void) {}
 	virtual ~Object_Factory(void) {}
-	friend ACE_Singleton<Object_Factory, ACE_Thread_Mutex>;
+	friend class ACE_Singleton<Object_Factory, ACE_Thread_Mutex>;
 
 	ACE_Thread_Mutex m_lock;
 	std::map<OOObject::guid_t,OOCore::Object_Ptr<ObjectFactory> > m_factory_map;

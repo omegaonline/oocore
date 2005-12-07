@@ -25,7 +25,7 @@ class InputStream_CDR :
 	friend class OutputStream_CDR;
 
 public:
-	InputStream_CDR(ACE_InputCDR& in, size_t magic);
+	InputStream_CDR(const ACE_InputCDR& in, size_t magic);
 
 	size_t get_magic() const;
 	

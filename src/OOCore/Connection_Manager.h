@@ -14,7 +14,6 @@
 #include <ace/MEM_Stream.h>
 
 #include "./Transport_Svc_Handler.h"
-#include "./ObjectManager.h"
 
 namespace OOCore
 {
@@ -32,7 +31,7 @@ public:
 private:
 	virtual ~Connection_Manager() {}
 
-	friend ACE_Singleton<Connection_Manager, ACE_Thread_Mutex>;
+	friend class ACE_Singleton<Connection_Manager, ACE_Thread_Mutex>;
 
 	ssize_t send_n(ACE_Message_Block* mb);
 };

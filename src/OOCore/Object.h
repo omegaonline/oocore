@@ -2,7 +2,7 @@
 #define OOCORE_OBJECT_H_INCLUDED_
 
 #include "./Object_Types.h"
-#include "./GUID.h"
+#include "./Guid.h"
 
 #include "./OOCore_export.h"
 

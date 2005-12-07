@@ -20,14 +20,17 @@
 
 #include <functional>
 
+namespace std
+{
 template<>
-struct std::less<OOObject::cookie_t> : public std::binary_function <OOObject::cookie_t, OOObject::cookie_t, bool> 
+struct less<OOObject::cookie_t> : public binary_function <OOObject::cookie_t, OOObject::cookie_t, bool> 
 {
 	bool operator()(const OOObject::cookie_t& _Left, const OOObject::cookie_t& _Right) const
 	{
 		return (_Left.slot_generation() <= _Right.slot_generation() &&
 				_Left.slot_index() < _Right.slot_index());
 	}
+};
 };
 
 namespace OOCore

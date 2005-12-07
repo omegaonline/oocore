@@ -12,7 +12,7 @@ namespace Impl
 	{
 	public:
 		template <class T, class I>
-			static int Invoke(T* pT, I* iface, OOCore::ProxyStubManager* manager, OOObject::uint32_t method, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output)
+			static int Invoke(T* pT, I* iface, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOObject::uint32_t method, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output)
 		{
 			OOCORE_PS_DECLARE_INVOKE_TABLE()
 		}
@@ -203,6 +203,8 @@ namespace Impl
 		}
 
 	protected:
+		virtual ~ProxyStub_Impl() {};
+		
 		Impl::marshaller_t method(int id, Marshall_Flags flags = SYNC, OOObject::uint16_t wait_secs = 5)
 		{
 			OOObject::uint32_t method = static_cast<OOObject::uint32_t>(id);
@@ -222,10 +224,10 @@ namespace Impl
 			
 			return Impl::marshaller_t(m_manager,flags,wait_secs,output,trans_id);
 		}
+		
+		virtual int invoke_i(OBJECT* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::Impl::InputStream_Wrapper input, OOCore::Impl::OutputStream_Wrapper output) = 0;
 
-		virtual int invoke_i(OBJECT* obj, OOObject::uint32_t method, OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output) = 0;
-
-	private:
+	private:		
 		const bool m_bStub;
 		OOObject::cookie_t m_key;
 		OOCore::Object_Ptr<OBJECT> m_object;

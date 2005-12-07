@@ -41,7 +41,8 @@ OOCore::Impl::create_guid(const ACE_Utils::UUID& uuid)
 OOObject::guid_t 
 OOCore::Impl::create_guid(const ACE_CString& uuidString)
 {
-	return init_guid(ACE_Utils::UUID(uuidString));
+	ACE_Utils::UUID uuid(uuidString);
+	return init_guid(uuid);
 }
 
 bool 

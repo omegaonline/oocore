@@ -110,50 +110,37 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 #include "./Test.h"
 #endif
 
+#define OOCORE_PSF_CREATE_AUTO_STUB(iface,manager,key,obj)		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_stub(manager,key,static_cast<iface*>(obj)))
+#define OOCORE_PSF_CREATE_AUTO_PROXY(iface,manager,key) 		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_proxy(manager,key))
+
+#define OOCORE_PSF_BEGIN_AUTO_PROXY_MAP()
+#define OOCORE_PSF_AUTO_PROXY_ENTRY(t)	if (iid==t::IID) *proxy=OOCORE_PSF_CREATE_AUTO_PROXY(t,manager,key); else
+#define OOCORE_PSF_END_AUTO_PROXY_MAP() { errno = ENOENT;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid Proxy IID\n")),-1);}if (*proxy==0) ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy create failed\n")),-1); (*proxy)->AddRef(); return 0;
+
+#define OOCORE_PSF_BEGIN_AUTO_STUB_MAP()
+#define OOCORE_PSF_AUTO_STUB_ENTRY(t)	if (iid==t::IID) *stub=OOCORE_PSF_CREATE_AUTO_STUB(t,manager,key,obj); else
+#define OOCORE_PSF_END_AUTO_STUB_MAP() {errno = ENOENT;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid Stub IID\n")),-1);}if (*stub==0) ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Stub create failed\n")),-1); (*stub)->AddRef(); return 0;
+
 int 
 OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy)
 {
-	if (iid==OOCore::Impl::RemoteObjectFactory::IID)
-		*proxy = CREATE_AUTO_PROXY(OOCore::Impl::RemoteObjectFactory,manager,key);
-
-#ifdef OOCORE_TEST_H_INCLUDED_
-	else if (iid==OOCore::Test::IID)
-		*proxy = CREATE_AUTO_PROXY(OOCore::Test,manager,key);
-#endif
-
-	else
-	{
-		errno = ENOENT;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid Proxy IID\n")),-1);
-	}
+	OOCORE_PSF_BEGIN_AUTO_PROXY_MAP()
+		OOCORE_PSF_AUTO_PROXY_ENTRY(OOCore::Impl::RemoteObjectFactory)
 	
-	if (*proxy==0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy create failed\n")),-1);
-
-	(*proxy)->AddRef();
-	return 0;
+#ifdef _DEBUG
+		OOCORE_PSF_AUTO_PROXY_ENTRY(OOCore::Test)
+#endif
+	OOCORE_PSF_END_AUTO_PROXY_MAP()
 }
 
 int 
 OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub)
 {
-	if (iid==OOCore::Impl::RemoteObjectFactory::IID)
-		*stub = CREATE_AUTO_STUB(OOCore::Impl::RemoteObjectFactory,manager,key,obj);
+	OOCORE_PSF_BEGIN_AUTO_STUB_MAP()
+		OOCORE_PSF_AUTO_STUB_ENTRY(OOCore::Impl::RemoteObjectFactory)
 		
-#ifdef OOCORE_TEST_H_INCLUDED_
-	else if (iid==OOCore::Test::IID)
-		*stub = CREATE_AUTO_STUB(OOCore::Test,manager,key,obj);
+#ifdef _DEBUG
+		OOCORE_PSF_AUTO_STUB_ENTRY(OOCore::Test)
 #endif
-
-	else
-	{
-		errno = ENOENT;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid Stub IID\n")),-1);
-	}
-	
-	if (*stub==0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Stub create failed\n")),-1);
-
-	(*stub)->AddRef();
-	return 0;
+	OOCORE_PSF_END_AUTO_STUB_MAP()
 }

@@ -1,5 +1,5 @@
-#ifndef _OOSERVER_NT_SERVICE_H_INCLUDED_
-#define _OOSERVER_NT_SERVICE_H_INCLUDED_
+#ifndef OOSERVER_NT_SERVICE_H_INCLUDED_
+#define OOSERVER_NT_SERVICE_H_INCLUDED_
 
 #include <ace/NT_Service.h>
 
@@ -40,16 +40,18 @@ protected:
 	int handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask);
 
 private:
+	typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
+
 	static ACE_THR_FUNC_RETURN start_service(void*);
 	static BOOL WINAPI ctrlc_handler(DWORD dwCtrlType);
 
 	void handle_shutdown();
 
-	bool scm_started_;
+	bool m_scm_started;
 	ACE_Event m_finished;
 	bool m_our_close;
 };
 
 #endif // ACE_NT_SERVICE_DEFINE
 
-#endif // _OOSERVER_NT_SERVICE_H_INCLUDED_
+#endif // OOSERVER_NT_SERVICE_H_INCLUDED_

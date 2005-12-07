@@ -208,7 +208,4 @@
 												
 #define END_AUTO_PROXY_STUB()						};
 
-#define CREATE_AUTO_STUB(iface,manager,key,obj)		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_stub(manager,key,static_cast<iface*>(obj)))
-#define CREATE_AUTO_PROXY(iface,manager,key) 		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_proxy(manager,key))
-
 #endif // OOCORE_PROXYSTUB_MACROS_H_INCLUDED_

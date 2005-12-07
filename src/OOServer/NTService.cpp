@@ -21,13 +21,11 @@
 // multiple threads.  The first reference to it at runtime creates it,
 // and the ACE_Object_Manager deletes it at run-down.
 
-typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
-
 ACE_NT_SERVICE_DEFINE(OOServer,NTService,NTSERVICE_DESC);
 
 NTService::NTService(void) : 
 	ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC),
-	scm_started_(false),
+	m_scm_started(false),
 	m_our_close(false)
 {
 }
@@ -195,14 +193,14 @@ int NTService::description(const ACE_TCHAR *desc)
 ACE_THR_FUNC_RETURN NTService::start_service(void*)
 {
 	// Assume everything is okay
-	NTSERVICE::instance()->scm_started_ = true;
+	NTSERVICE::instance()->m_scm_started = true;
 
 	// This blocks running svc
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
 	
 	if (ret == 0)
 	{
-		NTSERVICE::instance()->scm_started_ = false;
+		NTSERVICE::instance()->m_scm_started = false;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),-1);
 	}
 	
@@ -232,7 +230,7 @@ void NTService::handle_control(DWORD control_code)
 	if (control_code == SERVICE_CONTROL_SHUTDOWN || 
 		control_code == SERVICE_CONTROL_STOP)
 	{
-		if (scm_started_)
+		if (m_scm_started)
 			report_status(SERVICE_STOP_PENDING);
 
 		ACE_DEBUG ((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));

@@ -43,8 +43,8 @@
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
-				GenerateMapFile="TRUE"
-				MapExports="TRUE"
+				GenerateMapFile="FALSE"
+				MapExports="FALSE"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)/OOCore.lib"
 				TargetMachine="1"/>

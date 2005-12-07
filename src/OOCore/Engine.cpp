@@ -37,12 +37,22 @@ int
 OOCore::Engine::open(int argc, ACE_TCHAR* argv[])
 {
 	// Parse cmd line first
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":"));
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":e:"));
 	int option;
+	int threads = 2;
 	while ((option = cmd_opts()) != EOF)
 	{
 		switch (option)
 		{
+		case ACE_TEXT('e'):
+			threads = ACE_OS::atoi(cmd_opts.opt_arg());
+			if (threads<0 || threads>10)
+			{
+				errno = EINVAL;
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of engine threads '%s' range is [0..10].\n"),cmd_opts.opt_arg()),-1);
+			}
+			break;
+
 		case ACE_TEXT(':'):
 			errno = EINVAL;
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n"),cmd_opts.opt_opt()),-1);
@@ -53,12 +63,18 @@ OOCore::Engine::open(int argc, ACE_TCHAR* argv[])
 		}
 	}
 
-	return open();
+	return open(threads);
 }
 
 int 
-OOCore::Engine::open()
+OOCore::Engine::open(unsigned int nThreads)
 {
+	if (nThreads<0 || nThreads>10)
+	{
+		errno = EINVAL;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of engine threads '%u' range is [0..10].\n"),nThreads),-1);
+	}
+
 	if (m_reactor)
 	{
 		errno = EISCONN;
@@ -77,7 +93,7 @@ OOCore::Engine::open()
 	if (!m_reactor)
 		return -1;
 
-	return activate();
+	return activate(nThreads);
 }
 
 int 

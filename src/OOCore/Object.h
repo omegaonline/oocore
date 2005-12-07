@@ -25,7 +25,7 @@ namespace OOObject
 	};
 
 	// API functions
-	OOCore_Export int Init();
+	OOCore_Export int Init(unsigned int threads = 1);
 	OOCore_Export void Term();	
 	OOCore_Export void* Alloc(const size_t size);
 	OOCore_Export void Free(void* p);

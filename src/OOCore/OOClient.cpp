@@ -12,7 +12,7 @@
 #endif
 
 OOCore_Export int 
-OOObject::Init()
+OOObject::Init(unsigned int threads)
 {
 	if (g_IsServer)
 	{
@@ -30,7 +30,7 @@ OOObject::Init()
 			OOCore::RegisterProxyStub(OOCore::Test::IID,"OOCore");
 		#endif
 
-		if ((ret = OOCore::ENGINE::instance()->open()) == 0)
+		if ((ret = OOCore::ENGINE::instance()->open(threads)) == 0)
 		{
 			if ((ret = OOCore::Impl::Connection_Manager::init()) == 0)
 			{

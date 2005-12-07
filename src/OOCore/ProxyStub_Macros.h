@@ -108,7 +108,7 @@
 																BOOST_PP_CAT(PROXY_OBJECT_,OOCORE_PS_PARAM_VAR(param)), \
 																OOCORE_PS_PARAM_VAR(param) \
 															) \
-														;), \
+														);, \
 														BOOST_PP_EMPTY() \
 													)
 

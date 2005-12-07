@@ -57,27 +57,25 @@ OOCore::ObjectManager::Close()
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	if (m_ptrRemoteFactory)
+	if (!m_bIsAcceptor && m_ptrRemoteFactory)
 	{
 		// Inform the other end we are leaving
-		m_ptrRemoteFactory->RemoteClose();
-		m_ptrRemoteFactory = 0;
+		m_ptrRemoteFactory->SetReverse(0);
 	}
+	m_ptrRemoteFactory = 0;
 
 	// Wait until all stubs have gone
 	ACE_Time_Value wait(5);
 	if (ENGINE::instance()->pump_requests(&wait,await_close,this) != 0)
 	{
 		// Close all the stubs
-		for (std::map<OOObject::cookie_t,OOObject::Object*>::iterator i=m_rev_stub_obj_map.begin();i!=m_rev_stub_obj_map.end();++i)
+		for (ACE_Active_Map_Manager<Stub*>::iterator i=m_stub_map.begin();i!=m_stub_map.end();++i)
 		{
-			Stub* stub;
-			if (m_stub_map.unbind(i->first,stub) == 0)
-				stub->Release();
+			(*i).int_id_->Release();
 		}
+		m_stub_map.unbind_all();
 
-		m_rev_stub_obj_map.clear();
-		m_stub_obj_map.clear();
+		m_stub_obj_map.remove_all();
 	}
 
 	m_ptrTransport = 0;
@@ -101,7 +99,6 @@ OOCore::ObjectManager::connect()
 
 	if (m_ptrRemoteFactory->SetReverse(this) != 0)
 	{
-		m_ptrRemoteFactory->RemoteClose();
 		m_ptrRemoteFactory = 0;
 		return -1;
 	}
@@ -302,14 +299,18 @@ OOCore::ObjectManager::process_response(Impl::InputStream_Wrapper& input)
 int 
 OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** ppVal)
 {
+	if (!ppVal)
+	{
+		errno = EINVAL;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
+
 	// Check if we have already created a proxy for this key
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
-	std::map<OOObject::cookie_t,OOObject::Object*>::iterator i=m_proxy_map.find(key);
 	
-	if (i!=m_proxy_map.end())
+	if (m_proxy_obj_map.find(key,*ppVal))
 	{
 		// Yes we have!
-		*ppVal = i->second;
 		(*ppVal)->AddRef();
 		return 0;
 	}
@@ -319,8 +320,7 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::
 		return -1;
 	
 	// Pop it in the map
-	m_proxy_map.insert(std::map<OOObject::cookie_t,OOObject::Object*>::value_type(key,*ppVal));
-	m_rev_proxy_map.insert(std::map<OOObject::Object*,OOObject::cookie_t>::value_type(*ppVal,key));
+	m_proxy_obj_map.insert(key,iid,*ppVal);
 
 	return 0;
 }
@@ -328,7 +328,7 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::
 int 
 OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object* obj, OOObject::cookie_t* key)
 {
-	if (!key)
+	if (!key || !obj)
 	{
 		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
@@ -338,11 +338,9 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	// Check if we have created a stub for this obj already
-	std::map<OOObject::Object*,OOObject::cookie_t>::iterator i=m_stub_obj_map.find(obj);
-	if (i!=m_stub_obj_map.end())
+	if (m_stub_obj_map.find(obj,iid,*key))
 	{
-		// Yes we have, return the key
-		*key = i->second;
+		// Yes we have
 		return 0;
 	}
 
@@ -354,11 +352,11 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	Stub* stub = 0;
 	
 	// If obj is a proxy, we can create a 'pass-through' stub!
-	std::map<OOObject::Object*,OOObject::cookie_t>::iterator j=m_rev_proxy_map.find(obj);
-	if (j!=m_rev_proxy_map.end())
+	OOObject::cookie_t proxy_key;
+	if (m_proxy_obj_map.find(obj,iid,proxy_key))
 	{
 		// Yes it is!
-		ACE_NEW_NORETURN(stub,OOCore::Impl::PassThruStub(this,j->second,*key));
+		ACE_NEW_NORETURN(stub,OOCore::Impl::PassThruStub(this,proxy_key,*key));
 		if (stub==0)
 		{
 			m_stub_map.unbind(*key);
@@ -380,8 +378,7 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	}
 
 	// Add the obj to the stub key maps
-	m_stub_obj_map.insert(std::map<OOObject::Object*,OOObject::cookie_t>::value_type(obj,*key));
-	m_rev_stub_obj_map.insert(std::map<OOObject::cookie_t,OOObject::Object*>::value_type(*key,obj));
+	m_stub_obj_map.insert(*key,iid,obj);
 	
 	return 0;
 }
@@ -392,14 +389,7 @@ OOCore::ObjectManager::ReleaseProxy(const OOObject::cookie_t& key)
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 	
 	// Remove from proxy map
-	std::map<OOObject::cookie_t,OOObject::Object*>::iterator i=m_proxy_map.find(key);
-	if (i!=m_proxy_map.end())
-	{
-		m_rev_proxy_map.erase(i->second);
-		m_proxy_map.erase(i);
-	}
-
-	return 0;
+	return (m_proxy_obj_map.remove(key) ? 0 : -1);
 }
 
 int 
@@ -413,13 +403,8 @@ OOCore::ObjectManager::ReleaseStub(const OOObject::cookie_t& key)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub\n")),-1);
 	
 	// Remove from stub obj map
-	std::map<OOObject::cookie_t,OOObject::Object*>::iterator i=m_rev_stub_obj_map.find(key);
-	if (i!=m_rev_stub_obj_map.end())
-	{
-		m_stub_obj_map.erase(i->second);
-		m_rev_stub_obj_map.erase(i);
-	}
-
+	m_stub_obj_map.remove(key);
+	
 	stub->Release();
 	
 	return 0;
@@ -535,6 +520,12 @@ OOCore::ObjectManager::await_response_i(OOObject::uint32_t trans_id, InputStream
 int 
 OOCore::ObjectManager::SendAndReceive(Marshall_Flags flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
 {
+	if (!input || !output)
+	{
+		errno = EINVAL;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
+
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_ptrTransport)
@@ -566,6 +557,12 @@ OOCore::ObjectManager::SendAndReceive(Marshall_Flags flags, OOObject::uint16_t w
 OOObject::int32_t 
 OOCore::ObjectManager::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
+	if (!ppVal)
+	{
+		errno = EINVAL;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
+	}
+
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_ptrRemoteFactory)
@@ -590,12 +587,6 @@ OOCore::ObjectManager::CreateRemoteObject(const OOObject::guid_t& clsid, const O
 OOObject::int32_t 
 OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 {
-	if (!pRemote)
-	{
-		errno = EINVAL;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
-	}
-
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	if (!m_bIsAcceptor)
@@ -604,23 +595,13 @@ OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to set reverse object factory for acceptor!\n")),-1);
 	}
 
-	if (m_ptrRemoteFactory)
+	if (m_ptrRemoteFactory && pRemote)
 	{
 		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to set reverse object factory multiple times\n")),-1);
 	}
 
 	m_ptrRemoteFactory = pRemote;
-
-	return 0;
-}
-
-OOObject::int32_t 
-OOCore::ObjectManager::RemoteClose()
-{
-	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
-
-	m_ptrRemoteFactory = 0;
 
 	return 0;
 }

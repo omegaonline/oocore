@@ -204,20 +204,42 @@ namespace Impl
 
 		int read(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
 		{
-			OOObject::cookie_t key;
-			if (in.read(key) != 0) 
+			OOObject::bool_t null;
+			if (in.read(null) != 0) 
 				return -1;
-		
-			return manager->CreateProxy(m_iid,key,reinterpret_cast<OOObject::Object**>(&m_obj));
+
+			if (!null)
+			{
+				OOObject::cookie_t key;
+				if (in.read(key) != 0) 
+					return -1;
+			
+				return manager->CreateProxy(m_iid,key,reinterpret_cast<OOObject::Object**>(&m_obj));
+			}
+			else
+			{
+				m_obj = 0;
+				return 0;
+			}
 		}
 
 		int write(OOCore::ProxyStubManager* manager, OOCore::Impl::OutputStream_Wrapper& out)
 		{
-			OOObject::cookie_t key;
-			if (manager->CreateStub(m_iid,m_obj,&key)!=0)
-				return -1;
+			if (!m_obj)
+			{
+				return out->WriteBoolean(true);
+			}
+			else
+			{
+				if (out->WriteBoolean(false)!=0)
+					return -1;
 
-			return out.write(key);
+				OOObject::cookie_t key;
+				if (manager->CreateStub(m_iid,m_obj,&key)!=0)
+					return -1;
+
+				return out.write(key);
+			}
 		}
 
 	private:

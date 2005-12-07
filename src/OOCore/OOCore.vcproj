@@ -168,6 +168,9 @@
 				RelativePath=".\ProxyStub.cpp">
 			</File>
 			<File
+				RelativePath=".\PSMap.cpp">
+			</File>
+			<File
 				RelativePath=".\Transport_Impl.cpp">
 			</File>
 		</Filter>
@@ -234,6 +237,9 @@
 			</File>
 			<File
 				RelativePath=".\ProxyStub_Types.h">
+			</File>
+			<File
+				RelativePath=".\PSMap.h">
 			</File>
 			<File
 				RelativePath=".\Register.h">

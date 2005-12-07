@@ -6,6 +6,7 @@
 
 #include "./OOCore_Impl.h"
 #include "./ProxyStub.h"
+#include "./PSMap.h"
 
 namespace OOCore
 {
@@ -16,7 +17,6 @@ namespace Impl
 	public:
 		virtual OOObject::int32_t CreateRemoteObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
-		virtual OOObject::int32_t RemoteClose() = 0;
 		virtual OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
 		virtual OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid) = 0;
 	
@@ -26,7 +26,6 @@ namespace Impl
 	BEGIN_AUTO_PROXY_STUB(RemoteObjectFactory)
 		METHOD(CreateRemoteObject,3,((in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
 		METHOD(SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
-		METHOD(RemoteClose,0,())
 		METHOD(AddObjectFactory,2,((in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
 		METHOD(RemoveObjectFactory,1,((in),const OOObject::guid_t&,clsid))
 	END_AUTO_PROXY_STUB()
@@ -62,13 +61,14 @@ private:
 	bool m_bIsAcceptor;
 	bool m_bOpened;
 	ACE_Recursive_Thread_Mutex m_lock;
-	std::map<OOObject::cookie_t,OOObject::Object*> m_proxy_map;
-	std::map<OOObject::Object*,OOObject::cookie_t> m_rev_proxy_map;
-	std::map<OOObject::Object*,OOObject::cookie_t> m_stub_obj_map;
-	std::map<OOObject::cookie_t,OOObject::Object*> m_rev_stub_obj_map;
+
+	Impl::PSMap m_proxy_obj_map;
+	Impl::PSMap m_stub_obj_map;
 	ACE_Active_Map_Manager<Stub*> m_stub_map;
+	
 	Object_Ptr<Impl::RemoteObjectFactory> m_ptrRemoteFactory;
 	Object_Ptr<Transport> m_ptrTransport;
+
 	std::map<OOObject::uint32_t,Object_Ptr<InputStream> > m_response_map;
 	OOObject::uint32_t m_next_trans_id;
 	std::set<OOObject::uint32_t> m_transaction_set;
@@ -93,7 +93,6 @@ END_INTERFACE_MAP()
 public:
 	OOObject::int32_t CreateRemoteObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote);
-	OOObject::int32_t RemoteClose();
 	OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory);
 	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 	

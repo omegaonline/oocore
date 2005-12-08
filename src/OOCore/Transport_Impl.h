@@ -45,7 +45,7 @@ private:
 		
 	struct msg_param : ACE_Method_Request
 	{
-		msg_param(ObjectManager* om, const Object_Ptr<Impl::InputStream_CDR>& i) :
+		msg_param(Object_Ptr<ObjectManager>& om, const Object_Ptr<Impl::InputStream_CDR>& i) :
 			OM(om),input(i)
 		{}
 			

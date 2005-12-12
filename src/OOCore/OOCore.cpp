@@ -24,8 +24,17 @@ DEFINE_CLSID(OOCore::CLSID_Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
 
 bool g_IsServer = false;
 
+namespace OOCore
+{
+namespace Impl
+{
+	OOCore_Export int RegisterAsServer();
+	OOCore_Export int SetServerPort(OOObject::uint16_t uPort);
+};
+};
+
 OOCore_Export int 
-OOCore::InitAsServer()
+OOCore::Impl::RegisterAsServer()
 {
 #ifdef _DEBUG
 	RegisterProxyStub(Server::IID,"OOCore");
@@ -42,7 +51,7 @@ OOCore::InitAsServer()
 }
 
 OOCore_Export int
-OOCore::SetServerPort(OOObject::uint16_t uPort)
+OOCore::Impl::SetServerPort(OOObject::uint16_t uPort)
 {
 	ACE_TCHAR szBuf[24];
 	ACE_OS::sprintf(szBuf,ACE_TEXT("%u"),uPort);

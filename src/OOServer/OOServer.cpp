@@ -70,7 +70,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 				// Run the reactor loop...  
 				// This is needed to make ACE_Service_Config work
 				ACE_Reactor::instance()->owner(ACE_Thread::self());
-				ACE_Reactor::instance()->run_reactor_event_loop();
+				ACE_Reactor::run_event_loop();
 			}
 		}
 

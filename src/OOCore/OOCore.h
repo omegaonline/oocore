@@ -92,8 +92,6 @@ namespace OOCore
 	OOCore_Export int RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
 	OOCore_Export OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory);
 	OOCore_Export OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
-	OOCore_Export int InitAsServer();
-	OOCore_Export int SetServerPort(OOObject::uint16_t uPort);
 };
 
 #endif // OOCORE_OOCORE_H_INCLUDED_

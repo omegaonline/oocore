@@ -16,11 +16,6 @@
 // For the Windows path functions
 #include <shlwapi.h>
 
-// Define a singleton class as a way to insure that there's only one
-// Service instance in the program, and to protect against access from
-// multiple threads.  The first reference to it at runtime creates it,
-// and the ACE_Object_Manager deletes it at run-down.
-
 ACE_NT_SERVICE_DEFINE(OOServer,NTService,NTSERVICE_DESC);
 
 NTService::NTService(void) : 
@@ -138,13 +133,15 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 		if (ACE_Thread_Manager::instance()->spawn(NTService::start_service)==-1)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed spawn service thread\n")),-1);
 	}
+	else
+	{
+		// Ensure we are instantiated
+		NTSERVICE::instance();
 
-	// Enusre we are instantiated
-	NTSERVICE::instance();
-
-	// Install ConsoleCtrlHandler for Ctrl+C
-	if (!SetConsoleCtrlHandler(ctrlc_handler,TRUE))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),-1);
+		// Install ConsoleCtrlHandler for Ctrl+C
+		if (!::SetConsoleCtrlHandler(ctrlc_handler,TRUE))
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),-1);
+	}
 
 	return 0;
 }
@@ -161,7 +158,7 @@ int NTService::insert(const ACE_TCHAR *cmd_line,
 	ACE_TCHAR this_exe[MAXPATHLEN + 2];
 
 	if (ACE_TEXT_GetModuleFileName (0, this_exe + 1, MAXPATHLEN) == 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) GetModuleFilename failed.\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) GetModuleFilename failed.\n")),-1);
 		
 	// Make sure that this_exe is quoted
 	this_exe[0] = ACE_LIB_TEXT ('\"');
@@ -260,7 +257,6 @@ int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
 		{
 			m_our_close = true;
 //			OOSvc_Shutdown();
-			ACE_Reactor::instance()->end_reactor_event_loop();
 		}
 		else
 		{
@@ -273,7 +269,7 @@ int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
 	m_finished.signal();
 
 	// Tell the main reactor to stop
-	//ACE_Reactor::instance()->end_reactor_event_loop();
+	ACE_Reactor::end_event_loop();
 	
 	return ACE_NT_Service::handle_close(handle,mask);
 }

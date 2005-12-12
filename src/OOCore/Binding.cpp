@@ -6,9 +6,17 @@
 OOCore::Impl::Binding::Binding() :
 	m_unbind_pid(false)
 {
-#if (defined (ACE_WIN32) && defined (UNICODE))
+	m_context.name_options()->database(ACE_TEXT("OmegaOnline.reg_db"));
+	
+#ifdef ACE_WIN32
+#ifdef UNICODE
 	m_context.name_options()->use_registry(1);
 	m_context.name_options()->namespace_dir(ACE_TEXT("SOFTWARE\\OmegaOnline"));
+#else
+	m_context.name_options()->namespace_dir(ACE_TEXT("."));
+#endif
+#else
+	m_context.name_options()->namespace_dir(ACE_TEXT("/etc"));
 #endif
 
 	m_context.name_options()->context(ACE_Naming_Context::NODE_LOCAL);

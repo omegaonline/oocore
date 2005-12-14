@@ -1,10 +1,28 @@
 #include "./Proxy_Stub_Factory.h"
-
 #include "./Binding.h"
+#include "./OOCore_PS.h"
+#include "./ObjectManager.h"
 
-//extern "C" OOCore_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
-//extern "C" OOCore_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub);
+#ifdef _DEBUG
+#include "./Test.h"
+#endif
 
+BEGIN_PROXY_STUB_MAP(OOCore_Export,OOCore)
+	PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory)
+
+#ifdef _DEBUG
+	PROXY_STUB_AUTO_ENTRY(OOCore::Test)
+#endif
+
+END_PROXY_STUB_MAP()
+
+OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
+OOCore::Impl::Proxy_Stub_Factory::m_core_node = 
+{
+	ACE_DLL(), 
+	&CreateProxy, 
+	&CreateStub
+};
 
 int 
 OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy)
@@ -101,92 +119,3 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 
 	return 0;
 }
-
-#include "./OOCore_PS.h"
-#include "./ObjectManager.h"
-
-#ifdef _DEBUG
-#include "./Test.h"
-#endif
-
- /*
-BEGIN_PROXY_STUB_MAP(OOCore_Export,OOCore)
-	PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory)
-
-#ifdef _DEBUG
-	PROXY_STUB_AUTO_ENTRY(OOCore::Test)
-#endif
-
-END_PROXY_STUB_MAP()
- */
-
-// /*
-// BEGIN_PROXY_STUB_MAP(OOCore_Export,OOCore) =
-static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name); 
-
-extern "C" OOCore_Export int RegisterLib(bool bRegister) 
-{
-	return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,OOObject::cookie_t(),0,0, "OOCore" ); 
-}
-extern "C" OOCore_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy) 
-{
-    return CreateProxyStub(0,manager,iid,0,key,proxy,0,0); 
-}
-extern "C" OOCore_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub) 
-{
-    return CreateProxyStub(1,manager,iid,obj,key,0,stub,0); 
-}
-static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name) 
-{
-	if ((type==0 && proxy==0) || 
-		(type==1 && stub==0) || 
-		((type==2 || type==3) && dll_name==0) || 
-		type<0 || 
-		type>3) 
-	{
-		errno = EINVAL; 
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1); 
-	}
-	if (type==0) 
-		*proxy=0; 
-
-	if (type==1) 
-		*stub=0;
-	
-// PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory) =
-	if (type==2) 
-		OOCore::RegisterProxyStub(OOCore::Impl::RemoteObjectFactory::IID, dll_name ); 
-	else if (type==3)
-		OOCore::UnregisterProxyStub(OOCore::Impl::RemoteObjectFactory::IID, dll_name ); 
-    else if (iid==OOCore::Impl::RemoteObjectFactory::IID) 
-	{ 
-		if (type==0) 
-			*proxy=OOCORE_PS_CREATE_AUTO_PROXY(OOCore::Impl::RemoteObjectFactory,manager,key); 
-		else if (type==1) 
-			*stub=OOCORE_PS_CREATE_AUTO_STUB(OOCore::Impl::RemoteObjectFactory,manager,key,obj); 
-		goto end;
-	}
-
-// END_PROXY_STUB_MAP() =
-end:
-	if ((type==0 && *proxy==0) || (type==1 && *stub==0)) 
-	{ 
-		errno = ENOENT; 
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy/Stub create failed\n")),-1); 
-	}
-    if (type==0) 
-		(*proxy)->AddRef(); 
-	if (type==1) 
-		(*stub)->AddRef(); 
-	return 0; 
-}
-	
-// */
-
-OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
-OOCore::Impl::Proxy_Stub_Factory::m_core_node = 
-	{
-		ACE_DLL(), 
-		&CreateProxy, 
-		&CreateStub
-	};

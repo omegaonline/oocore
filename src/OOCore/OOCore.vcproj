@@ -26,6 +26,7 @@
 				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
 				MinimalRebuild="TRUE"
+				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -37,7 +38,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEd.lib"
+				AdditionalDependencies="ACEd.lib shlwapi.lib"
 				OutputFile="../../bin/OOCored.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
@@ -89,7 +90,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACE.lib"
+				AdditionalDependencies="ACE.lib shlwapi.lib"
 				OutputFile="../../bin/OOCore.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
@@ -240,9 +241,6 @@
 			</File>
 			<File
 				RelativePath=".\PSMap.h">
-			</File>
-			<File
-				RelativePath=".\Register.h">
 			</File>
 			<File
 				RelativePath=".\resource.h">

@@ -86,10 +86,12 @@ namespace OOCore
 		DECLARE_IID(OOCore_Export);
 	};
 
-	typedef OOCore_Export int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
-	typedef OOCore_Export int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, Stub** stub);
+	typedef int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
+	typedef int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, Stub** stub);
+	typedef int (*RegisterLib_Function)(bool bRegister);
 
 	OOCore_Export int RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
+	OOCore_Export int UnregisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
 	OOCore_Export OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory);
 	OOCore_Export OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 };

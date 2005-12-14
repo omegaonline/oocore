@@ -2,13 +2,9 @@
 
 #include "./Binding.h"
 
-OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
-OOCore::Impl::Proxy_Stub_Factory::m_core_node = 
-	{
-		ACE_DLL(), 
-		&Impl::Proxy_Stub_Factory::CreateProxy, 
-		&Impl::Proxy_Stub_Factory::CreateStub
-	};
+//extern "C" OOCore_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);
+//extern "C" OOCore_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub);
+
 
 int 
 OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy)
@@ -49,12 +45,15 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 	if (i==m_dll_map.end())
 	{
 		// Find the stub DLL name
-		ACE_NS_WString dll_name;
+		ACE_TString dll_name;
 		if (BINDING::instance()->find(OOCore::Impl::guid_to_string(iid).c_str(),dll_name) != 0)
+		{
+			errno = ENOENT;
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) No proxy/stub registered\n")),-1);
+		}
 			
 		// Check if it's us
-		if (dll_name==ACE_TEXT_WIDE("OOCore"))
+		if (dll_name==ACE_TEXT("OOCore"))
 		{
 			node = &m_core_node;
 			return 0;
@@ -64,10 +63,10 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 		proxystub_node* new_node;
 		ACE_NEW_RETURN(new_node,proxystub_node,-1);
 
-		if (new_node->dll.open(ACE_TEXT_WCHAR_TO_TCHAR(dll_name.c_str()),RTLD_NOW) != 0)
+		if (new_node->dll.open(dll_name.c_str(),RTLD_NOW) != 0)
 		{
 			delete new_node;
-			return -1;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to load library: %m\n")),-1);
 		}
 		
 		// Bind to the CreateStub function - C-style cast to please gcc
@@ -110,37 +109,84 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 #include "./Test.h"
 #endif
 
-#define OOCORE_PSF_CREATE_AUTO_STUB(iface,manager,key,obj)		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_stub(manager,key,static_cast<iface*>(obj)))
-#define OOCORE_PSF_CREATE_AUTO_PROXY(iface,manager,key) 		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_proxy(manager,key))
+ /*
+BEGIN_PROXY_STUB_MAP(OOCore_Export,OOCore)
+	PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory)
 
-#define OOCORE_PSF_BEGIN_AUTO_PROXY_MAP()
-#define OOCORE_PSF_AUTO_PROXY_ENTRY(t)	if (iid==t::IID) *proxy=OOCORE_PSF_CREATE_AUTO_PROXY(t,manager,key); else
-#define OOCORE_PSF_END_AUTO_PROXY_MAP() { errno = ENOENT;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid Proxy IID\n")),-1);}if (*proxy==0) ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy create failed\n")),-1); (*proxy)->AddRef(); return 0;
+#ifdef _DEBUG
+	PROXY_STUB_AUTO_ENTRY(OOCore::Test)
+#endif
 
-#define OOCORE_PSF_BEGIN_AUTO_STUB_MAP()
-#define OOCORE_PSF_AUTO_STUB_ENTRY(t)	if (iid==t::IID) *stub=OOCORE_PSF_CREATE_AUTO_STUB(t,manager,key,obj); else
-#define OOCORE_PSF_END_AUTO_STUB_MAP() {errno = ENOENT;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid Stub IID\n")),-1);}if (*stub==0) ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Stub create failed\n")),-1); (*stub)->AddRef(); return 0;
+END_PROXY_STUB_MAP()
+ */
 
-int 
-OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy)
+// /*
+// BEGIN_PROXY_STUB_MAP(OOCore_Export,OOCore) =
+static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name); 
+
+extern "C" OOCore_Export int RegisterLib(bool bRegister) 
 {
-	OOCORE_PSF_BEGIN_AUTO_PROXY_MAP()
-		OOCORE_PSF_AUTO_PROXY_ENTRY(OOCore::Impl::RemoteObjectFactory)
+	return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,OOObject::cookie_t(),0,0, "OOCore" ); 
+}
+extern "C" OOCore_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy) 
+{
+    return CreateProxyStub(0,manager,iid,0,key,proxy,0,0); 
+}
+extern "C" OOCore_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub) 
+{
+    return CreateProxyStub(1,manager,iid,obj,key,0,stub,0); 
+}
+static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name) 
+{
+	if ((type==0 && proxy==0) || 
+		(type==1 && stub==0) || 
+		((type==2 || type==3) && dll_name==0) || 
+		type<0 || 
+		type>3) 
+	{
+		errno = EINVAL; 
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1); 
+	}
+	if (type==0) 
+		*proxy=0; 
+
+	if (type==1) 
+		*stub=0;
 	
-#ifdef _DEBUG
-		OOCORE_PSF_AUTO_PROXY_ENTRY(OOCore::Test)
-#endif
-	OOCORE_PSF_END_AUTO_PROXY_MAP()
-}
+// PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory) =
+	if (type==2) 
+		OOCore::RegisterProxyStub(OOCore::Impl::RemoteObjectFactory::IID, dll_name ); 
+	else if (type==3)
+		OOCore::UnregisterProxyStub(OOCore::Impl::RemoteObjectFactory::IID, dll_name ); 
+    else if (iid==OOCore::Impl::RemoteObjectFactory::IID) 
+	{ 
+		if (type==0) 
+			*proxy=OOCORE_PS_CREATE_AUTO_PROXY(OOCore::Impl::RemoteObjectFactory,manager,key); 
+		else if (type==1) 
+			*stub=OOCORE_PS_CREATE_AUTO_STUB(OOCore::Impl::RemoteObjectFactory,manager,key,obj); 
+		goto end;
+	}
 
-int 
-OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub)
-{
-	OOCORE_PSF_BEGIN_AUTO_STUB_MAP()
-		OOCORE_PSF_AUTO_STUB_ENTRY(OOCore::Impl::RemoteObjectFactory)
-		
-#ifdef _DEBUG
-		OOCORE_PSF_AUTO_STUB_ENTRY(OOCore::Test)
-#endif
-	OOCORE_PSF_END_AUTO_STUB_MAP()
+// END_PROXY_STUB_MAP() =
+end:
+	if ((type==0 && *proxy==0) || (type==1 && *stub==0)) 
+	{ 
+		errno = ENOENT; 
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Proxy/Stub create failed\n")),-1); 
+	}
+    if (type==0) 
+		(*proxy)->AddRef(); 
+	if (type==1) 
+		(*stub)->AddRef(); 
+	return 0; 
 }
+	
+// */
+
+OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
+OOCore::Impl::Proxy_Stub_Factory::m_core_node = 
+	{
+		ACE_DLL(), 
+		&CreateProxy, 
+		&CreateStub
+	};

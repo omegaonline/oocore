@@ -37,6 +37,12 @@ namespace OOCore
 {
 namespace Impl
 {
+	extern bool g_IsServer;
+
+#ifdef ACE_WIN32
+	extern HINSTANCE g_hInstance;
+#endif
+
 	// IO helpers
 	class InputStream_Wrapper
 	{
@@ -171,6 +177,6 @@ namespace Impl
 };
 };
 
-extern bool g_IsServer;
+
 
 #endif // OOCORE_OOCORE_IMPL_H_INCLUDED_

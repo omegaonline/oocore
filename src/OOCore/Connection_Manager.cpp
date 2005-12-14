@@ -13,7 +13,7 @@ OOCore::Impl::Connection_Manager::init(void)
 		return -1;
 
 	// Get the port number from the binding
-	ACE_NS_WString strPort;
+	ACE_TString strPort;
 	if (BINDING::instance()->find(ACE_TEXT("local_port"),strPort) != 0)
 	{
 		errno = EHOSTUNREACH;

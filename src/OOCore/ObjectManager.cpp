@@ -2,7 +2,6 @@
 
 #include "./Engine.h"
 #include "./Proxy_Stub_Factory.h"
-#include "./Register.h"
 #include "./PassThruStub.h"
 
 DEFINE_IID(OOCore::Impl::RemoteObjectFactory,B1BC71BE-4DCC-4f0f-8483-A75D35126D2A);
@@ -12,7 +11,6 @@ OOCore::ObjectManager::ObjectManager() :
 	m_bOpened(false),
 	m_next_trans_id(static_cast<OOObject::uint32_t>(ACE_OS::rand()))
 {
-	OOCore::RegisterProxyStub(Impl::RemoteObjectFactory::IID,"OOCore");
 }
 
 OOCore::ObjectManager::~ObjectManager()
@@ -609,7 +607,7 @@ OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 OOObject::int32_t 
 OOCore::ObjectManager::AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory)
 {
-	if (!g_IsServer)
+	if (!Impl::g_IsServer)
 	{
 		errno = EOPNOTSUPP;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) AddRemoteObject should not be called on a client\n")),-1);
@@ -621,7 +619,7 @@ OOCore::ObjectManager::AddObjectFactory(const OOObject::guid_t& clsid, OOCore::O
 OOObject::int32_t 
 OOCore::ObjectManager::RemoveObjectFactory(const OOObject::guid_t& clsid)
 {
-	if (!g_IsServer)
+	if (!Impl::g_IsServer)
 	{
 		errno = EOPNOTSUPP;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) RemoveRemoteObject should not be called on a client\n")),-1);

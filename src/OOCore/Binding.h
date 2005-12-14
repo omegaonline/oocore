@@ -25,8 +25,9 @@ class Binding
 public:
 	int launch(bool bAsServer = false);
 	
-	int find(const ACE_TCHAR* name, ACE_NS_WString& value);
-	int rebind(const ACE_TCHAR* name, const ACE_NS_WString& value);
+	int find(const ACE_TCHAR* name, ACE_TString& value);
+	int rebind(const ACE_TCHAR* name, const ACE_TCHAR* value);
+	int unbind(const ACE_TCHAR* name);
 
 	const ACE_TCHAR* dll_name(void);
 	const ACE_TCHAR* name(void);

@@ -33,14 +33,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		case ACE_TEXT('t'):
 			threads = ACE_OS::atoi(cmd_opts.opt_arg());
 			if (threads<0 || threads>10)
-			{
-				errno = EINVAL;
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of threads '%s' range is [0..10].\n"),cmd_opts.opt_arg()),-1);
-			}
 			break;
 
 		case ACE_TEXT(':'):
-			errno = EINVAL;
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n"),cmd_opts.opt_opt()),-1);
 			break;
 

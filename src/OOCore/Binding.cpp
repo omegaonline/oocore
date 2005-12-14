@@ -3,6 +3,13 @@
 #include <ace/OS.h>
 #include <ace/Process.h>
 
+#ifdef ACE_WIN32
+// For the Windows path functions
+#include <shlwapi.h>
+#endif
+
+#include "./OOCore_Impl.h"
+
 OOCore::Impl::Binding::Binding() :
 	m_unbind_pid(false)
 {
@@ -13,7 +20,17 @@ OOCore::Impl::Binding::Binding() :
 	m_context.name_options()->use_registry(1);
 	m_context.name_options()->namespace_dir(ACE_TEXT("SOFTWARE\\OmegaOnline"));
 #else
-	m_context.name_options()->namespace_dir(ACE_TEXT("."));
+	ACE_TCHAR szBuf[MAX_PATH];
+	if (ACE_TEXT_GetModuleFileName(OOCore::Impl::g_hInstance,szBuf,MAX_PATH)!=0)
+	{
+		::PathRemoveFileSpec(szBuf);
+		m_context.name_options()->namespace_dir(szBuf);
+	}
+	else
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to detect DLL location\n")));
+		ACE_OS::abort();
+	}
 #endif
 #else
 	m_context.name_options()->namespace_dir(ACE_TEXT("/etc"));
@@ -144,17 +161,27 @@ OOCore::Impl::Binding::name(void)
 }
 
 int 
-OOCore::Impl::Binding::find(const ACE_TCHAR* name, ACE_NS_WString& value)
+OOCore::Impl::Binding::find(const ACE_TCHAR* name, ACE_TString& value)
 {
 	ACE_TCHAR* pszType = NULL;
-	int ret = m_context.resolve(name,value,pszType);
+	ACE_NS_WString w_val;
+	int ret = m_context.resolve(name,w_val,pszType);
 	ACE_OS::free(pszType);
+
+	if (ret==0)
+		value = ACE_TEXT_WCHAR_TO_TCHAR(w_val.c_str());
+
 	return ret;
 }
 
 int 
-OOCore::Impl::Binding::rebind(const ACE_TCHAR* name, const ACE_NS_WString& value)
+OOCore::Impl::Binding::rebind(const ACE_TCHAR* name, const ACE_TCHAR* value)
 {
-	// Use our port
 	return m_context.rebind(name,value);
+}
+
+int 
+OOCore::Impl::Binding::unbind(const ACE_TCHAR* name)
+{
+	return m_context.unbind(name);
 }

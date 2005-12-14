@@ -1,5 +1,7 @@
 #include "./OOCore.h"
-#include "./Register.h"
+
+#include <ace/OS_NS_wchar.h>
+
 #include "./Binding.h"
 #include "./Connection_Manager.h"
 #include "./Object_Factory.h"
@@ -22,25 +24,42 @@ DEFINE_CLSID(OOCore::CLSID_Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
 
 #endif
 
-bool g_IsServer = false;
-
 namespace OOCore
 {
 namespace Impl
 {
 	OOCore_Export int RegisterAsServer();
 	OOCore_Export int SetServerPort(OOObject::uint16_t uPort);
+
+	bool g_IsServer = false;
+
+#ifdef ACE_WIN32
+	HINSTANCE g_hInstance = NULL;
+#endif
 };
 };
+
+#ifdef ACE_WIN32
+BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID)
+{
+	if (reason == DLL_PROCESS_ATTACH)
+	{
+		ACE::init();
+
+		OOCore::Impl::g_hInstance = instance;
+		::DisableThreadLibraryCalls(instance);
+	}
+	else if (reason == DLL_PROCESS_DETACH)
+	{
+		ACE::fini();
+	}
+	return TRUE;
+}
+#endif
 
 OOCore_Export int 
 OOCore::Impl::RegisterAsServer()
 {
-#ifdef _DEBUG
-	RegisterProxyStub(Server::IID,"OOCore");
-	RegisterProxyStub(Test::IID,"OOCore");
-#endif
-
 	if (Impl::BINDING::instance()->launch(true) == 0)
 	{
 		// This is the only place this is set!
@@ -61,10 +80,35 @@ OOCore::Impl::SetServerPort(OOObject::uint16_t uPort)
 	return 0;
 }
 
+OOCore_Export int 
+OOCore::RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
+{
+	ACE_TString value(Impl::guid_to_string(iid));
+
+	return Impl::BINDING::instance()->rebind(value.c_str(),ACE_TEXT_CHAR_TO_TCHAR(dll_name));
+}
+
+OOCore_Export int 
+OOCore::UnregisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
+{
+	ACE_TString value(Impl::guid_to_string(iid));
+
+	// Find the stub DLL name
+	ACE_TString name;
+	if (Impl::BINDING::instance()->find(value.c_str(),name) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No proxy/stub registered\n")),-1);
+		
+	// Check if it's us
+	if (!(name==ACE_TEXT_CHAR_TO_TCHAR(dll_name)))
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Proxy/stub not registered to this library\n")),-1);
+
+	return Impl::BINDING::instance()->unbind(value.c_str());
+}
+
 OOCore_Export OOObject::int32_t  
 OOCore::AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory)
 {
-	if (g_IsServer)
+	if (Impl::g_IsServer)
 	{
 		return Impl::OBJECT_FACTORY::instance()->add_object_factory(clsid,pFactory);
 	}
@@ -77,7 +121,7 @@ OOCore::AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory)
 OOCore_Export OOObject::int32_t  
 OOCore::RemoveObjectFactory(const OOObject::guid_t& clsid)
 {
-	if (g_IsServer)
+	if (Impl::g_IsServer)
 	{
 		return Impl::OBJECT_FACTORY::instance()->remove_object_factory(clsid);
 	}

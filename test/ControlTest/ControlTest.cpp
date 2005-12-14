@@ -3,9 +3,8 @@
 
 #include <tchar.h>
 
-#include "../../src/OOCore/OOCore_Util.h"
-#include "../../src/OOCore/Test.h"
-//#include "../../src/OOCore/Client_Service.h"
+#include <OOCore/OOCore_Util.h>
+#include <OOCore/Test.h>
 
 int _tmain(int argc, _TCHAR* argv[])
 {

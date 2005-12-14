@@ -23,7 +23,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;;..\..\src"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -73,7 +73,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;;..\..\src"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"

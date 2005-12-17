@@ -18,7 +18,7 @@ namespace Impl
 		}
 	};
 
-	class marshaller_t
+	class OOCore_Export marshaller_t
 	{
 	public:
 		marshaller_t();

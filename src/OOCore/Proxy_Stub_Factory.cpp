@@ -3,17 +3,8 @@
 #include "./OOCore_PS.h"
 #include "./ObjectManager.h"
 
-#ifdef _DEBUG
-#include "./Test.h"
-#endif
-
-BEGIN_PROXY_STUB_MAP(OOCore_Export,OOCore)
+BEGIN_PROXY_STUB_MAP(OOCore)
 	PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory)
-
-#ifdef _DEBUG
-	PROXY_STUB_AUTO_ENTRY(OOCore::Test)
-#endif
-
 END_PROXY_STUB_MAP()
 
 OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
@@ -23,6 +14,16 @@ OOCore::Impl::Proxy_Stub_Factory::m_core_node =
 	&CreateProxy, 
 	&CreateStub
 };
+
+OOCore::Impl::Proxy_Stub_Factory::~Proxy_Stub_Factory(void)
+{
+	for (std::map<OOObject::guid_t,proxystub_node*>::iterator i=m_dll_map.begin();i!=m_dll_map.end();++i)
+	{
+		if (i->second != &m_core_node)
+			delete i->second;
+	}
+	m_dll_map.clear();
+}
 
 int 
 OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy)
@@ -49,7 +50,7 @@ OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager,
 
 	// Call CreateProxy
 	if ((node->stub_fn)(manager,iid,obj,key,ppStub) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) CreateStub failed\n")),-1);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) CreateStub failed: %m\n")),-1);
 	
 	return 0;
 }
@@ -58,6 +59,8 @@ int
 OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, proxystub_node*& node)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("Requesting proxy/stub for iid {%s}\n"),OOCore::Impl::guid_to_string(iid).c_str()));
 
 	std::map<OOObject::guid_t,proxystub_node*>::const_iterator i=m_dll_map.find(iid);
 	if (i==m_dll_map.end())
@@ -74,6 +77,7 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 		if (dll_name==ACE_TEXT("OOCore"))
 		{
 			node = &m_core_node;
+			m_dll_map.insert(std::map<OOObject::guid_t,proxystub_node*>::value_type(iid,&m_core_node));
 			return 0;
 		}
 

@@ -51,15 +51,17 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		return ret;
 #endif // defined (ACE_NT_SERVICE_DEFINE)
 
+	//ACE::init();
+
 	// Start the engine
 	if ((ret=OOCore::ENGINE::instance()->open(argc,argv)) == 0)
 	{
-		// Load the service configuration file
-		if ((ret=ACE_Service_Config::open(argc,argv)) == 0)
+		// Start the local connection acceptor
+		if ((ret=Client_Connection::init()) == 0)
 		{
-			// Start the local connection acceptor
-			if ((ret=Client_Connection::init()) == 0)
-			{
+			// Load the service configuration file
+			if ((ret=ACE_Service_Config::open(argc,argv)) == 0)
+			{	
 				// Spawn off some extra threads
 				ACE_Thread_Manager::instance()->spawn_n(threads,worker_fn);
 
@@ -76,6 +78,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 	// Wait for all the threads to finish
 	ACE_Thread_Manager::instance()->wait();
+
+	//ACE::fini();
 
 	return ret;
 }

@@ -4,7 +4,7 @@
 #include <tchar.h>
 
 #include <OOCore/OOCore_Util.h>
-#include <OOCore/Test.h>
+#include "../Test/Test.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -12,23 +12,22 @@ int _tmain(int argc, _TCHAR* argv[])
 	if (ret==0)
 	{
 		{
-			OOCore::Object_Ptr<OOCore::Test> pTest;
-			if (OOObject::CreateObject(OOCore::CLSID_Test,&pTest) == 0)
+			OOCore::Object_Ptr<Test::Test> pTest;
+			if (OOObject::CreateObject(CLSID_Test,&pTest) == 0)
 			{
 				OOObject::uint16_t arr[12];
 				pTest->Array_Test_In(12,arr);
 
 				OOObject::uint32_t count = 12;
 				OOObject::uint16_t* parr = arr;
-				pTest->Array_Test_InOut(&count,&parr);
+				if (pTest->Array_Test_InOut(&count,&parr) == 0)
+					if (parr!=arr) OOObject::Free(parr);
 
 				// Crash test dummy!
 				//exit(-1);
 
-				OOObject::Free(parr);
-
-				pTest->Array_Test_Out(&count,&parr);
-				OOObject::Free(parr);
+				if (pTest->Array_Test_Out(&count,&parr) == 0)
+					if (parr!=arr) OOObject::Free(parr);
 
 				//OOObject::uint16_t remaining = 0;
 				//pObj->Stop(false,&remaining);

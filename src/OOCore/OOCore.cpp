@@ -18,9 +18,6 @@ DEFINE_IID(OOCore::ObjectFactory,E2760ABA-1BAA-4c7b-89B2-466320296D1D);
 #include "./Test.h"
 
 DEFINE_IID(OOCore::Server,B4B5BF71-58DF-4001-BD0B-72496463E3C3);
-DEFINE_IID(OOCore::Test,6AAE8C33-699A-4414-AF84-25E74E693207);
-
-DEFINE_CLSID(OOCore::CLSID_Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
 
 #endif
 
@@ -44,15 +41,10 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID)
 {
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-		ACE::init();
-
 		OOCore::Impl::g_hInstance = instance;
 		::DisableThreadLibraryCalls(instance);
 	}
-	else if (reason == DLL_PROCESS_DETACH)
-	{
-		ACE::fini();
-	}
+	
 	return TRUE;
 }
 #endif

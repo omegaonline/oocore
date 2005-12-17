@@ -211,12 +211,12 @@
 #define OOCORE_PS_CREATE_AUTO_STUB(iface,manager,key,obj)	BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_stub(manager,key,static_cast<iface*>(obj)))
 #define OOCORE_PS_CREATE_AUTO_PROXY(iface,manager,key) 		BOOST_PP_CAT(iface,_Proxy_Stub_Impl::create_proxy(manager,key))
 
-#define BEGIN_PROXY_STUB_MAP(export,dll)	static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name); \
-											extern "C" export int RegisterLib(bool bRegister) { \
-											return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,OOObject::cookie_t(),0,0, #dll ); } \
-											extern "C" export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy) { \
+#define BEGIN_PROXY_STUB_MAP(lib)			static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name); \
+											extern "C" lib##_Export int RegisterLib(bool bRegister) { \
+											return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,OOObject::cookie_t(),0,0, #lib ); } \
+											extern "C" lib##_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy) { \
                                             return CreateProxyStub(0,manager,iid,0,key,proxy,0,0); } \
-                                            extern "C" export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub) { \
+                                            extern "C" lib##_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** stub) { \
                                             return CreateProxyStub(1,manager,iid,obj,key,0,stub,0); } \
                                             static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, const char* dll_name) { \
 											if ((type==0 && proxy==0) || (type==1 && stub==0) || ((type==2 || type==3) && dll_name==0) || type<0 || type>3) { errno = EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1); } \

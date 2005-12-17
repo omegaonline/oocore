@@ -1,6 +1,7 @@
 #include <ace/Get_Opt.h>
 #include <ace/OS_NS_stdio.h>
 #include <ace/DLL_Manager.h>
+#include <ace/DLL.h>
 
 #include <OOCore/OOCore.h>
 
@@ -15,8 +16,8 @@ static void print_help()
 
 static int do_install(bool bInstall, ACE_TCHAR* lib_path)
 {
-	ACE_DLL_Handle dll;
-	if (dll.open(lib_path,RTLD_NOW,ACE_SHLIB_INVALID_HANDLE)!=0)
+	ACE_DLL dll;
+	if (dll.open(lib_path,RTLD_NOW)!=0)
 	{
 		print_help();
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library %s.\n\n"),lib_path),-1);
@@ -35,7 +36,7 @@ static int do_install(bool bInstall, ACE_TCHAR* lib_path)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("'RegisterLib' function failed: %m\n\n")),-1);
 	}
 
-	ACE_OS::printf(ACE_TEXT("Registration of %s successful.\n\n"),dll.dll_name());
+	ACE_OS::printf(ACE_TEXT("Registration of %s successful.\n\n"),lib_path);
 
 	return 0;
 }
@@ -78,6 +79,9 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		print_help();
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid number of parameters.\n\n")),-1);
 	}
+
+	// This gives a small leak, but allows ACE based DLL's a chance to unload correctly
+	ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_LAZY);
 
 	return do_install(bInstall,argv[argc-1]);
 }

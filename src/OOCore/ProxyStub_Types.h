@@ -73,52 +73,61 @@ namespace Impl
 	{
 	public:
 		array_t(OOObject::uint32_t* c) :
-		  m_count(c)
-		{
-			m_data = static_cast<T*>(OOObject::Alloc(sizeof(T)*(*m_count)));
-			m_p=m_data;
-		}
+		  m_data(0), m_p(0), m_count(c), m_orig_count(0)
+		{ }
 
         array_t(T** ar, OOObject::uint32_t* c)	: 
-		  m_data(0), m_p(*ar), m_count(c)
+		  m_data(0), m_p(ar), m_count(c), m_orig_count(0)
 		{ }
 
 		~array_t()
 		{
-			if (m_p!=m_data) OOObject::Free(m_p);
-
-			if (m_data!=0) OOObject::Free(m_data);
+			if (!m_p && m_data)
+				OOObject::Free(m_data);
 		}
 
 		operator T**()
 		{
-			return &m_p;
+			return get_ptr();
 		}
 		
 		int read(OOCore::Impl::InputStream_Wrapper& in)
 		{
-			if (!m_p) return -1;
+			if (!m_p || (*m_count)>m_orig_count)
+			{
+				m_data = static_cast<T*>(OOObject::Alloc(sizeof(T)*(*m_count)));
+				if (m_p)
+					*m_p = m_data;
+			}
 				
 			for (OOObject::uint32_t i=0;i<*m_count;++i)
 			{
-				if (in.read(m_p[i])!=0) return -1;
+				if (in.read((*get_ptr())[i])!=0) return -1;
 			}
 			return 0;
 		}
 
 		int write(OOCore::Impl::OutputStream_Wrapper& out)
 		{
+			m_orig_count = *m_count;
+
 			for (OOObject::uint32_t i=0;i<*m_count;++i)
 			{
-				if (out.write(m_p[i])!=0) return -1;
+				if (out.write((*get_ptr())[i])!=0) return -1;
 			}
 			return 0;
 		}
 
 	private:
 		T* m_data;
-		T* m_p;
+		T** m_p;
 		OOObject::uint32_t* m_count;
+		OOObject::uint32_t m_orig_count;
+
+		T** get_ptr()
+		{
+			return (m_p ? m_p : &m_data);
+		}
 	};
 
 	// The string attribute can only be applied 
@@ -252,39 +261,73 @@ namespace Impl
 	{
 	public:
 		object_t(const OOObject::guid_t& iid) :
-		  m_iid(iid)
+		  m_iid(iid), m_ptr(0)
 		{ }
 
 		object_t(T** obj, const OOObject::guid_t& iid) :
-		  m_iid(iid), m_obj(*obj)
+		  m_iid(iid), m_obj(*obj), m_ptr(obj)
 		{ }
 		
 		operator T**()
 		{
-			return &m_obj;
+			return get_ptr();
 		}
 
 		int read(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
 		{
-			OOObject::cookie_t key;
-			if (in.read(key) != 0) 
+			if (!m_ptr)
 				return -1;
-		
-			return manager->CreateProxy(m_iid,key,&m_obj);
+
+			OOObject::bool_t null;
+			if (in.read(null) != 0) 
+				return -1;
+
+			if (!null)
+			{
+				OOObject::cookie_t key;
+				if (in.read(key) != 0) 
+					return -1;
+
+				if (*m_ptr)
+					(*m_ptr)->Release();
+							
+				return manager->CreateProxy(m_iid,key,m_ptr);
+			}
+			else
+			{
+				*m_ptr = 0;
+				return 0;
+			}
 		}
 		
 		int write(OOCore::ProxyStubManager* manager, OOCore::Impl::OutputStream_Wrapper& out)
 		{
-			OOObject::cookie_t key;
-			if (manager->CreateStub(m_iid,m_obj,&key) != 0)
-				return -1;
+			if (*get_ptr() == 0)
+			{
+				return out->WriteBoolean(true);
+			}
+			else
+			{
+				if (out->WriteBoolean(false)!=0)
+					return -1;
 
-			return out.write(key);
+				OOObject::cookie_t key;
+				if (manager->CreateStub(m_iid,*get_ptr(),&key) != 0)
+					return -1;
+
+				return out.write(key);
+			}
 		}
 		
 	private:
 		const OOObject::guid_t m_iid;
 		OOCore::Object_Ptr<T> m_obj;
+		T** m_ptr;
+
+		T** get_ptr()
+		{
+			return (m_ptr ? m_ptr : &m_obj);
+		}
 	};
 
 	template <class T>

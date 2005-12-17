@@ -24,13 +24,12 @@ public:
 		if (svc_class::open(p)!=0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 
-		if (open_transport(bAcceptor)!=0)
-			return -1;
-
-		m_bOpen = true;
-
 		// Raise our ref count while we are open
 		AddRef();
+		m_bOpen = true;
+
+		if (open_transport(bAcceptor)!=0)
+			return -1;
 
 		return 0;
 	}

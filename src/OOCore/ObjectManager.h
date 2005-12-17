@@ -20,7 +20,7 @@ namespace Impl
 		virtual OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
 		virtual OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid) = 0;
 	
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	BEGIN_AUTO_PROXY_STUB(RemoteObjectFactory)

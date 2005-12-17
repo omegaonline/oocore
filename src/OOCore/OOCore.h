@@ -20,7 +20,7 @@ namespace OOCore
 		virtual int ReadFloat(OOObject::real4_t& val) = 0;
 		virtual int ReadDouble(OOObject::real8_t& val) = 0;
 		
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	class OutputStream : public OOObject::Object
@@ -38,7 +38,7 @@ namespace OOCore
 		virtual int WriteFloat(OOObject::real4_t val) = 0;
 		virtual int WriteDouble(OOObject::real8_t val) = 0;
 				
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	class Transport : public OOObject::Object
@@ -47,7 +47,7 @@ namespace OOCore
 		virtual int CreateOutputStream(OutputStream** ppStream) = 0;
 		virtual int Send(OutputStream* output) = 0;
 
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	enum Marshall_Flags
@@ -61,7 +61,7 @@ namespace OOCore
 	public:
 		virtual int Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output) = 0;
 
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	class ProxyStubManager : public OOObject::Object
@@ -75,7 +75,7 @@ namespace OOCore
 		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
 		virtual int SendAndReceive(Marshall_Flags flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
 		
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	class ObjectFactory : public OOObject::Object
@@ -83,7 +83,7 @@ namespace OOCore
 	public:
 		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 
-		DECLARE_IID(OOCore_Export);
+		DECLARE_IID(OOCore);
 	};
 
 	typedef int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& key, OOObject::Object** proxy);

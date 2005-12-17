@@ -36,9 +36,15 @@ namespace OOCore
 			if (ptr)
 				ptr->AddRef();
 
-			// This is unsafe - you need a mutex
+#ifdef ACE_WIN32
+			OBJECT* old = reinterpret_cast<OBJECT*>(static_cast<LONG_PTR>(::InterlockedExchange(reinterpret_cast<LONG*>(&m_ptr), static_cast<LONG>(reinterpret_cast<LONG_PTR>(ptr)))));
+#else
+			static ACE_Thread_Mutex m_lock;
+			m_lock.acquire();
 			OBJECT* old = m_ptr;
 			m_ptr = ptr;
+			m_lock.release();
+#endif
 
 			if (old)
 				old->Release();

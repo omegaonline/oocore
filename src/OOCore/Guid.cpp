@@ -57,7 +57,8 @@ OOObject::guid_t::operator ==(const OOObject::guid_t& rhs) const
 bool 
 OOObject::guid_t::operator <(const OOObject::guid_t& rhs) const
 {
-	if (Data1>rhs.Data1)
+	return ACE_OS::memcmp(this,&rhs,sizeof(guid_t))<0;
+	/*if (Data1>rhs.Data1)
 		return false;
 
 	if (Data2>rhs.Data2)
@@ -66,7 +67,7 @@ OOObject::guid_t::operator <(const OOObject::guid_t& rhs) const
 	if (Data3>rhs.Data3)
 		return false;
 
-	return ACE_OS::memcmp(Data4,rhs.Data4,8)<0;
+	return ACE_OS::memcmp(Data4,rhs.Data4,8)<0;*/
 }
 
 ACE_TString 
@@ -74,7 +75,7 @@ OOCore::Impl::guid_to_string(const OOObject::guid_t& guid)
 {
 	ACE_TCHAR buf[37];
 	ACE_OS::sprintf(buf,
-        ACE_TEXT("%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x"),
+        ACE_TEXT("%8.8X-%4.4X-%4.4X-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X"),
         guid.Data1,
         guid.Data2,
         guid.Data3,

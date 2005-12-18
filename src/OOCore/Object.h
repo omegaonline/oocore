@@ -25,11 +25,15 @@ namespace OOObject
 	};
 
 	// API functions
-	OOCore_Export int Init(unsigned int threads = 1);
-	OOCore_Export void Term();	
-	OOCore_Export void* Alloc(const size_t size);
-	OOCore_Export void Free(void* p);
-	OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, const guid_t& iid, Object** ppVal);
+	extern "C"
+	{
+		OOCore_Export int Init(unsigned int threads = 1);
+		OOCore_Export void Term();	
+		OOCore_Export void* Alloc(const size_t size);
+		OOCore_Export void Free(void* p);
+		OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, const guid_t& iid, Object** ppVal);
+		OOCore_Export OOObject::int32_t CreateRemoteObject(const char_t* remote_addr, const guid_t& clsid, const guid_t& iid, Object** ppVal);
+	}
 	
 	template <class T>
 	OOObject::int32_t CreateObject(const guid_t& clsid, T** ppVal)

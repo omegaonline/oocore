@@ -15,7 +15,7 @@ namespace Impl
 	class RemoteObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t CreateRemoteObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
 		virtual OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
 		virtual OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid) = 0;
@@ -24,7 +24,7 @@ namespace Impl
 	};
 
 	BEGIN_AUTO_PROXY_STUB(RemoteObjectFactory)
-		METHOD(CreateRemoteObject,3,((in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
+		METHOD(CreateRemoteObject,4,((in)(string),const OOObject::char_t*,remote_addr,(in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
 		METHOD(SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
 		METHOD(AddObjectFactory,2,((in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
 		METHOD(RemoveObjectFactory,1,((in),const OOObject::guid_t&,clsid))
@@ -44,7 +44,7 @@ public:
 	int Open(Transport* transport, const bool AsAcceptor);
 	int Close();
 	int ProcessMessage(InputStream* input);
-	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 private:
 	virtual ~ObjectManager();
@@ -93,7 +93,7 @@ END_INTERFACE_MAP()
 
 // OOCore::Impl::RemoteObjectFactory
 public:
-	OOObject::int32_t CreateRemoteObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote);
 	OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory);
 	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);

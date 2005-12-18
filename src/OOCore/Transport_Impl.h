@@ -23,7 +23,7 @@ public:
 	int open_transport(const bool bAcceptor);
 	int close_transport();
 
-	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory);
 	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 	

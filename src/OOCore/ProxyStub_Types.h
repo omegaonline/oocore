@@ -162,22 +162,30 @@ namespace Impl
 			OOObject::uint32_t size;
 			if (in.read(size)!=0) return -1;
 
-			m_data = static_cast<T*>(OOObject::Alloc((size+1)*sizeof(T)));
-			if (!m_data) return -1;
-
-			for (OOObject::uint32_t i=0;i<size;++i)
+			if (size > 0)
 			{
-				if (in.read(m_data[i])!=0) return -1;
+				m_data = static_cast<T*>(OOObject::Alloc((size+1)*sizeof(T)));
+				if (!m_data) 
+					return -1;
+			
+				for (OOObject::uint32_t i=0;i<size;++i)
+				{
+					if (in.read(m_data[i])!=0) return -1;
+				}
+				m_data[size] = static_cast<T>(0);
 			}
-			m_data[size] = static_cast<T>(0);
 			m_p = m_data;
 			return 0;
 		}
 
 		int write(OOCore::Impl::OutputStream_Wrapper& out)
 		{
-			OOObject::uint32_t size = ACE_OS::strlen(m_p);
-			if (out.write(size)!=0) return -1;
+			OOObject::uint32_t size = 0;
+			if (m_p) 
+				size = ACE_OS::strlen(m_p);
+
+			if (out.write(size)!=0) 
+				return -1;
 
 			for (OOObject::uint32_t i=0;i<size;++i)
 			{

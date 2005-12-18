@@ -17,7 +17,7 @@ class OOCore_Export Engine :
 public:
 	int open(int argc, ACE_TCHAR* argv[]);
 	int open(unsigned int nThreads);
-	int shutdown();
+	int close();
 
 	const ACE_TCHAR* dll_name(void);
 	const ACE_TCHAR* name(void);

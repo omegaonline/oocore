@@ -163,6 +163,9 @@
 				RelativePath=".\PassThruStub.cpp">
 			</File>
 			<File
+				RelativePath=".\Protocol_Manager.cpp">
+			</File>
+			<File
 				RelativePath=".\Proxy_Stub_Factory.cpp">
 			</File>
 			<File
@@ -226,6 +229,9 @@
 			</File>
 			<File
 				RelativePath=".\PassThruStub.h">
+			</File>
+			<File
+				RelativePath=".\Protocol_Manager.h">
 			</File>
 			<File
 				RelativePath=".\Proxy_Stub_Factory.h">

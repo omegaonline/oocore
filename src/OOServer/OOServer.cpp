@@ -45,13 +45,12 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		}
 	}
 
+	// Start the NTService/Signal handlers
 	int ret = 0;
 #if defined (ACE_NT_SERVICE_DEFINE)
 	if ((ret = NTService::open(argc,argv))!=0)
 		return ret;
 #endif // defined (ACE_NT_SERVICE_DEFINE)
-
-	//ACE::init();
 
 	// Start the engine
 	if ((ret=OOCore::ENGINE::instance()->open(argc,argv)) == 0)
@@ -69,17 +68,18 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 				// This is needed to make ACE_Service_Config work
 				ACE_Reactor::instance()->owner(ACE_Thread::self());
 				ACE_Reactor::run_event_loop();
+
+				// Close the services
+				ACE_Service_Config::close();
 			}
 		}
 
 		// Stop the engine
-		OOCore::ENGINE::instance()->shutdown();
+		OOCore::ENGINE::instance()->close();
 	}
 
 	// Wait for all the threads to finish
 	ACE_Thread_Manager::instance()->wait();
-
-	//ACE::fini();
 
 	return ret;
 }

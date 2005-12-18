@@ -188,7 +188,7 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 }
 
 OOObject::int32_t 
-OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Transport_Impl::CreateObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
@@ -200,7 +200,7 @@ OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, const OOObje
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
 	}
 
-	return ptrOM->CreateObject(clsid,iid,ppVal);
+	return ptrOM->CreateObject(remote_addr,clsid,iid,ppVal);
 }
 
 OOObject::int32_t 

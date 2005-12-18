@@ -5,6 +5,7 @@
 #include "./Binding.h"
 #include "./Connection_Manager.h"
 #include "./Object_Factory.h"
+#include "./Protocol_Manager.h"
 
 DEFINE_IID(OOObject::Object,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
 DEFINE_IID(OOCore::Stub,D8B1513D-967B-429e-8403-31650213DA21);
@@ -13,6 +14,7 @@ DEFINE_IID(OOCore::OutputStream,0FA60065-8C8A-463b-9B01-D080E03EF39F);
 DEFINE_IID(OOCore::Transport,33EE56E9-9748-43ce-A71C-516ACE28925C);
 DEFINE_IID(OOCore::ProxyStubManager,F3EB63E5-602A-4155-8F52-F11FF502EFE5);
 DEFINE_IID(OOCore::ObjectFactory,E2760ABA-1BAA-4c7b-89B2-466320296D1D);
+DEFINE_IID(OOCore::Protocol,47938C01-35E6-44bc-B4C6-82C6C5EBADE2);
 
 #ifdef _DEBUG
 #include "./Test.h"
@@ -121,4 +123,28 @@ OOCore::RemoveObjectFactory(const OOObject::guid_t& clsid)
 	{
 		return Impl::CONNECTION_MANAGER::instance()->RemoveObjectFactory(clsid);
 	}
+}
+
+OOCore_Export OOObject::int32_t  
+OOCore::AddProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol)
+{
+	if (!Impl::g_IsServer)
+	{
+		errno = EACCES;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Must be a server!\n")),-1);
+	}
+	
+	return Impl::PROTOCOL_MANAGER::instance()->AddProtocol(name,protocol);
+}
+
+OOCore_Export OOObject::int32_t  
+OOCore::RemoveProtocol(const OOObject::char_t* name)
+{
+	if (!Impl::g_IsServer)
+	{
+		errno = EACCES;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Must be a server!\n")),-1);
+	}
+	
+	return Impl::PROTOCOL_MANAGER::instance()->RemoveProtocol(name);
 }

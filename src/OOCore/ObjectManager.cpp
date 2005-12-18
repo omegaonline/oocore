@@ -553,7 +553,7 @@ OOCore::ObjectManager::SendAndReceive(Marshall_Flags flags, OOObject::uint16_t w
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	if (!ppVal)
 	{
@@ -573,13 +573,13 @@ OOCore::ObjectManager::CreateObject(const OOObject::guid_t& clsid, const OOObjec
 
 	guard.release();
 	
-	return fact->CreateRemoteObject(clsid,iid,ppVal);
+	return fact->CreateRemoteObject(remote_addr,clsid,iid,ppVal);
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::CreateRemoteObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return OOObject::CreateObject(clsid,iid,ppVal);
+	return OOObject::CreateRemoteObject(remote_addr,clsid,iid,ppVal);
 }
 
 OOObject::int32_t 

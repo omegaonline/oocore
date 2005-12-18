@@ -29,9 +29,6 @@ public:
 	int rebind(const ACE_TCHAR* name, const ACE_TCHAR* value);
 	int unbind(const ACE_TCHAR* name);
 
-	const ACE_TCHAR* dll_name(void);
-	const ACE_TCHAR* name(void);
-	
 private:
 	friend class ACE_Singleton<Binding, ACE_Thread_Mutex>;
 

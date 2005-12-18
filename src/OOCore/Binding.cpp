@@ -148,18 +148,6 @@ OOCore::Impl::Binding::launch_server()
     return 0;
 }
 
-const ACE_TCHAR* 
-OOCore::Impl::Binding::dll_name(void)
-{
-	return ACE_TEXT("OOCore");
-}
-
-const ACE_TCHAR* 
-OOCore::Impl::Binding::name(void)
-{
-	return ACE_TEXT("Binding");
-}
-
 int 
 OOCore::Impl::Binding::find(const ACE_TCHAR* name, ACE_TString& value)
 {

@@ -101,7 +101,7 @@ OOCore::Engine::open(unsigned int nThreads)
 }
 
 int 
-OOCore::Engine::shutdown()
+OOCore::Engine::close()
 {
 	if (!m_reactor)
 		return -1;

@@ -13,7 +13,7 @@ Test_Service::init(int argc, ACE_TCHAR *argv[])
 int 
 Test_Service::fini(void)
 {
-	return 0;//OOCore::RemoveObjectFactory(CLSID_Test);
+	return OOCore::RemoveObjectFactory(CLSID_Test);
 }
 
 OOObject::int32_t 

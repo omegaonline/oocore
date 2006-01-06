@@ -2,7 +2,7 @@
 #include "./OutputStream_CDR.h"
 #include "./InputStream_CDR.h"
 
-OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const OOObject::cookie_t& proxy_key, const OOObject::cookie_t& stub_key) :
+OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const OOCore::ProxyStubManager::cookie_t& proxy_key, const OOCore::ProxyStubManager::cookie_t& stub_key) :
 	m_manager(manager),
 	m_proxy_key(proxy_key),
 	m_stub_key(stub_key)
@@ -10,7 +10,7 @@ OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const O
 }
 
 int 
-OOCore::Impl::PassThruStub::Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
+OOCore::Impl::PassThruStub::Invoke(Stub::Flags_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
 {
 	// Create a request output stream
 	OOObject::uint32_t trans_id;
@@ -31,7 +31,7 @@ OOCore::Impl::PassThruStub::Invoke(Marshall_Flags flags, OOObject::uint16_t wait
 	if (m_manager->SendAndReceive(flags,wait_secs,req_output,trans_id,&req_input) != 0)
 		return -1;
 
-	if (flags & SYNC)
+	if (flags & Stub::SYNC)
 	{
 		// Copy req_input to output
 		if (copy(req_input,output) != 0)
@@ -42,15 +42,28 @@ OOCore::Impl::PassThruStub::Invoke(Marshall_Flags flags, OOObject::uint16_t wait
 }
 
 int 
+OOCore::Impl::PassThruStub::GetObject(OOObject::Object** ppVal)
+{
+	errno = EFAULT;
+	ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("GetObject is not allowed on a PassThruStub\n")),-1);
+}
+
+int 
 OOCore::Impl::PassThruStub::copy(OOCore::InputStream* in, OOCore::OutputStream* out)
 {
 	// Check the magic numbers and copy
-	OutputStream_CDR* out_cdr = reinterpret_cast<OutputStream_CDR*>(out);
-	InputStream_CDR* in_cdr = reinterpret_cast<InputStream_CDR*>(in);
-	if (out_cdr->get_magic()!=in_cdr->get_magic())
+	Object_Ptr<Impl::OutputStream_CDR> out_cdr;
+	if (out->QueryInterface(Impl::InputStream_CDR::IID,reinterpret_cast<OOObject::Object**>(&out_cdr)) != 0)
 	{
 		errno = EFAULT;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid input or output stream\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream\n")),-1);
+	}
+
+	Object_Ptr<Impl::InputStream_CDR> in_cdr;
+	if (in->QueryInterface(Impl::InputStream_CDR::IID,reinterpret_cast<OOObject::Object**>(&in_cdr)) != 0)
+	{
+		errno = EFAULT;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid input stream\n")),-1);
 	}
 
 	return out_cdr->copy_from(in_cdr);

@@ -19,16 +19,22 @@ namespace Impl
 {
 
 class InputStream_CDR : 
-	public OOCore::Object_Impl<OOCore::InputStream>,
+	public OOCore::Object_Root,
+	public OOCore::InputStream,
 	public ACE_InputCDR
 {
 	friend class OutputStream_CDR;
 
 public:
-	InputStream_CDR(const ACE_InputCDR& in, size_t magic);
+	InputStream_CDR(const ACE_InputCDR& in);
 
-	size_t get_magic() const;
-	
+	DECLARE_IID(OOCore);
+
+BEGIN_INTERFACE_MAP(InputStream_CDR)
+	INTERFACE_ENTRY(OOCore::InputStream)
+	INTERFACE_ENTRY(InputStream_CDR)
+END_INTERFACE_MAP()
+
 private:
 	virtual ~InputStream_CDR() {};
 
@@ -37,8 +43,6 @@ private:
 	{
 		return ((*this >> val) ? 0 : -1);
 	}
-
-	const unsigned long m_magic;
 
 // OOObject::InputStream members
 public:

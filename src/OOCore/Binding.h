@@ -36,9 +36,11 @@ private:
 	virtual ~Binding();
 
 	bool m_unbind_pid;
+	bool m_bOpen;
 	ACE_Naming_Context m_context;
 	
 	int launch_server();
+	int check_open();
 };
 
 typedef ACE_Singleton<Binding, ACE_Thread_Mutex> BINDING;

@@ -25,6 +25,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7&quot;;&quot;..\..\3rd Party Libraries\boost-1.33.0\include\boost-1_33&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
+				GeneratePreprocessedFile="0"
 				MinimalRebuild="TRUE"
 				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="3"
@@ -167,6 +168,12 @@
 			</File>
 			<File
 				RelativePath=".\Proxy_Stub_Factory.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						GeneratePreprocessedFile="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\ProxyStub.cpp">
@@ -271,5 +278,8 @@
 		</Filter>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="OOCore.rc"/>
 	</Globals>
 </VisualStudioProject>

@@ -23,9 +23,9 @@
 namespace std
 {
 template<>
-struct less<OOObject::cookie_t> : public binary_function <OOObject::cookie_t, OOObject::cookie_t, bool> 
+struct less< OOCore::ProxyStubManager::cookie_t > : public binary_function<OOCore::ProxyStubManager::cookie_t, OOCore::ProxyStubManager::cookie_t, bool> 
 {
-	bool operator()(const OOObject::cookie_t& _Left, const OOObject::cookie_t& _Right) const
+	bool operator()(const OOCore::ProxyStubManager::cookie_t& _Left, const OOCore::ProxyStubManager::cookie_t& _Right) const
 	{
 		return (_Left.slot_generation() <= _Right.slot_generation() &&
 				_Left.slot_index() < _Right.slot_index());
@@ -59,7 +59,6 @@ namespace Impl
 
 		int read(OOObject::bool_t& in) { return m_in->ReadBoolean(in); }
 		int read(OOObject::char_t& in) { return m_in->ReadChar(in); }
-		int read(OOObject::byte_t& in) { return m_in->ReadByte(in); }
 		int read(OOObject::int16_t& in) { return m_in->ReadShort(in); }
 		int read(OOObject::uint16_t& in) { return m_in->ReadUShort(in); }
 		int read(OOObject::int32_t& in) { return m_in->ReadLong(in); }
@@ -69,7 +68,7 @@ namespace Impl
 		int read(OOObject::real4_t& in) { return m_in->ReadFloat(in); }
 		int read(OOObject::real8_t& in) { return m_in->ReadDouble(in); }
 		
-		int read(OOObject::cookie_t& val)
+		int read(OOCore::ProxyStubManager::cookie_t& val)
 		{
 			OOObject::byte_t* buf;
 			ACE_NEW_RETURN(buf,OOObject::byte_t[ACE_Active_Map_Manager_Key::size()],-1);
@@ -92,6 +91,12 @@ namespace Impl
 			return read_bytes(val.Data4,8);
 		}
 
+		// Work around for the fact that on some platforms ACE_CDR::Boolean is typedef'd as unsigned char
+		int read(ACE::If_Then_Else<(sizeof(bool)==1),OOObject::byte_t,OOObject::byte_t[2]>::result_type& in)
+		{ 
+			return read_byte_workaround(in); 
+		}
+
 		operator OOCore::InputStream*()
 		{
 			return m_in;
@@ -104,6 +109,16 @@ namespace Impl
 
 	private:
 		OOCore::Object_Ptr<OOCore::InputStream> m_in;
+
+		int read_byte_workaround(OOObject::byte_t& in)
+		{
+			return m_in->ReadByte(in);
+		}
+
+		int read_byte_workaround(OOObject::byte_t in[2])
+		{
+			return read_bytes(in,2);
+		}
 
 		int read_bytes(OOObject::byte_t* b, size_t c)
 		{
@@ -124,7 +139,6 @@ namespace Impl
 
 		int write(const OOObject::bool_t& out) { return m_out->WriteBoolean(out); }
 		int write(const OOObject::char_t& out) { return m_out->WriteChar(out); }
-		int write(const OOObject::byte_t& out) { return m_out->WriteByte(out); }
 		int write(const OOObject::int16_t& out) { return m_out->WriteShort(out); }
 		int write(const OOObject::uint16_t& out) { return m_out->WriteUShort(out); }
 		int write(const OOObject::int32_t& out) { return m_out->WriteLong(out); }
@@ -134,7 +148,7 @@ namespace Impl
 		int write(const OOObject::real4_t& out) { return m_out->WriteFloat(out); }
 		int write(const OOObject::real8_t& out) { return m_out->WriteDouble(out); }
 		
-		int write(const OOObject::cookie_t& val) 
+		int write(const OOCore::ProxyStubManager::cookie_t& val) 
 		{ 
 			OOObject::byte_t* buf;
 			ACE_NEW_RETURN(buf,OOObject::byte_t[ACE_Active_Map_Manager_Key::size()],-1);
@@ -152,6 +166,12 @@ namespace Impl
 			return write_bytes(val.Data4,8);
 		}
 
+		// Work around for the fact that on some platforms ACE_CDR::Boolean is typedef'd as unsigned char
+		int write(const ACE::If_Then_Else<(sizeof(bool)==1),OOObject::byte_t,OOObject::byte_t[2]>::result_type& out)
+		{ 
+			return write_byte_workaround(out); 
+		}
+
 		operator OOCore::OutputStream*()
 		{
 			return m_out;
@@ -165,6 +185,16 @@ namespace Impl
 	private:
 		OOCore::Object_Ptr<OOCore::OutputStream> m_out;
 
+		int write_byte_workaround(const OOObject::byte_t& out)
+		{
+			return m_out->WriteByte(out);
+		}
+
+		int write_byte_workaround(const OOObject::byte_t out[2])
+		{
+			return write_bytes(out,2);
+		}
+
 		int write_bytes(const OOObject::byte_t* p, size_t c)
 		{
 			for (size_t i=0;i<c;++i)
@@ -176,7 +206,5 @@ namespace Impl
 	};
 };
 };
-
-
 
 #endif // OOCORE_OOCORE_IMPL_H_INCLUDED_

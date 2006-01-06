@@ -5,33 +5,27 @@
 #include <ace/SOCK_Stream.h>
 
 #include "../OOCore/Transport_Svc_Handler.h"
-#include "../OOSvc/Transport_Acceptor.h"
-#include "../OOSvc/Shutdown.h"
 
-class OONet_TcpIp_Manager;
+class TcpIp_Manager;
 
-class OONet_TcpIp_Acceptor : 
-	public OOCore_Transport_Svc_Handler<OOSvc_Transport_Acceptor,ACE_SOCK_STREAM,2048>,
-	public OOSvc_Shutdown_Observer
+class TcpIp_Acceptor : 
+	public OOCore::Transport_Svc_Handler<true,ACE_SOCK_STREAM,2048>
 {
-	typedef OOCore_Transport_Svc_Handler<OOSvc_Transport_Acceptor,ACE_SOCK_STREAM,2048> acceptor_base;
+	typedef OOCore::Transport_Svc_Handler<true,ACE_SOCK_STREAM,2048> svc_base;
 
 public:
-	OONet_TcpIp_Acceptor();
+	TcpIp_Acceptor();
 
 	int open(void* p);
 
-protected:
-	ssize_t send_n(ACE_Message_Block* mb)
-	{
-		return peer().send_n(mb);
-	}
+	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK);
 
 private:
-	int request_close();
-	void handle_shutdown();
+	virtual ~TcpIp_Acceptor() {}
 
-	OONet_TcpIp_Manager* m_protocol;
+	ssize_t send_n(ACE_Message_Block* mb);
+	
+	OOCore::Object_Ptr<TcpIp_Manager> m_protocol;
 };
 
 #endif // _OONET_TCPIP_ACCEPTOR_H_INCLUDED_

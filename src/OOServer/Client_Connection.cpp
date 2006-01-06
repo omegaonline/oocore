@@ -24,6 +24,10 @@ Client_Connection::init(void)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),-1);
 	}
 
+/*#if defined (ACE_WIN32) || !defined (_ACE_USE_SV_SEM)
+	ACCEPTOR::instance()->acceptor().preferred_strategy(ACE_MEM_IO::MT);
+#endif*/
+    
 	ACE_MEM_Addr port_addr((u_short)0);
 	if (ACCEPTOR::instance()->open(port_addr,OOCore::ENGINE::instance()->reactor()) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
@@ -35,9 +39,17 @@ Client_Connection::init(void)
 	if (OOCore::Impl::SetServerPort(uPort) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set local port")),-1);
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Listening on port %u for client connections.\n"),uPort));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Listening for client connections.\n")));
 		
 	return 0;
+}
+
+int 
+Client_Connection::recv(ACE_Message_Block*& mb, ACE_Time_Value* wait)
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	return svc_base::recv(mb,wait);
 }
 
 ssize_t 

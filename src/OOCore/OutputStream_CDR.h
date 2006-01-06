@@ -13,6 +13,8 @@
 
 #include "./OOCore_Util.h"
 
+#include "./InputStream_CDR.h"
+
 namespace OOCore
 {
 namespace Impl
@@ -21,16 +23,23 @@ namespace Impl
 class InputStream_CDR;
 
 class OutputStream_CDR :
-	public OOCore::Object_Impl<OOCore::OutputStream>,
+	public OOCore::Object_Root,
+	public OOCore::OutputStream,
 	public ACE_OutputCDR
 {
-	friend class InputStream_CDR;
+	//friend class InputStream_CDR;
 	
 public:
-	OutputStream_CDR(size_t magic);
+	OutputStream_CDR();
 
-	size_t get_magic() const;
 	int copy_from(InputStream_CDR* in);
+
+	DECLARE_IID(OOCore);
+
+BEGIN_INTERFACE_MAP(OutputStream_CDR)
+	INTERFACE_ENTRY(OOCore::OutputStream)
+	INTERFACE_ENTRY(OutputStream_CDR)
+END_INTERFACE_MAP()
 
 private:
 	virtual ~OutputStream_CDR() {}
@@ -40,8 +49,6 @@ private:
 	{
 		return ((*this << val) ? 0 : -1);
 	}
-
-	const unsigned long m_magic;
 
 public:
 	int WriteBoolean(OOObject::bool_t val);

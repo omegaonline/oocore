@@ -19,6 +19,9 @@ public:
 	static int init(void);
 
 private:
+	ACE_Thread_Mutex	m_lock;
+
+	int recv(ACE_Message_Block*& mb, ACE_Time_Value* wait = 0);
 	ssize_t send_n(ACE_Message_Block* mb);
 };
 

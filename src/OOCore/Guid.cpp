@@ -2,7 +2,7 @@
 
 #include "./OOCore.h"
 
-const OOObject::guid_t OOObject::guid_t::NIL = {0};
+const OOObject::guid_t OOObject::guid_t::NIL;
 
 namespace OOCore
 {

@@ -31,15 +31,37 @@ namespace OOCore
 				m_ptr->Release();
 		}
 
+		Object_Ptr& operator = (const Object_Ptr<OBJECT>& rhs)
+		{
+			return (*this) = rhs.m_ptr;
+		}
+
+		Object_Ptr clear()
+		{
+			Object_Ptr<OBJECT> old;
+
+#if defined(WIN32)
+			old = reinterpret_cast<OBJECT*>(static_cast<LONG_PTR>(::InterlockedExchange(reinterpret_cast<LONG*>(&m_ptr), 0)));
+#else
+			m_lock.acquire();
+			old = m_ptr;
+			m_ptr = 0;
+			m_lock.release();
+#endif
+			if (old) 
+				old->Release();
+			return old;
+			
+		}
+
 		Object_Ptr& operator = (OBJECT* ptr)
 		{
 			if (ptr)
 				ptr->AddRef();
 
-#ifdef ACE_WIN32
+#if defined(WIN32)
 			OBJECT* old = reinterpret_cast<OBJECT*>(static_cast<LONG_PTR>(::InterlockedExchange(reinterpret_cast<LONG*>(&m_ptr), static_cast<LONG>(reinterpret_cast<LONG_PTR>(ptr)))));
 #else
-			static ACE_Thread_Mutex m_lock;
 			m_lock.acquire();
 			OBJECT* old = m_ptr;
 			m_ptr = ptr;
@@ -66,9 +88,19 @@ namespace OOCore
 		{
 			return m_ptr;
 		}
+
+		template <class NEW>
+		OOObject::int32_t QueryInterface(NEW** ppVal)
+		{
+			return m_ptr->QueryInterface(NEW::IID,reinterpret_cast<OOObject::Object**>(ppVal));
+		}
 			
 	private:
 		OBJECT* m_ptr;
+
+#if !defined(WIN32)
+		ACE_Thread_Mutex m_lock;
+#endif
 	};
 
 	template <class OBJECT>
@@ -78,13 +110,13 @@ namespace OOCore
 		Object_Impl() : m_refcount(0) 
 		{ }
 
-		OOObject::int32_t AddRef()
+		virtual OOObject::int32_t AddRef()
 		{
 			++m_refcount;
 			return 0;
 		}
 
-		OOObject::int32_t Release()
+		virtual OOObject::int32_t Release()
 		{
 			if (--m_refcount==0)
 				delete this;
@@ -111,6 +143,11 @@ namespace OOCore
 	protected:
 		virtual ~Object_Impl()
 		{}
+
+		long RefCount()
+		{
+			return m_refcount.value();
+		}
 
 	private:
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
@@ -145,9 +182,10 @@ namespace OOCore
 			if (!ppVal)
 				return -1;
 
-			for (const OOObject::guid_t* g=getQIEntries();g!=0;++g)
+			const OOObject::guid_t** g=getQIEntries();
+			for (int i=0;g[i]!=0;++i)
 			{
-				if (*g == iid)
+				if (*(g[i]) == iid)
 				{
 					Internal_AddRef();
 					*ppVal = reinterpret_cast<OOObject::Object*>(this);
@@ -158,7 +196,7 @@ namespace OOCore
 			return -1;
 		}
 
-		virtual const OOObject::guid_t* getQIEntries() = 0;
+		virtual const OOObject::guid_t** getQIEntries() = 0;
 		
 	private:
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
@@ -171,12 +209,12 @@ namespace OOCore
 	OOObject::int32_t Release() {return Internal_Release();} \
 	OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) {return Internal_QueryInterface(iid,ppVal);} \
 	private: \
-	const OOObject::guid_t* getQIEntries() {static const OOObject::guid_t* QIEntries[] = { &OOObject::Object::IID,
+	const OOObject::guid_t** getQIEntries() {static const OOObject::guid_t* QIEntries[] = { &OOObject::Object::IID,
 
 #define INTERFACE_ENTRY(object) \
 	&object::IID,
 
 #define END_INTERFACE_MAP() \
-	0 }; return QIEntries[0]; }
+	0 }; return QIEntries; }
 
 #endif // OOCORE_OOCORE_UTIL_H_INCLUDED_

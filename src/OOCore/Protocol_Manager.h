@@ -27,10 +27,10 @@ namespace Impl
 class Protocol_Manager
 {
 public:
-	OOObject::int32_t AddProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol);
-	OOObject::int32_t RemoveProtocol(const OOObject::char_t* name);
+	OOObject::int32_t RegisterProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol);
+	OOObject::int32_t UnregisterProtocol(const OOObject::char_t* name);
 
-	OOObject::int32_t create_remote_object(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t create_remote_object(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 private:
 	friend class ACE_Singleton<Protocol_Manager, ACE_Thread_Mutex>;

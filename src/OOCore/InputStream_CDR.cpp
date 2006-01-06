@@ -1,15 +1,11 @@
 #include "./InputStream_CDR.h"
 
-OOCore::Impl::InputStream_CDR::InputStream_CDR(const ACE_InputCDR& in, size_t magic) :
-	ACE_InputCDR(in),
-	m_magic(magic)
-{
-}
+// Intentionally the same as OutputStream_CDR
+DEFINE_IID(OOCore::Impl::InputStream_CDR,EF7C52B5-5631-4bdf-A213-7CFA7CF1F8DE);
 
-size_t 
-OOCore::Impl::InputStream_CDR::get_magic() const
+OOCore::Impl::InputStream_CDR::InputStream_CDR(const ACE_InputCDR& in) :
+	ACE_InputCDR(in)
 {
-	return m_magic;
 }
 
 int

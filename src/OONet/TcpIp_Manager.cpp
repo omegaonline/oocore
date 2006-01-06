@@ -7,30 +7,27 @@
 
 #include "../OOCore/Binding.h"
 #include "../OOCore/Engine.h"
-#include "../OOSvc/Transport_Manager.h"
 
 #include "./TcpIp_Connector.h"
 
 #include "./OONet_export.h"
 
 // Declare the service
-ACE_FACTORY_DEFINE(OONet,OONet_TcpIp_Manager)
+ACE_FACTORY_DEFINE(OONet,TcpIp_Manager)
 
-OONet_TcpIp_Manager::OONet_TcpIp_Manager(void) :
-	ACE_Acceptor<OONet_TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>(ENGINE::instance()->reactor()),
-	OOSvc_Transport_Protocol("tcp")
+TcpIp_Manager::TcpIp_Manager(void) :
+	ACE_Acceptor<TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>(OOCore::ENGINE::instance()->reactor())
+{
+	// Artifically AddRef ourselves, because ACE_Svc_Config controls our lifetime
+	AddRef();
+}
+
+TcpIp_Manager::~TcpIp_Manager(void)
 {
 }
 
-OONet_TcpIp_Manager::~OONet_TcpIp_Manager(void)
+int TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 {
-}
-
-int OONet_TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
-{
-	if (ACE::debug())
-		ACE_DEBUG((LM_DEBUG,ACE_TEXT("TcpIp_Manager::init\n")));
-
 	// Parse cmd line first
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":p:"),0);
 	int option;
@@ -53,14 +50,14 @@ int OONet_TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 	}
 
 	ACE_INET_Addr port_addr(uPort);
-	if (open(port_addr,ENGINE::instance()->reactor()) == -1)
+	if (open(port_addr,OOCore::ENGINE::instance()->reactor()) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	
 	// Confirm we have a connection
 	if (acceptor().get_local_addr(port_addr)==-1)
-		return -1;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")),-1);
 
-	if (TRANSPORT_MANAGER::instance()->register_protocol(this) != 0)
+	if (OOCore::RegisterProtocol("tcp",this) != 0)
 	{
 		close();
 		return -1;
@@ -71,48 +68,114 @@ int OONet_TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 	return 0;
 }
 
-int OONet_TcpIp_Manager::fini(void)
+bool 
+TcpIp_Manager::await_close(void* p)
 {
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("OONet_TcpIp_Manager::fini\n")));
+	TcpIp_Manager* pThis = reinterpret_cast<TcpIp_Manager*>(p);
 
-	TRANSPORT_MANAGER::instance()->unregister_protocol(protocol_name());
-
-	return 0;
+	return (pThis->RefCount()<=1);
 }
 
-void OONet_TcpIp_Manager::handle_shutdown()
+int 
+TcpIp_Manager::fini(void)
 {
+	// Stop accepting any more connections
+	OOCore::UnregisterProtocol("tcp");
 	close();
-}
 
-bool OONet_TcpIp_Manager::address_is_equal(const char* addr1, const char* addr2)
-{
-	return ACE_INET_Addr(addr1) == ACE_INET_Addr(addr2);
-}
+	// Close any open connections
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> > local_copy(m_trans_map);
+	m_trans_map.clear();
+	guard.release();
 
-int OONet_TcpIp_Manager::connect_transport(const char* remote_host, OOCore_Transport_Base*& transport)
-{
-	// Sort out address
-	ACE_INET_Addr addr;
-	if (addr.set(remote_host) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to resolve address: tcp://%s - %m\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_host)),-1);
+	for (std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=local_copy.begin();i!=local_copy.end();++i)
+	{
+		i->second->close();
+	}
+	local_copy.clear();
 
-	// Connect to this
-	OONet_TcpIp_Connector* conn = 0;
-	ACE_Connector<OONet_TcpIp_Connector, ACE_SOCK_CONNECTOR> connector(ENGINE::instance()->reactor());
-	if (connector.connect(conn,addr)!=0)
-		return -1;
-
-	conn->set_protocol(this);
-	transport = conn;
+	// Wait for everyone to close
+	ACE_Time_Value wait(DEFAULT_WAIT);
+	OOCore::ENGINE::instance()->pump_requests(&wait,await_close,this);
 	
 	return 0;
 }
 
+void 
+TcpIp_Manager::add_connection(const ACE_INET_Addr& addr, OOCore::Transport_Impl* trans)
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.find(addr);
+	if (i==m_trans_map.end())
+	{
+		m_trans_map[addr] = trans;
+	}
+}
+
+void 
+TcpIp_Manager::remove_connection(OOCore::Transport_Impl* trans)
+{
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	for (std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.begin();i!=m_trans_map.end();++i)
+	{
+		if (i->second == trans)
+		{
+			m_trans_map.erase(i);
+			return;
+		}
+	}
+}
+
+OOObject::int32_t 
+TcpIp_Manager::Connect(const OOObject::char_t* remote_addr, OOCore::Transport** ppTransport)
+{
+	// Sort out address
+	ACE_INET_Addr addr;
+	if (addr.set(remote_addr) != 0)
+        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to resolve address: tcp://%s - %m\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_addr)),-1);
+
+	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+
+	std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.find(addr);
+	if (i!=m_trans_map.end())
+	{
+		*ppTransport = i->second;
+		(*ppTransport)->AddRef();
+		return 0;
+	}
+
+	guard.release();
+
+	// Connect to the address
+	TcpIp_Connector* conn = 0;
+	ACE_Connector<TcpIp_Connector, ACE_SOCK_CONNECTOR> connector(OOCore::ENGINE::instance()->reactor());
+	if (connector.connect(conn,addr)!=0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to connect to address: tcp://%s - %m\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_addr)),-1);
+	
+	conn->set_protocol(this);
+	conn->AddRef();
+
+	// Put in the map
+	add_connection(addr,conn);
+	
+	if (conn->wait_for_open())
+	{
+		conn->Release();
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connecting timed out and gave up\n")),-1);
+	}
+
+	*ppTransport = conn;
+		
+	return 0;
+}
+
 #if defined (ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION)
-template class ACE_DLL_Singleton_T<OONet_TcpIp_Manager,ACE_Thread_Mutex>;
-template class ACE_Acceptor<OONet_TcpIp_Connection, ACE_SOCK_ACCEPTOR>;
+template class ACE_DLL_Singleton_T<TcpIp_Manager,ACE_Thread_Mutex>;
+template class ACE_Acceptor<TcpIp_Connection, ACE_SOCK_ACCEPTOR>;
 #elif defined (ACE_HAS_TEMPLATE_INSTANTIATION_PRAGMA)
-#pragma instantiate ACE_DLL_Singleton_T<OONet_TcpIp_Manager,ACE_Thread_Mutex>
-#pragma instantiate ACE_Acceptor<OONet_TcpIp_Connection, ACE_SOCK_ACCEPTOR>
+#pragma instantiate ACE_DLL_Singleton_T<TcpIp_Manager,ACE_Thread_Mutex>
+#pragma instantiate ACE_Acceptor<TcpIp_Connection, ACE_SOCK_ACCEPTOR>
 #endif /* ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION */

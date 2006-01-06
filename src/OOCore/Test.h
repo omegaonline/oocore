@@ -17,11 +17,11 @@ namespace OOCore
 		DECLARE_IID(OOCore);
 	};
 
-	BEGIN_AUTO_PROXY_STUB(Server)
+	BEGIN_META_INFO(Server)
 		METHOD(Stop,2,((in),OOObject::bool_t,force,(out),OOObject::uint16_t*,remaining))
 		METHOD(StopPending,1,((out),OOObject::bool_t*,pending))
 		METHOD(StayAlive,0,())
-	END_AUTO_PROXY_STUB()
+	END_META_INFO()
 };
 
 #endif // OOCORE_TEST_H_INCLUDED_

@@ -23,17 +23,22 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// NB - ACE_Service_Config uses "bdf:k:nyp:s:S:"
 	//      Engine uses "e:"
 
+#ifdef _DEBUG
+	ACE_TCHAR buf[MAXPATHLEN];
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Starting OOServer in working directory:\n\t'%s'\n\n"),ACE_OS::getcwd(buf,MAXPATHLEN)));
+#endif
+
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":t:"));
 	int option;
-	int threads = 2;
+	int threads = ACE_OS::num_processors()+1;
 	while ((option = cmd_opts()) != EOF)
 	{
 		switch (option)
 		{
 		case ACE_TEXT('t'):
 			threads = ACE_OS::atoi(cmd_opts.opt_arg());
-			if (threads<0 || threads>10)
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of threads '%s' range is [0..10].\n"),cmd_opts.opt_arg()),-1);
+			if (threads<1 || threads>10)
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of threads '%s' range is [1..10].\n"),cmd_opts.opt_arg()),-1);
 			break;
 
 		case ACE_TEXT(':'):
@@ -70,7 +75,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 				ACE_Reactor::run_event_loop();
 
 				// Close the services
-				ACE_Service_Config::close();
+				ACE_Service_Config::fini_svcs();
 			}
 		}
 
@@ -80,6 +85,16 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 	// Wait for all the threads to finish
 	ACE_Thread_Manager::instance()->wait();
+
+#ifdef _DEBUG
+	// Give us a chance to read the error message
+	if (ret != 0)
+	{
+		ACE_DEBUG((LM_DEBUG,ACE_TEXT("\nTerminating OOServer: exitcode = %d, error = %m.\n\n" \
+									 "OOServer will now wait for 10 seconds so you can read this message...\n"),ret));
+		ACE_OS::sleep(10);
+	}
+#endif
 
 	return ret;
 }

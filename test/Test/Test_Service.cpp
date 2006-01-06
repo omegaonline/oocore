@@ -6,8 +6,10 @@ ACE_FACTORY_DEFINE(Test,Test_Service)
 int 
 Test_Service::init(int argc, ACE_TCHAR *argv[])
 {
-	AddRef();
-	return OOCore::AddObjectFactory(CLSID_Test,this);
+	// Artifically increment our RefCount, the ACE_Svc_Config will delete us
+    AddRef();
+
+	return OOCore::AddObjectFactory(OOCore::ObjectFactory::USAGE_ANY,CLSID_Test,this);
 }
 
 int 

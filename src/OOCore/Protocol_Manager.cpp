@@ -1,7 +1,7 @@
 #include "./Protocol_Manager.h"
 
 OOObject::int32_t 
-OOCore::Impl::Protocol_Manager::AddProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol)
+OOCore::Impl::Protocol_Manager::RegisterProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -18,7 +18,7 @@ OOCore::Impl::Protocol_Manager::AddProtocol(const OOObject::char_t* name, OOCore
 }
 
 OOObject::int32_t 
-OOCore::Impl::Protocol_Manager::RemoveProtocol(const OOObject::char_t* name)
+OOCore::Impl::Protocol_Manager::UnregisterProtocol(const OOObject::char_t* name)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -35,21 +35,20 @@ OOCore::Impl::Protocol_Manager::RemoveProtocol(const OOObject::char_t* name)
 }
 
 OOObject::int32_t 
-OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* remote_addr, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	// URL format = <protocol>://<protocol_specific_address>
-	ACE_CString strURL(remote_addr);
+	ACE_CString strURL(remote_url);
 
 	// Find the first colon
 	ssize_t colon = strURL.find("://");
 	if (colon==-1)
 	{
 		errno = EINVAL;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad remote transport address %s\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_addr)),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad remote transport address %s\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_url)),-1);
 	}
 
-	ACE_CString strAddress = strURL.substr(colon+3);
-
+	// Lookup the corresponding protocol
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
 	std::map<ACE_CString,OOCore::Object_Ptr<OOCore::Protocol> >::iterator i=m_protocol_map.find(strURL.substr(0,colon));
@@ -58,6 +57,15 @@ OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* rem
 		errno = EPFNOSUPPORT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No such protocol\n")),-1);
 	}
-	
-	return -1;	
+	Object_Ptr<Protocol> protocol = i->second;
+
+	guard.release();
+
+	// Connect to the transport
+	Object_Ptr<Transport> transport;
+	if (protocol->Connect(strURL.substr(colon+3).c_str(),&transport) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Connect failed\n")),-1);
+
+	// Ask the transport to create the object
+    return transport->CreateObject(clsid,iid,ppVal);	
 }

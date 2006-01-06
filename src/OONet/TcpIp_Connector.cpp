@@ -2,31 +2,28 @@
 
 #include "./TcpIp_Manager.h"
 
-OONet_TcpIp_Connector::OONet_TcpIp_Connector() :
+TcpIp_Connector::TcpIp_Connector() :
 	m_protocol(0)
 {
 }
 
-void OONet_TcpIp_Connector::set_protocol(OONet_TcpIp_Manager* p)
+void 
+TcpIp_Connector::set_protocol(TcpIp_Manager* p)
 {
 	m_protocol = p;
 }
 
-int OONet_TcpIp_Connector::close(u_long flags)
+ssize_t 
+TcpIp_Connector::send_n(ACE_Message_Block* mb)
 {
-	if (OOSvc_Transport_Connector::close() != 0)
-		return -1;
-
-	shutdown();
-
-	return 0;
+	return peer().send_n(mb);
 }
 
-int OONet_TcpIp_Connector::on_close()
+int 
+TcpIp_Connector::handle_close(ACE_HANDLE fd, ACE_Reactor_Mask mask)
 {
-	// This does nothing and needs to be fixed
 	if (m_protocol)
-		m_protocol->transport_closed(this);
-
-	return 0;
+		m_protocol->remove_connection(this);
+	
+	return svc_base::handle_close(fd,mask);
 }

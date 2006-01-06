@@ -1,41 +1,59 @@
 // ControlTest.cpp : Defines the entry point for the console application.
 //
 
-#include <tchar.h>
+//#include <tchar.h>
 
 #include <OOCore/OOCore_Util.h>
+
 #include "../Test/Test.h"
 
-int _tmain(int argc, _TCHAR* argv[])
+void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
+{
+	OOObject::uint16_t arr[11] = {0};
+	OOObject::uint32_t count = 7;
+		
+	ACE_OS::printf("Calling Array_Test_In with %u items: ",count);
+	if (ptrTest->Array_Test_In(count,arr)==0)
+		ACE_OS::printf("succeeded.");
+	else
+		ACE_OS::perror("failed");
+	ACE_OS::printf("\n");
+
+	OOObject::uint16_t* parr = 0;
+	ACE_OS::printf("Calling Array_Test_Out: ");
+	if (ptrTest->Array_Test_Out(&count,&parr) == 0)
+		ACE_OS::printf("succeeded, %u items received.",count);
+	else
+		ACE_OS::perror("failed");
+	ACE_OS::printf("\n");
+	
+	ACE_OS::printf("Calling Array_Test_InOut with %u items: ",count);
+	if (ptrTest->Array_Test_InOut(&count,&parr) == 0)
+		ACE_OS::printf("succeeded, %u items received.",count);
+	else
+		ACE_OS::perror("failed");
+	ACE_OS::printf("\n");
+
+	OOObject::Free(parr);
+}
+
+int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	int ret = OOObject::Init();
 	if (ret==0)
 	{
 		{
-			OOCore::Object_Ptr<Test::Test> pTest;
-			if (OOObject::CreateObject(CLSID_Test,&pTest) == 0)
-			{
-				OOObject::uint16_t arr[12];
-				pTest->Array_Test_In(12,arr);
-
-				OOObject::uint32_t count = 12;
-				OOObject::uint16_t* parr = arr;
-				if (pTest->Array_Test_InOut(&count,&parr) == 0)
-					if (parr!=arr) OOObject::Free(parr);
-
-				// Crash test dummy!
-				//exit(-1);
-
-				if (pTest->Array_Test_Out(&count,&parr) == 0)
-					if (parr!=arr) OOObject::Free(parr);
-
-				//OOObject::uint16_t remaining = 0;
-				//pObj->Stop(false,&remaining);
-			}
+            OOCore::Object_Ptr<Test::Test> ptrTest;
+			if (OOObject::CreateObject(CLSID_Test,&ptrTest) == 0)
+				DoTests(ptrTest);
 			else
-			{
-				ACE_ERROR((LM_DEBUG,ACE_TEXT("Failed to create object: %m.\n")));
-			}
+				ACE_OS::perror("CreateObject failed");
+						
+			ptrTest = 0;
+			if (OOObject::CreateRemoteObject("tcp://localhost:5000",CLSID_Test,&ptrTest) == 0)
+				DoTests(ptrTest);
+			else
+				ACE_OS::perror("CreateRemoteObject failed");
 		}
 				
 		OOObject::Term();

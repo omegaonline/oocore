@@ -9,8 +9,8 @@
 #ifndef OOCORE_OBJECT_TYPES_H_INCLUDED_
 #define OOCORE_OBJECT_TYPES_H_INCLUDED_
 
-#include <ace/Active_Map_Manager.h>
 #include <ace/CDR_Stream.h>
+#include <ace/OS.h>
 
 #include "./OOCore_export.h"
 
@@ -27,10 +27,14 @@ namespace OOObject
 	typedef ACE_CDR::ULongLong			uint64_t;
 	typedef ACE_CDR::Float				real4_t;
 	typedef ACE_CDR::Double				real8_t;
-	typedef ACE_Active_Map_Manager_Key	cookie_t;
 	
 	struct OOCore_Export guid_t
 	{
+		guid_t() : Data1(0), Data2(0), Data3(0)
+		{ 
+			ACE_OS::memset(Data4,0,8);
+		}
+
 		uint32_t	Data1;
 		uint16_t	Data2;
 		uint16_t	Data3;

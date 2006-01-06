@@ -1,6 +1,6 @@
-#include ".\test_impl.h"
+#include "./Test_Impl.h"
 
-int 
+OOObject::int32_t 
 Test_Impl::Array_Test_In(OOObject::uint32_t count, OOObject::uint16_t* pArray)
 {
 	ACE_OS::printf(ACE_TEXT("Array_Test_In: Received %u items.\n"),count);
@@ -8,10 +8,10 @@ Test_Impl::Array_Test_In(OOObject::uint32_t count, OOObject::uint16_t* pArray)
 	return 0;
 }
 
-int 
+OOObject::int32_t 
 Test_Impl::Array_Test_Out(OOObject::uint32_t* count, OOObject::uint16_t** pArray)
 {
-	*count = 14;
+	*count = 11;
 	*pArray = (OOObject::uint16_t*)OOObject::Alloc(sizeof(OOObject::uint16_t)* *count);
 
 	ACE_OS::printf(ACE_TEXT("Array_Test_Out: Sending %u items.\n"),*count);
@@ -19,34 +19,22 @@ Test_Impl::Array_Test_Out(OOObject::uint32_t* count, OOObject::uint16_t** pArray
 	return (*pArray ? 0 : -1);
 }
 
-int 
+OOObject::int32_t 
 Test_Impl::Array_Test_InOut(OOObject::uint32_t* count, OOObject::uint16_t** pArray)
 {
 	ACE_OS::printf(ACE_TEXT("Array_Test_InOut: Received %u items.\n"),*count);
 
-#define RESIZE_TEST 0
+#define RESIZE_TEST 1
 
-#ifdef RESIZE_TEST
+#if (RESIZE_TEST==1)
 	OOObject::Free(*pArray);
-	*count = 14;
+	*count = 13;
 	*pArray = (OOObject::uint16_t*)OOObject::Alloc(sizeof(OOObject::uint16_t)* *count);
 #else
-	*count = 10;
+	*count = 9;
 #endif
 
 	ACE_OS::printf(ACE_TEXT("Array_Test_InOut: Sending %u items.\n"),*count);
 
 	return (*pArray ? 0 : -1);
-}
-
-int 
-Test_Impl::Object_Test_In(const OOObject::guid_t& iid, OOObject::Object* pObj)
-{
-	return 0;
-}
-
-int 
-Test_Impl::Object_Test_Out(const OOObject::guid_t& iid, OOObject::Object** pObj)
-{
-	return -1;
 }

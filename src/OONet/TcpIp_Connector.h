@@ -4,32 +4,25 @@
 #include <ace/SOCK_Stream.h>
 
 #include "../OOCore/Transport_Svc_Handler.h"
-#include "../OOSvc/Transport_Connector.h"
 
-class OONet_TcpIp_Manager;
+class TcpIp_Manager;
 
-class OONet_TcpIp_Connector :
-	public OOCore_Transport_Svc_Handler<OOSvc_Transport_Connector,ACE_SOCK_STREAM,2048>
+class TcpIp_Connector :
+	public OOCore::Transport_Svc_Handler<false,ACE_SOCK_STREAM,2048>
 {
-	typedef OOCore_Transport_Svc_Handler<OOSvc_Transport_Connector,ACE_SOCK_STREAM,2048> connector_base;
+	typedef OOCore::Transport_Svc_Handler<false,ACE_SOCK_STREAM,2048> svc_base;
 
 public:
-	OONet_TcpIp_Connector();
+	TcpIp_Connector();
 
-	void set_protocol(OONet_TcpIp_Manager* p);
+	void set_protocol(TcpIp_Manager* p);
 
-	int close(u_long flags = 0);
-
-protected:
-	ssize_t send_n(ACE_Message_Block* mb)
-	{
-		return peer().send_n(mb);
-	}
-
+	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+	
 private:
-	OONet_TcpIp_Manager* m_protocol;
+	OOCore::Object_Ptr<TcpIp_Manager> m_protocol;
 
-	int on_close();
+	ssize_t send_n(ACE_Message_Block* mb);
 };
 
 #endif // _OONET_TCPIP_CONNECTOR_H_INCLUDED_

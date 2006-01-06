@@ -29,11 +29,15 @@ public:
 	static int init(void);
 
 private:
+	friend class ACE_Singleton<Connection_Manager, ACE_Thread_Mutex>;
 	virtual ~Connection_Manager() {}
 
-	friend class ACE_Singleton<Connection_Manager, ACE_Thread_Mutex>;
+	ACE_Thread_Mutex	m_lock;
 
+	int recv(ACE_Message_Block*& mb, ACE_Time_Value* wait = 0);
 	ssize_t send_n(ACE_Message_Block* mb);
+
+	static bool await_connect(void * p);
 };
 
 typedef ACE_Singleton<Connection_Manager, ACE_Thread_Mutex> CONNECTION_MANAGER;

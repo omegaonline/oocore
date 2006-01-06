@@ -12,16 +12,17 @@ class PassThruStub :
 	public OOCore::Object_Impl<OOCore::Stub>
 {
 public:
-	PassThruStub(OOCore::ObjectManager* manager, const OOObject::cookie_t& proxy_key, const OOObject::cookie_t& stub_key);
+	PassThruStub(OOCore::ObjectManager* manager, const OOCore::ProxyStubManager::cookie_t& proxy_key, const OOCore::ProxyStubManager::cookie_t& stub_key);
 
 // Stub members
 public:
-	int Invoke(Marshall_Flags flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output);
-
+	int Invoke(Stub::Flags_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output);
+	int GetObject(OOObject::Object** ppVal);
+		
 private:
 	OOCore::Object_Ptr<OOCore::ObjectManager> m_manager;
-	const OOObject::cookie_t& m_proxy_key;
-	const OOObject::cookie_t& m_stub_key;
+	const OOCore::ProxyStubManager::cookie_t& m_proxy_key;
+	const OOCore::ProxyStubManager::cookie_t& m_stub_key;
 
 	int copy(OOCore::InputStream* in, OOCore::OutputStream* out);
 };

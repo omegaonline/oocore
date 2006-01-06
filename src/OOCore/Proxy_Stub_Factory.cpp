@@ -3,17 +3,44 @@
 #include "./OOCore_PS.h"
 #include "./ObjectManager.h"
 
-BEGIN_PROXY_STUB_MAP(OOCore)
-	PROXY_STUB_AUTO_ENTRY(OOCore::Impl::RemoteObjectFactory)
-END_PROXY_STUB_MAP()
+namespace OOCore
+{
+namespace Impl
+{
+	typedef ACE_Singleton<Proxy_Stub_Factory, ACE_Thread_Mutex> PROXY_STUB_FACTORY;
+
+	class Object_Proxy : public OOObject::Object
+	{
+	public:
+		static const OOObject::guid_t IID;
+	};
+
+	BEGIN_META_INFO(Object_Proxy)
+	END_META_INFO()
+};
+};
+
+DEFINE_IID(OOCore::Impl::Object_Proxy,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
+
+OOCORE_PS_BEGIN_PROXY_STUB_MAP(OOCore::Impl::Proxy_Stub_Factory::CreateProxyStub)
+	OOCORE_PS_ENTRY_SHIM(OOCore::Impl::RemoteObjectFactory)
+	OOCORE_PS_ENTRY_SHIM(OOCore::Impl::Object_Proxy)
+END_META_INFO_MAP()
 
 OOCore::Impl::Proxy_Stub_Factory::proxystub_node 
 OOCore::Impl::Proxy_Stub_Factory::m_core_node = 
 {
 	ACE_DLL(), 
-	&CreateProxy, 
-	&CreateStub
+	&OOCore::Impl::Proxy_Stub_Factory::CreateProxy, 
+	&OOCore::Impl::Proxy_Stub_Factory::CreateStub,
+	&OOCore::Impl::Proxy_Stub_Factory::GetTypeInfo
 };
+
+OOCore::Impl::Proxy_Stub_Factory::Proxy_Stub_Factory(void)
+{
+	// This little bit of madness will register all the OOCore proxy/stubs automatically
+	CreateProxyStub(4,0,OOObject::guid_t::NIL,0,OOCore::ProxyStubManager::cookie_t(),0,0,0,reinterpret_cast<const char*>(this));
+}
 
 OOCore::Impl::Proxy_Stub_Factory::~Proxy_Stub_Factory(void)
 {
@@ -26,7 +53,7 @@ OOCore::Impl::Proxy_Stub_Factory::~Proxy_Stub_Factory(void)
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::cookie_t& cookie, OOObject::Object** proxy)
+OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& cookie, OOObject::Object** proxy)
 {
 	// Get the proxy/stub node
 	proxystub_node* node;
@@ -41,7 +68,7 @@ OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::cookie_t& key, OOCore::Stub** ppStub)
+OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** ppStub)
 {
 	// Get the proxy/stub node
 	proxystub_node* node;
@@ -56,11 +83,24 @@ OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager,
 }
 
 int 
+OOCore::Impl::Proxy_Stub_Factory::create_type_info(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info)
+{
+	// Get the proxy/stub node
+	proxystub_node* node;
+	if (load_proxy_stub(iid,node) != 0)
+		return -1;
+
+	// Call CreateProxy
+	if ((node->get_type_info_fn)(iid,type_info) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) GetTypeInfo failed: %m\n")),-1);
+	
+	return 0;
+}
+
+int 
 OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, proxystub_node*& node)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("Requesting proxy/stub for iid {%s}\n"),OOCore::Impl::guid_to_string(iid).c_str()));
 
 	std::map<OOObject::guid_t,proxystub_node*>::const_iterator i=m_dll_map.find(iid);
 	if (i==m_dll_map.end())
@@ -73,14 +113,6 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) No proxy/stub registered\n")),-1);
 		}
 			
-		// Check if it's us
-		if (dll_name==ACE_TEXT("OOCore"))
-		{
-			node = &m_core_node;
-			m_dll_map.insert(std::map<OOObject::guid_t,proxystub_node*>::value_type(iid,&m_core_node));
-			return 0;
-		}
-
 		// Open the DLL
 		proxystub_node* new_node;
 		ACE_NEW_RETURN(new_node,proxystub_node,-1);
@@ -107,6 +139,14 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) CreateProxy function missing from library\n")),-1);
 		}
 
+		// Bind to the GetTypeInfo function - C-style cast to please gcc
+		new_node->get_type_info_fn = (OOCore::GetTypeInfo_Function)(new_node->dll.symbol(ACE_TEXT("GetTypeInfo")));
+		if (new_node->proxy_fn == 0)
+		{
+			delete new_node;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) GetTypeInfo function missing from library\n")),-1);
+		}
+
 		// Add the node info to the map
 		if (!m_dll_map.insert(std::map<OOObject::guid_t,proxystub_node*>::value_type(iid,new_node)).second)
 		{
@@ -122,4 +162,40 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 	}
 
 	return 0;
+}
+
+int 
+OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy) 
+{
+	return CreateProxyStub(0,manager,iid,0,key,proxy,0,0,0); 
+}
+
+int 
+OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub) 
+{
+	return CreateProxyStub(1,manager,iid,obj,key,0,stub,0,0); 
+}
+
+int 
+OOCore::Impl::Proxy_Stub_Factory::GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info) 
+{
+	return CreateProxyStub(5,0,iid,0,OOCore::ProxyStubManager::cookie_t(),0,0,type_info,0); 
+}
+
+int OOCore_Export 
+OOCore::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy)
+{
+	return Impl::PROXY_STUB_FACTORY::instance()->create_proxy(manager,iid,key,proxy);
+}
+
+int OOCore_Export 
+OOCore::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub)
+{
+	return Impl::PROXY_STUB_FACTORY::instance()->create_stub(manager,iid,obj,key,stub);
+}
+
+int OOCore_Export 
+OOCore::GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info)
+{
+	return Impl::PROXY_STUB_FACTORY::instance()->create_type_info(iid,type_info);
 }

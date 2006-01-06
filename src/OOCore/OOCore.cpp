@@ -8,19 +8,20 @@
 #include "./Protocol_Manager.h"
 
 DEFINE_IID(OOObject::Object,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
+DEFINE_IID(OOCore::Proxy,E196DC53-18D8-4267-8D82-4DCF8A0EF53B);
 DEFINE_IID(OOCore::Stub,D8B1513D-967B-429e-8403-31650213DA21);
 DEFINE_IID(OOCore::InputStream,86F468DB-953F-4be0-A8EB-D9A344C104E3);
 DEFINE_IID(OOCore::OutputStream,0FA60065-8C8A-463b-9B01-D080E03EF39F);
+DEFINE_IID(OOCore::Channel,F5A70AB9-3BD3-4786-98AE-4682AF2CC30E);
 DEFINE_IID(OOCore::Transport,33EE56E9-9748-43ce-A71C-516ACE28925C);
 DEFINE_IID(OOCore::ProxyStubManager,F3EB63E5-602A-4155-8F52-F11FF502EFE5);
 DEFINE_IID(OOCore::ObjectFactory,E2760ABA-1BAA-4c7b-89B2-466320296D1D);
 DEFINE_IID(OOCore::Protocol,47938C01-35E6-44bc-B4C6-82C6C5EBADE2);
+DEFINE_IID(OOCore::TypeInfo,092A991C-E6C3-49db-8F1E-38D14189C542);
 
 #ifdef _DEBUG
 #include "./Test.h"
-
 DEFINE_IID(OOCore::Server,B4B5BF71-58DF-4001-BD0B-72496463E3C3);
-
 #endif
 
 namespace OOCore
@@ -31,20 +32,28 @@ namespace Impl
 	OOCore_Export int SetServerPort(OOObject::uint16_t uPort);
 
 	bool g_IsServer = false;
-
-#ifdef ACE_WIN32
-	HINSTANCE g_hInstance = NULL;
-#endif
 };
 };
 
 #ifdef ACE_WIN32
+namespace OOCore
+{
+namespace Impl
+{
+	HINSTANCE g_hInstance = 0;
+};
+};
+
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID)
 {
 	if (reason == DLL_PROCESS_ATTACH)
 	{
 		OOCore::Impl::g_hInstance = instance;
+
+#if defined (ACE_DISABLES_THREAD_LIBRARY_CALLS) && (ACE_DISABLES_THREAD_LIBRARY_CALLS == 1)
 		::DisableThreadLibraryCalls(instance);
+#endif /* ACE_DISABLES_THREAD_LIBRARY_CALLS */
+
 	}
 	
 	return TRUE;
@@ -54,13 +63,14 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID)
 OOCore_Export int 
 OOCore::Impl::RegisterAsServer()
 {
-	if (Impl::BINDING::instance()->launch(true) == 0)
+	int ret = Impl::BINDING::instance()->launch(true);
+	if (ret == 0)
 	{
 		// This is the only place this is set!
 		g_IsServer = true;
-		return 0;
 	}
-	return -1;
+
+	return ret;
 }
 
 OOCore_Export int
@@ -100,15 +110,15 @@ OOCore::UnregisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
 }
 
 OOCore_Export OOObject::int32_t  
-OOCore::AddObjectFactory(const OOObject::guid_t& clsid, ObjectFactory* pFactory)
+OOCore::AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory)
 {
 	if (Impl::g_IsServer)
 	{
-		return Impl::OBJECT_FACTORY::instance()->add_object_factory(clsid,pFactory);
+		return Impl::OBJECT_FACTORY::instance()->add_object_factory(flags,clsid,pFactory);
 	}
 	else
 	{
-		return Impl::CONNECTION_MANAGER::instance()->AddObjectFactory(clsid,pFactory);
+		return Impl::CONNECTION_MANAGER::instance()->AddObjectFactory(flags,clsid,pFactory);
 	}
 }
 
@@ -126,7 +136,7 @@ OOCore::RemoveObjectFactory(const OOObject::guid_t& clsid)
 }
 
 OOCore_Export OOObject::int32_t  
-OOCore::AddProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol)
+OOCore::RegisterProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol)
 {
 	if (!Impl::g_IsServer)
 	{
@@ -134,11 +144,11 @@ OOCore::AddProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Must be a server!\n")),-1);
 	}
 	
-	return Impl::PROTOCOL_MANAGER::instance()->AddProtocol(name,protocol);
+	return Impl::PROTOCOL_MANAGER::instance()->RegisterProtocol(name,protocol);
 }
 
 OOCore_Export OOObject::int32_t  
-OOCore::RemoveProtocol(const OOObject::char_t* name)
+OOCore::UnregisterProtocol(const OOObject::char_t* name)
 {
 	if (!Impl::g_IsServer)
 	{
@@ -146,5 +156,5 @@ OOCore::RemoveProtocol(const OOObject::char_t* name)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Must be a server!\n")),-1);
 	}
 	
-	return Impl::PROTOCOL_MANAGER::instance()->RemoveProtocol(name);
+	return Impl::PROTOCOL_MANAGER::instance()->UnregisterProtocol(name);
 }

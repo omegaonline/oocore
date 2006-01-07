@@ -1,7 +1,5 @@
 #include "./Engine.h"
 
-#include <memory>
-
 #include <ace/Get_Opt.h>
 #ifdef ACE_WIN32
 #include <ace/WFMO_Reactor.h>
@@ -9,6 +7,8 @@
 #include <ace/TP_Reactor.h>
 #endif
 #include <ace/OS.h>
+
+#include <memory>
 
 OOCore::Engine::Engine(void) :
 	m_activ_queue(msg_queue()),

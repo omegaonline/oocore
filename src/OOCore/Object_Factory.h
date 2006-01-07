@@ -1,10 +1,10 @@
 #ifndef OOCORE_OBJECT_FACTORY_H_INCLUDED_
 #define OOCORE_OBJECT_FACTORY_H_INCLUDED_
 
-#include <map>
-
 #include <ace/Singleton.h>
 #include <ace/Thread_Mutex.h>
+
+#include <map>
 
 #include "./OOCore_Util.h"
 

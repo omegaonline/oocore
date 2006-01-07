@@ -1,14 +1,15 @@
 #ifndef OOCORE_ENGINE_H_INCLUDED_
 #define OOCORE_ENGINE_H_INCLUDED_
 
-#include <list>
-
 #include <ace/Task.h>
 #include <ace/Reactor.h>
 #include <ace/Singleton.h>
 #include <ace/Activation_Queue.h>
+#include <ace/Method_Request.h>
 #include <ace/Thread.h>
 #include <ace/TSS_T.h>
+
+#include <list>
 
 #include "./OOCore_export.h"
 

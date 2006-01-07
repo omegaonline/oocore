@@ -36,7 +36,7 @@
 #define OOCORE_PS_DECLARE_PARAMATTR_TABLE()				switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_PARAMATTR_TABLE_I,_) default:errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),method),-1); }
 #define OOCORE_PS_DECLARE_PARAMATTR_TABLE_I(z,n,d)		case n:	return pT->get_param_attrib(boost::mpl::size_t< n >(),param,attr,is_index);
 															
-#define OOCORE_PS_METATYPE_BUILDER(t)					template <> class type_info_t<OOObject::t> { public: enum { value = OOCore::TypeInfo::t }; };
+#define OOCORE_PS_METATYPE_BUILDER(t)					template <> class type_info_t< OOObject::t > { public: enum { value = OOCore::TypeInfo::t }; }
 
 // IDL style attribute macros
 #define OOCORE_PS_ATTRIB_in						(0)
@@ -176,7 +176,7 @@
 
 #define OOCORE_PS_DECLARE_PARAMINFO_IF(param)			*type = BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,iid_is), \
 															OOCore::TypeInfo::Object, \
-															OOCore::Impl::metainfo_t::type_info_t< OOCORE_PS_PARAM_TYPE(param) >::value \
+															OOCore::Impl::type_info_t< OOCORE_PS_PARAM_TYPE(param) >::value \
 														) | OOCORE_PS_PARAMINFO_ATTRIB(param);
 
 #define OOCORE_PS_PARAMINFO_ATTRIB(param)				BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,in),OOCore::TypeInfo::in,0) \
@@ -218,7 +218,7 @@
 															int get_param_info(const id&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) \
 															{ OOCORE_PS_DECLARE_PARAMINFO_SWITCH(n,params) } \
 															int get_param_attrib(const id&, size_t param, const void* attr, bool& is_index) \
-															{ const size_t method_tag__ = id::value; OOCORE_PS_DECLARE_PARAMINFO_ATTRIB_SRCH(n,params) }
+															{ const size_t method_tag__ = id::value; (void)method_tag__; OOCORE_PS_DECLARE_PARAMINFO_ATTRIB_SRCH(n,params) }
 
 // Method declaration macros
 #define OOCORE_PS_METHOD_I(fn,n,params,id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) \

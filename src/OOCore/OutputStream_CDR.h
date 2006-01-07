@@ -12,7 +12,6 @@
 #include <ace/CDR_Stream.h>
 
 #include "./OOCore_Util.h"
-
 #include "./InputStream_CDR.h"
 
 namespace OOCore
@@ -27,7 +26,7 @@ class OutputStream_CDR :
 	public OOCore::OutputStream,
 	public ACE_OutputCDR
 {
-	//friend class InputStream_CDR;
+	friend class InputStream_CDR;
 	
 public:
 	OutputStream_CDR();

@@ -1,9 +1,9 @@
 #ifndef OOCORE_OOCORE_H_INCLUDED_
 #define OOCORE_OOCORE_H_INCLUDED_
 
-#include "./Object.h"
+#include <ace/Active_Map_Manager.h>
 
-#include <ACE/Active_Map_Manager.h>
+#include "./Object.h"
 
 #ifdef _DEBUG
 #define DEFAULT_WAIT	30
@@ -114,7 +114,7 @@ namespace OOCore
 		{
 			LOCAL_ONLY = 1,
 			REMOTE_ONLY = 2,
-			USAGE_ANY = 3,
+			USAGE_ANY = 3
 		};
 		typedef OOObject::uint16_t Flags_t;
 

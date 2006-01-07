@@ -1,9 +1,9 @@
 #ifndef OOCORE_PSMAP_H_INCLUDED_
 #define OOCORE_PSMAP_H_INCLUDED_
 
-#include <map>
-
 #include "./OOCore_Impl.h"
+
+#include <map>
 
 namespace OOCore
 {

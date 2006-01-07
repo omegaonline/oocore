@@ -1,10 +1,10 @@
 #ifndef OOCORE_TRANSPORT_IMPL_H_INCLUDED_
 #define OOCORE_TRANSPORT_IMPL_H_INCLUDED_
 
-#include <queue>
-
 #include <ace/Message_Block.h>
 #include <ace/Method_Request.h>
+
+#include <queue>
 
 #include "./ObjectManager.h"
 #include "./InputStream_CDR.h"

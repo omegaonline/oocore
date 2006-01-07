@@ -9,14 +9,13 @@
 #ifndef OOCORE_PROXY_STUB_FACTORY_H_INCLUDED_
 #define OOCORE_PROXY_STUB_FACTORY_H_INCLUDED_
 
-#include <map>
-
 #include <ace/Singleton.h>
 #include <ace/Thread_Mutex.h>
 #include <ace/DLL.h>
 
-#include "./OOCore.h"
+#include <map>
 
+#include "./OOCore.h"
 #include "./ProxyStub.h"
 
 namespace OOCore

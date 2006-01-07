@@ -52,40 +52,40 @@ namespace Impl
 
 			OOCORE_PS_DECLARE_PARAMATTR_TABLE()
 		}
-
-		template <class T> class type_info_t;
-		OOCORE_PS_METATYPE_BUILDER(bool_t)
-		OOCORE_PS_METATYPE_BUILDER(char_t)
-		OOCORE_PS_METATYPE_BUILDER(byte_t)
-		OOCORE_PS_METATYPE_BUILDER(int16_t)
-		OOCORE_PS_METATYPE_BUILDER(uint16_t)
-		OOCORE_PS_METATYPE_BUILDER(int32_t)
-		OOCORE_PS_METATYPE_BUILDER(uint32_t)
-		OOCORE_PS_METATYPE_BUILDER(int64_t)
-		OOCORE_PS_METATYPE_BUILDER(uint64_t)
-		OOCORE_PS_METATYPE_BUILDER(real4_t)
-		OOCORE_PS_METATYPE_BUILDER(real8_t)
-		OOCORE_PS_METATYPE_BUILDER(guid_t)
-
-		template <class T> class type_info_t<const T>
-		{
-		public:
-			enum { value = (typename type_info_t<T>::value | OOCore::TypeInfo::cpp_const) };
-		};
-
-		template <class T> class type_info_t<T&>
-		{
-		public:
-			enum { value = (typename type_info_t<T>::value | OOCore::TypeInfo::cpp_ref) };
-		};
-
-		template <class T> class type_info_t<T*>
-		{
-		public:
-			enum { value = typename type_info_t<T>::value };
-		};
 	};
 
+	template <class T> class type_info_t;
+	OOCORE_PS_METATYPE_BUILDER(bool_t);
+	OOCORE_PS_METATYPE_BUILDER(char_t);
+	OOCORE_PS_METATYPE_BUILDER(byte_t);
+	OOCORE_PS_METATYPE_BUILDER(int16_t);
+	OOCORE_PS_METATYPE_BUILDER(uint16_t);
+	OOCORE_PS_METATYPE_BUILDER(int32_t);
+	OOCORE_PS_METATYPE_BUILDER(uint32_t);
+	OOCORE_PS_METATYPE_BUILDER(int64_t);
+	OOCORE_PS_METATYPE_BUILDER(uint64_t);
+	OOCORE_PS_METATYPE_BUILDER(real4_t);
+	OOCORE_PS_METATYPE_BUILDER(real8_t);
+	OOCORE_PS_METATYPE_BUILDER(guid_t);
+
+	template <class T> class type_info_t<const T>
+	{
+	public:
+		enum { value = ( type_info_t<T>::value | OOCore::TypeInfo::cpp_const) };
+	};
+
+	template <class T> class type_info_t<T&>
+	{
+	public:
+		enum { value = ( type_info_t<T>::value | OOCore::TypeInfo::cpp_ref) };
+	};
+
+	template <class T> class type_info_t<T*>
+	{
+	public:
+		enum { value = type_info_t<T>::value };
+	};
+	
 	class OOCore_Export marshaller_t
 	{
 	public:

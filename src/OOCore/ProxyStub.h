@@ -217,7 +217,7 @@ namespace Impl
 			{
 				if (m_type==PROXY)
 				{
-					method(id,TypeInfo::Method_Attributes::async,DEFAULT_WAIT).send_and_recv();
+					method(id,TypeInfo::async,DEFAULT_WAIT).send_and_recv();
 					m_manager->ReleaseProxy(m_key);
 				}
 				delete this;
@@ -264,7 +264,7 @@ namespace Impl
 				}
 
 				Impl::object_t<OOObject::Object**> ppVal_stub(ppVal,iid);
-				Impl::marshaller_t qi_mshl(method(id,TypeInfo::Method_Attributes::sync,DEFAULT_WAIT));
+				Impl::marshaller_t qi_mshl(method(id,TypeInfo::sync,DEFAULT_WAIT));
 				qi_mshl << iid;
 				ret = qi_mshl.send_and_recv();
 				qi_mshl >> ppVal_stub;

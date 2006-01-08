@@ -31,7 +31,7 @@ OOCore::Impl::marshaller_t::send_and_recv()
 	if (m_manager->SendAndReceive(m_flags,m_wait_secs,m_out,m_trans_id,&ptrIn)!=0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) SendAndReceive failed: %m\n")),-1);
 	
-	if (!(m_flags & TypeInfo::Method_Attributes::async))
+	if (!(m_flags & TypeInfo::async))
 	{
 		// Read the response code
 		OOObject::int32_t ret_code;

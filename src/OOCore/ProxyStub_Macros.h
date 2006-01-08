@@ -101,7 +101,7 @@
 // Proxy function implementation
 #define OOCORE_PS_PROXY_METHOD_ATTR(attr)			BOOST_PP_SEQ_FOR_EACH_I(OOCORE_PS_PROXY_METHOD_ATTR_I,0,attr)
 #define OOCORE_PS_PROXY_METHOD_ATTR_I(r,d,n,attr)	BOOST_PP_EXPR_IF(n,|) \
-													BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS_FLAG(attr),BOOST_PP_CAT(OOCore::TypeInfo::Method_Attributes::,attr),0 )
+													BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS_FLAG(attr),OOCore::TypeInfo::attr,0 )
 
 #define OOCORE_PS_PROXY_METHOD_WAIT(attr)			BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS(attr,wait), \
 														OOCORE_PS_METHOD_ATTRIB_ELEM(attr,wait,0), \

@@ -57,16 +57,16 @@ namespace Impl
 			return *this;
 		}
 
-		int read(OOObject::bool_t& in) { return m_in->ReadBoolean(in); }
-		int read(OOObject::char_t& in) { return m_in->ReadChar(in); }
-		int read(OOObject::int16_t& in) { return m_in->ReadShort(in); }
-		int read(OOObject::uint16_t& in) { return m_in->ReadUShort(in); }
-		int read(OOObject::int32_t& in) { return m_in->ReadLong(in); }
-		int read(OOObject::uint32_t& in) { return m_in->ReadULong(in); }
-		int read(OOObject::int64_t& in) { return m_in->ReadLongLong(in); }
-		int read(OOObject::uint64_t& in) { return m_in->ReadULongLong(in); }
-		int read(OOObject::real4_t& in) { return m_in->ReadFloat(in); }
-		int read(OOObject::real8_t& in) { return m_in->ReadDouble(in); }
+		int read(OOObject::bool_t& in) { return (m_in ? m_in->ReadBoolean(in) : -1); }
+		int read(OOObject::char_t& in) { return (m_in ? m_in->ReadChar(in) : -1); }
+		int read(OOObject::int16_t& in) { return (m_in ? m_in->ReadShort(in) : -1); }
+		int read(OOObject::uint16_t& in) { return (m_in ? m_in->ReadUShort(in) : -1); }
+		int read(OOObject::int32_t& in) { return (m_in ? m_in->ReadLong(in) : -1); }
+		int read(OOObject::uint32_t& in) { return (m_in ? m_in->ReadULong(in) : -1); }
+		int read(OOObject::int64_t& in) { return (m_in ? m_in->ReadLongLong(in) : -1); }
+		int read(OOObject::uint64_t& in) { return (m_in ? m_in->ReadULongLong(in) : -1); }
+		int read(OOObject::real4_t& in) { return (m_in ? m_in->ReadFloat(in) : -1); }
+		int read(OOObject::real8_t& in) { return (m_in ? m_in->ReadDouble(in) : -1); }
 		
 		int read(OOCore::ProxyStubManager::cookie_t& val)
 		{
@@ -85,6 +85,9 @@ namespace Impl
 
 		int read(OOObject::guid_t& val) 
 		{
+			if (m_in == 0)
+				return -1;
+
 			if (m_in->ReadULong(val.Data1) != 0) return -1;
 			if (m_in->ReadUShort(val.Data2) != 0) return -1;
 			if (m_in->ReadUShort(val.Data3) != 0) return -1;
@@ -112,16 +115,25 @@ namespace Impl
 
 		int read_byte_workaround(OOObject::byte_t& in)
 		{
+			if (m_in == 0)
+				return -1;
+
 			return m_in->ReadByte(in);
 		}
 
 		int read_byte_workaround(OOObject::byte_t in[2])
 		{
+			if (m_in == 0)
+				return -1;
+
 			return read_bytes(in,2);
 		}
 
 		int read_bytes(OOObject::byte_t* b, size_t c)
 		{
+			if (m_in == 0)
+				return -1;
+
 			for (size_t i=0;i<c;++i)
 			{
 				if (m_in->ReadByte(b[i]) != 0) return -1;

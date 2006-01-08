@@ -28,7 +28,7 @@
 #define OOCORE_PS_DECLARE_INVOKE_TABLE_I(z,n,d)			case n:	return pT->invoke(boost::mpl::size_t< n >(),manager,iface,input,output);
 
 #define OOCORE_PS_DECLARE_METHODINFO_TABLE()			switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_METHODINFO_TABLE_I,_) default:errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),method),-1); }
-#define OOCORE_PS_DECLARE_METHODINFO_TABLE_I(z,n,d)		case n:	return pT->get_method_info(boost::mpl::size_t< n >(),method_name,param_count);
+#define OOCORE_PS_DECLARE_METHODINFO_TABLE_I(z,n,d)		case n:	return pT->get_method_info(boost::mpl::size_t< n >(),method_name,param_count,attributes,wait_secs);
 
 #define OOCORE_PS_DECLARE_PARAMINFO_TABLE()				switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_PARAMINFO_TABLE_I,_) default:errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),method),-1); }
 #define OOCORE_PS_DECLARE_PARAMINFO_TABLE_I(z,n,d)		case n:	return pT->get_param_info(boost::mpl::size_t< n >(),param,param_name,type);
@@ -38,27 +38,28 @@
 															
 #define OOCORE_PS_METATYPE_BUILDER(t)					template <> class type_info_t< OOObject::t > { public: enum { value = OOCore::TypeInfo::t }; }
 
-// IDL style attribute macros
-#define OOCORE_PS_ATTRIB_in						(0)
-#define OOCORE_PS_ATTRIB_out					(1)
-#define OOCORE_PS_ATTRIB_size_is				(2)
-#define OOCORE_PS_ATTRIB_iid_is					(3)
-#define OOCORE_PS_ATTRIB_string					(4)
+// IDL style param attribute macros
+#define OOCORE_PS_PRM_ATTRIB_in						(0)
+#define OOCORE_PS_PRM_ATTRIB_out					(1)
+#define OOCORE_PS_PRM_ATTRIB_size_is				(2)
+#define OOCORE_PS_PRM_ATTRIB_iid_is					(3)
+#define OOCORE_PS_PRM_ATTRIB_string					(4)
 
-#define OOCORE_PS_ATTRIB_IS(a,type)				BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,type)))
+#define OOCORE_PS_PRM_ATTRIB_IS(a,type)				BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_PRM_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_PRM_ATTRIB_,type)))
 
 // Parameter macros
-#define OOCORE_PS_PARAM_ATTRIB(param)			BOOST_PP_SEQ_ELEM(0,param)
-#define OOCORE_PS_PARAM_TYPE(param)				BOOST_PP_SEQ_ELEM(1,param)
-#define OOCORE_PS_PARAM_VAR(param)				BOOST_PP_SEQ_ELEM(2,param)
-#define OOCORE_PS_PARAM_NAME(param)				BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_VAR(param))
+#define OOCORE_PS_PARAM_ATTRIB(param)				BOOST_PP_SEQ_ELEM(0,param)
+#define OOCORE_PS_PARAM_TYPE(param)					BOOST_PP_SEQ_ELEM(1,param)
+#define OOCORE_PS_PARAM_VAR(param)					BOOST_PP_SEQ_ELEM(2,param)
+#define OOCORE_PS_PARAM_NAME(param)					BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_VAR(param))
 
 #define OOCORE_PS_PARAM_ATTRIB_IS(param,type)		BOOST_PP_EQUAL(BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),99)),2)
-#define OOCORE_PS_PARAM_ATTRIB_IS_I(s,type,a)		BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,type)))
+#define OOCORE_PS_PARAM_ATTRIB_IS_I(s,type,a)		BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_PRM_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_PRM_ATTRIB_,type)))
 
 #define OOCORE_PS_PARAM_ATTRIB_ELEM_I(n,seq)		BOOST_PP_ARRAY_ELEM(BOOST_PP_ADD(n,1),BOOST_PP_SEQ_TO_ARRAY(seq))
-#define OOCORE_PS_PARAM_ATTRIB_ELEM(param,type,n)	OOCORE_PS_PARAM_ATTRIB_ELEM_I(n,BOOST_PP_CAT(OOCORE_PS_ATTRIB_,BOOST_PP_SEQ_ELEM(0,BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),99))))
+#define OOCORE_PS_PARAM_ATTRIB_ELEM(param,type,n)	OOCORE_PS_PARAM_ATTRIB_ELEM_I(n,BOOST_PP_CAT(OOCORE_PS_PRM_ATTRIB_,BOOST_PP_SEQ_ELEM(0,BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_PARAM_ATTRIB_IS_I,type,OOCORE_PS_PARAM_ATTRIB(param)),99))))
 
+// Parameter enumeration macros
 #define OOCORE_PS_PARSE_PARAMS(n,params,m)			BOOST_PP_REPEAT_FROM_TO(0,n,OOCORE_PS_PARSE_PARAMS_I,(params,m))
 #define OOCORE_PS_PARSE_PARAMS_I(z,n,d)				BOOST_PP_TUPLE_ELEM(2,1,d)(n,BOOST_PP_SEQ_SUBSEQ(BOOST_PP_TUPLE_ELEM(2,0,d),BOOST_PP_MUL(n,3),3))
 
@@ -66,6 +67,22 @@
 #define OOCORE_PS_GENERATE_UNIQUE_ID(fn,n)				OOCORE_PS_GENERATE_UNIQUE_ID_I(fn,n,__LINE__)
 #define OOCORE_PS_GENERATE_UNIQUE_ID_I(fn,n,__LINE__)	OOCORE_PS_GENERATE_UNIQUE_ID_II(fn,n,__LINE__)
 #define OOCORE_PS_GENERATE_UNIQUE_ID_II(fn,n,Line)		BOOST_PP_CAT(PROXYSTUB_ID_,BOOST_PP_CAT(fn,BOOST_PP_CAT(n,Line)))
+
+// IDL style method attribute macros
+#define OOCORE_PS_MTHD_ATTRIB_sync					(0)
+#define OOCORE_PS_MTHD_ATTRIB_async					(1)
+#define OOCORE_PS_MTHD_ATTRIB_wait					(100)
+
+#define OOCORE_PS_MTHD_ATTRIB_IS(a,type)			BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_MTHD_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_MTHD_ATTRIB_,type)))
+
+// Method attribute macros
+#define OOCORE_PS_METHOD_ATTRIB_IS(attr,type)		BOOST_PP_EQUAL(BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_METHOD_ATTRIB_IS_I,type,attr),99)),2)
+#define OOCORE_PS_METHOD_ATTRIB_IS_I(s,type,a)		BOOST_PP_EQUAL(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_MTHD_ATTRIB_,a)),BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_MTHD_ATTRIB_,type)))
+
+#define OOCORE_PS_METHOD_ATTRIB_IS_FLAG(attr)		BOOST_PP_LESS(BOOST_PP_SEQ_ELEM(0,BOOST_PP_CAT(OOCORE_PS_MTHD_ATTRIB_,attr)),100)
+
+#define OOCORE_PS_METHOD_ATTRIB_ELEM_I(n,seq)		BOOST_PP_ARRAY_ELEM(BOOST_PP_ADD(n,1),BOOST_PP_SEQ_TO_ARRAY(seq))
+#define OOCORE_PS_METHOD_ATTRIB_ELEM(attr,type,n)	OOCORE_PS_METHOD_ATTRIB_ELEM_I(n,BOOST_PP_CAT(OOCORE_PS_MTHD_ATTRIB_,BOOST_PP_SEQ_ELEM(0,BOOST_PP_SEQ_PUSH_BACK(BOOST_PP_SEQ_FILTER(OOCORE_PS_METHOD_ATTRIB_IS_I,type,attr),99))))
 
 // ID declaration - this is pure witchcraft!
 #define OOCORE_PS_DECLARE_METHOD_ID(id,name)		public: typedef \
@@ -82,8 +99,17 @@
 #define OOCORE_PS_PROXY_PARAM_DECL(n,param)			BOOST_PP_COMMA_IF(n) OOCORE_PS_PARAM_TYPE(param) OOCORE_PS_PARAM_VAR(param)
 
 // Proxy function implementation
-#define OOCORE_PS_IMPL_PROXY_FN(id,n,seq)			{ OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_DECL_IMPL) \
-													OOCore::Impl::marshaller_t method_PROXY_FUNC(method(id::value)); \
+#define OOCORE_PS_PROXY_METHOD_ATTR(attr)			BOOST_PP_SEQ_FOR_EACH_I(OOCORE_PS_PROXY_METHOD_ATTR_I,0,attr)
+#define OOCORE_PS_PROXY_METHOD_ATTR_I(r,d,n,attr)	BOOST_PP_EXPR_IF(n,|) \
+													BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS_FLAG(attr),BOOST_PP_CAT(OOCore::TypeInfo::Method_Attributes::,attr),0 )
+
+#define OOCORE_PS_PROXY_METHOD_WAIT(attr)			BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS(attr,wait), \
+														OOCORE_PS_METHOD_ATTRIB_ELEM(attr,wait,0), \
+														DEFAULT_WAIT \
+													)
+
+#define OOCORE_PS_IMPL_PROXY_FN(id,n,seq,attr)		{ OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_DECL_IMPL) \
+													OOCore::Impl::marshaller_t method_PROXY_FUNC(method(id::value,OOCORE_PS_PROXY_METHOD_ATTR(attr),OOCORE_PS_PROXY_METHOD_WAIT(attr) )); \
 													method_PROXY_FUNC OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_IN_IMPL); \
 													OOObject::int32_t method_PROXY_FUNC_RESULT = method_PROXY_FUNC.send_and_recv(); \
 													OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_OUT_IMPL) return method_PROXY_FUNC_RESULT; }
@@ -213,25 +239,25 @@
 																BOOST_PP_EXPR_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
 																	case n: return unpack_iid_attr(method_tag__,attr,OOObject::guid_t::NIL,BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_ATTRIB_ELEM(param,size_is,0)),is_index); )
 
-#define OOCORE_PS_DECLARE_METHODINFO_FN(id,fn,n,params)		private: int get_method_info(const id&, const OOObject::char_t** method_name, size_t* param_count) \
-															{ *method_name = #fn; *param_count = n; return 0; } \
-															int get_param_info(const id&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) \
-															{ OOCORE_PS_DECLARE_PARAMINFO_SWITCH(n,params) } \
-															int get_param_attrib(const id&, size_t param, const void* attr, bool& is_index) \
-															{ const size_t method_tag__ = id::value; (void)method_tag__; OOCORE_PS_DECLARE_PARAMINFO_ATTRIB_SRCH(n,params) }
+#define OOCORE_PS_DECLARE_METHODINFO_FN(id,attribute,fn,n,params)	private: int get_method_info(const id&, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) \
+																	{ *method_name = #fn; *param_count = n; *wait_secs = OOCORE_PS_PROXY_METHOD_WAIT(attribute); return 0; } \
+																	int get_param_info(const id&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) \
+																	{ OOCORE_PS_DECLARE_PARAMINFO_SWITCH(n,params) } \
+																	int get_param_attrib(const id&, size_t param, const void* attr, bool& is_index) \
+																	{ const size_t method_tag__ = id::value; (void)method_tag__; OOCORE_PS_DECLARE_PARAMINFO_ATTRIB_SRCH(n,params) }
 
 // Method declaration macros
-#define OOCORE_PS_METHOD_I(fn,n,params,id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) \
-													OOCORE_PS_DECLARE_METHODINFO_FN(id,fn,n,params) \
-													OOCORE_PS_DECLARE_PROXY_FN(fn,n,params) OOCORE_PS_IMPL_PROXY_FN(id,n,params) \
+#define OOCORE_PS_METHOD_I(fn,n,params,id,attr)		OOCORE_PS_DECLARE_METHOD_ID(id,PS) \
+													OOCORE_PS_DECLARE_METHODINFO_FN(id,attr,fn,n,params) \
+													OOCORE_PS_DECLARE_PROXY_FN(fn,n,params) OOCORE_PS_IMPL_PROXY_FN(id,n,params,attr) \
 													OOCORE_PS_DECLARE_STUB_FN(id) OOCORE_PS_IMPL_STUB_FN(fn,n,params)
 
 // Default fn implementation
 #define OOCORE_PS_DECLARE_ADDREF()				OOCORE_PS_DECLARE_ADDREF_I(OOCORE_PS_GENERATE_UNIQUE_ID(AddRef,0))
-#define OOCORE_PS_DECLARE_ADDREF_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,AddRef,0,() )
+#define OOCORE_PS_DECLARE_ADDREF_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,(sync),AddRef,0,() )
 
 #define OOCORE_PS_DECLARE_RELEASE()				OOCORE_PS_DECLARE_RELEASE_I(OOCORE_PS_GENERATE_UNIQUE_ID(Release,0))
-#define OOCORE_PS_DECLARE_RELEASE_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,Release,0,() ) OOObject::int32_t Release() { return Release_i(id::value,false); } \
+#define OOCORE_PS_DECLARE_RELEASE_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,(async),Release,0,() ) OOObject::int32_t Release() { return Release_i(id::value,false); } \
 												OOCORE_PS_DECLARE_STUB_FN(id) { \
 												OOObject::int32_t ret_code=Release_i(id::value,true); \
 												if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
@@ -239,7 +265,7 @@
 												return 0; }
 
 #define OOCORE_PS_DECLARE_QI()					OOCORE_PS_DECLARE_QI_I(OOCORE_PS_GENERATE_UNIQUE_ID(QueryInterface,2))
-#define OOCORE_PS_DECLARE_QI_I(id)				OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,QueryInterface,2,((in))(const OOObject::guid_t&)(iid)((out)(iid_is(iid)))(OOObject::Object**)(ppVal)) OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) { return QueryInterface_i(id::value,iid,ppVal); } \
+#define OOCORE_PS_DECLARE_QI_I(id)				OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,(sync),QueryInterface,2,((in))(const OOObject::guid_t&)(iid)((out)(iid_is(iid)))(OOObject::Object**)(ppVal)) OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) { return QueryInterface_i(id::value,iid,ppVal); } \
 												OOCORE_PS_DECLARE_STUB_FN(id) { OOCore::Impl::param_t<const OOObject::guid_t&> iid(input); \
 												if (iid.failed()) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read in param\n")),-1); \
 												OOCore::Impl::param_t<OOCore::Impl::object_t<OOObject::Object**> > ppVal(iid); \
@@ -252,14 +278,15 @@
 #define OOCORE_PS_END_TYPEINFO_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) int GetMetaInfo(const OOObject::char_t** type_name, size_t* method_count) { if (method_count==0) { errno=EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid NULL pointer\n")),-1); } if (get_type_name(type_name)!=0) return -1; *method_count = id::value; return 0; }
 
 // Method declaration macros
-#define METHOD(fn,n,p)							OOCORE_PS_METHOD_I(fn,n,BOOST_PP_TUPLE_TO_SEQ(BOOST_PP_MUL(n,3),p),OOCORE_PS_GENERATE_UNIQUE_ID(fn,n))
+#define METHOD(fn,n,p)								METHOD_EX((sync),fn,n,p)
+#define METHOD_EX(attr,fn,n,p)						OOCORE_PS_METHOD_I(fn,n,BOOST_PP_TUPLE_TO_SEQ(BOOST_PP_MUL(n,3),p),OOCORE_PS_GENERATE_UNIQUE_ID(fn,n),attr)
 
 // Interface meta-information declaration macros
 #define BEGIN_META_INFO(iface)						OOCORE_PS_BEGIN_PROXY_I(iface,BOOST_PP_CAT(iface,_MetaInfo__))
 #define OOCORE_PS_BEGIN_PROXY_I(iface,name)			class name : public OOCore::ProxyStub_Impl<iface> { \
 													friend class OOCore::Impl::metainfo_t; \
 													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
-													template <class T> int get_method_info(const T&, const OOObject::char_t** method_name, size_t* param_count ) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
+													template <class T> int get_method_info(const T&, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_info(const T&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_attrib(const T&, size_t param, const void* attr, bool& is_index) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													name(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
@@ -269,8 +296,8 @@
 													int get_type_name(const OOObject::char_t** type_name) { if (type_name==0) { errno=EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid NULL pointer\n")),-1); } *type_name = #iface; return 0; } \
 													int Invoke_i(iface* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::Impl::InputStream_Wrapper input, OOCore::Impl::OutputStream_Wrapper output) { \
 													return OOCore::Impl::metainfo_t::Invoke(this,obj,manager,method,input,output); } \
-													int GetMethodInfo(size_t method, const OOObject::char_t** method_name, size_t* param_count) { \
-													return OOCore::Impl::metainfo_t::GetMethodInfo(this,method,method_name,param_count); } \
+													int GetMethodInfo(size_t method, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) { \
+													return OOCore::Impl::metainfo_t::GetMethodInfo(this,method,method_name,param_count,attributes,wait_secs); } \
 													int GetParamInfo(size_t method, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) { \
 													return OOCore::Impl::metainfo_t::GetParamInfo(this,method,param,param_name,type); } \
 													int GetParamAttributeData(size_t method, size_t param, const void* attr, bool& is_index) { \

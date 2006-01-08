@@ -18,9 +18,9 @@ namespace Impl
 		}
 
 		template <class T>
-			static int GetMethodInfo(T* pT, size_t method, const OOObject::char_t** method_name, size_t* param_count)
+			static int GetMethodInfo(T* pT, size_t method, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs)
 		{
-			if (method_name==0 || param_count==0) 
+			if (method_name==0 || param_count==0 || attributes==0 || wait_secs==0) 
 			{
 				errno = EINVAL; 
 				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid NULL value\n")),-1); 
@@ -90,7 +90,7 @@ namespace Impl
 	{
 	public:
 		marshaller_t();
-		marshaller_t(OOCore::ProxyStubManager* manager, Stub::Flags_t flags, OOObject::uint16_t wait_secs, OOCore::OutputStream* output, OOObject::uint32_t trans_id);
+		marshaller_t(OOCore::ProxyStubManager* manager, TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOCore::OutputStream* output, OOObject::uint32_t trans_id);
 
 		template <class T>
 		marshaller_t& operator <<(const T& val)
@@ -163,7 +163,7 @@ namespace Impl
 		OOCore::Impl::OutputStream_Wrapper				m_out;
 		bool											m_failed;
 		OOCore::Object_Ptr<OOCore::ProxyStubManager>	m_manager;
-		const Stub::Flags_t								m_flags;
+		const TypeInfo::Method_Attributes_t				m_flags;
 		const OOObject::uint32_t						m_trans_id;
 		const OOObject::uint16_t						m_wait_secs;
 	};
@@ -217,7 +217,7 @@ namespace Impl
 			{
 				if (m_type==PROXY)
 				{
-					method(id,Stub::ASYNC).send_and_recv();
+					method(id,TypeInfo::Method_Attributes::async,DEFAULT_WAIT).send_and_recv();
 					m_manager->ReleaseProxy(m_key);
 				}
 				delete this;
@@ -264,7 +264,7 @@ namespace Impl
 				}
 
 				Impl::object_t<OOObject::Object**> ppVal_stub(ppVal,iid);
-				Impl::marshaller_t qi_mshl(method(id));
+				Impl::marshaller_t qi_mshl(method(id,TypeInfo::Method_Attributes::sync,DEFAULT_WAIT));
 				qi_mshl << iid;
 				ret = qi_mshl.send_and_recv();
 				qi_mshl >> ppVal_stub;
@@ -291,7 +291,7 @@ namespace Impl
 			return ret;
 		}
 
-		int Invoke(Stub::Flags_t flags, OOObject::uint16_t wait_secs, OOCore::InputStream* input, OOCore::OutputStream* output)
+		int Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOCore::InputStream* input, OOCore::OutputStream* output)
 		{
 			if (m_type!=STUB)
 			{
@@ -325,39 +325,6 @@ namespace Impl
 				(*ppVal)->AddRef();
 
 			return 0;
-		}
-
-		int FindMethod(const OOObject::char_t* method_name, size_t* index, size_t* param_count)
-		{
-			if (m_type!=TYPEINFO)
-			{
-				errno = EFAULT;
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid call\n")),-1);
-			}
-			else if (index==0 || param_count==0)
-			{
-				errno = EINVAL;
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid NULL pointer\n")),-1);
-			}
-
-			size_t method_count;
-			const OOObject::char_t* type_name;
-			if (GetMetaInfo(&type_name,&method_count) != 0)
-				return -1;
-			
-			for (size_t i=0;i<method_count;++i)
-			{
-				const OOObject::char_t* method_name_2;
-				if (GetMethodInfo(i,&method_name_2,param_count) != 0)
-					return -1;
-
-				if (ACE_OS::strcmp(method_name,method_name_2)==0)
-				{
-					*index = i;
-					return 0;
-				}
-			}
-			return -1;	
 		}
 
 		int GetManager(ProxyStubManager** ppManager)
@@ -402,7 +369,7 @@ namespace Impl
 	protected:
 		virtual ~ProxyStub_Impl() {};
 		
-		Impl::marshaller_t method(int id, Stub::Flags_t flags = Stub::SYNC, OOObject::uint16_t wait_secs = DEFAULT_WAIT)
+		Impl::marshaller_t method(int id, TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs)
 		{
 			OOObject::uint32_t method = static_cast<OOObject::uint32_t>(id);
 			OOObject::uint32_t trans_id;
@@ -430,8 +397,10 @@ namespace Impl
 			{
 				const OOObject::char_t* name;
 				size_t param_count;
+				OOCore::TypeInfo::Method_Attributes_t attributes;
+				OOObject::uint16_t wait_secs;
 
-				if (GetMethodInfo(method,&name,&param_count) != 0)
+				if (GetMethodInfo(method,&name,&param_count,&attributes,&wait_secs) != 0)
 					return -1;
 
 				for (size_t i=0;i<param_count;++i)

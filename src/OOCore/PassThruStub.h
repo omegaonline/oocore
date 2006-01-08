@@ -16,7 +16,7 @@ public:
 
 // Stub members
 public:
-	int Invoke(Stub::Flags_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output);
+	int Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output);
 	int GetObject(OOObject::Object** ppVal);
 		
 private:

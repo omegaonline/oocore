@@ -251,7 +251,7 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 	}
 
 	// Read the sync state
-	Stub::Flags_t flags;
+	TypeInfo::Method_Attributes_t flags;
 	if (input.read(flags) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read sync flag\n")),-1);
 
@@ -272,7 +272,7 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 	if (stub->Invoke(flags,5,input,output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed\n")),-1);
 
-	if (flags & Stub::SYNC)
+	if (!(flags & TypeInfo::Method_Attributes::async))
 	{
 		// Send the response
 		if (channel->Send(output) != 0)
@@ -363,7 +363,7 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 	// Create stream from the other manager
 	Object_Ptr<OutputStream> their_output;
 	OOObject::uint32_t trans_id;
-	if (manager->CreateRequest(OOCore::Stub::SYNC,proxy_key,&trans_id,&their_output) != 0)
+	if (manager->CreateRequest(OOCore::TypeInfo::Method_Attributes::sync,proxy_key,&trans_id,&their_output) != 0)
 		return -1;
 
 	// Immediately cancel the request
@@ -467,7 +467,7 @@ OOCore::ObjectManager::ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key
 }
 
 int 
-OOCore::ObjectManager::CreateRequest(Stub::Flags_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
+OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
 {
 	if (!trans_id || !output_stream)
 	{
@@ -577,7 +577,7 @@ OOCore::ObjectManager::await_response_i(OOObject::uint32_t trans_id, InputStream
 }
 
 int 
-OOCore::ObjectManager::SendAndReceive(Stub::Flags_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
+OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
 {
 	if (!input || !output)
 	{
@@ -596,7 +596,7 @@ OOCore::ObjectManager::SendAndReceive(Stub::Flags_t flags, OOObject::uint16_t wa
 	if (channel->Send(output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Send failed\n")),-1);
 	
-	if (flags & Stub::SYNC)
+	if (!(flags & TypeInfo::Method_Attributes::async))
 	{
 		ACE_Time_Value wait(wait_secs);
 

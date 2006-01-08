@@ -66,71 +66,6 @@ namespace OOCore
 		DECLARE_IID(OOCore);
 	};
 
-	class Stub : public OOObject::Object
-	{
-	public:
-		enum Flags
-		{
-			ASYNC = 0,
-			SYNC = 1
-		};
-		typedef OOObject::uint16_t Flags_t;
-
-		virtual int Invoke(Flags_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output) = 0;
-		virtual int GetObject(OOObject::Object** ppVal) = 0;
-
-		DECLARE_IID(OOCore);
-	};
-
-	class ProxyStubManager : public OOObject::Object
-	{
-	public:
-		typedef ACE_Active_Map_Manager_Key	cookie_t;
-
-		virtual int CreateProxy(const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** ppVal) = 0;
-		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOCore::ProxyStubManager::cookie_t* key) = 0;
-		virtual int ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key) = 0;
-		virtual int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key) = 0;
-		virtual int CreateRequest(Stub::Flags_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
-		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
-		virtual int SendAndReceive(Stub::Flags_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
-		
-		DECLARE_IID(OOCore);
-	};
-
-	class Proxy : public OOObject::Object
-	{
-	public:
-		virtual int GetManager(ProxyStubManager** ppManager) = 0;
-		virtual int GetKey(OOCore::ProxyStubManager::cookie_t* proxy_key) = 0;
-
-		DECLARE_IID(OOCore);
-	};
-
-	class ObjectFactory : public OOObject::Object
-	{
-	public:
-		enum Flags
-		{
-			LOCAL_ONLY = 1,
-			REMOTE_ONLY = 2,
-			USAGE_ANY = 3
-		};
-		typedef OOObject::uint16_t Flags_t;
-
-		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
-
-		DECLARE_IID(OOCore);
-	};
-
-	class Protocol : public OOObject::Object
-	{
-	public:
-		virtual OOObject::int32_t Connect(const OOObject::char_t* remote_addr, Transport** ppTransport) = 0;
-
-		DECLARE_IID(OOCore);
-	};
-
 	class TypeInfo : public OOObject::Object
 	{
 	public:
@@ -167,11 +102,75 @@ namespace OOCore
 		};
 		typedef OOObject::uint16_t Type_t;
 
+		enum Method_Attributes
+		{
+			sync = 0,
+			async = 1
+		};
+		typedef OOObject::uint16_t Method_Attributes_t;
+
 		virtual int GetMetaInfo(const OOObject::char_t** type_name, size_t* method_count) = 0;
-		virtual int FindMethod(const OOObject::char_t* method_name, size_t* index, size_t* param_count) = 0;		
-		virtual int GetMethodInfo(size_t method, const OOObject::char_t** method_name, size_t* param_count) = 0;
+		virtual int GetMethodInfo(size_t method, const OOObject::char_t** method_name, size_t* param_count, Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) = 0;
 		virtual int GetParamInfo(size_t method, size_t param, const OOObject::char_t** param_name, Type_t* type) = 0;
 		virtual int GetParamAttributeData(size_t method, size_t param, const void* attr, bool& is_index) = 0;
+
+		DECLARE_IID(OOCore);
+	};
+
+	class Stub : public OOObject::Object
+	{
+	public:
+		virtual int Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output) = 0;
+		virtual int GetObject(OOObject::Object** ppVal) = 0;
+
+		DECLARE_IID(OOCore);
+	};
+
+	class ProxyStubManager : public OOObject::Object
+	{
+	public:
+		typedef ACE_Active_Map_Manager_Key	cookie_t;
+
+		virtual int CreateProxy(const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** ppVal) = 0;
+		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOCore::ProxyStubManager::cookie_t* key) = 0;
+		virtual int ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key) = 0;
+		virtual int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key) = 0;
+		virtual int CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
+		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
+		virtual int SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
+		
+		DECLARE_IID(OOCore);
+	};
+
+	class Proxy : public OOObject::Object
+	{
+	public:
+		virtual int GetManager(ProxyStubManager** ppManager) = 0;
+		virtual int GetKey(OOCore::ProxyStubManager::cookie_t* proxy_key) = 0;
+
+		DECLARE_IID(OOCore);
+	};
+
+	class ObjectFactory : public OOObject::Object
+	{
+	public:
+		enum Flags
+		{
+			LOCAL_ONLY = 1,
+			REMOTE_ONLY = 2,
+			USAGE_ANY = 3
+		};
+		typedef OOObject::uint16_t Flags_t;
+
+		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+
+		DECLARE_IID(OOCore);
+	};
+
+	class Protocol : public OOObject::Object
+	{
+	public:
+		virtual OOObject::int32_t Connect(const OOObject::char_t* remote_addr, Transport** ppTransport) = 0;
 
 		DECLARE_IID(OOCore);
 	};

@@ -10,7 +10,7 @@ OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const O
 }
 
 int 
-OOCore::Impl::PassThruStub::Invoke(Stub::Flags_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
+OOCore::Impl::PassThruStub::Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
 {
 	// Create a request output stream
 	OOObject::uint32_t trans_id;
@@ -31,7 +31,7 @@ OOCore::Impl::PassThruStub::Invoke(Stub::Flags_t flags, OOObject::uint16_t wait_
 	if (m_manager->SendAndReceive(flags,wait_secs,req_output,trans_id,&req_input) != 0)
 		return -1;
 
-	if (flags & Stub::SYNC)
+	if (!(flags & TypeInfo::Method_Attributes::async))
 	{
 		// Copy req_input to output
 		if (copy(req_input,output) != 0)

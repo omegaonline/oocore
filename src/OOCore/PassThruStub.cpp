@@ -31,7 +31,7 @@ OOCore::Impl::PassThruStub::Invoke(TypeInfo::Method_Attributes_t flags, OOObject
 	if (m_manager->SendAndReceive(flags,wait_secs,req_output,trans_id,&req_input) != 0)
 		return -1;
 
-	if (!(flags & TypeInfo::async))
+	if (!(flags & TypeInfo::async_method))
 	{
 		// Copy req_input to output
 		if (copy(req_input,output) != 0)

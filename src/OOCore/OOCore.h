@@ -104,15 +104,25 @@ namespace OOCore
 
 		enum Method_Attributes
 		{
-			sync = 0,
-			async = 1
+			sync_method = 0,
+			async_method = 1
 		};
 		typedef OOObject::uint16_t Method_Attributes_t;
 
 		virtual int GetMetaInfo(const OOObject::char_t** type_name, size_t* method_count) = 0;
 		virtual int GetMethodInfo(size_t method, const OOObject::char_t** method_name, size_t* param_count, Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) = 0;
 		virtual int GetParamInfo(size_t method, size_t param, const OOObject::char_t** param_name, Type_t* type) = 0;
-		virtual int GetParamAttributeData(size_t method, size_t param, const void* attr, bool& is_index) = 0;
+
+		struct Param_Attrib_Data_t
+		{
+			bool	is_index;
+			union
+			{
+				size_t	index;
+				const OOObject::guid_t* iid;
+			};
+		};
+		virtual int GetParamAttributeData(size_t method, size_t param, Param_Attrib_Data_t* data) = 0;
 
 		DECLARE_IID(OOCore);
 	};

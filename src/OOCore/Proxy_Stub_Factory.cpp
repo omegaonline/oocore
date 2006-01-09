@@ -1,6 +1,5 @@
 #include "./Proxy_Stub_Factory.h"
 #include "./Binding.h"
-#include "./OOCore_PS.h"
 #include "./ObjectManager.h"
 
 namespace OOCore

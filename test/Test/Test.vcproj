@@ -85,7 +85,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACE.lib"
-				OutputFile="../../bin/Test.dll"
+				OutputFile="../../bin/Release/Test.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"

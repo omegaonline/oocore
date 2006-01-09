@@ -87,7 +87,7 @@ private:
 	int process_connect(Impl::InputStream_Wrapper& input);
 	bool await_response_i(OOObject::uint32_t trans_id, InputStream** input);
 	int create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub*& stub);
-
+	
 	static bool await_response(void* p);
 	static bool await_connect(void * p);
 	static bool await_close(void * p);

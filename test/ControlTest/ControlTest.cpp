@@ -29,12 +29,13 @@ void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
 	
 	ACE_OS::printf("Calling Array_Test_InOut with %u items: ",count);
 	if (ptrTest->Array_Test_InOut(&count,&parr) == 0)
+	{
 		ACE_OS::printf("succeeded, %u items received.",count);
+		OOObject::Free(parr);
+	}
 	else
 		ACE_OS::perror("failed");
 	ACE_OS::printf("\n");
-
-	OOObject::Free(parr);
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
@@ -47,14 +48,22 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			if (OOObject::CreateObject(CLSID_Test,&ptrTest) == 0)
 				DoTests(ptrTest);
 			else
-				ACE_OS::perror("CreateObject failed");
+			{
+				ACE_OS::printf("CreateObject failed: errno %d, ",errno);
+				ACE_OS::perror("");
+			}
 						
 			ptrTest = 0;
-			if (OOObject::CreateRemoteObject("tcp://localhost:5000",CLSID_Test,&ptrTest) == 0)
+			if (OOObject::CreateRemoteObject("tcp://tss03:5000",CLSID_Test,&ptrTest) == 0)
 				DoTests(ptrTest);
 			else
-				ACE_OS::perror("CreateRemoteObject failed");
+			{
+				ACE_OS::printf("CreateRemoteObject failed: errno %d, ",errno);
+				ACE_OS::perror("");
+			}
 		}
+
+		ACE_OS::sleep(5);
 				
 		OOObject::Term();
 	}

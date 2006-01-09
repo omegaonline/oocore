@@ -267,12 +267,38 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 	// Write the transaction id
 	if (output->WriteULong(trans_id) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
-
+	
 	// Invoke the method on the stub
-	if (stub->Invoke(flags,5,input,output) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed\n")),-1);
+	OOObject::int32_t ret_code= stub->Invoke(flags,5,input,output);
+	if (ret_code != 0)
+	{
+		ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed: %d '%m'\n"),errno));
 
-	if (!(flags & TypeInfo::async))
+		// Clear the output, its probably garbage
+		output = 0;
+        
+		// Recreate the header...
+		if (channel->CreateOutputStream(&output) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
+			
+		// Write that we are a response
+		if (output->WriteByte(0) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
+
+		// Write the transaction id
+		if (output->WriteULong(trans_id) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
+
+		// Write ret code
+		if (output->WriteLong(ret_code) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write ret_code\n")),-1);
+
+		// Write errno
+		if (output->WriteLong(errno) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1);
+	}
+
+	if (!(flags & TypeInfo::async_method))
 	{
 		// Send the response
 		if (channel->Send(output) != 0)
@@ -363,7 +389,7 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 	// Create stream from the other manager
 	Object_Ptr<OutputStream> their_output;
 	OOObject::uint32_t trans_id;
-	if (manager->CreateRequest(OOCore::TypeInfo::sync,proxy_key,&trans_id,&their_output) != 0)
+	if (manager->CreateRequest(OOCore::TypeInfo::sync_method,proxy_key,&trans_id,&their_output) != 0)
 		return -1;
 
 	// Immediately cancel the request
@@ -596,13 +622,16 @@ OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObj
 	if (channel->Send(output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Send failed\n")),-1);
 	
-	if (!(flags & TypeInfo::async))
+	if (!(flags & TypeInfo::async_method))
 	{
 		ACE_Time_Value wait(wait_secs);
 
 		response_wait rw(this,trans_id,input);
 		if (ENGINE::instance()->pump_requests(&wait,await_response,&rw) != 0)
+		{
+			errno = ETIMEDOUT;
             return -1;
+		}
 		else if (*input==0)
 		{
 			errno = ESHUTDOWN;

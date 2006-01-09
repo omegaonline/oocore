@@ -42,9 +42,9 @@ namespace Impl
 		}
 
 		template <class T>
-			static int GetParamAttributeData(T* pT, size_t method, size_t param, const void* attr, bool& is_index)
+			static int GetParamAttributeData(T* pT, size_t method, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data)
 		{
-			if (attr==0) 
+			if (data==0) 
 			{ 
 				errno = EINVAL; 
 				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Invalid NULL value\n")),-1); 
@@ -217,7 +217,7 @@ namespace Impl
 			{
 				if (m_type==PROXY)
 				{
-					method(id,TypeInfo::async,DEFAULT_WAIT).send_and_recv();
+					method(id,TypeInfo::async_method,DEFAULT_WAIT).send_and_recv();
 					m_manager->ReleaseProxy(m_key);
 				}
 				delete this;
@@ -264,7 +264,7 @@ namespace Impl
 				}
 
 				Impl::object_t<OOObject::Object**> ppVal_stub(ppVal,iid);
-				Impl::marshaller_t qi_mshl(method(id,TypeInfo::sync,DEFAULT_WAIT));
+				Impl::marshaller_t qi_mshl(method(id,TypeInfo::sync_method,DEFAULT_WAIT));
 				qi_mshl << iid;
 				ret = qi_mshl.send_and_recv();
 				qi_mshl >> ppVal_stub;
@@ -391,7 +391,7 @@ namespace Impl
 		
 		virtual int Invoke_i(OBJECT* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::Impl::InputStream_Wrapper input, OOCore::Impl::OutputStream_Wrapper output) = 0;
 
-		int unpack_iid_attr(size_t method, const void* data, const OOObject::guid_t& iid, const char* var_name, bool& is_index)
+		int unpack_iid_attr(size_t method, OOCore::TypeInfo::Param_Attrib_Data_t* data, const OOObject::guid_t& iid, const char* var_name)
 		{
 			if (iid == OOObject::guid_t::NIL)
 			{
@@ -411,16 +411,16 @@ namespace Impl
 					
 					if (ACE_OS::strcmp(name,var_name)==0)
 					{
-						data = reinterpret_cast<const void*>(i);
-						is_index = true;
+						data->index = i;
+						data->is_index = true;
 						return 0;
 					}
 				}
 			}
 
 			// Must be a real iid!
-			data = &iid;
-			is_index = false;
+			data->iid = &iid;
+			data->is_index = false;
 			return 0;
 		}
 

@@ -88,7 +88,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACE.lib"
-				OutputFile="../../bin/OONet.dll"
+				OutputFile="../../bin/Release/OONet.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"

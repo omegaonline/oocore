@@ -85,7 +85,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACE.lib"
-				OutputFile="../../bin/ControlTest.exe"
+				OutputFile="../../bin/Release/ControlTest.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"

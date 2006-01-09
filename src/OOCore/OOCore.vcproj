@@ -92,7 +92,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACE.lib shlwapi.lib"
-				OutputFile="../../bin/OOCore.dll"
+				OutputFile="../../bin/Release/OOCore.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.7\lib&quot;"
 				GenerateDebugInformation="TRUE"
@@ -226,9 +226,6 @@
 				RelativePath=".\OOCore_Impl.h">
 			</File>
 			<File
-				RelativePath=".\OOCore_PS.h">
-			</File>
-			<File
 				RelativePath=".\OOCore_Util.h">
 			</File>
 			<File
@@ -259,7 +256,7 @@
 				RelativePath=".\resource.h">
 			</File>
 			<File
-				RelativePath=".\Test.h">
+				RelativePath=".\Server.h">
 			</File>
 			<File
 				RelativePath=".\Transport_Impl.h">

@@ -6,6 +6,7 @@
 #include "./Connection_Manager.h"
 #include "./Object_Factory.h"
 #include "./Protocol_Manager.h"
+#include "./Server.h"
 
 DEFINE_IID(OOObject::Object,45F040A3-5386-413e-AB21-7FA35EFCB7DD);
 DEFINE_IID(OOCore::Proxy,E196DC53-18D8-4267-8D82-4DCF8A0EF53B);
@@ -18,11 +19,7 @@ DEFINE_IID(OOCore::ProxyStubManager,F3EB63E5-602A-4155-8F52-F11FF502EFE5);
 DEFINE_IID(OOCore::ObjectFactory,E2760ABA-1BAA-4c7b-89B2-466320296D1D);
 DEFINE_IID(OOCore::Protocol,47938C01-35E6-44bc-B4C6-82C6C5EBADE2);
 DEFINE_IID(OOCore::TypeInfo,092A991C-E6C3-49db-8F1E-38D14189C542);
-
-#ifdef _DEBUG
-#include "./Test.h"
 DEFINE_IID(OOCore::Server,B4B5BF71-58DF-4001-BD0B-72496463E3C3);
-#endif
 
 namespace OOCore
 {

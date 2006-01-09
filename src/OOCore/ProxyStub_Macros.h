@@ -34,7 +34,7 @@
 #define OOCORE_PS_DECLARE_PARAMINFO_TABLE_I(z,n,d)		case n:	return pT->get_param_info(boost::mpl::size_t< n >(),param,param_name,type);
 
 #define OOCORE_PS_DECLARE_PARAMATTR_TABLE()				switch (method) { BOOST_PP_REPEAT(BOOST_PP_ADD(PROXY_STUB_MAX_METHODS,1),OOCORE_PS_DECLARE_PARAMATTR_TABLE_I,_) default:errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),method),-1); }
-#define OOCORE_PS_DECLARE_PARAMATTR_TABLE_I(z,n,d)		case n:	return pT->get_param_attrib(boost::mpl::size_t< n >(),param,attr,is_index);
+#define OOCORE_PS_DECLARE_PARAMATTR_TABLE_I(z,n,d)		case n:	return pT->get_param_attrib(boost::mpl::size_t< n >(),param,data);
 															
 #define OOCORE_PS_METATYPE_BUILDER(t)					template <> class type_info_t< OOObject::t > { public: enum { value = OOCore::TypeInfo::t }; }
 
@@ -101,7 +101,7 @@
 // Proxy function implementation
 #define OOCORE_PS_PROXY_METHOD_ATTR(attr)			BOOST_PP_SEQ_FOR_EACH_I(OOCORE_PS_PROXY_METHOD_ATTR_I,0,attr)
 #define OOCORE_PS_PROXY_METHOD_ATTR_I(r,d,n,attr)	BOOST_PP_EXPR_IF(n,|) \
-													BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS_FLAG(attr),OOCore::TypeInfo::attr,0 )
+													BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS_FLAG(attr),OOCore::TypeInfo:: BOOST_PP_CAT(attr,_method),0 )
 
 #define OOCORE_PS_PROXY_METHOD_WAIT(attr)			BOOST_PP_IF(OOCORE_PS_METHOD_ATTRIB_IS(attr,wait), \
 														OOCORE_PS_METHOD_ATTRIB_ELEM(attr,wait,0), \
@@ -235,15 +235,15 @@
 																);
 
 #define OOCORE_PS_DECLARE_PARAMINFO_ATTRIB_SRCH_II(n,param)		BOOST_PP_EXPR_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,iid_is), \
-																	case n: return unpack_iid_attr(method_tag__,attr,OOCORE_PS_PARAM_ATTRIB_ELEM(param,iid_is,0),BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_ATTRIB_ELEM(param,iid_is,0)),is_index); ) \
+																	case n: return unpack_iid_attr(method_tag__,data,OOCORE_PS_PARAM_ATTRIB_ELEM(param,iid_is,0),BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_ATTRIB_ELEM(param,iid_is,0))); ) \
 																BOOST_PP_EXPR_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
-																	case n: return unpack_iid_attr(method_tag__,attr,OOObject::guid_t::NIL,BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_ATTRIB_ELEM(param,size_is,0)),is_index); )
+																	case n: return unpack_iid_attr(method_tag__,data,OOObject::guid_t::NIL,BOOST_PP_STRINGIZE(OOCORE_PS_PARAM_ATTRIB_ELEM(param,size_is,0))); )
 
 #define OOCORE_PS_DECLARE_METHODINFO_FN(id,attribute,fn,n,params)	private: int get_method_info(const id&, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) \
 																	{ *method_name = #fn; *param_count = n; *wait_secs = OOCORE_PS_PROXY_METHOD_WAIT(attribute); return 0; } \
 																	int get_param_info(const id&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) \
 																	{ OOCORE_PS_DECLARE_PARAMINFO_SWITCH(n,params) } \
-																	int get_param_attrib(const id&, size_t param, const void* attr, bool& is_index) \
+																	int get_param_attrib(const id&, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data) \
 																	{ const size_t method_tag__ = id::value; (void)method_tag__; OOCORE_PS_DECLARE_PARAMINFO_ATTRIB_SRCH(n,params) }
 
 // Method declaration macros
@@ -288,7 +288,7 @@
 													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_method_info(const T&, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_info(const T&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
-													template <class T> int get_param_attrib(const T&, size_t param, const void* attr, bool& is_index) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
+													template <class T> int get_param_attrib(const T&, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													name(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
 													name(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
 													name() : OOCore::ProxyStub_Impl<iface>() {} \
@@ -300,8 +300,8 @@
 													return OOCore::Impl::metainfo_t::GetMethodInfo(this,method,method_name,param_count,attributes,wait_secs); } \
 													int GetParamInfo(size_t method, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) { \
 													return OOCore::Impl::metainfo_t::GetParamInfo(this,method,param,param_name,type); } \
-													int GetParamAttributeData(size_t method, size_t param, const void* attr, bool& is_index) { \
-													return OOCore::Impl::metainfo_t::GetParamAttributeData(this,method,param,attr,is_index); } \
+													int GetParamAttributeData(size_t method, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data) { \
+													return OOCore::Impl::metainfo_t::GetParamAttributeData(this,method,param,data); } \
 													public: typedef name this_class; typedef iface iface_class; \
 													static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key) { name* proxy; ACE_NEW_RETURN(proxy,this_class(manager,key),0); return proxy;} \
 													static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key, iface* obj) { name* stub; ACE_NEW_RETURN(stub,this_class(manager,key,obj),0); return stub;} \

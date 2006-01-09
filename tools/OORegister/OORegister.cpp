@@ -36,7 +36,10 @@ static int do_install(bool bInstall, ACE_TCHAR* lib_path)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("'RegisterLib' function failed: %m\n\n")),-1);
 	}
 
-	ACE_OS::printf(ACE_TEXT("Registration of %s successful.\n\n"),lib_path);
+	if (bInstall)
+		ACE_OS::printf(ACE_TEXT("Registration of %s successful.\n\n"),lib_path);
+	else
+		ACE_OS::printf(ACE_TEXT("Unregistration of %s successful.\n\n"),lib_path);
 
 	return 0;
 }

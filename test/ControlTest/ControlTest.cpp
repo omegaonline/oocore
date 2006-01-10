@@ -45,16 +45,22 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	{
 		{
             OOCore::Object_Ptr<Test::Test> ptrTest;
-			if (OOObject::CreateObject(CLSID_Test,&ptrTest) == 0)
+			if ((ret=OOObject::CreateObject(CLSID_Test,&ptrTest)) == 0)
 				DoTests(ptrTest);
 			else
 			{
 				ACE_OS::printf("CreateObject failed: errno %d, ",errno);
 				ACE_OS::perror("");
 			}
-						
+
+			char szBuf[512] = "tcp://";
+			if (argc == 2)
+				strcat(szBuf,argv[1]);
+			else
+				strcat(szBuf,"localhost:5000");
+				
 			ptrTest = 0;
-			if (OOObject::CreateRemoteObject("tcp://tss03:5000",CLSID_Test,&ptrTest) == 0)
+			if ((ret=OOObject::CreateRemoteObject(szBuf,CLSID_Test,&ptrTest)) == 0)
 				DoTests(ptrTest);
 			else
 			{
@@ -63,7 +69,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			}
 		}
 
-		ACE_OS::sleep(5);
+		if (ret != 0)
+			ACE_OS::sleep(5);
 				
 		OOObject::Term();
 	}

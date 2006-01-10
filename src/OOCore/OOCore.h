@@ -147,7 +147,7 @@ namespace OOCore
 		virtual int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key) = 0;
 		virtual int CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
 		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
-		virtual int SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
+		virtual OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
 		
 		DECLARE_IID(OOCore);
 	};

@@ -112,7 +112,7 @@ public:
 	int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key);	
 	int CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
 	int CancelRequest(OOObject::uint32_t trans_id);
-	int SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
+	OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
 };
 
 };

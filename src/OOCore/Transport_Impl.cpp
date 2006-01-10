@@ -251,12 +251,20 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 
 	// Write a header
     ACE_OutputCDR header;
-	if (!header.write_ushort(sizeof(ACE_CDR::UShort) + sizeof(ACE_CDR::ULong)) ||
-		!header.write_ulong(pStream->begin()->total_length()))
-	{
+	if (!header.write_ushort(sizeof(ACE_CDR::UShort) + sizeof(ACE_CDR::ULong)))
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to compose header\n")),-1);
+		
+	// Get the length as a uint32_t
+	size_t l = pStream->begin()->total_length();
+	if (l > 0xffffffff)
+	{
+		errno = E2BIG;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Message too big\n")),-1);
 	}
 
+	if (!header.write_ulong(static_cast<OOObject::uint32_t>(l)))
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to compose header\n")),-1);
+	
 	// Append the data
 	ACE_Message_Block* mb = header.begin()->duplicate();
 	mb->cont(pStream->begin()->duplicate());

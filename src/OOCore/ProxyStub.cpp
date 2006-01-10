@@ -31,27 +31,7 @@ OOCore::Impl::marshaller_t::send_and_recv()
 	if (m_manager->SendAndReceive(m_flags,m_wait_secs,m_out,m_trans_id,&ptrIn)!=0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) SendAndReceive failed: %m\n")),-1);
 	
-	if (!(m_flags & TypeInfo::async_method))
-	{
-		// Read the response code
-		OOObject::int32_t ret_code;
-		if (ptrIn->ReadLong(ret_code) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read return code\n")),-1);
-
-		if (ret_code != 0)
-		{
-			OOObject::int32_t error_no;
-			if (ptrIn->ReadLong(error_no) != 0)
-				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read errno\n")),-1);
-
-			errno = error_no;
-
-			return ret_code;
-		}
-
-		m_in = ptrIn;
-	}
-
+	m_in = ptrIn;
 	m_failed = false;
 
 	return 0;

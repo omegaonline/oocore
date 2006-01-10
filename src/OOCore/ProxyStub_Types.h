@@ -196,7 +196,16 @@ namespace Impl
 		{
 			OOObject::uint32_t size = 0;
 			if (m_p) 
-				size = ACE_OS::strlen(m_p);
+			{
+				size_t s = ACE_OS::strlen(m_p);
+				if (s > 0xffffffff)
+				{
+					errno = E2BIG;
+					return -1;
+				}
+
+				size = static_cast<OOObject::uint32_t>(s);
+			}
 
 			if (out.write(size)!=0) 
 				return -1;

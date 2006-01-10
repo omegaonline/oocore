@@ -602,7 +602,7 @@ OOCore::ObjectManager::await_response_i(OOObject::uint32_t trans_id, InputStream
 	return false;
 }
 
-int 
+OOObject::int32_t  
 OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
 {
 	if (!input || !output)
@@ -636,6 +636,23 @@ OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObj
 		{
 			errno = ESHUTDOWN;
 			return -1;
+		}
+
+		// Read the response code
+		OOObject::int32_t ret_code;
+		if ((*input)->ReadLong(ret_code) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read return code\n")),-1);
+
+		// If it fails, get the error code, and set it
+		if (ret_code != 0)
+		{
+			OOObject::int32_t error_no;
+			if ((*input)->ReadLong(error_no) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read errno\n")),-1);
+
+			errno = error_no;
+
+			return ret_code;
 		}
 	}
 	

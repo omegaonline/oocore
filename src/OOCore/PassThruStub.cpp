@@ -14,31 +14,42 @@ OOCore::Impl::PassThruStub::Invoke(TypeInfo::Method_Attributes_t flags, OOObject
 {
 	// Create a request output stream
 	OOObject::uint32_t trans_id;
-	OOCore::Object_Ptr<OOCore::OutputStream> req_output;
+	OOCore::Object_Ptr<OOCore::OutputStream> request;
 	
-	if (m_manager->CreateRequest(flags,m_proxy_key,&trans_id,&req_output) != 0)
+	if (m_manager->CreateRequest(flags,m_proxy_key,&trans_id,&request) != 0)
 		return -1;
 
-	// Copy input to req_output
-	if (copy(input,req_output) != 0)
+	// Copy input to request
+	if (copy(input,request) != 0)
 	{
 		m_manager->CancelRequest(trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
 	}
 
 	// Send the request
-	OOCore::Object_Ptr<OOCore::InputStream> req_input;
-	if (m_manager->SendAndReceive(flags,wait_secs,req_output,trans_id,&req_input) != 0)
-		return -1;
-
+	OOCore::Object_Ptr<OOCore::InputStream> response;
+	OOObject::int32_t ret = m_manager->SendAndReceive(flags,wait_secs,request,trans_id,&response);
+	
 	if (!(flags & TypeInfo::async_method))
 	{
-		// Copy req_input to output
-		if (copy(req_input,output) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
+		// Write error code out
+		if (output->WriteLong(ret) != 0)
+			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write ret_code\n")),-1);
+
+		if (ret != 0)
+		{
+			if (output->WriteLong(errno) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1);
+		}
+		else
+		{
+			// Copy response to output
+			if (copy(response,output) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
+		}
 	}
 	
-	return 0;
+	return ret;
 }
 
 int 

@@ -196,8 +196,6 @@ namespace OOCore
 	OOCore_Export OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 	OOCore_Export OOObject::int32_t RegisterProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol);
 	OOCore_Export OOObject::int32_t UnregisterProtocol(const OOObject::char_t* name);
-	OOCore_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy);
-	OOCore_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub);
 	OOCore_Export int GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info);
 };
 

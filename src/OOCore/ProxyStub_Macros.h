@@ -148,7 +148,7 @@
 													)
 
 // Stub function declaration
-#define OOCORE_PS_DECLARE_STUB_FN(id)				private: int invoke(const id&, OOCore::ProxyStubManager* manager, iface_class* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output )
+#define OOCORE_PS_DECLARE_STUB_FN(id)				private: int invoke(const id&, OOCore::ProxyStubManager* manager, iface_class* obj, OOCore::InputStream_Wrapper& input, OOCore::OutputStream_Wrapper& output )
 
 // Stub function implementation
 #define OOCORE_PS_IMPL_STUB_FN(fn,n,params)			{ OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_DECL_IMPL) \
@@ -285,7 +285,7 @@
 #define BEGIN_META_INFO(iface)						OOCORE_PS_BEGIN_PROXY_I(iface,BOOST_PP_CAT(iface,_MetaInfo__))
 #define OOCORE_PS_BEGIN_PROXY_I(iface,name)			class name : public OOCore::ProxyStub_Impl<iface> { \
 													friend class OOCore::Impl::metainfo_t; \
-													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output ) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
+													template <class T> int invoke(const T&, OOCore::ProxyStubManager* manager, iface* obj, OOCore::InputStream_Wrapper& input, OOCore::OutputStream_Wrapper& output ) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_method_info(const T&, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_info(const T&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_attrib(const T&, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
@@ -294,7 +294,7 @@
 													name() : OOCore::ProxyStub_Impl<iface>() {} \
 													friend OOCore::Impl::unused_t BOOST_PP_CAT(Method_Id_Gen_,PS)(name*,...); \
 													int get_type_name(const OOObject::char_t** type_name) { if (type_name==0) { errno=EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid NULL pointer\n")),-1); } *type_name = #iface; return 0; } \
-													int Invoke_i(iface* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::Impl::InputStream_Wrapper input, OOCore::Impl::OutputStream_Wrapper output) { \
+													int Invoke_i(iface* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::InputStream_Wrapper input, OOCore::OutputStream_Wrapper output) { \
 													return OOCore::Impl::metainfo_t::Invoke(this,obj,manager,method,input,output); } \
 													int GetMethodInfo(size_t method, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) { \
 													return OOCore::Impl::metainfo_t::GetMethodInfo(this,method,method_name,param_count,attributes,wait_secs); } \

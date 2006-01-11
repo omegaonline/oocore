@@ -191,7 +191,7 @@ OOCore::Transport_Impl::CreateRemoteObject(const OOObject::char_t* remote_url, c
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
 	}
 
-	return ptrOM->RequestRemoteObject(remote_url,clsid,iid,ppVal);
+	return ptrOM->CreateRemoteObject(remote_url,clsid,iid,ppVal);
 }
 
 OOObject::int32_t 

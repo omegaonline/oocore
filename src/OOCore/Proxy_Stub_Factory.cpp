@@ -6,8 +6,6 @@ namespace OOCore
 {
 namespace Impl
 {
-	typedef ACE_Singleton<Proxy_Stub_Factory, ACE_Thread_Mutex> PROXY_STUB_FACTORY;
-
 	class Object_Proxy : public OOObject::Object
 	{
 	public:
@@ -179,18 +177,6 @@ int
 OOCore::Impl::Proxy_Stub_Factory::GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info) 
 {
 	return CreateProxyStub(5,0,iid,0,OOCore::ProxyStubManager::cookie_t(),0,0,type_info,0); 
-}
-
-int OOCore_Export 
-OOCore::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy)
-{
-	return Impl::PROXY_STUB_FACTORY::instance()->create_proxy(manager,iid,key,proxy);
-}
-
-int OOCore_Export 
-OOCore::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub)
-{
-	return Impl::PROXY_STUB_FACTORY::instance()->create_stub(manager,iid,obj,key,stub);
 }
 
 int OOCore_Export 

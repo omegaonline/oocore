@@ -1,0 +1,27 @@
+HKCR
+{
+	OmegaOnline.Test.1 = s 'Test Class'
+	{
+		CLSID = s '{7A5701A9-28FD-4fa0-8D95-77D00C753444}'
+	}
+	OmegaOnline.Test = s 'Test Class'
+	{
+		CLSID = s '{7A5701A9-28FD-4fa0-8D95-77D00C753444}'
+		CurVer = s 'OmegaOnline.Test.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {7A5701A9-28FD-4fa0-8D95-77D00C753444} = s 'Test Class'
+		{
+			ProgID = s 'OmegaOnline.Test.1'
+			VersionIndependentProgID = s 'OmegaOnline.Test'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Free'
+			}
+			val AppID = s '%APPID%'
+			val OO_Default_IID = s '{6AAE8C33-699A-4414-AF84-25E74E693207}'
+		}
+	}
+}

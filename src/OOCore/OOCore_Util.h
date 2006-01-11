@@ -129,7 +129,7 @@ namespace OOCore
 			if (!ppVal)
 				return -1;
 
-			if (iid==OOObject::Object::IID ||
+			if (iid==OOObject::Object::IID || 
 				iid==OBJECT::IID)
 			{
 				++m_refcount;

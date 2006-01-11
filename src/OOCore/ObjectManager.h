@@ -15,7 +15,7 @@ namespace Impl
 	class RemoteObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
 		virtual OOObject::int32_t AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
 		virtual OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid) = 0;
@@ -24,7 +24,7 @@ namespace Impl
 	};
 
 	BEGIN_META_INFO(RemoteObjectFactory)
-		METHOD(CreateRemoteObject,4,((in)(string),const OOObject::char_t*,remote_url,(in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
+		METHOD(RequestRemoteObject,4,((in)(string),const OOObject::char_t*,remote_url,(in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
 		METHOD(SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
 		METHOD(AddObjectFactory,3,((in),ObjectFactory::Flags_t,flags,(in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
 		METHOD(RemoveObjectFactory,1,((in),const OOObject::guid_t&,clsid))
@@ -44,11 +44,12 @@ public:
 	int Open(Channel* channel, const bool AsAcceptor);
 	int Close(bool channel_alive);
 	int ProcessMessage(InputStream* input);
-	OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
-private:
+protected:
 	virtual ~ObjectManager();
 
+private:
 	struct response_wait
 	{
 		response_wait(ObjectManager* t, OOObject::uint32_t k, InputStream** i) :
@@ -82,11 +83,11 @@ private:
 	
 	int connect();
 	int accept();
-	int process_request(Impl::InputStream_Wrapper& input);
-	int process_response(Impl::InputStream_Wrapper& input);
-	int process_connect(Impl::InputStream_Wrapper& input);
+	int process_request(InputStream_Wrapper& input);
+	int process_response(InputStream_Wrapper& input);
+	int process_connect(InputStream_Wrapper& input);
 	bool await_response_i(OOObject::uint32_t trans_id, InputStream** input);
-	int create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub*& stub);
+	int create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub);
 	
 	static bool await_response(void* p);
 	static bool await_connect(void * p);
@@ -99,7 +100,7 @@ END_INTERFACE_MAP()
 
 // OOCore::Impl::RemoteObjectFactory
 public:
-	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote);
 	OOObject::int32_t AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory);
 	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);

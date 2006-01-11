@@ -3,7 +3,7 @@
 
 #include <boost/type_traits.hpp>
 
-#include "./OOCore_Impl.h"
+#include "./IO_Wrappers.h"
 
 namespace OOCore
 {
@@ -39,7 +39,7 @@ namespace Impl
 			return m_p;
 		}
 
-		int read(OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::InputStream_Wrapper& in)
 		{
 			m_data = static_cast<type>(OOObject::Alloc(m_count*sizeof(T)));
 			if (!m_data) return -1;
@@ -52,7 +52,7 @@ namespace Impl
 			return 0;
 		}
 
-		int write(OOCore::Impl::OutputStream_Wrapper& out)
+		int write(OOCore::OutputStream_Wrapper& out)
 		{
 			for (OOObject::uint32_t i=0;i<m_count;++i)
 			{
@@ -91,7 +91,7 @@ namespace Impl
 			return get_ptr();
 		}
 		
-		int read(OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::InputStream_Wrapper& in)
 		{
 			if (m_count==0)
 				return -1;
@@ -118,7 +118,7 @@ namespace Impl
 			return 0;
 		}
 
-		int write(OOCore::Impl::OutputStream_Wrapper& out)
+		int write(OOCore::OutputStream_Wrapper& out)
 		{
 			if (*get_ptr()==0 || m_count==0)
 				return -1;
@@ -171,7 +171,7 @@ namespace Impl
 			return m_p;
 		}
 
-		int read(OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::InputStream_Wrapper& in)
 		{
 			OOObject::uint32_t size;
 			if (in.read(size)!=0) return -1;
@@ -192,7 +192,7 @@ namespace Impl
 			return 0;
 		}
 
-		int write(OOCore::Impl::OutputStream_Wrapper& out)
+		int write(OOCore::OutputStream_Wrapper& out)
 		{
 			OOObject::uint32_t size = 0;
 			if (m_p) 
@@ -242,7 +242,7 @@ namespace Impl
 			return m_obj;
 		}
 
-		int read(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::ProxyStubManager* manager, OOCore::InputStream_Wrapper& in)
 		{
 			OOObject::bool_t null;
 			if (in.read(null) != 0) 
@@ -263,7 +263,7 @@ namespace Impl
 			}
 		}
 
-		int write(OOCore::ProxyStubManager* manager, OOCore::Impl::OutputStream_Wrapper& out)
+		int write(OOCore::ProxyStubManager* manager, OOCore::OutputStream_Wrapper& out)
 		{
 			if (!m_obj)
 			{
@@ -304,7 +304,7 @@ namespace Impl
 			return get_ptr();
 		}
 
-		int read(OOCore::ProxyStubManager* manager, OOCore::Impl::InputStream_Wrapper& in)
+		int read(OOCore::ProxyStubManager* manager, OOCore::InputStream_Wrapper& in)
 		{
 			if (!m_ptr)
 				return -1;
@@ -331,7 +331,7 @@ namespace Impl
 			}
 		}
 		
-		int write(OOCore::ProxyStubManager* manager, OOCore::Impl::OutputStream_Wrapper& out)
+		int write(OOCore::ProxyStubManager* manager, OOCore::OutputStream_Wrapper& out)
 		{
 			if (*get_ptr() == 0)
 			{
@@ -368,7 +368,7 @@ namespace Impl
 		param_t() : m_failed(true)
 		{ }
 
-		param_t(OOCore::Impl::InputStream_Wrapper& input)
+		param_t(OOCore::InputStream_Wrapper& input)
 		{
 			m_failed = (input.read(m_t)!=0);
 		}
@@ -398,7 +398,7 @@ namespace Impl
 		param_t() : m_failed(true)
 		{ }
 
-		param_t(OOCore::Impl::InputStream_Wrapper& input)
+		param_t(OOCore::InputStream_Wrapper& input)
 		{
 			m_failed = (input.read(m_t)!=0);
 		}
@@ -413,7 +413,7 @@ namespace Impl
 			return m_failed;
 		}
 
-		int respond(OOCore::Impl::OutputStream_Wrapper& output)
+		int respond(OOCore::OutputStream_Wrapper& output)
 		{
 			return output.write(m_t);
 		}
@@ -431,7 +431,7 @@ namespace Impl
 		  m_arr(c), m_failed(true)
 		{ }
 
-		param_t(OOCore::Impl::InputStream_Wrapper& input, const OOObject::uint32_t c) :
+		param_t(OOCore::InputStream_Wrapper& input, const OOObject::uint32_t c) :
 		  m_arr(c)
 		{
 			m_failed = (m_arr.read(input)!=0);
@@ -460,7 +460,7 @@ namespace Impl
 		  m_arr(c), m_failed(true)
 		{ }
 
-		param_t(OOCore::Impl::InputStream_Wrapper& input, param_t<OOObject::uint32_t*>& c) :
+		param_t(OOCore::InputStream_Wrapper& input, param_t<OOObject::uint32_t*>& c) :
 		  m_arr(c)
 		{
 			m_failed = (m_arr.read(input)!=0);
@@ -476,7 +476,7 @@ namespace Impl
 			return m_failed;
 		}
 
-		int respond(OOCore::Impl::OutputStream_Wrapper& output)
+		int respond(OOCore::OutputStream_Wrapper& output)
 		{
 			return m_arr.write(output);
 		}
@@ -493,7 +493,7 @@ namespace Impl
 		param_t() : m_failed(true)
 		{ }
 
-		param_t(OOCore::Impl::InputStream_Wrapper& input)
+		param_t(OOCore::InputStream_Wrapper& input)
 		{
 			m_failed = (m_str.read(input)!=0);
 		}
@@ -521,7 +521,7 @@ namespace Impl
 		  m_obj(iid), m_failed(true)
 		{ }
 
-		param_t(OOCore::Impl::InputStream_Wrapper& input, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid) :
+		param_t(OOCore::InputStream_Wrapper& input, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid) :
 		  m_obj(iid)
 		{
 			m_failed = (m_obj.read(manager,input)!=0);
@@ -555,7 +555,7 @@ namespace Impl
 			return m_obj;
 		}
 
-		int respond(OOCore::Impl::OutputStream_Wrapper& output, OOCore::ProxyStubManager* manager)
+		int respond(OOCore::OutputStream_Wrapper& output, OOCore::ProxyStubManager* manager)
 		{
 			return m_obj.write(manager,output);
 		}

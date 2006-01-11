@@ -145,6 +145,9 @@
 				RelativePath=".\Connection_Manager.cpp">
 			</File>
 			<File
+				RelativePath=".\CustomMarshaller.cpp">
+			</File>
+			<File
 				RelativePath=".\Engine.cpp">
 			</File>
 			<File
@@ -204,6 +207,9 @@
 				RelativePath=".\Connection_Manager.h">
 			</File>
 			<File
+				RelativePath=".\CustomMarshaller.h">
+			</File>
+			<File
 				RelativePath=".\Engine.h">
 			</File>
 			<File
@@ -211,6 +217,9 @@
 			</File>
 			<File
 				RelativePath=".\InputStream_CDR.h">
+			</File>
+			<File
+				RelativePath=".\IO_Wrappers.h">
 			</File>
 			<File
 				RelativePath=".\Object.h">

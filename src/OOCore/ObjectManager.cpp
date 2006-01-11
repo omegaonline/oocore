@@ -21,20 +21,13 @@ OOCore::ObjectManager::~ObjectManager()
 int 
 OOCore::ObjectManager::Open(Channel* channel, const bool AsAcceptor)
 {
-	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
-
-	if (m_bOpened == OPEN || m_ptrRemoteFactory)
+	if (m_ptrChannel)
 	{
 		errno = EISCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling open repeatedly on an ObjectManager!\n")),-1);
 	}
 
-	m_bOpened = NOT_OPENED;
 	m_ptrChannel = channel;
-
-	//m_stub_map.open();
-
-	guard.release();
 
 	int res;
 	if (AsAcceptor)
@@ -43,12 +36,8 @@ OOCore::ObjectManager::Open(Channel* channel, const bool AsAcceptor)
 		res = connect();
 
 	if (res!=0)
-	{
-		guard.acquire();
-
 		m_ptrChannel = 0;
-	}
-
+	
 	return res;
 }
 
@@ -135,7 +124,7 @@ OOCore::ObjectManager::accept()
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 
 	// Write out the key
-	if (Impl::OutputStream_Wrapper(output).write(key) != 0)
+	if (OutputStream_Wrapper(output).write(key) != 0)
 	{
 		ReleaseStub(key);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write stub key\n")),-1);
@@ -173,7 +162,7 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling process msg with a NULL message!\n")),-1);
 	}
 
-	Impl::InputStream_Wrapper input(input_stream);
+	InputStream_Wrapper input(input_stream);
 
 	// Check for the connect state first 
 	if (!m_bIsAcceptor && m_bOpened==NOT_OPENED)
@@ -196,7 +185,7 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 }
 
 int 
-OOCore::ObjectManager::process_connect(Impl::InputStream_Wrapper& input)
+OOCore::ObjectManager::process_connect(InputStream_Wrapper& input)
 {
 	// Read the object key
 	OOCore::ProxyStubManager::cookie_t key;
@@ -211,7 +200,7 @@ OOCore::ObjectManager::process_connect(Impl::InputStream_Wrapper& input)
 }
 
 int 
-OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
+OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 {
 	if (m_bOpened != OPEN)
 	{
@@ -269,7 +258,7 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
 	
 	// Invoke the method on the stub
-	OOObject::int32_t ret_code= stub->Invoke(flags,5,input,output);
+	OOObject::int32_t ret_code= stub->Invoke(flags,DEFAULT_WAIT,input,output);
 	if (ret_code != 0)
 	{
 		ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed: %d '%m'\n"),errno));
@@ -309,7 +298,7 @@ OOCore::ObjectManager::process_request(Impl::InputStream_Wrapper& input)
 }
 
 int 
-OOCore::ObjectManager::process_response(Impl::InputStream_Wrapper& input)
+OOCore::ObjectManager::process_response(InputStream_Wrapper& input)
 {
 	// Read the transaction key
 	OOObject::uint32_t trans_id;
@@ -357,7 +346,7 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 	}
 
 	// Create a new one
-	if (OOCore::CreateProxy(this,iid,key,ppVal) != 0)
+	if (Impl::PROXY_STUB_FACTORY::instance()->create_proxy(this,iid,key,ppVal) != 0)
 		return -1;
 	
 	// Pop it in the map
@@ -367,10 +356,13 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 }
 
 int
-OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub*& stub)
+OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub)
 {
 	// Locks are held already!
 
+	// DO NOT USE PASS THRU - ITS BUST!
+	return -1;
+	
 	// Check if obj is a proxy
 	Object_Ptr<OOCore::Proxy> proxy;
 	if (obj->QueryInterface(OOCore::Proxy::IID,reinterpret_cast<OOObject::Object**>(&proxy)) != 0)
@@ -412,8 +404,10 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 		return -1;
 
 	// If we get here then we can create a pass thru
-	ACE_NEW_RETURN(stub,OOCore::Impl::PassThruStub(this,proxy_key,stub_key),-1);
-	
+	ACE_NEW_RETURN(*stub,OOCore::Impl::PassThruStub(this,proxy_key,stub_key),-1);
+
+	(*stub)->AddRef();
+
 	return 0;
 }
 
@@ -444,7 +438,8 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	Stub* stub = 0;
 	
 	// Try to create a pass through stub or create one from the factory
-	if (create_pass_thru(obj,*key,stub) != 0 && OOCore::CreateStub(this,iid,obj,*key,&stub) != 0)
+	if (create_pass_thru(obj,*key,&stub) != 0 && 
+		Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
 	{
 		m_stub_map.unbind(*key);
 		return -1;
@@ -527,7 +522,7 @@ OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const 
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 	}
 
-	Impl::OutputStream_Wrapper output(ptrOutput);
+	OutputStream_Wrapper output(ptrOutput);
 	
 	// Write message ident (request)
 	if (output.write(OOObject::byte_t(1)) != 0)
@@ -660,7 +655,7 @@ OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObj
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	if (!ppVal)
 	{
@@ -676,11 +671,11 @@ OOCore::ObjectManager::RequestRemoteObject(const OOObject::char_t* remote_url, c
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No remote object factory\n")),-1);
 	}
 
-	return fact->CreateRemoteObject(remote_url,clsid,iid,ppVal);
+	return fact->RequestRemoteObject(remote_url,clsid,iid,ppVal);
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	return OOObject::CreateRemoteObject(remote_url,clsid,iid,ppVal);
 }

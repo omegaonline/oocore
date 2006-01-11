@@ -55,6 +55,9 @@ private:
 
 	int load_proxy_stub(const OOObject::guid_t& iid, proxystub_node*& node);
 };
+
+typedef ACE_Singleton<Proxy_Stub_Factory, ACE_Thread_Mutex> PROXY_STUB_FACTORY;
+
 };
 };
 

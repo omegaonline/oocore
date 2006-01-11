@@ -21,8 +21,8 @@ public:
 		
 private:
 	OOCore::Object_Ptr<OOCore::ObjectManager> m_manager;
-	const OOCore::ProxyStubManager::cookie_t& m_proxy_key;
-	const OOCore::ProxyStubManager::cookie_t& m_stub_key;
+	OOCore::ProxyStubManager::cookie_t m_proxy_key;
+	OOCore::ProxyStubManager::cookie_t m_stub_key;
 
 	int copy(OOCore::InputStream* in, OOCore::OutputStream* out);
 };

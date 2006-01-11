@@ -12,7 +12,7 @@ namespace Impl
 	{
 	public:
 		template <class T, class I>
-			static int Invoke(T* pT, I* iface, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOObject::uint32_t method, OOCore::Impl::InputStream_Wrapper& input, OOCore::Impl::OutputStream_Wrapper& output)
+			static int Invoke(T* pT, I* iface, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOObject::uint32_t method, OOCore::InputStream_Wrapper& input, OOCore::OutputStream_Wrapper& output)
 		{
 			OOCORE_PS_DECLARE_INVOKE_TABLE()
 		}
@@ -159,8 +159,8 @@ namespace Impl
 		OOObject::int32_t send_and_recv();
 
 	private:
-		OOCore::Impl::InputStream_Wrapper				m_in;
-		OOCore::Impl::OutputStream_Wrapper				m_out;
+		OOCore::InputStream_Wrapper						m_in;
+		OOCore::OutputStream_Wrapper					m_out;
 		bool											m_failed;
 		OOCore::Object_Ptr<OOCore::ProxyStubManager>	m_manager;
 		const TypeInfo::Method_Attributes_t				m_flags;
@@ -262,12 +262,14 @@ namespace Impl
 					AddRef();
 					*ppVal = static_cast<OOCore::Proxy*>(this);
 				}
-
-				Impl::object_t<OOObject::Object**> ppVal_stub(ppVal,iid);
-				Impl::marshaller_t qi_mshl(method(id,TypeInfo::sync_method,DEFAULT_WAIT));
-				qi_mshl << iid;
-				ret = qi_mshl.send_and_recv();
-				qi_mshl >> ppVal_stub;
+				else
+				{
+					Impl::object_t<OOObject::Object**> ppVal_stub(ppVal,iid);
+					Impl::marshaller_t qi_mshl(method(id,TypeInfo::sync_method,DEFAULT_WAIT));
+					qi_mshl << iid;
+					ret = qi_mshl.send_and_recv();
+					qi_mshl >> ppVal_stub;
+				}
 			}
 			else if (m_type==TYPEINFO)
 			{
@@ -304,7 +306,7 @@ namespace Impl
 			if (input->ReadULong(method) != 0)
 				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
 			
-			return Invoke_i(m_object,method,m_manager,OOCore::Impl::InputStream_Wrapper(input),OOCore::Impl::OutputStream_Wrapper(output));
+			return Invoke_i(m_object,method,m_manager,OOCore::InputStream_Wrapper(input),OOCore::OutputStream_Wrapper(output));
 		}
 		
 		int GetObject(OOObject::Object** ppVal)
@@ -389,7 +391,7 @@ namespace Impl
 			return Impl::marshaller_t(m_manager,flags,wait_secs,output,trans_id);
 		}
 		
-		virtual int Invoke_i(OBJECT* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::Impl::InputStream_Wrapper input, OOCore::Impl::OutputStream_Wrapper output) = 0;
+		virtual int Invoke_i(OBJECT* obj, OOObject::uint32_t& method, OOCore::Object_Ptr<OOCore::ProxyStubManager>& manager, OOCore::InputStream_Wrapper input, OOCore::OutputStream_Wrapper output) = 0;
 
 		int unpack_iid_attr(size_t method, OOCore::TypeInfo::Param_Attrib_Data_t* data, const OOObject::guid_t& iid, const char* var_name)
 		{

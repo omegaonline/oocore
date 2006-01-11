@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="OORegister"
-	ProjectGUID="{1FEE1F86-6678-48EF-AE58-B62EB0D0B196}"
-	Keyword="Win32Proj">
+	Name="OOInteropCOM"
+	ProjectGUID="{3700F23A-9B3A-486D-8A10-84FE772F11E5}"
+	Keyword="AtlProj">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
@@ -14,44 +14,61 @@
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
-			ConfigurationType="1"
+			ConfigurationType="2"
+			UseOfATL="1"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8&quot;;&quot;..\..\3rd Party Libraries\boost_1_33_1&quot;;..\..\src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="TRUE"
-				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				TreatWChar_tAsBuiltInType="TRUE"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="3"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				IgnoreImportLibrary="TRUE"
 				AdditionalDependencies="ACEd.lib"
-				OutputFile="../../bin/OORegister.exe"
+				OutputFile="../../bin/OOInteropCOM.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
+				ModuleDefinitionFile=".\OOInteropCOM.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/OORegister.pdb"
-				SubSystem="1"
+				SubSystem="2"
+				ImportLibrary="$(OutDir)/OOInteropCOM.lib"
 				TargetMachine="1"/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="FALSE"
+				TargetEnvironment="1"
+				GenerateStublessProxies="TRUE"
+				TypeLibraryName="$(IntDir)/OOInteropCOM.tlb"
+				HeaderFileName="OOInteropCOM.h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="OOInteropCOM_i.c"
+				ProxyFileName="OOInteropCOM_p.c"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				Description="Performing registration"
+				CommandLine="regsvr32 /s /c &quot;$(TargetPath)&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="$(IntDir)"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -67,16 +84,16 @@
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
-			ConfigurationType="1"
+			ConfigurationType="2"
+			UseOfATL="1"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8&quot;;&quot;..\..\3rd Party Libraries\boost_1_33_1&quot;;..\..\src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				ExceptionHandling="FALSE"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
 				RuntimeLibrary="2"
-				TreatWChar_tAsBuiltInType="TRUE"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
@@ -84,25 +101,42 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				IgnoreImportLibrary="TRUE"
 				AdditionalDependencies="ACE.lib"
-				OutputFile="../../bin/Release/OORegister.exe"
+				OutputFile="../../bin/Release/OOInteropCOM.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
+				ModuleDefinitionFile=".\OOInteropCOM.def"
 				GenerateDebugInformation="TRUE"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				ImportLibrary="$(OutDir)/OOInteropCOM.lib"
 				TargetMachine="1"/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="FALSE"
+				TargetEnvironment="1"
+				GenerateStublessProxies="TRUE"
+				TypeLibraryName="$(IntDir)/OOInteropCOM.tlb"
+				HeaderFileName="OOInteropCOM.h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="OOInteropCOM_i.c"
+				ProxyFileName="OOInteropCOM_p.c"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				Description="Performing registration"
+				CommandLine="regsvr32 /s /c &quot;$(TargetPath)&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="$(IntDir)"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -123,18 +157,63 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\OORegister.cpp">
+				RelativePath=".\COMClassFactory.cpp">
+			</File>
+			<File
+				RelativePath=".\OODispatch.cpp">
+			</File>
+			<File
+				RelativePath=".\OOInteropCOM.cpp">
+			</File>
+			<File
+				RelativePath=".\OOInteropCOM.def">
+			</File>
+			<File
+				RelativePath=".\stdafx.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\COMClassFactory.h">
+			</File>
+			<File
+				RelativePath=".\OODispatch.h">
+			</File>
+			<File
+				RelativePath=".\Resource.h">
+			</File>
+			<File
+				RelativePath=".\stdafx.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			<File
+				RelativePath=".\OODispatch.rgs">
+			</File>
+			<File
+				RelativePath=".\OOInteropCOM.rc">
+			</File>
+			<File
+				RelativePath=".\OOInteropCOM.rgs">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

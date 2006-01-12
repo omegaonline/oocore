@@ -9,7 +9,6 @@
 #ifndef OOCORE_CONNECTION_MANAGER_H_INCLUDED_
 #define OOCORE_CONNECTION_MANAGER_H_INCLUDED_
 
-#include <ace/Singleton.h>
 #include <ace/Thread_Mutex.h>
 #include <ace/MEM_Stream.h>
 

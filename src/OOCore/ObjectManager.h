@@ -1,11 +1,9 @@
 #ifndef OOCORE_OBJECTMANAGER_IMPL_H_INCLUDED_
 #define OOCORE_OBJECTMANAGER_IMPL_H_INCLUDED_
 
-#include "./OOCore_Impl.h"
 #include "./ProxyStub.h"
 #include "./PSMap.h"
 
-#include <map>
 #include <set>
 
 namespace OOCore

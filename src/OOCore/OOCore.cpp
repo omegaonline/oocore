@@ -1,5 +1,3 @@
-#include "./OOCore.h"
-
 #include <ace/OS_NS_wchar.h>
 
 #include "./Binding.h"

@@ -4,7 +4,6 @@
 
 #include "./Connection_Manager.h"
 #include "./Object_Factory.h"
-#include "./Engine.h"
 #include "./Protocol_Manager.h"
 
 OOCore_Export int 

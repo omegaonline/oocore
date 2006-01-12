@@ -1,5 +1,3 @@
-#include "./Guid.h"
-
 #include "./OOCore.h"
 
 const OOObject::guid_t OOObject::guid_t::NIL;

@@ -4,7 +4,7 @@
 #include <ace/Connector.h>
 
 #include "./Binding.h"
-#include "./Engine.h"
+//#include "./Engine.h"
 
 int 
 OOCore::Impl::Connection_Manager::init(void)

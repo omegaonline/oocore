@@ -9,9 +9,6 @@
 #ifndef OOCORE_OUTPUTSTREAM_CDR_H_INCLUDED_
 #define OOCORE_OUTPUTSTREAM_CDR_H_INCLUDED_
 
-#include <ace/CDR_Stream.h>
-
-#include "./OOCore_Util.h"
 #include "./InputStream_CDR.h"
 
 namespace OOCore

@@ -10,7 +10,6 @@
 #define OOCORE_GUID_H_INCLUDED_
 
 #include <ace/UUID.h>
-#include <ace/CDR_Stream.h>
 
 #include "./Object_Types.h"
 

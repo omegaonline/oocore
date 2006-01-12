@@ -6,6 +6,15 @@
 #include "./Engine.h"
 #include "./Transport_Impl.h"
 
+/**@class ACE_Svc_Handler Svc_Handler.h <ace/Svc_Handler.h>
+ *
+ * @brief The ACE service handler base class. 
+ * 
+ * This class is documented as part of the ACE project.
+ * 
+ * @sa http://www.dre.vanderbilt.edu/Doxygen/Current/html/ace/classACE__Svc__Handler.html
+ */
+
 namespace OOCore
 {
 

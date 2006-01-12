@@ -1,6 +1,5 @@
 #include "./PassThruStub.h"
 #include "./OutputStream_CDR.h"
-#include "./InputStream_CDR.h"
 
 OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const OOCore::ProxyStubManager::cookie_t& proxy_key, const OOCore::ProxyStubManager::cookie_t& stub_key) :
 	m_manager(manager),

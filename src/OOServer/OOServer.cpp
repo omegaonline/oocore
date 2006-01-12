@@ -14,7 +14,7 @@ static ACE_THR_FUNC_RETURN worker_fn(void * p)
 {
 	OOCore::ENGINE::instance()->pump_requests();
 
-	return (errno != ESHUTDOWN ? -1 : 0);
+	return reinterpret_cast<ACE_THR_FUNC_RETURN>(errno != ESHUTDOWN ? -1 : 0);
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])

@@ -12,17 +12,18 @@ class TcpIp_Acceptor :
 	public OOCore::Transport_Svc_Handler<true,ACE_SOCK_STREAM,2048>
 {
 	typedef OOCore::Transport_Svc_Handler<true,ACE_SOCK_STREAM,2048> svc_base;
-
+	
 public:
 	TcpIp_Acceptor();
-
+	
 	int open(void* p);
 
 	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK);
 
-private:
+protected:
 	virtual ~TcpIp_Acceptor() {}
 
+private:
 	ssize_t send_n(ACE_Message_Block* mb);
 	
 	OOCore::Object_Ptr<TcpIp_Manager> m_protocol;

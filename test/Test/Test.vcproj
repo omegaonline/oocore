@@ -39,7 +39,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACEd.lib"
-				OutputFile="../../bin/Testd.dll"
+				OutputFile="../../bin/OOTestd.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
 				GenerateDebugInformation="TRUE"
@@ -91,7 +91,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACE.lib"
-				OutputFile="../../bin/Release/Test.dll"
+				OutputFile="../../bin/Release/OOTest.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
 				GenerateDebugInformation="TRUE"

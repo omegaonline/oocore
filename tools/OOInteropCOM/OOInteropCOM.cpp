@@ -51,7 +51,8 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 		ACE::init();
 		OOObject::Init();
 
-		INTEROP::instance()->Open();
+		if (INTEROP::instance()->Open() != 0)
+			return E_UNEXPECTED;
 
 		_AtlModule.AddTermFunc(Shutdown,0);
 	}

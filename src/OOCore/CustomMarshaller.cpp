@@ -33,7 +33,7 @@ OOCore::CustomMarshaller::Open()
 	}
 
     if (m_outer_OM->Open(m_outer_channel,false) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Failed to open inner object manager.\n")),-1);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Failed to open outer object manager.\n")),-1);
 
 	return 0;
 }

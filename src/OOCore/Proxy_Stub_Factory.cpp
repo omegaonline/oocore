@@ -117,7 +117,8 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 		if (new_node->dll.open(dll_name.c_str(),RTLD_NOW) != 0)
 		{
 			delete new_node;
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to load library: %m\n")),-1);
+			errno = ENOENT;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to load library '%s': %m\n"),dll_name.c_str()),-1);
 		}
 		
 		// Bind to the CreateStub function - C-style cast to please gcc

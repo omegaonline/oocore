@@ -315,14 +315,15 @@
 #define OOCORE_PS_CREATE_TYPEINFO(iface) 				BOOST_PP_CAT(iface,_MetaInfo__::create_typeinfo())
 
 // Meta info map declaration macros
-#define BEGIN_META_INFO_MAP(lib)			static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name); \
-											extern "C" lib##_Export int RegisterLib(bool bRegister) { \
+#define BEGIN_META_INFO_MAP(lib)			BEGIN_META_INFO_MAP_EX(lib,lib)
+#define BEGIN_META_INFO_MAP_EX(exp,lib)		static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name); \
+											extern "C" exp##_Export int RegisterLib(bool bRegister) { \
 											return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,OOCore::ProxyStubManager::cookie_t(),0,0,0,#lib ); } \
-											extern "C" lib##_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy) { \
+											extern "C" exp##_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy) { \
                                             return CreateProxyStub(0,manager,iid,0,key,proxy,0,0,0); } \
-                                            extern "C" lib##_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub) { \
+                                            extern "C" exp##_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub) { \
                                             return CreateProxyStub(1,manager,iid,obj,key,0,stub,0,0); } \
-											extern "C" lib##_Export int GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** typeinfo) { \
+											extern "C" exp##_Export int GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** typeinfo) { \
                                             return CreateProxyStub(5,0,iid,0,OOCore::ProxyStubManager::cookie_t(),0,0,typeinfo,0); } static OOCORE_PS_BEGIN_PROXY_STUB_MAP(CreateProxyStub)
 
 #define OOCORE_PS_BEGIN_PROXY_STUB_MAP(fn)	int fn(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name) { \

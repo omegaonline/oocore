@@ -76,7 +76,8 @@ errored:
 
 #endif
 #else
-	m_context.name_options()->namespace_dir(ACE_TEXT("/etc"));
+	// HUGE HACK TO GET THIS WORKING UNDER *NIX
+	m_context.name_options()->namespace_dir(ACE_TEXT("/tmp/"));
 #endif
 
 	m_context.name_options()->context(ACE_Naming_Context::NODE_LOCAL);

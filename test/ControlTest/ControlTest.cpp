@@ -54,12 +54,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 				ACE_OS::perror("");
 			}
 
-			char szBuf[512] = "tcp://";
+			char szBuf[512] = "tcp://localhost:5000";
 			if (argc == 2)
-				strcat(szBuf,argv[1]);
-			else
-				strcat(szBuf,"localhost:5000");
-				
+				strcpy(szBuf,argv[1]);
+							
 			ptrTest = 0;
 			if ((ret=OOObject::CreateRemoteObject(szBuf,CLSID_Test,&ptrTest)) == 0)
 				DoTests(ptrTest);

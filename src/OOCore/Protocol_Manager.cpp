@@ -44,7 +44,7 @@ OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* rem
 	ssize_t colon = strURL.find("://");
 	if (colon==-1)
 	{
-		errno = EINVAL;
+		errno = ENOENT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Bad remote transport address %s\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_url)),-1);
 	}
 

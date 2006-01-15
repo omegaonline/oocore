@@ -20,9 +20,9 @@ namespace Impl
 {
 
 class Connection_Manager :
-	public OOCore::Transport_Svc_Handler<false,ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER>
+	public OOCore::Transport_Svc_Handler<ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER>
 {
-	typedef OOCore::Transport_Svc_Handler<false,ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER> svc_base;
+	typedef OOCore::Transport_Svc_Handler<ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER> svc_base;
 
 public:
 	static int init(void);

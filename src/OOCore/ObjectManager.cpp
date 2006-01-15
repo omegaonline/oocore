@@ -6,8 +6,7 @@
 DEFINE_IID(OOCore::Impl::RemoteObjectFactory,B1BC71BE-4DCC-4f0f-8483-A75D35126D2A);
 
 OOCore::ObjectManager::ObjectManager() :
-	m_bIsAcceptor(false),
-	m_bOpened(NOT_OPENED),
+	m_is_opening(false),
 	m_next_trans_id(static_cast<OOObject::uint32_t>(ACE_OS::rand()))
 {
 }
@@ -17,7 +16,7 @@ OOCore::ObjectManager::~ObjectManager()
 }
 
 int 
-OOCore::ObjectManager::Open(Channel* channel, const bool AsAcceptor)
+OOCore::ObjectManager::Open(Channel* channel)
 {
 	if (m_ptrChannel)
 	{
@@ -27,16 +26,7 @@ OOCore::ObjectManager::Open(Channel* channel, const bool AsAcceptor)
 
 	m_ptrChannel = channel;
 
-	int res;
-	if (AsAcceptor)
-		res = accept();
-	else
-		res = connect();
-
-	if (res!=0)
-		m_ptrChannel = 0;
-	
-	return res;
+	return 0;
 }
 
 bool 
@@ -48,16 +38,14 @@ OOCore::ObjectManager::await_close(void * p)
 }
 
 int
-OOCore::ObjectManager::Close(bool channel_alive)
+OOCore::ObjectManager::Close()
 {
 	Object_Ptr<Impl::RemoteObjectFactory> fact = m_ptrRemoteFactory.clear();
 
-	if (!m_bIsAcceptor && fact && channel_alive)
-	{
-		// Inform the other end we are leaving
+	// Inform the other end we are leaving...
+	if (fact)
 		fact->SetReverse(0);
-	}
-
+	
 	if (!Impl::g_IsServer)
 	{
 		// Wait until all stubs have gone
@@ -67,16 +55,13 @@ OOCore::ObjectManager::Close(bool channel_alive)
 
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	m_bOpened = CLOSED;
-
 	// Close all the stubs
 	for (ACE_Active_Map_Manager<Stub*>::iterator i=m_stub_map.begin();i!=m_stub_map.end();++i)
 	{
 		(*i).int_id_->Release();
 	}
 	m_stub_map.unbind_all();
-	//m_stub_map.close();
-	
+		
 	m_stub_obj_map.remove_all();
 
 	m_ptrChannel = 0;
@@ -85,58 +70,70 @@ OOCore::ObjectManager::Close(bool channel_alive)
 }
 
 int 
-OOCore::ObjectManager::connect()
+OOCore::ObjectManager::request_remote_factory()
 {
-	// We call this synchronously, 'cos the data should already be there
-	ACE_Time_Value wait(DEFAULT_WAIT);
-	if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Proxy creation timed out and gave up\n")),-1);
-
-	Object_Ptr<Impl::RemoteObjectFactory> fact = m_ptrRemoteFactory;
-
-	if (!fact || fact->SetReverse(this) != 0)
+	if (m_is_opening)
 	{
-		m_ptrRemoteFactory = 0;
-		
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to set reverse\n")),-1);
+		// Wait for a connect response
+		ACE_Time_Value wait(DEFAULT_WAIT);
+		if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connection negotiation timed out and gave up\n")),-1);
+	
+		return 0;
 	}
 
-	return 0;
-}
+	m_is_opening = true;
 
-int 
-OOCore::ObjectManager::accept()
-{
 	// Create the stub
 	OOCore::ProxyStubManager::cookie_t key;
 	if (CreateStub(RemoteObjectFactory::IID,static_cast<RemoteObjectFactory*>(this),&key) != 0)
+	{
+		m_is_opening = false;
 		return -1;
+	}
 
 	Object_Ptr<Channel> channel = m_ptrChannel;
 	if (!channel)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) No channel to accept on!\n")),-1);
+	{
+		m_is_opening = false;
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) No channel to negotiate on!\n")),-1);
+	}
 
 	// Write out the interface info
 	Object_Ptr<OutputStream> output;
 	if (channel->CreateOutputStream(&output) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
-
-	// Write out the key
-	if (OutputStream_Wrapper(output).write(key) != 0)
 	{
+		m_is_opening = false;
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
+	}
+
+	// Write out the message ident (connect) and key
+	OutputStream_Wrapper out(output);
+	if (out->WriteByte(2) != 0 ||
+		out.write(key) != 0)
+	{
+		m_is_opening = false;
 		ReleaseStub(key);
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write stub key\n")),-1);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write negotiate key\n")),-1);
 	}
 
 	// Send the message back
 	if (channel->Send(output) != 0)
+	{
+		m_is_opening = false;
+		ReleaseStub(key);
 		return -1;
+	}
 
-	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+	// Wait for a connect response
+	ACE_Time_Value wait(DEFAULT_WAIT);
+	if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
+	{
+		m_is_opening = false;
+		ReleaseStub(key);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connection negotiation timed out and gave up\n")),-1);
+	}
 
-	m_bIsAcceptor = true;
-	m_bOpened = OPEN;
-	
 	return 0;
 }
 
@@ -151,8 +148,6 @@ OOCore::ObjectManager::await_connect(void * p)
 int 
 OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 {
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@ Message!\n"),this));
-
 	// Check we have input
 	if (!input_stream)
 	{
@@ -160,23 +155,26 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling process msg with a NULL message!\n")),-1);
 	}
 
+	// Wrap the stream
 	InputStream_Wrapper input(input_stream);
 
-	// Check for the connect state first 
-	if (!m_bIsAcceptor && m_bOpened==NOT_OPENED)
-		return process_connect(input);
-	
 	// Read the message ident
 	OOObject::byte_t request;
 	if (input->ReadByte(request) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request status\n")),-1);
 	
-	if (request == 0)
-		return process_response(input);
-	else if (request == 1)
-		return process_request(input);
-	else
+	switch (request)
 	{
+	case 0:
+		return process_response(input);
+
+	case 1:
+		return process_request(input);
+
+	case 2:
+		return process_connect(input);
+
+	default:
 		errno = EINVAL;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid request status\n")),-1);
 	}
@@ -190,22 +188,17 @@ OOCore::ObjectManager::process_connect(InputStream_Wrapper& input)
 	if (input.read(key) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read key\n")),-1);
 	
+	// Create a proxy for the other end's RemoteFactory
 	int ret = CreateProxy(RemoteObjectFactory::IID,key,reinterpret_cast<OOObject::Object**>(&m_ptrRemoteFactory));
-	if (ret == 0)
-		m_bOpened = OPEN;
-	
-	return ret;
+	if (ret != 0)
+		return ret;
+
+	return m_ptrRemoteFactory->SetReverse(this);
 }
 
 int 
 OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 {
-	if (m_bOpened != OPEN)
-	{
-		errno = ENOTCONN;
-		return -1;
-	}
-
 	// Read the transaction key
 	OOObject::uint32_t trans_id;
 	if (input.read(trans_id) != 0)
@@ -215,56 +208,40 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 	OOCore::ProxyStubManager::cookie_t key;
 	if (input.read(key) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request key\n")),-1);
-	
-	// Find the stub
-	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
-
-	Stub* st;
-	if (m_stub_map.find(key,st) != 0)
-	{
-		errno = ENOENT;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid stub key\n")),-1);
-	}
-
-	guard.release();
-
-	Object_Ptr<Stub> stub(st);
-	Object_Ptr<Channel> channel = m_ptrChannel;
-		
-	if (!channel)
-	{
-		errno = ENOTCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
-	}
 
 	// Read the sync state
 	TypeInfo::Method_Attributes_t flags;
 	if (input.read(flags) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read sync flag\n")),-1);
 
-	// Create the output stream
-	Object_Ptr<OutputStream> output;
-	if (channel->CreateOutputStream(&output) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
-		
-	// Write that we are a response
-	if (output->WriteByte(0) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
-
-	// Write the transaction id
-	if (output->WriteULong(trans_id) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
+	OOObject::int32_t ret_code = 0;
 	
-	// Invoke the method on the stub
-	OOObject::int32_t ret_code= stub->Invoke(flags,DEFAULT_WAIT,input,output);
-	if (ret_code != 0)
-	{
-		ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed: %d '%m'\n"),errno));
+	// Find the stub
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-		// Clear the output, its probably garbage
-		output = 0;
-        
-		// Recreate the header...
+	Stub* st = 0;
+	if (m_stub_map.find(key,st) != 0)
+	{
+		ret_code = -1;
+		errno = ENOENT;
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) %@: Invalid stub key %d:%d\n"),this,key.slot_index(),key.slot_generation()));
+	}
+
+	guard.release();
+
+	Object_Ptr<Stub> stub(st);
+	Object_Ptr<OutputStream> output;
+	Object_Ptr<Channel> channel = m_ptrChannel;
+	
+	if (!(flags & TypeInfo::async_method))
+	{
+		if (!channel)
+		{
+			errno = ENOTCONN;
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Object Manager closed\n")),-1);
+		}
+		
+		// Create the output stream
 		if (channel->CreateOutputStream(&output) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 			
@@ -275,19 +252,43 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 		// Write the transaction id
 		if (output->WriteULong(trans_id) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
-
-		// Write ret code
-		if (output->WriteLong(ret_code) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write ret_code\n")),-1);
-
-		// Write errno
-		if (output->WriteLong(errno) != 0)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1);
 	}
+
+	// Invoke the method on the stub
+	if (ret_code == 0)
+		ret_code = stub->Invoke(flags,DEFAULT_WAIT,input,output);
 
 	if (!(flags & TypeInfo::async_method))
 	{
-		// Send the response
+		if (ret_code != 0)
+		{
+			ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Invoke failed: %d '%m'\n"),errno));
+
+			// Clear the output, its probably garbage
+			output = 0;
+	        
+			// Recreate the header...
+			if (channel->CreateOutputStream(&output) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
+				
+			// Write that we are a response
+			if (output->WriteByte(0) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
+
+			// Write the transaction id
+			if (output->WriteULong(trans_id) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write transaction id\n")),-1);
+
+			// Write ret code
+			if (output->WriteLong(ret_code) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write ret_code\n")),-1);
+
+			// Write errno
+			if (output->WriteLong(errno) != 0)
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1);
+		}
+		
+        // Send the response
 		if (channel->Send(output) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to send output\n")),-1);
 	}
@@ -336,12 +337,12 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 	}
 
 	// Check if we asking for a stub we already have
-	Stub* stub;
+	/*Stub* stub;
 	if (m_stub_map.find(key,stub) == 0)
 	{
 		if (stub->GetObject(ppVal) == 0)
 			return 0;
-	}
+	}*/
 
 	// Create a new one
 	if (Impl::PROXY_STUB_FACTORY::instance()->create_proxy(this,iid,key,ppVal) != 0)
@@ -349,6 +350,8 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 	
 	// Pop it in the map
 	m_proxy_obj_map.insert(key,iid,*ppVal);
+
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %d:%d\n"),this,key.slot_index(),key.slot_generation()));
 
 	return 0;
 }
@@ -358,8 +361,11 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 {
 	// Locks are held already!
 
-	// DO NOT USE PASS THRU - ITS BUST!
-	return -1;
+	if (!m_ptrChannel)
+	{
+		errno = ENOTCONN;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) ObjectManager closed.\n")),-1);
+	}
 	
 	// Check if obj is a proxy
 	Object_Ptr<OOCore::Proxy> proxy;
@@ -392,7 +398,7 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 
 	magic.clear();
 
-	// Create a stream from our channel
+    // Create a stream from our channel
 	Object_Ptr<OutputStream> our_output;
 	if (m_ptrChannel->CreateOutputStream(&our_output) != 0)
 		return -1;
@@ -402,9 +408,11 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 		return -1;
 
 	// If we get here then we can create a pass thru
-	ACE_NEW_RETURN(*stub,OOCore::Impl::PassThruStub(this,proxy_key,stub_key),-1);
+	ACE_NEW_RETURN(*stub,OOCore::Impl::PassThruStub(stub_key,manager,proxy_key),-1);
 
 	(*stub)->AddRef();
+
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %d:%d -> %d:%d\n"),this,stub_key.slot_index(),stub_key.slot_generation(),proxy_key.slot_index(),proxy_key.slot_generation()));
 
 	return 0;
 }
@@ -452,6 +460,8 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 
 	// Add the obj to the stub key maps
 	m_stub_obj_map.insert(*key,iid,obj);
+
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %d:%d\n"),this,key->slot_index(),key->slot_generation()));
 	
 	return 0;
 }
@@ -460,6 +470,8 @@ int
 OOCore::ObjectManager::ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %d:%d\n"),this,key.slot_index(),key.slot_generation()));
 	
 	// Remove from proxy map
 	return (m_proxy_obj_map.remove(key) ? 0 : -1);
@@ -470,17 +482,17 @@ OOCore::ObjectManager::ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	{
-		// Remove from stub map
-		Stub* stub;
-		if (m_stub_map.unbind(key,stub) != 0)
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub\n")),-1);
-		
-		// Remove from stub obj map
-		m_stub_obj_map.remove(key);
-		
-		stub->Release();
-	}
+	// Remove from stub map
+	Stub* stub;
+	if (m_stub_map.unbind(key,stub) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub\n")),-1);
+	
+	// Remove from stub obj map
+	m_stub_obj_map.remove(key);
+	
+	stub->Release();
+	
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %d:%d\n"),this,key.slot_index(),key.slot_generation()));
 	
 	return 0;
 }
@@ -495,8 +507,7 @@ OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const 
 	}
 
 	Object_Ptr<Channel> channel = m_ptrChannel;
-
-	if (!channel || m_bOpened != OPEN)
+	if (!channel)
 	{
 		errno = ESHUTDOWN;
 		return -1;
@@ -575,7 +586,7 @@ OOCore::ObjectManager::await_response(void* p)
 bool 
 OOCore::ObjectManager::await_response_i(OOObject::uint32_t trans_id, InputStream** input)
 {
-	if (m_bOpened != OPEN)
+	if (!m_ptrChannel)
 		return true;
 
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock,0);
@@ -605,8 +616,7 @@ OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObj
 	}
 
 	Object_Ptr<Channel> channel = m_ptrChannel;
-
-	if (!channel || m_bOpened != OPEN)
+	if (!channel)
 	{
 		errno = ENOTCONN;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Calling send and receive on a closed object manager\n")),-1);
@@ -665,8 +675,11 @@ OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_url, co
 
 	if (!fact)
 	{
-		errno = ENOTCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No remote object factory\n")),-1);
+		int ret = request_remote_factory();
+		if (ret!=0)
+			return ret;
+
+		fact = m_ptrRemoteFactory;
 	}
 
 	return fact->RequestRemoteObject(remote_url,clsid,iid,ppVal);
@@ -681,12 +694,6 @@ OOCore::ObjectManager::RequestRemoteObject(const OOObject::char_t* remote_url, c
 OOObject::int32_t 
 OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 {
-	if (!m_bIsAcceptor)
-	{
-		errno = EINVAL;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to set reverse object factory for acceptor!\n")),-1);
-	}
-
 	if (m_ptrRemoteFactory && pRemote)
 	{
 		errno = EISCONN;

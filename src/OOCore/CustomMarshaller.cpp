@@ -16,23 +16,14 @@ OOCore::CustomMarshaller::Open()
 	ACE_NEW_RETURN(m_inner_channel,CM_Channel(this,true),-1);
 	ACE_NEW_RETURN(m_inner_OM,ObjectManager,-1);
 
-	if (m_inner_OM->Open(m_inner_channel,true) != 0)
+	if (m_inner_OM->Open(m_inner_channel) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Failed to open inner object manager.\n")),-1);
 
 	// Create the outer ObjectManager
 	ACE_NEW_RETURN(m_outer_channel,CM_Channel(this,false),-1);
 	ACE_NEW_RETURN(m_outer_OM,CustomOM,-1);
 
-	while (!m_msg_queue.is_empty())
-	{
-		ACE_Message_Block* mb;
-		if (m_msg_queue.dequeue(mb) != 0)
-			return -1;
-
-		recv_from_inner(mb);
-	}
-
-    if (m_outer_OM->Open(m_outer_channel,false) != 0)
+	if (m_outer_OM->Open(m_outer_channel) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Failed to open outer object manager.\n")),-1);
 
 	return 0;
@@ -95,9 +86,6 @@ OOCore::CustomMarshaller::Invoke(TypeInfo::Method_Attributes_t flags, OOObject::
 int 
 OOCore::CustomMarshaller::recv_from_inner(ACE_Message_Block* mb)
 {
-	if (!m_outer_OM)
-		return (m_msg_queue.enqueue(mb) == -1 ? -1 : 0);
-	
 	Object_Ptr<Impl::InputStream_CDR> i;
 	ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(mb)),-1);
 

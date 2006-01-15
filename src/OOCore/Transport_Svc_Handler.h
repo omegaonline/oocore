@@ -18,7 +18,7 @@
 namespace OOCore
 {
 
-template <const bool bAcceptor, ACE_PEER_STREAM_1, const int Buffer_Size>
+template <ACE_PEER_STREAM_1, const int Buffer_Size>
 class Transport_Svc_Handler :
 	public ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH>,
 	public Transport_Impl
@@ -39,7 +39,7 @@ public:
 		if (svc_class::open(p)!=0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 		
-		if (open_transport(bAcceptor)!=0)
+		if (open_transport()!=0)
 			return -1;
 		
 		return 0;
@@ -65,7 +65,7 @@ public:
 	{
 		if (m_bOpen)
 		{
-			if (close_transport(mask==0) != 0)
+			if (close_transport() != 0)
 				return -1;
 
 			m_bOpen = false;

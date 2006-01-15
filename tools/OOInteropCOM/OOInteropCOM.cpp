@@ -24,6 +24,10 @@ COOInteropCOMModule _AtlModule;
 // DLL Entry Point
 extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
+	if (dwReason == DLL_THREAD_ATTACH)
+		// Open Winsock (no-op on other platforms).
+		ACE_OS::socket_init(ACE_WSOCK_VERSION);
+
     hInstance;
     return _AtlModule.DllMain(dwReason, lpReserved);
 }

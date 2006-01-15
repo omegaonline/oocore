@@ -1,10 +1,10 @@
 #include "./PassThruStub.h"
 #include "./OutputStream_CDR.h"
 
-OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* manager, const OOCore::ProxyStubManager::cookie_t& proxy_key, const OOCore::ProxyStubManager::cookie_t& stub_key) :
-	m_manager(manager),
-	m_proxy_key(proxy_key),
-	m_stub_key(stub_key)
+OOCore::Impl::PassThruStub::PassThruStub(const OOCore::ProxyStubManager::cookie_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOCore::ProxyStubManager::cookie_t& proxy_key) :
+	m_stub_key(stub_key),
+	m_proxy_manager(proxy_manager),
+	m_proxy_key(proxy_key)
 {
 }
 
@@ -15,19 +15,19 @@ OOCore::Impl::PassThruStub::Invoke(TypeInfo::Method_Attributes_t flags, OOObject
 	OOObject::uint32_t trans_id;
 	OOCore::Object_Ptr<OOCore::OutputStream> request;
 	
-	if (m_manager->CreateRequest(flags,m_proxy_key,&trans_id,&request) != 0)
+	if (m_proxy_manager->CreateRequest(flags,m_proxy_key,&trans_id,&request) != 0)
 		return -1;
 
 	// Copy input to request
 	if (copy(input,request) != 0)
 	{
-		m_manager->CancelRequest(trans_id);
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
+		m_proxy_manager->CancelRequest(trans_id);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy request\n")),-1);
 	}
 
 	// Send the request
 	OOCore::Object_Ptr<OOCore::InputStream> response;
-	OOObject::int32_t ret = m_manager->SendAndReceive(flags,wait_secs,request,trans_id,&response);
+	OOObject::int32_t ret = m_proxy_manager->SendAndReceive(flags,wait_secs,request,trans_id,&response);
 	
 	if (!(flags & TypeInfo::async_method))
 	{
@@ -44,7 +44,7 @@ OOCore::Impl::PassThruStub::Invoke(TypeInfo::Method_Attributes_t flags, OOObject
 		{
 			// Copy response to output
 			if (copy(response,output) != 0)
-				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy params\n")),-1);
+				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to copy response\n")),-1);
 		}
 	}
 	

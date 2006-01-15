@@ -23,7 +23,7 @@ namespace Impl
 
 	BEGIN_META_INFO(RemoteObjectFactory)
 		METHOD(RequestRemoteObject,4,((in)(string),const OOObject::char_t*,remote_url,(in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
-		METHOD(SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
+		METHOD_EX((async),SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
 		METHOD(AddObjectFactory,3,((in),ObjectFactory::Flags_t,flags,(in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
 		METHOD(RemoveObjectFactory,1,((in),const OOObject::guid_t&,clsid))
 	END_META_INFO()
@@ -33,14 +33,12 @@ class OOCore_Export ObjectManager :
 	public Object_Root,
 	public Impl::RemoteObjectFactory,
 	public ProxyStubManager
-{
-	friend class shutup_gcc_warnings;
-	
+{	
 public:
 	ObjectManager();
 	
-	int Open(Channel* channel, const bool AsAcceptor);
-	int Close(bool channel_alive);
+	int Open(Channel* channel);
+	int Close();
 	int ProcessMessage(InputStream* input);
 	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
@@ -59,13 +57,7 @@ private:
 		InputStream** input;
 	};
 
-	bool m_bIsAcceptor;
-	enum
-	{
-		NOT_OPENED,
-		OPEN,
-		CLOSED
-	} m_bOpened;
+	bool m_is_opening;
 	ACE_Recursive_Thread_Mutex m_lock;
 
 	Impl::PSMap m_proxy_obj_map;
@@ -79,8 +71,7 @@ private:
 	OOObject::uint32_t m_next_trans_id;
 	std::set<OOObject::uint32_t> m_transaction_set;
 	
-	int connect();
-	int accept();
+	int request_remote_factory();
 	int process_request(InputStream_Wrapper& input);
 	int process_response(InputStream_Wrapper& input);
 	int process_connect(InputStream_Wrapper& input);

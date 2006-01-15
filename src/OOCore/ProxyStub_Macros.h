@@ -153,9 +153,9 @@
 // Stub function implementation
 #define OOCORE_PS_IMPL_STUB_FN(fn,n,params)			{ OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_DECL_IMPL) \
 													OOObject::int32_t ret_code=obj->fn( OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_CALL_IMPL) ); \
-													if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
+													if (output) { if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
 													if (ret_code!=0) { if (output->WriteLong(errno) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1); } \
-													else { OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_OUT_IMPL) } return 0; }
+													else { OOCORE_PS_PARSE_PARAMS(n,params,OOCORE_PS_STUB_PARAM_OUT_IMPL) } } return 0; }
 
 #define OOCORE_PS_STUB_PARAM_DECL_IMPL(n,param)		OOCore::Impl::param_t< \
 													BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
@@ -258,11 +258,7 @@
 
 #define OOCORE_PS_DECLARE_RELEASE()				OOCORE_PS_DECLARE_RELEASE_I(OOCORE_PS_GENERATE_UNIQUE_ID(Release,0))
 #define OOCORE_PS_DECLARE_RELEASE_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,(async),Release,0,() ) OOObject::int32_t Release() { return Release_i(id::value,false); } \
-												OOCORE_PS_DECLARE_STUB_FN(id) { \
-												OOObject::int32_t ret_code=Release_i(id::value,true); \
-												if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
-												if (ret_code!=0) { if (output->WriteLong(errno) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1); } \
-												return 0; }
+												OOCORE_PS_DECLARE_STUB_FN(id) { return Release_i(id::value,true); }
 
 #define OOCORE_PS_DECLARE_QI()					OOCORE_PS_DECLARE_QI_I(OOCORE_PS_GENERATE_UNIQUE_ID(QueryInterface,2))
 #define OOCORE_PS_DECLARE_QI_I(id)				OOCORE_PS_DECLARE_METHOD_ID(id,PS) OOCORE_PS_DECLARE_METHODINFO_FN(id,(sync),QueryInterface,2,((in))(const OOObject::guid_t&)(iid)((out)(iid_is(iid)))(OOObject::Object**)(ppVal)) OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) { return QueryInterface_i(id::value,iid,ppVal); } \
@@ -270,9 +266,9 @@
 												if (iid.failed()) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to read in param\n")),-1); \
 												OOCore::Impl::param_t<OOCore::Impl::object_t<OOObject::Object**> > ppVal(iid); \
 												OOObject::int32_t ret_code=QueryInterface_i(id::value,iid,ppVal); \
-												if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
+												if (output) { if (output.write(ret_code) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write return code\n")),-1); \
 												if (ret_code!=0) { if (output->WriteLong(errno) != 0) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write errno\n")),-1); } \
-												else { if (ppVal.respond(output,manager)!=0 ) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write out param\n")),-1); } return 0; }
+												else { if (ppVal.respond(output,manager)!=0 ) ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to write out param\n")),-1); } } return 0; }
 
 #define OOCORE_PS_END_TYPEINFO()				OOCORE_PS_END_TYPEINFO_I(OOCORE_PS_GENERATE_UNIQUE_ID(EndTypeInfo__Marker,0))
 #define OOCORE_PS_END_TYPEINFO_I(id)			OOCORE_PS_DECLARE_METHOD_ID(id,PS) int GetMetaInfo(const OOObject::char_t** type_name, size_t* method_count) { if (method_count==0) { errno=EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid NULL pointer\n")),-1); } if (get_type_name(type_name)!=0) return -1; *method_count = id::value; return 0; }

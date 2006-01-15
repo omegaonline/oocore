@@ -322,7 +322,13 @@ namespace Impl
 				if (*m_ptr)
 					(*m_ptr)->Release();
 							
-				return manager->CreateProxy(m_iid,key,m_ptr);
+				if (manager->CreateProxy(m_iid,key,m_ptr) != 0)
+					return -1;
+
+				// Do an extra AddRef() because we are an out parameter!
+				(*m_ptr)->AddRef();
+
+				return 0;
 			}
 			else
 			{

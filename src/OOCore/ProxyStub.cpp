@@ -29,7 +29,7 @@ OOCore::Impl::marshaller_t::send_and_recv()
 
 	OOCore::Object_Ptr<OOCore::InputStream> ptrIn;
 	if (m_manager->SendAndReceive(m_flags,m_wait_secs,m_out,m_trans_id,&ptrIn)!=0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) SendAndReceive failed: %m\n")),-1);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Remote call failed: %m\n")),-1);
 	
 	m_in = ptrIn;
 	m_failed = false;

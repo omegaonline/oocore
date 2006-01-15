@@ -1,9 +1,6 @@
 #ifndef OOCORE_CUSTOM_MARSHALLER_H_INCLUDED_
 #define OOCORE_CUSTOM_MARSHALLER_H_INCLUDED_
 
-#include <ace/Condition_Thread_Mutex.h>
-#include <ace/Message_Queue.h>
-
 #include "./ObjectManager.h"
 
 namespace OOCore
@@ -50,8 +47,6 @@ private:
 	Object_Ptr<CM_Channel> m_outer_channel;
 	Object_Ptr<ObjectManager> m_inner_OM;
 	Object_Ptr<CustomOM> m_outer_OM;
-
-	ACE_Message_Queue<ACE_MT_SYNCH> m_msg_queue;
 
 	int recv_from_inner(ACE_Message_Block* mb);
 	int recv_from_outer(ACE_Message_Block* mb);

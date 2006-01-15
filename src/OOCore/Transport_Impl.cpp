@@ -18,7 +18,7 @@ OOCore::Transport_Impl::~Transport_Impl(void)
 }
 
 int 
-OOCore::Transport_Impl::open_transport(const bool bAcceptor)
+OOCore::Transport_Impl::open_transport()
 {
 	if (m_ptrOM)
 	{
@@ -43,11 +43,11 @@ OOCore::Transport_Impl::open_transport(const bool bAcceptor)
 
 	guard.release();
 
-	return ptrOM->Open(this,bAcceptor);
+	return ptrOM->Open(this);
 }
 
 int 
-OOCore::Transport_Impl::close_transport(bool transport_alive)
+OOCore::Transport_Impl::close_transport()
 {
 	// Get the object manager
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM.clear();
@@ -55,7 +55,7 @@ OOCore::Transport_Impl::close_transport(bool transport_alive)
 	if (ptrOM)
 	{
 		// Call close
-		ptrOM->Close(transport_alive);
+		ptrOM->Close();
 	}
 
 	return 0;

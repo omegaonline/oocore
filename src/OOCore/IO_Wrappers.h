@@ -111,16 +111,16 @@ namespace OOCore
 		  m_out(output)
 		{ }
 
-		int write(const OOObject::bool_t& out) { return m_out->WriteBoolean(out); }
-		int write(const OOObject::char_t& out) { return m_out->WriteChar(out); }
-		int write(const OOObject::int16_t& out) { return m_out->WriteShort(out); }
-		int write(const OOObject::uint16_t& out) { return m_out->WriteUShort(out); }
-		int write(const OOObject::int32_t& out) { return m_out->WriteLong(out); }
-		int write(const OOObject::uint32_t& out) { return m_out->WriteULong(out); }
-		int write(const OOObject::int64_t& out) { return m_out->WriteLongLong(out); }
-		int write(const OOObject::uint64_t& out) { return m_out->WriteULongLong(out); }
-		int write(const OOObject::real4_t& out) { return m_out->WriteFloat(out); }
-		int write(const OOObject::real8_t& out) { return m_out->WriteDouble(out); }
+		int write(const OOObject::bool_t& out) { return (m_out ? m_out->WriteBoolean(out) : -1); }
+		int write(const OOObject::char_t& out) { return (m_out ? m_out->WriteChar(out) : -1); }
+		int write(const OOObject::int16_t& out) { return (m_out ? m_out->WriteShort(out) : -1); }
+		int write(const OOObject::uint16_t& out) { return (m_out ? m_out->WriteUShort(out) : -1); }
+		int write(const OOObject::int32_t& out) { return (m_out ? m_out->WriteLong(out) : -1); }
+		int write(const OOObject::uint32_t& out) { return (m_out ? m_out->WriteULong(out) : -1); }
+		int write(const OOObject::int64_t& out) { return (m_out ? m_out->WriteLongLong(out) : -1); }
+		int write(const OOObject::uint64_t& out) { return (m_out ? m_out->WriteULongLong(out) : -1); }
+		int write(const OOObject::real4_t& out) { return (m_out ? m_out->WriteFloat(out) : -1); }
+		int write(const OOObject::real8_t& out) { return (m_out ? m_out->WriteDouble(out) : -1); }
 		
 		int write(const OOCore::ProxyStubManager::cookie_t& val) 
 		{ 
@@ -134,6 +134,7 @@ namespace OOCore
 		
 		int write(const OOObject::guid_t& val)
 		{
+			if (!m_out) return -1;
 			if (m_out->WriteULong(val.Data1) != 0) return -1;
 			if (m_out->WriteUShort(val.Data2) != 0) return -1;
 			if (m_out->WriteUShort(val.Data3) != 0) return -1;
@@ -161,6 +162,7 @@ namespace OOCore
 
 		int write_byte_workaround(const OOObject::byte_t& out)
 		{
+			if (!m_out) return -1;
 			return m_out->WriteByte(out);
 		}
 
@@ -171,6 +173,7 @@ namespace OOCore
 
 		int write_bytes(const OOObject::byte_t* p, size_t c)
 		{
+			if (!m_out) return -1;
 			for (size_t i=0;i<c;++i)
 			{
 				if (m_out->WriteByte(p[i]) != 0) return -1;

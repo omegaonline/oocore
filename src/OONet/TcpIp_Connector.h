@@ -8,9 +8,9 @@
 class TcpIp_Manager;
 
 class TcpIp_Connector :
-	public OOCore::Transport_Svc_Handler<false,ACE_SOCK_STREAM,2048>
+	public OOCore::Transport_Svc_Handler<ACE_SOCK_STREAM,2048>
 {
-	typedef OOCore::Transport_Svc_Handler<false,ACE_SOCK_STREAM,2048> svc_base;
+	typedef OOCore::Transport_Svc_Handler<ACE_SOCK_STREAM,2048> svc_base;
 
 public:
 	TcpIp_Connector();

@@ -16,7 +16,7 @@ void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
 	if (ptrTest->Array_Test_In(count,arr)==0)
 		ACE_OS::printf("succeeded.");
 	else
-		ACE_OS::perror("failed");
+		ACE_OS::perror("failed.");
 	ACE_OS::printf("\n");
 
 	OOObject::int16_t* parr = 0;
@@ -24,7 +24,7 @@ void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
 	if (ptrTest->Array_Test_Out(&count,&parr) == 0)
 		ACE_OS::printf("succeeded, %u items received.",count);
 	else
-		ACE_OS::perror("failed");
+		ACE_OS::perror("failed.");
 	ACE_OS::printf("\n");
 	
 	ACE_OS::printf("Calling Array_Test_InOut with %u items: ",count);
@@ -34,7 +34,25 @@ void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
 		OOObject::Free(parr);
 	}
 	else
-		ACE_OS::perror("failed");
+		ACE_OS::perror("failed.");
+	ACE_OS::printf("\n");
+
+	ACE_OS::printf("Calling String_Test_In ");
+	if (ptrTest->String_Test_In("Hello, can you hear me?")==0)
+		ACE_OS::printf("succeeded.");
+	else
+		ACE_OS::perror("failed.");
+	ACE_OS::printf("\n");
+
+	OOObject::char_t* pstr = 0;
+	ACE_OS::printf("Calling String_Test_Out: ");
+	if (ptrTest->String_Test_Out(&pstr) == 0)
+	{
+		ACE_OS::printf("succeeded, received \"%s\".",pstr);
+		OOObject::Free(pstr);
+	}
+	else
+		ACE_OS::perror("failed.");
 	ACE_OS::printf("\n");
 }
 

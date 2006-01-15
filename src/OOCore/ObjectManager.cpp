@@ -109,7 +109,7 @@ OOCore::ObjectManager::request_remote_factory()
 
 	// Write out the message ident (connect) and key
 	OutputStream_Wrapper out(output);
-	if (out->WriteByte(2) != 0 ||
+	if (out->WriteByte(CONNECT) != 0 ||
 		out.write(key) != 0)
 	{
 		m_is_opening = false;
@@ -159,24 +159,24 @@ OOCore::ObjectManager::ProcessMessage(InputStream* input_stream)
 	InputStream_Wrapper input(input_stream);
 
 	// Read the message ident
-	OOObject::byte_t request;
-	if (input->ReadByte(request) != 0)
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request status\n")),-1);
+	OOObject::byte_t message;
+	if (input->ReadByte(message) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read message opcode\n")),-1);
 	
-	switch (request)
+	switch (message)
 	{
-	case 0:
-		return process_response(input);
-
-	case 1:
+	case REQUEST:
 		return process_request(input);
 
-	case 2:
+	case RESPONSE:
+		return process_response(input);
+
+	case CONNECT:
 		return process_connect(input);
 
 	default:
 		errno = EINVAL;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid request status\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid message opcode %d\n"),message),-1);
 	}
 }
 
@@ -246,7 +246,7 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 			
 		// Write that we are a response
-		if (output->WriteByte(0) != 0)
+		if (output->WriteByte(RESPONSE) != 0)
 			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
 
 		// Write the transaction id
@@ -272,7 +272,7 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 				
 			// Write that we are a response
-			if (output->WriteByte(0) != 0)
+			if (output->WriteByte(RESPONSE) != 0)
 				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write response flag\n")),-1);
 
 			// Write the transaction id
@@ -531,15 +531,15 @@ OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const 
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to create output stream\n")),-1);
 	}
 
-	OutputStream_Wrapper output(ptrOutput);
-	
 	// Write message ident (request)
-	if (output.write(OOObject::byte_t(1)) != 0)
+	if (ptrOutput->WriteByte(REQUEST) != 0)
 	{
 		CancelRequest(*trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write request flag\n")),-1);
 	}
 	
+	OutputStream_Wrapper output(ptrOutput);
+
 	// Write the transaction id
 	if (output.write(*trans_id) != 0)
 	{
@@ -555,7 +555,7 @@ OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const 
 	}
 
 	// Write the flags
-	if (output->WriteUShort(flags) != 0)
+	if (output.write(flags) != 0)
 	{
 		CancelRequest(*trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write sync status\n")),-1);

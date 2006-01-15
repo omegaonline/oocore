@@ -121,6 +121,10 @@ OOCore::Engine::close()
 	if (m_reactor->end_reactor_event_loop() != 0)
 		return -1;
 
+	// Call it twice, just in case...
+	if (m_reactor->end_reactor_event_loop() != 0)
+		return -1;
+
 	return wait();
 }
 

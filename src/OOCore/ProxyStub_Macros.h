@@ -140,9 +140,12 @@
 #define OOCORE_PS_PROXY_PARAM_OUT_IMPL(n,param)		BOOST_PP_EXPR_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,out), \
 														method_PROXY_FUNC >> BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
 															BOOST_PP_CAT(PROXY_ARRAY_,OOCORE_PS_PARAM_VAR(param)), \
-															BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,iid_is), \
-																BOOST_PP_CAT(PROXY_OBJECT_,OOCORE_PS_PARAM_VAR(param)), \
-																OOCORE_PS_PARAM_VAR(param) \
+															BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,string), \
+																BOOST_PP_CAT(PROXY_STRING_,OOCORE_PS_PARAM_VAR(param)), \
+																BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,iid_is), \
+																	BOOST_PP_CAT(PROXY_OBJECT_,OOCORE_PS_PARAM_VAR(param)), \
+																	OOCORE_PS_PARAM_VAR(param) \
+																) \
 															) \
 														); \
 													)

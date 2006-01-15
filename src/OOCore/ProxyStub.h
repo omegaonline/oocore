@@ -116,7 +116,7 @@ namespace Impl
 			return *this;
 		}
 
-		template <class T>
+		template <class T>		
 		marshaller_t& operator <<(string_t<T>& val)
 		{
 			if (!m_failed)
@@ -142,6 +142,14 @@ namespace Impl
 
 		template <class T>
 		marshaller_t& operator >>(array_t<T**>& val)
+		{
+			if (!m_failed)
+				m_failed = (val.read(m_in)!=0);
+			return *this;
+		}
+
+		template <class T>
+		marshaller_t& operator >>(string_t<T**>& val)
 		{
 			if (!m_failed)
 				m_failed = (val.read(m_in)!=0);

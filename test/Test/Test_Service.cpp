@@ -3,11 +3,22 @@
 
 ACE_FACTORY_DEFINE(Test,Test_Service)
 
+
+DEFINE_IID(Test::Test,6AAE8C33-699A-4414-AF84-25E74E693207);
+DEFINE_CLSID(Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
+
+BEGIN_META_INFO_MAP_EX(Test,OOTest)
+	META_INFO_ENTRY(Test::Test)
+END_META_INFO_MAP()
+
 int 
 Test_Service::init(int argc, ACE_TCHAR *argv[])
 {
 	// Artifically increment our RefCount, the ACE_Svc_Config will delete us
     AddRef();
+
+	// Register ourselves... Its just easier!
+	RegisterLib(true);
 
 	return OOCore::AddObjectFactory(OOCore::ObjectFactory::USAGE_ANY,CLSID_Test,this);
 }

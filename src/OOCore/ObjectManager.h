@@ -57,6 +57,14 @@ private:
 		InputStream** input;
 	};
 
+	enum OPCODES
+	{
+		RESPONSE = 0,
+		REQUEST = 1,
+		CONNECT = 2,
+		STATIC = 3
+	};
+
 	bool m_is_opening;
 	ACE_Recursive_Thread_Mutex m_lock;
 

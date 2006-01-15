@@ -41,7 +41,7 @@ namespace Impl
 
 		int read(OOCore::InputStream_Wrapper& in)
 		{
-			m_data = static_cast<type>(OOObject::Alloc(m_count*sizeof(T)));
+			m_data = static_cast<type*>(OOObject::Alloc(m_count*sizeof(T)));
 			if (!m_data) return -1;
 
 			for (OOObject::uint32_t i=0;i<m_count;++i)
@@ -62,8 +62,8 @@ namespace Impl
 		}
 
 	private:
-		typedef typename boost::remove_cv<T*>::type type;
-		type m_data;
+		typedef typename boost::remove_cv<T>::type type;
+		type* m_data;
 		T* m_p;
 		const OOObject::uint32_t m_count;
 	};
@@ -144,13 +144,11 @@ namespace Impl
 		}
 	};
 
-	// The string attribute can only be applied 
-	// to const character pointer types
 	template <class T>
 	class string_t;
 
 	template <class T>
-	class string_t<const T*>
+	class string_t<T*>
 	{
 	public:
 		string_t() :
@@ -178,7 +176,7 @@ namespace Impl
 
 			if (size > 0)
 			{
-				m_data = static_cast<T*>(OOObject::Alloc((size+1)*sizeof(T)));
+				m_data = static_cast<type*>(OOObject::Alloc((size+1)*sizeof(T)));
 				if (!m_data) 
 					return -1;
 			
@@ -218,8 +216,95 @@ namespace Impl
 		}
 
 	private:
+		typedef typename boost::remove_cv<T>::type type;
+		type* m_data;
+		T* m_p;
+	};
+
+	template <class T>
+	class string_t<T**>
+	{
+	public:
+		string_t() :
+		  m_data(0), m_p(0), m_orig_count(0)
+		{ }
+
+        string_t(T** s)	: 
+		  m_data(0), m_p(s), m_orig_count(0)
+		{ }
+
+		~string_t()
+		{
+			//if (m_data && !m_p)
+				//OOObject::Free(m_data);
+		}
+
+		operator T**()
+		{
+			return get_ptr();
+		}
+		
+		int read(OOCore::InputStream_Wrapper& in)
+		{
+			OOObject::uint32_t size;
+			if (in.read(size)!=0) return -1;
+
+			if (!m_p || size>m_orig_count)
+			{
+				m_data = static_cast<T*>(OOObject::Alloc((size+1)*sizeof(T)));
+				if (m_p)
+				{
+					if (m_orig_count)
+						OOObject::Free(*m_p);
+
+					*m_p = m_data;
+				}
+			}
+
+			if (*get_ptr()==0)
+				return -1;
+				
+			for (OOObject::uint32_t i=0;i<size;++i)
+			{
+				if (in.read((*get_ptr())[i])!=0) return -1;
+			}
+			(*get_ptr())[size] = static_cast<T>(0);
+			return 0;
+		}
+
+		int write(OOCore::OutputStream_Wrapper& out)
+		{
+			if (*get_ptr())
+			{
+				size_t s = ACE_OS::strlen(*get_ptr());
+				if (s > 0xffffffff)
+				{
+					errno = E2BIG;
+					return -1;
+				}
+
+				m_orig_count = static_cast<OOObject::uint32_t>(s);
+			}
+
+			if (out.write(m_orig_count)!=0) 
+				return -1;
+			
+			for (OOObject::uint32_t i=0;i<m_orig_count;++i)
+			{
+				if (out.write((*get_ptr())[i])!=0) return -1;
+			}
+			return 0;
+		}
+
+	private:
 		T* m_data;
-		const T* m_p;
+		T** m_p;
+		OOObject::uint32_t m_orig_count;
+				
+		T** get_ptr()
+		{
+			return (m_p ? m_p : &m_data);
+		}
 	};
 
 	template <class T>
@@ -493,7 +578,7 @@ namespace Impl
 	};
 
 	template <class T>
-	class param_t<string_t<T> >
+	class param_t<string_t<T*> >
 	{
 	public:
 		param_t() : m_failed(true)
@@ -504,7 +589,7 @@ namespace Impl
 			m_failed = (m_str.read(input)!=0);
 		}
 
-		operator T()
+		operator T*()
 		{
 			return m_str;
 		}
@@ -515,7 +600,40 @@ namespace Impl
 		}
 
 	private:
-		string_t<T> m_str;
+		string_t<T*> m_str;
+		bool m_failed;
+	};
+
+	template <class T>
+	class param_t<string_t<T**> >
+	{
+	public:
+		param_t() :
+		  m_failed(true)
+		{ }
+
+		param_t(OOCore::InputStream_Wrapper& input)
+		{
+			m_failed = (m_str.read(input)!=0);
+		}		
+
+		operator T**()
+		{
+			return m_str;
+		}
+
+		bool failed()
+		{
+			return m_failed;
+		}
+
+		int respond(OOCore::OutputStream_Wrapper& output)
+		{
+			return m_str.write(output);
+		}
+
+	private:
+		string_t<T**> m_str;
 		bool m_failed;
 	};
 

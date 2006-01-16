@@ -17,7 +17,7 @@ namespace Test
 
 		virtual OOObject::int32_t String_Test_In(const OOObject::char_t* str) = 0;
 		virtual OOObject::int32_t String_Test_Out(OOObject::char_t** str) = 0;
-		//virtual OOObject::int32_t String_Test_InOut(OOObject::char_t** str) = 0;
+		virtual OOObject::int32_t String_Test_InOut(OOObject::char_t** str) = 0;
 
 		DECLARE_IID(Test);
 	};
@@ -29,7 +29,7 @@ namespace Test
 
 		METHOD(String_Test_In,1,((in)(string),const OOObject::char_t*,str))
 		METHOD(String_Test_Out,1,((out)(string),OOObject::char_t**,str));
-		//METHOD(String_Test_InOut,1,((in)(out)(string),OOObject::char_t**,str));
+		METHOD(String_Test_InOut,1,((in)(out)(string),OOObject::char_t**,str));
 	END_META_INFO()
 };
 

@@ -1,22 +1,40 @@
 #include "./PassThruStub.h"
 #include "./OutputStream_CDR.h"
 
-OOCore::Impl::PassThruStub::PassThruStub(const OOCore::ProxyStubManager::cookie_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOCore::ProxyStubManager::cookie_t& proxy_key) :
+OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* stub_manager, const OOCore::ProxyStubManager::cookie_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOCore::ProxyStubManager::cookie_t& proxy_key,Object_Ptr<OOCore::Proxy>& proxy) :
+	m_stub_manager(stub_manager),
 	m_stub_key(stub_key),
 	m_proxy_manager(proxy_manager),
-	m_proxy_key(proxy_key)
+	m_proxy_key(proxy_key),
+	m_proxy(proxy)
 {
 }
 
 int 
 OOCore::Impl::PassThruStub::Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
 {
+	// Read the method number
+	OOObject::uint32_t method = 0;
+	if (input->ReadULong(method) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) pass thru saw method %u.\n"),method));
+
+	if (method==1)
+	{
+		m_proxy = 0;
+		return m_stub_manager->ReleaseStub(m_stub_key);
+	}
+	
 	// Create a request output stream
 	OOObject::uint32_t trans_id;
 	OOCore::Object_Ptr<OOCore::OutputStream> request;
-	
 	if (m_proxy_manager->CreateRequest(flags,m_proxy_key,&trans_id,&request) != 0)
 		return -1;
+	
+	// Write the method number to the request
+	if (request->WriteULong(method) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write method ordinal\n")),-1);
 
 	// Copy input to request
 	if (copy(input,request) != 0)

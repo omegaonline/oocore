@@ -101,8 +101,8 @@ namespace Impl
 				m_data = static_cast<T*>(OOObject::Alloc(sizeof(T)*(*m_count)));
 				if (m_p)
 				{
-					if (m_orig_count)
-						OOObject::Free(*m_p);
+					//if (m_orig_count)
+					//	OOObject::Free(*m_p);
 
 					*m_p = m_data;
 				}
@@ -235,8 +235,8 @@ namespace Impl
 
 		~string_t()
 		{
-			//if (m_data && !m_p)
-				//OOObject::Free(m_data);
+			if (m_data && !m_p)
+				OOObject::Free(m_data);
 		}
 
 		operator T**()
@@ -254,8 +254,8 @@ namespace Impl
 				m_data = static_cast<T*>(OOObject::Alloc((size+1)*sizeof(T)));
 				if (m_p)
 				{
-					if (m_orig_count)
-						OOObject::Free(*m_p);
+					//if (m_orig_count)
+					//	OOObject::Free(*m_p);
 
 					*m_p = m_data;
 				}
@@ -409,9 +409,6 @@ namespace Impl
 							
 				if (manager->CreateProxy(m_iid,key,m_ptr) != 0)
 					return -1;
-
-				// Do an extra AddRef() because we are an out parameter!
-				(*m_ptr)->AddRef();
 
 				return 0;
 			}

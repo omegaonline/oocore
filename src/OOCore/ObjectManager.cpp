@@ -408,7 +408,7 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 		return -1;
 
 	// If we get here then we can create a pass thru
-	ACE_NEW_RETURN(*stub,OOCore::Impl::PassThruStub(stub_key,manager,proxy_key),-1);
+	ACE_NEW_RETURN(*stub,OOCore::Impl::PassThruStub(this,stub_key,manager,proxy_key,proxy),-1);
 
 	(*stub)->AddRef();
 

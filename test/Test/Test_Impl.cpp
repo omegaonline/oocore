@@ -50,7 +50,10 @@ Test_Impl::String_Test_In(const OOObject::char_t* str)
 OOObject::int32_t 
 Test_Impl::String_Test_Out(OOObject::char_t** str)
 {
-	*str = "Mr. Watson -- Come here -- I want to see you.";
+	const OOObject::char_t* text = "Mr. Watson -- Come here -- I want to see you.";
+
+	*str = (OOObject::char_t*)OOObject::Alloc(ACE_OS::strlen(text)+1);
+	ACE_OS::strcpy(*str,text);
 
 	ACE_OS::printf(ACE_TEXT("String_Test_Out: Sending \"%s\".\n"),*str);
 
@@ -62,12 +65,16 @@ Test_Impl::String_Test_InOut(OOObject::char_t** str)
 {
 	ACE_OS::printf(ACE_TEXT("String_Test_InOut: Received \"%s\".\n"),*str);
 
-	*str =	"Leave the beaten track occasionally and dive into the woods. "
-			"Every time you do so you will be certain to find something that you have never seen before. "
-			"Follow it up, explore all around it, and before you know it, "
-			"you will have something worth thinking about to occupy your mind. "
-			"All really big discoveries are the results of thought."
-			"\n\n\t-- Alexander Graham Bell";
+	const OOObject::char_t* text =	"Leave the beaten track occasionally and dive into the woods. "
+									"Every time you do so you will be certain to find something that you have never seen before. "
+									"Follow it up, explore all around it, and before you know it, "
+									"you will have something worth thinking about to occupy your mind. "
+									"All really big discoveries are the results of thought."
+									"\n\n\t-- Alexander Graham Bell";
+
+	OOObject::Free(*str);
+	*str = (OOObject::char_t*)OOObject::Alloc(ACE_OS::strlen(text)+1);
+	ACE_OS::strcpy(*str,text);
 
 	ACE_OS::printf(ACE_TEXT("String_Test_InOut: Sending \"%s\".\n"),*str);
 

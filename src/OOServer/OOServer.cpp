@@ -6,6 +6,11 @@
 #include <ace/Get_Opt.h>
 #include <ace/ARGV.h>
 
+#ifdef ACE_WIN32
+// For the Windows path functions
+#include <shlwapi.h>
+#endif
+
 #include "../OOCore/Engine.h"
 
 #include "./NTService.h"
@@ -24,16 +29,20 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// Parse cmd line first
 	// NB - ACE_Service_Config uses "bdf:k:nyp:s:S:"
 	//      Engine uses "e:"
+	//		We use "t:"
 
 #ifdef _DEBUG
 	ACE_TCHAR buf[MAXPATHLEN];
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Starting OOServer in working directory:\n\t'%s'\n\n"),ACE_OS::getcwd(buf,MAXPATHLEN)));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Starting OOServer with working directory:\n\t'%s'\n\n"),ACE_OS::getcwd(buf,MAXPATHLEN)));
 #endif
 
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":t:"));
 	int option;
-	int threads = ACE_OS::num_processors()+1;
 	bool bSeen_f = false;
+	int threads = ACE_OS::num_processors()+1;
+	if (threads==0)
+		threads = 2;
+	
 	while ((option = cmd_opts()) != EOF)
 	{
 		switch (option)
@@ -79,34 +88,19 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			if (!bSeen_f)
 			{
 #ifdef ACE_WIN32
-				char szBuf[MAX_PATH] = {0};
-				if (::SHGetSpecialFolderPathA(NULL,szBuf,CSIDL_COMMON_APPDATA,0))
-				{
-					::PathAppendA(szBuf,"OmegaOnline");
-					if (!::PathFileExistsA(szBuf))
-					{
-						if (ACE_OS::mkdir(szBuf) != 0)
-							goto errored;
-					}
-					else if (!::PathIsDirectoryA(szBuf))
-						goto trylocal;
-				}
-				else
-				{
-			trylocal:
-					if (::GetModuleFileNameA(OOCore::Impl::g_hInstance,szBuf,MAX_PATH)!=0)
-					{
-						::PathRemoveFileSpecA(szBuf);
-					}
-				}
-	
-				if (szBuf[0] == 0)
-				{
-			errored:
+				ACE_TCHAR szBuf[MAX_PATH] = "\0";
+				if (ACE_TEXT_GetModuleFileName(0,szBuf,MAX_PATH)==0)
 					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to detect OOServer config file location\n")),-1);
-				}
-				svc_argv.add(szBuf);
+				
+				::PathRemoveFileSpec(szBuf);
+
+				ACE_TCHAR szConf[MAX_PATH] = "-f ";
+				ACE_OS::strcat(szConf,szBuf);
+				ACE_OS::strcat(szConf,"\\svc.conf");
+	
+				svc_argv.add(szConf);
 #else
+				/// @todo Check for environment variable first?
 				svc_argv.add(ACE_TEXT("-f /etc/OmegaOnline/svc.conf"));
 #endif
 			}

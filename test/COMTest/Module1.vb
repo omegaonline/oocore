@@ -8,6 +8,7 @@ Module Module1
 
         test.Array_Test_In(arr.GetLength(0), arr)
 
+        test = Nothing
     End Sub
 
 End Module

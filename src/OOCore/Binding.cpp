@@ -7,8 +7,6 @@
 // For the Windows path functions
 #include <shlwapi.h>
 #include <shlobj.h>
-#else
-#include <unistd.h>
 #endif
 
 #include "./OOCore_Impl.h"
@@ -109,7 +107,7 @@ OOCore::Impl::Binding::check_open()
 int 
 OOCore::Impl::Binding::launch(bool bAsServer)
 {
-	// Check we are opne for business
+	// Check we are open for business
 	if (check_open() != 0)
 		return -1;
 
@@ -145,7 +143,7 @@ OOCore::Impl::Binding::launch(bool bAsServer)
 				
 #if (defined (ACE_WIN32))
 		ACE_TCHAR this_exe[MAXPATHLEN];
-		if (ACE_TEXT_GetModuleFileName(0, this_exe, MAXPATHLEN) != 0)
+		if (ACE_TEXT_GetModuleFileName(0, this_exe, MAXPATHLEN) == 0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to determine own process name\n")),-1);
 			
 		m_context.rebind(ACE_TEXT("server"),this_exe);
@@ -217,7 +215,7 @@ OOCore::Impl::Binding::launch_server()
 int 
 OOCore::Impl::Binding::find(const ACE_TCHAR* name, ACE_TString& value)
 {
-	// Check we are opne for business
+	// Check we are open for business
 	if (check_open() != 0)
 		return -1;
 
@@ -235,7 +233,7 @@ OOCore::Impl::Binding::find(const ACE_TCHAR* name, ACE_TString& value)
 int 
 OOCore::Impl::Binding::rebind(const ACE_TCHAR* name, const ACE_TCHAR* value)
 {
-	// Check we are opne for business
+	// Check we are open for business
 	if (check_open() != 0)
 		return -1;
 
@@ -245,7 +243,7 @@ OOCore::Impl::Binding::rebind(const ACE_TCHAR* name, const ACE_TCHAR* value)
 int 
 OOCore::Impl::Binding::unbind(const ACE_TCHAR* name)
 {
-	// Check we are opne for business
+	// Check we are open for business
 	if (check_open() != 0)
 		return -1;
 

@@ -4,6 +4,7 @@
 #include <ace/NT_Service.h>
 #include <ace/Thread_Manager.h>
 #include <ace/Get_Opt.h>
+#include <ace/ARGV.h>
 
 #include "../OOCore/Engine.h"
 
@@ -32,6 +33,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":t:"));
 	int option;
 	int threads = ACE_OS::num_processors()+1;
+	bool bSeen_f = false;
 	while ((option = cmd_opts()) != EOF)
 	{
 		switch (option)
@@ -40,6 +42,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			threads = ACE_OS::atoi(cmd_opts.opt_arg());
 			if (threads<1 || threads>10)
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of threads '%s' range is [1..10].\n"),cmd_opts.opt_arg()),-1);
+			break;
+			
+		case ACE_TEXT('f'):
+			bSeen_f = true;
 			break;
 
 		case ACE_TEXT(':'):
@@ -64,8 +70,49 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		// Start the local connection acceptor
 		if ((ret=Client_Connection::init()) == 0)
 		{
+			ACE_ARGV svc_argv;
+			for (int i=0;i<argc;++i)
+			{
+				svc_argv.add(argv[i]);
+			}
+			
+			if (!bSeen_f)
+			{
+#ifdef ACE_WIN32
+				char szBuf[MAX_PATH] = {0};
+				if (::SHGetSpecialFolderPathA(NULL,szBuf,CSIDL_COMMON_APPDATA,0))
+				{
+					::PathAppendA(szBuf,"OmegaOnline");
+					if (!::PathFileExistsA(szBuf))
+					{
+						if (ACE_OS::mkdir(szBuf) != 0)
+							goto errored;
+					}
+					else if (!::PathIsDirectoryA(szBuf))
+						goto trylocal;
+				}
+				else
+				{
+			trylocal:
+					if (::GetModuleFileNameA(OOCore::Impl::g_hInstance,szBuf,MAX_PATH)!=0)
+					{
+						::PathRemoveFileSpecA(szBuf);
+					}
+				}
+	
+				if (szBuf[0] == 0)
+				{
+			errored:
+					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to detect OOServer config file location\n")),-1);
+				}
+				svc_argv.add(szBuf);
+#else
+				svc_argv.add(ACE_TEXT("-f /etc/OmegaOnline/svc.conf"));
+#endif
+			}
+			
 			// Load the service configuration file
-			if ((ret=ACE_Service_Config::open(argc,argv)) == 0)
+			if ((ret=ACE_Service_Config::open(svc_argv.argc(),svc_argv.argv(),ACE_DEFAULT_LOGGER_KEY,1,1)) == 0)
 			{	
 				// Spawn off some extra threads
 				ACE_Thread_Manager::instance()->spawn_n(threads,worker_fn);

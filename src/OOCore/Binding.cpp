@@ -7,6 +7,8 @@
 // For the Windows path functions
 #include <shlwapi.h>
 #include <shlobj.h>
+#else
+#include <unistd.h>
 #endif
 
 #include "./OOCore_Impl.h"
@@ -139,13 +141,18 @@ OOCore::Impl::Binding::launch(bool bAsServer)
 		if (m_context.bind(ACE_TEXT("pid"),szBuf)!=0)
 			return -1;
 
-#if (defined (ACE_WIN32))
 		// Rebind our file location
+				
+#if (defined (ACE_WIN32))
 		ACE_TCHAR this_exe[MAXPATHLEN];
 		if (ACE_TEXT_GetModuleFileName(0, this_exe, MAXPATHLEN) != 0)
-			m_context.rebind(ACE_TEXT("server"),this_exe);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to determine own process name\n")),-1);
+			
+		m_context.rebind(ACE_TEXT("server"),this_exe);
+#else
+		//const char* this_exe = exec();
 #endif
-
+		
 		m_unbind_pid = true;
 	}
 	else
@@ -162,7 +169,6 @@ OOCore::Impl::Binding::launch_server()
 {
 	// Find what the server is called
 	ACE_TString exe_name;
-#if defined (ACE_WIN32)
 	ACE_TCHAR* pszType = 0;
 	ACE_NS_WString strExeName;
 	if (m_context.resolve(ACE_TEXT("server"),strExeName,pszType)==0)
@@ -170,10 +176,10 @@ OOCore::Impl::Binding::launch_server()
 		ACE_OS::free(pszType);
 		exe_name = ACE_TEXT_WCHAR_TO_TCHAR(strExeName.c_str());
 	}
-#else
-	exe_name = ACE_OS::getenv("OOSERVER");
-#endif
 
+	if (exe_name.length() == 0)
+		exe_name = ACE_OS::getenv("OOSERVER");
+		
 	if (exe_name.length() == 0)
 		exe_name = ACE_TEXT("OOServer");
 
@@ -185,7 +191,7 @@ OOCore::Impl::Binding::launch_server()
 		return -1;
 
 	// Set the creation flags
-	u_long flags = ACE_Process_Options::NO_EXEC;
+	u_long flags = 0;
 #if defined (ACE_WIN32)
 	flags |= CREATE_NEW_CONSOLE;
 #endif

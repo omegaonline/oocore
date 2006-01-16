@@ -32,7 +32,7 @@ NTService::~NTService(void)
 int NTService::open(int argc, ACE_TCHAR* argv[])
 {
 	// Used for cmdline processing
-	ACE_ARGV svc_argv(0);
+	ACE_ARGV svc_argv;
 	int bInstall = 0;
 	bool bRunAsService = false;
 	bool bOptionsAlready = false;

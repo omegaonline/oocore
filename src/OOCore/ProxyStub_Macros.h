@@ -110,7 +110,7 @@
 
 #define OOCORE_PS_IMPL_PROXY_FN(id,n,seq,attr)		{ OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_DECL_IMPL) \
 													OOCore::Impl::marshaller_t method_PROXY_FUNC(method(id::value,OOCORE_PS_PROXY_METHOD_ATTR(attr),OOCORE_PS_PROXY_METHOD_WAIT(attr) )); \
-													method_PROXY_FUNC OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_IN_IMPL); \
+													(void)method_PROXY_FUNC; OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_IN_IMPL); \
 													OOObject::int32_t method_PROXY_FUNC_RESULT = method_PROXY_FUNC.send_and_recv(); \
 													OOCORE_PS_PARSE_PARAMS(n,seq,OOCORE_PS_PROXY_PARAM_OUT_IMPL) return method_PROXY_FUNC_RESULT; }
 
@@ -125,7 +125,7 @@
 													)
 
 #define OOCORE_PS_PROXY_PARAM_IN_IMPL(n,param)		BOOST_PP_EXPR_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,in), \
-														<< BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
+														method_PROXY_FUNC << BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,size_is), \
 															BOOST_PP_CAT(PROXY_ARRAY_,OOCORE_PS_PARAM_VAR(param)), \
 															BOOST_PP_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,string), \
 																BOOST_PP_CAT(PROXY_STRING_,OOCORE_PS_PARAM_VAR(param)), \
@@ -134,7 +134,7 @@
 																	OOCORE_PS_PARAM_VAR(param) \
 																) \
 															) \
-														) \
+														); \
 													) 
 
 #define OOCORE_PS_PROXY_PARAM_OUT_IMPL(n,param)		BOOST_PP_EXPR_IF(OOCORE_PS_PARAM_ATTRIB_IS(param,out), \

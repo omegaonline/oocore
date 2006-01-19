@@ -55,18 +55,10 @@ OOCore::CustomMarshaller::CreateRemoteObject(const OOObject::char_t* remote_url,
 }
 
 int 
-OOCore::CustomMarshaller::CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& key, OOObject::uint32_t method, OOObject::uint32_t* trans_id, OutputStream** output)
+OOCore::CustomMarshaller::CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& key, OOObject::uint32_t* trans_id, OutputStream** output)
 {
-	if (m_outer_OM->CreateRequest(flags,key,trans_id,output) != 0)
+	if (m_outer_OM->CreateRequest(method,flags,key,trans_id,output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Outer object manager CreateRequest failed.\n")),-1);
-
-	// Write the method number
-	if ((*output)->WriteULong(method) != 0)
-	{
-		m_outer_OM->CancelRequest(*trans_id);
-		(*output)->Release();
-		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write method ordinal\n")),-1);
-	}
 
 	return 0;
 }

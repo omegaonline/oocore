@@ -130,7 +130,7 @@ namespace OOCore
 	class Stub : public OOObject::Object
 	{
 	public:
-		virtual int Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output) = 0;
+		virtual int Invoke(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output) = 0;
 		virtual int GetObject(OOObject::Object** ppVal) = 0;
 
 		DECLARE_IID(OOCore);
@@ -145,7 +145,7 @@ namespace OOCore
 		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOCore::ProxyStubManager::cookie_t* key) = 0;
 		virtual int ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key) = 0;
 		virtual int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key) = 0;
-		virtual int CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
+		virtual int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
 		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
 		virtual OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
 		

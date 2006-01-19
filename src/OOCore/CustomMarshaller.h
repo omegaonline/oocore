@@ -13,7 +13,7 @@ public:
 	virtual ~CustomMarshaller(void);
 	
 	int Open();
-	int CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& key, OOObject::uint32_t method, OOObject::uint32_t* trans_id, OutputStream** output);
+	int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& key, OOObject::uint32_t* trans_id, OutputStream** output);
 	int CancelRequest(OOObject::uint32_t trans_id);
 	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOCore::ProxyStubManager::cookie_t* key, OOObject::Object** ppVal);
 	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOCore::ProxyStubManager::cookie_t* key, OOObject::Object** ppVal);

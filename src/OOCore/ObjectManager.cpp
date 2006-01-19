@@ -213,7 +213,12 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 	TypeInfo::Method_Attributes_t flags;
 	if (input.read(flags) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read sync flag\n")),-1);
-
+		
+	// Read the method number
+	OOObject::uint32_t method;
+	if (input.read(method) != 0)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
+	
 	OOObject::int32_t ret_code = 0;
 	
 	// Find the stub
@@ -256,7 +261,7 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 
 	// Invoke the method on the stub
 	if (ret_code == 0)
-		ret_code = stub->Invoke(flags,DEFAULT_WAIT,input,output);
+		ret_code = stub->Invoke(method,flags,DEFAULT_WAIT,input,output);
 
 	if (!(flags & TypeInfo::async_method))
 	{
@@ -357,10 +362,9 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 }
 
 int
-OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub)
+OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub)
 {
 	// Locks are held already!
-
 	if (!m_ptrChannel)
 	{
 		errno = ENOTCONN;
@@ -370,23 +374,23 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 	// Check if obj is a proxy
 	Object_Ptr<OOCore::Proxy> proxy;
 	if (obj->QueryInterface(OOCore::Proxy::IID,reinterpret_cast<OOObject::Object**>(&proxy)) != 0)
-		return -1;
+		return 0;
 
 	// Get the proxy's key
 	OOCore::ProxyStubManager::cookie_t proxy_key;
 	if (proxy->GetKey(&proxy_key) != 0)
-		return -1;
+		return 0;
 
 	// Get the proxy's ProxyStubManager
 	Object_Ptr<OOCore::ProxyStubManager> manager;
 	if (proxy->GetManager(&manager) != 0)
-		return -1;
+		return 0;
 
 	// Create stream from the other manager
 	Object_Ptr<OutputStream> their_output;
 	OOObject::uint32_t trans_id;
-	if (manager->CreateRequest(OOCore::TypeInfo::sync_method,proxy_key,&trans_id,&their_output) != 0)
-		return -1;
+	if (manager->CreateRequest(0,OOCore::TypeInfo::sync_method,proxy_key,&trans_id,&their_output) != 0)
+		return 0;
 
 	// Immediately cancel the request
 	manager->CancelRequest(trans_id);
@@ -394,22 +398,32 @@ OOCore::ObjectManager::create_pass_thru(OOObject::Object* obj, const OOCore::Pro
 	// Check if their channel's streams are actually *_CDR streams
 	Object_Ptr<Impl::InputStream_CDR> magic;
 	if (their_output.QueryInterface(&magic) != 0)
-		return -1;
+		return 0;
 
 	magic.clear();
 
     // Create a stream from our channel
 	Object_Ptr<OutputStream> our_output;
 	if (m_ptrChannel->CreateOutputStream(&our_output) != 0)
-		return -1;
+		return 0;
 
 	// Check if our channel's streams are actually *_CDR streams
 	if (our_output.QueryInterface(&magic) != 0)
-		return -1;
+		return 0;
 
 	// If we get here then we can create a pass thru
-	ACE_NEW_RETURN(*stub,OOCore::Impl::PassThruStub(this,stub_key,manager,proxy_key,proxy),-1);
+	Impl::PassThruStub* new_stub;
+	ACE_NEW_RETURN(new_stub,Impl::PassThruStub(this,stub_key,manager,proxy_key,proxy),0);
 
+	// Init the new stub with the current stub
+	if (new_stub->init(iid,*stub) != 0)
+	{
+		delete new_stub;
+		return 0;
+	}
+	
+	// Return the new stub
+	*stub = new_stub;
 	(*stub)->AddRef();
 
 	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %d:%d -> %d:%d\n"),this,stub_key.slot_index(),stub_key.slot_generation(),proxy_key.slot_index(),proxy_key.slot_generation()));
@@ -440,15 +454,23 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	if (m_stub_map.bind(0,*key) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind stub info\n")),-1);
 	
-	// Create the stub
+	// Create a stub first
 	Stub* stub = 0;
-	
-	// Try to create a pass through stub or create one from the factory
-	if (create_pass_thru(obj,*key,&stub) != 0 && 
-		Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
+	if (Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
 	{
 		m_stub_map.unbind(*key);
 		return -1;
+	}
+	
+	// Never allow pass-thru's on RemoteObjectFactory!
+	if (!(iid == Impl::RemoteObjectFactory::IID))
+	{
+		// Try to create a pass-through stub...
+		if (create_pass_thru(iid,obj,*key,&stub) != 0)
+		{
+			m_stub_map.unbind(*key);
+			return -1;
+		}
 	}
 
 	// Insert the stub into the map
@@ -498,7 +520,7 @@ OOCore::ObjectManager::ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key
 }
 
 int 
-OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
+OOCore::ObjectManager::CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
 {
 	if (!trans_id || !output_stream)
 	{
@@ -556,6 +578,13 @@ OOCore::ObjectManager::CreateRequest(TypeInfo::Method_Attributes_t flags, const 
 
 	// Write the flags
 	if (output.write(flags) != 0)
+	{
+		CancelRequest(*trans_id);
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write sync status\n")),-1);
+	}
+	
+	// Write the method number
+	if (output.write(method) != 0)
 	{
 		CancelRequest(*trans_id);
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write sync status\n")),-1);

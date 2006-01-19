@@ -84,7 +84,7 @@ private:
 	int process_response(InputStream_Wrapper& input);
 	int process_connect(InputStream_Wrapper& input);
 	bool await_response_i(OOObject::uint32_t trans_id, InputStream** input);
-	int create_pass_thru(OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub);
+	int create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub);
 	
 	static bool await_response(void* p);
 	static bool await_connect(void * p);
@@ -108,7 +108,7 @@ public:
 	int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOCore::ProxyStubManager::cookie_t* key);
 	int ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key);
 	int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key);	
-	int CreateRequest(TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
+	int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
 	int CancelRequest(OOObject::uint32_t trans_id);
 	OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
 };

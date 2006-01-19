@@ -301,7 +301,7 @@ namespace Impl
 			return ret;
 		}
 
-		int Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOCore::InputStream* input, OOCore::OutputStream* output)
+		int Invoke(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOCore::InputStream* input, OOCore::OutputStream* output)
 		{
 			if (m_type!=STUB)
 			{
@@ -309,11 +309,6 @@ namespace Impl
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid call\n")),-1);
 			}
 
-			// Read the method number
-			OOObject::uint32_t method;
-			if (input->ReadULong(method) != 0)
-				ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read method ordinal\n")),-1);
-			
 			return Invoke_i(m_object,method,m_manager,OOCore::InputStream_Wrapper(input),OOCore::OutputStream_Wrapper(output));
 		}
 		
@@ -385,17 +380,9 @@ namespace Impl
 			OOObject::uint32_t trans_id;
 			OOCore::Object_Ptr<OOCore::OutputStream> output;
 
-			if (m_type!=PROXY || m_manager->CreateRequest(flags,m_key,&trans_id,&output) != 0)
+			if (m_type!=PROXY || m_manager->CreateRequest(method,flags,m_key,&trans_id,&output) != 0)
 				return Impl::marshaller_t();
 
-			// Write the method number
-			if (output->WriteULong(method) != 0)
-			{
-				m_manager->CancelRequest(trans_id);
-				ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to write method ordinal\n")));
-				return Impl::marshaller_t();
-			}
-			
 			return Impl::marshaller_t(m_manager,flags,wait_secs,output,trans_id);
 		}
 		

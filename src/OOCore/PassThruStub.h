@@ -12,8 +12,8 @@ class PassThruStub :
 	public OOCore::Object_Impl<OOCore::Stub>
 {
 public:
-	PassThruStub(OOCore::ObjectManager* stub_manager, const OOCore::ProxyStubManager::cookie_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOCore::ProxyStubManager::cookie_t& proxy_key, Object_Ptr<OOCore::Proxy>& proxy);
-	
+	PassThruStub(OOCore::ObjectManager* stub_manager, const OOObject::uint32_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOObject::uint32_t& proxy_key, Object_Ptr<OOCore::Proxy>& proxy);
+		
 	int init(const OOObject::guid_t& iid, Stub* stub);
 
 // Stub members
@@ -23,9 +23,9 @@ public:
 		
 private:
 	Object_Ptr<OOCore::ProxyStubManager> m_stub_manager;
-	OOCore::ProxyStubManager::cookie_t m_stub_key;
+	OOObject::uint32_t m_stub_key;
 	Object_Ptr<OOCore::ProxyStubManager> m_proxy_manager;
-	OOCore::ProxyStubManager::cookie_t m_proxy_key;
+	OOObject::uint32_t m_proxy_key;
 	Object_Ptr<OOCore::Proxy> m_proxy;
 	Object_Ptr<OOCore::Stub> m_stub;
 	std::set<size_t> m_iid_methods;

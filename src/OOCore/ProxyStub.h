@@ -193,7 +193,7 @@ namespace Impl
 		{}
 
 		// Proxy constructor
-		ProxyStub_Impl(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key) :
+		ProxyStub_Impl(OOCore::ProxyStubManager* manager, const OOObject::uint32_t& key) :
 			m_type(PROXY),
 			m_key(key),
 			m_manager(manager),
@@ -201,7 +201,7 @@ namespace Impl
 		{}
 
 		// Stub constructor
-		ProxyStub_Impl(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key, OBJECT* obj) :
+		ProxyStub_Impl(OOCore::ProxyStubManager* manager, const OOObject::uint32_t& key, OBJECT* obj) :
 			m_type(STUB),
 			m_key(key),
 			m_object(obj),
@@ -352,7 +352,7 @@ namespace Impl
 			}
 		}
 
-		int GetKey(OOCore::ProxyStubManager::cookie_t* proxy_key)
+		int GetKey(OOObject::uint32_t* proxy_key)
 		{
 			if (m_type!=PROXY)
 			{
@@ -423,7 +423,7 @@ namespace Impl
 
 	private:
 		const enum { PROXY, STUB, TYPEINFO } m_type;
-		OOCore::ProxyStubManager::cookie_t m_key;
+		OOObject::uint32_t m_key;
 		OOCore::Object_Ptr<OBJECT> m_object;
 		OOCore::Object_Ptr<OOCore::ProxyStubManager> m_manager;
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;

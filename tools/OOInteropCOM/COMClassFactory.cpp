@@ -84,7 +84,7 @@ STDMETHODIMP CCOMClassFactory::CreateInstance(LPUNKNOWN pUnkOuter, REFIID riid, 
 {
 	// First create the OO object
 	OOCore::Object_Ptr<OOObject::Object> ptrObj;
-	OOCore::ProxyStubManager::cookie_t key;
+	OOObject::uint32_t key;
 	if (INTEROP::instance()->CreateObject(m_OO_clsid,m_OO_iid,&key,&ptrObj) != 0)
 		return CLASS_E_CLASSNOTAVAILABLE;
 

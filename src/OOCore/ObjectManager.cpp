@@ -7,6 +7,7 @@ DEFINE_IID(OOCore::Impl::RemoteObjectFactory,B1BC71BE-4DCC-4f0f-8483-A75D35126D2
 
 OOCore::ObjectManager::ObjectManager() :
 	m_is_opening(false),
+	m_next_stub_key(static_cast<OOObject::uint32_t>(ACE_OS::rand())),
 	m_next_trans_id(static_cast<OOObject::uint32_t>(ACE_OS::rand()))
 {
 }
@@ -34,7 +35,7 @@ OOCore::ObjectManager::await_close(void * p)
 {
 	ObjectManager* pThis = static_cast<ObjectManager*>(p);
 
-	return (pThis->m_stub_map.current_size()==0);
+	return (pThis->m_stub_map.empty());
 }
 
 int
@@ -45,22 +46,26 @@ OOCore::ObjectManager::Close()
 	// Inform the other end we are leaving...
 	if (fact)
 		fact->SetReverse(0);
-	
+
+	fact = 0;
+
 	if (!Impl::g_IsServer)
 	{
 		// Wait until all stubs have gone
 		ACE_Time_Value wait(DEFAULT_WAIT);
-		ENGINE::instance()->pump_requests(&wait,await_close,this);
+		if (ENGINE::instance()->pump_requests(&wait,await_close,this) != 0)
+			ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) ObjectManager timed out waiting for stubs to close.\n")));
 	}
 
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	// Close all the stubs
-	for (ACE_Active_Map_Manager<Stub*>::iterator i=m_stub_map.begin();i!=m_stub_map.end();++i)
+	for (std::map<OOObject::uint32_t,Stub*>::iterator i=m_stub_map.begin();i!=m_stub_map.end();++i)
 	{
-		(*i).int_id_->Release();
+		if (i->second)
+			i->second->Release();
 	}
-	m_stub_map.unbind_all();
+	m_stub_map.clear();
 		
 	m_stub_obj_map.remove_all();
 
@@ -85,7 +90,7 @@ OOCore::ObjectManager::request_remote_factory()
 	m_is_opening = true;
 
 	// Create the stub
-	OOCore::ProxyStubManager::cookie_t key;
+	OOObject::uint32_t key;
 	if (CreateStub(RemoteObjectFactory::IID,static_cast<RemoteObjectFactory*>(this),&key) != 0)
 	{
 		m_is_opening = false;
@@ -184,9 +189,13 @@ int
 OOCore::ObjectManager::process_connect(InputStream_Wrapper& input)
 {
 	// Read the object key
-	OOCore::ProxyStubManager::cookie_t key;
+	OOObject::uint32_t key;
 	if (input.read(key) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read key\n")),-1);
+
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+	m_next_stub_key = key + 0x80000000;
+	guard.release();
 	
 	// Create a proxy for the other end's RemoteFactory
 	int ret = CreateProxy(RemoteObjectFactory::IID,key,reinterpret_cast<OOObject::Object**>(&m_ptrRemoteFactory));
@@ -205,7 +214,7 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read transaction key\n")),-1);
 	
 	// Read the stub key
-	OOCore::ProxyStubManager::cookie_t key;
+	OOObject::uint32_t key;
 	if (input.read(key) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to read request key\n")),-1);
 
@@ -224,17 +233,18 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 	// Find the stub
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	Stub* st = 0;
-	if (m_stub_map.find(key,st) != 0)
+	std::map<OOObject::uint32_t,Stub*>::iterator i = m_stub_map.find(key);
+	if (i == m_stub_map.end())
 	{
 		ret_code = -1;
 		errno = ENOENT;
-		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) %@: Invalid stub key %d:%d\n"),this,key.slot_index(),key.slot_generation()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) %@: Invalid stub key %u\n"),this,key));
 	}
+
+	Object_Ptr<Stub> stub(i->second);
 
 	guard.release();
 
-	Object_Ptr<Stub> stub(st);
 	Object_Ptr<OutputStream> output;
 	Object_Ptr<Channel> channel = m_ptrChannel;
 	
@@ -323,7 +333,7 @@ OOCore::ObjectManager::process_response(InputStream_Wrapper& input)
 }
 
 int 
-OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** ppVal)
 {
 	if (!ppVal)
 	{
@@ -342,12 +352,12 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 	}
 
 	// Check if we asking for a stub we already have
-	/*Stub* stub;
-	if (m_stub_map.find(key,stub) == 0)
+	std::map<OOObject::uint32_t,Stub*>::iterator i = m_stub_map.find(key);
+	if (i != m_stub_map.end())
 	{
-		if (stub->GetObject(ppVal) == 0)
+		if (i->second->GetObject(ppVal) == 0)
 			return 0;
-	}*/
+	}
 
 	// Create a new one
 	if (Impl::PROXY_STUB_FACTORY::instance()->create_proxy(this,iid,key,ppVal) != 0)
@@ -356,13 +366,13 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOCore::Pr
 	// Pop it in the map
 	m_proxy_obj_map.insert(key,iid,*ppVal);
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %d:%d\n"),this,key.slot_index(),key.slot_generation()));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %X\n"),this,key));
 
 	return 0;
 }
 
 int
-OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub)
+OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& stub_key, Stub** stub)
 {
 	// Locks are held already!
 	if (!m_ptrChannel)
@@ -377,7 +387,7 @@ OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::O
 		return 0;
 
 	// Get the proxy's key
-	OOCore::ProxyStubManager::cookie_t proxy_key;
+	OOObject::uint32_t proxy_key;
 	if (proxy->GetKey(&proxy_key) != 0)
 		return 0;
 
@@ -426,13 +436,13 @@ OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::O
 	*stub = new_stub;
 	(*stub)->AddRef();
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %d:%d -> %d:%d\n"),this,stub_key.slot_index(),stub_key.slot_generation(),proxy_key.slot_index(),proxy_key.slot_generation()));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %X -> %X\n"),this,stub_key,proxy_key));
 
 	return 0;
 }
 
 int 
-OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object* obj, OOCore::ProxyStubManager::cookie_t* key)
+OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object* obj, OOObject::uint32_t* key)
 {
 	if (!key || !obj)
 	{
@@ -450,31 +460,31 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 		return 0;
 	}
 
-	// Insert the stub into the map (we add NULL to create a key, and then replace its value)
-	if (m_stub_map.bind(0,*key) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind stub info\n")),-1);
-	
+	// Increment m_next_stub_key until we can insert it
+	OOObject::Object* magic;
+	do
+	{
+		do 
+		{
+			*key = m_next_stub_key++;
+		} while (m_stub_map.find(*key)!=m_stub_map.end());
+	} while (m_proxy_obj_map.find(*key,magic));
+
 	// Create a stub first
 	Stub* stub = 0;
 	if (Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
-	{
-		m_stub_map.unbind(*key);
 		return -1;
-	}
 	
 	// Never allow pass-thru's on RemoteObjectFactory!
 	if (!(iid == Impl::RemoteObjectFactory::IID))
 	{
 		// Try to create a pass-through stub...
 		if (create_pass_thru(iid,obj,*key,&stub) != 0)
-		{
-			m_stub_map.unbind(*key);
 			return -1;
-		}
 	}
 
 	// Insert the stub into the map
-	if (m_stub_map.rebind(*key,stub) != 0)
+	if (!m_stub_map.insert(std::map<OOObject::uint32_t,Stub*>::value_type(*key,stub)).second)
 	{
 		stub->Release();
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind stub info\n")),-1);
@@ -483,44 +493,49 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	// Add the obj to the stub key maps
 	m_stub_obj_map.insert(*key,iid,obj);
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %d:%d\n"),this,key->slot_index(),key->slot_generation()));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %X\n"),this,*key));
 	
 	return 0;
 }
 
 int 
-OOCore::ObjectManager::ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key)
+OOCore::ObjectManager::ReleaseProxy(const OOObject::uint32_t& key)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %d:%d\n"),this,key.slot_index(),key.slot_generation()));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %X\n"),this,key));
 	
+	// Remove from the stub map
+	//m_stub_map.erase(key);
+
 	// Remove from proxy map
 	return (m_proxy_obj_map.remove(key) ? 0 : -1);
 }
 
 int 
-OOCore::ObjectManager::ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key)
+OOCore::ObjectManager::ReleaseStub(const OOObject::uint32_t& key)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	// Remove from stub map
-	Stub* stub;
-	if (m_stub_map.unbind(key,stub) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub\n")),-1);
+	std::map<OOObject::uint32_t,Stub*>::iterator i=m_stub_map.find(key);
+	if (i == m_stub_map.end())
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub %u\n"),key),-1);
 	
 	// Remove from stub obj map
 	m_stub_obj_map.remove(key);
-	
-	stub->Release();
-	
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %d:%d\n"),this,key.slot_index(),key.slot_generation()));
+		
+	i->second->Release();
+
+	m_stub_map.erase(i);
+		
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %X\n"),this,key));
 	
 	return 0;
 }
 
 int 
-OOCore::ObjectManager::CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
+OOCore::ObjectManager::CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output_stream)
 {
 	if (!trans_id || !output_stream)
 	{

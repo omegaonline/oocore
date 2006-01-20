@@ -166,6 +166,8 @@ OOCore::Engine::pump_requests(ACE_Time_Value* timeout, CONDITION_FN cond_fn, voi
 			{
 				ACE_Time_Value wait(1);
 				ret = pump_request_i(&wait);
+				if (ret==-1 && errno==EWOULDBLOCK)
+					ret = 0;
 			}
 			else
 				ret = pump_request_i(timeout);

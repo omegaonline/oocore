@@ -1,8 +1,6 @@
 #ifndef OOCORE_OOCORE_H_INCLUDED_
 #define OOCORE_OOCORE_H_INCLUDED_
 
-#include <ace/Active_Map_Manager.h>
-
 #include "./Object.h"
 
 #ifdef _DEBUG
@@ -139,13 +137,11 @@ namespace OOCore
 	class ProxyStubManager : public OOObject::Object
 	{
 	public:
-		typedef ACE_Active_Map_Manager_Key	cookie_t;
-
-		virtual int CreateProxy(const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** ppVal) = 0;
-		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOCore::ProxyStubManager::cookie_t* key) = 0;
-		virtual int ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key) = 0;
-		virtual int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key) = 0;
-		virtual int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
+		virtual int CreateProxy(const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** ppVal) = 0;
+		virtual int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOObject::uint32_t* key) = 0;
+		virtual int ReleaseProxy(const OOObject::uint32_t& key) = 0;
+		virtual int ReleaseStub(const OOObject::uint32_t& key) = 0;
+		virtual int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output) = 0;
 		virtual int CancelRequest(OOObject::uint32_t trans_id) = 0;
 		virtual OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input) = 0;
 		
@@ -156,7 +152,7 @@ namespace OOCore
 	{
 	public:
 		virtual int GetManager(ProxyStubManager** ppManager) = 0;
-		virtual int GetKey(OOCore::ProxyStubManager::cookie_t* proxy_key) = 0;
+		virtual int GetKey(OOObject::uint32_t* proxy_key) = 0;
 
 		DECLARE_IID(OOCore);
 	};
@@ -185,8 +181,8 @@ namespace OOCore
 		DECLARE_IID(OOCore);
 	};
 
-	typedef int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy);
-	typedef int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, Stub** stub);
+	typedef int (*CreateProxy_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** proxy);
+	typedef int (*CreateStub_Function)(ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, Stub** stub);
 	typedef int (*RegisterLib_Function)(bool bRegister);
 	typedef int (*GetTypeInfo_Function)(const OOObject::guid_t& iid, TypeInfo** typeinfo);
 

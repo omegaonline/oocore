@@ -5,7 +5,7 @@
 #include ".\oodispatch.h"
 
 // COODispatch
-HRESULT COODispatch::init(const OOCore::ProxyStubManager::cookie_t& key, OOCore::Object_Ptr<OOCore::TypeInfo>& type_info)
+HRESULT COODispatch::init(const OOObject::uint32_t& key, OOCore::Object_Ptr<OOCore::TypeInfo>& type_info)
 {
 	m_OO_key = key;
 	m_ptr_OO_TypeInfo = type_info;
@@ -639,7 +639,7 @@ STDMETHODIMP COODispatch::Invoke(/* [in] */ DISPID dispIdMember, /* [in] */ REFI
 	// Call CreateRequest for an OutputStream
 	OOObject::uint32_t trans_id;
 	OOCore::Object_Ptr<OOCore::OutputStream> ptrRequest;
-	if (INTEROP::instance()->CreateRequest(attr,m_OO_key,dispIdMember,&trans_id,&ptrRequest) != 0)
+	if (INTEROP::instance()->CreateRequest(dispIdMember,attr,m_OO_key,&trans_id,&ptrRequest) != 0)
 		return E_UNEXPECTED;
 
 	// Write out each param

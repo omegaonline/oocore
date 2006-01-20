@@ -26,8 +26,8 @@ namespace Impl
 class Proxy_Stub_Factory
 {
 public:
-	int create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy);
-	int create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** ppStub);
+	int create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** proxy);
+	int create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOCore::Stub** ppStub);
 	int create_type_info(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info);
 
 private:
@@ -48,9 +48,9 @@ private:
 
 	static proxystub_node m_core_node;
 
-	static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name);
-	static int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy);
-	static int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub);
+	static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name);
+	static int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** proxy);
+	static int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOCore::Stub** stub);
 	static int GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info);
 
 	int load_proxy_stub(const OOObject::guid_t& iid, proxystub_node*& node);

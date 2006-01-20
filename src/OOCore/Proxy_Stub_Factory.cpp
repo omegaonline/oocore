@@ -36,7 +36,7 @@ OOCore::Impl::Proxy_Stub_Factory::m_core_node =
 OOCore::Impl::Proxy_Stub_Factory::Proxy_Stub_Factory(void)
 {
 	// This little bit of madness will register all the OOCore proxy/stubs automatically
-	CreateProxyStub(4,0,OOObject::guid_t::NIL,0,OOCore::ProxyStubManager::cookie_t(),0,0,0,reinterpret_cast<const char*>(this));
+	CreateProxyStub(4,0,OOObject::guid_t::NIL,0,0,0,0,0,reinterpret_cast<const char*>(this));
 }
 
 OOCore::Impl::Proxy_Stub_Factory::~Proxy_Stub_Factory(void)
@@ -50,7 +50,7 @@ OOCore::Impl::Proxy_Stub_Factory::~Proxy_Stub_Factory(void)
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& cookie, OOObject::Object** proxy)
+OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::uint32_t& cookie, OOObject::Object** proxy)
 {
 	// Get the proxy/stub node
 	proxystub_node* node;
@@ -65,7 +65,7 @@ OOCore::Impl::Proxy_Stub_Factory::create_proxy(OOCore::ProxyStubManager* manager
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** ppStub)
+OOCore::Impl::Proxy_Stub_Factory::create_stub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOCore::Stub** ppStub)
 {
 	// Get the proxy/stub node
 	proxystub_node* node;
@@ -163,13 +163,13 @@ OOCore::Impl::Proxy_Stub_Factory::load_proxy_stub(const OOObject::guid_t& iid, p
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy) 
+OOCore::Impl::Proxy_Stub_Factory::CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** proxy) 
 {
 	return CreateProxyStub(0,manager,iid,0,key,proxy,0,0,0); 
 }
 
 int 
-OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub) 
+OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOCore::Stub** stub) 
 {
 	return CreateProxyStub(1,manager,iid,obj,key,0,stub,0,0); 
 }
@@ -177,7 +177,7 @@ OOCore::Impl::Proxy_Stub_Factory::CreateStub(OOCore::ProxyStubManager* manager, 
 int 
 OOCore::Impl::Proxy_Stub_Factory::GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info) 
 {
-	return CreateProxyStub(5,0,iid,0,OOCore::ProxyStubManager::cookie_t(),0,0,type_info,0); 
+	return CreateProxyStub(5,0,iid,0,0,0,0,type_info,0); 
 }
 
 int OOCore_Export 

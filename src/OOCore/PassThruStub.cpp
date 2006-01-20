@@ -1,7 +1,7 @@
 #include "./PassThruStub.h"
 #include "./OutputStream_CDR.h"
 
-OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* stub_manager, const OOCore::ProxyStubManager::cookie_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOCore::ProxyStubManager::cookie_t& proxy_key,Object_Ptr<OOCore::Proxy>& proxy) :
+OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* stub_manager, const OOObject::uint32_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOObject::uint32_t& proxy_key,Object_Ptr<OOCore::Proxy>& proxy) :
 	m_stub_manager(stub_manager),
 	m_stub_key(stub_key),
 	m_proxy_manager(proxy_manager),
@@ -30,7 +30,7 @@ OOCore::Impl::PassThruStub::init(const OOObject::guid_t& iid, Stub* stub)
 	if (ptrTypeInfo->GetMetaInfo(&name,&method_count) != 0)
 		return -1;
 		
-	for (size_t method=3;method<method_count;++method)
+	for (size_t method=2;method<method_count;++method)
 	{
 		TypeInfo::Method_Attributes_t attributes;
 		OOObject::uint16_t wait_secs;
@@ -67,7 +67,7 @@ OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, TypeInfo::Method_A
 	{
 		m_proxy = 0;
 		m_stub = 0;
-		return m_stub_manager->ReleaseStub(m_stub_key);
+		return 0;
 	}
 	else if (m_iid_methods.find(method) != m_iid_methods.end())
 	{

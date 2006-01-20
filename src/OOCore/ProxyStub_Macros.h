@@ -288,8 +288,8 @@
 													template <class T> int get_method_info(const T&, const OOObject::char_t** method_name, size_t* param_count, OOCore::TypeInfo::Method_Attributes_t* attributes, OOObject::uint16_t* wait_secs) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_info(const T&, size_t param, const OOObject::char_t** param_name, OOCore::TypeInfo::Type_t* type) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
 													template <class T> int get_param_attrib(const T&, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data) { errno=ENOSYS;ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid method id %d\n"),T::value),-1); } \
-													name(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
-													name(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
+													name(OOCore::ProxyStubManager* manager, const OOObject::uint32_t& key, iface* obj) : OOCore::ProxyStub_Impl<iface>(manager,key,obj) {} \
+													name(OOCore::ProxyStubManager* manager, const OOObject::uint32_t& key) : OOCore::ProxyStub_Impl<iface>(manager,key) {} \
 													name() : OOCore::ProxyStub_Impl<iface>() {} \
 													friend OOCore::Impl::unused_t BOOST_PP_CAT(Method_Id_Gen_,PS)(name*,...); \
 													int get_type_name(const OOObject::char_t** type_name) { if (type_name==0) { errno=EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid NULL pointer\n")),-1); } *type_name = #iface; return 0; } \
@@ -302,8 +302,8 @@
 													int GetParamAttributeData(size_t method, size_t param, OOCore::TypeInfo::Param_Attrib_Data_t* data) { \
 													return OOCore::Impl::metainfo_t::GetParamAttributeData(this,method,param,data); } \
 													public: typedef name this_class; typedef iface iface_class; \
-													static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key) { name* proxy; ACE_NEW_RETURN(proxy,this_class(manager,key),0); return proxy;} \
-													static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, const OOCore::ProxyStubManager::cookie_t& key, iface* obj) { name* stub; ACE_NEW_RETURN(stub,this_class(manager,key,obj),0); return stub;} \
+													static iface* create_proxy(OOCore::ProxyStubManager* manager, const OOObject::uint32_t& key) { name* proxy; ACE_NEW_RETURN(proxy,this_class(manager,key),0); return proxy;} \
+													static OOCore::Stub* create_stub(OOCore::ProxyStubManager* manager, const OOObject::uint32_t& key, iface* obj) { name* stub; ACE_NEW_RETURN(stub,this_class(manager,key,obj),0); return stub;} \
 													static OOCore::TypeInfo* create_typeinfo() { name* typeinfo; ACE_NEW_RETURN(typeinfo,this_class,0); return typeinfo;} \
 													OOCORE_PS_DECLARE_ADDREF() OOCORE_PS_DECLARE_RELEASE() OOCORE_PS_DECLARE_QI()
 												
@@ -315,17 +315,17 @@
 
 // Meta info map declaration macros
 #define BEGIN_META_INFO_MAP(lib)			BEGIN_META_INFO_MAP_EX(lib,lib)
-#define BEGIN_META_INFO_MAP_EX(exp,lib)		static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name); \
+#define BEGIN_META_INFO_MAP_EX(exp,lib)		static int CreateProxyStub(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name); \
 											extern "C" exp##_Export int RegisterLib(bool bRegister) { \
-											return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,OOCore::ProxyStubManager::cookie_t(),0,0,0,#lib ); } \
-											extern "C" exp##_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy) { \
+											return CreateProxyStub((bRegister?2:3),0,OOObject::guid_t::NIL,0,0,0,0,0,#lib ); } \
+											extern "C" exp##_Export int CreateProxy(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** proxy) { \
                                             return CreateProxyStub(0,manager,iid,0,key,proxy,0,0,0); } \
-                                            extern "C" exp##_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOCore::Stub** stub) { \
+                                            extern "C" exp##_Export int CreateStub(OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOCore::Stub** stub) { \
                                             return CreateProxyStub(1,manager,iid,obj,key,0,stub,0,0); } \
 											extern "C" exp##_Export int GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** typeinfo) { \
-                                            return CreateProxyStub(5,0,iid,0,OOCore::ProxyStubManager::cookie_t(),0,0,typeinfo,0); } static OOCORE_PS_BEGIN_PROXY_STUB_MAP(CreateProxyStub)
+                                            return CreateProxyStub(5,0,iid,0,0,0,0,typeinfo,0); } static OOCORE_PS_BEGIN_PROXY_STUB_MAP(CreateProxyStub)
 
-#define OOCORE_PS_BEGIN_PROXY_STUB_MAP(fn)	int fn(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name) { \
+#define OOCORE_PS_BEGIN_PROXY_STUB_MAP(fn)	int fn(int type, OOCore::ProxyStubManager* manager, const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& key, OOObject::Object** proxy, OOCore::Stub** stub, OOCore::TypeInfo** typeinfo, const char* dll_name) { \
 											if ((type==0 && proxy==0) || (type==1 && stub==0) || ((type==2 || type==3 || type==4) && dll_name==0) || (type==5 && typeinfo==0) ) { errno = EINVAL; ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1); } \
 											if (type==0) *proxy=0; if (type==1) *stub=0; if (type==5) *typeinfo=0;
 

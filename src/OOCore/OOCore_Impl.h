@@ -18,21 +18,6 @@
 	#define EXPLICIT_TEMPLATE(m,t)	m<t>
 #endif*/
 
-#include <functional>
-
-namespace std
-{
-template<>
-struct less< OOCore::ProxyStubManager::cookie_t > : public binary_function<OOCore::ProxyStubManager::cookie_t, OOCore::ProxyStubManager::cookie_t, bool> 
-{
-	bool operator()(const OOCore::ProxyStubManager::cookie_t& _Left, const OOCore::ProxyStubManager::cookie_t& _Right) const
-	{
-		return (_Left.slot_generation() <= _Right.slot_generation() &&
-				_Left.slot_index() < _Right.slot_index());
-	}
-};
-};
-
 namespace OOCore
 {
 namespace Impl

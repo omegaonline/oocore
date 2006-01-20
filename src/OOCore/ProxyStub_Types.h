@@ -335,7 +335,7 @@ namespace Impl
 
 			if (!null)
 			{
-				OOCore::ProxyStubManager::cookie_t key;
+				OOObject::uint32_t key;
 				if (in.read(key) != 0) 
 					return -1;
 			
@@ -359,7 +359,7 @@ namespace Impl
 				if (out->WriteBoolean(false)!=0)
 					return -1;
 
-				OOCore::ProxyStubManager::cookie_t key;
+				OOObject::uint32_t key;
 				if (manager->CreateStub(m_iid,m_obj,&key)!=0)
 					return -1;
 
@@ -400,7 +400,7 @@ namespace Impl
 
 			if (!null)
 			{
-				OOCore::ProxyStubManager::cookie_t key;
+				OOObject::uint32_t key;
 				if (in.read(key) != 0) 
 					return -1;
 
@@ -430,7 +430,7 @@ namespace Impl
 				if (out->WriteBoolean(false)!=0)
 					return -1;
 
-				OOCore::ProxyStubManager::cookie_t key;
+				OOObject::uint32_t key;
 				if (manager->CreateStub(m_iid,*get_ptr(),&key) != 0)
 					return -1;
 

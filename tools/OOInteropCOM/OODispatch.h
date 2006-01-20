@@ -15,7 +15,7 @@ public:
 	{
 	}
 
-	HRESULT init(const OOCore::ProxyStubManager::cookie_t& key, OOCore::Object_Ptr<OOCore::TypeInfo>& type_info);
+	HRESULT init(const OOObject::uint32_t& key, OOCore::Object_Ptr<OOCore::TypeInfo>& type_info);
 
 DECLARE_REGISTRY_RESOURCEID(IDR_OODISPATCH)
 
@@ -24,7 +24,7 @@ BEGIN_COM_MAP(COODispatch)
 END_COM_MAP()
 
 private:
-	OOCore::ProxyStubManager::cookie_t		m_OO_key;
+	OOObject::uint32_t						m_OO_key;
 	OOCore::Object_Ptr<OOCore::TypeInfo>	m_ptr_OO_TypeInfo;
 
 	VARTYPE OOTypeToVARTYPE(OOCore::TypeInfo::Type_t type);

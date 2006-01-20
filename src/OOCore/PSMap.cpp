@@ -1,16 +1,16 @@
 #include "./PSMap.h"
 
 void 
-OOCore::Impl::PSMap::insert(const OOCore::ProxyStubManager::cookie_t& key, const OOObject::guid_t& iid, OOObject::Object* obj)
+OOCore::Impl::PSMap::insert(const OOObject::uint32_t& key, const OOObject::guid_t& iid, OOObject::Object* obj)
 {
-	m_forward_map.insert(std::map<OOCore::ProxyStubManager::cookie_t,std::pair<OOObject::Object*,OOObject::guid_t> >::value_type(key,std::pair<OOObject::Object*,OOObject::guid_t>(obj,iid)));
-	m_reverse_map.insert(std::map<std::pair<OOObject::Object*,OOObject::guid_t>,OOCore::ProxyStubManager::cookie_t>::value_type(std::pair<OOObject::Object*,OOObject::guid_t>(obj,iid),key));
+	m_forward_map.insert(std::map<OOObject::uint32_t,std::pair<OOObject::Object*,OOObject::guid_t> >::value_type(key,std::pair<OOObject::Object*,OOObject::guid_t>(obj,iid)));
+	m_reverse_map.insert(std::map<std::pair<OOObject::Object*,OOObject::guid_t>,OOObject::uint32_t>::value_type(std::pair<OOObject::Object*,OOObject::guid_t>(obj,iid),key));
 }
 
 bool 
-OOCore::Impl::PSMap::find(const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object*& obj)
+OOCore::Impl::PSMap::find(const OOObject::uint32_t& key, OOObject::Object*& obj)
 {
-	std::map<OOCore::ProxyStubManager::cookie_t,std::pair<OOObject::Object*,OOObject::guid_t> >::iterator i=m_forward_map.find(key);
+	std::map<OOObject::uint32_t,std::pair<OOObject::Object*,OOObject::guid_t> >::iterator i=m_forward_map.find(key);
 	if (i!=m_forward_map.end())
 	{
 		obj = i->second.first;
@@ -20,9 +20,9 @@ OOCore::Impl::PSMap::find(const OOCore::ProxyStubManager::cookie_t& key, OOObjec
 }
 
 bool 
-OOCore::Impl::PSMap::find(OOObject::Object* obj, const OOObject::guid_t& iid, OOCore::ProxyStubManager::cookie_t& key)
+OOCore::Impl::PSMap::find(OOObject::Object* obj, const OOObject::guid_t& iid, OOObject::uint32_t& key)
 {
-	std::map<std::pair<OOObject::Object*,OOObject::guid_t>,OOCore::ProxyStubManager::cookie_t>::iterator i=m_reverse_map.find(std::pair<OOObject::Object*,OOObject::guid_t>(obj,iid));
+	std::map<std::pair<OOObject::Object*,OOObject::guid_t>,OOObject::uint32_t>::iterator i=m_reverse_map.find(std::pair<OOObject::Object*,OOObject::guid_t>(obj,iid));
 	if (i!=m_reverse_map.end())
 	{
 		key = i->second;
@@ -32,9 +32,9 @@ OOCore::Impl::PSMap::find(OOObject::Object* obj, const OOObject::guid_t& iid, OO
 }
 
 bool 
-OOCore::Impl::PSMap::remove(const OOCore::ProxyStubManager::cookie_t& key)
+OOCore::Impl::PSMap::remove(const OOObject::uint32_t& key)
 {
-	std::map<OOCore::ProxyStubManager::cookie_t,std::pair<OOObject::Object*,OOObject::guid_t> >::iterator i=m_forward_map.find(key);
+	std::map<OOObject::uint32_t,std::pair<OOObject::Object*,OOObject::guid_t> >::iterator i=m_forward_map.find(key);
 	if (i!=m_forward_map.end())
 	{
 		m_reverse_map.erase(i->second);

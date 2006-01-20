@@ -30,21 +30,6 @@ namespace OOCore
 		int read(OOObject::real4_t& in) { return (m_in ? m_in->ReadFloat(in) : -1); }
 		int read(OOObject::real8_t& in) { return (m_in ? m_in->ReadDouble(in) : -1); }
 		
-		int read(OOCore::ProxyStubManager::cookie_t& val)
-		{
-			OOObject::byte_t* buf;
-			ACE_NEW_RETURN(buf,OOObject::byte_t[ACE_Active_Map_Manager_Key::size()],-1);
-			if (read_bytes(buf,ACE_Active_Map_Manager_Key::size())!=0) 
-			{
-				delete [] buf;
-				return -1;
-			}
-			
-			val.decode(buf);
-			delete [] buf;
-			return 0;
-		}
-
 		int read(OOObject::guid_t& val) 
 		{
 			if (m_in == 0)
@@ -121,16 +106,6 @@ namespace OOCore
 		int write(const OOObject::uint64_t& out) { return (m_out ? m_out->WriteULongLong(out) : -1); }
 		int write(const OOObject::real4_t& out) { return (m_out ? m_out->WriteFloat(out) : -1); }
 		int write(const OOObject::real8_t& out) { return (m_out ? m_out->WriteDouble(out) : -1); }
-		
-		int write(const OOCore::ProxyStubManager::cookie_t& val) 
-		{ 
-			OOObject::byte_t* buf;
-			ACE_NEW_RETURN(buf,OOObject::byte_t[ACE_Active_Map_Manager_Key::size()],-1);
-			val.encode(buf);
-			int ret = write_bytes(buf,ACE_Active_Map_Manager_Key::size());
-			delete [] buf;
-			return ret;
-		}
 		
 		int write(const OOObject::guid_t& val)
 		{

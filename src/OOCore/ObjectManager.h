@@ -70,7 +70,8 @@ private:
 
 	Impl::PSMap m_proxy_obj_map;
 	Impl::PSMap m_stub_obj_map;
-	ACE_Active_Map_Manager<Stub*> m_stub_map;
+	std::map<OOObject::uint32_t,Stub*> m_stub_map;
+	OOObject::uint32_t m_next_stub_key;
 	
 	Object_Ptr<Impl::RemoteObjectFactory> m_ptrRemoteFactory;
 	Object_Ptr<Channel> m_ptrChannel;
@@ -84,7 +85,7 @@ private:
 	int process_response(InputStream_Wrapper& input);
 	int process_connect(InputStream_Wrapper& input);
 	bool await_response_i(OOObject::uint32_t trans_id, InputStream** input);
-	int create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOCore::ProxyStubManager::cookie_t& stub_key, Stub** stub);
+	int create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& stub_key, Stub** stub);
 	
 	static bool await_response(void* p);
 	static bool await_connect(void * p);
@@ -104,11 +105,11 @@ public:
 	
 // OOCore::ProxyStubManager
 public:
-	int CreateProxy(const OOObject::guid_t& iid, const OOCore::ProxyStubManager::cookie_t& key, OOObject::Object** ppVal);
-	int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOCore::ProxyStubManager::cookie_t* key);
-	int ReleaseProxy(const OOCore::ProxyStubManager::cookie_t& key);
-	int ReleaseStub(const OOCore::ProxyStubManager::cookie_t& key);	
-	int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOCore::ProxyStubManager::cookie_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
+	int CreateProxy(const OOObject::guid_t& iid, const OOObject::uint32_t& key, OOObject::Object** ppVal);
+	int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOObject::uint32_t* key);
+	int ReleaseProxy(const OOObject::uint32_t& key);
+	int ReleaseStub(const OOObject::uint32_t& key);	
+	int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
 	int CancelRequest(OOObject::uint32_t trans_id);
 	OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
 };

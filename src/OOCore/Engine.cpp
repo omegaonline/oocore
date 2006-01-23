@@ -130,6 +130,8 @@ OOCore::Engine::close()
 int 
 OOCore::Engine::svc()
 {
+	m_reactor->owner(ACE_Thread::self());
+
 	return m_reactor->run_reactor_event_loop();
 }
 

@@ -71,7 +71,7 @@ OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, TypeInfo::Method_A
 	}
 	else if (m_iid_methods.find(method) != m_iid_methods.end())
 	{
-		ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) pass thru routing method %u to stub.\n"),method));
+		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) pass thru routing method %u to stub.\n"),method));
 		
 		// If it is a method with a contained object, just call the stub
 		return m_stub->Invoke(method,flags,wait_secs,input,output);

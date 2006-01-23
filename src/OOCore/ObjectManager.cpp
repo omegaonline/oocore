@@ -47,7 +47,7 @@ OOCore::ObjectManager::Close()
 	if (fact)
 		fact->SetReverse(0);
 
-	fact = 0;
+	//fact = 0;
 
 	if (!Impl::g_IsServer)
 	{
@@ -208,6 +208,8 @@ OOCore::ObjectManager::process_connect(InputStream_Wrapper& input)
 int 
 OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 {
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@ Received request packet\n"),this));
+
 	// Read the transaction key
 	OOObject::uint32_t trans_id;
 	if (input.read(trans_id) != 0)
@@ -366,7 +368,7 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::
 	// Pop it in the map
 	m_proxy_obj_map.insert(key,iid,*ppVal);
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %X\n"),this,key));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %X\n"),this,key));
 
 	return 0;
 }
@@ -436,7 +438,7 @@ OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::O
 	*stub = new_stub;
 	(*stub)->AddRef();
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %X -> %X\n"),this,stub_key,proxy_key));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %X -> %X\n"),this,stub_key,proxy_key));
 
 	return 0;
 }
@@ -493,7 +495,7 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	// Add the obj to the stub key maps
 	m_stub_obj_map.insert(*key,iid,obj);
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %X\n"),this,*key));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %X\n"),this,*key));
 	
 	return 0;
 }
@@ -503,7 +505,7 @@ OOCore::ObjectManager::ReleaseProxy(const OOObject::uint32_t& key)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %X\n"),this,key));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %X\n"),this,key));
 	
 	// Remove from the stub map
 	//m_stub_map.erase(key);
@@ -529,7 +531,7 @@ OOCore::ObjectManager::ReleaseStub(const OOObject::uint32_t& key)
 
 	m_stub_map.erase(i);
 		
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %X\n"),this,key));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %X\n"),this,key));
 	
 	return 0;
 }

@@ -49,15 +49,13 @@ OOCore::Transport_Impl::open_transport()
 int 
 OOCore::Transport_Impl::close_transport()
 {
-	// Get the object manager
-	Object_Ptr<ObjectManager> ptrOM = m_ptrOM.clear();
-	
-	if (ptrOM)
+	if (m_ptrOM)
 	{
 		// Call close
-		ptrOM->Close();
+		m_ptrOM->Close();
+		m_ptrOM = 0;
 	}
-
+	
 	return 0;
 }
 
@@ -67,6 +65,8 @@ OOCore::Transport_Impl::handle_recv()
 	ACE_Message_Block* mb;
 	if (recv(mb) != 0)
 		return -1;
+
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@ Received packet\n"),this));
 	
 	return process_block(mb);
 }

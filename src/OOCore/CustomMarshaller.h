@@ -23,14 +23,13 @@ private:
 	class CM_Channel : public Object_Impl<Channel>
 	{
 	public:
-		CM_Channel(CustomMarshaller* owner, const bool inner) :
-		  m_owner(owner), m_is_inner(inner)
+		CM_Channel(CustomMarshaller* owner) :
+		  m_owner(owner)
 		{}
 
 	private:
 		CustomMarshaller* m_owner;
-		const bool m_is_inner;
-
+		
 	// OOCore::Channel
 	public:
 		int CreateOutputStream(OutputStream** ppStream);
@@ -43,13 +42,8 @@ private:
 	public:
 	};
 
-	Object_Ptr<CM_Channel> m_inner_channel;
-	Object_Ptr<CM_Channel> m_outer_channel;
-	Object_Ptr<ObjectManager> m_inner_OM;
-	Object_Ptr<CustomOM> m_outer_OM;
-
-	int recv_from_inner(ACE_Message_Block* mb);
-	int recv_from_outer(ACE_Message_Block* mb);
+	Object_Ptr<CM_Channel>	m_ptrChannel;
+	Object_Ptr<CustomOM>	m_ptrOM;
 };
 };
 

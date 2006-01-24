@@ -18,7 +18,7 @@ HKCR
 			ForceRemove 'Programmable'
 			InprocServer32 = s '%MODULE%'
 			{
-				val ThreadingModel = s 'Free'
+				val ThreadingModel = s 'Apartment'
 			}
 			val AppID = s '%APPID%'
 			val OO_Default_IID = s '{6AAE8C33-699A-4414-AF84-25E74E693207}'

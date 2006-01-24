@@ -70,8 +70,6 @@ OOCore::Transport_Impl::handle_recv()
 	ACE_Message_Block* mb;
 	if (recv(mb) != 0)
 		return -1;
-
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@ Received packet\n"),this));
 	
 	return process_block(mb);
 }

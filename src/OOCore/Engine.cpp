@@ -122,7 +122,7 @@ OOCore::Engine::close()
 		return -1;
 
 	// Wait a bit, in case something got stuck!
-	ACE_OS::sleep(1);
+	//ACE_OS::sleep(1);
 
 	return wait();
 }

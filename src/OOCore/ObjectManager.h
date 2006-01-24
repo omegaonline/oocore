@@ -71,7 +71,7 @@ private:
 
 	Impl::PSMap m_proxy_obj_map;
 	Impl::PSMap m_stub_obj_map;
-	std::map<OOObject::uint32_t,Stub*> m_stub_map;
+	std::map<OOObject::uint32_t,Object_Ptr<Stub> > m_stub_map;
 	OOObject::uint32_t m_next_stub_key;
 	
 	Object_Ptr<Impl::RemoteObjectFactory> m_ptrRemoteFactory;

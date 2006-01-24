@@ -64,13 +64,6 @@ OOCore::ObjectManager::Closed()
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	// Close all the stubs
-	for (std::map<OOObject::uint32_t,Stub*>::iterator i=m_stub_map.begin();i!=m_stub_map.end();++i)
-	{
-		if (i->second)
-			i->second->Release();
-	}
-
 	// Clear the maps
 	m_stub_map.clear();
 	m_stub_obj_map.remove_all();
@@ -216,8 +209,6 @@ OOCore::ObjectManager::process_connect(InputStream_Wrapper& input)
 int 
 OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 {
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@ Received request packet\n"),this));
-
 	// Read the transaction key
 	OOObject::uint32_t trans_id;
 	if (input.read(trans_id) != 0)
@@ -243,12 +234,12 @@ OOCore::ObjectManager::process_request(InputStream_Wrapper& input)
 	// Find the stub
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	std::map<OOObject::uint32_t,Stub*>::iterator i = m_stub_map.find(key);
+	std::map<OOObject::uint32_t,Object_Ptr<Stub> >::iterator i = m_stub_map.find(key);
 	if (i == m_stub_map.end())
 	{
 		ret_code = -1;
 		errno = ENOENT;
-		ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) %@: Invalid stub key %u\n"),this,key));
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) %@: Invalid stub key %X\n"),this,key),-1);
 	}
 
 	Object_Ptr<Stub> stub(i->second);
@@ -362,7 +353,7 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::
 	}
 
 	// Check if we asking for a stub we already have
-	std::map<OOObject::uint32_t,Stub*>::iterator i = m_stub_map.find(key);
+	std::map<OOObject::uint32_t,Object_Ptr<Stub> >::iterator i = m_stub_map.find(key);
 	if (i != m_stub_map.end())
 	{
 		if (i->second->GetObject(ppVal) == 0)
@@ -484,7 +475,7 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	} while (m_proxy_obj_map.find(*key,magic));
 
 	// Create a stub first
-	Stub* stub = 0;
+	Object_Ptr<Stub> stub = 0;
 	if (Impl::PROXY_STUB_FACTORY::instance()->create_stub(this,iid,obj,*key,&stub) != 0)
 		return -1;
 	
@@ -497,7 +488,7 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	}
 
 	// Insert the stub into the map
-	if (!m_stub_map.insert(std::map<OOObject::uint32_t,Stub*>::value_type(*key,stub)).second)
+	if (!m_stub_map.insert(std::map<OOObject::uint32_t,Object_Ptr<Stub> >::value_type(*key,stub)).second)
 	{
 		stub->Release();
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to bind stub info\n")),-1);
@@ -531,15 +522,13 @@ OOCore::ObjectManager::ReleaseStub(const OOObject::uint32_t& key)
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	// Remove from stub map
-	std::map<OOObject::uint32_t,Stub*>::iterator i=m_stub_map.find(key);
+	std::map<OOObject::uint32_t,Object_Ptr<Stub> >::iterator i=m_stub_map.find(key);
 	if (i == m_stub_map.end())
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Trying to remove unbound stub %u\n"),key),-1);
 	
 	// Remove from stub obj map
 	m_stub_obj_map.remove(key);
 		
-	i->second->Release();
-
 	m_stub_map.erase(i);
 		
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %X\n"),this,key));

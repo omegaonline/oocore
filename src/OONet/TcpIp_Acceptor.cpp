@@ -30,11 +30,11 @@ TcpIp_Acceptor::send_n(ACE_Message_Block* mb)
 	return peer().send_n(mb);
 }
 
-int 
-TcpIp_Acceptor::handle_close(ACE_HANDLE fd, ACE_Reactor_Mask mask)
+void 
+TcpIp_Acceptor::Closed()
 {
 	if (m_protocol)
 		m_protocol->remove_connection(this);
 	
-	return svc_base::handle_close(fd,mask);
+	svc_base::Closed();
 }

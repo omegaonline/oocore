@@ -38,7 +38,8 @@ public:
 	ObjectManager();
 	
 	int Open(Channel* channel);
-	int Close();
+	int RequestClose();
+	void Closed();
 	int ProcessMessage(InputStream* input);
 	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 

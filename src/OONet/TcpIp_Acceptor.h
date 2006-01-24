@@ -18,10 +18,10 @@ public:
 	
 	int open(void* p);
 
-	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK);
-
 protected:
 	virtual ~TcpIp_Acceptor() {}
+
+	void Closed();
 
 private:
 	ssize_t send_n(ACE_Message_Block* mb);

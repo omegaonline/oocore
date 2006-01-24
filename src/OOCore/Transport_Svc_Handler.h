@@ -39,7 +39,7 @@ public:
 		if (svc_class::open(p)!=0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 		
-		if (open_transport()!=0)
+		if (Open()!=0)
 			return -1;
 		
 		return 0;
@@ -65,10 +65,9 @@ public:
 	{
 		if (m_bOpen)
 		{
-			if (close_transport() != 0)
-				return -1;
-
 			m_bOpen = false;
+
+			this->Closed();
 
 			// Release our own ref count - we are closed
 			Release();
@@ -78,20 +77,18 @@ public:
 		return 0;
 	}
 
-	virtual int close()
+	virtual int RequestClose()
 	{
-		// Artifically inflate our addref in case close() destroys us!
+		// Artifically inflate our addref in case RequestClose() destroys us!
 		AddRef();
 
-		if (close(0) == 0)
-			svc_class::shutdown();
-		
-		return Release();
-	}
+		int ret = Transport_Impl::RequestClose();
+		if (ret == 0)
+			this->peer().close_writer();
+					
+		Release();
 
-	virtual int close(u_long flags)
-	{
-		return svc_class::close(flags);
+		return ret;
 	}
 
 protected:

@@ -18,7 +18,7 @@ OOCore::Transport_Impl::~Transport_Impl(void)
 }
 
 int 
-OOCore::Transport_Impl::open_transport()
+OOCore::Transport_Impl::Open()
 {
 	if (m_ptrOM)
 	{
@@ -47,16 +47,21 @@ OOCore::Transport_Impl::open_transport()
 }
 
 int 
-OOCore::Transport_Impl::close_transport()
+OOCore::Transport_Impl::RequestClose()
 {
 	if (m_ptrOM)
-	{
-		// Call close
-		m_ptrOM->Close();
-		m_ptrOM = 0;
-	}
-	
+		return m_ptrOM->RequestClose();
+
 	return 0;
+}
+
+void
+OOCore::Transport_Impl::Closed()
+{
+	Object_Ptr<ObjectManager> pOM = m_ptrOM.clear();
+
+	if (pOM)
+		pOM->Closed();
 }
 
 int 

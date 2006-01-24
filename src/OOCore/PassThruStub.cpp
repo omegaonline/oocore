@@ -65,9 +65,7 @@ OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, TypeInfo::Method_A
 	// Check for Release first
 	if (method==1)
 	{
-		m_proxy = 0;
-		m_stub = 0;
-		return 0;
+		return m_stub_manager->ReleaseStub(m_stub_key);
 	}
 	else if (m_iid_methods.find(method) != m_iid_methods.end())
 	{

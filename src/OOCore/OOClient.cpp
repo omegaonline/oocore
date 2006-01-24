@@ -39,7 +39,7 @@ OOObject::Term()
 	}
 	else
 	{
-		OOCore::Impl::CONNECTION_MANAGER::instance()->close();
+		OOCore::Impl::CONNECTION_MANAGER::instance()->RequestClose();
 				
 		OOCore::ENGINE::instance()->close();
 	}

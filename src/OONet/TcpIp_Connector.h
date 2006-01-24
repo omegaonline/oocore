@@ -17,7 +17,8 @@ public:
 
 	void set_protocol(TcpIp_Manager* p);
 
-	int handle_close(ACE_HANDLE fd = ACE_INVALID_HANDLE, ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+protected:
+	void Closed();
 	
 private:
 	OOCore::Object_Ptr<TcpIp_Manager> m_protocol;

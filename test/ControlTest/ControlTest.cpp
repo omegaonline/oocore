@@ -83,7 +83,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 				ACE_OS::perror("");
 			}
 
-			/*char szBuf[512] = "tcp://localhost:5000";
+			char szBuf[512] = "tcp://localhost:5000";
 			if (argc == 2)
 				strcpy(szBuf,argv[1]);
 							
@@ -94,7 +94,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			{
 				ACE_OS::printf("CreateRemoteObject failed: errno %d, ",errno);
 				ACE_OS::perror("");
-			}*/
+			}
 
 			if (ret != 0)
 				ACE_OS::sleep(5);

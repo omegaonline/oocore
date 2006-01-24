@@ -39,24 +39,29 @@ OOCore::ObjectManager::await_close(void * p)
 }
 
 int
-OOCore::ObjectManager::Close()
+OOCore::ObjectManager::RequestClose()
 {
-	Object_Ptr<Impl::RemoteObjectFactory> fact = m_ptrRemoteFactory.clear();
-
 	// Inform the other end we are leaving...
+	Object_Ptr<Impl::RemoteObjectFactory> fact = m_ptrRemoteFactory.clear();
 	if (fact)
-		fact->SetReverse(0);
-
-	//fact = 0;
-
-	if (!Impl::g_IsServer)
 	{
-		// Wait until all stubs have gone
-		ACE_Time_Value wait(DEFAULT_WAIT);
-		if (ENGINE::instance()->pump_requests(&wait,await_close,this) != 0)
-			ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) ObjectManager timed out waiting for stubs to close.\n")));
+		fact->SetReverse(0);
+		fact = 0;
 	}
 
+	// Wait until all stubs have gone
+	ACE_Time_Value wait(DEFAULT_WAIT);
+	if (ENGINE::instance()->pump_requests(&wait,await_close,this) != 0)
+		ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) ObjectManager timed out waiting for stubs to close.\n")));
+
+	Closed();
+
+	return 0;
+}
+
+void
+OOCore::ObjectManager::Closed()
+{
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
 	// Close all the stubs
@@ -65,13 +70,16 @@ OOCore::ObjectManager::Close()
 		if (i->second)
 			i->second->Release();
 	}
+
+	// Clear the maps
 	m_stub_map.clear();
-		
 	m_stub_obj_map.remove_all();
 
+	guard.release();
+
+	// Shutdown everything
+	m_ptrRemoteFactory = 0;
 	m_ptrChannel = 0;
-	
-	return 0;
 }
 
 int 
@@ -368,7 +376,7 @@ OOCore::ObjectManager::CreateProxy(const OOObject::guid_t& iid, const OOObject::
 	// Pop it in the map
 	m_proxy_obj_map.insert(key,iid,*ppVal);
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %X\n"),this,key));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created proxy %X\n"),this,key));
 
 	return 0;
 }
@@ -434,11 +442,14 @@ OOCore::ObjectManager::create_pass_thru(const OOObject::guid_t& iid, OOObject::O
 		return 0;
 	}
 	
+	// Release the current stub (we have already stashed a copy)
+	(*stub)->Release();
+
 	// Return the new stub
 	*stub = new_stub;
 	(*stub)->AddRef();
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %X -> %X\n"),this,stub_key,proxy_key));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created pass-thru %X -> %X\n"),this,stub_key,proxy_key));
 
 	return 0;
 }
@@ -495,7 +506,7 @@ OOCore::ObjectManager::CreateStub(const OOObject::guid_t& iid, OOObject::Object*
 	// Add the obj to the stub key maps
 	m_stub_obj_map.insert(*key,iid,obj);
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %X\n"),this,*key));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Created stub %X\n"),this,*key));
 	
 	return 0;
 }
@@ -505,7 +516,7 @@ OOCore::ObjectManager::ReleaseProxy(const OOObject::uint32_t& key)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %X\n"),this,key));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed proxy %X\n"),this,key));
 	
 	// Remove from the stub map
 	//m_stub_map.erase(key);
@@ -531,7 +542,7 @@ OOCore::ObjectManager::ReleaseStub(const OOObject::uint32_t& key)
 
 	m_stub_map.erase(i);
 		
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %X\n"),this,key));
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) %@: Removed stub %X\n"),this,key));
 	
 	return 0;
 }

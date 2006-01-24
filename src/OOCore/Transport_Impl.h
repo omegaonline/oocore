@@ -22,18 +22,17 @@ class OOCore_Export Transport_Impl :
 public:
 	Transport_Impl(void);
 	
-	int open_transport();
-	int close_transport();
-
+	int Open();
+	virtual int RequestClose();
+	
 	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory);
 	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
 
-	// Overrides
-	virtual int close() = 0;
-
 protected:
 	virtual ~Transport_Impl(void);
+
+	virtual void Closed();
 
 	// Operations
 	virtual int handle_recv();

@@ -19,11 +19,11 @@ TcpIp_Connector::send_n(ACE_Message_Block* mb)
 	return peer().send_n(mb);
 }
 
-int 
-TcpIp_Connector::handle_close(ACE_HANDLE fd, ACE_Reactor_Mask mask)
+void 
+TcpIp_Connector::Closed()
 {
 	if (m_protocol)
 		m_protocol->remove_connection(this);
 	
-	return svc_base::handle_close(fd,mask);
+	return svc_base::Closed();
 }

@@ -85,16 +85,14 @@ TcpIp_Manager::fini(void)
 
 	// Close any open connections
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-	std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> > local_copy(m_trans_map);
-	m_trans_map.clear();
-	guard.release();
 
-	for (std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=local_copy.begin();i!=local_copy.end();++i)
+	for (std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i = m_trans_map.begin(); i!= m_trans_map.end(); ++i)
 	{
-		i->second->close();
+		i->second->RequestClose();
 	}
-	local_copy.clear();
 
+	guard.release();
+	
 	// Wait for everyone to close
 	ACE_Time_Value wait(DEFAULT_WAIT);
 	OOCore::ENGINE::instance()->pump_requests(&wait,await_close,this);

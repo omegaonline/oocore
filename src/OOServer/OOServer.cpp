@@ -11,14 +11,12 @@
 #include <shlwapi.h>
 #endif
 
-#include "../OOCore/Engine.h"
-
 #include "./NTService.h"
 #include "./Client_Connection.h"
 
 static ACE_THR_FUNC_RETURN worker_fn(void * p)
 {
-	OOCore::ENGINE::instance()->pump_requests();
+	OOCore::PumpRequests();
 
 	// We can't use a C++ cast here because gcc and VC disagree which one is valid!
 	return (ACE_THR_FUNC_RETURN)(errno != ESHUTDOWN ? -1 : 0);
@@ -73,8 +71,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		return ret;
 #endif // defined (ACE_NT_SERVICE_DEFINE)
 
+	int thrd_grp_id = -1;
+
 	// Start the engine
-	if ((ret=OOCore::ENGINE::instance()->open(argc,argv)) == 0)
+	if ((ret=OOCore::OpenEngine(argc,argv)) == 0)
 	{
 		// Start the local connection acceptor
 		if ((ret=Client_Connection::init()) == 0)
@@ -109,7 +109,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			if ((ret=ACE_Service_Config::open(svc_argv.argc(),svc_argv.argv(),ACE_DEFAULT_LOGGER_KEY,1,1)) == 0)
 			{	
 				// Spawn off some extra threads
-				ACE_Thread_Manager::instance()->spawn_n(threads,worker_fn);
+				thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,worker_fn);
 
 				// Run the reactor loop...  
 				// This is needed to make ACE_Service_Config work
@@ -122,11 +122,12 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		}
 
 		// Stop the engine
-		OOCore::ENGINE::instance()->close();
+		OOCore::CloseEngine();
 	}
 
 	// Wait for all the threads to finish
-	ACE_Thread_Manager::instance()->wait();
+	if (thrd_grp_id != -1)
+		ACE_Thread_Manager::instance()->wait_grp(thrd_grp_id);
 
 #ifdef _DEBUG
 	// Give us a chance to read the error message

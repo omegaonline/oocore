@@ -1,7 +1,5 @@
 #include "./Client_Connection.h"
 
-#include "../OOCore/Engine.h"
-
 namespace OOCore
 {
 namespace Impl
@@ -29,7 +27,7 @@ Client_Connection::init(void)
 #endif*/
     
 	ACE_MEM_Addr port_addr((u_short)0);
-	if (ACCEPTOR::instance()->open(port_addr,OOCore::ENGINE::instance()->reactor()) == -1)
+	if (ACCEPTOR::instance()->open(port_addr,OOCore::GetEngineReactor()) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	
 	if (ACCEPTOR::instance()->acceptor().get_local_addr(port_addr)==-1)

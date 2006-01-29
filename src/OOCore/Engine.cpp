@@ -10,7 +10,9 @@
 
 #include <memory>
 
-OOCore::Engine::Engine(void) :
+#include "./OOCore.h"
+
+OOCore::Impl::Engine::Engine(void) :
 	m_activ_queue(msg_queue()),
 	m_reactor(0),
 	m_stop(false)
@@ -19,32 +21,20 @@ OOCore::Engine::Engine(void) :
 	ACE_OS::srand(static_cast<u_int>(ACE_OS::time()));
 }
 
-OOCore::Engine::~Engine(void)
+OOCore::Impl::Engine::~Engine(void)
 {
 	if (m_reactor)
 		delete m_reactor;
 }
 
-const ACE_TCHAR* 
-OOCore::Engine::dll_name()
-{
-	return ACE_TEXT("OOCore");
-}
-
-const ACE_TCHAR* 
-OOCore::Engine::name()
-{
-	return ACE_TEXT("Engine");
-}
-
 int 
-OOCore::Engine::open(int argc, ACE_TCHAR* argv[])
+OOCore::Impl::Engine::open(int argc, ACE_TCHAR* argv[])
 {
 	// Parse cmd line first
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":e:"));
 	int option;
 	int threads = ACE_OS::num_processors()+1;
-	if (threads==0)
+	if (threads == 0)
 		threads = 2;
 
 	while ((option = cmd_opts()) != EOF)
@@ -74,7 +64,7 @@ OOCore::Engine::open(int argc, ACE_TCHAR* argv[])
 }
 
 int 
-OOCore::Engine::open(unsigned int nThreads)
+OOCore::Impl::Engine::open(unsigned int nThreads)
 {
 	if (nThreads<0 || nThreads>10)
 	{
@@ -100,11 +90,11 @@ OOCore::Engine::open(unsigned int nThreads)
 	if (!m_reactor)
 		return -1;
 
-	return activate(THR_NEW_LWP | THR_JOINABLE |THR_INHERIT_SCHED,nThreads);
+	return activate(THR_NEW_LWP | THR_JOINABLE | THR_INHERIT_SCHED,nThreads);
 }
 
 int 
-OOCore::Engine::close()
+OOCore::Impl::Engine::close()
 {
 	if (!m_reactor)
 		return -1;
@@ -113,36 +103,36 @@ OOCore::Engine::close()
 
 	while (!m_activ_queue.is_empty())
 	{
-		ACE_OS::sleep(0);
+		ACE_OS::sleep(1);
 	}
 
 	m_activ_queue.queue()->deactivate();
-
+	
 	if (m_reactor->end_reactor_event_loop() != 0)
 		return -1;
 
-	// Wait a bit, in case something got stuck!
-	//ACE_OS::sleep(1);
-
-	return wait();
+	ACE_OS::sleep(1);
+	m_reactor->wakeup_all_threads();
+	    	
+	return thr_mgr()->wait_grp(grp_id());
 }
 
 int 
-OOCore::Engine::svc()
+OOCore::Impl::Engine::svc()
 {
-	m_reactor->owner(ACE_Thread::self());
+	//m_reactor->owner(ACE_Thread::self());
 
 	return m_reactor->run_reactor_event_loop();
 }
 
 ACE_Reactor* 
-OOCore::Engine::reactor()
+OOCore::Impl::Engine::reactor()
 {
 	return m_reactor;
 }
 
 int 
-OOCore::Engine::pump_requests(ACE_Time_Value* timeout, CONDITION_FN cond_fn, void* cond_fn_args)
+OOCore::Impl::Engine::pump_requests(ACE_Time_Value* timeout, PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
 {
 	cond_req* c = 0;
 	if (cond_fn)
@@ -205,7 +195,7 @@ exit:
 }
 
 int
-OOCore::Engine::check_conditions()
+OOCore::Impl::Engine::check_conditions()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock,0);
 
@@ -230,7 +220,7 @@ OOCore::Engine::check_conditions()
 }
 
 int 
-OOCore::Engine::cond_req::call()
+OOCore::Impl::Engine::cond_req::call()
 {
 	if (ACE_Thread::self()==tid && ENGINE::instance()->m_nestcount->second==nesting)
 	{
@@ -246,7 +236,7 @@ OOCore::Engine::cond_req::call()
 }
 
 int 
-OOCore::Engine::pump_request_i(ACE_Time_Value* timeout)
+OOCore::Impl::Engine::pump_request_i(ACE_Time_Value* timeout)
 {
 	ACE_Method_Request* req;
 
@@ -276,10 +266,34 @@ OOCore::Engine::pump_request_i(ACE_Time_Value* timeout)
 }
 
 int 
-OOCore::Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
+OOCore::Impl::Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
 {
 	if (m_stop)
 		return -1;
 
 	return m_activ_queue.enqueue(req,wait)==-1 ? -1 : 0;
+}
+
+OOCore_Export ACE_Reactor* 
+OOCore::GetEngineReactor()
+{
+	return Impl::ENGINE::instance()->reactor();
+}
+
+int OOCore_Export
+OOCore::OpenEngine(int argc, ACE_TCHAR* argv[])
+{
+	return Impl::ENGINE::instance()->open(argc,argv);
+}
+
+int OOCore_Export
+OOCore::CloseEngine()
+{
+	return Impl::ENGINE::instance()->close();
+}
+
+int OOCore_Export
+OOCore::PumpRequests(ACE_Time_Value* timeout, PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
+{
+	return Impl::ENGINE::instance()->pump_requests(timeout,cond_fn,cond_fn_args);
 }

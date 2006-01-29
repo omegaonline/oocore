@@ -5,18 +5,14 @@
 #include <ace/SOCK_Connector.h>
 #include <ace/Connector.h>
 
-#include "../OOCore/Binding.h"
-#include "../OOCore/Engine.h"
-
 #include "./TcpIp_Connector.h"
 
 #include "./OONet_export.h"
 
-// Declare the service
 ACE_FACTORY_DEFINE(OONet,TcpIp_Manager)
 
 TcpIp_Manager::TcpIp_Manager(void) :
-	ACE_Acceptor<TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>(OOCore::ENGINE::instance()->reactor())
+	ACE_Acceptor<TcpIp_Acceptor, ACE_SOCK_ACCEPTOR>(OOCore::GetEngineReactor())
 {
 	// Artifically AddRef ourselves, because ACE_Svc_Config controls our lifetime
 	AddRef();
@@ -50,7 +46,7 @@ int TcpIp_Manager::init(int argc, ACE_TCHAR *argv[])
 	}
 
 	ACE_INET_Addr port_addr(uPort);
-	if (open(port_addr,OOCore::ENGINE::instance()->reactor()) == -1)
+	if (open(port_addr,OOCore::GetEngineReactor()) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Accept failed")),-1);
 	
 	// Confirm we have a connection
@@ -95,7 +91,7 @@ TcpIp_Manager::fini(void)
 	
 	// Wait for everyone to close
 	ACE_Time_Value wait(DEFAULT_WAIT);
-	OOCore::ENGINE::instance()->pump_requests(&wait,await_close,this);
+	OOCore::PumpRequests(&wait,await_close,this);
 	
 	return 0;
 }
@@ -149,7 +145,7 @@ TcpIp_Manager::Connect(const OOObject::char_t* remote_addr, OOCore::Transport** 
 
 	// Connect to the address
 	TcpIp_Connector* conn = 0;
-	ACE_Connector<TcpIp_Connector, ACE_SOCK_CONNECTOR> connector(OOCore::ENGINE::instance()->reactor());
+	ACE_Connector<TcpIp_Connector, ACE_SOCK_CONNECTOR> connector(OOCore::GetEngineReactor());
 	if (connector.connect(conn,addr)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to connect to address: tcp://%s - %m\n"),ACE_TEXT_CHAR_TO_TCHAR(remote_addr)),-1);
 	

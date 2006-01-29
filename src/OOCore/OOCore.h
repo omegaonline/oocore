@@ -9,6 +9,8 @@
 #define DEFAULT_WAIT	5
 #endif
 
+class ACE_Reactor;
+
 namespace OOCore
 {
 	class InputStream : public OOObject::Object
@@ -164,7 +166,8 @@ namespace OOCore
 		{
 			LOCAL_ONLY = 1,
 			REMOTE_ONLY = 2,
-			USAGE_ANY = 3
+			USAGE_ANY = 3,
+			STATIC = 4
 		};
 		typedef OOObject::uint16_t Flags_t;
 
@@ -188,11 +191,21 @@ namespace OOCore
 
 	OOCore_Export int RegisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
 	OOCore_Export int UnregisterProxyStub(const OOObject::guid_t& iid, const char* dll_name);
-    OOCore_Export OOObject::int32_t AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory);
-	OOCore_Export OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
+    OOCore_Export OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory);
+	OOCore_Export OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid);
+	OOCore_Export OOObject::int32_t RegisterStaticInterface(const OOObject::guid_t& iid, ObjectFactory* pFactory);
+	OOCore_Export OOObject::int32_t UnregisterStaticInterface(const OOObject::guid_t& iid);
 	OOCore_Export OOObject::int32_t RegisterProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol);
 	OOCore_Export OOObject::int32_t UnregisterProtocol(const OOObject::char_t* name);
 	OOCore_Export int GetTypeInfo(const OOObject::guid_t& iid, OOCore::TypeInfo** type_info);
+
+	// Engine helpers
+	OOCore_Export ACE_Reactor* GetEngineReactor();
+	OOCore_Export int OpenEngine(int argc, ACE_TCHAR* argv[]);
+	OOCore_Export int CloseEngine();
+
+	typedef bool (*PUMP_CONDITION_FN)(void* cond_fn_args);
+	OOCore_Export int PumpRequests(ACE_Time_Value* timeout = 0, PUMP_CONDITION_FN cond_fn = 0, void* cond_fn_args = 0);
 };
 
 #endif // OOCORE_OOCORE_H_INCLUDED_

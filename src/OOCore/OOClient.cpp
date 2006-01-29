@@ -16,14 +16,14 @@ OOObject::Init(unsigned int threads)
 	}
 
 	int ret = 0;
-	if ((ret = OOCore::ENGINE::instance()->open(threads)) == 0)
+	if ((ret = OOCore::Impl::ENGINE::instance()->open(threads)) == 0)
 	{
 		if ((ret = OOCore::Impl::Connection_Manager::init()) == 0)
 		{
 		}
 
 		if (ret!=0)
-			OOCore::ENGINE::instance()->close();
+			OOCore::Impl::ENGINE::instance()->close();
 	}
 
 	return ret;
@@ -41,7 +41,7 @@ OOObject::Term()
 	{
 		OOCore::Impl::CONNECTION_MANAGER::instance()->RequestClose();
 				
-		OOCore::ENGINE::instance()->close();
+		OOCore::Impl::ENGINE::instance()->close();
 	}
 }
 

@@ -3,7 +3,6 @@
 
 ACE_FACTORY_DEFINE(Test,Test_Service)
 
-
 DEFINE_IID(Test::Test,6AAE8C33-699A-4414-AF84-25E74E693207);
 DEFINE_CLSID(Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
 
@@ -20,13 +19,18 @@ Test_Service::init(int argc, ACE_TCHAR *argv[])
 	// Register ourselves... Its just easier!
 	RegisterLib(true);
 
-	return OOCore::AddObjectFactory(OOCore::ObjectFactory::USAGE_ANY,CLSID_Test,this);
+	if (OOCore::RegisterObjectFactory(OOCore::ObjectFactory::USAGE_ANY,CLSID_Test,this) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to register Test object factory\n")),-1);
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Test-Service started.  Test away!\n")));
+
+	return 0;
 }
 
 int 
 Test_Service::fini(void)
 {
-	return OOCore::RemoveObjectFactory(CLSID_Test);
+	return OOCore::UnregisterObjectFactory(CLSID_Test);
 }
 
 OOObject::int32_t 

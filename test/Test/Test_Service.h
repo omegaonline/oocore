@@ -5,9 +5,7 @@
 
 #include <OOCore/OOCore_Util.h>
 
-#include "./Test_export.h"
-
-class Test_Export Test_Service : 
+class Test_Service : 
 	public ACE_Service_Object,
 	public OOCore::Object_Impl<OOCore::ObjectFactory>
 {

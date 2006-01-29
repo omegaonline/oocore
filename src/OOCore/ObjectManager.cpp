@@ -51,7 +51,7 @@ OOCore::ObjectManager::RequestClose()
 
 	// Wait until all stubs have gone
 	ACE_Time_Value wait(DEFAULT_WAIT);
-	if (ENGINE::instance()->pump_requests(&wait,await_close,this) != 0)
+	if (PumpRequests(&wait,await_close,this) != 0)
 		ACE_DEBUG((LM_DEBUG,ACE_TEXT("(%P|%t) ObjectManager timed out waiting for stubs to close.\n")));
 
 	Closed();
@@ -82,7 +82,7 @@ OOCore::ObjectManager::request_remote_factory()
 	{
 		// Wait for a connect response
 		ACE_Time_Value wait(DEFAULT_WAIT);
-		if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
+		if (PumpRequests(&wait,await_connect,this) != 0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Connection negotiation timed out and gave up\n")),-1);
 	
 		return 0;
@@ -133,7 +133,7 @@ OOCore::ObjectManager::request_remote_factory()
 
 	// Wait for a connect response
 	ACE_Time_Value wait(DEFAULT_WAIT);
-	if (ENGINE::instance()->pump_requests(&wait,await_connect,this) != 0)
+	if (PumpRequests(&wait,await_connect,this) != 0)
 	{
 		m_is_opening = false;
 		ReleaseStub(key);
@@ -676,7 +676,7 @@ OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObj
 		ACE_Time_Value wait(wait_secs);
 
 		response_wait rw(this,trans_id,input);
-		if (ENGINE::instance()->pump_requests(&wait,await_response,&rw) != 0)
+		if (PumpRequests(&wait,await_response,&rw) != 0)
 		{
 			errno = ETIMEDOUT;
             return -1;
@@ -752,25 +752,25 @@ OOCore::ObjectManager::SetReverse(RemoteObjectFactory* pRemote)
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory)
+OOCore::ObjectManager::RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory)
 {
 	if (!Impl::g_IsServer)
 	{
 		errno = EOPNOTSUPP;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) AddObjectFactory should not be called on a client\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) RegisterObjectFactory should not be called on a client\n")),-1);
 	}
 
-	return OOCore::AddObjectFactory(flags,clsid,pFactory);
+	return OOCore::RegisterObjectFactory(flags,clsid,pFactory);
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::RemoveObjectFactory(const OOObject::guid_t& clsid)
+OOCore::ObjectManager::UnregisterObjectFactory(const OOObject::guid_t& clsid)
 {
 	if (!Impl::g_IsServer)
 	{
 		errno = EOPNOTSUPP;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) RemoveObjectFactory should not be called on a client\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) UnregisterObjectFactory should not be called on a client\n")),-1);
 	}
 
-	return OOCore::RemoveObjectFactory(clsid);
+	return OOCore::UnregisterObjectFactory(clsid);
 }

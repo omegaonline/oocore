@@ -15,8 +15,8 @@ namespace Impl
 	public:
 		virtual OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
-		virtual OOObject::int32_t AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
-		virtual OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid) = 0;
+		virtual OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
+		virtual OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid) = 0;
 	
 		DECLARE_IID(OOCore);
 	};
@@ -24,8 +24,8 @@ namespace Impl
 	BEGIN_META_INFO(RemoteObjectFactory)
 		METHOD(RequestRemoteObject,4,((in)(string),const OOObject::char_t*,remote_url,(in),const OOObject::guid_t&,clsid,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
 		METHOD_EX((async),SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
-		METHOD(AddObjectFactory,3,((in),ObjectFactory::Flags_t,flags,(in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
-		METHOD(RemoveObjectFactory,1,((in),const OOObject::guid_t&,clsid))
+		METHOD(RegisterObjectFactory,3,((in),ObjectFactory::Flags_t,flags,(in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
+		METHOD(UnregisterObjectFactory,1,((in),const OOObject::guid_t&,clsid))
 	END_META_INFO()
 };
 
@@ -101,8 +101,8 @@ END_INTERFACE_MAP()
 public:
 	OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote);
-	OOObject::int32_t AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory);
-	OOObject::int32_t RemoveObjectFactory(const OOObject::guid_t& clsid);
+	OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory);
+	OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid);
 	
 // OOCore::ProxyStubManager
 public:

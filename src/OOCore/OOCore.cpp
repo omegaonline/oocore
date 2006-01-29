@@ -105,7 +105,7 @@ OOCore::UnregisterProxyStub(const OOObject::guid_t& iid, const char* dll_name)
 }
 
 OOCore_Export OOObject::int32_t  
-OOCore::AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory)
+OOCore::RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory)
 {
 	if (Impl::g_IsServer)
 	{
@@ -113,12 +113,18 @@ OOCore::AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& c
 	}
 	else
 	{
-		return Impl::CONNECTION_MANAGER::instance()->AddObjectFactory(flags,clsid,pFactory);
+		return Impl::CONNECTION_MANAGER::instance()->RegisterObjectFactory(flags,clsid,pFactory);
 	}
 }
 
 OOCore_Export OOObject::int32_t  
-OOCore::RemoveObjectFactory(const OOObject::guid_t& clsid)
+OOCore::RegisterStaticInterface(const OOObject::guid_t& iid, ObjectFactory* pFactory)
+{
+	return RegisterObjectFactory(ObjectFactory::STATIC,iid,pFactory);
+}
+
+OOCore_Export OOObject::int32_t  
+OOCore::UnregisterObjectFactory(const OOObject::guid_t& clsid)
 {
 	if (Impl::g_IsServer)
 	{
@@ -126,8 +132,14 @@ OOCore::RemoveObjectFactory(const OOObject::guid_t& clsid)
 	}
 	else
 	{
-		return Impl::CONNECTION_MANAGER::instance()->RemoveObjectFactory(clsid);
+		return Impl::CONNECTION_MANAGER::instance()->UnregisterObjectFactory(clsid);
 	}
+}
+
+OOCore_Export OOObject::int32_t  
+OOCore::UnregisterStaticInterface(const OOObject::guid_t& iid)
+{
+	return UnregisterObjectFactory(iid);
 }
 
 OOCore_Export OOObject::int32_t  

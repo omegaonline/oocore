@@ -132,7 +132,7 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 			// Try to post it
 			msg_param* p;
 			ACE_NEW_RETURN(p,msg_param(m_ptrOM,i),-1);
-			if (ENGINE::instance()->post_request(p) != 0)
+			if (Impl::ENGINE::instance()->post_request(p) != 0)
 			{
 				delete p;
 				return -1;
@@ -198,7 +198,7 @@ OOCore::Transport_Impl::CreateRemoteObject(const OOObject::char_t* remote_url, c
 }
 
 OOObject::int32_t 
-OOCore::Transport_Impl::AddObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory)
+OOCore::Transport_Impl::RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory)
 {
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
 	if (!ptrOM)
@@ -207,11 +207,11 @@ OOCore::Transport_Impl::AddObjectFactory(ObjectFactory::Flags_t flags, const OOO
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
 	}
 
-	return ptrOM->AddObjectFactory(flags,clsid,pFactory);
+	return ptrOM->RegisterObjectFactory(flags,clsid,pFactory);
 }
 
 OOObject::int32_t 
-OOCore::Transport_Impl::RemoveObjectFactory(const OOObject::guid_t& clsid)
+OOCore::Transport_Impl::UnregisterObjectFactory(const OOObject::guid_t& clsid)
 {
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
 	if (!ptrOM)
@@ -220,7 +220,7 @@ OOCore::Transport_Impl::RemoveObjectFactory(const OOObject::guid_t& clsid)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
 	}
 
-	return ptrOM->RemoveObjectFactory(clsid);
+	return ptrOM->UnregisterObjectFactory(clsid);
 }
 
 int 

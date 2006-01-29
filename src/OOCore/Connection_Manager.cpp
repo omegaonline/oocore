@@ -29,7 +29,7 @@ OOCore::Impl::Connection_Manager::init(void)
 	CONNECTION_MANAGER::instance()->AddRef();
 
 	// Connect to an instance of OOCore_Connection_Manager
-	ACE_Connector<Connection_Manager, ACE_MEM_CONNECTOR> connector(OOCore::ENGINE::instance()->reactor());
+	ACE_Connector<Connection_Manager, ACE_MEM_CONNECTOR> connector(OOCore::GetEngineReactor());
 
 /*#if defined (ACE_WIN32) || !defined (_ACE_USE_SV_SEM)
 	connector.connector().preferred_strategy(ACE_MEM_IO::MT);

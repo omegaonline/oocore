@@ -48,7 +48,7 @@ public:
 	int wait_for_open()
 	{
 		ACE_Time_Value wait(DEFAULT_WAIT);
-		return ENGINE::instance()->pump_requests(&wait,await_connect,this);
+		return PumpRequests(&wait,await_connect,this);
 	}
 
 	int handle_input(ACE_HANDLE fd = ACE_INVALID_HANDLE)

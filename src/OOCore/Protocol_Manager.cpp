@@ -35,7 +35,7 @@ OOCore::Impl::Protocol_Manager::UnregisterProtocol(const OOObject::char_t* name)
 }
 
 OOObject::int32_t 
-OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	// URL format = <protocol>://<protocol_specific_address>
 	ACE_CString strURL(remote_url);
@@ -67,5 +67,5 @@ OOCore::Impl::Protocol_Manager::create_remote_object(const OOObject::char_t* rem
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Connect failed\n")),-1);
 
 	// Ask the transport to create the object
-    return transport->CreateObject(clsid,iid,ppVal);	
+    return transport->CreateObject(clsid,pOuter,iid,ppVal);	
 }

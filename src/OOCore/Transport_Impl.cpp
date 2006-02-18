@@ -185,7 +185,7 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 }
 
 OOObject::int32_t 
-OOCore::Transport_Impl::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Transport_Impl::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
 	if (!ptrOM)
@@ -194,7 +194,7 @@ OOCore::Transport_Impl::CreateRemoteObject(const OOObject::char_t* remote_url, c
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
 	}
 
-	return ptrOM->CreateRemoteObject(remote_url,clsid,iid,ppVal);
+	return ptrOM->CreateRemoteObject(remote_url,clsid,pOuter,iid,ppVal);
 }
 
 OOObject::int32_t 
@@ -283,7 +283,7 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 }
 
 OOObject::int32_t 
-OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return this->CreateRemoteObject(0,clsid,iid,ppVal);
+	return this->CreateRemoteObject(0,clsid,pOuter,iid,ppVal);
 }

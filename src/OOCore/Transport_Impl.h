@@ -15,7 +15,7 @@ namespace OOCore
 {
 
 class OOCore_Export Transport_Impl : 
-	public Object_Root,
+	public Object_Root<Transport_Impl>,
 	public Transport,
 	public Channel
 {
@@ -25,7 +25,7 @@ public:
 	int Open();
 	virtual int RequestClose();
 	
-	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory);
 	OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid);
 
@@ -79,7 +79,7 @@ public:
 
 // OOCore::Transport members
 public:
-	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 };
 
 };

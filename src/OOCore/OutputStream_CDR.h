@@ -19,7 +19,7 @@ namespace Impl
 class InputStream_CDR;
 
 class OutputStream_CDR :
-	public OOCore::Object_Root,
+	public OOCore::Object_Root<OutputStream_CDR>,
 	public OOCore::OutputStream,
 	public ACE_OutputCDR
 {

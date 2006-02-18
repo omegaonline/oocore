@@ -7,7 +7,7 @@
 
 #include "../Test/Test.h"
 
-void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
+void DoTests(OOCore::Object_Ptr<TestNS::Test>& ptrTest)
 {
 	OOObject::int16_t arr[11] = {0};
 	OOObject::uint32_t count = 7;
@@ -65,6 +65,22 @@ void DoTests(OOCore::Object_Ptr<Test::Test>& ptrTest)
 	OOObject::Free(pstr);
 	if (pstr2 != pstr)
 		OOObject::Free(pstr2);
+
+	// Now test QI
+	OOCore::Object_Ptr<TestNS::Test2> ptrTest2;
+	if (ptrTest->QueryInterface(TestNS::Test2::IID,reinterpret_cast<OOObject::Object**>(&ptrTest2)) != 0)
+		ACE_OS::printf("QI failed!\n");
+	else
+	{
+		OOObject::char_t* pstr = 0;
+		ACE_OS::printf("Calling Test2_Hello: ");
+		if (ptrTest2->Test2_Hello(&pstr) == 0)
+			ACE_OS::printf("succeeded, received \"%s\".",pstr);
+		else
+			ACE_OS::perror("failed.");
+		ACE_OS::printf("\n");
+		OOObject::Free(pstr);
+	}
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
@@ -74,7 +90,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	{
 		// The inner braces ensure that all objects are destructed before OOObject::Term() is called
 		{
-            OOCore::Object_Ptr<Test::Test> ptrTest;
+            OOCore::Object_Ptr<TestNS::Test> ptrTest;
 			if ((ret=OOObject::CreateObject(CLSID_Test,&ptrTest)) == 0)
 				DoTests(ptrTest);
 			else

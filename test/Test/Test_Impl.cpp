@@ -80,3 +80,16 @@ Test_Impl::String_Test_InOut(OOObject::char_t** str)
 
 	return 0;
 }
+
+OOObject::int32_t 
+Test_Impl::Test2_Hello(OOObject::char_t** str)
+{
+	const OOObject::char_t* text = "Hello";
+
+	*str = (OOObject::char_t*)OOObject::Alloc(ACE_OS::strlen(text)+1);
+	ACE_OS::strcpy(*str,text);
+
+	ACE_OS::printf(ACE_TEXT("String_Test_Out: Sending \"%s\".\n"),*str);
+
+	return 0;
+}

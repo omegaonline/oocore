@@ -56,7 +56,7 @@ Kademlia_Service::fini(void)
 }
 
 OOObject::int32_t 
-Kademlia_Service::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+Kademlia_Service::CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	return -1;
 }

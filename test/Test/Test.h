@@ -6,7 +6,7 @@
 
 #include "./Test_export.h"
 
-namespace Test
+namespace TestNS
 {
 	class Test : public OOObject::Object
 	{
@@ -22,6 +22,14 @@ namespace Test
 		DECLARE_IID(Test);
 	};
 
+	class Test2 : public OOObject::Object
+	{
+	public:
+		virtual OOObject::int32_t Test2_Hello(OOObject::char_t** str) = 0;
+
+		DECLARE_IID(Test);
+	};
+
 	BEGIN_META_INFO(Test)
 		METHOD(Array_Test_In,2,((in),OOObject::uint32_t,count,(in)(size_is(count)),OOObject::int16_t*,pArray))	
 		METHOD(Array_Test_Out,2,((out),OOObject::uint32_t*,count,(out)(size_is(count)),OOObject::int16_t**,pArray))
@@ -30,6 +38,10 @@ namespace Test
 		METHOD(String_Test_In,1,((in)(string),const OOObject::char_t*,str))
 		METHOD(String_Test_Out,1,((out)(string),OOObject::char_t**,str));
 		METHOD(String_Test_InOut,1,((in)(out)(string),OOObject::char_t**,str));
+	END_META_INFO()
+
+	BEGIN_META_INFO(Test2)
+		METHOD(Test2_Hello,1,((out)(string),OOObject::char_t**,str));
 	END_META_INFO()
 };
 

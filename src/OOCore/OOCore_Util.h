@@ -153,6 +153,7 @@ namespace OOCore
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
 	};
 
+	template <class thisClass>
 	class Object_Root
 	{
 	public:
@@ -177,26 +178,33 @@ namespace OOCore
 			return 0;
 		}
 
+		struct QIEntry
+		{
+			const OOObject::guid_t* pGuid;
+			size_t cast_offset;
+		};
+
+		virtual const QIEntry* getQIEntries() = 0;
+
 		OOObject::int32_t Internal_QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal)
 		{
 			if (!ppVal)
 				return -1;
 
-			const OOObject::guid_t** g=getQIEntries();
-			for (int i=0;g[i]!=0;++i)
+			const QIEntry* g=getQIEntries();
+			for (int i=0;g[i].pGuid!=0;++i)
 			{
-				if (*(g[i]) == iid)
+				if (iid == OOObject::Object::IID ||
+					*(g[i].pGuid) == iid)
 				{
 					Internal_AddRef();
-					*ppVal = reinterpret_cast<OOObject::Object*>(this);
+					*ppVal = reinterpret_cast<OOObject::Object*>(reinterpret_cast<size_t>(static_cast<thisClass*>(this)) + g[i].cast_offset);
 					return 0;
 				}
 			}
 			
 			return -1;
 		}
-
-		virtual const OOObject::guid_t** getQIEntries() = 0;
 		
 	private:
 		ACE_Atomic_Op<ACE_Thread_Mutex,long> m_refcount;
@@ -204,17 +212,25 @@ namespace OOCore
 };
 
 #define BEGIN_INTERFACE_MAP(cls) \
+	private: \
+	typedef cls RootClass; \
 	public: \
 	OOObject::int32_t AddRef() {return Internal_AddRef();} \
 	OOObject::int32_t Release() {return Internal_Release();} \
 	OOObject::int32_t QueryInterface(const OOObject::guid_t& iid, OOObject::Object** ppVal) {return Internal_QueryInterface(iid,ppVal);} \
 	private: \
-	const OOObject::guid_t** getQIEntries() {static const OOObject::guid_t* QIEntries[] = { &OOObject::Object::IID,
+	const QIEntry* getQIEntries() {static const QIEntry QIEntries[] = { 
+
+#ifdef _MSC_VER
+#define CLASS_CAST_OFFSET 0x1000
+#else
+#error You need to define CLASS_CAST_OFFSET, try 0x1000
+#endif
 
 #define INTERFACE_ENTRY(object) \
-	&object::IID,
+	{ &object::IID, reinterpret_cast<size_t>(static_cast<object*>(reinterpret_cast<RootClass*>(CLASS_CAST_OFFSET))) - CLASS_CAST_OFFSET}, 
 
 #define END_INTERFACE_MAP() \
-	0 }; return QIEntries; }
+	{ 0 } }; return QIEntries; }
 
 #endif // OOCORE_OOCORE_UTIL_H_INCLUDED_

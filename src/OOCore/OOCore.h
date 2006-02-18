@@ -61,7 +61,7 @@ namespace OOCore
 	class Transport : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 
 		DECLARE_IID(OOCore);
 	};
@@ -171,7 +171,7 @@ namespace OOCore
 		};
 		typedef OOObject::uint16_t Flags_t;
 
-		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
+		virtual OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 
 		DECLARE_IID(OOCore);
 	};

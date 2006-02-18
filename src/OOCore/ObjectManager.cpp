@@ -709,7 +709,7 @@ OOCore::ObjectManager::SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObj
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	if (!ppVal)
 	{
@@ -728,13 +728,13 @@ OOCore::ObjectManager::CreateRemoteObject(const OOObject::char_t* remote_url, co
 		fact = m_ptrRemoteFactory;
 	}
 
-	return fact->RequestRemoteObject(remote_url,clsid,iid,ppVal);
+	return fact->RequestRemoteObject(remote_url,clsid,pOuter,iid,ppVal);
 }
 
 OOObject::int32_t 
-OOCore::ObjectManager::RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::ObjectManager::RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return OOObject::CreateRemoteObject(remote_url,clsid,iid,ppVal);
+	return OOObject::CreateRemoteObject(remote_url,clsid,pOuter,iid,ppVal);
 }
 
 OOObject::int32_t 

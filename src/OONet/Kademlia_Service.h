@@ -7,7 +7,7 @@
 
 class Kademlia_Service : 
 	public ACE_Service_Object,
-	public OOCore::Object_Root,
+	public OOCore::Object_Root<Kademlia_Service>,
 	public OOCore::ObjectFactory,
 	public Kademlia::RPC_Request,
 	public Kademlia::RPC_Response
@@ -24,7 +24,7 @@ END_INTERFACE_MAP()
 
 // ObjectFactory members
 public:
-	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 // RPC_Request members
 public:

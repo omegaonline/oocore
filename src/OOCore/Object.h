@@ -28,20 +28,32 @@ namespace OOObject
 		OOCore_Export void Term();	
 		OOCore_Export void* Alloc(const size_t size);
 		OOCore_Export void Free(void* p);
-		OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, const guid_t& iid, Object** ppVal);
-		OOCore_Export OOObject::int32_t CreateRemoteObject(const char_t* remote_url, const guid_t& clsid, const guid_t& iid, Object** ppVal);
+		OOCore_Export OOObject::int32_t CreateObject(const guid_t& clsid, OOObject::Object* pOuter, const guid_t& iid, Object** ppVal);
+		OOCore_Export OOObject::int32_t CreateRemoteObject(const char_t* remote_url, const guid_t& clsid, OOObject::Object* pOuter, const guid_t& iid, Object** ppVal);
 	}
 	
 	template <class T>
+	OOObject::int32_t CreateObject(const guid_t& clsid, OOObject::Object* pOuter, T** ppVal)
+	{
+		return CreateObject(clsid,pOuter,T::IID,reinterpret_cast<Object**>(ppVal));
+	}
+
+	template <class T>
 	OOObject::int32_t CreateObject(const guid_t& clsid, T** ppVal)
 	{
-		return CreateObject(clsid,T::IID,reinterpret_cast<Object**>(ppVal));
+		return CreateObject(clsid,0,T::IID,reinterpret_cast<Object**>(ppVal));
+	}
+
+	template <class T>
+	OOObject::int32_t CreateRemoteObject(const char_t* remote_url, const guid_t& clsid, OOObject::Object* pOuter, T** ppVal)
+	{
+		return CreateRemoteObject(remote_url,clsid,pOuter,T::IID,reinterpret_cast<Object**>(ppVal));
 	}
 
 	template <class T>
 	OOObject::int32_t CreateRemoteObject(const char_t* remote_url, const guid_t& clsid, T** ppVal)
 	{
-		return CreateRemoteObject(remote_url,clsid,T::IID,reinterpret_cast<Object**>(ppVal));
+		return CreateRemoteObject(remote_url,clsid,0,T::IID,reinterpret_cast<Object**>(ppVal));
 	}
 };
 

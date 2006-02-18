@@ -19,7 +19,7 @@ OOCore::Impl::Object_Factory::remove_object_factory(const OOObject::guid_t& clsi
 }
 
 OOObject::int32_t 
-OOCore::Impl::Object_Factory::create_object(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOCore::Impl::Object_Factory::create_object(const OOObject::guid_t& clsid, ObjectFactory::Flags_t flags, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
@@ -34,5 +34,5 @@ OOCore::Impl::Object_Factory::create_object(ObjectFactory::Flags_t flags, const 
 
 	guard.release();
 
-	return fact->CreateObject(clsid,iid,ppVal);
+	return fact->CreateObject(clsid,pOuter,iid,ppVal);
 }

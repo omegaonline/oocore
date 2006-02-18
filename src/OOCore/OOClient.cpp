@@ -58,19 +58,19 @@ OOObject::Free(void* p)
 }
 
 OOCore_Export OOObject::int32_t 
-OOObject::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOObject::CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
-	return OOObject::CreateRemoteObject(0,clsid,iid,ppVal);
+	return OOObject::CreateRemoteObject(0,clsid,pOuter,iid,ppVal);
 }
 
 OOCore_Export OOObject::int32_t 
-OOObject::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal)
+OOObject::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
 {
 	if (!OOCore::Impl::g_IsServer)
-		return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateRemoteObject(remote_url,clsid,iid,ppVal);
+		return OOCore::Impl::CONNECTION_MANAGER::instance()->CreateRemoteObject(remote_url,clsid,pOuter,iid,ppVal);
 
 	if (!remote_url)
-		return OOCore::Impl::OBJECT_FACTORY::instance()->create_object(OOCore::ObjectFactory::LOCAL_ONLY,clsid,iid,ppVal);
+		return OOCore::Impl::OBJECT_FACTORY::instance()->create_object(clsid,OOCore::ObjectFactory::LOCAL_ONLY,pOuter,iid,ppVal);
 
-	return OOCore::Impl::PROTOCOL_MANAGER::instance()->create_remote_object(remote_url,clsid,iid,ppVal);
+	return OOCore::Impl::PROTOCOL_MANAGER::instance()->create_remote_object(remote_url,clsid,pOuter,iid,ppVal);
 }

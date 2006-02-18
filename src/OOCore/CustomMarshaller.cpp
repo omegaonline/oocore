@@ -23,16 +23,16 @@ OOCore::CustomMarshaller::Open()
 }
 
 OOObject::int32_t 
-OOCore::CustomMarshaller::CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
+OOCore::CustomMarshaller::CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
 {
-	return CreateRemoteObject(NULL,clsid,iid,key,ppVal);
+	return CreateRemoteObject(0,clsid,pOuter,iid,key,ppVal);
 }
 
 OOObject::int32_t 
-OOCore::CustomMarshaller::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
+OOCore::CustomMarshaller::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
 {
 	Object_Ptr<OOObject::Object> ptrObj;
-	if (OOObject::CreateRemoteObject(remote_url,clsid,iid,&ptrObj) != 0)
+	if (OOObject::CreateRemoteObject(remote_url,clsid,pOuter,iid,&ptrObj) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Outer object manager CreateRemoteObject failed.\n")),-1);
 
 	if (m_ptrOM->CreateStub(iid,ptrObj,key) != 0)

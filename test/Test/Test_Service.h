@@ -15,7 +15,7 @@ public:
 
 // ObjectFactory members
 public:
-	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 };
 
 #endif // TEST_TEST_SERVICE_H_INCLUDED_

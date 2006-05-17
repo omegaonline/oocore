@@ -11,8 +11,6 @@
 
 #include <ace/UUID.h>
 
-#include "./Object_Types.h"
-
 namespace OOCore
 {
 namespace Impl

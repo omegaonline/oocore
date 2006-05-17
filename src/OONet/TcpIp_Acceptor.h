@@ -26,7 +26,7 @@ protected:
 private:
 	ssize_t send_n(ACE_Message_Block* mb);
 	
-	OOCore::Object_Ptr<TcpIp_Manager> m_protocol;
+	OOUtil::Object_Ptr<TcpIp_Manager> m_protocol;
 };
 
 #endif // _OONET_TCPIP_ACCEPTOR_H_INCLUDED_

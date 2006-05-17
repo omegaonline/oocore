@@ -15,7 +15,7 @@
 
 #include <map>
 
-#include "./OOCore_Util.h"
+#include "./OOUtil.h"
 
 #include "./OOCore_export.h"
 
@@ -27,22 +27,22 @@ namespace Impl
 class Protocol_Manager
 {
 public:
-	OOObject::int32_t RegisterProtocol(const OOObject::char_t* name, OOCore::Protocol* protocol);
+	OOObject::int32_t RegisterProtocol(const OOObject::char_t* name, OOObject::Protocol* protocol);
 	OOObject::int32_t UnregisterProtocol(const OOObject::char_t* name);
 
-	OOObject::int32_t create_remote_object(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	OOObject::int32_t create_remote_object(const OOObject::char_t* remote_url, const OOObject::guid_t& oid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 private:
-	friend class ACE_Singleton<Protocol_Manager, ACE_Thread_Mutex>;
+	friend class ACE_DLL_Singleton<Protocol_Manager, ACE_Thread_Mutex>;
 
 	Protocol_Manager(void) {}
 	virtual ~Protocol_Manager(void) {}
 
 	ACE_Thread_Mutex	m_lock;
-	std::map<ACE_CString,OOCore::Object_Ptr<OOCore::Protocol> > m_protocol_map;
+	std::map<ACE_CString,OOUtil::Object_Ptr<OOObject::Protocol> > m_protocol_map;
 };
 
-typedef ACE_Singleton<Protocol_Manager, ACE_Thread_Mutex> PROTOCOL_MANAGER;
+typedef ACE_DLL_Singleton<Protocol_Manager, ACE_Thread_Mutex> PROTOCOL_MANAGER;
 
 };
 };

@@ -13,7 +13,7 @@ class Client_Connection :
 	public OOCore::Transport_Svc_Handler<ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER>
 {
 	typedef OOCore::Transport_Svc_Handler<ACE_MEM_STREAM,ACE_MEM_STREAM_MIN_BUFFER> svc_base;
-	typedef ACE_Singleton<ACE_Acceptor<Client_Connection, ACE_MEM_ACCEPTOR>, ACE_Thread_Mutex> ACCEPTOR;
+	typedef ACE_DLL_Singleton<ACE_Acceptor<Client_Connection, ACE_MEM_ACCEPTOR>, ACE_Thread_Mutex> ACCEPTOR;
 	
 public:
 	static int init(void);

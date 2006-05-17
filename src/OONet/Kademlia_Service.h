@@ -7,8 +7,8 @@
 
 class Kademlia_Service : 
 	public ACE_Service_Object,
-	public OOCore::Object_Root<Kademlia_Service>,
-	public OOCore::ObjectFactory,
+	public OOUtil::Object_Root<Kademlia_Service>,
+	public OOObject::ObjectFactory,
 	public Kademlia::RPC_Request,
 	public Kademlia::RPC_Response
 {
@@ -17,7 +17,7 @@ public:
 	int fini(void);
 
 BEGIN_INTERFACE_MAP(Kademlia_Service)
-	INTERFACE_ENTRY(OOCore::ObjectFactory)
+	INTERFACE_ENTRY(OOObject::ObjectFactory)
 	INTERFACE_ENTRY(Kademlia::RPC_Request)
 	INTERFACE_ENTRY(Kademlia::RPC_Response)
 END_INTERFACE_MAP()

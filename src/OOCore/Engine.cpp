@@ -12,7 +12,9 @@
 
 #include "./OOCore.h"
 
-OOCore::Impl::Engine::Engine(void) :
+using namespace OOCore::Impl;
+
+Engine::Engine(void) :
 	m_activ_queue(msg_queue()),
 	m_reactor(0),
 	m_stop(false)
@@ -21,14 +23,14 @@ OOCore::Impl::Engine::Engine(void) :
 	ACE_OS::srand(static_cast<u_int>(ACE_OS::time()));
 }
 
-OOCore::Impl::Engine::~Engine(void)
+Engine::~Engine(void)
 {
 	if (m_reactor)
 		delete m_reactor;
 }
 
 int 
-OOCore::Impl::Engine::open(int argc, ACE_TCHAR* argv[])
+Engine::open(int argc, ACE_TCHAR* argv[])
 {
 	// Parse cmd line first
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":e:"));
@@ -64,7 +66,7 @@ OOCore::Impl::Engine::open(int argc, ACE_TCHAR* argv[])
 }
 
 int 
-OOCore::Impl::Engine::open(unsigned int nThreads)
+Engine::open(unsigned int nThreads)
 {
 	if (nThreads<0 || nThreads>10)
 	{
@@ -94,7 +96,7 @@ OOCore::Impl::Engine::open(unsigned int nThreads)
 }
 
 int 
-OOCore::Impl::Engine::close()
+Engine::close()
 {
 	if (!m_reactor)
 		return -1;
@@ -118,7 +120,7 @@ OOCore::Impl::Engine::close()
 }
 
 int 
-OOCore::Impl::Engine::svc()
+Engine::svc()
 {
 	//m_reactor->owner(ACE_Thread::self());
 
@@ -126,13 +128,13 @@ OOCore::Impl::Engine::svc()
 }
 
 ACE_Reactor* 
-OOCore::Impl::Engine::reactor()
+Engine::reactor()
 {
 	return m_reactor;
 }
 
 int 
-OOCore::Impl::Engine::pump_requests(ACE_Time_Value* timeout, PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
+Engine::pump_requests(ACE_Time_Value* timeout, OOCore::PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
 {
 	cond_req* c = 0;
 	if (cond_fn)
@@ -195,7 +197,7 @@ exit:
 }
 
 int
-OOCore::Impl::Engine::check_conditions()
+Engine::check_conditions()
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock,0);
 
@@ -220,7 +222,7 @@ OOCore::Impl::Engine::check_conditions()
 }
 
 int 
-OOCore::Impl::Engine::cond_req::call()
+Engine::cond_req::call()
 {
 	if (ACE_Thread::self()==tid && ENGINE::instance()->m_nestcount->second==nesting)
 	{
@@ -236,7 +238,7 @@ OOCore::Impl::Engine::cond_req::call()
 }
 
 int 
-OOCore::Impl::Engine::pump_request_i(ACE_Time_Value* timeout)
+Engine::pump_request_i(ACE_Time_Value* timeout)
 {
 	ACE_Method_Request* req;
 
@@ -266,7 +268,7 @@ OOCore::Impl::Engine::pump_request_i(ACE_Time_Value* timeout)
 }
 
 int 
-OOCore::Impl::Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
+Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
 {
 	if (m_stop)
 		return -1;

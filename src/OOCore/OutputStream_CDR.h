@@ -19,27 +19,28 @@ namespace Impl
 class InputStream_CDR;
 
 class OutputStream_CDR :
-	public OOCore::Object_Root<OutputStream_CDR>,
-	public OOCore::OutputStream,
+	public OOUtil::Object_Root<OutputStream_CDR>,
+	public OOObject::OutputStream,
 	public ACE_OutputCDR
 {
 	friend class InputStream_CDR;
 	
 public:
-	OutputStream_CDR();
-
 	int copy_from(InputStream_CDR* in);
 
-	DECLARE_IID(OOCore);
+	HAS_IID;
 
 BEGIN_INTERFACE_MAP(OutputStream_CDR)
-	INTERFACE_ENTRY(OOCore::OutputStream)
+	INTERFACE_ENTRY(OOObject::OutputStream)
 	INTERFACE_ENTRY(OutputStream_CDR)
 END_INTERFACE_MAP()
 
-private:
+protected:
+	OutputStream_CDR();
+
 	virtual ~OutputStream_CDR() {}
 
+private:
 	template <class T>
 	int WriteVar(const T& val)
 	{

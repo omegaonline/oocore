@@ -1,5 +1,5 @@
 #include "./Transport_Impl.h"
-#include "./Object.h"
+#include "./OOObject.h"
 #include "./Engine.h"
 #include "./OutputStream_CDR.h"
 
@@ -10,43 +10,23 @@ OOCore::Transport_Impl::Transport_Impl(void) :
 
 OOCore::Transport_Impl::~Transport_Impl(void)
 {
-	while (!m_init_queue.empty())
-	{
-		m_init_queue.front()->release();
-		m_init_queue.pop();
-	}
 }
 
 int 
-OOCore::Transport_Impl::Open()
+OOCore::Transport_Impl::open()
 {
-	if (m_ptrOM)
-	{
-		errno = EISCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Transport already open!\n")),-1);
-	}
-
-	ACE_NEW_RETURN(m_ptrOM,OOCore::ObjectManager,-1);
-	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
-
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	while (!m_init_queue.empty())
+	if (m_ptrOM)
 	{
-		if (process_block(m_init_queue.front()) != 0)
-		{
-			m_ptrOM = 0;
-			return -1;
-		}
-		m_init_queue.pop();
+		errno = EALREADY;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Transport already open\n")),-1);
 	}
 
-	guard.release();
-
-	return ptrOM->Open(this);
+	return m_ptrOM.CreateObject(OID_StdObjectManager);
 }
 
-int 
+/*int 
 OOCore::Transport_Impl::RequestClose()
 {
 	if (m_ptrOM)
@@ -58,21 +38,11 @@ OOCore::Transport_Impl::RequestClose()
 void
 OOCore::Transport_Impl::Closed()
 {
-	Object_Ptr<ObjectManager> pOM = m_ptrOM.clear();
+	//OOUtil::Object_Ptr<ObjectManager> pOM = m_ptrOM.clear();
 
-	if (pOM)
-		pOM->Closed();
-}
-
-int 
-OOCore::Transport_Impl::handle_recv()
-{
-	ACE_Message_Block* mb;
-	if (recv(mb) != 0)
-		return -1;
-	
-	return process_block(mb);
-}
+	//if (pOM)
+	//	pOM->Closed();
+}*/
 
 int
 OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
@@ -81,8 +51,8 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 
 	if (!m_ptrOM)
 	{
-		m_init_queue.push(mb);
-		return 0;
+		errno = ENOTCONN;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Transport not open\n")),-1);
 	}
 
 	// Append the new data
@@ -126,12 +96,18 @@ OOCore::Transport_Impl::process_block(ACE_Message_Block* mb)
 		if (msg_size>0)
 		{
 			// Clone the input
-			Object_Ptr<Impl::InputStream_CDR> i;
-			ACE_NEW_RETURN(i,Impl::InputStream_CDR(ACE_InputCDR(input.start())),-1);
+			OOUtil::Object<Impl::InputStream_CDR>* i;
+			if (OOUtil::Object<Impl::InputStream_CDR>::CreateObject(ACE_InputCDR(input.start()),i) != 0)
+				return -1;
 
 			// Try to post it
 			msg_param* p;
-			ACE_NEW_RETURN(p,msg_param(m_ptrOM,i),-1);
+			ACE_NEW_NORETURN(p,msg_param(m_ptrOM,i));
+			if (!p)
+			{
+				delete i;
+				return -1;
+			}
 			if (Impl::ENGINE::instance()->post_request(p) != 0)
 			{
 				delete p;
@@ -184,47 +160,8 @@ OOCore::Transport_Impl::read_header(ACE_InputCDR& input, size_t& msg_size)
 	return 0;
 }
 
-OOObject::int32_t 
-OOCore::Transport_Impl::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
-{
-	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
-	if (!ptrOM)
-	{
-		errno = ENOTCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
-	}
-
-	return ptrOM->CreateRemoteObject(remote_url,clsid,pOuter,iid,ppVal);
-}
-
-OOObject::int32_t 
-OOCore::Transport_Impl::RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory)
-{
-	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
-	if (!ptrOM)
-	{
-		errno = ENOTCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
-	}
-
-	return ptrOM->RegisterObjectFactory(flags,clsid,pFactory);
-}
-
-OOObject::int32_t 
-OOCore::Transport_Impl::UnregisterObjectFactory(const OOObject::guid_t& clsid)
-{
-	Object_Ptr<ObjectManager> ptrOM = m_ptrOM;
-	if (!ptrOM)
-	{
-		errno = ENOTCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) No object manager\n")),-1);
-	}
-
-	return ptrOM->UnregisterObjectFactory(clsid);
-}
-
 int 
-OOCore::Transport_Impl::CreateOutputStream(OutputStream** ppStream)
+OOCore::Transport_Impl::CreateOutputStream(OOObject::OutputStream** ppStream)
 {
 	if (!ppStream)
 	{
@@ -232,8 +169,9 @@ OOCore::Transport_Impl::CreateOutputStream(OutputStream** ppStream)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
 	}
 
-	Impl::OutputStream_CDR* pStream;
-	ACE_NEW_RETURN(pStream,Impl::OutputStream_CDR(),-1);
+	OOUtil::Object<Impl::OutputStream_CDR>* pStream;
+	if (OOUtil::Object<Impl::OutputStream_CDR>::CreateObject(pStream) != 0)
+		return -1;
 
 	*ppStream = pStream;
 	(*ppStream)->AddRef();
@@ -242,10 +180,10 @@ OOCore::Transport_Impl::CreateOutputStream(OutputStream** ppStream)
 }
 
 int 
-OOCore::Transport_Impl::Send(OutputStream* output)
+OOCore::Transport_Impl::Send(OOObject::OutputStream* output)
 {
 	// See if output is a Impl::OutputStream_CDR
-	Object_Ptr<Impl::OutputStream_CDR> pStream;
+	OOUtil::Object_Ptr<Impl::OutputStream_CDR> pStream;
 	if (output->QueryInterface(Impl::InputStream_CDR::IID,reinterpret_cast<OOObject::Object**>(&pStream)) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream passed in to transport\n")),-1);
 	
@@ -259,7 +197,7 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 		
 	// Get the length as a uint32_t
 	size_t l = pStream->begin()->total_length();
-	if (l > 0xffffffff)
+	if (l > 0x7fffffff)
 	{
 		errno = E2BIG;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Message too big\n")),-1);
@@ -280,10 +218,4 @@ OOCore::Transport_Impl::Send(OutputStream* output)
 	}
 
 	return 0;
-}
-
-OOObject::int32_t 
-OOCore::Transport_Impl::CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal)
-{
-	return this->CreateRemoteObject(0,clsid,pOuter,iid,ppVal);
 }

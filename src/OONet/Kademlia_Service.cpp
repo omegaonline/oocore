@@ -5,6 +5,8 @@
 
 #include "./OONet_export.h"
 
+#include "../OOCore/Guid.h"
+
 ACE_FACTORY_DEFINE(OONet,Kademlia_Service)
 
 DEFINE_IID(Kademlia::RPC_Request,6AAE8C33-699A-4414-AF84-25E74E693207);

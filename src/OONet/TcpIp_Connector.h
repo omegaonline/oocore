@@ -21,7 +21,7 @@ protected:
 	void Closed();
 	
 private:
-	OOCore::Object_Ptr<TcpIp_Manager> m_protocol;
+	OOUtil::Object_Ptr<TcpIp_Manager> m_protocol;
 
 	ssize_t send_n(ACE_Message_Block* mb);
 };

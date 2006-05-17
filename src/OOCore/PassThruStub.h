@@ -9,28 +9,28 @@ namespace Impl
 {
 
 class PassThruStub :
-	public OOCore::Object_Impl<OOCore::Stub>
+	public OOUtil::Object_Impl<OOObject::Stub>
 {
 public:
-	PassThruStub(OOCore::ObjectManager* stub_manager, const OOObject::uint32_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOObject::uint32_t& proxy_key, Object_Ptr<OOCore::Proxy>& proxy);
+	PassThruStub(OOCore::ObjectManager* stub_manager, const OOObject::uint32_t& stub_key, OOUtil::Object_Ptr<OOObject::ProxyStubManager>& proxy_manager, const OOObject::uint32_t& proxy_key, OOUtil::Object_Ptr<OOObject::Proxy>& proxy);
 		
-	int init(const OOObject::guid_t& iid, Stub* stub);
+	int init(const OOObject::guid_t& iid, OOObject::Stub* stub);
 
 // Stub members
 public:
-	int Invoke(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output);
+	int Invoke(OOObject::uint32_t method, OOObject::TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOObject::InputStream* input, OOObject::OutputStream* output);
 	int GetObject(OOObject::Object** ppVal);
 		
 private:
-	Object_Ptr<OOCore::ProxyStubManager> m_stub_manager;
+	OOUtil::Object_Ptr<OOObject::ProxyStubManager> m_stub_manager;
 	OOObject::uint32_t m_stub_key;
-	Object_Ptr<OOCore::ProxyStubManager> m_proxy_manager;
+	OOUtil::Object_Ptr<OOObject::ProxyStubManager> m_proxy_manager;
 	OOObject::uint32_t m_proxy_key;
-	Object_Ptr<OOCore::Proxy> m_proxy;
-	Object_Ptr<OOCore::Stub> m_stub;
+	OOUtil::Object_Ptr<OOObject::Proxy> m_proxy;
+	OOUtil::Object_Ptr<OOObject::Stub> m_stub;
 	std::set<size_t> m_iid_methods;
 	
-	int copy(OOCore::InputStream* in, OOCore::OutputStream* out);
+	int copy(OOObject::InputStream* in, OOObject::OutputStream* out);
 };
 
 };

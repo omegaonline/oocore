@@ -23,16 +23,10 @@ OOCore::CustomMarshaller::Open()
 }
 
 OOObject::int32_t 
-OOCore::CustomMarshaller::CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
+OOCore::CustomMarshaller::CreateObject(const OOObject::guid_t& oid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
 {
-	return CreateRemoteObject(0,clsid,pOuter,iid,key,ppVal);
-}
-
-OOObject::int32_t 
-OOCore::CustomMarshaller::CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::uint32_t* key, OOObject::Object** ppVal)
-{
-	Object_Ptr<OOObject::Object> ptrObj;
-	if (OOObject::CreateRemoteObject(remote_url,clsid,pOuter,iid,&ptrObj) != 0)
+	OOUtil::Object_Ptr<OOObject::Object> ptrObj;
+	if (OOObject::CreateObject(oid,0,pOuter,iid,&ptrObj) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Outer object manager CreateRemoteObject failed.\n")),-1);
 
 	if (m_ptrOM->CreateStub(iid,ptrObj,key) != 0)
@@ -48,7 +42,7 @@ OOCore::CustomMarshaller::CreateRemoteObject(const OOObject::char_t* remote_url,
 }
 
 int 
-OOCore::CustomMarshaller::CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& key, OOObject::uint32_t* trans_id, OutputStream** output)
+OOCore::CustomMarshaller::CreateRequest(OOObject::uint32_t method, OOObject::TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& key, OOObject::uint32_t* trans_id, OOObject::OutputStream** output)
 {
 	if (m_ptrOM->CreateRequest(method,flags,key,trans_id,output) != 0)
 		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("Outer object manager CreateRequest failed.\n")),-1);
@@ -63,13 +57,13 @@ OOCore::CustomMarshaller::CancelRequest(OOObject::uint32_t trans_id)
 }
 
 OOObject::int32_t 
-OOCore::CustomMarshaller::Invoke(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input)
+OOCore::CustomMarshaller::Invoke(OOObject::TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOObject::OutputStream* output, OOObject::uint32_t trans_id, OOObject::InputStream** input)
 {
 	return m_ptrOM->SendAndReceive(flags,wait_secs,output,trans_id,input);
 }
 
 int 
-OOCore::CustomMarshaller::CM_Channel::CreateOutputStream(OutputStream** ppStream)
+OOCore::CustomMarshaller::CM_Channel::CreateOutputStream(OOObject::OutputStream** ppStream)
 {
 	if (!ppStream)
 	{
@@ -77,8 +71,9 @@ OOCore::CustomMarshaller::CM_Channel::CreateOutputStream(OutputStream** ppStream
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid NULL pointer\n")),-1);
 	}
 
-	Impl::OutputStream_CDR* pStream;
-	ACE_NEW_RETURN(pStream,Impl::OutputStream_CDR(),-1);
+	OOUtil:Object<Impl::OutputStream_CDR>* pStream;
+	if (OOUtil:Object<Impl::OutputStream_CDR>::CreateObject(pStream) != 0)
+		return -1;
 
 	*ppStream = pStream;
 	(*ppStream)->AddRef();
@@ -87,10 +82,10 @@ OOCore::CustomMarshaller::CM_Channel::CreateOutputStream(OutputStream** ppStream
 }
 
 int 
-OOCore::CustomMarshaller::CM_Channel::Send(OutputStream* output)
+OOCore::CustomMarshaller::CM_Channel::Send(OOObject::OutputStream* output)
 {
 	// See if output is a Impl::OutputStream_CDR
-	Object_Ptr<Impl::OutputStream_CDR> pStream;
+	OOUtil::Object_Ptr<Impl::OutputStream_CDR> pStream;
 	if (output->QueryInterface(Impl::InputStream_CDR::IID,reinterpret_cast<OOObject::Object**>(&pStream)) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream passed in to transport\n")),-1);
 	
@@ -99,7 +94,7 @@ OOCore::CustomMarshaller::CM_Channel::Send(OutputStream* output)
 
 	// Copy the block
 	ACE_Message_Block* mb = pStream->begin()->duplicate();
-	Object_Ptr<Impl::InputStream_CDR> i;
+	OOUtil::Object_Ptr<Impl::InputStream_CDR> i;
 	ACE_NEW_NORETURN(i,Impl::InputStream_CDR(ACE_InputCDR(mb)));
 	mb->release();
 	if (!i)

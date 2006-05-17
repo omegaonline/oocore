@@ -25,35 +25,39 @@ class Transport_Svc_Handler :
 {
 	typedef ACE_Svc_Handler<ACE_PEER_STREAM_2, ACE_MT_SYNCH> svc_class;
 
-public:
+protected:
 	Transport_Svc_Handler() : m_bOpen(false)
 	{ }
 
 	virtual int open(void* p = 0)
 	{
 		// Raise our ref count while we are open
-		AddRef();
+		GetControllingObject()->AddRef();
 
 		m_bOpen = true;
 
 		if (svc_class::open(p)!=0)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Service handler open failed\n")),-1);
 		
-		if (Open()!=0)
+		if (Transport_Impl::open()!=0)
 			return -1;
 		
 		return 0;
 	}
 
-	int wait_for_open()
+	/*int wait_for_connect()
 	{
 		ACE_Time_Value wait(DEFAULT_WAIT);
 		return PumpRequests(&wait,await_connect,this);
-	}
+	}*/
 
 	int handle_input(ACE_HANDLE fd = ACE_INVALID_HANDLE)
 	{
-		return handle_recv();
+		ACE_Message_Block* mb;
+		if (recv(mb) != 0)
+			return -1;
+		
+		return process_block(mb);
 	}
 
 	int handle_output(ACE_HANDLE fd = ACE_INVALID_HANDLE)
@@ -70,7 +74,7 @@ public:
 			this->Closed();
 
 			// Release our own ref count - we are closed
-			Release();
+			GetControllingObject()->Release();
 		}
 				
 		// Do not call svc_class::handle_close() it calls delete!
@@ -80,13 +84,13 @@ public:
 	virtual int RequestClose()
 	{
 		// Artifically inflate our addref in case RequestClose() destroys us!
-		AddRef();
+		GetControllingObject()->AddRef();
 
 		int ret = Transport_Impl::RequestClose();
 		if (ret == 0)
 			this->peer().close_writer();
 					
-		Release();
+		GetControllingObject()->Release();
 
 		return ret;
 	}
@@ -128,8 +132,6 @@ protected:
 	virtual ssize_t send_n(ACE_Message_Block* mb) = 0;
 
 private:
-	bool m_bOpen;
-
 	int send_i()
 	{
 		ACE_Message_Block *mb;
@@ -161,12 +163,12 @@ private:
 		return 0;
 	}
 
-	static bool await_connect(void * p)
+	/*static bool await_connect(void * p)
 	{
 		Transport_Svc_Handler* pThis = static_cast<Transport_Svc_Handler*>(p);
 
 		return pThis->m_bOpen;
-	}
+	}*/
 };
 
 };

@@ -1,6 +1,8 @@
 #ifndef OOCORE_OBJECTMANAGER_IMPL_H_INCLUDED_
 #define OOCORE_OBJECTMANAGER_IMPL_H_INCLUDED_
 
+#include <ace/Recursive_Thread_Mutex.h>
+
 #include "./ProxyStub.h"
 #include "./PSMap.h"
 
@@ -13,49 +15,41 @@ namespace Impl
 	class RemoteObjectFactory : public OOObject::Object
 	{
 	public:
-		virtual OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal) = 0;
 		virtual OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote) = 0;
-		virtual OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory) = 0;
-		virtual OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid) = 0;
-	
-		DECLARE_IID(OOCore);
+		
+		HAS_IID;
 	};
 
 	BEGIN_META_INFO(RemoteObjectFactory)
-		METHOD(RequestRemoteObject,5,((in)(string),const OOObject::char_t*,remote_url,(in),const OOObject::guid_t&,clsid,(in)(iid_is(OOObject::Object::IID)),OOObject::Object*,pOuter,(in),const OOObject::guid_t&,iid,(out)(iid_is(iid)),OOObject::Object**,ppVal))
 		METHOD_EX((async),SetReverse,1,((in)(iid_is(RemoteObjectFactory::IID)),RemoteObjectFactory*,pRemote)) 
-		METHOD(RegisterObjectFactory,3,((in),ObjectFactory::Flags_t,flags,(in),const OOObject::guid_t&,clsid,(in)(iid_is(OOCore::ObjectFactory::IID)),OOCore::ObjectFactory*,pFactory))
-		METHOD(UnregisterObjectFactory,1,((in),const OOObject::guid_t&,clsid))
 	END_META_INFO()
 };
 
 class OOCore_Export ObjectManager :
-	public Object_Root<ObjectManager>,
+	public OOUtil::Object_Root<ObjectManager>,
 	public Impl::RemoteObjectFactory,
-	public ProxyStubManager
+	public OOObject::ProxyStubManager
 {	
 public:
-	ObjectManager();
-	
-	int Open(Channel* channel);
 	int RequestClose();
 	void Closed();
-	int ProcessMessage(InputStream* input);
-	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	int ProcessMessage(OOObject::InputStream* input);
+	OOObject::int32_t CreateRemoteObject(const OOObject::guid_t& oid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 
 protected:
+	ObjectManager();
 	virtual ~ObjectManager();
 
 private:
 	struct response_wait
 	{
-		response_wait(ObjectManager* t, OOObject::uint32_t k, InputStream** i) :
+		response_wait(ObjectManager* t, OOObject::uint32_t k, OOObject::InputStream** i) :
 			pThis(t), trans_id(k), input(i)
 		{ }
 
-		Object_Ptr<ObjectManager> pThis;
+		ObjectManager* pThis;
 		OOObject::uint32_t trans_id;
-		InputStream** input;
+		OOObject::InputStream** input;
 	};
 
 	enum OPCODES
@@ -71,22 +65,22 @@ private:
 
 	Impl::PSMap m_proxy_obj_map;
 	Impl::PSMap m_stub_obj_map;
-	std::map<OOObject::uint32_t,Object_Ptr<Stub> > m_stub_map;
+	std::map<OOObject::uint32_t,OOUtil::Object_Ptr<OOObject::Stub> > m_stub_map;
 	OOObject::uint32_t m_next_stub_key;
 	
-	Object_Ptr<Impl::RemoteObjectFactory> m_ptrRemoteFactory;
-	Object_Ptr<Channel> m_ptrChannel;
+	OOUtil::Object_Ptr<Impl::RemoteObjectFactory> m_ptrRemoteFactory;
+	OOUtil::Object_Ptr<OOObject::Channel> m_ptrChannel;
 
-	std::map<OOObject::uint32_t,Object_Ptr<InputStream> > m_response_map;
+	std::map<OOObject::uint32_t,OOUtil::InputStream_Ptr > m_response_map;
 	OOObject::uint32_t m_next_trans_id;
 	std::set<OOObject::uint32_t> m_transaction_set;
 	
 	int request_remote_factory();
-	int process_request(InputStream_Wrapper& input);
-	int process_response(InputStream_Wrapper& input);
-	int process_connect(InputStream_Wrapper& input);
-	bool await_response_i(OOObject::uint32_t trans_id, InputStream** input);
-	int create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& stub_key, Stub** stub);
+	int process_request(OOUtil::InputStream_Ptr& input);
+	int process_response(OOUtil::InputStream_Ptr& input);
+	int process_connect(OOUtil::InputStream_Ptr& input);
+	bool await_response_i(OOObject::uint32_t trans_id, OOObject::InputStream** input);
+	int create_pass_thru(const OOObject::guid_t& iid, OOObject::Object* obj, const OOObject::uint32_t& stub_key, OOObject::Stub** stub);
 	
 	static bool await_response(void* p);
 	static bool await_connect(void * p);
@@ -99,10 +93,7 @@ END_INTERFACE_MAP()
 
 // OOCore::Impl::RemoteObjectFactory
 public:
-	OOObject::int32_t RequestRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
 	OOObject::int32_t SetReverse(RemoteObjectFactory* pRemote);
-	OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, OOCore::ObjectFactory* pFactory);
-	OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid);
 	
 // OOCore::ProxyStubManager
 public:
@@ -110,9 +101,9 @@ public:
 	int CreateStub(const OOObject::guid_t& iid, OOObject::Object* pObj, OOObject::uint32_t* key);
 	int ReleaseProxy(const OOObject::uint32_t& key);
 	int ReleaseStub(const OOObject::uint32_t& key);	
-	int CreateRequest(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& proxy_key, OOObject::uint32_t* trans_id, OutputStream** output);
+	int CreateRequest(OOObject::uint32_t method, OOObject::TypeInfo::Method_Attributes_t flags, const OOObject::uint32_t& proxy_key, OOObject::uint32_t* trans_id, OOObject::OutputStream** output);
 	int CancelRequest(OOObject::uint32_t trans_id);
-	OOObject::int32_t SendAndReceive(TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OutputStream* output, OOObject::uint32_t trans_id, InputStream** input);
+	OOObject::int32_t SendAndReceive(OOObject::TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOObject::OutputStream* output, OOObject::uint32_t trans_id, OOObject::InputStream** input);
 };
 
 };

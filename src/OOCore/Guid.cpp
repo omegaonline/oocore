@@ -1,4 +1,7 @@
 #include "./OOCore.h"
+#include "./Guid.h"
+
+#include <ace/Uuid.h>
 
 const OOObject::guid_t OOObject::guid_t::NIL;
 

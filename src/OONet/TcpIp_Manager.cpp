@@ -82,7 +82,7 @@ TcpIp_Manager::fini(void)
 	// Close any open connections
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	for (std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i = m_trans_map.begin(); i!= m_trans_map.end(); ++i)
+	for (std::map<ACE_INET_Addr,OOUtil::Object_Ptr<OOCore::Transport_Impl> >::iterator i = m_trans_map.begin(); i!= m_trans_map.end(); ++i)
 	{
 		i->second->RequestClose();
 	}
@@ -101,7 +101,7 @@ TcpIp_Manager::add_connection(const ACE_INET_Addr& addr, OOCore::Transport_Impl*
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.find(addr);
+	std::map<ACE_INET_Addr,OOUtil::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.find(addr);
 	if (i==m_trans_map.end())
 	{
 		m_trans_map[addr] = trans;
@@ -113,7 +113,7 @@ TcpIp_Manager::remove_connection(OOCore::Transport_Impl* trans)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	for (std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.begin();i!=m_trans_map.end();++i)
+	for (std::map<ACE_INET_Addr,OOUtil::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.begin();i!=m_trans_map.end();++i)
 	{
 		if (i->second == trans)
 		{
@@ -124,7 +124,7 @@ TcpIp_Manager::remove_connection(OOCore::Transport_Impl* trans)
 }
 
 OOObject::int32_t 
-TcpIp_Manager::Connect(const OOObject::char_t* remote_addr, OOCore::Transport** ppTransport)
+TcpIp_Manager::Connect(const OOObject::char_t* remote_addr, OOObject::Transport** ppTransport)
 {
 	// Sort out address
 	ACE_INET_Addr addr;
@@ -133,7 +133,7 @@ TcpIp_Manager::Connect(const OOObject::char_t* remote_addr, OOCore::Transport** 
 
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
 
-	std::map<ACE_INET_Addr,OOCore::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.find(addr);
+	std::map<ACE_INET_Addr,OOUtil::Object_Ptr<OOCore::Transport_Impl> >::iterator i=m_trans_map.find(addr);
 	if (i!=m_trans_map.end())
 	{
 		*ppTransport = i->second;

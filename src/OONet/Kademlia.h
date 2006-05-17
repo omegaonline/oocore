@@ -1,7 +1,7 @@
 #ifndef OONET_KADEMLIA_H_INCLUDED_
 #define OONET_KADEMLIA_H_INCLUDED_
 
-#include "../OOCore/Object.h"
+#include "../OOCore/OOObject.h"
 #include "../OOCore/ProxyStub.h"
 
 #include "./OONet_export.h"

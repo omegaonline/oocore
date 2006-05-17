@@ -15,51 +15,39 @@ namespace OOCore
 {
 
 class OOCore_Export Transport_Impl : 
-	public Object_Root<Transport_Impl>,
-	public Transport,
-	public Channel
+	public OOUtil::Object_Root<Transport_Impl>,
+	public OOObject::Transport
 {
-public:
-	Transport_Impl(void);
-	
-	int Open();
-	virtual int RequestClose();
-	
-	OOObject::int32_t CreateRemoteObject(const OOObject::char_t* remote_url, const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
-	OOObject::int32_t RegisterObjectFactory(ObjectFactory::Flags_t flags, const OOObject::guid_t& clsid, ObjectFactory* pFactory);
-	OOObject::int32_t UnregisterObjectFactory(const OOObject::guid_t& clsid);
-
 protected:
+	Transport_Impl(void);
 	virtual ~Transport_Impl(void);
-
-	virtual void Closed();
+	
+	int open();
 
 	// Operations
-	virtual int handle_recv();
+	int process_block(ACE_Message_Block* mb);
 
 	// Overrides	
 	virtual int send(ACE_Message_Block* mb, ACE_Time_Value* wait = 0) = 0;
 	virtual int recv(ACE_Message_Block*& mb, ACE_Time_Value* wait = 0) = 0;
 
 BEGIN_INTERFACE_MAP(Transport_Impl)
-	INTERFACE_ENTRY(Channel)
-	INTERFACE_ENTRY(Transport)
+	INTERFACE_ENTRY(OOObject::Transport)
 END_INTERFACE_MAP()
 
 private:
 	ACE_Thread_Mutex m_lock;
 	ACE_Message_Block* m_curr_block;
-	Object_Ptr<ObjectManager> m_ptrOM;
-	std::queue<ACE_Message_Block*> m_init_queue;
+	OOUtil::Object_Ptr<ObjectManager> m_ptrOM;
 
 	struct msg_param : ACE_Method_Request
 	{
-		msg_param(Object_Ptr<ObjectManager>& om, const Object_Ptr<Impl::InputStream_CDR>& i) :
+		msg_param(OOUtil::Object_Ptr<ObjectManager>& om, Impl::InputStream_CDR* i) :
 			OM(om),input(i)
 		{}
 			
-		Object_Ptr<ObjectManager> OM;
-		Object_Ptr<Impl::InputStream_CDR> input;
+		OOUtil::Object_Ptr<ObjectManager> OM;
+		OOUtil::Object_Ptr<Impl::InputStream_CDR> input;
 
 		int call()
 		{
@@ -69,17 +57,13 @@ private:
 		}
 	};
 	
-	int process_block(ACE_Message_Block* mb);
 	int read_header(ACE_InputCDR& input, size_t& msg_size);
 	
-// OOCore::Channel members
-public:
-	int CreateOutputStream(OutputStream** ppStream);
-	int Send(OutputStream* output);
-
 // OOCore::Transport members
 public:
-	OOObject::int32_t CreateObject(const OOObject::guid_t& clsid, OOObject::Object* pOuter, const OOObject::guid_t& iid, OOObject::Object** ppVal);
+	virtual int CreateOutputStream(OOObject::OutputStream** ppStream);
+	virtual int Send(OOObject::OutputStream* output);
+	virtual int Close();
 };
 
 };

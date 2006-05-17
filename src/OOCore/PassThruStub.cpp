@@ -1,7 +1,7 @@
 #include "./PassThruStub.h"
 #include "./OutputStream_CDR.h"
 
-OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* stub_manager, const OOObject::uint32_t& stub_key, Object_Ptr<OOCore::ProxyStubManager>& proxy_manager, const OOObject::uint32_t& proxy_key,Object_Ptr<OOCore::Proxy>& proxy) :
+OOCore::Impl::PassThruStub::PassThruStub(OOCore::ObjectManager* stub_manager, const OOObject::uint32_t& stub_key, OOUtil::Object_Ptr<OOObject::ProxyStubManager>& proxy_manager, const OOObject::uint32_t& proxy_key, OOUtil::Object_Ptr<OOObject::Proxy>& proxy) :
 	m_stub_manager(stub_manager),
 	m_stub_key(stub_key),
 	m_proxy_manager(proxy_manager),
@@ -20,8 +20,8 @@ OOCore::Impl::PassThruStub::init(const OOObject::guid_t& iid, Stub* stub)
 	}
 	
 	// Get the TypeInfo
-	Object_Ptr<TypeInfo> ptrTypeInfo;	
-	if (OOCore::GetTypeInfo(iid,&ptrTypeInfo) != 0)
+	OOUtil::Object_Ptr<OOObject::TypeInfo> ptrTypeInfo;	
+	if (OOUtil::GetTypeInfo(iid,&ptrTypeInfo) != 0)
 		return -1;
 		
 	// Enum the methods looking for any with iid_is attributes
@@ -32,7 +32,7 @@ OOCore::Impl::PassThruStub::init(const OOObject::guid_t& iid, Stub* stub)
 		
 	for (size_t method=2;method<method_count;++method)
 	{
-		TypeInfo::Method_Attributes_t attributes;
+		OOObject::TypeInfo::Method_Attributes_t attributes;
 		OOObject::uint16_t wait_secs;
 		size_t param_count;
 		if (ptrTypeInfo->GetMethodInfo(method,&name,&param_count,&attributes,&wait_secs) != 0)
@@ -40,12 +40,12 @@ OOCore::Impl::PassThruStub::init(const OOObject::guid_t& iid, Stub* stub)
 			
 		for (size_t param=0;param<param_count;++param)
 		{
-			TypeInfo::Type_t type;
+			OOObject::TypeInfo::Type_t type;
 			if (ptrTypeInfo->GetParamInfo(method,param,&name,&type) != 0)
 				return -1;
 				
 			// Check to see if we have a parameter of type Object
-			if ((type & TypeInfo::TYPE_MASK) == TypeInfo::Object)
+			if ((type & OOObject::TypeInfo::TYPE_MASK) == OOObject::TypeInfo::Object)
 			{
 				m_iid_methods.insert(method);
 				break;	
@@ -60,7 +60,7 @@ OOCore::Impl::PassThruStub::init(const OOObject::guid_t& iid, Stub* stub)
 }		
 
 int 
-OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, InputStream* input, OutputStream* output)
+OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, OOObject::TypeInfo::Method_Attributes_t flags, OOObject::uint16_t wait_secs, OOObject::InputStream* input, OOObject::OutputStream* output)
 {
 	// Check for Release first
 	if (method==1)
@@ -77,7 +77,7 @@ OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, TypeInfo::Method_A
 	
 	// Create a request output stream
 	OOObject::uint32_t trans_id;
-	OOCore::Object_Ptr<OOCore::OutputStream> request;
+	OOUtil::OutputStream_Ptr request;
 	if (m_proxy_manager->CreateRequest(method,flags,m_proxy_key,&trans_id,&request) != 0)
 		return -1;
 	
@@ -89,10 +89,10 @@ OOCore::Impl::PassThruStub::Invoke(OOObject::uint32_t method, TypeInfo::Method_A
 	}
 
 	// Send the request
-	OOCore::Object_Ptr<OOCore::InputStream> response;
+	OOUtil::InputStream_Ptr response;
 	OOObject::int32_t ret = m_proxy_manager->SendAndReceive(flags,wait_secs,request,trans_id,&response);
 	
-	if (!(flags & TypeInfo::async_method))
+	if (!(flags & OOObject::TypeInfo::async_method))
 	{
 		// Write error code out
 		if (output->WriteLong(ret) != 0)
@@ -122,18 +122,18 @@ OOCore::Impl::PassThruStub::GetObject(OOObject::Object** ppVal)
 }
 
 int 
-OOCore::Impl::PassThruStub::copy(OOCore::InputStream* in, OOCore::OutputStream* out)
+OOCore::Impl::PassThruStub::copy(OOObject::InputStream* in, OOObject::OutputStream* out)
 {
 #ifdef DONT_USE_DYNAMIC_CAST
 	// Check the magic numbers and copy
-	Object_Ptr<Impl::OutputStream_CDR> out_cdr;
+	OOUtil::Object_Ptr<Impl::OutputStream_CDR> out_cdr;
 	if (out->QueryInterface(Impl::InputStream_CDR::IID,reinterpret_cast<OOObject::Object**>(&out_cdr)) != 0)
 	{
 		errno = EFAULT;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Invalid output stream\n")),-1);
 	}
 
-	Object_Ptr<Impl::InputStream_CDR> in_cdr;
+	OOUtil::Object_Ptr<Impl::InputStream_CDR> in_cdr;
 	if (in->QueryInterface(Impl::InputStream_CDR::IID,reinterpret_cast<OOObject::Object**>(&in_cdr)) != 0)
 	{
 		errno = EFAULT;

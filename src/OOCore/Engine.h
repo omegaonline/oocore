@@ -34,7 +34,7 @@ public:
 private:
 	Engine();
 	virtual ~Engine();
-	friend class ACE_Singleton<Engine, ACE_Thread_Mutex>;
+	friend class ACE_DLL_Singleton<Engine, ACE_Thread_Mutex>;
 
 	struct cond_req : ACE_Method_Request
 	{
@@ -77,7 +77,7 @@ private:
 	int check_conditions();
 };
 
-typedef ACE_Singleton<Engine, ACE_Thread_Mutex> ENGINE;
+typedef ACE_DLL_Singleton<Engine, ACE_Thread_Mutex> ENGINE;
 
 };
 };

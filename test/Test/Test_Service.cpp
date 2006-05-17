@@ -1,11 +1,13 @@
 #include "./Test_Service.h"
 #include "./Test_Impl.h"
 
+#include <OOCore/Guid.h>
+
 ACE_FACTORY_DEFINE(Test,Test_Service)
 
 DEFINE_IID(TestNS::Test,6AAE8C33-699A-4414-AF84-25E74E693207);
 DEFINE_IID(TestNS::Test2,911D26B6-8539-4b86-A0EE-C978342F0C7B);
-DEFINE_CLSID(Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
+DEFINE_OID(Test,7A5701A9-28FD-4fa0-8D95-77D00C753444);
 
 BEGIN_META_INFO_MAP_EX(Test,OOTest)
 	META_INFO_ENTRY(TestNS::Test)
@@ -21,7 +23,7 @@ Test_Service::init(int argc, ACE_TCHAR *argv[])
 	// Register ourselves... Its just easier!
 	RegisterLib(true);
 
-	if (OOCore::RegisterObjectFactory(OOCore::ObjectFactory::USAGE_ANY,CLSID_Test,this) != 0)
+	if (OOCore::RegisterObjectFactory(OOObject::ObjectFactory::ANY,OID_Test,this) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) Failed to register Test object factory\n")),-1);
 
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Test-Service started.  Test away!\n")));
@@ -32,7 +34,7 @@ Test_Service::init(int argc, ACE_TCHAR *argv[])
 int 
 Test_Service::fini(void)
 {
-	return OOCore::UnregisterObjectFactory(CLSID_Test);
+	return OOCore::UnregisterObjectFactory(OID_Test);
 }
 
 OOObject::int32_t 

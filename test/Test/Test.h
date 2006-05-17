@@ -1,7 +1,7 @@
 #ifndef TEST_TEST_H_INCLUDED_
 #define TEST_TEST_H_INCLUDED_
 
-#include <OOCore/Object.h>
+#include <OOCore/OOObject.h>
 #include <OOCore/ProxyStub.h>
 
 #include "./Test_export.h"
@@ -45,6 +45,6 @@ namespace TestNS
 	END_META_INFO()
 };
 
-DECLARE_CLSID(Test,Test);
+DECLARE_OID(Test,Test);
 
 #endif // TEST_TEST_H_INCLUDED_

@@ -3,11 +3,11 @@
 
 #include <ace/Service_Object.h>
 
-#include <OOCore/OOCore_Util.h>
+#include <OOCore/OOUtil.h>
 
 class Test_Service : 
 	public ACE_Service_Object,
-	public OOCore::Object_Impl<OOCore::ObjectFactory>
+	public OOUtil::Object_Impl<OOObject::ObjectFactory>
 {
 public:
 	int init(int argc, ACE_TCHAR *argv[]);

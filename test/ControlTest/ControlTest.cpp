@@ -1,13 +1,11 @@
 // ControlTest.cpp : Defines the entry point for the console application.
 //
 
-//#include <tchar.h>
-
-#include <OOCore/OOCore_Util.h>
+#include <OOCore/OOUtil.h>
 
 #include "../Test/Test.h"
 
-void DoTests(OOCore::Object_Ptr<TestNS::Test>& ptrTest)
+void DoTests(OOUtil::Object_Ptr<TestNS::Test>& ptrTest)
 {
 	OOObject::int16_t arr[11] = {0};
 	OOObject::uint32_t count = 7;
@@ -67,7 +65,7 @@ void DoTests(OOCore::Object_Ptr<TestNS::Test>& ptrTest)
 		OOObject::Free(pstr2);
 
 	// Now test QI
-	OOCore::Object_Ptr<TestNS::Test2> ptrTest2;
+	OOUtil::Object_Ptr<TestNS::Test2> ptrTest2;
 	if (ptrTest->QueryInterface(TestNS::Test2::IID,reinterpret_cast<OOObject::Object**>(&ptrTest2)) != 0)
 		ACE_OS::printf("QI failed!\n");
 	else
@@ -90,8 +88,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	{
 		// The inner braces ensure that all objects are destructed before OOObject::Term() is called
 		{
-            OOCore::Object_Ptr<TestNS::Test> ptrTest;
-			if ((ret=OOObject::CreateObject(CLSID_Test,&ptrTest)) == 0)
+            OOUtil::Object_Ptr<TestNS::Test> ptrTest;
+			if ((ret=OOUtil::CreateObject(OID_Test,&ptrTest)) == 0)
 				DoTests(ptrTest);
 			else
 			{
@@ -104,11 +102,11 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 				strcpy(szBuf,argv[1]);
 							
 			ptrTest = 0;
-			if ((ret=OOObject::CreateRemoteObject(szBuf,CLSID_Test,&ptrTest)) == 0)
+			if ((ret=OOUtil::CreateObject(OID_Test,&ptrTest)) == 0)
 				DoTests(ptrTest);
 			else
 			{
-				ACE_OS::printf("CreateRemoteObject failed: errno %d, ",errno);
+				ACE_OS::printf("CreateObject failed: errno %d, ",errno);
 				ACE_OS::perror("");
 			}
 

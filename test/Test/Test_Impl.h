@@ -4,7 +4,7 @@
 #include "./Test.h"
 
 class Test_Impl : 
-	public OOCore::Object_Root<Test_Impl>,
+	public OOUtil::Object_Root<Test_Impl>,
 	public TestNS::Test,
 	public TestNS::Test2
 {

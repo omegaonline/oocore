@@ -40,7 +40,9 @@
 #include <atlcom.h>
 #include <atlstr.h>
 
-#include <OOCore/Object.h>
+#include <ace/Init_ACE.h>
+
+#include <OOCore/OOObject.h>
 #include <OOCore/OOCore_Util.h>
 #include <OOCore/CustomMarshaller.h>
 

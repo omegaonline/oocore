@@ -56,7 +56,7 @@ HRESULT CCOMClassFactory::init(REFCLSID rclsid)
 	{
 		const OOObject::char_t* method_name;
 		size_t param_count;
-		OOCore::TypeInfo::Method_Attributes_t attr;
+		OOObject::TypeInfo::Method_Attributes_t attr;
 		OOObject::uint16_t wait_secs;
         m_ptr_OO_TypeInfo->GetMethodInfo(i,&method_name,&param_count,&attr,&wait_secs);
 
@@ -65,7 +65,7 @@ HRESULT CCOMClassFactory::init(REFCLSID rclsid)
 		for (size_t j=0;j<param_count;++j)
 		{
 			const OOObject::char_t* param_name;
-			OOCore::TypeInfo::Type_t type;
+			OOObject::TypeInfo::Type_t type;
 			m_ptr_OO_TypeInfo->GetParamInfo(i,j,&param_name,&type);
 
 			if (j>0)
@@ -83,7 +83,7 @@ HRESULT CCOMClassFactory::init(REFCLSID rclsid)
 STDMETHODIMP CCOMClassFactory::CreateInstance(LPUNKNOWN pUnkOuter, REFIID riid, void** ppvObj)
 {
 	// First create the OO object
-	OOCore::Object_Ptr<OOObject::Object> ptrObj;
+	OOUtil::Object_Ptr<OOObject::Object> ptrObj;
 	OOObject::uint32_t key;
 	if (INTEROP::instance()->CreateObject(m_OO_clsid,0,m_OO_iid,&key,&ptrObj) != 0)
 		return CLASS_E_CLASSNOTAVAILABLE;

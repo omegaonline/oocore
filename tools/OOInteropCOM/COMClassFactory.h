@@ -11,7 +11,7 @@ public:
 private:
 	OOObject::guid_t						m_OO_clsid;
 	OOObject::guid_t						m_OO_iid;
-	OOCore::Object_Ptr<OOCore::TypeInfo>	m_ptr_OO_TypeInfo;
+	OOUtil::Object_Ptr<OOObject::TypeInfo>	m_ptr_OO_TypeInfo;
 	
 	HRESULT init(REFCLSID rclsid);
 

@@ -15,7 +15,7 @@ public:
 	{
 	}
 
-	HRESULT init(const OOObject::uint32_t& key, OOCore::Object_Ptr<OOCore::TypeInfo>& type_info);
+	HRESULT init(const OOObject::uint32_t& key, OOUtil::Object_Ptr<OOObject::TypeInfo>& type_info);
 
 DECLARE_REGISTRY_RESOURCEID(IDR_OODISPATCH)
 
@@ -25,23 +25,23 @@ END_COM_MAP()
 
 private:
 	OOObject::uint32_t						m_OO_key;
-	OOCore::Object_Ptr<OOCore::TypeInfo>	m_ptr_OO_TypeInfo;
+	OOUtil::Object_Ptr<OOObject::TypeInfo>	m_ptr_OO_TypeInfo;
 
-	VARTYPE OOTypeToVARTYPE(OOCore::TypeInfo::Type_t type);
-	HRESULT WriteParam(const CComVariant& var, OOCore::TypeInfo::Type_t type, OOCore::Object_Ptr<OOCore::OutputStream>& ptrOut);
-	HRESULT WriteString(const BSTR bstr, OOCore::TypeInfo::Type_t type, OOCore::OutputStream_Wrapper& out);
-	HRESULT WriteArray(SAFEARRAY* parray, OOCore::TypeInfo::Type_t type, OOCore::Object_Ptr<OOCore::OutputStream>& ptrOut);
-	HRESULT ReadParam(VARIANT* var, OOCore::TypeInfo::Type_t type, OOCore::Object_Ptr<OOCore::InputStream>& ptrIn);
-	HRESULT ReadString(BSTR& bstr, OOCore::TypeInfo::Type_t type, OOCore::InputStream_Wrapper& in);
+	VARTYPE OOTypeToVARTYPE(OOObject::TypeInfo::Type_t type);
+	HRESULT WriteParam(const CComVariant& var, OOObject::TypeInfo::Type_t type, OOUtil::OutputStream_Ptr& ptrOut);
+	HRESULT WriteString(const BSTR bstr, OOObject::TypeInfo::Type_t type, OOUtil::OutputStream_Ptr& out);
+	HRESULT WriteArray(SAFEARRAY* parray, OOObject::TypeInfo::Type_t type, OOUtil::OutputStream_Ptr& ptrOut);
+	HRESULT ReadParam(VARIANT* var, OOObject::TypeInfo::Type_t type, OOUtil::InputStream_Ptr& ptrIn);
+	HRESULT ReadString(BSTR& bstr, OOObject::TypeInfo::Type_t type, OOUtil::InputStream_Ptr& in);
 
 	template <class T>
-	HRESULT Write(const T& val, OOCore::OutputStream_Wrapper& out)
+	HRESULT Write(const T& val, OOUtil::OutputStream_Ptr& out)
 	{
 		return (out.write(val) == 0 ? S_OK : STG_E_ABNORMALAPIEXIT);
 	}
 
 	template <class T>
-	HRESULT Read(T& val, OOCore::InputStream_Wrapper& in)
+	HRESULT Read(T& val, OOUtil::InputStream_Ptr& in)
 	{
 		return (in.read(val) == 0 ? S_OK : STG_E_ABNORMALAPIEXIT);
 	}

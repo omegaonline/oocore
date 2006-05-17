@@ -5,7 +5,7 @@
 #include ".\oodispatch.h"
 
 // COODispatch
-HRESULT COODispatch::init(const OOObject::uint32_t& key, OOCore::Object_Ptr<OOCore::TypeInfo>& type_info)
+HRESULT COODispatch::init(const OOObject::uint32_t& key, OOUtil::Object_Ptr<OOObject::TypeInfo>& type_info)
 {
 	m_OO_key = key;
 	m_ptr_OO_TypeInfo = type_info;
@@ -13,7 +13,7 @@ HRESULT COODispatch::init(const OOObject::uint32_t& key, OOCore::Object_Ptr<OOCo
 	return S_OK;
 }
 
-HRESULT COODispatch::ReadParam(VARIANT* var, OOCore::TypeInfo::Type_t type, OOCore::Object_Ptr<OOCore::InputStream>& ptrIn)
+HRESULT COODispatch::ReadParam(VARIANT* var, OOObject::TypeInfo::Type_t type, OOUtil::InputStream_Ptr& ptrIn)
 {
 	/*VT_ARRAY	= 0x2000*/
 	
@@ -23,70 +23,70 @@ HRESULT COODispatch::ReadParam(VARIANT* var, OOCore::TypeInfo::Type_t type, OOCo
 	case VT_UNKNOWN:
 
 	case VT_I8:
-		return Read(var->llVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->llVal,ptrIn);
 
     case VT_I4:
 		{
 			// This is bust for some reason!
 			OOObject::int32_t v;
 			HRESULT hr;
-			if ((hr=Read(v,OOCore::InputStream_Wrapper(ptrIn))) == S_OK)
+			if ((hr=Read(v,ptrIn)) == S_OK)
 				var->lVal = v;
 			return hr;
 		}
 
     case VT_UI1:
-		return Read(var->bVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->bVal,ptrIn);
 
     case VT_I2:
-		return Read(var->iVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->iVal,ptrIn);
 
     case VT_R4:
-		return Read(var->fltVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->fltVal,ptrIn);
 
     case VT_R8:
-		return Read(var->dblVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->dblVal,ptrIn);
 
     case VT_BOOL:
-		return Read(var->boolVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->boolVal,ptrIn);
     
 	case (VT_BYREF | VT_UI1):
-		return Read(*var->pbVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pbVal,ptrIn);
 
 	case (VT_BYREF | VT_I2):
-		return Read(*var->piVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->piVal,ptrIn);
     
 	case (VT_BYREF | VT_I4):
 		{
 			// This is bust for some reason!
 			OOObject::int32_t v;
 			HRESULT hr;
-			if ((hr=Read(v,OOCore::InputStream_Wrapper(ptrIn))) == S_OK)
+			if ((hr=Read(v,ptrIn)) == S_OK)
 				*var->plVal = v;
 			return hr;
 		}
 
 	case (VT_BYREF | VT_I8):
-		return Read(*var->pllVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pllVal,ptrIn);
     
 	case (VT_BYREF | VT_R4):
-		return Read(*var->pfltVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pfltVal,ptrIn);
 
 	case (VT_BYREF | VT_R8):
-		return Read(*var->pdblVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pdblVal,ptrIn);
 
 	case (VT_BYREF | VT_BOOL):
-		return Read(*var->pboolVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pboolVal,ptrIn);
     
     case VT_BSTR:
-		if (type & OOCore::TypeInfo::string)
-			return ReadString(var->bstrVal,type,OOCore::InputStream_Wrapper(ptrIn));
+		if (type & OOObject::TypeInfo::string)
+			return ReadString(var->bstrVal,type,ptrIn);
 		else
 			return DISP_E_BADVARTYPE;		
 
 	case (VT_BYREF | VT_BSTR):
-		if (type & OOCore::TypeInfo::string)
-			return ReadString(*var->pbstrVal,type,OOCore::InputStream_Wrapper(ptrIn));
+		if (type & OOObject::TypeInfo::string)
+			return ReadString(*var->pbstrVal,type,ptrIn);
 		else
 			return DISP_E_BADVARTYPE;		
     /*
@@ -104,54 +104,54 @@ HRESULT COODispatch::ReadParam(VARIANT* var, OOCore::TypeInfo::Type_t type, OOCo
 		return ReadParam(var->pvarVal,type,ptrIn);
     
     case VT_I1:
-		return Read(var->cVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->cVal,ptrIn);
 
     case VT_UI2:
-		return Read(var->uiVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->uiVal,ptrIn);
 
     case VT_UI4:
 		{
 			// This is bust for some reason!
 			OOObject::uint32_t v;
 			HRESULT hr;
-			if ((hr=Read(v,OOCore::InputStream_Wrapper(ptrIn))) == S_OK)
+			if ((hr=Read(v,ptrIn)) == S_OK)
 				var->ulVal = v;
 			return hr;
 		}
 
     case VT_UI8:
-		return Read(var->ullVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->ullVal,ptrIn);
 
     case VT_INT:
-		return Read(var->intVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->intVal,ptrIn);
 
     case VT_UINT:
-		return Read(var->uintVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(var->uintVal,ptrIn);
 
 	case (VT_BYREF | VT_I1):
-		return Read(*var->pcVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pcVal,ptrIn);
 
 	case (VT_BYREF | VT_UI2):
-		return Read(*var->puiVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->puiVal,ptrIn);
 
 	case (VT_BYREF | VT_UI4):
 		{
 			// This is bust for some reason!
 			OOObject::uint32_t v;
 			HRESULT hr;
-			if ((hr=Read(v,OOCore::InputStream_Wrapper(ptrIn))) == S_OK)
+			if ((hr=Read(v,ptrIn)) == S_OK)
 				*var->pulVal = v;
 			return hr;
 		}
 
     case (VT_BYREF | VT_UI8):
-		return Read(*var->pullVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pullVal,ptrIn);
 
     case (VT_BYREF | VT_INT):
-		return Read(*var->pintVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->pintVal,ptrIn);
 
     case (VT_BYREF | VT_UINT):
-		return Read(*var->puintVal,OOCore::InputStream_Wrapper(ptrIn));
+		return Read(*var->puintVal,ptrIn);
     	
 	// We can't handle anything else!
 	default:
@@ -159,7 +159,7 @@ HRESULT COODispatch::ReadParam(VARIANT* var, OOCore::TypeInfo::Type_t type, OOCo
 	}
 }
 
-HRESULT COODispatch::ReadString(BSTR& bstr, OOCore::TypeInfo::Type_t type, OOCore::InputStream_Wrapper& in)
+HRESULT COODispatch::ReadString(BSTR& bstr, OOObject::TypeInfo::Type_t type, OOUtil::InputStream_Ptr& in)
 {
 	::SysFreeString(bstr);
 	bstr=NULL;
@@ -172,7 +172,7 @@ HRESULT COODispatch::ReadString(BSTR& bstr, OOCore::TypeInfo::Type_t type, OOCor
 	if (nLen==0)
 		return S_OK;
 
-	if (type & OOCore::TypeInfo::char_t)
+	if (type & OOObject::TypeInfo::char_t)
 	{
 		LPSTR pszText = new char[nLen+1];
 		for (UINT i=0;i<nLen;++i)
@@ -192,7 +192,7 @@ HRESULT COODispatch::ReadString(BSTR& bstr, OOCore::TypeInfo::Type_t type, OOCor
 
 		return S_OK;
 	}
-	else if (type & OOCore::TypeInfo::int16_t)
+	else if (type & OOObject::TypeInfo::int16_t)
 	{
 		LPWSTR pszText = new wchar_t[nLen+1];
 		for (UINT i=0;i<nLen;++i)
@@ -219,7 +219,7 @@ HRESULT COODispatch::ReadString(BSTR& bstr, OOCore::TypeInfo::Type_t type, OOCor
 	return DISP_E_BADVARTYPE;
 }
 
-HRESULT COODispatch::WriteParam(const CComVariant& var, OOCore::TypeInfo::Type_t type, OOCore::Object_Ptr<OOCore::OutputStream>& ptrOut)
+HRESULT COODispatch::WriteParam(const CComVariant& var, OOObject::TypeInfo::Type_t type, OOUtil::OutputStream_Ptr& ptrOut)
 {
 	if (var.vt & (VT_ARRAY | VT_BYREF))
 		return WriteArray(*var.pparray,type,ptrOut);
@@ -232,64 +232,64 @@ HRESULT COODispatch::WriteParam(const CComVariant& var, OOCore::TypeInfo::Type_t
 	case VT_UNKNOWN:
 
 	case VT_I8:
-		return Write(var.llVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.llVal,ptrOut);
 
     case VT_I4:
-		return Write(var.lVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.lVal,ptrOut);
 		/*{
 			// This is bust for some reason!
 			OOObject::int32_t v;
 			HRESULT hr;
-			if ((hr=Write(v,OOCore::OutputStream_Wrapper(ptrOut))) == S_OK)
+			if ((hr=Write(v,ptrOut)) == S_OK)
 				var->lVal = v;
 			return hr;
 		}*/
 
     case VT_UI1:
-		return Write(var.bVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.bVal,ptrOut);
 
     case VT_I2:
-		return Write(var.iVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.iVal,ptrOut);
 
     case VT_R4:
-		return Write(var.fltVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.fltVal,ptrOut);
 
     case VT_R8:
-		return Write(var.dblVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.dblVal,ptrOut);
 
     case VT_BOOL:
-		return Write(var.boolVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.boolVal,ptrOut);
     
 	case (VT_BYREF | VT_UI1):
-		return Write(*var.pbVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pbVal,ptrOut);
 
 	case (VT_BYREF | VT_I2):
-		return Write(*var.piVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.piVal,ptrOut);
     
 	case (VT_BYREF | VT_I4):
-		return Write(*var.plVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.plVal,ptrOut);
 		
 	case (VT_BYREF | VT_I8):
-		return Write(*var.pllVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pllVal,ptrOut);
     
 	case (VT_BYREF | VT_R4):
-		return Write(*var.pfltVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pfltVal,ptrOut);
 
 	case (VT_BYREF | VT_R8):
-		return Write(*var.pdblVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pdblVal,ptrOut);
 
 	case (VT_BYREF | VT_BOOL):
-		return Write(*var.pboolVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pboolVal,ptrOut);
     
     case VT_BSTR:
-		if (type & OOCore::TypeInfo::string)
-			return WriteString(var.bstrVal,type,OOCore::OutputStream_Wrapper(ptrOut));
+		if (type & OOObject::TypeInfo::string)
+			return WriteString(var.bstrVal,type,ptrOut);
 		else
 			return DISP_E_BADVARTYPE;		
 
 	case (VT_BYREF | VT_BSTR):
-		if (type & OOCore::TypeInfo::string)
-			return WriteString(*var.pbstrVal,type,OOCore::OutputStream_Wrapper(ptrOut));
+		if (type & OOObject::TypeInfo::string)
+			return WriteString(*var.pbstrVal,type,ptrOut);
 		else
 			return DISP_E_BADVARTYPE;		
     /*
@@ -304,40 +304,40 @@ HRESULT COODispatch::WriteParam(const CComVariant& var, OOCore::TypeInfo::Type_t
 		return WriteParam(*var.pvarVal,type,ptrOut);
     
     case VT_I1:
-		return Write(var.cVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.cVal,ptrOut);
 
     case VT_UI2:
-		return Write(var.uiVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.uiVal,ptrOut);
 
     case VT_UI4:
-		return Write(static_cast<OOObject::uint32_t>(var.ulVal),OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(static_cast<OOObject::uint32_t>(var.ulVal),ptrOut);
 
     case VT_UI8:
-		return Write(var.ullVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.ullVal,ptrOut);
 
     case VT_INT:
-		return Write(var.intVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.intVal,ptrOut);
 
     case VT_UINT:
-		return Write(var.uintVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(var.uintVal,ptrOut);
 
 	case (VT_BYREF | VT_I1):
-		return Write(*var.pcVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pcVal,ptrOut);
 
 	case (VT_BYREF | VT_UI2):
-		return Write(*var.puiVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.puiVal,ptrOut);
 
 	case (VT_BYREF | VT_UI4):
-		return Write(static_cast<OOObject::int32_t>(*var.pulVal),OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(static_cast<OOObject::int32_t>(*var.pulVal),ptrOut);
 
     case (VT_BYREF | VT_UI8):
-		return Write(*var.pullVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pullVal,ptrOut);
 
     case (VT_BYREF | VT_INT):
-		return Write(*var.pintVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.pintVal,ptrOut);
 
     case (VT_BYREF | VT_UINT):
-		return Write(*var.puintVal,OOCore::OutputStream_Wrapper(ptrOut));
+		return Write(*var.puintVal,ptrOut);
     	
 	// We can't handle anything else!
 	default:
@@ -345,12 +345,12 @@ HRESULT COODispatch::WriteParam(const CComVariant& var, OOCore::TypeInfo::Type_t
 	}
 }
 
-HRESULT COODispatch::WriteArray(SAFEARRAY* parray, OOCore::TypeInfo::Type_t type, OOCore::Object_Ptr<OOCore::OutputStream>& ptrOut)
+HRESULT COODispatch::WriteArray(SAFEARRAY* parray, OOObject::TypeInfo::Type_t type, OOUtil::OutputStream_Ptr& ptrOut)
 {
 	long ubound,lbound;
 
 	// Remove the array tag from type
-	type &= ~OOCore::TypeInfo::array;
+	type &= ~OOObject::TypeInfo::array;
 
 	VARTYPE vt = OOTypeToVARTYPE(type);
 
@@ -388,14 +388,14 @@ HRESULT COODispatch::WriteArray(SAFEARRAY* parray, OOCore::TypeInfo::Type_t type
 	return hr;
 }
 
-HRESULT COODispatch::WriteString(const BSTR bstr, OOCore::TypeInfo::Type_t type, OOCore::OutputStream_Wrapper& out)
+HRESULT COODispatch::WriteString(const BSTR bstr, OOObject::TypeInfo::Type_t type, OOUtil::OutputStream_Ptr& out)
 {
 	OOObject::uint32_t nLen = ::SysStringLen(bstr);
 	HRESULT hr = Write(nLen,out);
 	if FAILED(hr)
 		return hr;
 
-	if (type & OOCore::TypeInfo::char_t)
+	if (type & OOObject::TypeInfo::char_t)
 	{
 		LPSTR pszText = CW2A(bstr);
 		for (UINT i=0;i<nLen;++i)
@@ -406,7 +406,7 @@ HRESULT COODispatch::WriteString(const BSTR bstr, OOCore::TypeInfo::Type_t type,
 		}
 		return S_OK;
 	}
-	else if (type & OOCore::TypeInfo::int16_t)
+	else if (type & OOObject::TypeInfo::int16_t)
 	{
 		for (UINT i=0;i<nLen;++i)
 		{
@@ -420,57 +420,57 @@ HRESULT COODispatch::WriteString(const BSTR bstr, OOCore::TypeInfo::Type_t type,
 	return DISP_E_BADVARTYPE;
 }
 
-VARTYPE COODispatch::OOTypeToVARTYPE(OOCore::TypeInfo::Type_t type)
+VARTYPE COODispatch::OOTypeToVARTYPE(OOObject::TypeInfo::Type_t type)
 {
 	// Work out the basic type
 	VARTYPE result = VT_EMPTY;
-	switch (type & OOCore::TypeInfo::TYPE_MASK)
+	switch (type & OOObject::TypeInfo::TYPE_MASK)
 	{
-	case OOCore::TypeInfo::bool_t:
+	case OOObject::TypeInfo::bool_t:
 		result = VT_BOOL;
 		break;
 
-	case OOCore::TypeInfo::char_t:
+	case OOObject::TypeInfo::char_t:
 		result = VT_I1;
 		break;
 
-	case OOCore::TypeInfo::byte_t:
+	case OOObject::TypeInfo::byte_t:
 		result = VT_UI1;
 		break;
 
-	case OOCore::TypeInfo::int16_t:
+	case OOObject::TypeInfo::int16_t:
 		result = VT_I2;
 		break;
 
-	case OOCore::TypeInfo::uint16_t:
+	case OOObject::TypeInfo::uint16_t:
 		result = VT_UI2;
 		break;
 
-	case OOCore::TypeInfo::int32_t:
+	case OOObject::TypeInfo::int32_t:
 		result = VT_I4;
 		break;
 
-	case OOCore::TypeInfo::uint32_t:
+	case OOObject::TypeInfo::uint32_t:
 		result = VT_UI4;
 		break;
 
-	case OOCore::TypeInfo::int64_t:
+	case OOObject::TypeInfo::int64_t:
 		result = VT_I8;
 		break;
 
-	case OOCore::TypeInfo::uint64_t:
+	case OOObject::TypeInfo::uint64_t:
 		result = VT_UI8;
 		break;
 
-	case OOCore::TypeInfo::real4_t:
+	case OOObject::TypeInfo::real4_t:
 		result = VT_R4;
 		break;
 
-	case OOCore::TypeInfo::real8_t:
+	case OOObject::TypeInfo::real8_t:
 		result = VT_R8;
 		break;
 
-	case OOCore::TypeInfo::Object:	
+	case OOObject::TypeInfo::Object:	
 		result = VT_DISPATCH;
 		break;
 
@@ -479,10 +479,10 @@ VARTYPE COODispatch::OOTypeToVARTYPE(OOCore::TypeInfo::Type_t type)
 		break;
 	}
 
-	OOCore::TypeInfo::Type_t attr_type = (type & OOCore::TypeInfo::ATTR_MASK);
+	OOObject::TypeInfo::Type_t attr_type = (type & OOObject::TypeInfo::ATTR_MASK);
 
 	// Check for possible string types...
-	if (attr_type & OOCore::TypeInfo::string)
+	if (attr_type & OOObject::TypeInfo::string)
 	{
 		if (result == VT_I1 || result==VT_I2)
 			result = VT_BSTR;
@@ -494,13 +494,13 @@ VARTYPE COODispatch::OOTypeToVARTYPE(OOCore::TypeInfo::Type_t type)
 	}
 
 	// Check the in and out attributes for pointer values...
-	if (attr_type & OOCore::TypeInfo::out)
+	if (attr_type & OOObject::TypeInfo::out)
 	{
 		// Must be a pointer
 		result |= VT_BYREF;
 	}
 
-	if (attr_type & OOCore::TypeInfo::array)
+	if (attr_type & OOObject::TypeInfo::array)
 	{
 		// Must be an array
 		result |= VT_ARRAY;
@@ -540,7 +540,7 @@ STDMETHODIMP COODispatch::GetIDsOfNames(/* [in] */ REFIID riid, /* [size_is][in]
 	for (size_t i=0;i<method_count;++i)
 	{
 		const OOObject::char_t* method_name;
-		OOCore::TypeInfo::Method_Attributes_t attribs;
+		OOObject::TypeInfo::Method_Attributes_t attribs;
 		OOObject::uint16_t wait_secs;
 		if (m_ptr_OO_TypeInfo->GetMethodInfo(i,&method_name,&param_count,&attribs,&wait_secs) != 0)
 			return E_UNEXPECTED;
@@ -561,7 +561,7 @@ STDMETHODIMP COODispatch::GetIDsOfNames(/* [in] */ REFIID riid, /* [size_is][in]
 	for (i=0;i<param_count;++i)
 	{
 		const OOObject::char_t* param_name;
-		OOCore::TypeInfo::Type_t type;
+		OOObject::TypeInfo::Type_t type;
 		if (m_ptr_OO_TypeInfo->GetParamInfo(rgDispId[0],i,&param_name,&type) != 0)
 			return E_UNEXPECTED;
 		
@@ -594,7 +594,7 @@ STDMETHODIMP COODispatch::Invoke(/* [in] */ DISPID dispIdMember, /* [in] */ REFI
 
 	// Get the method info
 	const OOObject::char_t* name;
-	OOCore::TypeInfo::Method_Attributes_t attr;
+	OOObject::TypeInfo::Method_Attributes_t attr;
 	size_t param_count;
 	OOObject::uint16_t wait_secs;
 	if (m_ptr_OO_TypeInfo->GetMethodInfo(dispIdMember,&name,&param_count,&attr,&wait_secs) != 0)
@@ -602,11 +602,11 @@ STDMETHODIMP COODispatch::Invoke(/* [in] */ DISPID dispIdMember, /* [in] */ REFI
 
 	// Enumerate params
 	HRESULT hr;
-	std::vector<std::pair<CComVariant,OOCore::TypeInfo::Type_t> > vecParams;
+	std::vector<std::pair<CComVariant,OOObject::TypeInfo::Type_t> > vecParams;
 	for (size_t p=0;p<param_count;++p)
 	{
 		// Get the param type info
-		OOCore::TypeInfo::Type_t type;
+		OOObject::TypeInfo::Type_t type;
 		if (m_ptr_OO_TypeInfo->GetParamInfo(dispIdMember,p,&name,&type) != 0)
 			return E_UNEXPECTED;
 
@@ -633,19 +633,19 @@ STDMETHODIMP COODispatch::Invoke(/* [in] */ DISPID dispIdMember, /* [in] */ REFI
 			return hr;
 
 		// Put into param vector
-		vecParams.push_back(std::pair<CComVariant,OOCore::TypeInfo::Type_t>(param,type));
+		vecParams.push_back(std::pair<CComVariant,OOObject::TypeInfo::Type_t>(param,type));
 	}
 
 	// Call CreateRequest for an OutputStream
 	OOObject::uint32_t trans_id;
-	OOCore::Object_Ptr<OOCore::OutputStream> ptrRequest;
+	OOUtil::OutputStream_Ptr ptrRequest;
 	if (INTEROP::instance()->CreateRequest(dispIdMember,attr,m_OO_key,&trans_id,&ptrRequest) != 0)
 		return E_UNEXPECTED;
 
 	// Write out each param
-	for (std::vector<std::pair<CComVariant,OOCore::TypeInfo::Type_t> >::iterator k=vecParams.begin();k!=vecParams.end();++k)
+	for (std::vector<std::pair<CComVariant,OOObject::TypeInfo::Type_t> >::iterator k=vecParams.begin();k!=vecParams.end();++k)
 	{
-		if (k->second & OOCore::TypeInfo::in)
+		if (k->second & OOObject::TypeInfo::in)
 		{
             // Write the data to the outputstream
 			hr = WriteParam(k->first,k->second,ptrRequest);
@@ -659,7 +659,7 @@ STDMETHODIMP COODispatch::Invoke(/* [in] */ DISPID dispIdMember, /* [in] */ REFI
 
 	// Invoke
 	CComVariant ret_code(0,VT_I4);
-	OOCore::Object_Ptr<OOCore::InputStream> ptrResponse;
+	OOUtil::InputStream_Ptr ptrResponse;
 	ret_code.lVal = INTEROP::instance()->Invoke(attr,wait_secs,ptrRequest,trans_id,&ptrResponse);
 
 	if (pVarResult)
@@ -669,12 +669,12 @@ STDMETHODIMP COODispatch::Invoke(/* [in] */ DISPID dispIdMember, /* [in] */ REFI
 		return E_UNEXPECTED;
 
 	// If we want a response
-	if (!(attr & OOCore::TypeInfo::async_method))
+	if (!(attr & OOObject::TypeInfo::async_method))
 	{
 		// Read Params
 		for (k=vecParams.begin();k!=vecParams.end();++k)
 		{
-			if (k->second & OOCore::TypeInfo::out)
+			if (k->second & OOObject::TypeInfo::out)
 			{
 				// Write the data to the outputstream
 				hr = ReadParam(&k->first,k->second,ptrResponse);

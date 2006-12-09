@@ -1,17 +1,24 @@
+/////////////////////////////////////////////////////////////
+//
+//	***** THIS IS A SECURE MODULE *****
+//
+//	It will be run as Administrator/setuid root
+//
+//	Therefore it needs to be SAFE AS HOUSES!
+//
+//	Do not include anything unecessary and do not use precompiled headers
+//
+/////////////////////////////////////////////////////////////
+
 #include "./NTService.h"
 
-#ifdef ACE_NT_SERVICE_DEFINE
+#ifdef OOSERVER_USE_NTSERVICE
 
-#include <ace/OS.h>
-#include <ace/SString.h>
-#include <ace/Get_opt.h>
+#include <ace/Get_Opt.h>
 #include <ace/ARGV.h>
-#include <ace/Service_Config.h>
+#include <ace/OS.h>
 #include <ace/Reactor.h>
-#include <ace/Service_Repository.h>
-#include <ace/Service_Types.h>
-#include <ace/Singleton.h>
-#include <ace/Mutex.h>
+#include <ace/SString.h>
 
 // For the Windows path functions
 #include <shlwapi.h>
@@ -37,9 +44,9 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 	bool bRunAsService = false;
 	bool bOptionsAlready = false;
 	bool bDebug = false;
-	
-	// Check command line options, these must match those of ACE_Service_Config::parse_args
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":bdf:k:nyp:s:S:"));
+
+	// Check command line options
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":bds:"));
 	int option;
 	while ((option = cmd_opts()) != EOF && !bInstall)
 	{
@@ -161,8 +168,8 @@ int NTService::insert(const ACE_TCHAR *cmd_line,
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) GetModuleFilename failed.\n")),-1);
 		
 	// Make sure that this_exe is quoted
-	this_exe[0] = ACE_LIB_TEXT ('\"');
-	ACE_OS::strcat (this_exe, ACE_LIB_TEXT ("\""));
+	this_exe[0] = ACE_TEXT('\"');
+	ACE_OS::strcat(this_exe, ACE_TEXT("\""));
 	
 	ACE_TString exe_path(this_exe);
 	exe_path += ACE_TEXT(" ");
@@ -198,7 +205,7 @@ ACE_THR_FUNC_RETURN NTService::start_service(void*)
 	if (ret == 0)
 	{
 		NTSERVICE::instance()->m_scm_started = false;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),(ACE_THR_FUNC_RETURN)-1);
 	}
 	
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("%T (%t): Service stopped.\n")));
@@ -256,7 +263,7 @@ int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
 		if (!m_our_close)
 		{
 			m_our_close = true;
-//			OOSvc_Shutdown();
+			ACE_Reactor::instance()->end_reactor_event_loop();
 		}
 		else
 		{
@@ -274,10 +281,9 @@ int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
 	return ACE_NT_Service::handle_close(handle,mask);
 }
 
-#if defined (ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION)
-template class ACE_Singleton<NTService, ACE_Thread_Mutex>;
-#elif defined (ACE_HAS_TEMPLATE_INSTANTIATION_PRAGMA)
-#pragma instantiate ACE_Singleton<NTService, ACE_Thread_Mutex>
-#endif /* ACE_HAS_EXPLICIT_TEMPLATE_INSTANTIATION */
+int StartDaemonService(int argc, ACE_TCHAR* argv[])
+{
+	return NTService::open(argc,argv);
+}
 
-#endif // ACE_NT_SERVICE_DEFINE
+#endif // OOSERVER_USE_NTSERVICE

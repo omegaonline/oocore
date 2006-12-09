@@ -1,52 +1,45 @@
 #ifndef OOCORE_ENGINE_H_INCLUDED_
 #define OOCORE_ENGINE_H_INCLUDED_
 
-#include <ace/Task.h>
-#include <ace/Reactor.h>
-#include <ace/Singleton.h>
-#include <ace/Activation_Queue.h>
-#include <ace/Method_Request.h>
-#include <ace/Thread.h>
-#include <ace/TSS_T.h>
+// This is cheeky I know, but the interface is private 
+// and subject to change, and therefore not part of the standard API
+#include "../OOServer/InterProcess.h"
 
-#include <list>
-
-#include "./OOCore.h"
-
-namespace OOCore
-{
-namespace Impl
-{
-
-class Engine : 
-	public ACE_Task<ACE_MT_SYNCH>
+class Engine : public ACE_Task<ACE_MT_SYNCH>
 {
 public:
-	int open(int argc, ACE_TCHAR* argv[]);
-	int open(unsigned int nThreads);
-	int close();
+	const ACE_TCHAR* name();
+	const ACE_TCHAR* dll_name();
 
-	ACE_Reactor* reactor();
+	int open (void *args = 0);
+	void close();
 
-	int pump_requests(ACE_Time_Value* timeout = 0, PUMP_CONDITION_FN cond_fn = 0, void* cond_fn_args = 0);
-	int post_request(ACE_Method_Request* req, ACE_Time_Value* wait = 0);
+	bool pump_requests(ACE_Time_Value* timeout = 0, Omega::Activation::IApartment::PUMP_CONDITION_FN cond_fn = 0, void* cond_fn_args = 0);
+	bool post_request(ACE_Method_Request* req, ACE_Time_Value* wait = 0);
+
+	ACE_Reactor* get_reactor();
+	void release_reactor();
+
+	static Engine* GetSingleton();
 
 private:
 	Engine();
 	virtual ~Engine();
-	friend class ACE_DLL_Singleton<Engine, ACE_Thread_Mutex>;
+	friend class ACE_DLL_Singleton_T<Engine, ACE_Recursive_Thread_Mutex>;
 
-	struct cond_req : ACE_Method_Request
+	typedef ACE_DLL_Singleton_T<Engine, ACE_Recursive_Thread_Mutex> ENGINE;
+
+	struct ConditionRequest : ACE_Method_Request
 	{
-		cond_req() :
+		ConditionRequest() :
 			tid(ACE_Thread::self()), nesting(0)
 		{}
 
-		cond_req(PUMP_CONDITION_FN fn, void* args, long n) :
+		ConditionRequest(Omega::Activation::IApartment::PUMP_CONDITION_FN fn, void* args, long n) :
 			cond_fn(fn), cond_fn_args(args), tid(ACE_Thread::self()), nesting(n)
 		{}
 
-		cond_req& operator = (const cond_req& rhs)
+		ConditionRequest& operator = (const ConditionRequest& rhs)
 		{
 			cond_fn = rhs.cond_fn;
 			cond_fn_args = rhs.cond_fn_args;
@@ -56,30 +49,27 @@ private:
 			return *this;
 		}
 			
-		PUMP_CONDITION_FN cond_fn;
+		Omega::Activation::IApartment::PUMP_CONDITION_FN cond_fn;
 		void* cond_fn_args;
 		ACE_thread_t tid;
 		long nesting;
 
 		int call();
 	};
-	friend struct cond_req;
 
 	ACE_Activation_Queue m_activ_queue;
 	ACE_Reactor* m_reactor;
 	bool m_stop;
+	Omega::AtomicOp<long>::type m_reactor_start_count;
+	Omega::AtomicOp<long>::type m_pump_start_count;
 	ACE_TSS<std::pair<bool,long> > m_nestcount;
-	ACE_Thread_Mutex m_lock;
-	std::list<cond_req*> m_conditions;
-		
+	ACE_Recursive_Thread_Mutex m_lock;
+	std::list<ConditionRequest*> m_conditions;
+			
 	int svc();
-	int pump_request_i(ACE_Time_Value* timeout);
-	int check_conditions();
-};
-
-typedef ACE_DLL_Singleton<Engine, ACE_Thread_Mutex> ENGINE;
-
-};
+	bool pump_request_i(ACE_Time_Value* timeout);
+	bool check_conditions();
+	void remove_condition(ConditionRequest* c);
 };
 
 #endif // OOCORE_ENGINE_H_INCLUDED_

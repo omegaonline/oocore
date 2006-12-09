@@ -1,26 +1,19 @@
+#include "OOCore_precomp.h"
+
 #include "./Engine.h"
+#include "./StdApartment.h"
 
-#include <ace/Get_Opt.h>
-#ifdef ACE_WIN32
-#include <ace/WFMO_Reactor.h>
-#else
-#include <ace/TP_Reactor.h>
-#endif
-#include <ace/OS.h>
+using namespace Omega;
+using namespace OTL;
 
-#include <memory>
-
-#include "./OOCore.h"
-
-using namespace OOCore::Impl;
-
+// Engine
 Engine::Engine(void) :
 	m_activ_queue(msg_queue()),
 	m_reactor(0),
-	m_stop(false)
+	m_stop(false),
+	m_reactor_start_count(0),
+	m_pump_start_count(0)
 {
-	// Because the object manager uses rand()
-	ACE_OS::srand(static_cast<u_int>(ACE_OS::time()));
 }
 
 Engine::~Engine(void)
@@ -29,114 +22,120 @@ Engine::~Engine(void)
 		delete m_reactor;
 }
 
-int 
-Engine::open(int argc, ACE_TCHAR* argv[])
+Engine* Engine::GetSingleton()
 {
-	// Parse cmd line first
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":e:"));
-	int option;
-	int threads = ACE_OS::num_processors()+1;
-	if (threads == 0)
-		threads = 2;
+	return ENGINE::instance();
+}
 
-	while ((option = cmd_opts()) != EOF)
+int Engine::open(void *args)
+{
+	ACE_UNUSED_ARG(args);
+
+	if (!m_stop)
+		++m_pump_start_count;
+
+	return 0;
+}
+
+void Engine::close()
+{
+	if (--m_pump_start_count==0)
 	{
-		switch (option)
+		m_stop = true;
+
+		while (!m_activ_queue.is_empty())
 		{
-		case ACE_TEXT('e'):
-			threads = ACE_OS::atoi(cmd_opts.opt_arg());
-			if (threads<1 || threads>10)
-			{
-				errno = EINVAL;
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of engine threads '%s' range is [1..10].\n"),cmd_opts.opt_arg()),-1);
-			}
-			break;
-
-		case ACE_TEXT(':'):
-			errno = EINVAL;
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n"),cmd_opts.opt_opt()),-1);
-			break;
-
-		default:
-			break;
+			ACE_OS::sleep(1);
 		}
-	}
 
-	return open(threads);
+		m_activ_queue.queue()->deactivate();
+	}
 }
 
-int 
-Engine::open(unsigned int nThreads)
+ACE_Reactor* Engine::get_reactor()
 {
-	if (nThreads<0 || nThreads>10)
+	if (++m_reactor_start_count==1)
 	{
-		errno = EINVAL;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad number of engine threads '%u' range is [0..10].\n"),nThreads),-1);
+		ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+
+		// Create the correct reactor impl
+		ACE_Reactor_Impl* reactor_impl;
+	#ifdef OMEGA_WIN32
+		OMEGA_NEW(reactor_impl,ACE_WFMO_Reactor);
+	#else
+		OMEGA_NEW(reactor_impl,ACE_TP_Reactor);
+	#endif // !OMEGA_WIN32
+
+		ACE_Auto_Ptr<ACE_Reactor_Impl> ptrReactor(reactor_impl);
+		OMEGA_NEW(m_reactor,ACE_Reactor(reactor_impl,1));
+		ptrReactor.release();
+
+		unsigned int threads = static_cast<unsigned int>(ACE_OS::num_processors()+1);
+		if (threads < 2)
+			threads = 2;
+
+		if (activate(THR_NEW_LWP | THR_JOINABLE | THR_INHERIT_SCHED,threads) != 0)
+			OOCORE_THROW_LASTERROR();
 	}
 
-	if (m_reactor)
-	{
-		errno = EISCONN;
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Engine already open\n")),-1);
-	}
-
-	// Create the correct reactor impl
-	ACE_Reactor_Impl* reactor_impl;
-#ifdef ACE_WIN32
-	ACE_NEW_RETURN(reactor_impl,ACE_WFMO_Reactor,-1);
-#else
-	ACE_NEW_RETURN(reactor_impl,ACE_TP_Reactor,-1);
-#endif // !ACE_WIN32
-
-	ACE_NEW_NORETURN(m_reactor,ACE_Reactor(reactor_impl,1));
-	if (!m_reactor)
-		return -1;
-
-	return activate(THR_NEW_LWP | THR_JOINABLE | THR_INHERIT_SCHED,nThreads);
-}
-
-int 
-Engine::close()
-{
-	if (!m_reactor)
-		return -1;
-
-	m_stop = true;
-
-	while (!m_activ_queue.is_empty())
-	{
-		ACE_OS::sleep(1);
-	}
-
-	m_activ_queue.queue()->deactivate();
-	
-	if (m_reactor->end_reactor_event_loop() != 0)
-		return -1;
-
-	ACE_OS::sleep(1);
-	m_reactor->wakeup_all_threads();
-	    	
-	return thr_mgr()->wait_grp(grp_id());
-}
-
-int 
-Engine::svc()
-{
-	//m_reactor->owner(ACE_Thread::self());
-
-	return m_reactor->run_reactor_event_loop();
-}
-
-ACE_Reactor* 
-Engine::reactor()
-{
 	return m_reactor;
 }
 
-int 
-Engine::pump_requests(ACE_Time_Value* timeout, OOCore::PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
+void Engine::release_reactor()
 {
-	cond_req* c = 0;
+	if (--m_reactor_start_count==0 && m_reactor)
+	{
+		m_reactor->end_event_loop();
+
+		thr_mgr()->wait_grp(grp_id());
+	}
+}
+
+const ACE_TCHAR* Engine::name()
+{
+	return ACE_TEXT("Engine");
+}
+
+const ACE_TCHAR* Engine::dll_name()
+{
+	return ACE_TEXT("OOCore");
+}
+
+int Engine::ConditionRequest::call()
+{
+	try
+	{
+		if (ACE_Thread::self()==tid && ENGINE::instance()->m_nestcount->second==nesting)
+		{
+			--ENGINE::instance()->m_nestcount->second;
+			delete this;
+			return 1;
+		}
+		
+		if (!ENGINE::instance()->post_request(this))
+		{
+			delete this;
+			return 1;
+		}
+
+		return 0;
+	}
+	catch (IException* pE)
+	{
+		ACE_DEBUG((LM_DEBUG,ACE_TEXT("ConditionRequest call() throws an exception: %s"),(const char*)pE->Description()));
+		pE->Release();
+	}
+	catch (...)
+	{}
+
+	delete this;
+	return 1;	
+}
+
+// false = timedout
+bool Engine::pump_requests(ACE_Time_Value* timeout, Activation::IApartment::PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
+{
+	ConditionRequest* c = 0;
 	if (cond_fn)
 	{
 		if (!m_nestcount->first)
@@ -145,100 +144,97 @@ Engine::pump_requests(ACE_Time_Value* timeout, OOCore::PUMP_CONDITION_FN cond_fn
 			m_nestcount->second = 0;
 		}
 
-		ACE_NEW_RETURN(c,cond_req(cond_fn,cond_fn_args,++m_nestcount->second),-1);
-		
+		OMEGA_NEW(c,ConditionRequest(cond_fn,cond_fn_args,++m_nestcount->second));
+
+		ACE_Auto_Ptr<ConditionRequest> pc(c);
+
 		m_conditions.push_back(c);
+
+		pc.release();
 	}	
 
-	ACE_Countdown_Time countdown(timeout);
-	while ((timeout && *timeout != ACE_Time_Value::zero) || !timeout)
+	try
 	{
-		int ret = check_conditions();
-		if (ret==0)
+		ACE_Countdown_Time countdown(timeout);
+		do
 		{
-			if (timeout && timeout->sec()>1)
+			bool ret = check_conditions();
+			if (!ret)
 			{
-				ACE_Time_Value wait(1);
-				ret = pump_request_i(&wait);
-				if (ret==-1 && errno==EWOULDBLOCK)
-					ret = 0;
+				if ((timeout && timeout->sec()>1) || cond_fn)
+				{
+					ACE_Time_Value wait(1);
+					ret = pump_request_i(&wait);
+				}
+				else
+					ret = pump_request_i(timeout);
 			}
-			else
-				ret = pump_request_i(timeout);
-		}
 
-		if (ret == 1)
-			return 0;
-		else if (ret != 0)
-			goto exit;
+			if (ret)
+				return true;
+			
+			countdown.update();
+		} while ((timeout && *timeout != ACE_Time_Value::zero) || !timeout);
+	}
+	catch (...)
+	{
+		if (c)
+			remove_condition(c);
 
-		countdown.update();
+		throw;
 	}
 
-	errno = EWOULDBLOCK;
-	
-exit:
 	if (c)
-	{
-		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-
-		for (std::list<cond_req*>::iterator i=m_conditions.begin();i!=m_conditions.end();++i)
-		{
-			if (*i == c)
-			{
-				delete (*i);
-				m_conditions.erase(i);
-				break;
-			}
-		}
-	}
-
-	return -1;
+		remove_condition(c);
+	
+	return false;
 }
 
-int
-Engine::check_conditions()
+void Engine::remove_condition(ConditionRequest* c)
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock,0);
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
+
+	for (std::list<ConditionRequest*>::iterator i=m_conditions.begin();i!=m_conditions.end();++i)
+	{
+		if (*i == c)
+		{
+			delete c;
+			m_conditions.erase(i);
+			break;
+		}
+	}
+}
+
+int Engine::svc()
+{
+	return m_reactor->run_reactor_event_loop();
+}
+
+bool Engine::check_conditions()
+{
+	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock,0);
 
 	if (!guard.locked())
 	{
 		ACE_OS::sleep(0);
-		return 0;
+		return false;
 	}
 
-	for (std::list<cond_req*>::iterator i=m_conditions.begin();i!=m_conditions.end();++i)
+	for (std::list<ConditionRequest*>::iterator i=m_conditions.begin();i!=m_conditions.end();++i)
 	{
 		if ((*i)->cond_fn((*i)->cond_fn_args))
 		{
-			cond_req* r = *i;
+			ConditionRequest* r = *i;
 			m_conditions.erase(i);
 
-			return r->call();
+			return (r->call() == 1);
 		}
 	}
 
-	return 0;
+	return false;
 }
 
-int 
-Engine::cond_req::call()
-{
-	if (ACE_Thread::self()==tid && ENGINE::instance()->m_nestcount->second==nesting)
-	{
-		--ENGINE::instance()->m_nestcount->second;
-		delete this;
-		return 1;
-	}
-	
-	if (ENGINE::instance()->post_request(this) != 0)
-		delete this;
-
-	return 0;
-}
-
-int 
-Engine::pump_request_i(ACE_Time_Value* timeout)
+bool Engine::pump_request_i(ACE_Time_Value* timeout)
 {
 	ACE_Method_Request* req;
 
@@ -254,48 +250,26 @@ Engine::pump_request_i(ACE_Time_Value* timeout)
 
 	if (!req)
 	{
-		if (errno!=EWOULDBLOCK && errno!=ESHUTDOWN)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("(%P|%t) Failed to dequeue async request\n")));
-
-		return -1;
+		int last_error = ACE_OS::last_error();
+		if (last_error!=EWOULDBLOCK && last_error!=ESHUTDOWN)
+			OOCORE_THROW_LASTERROR();
+		
+		if (last_error == ESHUTDOWN)
+			return true;
+		
+		return false;
 	}
 
-	int ret = req->call();
-	if (ret != 0 && ret != 1)
-		ACE_ERROR((LM_DEBUG,ACE_TEXT("(%P|%t) Async request call() returned %d\n"),ret));
-
-	return ret;
+	return (req->call() == 1);
 }
 
-int 
-Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
+bool Engine::post_request(ACE_Method_Request* req, ACE_Time_Value* wait)
 {
 	if (m_stop)
-		return -1;
+		return false;
 
-	return m_activ_queue.enqueue(req,wait)==-1 ? -1 : 0;
-}
+	if (m_activ_queue.enqueue(req,wait)==-1)
+		OOCORE_THROW_LASTERROR();
 
-OOCore_Export ACE_Reactor* 
-OOCore::GetEngineReactor()
-{
-	return Impl::ENGINE::instance()->reactor();
-}
-
-int OOCore_Export
-OOCore::OpenEngine(int argc, ACE_TCHAR* argv[])
-{
-	return Impl::ENGINE::instance()->open(argc,argv);
-}
-
-int OOCore_Export
-OOCore::CloseEngine()
-{
-	return Impl::ENGINE::instance()->close();
-}
-
-int OOCore_Export
-OOCore::PumpRequests(ACE_Time_Value* timeout, PUMP_CONDITION_FN cond_fn, void* cond_fn_args)
-{
-	return Impl::ENGINE::instance()->pump_requests(timeout,cond_fn,cond_fn_args);
+	return true;
 }

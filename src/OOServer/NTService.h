@@ -1,20 +1,35 @@
+/////////////////////////////////////////////////////////////
+//
+//	***** THIS IS A SECURE MODULE *****
+//
+//	It will be run as Administrator/setuid root
+//
+//	Therefore it needs to be SAFE AS HOUSES!
+//
+//	Do not include anything unecessary and do not use precompiled headers
+//
+/////////////////////////////////////////////////////////////
+
 #ifndef OOSERVER_NT_SERVICE_H_INCLUDED_
 #define OOSERVER_NT_SERVICE_H_INCLUDED_
+
+#define ACE_HAS_VERSIONED_NAMESPACE  1
+#define ACE_AS_STATIC_LIBS
 
 #include <ace/NT_Service.h>
 
 #ifdef ACE_NT_SERVICE_DEFINE
+#define OOSERVER_USE_NTSERVICE
 
 #include <ace/Event.h>
 
 #define NTSERVICE_NAME		ACE_TEXT("OOService")
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Service")
-#define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online system")
+#define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online network")
 
-//#include "../OOSvc/Shutdown.h"
+int StartDaemonService(int argc, ACE_TCHAR* argv[]);
 
-class NTService : 
-	public ACE_NT_Service
+class NTService : public ACE_NT_Service
 {
 public:
 	NTService(void);
@@ -40,7 +55,7 @@ protected:
 	int handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask);
 
 private:
-	typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
+	typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
 
 	static ACE_THR_FUNC_RETURN start_service(void*);
 	static BOOL WINAPI ctrlc_handler(DWORD dwCtrlType);

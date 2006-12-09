@@ -3,12 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="OOServer"
-	ProjectGUID="{A3E59F41-DD3A-4A94-B649-BD954EEF6171}"
-	RootNamespace="OOServer"
-	SccProjectName=""
-	SccAuxPath=""
-	SccLocalPath=""
-	SccProvider=""
+	ProjectGUID="{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -17,36 +12,33 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="Debug"
+			IntermediateDirectory="Debug"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8&quot;;&quot;..\..\3rd Party Libraries\boost_1_33_1&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.4&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				SmallerTypeCheck="TRUE"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
-				EnableFunctionLevelLinking="TRUE"
 				TreatWChar_tAsBuiltInType="TRUE"
-				ForceConformanceInForLoopScope="TRUE"
-				RuntimeTypeInfo="TRUE"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="OOServer.h"
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib ACEd.lib"
-				OutputFile="../../bin/OOServer.exe"
+				AdditionalDependencies="shlwapi.lib Userenv.lib"
+				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOServer.pdb"
 				SubSystem="1"
@@ -74,33 +66,30 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8&quot;;&quot;..\..\3rd Party Libraries\boost_1_33_1&quot;"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.4&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="TRUE"
 				TreatWChar_tAsBuiltInType="TRUE"
-				ForceConformanceInForLoopScope="TRUE"
-				RuntimeTypeInfo="TRUE"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="OOServer.h"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="0"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib ACE.lib"
-				OutputFile="../../bin/Release/OOServer.exe"
+				AdditionalDependencies="shlwapi.lib Userenv.lib"
+				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
-				GenerateDebugInformation="FALSE"
+				AdditionalLibraryDirectories=""
+				GenerateDebugInformation="TRUE"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -135,10 +124,41 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\Client_Connection.cpp">
+				RelativePath=".\EntryPoint.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\InterProcess.cpp">
 			</File>
 			<File
 				RelativePath=".\NTService.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\OOServer.cpp">
@@ -146,14 +166,119 @@
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"/>
+						UsePrecompiledHeader="1"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"/>
+						UsePrecompiledHeader="1"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\OOServer_link.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\RootConnection.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\RootManager.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\SpawnedProcessUnix.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\SpawnedProcessWin32.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\OOCore\UserService.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\UserSession.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -161,29 +286,35 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\Client_Connection.h">
+				RelativePath=".\InterProcess.h">
 			</File>
 			<File
 				RelativePath=".\NTService.h">
 			</File>
 			<File
-				RelativePath=".\resource.h">
+				RelativePath=".\OOServer.h">
+			</File>
+			<File
+				RelativePath=".\RootConnection.h">
+			</File>
+			<File
+				RelativePath=".\RootManager.h">
+			</File>
+			<File
+				RelativePath=".\SpawnedProcess.h">
+			</File>
+			<File
+				RelativePath="..\OOCore\UserService.h">
+			</File>
+			<File
+				RelativePath=".\UserSession.h">
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
-			<File
-				RelativePath=".\Resources\logo.ico">
-			</File>
-			<File
-				RelativePath=".\OOServer.rc">
-			</File>
 		</Filter>
-		<File
-			RelativePath="..\..\bin\svc.conf">
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

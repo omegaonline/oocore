@@ -3,11 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="OOCore"
-	ProjectGUID="{ED1B0BBD-5F3D-4AFD-8EC8-7E4CE485F9CB}"
-	SccProjectName=""
-	SccAuxPath=""
-	SccLocalPath=""
-	SccProvider=""
+	ProjectGUID="{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -23,35 +19,28 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8&quot;;&quot;..\..\3rd Party Libraries\boost_1_33_1&quot;"
+				AdditionalIncludeDirectories="..\..\include;&quot;..\..\3rd Party Libraries\ACE-5.5.4&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
-				GeneratePreprocessedFile="0"
 				MinimalRebuild="TRUE"
-				ExceptionHandling="TRUE"
 				BasicRuntimeChecks="3"
-				SmallerTypeCheck="FALSE"
-				RuntimeLibrary="3"
-				BufferSecurityCheck="TRUE"
-				EnableFunctionLevelLinking="TRUE"
+				RuntimeLibrary="1"
 				TreatWChar_tAsBuiltInType="TRUE"
 				ForceConformanceInForLoopScope="TRUE"
 				RuntimeTypeInfo="TRUE"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="OOCore_precomp.h"
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEd.lib shlwapi.lib"
-				OutputFile="../../bin/OOCored.dll"
+				AdditionalDependencies="shlwapi.lib"
+				OutputFile="$(OutDir)/OOCore.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
-				GenerateMapFile="FALSE"
-				MapExports="FALSE"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)/OOCore.lib"
 				TargetMachine="1"/>
@@ -84,27 +73,32 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8&quot;;&quot;..\..\3rd Party Libraries\boost_1_33_1&quot;"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
+				EnableIntrinsicFunctions="TRUE"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..\..\include;&quot;..\..\3rd Party Libraries\ACE-5.5.4&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="TRUE"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				TreatWChar_tAsBuiltInType="TRUE"
 				ForceConformanceInForLoopScope="TRUE"
 				RuntimeTypeInfo="TRUE"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="FALSE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="OOCore_precomp.h"
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACE.lib shlwapi.lib"
-				OutputFile="../../bin/Release/OOCore.dll"
+				AdditionalDependencies="shlwapi.lib"
+				OutputFile="$(OutDir)/OOCore.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\3rd Party Libraries\ACE-5.4.8\lib&quot;"
 				GenerateDebugInformation="TRUE"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				ImportLibrary="$(OutDir)/OOCore.lib"
@@ -139,58 +133,80 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\CustomMarshaller.cpp">
+				RelativePath=".\Activator.cpp">
 			</File>
 			<File
 				RelativePath=".\Engine.cpp">
 			</File>
 			<File
-				RelativePath=".\Guid.cpp">
-			</File>
-			<File
-				RelativePath=".\InProcManager.cpp">
-			</File>
-			<File
-				RelativePath=".\InputStream_CDR.cpp">
-			</File>
-			<File
-				RelativePath=".\LocalTransport.cpp">
-			</File>
-			<File
-				RelativePath=".\Object_Factory.cpp">
-			</File>
-			<File
-				RelativePath=".\ObjectManager.cpp">
+				RelativePath=".\Exception.cpp">
 			</File>
 			<File
 				RelativePath=".\OOCore.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\OOCore_Impl.cpp">
+				RelativePath=".\OOCore_link.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\OOObject.cpp">
+				RelativePath=".\Registry.cpp">
 			</File>
 			<File
-				RelativePath=".\OutputStream_CDR.cpp">
+				RelativePath=".\ROT.cpp">
 			</File>
 			<File
-				RelativePath=".\PassThruStub.cpp">
+				RelativePath=".\Session.cpp">
 			</File>
 			<File
-				RelativePath=".\Protocol_Manager.cpp">
+				RelativePath=".\StdApartment.cpp">
 			</File>
 			<File
-				RelativePath=".\ProxyStub.cpp">
+				RelativePath=".\StdObjectManager.cpp">
 			</File>
 			<File
-				RelativePath=".\PSMap.cpp">
+				RelativePath=".\Types.cpp">
 			</File>
 			<File
-				RelativePath=".\RegistryKey_Impl.cpp">
-			</File>
-			<File
-				RelativePath=".\Transport_Impl.cpp">
+				RelativePath=".\UserService.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -198,99 +214,101 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\CustomMarshaller.h">
-			</File>
-			<File
 				RelativePath=".\Engine.h">
 			</File>
 			<File
-				RelativePath=".\Guid.h">
+				RelativePath=".\OOCore_precomp.h">
 			</File>
 			<File
-				RelativePath=".\InProcManager.h">
+				RelativePath=".\Session.h">
 			</File>
 			<File
-				RelativePath=".\InputStream_CDR.h">
+				RelativePath=".\StdApartment.h">
 			</File>
 			<File
-				RelativePath=".\IO_Wrappers.h">
+				RelativePath=".\StdObjectManager.h">
 			</File>
 			<File
-				RelativePath=".\LocalTransport.h">
+				RelativePath=".\StdTransport.h">
 			</File>
 			<File
-				RelativePath=".\Object_Factory.h">
-			</File>
-			<File
-				RelativePath=".\ObjectManager.h">
-			</File>
-			<File
-				RelativePath=".\OOCore.h">
-			</File>
-			<File
-				RelativePath=".\OOCore_export.h">
-			</File>
-			<File
-				RelativePath=".\OOCore_Impl.h">
-			</File>
-			<File
-				RelativePath=".\OOCore_Util.h">
-			</File>
-			<File
-				RelativePath=".\OOModule.h">
-			</File>
-			<File
-				RelativePath=".\OOObject.h">
-			</File>
-			<File
-				RelativePath=".\OOUtil.h">
-			</File>
-			<File
-				RelativePath=".\OutputStream_CDR.h">
-			</File>
-			<File
-				RelativePath=".\PassThruStub.h">
-			</File>
-			<File
-				RelativePath=".\Protocol_Manager.h">
-			</File>
-			<File
-				RelativePath=".\ProxyStub.h">
-			</File>
-			<File
-				RelativePath=".\ProxyStub_Macros.h">
-			</File>
-			<File
-				RelativePath=".\PSMap.h">
-			</File>
-			<File
-				RelativePath=".\RegistryKey_Impl.h">
-			</File>
-			<File
-				RelativePath=".\resource.h">
-			</File>
-			<File
-				RelativePath=".\Server.h">
-			</File>
-			<File
-				RelativePath=".\Transport_Impl.h">
-			</File>
-			<File
-				RelativePath=".\Transport_Svc_Handler.h">
+				RelativePath=".\UserService.h">
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+		</Filter>
+		<Filter
+			Name="OTL"
+			Filter="">
 			<File
-				RelativePath=".\OOCore.rc">
+				RelativePath="..\..\..\include\Otl\OTL.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\Otl\OTL.inl">
+			</File>
+			<File
+				RelativePath="..\..\..\include\Otl\OTL_special.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="OOCore"
+			Filter="">
+			<File
+				RelativePath="..\..\..\include\OOCore\config-win32-msvc.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\config-win32.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\config.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\Enum.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_base.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_export.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_ifaces.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_rtti.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_rtti.inl">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_type_sizes.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_types.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_types.inl">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\OOCore_wire.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\Registry.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\Remoting.h">
+			</File>
+			<File
+				RelativePath="..\..\..\include\OOCore\ROT.h">
 			</File>
 		</Filter>
 	</Files>
 	<Globals>
-		<Global
-			Name="RESOURCE_FILE"
-			Value="OOCore.rc"/>
 	</Globals>
 </VisualStudioProject>

@@ -17,7 +17,7 @@
 #include <ace/Get_Opt.h>
 #include <ace/ARGV.h>
 #include <ace/OS.h>
-#include <ace/Reactor.h>
+#include <ace/Proactor.h>
 #include <ace/SString.h>
 
 // For the Windows path functions
@@ -26,9 +26,7 @@
 ACE_NT_SERVICE_DEFINE(OOServer,NTService,NTSERVICE_DESC);
 
 NTService::NTService(void) : 
-	ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC),
-	m_scm_started(false),
-	m_our_close(false)
+	ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC)
 {
 }
 
@@ -196,89 +194,58 @@ int NTService::description(const ACE_TCHAR *desc)
 
 ACE_THR_FUNC_RETURN NTService::start_service(void*)
 {
-	// Assume everything is okay
-	NTSERVICE::instance()->m_scm_started = true;
-
 	// This blocks running svc
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
 	
 	if (ret == 0)
-	{
-		NTSERVICE::instance()->m_scm_started = false;
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),(ACE_THR_FUNC_RETURN)-1);
-	}
-	
+		
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("%T (%t): Service stopped.\n")));
 	return 0;
+}
+
+int NTService::svc(void)
+{
+	report_status(SERVICE_RUNNING);
+
+	// Just wait here until we are told to stop
+	return m_finished.wait();
+}
+
+void NTService::pause_requested(DWORD)
+{
+	// We don't pause
+	report_status(SERVICE_RUNNING);
+}
+
+void NTService::continue_requested(DWORD)
+{
+	// We don't pause
+	report_status(SERVICE_RUNNING);
+}
+
+void NTService::stop_requested(DWORD)
+{
+	report_status(SERVICE_STOP_PENDING);
+
+	ACE_DEBUG((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
+
+	ACE_Proactor::instance()->proactor_end_event_loop();
+	
+	report_status(SERVICE_STOPPED);
+
+	// Tell the service thread to stop
+	m_finished.signal();
 }
 
 BOOL WINAPI NTService::ctrlc_handler(DWORD dwCtrlType)
 {
 	ACE_UNUSED_ARG(dwCtrlType);
 
-	ACE_DEBUG ((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
-
-	return (ACE_Reactor::instance()->notify(NTSERVICE::instance(),ACE_Event_Handler::EXCEPT_MASK)==0 ? TRUE : FALSE);
-}
-
-int NTService::svc(void)
-{
-	report_status(SERVICE_RUNNING, 0);
-
-	// Just wait here until we are told to stop
-	return m_finished.wait();
-}
-
-void NTService::handle_control(DWORD control_code)
-{
-	if (control_code == SERVICE_CONTROL_SHUTDOWN || 
-		control_code == SERVICE_CONTROL_STOP)
-	{
-		if (m_scm_started)
-			report_status(SERVICE_STOP_PENDING);
-
-		ACE_DEBUG ((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
-
-		ACE_Reactor::instance()->notify(this,ACE_Event_Handler::EXCEPT_MASK);
-	}
-	else
-		ACE_NT_Service::handle_control(control_code);
-}
-
-void NTService::handle_shutdown()
-{
-	if (!m_our_close)
-		ACE_Reactor::instance()->notify(this,ACE_Event_Handler::WRITE_MASK);
-}
-
-int NTService::handle_exception(ACE_HANDLE)
-{
-	return -1;
-}
-
-int NTService::handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask)
-{
-	if (mask & ACE_Event_Handler::EXCEPT_MASK)
-	{
-		if (!m_our_close)
-		{
-			m_our_close = true;
-			ACE_Reactor::instance()->end_reactor_event_loop();
-		}
-		else
-		{
-			// This prevents us getting totally stuck!
-			ACE_OS::abort();
-		}
-	}
+	ACE_DEBUG((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
 
 	// Tell the service thread to stop
-	m_finished.signal();
-
-	// Tell the main reactor to stop
-	ACE_Reactor::end_event_loop();
-	
-	return ACE_NT_Service::handle_close(handle,mask);
+	return (ACE_Proactor::instance()->proactor_end_event_loop()==0 ? TRUE : FALSE);
 }
 
 int StartDaemonService(int argc, ACE_TCHAR* argv[])

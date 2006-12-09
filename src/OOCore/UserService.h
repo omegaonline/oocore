@@ -1,9 +1,6 @@
 #ifndef OOCORE_USER_SERVICE_H_INCLUDED_
 #define OOCORE_USER_SERVICE_H_INCLUDED_
 
-#define ACE_HAS_VERSIONED_NAMESPACE  1
-#define ACE_AS_STATIC_LIBS
-
 #include <ace/Acceptor.h>
 #include <ace/Connector.h>
 #include <ace/SOCK_Stream.h>

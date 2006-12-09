@@ -124,6 +124,23 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\ClientConnection.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\EntryPoint.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -286,7 +303,13 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
+				RelativePath=".\ClientConnection.h">
+			</File>
+			<File
 				RelativePath=".\InterProcess.h">
+			</File>
+			<File
+				RelativePath=".\LocalAcceptor.h">
 			</File>
 			<File
 				RelativePath=".\NTService.h">

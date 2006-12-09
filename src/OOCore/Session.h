@@ -1,12 +1,21 @@
+/////////////////////////////////////////////////////////////
+//
+//	***** THIS IS A SECURE HEADER FILE *****
+//
+//	It will be included by modules run as Administrator/setuid root
+//
+//	Therefore it needs to be SAFE AS HOUSES!
+//
+//	Do not include anything unecessary
+//
+/////////////////////////////////////////////////////////////
+
 #ifndef OOCORE_SESSION_H_INCLUDED_
 #define OOCORE_SESSION_H_INCLUDED_
 
 #include <ace/SString.h>
 
 #ifdef ACE_WIN32
-#ifndef _WIN32_IE
-#define _WIN32_IE	0x0500
-#endif
 #include <shlobj.h>
 #include <shlwapi.h>
 #endif
@@ -16,9 +25,9 @@
 namespace Session
 {
 #ifdef ACE_WIN32
-	typedef DWORD USERID;
+	typedef DWORD TOKEN;
 #else
-	typedef uid_t USERID;
+	typedef uid_t TOKEN;
 #endif
 
 // Make sure we are packed 
@@ -28,14 +37,18 @@ namespace Session
 
 	struct Request
 	{
-		size_t	cbSize;
-		USERID	uid;
+		typedef ACE_UINT16 Length;
+
+        Length		cbSize;
+		TOKEN		uid;
 	};
 
 	struct Response
 	{
-		size_t	cbSize;
-		char	bFailure;
+		typedef ACE_UINT16 Length;
+
+		Length		cbSize;
+		char		bFailure;
 		union
 		{
 			int		err;
@@ -67,7 +80,7 @@ namespace Session
 
 	#else
 
-	#define BOOTSTRAP_PREFIX ACE_TEXT("/tmp/")
+		#define BOOTSTRAP_PREFIX ACE_TEXT("/tmp/")
 		
 		return ACE_TString(ACE_TEXT(OMEGA_CONCAT(BOOTSTRAP_PREFIX,BOOTSTRAP_FILE)));
 

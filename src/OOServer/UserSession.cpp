@@ -2,23 +2,59 @@
 #include "./UserSession.h"
 #include "../OOCore/UserService.h"
 
-int StartReactor()
+static ACE_THR_FUNC_RETURN worker_fn(void*)
 {
-	// Create the correct reactor impl
-	ACE_Reactor_Impl* reactor_impl;
-#ifdef ACE_WIN32
-	ACE_NEW_RETURN(reactor_impl,ACE_WFMO_Reactor,-1);
-#else
-	ACE_NEW_RETURN(reactor_impl,ACE_TP_Reactor,-1);
-#endif // !ACE_WIN32
-	ACE_Auto_Ptr<ACE_Reactor_Impl> ptrReactor(reactor_impl);
+	int ret = ACE_Proactor::instance()->proactor_run_event_loop();
+	if (ret != 0)
+	{
+		if (ACE_OS::last_error() == ESHUTDOWN)
+			ret = 0;
+	}
+	return (ACE_THR_FUNC_RETURN)ret;
+}
 
-	ACE_Reactor* reactor;
-	ACE_NEW_RETURN(reactor,ACE_Reactor(reactor_impl,1),-1);
-	ACE_Reactor::instance(reactor,1);
-	
-	ptrReactor.release();
-	return 0;
+static int ConnectToRoot(u_short uPort)
+{
+	ACE_Connector<UserSession, ACE_SOCK_CONNECTOR>	connector;
+
+	UserSession* pSession = 0;
+	ACE_INET_Addr addr(uPort,ACE_LOCALHOST);
+	int ret = 0;
+	if ((ret = connector.connect(pSession,addr)) != 0)
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")));
+	}
+	else
+	{
+		ACE_INET_Addr port_addr((u_short)0);
+		Session::Acceptor<OTL::ObjectImpl<UserService>, ACE_SOCK_Acceptor> acceptor;
+		if ((ret = acceptor.open(port_addr)) == -1)
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("acceptor::open() failed")));
+		}
+		else
+		{
+			if ((ret = acceptor.acceptor().get_local_addr(port_addr))==-1)
+			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
+			}
+			else
+			{
+				uPort = port_addr.get_port_number();
+				if (pSession->peer().send(&uPort,sizeof(uPort)) < sizeof(uPort))
+				{
+					ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send()")));
+					ret = -1;
+				}
+			}
+
+			acceptor.close();
+		}
+
+		pSession->close();
+	}
+
+	return ret;
 }
 
 int UserMain(u_short uPort)
@@ -36,52 +72,24 @@ int UserMain(u_short uPort)
 
 #endif
 
-	// Start the reactor
-	int ret = 0;
-	if ((ret = StartReactor()) == 0)
+	int ret = ConnectToRoot(uPort);
+	if (ret == 0)
 	{
-		ACE_Connector<UserSession, ACE_SOCK_CONNECTOR>	connector;
+		// Spawn off the engine threads
+		int thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,worker_fn);
+		if (thrd_grp_id == -1)
+			ret = -1;
 
-		UserSession* pSession = 0;
-		ACE_INET_Addr addr(uPort,ACE_LOCALHOST);
-		if ((ret = connector.connect(pSession,addr)) != 0)
+		if (ret==0)
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")));
-		}
-		else
-		{
-			ACE_INET_Addr port_addr((u_short)0);
-			Session::Acceptor<OTL::ObjectImpl<UserService>, ACE_SOCK_Acceptor> acceptor;
-			if ((ret = acceptor.open(port_addr)) == -1)
-			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("acceptor::open() failed")));
-			}
-			else
-			{
-				if ((ret = acceptor.acceptor().get_local_addr(port_addr))==-1)
-				{
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
-				}
-				else
-				{
-					u_short uPort = port_addr.get_port_number();
-					if ((ret = pSession->peer().send(&uPort,sizeof(uPort))) < sizeof(uPort))
-					{
-						ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send()")));
-					}
-					else
-					{
-						ret = ACE_Reactor::instance()->run_reactor_event_loop();
-					}
-				}
+			// Treat this thread as a worker as well
+			ret = worker_fn(0);
 
-				acceptor.close();
-			}
-
-			pSession->close();
+			// Wait for all the threads to finish
+			ACE_Thread_Manager::instance()->wait_grp(thrd_grp_id);
 		}
 	}
-
+	
 #ifdef _DEBUG
 	// Give us a chance to read the error message
 	if (ret != 0)

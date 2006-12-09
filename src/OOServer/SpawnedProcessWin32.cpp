@@ -18,6 +18,7 @@
 
 #include <userenv.h>
 #include <lm.h>
+#include <sddl.h>
 
 SpawnedProcess::SpawnedProcess() :
 	m_hToken(NULL),
@@ -283,7 +284,7 @@ DWORD SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 	return ERROR_SUCCESS;
 }
 
-int SpawnedProcess::Spawn(Session::USERID id, u_short uPort)
+int SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 {
 	// Get the process handle
 	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
@@ -309,7 +310,69 @@ int SpawnedProcess::Spawn(Session::USERID id, u_short uPort)
 	
 	m_hToken = hToken;
 
-	return ERROR_SUCCESS;
+	return 0;
+}
+
+int SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, SpawnedProcess::USERID& uid)
+{
+	// Get the process handle
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);
+	if (!hProcess)
+		return GetLastError();
+
+	// Get the process token
+	int err = 0;
+	HANDLE hToken;
+	BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
+	if (!bSuccess)
+		err = GetLastError();
+
+	// Done with hProcess
+	CloseHandle(hProcess);
+	if (!bSuccess)
+		return err;
+
+	DWORD dwLen = 0;
+	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
+	if (dwLen == 0)
+	{
+		err = GetLastError();
+		CloseHandle(hToken);
+		return err;
+	}
+	
+	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(malloc(dwLen));
+	if (!pBuffer)
+	{
+		CloseHandle(hToken);
+		return ERROR_OUTOFMEMORY;
+	}
+
+	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
+	{
+		err = GetLastError();
+		free(pBuffer);
+		CloseHandle(hToken);
+		return err;
+	}
+
+	LPTSTR pszString;
+	if (!ConvertSidToStringSid(pBuffer->User.Sid,&pszString))
+	{
+		err = GetLastError();
+		free(pBuffer);
+		CloseHandle(hToken);
+		return err;
+	}
+
+	uid = pszString;
+	LocalFree(pszString);
+	free(pBuffer);
+
+	// Done with hToken
+	CloseHandle(hToken);
+
+	return 0;
 }
 
 #endif // ACE_WIN32

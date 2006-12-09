@@ -13,22 +13,23 @@
 #ifndef OOSERVER_ROOT_MANAGER_H_INCLUDED_
 #define OOSERVER_ROOT_MANAGER_H_INCLUDED_
 
-#include "./RootConnection.h"
-#include "../OOCore/Session.h"
+#include "./LocalAcceptor.h"
+#include "./SpawnedProcess.h"
+#include "./ClientConnection.h"
+
+#include <ace/Singleton.h>
 
 #include <map>
 
-class SpawnedProcess;
-
-class RootManager : public ACE_Acceptor<RootConnection, ACE_SOCK_ACCEPTOR>
+class RootManager : public LocalAcceptor<ClientConnection>
 {
 public:
 	typedef ACE_Singleton<RootManager, ACE_Recursive_Thread_Mutex > ROOT_MANAGER;
 
 	RootManager();
 
-	int open();
-	int close();
+	int init();
+	void close();
 
 	void connect_client(const Session::Request& request, Session::Response& response);
 	
@@ -36,8 +37,19 @@ private:
 	RootManager(const RootManager&) {}
 	RootManager& operator = (const RootManager&) {}
 
-	ACE_HANDLE	m_config_file;
-	std::map<Session::USERID,std::pair<u_short,SpawnedProcess*> > m_mapSpawned;
+	ACE_Thread_Mutex	m_lock;
+	ACE_HANDLE			m_config_file;
+
+	struct UserProcess
+	{
+
+		u_short				uPort;
+		SpawnedProcess*		pSpawn;
+	};
+
+	std::map<SpawnedProcess::USERID,UserProcess> m_mapSpawned;
+
+	void spawn_client(const Session::Request& request, Session::Response& response, UserProcess& process);
 };
 
 #endif // OOSERVER_ROOT_MANAGER_H_INCLUDED_

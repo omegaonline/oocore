@@ -13,7 +13,7 @@
 #ifndef OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 #define OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 
-#include "./RootManager.h"
+#include "../OOCore/Session.h"
 
 class SpawnedProcess
 {
@@ -21,13 +21,17 @@ public:
 	SpawnedProcess(void);
 	~SpawnedProcess(void);
 
-	int Spawn(Session::USERID id, u_short uPort);
+	int Spawn(Session::TOKEN id, u_short uPort);
 	int SpawnSandbox();
 
 	bool IsRunning();
 	int Close(ACE_Time_Value* wait = 0);
 
 #ifdef ACE_WIN32
+
+	typedef ACE_TString USERID;
+
+	static int ResolveTokenToUid(Session::TOKEN token, USERID& uid);
 
 private:
 	HANDLE	m_hToken;
@@ -38,6 +42,13 @@ private:
 	DWORD SpawnFromToken(HANDLE hToken, u_short uPort);
 
 #else // !ACE_WIN32
+
+	typedef uid_t USERID;
+	static int ResolveTokenToUid(Session::TOKEN token, USERID& uid)
+	{
+		uid = token;
+		return 0;
+	}
 
 private:
 	

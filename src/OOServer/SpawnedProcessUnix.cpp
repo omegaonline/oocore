@@ -14,8 +14,6 @@
 
 #ifndef ACE_WIN32
 
-#include <ace/OS.h>
-
 #include "./UserSession.h"
 
 SpawnedProcess::SpawnedProcess(void)

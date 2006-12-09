@@ -10,16 +10,16 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./RootConnection.h"
+#include "./ClientConnection.h"
 #include "./RootManager.h"
 
-RootConnection::~RootConnection()
+ClientConnection::~ClientConnection()
 {
 	if (handle() != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(handle());
 }
 
-void RootConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
+void ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 {
 	// Stash the handle
 	this->handle(new_handle);
@@ -45,7 +45,7 @@ void RootConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 	}
 }
 
-void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+void ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
 
@@ -137,7 +137,7 @@ void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 	}
 }
 
-void RootConnection::handle_write_stream(const ACE_Asynch_Write_Stream::Result& result)
+void ClientConnection::handle_write_stream(const ACE_Asynch_Write_Stream::Result& result)
 {
 	// All done, close
 	result.message_block().release();

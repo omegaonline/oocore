@@ -13,9 +13,6 @@
 #ifndef OOSERVER_NT_SERVICE_H_INCLUDED_
 #define OOSERVER_NT_SERVICE_H_INCLUDED_
 
-#define ACE_HAS_VERSIONED_NAMESPACE  1
-#define ACE_AS_STATIC_LIBS
-
 #include <ace/NT_Service.h>
 
 #ifdef ACE_NT_SERVICE_DEFINE
@@ -50,21 +47,17 @@ protected:
 				const ACE_TCHAR *account_name = 0,
 				const ACE_TCHAR *password = 0);
 
-	int handle_exception(ACE_HANDLE);
-	void handle_control(DWORD control_code);
-	int handle_close(ACE_HANDLE handle, ACE_Reactor_Mask mask);
-
 private:
 	typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
 
 	static ACE_THR_FUNC_RETURN start_service(void*);
 	static BOOL WINAPI ctrlc_handler(DWORD dwCtrlType);
 
-	void handle_shutdown();
-
-	bool m_scm_started;
+	void stop_requested (DWORD control_code);
+	void pause_requested (DWORD control_code);
+	void continue_requested (DWORD control_code);
+	
 	ACE_Event m_finished;
-	bool m_our_close;
 };
 
 #endif // ACE_NT_SERVICE_DEFINE

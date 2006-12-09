@@ -2,7 +2,8 @@
 #define OOSERVER_USER_SESSION_H_INCLUDED_
 
 int UserMain(u_short uPort);
-int StartReactor();
+
+#include <ace/Svc_Handler.h>
 
 class UserSession : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_MT_SYNCH>
 {		

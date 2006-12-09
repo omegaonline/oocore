@@ -11,45 +11,19 @@
 /////////////////////////////////////////////////////////////
 
 #include "./RootManager.h"
-#include "./SpawnedProcess.h"
+
+#include <ace/OS.h>
+#include <ace/SOCK_Acceptor.h>
 
 #include <OOCore/Preprocessor/base.h>
-#include <ace/OS.h>
 
 RootManager::RootManager() : 
-	ACE_Acceptor<RootConnection, ACE_SOCK_ACCEPTOR>(),
+	LocalAcceptor<ClientConnection>(),
 	m_config_file(ACE_INVALID_HANDLE)
 {
 }
 
-// This function must match the one in OOCore/Root.cpp
-/*static ACE_TString GetBootstrapFileName()
-{
-#define BOOTSTRAP_FILE "ooserver.bootstrap"
-
-#ifdef ACE_WIN32
-
-	ACE_TCHAR szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-	if FAILED(hr)
-		return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",BOOTSTRAP_FILE)));
-
-	ACE_TCHAR szBuf2[MAX_PATH] = {0};
-	if (!PathCombine(szBuf2,szBuf,ACE_TEXT(BOOTSTRAP_FILE)))
-		return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",BOOTSTRAP_FILE)));
-
-	return ACE_TString(szBuf2);
-
-#else
-
-#define BOOTSTRAP_PREFIX ACE_TEXT("/tmp/")
-	
-	return ACE_TString(ACE_TEXT(OMEGA_CONCAT(BOOTSTRAP_PREFIX,BOOTSTRAP_FILE)));
-
-#endif
-}*/
-
-int RootManager::open()
+int RootManager::init()
 {
     // Open the Server key file
 	if (m_config_file != ACE_INVALID_HANDLE)
@@ -90,27 +64,37 @@ int RootManager::open()
 
 #endif
 
-	// Bind a tcp socket via acceptor
-	ACE_INET_Addr port_addr((u_short)0);
-	if (ACE_Acceptor<RootConnection, ACE_SOCK_ACCEPTOR>::open(port_addr,ACE_Reactor::instance()) == -1)
+	// Bind a tcp socket 
+	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
+	if (open(sa) != 0)
 	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("open() failed")));
 		ACE_OS::close(m_config_file);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("open() failed")),-1);
+		return -1;
 	}
 	
 	// Get our port number
-	if (acceptor().get_local_addr(port_addr)==-1)
+	int len = sa.get_size ();
+	sockaddr* addr = reinterpret_cast<sockaddr*>(sa.get_addr());
+	if (ACE_OS::getsockname(this->get_handle(),addr,&len) == -1)
 	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
 		ACE_OS::close(m_config_file);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")),-1);
+		close();		
+		return -1;
 	}
-	
+	sa.set_type(addr->sa_family);
+	sa.set_size(len);
+
 	// Write it back...
-	u_short uPort = port_addr.get_port_number();
+	u_short uPort = sa.get_port_number();
 	if (ACE_OS::write(m_config_file,&uPort,sizeof(uPort)) != sizeof(uPort))
 	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 		ACE_OS::close(m_config_file);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")),-1);
+		close();
+		return -1;
+		
 	}
 
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Listening for client connections on port %u.\n"),uPort));
@@ -118,28 +102,33 @@ int RootManager::open()
 	return 0;
 }
 
-int RootManager::close()
+void RootManager::close()
 {
-	// Stop accepting new connections
-	int ret = ACE_Acceptor<RootConnection, ACE_SOCK_ACCEPTOR>::close();
-	if (ret != 0)
-		return -1;
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
+	// Don't accept any more...
+	reissue_accept(0);
+
+	// Kill the map
+	for (std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.begin();i!=m_mapSpawned.end();++i)
+	{
+		delete i->second.pSpawn;
+	}
+	m_mapSpawned.clear();
+
+	// Close the config file...
 	if (m_config_file != ACE_INVALID_HANDLE)
+	{
 		ACE_OS::close(m_config_file);
-
-	return 0;
+		m_config_file = ACE_INVALID_HANDLE;
+	}
 }
 
-void RootManager::connect_client(const Session::Request& request, Session::Response& response)
+void RootManager::spawn_client(const Session::Request& request, Session::Response& response, UserProcess& process)
 {
-	// Set the response size
-	response.cbSize = sizeof(response);
-
 	// Alloc a new SpawnedProcess
-	SpawnedProcess* pProcess = 0;
-	ACE_NEW_NORETURN(pProcess,SpawnedProcess);
-	if (!pProcess)
+	ACE_NEW_NORETURN(process.pSpawn,SpawnedProcess);
+	if (!process.pSpawn)
 	{
 		response.bFailure = 1;
 		response.err = E_OUTOFMEMORY;
@@ -149,7 +138,7 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 	// Open an acceptor
 	ACE_INET_Addr addr((u_short)0);
 	ACE_SOCK_Acceptor acceptor;
-	int ret = acceptor.open(addr);
+	int ret = acceptor.open(addr,0,PF_INET,1);
 	if (ret != 0)
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
@@ -164,7 +153,7 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 		else
 		{
 			// Spawn the user process
-			ret = pProcess->Spawn(request.uid,addr.get_port_number());
+			ret = process.pSpawn->Spawn(request.uid,addr.get_port_number());
 			if (ret != 0)
 			{
 				ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn() failed")));
@@ -173,7 +162,7 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 			{
 				// Accept a socket
 				ACE_SOCK_Stream stream;
-				ACE_Time_Value wait(2);
+				ACE_Time_Value wait(5);
 				ret = acceptor.accept(stream,0,&wait);
 				if (ret != 0)
 				{
@@ -182,11 +171,10 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 				else
 				{
 					// Read the port the user session is listening on...
-					wait.sec(2);
-					ret = stream.recv(&response.uNewPort,sizeof(response.uNewPort),&wait);
-					if (ret != 0)
+					if (stream.recv(&response.uNewPort,sizeof(response.uNewPort),&wait) < sizeof(response.uNewPort))
 					{
-						ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("accept() failed")));
+						ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("recv() failed")));
+						ret = -1;
 					}
 					else
 					{
@@ -198,7 +186,7 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 				}
 
 				if (ret != 0)
-					pProcess->Close();
+					process.pSpawn->Close();
 			}
 		}
 
@@ -207,8 +195,64 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 
 	if (ret != 0)
 	{
-		delete pProcess;
+		delete process.pSpawn;
 		response.bFailure = 1;
 		response.err = ret;
-	}	
+	}
+	else
+	{
+		response.bFailure = 0;
+		process.uPort = response.uNewPort;
+	}
+}
+
+void RootManager::connect_client(const Session::Request& request, Session::Response& response)
+{
+	// Set the response size
+	response.cbSize = sizeof(response);
+
+	SpawnedProcess::USERID key;
+	int err = SpawnedProcess::ResolveTokenToUid(request.uid,key);
+	if (err != 0)
+	{
+		response.bFailure = 1;
+		response.err = err;
+		return;
+	}
+
+	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,
+		response.bFailure = 1;
+		response.err = ACE_OS::last_error();
+		return;
+	);
+
+	// See if we have a process already
+	std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.find(key);
+	if (i!=m_mapSpawned.end())
+	{
+		// See if the process is still alive
+		if (!i->second.pSpawn->IsRunning())
+		{
+			// Remove it
+			delete i->second.pSpawn;
+			m_mapSpawned.erase(i);
+			i = m_mapSpawned.end();
+		}
+	}
+
+	if (i==m_mapSpawned.end())
+	{
+		// No we don't
+		UserProcess process;
+		spawn_client(request,response,process);
+
+		if (!response.bFailure)
+			m_mapSpawned.insert(std::map<SpawnedProcess::USERID,UserProcess>::value_type(key,process));
+	}
+	else
+	{
+		// Yes we do
+		response.bFailure = 0;
+		response.uNewPort = i->second.uPort;
+	}
 }

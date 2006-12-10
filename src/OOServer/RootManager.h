@@ -30,6 +30,7 @@ public:
 
 	int init();
 	void close();
+	void term();
 
 	void connect_client(const Session::Request& request, Session::Response& response);
 	

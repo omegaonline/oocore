@@ -20,7 +20,7 @@
 
 #include <ace/Event.h>
 
-#define NTSERVICE_NAME		ACE_TEXT("OOService")
+#define NTSERVICE_NAME		ACE_TEXT("OOServer")
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Service")
 #define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online network")
 
@@ -51,7 +51,6 @@ private:
 	typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
 
 	static ACE_THR_FUNC_RETURN start_service(void*);
-	static BOOL WINAPI ctrlc_handler(DWORD dwCtrlType);
 
 	void stop_requested (DWORD control_code);
 	void pause_requested (DWORD control_code);

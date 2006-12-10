@@ -13,6 +13,7 @@
 #include "./RootManager.h"
 
 #include <ace/OS.h>
+#include <ace/Proactor.h>
 #include <ace/SOCK_Acceptor.h>
 
 #include <OOCore/Preprocessor/base.h>
@@ -58,12 +59,6 @@ int RootManager::init()
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")),-1);
 	}
 
-#if defined(ACE_WIN32)
-
-	::DebugBreak();
-
-#endif
-
 	// Bind a tcp socket 
 	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	if (open(sa) != 0)
@@ -80,7 +75,6 @@ int RootManager::init()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
 		ACE_OS::close(m_config_file);
-		close();		
 		return -1;
 	}
 	sa.set_type(addr->sa_family);
@@ -92,7 +86,6 @@ int RootManager::init()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 		ACE_OS::close(m_config_file);
-		close();
 		return -1;
 		
 	}
@@ -106,8 +99,17 @@ void RootManager::close()
 {
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
-	// Don't accept any more...
-	reissue_accept(0);
+	cancel();
+
+	if (get_handle() != ACE_INVALID_HANDLE)
+		ACE_OS::closesocket(get_handle());
+
+	ACE_Proactor::instance()->proactor_end_event_loop();
+}
+
+void RootManager::term()
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
 	// Kill the map
 	for (std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.begin();i!=m_mapSpawned.end();++i)

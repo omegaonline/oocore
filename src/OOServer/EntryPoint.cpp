@@ -14,18 +14,12 @@
 #include "./RootManager.h"
 #include "./UserSession.h"
 
-#include <ace/Proactor.h>
 #include <ace/OS.h>
+#include <ace/Proactor.h>
 
 static ACE_THR_FUNC_RETURN worker_fn(void*)
 {
-	int ret = ACE_Proactor::instance()->proactor_run_event_loop();
-	if (ret != 0)
-	{
-		if (ACE_OS::last_error() == ESHUTDOWN)
-			ret = 0;
-	}
-	return (ACE_THR_FUNC_RETURN)ret;
+	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
 #ifdef ACE_WIN32
@@ -75,13 +69,13 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			}
 
 			// Close the Root connection acceptor
-			RootManager::ROOT_MANAGER::instance()->close();
+			RootManager::ROOT_MANAGER::instance()->term();
 		}
 	}
 	
 #ifdef _DEBUG
 	// Give us a chance to read the error message
-	if (ret != 0)
+	if (ret < 0)
 	{
 		ACE_DEBUG((LM_DEBUG,ACE_TEXT("\nTerminating OOServer: exitcode = %d, error = %m.\n\n" \
 									 "OOServer will now wait for 10 seconds so you can read this message...\n"),ret));

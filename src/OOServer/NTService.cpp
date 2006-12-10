@@ -14,6 +14,8 @@
 
 #ifdef OOSERVER_USE_NTSERVICE
 
+#include "./RootManager.h"
+
 #include <ace/Get_Opt.h>
 #include <ace/ARGV.h>
 #include <ace/OS.h>
@@ -39,26 +41,22 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 	// Used for cmdline processing
 	ACE_ARGV svc_argv;
 	int bInstall = 0;
-	bool bRunAsService = false;
 	bool bOptionsAlready = false;
 	bool bDebug = false;
 
 	// Check command line options
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":bds:"));
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":ds:"));
 	int option;
 	while ((option = cmd_opts()) != EOF && !bInstall)
 	{
 		switch (option)
 		{
 		case ACE_TEXT('s'):
-			if (bRunAsService)
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Do not mix -b and -s.\n")),-1);
-			else if (ACE_OS::strcasecmp(ACE_TEXT("install"),cmd_opts.opt_arg())==0)
+			if (ACE_OS::strcasecmp(ACE_TEXT("install"),cmd_opts.opt_arg())==0)
 			{
 				if (bOptionsAlready)
 					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("-s Install must come before all other command line options.\n")),-1);
 				
-				svc_argv.add(ACE_TEXT("-b"));
 				bInstall = cmd_opts.opt_ind();
 			}
 			else if (ACE_OS::strcasecmp(ACE_TEXT("uninstall"),cmd_opts.opt_arg())==0)
@@ -72,13 +70,6 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 			}
 			else
 				ACE_ERROR_RETURN((LM_WARNING,ACE_TEXT("Invalid argument for -%c %s.\n"),cmd_opts.opt_opt(),cmd_opts.opt_arg()),-1);
-			break;
-
-		case ACE_TEXT('b'):
-			if (bInstall)
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Do not mix -b and -s.\n")),-1);
-			
-			bRunAsService = true;
 			break;
 
 		case ACE_TEXT('d'):
@@ -106,7 +97,7 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 		// this allows us to alter the config
 		NTSERVICE::instance()->remove();
 
-		if (NTSERVICE::instance()->insert(svc_argv.buf(),SERVICE_AUTO_START) == -1)
+		if (NTSERVICE::instance()->insert(svc_argv.buf()) == -1)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Install")),-1);
 
 		NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
@@ -115,39 +106,27 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 		return 1;
 	}
 	
-	if (bRunAsService)
+	// Change working directory to current exe directory
+	ACE_TCHAR this_exe[MAXPATHLEN];
+	if (!ACE_TEXT_GetModuleFileName(0,this_exe,MAXPATHLEN) ||
+		!::PathRemoveFileSpec(this_exe) || 
+		!::SetCurrentDirectory(this_exe))
 	{
-		// Change working directory to current exe directory
-		ACE_TCHAR this_exe[MAXPATHLEN];
-		if (!ACE_TEXT_GetModuleFileName(0,this_exe,MAXPATHLEN) ||
-			!::PathRemoveFileSpec(this_exe) || 
-			!::SetCurrentDirectory(this_exe))
-		{
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to change working dir\n")),-1);
-		}
-      
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed to change working dir\n")),-1);
+	}
+    
 #ifdef _DEBUG
-		if (bDebug)
-		{
-			// Break into debugger from SCM
-			::DebugBreak();
-		}
+	if (bDebug)
+	{
+		// Break into debugger from SCM
+		::DebugBreak();
+	}
 #endif // _DEBUG
 
-		// Do the ServiceMain in a seperate thread
-		if (ACE_Thread_Manager::instance()->spawn(NTService::start_service)==-1)
-			ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed spawn service thread\n")),-1);
-	}
-	else
-	{
-		// Ensure we are instantiated
-		NTSERVICE::instance();
-
-		// Install ConsoleCtrlHandler for Ctrl+C
-		if (!::SetConsoleCtrlHandler(ctrlc_handler,TRUE))
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),-1);
-	}
-
+	// Do the ServiceMain in a seperate thread
+	if (ACE_Thread_Manager::instance()->spawn(NTService::start_service)==-1)
+		ACE_ERROR_RETURN((LM_DEBUG,ACE_TEXT("(%P|%t) Failed spawn service thread\n")),-1);
+	
 	return 0;
 }
 
@@ -209,7 +188,11 @@ int NTService::svc(void)
 	report_status(SERVICE_RUNNING);
 
 	// Just wait here until we are told to stop
-	return m_finished.wait();
+	m_finished.wait();
+
+	report_status(SERVICE_STOPPED);
+
+	return 0;
 }
 
 void NTService::pause_requested(DWORD)
@@ -230,22 +213,10 @@ void NTService::stop_requested(DWORD)
 
 	ACE_DEBUG((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
 
-	ACE_Proactor::instance()->proactor_end_event_loop();
-	
-	report_status(SERVICE_STOPPED);
+	RootManager::ROOT_MANAGER::instance()->close();
 
 	// Tell the service thread to stop
 	m_finished.signal();
-}
-
-BOOL WINAPI NTService::ctrlc_handler(DWORD dwCtrlType)
-{
-	ACE_UNUSED_ARG(dwCtrlType);
-
-	ACE_DEBUG((LM_INFO,ACE_TEXT ("Service control stop requested.\n")));
-
-	// Tell the service thread to stop
-	return (ACE_Proactor::instance()->proactor_end_event_loop()==0 ? TRUE : FALSE);
 }
 
 int StartDaemonService(int argc, ACE_TCHAR* argv[])

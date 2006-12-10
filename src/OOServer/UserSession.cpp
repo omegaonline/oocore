@@ -4,13 +4,7 @@
 
 static ACE_THR_FUNC_RETURN worker_fn(void*)
 {
-	int ret = ACE_Proactor::instance()->proactor_run_event_loop();
-	if (ret != 0)
-	{
-		if (ACE_OS::last_error() == ESHUTDOWN)
-			ret = 0;
-	}
-	return (ACE_THR_FUNC_RETURN)ret;
+	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
 static int ConnectToRoot(u_short uPort)
@@ -92,7 +86,7 @@ int UserMain(u_short uPort)
 	
 #ifdef _DEBUG
 	// Give us a chance to read the error message
-	if (ret != 0)
+	if (ret < 0)
 	{
 		ACE_DEBUG((LM_DEBUG,ACE_TEXT("\nTerminating OOServer user process: exitcode = %d, error = %m.\n\n" \
 									 "OOServer will now wait for 10 seconds so you can read this message...\n"),ret));

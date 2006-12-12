@@ -278,6 +278,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\UserManager.cpp">
+			</File>
+			<File
 				RelativePath="..\OOCore\UserService.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -293,9 +296,6 @@
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\UserSession.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -324,13 +324,16 @@
 				RelativePath=".\RootManager.h">
 			</File>
 			<File
+				RelativePath=".\RootProtocol.h">
+			</File>
+			<File
 				RelativePath=".\SpawnedProcess.h">
 			</File>
 			<File
-				RelativePath="..\OOCore\UserService.h">
+				RelativePath=".\UserManager.h">
 			</File>
 			<File
-				RelativePath=".\UserSession.h">
+				RelativePath="..\OOCore\UserService.h">
 			</File>
 		</Filter>
 		<Filter

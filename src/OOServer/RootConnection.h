@@ -13,31 +13,37 @@
 #ifndef OOSERVER_ROOT_CONNECTION_H_INCLUDED_
 #define OOSERVER_ROOT_CONNECTION_H_INCLUDED_
 
+#include "./RootProtocol.h"
+#include "./SpawnedProcess.h"
+
 #include <ace/Asynch_IO.h>
 
-#include "../OOCore/Session.h"
-
-class RootManager;
+class RootBase
+{
+public:
+	virtual void enque_request(ACE_Message_Block& mb, ACE_HANDLE handle) = 0;
+	virtual void connection_closed(SpawnedProcess::USERID key) = 0;
+};
 
 class RootConnection : public ACE_Service_Handler
 {		
 public:
-	RootConnection() : ACE_Service_Handler()
-	{}
-
+	RootConnection(RootBase* pBase, SpawnedProcess::USERID key);
 	virtual ~RootConnection();
 
 	void open(ACE_HANDLE new_handle, ACE_Message_Block &message_block);
 	void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
-	void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);
-	
+		
 private:
 	RootConnection(const RootConnection&) {}
 	RootConnection& operator = (const RootConnection&) {}
 
-	Session::Request::Length	m_header_len;
-	ACE_Asynch_Read_Stream		m_reader;
-	ACE_Asynch_Write_Stream		m_writer;
+	RootBase*							m_pBase;
+	SpawnedProcess::USERID				m_id;
+	RootProtocol::Header::Length		m_read_len;
+	ACE_Asynch_Read_Stream				m_reader;
+
+	void read();
 };
 
-#endif // OOSERVER_ROOTt_CONNECTION_H_INCLUDED_
+#endif // OOSERVER_ROOT_CONNECTION_H_INCLUDED_

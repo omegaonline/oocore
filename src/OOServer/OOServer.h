@@ -1,3 +1,5 @@
+#include <OOCore/OOCore.h>
+
 #if (defined(_MSC_VER) && _MSC_VER>=1300)
 #pragma warning(disable : 4541)
 #endif

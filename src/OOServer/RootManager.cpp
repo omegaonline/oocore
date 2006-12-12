@@ -24,6 +24,57 @@ RootManager::RootManager() :
 {
 }
 
+RootManager::~RootManager()
+{
+	term();
+}
+
+int RootManager::run_event_loop()
+{
+	return ROOT_MANAGER::instance()->run_event_loop_i();
+}
+
+int RootManager::run_event_loop_i()
+{
+	// Init
+	int ret = init();
+	if (ret != 0)
+		return ret;
+
+	// Determine default threads from processor count
+	int threads = ACE_OS::num_processors();
+	if (threads < 2)
+		threads = 2;
+
+	// Spawn off the request threads
+	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn);
+	if (req_thrd_grp_id == -1)
+		ret = -1;
+	else
+	{
+		// Spawn off the proactor threads
+		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,proactor_worker_fn);
+		if (pro_thrd_grp_id == -1)
+			ret = -1;
+		else
+		{
+			// Treat this thread as a worker as well
+			ret = proactor_worker_fn(0);
+
+			// Wait for all the proactor threads to finish
+			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
+		}
+
+		// Stop the message queue
+		m_msg_queue.close();
+		
+		// Wait for all the request threads to finish
+		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
+	}
+
+	return ret;
+}
+
 int RootManager::init()
 {
     // Open the Server key file
@@ -86,8 +137,7 @@ int RootManager::init()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 		ACE_OS::close(m_config_file);
-		return -1;
-		
+		return -1;	
 	}
 
 	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Listening for client connections on port %u.\n"),uPort));
@@ -95,23 +145,28 @@ int RootManager::init()
 	return 0;
 }
 
-void RootManager::close()
+void RootManager::end_event_loop()
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	ROOT_MANAGER::instance()->end_event_loop_i();
+}
 
-	cancel();
+void RootManager::end_event_loop_i()
+{
+	//cancel();
 
-	if (get_handle() != ACE_INVALID_HANDLE)
-		ACE_OS::closesocket(get_handle());
+	//if (get_handle() != ACE_INVALID_HANDLE)
+	//	ACE_OS::closesocket(get_handle());
 
 	ACE_Proactor::instance()->proactor_end_event_loop();
+
+	term();
 }
 
 void RootManager::term()
 {
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
-	// Kill the map
+	// Empty the map
 	for (std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.begin();i!=m_mapSpawned.end();++i)
 	{
 		delete i->second.pSpawn;
@@ -126,7 +181,7 @@ void RootManager::term()
 	}
 }
 
-void RootManager::spawn_client(const Session::Request& request, Session::Response& response, UserProcess& process)
+void RootManager::spawn_client(const Session::Request& request, Session::Response& response, UserProcess& process, SpawnedProcess::USERID key)
 {
 	// Alloc a new SpawnedProcess
 	ACE_NEW_NORETURN(process.pSpawn,SpawnedProcess);
@@ -138,7 +193,7 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 	}
 
 	// Open an acceptor
-	ACE_INET_Addr addr((u_short)0);
+	ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Acceptor acceptor;
 	int ret = acceptor.open(addr,0,PF_INET,1);
 	if (ret != 0)
@@ -183,7 +238,20 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 						response.bFailure = 0;
 					}
 
-					void* TODO;	// Attach the socket to a Svc_handler....
+					// Create a new RootConnection
+					RootConnection* pRC = 0;
+					ACE_NEW_NORETURN(pRC,RootConnection(this,key));
+					if (!pRC)
+						ret = -1;
+					else
+					{
+						ACE_Message_Block mb;
+						pRC->open(stream.get_handle(),mb);
+						
+						// Clear the handle in the stream, pRC now owns it
+						stream.set_handle(ACE_INVALID_HANDLE);		
+					}
+
 					stream.close();
 				}
 
@@ -198,6 +266,7 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 	if (ret != 0)
 	{
 		delete process.pSpawn;
+		process.pSpawn = 0;
 		response.bFailure = 1;
 		response.err = ret;
 	}
@@ -209,6 +278,11 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 }
 
 void RootManager::connect_client(const Session::Request& request, Session::Response& response)
+{
+	return ROOT_MANAGER::instance()->connect_client_i(request,response);
+}
+
+void RootManager::connect_client_i(const Session::Request& request, Session::Response& response)
 {
 	// Set the response size
 	response.cbSize = sizeof(response);
@@ -246,7 +320,7 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 	{
 		// No we don't
 		UserProcess process;
-		spawn_client(request,response,process);
+		spawn_client(request,response,process,key);
 
 		if (!response.bFailure)
 			m_mapSpawned.insert(std::map<SpawnedProcess::USERID,UserProcess>::value_type(key,process));
@@ -256,5 +330,73 @@ void RootManager::connect_client(const Session::Request& request, Session::Respo
 		// Yes we do
 		response.bFailure = 0;
 		response.uNewPort = i->second.uPort;
+	}
+}
+
+void RootManager::connection_closed(SpawnedProcess::USERID key)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+	std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.find(key);
+	if (i!=m_mapSpawned.end())
+	{
+		delete i->second.pSpawn;
+		m_mapSpawned.erase(i);
+	}
+}
+
+ACE_THR_FUNC_RETURN RootManager::proactor_worker_fn(void*)
+{
+	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
+}
+
+void RootManager::enque_request(ACE_Message_Block& mb, ACE_HANDLE handle)
+{
+	ACE_Message_Block* mb_new = mb.duplicate();
+	if (mb_new)
+	{
+		// Swap the length for the handle value...
+		RootProtocol::Header* pHeader = reinterpret_cast<RootProtocol::Header*>(mb_new->rd_ptr());
+		pHeader->handle = handle;
+
+		if (m_msg_queue.enqueue_prio(mb.duplicate()) != 0)
+			mb_new->release();
+	}
+}
+
+ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
+{
+	return ROOT_MANAGER::instance()->process_requests();
+}
+
+ACE_THR_FUNC_RETURN RootManager::process_requests()
+{
+	for (;;)
+	{
+		// Get the next message
+		ACE_Message_Block* mb;
+		int ret = m_msg_queue.dequeue_prio(mb);
+		if (ret < 0)
+			return (ACE_THR_FUNC_RETURN)ret;
+	
+		// Get the header, and move on the rd_ptr
+		RootProtocol::Header* pHeader = reinterpret_cast<RootProtocol::Header*>(mb->rd_ptr());
+		mb->rd_ptr(sizeof(RootProtocol::Header));
+
+		// Do something with mb...
+		ret = -1;
+		switch (pHeader->op)
+		{
+		default:
+			void* TODO;
+		}
+
+		if (ret != 0)
+		{
+			// Something fishy from downstream, close socket!
+			ACE_OS::closesocket(pHeader->handle);
+		}
+		
+		mb->release();
 	}
 }

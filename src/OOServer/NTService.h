@@ -15,16 +15,13 @@
 
 #include <ace/NT_Service.h>
 
-#ifdef ACE_NT_SERVICE_DEFINE
-#define OOSERVER_USE_NTSERVICE
+#ifdef ACE_WIN32
 
 #include <ace/Event.h>
 
 #define NTSERVICE_NAME		ACE_TEXT("OOServer")
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Service")
 #define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online network")
-
-int StartDaemonService(int argc, ACE_TCHAR* argv[]);
 
 class NTService : public ACE_NT_Service
 {
@@ -59,6 +56,6 @@ private:
 	ACE_Event m_finished;
 };
 
-#endif // ACE_NT_SERVICE_DEFINE
+#endif // ACE_WIN32
 
 #endif // OOSERVER_NT_SERVICE_H_INCLUDED_

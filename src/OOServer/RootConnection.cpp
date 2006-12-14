@@ -13,7 +13,7 @@
 #include "./RootConnection.h"
 #include "./RootManager.h"
 
-RootConnection::RootConnection(RootBase* pBase, SpawnedProcess::USERID key) : 
+RootConnection::RootConnection(RootBase* pBase, const SpawnedProcess::USERID& key) : 
 	ACE_Service_Handler(),
 	m_pBase(pBase),
 	m_id(key)
@@ -22,11 +22,13 @@ RootConnection::RootConnection(RootBase* pBase, SpawnedProcess::USERID key) :
 
 RootConnection::~RootConnection()
 {
-	if (handle() != ACE_INVALID_HANDLE)
-		ACE_OS::closesocket(handle());
-
+	ACE_HANDLE my_handle = handle();
+	
 	if (m_pBase)
-		m_pBase->root_connection_closed(m_id);
+		m_pBase->root_connection_closed(m_id,my_handle);
+
+	if (my_handle != ACE_INVALID_HANDLE)
+		ACE_OS::closesocket(my_handle);
 }
 
 void RootConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)

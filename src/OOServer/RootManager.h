@@ -14,26 +14,23 @@
 #define OOSERVER_ROOT_MANAGER_H_INCLUDED_
 
 #include "./LocalAcceptor.h"
+#include "./RequestHandler.h"
 #include "./RootConnection.h"
 #include "./ClientConnection.h"
 
 #include <ace/Singleton.h>
-#include <ace/Condition_Thread_Mutex.h>
-#include <ace/Message_Queue_T.h>
 
 #include <map>
 
 class RootManager : 
 	public LocalAcceptor<ClientConnection>, 
-	public RootBase
+	public RootBase,
+	public RequestHandler<RequestBase>
 {
 public:
 	static int run_event_loop();
 	static void end_event_loop();
 	static void connect_client(const Session::Request& request, Session::Response& response);
-
-	int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
-	void root_connection_closed(SpawnedProcess::USERID key);
 		
 private:
 	typedef ACE_Singleton<RootManager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;
@@ -46,22 +43,20 @@ private:
 
 	ACE_Thread_Mutex				m_lock;
 	ACE_HANDLE						m_config_file;
-	ACE_Message_Queue<ACE_MT_SYNCH>	m_msg_queue;
-
-	struct UserProcess
-	{
-		u_short				uPort;
-		SpawnedProcess*		pSpawn;
-	};
-	std::map<SpawnedProcess::USERID,UserProcess> m_mapSpawned;
+	
+	std::map<SpawnedProcess::USERID,u_short>	m_mapUserPorts;
+	std::map<ACE_HANDLE,SpawnedProcess*>		m_mapHandles;
 
 	int run_event_loop_i();
 	int init();
 	void end_event_loop_i();
 	void term();
 	void connect_client_i(const Session::Request& request, Session::Response& response);
-	void spawn_client(const Session::Request& request, Session::Response& response, UserProcess& process, SpawnedProcess::USERID key);
-	ACE_THR_FUNC_RETURN process_requests();
+	void spawn_client(const Session::Request& request, Session::Response& response, const SpawnedProcess::USERID& key);
+	
+	int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
+	void root_connection_closed(const SpawnedProcess::USERID& key, ACE_HANDLE handle);
+	void process_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);

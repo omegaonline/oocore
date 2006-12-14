@@ -318,6 +318,12 @@
 				RelativePath=".\OOServer.h">
 			</File>
 			<File
+				RelativePath=".\RequestHandler.h">
+			</File>
+			<File
+				RelativePath=".\RequestHandler.inl">
+			</File>
+			<File
 				RelativePath=".\RootConnection.h">
 			</File>
 			<File

@@ -65,9 +65,9 @@ int RootManager::run_event_loop_i()
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
 
-		// Stop the message queue
-		m_msg_queue.close();
-		
+		// Stop handling requests
+		RequestHandler<RequestBase>::stop();
+
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
@@ -152,11 +152,6 @@ void RootManager::end_event_loop()
 
 void RootManager::end_event_loop_i()
 {
-	//cancel();
-
-	//if (get_handle() != ACE_INVALID_HANDLE)
-	//	ACE_OS::closesocket(get_handle());
-
 	ACE_Proactor::instance()->proactor_end_event_loop();
 
 	term();
@@ -167,11 +162,11 @@ void RootManager::term()
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
 	// Empty the map
-	for (std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.begin();i!=m_mapSpawned.end();++i)
+	for (std::map<ACE_HANDLE,SpawnedProcess*>::iterator i=m_mapHandles.begin();i!=m_mapHandles.end();++i)
 	{
-		delete i->second.pSpawn;
+		delete i->second;
 	}
-	m_mapSpawned.clear();
+	m_mapHandles.clear();
 
 	// Close the config file...
 	if (m_config_file != ACE_INVALID_HANDLE)
@@ -181,11 +176,12 @@ void RootManager::term()
 	}
 }
 
-void RootManager::spawn_client(const Session::Request& request, Session::Response& response, UserProcess& process, SpawnedProcess::USERID key)
+void RootManager::spawn_client(const Session::Request& request, Session::Response& response, const SpawnedProcess::USERID& key)
 {
 	// Alloc a new SpawnedProcess
-	ACE_NEW_NORETURN(process.pSpawn,SpawnedProcess);
-	if (!process.pSpawn)
+	SpawnedProcess* pSpawn;
+	ACE_NEW_NORETURN(pSpawn,SpawnedProcess);
+	if (!pSpawn)
 	{
 		response.bFailure = 1;
 		response.err = E_OUTOFMEMORY;
@@ -210,7 +206,7 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 		else
 		{
 			// Spawn the user process
-			ret = process.pSpawn->Spawn(request.uid,addr.get_port_number());
+			ret = pSpawn->Spawn(request.uid,addr.get_port_number());
 			if (ret != 0)
 			{
 				ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn() failed")));
@@ -235,28 +231,32 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 					}
 					else
 					{
-						response.bFailure = 0;
-					}
+						// Create a new RootConnection
+						RootConnection* pRC = 0;
+						ACE_NEW_NORETURN(pRC,RootConnection(this,key));
+						if (!pRC)
+							ret = -1;
+						else
+						{
+							ACE_HANDLE handle = stream.get_handle();
 
-					// Create a new RootConnection
-					RootConnection* pRC = 0;
-					ACE_NEW_NORETURN(pRC,RootConnection(this,key));
-					if (!pRC)
-						ret = -1;
-					else
-					{
-						ACE_Message_Block mb;
-						pRC->open(stream.get_handle(),mb);
-						
-						// Clear the handle in the stream, pRC now owns it
-						stream.set_handle(ACE_INVALID_HANDLE);		
+							// Clear the handle in the stream, pRC now owns it
+							stream.set_handle(ACE_INVALID_HANDLE);
+
+							ACE_Message_Block mb;
+							pRC->open(handle,mb);
+
+							// Insert the data into various maps...
+							m_mapUserPorts.insert(std::map<SpawnedProcess::USERID,u_short>::value_type(key,response.uNewPort));
+							m_mapHandles.insert(std::map<ACE_HANDLE,SpawnedProcess*>::value_type(handle,pSpawn));						
+						}
 					}
 
 					stream.close();
 				}
 
 				if (ret != 0)
-					process.pSpawn->Close();
+					pSpawn->Close();
 			}
 		}
 
@@ -265,15 +265,13 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 
 	if (ret != 0)
 	{
-		delete process.pSpawn;
-		process.pSpawn = 0;
+		delete pSpawn;
 		response.bFailure = 1;
 		response.err = ret;
 	}
 	else
 	{
 		response.bFailure = 0;
-		process.uPort = response.uNewPort;
 	}
 }
 
@@ -303,45 +301,17 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 	);
 
 	// See if we have a process already
-	std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.find(key);
-	if (i!=m_mapSpawned.end())
-	{
-		// See if the process is still alive
-		if (!i->second.pSpawn->IsRunning())
-		{
-			// Remove it
-			delete i->second.pSpawn;
-			m_mapSpawned.erase(i);
-			i = m_mapSpawned.end();
-		}
-	}
-
-	if (i==m_mapSpawned.end())
+	std::map<SpawnedProcess::USERID,u_short>::iterator i=m_mapUserPorts.find(key);
+	if (i==m_mapUserPorts.end())
 	{
 		// No we don't
-		UserProcess process;
-		spawn_client(request,response,process,key);
-
-		if (!response.bFailure)
-			m_mapSpawned.insert(std::map<SpawnedProcess::USERID,UserProcess>::value_type(key,process));
+		spawn_client(request,response,key);
 	}
 	else
 	{
 		// Yes we do
 		response.bFailure = 0;
-		response.uNewPort = i->second.uPort;
-	}
-}
-
-void RootManager::root_connection_closed(SpawnedProcess::USERID key)
-{
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-	std::map<SpawnedProcess::USERID,UserProcess>::iterator i=m_mapSpawned.find(key);
-	if (i!=m_mapSpawned.end())
-	{
-		delete i->second.pSpawn;
-		m_mapSpawned.erase(i);
+		response.uNewPort = i->second;
 	}
 }
 
@@ -350,18 +320,62 @@ ACE_THR_FUNC_RETURN RootManager::proactor_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
+void RootManager::root_connection_closed(const SpawnedProcess::USERID& key, ACE_HANDLE handle)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+	m_mapUserPorts.erase(key);
+	
+	std::map<ACE_HANDLE,SpawnedProcess*>::iterator i=m_mapHandles.find(handle);
+	if (i != m_mapHandles.end())
+	{
+		delete i->second;
+		m_mapHandles.erase(i);
+	}
+}
+
 int RootManager::enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
-	// Steal from UserManager...
-	return 0;
+	RequestBase* req;
+	ACE_NEW_RETURN(req,RequestBase(handle,input),-1);
+
+	int ret = enqueue_request(req);
+	if (ret <= 0)
+		delete req;
+
+	return ret;
 }
 
 ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
 {
-	return ROOT_MANAGER::instance()->process_requests();
+	return (ACE_THR_FUNC_RETURN)ROOT_MANAGER::instance()->pump_requests();
 }
 
-ACE_THR_FUNC_RETURN RootManager::process_requests()
+void RootManager::process_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	return 0;
+	SpawnedProcess* pSpawn = 0;
+	{
+		// Get the spawned process
+		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+		std::map<ACE_HANDLE,SpawnedProcess*>::iterator i=m_mapHandles.find(request->handle());
+		if (i == m_mapHandles.end())
+		{
+			delete request;
+			return;
+		}
+		pSpawn = i->second;
+	}
+
+	ACE_CDR::ULong op_code;
+	(*request->input()) >> op_code;
+	if (!request->input()->good_bit())
+		return;
+
+	switch (op_code)
+	{
+	default:
+		;
+	}
+
+	delete request;
 }

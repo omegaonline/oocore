@@ -22,13 +22,13 @@ class RootBase
 {
 public:
 	virtual int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle) = 0;
-	virtual void root_connection_closed(SpawnedProcess::USERID key) = 0;
+	virtual void root_connection_closed(const SpawnedProcess::USERID& key, ACE_HANDLE handle) = 0;
 };
 
 class RootConnection : public ACE_Service_Handler
 {		
 public:
-	RootConnection(RootBase* pBase, SpawnedProcess::USERID key);
+	RootConnection(RootBase* pBase, const SpawnedProcess::USERID& key);
 	virtual ~RootConnection();
 
 	void open(ACE_HANDLE new_handle, ACE_Message_Block &message_block);
@@ -47,4 +47,3 @@ private:
 };
 
 #endif // OOSERVER_ROOT_CONNECTION_H_INCLUDED_
-

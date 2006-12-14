@@ -244,68 +244,71 @@
 			Name="OTL"
 			Filter="">
 			<File
-				RelativePath="..\..\..\include\Otl\OTL.h">
+				RelativePath="..\..\include\Otl\OTL.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\Otl\OTL.inl">
+				RelativePath="..\..\include\Otl\OTL.inl">
 			</File>
 			<File
-				RelativePath="..\..\..\include\Otl\OTL_special.h">
+				RelativePath="..\..\include\Otl\OTL_special.h">
 			</File>
 		</Filter>
 		<Filter
 			Name="OOCore"
 			Filter="">
 			<File
-				RelativePath="..\..\..\include\OOCore\config-win32-msvc.h">
+				RelativePath="..\..\include\OOCore\config-win32-gcc.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\config-win32.h">
+				RelativePath="..\..\include\OOCore\config-win32-msvc.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\config.h">
+				RelativePath="..\..\include\OOCore\config-win32.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\Enum.h">
+				RelativePath="..\..\include\OOCore\config.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore.h">
+				RelativePath="..\..\include\OOCore\Enum.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_base.h">
+				RelativePath="..\..\include\OOCore\OOCore.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_export.h">
+				RelativePath="..\..\include\OOCore\OOCore_base.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_ifaces.h">
+				RelativePath="..\..\include\OOCore\OOCore_export.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_rtti.h">
+				RelativePath="..\..\include\OOCore\OOCore_ifaces.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_rtti.inl">
+				RelativePath="..\..\include\OOCore\OOCore_rtti.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_type_sizes.h">
+				RelativePath="..\..\include\OOCore\OOCore_rtti.inl">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_types.h">
+				RelativePath="..\..\include\OOCore\OOCore_type_sizes.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_types.inl">
+				RelativePath="..\..\include\OOCore\OOCore_types.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\OOCore_wire.h">
+				RelativePath="..\..\include\OOCore\OOCore_types.inl">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\Registry.h">
+				RelativePath="..\..\include\OOCore\OOCore_wire.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\Remoting.h">
+				RelativePath="..\..\include\OOCore\Registry.h">
 			</File>
 			<File
-				RelativePath="..\..\..\include\OOCore\ROT.h">
+				RelativePath="..\..\include\OOCore\Remoting.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\ROT.h">
 			</File>
 		</Filter>
 	</Files>

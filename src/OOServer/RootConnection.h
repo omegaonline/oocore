@@ -13,16 +13,16 @@
 #ifndef OOSERVER_ROOT_CONNECTION_H_INCLUDED_
 #define OOSERVER_ROOT_CONNECTION_H_INCLUDED_
 
-#include "./RootProtocol.h"
 #include "./SpawnedProcess.h"
 
 #include <ace/Asynch_IO.h>
+#include <ace/CDR_Stream.h>
 
 class RootBase
 {
 public:
-	virtual void enque_request(ACE_Message_Block& mb, ACE_HANDLE handle) = 0;
-	virtual void connection_closed(SpawnedProcess::USERID key) = 0;
+	virtual int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle) = 0;
+	virtual void root_connection_closed(SpawnedProcess::USERID key) = 0;
 };
 
 class RootConnection : public ACE_Service_Handler
@@ -40,10 +40,11 @@ private:
 
 	RootBase*							m_pBase;
 	SpawnedProcess::USERID				m_id;
-	RootProtocol::Header::Length		m_read_len;
+	ACE_CDR::ULong						m_read_len;
 	ACE_Asynch_Read_Stream				m_reader;
 
 	void read();
 };
 
 #endif // OOSERVER_ROOT_CONNECTION_H_INCLUDED_
+

@@ -32,8 +32,8 @@ public:
 	static void end_event_loop();
 	static void connect_client(const Session::Request& request, Session::Response& response);
 
-	void enque_request(ACE_Message_Block& mb, ACE_HANDLE handle);
-	void connection_closed(SpawnedProcess::USERID key);
+	int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
+	void root_connection_closed(SpawnedProcess::USERID key);
 		
 private:
 	typedef ACE_Singleton<RootManager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;

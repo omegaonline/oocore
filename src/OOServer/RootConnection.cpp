@@ -26,7 +26,7 @@ RootConnection::~RootConnection()
 		ACE_OS::closesocket(handle());
 
 	if (m_pBase)
-		m_pBase->connection_closed(m_id);
+		m_pBase->root_connection_closed(m_id);
 }
 
 void RootConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
@@ -51,7 +51,12 @@ void RootConnection::read()
 	m_read_len = 0;
 	ACE_Message_Block* mb;
 	ACE_NEW_NORETURN(mb,ACE_Message_Block(1024));
-	if (m_reader.read(*mb,sizeof(m_read_len)) != 0)
+
+	// Align the message block for CDR
+	ACE_CDR::mb_align(mb);
+
+	// Start an async read
+	if (m_reader.read(*mb,sizeof(m_read_len)+sizeof(ACE_CDR::Octet)) != 0)
 	{
 		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::read")));
 		mb->release();
@@ -69,17 +74,29 @@ void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 		if (m_read_len==0)
 		{
 			// Read the header length
-			if (result.bytes_transferred() == sizeof(m_read_len))
+			if (result.bytes_transferred() == sizeof(m_read_len)+sizeof(ACE_CDR::Boolean))
 			{
-				m_read_len = *reinterpret_cast<RootProtocol::Header::Length*>(mb.rd_ptr());
-		
-				// Resize the message block
-				if (mb.size(m_read_len) == 0)
-				{
-					m_read_len -= sizeof(m_read_len);
+				// Create a temp input CDR
+				ACE_InputCDR input(mb.data_block(),ACE_Message_Block::DONT_DELETE);
+				input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-					// Issue another read for the rest of the data
-					bSuccess = (m_reader.read(mb,m_read_len) == 0);
+				// Read and set the byte order
+				ACE_CDR::Octet byte_order;
+				if (input.read_octet(byte_order))
+				{
+					input.reset_byte_order(byte_order);
+
+					// Read the length
+					input >> m_read_len;
+					if (input.good_bit())
+					{
+						// Resize the message block
+						if (mb.size(m_read_len + mb.length()) == 0)
+						{
+							// Issue another read for the rest of the data
+							bSuccess = (m_reader.read(mb,m_read_len) == 0);
+						}
+					}
 				}
 			}
 		}
@@ -88,23 +105,47 @@ void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 			// Check the header length
 			if (result.bytes_transferred() == m_read_len)
 			{
-				bSuccess = true;
+				// Create a new input CDR
+				ACE_InputCDR* input = 0;
+				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0));
+				if (input)
+				{
+					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-				// Push into the RootManager queue...
-				m_pBase->enque_request(mb,handle());
+					// Read and set the byte order
+					ACE_CDR::Octet byte_order;
+					if (input->read_octet(byte_order))
+					{
+						input->reset_byte_order(byte_order);
 
-				mb.release();
+						// Read the length
+						ACE_CDR::ULong read_len;
+						(*input) >> read_len;
+						if (input->good_bit() && read_len == m_read_len)
+						{
+							// Push into the RootBase queue...
+							if (m_pBase->enque_root_request(input,handle()) > 0)
+							{
+								// Start a new read
+								read();
 
-				// Start a new read
-				read();
+								bSuccess = true;
+							}
+						}
+					}
+
+					if (!bSuccess)
+						delete input;
+				}
 			}
 		}
 	}
 
+	mb.release();
+
 	if (!bSuccess)
 	{
 		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::handle_read_stream")));
-		mb.release();
 		delete this;
 	}
 }

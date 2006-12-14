@@ -324,9 +324,6 @@
 				RelativePath=".\RootManager.h">
 			</File>
 			<File
-				RelativePath=".\RootProtocol.h">
-			</File>
-			<File
 				RelativePath=".\SpawnedProcess.h">
 			</File>
 			<File

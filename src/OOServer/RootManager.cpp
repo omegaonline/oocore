@@ -333,7 +333,7 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 	}
 }
 
-void RootManager::connection_closed(SpawnedProcess::USERID key)
+void RootManager::root_connection_closed(SpawnedProcess::USERID key)
 {
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
@@ -350,18 +350,10 @@ ACE_THR_FUNC_RETURN RootManager::proactor_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-void RootManager::enque_request(ACE_Message_Block& mb, ACE_HANDLE handle)
+int RootManager::enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
-	ACE_Message_Block* mb_new = mb.duplicate();
-	if (mb_new)
-	{
-		// Swap the length for the handle value...
-		RootProtocol::Header* pHeader = reinterpret_cast<RootProtocol::Header*>(mb_new->rd_ptr());
-		pHeader->handle = handle;
-
-		if (m_msg_queue.enqueue_prio(mb.duplicate()) != 0)
-			mb_new->release();
-	}
+	// Steal from UserManager...
+	return 0;
 }
 
 ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
@@ -371,32 +363,5 @@ ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
 
 ACE_THR_FUNC_RETURN RootManager::process_requests()
 {
-	for (;;)
-	{
-		// Get the next message
-		ACE_Message_Block* mb;
-		int ret = m_msg_queue.dequeue_prio(mb);
-		if (ret < 0)
-			return (ACE_THR_FUNC_RETURN)ret;
-	
-		// Get the header, and move on the rd_ptr
-		RootProtocol::Header* pHeader = reinterpret_cast<RootProtocol::Header*>(mb->rd_ptr());
-		mb->rd_ptr(sizeof(RootProtocol::Header));
-
-		// Do something with mb...
-		ret = -1;
-		switch (pHeader->op)
-		{
-		default:
-			void* TODO;
-		}
-
-		if (ret != 0)
-		{
-			// Something fishy from downstream, close socket!
-			ACE_OS::closesocket(pHeader->handle);
-		}
-		
-		mb->release();
-	}
+	return 0;
 }

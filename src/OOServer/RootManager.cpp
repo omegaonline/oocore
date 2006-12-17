@@ -156,6 +156,9 @@ void RootManager::end_event_loop_i()
 {
 	try
 	{
+		// Stop accepting
+		ACE_OS::closesocket(handle());
+
 		{
 			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 	

@@ -192,6 +192,9 @@ void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE 
 {
 	try
 	{
+		// Stop accepting
+		ACE_OS::closesocket(handle());
+
 		{
 			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 			// Shutdown all client handles

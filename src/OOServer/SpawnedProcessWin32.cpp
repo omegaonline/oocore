@@ -313,7 +313,7 @@ int SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 	return 0;
 }
 
-int SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, SpawnedProcess::USERID& uid)
+int SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid)
 {
 	// Get the process handle
 	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);
@@ -356,8 +356,8 @@ int SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, SpawnedProcess::USER
 		return err;
 	}
 
-	LPTSTR pszString;
-	if (!ConvertSidToStringSid(pBuffer->User.Sid,&pszString))
+	LPSTR pszString;
+	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
 	{
 		err = GetLastError();
 		free(pBuffer);

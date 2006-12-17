@@ -16,6 +16,9 @@
 #include <ace/CDR_Stream.h>
 #include <ace/Message_Queue_T.h>
 #include <ace/Condition_Thread_Mutex.h>
+#include <ace/Atomic_Op.h>
+
+#include <set>
 
 class RequestBase
 {
@@ -51,26 +54,31 @@ template <class REQUEST>
 class RequestHandler
 {
 protected:
+	RequestHandler() :
+		 m_next_trans_id(1)
+	{}
+
 	int enqueue_request(REQUEST* req);
-	int send_asynch(ACE_HANDLE handle, const ACE_OutputCDR& request, ACE_Time_Value* wait);
-	int send_synch(ACE_HANDLE handle, const ACE_OutputCDR& request, REQUEST*& response, ACE_Time_Value* wait);
+	int send_asynch(ACE_HANDLE handle, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
+	int send_synch(ACE_HANDLE handle, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, REQUEST*& response, ACE_Time_Value* deadline);
+	int send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, ACE_Time_Value* deadline);
 	int pump_requests(ACE_Time_Value* deadline = 0);
 	void stop();
 
-	virtual void process_request(REQUEST* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline) = 0;
+	virtual void process_request(REQUEST* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline) = 0;
 		
 private:
-	static const unsigned int header_padding = 16;
-
-	int wait_for_response(ACE_HANDLE handle, ACE_CDR::ULong trans_id, REQUEST*& response, ACE_Time_Value* deadline = 0);
-	int build_header(ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_OutputCDR& request, const ACE_Time_Value& deadline);
-	ACE_CDR::ULong next_trans_id();
-	bool expired_request(ACE_CDR::ULong trans_id);
-	void cancel_trans_id(ACE_CDR::ULong trans_id);
-
+	ACE_Atomic_Op<ACE_Thread_Mutex,long>		m_next_trans_id;
 	ACE_Message_Queue_Ex<REQUEST,ACE_MT_SYNCH>	m_msg_queue;
+	ACE_Thread_Mutex							m_trans_lock;
+	std::set<ACE_CDR::ULong>					m_setPendingTrans;
+
+	int wait_for_response(ACE_CDR::ULong trans_id, REQUEST*& response, ACE_Time_Value* deadline = 0);
+	int build_header(const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
+	bool valid_transaction(ACE_CDR::ULong trans_id);
 };
 
 #include "./RequestHandler.inl"
 
 #endif  // OOSERVER_REQUEST_HANDLER_H_INCLUDED_
+

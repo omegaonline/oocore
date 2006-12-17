@@ -11,6 +11,7 @@
 /////////////////////////////////////////////////////////////
 
 #include "./RootManager.h"
+#include "./SpawnedProcess.h"
 
 #include <ace/OS.h>
 #include <ace/Proactor.h>
@@ -20,7 +21,8 @@
 
 RootManager::RootManager() : 
 	LocalAcceptor<ClientConnection>(),
-	m_config_file(ACE_INVALID_HANDLE)
+	m_config_file(ACE_INVALID_HANDLE),
+	m_uNextChannelId(2)
 {
 }
 
@@ -77,7 +79,7 @@ int RootManager::run_event_loop_i()
 
 int RootManager::init()
 {
-    // Open the Server key file
+    // Open the Server lock file
 	if (m_config_file != ACE_INVALID_HANDLE)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Already open.\n")),-1);
 
@@ -152,6 +154,29 @@ void RootManager::end_event_loop()
 
 void RootManager::end_event_loop_i()
 {
+	try
+	{
+		{
+			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	
+			// Shutdown all client handles
+			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();++j)
+			{
+				ACE_OS::shutdown(j->first,SD_SEND);
+			}
+		}
+
+        // Give everyone a chance to shut down
+		for (;;)
+		{
+			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+			if (m_mapReverseChannelIds.empty())
+				break;
+		}
+	}
+	catch (...)
+	{}
+
 	ACE_Proactor::instance()->proactor_end_event_loop();
 
 	term();
@@ -162,11 +187,18 @@ void RootManager::term()
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
 	// Empty the map
-	for (std::map<ACE_HANDLE,SpawnedProcess*>::iterator i=m_mapHandles.begin();i!=m_mapHandles.end();++i)
+	try
 	{
-		delete i->second;
+		for (std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
+		{
+			i->second.pSpawn->Close();
+			delete i->second.pSpawn;
+		}
+		m_mapUserProcesses.clear();
+		m_mapUserIds.clear();
 	}
-	m_mapHandles.clear();
+	catch (...)
+	{}
 
 	// Close the config file...
 	if (m_config_file != ACE_INVALID_HANDLE)
@@ -176,7 +208,7 @@ void RootManager::term()
 	}
 }
 
-void RootManager::spawn_client(const Session::Request& request, Session::Response& response, const SpawnedProcess::USERID& key)
+void RootManager::spawn_client(const Session::Request& request, Session::Response& response, const ACE_CString& strUserId)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
@@ -233,22 +265,38 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 					{
 						// Create a new RootConnection
 						RootConnection* pRC = 0;
-						ACE_NEW_NORETURN(pRC,RootConnection(this,key));
+						ACE_NEW_NORETURN(pRC,RootConnection(this,strUserId));
 						if (!pRC)
-							ret = -1;
-						else
 						{
-							ACE_HANDLE handle = stream.get_handle();
-
-							// Clear the handle in the stream, pRC now owns it
-							stream.set_handle(ACE_INVALID_HANDLE);
-
-							ACE_Message_Block mb;
-							pRC->open(handle,mb);
-
+							ret = -1;
+						}
+						else if ((ret=pRC->open(stream.get_handle())) == 0)
+						{
 							// Insert the data into various maps...
-							m_mapUserPorts.insert(std::map<SpawnedProcess::USERID,u_short>::value_type(key,response.uNewPort));
-							m_mapHandles.insert(std::map<ACE_HANDLE,SpawnedProcess*>::value_type(handle,pSpawn));						
+							try
+							{
+								UserProcess process = {response.uNewPort, pSpawn};
+								m_mapUserProcesses.insert(std::map<ACE_CString,UserProcess>::value_type(strUserId,process));
+								m_mapUserIds.insert(std::map<ACE_HANDLE,ACE_CString>::value_type(stream.get_handle(),strUserId));
+
+								// Create a new unique channel id
+								Channel channel = {stream.get_handle(), 0};
+								ACE_CDR::UShort uChannelId = m_uNextChannelId++;
+								while (uChannelId < 2 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
+								{
+									uChannelId = m_uNextChannelId++;
+								}
+								m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(uChannelId,channel));
+								m_mapReverseChannelIds.insert(std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(stream.get_handle(),std::map<ACE_CDR::UShort,ACE_CDR::UShort>()));
+								
+								// Clear the handle in the stream, pRC now owns it
+								stream.set_handle(ACE_INVALID_HANDLE);
+							}
+							catch (...)
+							{
+								delete pRC;
+								ret = -1;
+							}
 						}
 					}
 
@@ -285,8 +333,8 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 	// Set the response size
 	response.cbSize = sizeof(response);
 
-	SpawnedProcess::USERID key;
-	int err = SpawnedProcess::ResolveTokenToUid(request.uid,key);
+	ACE_CString strUserId;
+	int err = SpawnedProcess::ResolveTokenToUid(request.uid,strUserId);
 	if (err != 0)
 	{
 		response.bFailure = 1;
@@ -301,17 +349,39 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 	);
 
 	// See if we have a process already
-	std::map<SpawnedProcess::USERID,u_short>::iterator i=m_mapUserPorts.find(key);
-	if (i==m_mapUserPorts.end())
+	try
 	{
-		// No we don't
-		spawn_client(request,response,key);
+		std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
+		if (i!=m_mapUserProcesses.end())
+		{
+			// See if its still running...
+			if (!i->second.pSpawn->IsRunning())
+			{
+				// No, close it and remove from map
+				i->second.pSpawn->Close();
+				delete i->second.pSpawn;
+				m_mapUserProcesses.erase(i);
+				i = m_mapUserProcesses.end();
+			}
+		}
+
+		if (i==m_mapUserProcesses.end())
+		{
+			// No we don't
+			spawn_client(request,response,strUserId);
+		}
+		else
+		{
+			// Yes we do
+			response.bFailure = 0;
+			response.uNewPort = i->second.uPort;
+		}
 	}
-	else
+	catch (...)
 	{
-		// Yes we do
-		response.bFailure = 0;
-		response.uNewPort = i->second;
+		response.bFailure = 1;
+		response.err = EINVAL;
+		return;
 	}
 }
 
@@ -320,21 +390,39 @@ ACE_THR_FUNC_RETURN RootManager::proactor_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-void RootManager::root_connection_closed(const SpawnedProcess::USERID& key, ACE_HANDLE handle)
+void RootManager::root_connection_closed(const ACE_CString& strUserId, ACE_HANDLE handle)
 {
+	ACE_OS::closesocket(handle);
+
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
-	m_mapUserPorts.erase(key);
-	
-	std::map<ACE_HANDLE,SpawnedProcess*>::iterator i=m_mapHandles.find(handle);
-	if (i != m_mapHandles.end())
+	try
 	{
-		delete i->second;
-		m_mapHandles.erase(i);
+		std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
+		if (i != m_mapUserProcesses.end())
+		{
+			i->second.pSpawn->Close();
+			delete i->second.pSpawn;
+			m_mapUserProcesses.erase(i);
+		}
+
+		m_mapUserIds.erase(handle);
+
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(handle);
+		if (j!=m_mapReverseChannelIds.end())
+		{
+			for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
+			{
+				m_mapChannelIds.erase(k->second);
+			}
+			m_mapReverseChannelIds.erase(j);
+		}
 	}
+	catch (...)
+	{}
 }
 
-int RootManager::enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
+int RootManager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	RequestBase* req;
 	ACE_NEW_RETURN(req,RequestBase(handle,input),-1);
@@ -351,21 +439,109 @@ ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ROOT_MANAGER::instance()->pump_requests();
 }
 
-void RootManager::process_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void RootManager::forward_request(RequestBase* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	SpawnedProcess* pSpawn = 0;
+	// Forward to the correct channel...
+	Channel dest_channel;
+	ACE_CDR::UShort reply_channel_id;
+	try
 	{
-		// Get the spawned process
 		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
-		std::map<ACE_HANDLE,SpawnedProcess*>::iterator i=m_mapHandles.find(request->handle());
-		if (i == m_mapHandles.end())
+
+		std::map<ACE_CDR::UShort,Channel>::iterator i=m_mapChannelIds.find(dest_channel_id);
+		if (i == m_mapChannelIds.end())
 		{
-			delete request;
-			return;
+			if (dest_channel_id != 1)
+				return;
+			
+			void* TODO; // Spawn sandbox!
 		}
-		pSpawn = i->second;
+		dest_channel = i->second;
+		
+		// Find the local channel id that matches src_channel_id
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(request->handle());
+		if (j==m_mapReverseChannelIds.end())
+			return; 
+
+		std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
+		if (k == j->second.end())
+		{
+			Channel channel = {request->handle(), src_channel_id};
+			reply_channel_id = m_uNextChannelId++;
+			while (reply_channel_id<2 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
+			{
+				reply_channel_id = m_uNextChannelId++;
+			}
+			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(reply_channel_id,channel));
+
+			k = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id)).first;
+		}
+		reply_channel_id = k->second;
+	}
+	catch (...)
+	{
+		return;
 	}
 
+	if (trans_id == 0)
+	{
+		send_asynch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
+	}
+	else
+	{
+		RequestBase* response;
+		if (send_synch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		{
+			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
+			delete response;
+		}
+	}
+}
+
+void RootManager::process_request(RequestBase* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+{
+	// Get the corresponding UserId
+	ACE_CString strRealUserId(strUserId);
+	if (strRealUserId.is_empty())
+	{
+		try
+		{
+			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+			std::map<ACE_HANDLE,ACE_CString>::iterator i=m_mapUserIds.find(request->handle());
+			if (i == m_mapUserIds.end())
+				return;
+			
+			strRealUserId = i->second;
+		}
+		catch (...)
+		{
+			return;
+		}
+	}
+
+	if (dest_channel_id == 0)
+	{
+		/*if (request has come from a network driver)
+		{
+			// Force on to sand box
+			forward_request(request,strUserId,1,src_channel,trans_id,request_deadline);
+		}
+		else*/ 
+		{
+			process_root_request(request,trans_id,request_deadline);
+		}
+	}
+	else
+	{
+		forward_request(request,strRealUserId,dest_channel_id,src_channel_id,trans_id,request_deadline);
+	}
+
+	delete request;
+}
+
+void RootManager::process_root_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+{
 	ACE_CDR::ULong op_code;
 	(*request->input()) >> op_code;
 	if (!request->input()->good_bit())
@@ -376,6 +552,4 @@ void RootManager::process_request(RequestBase* request, ACE_CDR::ULong trans_id,
 	default:
 		;
 	}
-
-	delete request;
 }

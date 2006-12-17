@@ -22,6 +22,8 @@
 
 #include <map>
 
+class SpawnedProcess;
+
 class RootManager : 
 	public LocalAcceptor<ClientConnection>, 
 	public RootBase,
@@ -43,20 +45,35 @@ private:
 
 	ACE_Thread_Mutex				m_lock;
 	ACE_HANDLE						m_config_file;
-	
-	std::map<SpawnedProcess::USERID,u_short>	m_mapUserPorts;
-	std::map<ACE_HANDLE,SpawnedProcess*>		m_mapHandles;
 
+	struct UserProcess
+	{
+		u_short			uPort;
+		SpawnedProcess*	pSpawn;
+	};	
+	std::map<ACE_CString,UserProcess>		m_mapUserProcesses;
+	std::map<ACE_HANDLE,ACE_CString>		m_mapUserIds;
+	ACE_CDR::UShort							m_uNextChannelId;
+	struct Channel
+	{
+		ACE_HANDLE			handle;
+		ACE_CDR::UShort		channel;
+	};
+	std::map<ACE_CDR::UShort,Channel>		m_mapChannelIds;
+	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >	m_mapReverseChannelIds;
+	
 	int run_event_loop_i();
 	int init();
 	void end_event_loop_i();
 	void term();
 	void connect_client_i(const Session::Request& request, Session::Response& response);
-	void spawn_client(const Session::Request& request, Session::Response& response, const SpawnedProcess::USERID& key);
+	void spawn_client(const Session::Request& request, Session::Response& response, const ACE_CString& key);
 	
-	int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
-	void root_connection_closed(const SpawnedProcess::USERID& key, ACE_HANDLE handle);
-	void process_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
+	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
+	void process_request(RequestBase* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void process_root_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void forward_request(RequestBase* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);

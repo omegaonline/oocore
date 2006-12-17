@@ -27,13 +27,12 @@ public:
 	bool IsRunning();
 	int Close(ACE_Time_Value* wait = 0);
 
-#ifdef ACE_WIN32
-
-	typedef ACE_TString USERID;
-
-	static int ResolveTokenToUid(Session::TOKEN token, USERID& uid);
+	static int ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid);
 
 private:
+
+#ifdef ACE_WIN32
+
 	HANDLE	m_hToken;
 	HANDLE	m_hProfile;
 	HANDLE	m_hProcess;
@@ -42,15 +41,6 @@ private:
 	DWORD SpawnFromToken(HANDLE hToken, u_short uPort);
 
 #else // !ACE_WIN32
-
-	typedef uid_t USERID;
-	static int ResolveTokenToUid(Session::TOKEN token, USERID& uid)
-	{
-		uid = token;
-		return 0;
-	}
-
-private:
 	
 #endif // ACE_WIN32
 

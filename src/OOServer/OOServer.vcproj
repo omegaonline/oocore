@@ -278,24 +278,10 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UserManager.cpp">
+				RelativePath=".\UserConnection.cpp">
 			</File>
 			<File
-				RelativePath="..\OOCore\UserService.cpp">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
+				RelativePath=".\UserManager.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -333,10 +319,10 @@
 				RelativePath=".\SpawnedProcess.h">
 			</File>
 			<File
-				RelativePath=".\UserManager.h">
+				RelativePath=".\UserConnection.h">
 			</File>
 			<File
-				RelativePath="..\OOCore\UserService.h">
+				RelativePath=".\UserManager.h">
 			</File>
 		</Filter>
 		<Filter

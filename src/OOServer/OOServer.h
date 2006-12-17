@@ -14,6 +14,7 @@
 #include <ace/SOCK_Acceptor.h>
 #include <ace/SOCK_Connector.h>
 #include <ace/Proactor.h>
+#include <ace/CDR_Stream.h>
 
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>

@@ -1,4 +1,5 @@
 #include "OOServer.h"
+
 #include "./UserManager.h"
 
 int UserMain(u_short uPort)
@@ -25,7 +26,10 @@ int UserMain(u_short uPort)
 	return ret;
 }
 
-UserManager::UserManager() : LocalAcceptor<UserConnection>()
+UserManager::UserManager() : 
+	LocalAcceptor<UserConnection>(),
+	m_root_handle(ACE_INVALID_HANDLE),
+	m_uNextChannelId(1)
 {
 }
 
@@ -124,14 +128,16 @@ int UserManager::init(u_short uPort)
 				{
 					// Create a new RootConnection
 					RootConnection*	pRC;
-					ACE_NEW_NORETURN(pRC,RootConnection(this,SpawnedProcess::USERID()));
+					ACE_NEW_NORETURN(pRC,RootConnection(this,ACE_CString()));
 					if (!pRC)
-						ret = -1;
-					else
 					{
-						ACE_Message_Block mb;
-						pRC->open(stream.get_handle(),mb);
-						
+						ret = -1;
+					}
+					else if ((ret=pRC->open(stream.get_handle())) == 0)
+					{
+						// Stash the root handle
+						m_root_handle = stream.get_handle();
+
 						// Clear the handle in the stream, pRC now owns it
 						stream.set_handle(ACE_INVALID_HANDLE);
 					}
@@ -147,11 +153,47 @@ int UserManager::init(u_short uPort)
 
 void UserManager::term()
 {
-	
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+	if (m_root_handle != ACE_INVALID_HANDLE)
+	{
+		ACE_OS::closesocket(m_root_handle);
+		m_root_handle = ACE_INVALID_HANDLE;
+	}
 }
 
-void UserManager::root_connection_closed(const SpawnedProcess::USERID& /*key*/, ACE_HANDLE /*handle*/)
+void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE /*handle*/)
 {
+	try
+	{
+		{
+			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+			// Shutdown all client handles
+			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();)
+			{
+				if (j->first == m_root_handle)
+				{
+					m_mapReverseChannelIds.erase(j++);
+				}
+				else
+				{
+					ACE_OS::shutdown(j->first,SD_SEND);
+					++j;
+				}
+			}
+		}
+
+		// Give everyone a chance to shut down
+		for (;;)
+		{
+			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+			if (m_mapReverseChannelIds.empty())
+				break;
+		}
+	}
+	catch (...)
+	{}
+
 	// We close when the root connection closes
 	ACE_Proactor::instance()->proactor_end_event_loop();
 
@@ -163,7 +205,34 @@ ACE_THR_FUNC_RETURN UserManager::proactor_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-int UserManager::enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
+int UserManager::validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local)
+{
+	// Check we can accept it...
+	if (LocalAcceptor<UserConnection>::validate_connection(result,remote,local) != 0)
+		return -1;
+
+	try
+	{
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
+
+		Channel channel = {result.accept_handle(), 0};
+		ACE_CDR::UShort uChannelId = m_uNextChannelId++;
+		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
+		{
+			uChannelId = m_uNextChannelId++;
+		}
+		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(uChannelId,channel));
+		m_mapReverseChannelIds.insert(std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(result.accept_handle(),std::map<ACE_CDR::UShort,ACE_CDR::UShort>()));
+	}
+	catch (...)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int UserManager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	UserRequest* req;
 	ACE_NEW_RETURN(req,UserRequest(handle,input),-1);
@@ -177,24 +246,72 @@ int UserManager::enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	return ret;
 }
 
+int UserManager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
+{
+	UserRequest* req;
+	ACE_NEW_RETURN(req,UserRequest(handle,input),-1);
+
+	req->m_bRoot = false;
+	
+	int ret = USER_MANAGER::instance()->enqueue_request(req);
+	if (ret <= 0)
+		delete req;
+
+	return ret;
+}
+
+void UserManager::user_connection_closed(ACE_HANDLE handle)
+{
+	USER_MANAGER::instance()->user_connection_closed_i(handle);
+}
+
+void UserManager::user_connection_closed_i(ACE_HANDLE handle)
+{
+	ACE_OS::closesocket(handle);
+
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+	try
+	{
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(handle);
+		if (j!=m_mapReverseChannelIds.end())
+		{
+			for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
+			{
+				m_mapChannelIds.erase(k->second);
+			}
+			m_mapReverseChannelIds.erase(j);
+		}
+	}
+	catch (...)
+	{}
+}
+
 ACE_THR_FUNC_RETURN UserManager::request_worker_fn(void*)
 {
 	return (ACE_THR_FUNC_RETURN)USER_MANAGER::instance()->pump_requests();
 }
 
-void UserManager::process_request(UserRequest* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void UserManager::process_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	if (request->m_bRoot)
-		process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
+	if (dest_channel_id == 0)
+	{
+		if (request->m_bRoot)
+			process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
+		else 
+			process_request(request->handle(),*request->input(),trans_id,request_deadline);
+	}
 	else
-		process_request(request->handle(),*request->input(),trans_id,request_deadline);
+	{
+		// Forward to the correct channel...
+		forward_request(request,strUserId,dest_channel_id,src_channel_id,trans_id,request_deadline);
+	}
 
 	delete request;
 }
 
 void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	// The root service really only notifies us of things...
 	ACE_CDR::ULong op_code;
 	request >> op_code;
 	if (!request.good_bit())
@@ -219,5 +336,59 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 	}
 	catch (...)
 	{
+	}
+}
+
+void UserManager::forward_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+{
+	Channel dest_channel;
+	ACE_CDR::UShort reply_channel_id;
+	try
+	{
+		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+		// Find the destination channel
+		std::map<ACE_CDR::UShort,Channel>::iterator i=m_mapChannelIds.find(dest_channel_id);
+		if (i == m_mapChannelIds.end())
+			return;
+		dest_channel = i->second;
+
+		// Find the local channel id that matches src_channel_id
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(request->handle());
+		if (j==m_mapReverseChannelIds.end())
+			return;
+
+		std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
+		if (k == j->second.end())
+		{
+			Channel channel = {request->handle(), src_channel_id};
+			reply_channel_id = m_uNextChannelId++;
+			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
+			{
+				reply_channel_id = m_uNextChannelId++;
+			}
+			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(reply_channel_id,channel));
+
+			k = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id)).first;
+		}
+		reply_channel_id = k->second;
+	}
+	catch (...)
+	{
+		return;
+	}
+
+	if (trans_id == 0)
+	{
+		send_asynch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
+	}
+	else
+	{
+		UserRequest* response;
+		if (send_synch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		{
+			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
+			delete response;
+		}
 	}
 }

@@ -4,14 +4,7 @@
 #include "./LocalAcceptor.h"
 #include "./RequestHandler.h"
 #include "./RootConnection.h"
-
-//#include "./UserConnection.h"
-
-class UserConnection : public ACE_Service_Handler
-{
-};
-
-
+#include "./UserConnection.h"
 
 class UserRequest : public RequestBase
 {
@@ -30,6 +23,8 @@ class UserManager :
 {
 public:
 	static int run_event_loop(u_short uPort);
+	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
+	static void user_connection_closed(ACE_HANDLE handle);
 	
 private:
 	typedef ACE_Singleton<UserManager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
@@ -39,23 +34,37 @@ private:
 	virtual ~UserManager();
 	UserManager(const UserManager&) {}
 	UserManager& operator = (const UserManager&) {}
+
+	ACE_Thread_Mutex		m_lock;
+	ACE_HANDLE				m_root_handle;
+	ACE_CDR::UShort			m_uNextChannelId;
+	struct Channel
+	{
+		ACE_HANDLE			handle;
+		ACE_CDR::UShort		channel;
+	};
+	std::map<ACE_CDR::UShort,Channel>	m_mapChannelIds;
+
+	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >	m_mapReverseChannelIds;
 	
 	int run_event_loop_i(u_short uPort);
 	int init(u_short uPort);
 	void stop_i();
 	void term();
 
-	int enque_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
-	void root_connection_closed(const SpawnedProcess::USERID& key, ACE_HANDLE handle);
-	void process_request(UserRequest* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
+	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
+	void process_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void forward_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);
 
 	void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+
+	void user_connection_closed_i(ACE_HANDLE handle);
+	int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);
 };
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_
-
-

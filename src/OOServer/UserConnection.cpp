@@ -1,49 +1,39 @@
-/////////////////////////////////////////////////////////////
-//
-//	***** THIS IS A SECURE MODULE *****
-//
-//	It will be run as Administrator/setuid root
-//
-//	Therefore it needs to be SAFE AS HOUSES!
-//
-//	Do not include anything unecessary and do not use precompiled headers
-//
-/////////////////////////////////////////////////////////////
+#include "OOServer.h"
 
-#include "./RootConnection.h"
-#include "./RootManager.h"
+#include "./UserConnection.h"
+#include "./UserManager.h"
 
-RootConnection::RootConnection(RootBase* pBase, const ACE_CString& key) : 
-	ACE_Service_Handler(),
-	m_pBase(pBase),
-	m_id(key)
+UserConnection::UserConnection() : ACE_Service_Handler()
 {
 }
 
-RootConnection::~RootConnection()
+UserConnection::~UserConnection()
 {
 	ACE_HANDLE my_handle = handle();
-	
-	if (m_pBase)
-		m_pBase->root_connection_closed(m_id,my_handle);
 
+	UserManager::user_connection_closed(my_handle);
+	
 	if (my_handle != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(my_handle);
 }
 
-int RootConnection::open(ACE_HANDLE new_handle)
+void UserConnection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
 {
 	// Stash the handle
 	this->handle(new_handle);
 
 	// Open the reader
 	if (m_reader.open(*this) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::open")),-1);
+	{
+	    ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::open")));
+		delete this;
+	}
 			
-	return read();
+	if (read() != 0)
+		delete this;
 }
 
-int RootConnection::read()
+int UserConnection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
@@ -56,7 +46,7 @@ int RootConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::read")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::read")));
 		mb->release();
 		return -1;
 	}
@@ -64,7 +54,7 @@ int RootConnection::read()
 	return 0;
 }
 
-void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
 	
@@ -116,8 +106,8 @@ void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 				{
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-					// Push into the RootBase queue...
-					if (m_pBase->enqueue_root_request(input,handle()) > 0)
+					// Push into the UserBase queue...
+					if (UserManager::enqueue_user_request(input,handle()) > 0)
 					{
 						// Start a new read
 						bSuccess = (read() == 0);
@@ -134,7 +124,7 @@ void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 
 	if (!bSuccess)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::handle_read_stream")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::handle_read_stream")));
 		delete this;
 	}
 }

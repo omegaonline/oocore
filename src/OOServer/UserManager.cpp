@@ -7,7 +7,7 @@ int UserMain(u_short uPort)
 #if defined(ACE_WIN32)
 
 	//::DebugBreak();
-	printf("SPAWNED!!!");
+	printf("SPAWNED!!!\n\n");
 
 #endif
 
@@ -66,8 +66,12 @@ int UserManager::run_event_loop_i(u_short uPort)
 			ret = -1;
 		else
 		{
-			// Treat this thread as a worker as well
-			ret = proactor_worker_fn(0);
+			// Run out bootstrap functions
+			ret = boostrap();
+			if (ret != 0)
+				ACE_OS::shutdown(m_root_handle,SD_BOTH);
+			else
+				ret = proactor_worker_fn(0);
 
 			// Wait for all the proactor threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
@@ -160,6 +164,28 @@ void UserManager::term()
 		ACE_OS::closesocket(m_root_handle);
 		m_root_handle = ACE_INVALID_HANDLE;
 	}
+}
+
+int UserManager::boostrap()
+{
+	// Send a test message
+	ACE_OutputCDR request;
+	request.write_ulong(1);
+	request.write_string("Hello!");
+
+	ACE_Time_Value wait(60);
+	UserRequest* response;	
+	int ret = send_synch(m_root_handle,0,request,response,&wait);
+	if (ret == 0)
+	{
+		ACE_CString strResponse;
+		if (response->input()->read_string(strResponse))
+		{
+			printf("Response: %s\n",strResponse.c_str());
+		}
+	}
+
+	return ret;
 }
 
 void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE /*handle*/)
@@ -380,15 +406,33 @@ void UserManager::forward_request(UserRequest* request, const ACE_CString& strUs
 
 	if (trans_id == 0)
 	{
-		send_asynch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
+		RequestHandler<UserRequest>::send_asynch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
 	}
 	else
 	{
 		UserRequest* response;
-		if (send_synch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		if (RequestHandler<UserRequest>::send_synch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
 		{
 			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
 			delete response;
 		}
 	}
+}
+
+int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait)
+{
+	ACE_Time_Value deadline(5);
+	if (wait)
+		deadline = ACE_OS::gettimeofday() + *wait;
+
+	return RequestHandler<UserRequest>::send_asynch(handle,"",dest_channel_id,0,request.begin(),&deadline);
+}
+
+int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait)
+{
+	ACE_Time_Value deadline(5);
+	if (wait)
+		deadline = ACE_OS::gettimeofday() + *wait;
+
+	return RequestHandler<UserRequest>::send_synch(handle,"",dest_channel_id,0,request.begin(),response,&deadline);
 }

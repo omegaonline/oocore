@@ -67,7 +67,7 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 			if (result.bytes_transferred() == s_initial_read)
 			{
 				// Create a temp input CDR
-				ACE_InputCDR input(mb.data_block(),ACE_Message_Block::DONT_DELETE);
+				ACE_InputCDR input(mb.data_block(),ACE_Message_Block::DONT_DELETE,static_cast<size_t>(mb.rd_ptr() - mb.base()),static_cast<size_t>(mb.wr_ptr() - mb.base()));
 				input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 				// Read and set the byte order
@@ -89,6 +89,8 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 
 							// Issue another read for the rest of the data
 							bSuccess = (m_reader.read(mb,m_read_len) == 0);
+							if (bSuccess)
+								return;
 						}
 					}
 				}
@@ -101,7 +103,7 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 			{
 				// Create a new input CDR
 				ACE_InputCDR* input = 0;
-				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0)));
+				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,static_cast<size_t>(mb.rd_ptr() - mb.base()),static_cast<size_t>(mb.wr_ptr() - mb.base())));
 				if (input)
 				{
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);

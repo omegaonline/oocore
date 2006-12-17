@@ -51,6 +51,7 @@ private:
 	int init(u_short uPort);
 	void stop_i();
 	void term();
+	int boostrap();
 
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
@@ -65,6 +66,9 @@ private:
 
 	void user_connection_closed_i(ACE_HANDLE handle);
 	int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);
+
+	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait = 0);
+	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait = 0);
 };
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_

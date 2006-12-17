@@ -547,8 +547,19 @@ void RootManager::process_root_request(RequestBase* request, ACE_CDR::ULong tran
 	if (!request->input()->good_bit())
 		return;
 
+	ACE_OutputCDR response;
+
 	switch (op_code)
 	{
+	case 1:
+		{
+			ACE_CString strIn;
+			request->input()->read_string(strIn);
+			response.write_string(strIn);
+			send_response(request->handle(),0,trans_id,response.begin(),request_deadline);
+		}
+		break;
+
 	default:
 		;
 	}

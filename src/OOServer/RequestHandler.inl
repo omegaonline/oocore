@@ -155,7 +155,7 @@ int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, const ACE_CString& st
 	ACE_CDR::ULong trans_id = static_cast<ACE_CDR::ULong>(trans);
 
 	// Write the header info
-	ACE_OutputCDR header(128);
+	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (build_header(strUserId,dest_channel_id,src_channel_id,trans_id,header,mb,*deadline) != 0)
 		return -1;
 	
@@ -178,8 +178,8 @@ int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, const ACE_CString& st
 		// Send to the handle
 		ret = -1;
 		size_t sent = 0;
-		ssize_t res = ACE::send_n(handle,mb,&wait,&sent);
-		if (res != -1 && sent == mb->total_length())
+		ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
+		if (res != -1 && sent == header.total_length())
 		{
 			// Wait for response...
 			ret = wait_for_response(trans_id,response,deadline);
@@ -207,7 +207,7 @@ template <class REQUEST>
 int RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
-	ACE_OutputCDR header(128);
+	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (build_header(strUserId,dest_channel_id,src_channel_id,0,header,mb,*deadline) == -1)
 		return -1;
 
@@ -237,16 +237,14 @@ int RequestHandler<REQUEST>::build_header(const ACE_CString& strUserId, ACE_CDR:
 		return -1;
 	}
 
-	ACE_CDR::Octet byte_order = static_cast<ACE_CDR::Octet>(header.byte_order());
-	header << byte_order;
+	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
 		return -1;
 
 	// Write out the header length and remember where we wrote it
-	char* msg_len_point = header.current()->wr_ptr();
-	header.adjust(ACE_CDR::LONG_SIZE,msg_len_point);
 	header.write_ulong(0);
+	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
 
 	// Write the common header
 	header << trans_id;
@@ -287,17 +285,15 @@ int RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort de
 	}
 
 	// Write the header info
-	ACE_OutputCDR header(128);
-	ACE_CDR::Octet byte_order = static_cast<ACE_CDR::Octet>(header.byte_order());
-	header << byte_order;
+	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
 		return -1;
 
 	// Write out the header length and remember where we wrote it
-	char* msg_len_point = header.current()->wr_ptr();
-	header.adjust(ACE_CDR::LONG_SIZE,msg_len_point);
-	header.write_ulong(0); 
+	header.write_ulong(0);
+	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
 
 	// Write out common header
 	header << trans_id;

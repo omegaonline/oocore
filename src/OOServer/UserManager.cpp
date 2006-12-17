@@ -145,6 +145,10 @@ int UserManager::init(u_short uPort)
 						// Clear the handle in the stream, pRC now owns it
 						stream.set_handle(ACE_INVALID_HANDLE);
 					}
+					else
+					{
+						delete pRC;
+					}
 				}
 			}
 		}

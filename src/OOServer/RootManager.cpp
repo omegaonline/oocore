@@ -301,6 +301,10 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 								ret = -1;
 							}
 						}
+						else
+						{
+							delete pRC;
+						}
 					}
 
 					stream.close();

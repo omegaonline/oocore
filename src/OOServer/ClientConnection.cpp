@@ -35,7 +35,7 @@ void ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 		// Recv the length of the request
 		m_header_len = 0;
 		ACE_Message_Block* mb;
-		ACE_NEW_NORETURN(mb,ACE_Message_Block(1024));
+		ACE_NEW_NORETURN(mb,ACE_Message_Block(16));
 		if (m_reader.read(*mb,sizeof(m_header_len)) != 0)
 		{
 			ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("ClientConnection::open")));
@@ -87,7 +87,7 @@ void ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 			
 				// Try to send the response, reusing mb
 				mb.reset();
-				if (mb.size(response.cbSize) == 0)
+				if (mb.size(response.cbSize)==0 && mb.copy(reinterpret_cast<const char*>(&response),response.cbSize)==0)
 				{
 					bSuccess = (m_writer.write(mb,response.cbSize) == 0);
 				}

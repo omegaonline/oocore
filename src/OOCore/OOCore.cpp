@@ -1,8 +1,8 @@
 #include "OOCore_precomp.h"
 
+#include "./UserSession.h"
+
 #include "./StdObjectManager.h"
-#include "./StdApartment.h"
-#include "./Session.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -32,29 +32,12 @@ BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 }
 #endif
 
-struct OOThreadContext
-{
-	OOThreadContext() :
-		m_initcount(0), m_pApartment(0)
-	{}
-
-	AtomicOp<long>::type						m_initcount;
-	AtomicOp<Activation::IApartment*>::type		m_pApartment;
-
-	// Extra per-thread security based stuff should probably go here one day!
-};
-
-namespace 
-{
-	ACE_TSS<OOThreadContext>				s_thread_context;
-	AtomicOp<long>::type					s_initcount = 0;
-}
+static AtomicOp<long>::type	s_initcount = 0;
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IApartment*,IApartment_GetCurrentApartment,0,())
 {
-	Activation::IApartment* pApartment = s_thread_context->m_pApartment.value();
-	pApartment->AddRef();
-	return pApartment;
+	void* TODO;
+	return 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,1,((in),Activation::IApartment*,pApartment))
@@ -78,69 +61,20 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,1,((in),Activation::
 		}
 	}
 
-	if (++s_thread_context->m_initcount == 1)
-	{
-		try
-		{
-			// Set the apartment...
-			Activation::IApartment* pNew = pApartment;
-			if (pNew == (Activation::IApartment*)-1 ||
-				pNew == 0)
-			{
-				pNew = ObjectImpl<StdApartment>::CreateObject();
-			}
-			else
-			{
-				pNew->AddRef();
-			}
-
-			s_thread_context->m_pApartment.exchange(pNew);
-		}
-		catch (IException* pE)
-		{
-			--s_thread_context->m_initcount;
-			return pE;
-		}
-	}
-
-	if (bStart && pApartment != (Activation::IApartment*)-1)
+	if (bStart)
 	{
 		ObjectPtr<IException> ptrE;
-		try
-		{
-			// Now connect to our local server
-			Session::Connect();
-		}
-		catch (IException* pE)
-		{
-			ptrE.Attach(pE);
-		}
-		catch (std::exception& e)
+		
+		int ret = UserSession::init();
+		if (ret != 0)
 		{
 			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
-			pE->m_strDesc = e.what();
-			ptrE.Attach(pE);
-		}
-		catch (...)
-		{
-			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
-			pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
+			pE->m_strDesc = ACE_OS::strerror(ret);
             ptrE.Attach(pE);
 		}
 
 		if (ptrE)
 		{
-			try
-			{
-				s_thread_context->m_pApartment.exchange(0)->Release();
-			}
-			catch (IException* pE)
-			{
-				pE->Release();
-			}
-			catch (...)
-			{ }
-			
 			ACE::fini();
 
 			return ptrE.AddRefReturn();
@@ -157,37 +91,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Initialize_Minimal,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 {
-	if (--s_thread_context->m_initcount == 0)
-	{
-		try 
-		{ 
-			s_thread_context->m_pApartment.exchange(0)->Release();
-		} 
-		catch (IException* pE)
-		{
-			pE->Release();
-		}
-		catch (...) 
-		{}
-	}
-
 	if (--s_initcount==0)
 	{
-		/*try 
-		{ 
-			//LocalTransport::term();
-		} 
-		catch (IException* pE)
-		{
-			pE->Release();
-		}
-		catch (...) 
-		{}*/
+		UserSession::term();
 
 		ACE::fini();
 	}
 }
-
 
 // Helpers
 void ExecProcess(const string_t& strExeName)

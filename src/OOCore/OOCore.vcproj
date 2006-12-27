@@ -192,6 +192,9 @@
 				RelativePath=".\Types.cpp">
 			</File>
 			<File
+				RelativePath=".\UserConnection.cpp">
+			</File>
+			<File
 				RelativePath=".\UserService.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -207,6 +210,9 @@
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\UserSession.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -232,7 +238,13 @@
 				RelativePath=".\StdTransport.h">
 			</File>
 			<File
+				RelativePath=".\UserConnection.h">
+			</File>
+			<File
 				RelativePath=".\UserService.h">
+			</File>
+			<File
+				RelativePath=".\UserSession.h">
 			</File>
 		</Filter>
 		<Filter

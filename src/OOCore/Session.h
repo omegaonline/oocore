@@ -60,7 +60,6 @@ namespace Session
 #pragma pack(pop)
 #endif
 
-	void Connect();
 	inline ACE_TString GetBootstrapFileName()
 	{
 	#define BOOTSTRAP_FILE "ooserver.bootstrap"

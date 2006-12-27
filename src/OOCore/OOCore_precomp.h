@@ -30,6 +30,9 @@
 #include <ace/SString.h>
 #include <ace/CDR_Stream.h>
 
+// New ones...
+#include <ace/Proactor.h>
+
 #if defined(ACE_WIN32)
 #include <ace/WFMO_Reactor.h>
 #else

@@ -21,7 +21,7 @@ Activation::IRunningObjectTable* Activation::IRunningObjectTable::GetRunningObje
 	return ObjectImpl<RunningObjectTableImpl>::CreateObject();
 }
 
-void RunningObjectTableImpl::GetRegisteredObject(const guid_t& oid, const guid_t& iid, IObject** ppObject)
+void RunningObjectTableImpl::GetRegisteredObject(const guid_t&, const guid_t&, IObject**)
 {
 	void* TODO;
 }

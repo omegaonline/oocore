@@ -38,7 +38,7 @@ int UserSession::init_i()
 		
 	// Create a new UserConnection
 	UserConnection*	pRC;
-	ACE_NEW_RETURN(pRC,UserConnection,-1);
+	ACE_NEW_RETURN(pRC,UserConnection(this),-1);
 	
 	if (pRC->open(stream.get_handle()) != 0)
 	{
@@ -46,7 +46,7 @@ int UserSession::init_i()
 		return -1;
 	}
 	
-	// Stash the root handle
+	// Stash the user handle
 	m_user_handle = stream.get_handle();
 
 	// Clear the handle in the stream, pRC now owns it
@@ -64,39 +64,9 @@ int UserSession::init_i()
 		delete pRC;
 		return -1;
 	}
+
+	// Now we bootstrap...
 	
-
-	/*	// Connect to an instance of LocalTransport
-	OTL::Remoting::ACE::Transport_Svc_Connector<OTL::SingletonObjectImpl<LocalTransport>, ACE_SOCK_CONNECTOR> connector(Engine::GetSingleton()->get_reactor());
-
-#if defined (ACE_WIN32) || !defined (_ACE_USE_SV_SEM)
-	connector.connector().preferred_strategy(ACE_MEM_IO::MT);
-#endif
-	
-	OTL::SingletonObjectImpl<LocalTransport>* pTransport = 0;
-	if (connector.connect(pTransport,addr)!=0)
-	{
-		Engine::GetSingleton()->release_reactor();
-		OOCORE_THROW_LASTERROR();
-	}	
-
-	// Stash the transport pointer in a ObjectPtr
-	OTL::ObjectPtr<OTL::SingletonObjectImpl<LocalTransport> > ptrTransport;
-	ptrTransport.Attach(pTransport);
-
-	// LocalTransport maintains its own ref count on the reactor
-	Engine::GetSingleton()->release_reactor();
-
-	// Attach a StdObjectManager to the LocalTransport
-	OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM(OID_StdObjectManager);
-	ptrOM->Attach(ptrTransport);
-	
-	// Prepare the static interface for the server end of OOServer::IInterProcess
-	OTL::ObjectPtr<IObject> ptrObj;
-	ptrObj.Attach(ptrOM->PrepareStaticInterface(OOServer::OID_InterProcess,OOServer::IID_IInterProcess));
-	OTL::ObjectPtr<OOServer::IInterProcess> ptrIPC(ptrObj);
-	*/
-
 	return 0;
 }
 
@@ -256,7 +226,7 @@ void UserSession::term_i()
 	m_msg_queue.close();
 }
 
-void UserSession::connection_closed_i()
+void UserSession::connection_closed()
 {
 	// Stop the proactor, the socket is closed
 	ACE_Proactor::instance()->proactor_end_event_loop();
@@ -272,31 +242,11 @@ int UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	Request* req;
 	ACE_NEW_RETURN(req,Request(handle,input),-1);
 
-	int ret = USER_SESSION::instance()->m_msg_queue.enqueue_prio(req);
+	int ret = m_msg_queue.enqueue_prio(req);
 	if (ret <= 0)
 		delete req;
 
 	return ret;
-}
-
-void UserSession::connection_closed()
-{
-	USER_SESSION::instance()->connection_closed_i();
-}
-
-void UserSession::process_request(Request* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
-{
-	// Create an IChannel and farm it off to our local StdObjectManager!!
-	try
-	{
-        // Ooooh Omega::functionality!
-	}
-	catch (Omega::IException* pE)
-	{
-	}
-	catch (...)
-	{
-	}
 }
 
 int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)
@@ -336,7 +286,6 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 			ACE_CDR::ULong req_dline_secs = 0;
 			ACE_CDR::ULong req_dline_usecs = 0;
 			ACE_CDR::UShort src_channel_id = 0;
-			ACE_CString strUserId;
 			
 			if (bIsRequest)
 			{
@@ -344,7 +293,6 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 				input >> req_dline_secs;
 				input >> req_dline_usecs;
 				input >> src_channel_id;
-				input.read_string(strUserId);
 			}
 
 			if (input.good_bit())
@@ -362,7 +310,7 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 					req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
 
 					// Process the message...
-					process_request(req,strUserId,dest_channel_id,src_channel_id,request_trans_id,&request_deadline);
+					process_request(req,src_channel_id,request_trans_id,&request_deadline);
 
 					// process_request() is expected to delete req;
 					req = 0;
@@ -410,7 +358,7 @@ int UserSession::pump_requests(ACE_Time_Value* deadline)
 	return ret;
 }
 
-int UserSession::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
+int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
 {
 	// Generate next transaction id
 	long trans = m_next_trans_id++;
@@ -426,7 +374,7 @@ int UserSession::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	// Add to pending trans set
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,-1);
 		m_setPendingTrans.insert(trans_id);
 	}
 	catch (...)
@@ -442,7 +390,7 @@ int UserSession::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 		// Send to the handle
 		ret = -1;
 		size_t sent = 0;
-		ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
+		ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 		if (res != -1 && sent == header.total_length())
 		{
 			// Wait for response...
@@ -458,7 +406,7 @@ int UserSession::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	// Remove from pending trans set
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,-1);
 		m_setPendingTrans.erase(trans_id);
 	}
 	catch (...)
@@ -467,7 +415,7 @@ int UserSession::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	return ret;
 }
 
-int UserSession::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+int UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
 	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
@@ -483,7 +431,7 @@ int UserSession::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id,
 
 	// Send to the handle
 	size_t sent = 0;
-	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
+	ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
 		return -1;
 		
@@ -536,7 +484,7 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	return 0;
 }
 
-int UserSession::send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -585,7 +533,7 @@ int UserSession::send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_i
 
 	// Send to the handle
 	size_t sent = 0;
-	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
+	ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
 		return -1;
 		
@@ -596,11 +544,90 @@ bool UserSession::valid_transaction(ACE_CDR::ULong trans_id)
 {
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,false);
+		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,false);
 		return (m_setPendingTrans.find(trans_id) != m_setPendingTrans.end());
 	}
 	catch (...)
 	{
 		return false;
 	}
+}
+
+void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+{
+	try
+	{
+		// Find and/or create the object manager associated with src_channel_id
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
+		try
+		{
+			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+
+			std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
+			if (i == m_mapOMs.end())
+			{
+				// Create a new channel
+				OTL::ObjectPtr<OTL::ObjectImpl<Channel> > ptrChannel = OTL::ObjectImpl<Channel>::CreateObjectPtr();
+				ptrChannel->init(this,src_channel_id);
+
+				// Create a new OM
+				ptrOM = OTL::ObjectPtr<Omega::Remoting::IObjectManager>(Omega::OID_StdObjectManager,Omega::Activation::InProcess);
+
+				// Associate it with the channel
+				ptrOM->Connect(ptrChannel);
+
+				// And add to the map
+				m_mapOMs.insert(std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
+			}
+			else
+			{
+				ptrOM = i->second;
+			}
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e.what());
+		}
+
+		// Convert deadline time to #msecs
+		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
+		if (wait <= ACE_Time_Value::zero)
+			OOCORE_THROW_ERRNO(ETIMEDOUT);
+		ACE_UINT64 msecs = 0;
+		static_cast<const ACE_Time_Value>(wait).msec(msecs);
+		if (msecs > ACE_UINT32_MAX)
+			msecs = ACE_UINT32_MAX;
+
+		// Wrap up the request
+		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::InputCDR> > ptrRequest = OTL::ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ptrRequest->init(*request->input());
+
+		// Create a response if required
+		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+		if (trans_id != 0)
+			ptrResponse = OTL::ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+
+		OTL::ObjectPtr<Omega::Remoting::ICallContext> ptrPrevCallContext;
+		try		
+		{
+			void* TODO; // Setup the CallContext...
+
+			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<Omega::uint32_t>(msecs));
+		}
+		catch (...)
+		{
+			void* TODO; // Restore CallContext
+
+			throw;
+		}
+		void* TODO; // Restore CallContext
+	}
+	catch (Omega::IException* pE)
+	{
+		void* TODO; // Report the error
+
+		pE->Release();
+	}
+	
+	delete request;
 }

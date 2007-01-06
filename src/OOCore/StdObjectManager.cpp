@@ -5,7 +5,7 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace {
+/*namespace {
 
 class Proxy : 
 	public ObjectBase,
@@ -202,15 +202,6 @@ namespace MetaInfo
 }
 }
 
-// StdObjectManager
-StdObjectManager::StdObjectManager()
-{
-}
-
-StdObjectManager::~StdObjectManager()
-{
-}
-
 Serialize::IFormattedStream* StdObjectManager::PrepareRequest(Remoting::MethodAttributes_t flags)
 {
 	// Put it in the transaction map
@@ -248,11 +239,7 @@ Serialize::IFormattedStream* StdObjectManager::SendAndReceive(uint32_t* timeout,
 	if (ptrMessage->GetAttributes() & Remoting::synchronous)
 	{
 		response_wait rw(this,ptrMessage->GetTransId(),ptrRecv);
-		if (!m_ptrApartment->PumpRequests(timeout,await_response,&rw))
-		{
-            return 0;
-		}
-
+		
 		if (rw.except)
 		{
 			IException* pE = 0;
@@ -427,10 +414,7 @@ void StdObjectManager::Attach(Remoting::IChannel* pChannel)
 {
 	ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_lock);
 
-	if (!m_ptrApartment)
-		m_ptrApartment.Attach(Activation::IApartment::GetCurrentApartment());
-
-    // Check we haven't added too many already
+	// Check we haven't added too many already
 	if (m_vecChannels.size() > 0x7FFF)
 		OOCORE_THROW_ERRNO(EMFILE);
 
@@ -478,4 +462,137 @@ IObject* StdObjectManager::PrepareStaticInterface(const guid_t& oid, const guid_
 	ptrProxy->Init(static_cast<ObjectImpl<StdObjectManager>*>(this),oid);
 
 	return ptrProxy->QueryInterface(iid);
+}
+*/
+
+// StdObjectManager
+StdObjectManager::StdObjectManager()
+{
+}
+
+StdObjectManager::~StdObjectManager()
+{
+}
+
+void StdObjectManager::Connect(Omega::Remoting::IChannel* pChannel)
+{
+	if (m_ptrChannel)
+		OOCORE_THROW_ERRNO(EALREADY);
+
+	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+
+	m_ptrChannel = pChannel;
+}
+
+void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout)
+{
+	if (!pParamsIn)
+		OOCORE_THROW_ERRNO(EINVAL);
+
+	// Process an incoming request...
+	try
+	{
+		ObjectPtr<Omega::MetaInfo::IWireStub> ptrStub;
+		Omega::uint32_t method_id;
+		
+		// Read the stub id and method id
+		Omega::uint32_t stub_id = pParamsIn->ReadUInt32();
+		if (stub_id == 0)
+		{
+			// It's a static interface call...
+			// N.B. This will always use standard marshalling
+
+			// Read the oid and iid
+			guid_t oid = pParamsIn->ReadGuid();
+			guid_t iid = pParamsIn->ReadGuid();
+			method_id = pParamsIn->ReadUInt32();
+
+			// IObject interface calls are not allowed on static interfaces!
+			if (method_id < 3)
+				OOCORE_THROW_ERRNO(EINVAL);
+					
+			// Create the required object
+			ObjectPtr<IObject> ptrObject;
+
+			// *** TODO ***  Actually get it out of the ROT
+			ptrObject.Attach(Activation::CreateObject(oid,Activation::Any,0,iid));
+
+			// Get the handler for the interface
+			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			if (!pRtti || !pRtti->pfnCreateWireStub)
+				OMEGA_THROW("No handler for interface");
+			
+			// And create a stub
+			ptrStub.Attach(pRtti->pfnCreateWireStub(ptrObject));
+			if (!ptrStub)
+				OMEGA_THROW("No remote handler for interface");
+		}
+		else
+		{
+			// It's a method call on a stub...
+
+			// Look up the stub
+			try
+			{
+				ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+
+				std::map<Omega::uint32_t,ObjectPtr<Omega::MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
+				if (i==m_mapStubIds.end())
+					OMEGA_THROW("Bad stub id");
+				ptrStub = i->second;
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e.what());
+			}
+
+			// Read the method id
+			method_id = pParamsIn->ReadUInt32();
+		}
+
+		// Assume we succeed...
+		pParamsOut->WriteByte(0);
+
+		void* TODO; // decrease the wait time...
+
+		// Ask the stub to make the call
+		ptrStub->Call(method_id,pParamsIn,pParamsOut,timeout);
+	}
+	catch (Omega::IException* pE)
+	{
+		// Make sure we release the exception
+		ObjectPtr<IException> ptrE;
+		ptrE.Attach(pE);
+
+		// Reply with an exception if we can send replies...
+		if (pParamsOut)
+		{
+			// Dump the previous output...
+			pParamsOut->Release();
+
+			// And create a fresh output
+			pParamsOut = m_ptrChannel->CreateOutputStream();
+
+			// Write the exception onto the wire
+			MetaInfo::wire_write(this,pParamsOut,pE);
+		}
+	}
+}
+
+void StdObjectManager::Disconnect()
+{
+	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+
+	// clear the stub map
+	m_mapStubIds.clear();
+}
+
+void StdObjectManager::MarshalInterface(Serialize::IFormattedStream*, IObject*, const guid_t&)
+{
+	void* TODO;
+}
+
+void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream*, const guid_t&, IObject**)
+{
+	void* TODO;
 }

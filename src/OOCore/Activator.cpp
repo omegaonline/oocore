@@ -10,7 +10,7 @@ void Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags, c
 class ActivationImpl
 {
 public:
-	typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<const guid_t&>::safe oid, MetaInfo::interface_info<Activation::Flags_t>::safe flags, MetaInfo::interface_info<const guid_t&>::safe iid, MetaInfo::interface_info<IObject**>::safe ppObject);
+	typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags, MetaInfo::interface_info<const guid_t&>::safe_class iid, MetaInfo::interface_info<IObject**>::safe_class ppObject);
 	typedef ACE_DLL_Singleton_T<ActivationImpl,ACE_Recursive_Thread_Mutex> ACTIVATOR;
 
 	ActivationImpl();
@@ -115,7 +115,7 @@ IObject* ActivationImpl::GetObjectFactory(const string_t& dll_name, const guid_t
 			OOCORE_THROW_LASTERROR();
 
 		ObjectPtr<IObject> ptrObject;
-		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(MetaInfo::interface_info<const guid_t&>::stub(oid), MetaInfo::interface_info<Activation::Flags_t>::stub(flags), MetaInfo::interface_info<const guid_t&>::stub(iid), MetaInfo::interface_info<IObject**>::stub(&ptrObject,iid)); 
+		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(MetaInfo::interface_info<const guid_t&>::safe_stub(oid), MetaInfo::interface_info<Activation::Flags_t>::safe_stub(flags), MetaInfo::interface_info<const guid_t&>::safe_stub(iid), MetaInfo::interface_info<IObject**>::safe_stub(&ptrObject,iid)); 
 		if (GetObjectFactory_Exception) 
 			MetaInfo::throw_correct_exception(GetObjectFactory_Exception); 
 		return ptrObject.AddRefReturn(); 

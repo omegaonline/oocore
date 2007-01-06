@@ -423,7 +423,7 @@ namespace OTL
 
 	// IException members
 	public:
-		virtual Omega::guid_t GetIID()
+		virtual Omega::guid_t GetActualIID()
 		{
 			return Omega::MetaInfo::iid_traits<E>::GetIID();
 		}

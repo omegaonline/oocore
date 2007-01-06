@@ -55,8 +55,8 @@ private:
 
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
-	void process_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-	void forward_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void process_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void forward_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);

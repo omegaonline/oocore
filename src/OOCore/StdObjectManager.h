@@ -5,7 +5,7 @@ class StdObjectManager :
 	public OTL::ObjectBase,
 	public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::OID_StdObjectManager>,
 	public Omega::Remoting::IObjectManager,
-	public Omega::Remoting::IChannelSink
+	public Omega::MetaInfo::IWireManager
 {
 public:
 	StdObjectManager();
@@ -13,10 +13,9 @@ public:
 
 	BEGIN_INTERFACE_MAP(StdObjectManager)
 		INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
-		INTERFACE_ENTRY(Omega::Remoting::IChannelSink)
 	END_INTERFACE_MAP()
 
-public:
+/*public:
 	// Public interface
 	Omega::Serialize::IFormattedStream* PrepareRequest(Omega::Remoting::MethodAttributes_t flags);
 	Omega::Serialize::IFormattedStream* SendAndReceive(Omega::uint32_t* timeout, Omega::Serialize::IFormattedStream* pToSend);
@@ -45,7 +44,6 @@ private:
 	};
 
 	ACE_Recursive_Thread_Mutex m_lock;
-	OTL::ObjectPtr<Omega::Activation::IApartment> m_ptrApartment;
 	std::vector<OTL::ObjectPtr<Omega::Remoting::IChannel> >	m_vecChannels;
 	std::map<Omega::uint32_t,std::pair<OTL::ObjectPtr<Omega::Serialize::IFormattedStream>,bool> > m_response_map;
 	Omega::uint32_t m_next_trans_id;
@@ -56,16 +54,24 @@ private:
 	
 	static bool await_response(void* p);
 	bool await_response_i(Omega::uint32_t trans_id, OTL::ObjectPtr<Omega::Serialize::IFormattedStream>& input, bool& bExcep);
+*/
 
-// IChannelSink
-public:
-	void OnReceiveMessage(Omega::Serialize::IFormattedStream* pStream, Omega::uint32_t cookie);
-	void OnDisconnect(Omega::uint32_t cookie);
-	
+private:
+	ACE_Recursive_Thread_Mutex					m_lock;
+	OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
+
+	std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::MetaInfo::IWireStub> >	m_mapStubIds;
+
 // IObjectManager members
 public:
-	void Attach(Omega::Remoting::IChannel* pChannel);
-	Omega::IObject* PrepareStaticInterface(const Omega::guid_t& oid, const Omega::guid_t& iid);	
+	void Connect(Omega::Remoting::IChannel* pChannel);
+	void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout);
+	void Disconnect();
+
+// IWireManager members
+public:
+	void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, Omega::IObject* pObject, const Omega::guid_t& iid);
+	void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject** pObject);
 };
 
 #endif // OOCORE_OBJECT_MANAGER_H_INCLUDED_

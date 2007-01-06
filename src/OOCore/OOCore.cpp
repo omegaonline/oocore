@@ -34,13 +34,7 @@ BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 
 static AtomicOp<long>::type	s_initcount = 0;
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IApartment*,IApartment_GetCurrentApartment,0,())
-{
-	void* TODO;
-	return 0;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,1,((in),Activation::IApartment*,pApartment))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 {
 	bool bStart = false;
 	if (++s_initcount==1)
@@ -86,7 +80,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,1,((in),Activation::
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Initialize_Minimal,0,())
 {
-	Omega_Initialize_Impl((Activation::IApartment*)-1);
+	Omega_Initialize_Impl();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())

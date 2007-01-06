@@ -8,20 +8,11 @@ namespace Omega
 		template <class I>
 		struct interface_info
 		{
-			typedef I safe;
-			typedef I stub;
-			typedef I proxy;
+			typedef I safe_class;
+			typedef I safe_stub;
+			typedef I safe_proxy;
 		};
 
-		// MSVC gets really confused by Omega::uint32_t sometimes...
-		/*template <>
-		struct interface_info<Omega::uint32_t>
-		{
-			typedef Omega::uint32_t safe;
-			typedef Omega::uint32_t stub;
-			typedef Omega::uint32_t proxy;
-		};*/
-		
 		interface IException_Safe;
 		interface IObject_Safe
 		{
@@ -36,125 +27,123 @@ namespace Omega
 		IException_Safe* return_correct_exception(IException* pE);
 
 		template <class I>
-		struct stub_functor;
+		struct safe_stub_functor;
 		template <class I>
-		struct stub_functor_out;
+		struct safe_stub_functor_out;
 		template <class I>
-		struct proxy_functor;
+		struct safe_proxy_functor;
 		template <class I>
-		struct proxy_functor_out;
+		struct safe_proxy_functor_out;
 
-		template <class I, class Base> interface IObject_Stub;
-		template <class I> interface IObject_Proxy;
-		template <>
-		struct interface_info<IObject>
+		template <class I, class Base> interface IObject_SafeStub;
+		template <class I> interface IObject_SafeProxy;
+		template <> struct interface_info<IObject>
 		{
 			typedef IObject_Safe safe_class;
-			template <class I> struct stub_class
+			template <class I> struct safe_stub_factory
 			{
-				typedef IObject_Stub<I,typename interface_info<I>::safe_class> type;
+				typedef IObject_SafeStub<I,typename interface_info<I>::safe_class> type;
 			};
-			template <class I> struct proxy_class
+			template <class I> struct safe_proxy_factory
 			{
-				typedef IObject_Proxy<I> type;
+				typedef IObject_SafeProxy<I> type;
 			};
 		};
 		template <> struct interface_info<IObject*>
 		{
-			typedef interface_info<IObject>::safe_class* safe;
-			typedef stub_functor<IObject> stub;
-			typedef proxy_functor<IObject> proxy;
+			typedef interface_info<IObject>::safe_class* safe_class;
+			typedef safe_stub_functor<IObject> safe_stub;
+			typedef safe_proxy_functor<IObject> safe_proxy;
 		};
 		template <> struct interface_info<IObject**>
 		{
-			typedef interface_info<IObject>::safe_class** safe;
-			typedef stub_functor_out<IObject> stub;
-			typedef proxy_functor_out<IObject> proxy;
+			typedef interface_info<IObject>::safe_class** safe_class;
+			typedef safe_stub_functor_out<IObject> safe_stub;
+			typedef safe_proxy_functor_out<IObject> safe_proxy;
 		}; 
 
-		template <class I, class Base> struct IException_Stub;
-		template <class I, class Base> struct IException_Proxy;
-		template <>
-		struct interface_info<Omega::IException>
+		template <class I, class Base> struct IException_SafeStub;
+		template <class I, class Base> struct IException_SafeProxy;
+		template <> struct interface_info<Omega::IException>
 		{
 			typedef IException_Safe safe_class;
-			template <class I> struct stub_class
+			template <class I> struct safe_stub_factory
 			{
-				typedef IException_Stub<I,typename interface_info<Omega::IObject>::stub_class<I>::type> type;
+				typedef IException_SafeStub<I,typename interface_info<Omega::IObject>::safe_stub_factory<I>::type> type;
 			};
-			template <class I> struct proxy_class
+			template <class I> struct safe_proxy_factory
 			{
-				typedef IException_Proxy<I,typename interface_info<Omega::IObject>::proxy_class<I>::type> type;
+				typedef IException_SafeProxy<I,typename interface_info<Omega::IObject>::safe_proxy_factory<I>::type> type;
 			};
 		};
 		template <> struct interface_info<Omega::IException*>
 		{
-			typedef interface_info<Omega::IException>::safe_class* safe;
-			typedef stub_functor<Omega::IException> stub;
-			typedef proxy_functor<Omega::IException> proxy;
+			typedef interface_info<Omega::IException>::safe_class* safe_class;
+			typedef safe_stub_functor<Omega::IException> safe_stub;
+			typedef safe_proxy_functor<Omega::IException> safe_proxy;
 		};
 		template <> struct interface_info<Omega::IException**>
 		{
-			typedef interface_info<Omega::IException>::safe_class** safe;
-			typedef stub_functor_out<Omega::IException> stub;
-			typedef proxy_functor_out<Omega::IException> proxy;
+			typedef interface_info<Omega::IException>::safe_class** safe_class;
+			typedef safe_stub_functor_out<Omega::IException> safe_stub;
+			typedef safe_proxy_functor_out<Omega::IException> safe_proxy;
 		};
 
 		interface IException_Safe : public IObject_Safe
 		{
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::guid_t,GetIID,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::guid_t,GetActualIID,0,());
 			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::IException*,Cause,0,());
 			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::string_t,Description,0,());
 			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::string_t,Source,0,());
 		};
 
 		template <class I>
-		struct stub_functor
+		struct safe_stub_functor
 		{
-			stub_functor(I* pI);
+			safe_stub_functor(I* pI);
 
-			~stub_functor()
+			~safe_stub_functor()
 			{
 				if (m_pS)
 					m_pS->Release_Safe();
 			}
 
-			operator typename interface_info<I*>::safe ()
+			operator typename interface_info<I*>::safe_class ()
 			{
 				return m_pS;
 			}
 
 		private:
-			typename interface_info<I*>::safe m_pS;
+			typename interface_info<I*>::safe_class m_pS;
 		};
 
 		template <class I>
-		struct stub_functor_out
+		struct safe_stub_functor_out
 		{
-			stub_functor_out(I** ppI, const guid_t& iid = iid_traits<I>::GetIID());
-			~stub_functor_out();
+			safe_stub_functor_out(I** ppI, const guid_t& iid = iid_traits<I>::GetIID());
+			~safe_stub_functor_out();
 
-			operator typename interface_info<I**>::safe ()
+			operator typename interface_info<I**>::safe_class ()
 			{
 				return &m_pS;
 			}
 
 		private:
-			typename interface_info<I*>::safe m_pS;
+			typename interface_info<I*>::safe_class m_pS;
 			I** m_ppI;
 			const guid_t& m_iid;
 
 			// Disallow
-			stub_functor_out& operator = (const stub_functor_out&)
+			safe_stub_functor_out& operator = (const safe_stub_functor_out&)
 			{}
 		};
 
 		template <class I>
-		struct proxy_functor
+		struct safe_proxy_functor
 		{
-			proxy_functor(typename interface_info<I*>::safe pS);
+			safe_proxy_functor(typename interface_info<I*>::safe_class pS);
 
-			~proxy_functor()
+			~safe_proxy_functor()
 			{
 				if (m_pI)
 					m_pI->Release();
@@ -170,10 +159,10 @@ namespace Omega
 		};
 
 		template <class I>
-		struct proxy_functor_out
+		struct safe_proxy_functor_out
 		{
-			proxy_functor_out(typename interface_info<I**>::safe ppS, const guid_t& iid = iid_traits<I>::GetIID());
-			~proxy_functor_out();
+			safe_proxy_functor_out(typename interface_info<I**>::safe_class ppS, const guid_t& iid = iid_traits<I>::GetIID());
+			~safe_proxy_functor_out();
 
 			operator I** ()
 			{
@@ -182,21 +171,21 @@ namespace Omega
 
 		private:
 			I* m_pI;
-			typename interface_info<I**>::safe m_ppS;
+			typename interface_info<I**>::safe_class m_ppS;
 			const guid_t& m_iid;
 
 			// Disallow!
-			proxy_functor_out& operator = (const proxy_functor_out&)
+			safe_proxy_functor_out& operator = (const safe_proxy_functor_out&)
 			{}
 		};
 
-		template <class I_Stub, class I>
-		class StubImpl : public IObject_Safe
+		template <class I_SafeStub, class I>
+		class SafeStubImpl : public IObject_Safe
 		{
-			struct Contained : public I_Stub
+			struct Contained : public I_SafeStub
 			{
 				Contained(IObject_Safe* pOuter, I* pI) : 
-					I_Stub(pI), m_pOuter(pOuter)
+					I_SafeStub(pI), m_pOuter(pOuter)
 				{ }
 
 				virtual IException_Safe* OMEGA_CALL AddRef_Safe() 
@@ -217,10 +206,10 @@ namespace Omega
 			Contained					m_contained;
 			AtomicOp<uint32_t>::type	m_refcount;
 
-			StubImpl(IObject_Safe* pOuter, I* pI) : m_contained(pOuter,pI), m_refcount(1)
+			SafeStubImpl(IObject_Safe* pOuter, I* pI) : m_contained(pOuter,pI), m_refcount(1)
 			{ }
 
-			virtual ~StubImpl()
+			virtual ~SafeStubImpl()
 			{}
 
 		public:
@@ -230,8 +219,8 @@ namespace Omega
 				if (!pI)
 					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_FUNCNAME);
 
-				StubImpl* pRet = 0;
-				OMEGA_NEW(pRet,StubImpl(pOuter,pI));
+				SafeStubImpl* pRet = 0;
+				OMEGA_NEW(pRet,SafeStubImpl(pOuter,pI));
 				return pRet;
 			}
 
@@ -269,13 +258,13 @@ namespace Omega
 			}		
 		};
 
-		template <class I_Proxy, class I>
-		class ProxyImpl : public IObject
+		template <class I_SafeProxy, class I>
+		class SafeProxyImpl : public IObject
 		{
-			struct Contained : public I_Proxy
+			struct Contained : public I_SafeProxy
 			{
-				Contained(IObject* pOuter, typename interface_info<I*>::safe pS) : 
-					I_Proxy(pS), m_pOuter(pOuter)
+				Contained(IObject* pOuter, typename interface_info<I*>::safe_class pS) : 
+					I_SafeProxy(pS), m_pOuter(pOuter)
 				{ }
 
 				virtual void AddRef() 
@@ -296,11 +285,11 @@ namespace Omega
 			Contained					m_contained;
 			AtomicOp<uint32_t>::type	m_refcount;
 
-			virtual ~ProxyImpl()
+			virtual ~SafeProxyImpl()
 			{}
 
 		public:
-			ProxyImpl(IObject* pOuter, typename interface_info<I*>::safe pS) : m_contained(pOuter,pS), m_refcount(1)
+			SafeProxyImpl(IObject* pOuter, typename interface_info<I*>::safe_class pS) : m_contained(pOuter,pS), m_refcount(1)
 			{ }
 
 			static IObject* Create(IObject* pOuter, IObject_Safe* pObjS)
@@ -312,8 +301,8 @@ namespace Omega
 				if (!pObjS2)
 					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_FUNCNAME);
 
-				ProxyImpl* pRet = 0;
-				OMEGA_NEW(pRet,ProxyImpl(pOuter,static_cast<interface_info<I*>::safe>(pObjS2)));
+				SafeProxyImpl* pRet = 0;
+				OMEGA_NEW(pRet,SafeProxyImpl(pOuter,static_cast<interface_info<I*>::safe_class>(pObjS2)));
 				return pRet;
 			}
 
@@ -343,23 +332,22 @@ namespace Omega
 		};
 
 		template <class I>
-		struct ThrowImpl
+		inline void SafeThrow(IException_Safe* pSE)
 		{
-			static void Throw(IException_Safe* pSE)
-			{
-				I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::proxy(pSE))->QueryInterface(iid_traits<I>::GetIID()));
-				pSE->Release_Safe();
-				throw pI;
-			}
-		};
-
+			I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::safe_proxy(pSE))->QueryInterface(iid_traits<I>::GetIID()));
+			pSE->Release_Safe();
+			if (!pI)
+				OMEGA_THROW("No handler for exception interface");
+			throw pI;
+		}
+		
 		template <class I, class Base> 
-		struct IObject_Stub : public Base
+		struct IObject_SafeStub : public Base
 		{
-			IObject_Stub(I* pI) : m_pI(pI)
+			IObject_SafeStub(I* pI) : m_pI(pI)
 			{ } 
 
-			virtual ~IObject_Stub()
+			virtual ~IObject_SafeStub()
 			{
 				if (m_pI)
 					m_pI->Release();
@@ -375,12 +363,12 @@ namespace Omega
 		};
 
 		template <class I>
-		struct IObject_Proxy : public I
+		struct IObject_SafeProxy : public I
 		{
-			IObject_Proxy(typename interface_info<I*>::safe pS) :  m_pS(pS)
+			IObject_SafeProxy(typename interface_info<I*>::safe_class pS) :  m_pS(pS)
 			{ } 
 
-			virtual ~IObject_Proxy()
+			virtual ~IObject_SafeProxy()
 			{
 				if (m_pS)
 				{
@@ -395,13 +383,13 @@ namespace Omega
 				return 0;
 			}
 
-			typename interface_info<I*>::safe m_pS;
+			typename interface_info<I*>::safe_class m_pS;
 		};
 
 		template <class I, class Base>
-		struct IException_Stub : public Base
+		struct IException_SafeStub : public Base
 		{
-			IException_Stub(I* pI) : Base(pI)
+			IException_SafeStub(I* pI) : Base(pI)
 			{ }
 			
 			virtual IException_Safe* Internal_QueryInterface_Safe(IObject_Safe** ppS, const guid_t& iid)
@@ -415,16 +403,16 @@ namespace Omega
 				return Base::Internal_QueryInterface_Safe(ppS,iid);
 			}
 
-			OMEGA_DECLARE_STUB_DECLARED_METHOD(guid_t,GetIID,0,());
+			OMEGA_DECLARE_STUB_DECLARED_METHOD(guid_t,GetActualIID,0,());
 			OMEGA_DECLARE_STUB_DECLARED_METHOD(IException*,Cause,0,());
 			OMEGA_DECLARE_STUB_DECLARED_METHOD(string_t,Description,0,());
 			OMEGA_DECLARE_STUB_DECLARED_METHOD(string_t,Source,0,());
 		};
 
 		template <class I, class Base>
-		struct IException_Proxy : public Base
+		struct IException_SafeProxy : public Base
 		{
-			IException_Proxy(typename interface_info<I*>::safe pS) : Base(pS)
+			IException_SafeProxy(typename interface_info<I*>::safe_class pS) : Base(pS)
 			{ } 
 
 			virtual IObject* Internal_QueryInterface(const guid_t& iid)
@@ -438,17 +426,26 @@ namespace Omega
 				return Base::Internal_QueryInterface(iid);
 			}
 
-			OMEGA_DECLARE_PROXY_DECLARED_METHOD(guid_t,GetIID,0,())
+			OMEGA_DECLARE_PROXY_DECLARED_METHOD(guid_t,GetActualIID,0,())
 			OMEGA_DECLARE_PROXY_DECLARED_METHOD(IException*,Cause,0,())
 			OMEGA_DECLARE_PROXY_DECLARED_METHOD(string_t,Description,0,())
 			OMEGA_DECLARE_PROXY_DECLARED_METHOD(string_t,Source,0,())	
 		};
 
+		interface IWireStub;
+		template <class I>
+		static IWireStub* CreateWireStub(IObject* /*pObject*/)
+		{
+			OMEGA_THROW("No remote handler for interface");
+			return 0;
+		}
+				
 		struct qi_rtti
 		{
-			IObject_Safe* (*pfnCreateStub)(IObject_Safe* pOuter, IObject* pObj);
-			IObject* (*pfnCreateProxy)(IObject* pOuter, IObject_Safe* pObjS);
-			void (*pfnThrow)(IException_Safe* pSE);
+			IObject_Safe* (*pfnCreateSafeStub)(IObject_Safe* pOuter, IObject* pObj);
+			IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
+			void (*pfnSafeThrow)(IException_Safe* pSE);
+			IWireStub* (*pfnCreateWireStub)(IObject* pObject);
 		};
 
 		no_t get_qi_rtti(const qi_rtti** ppRtti, ...);
@@ -479,23 +476,23 @@ namespace Omega
 
 		const qi_rtti* get_qi_rtti_info(const guid_t& iid);
 		
-		struct ProxyStubMap
+		struct SafeProxyStubMap
 		{
 			CriticalSection m_cs;
 			std::map<void*,void*> m_map;
 		};
 
-		ProxyStubMap& get_proxy_map();
-		ProxyStubMap& get_stub_map();
+		SafeProxyStubMap& get_proxy_map();
+		SafeProxyStubMap& get_stub_map();
 
-		struct Stub : public IObject_Safe
+		struct SafeStub : public IObject_Safe
 		{
-			Stub(IObject* pObj) : m_refcount(1), m_pObj(pObj)
+			SafeStub(IObject* pObj) : m_refcount(1), m_pObj(pObj)
 			{
 				m_pObj->AddRef();
 			}
 
-			virtual ~Stub()
+			virtual ~SafeStub()
 			{
 				for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 				{
@@ -505,7 +502,7 @@ namespace Omega
 				m_pObj->Release();
 
 				// Remove ourselves from the stub_map
-				ProxyStubMap& stub_map = get_stub_map();
+				SafeProxyStubMap& stub_map = get_stub_map();
 				Guard<CriticalSection> guard(stub_map.m_cs);
 
 				stub_map.m_map.erase(m_pObj);
@@ -541,17 +538,17 @@ namespace Omega
 			IObject* m_pObj;
 		};
 
-		OMEGA_DECLARE_IID(Proxy);
-		struct Proxy : public IObject
+		OMEGA_DECLARE_IID(SafeProxy);
+		struct SafeProxy : public IObject
 		{
-			Proxy(IObject_Safe* pObjS) : m_refcount(1), m_pS(pObjS)
+			SafeProxy(IObject_Safe* pObjS) : m_refcount(1), m_pS(pObjS)
 			{
 				IException_Safe* pSE = m_pS->AddRef_Safe();
 				if (pSE)
 					throw_correct_exception(pSE);
 			}
 
-			virtual ~Proxy()
+			virtual ~SafeProxy()
 			{
 				for (std::map<const guid_t,IObject*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 				{
@@ -561,7 +558,7 @@ namespace Omega
 				m_pS->Release_Safe();
 
 				// Remove ourselves from the proxy_map
-				ProxyStubMap& proxy_map = get_proxy_map();
+				SafeProxyStubMap& proxy_map = get_proxy_map();
 				Guard<CriticalSection> guard(proxy_map.m_cs);
 
 				proxy_map.m_map.erase(m_pS);
@@ -580,7 +577,7 @@ namespace Omega
 
 			IObject* QueryInterface(const guid_t& iid);
 
-			IObject_Safe* GetStub()
+			IObject_Safe* GetSafeStub()
 			{
 				return m_pS;
 			}
@@ -594,7 +591,7 @@ namespace Omega
 	}
 }
 
-// This IID is used to detect a proxy - it has no other purpose
-OMEGA_DEFINE_IID(Omega::MetaInfo,Proxy,0xc55f671d, 0xac67, 0x4a8d, 0xb6, 0x10, 0x3b, 0x8, 0xbe, 0x15, 0xa5, 0xea);
+// This IID is used to detect a SafeProxy - it has no other purpose
+OMEGA_DEFINE_IID(Omega::MetaInfo,SafeProxy,0xc55f671d, 0xac67, 0x4a8d, 0xb6, 0x10, 0x3b, 0x8, 0xbe, 0x15, 0xa5, 0xea);
 
 #endif // OOCORE_RTTI_H_INCLUDED_

@@ -70,7 +70,6 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 			ACE_CDR::ULong req_dline_secs = 0;
 			ACE_CDR::ULong req_dline_usecs = 0;
 			ACE_CDR::UShort src_channel_id = 0;
-			ACE_CString strUserId;
 			
 			if (bIsRequest)
 			{
@@ -78,7 +77,6 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 				input >> req_dline_secs;
 				input >> req_dline_usecs;
 				input >> src_channel_id;
-				input.read_string(strUserId);
 			}
 
 			if (input.good_bit())
@@ -96,7 +94,7 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 					req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
 
 					// Process the message...
-					process_request(req,strUserId,dest_channel_id,src_channel_id,request_trans_id,&request_deadline);
+					process_request(req,dest_channel_id,src_channel_id,request_trans_id,&request_deadline);
 
 					// process_request() is expected to delete req;
 					req = 0;
@@ -146,7 +144,7 @@ int RequestHandler<REQUEST>::pump_requests(ACE_Time_Value* deadline)
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, REQUEST*& response, ACE_Time_Value* deadline)
+int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, REQUEST*& response, ACE_Time_Value* deadline)
 {
 	// Generate next transaction id
 	long trans = m_next_trans_id++;
@@ -156,7 +154,7 @@ int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, const ACE_CString& st
 
 	// Write the header info
 	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (build_header(strUserId,dest_channel_id,src_channel_id,trans_id,header,mb,*deadline) != 0)
+	if (build_header(dest_channel_id,src_channel_id,trans_id,header,mb,*deadline) != 0)
 		return -1;
 	
 	// Add to pending trans set
@@ -204,11 +202,11 @@ int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, const ACE_CString& st
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+int RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
 	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (build_header(strUserId,dest_channel_id,src_channel_id,0,header,mb,*deadline) == -1)
+	if (build_header(dest_channel_id,src_channel_id,0,header,mb,*deadline) == -1)
 		return -1;
 
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
@@ -228,7 +226,7 @@ int RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, const ACE_CString& s
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::build_header(const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
+int RequestHandler<REQUEST>::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -254,8 +252,7 @@ int RequestHandler<REQUEST>::build_header(const ACE_CString& strUserId, ACE_CDR:
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 	header << src_channel_id;
-	header.write_string(strUserId);
-
+	
 	if (!header.good_bit())
 		return -1;
 

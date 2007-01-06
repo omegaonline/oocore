@@ -325,7 +325,7 @@ ACE_THR_FUNC_RETURN UserManager::request_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)USER_MANAGER::instance()->pump_requests();
 }
 
-void UserManager::process_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	if (dest_channel_id == 0)
 	{
@@ -337,7 +337,7 @@ void UserManager::process_request(UserRequest* request, const ACE_CString& strUs
 	else
 	{
 		// Forward to the correct channel...
-		forward_request(request,strUserId,dest_channel_id,src_channel_id,trans_id,request_deadline);
+		forward_request(request,dest_channel_id,src_channel_id,trans_id,request_deadline);
 	}
 
 	delete request;
@@ -372,7 +372,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 	}
 }
 
-void UserManager::forward_request(UserRequest* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	Channel dest_channel;
 	ACE_CDR::UShort reply_channel_id;
@@ -413,12 +413,12 @@ void UserManager::forward_request(UserRequest* request, const ACE_CString& strUs
 
 	if (trans_id == 0)
 	{
-		RequestHandler<UserRequest>::send_asynch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
+		RequestHandler<UserRequest>::send_asynch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
 	}
 	else
 	{
 		UserRequest* response;
-		if (RequestHandler<UserRequest>::send_synch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		if (RequestHandler<UserRequest>::send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
 		{
 			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
 			delete response;
@@ -432,7 +432,7 @@ int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id,
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
 
-	return RequestHandler<UserRequest>::send_asynch(handle,"",dest_channel_id,0,request.begin(),&deadline);
+	return RequestHandler<UserRequest>::send_asynch(handle,dest_channel_id,0,request.begin(),&deadline);
 }
 
 int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait)
@@ -441,5 +441,5 @@ int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
 
-	return RequestHandler<UserRequest>::send_synch(handle,"",dest_channel_id,0,request.begin(),response,&deadline);
+	return RequestHandler<UserRequest>::send_synch(handle,dest_channel_id,0,request.begin(),response,&deadline);
 }

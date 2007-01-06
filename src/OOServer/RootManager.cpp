@@ -446,7 +446,7 @@ ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ROOT_MANAGER::instance()->pump_requests();
 }
 
-void RootManager::forward_request(RequestBase* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	// Forward to the correct channel...
 	Channel dest_channel;
@@ -492,12 +492,12 @@ void RootManager::forward_request(RequestBase* request, const ACE_CString& strUs
 
 	if (trans_id == 0)
 	{
-		send_asynch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
+		send_asynch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
 	}
 	else
 	{
 		RequestBase* response;
-		if (send_synch(dest_channel.handle,strUserId,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		if (send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
 		{
 			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
 			delete response;
@@ -505,10 +505,10 @@ void RootManager::forward_request(RequestBase* request, const ACE_CString& strUs
 	}
 }
 
-void RootManager::process_request(RequestBase* request, const ACE_CString& strUserId, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void RootManager::process_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	// Get the corresponding UserId
-	ACE_CString strRealUserId(strUserId);
+	/*ACE_CString strRealUserId(strUserId);
 	if (strRealUserId.is_empty())
 	{
 		try
@@ -525,14 +525,14 @@ void RootManager::process_request(RequestBase* request, const ACE_CString& strUs
 		{
 			return;
 		}
-	}
+	}*/
 
 	if (dest_channel_id == 0)
 	{
 		/*if (request has come from a network driver)
 		{
 			// Force on to sand box
-			forward_request(request,strUserId,1,src_channel,trans_id,request_deadline);
+			forward_request(request,1,src_channel,trans_id,request_deadline);
 		}
 		else*/ 
 		{
@@ -541,7 +541,7 @@ void RootManager::process_request(RequestBase* request, const ACE_CString& strUs
 	}
 	else
 	{
-		forward_request(request,strRealUserId,dest_channel_id,src_channel_id,trans_id,request_deadline);
+		forward_request(request,dest_channel_id,src_channel_id,trans_id,request_deadline);
 	}
 
 	delete request;

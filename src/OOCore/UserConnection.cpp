@@ -3,13 +3,16 @@
 #include "./UserConnection.h"
 #include "./UserSession.h"
 
-UserConnection::UserConnection() : ACE_Service_Handler()
+UserConnection::UserConnection(UserSession* pSession) : 
+	ACE_Service_Handler(),
+	m_pSession(pSession)
+
 {
 }
 
 UserConnection::~UserConnection()
 {
-	UserSession::connection_closed();
+	m_pSession->connection_closed();
 	
 	if (handle() != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(handle());
@@ -103,7 +106,7 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 					// Push into the UserBase queue...
-					if (UserSession::enqueue_request(input,handle()) > 0)
+					if (m_pSession->enqueue_request(input,handle()) > 0)
 					{
 						// Start a new read
 						bSuccess = (read() == 0);

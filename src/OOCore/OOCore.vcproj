@@ -136,7 +136,7 @@
 				RelativePath=".\Activator.cpp">
 			</File>
 			<File
-				RelativePath=".\Engine.cpp">
+				RelativePath=".\Channel.cpp">
 			</File>
 			<File
 				RelativePath=".\Exception.cpp">
@@ -183,9 +183,6 @@
 				RelativePath=".\Session.cpp">
 			</File>
 			<File
-				RelativePath=".\StdApartment.cpp">
-			</File>
-			<File
 				RelativePath=".\StdObjectManager.cpp">
 			</File>
 			<File
@@ -193,23 +190,6 @@
 			</File>
 			<File
 				RelativePath=".\UserConnection.cpp">
-			</File>
-			<File
-				RelativePath=".\UserService.cpp">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\UserSession.cpp">
@@ -220,7 +200,7 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\Engine.h">
+				RelativePath=".\Channel.h">
 			</File>
 			<File
 				RelativePath=".\OOCore_precomp.h">
@@ -229,19 +209,10 @@
 				RelativePath=".\Session.h">
 			</File>
 			<File
-				RelativePath=".\StdApartment.h">
-			</File>
-			<File
 				RelativePath=".\StdObjectManager.h">
 			</File>
 			<File
-				RelativePath=".\StdTransport.h">
-			</File>
-			<File
 				RelativePath=".\UserConnection.h">
-			</File>
-			<File
-				RelativePath=".\UserService.h">
 			</File>
 			<File
 				RelativePath=".\UserSession.h">

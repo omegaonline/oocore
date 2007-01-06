@@ -47,22 +47,22 @@
 #include <OOCore/OOCore_base.h>
 #include <OOCore/OOCore_export.h>
 #include <OOCore/OOCore_rtti.h>
-#include <OOCore/OOCore_ifaces.h>
 #include <OOCore/OOCore_wire.h>
+#include <OOCore/OOCore_ifaces.h>
 
 namespace Omega
 {
-	IException* Initialize(Activation::IApartment* pApartment = 0);
+	IException* Initialize();
 	void Uninitialize();
 
 	// Only use this if you know *exactly* what it does!
 	void Initialize_Minimal();
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,1,((in),Omega::Activation::IApartment*,pApartment));
-inline Omega::IException* Omega::Initialize(Omega::Activation::IApartment* pApartment)
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());
+inline Omega::IException* Omega::Initialize()
 {
-	return Omega_Initialize(pApartment);
+	return Omega_Initialize();
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Omega_Initialize_Minimal,0,());

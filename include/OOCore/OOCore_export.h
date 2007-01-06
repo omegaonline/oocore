@@ -25,9 +25,10 @@
 		{ \
 			static const qi_rtti rtti = \
 			{ \
-				&StubImpl<interface_info<n_space::iface>::stub_class<n_space::iface>::type,n_space::iface>::Create, \
-				&ProxyImpl<interface_info<n_space::iface>::proxy_class<n_space::iface>::type,n_space::iface>::Create, \
-				&ThrowImpl<n_space::iface>::Throw, \
+				&SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
+				&SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
+				&SafeThrow<n_space::iface>, \
+				&CreateWireStub<n_space::iface>, \
 			}; \
 			*ppRtti = &rtti; \
 			return true; \
@@ -41,32 +42,32 @@
 
 #define OMEGA_DECLARE_FORWARDS(n_space,name,unique,d_space,derived) \
 	template <class Base> interface OMEGA_CONCAT_R(unique,_Safe); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_Stub); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_Proxy); \
+	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_SafeStub); \
+	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_SafeProxy); \
 	template <> \
 	struct interface_info<n_space::name> \
 	{ \
 		typedef OMEGA_CONCAT_R(unique,_Safe)<interface_info<d_space::derived>::safe_class> safe_class; \
-		template <class I> struct stub_class \
+		template <class I> struct safe_stub_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(unique,_Stub)<I,typename interface_info<d_space::derived>::stub_class<I>::type> type; \
+			typedef OMEGA_CONCAT_R(unique,_SafeStub)<I,typename interface_info<d_space::derived>::safe_stub_factory<I>::type> type; \
 		}; \
-		template <class I> struct proxy_class \
+		template <class I> struct safe_proxy_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(unique,_Proxy)<I,typename interface_info<d_space::derived>::proxy_class<I>::type> type; \
+			typedef OMEGA_CONCAT_R(unique,_SafeProxy)<I,typename interface_info<d_space::derived>::safe_proxy_factory<I>::type> type; \
 		}; \
 	}; \
 	template <> struct interface_info<n_space::name*> \
 	{ \
-		typedef interface_info<n_space::name>::safe_class* safe; \
-		typedef stub_functor<n_space::name> stub; \
-		typedef proxy_functor<n_space::name> proxy; \
+		typedef interface_info<n_space::name>::safe_class* safe_class; \
+		typedef safe_stub_functor<n_space::name> safe_stub; \
+		typedef safe_proxy_functor<n_space::name> safe_proxy; \
 	}; \
 	template <> struct interface_info<n_space::name**> \
 	{ \
-		typedef interface_info<n_space::name>::safe_class** safe; \
-		typedef stub_functor_out<n_space::name> stub; \
-		typedef proxy_functor_out<n_space::name> proxy; \
+		typedef interface_info<n_space::name>::safe_class** safe_class; \
+		typedef safe_stub_functor_out<n_space::name> safe_stub; \
+		typedef safe_proxy_functor_out<n_space::name> safe_proxy; \
 	}; 
 	
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
@@ -88,7 +89,7 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_EMIT_PARAM,OMEGA_SPLIT_3(count,params),0)
 
 #define OMEGA_DECLARE_PARAM_SAFE_I(meta,type,name) \
-	Omega::MetaInfo::interface_info<type>::safe name
+	Omega::MetaInfo::interface_info<type>::safe_class name
 
 #define OMEGA_DECLARE_PARAM_SAFE_VOID(index,params,d) \
 	OMEGA_COMMA_NOT_FIRST(index) OMEGA_DECLARE_PARAM_SAFE_I params
@@ -118,7 +119,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_PS_PARAM_I,meta,(type,name))
 
 #define OMEGA_DECLARE_PARAM_STUB_I(meta,t,name) \
-	Omega::MetaInfo::interface_info<t>::stub(name OMEGA_PS_PARAM(meta,t,name) )
+	Omega::MetaInfo::interface_info<t>::safe_stub(name OMEGA_PS_PARAM(meta,t,name) )
 
 #define OMEGA_DECLARE_PARAM_STUB_VOID(index,param,d) \
 	OMEGA_COMMA_NOT_FIRST(index) OMEGA_DECLARE_PARAM_STUB_I param
@@ -133,7 +134,7 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_STUB,OMEGA_SPLIT_3(count,params),0)
 
 #define OMEGA_DECLARE_PARAM_PROXY_I(meta,t,name) \
-	Omega::MetaInfo::interface_info<t>::proxy(name OMEGA_PS_PARAM(meta,t,name) )
+	Omega::MetaInfo::interface_info<t>::safe_proxy(name OMEGA_PS_PARAM(meta,t,name) )
 
 #define OMEGA_DECLARE_PARAM_PROXY(index,param,d) \
 	OMEGA_COMMA_NOT_FIRST(index) OMEGA_DECLARE_PARAM_PROXY_I param
@@ -167,7 +168,7 @@
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params) ) = 0;
 
 #define OMEGA_DECLARE_SAFE_DECLARED_METHOD(ret_type,name,param_count,params) \
-	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type*>::safe OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) = 0;
+	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type*>::safe_class OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) = 0;
 
 #define OMEGA_DECLARE_SAFE_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_SAFE_,method)
@@ -197,11 +198,11 @@
 	}
 	
 #define OMEGA_DECLARE_STUB_DECLARED_METHOD(ret_type,name,param_count,params) \
-	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type*>::safe OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
+	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type*>::safe_class OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
 		try \
 		{ \
-			*static_cast<ret_type*>(interface_info<ret_type*>::proxy(OMEGA_CONCAT(name,_RetVal))) = this->m_pI->name( OMEGA_DECLARE_PARAMS_PROXY(param_count,params) ); \
+			*static_cast<ret_type*>(interface_info<ret_type*>::safe_proxy(OMEGA_CONCAT(name,_RetVal))) = this->m_pI->name( OMEGA_DECLARE_PARAMS_PROXY(param_count,params) ); \
 			return 0; \
 		} \
 		catch (IException* OMEGA_CONCAT(name,_Exception)) \
@@ -218,9 +219,9 @@
 
 #define OMEGA_DECLARE_STUB(n_space,name,unique,methods) \
 	template <class I, class Base> \
-	struct OMEGA_CONCAT_R(unique,_Stub) : public Base \
+	struct OMEGA_CONCAT_R(unique,_SafeStub) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_Stub)(I* pI) : Base(pI) \
+		OMEGA_CONCAT_R(unique,_SafeStub)(I* pI) : Base(pI) \
 		{ } \
 		virtual IException_Safe* Internal_QueryInterface_Safe(IObject_Safe** ppS, const guid_t& iid) \
 		{ \
@@ -248,7 +249,7 @@
 		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::MetaInfo::null_info<ret_type>::value(); \
 		OMEGA_ZERO_PARAMS(param_count,params) \
 		IException_Safe* OMEGA_CONCAT(name,_Exception) = this->m_pS->OMEGA_CONCAT(name,_Safe)( \
-		interface_info<ret_type*>::stub(&OMEGA_CONCAT(name,_RetVal)) OMEGA_DECLARE_PARAMS_STUB(param_count,params) ); \
+		interface_info<ret_type*>::safe_stub(&OMEGA_CONCAT(name,_RetVal)) OMEGA_DECLARE_PARAMS_STUB(param_count,params) ); \
 		if (OMEGA_CONCAT(name,_Exception)) throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
@@ -261,9 +262,9 @@
 
 #define OMEGA_DECLARE_PROXY(n_space,name,unique,methods) \
 	template <class I, class Base> \
-	struct OMEGA_CONCAT_R(unique,_Proxy) : public Base \
+	struct OMEGA_CONCAT_R(unique,_SafeProxy) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_Proxy)(typename interface_info<I*>::safe pS) : Base(pS) \
+		OMEGA_CONCAT_R(unique,_SafeProxy)(typename interface_info<I*>::safe_class pS) : Base(pS) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
 		{ \
@@ -310,14 +311,14 @@
 
 #define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	extern "C" OMEGA_IMPORT Omega::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)( \
-		Omega::MetaInfo::interface_info<ret_type*>::safe OMEGA_CONCAT(name,_RetVal) \
+		Omega::MetaInfo::interface_info<ret_type*>::safe_class OMEGA_CONCAT(name,_RetVal) \
 		OMEGA_DECLARE_PARAMS_SAFE(param_count,params)); \
 	inline ret_type name(OMEGA_DECLARE_PARAMS(param_count,params)) \
 	{ \
 		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::MetaInfo::null_info<ret_type>::value(); \
 		OMEGA_ZERO_PARAMS(param_count,params) \
 		Omega::MetaInfo::IException_Safe* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)( \
-			Omega::MetaInfo::interface_info<ret_type*>::stub(&OMEGA_CONCAT(name,_RetVal)) \
+			Omega::MetaInfo::interface_info<ret_type*>::safe_stub(&OMEGA_CONCAT(name,_RetVal)) \
 			OMEGA_DECLARE_PARAMS_STUB(param_count,params)); \
 		if (OMEGA_CONCAT(name,_Exception)) Omega::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \
@@ -355,11 +356,11 @@
 
 #define OMEGA_DEFINE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params)); \
-	extern "C" OMEGA_EXPORT Omega::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(Omega::MetaInfo::interface_info<ret_type*>::safe OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
+	extern "C" OMEGA_EXPORT Omega::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(Omega::MetaInfo::interface_info<ret_type*>::safe_class OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
 	{ \
 		try \
 		{ \
-			*static_cast<ret_type*>(Omega::MetaInfo::interface_info<ret_type*>::proxy(OMEGA_CONCAT(name,_RetVal))) = OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_PROXY(param_count,params)); \
+			*static_cast<ret_type*>(Omega::MetaInfo::interface_info<ret_type*>::safe_proxy(OMEGA_CONCAT(name,_RetVal))) = OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_PROXY(param_count,params)); \
 			return 0; \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \

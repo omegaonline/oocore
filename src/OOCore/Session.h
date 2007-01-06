@@ -62,18 +62,18 @@ namespace Session
 
 	inline ACE_TString GetBootstrapFileName()
 	{
-	#define BOOTSTRAP_FILE "ooserver.bootstrap"
+	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
 
 	#ifdef ACE_WIN32
 
 		ACE_TCHAR szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 		if FAILED(hr)
-			return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",BOOTSTRAP_FILE)));
+			return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_BOOTSTRAP_FILE)));
 
 		ACE_TCHAR szBuf2[MAX_PATH] = {0};
-		if (!PathCombine(szBuf2,szBuf,ACE_TEXT(BOOTSTRAP_FILE)))
-			return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",BOOTSTRAP_FILE)));
+		if (!PathCombine(szBuf2,szBuf,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
+			return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_BOOTSTRAP_FILE)));
 
 		return ACE_TString(szBuf2);
 
@@ -81,7 +81,7 @@ namespace Session
 
 		#define BOOTSTRAP_PREFIX ACE_TEXT("/tmp/")
 		
-		return ACE_TString(ACE_TEXT(OMEGA_CONCAT(BOOTSTRAP_PREFIX,BOOTSTRAP_FILE)));
+		return ACE_TString(ACE_TEXT(OMEGA_CONCAT(BOOTSTRAP_PREFIX,OMEGA_BOOTSTRAP_FILE)));
 
 	#endif
 	}

@@ -46,6 +46,8 @@ namespace OOCore
 
 	// IFormattedStream members
 	public:
+		Omega::bool_t ReadBoolean() 
+			{ no_access(); return 0; }
 		Omega::uint16_t ReadUInt16() 
 			{ no_access(); return 0; }
 		Omega::uint32_t ReadUInt32() 
@@ -54,12 +56,15 @@ namespace OOCore
 			{ no_access(); return 0; }
 		Omega::guid_t ReadGuid()
 			{ no_access(); return Omega::guid_t::NIL; }
+		void WriteBoolean(Omega::bool_t val)
+			{ if (!write_boolean(val)) throw_errno(); }
 		void WriteUInt16(Omega::uint16_t val)
 			{ if (!write_ushort(val)) throw_errno(); }
 		void WriteUInt32(Omega::uint32_t val)
 			{ if (!write_ulong(val)) throw_errno(); }
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) throw_errno(); }
+		void WriteGuid(const Omega::guid_t& val);
 	};
 
 	OMEGA_DECLARE_IID(InputCDR);
@@ -108,6 +113,8 @@ namespace OOCore
 
 	// IFormattedStream members
 	public:
+		Omega::bool_t ReadBoolean()
+			{ Omega::bool_t val; if (!read_boolean(val)) throw_errno(); return val; }
 		Omega::uint16_t ReadUInt16()
 			{ Omega::uint16_t val; if (!read_ushort(val)) throw_errno(); return val; }
 		Omega::uint32_t ReadUInt32()
@@ -115,11 +122,15 @@ namespace OOCore
 		Omega::uint64_t ReadUInt64()
 			{ Omega::uint64_t val; if (!read_ulonglong(val)) throw_errno(); return val; }
 		Omega::guid_t ReadGuid();
+		void WriteBoolean(Omega::bool_t) 
+			{ no_access(); }
 		void WriteUInt16(Omega::uint16_t) 
 			{ no_access(); }
 		void WriteUInt32(Omega::uint32_t) 
 			{ no_access(); }
 		void WriteUInt64(const Omega::uint64_t&) 
+			{ no_access(); }
+		void WriteGuid(const Omega::guid_t&) 
 			{ no_access(); }
 	};
 }

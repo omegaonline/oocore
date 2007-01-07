@@ -69,6 +69,30 @@
 #   endif
 # endif /* !defined(OMEGA_SIZEOF_LONG_LONG) */
 
+#include <float.h>
+
+// The number of bytes in a float.
+# ifndef OMEGA_SIZEOF_FLOAT
+#   if FLT_MAX_EXP == 128
+#     define OMEGA_SIZEOF_FLOAT 4
+#   elif FLT_MAX_EXP == 1024
+#     define OMEGA_SIZEOF_FLOAT 8
+#   else
+#     error: unsupported float size, must be updated for this platform!
+#   endif /* FLT_MAX_EXP */
+# endif /* OMEGA_SIZEOF_FLOAT */
+
+// The number of bytes in a double.
+# ifndef OMEGA_SIZEOF_DOUBLE
+#   if DBL_MAX_EXP == 128
+#     define OMEGA_SIZEOF_DOUBLE 4
+#   elif DBL_MAX_EXP == 1024
+#     define OMEGA_SIZEOF_DOUBLE 8
+#   else
+#     error: unsupported double size, must be updated for this platform!
+#   endif /* DBL_MAX_EXP */
+# endif /* OMEGA_SIZEOF_DOUBLE */
+
 // Byte-order (endian-ness) determination.
 # if defined(BYTE_ORDER)
 #   if (BYTE_ORDER == LITTLE_ENDIAN)

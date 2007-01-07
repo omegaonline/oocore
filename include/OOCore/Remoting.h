@@ -16,8 +16,8 @@ namespace Remoting
 		};
 		typedef uint16_t Flags_t;
 
-		virtual guid_t GetUnmarshalOID(const guid_t& iid, IObject* pObject, Flags_t flags) = 0;
-        virtual void MarshalObject(Serialize::IFormattedStream* pOutput, IObject* pObject, const guid_t& iid, Flags_t flags) = 0;
+		virtual guid_t GetUnmarshalOID(const guid_t& iid, Flags_t flags) = 0;
+        virtual void MarshalInterface(Serialize::IFormattedStream* pOutput, const guid_t& iid, Flags_t flags) = 0;
         virtual IObject* UnmarshalObject(Serialize::IFormattedStream* pInput, const guid_t& iid) = 0;
         virtual void ReleaseMarshalData(Serialize::IFormattedStream* pInput) = 0;
         virtual void DisconnectObject() = 0;

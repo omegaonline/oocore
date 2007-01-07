@@ -5,27 +5,7 @@
 
 namespace Omega
 {
-	namespace MetaInfo
-	{
-		template <bool C, typename Ta, typename Tb>
-		struct if_then_else_;
-
-		template <typename Ta, typename Tb>
-		struct if_then_else_<true, Ta, Tb>
-		{
-		typedef Ta type;
-		};
-
-		template <typename Ta, typename Tb>
-		struct if_then_else_<false, Ta, Tb>
-		{
-		typedef Tb type;
-		};
-	}
-
-    // Force bool to 1 byte
-	typedef MetaInfo::if_then_else_<(sizeof(bool) == 1), bool, unsigned char>::type bool_t;
-	
+	typedef bool bool_t;
 	typedef unsigned char byte_t;
 	typedef char char_t;
 
@@ -86,27 +66,8 @@ namespace Omega
 #elif OMEGA_SIZEOF_LONG_LONG == 8
 	typedef long long             int64_t;
 #else  /* no native 64 bit integer type */
-	#define NONNATIVE_LONGLONG
-	struct int64_t
-	{
-	#if defined(OMEGA_BIG_ENDIAN)
-		int32_t h;
-		uint32_t l;
-	#else
-		uint32_t l;
-		int32_t h;
-	#endif /* ! OMEGA_BIG_ENDIAN */
-		bool operator== (const int64_t &rhs) const
-		{ return this->h == rhs.h && this->l == rhs.l; }
-		bool operator!= (const int64_t &rhs) const 
-		{ return !((*this)==rhs); }
-	};
-#endif /* no native 64 bit integer type */
-#if defined(NONNATIVE_LONGLONG)
-	#define OMEGA_LONGLONG_INITIALIZER {0,0}
-#else
-	#define OMEGA_LONGLONG_INITIALIZER 0
-#endif /* NONNATIVE_LONGLONG */
+#error Have to add to the OMEGA_INT64 type setting
+#endif
 
 #if defined(OMEGA_UINT64_TYPE)
 	typedef OMEGA_UINT64_TYPE     uint64_t;
@@ -117,51 +78,19 @@ namespace Omega
 #elif OMEGA_SIZEOF_LONG_LONG == 8
 	typedef unsigned long long    uint64_t;
 #else  /* no native 64 bit integer type */
-	struct uint64_t
-	{
-	#if defined(OMEGA_BIG_ENDIAN)
-		uint32_t h;
-		uint32_t l;
-	#else
-		uint32_t l;
-		uint32_t h;
-	#endif /* ! OMEGA_BIG_ENDIAN */
-		bool operator== (const uint64_t &rhs) const
-		{ return this->h == rhs.h && this->l == rhs.l; }
-		bool operator!= (const uint64_t &rhs) const 
-		{ return !((*this)==rhs); }
-	};
-#endif /* no native 64 bit integer type */
-	#define OMEGA_ULONGLONG_INITIALIZER OMEGA_LONGLONG_INITIALIZER
+	#error Have to add to the OMEGA_UINT64 type setting
+#endif	
 
 #if OMEGA_SIZEOF_FLOAT == 4
 	typedef float real4_t;
 #else  /* OMEGA_SIZEOF_FLOAT != 4 */
-	struct real4_t
-	{
-	#if OMEGA_SIZEOF_INT == 4
-		// Use unsigned int to get word alignment.
-		unsigned int f;
-	#else  /* OMEGA_SIZEOF_INT != 4 */
-		// Applications will probably have trouble with this.
-		char f[4];
-	#endif /* OMEGA_SIZEOF_INT != 4 */
-	};
+	#error Have to add to the OMEGA_FLOAT type setting
 #endif /* OMEGA_SIZEOF_FLOAT != 4 */
 
 #if OMEGA_SIZEOF_DOUBLE == 8
 	typedef double real8_t;
 #else  /* OMEGA_SIZEOF_DOUBLE != 8 */
-	struct real8_t
-	{
-	#if OMEGA_SIZEOF_LONG == 8
-		// Use u long to get word alignment.
-		unsigned long f;
-	#else  /* OMEGA_SIZEOF_INT != 8 */
-		// Applications will probably have trouble with this.
-		char f[8];
-	#endif /* OMEGA_SIZEOF_INT != 8 */
-	};
+	#error Have to add to the OMEGA_DOUBLE type setting
 #endif /* OMEGA_SIZEOF_DOUBLE != 8 */
 
 	class string_t

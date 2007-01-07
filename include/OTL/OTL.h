@@ -262,11 +262,7 @@ namespace OTL
 		  ObjectPtrBase<OBJECT>(0)
 		{
 			if (pObject)
-			{
 				m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
-				if (m_ptr.value()==0)
-					Omega::INoInterfaceException::Throw(Omega::MetaInfo::iid_traits<OBJECT>::GetIID(),OMEGA_FUNCNAME);
-			}
 		}
 
 		ObjectPtr(const ObjectPtr<OBJECT>& rhs) :

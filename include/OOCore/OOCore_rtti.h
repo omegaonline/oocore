@@ -5,12 +5,16 @@ namespace Omega
 {	
 	namespace MetaInfo
 	{
-		template <class I>
+		template <class T>
+		struct std_wire_functor;
+
+		template <class T>
 		struct interface_info
 		{
-			typedef I safe_class;
-			typedef I safe_stub;
-			typedef I safe_proxy;
+			typedef T safe_class;
+			typedef T safe_stub;
+			typedef T safe_proxy;
+			typedef std_wire_functor<T> wire_functor;
 		};
 
 		interface IException_Safe;
@@ -34,9 +38,13 @@ namespace Omega
 		struct safe_proxy_functor;
 		template <class I>
 		struct safe_proxy_functor_out;
+		template <class I>
+		struct iface_wire_functor;
 
-		template <class I, class Base> interface IObject_SafeStub;
-		template <class I> interface IObject_SafeProxy;
+		template <class I, class Base> struct IObject_SafeStub;
+		template <class I> struct IObject_SafeProxy;
+		template <class I> struct IObject_WireStub;
+
 		template <> struct interface_info<IObject>
 		{
 			typedef IObject_Safe safe_class;
@@ -48,22 +56,30 @@ namespace Omega
 			{
 				typedef IObject_SafeProxy<I> type;
 			};
+			template <class I> struct wire_stub_factory
+			{
+				typedef IObject_WireStub<I> type;
+			};
 		};
 		template <> struct interface_info<IObject*>
 		{
 			typedef interface_info<IObject>::safe_class* safe_class;
 			typedef safe_stub_functor<IObject> safe_stub;
 			typedef safe_proxy_functor<IObject> safe_proxy;
+			typedef iface_wire_functor<IObject*> wire_functor;
 		};
 		template <> struct interface_info<IObject**>
 		{
 			typedef interface_info<IObject>::safe_class** safe_class;
 			typedef safe_stub_functor_out<IObject> safe_stub;
 			typedef safe_proxy_functor_out<IObject> safe_proxy;
+			typedef iface_wire_functor<IObject**> wire_functor;
 		}; 
 
 		template <class I, class Base> struct IException_SafeStub;
 		template <class I, class Base> struct IException_SafeProxy;
+		template <class I, class Base> struct IException_WireStub;
+
 		template <> struct interface_info<Omega::IException>
 		{
 			typedef IException_Safe safe_class;
@@ -75,18 +91,24 @@ namespace Omega
 			{
 				typedef IException_SafeProxy<I,typename interface_info<Omega::IObject>::safe_proxy_factory<I>::type> type;
 			};
+			template <class I> struct wire_stub_factory
+			{
+				typedef IException_WireStub<I,typename interface_info<Omega::IObject>::wire_stub_factory<I>::type> type;
+			};
 		};
 		template <> struct interface_info<Omega::IException*>
 		{
 			typedef interface_info<Omega::IException>::safe_class* safe_class;
 			typedef safe_stub_functor<Omega::IException> safe_stub;
 			typedef safe_proxy_functor<Omega::IException> safe_proxy;
+			typedef iface_wire_functor<Omega::IException*> wire_functor;
 		};
 		template <> struct interface_info<Omega::IException**>
 		{
 			typedef interface_info<Omega::IException>::safe_class** safe_class;
 			typedef safe_stub_functor_out<Omega::IException> safe_stub;
 			typedef safe_proxy_functor_out<Omega::IException> safe_proxy;
+			typedef iface_wire_functor<Omega::IException**> wire_functor;
 		};
 
 		interface IException_Safe : public IObject_Safe
@@ -403,10 +425,10 @@ namespace Omega
 				return Base::Internal_QueryInterface_Safe(ppS,iid);
 			}
 
-			OMEGA_DECLARE_STUB_DECLARED_METHOD(guid_t,GetActualIID,0,());
-			OMEGA_DECLARE_STUB_DECLARED_METHOD(IException*,Cause,0,());
-			OMEGA_DECLARE_STUB_DECLARED_METHOD(string_t,Description,0,());
-			OMEGA_DECLARE_STUB_DECLARED_METHOD(string_t,Source,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(guid_t,GetActualIID,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(IException*,Cause,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(string_t,Description,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(string_t,Source,0,());
 		};
 
 		template <class I, class Base>
@@ -433,19 +455,31 @@ namespace Omega
 		};
 
 		interface IWireStub;
-		template <class I>
-		static IWireStub* CreateWireStub(IObject* /*pObject*/)
-		{
-			OMEGA_THROW("No remote handler for interface");
-			return 0;
-		}
+		interface IWireManager;
+		template <class T>
+		static IWireStub* CreateWireStub(IWireManager*, IObject*, uint32_t);
 				
 		struct qi_rtti
 		{
 			IObject_Safe* (*pfnCreateSafeStub)(IObject_Safe* pOuter, IObject* pObj);
 			IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 			void (*pfnSafeThrow)(IException_Safe* pSE);
-			IWireStub* (*pfnCreateWireStub)(IObject* pObject);
+			IWireStub* (*pfnCreateWireStub)(IWireManager* pManager, IObject* pObject, uint32_t id);
+		};
+
+		template <bool C, typename Ta, typename Tb>
+		struct if_then_else_;
+
+		template <typename Ta, typename Tb>
+		struct if_then_else_<true, Ta, Tb>
+		{
+		typedef Ta type;
+		};
+
+		template <typename Ta, typename Tb>
+		struct if_then_else_<false, Ta, Tb>
+		{
+		typedef Tb type;
 		};
 
 		no_t get_qi_rtti(const qi_rtti** ppRtti, ...);

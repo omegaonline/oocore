@@ -466,7 +466,8 @@ IObject* StdObjectManager::PrepareStaticInterface(const guid_t& oid, const guid_
 */
 
 // StdObjectManager
-StdObjectManager::StdObjectManager()
+StdObjectManager::StdObjectManager() :
+	m_uNextStubId(1)
 {
 }
 
@@ -523,7 +524,7 @@ void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Ome
 				OMEGA_THROW("No handler for interface");
 			
 			// And create a stub
-			ptrStub.Attach(pRtti->pfnCreateWireStub(ptrObject));
+			ptrStub.Attach(pRtti->pfnCreateWireStub(this,ptrObject,0));
 			if (!ptrStub)
 				OMEGA_THROW("No remote handler for interface");
 		}
@@ -551,12 +552,12 @@ void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Ome
 		}
 
 		// Assume we succeed...
-		pParamsOut->WriteByte(0);
+		pParamsOut->WriteBoolean(true);
 
 		void* TODO; // decrease the wait time...
 
 		// Ask the stub to make the call
-		ptrStub->Call(method_id,pParamsIn,pParamsOut,timeout);
+		ptrStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
 	}
 	catch (Omega::IException* pE)
 	{
@@ -573,6 +574,9 @@ void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Ome
 			// And create a fresh output
 			pParamsOut = m_ptrChannel->CreateOutputStream();
 
+			// Mark that we have failed
+			pParamsOut->WriteBoolean(false);
+
 			// Write the exception onto the wire
 			MetaInfo::wire_write(this,pParamsOut,pE);
 		}
@@ -587,9 +591,62 @@ void StdObjectManager::Disconnect()
 	m_mapStubIds.clear();
 }
 
-void StdObjectManager::MarshalInterface(Serialize::IFormattedStream*, IObject*, const guid_t&)
+void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IObject* pObject, const guid_t& iid)
 {
-	void* TODO;
+	// See if pObject does custom marshalling...
+	ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
+	if (ptrMarshal)
+	{
+		guid_t oid = ptrMarshal->GetUnmarshalOID(iid,0);
+		if (oid != guid_t::NIL)
+		{
+			// Write the marshalling oid and iid
+			pStream->WriteGuid(oid);
+			pStream->WriteGuid(iid);
+
+			// Let the custom handle marshalling...
+			ptrMarshal->MarshalInterface(pStream,iid,0);
+
+			// Done
+			return;
+		}
+	}
+	
+	// Get the handler for the interface
+	const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+	if (!pRtti || !pRtti->pfnCreateWireStub)
+		OMEGA_THROW("No handler for interface");
+
+	// Generate a new key and stub pair
+	ObjectPtr<Omega::MetaInfo::IWireStub> ptrStub;
+	Omega::uint32_t uId;
+	try
+	{
+		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+
+		uId = m_uNextStubId++;
+		while (uId<1 || m_mapStubIds.find(uId)!=m_mapStubIds.end())
+		{
+			uId = m_uNextStubId++;
+		}
+
+		// Create a stub
+		ptrStub.Attach(pRtti->pfnCreateWireStub(this,pObject,uId));
+		if (!ptrStub)
+			OMEGA_THROW("No remote handler for interface");
+
+		// Add to the map...
+		m_mapStubIds.insert(std::map<Omega::uint32_t,ObjectPtr<Omega::MetaInfo::IWireStub> >::value_type(uId,ptrStub));
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
+
+	// Write out the data
+	pStream->WriteGuid(guid_t::NIL);
+	pStream->WriteGuid(iid);
+	pStream->WriteUInt32(uId);
 }
 
 void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream*, const guid_t&, IObject**)

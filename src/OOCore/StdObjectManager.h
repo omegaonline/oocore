@@ -59,6 +59,7 @@ private:
 private:
 	ACE_Recursive_Thread_Mutex					m_lock;
 	OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
+	Omega::uint32_t								m_uNextStubId;
 
 	std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::MetaInfo::IWireStub> >	m_mapStubIds;
 

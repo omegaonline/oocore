@@ -5,16 +5,586 @@ namespace Omega
 {	
 	namespace MetaInfo
 	{
-		template <class T>
-		struct std_wire_functor;
+		template <class T> struct std_safe_functor
+		{
+			std_safe_functor() : m_val(m_fixed)
+			{}
 
-		template <class T>
-		struct interface_info
+			std_safe_functor(const T& val) : m_fixed(val), m_val(m_fixed)
+			{}
+
+			void init(const T& val, const guid_t&)
+			{
+				m_val = val;
+			}
+
+			operator T&()
+			{
+				return m_val;
+			}
+
+			void attach(T& val_ref)
+			{
+				val_ref = m_fixed;
+				m_val = val_ref;
+			}
+
+			void detach(T& result, const guid_t& = guid_t::NIL)
+			{
+				result = m_val;
+			}
+
+		private:
+			T m_fixed;
+			T& m_val;
+
+			std_safe_functor(const std_safe_functor&) {}
+			std_safe_functor& operator = (const std_safe_functor&) {}
+		};
+
+		template <class T> struct std_stub_functor;
+		template <class T> struct std_stub_functor_array;
+		template <class T> struct std_proxy_functor;
+		template <class T> struct std_proxy_functor_array;
+		template <class T> struct std_wire_functor;
+
+		template <class T> struct interface_info
 		{
 			typedef T safe_class;
-			typedef T safe_stub;
-			typedef T safe_proxy;
+			typedef std_safe_functor<T> stub_functor;
+			typedef std_safe_functor<T> proxy_functor;
 			typedef std_wire_functor<T> wire_functor;
+		};
+		template <class T> struct interface_info<T&>
+		{
+			typedef typename interface_info<T>::safe_class* safe_class;
+			typedef std_stub_functor<T&> stub_functor;
+			typedef std_proxy_functor<T&> proxy_functor;
+			typedef std_wire_functor<T&> wire_functor;
+		};
+		template <class T> struct interface_info<const T>
+		{
+			typedef const typename interface_info<T>::safe_class safe_class;
+			typedef std_stub_functor<const T> stub_functor;
+			typedef std_proxy_functor<const T> proxy_functor;
+			typedef std_wire_functor<const T> wire_functor;
+		};
+
+		template <class T> struct interface_info<T*>
+		{
+			typedef typename interface_info<T>::safe_class* safe_class;
+			typedef std_stub_functor_array<T> stub_functor;
+			typedef std_proxy_functor_array<T> proxy_functor;
+			typedef std_wire_functor<T*> wire_functor;
+		};
+
+		template <class T> struct std_stub_functor<const T>
+		{
+			std_stub_functor() : m_actual()
+			{}
+
+			std_stub_functor(const typename interface_info<T>::safe_class& val) : m_actual(val)
+			{}
+
+			void init(const typename interface_info<T>::safe_class& val, const guid_t& iid)
+			{
+				m_actual.init(val,iid);
+			}
+
+			operator T& ()
+			{
+				return m_actual;
+			}
+
+			void attach(const T& val_ref)
+			{
+				m_actual.attach(const_cast<T&>(val_ref));
+			}
+
+			void detach(const typename interface_info<T>::safe_class&, const guid_t& = guid_t::NIL)
+			{}
+
+		private:
+			typename interface_info<T>::stub_functor	m_actual;
+
+			std_stub_functor(const std_stub_functor&) {}
+			std_stub_functor& operator = (const std_stub_functor&) {}
+		};
+
+		template <class T> struct std_proxy_functor<const T>
+		{
+			std_proxy_functor() : m_actual()
+			{}
+
+			std_proxy_functor(const T& val) : m_actual(val)
+			{}
+
+			void init(const T& val, const guid_t& iid)
+			{
+				m_actual.init(val,iid);
+			}
+
+			operator const typename interface_info<T>::safe_class& ()
+			{
+				return m_actual;
+			}
+
+			void attach(const typename interface_info<T>::safe_class& val_ref)
+			{
+				m_actual.attach(const_cast<typename interface_info<T>::safe_class&>(val_ref));
+			}
+
+			void detach(const T&, const guid_t& = guid_t::NIL)
+			{}
+
+		private:
+			typename interface_info<T>::proxy_functor	m_actual;
+
+			std_proxy_functor(const std_proxy_functor&) {}
+			std_proxy_functor& operator = (const std_proxy_functor&) {}
+		};
+
+		template <class T> struct std_stub_functor<T&>
+		{
+			std_stub_functor(typename interface_info<T>::safe_class* val) : 
+				m_result(val), m_actual(*val)
+			{}
+
+			~std_stub_functor()
+			{
+				m_actual.detach(*m_result);
+			}
+
+			operator T& ()
+			{
+				return m_actual;
+			}
+
+		private:
+			typename interface_info<T>::safe_class* m_result;
+			typename interface_info<T>::stub_functor m_actual;
+
+			std_stub_functor(const std_stub_functor&) {}
+			std_stub_functor& operator = (const std_stub_functor&) {}
+		};
+
+		template <class T> struct std_proxy_functor<T&>
+		{
+			std_proxy_functor(T& val) : 
+				m_result(val), m_actual(m_result)
+			{}
+
+			~std_proxy_functor()
+			{
+				m_actual.detach(m_result);
+			}
+
+			operator typename interface_info<T>::safe_class* ()
+			{
+				return &static_cast<typename interface_info<T>::safe_class&>(m_actual);
+			}
+
+		private:
+			T&	m_result;
+			typename interface_info<T>::proxy_functor	m_actual;
+
+			std_proxy_functor(const std_proxy_functor&) {}
+			std_proxy_functor& operator = (const std_proxy_functor&) {}
+		};
+
+		template <class T> struct std_stub_functor_array
+		{
+			std_stub_functor_array(typename interface_info<T>::safe_class* pVals, typename const interface_info<uint32_t>::safe_class& cbSize = s_default) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(0), m_iid(guid_t::NIL)
+			{
+				init(pVals);
+			}
+
+			std_stub_functor_array(typename interface_info<T>::safe_class* pVals, typename const interface_info<uint32_t&>::safe_class& cbSize) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(0), m_iid(guid_t::NIL)
+			{
+				init(pVals);
+			}
+
+			std_stub_functor_array(typename interface_info<T>::safe_class* pVals, const guid_t& iid, typename const interface_info<uint32_t>::safe_class& cbSize = s_default) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(0), m_iid(iid)
+			{
+				init(pVals);
+			}
+
+			std_stub_functor_array(typename interface_info<T>::safe_class* pVals, const guid_t* piids, typename const interface_info<uint32_t>::safe_class& cbSize = s_default) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(piids), m_iid(guid_t::NIL)
+			{
+				init(pVals);
+			}
+
+			~std_stub_functor_array()
+			{
+				if (m_cbSize > m_alloc_size)
+				{
+					delete [] m_pFunctors;
+					delete [] m_pVals;
+
+					OMEGA_THROW("Array has been resized out of bounds");
+				}
+				
+				if (m_piids)
+				{
+					for (uint32_t i=0;i<m_cbSize;++i)
+						m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
+				}
+				else
+				{
+					for (uint32_t i=0;i<m_cbSize;++i)
+						m_pFunctors[i].detach(m_pResults[i],m_iid);
+				}
+
+				delete [] m_pFunctors;
+				delete [] m_pVals;
+			}
+
+			operator T* ()
+			{
+				return m_pVals;
+			}
+
+		private:
+			static const interface_info<uint32_t>::safe_class s_default = 1;
+			typename interface_info<T>::stub_functor* m_pFunctors;
+			T* m_pVals;
+			typename interface_info<T>::safe_class* m_pResults;
+			const interface_info<uint32_t&>::safe_class& m_cbSize;
+			const uint32_t m_alloc_size;
+			const guid_t* m_piids;
+			const guid_t& m_iid;
+
+			void init(typename interface_info<T>::safe_class* pVals)
+			{
+				try
+				{
+					if (cbSize>0)
+					{
+						OMEGA_NEW(m_pFunctors,interface_info<T>::stub_functor[cbSize]);
+						OMEGA_NEW(m_pVals,T[cbSize]);
+
+						if (m_piids)
+						{
+							for (uint32_t i=0;i<cbSize;++i)
+							{
+								m_pFunctors[i].attach(m_pVals[i]);
+								m_pVals[i].init(pVals[i],m_piids[i]);
+							}
+						}
+						else
+						{
+							for (uint32_t i=0;i<cbSize;++i)
+							{
+								m_pFunctors[i].attach(m_pVals[i]);
+								m_pVals[i].init(pVals[i],m_iid);
+							}
+						}
+					}
+				}
+				catch (...)
+				{
+					delete [] pFunctors;
+					delete [] pVals;
+					throw;
+				}
+			}
+
+			std_stub_functor_array(const std_stub_functor_array&) {}
+			std_stub_functor_array& operator = (const std_stub_functor_array&) {}
+		};
+
+		template <class T> struct std_proxy_functor_array
+		{
+			std_proxy_functor_array(T* pVals, const uint32_t& cbSize = s_default) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(0), m_iid(guid_t::NIL)
+			{
+				init(pVals);
+			}
+
+			std_proxy_functor_array(T* pVals, const guid_t& iid, const uint32_t& cbSize = s_default) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(0), m_iid(iid)
+			{
+				init(pVals);
+			}
+
+			std_proxy_functor_array(T* pVals, const guid_t* piids, const uint32_t& cbSize = s_default) : 
+				m_pFunctors(0), m_pVals(0), m_pResults(pVals), 
+				m_cbSize(cbSize), m_alloc_size(cbSize),
+				m_piids(piids), m_iid(guid_t::NIL)
+			{
+				init(pVals);
+			}
+
+			~std_proxy_functor_array()
+			{
+				if (m_cbSize > m_alloc_size)
+				{
+					delete [] m_pFunctors;
+					delete [] m_pVals;
+
+					OMEGA_THROW("Array has been resized out of bounds");
+				}
+				
+				if (m_piids)
+				{
+					for (uint32_t i=0;i<m_cbSize;++i)
+						m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
+				}
+				else
+				{
+					for (uint32_t i=0;i<m_cbSize;++i)
+						m_pFunctors[i].detach(m_pResults[i],m_iid);
+				}
+
+				delete [] m_pFunctors;
+				delete [] m_pVals;
+			}
+
+			operator typename interface_info<T>::safe_class* ()
+			{
+				return m_pVals;
+			}
+
+		private:
+			static const uint32_t s_default = 1;
+			typename interface_info<T>::proxy_functor* m_pFunctors;
+			typename interface_info<T>::safe_class* m_pVals;
+			T* m_pResults;
+			const uint32_t& m_cbSize;
+			const uint32_t m_alloc_size;
+			const guid_t* m_piids;
+			const guid_t& m_iid;
+
+			void init(T* pVals)
+			{
+				try
+				{
+					if (m_cbSize>0)
+					{
+						OMEGA_NEW(m_pFunctors,typename interface_info<T>::proxy_functor[m_cbSize]);
+						OMEGA_NEW(m_pVals,typename interface_info<T>::safe_class[m_cbSize]);
+
+						if (m_piids)
+						{
+							for (uint32_t i=0;i<m_cbSize;++i)
+							{
+								m_pFunctors[i].attach(m_pVals[i]);
+								m_pVals[i].init(pVals[i],m_piids[i]);
+							}
+						}
+						else
+						{
+							for (uint32_t i=0;i<m_cbSize;++i)
+							{
+								m_pFunctors[i].attach(m_pVals[i]);
+								m_pVals[i].init(pVals[i],m_iid);
+							}
+						}
+					}
+				}
+				catch (...)
+				{
+					delete [] pFunctors;
+					delete [] pVals;
+					throw;
+				}
+			}
+
+			std_proxy_functor_array(const std_proxy_functor_array&) {}
+			std_proxy_functor_array& operator = (const std_proxy_functor_array&) {}
+		};
+
+		template <class I> struct iface_stub_functor;
+		template <class I> struct iface_stub_functor<I*>
+		{
+			iface_stub_functor(typename interface_info<I>::safe_class* pS = 0, const guid_t& iid = iid_traits<I>::GetIID()) :
+				m_fixed(0), m_pI(m_fixed)
+			{
+				init(pS,iid);
+			}
+
+			~iface_stub_functor()
+			{
+				if (m_pI)
+					m_pI->Release();
+			}
+
+			void init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
+			{
+				if (pS)
+				{
+					IObject_Safe* pObjS = 0;
+					IException_Safe* pSE = pS->QueryInterface_Safe(&pObjS,IID_IObject);
+					if (pSE)
+						throw_correct_exception(pSE);
+					if (!pObjS)
+						INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+					try 
+					{
+						m_pI = static_cast<I*>(lookup_proxy(pObjS,iid,false));
+						pObjS->Release_Safe();
+					}
+					catch (...)
+					{
+						if (pObjS)
+							pObjS->Release_Safe();
+						throw;
+					}
+				}
+			}
+
+			operator I*& ()
+			{
+				return m_pI;
+			}
+
+			void attach(I*& val_ref)
+			{
+				val_ref = m_fixed;
+				m_pI = val_ref;
+			}
+
+			void detach(typename interface_info<I>::safe_class*& result, const guid_t& iid = iid_traits<I>::GetIID())
+			{
+				if (result)
+				{
+					IException_Safe* pSE = result->Release_Safe();
+					if (pSE)
+						throw_correct_exception(pSE);
+				}
+				
+				if (!m_pI)
+					result = 0;
+				else
+				{
+					IObject* pObj = m_pI->QueryInterface(IID_IObject);
+					if (!pObj)
+						INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+					try
+					{
+						result = static_cast<typename interface_info<I>::safe_class*>(lookup_stub(pObj,iid));
+						pObj->Release();
+					}
+					catch (...)
+					{
+						if (pObj)
+							pObj->Release();
+						throw;
+					}
+				}
+			}
+
+		private:
+			I* m_fixed;
+			I*& m_pI;
+
+			iface_stub_functor(const iface_stub_functor&) {}
+			iface_stub_functor& operator = (const iface_stub_functor&) {}
+		};
+
+		template <class I> struct iface_proxy_functor;
+		template <class I> struct iface_proxy_functor<I*>
+		{
+			iface_proxy_functor(I* pI = 0, const guid_t& iid = iid_traits<I>::GetIID()) :
+				m_fixed(0), m_pS(m_fixed)
+			{
+				init(pI,iid);
+			}
+
+			~iface_proxy_functor()
+			{
+				if (m_pS)
+					m_pS->Release_Safe();
+			}
+
+			void init(I* pI, const guid_t& iid)
+			{
+				if (pI)
+				{
+					IObject* pObj = 0;
+					try
+					{
+						pObj = pI->QueryInterface(IID_IObject);
+						if (!pObj)
+							INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+						m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(pObj,iid));
+						pObj->Release();
+					}
+					catch (...)
+					{
+						if (pObj)
+							pObj->Release();
+						throw;
+					}
+				}
+			}
+
+			operator typename interface_info<I*>::safe_class& ()
+			{
+				return m_pS;
+			}
+
+			void attach(typename interface_info<I>::safe_class*& val_ref)
+			{
+				val_ref = m_fixed;
+				m_pI = val_ref;
+			}
+
+			void detach(I*& result, const guid_t& iid = iid_traits<I>::GetIID())
+			{
+				if (result)
+					result->Release();
+
+				if (!m_pS)
+					result = 0;
+				else
+				{
+					IObject_Safe* pObjS = 0;
+					IException_Safe* pSE = m_pS->QueryInterface_Safe(&pObjS,IID_IObject);
+					if (pSE)
+						throw_correct_exception(pSE);
+					if (!pObjS)
+						INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+					try 
+					{
+						result = static_cast<I*>(lookup_proxy(pObjS,iid,true));
+						pObjS->Release_Safe();
+					}
+					catch (...)
+					{
+						if (pObjS)
+							pObjS->Release_Safe();
+						throw;
+					}
+				}
+			}
+			
+		private:
+			typename interface_info<I>::safe_class* m_fixed;
+			typename interface_info<I>::safe_class*& m_pS;
+
+			iface_proxy_functor(const iface_proxy_functor&) {}
+			iface_proxy_functor& operator = (const iface_proxy_functor&) {}
 		};
 
 		interface IException_Safe;
@@ -29,17 +599,6 @@ namespace Omega
 		IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
 		void throw_correct_exception(IException_Safe* pE);
 		IException_Safe* return_correct_exception(IException* pE);
-
-		template <class I>
-		struct safe_stub_functor;
-		template <class I>
-		struct safe_stub_functor_out;
-		template <class I>
-		struct safe_proxy_functor;
-		template <class I>
-		struct safe_proxy_functor_out;
-		template <class I>
-		struct iface_wire_functor;
 
 		template <class I, class Base> struct IObject_SafeStub;
 		template <class I> struct IObject_SafeProxy;
@@ -61,146 +620,68 @@ namespace Omega
 				typedef IObject_WireStub<I> type;
 			};
 		};
+
+		template <class I> struct iface_wire_functor;
+
 		template <> struct interface_info<IObject*>
 		{
 			typedef interface_info<IObject>::safe_class* safe_class;
-			typedef safe_stub_functor<IObject> safe_stub;
-			typedef safe_proxy_functor<IObject> safe_proxy;
+			typedef iface_stub_functor<IObject*> stub_functor;
+			typedef iface_proxy_functor<IObject*> proxy_functor;
 			typedef iface_wire_functor<IObject*> wire_functor;
 		};
 		template <> struct interface_info<IObject**>
 		{
-			typedef interface_info<IObject>::safe_class** safe_class;
-			typedef safe_stub_functor_out<IObject> safe_stub;
-			typedef safe_proxy_functor_out<IObject> safe_proxy;
+			typedef interface_info<IObject*>::safe_class* safe_class;
+			typedef std_stub_functor_array<IObject*> stub_functor;
+			typedef std_proxy_functor_array<IObject*> proxy_functor;
 			typedef iface_wire_functor<IObject**> wire_functor;
-		}; 
-
+		};
+		
+		
 		template <class I, class Base> struct IException_SafeStub;
 		template <class I, class Base> struct IException_SafeProxy;
 		template <class I, class Base> struct IException_WireStub;
 
-		template <> struct interface_info<Omega::IException>
+		template <> struct interface_info<IException>
 		{
 			typedef IException_Safe safe_class;
 			template <class I> struct safe_stub_factory
 			{
-				typedef IException_SafeStub<I,typename interface_info<Omega::IObject>::safe_stub_factory<I>::type> type;
+				typedef IException_SafeStub<I,typename interface_info<IObject>::safe_stub_factory<I>::type> type;
 			};
 			template <class I> struct safe_proxy_factory
 			{
-				typedef IException_SafeProxy<I,typename interface_info<Omega::IObject>::safe_proxy_factory<I>::type> type;
+				typedef IException_SafeProxy<I,typename interface_info<IObject>::safe_proxy_factory<I>::type> type;
 			};
 			template <class I> struct wire_stub_factory
 			{
-				typedef IException_WireStub<I,typename interface_info<Omega::IObject>::wire_stub_factory<I>::type> type;
+				typedef IException_WireStub<I,typename interface_info<IObject>::wire_stub_factory<I>::type> type;
 			};
 		};
-		template <> struct interface_info<Omega::IException*>
+		template <> struct interface_info<IException*>
 		{
-			typedef interface_info<Omega::IException>::safe_class* safe_class;
-			typedef safe_stub_functor<Omega::IException> safe_stub;
-			typedef safe_proxy_functor<Omega::IException> safe_proxy;
-			typedef iface_wire_functor<Omega::IException*> wire_functor;
+			typedef interface_info<IException>::safe_class* safe_class;
+			typedef iface_stub_functor<IException*> stub_functor;
+			typedef iface_proxy_functor<IException*> proxy_functor;
+			typedef iface_wire_functor<IException*> wire_functor;
 		};
-		template <> struct interface_info<Omega::IException**>
+		template <> struct interface_info<IException**>
 		{
-			typedef interface_info<Omega::IException>::safe_class** safe_class;
-			typedef safe_stub_functor_out<Omega::IException> safe_stub;
-			typedef safe_proxy_functor_out<Omega::IException> safe_proxy;
-			typedef iface_wire_functor<Omega::IException**> wire_functor;
+			typedef interface_info<IException*>::safe_class* safe_class;
+			typedef std_stub_functor_array<IException*> stub_functor;
+			typedef std_proxy_functor_array<IException*> proxy_functor;
+			typedef iface_wire_functor<IException*> wire_functor;
 		};
-
+		
 		interface IException_Safe : public IObject_Safe
 		{
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::guid_t,GetActualIID,0,());
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::IException*,Cause,0,());
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::string_t,Description,0,());
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(Omega::string_t,Source,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(guid_t,GetActualIID,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(IException*,Cause,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(string_t,Description,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(string_t,Source,0,());
 		};
-
-		template <class I>
-		struct safe_stub_functor
-		{
-			safe_stub_functor(I* pI);
-
-			~safe_stub_functor()
-			{
-				if (m_pS)
-					m_pS->Release_Safe();
-			}
-
-			operator typename interface_info<I*>::safe_class ()
-			{
-				return m_pS;
-			}
-
-		private:
-			typename interface_info<I*>::safe_class m_pS;
-		};
-
-		template <class I>
-		struct safe_stub_functor_out
-		{
-			safe_stub_functor_out(I** ppI, const guid_t& iid = iid_traits<I>::GetIID());
-			~safe_stub_functor_out();
-
-			operator typename interface_info<I**>::safe_class ()
-			{
-				return &m_pS;
-			}
-
-		private:
-			typename interface_info<I*>::safe_class m_pS;
-			I** m_ppI;
-			const guid_t& m_iid;
-
-			// Disallow
-			safe_stub_functor_out& operator = (const safe_stub_functor_out&)
-			{}
-		};
-
-		template <class I>
-		struct safe_proxy_functor
-		{
-			safe_proxy_functor(typename interface_info<I*>::safe_class pS);
-
-			~safe_proxy_functor()
-			{
-				if (m_pI)
-					m_pI->Release();
-			}
-
-			operator I* ()
-			{
-				return m_pI;
-			}
-
-		private:
-			I* m_pI;
-		};
-
-		template <class I>
-		struct safe_proxy_functor_out
-		{
-			safe_proxy_functor_out(typename interface_info<I**>::safe_class ppS, const guid_t& iid = iid_traits<I>::GetIID());
-			~safe_proxy_functor_out();
-
-			operator I** ()
-			{
-				return &m_pI;
-			}
-
-		private:
-			I* m_pI;
-			typename interface_info<I**>::safe_class m_ppS;
-			const guid_t& m_iid;
-
-			// Disallow!
-			safe_proxy_functor_out& operator = (const safe_proxy_functor_out&)
-			{}
-		};
-
+		
 		template <class I_SafeStub, class I>
 		class SafeStubImpl : public IObject_Safe
 		{
@@ -356,7 +837,7 @@ namespace Omega
 		template <class I>
 		inline void SafeThrow(IException_Safe* pSE)
 		{
-			I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::safe_proxy(pSE))->QueryInterface(iid_traits<I>::GetIID()));
+			I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::proxy_functor(pSE))->QueryInterface(iid_traits<I>::GetIID()));
 			pSE->Release_Safe();
 			if (!pI)
 				OMEGA_THROW("No handler for exception interface");
@@ -629,3 +1110,4 @@ namespace Omega
 OMEGA_DEFINE_IID(Omega::MetaInfo,SafeProxy,0xc55f671d, 0xac67, 0x4a8d, 0xb6, 0x10, 0x3b, 0x8, 0xbe, 0x15, 0xa5, 0xea);
 
 #endif // OOCORE_RTTI_H_INCLUDED_
+

@@ -9,7 +9,7 @@
 	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)
 
 #define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params) \
+	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
 
 #else
 
@@ -17,7 +17,7 @@
 	OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params)
 
 #define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-	OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+	OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params)
 
 #endif
 

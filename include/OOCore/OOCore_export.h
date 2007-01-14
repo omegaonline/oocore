@@ -67,14 +67,14 @@
 		typedef interface_info<n_space::name>::safe_class* safe_class; \
 		typedef iface_stub_functor<n_space::name*> stub_functor; \
 		typedef iface_proxy_functor<n_space::name*> proxy_functor; \
-		typedef iface_wire_functor<n_space::name*> wire_functor; \
+		typedef iface_wire_type<n_space::name*> wire_type; \
 	}; \
 	template <> struct interface_info<n_space::name**> \
 	{ \
 		typedef interface_info<n_space::name*>::safe_class* safe_class; \
 		typedef iface_stub_functor_array<n_space::name*> stub_functor; \
 		typedef iface_proxy_functor_array<n_space::name*> proxy_functor; \
-		typedef iface_wire_functor<n_space::name*> wire_functor; \
+		typedef iface_wire_type<n_space::name*> wire_type; \
 	};
 	 	
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
@@ -153,7 +153,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_READ_PARAM_I,meta,(type,name))
 
 #define OMEGA_DECLARE_PARAM_WIRE_STUB_I(meta,t,name) \
-	Omega::MetaInfo::interface_info<t>::wire_functor name( OMEGA_WIRE_READ_PARAM(meta,t,name) );
+	Omega::MetaInfo::interface_info<t>::wire_type name( OMEGA_WIRE_READ_PARAM(meta,t,name) );
 
 #define OMEGA_DECLARE_PARAM_WIRE_STUB(index,param,d) \
 	OMEGA_DECLARE_PARAM_WIRE_STUB_I param

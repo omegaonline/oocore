@@ -35,28 +35,28 @@ namespace Omega
 		template <class T> struct std_stub_functor_array;
 		template <class T> struct std_proxy_functor;
 		template <class T> struct std_proxy_functor_array;
-		template <class T> struct std_wire_functor;
+		template <class T> struct std_wire_type;
 
 		template <class T> struct interface_info
 		{
 			typedef T safe_class;
 			typedef std_safe_functor<T> stub_functor;
 			typedef std_safe_functor<T> proxy_functor;
-			typedef std_wire_functor<T> wire_functor;
+			typedef std_wire_type<T> wire_type;
 		};
 		template <class T> struct interface_info<T&>
 		{
 			typedef typename interface_info<T>::safe_class* safe_class;
 			typedef std_stub_functor<T&> stub_functor;
 			typedef std_proxy_functor<T&> proxy_functor;
-			typedef std_wire_functor<T&> wire_functor;
+			typedef std_wire_type<T&> wire_type;
 		};
 		template <class T> struct interface_info<const T>
 		{
 			typedef const typename interface_info<T>::safe_class safe_class;
 			typedef std_stub_functor<const T> stub_functor;
 			typedef std_proxy_functor<const T> proxy_functor;
-			typedef std_wire_functor<const T> wire_functor;
+			typedef std_wire_type<const T> wire_type;
 		};
 
 		template <class T> struct interface_info<T*>
@@ -64,7 +64,7 @@ namespace Omega
 			typedef typename interface_info<T>::safe_class* safe_class;
 			typedef std_safe_functor<T*> stub_functor;
 			typedef std_safe_functor<T*> proxy_functor;
-			typedef std_wire_functor<T*> wire_functor;
+			typedef std_wire_type<T*> wire_type;
 		};
 
 		template <class T> struct std_stub_functor<const T>
@@ -417,21 +417,21 @@ namespace Omega
 			};
 		};
 
-		template <class I> struct iface_wire_functor;
+		template <class I> struct iface_wire_type;
 
 		template <> struct interface_info<IObject*>
 		{
 			typedef interface_info<IObject>::safe_class* safe_class;
 			typedef iface_stub_functor<IObject*> stub_functor;
 			typedef iface_proxy_functor<IObject*> proxy_functor;
-			typedef iface_wire_functor<IObject*> wire_functor;
+			typedef iface_wire_type<IObject*> wire_type;
 		};
 		template <> struct interface_info<IObject**>
 		{
 			typedef interface_info<IObject*>::safe_class* safe_class;
 			typedef iface_stub_functor_array<IObject*> stub_functor;
 			typedef iface_proxy_functor_array<IObject*> proxy_functor;
-			typedef iface_wire_functor<IObject**> wire_functor;
+			typedef iface_wire_type<IObject**> wire_type;
 		};
 				
 		template <class I, class Base> struct IException_SafeStub;
@@ -459,14 +459,14 @@ namespace Omega
 			typedef interface_info<IException>::safe_class* safe_class;
 			typedef iface_stub_functor<IException*> stub_functor;
 			typedef iface_proxy_functor<IException*> proxy_functor;
-			typedef iface_wire_functor<IException*> wire_functor;
+			typedef iface_wire_type<IException*> wire_type;
 		};
 		template <> struct interface_info<IException**>
 		{
 			typedef interface_info<IException*>::safe_class* safe_class;
 			typedef iface_stub_functor_array<IException*> stub_functor;
 			typedef iface_proxy_functor_array<IException*> proxy_functor;
-			typedef iface_wire_functor<IException**> wire_functor;
+			typedef iface_wire_type<IException**> wire_type;
 		};
 		
 		interface IException_Safe : public IObject_Safe

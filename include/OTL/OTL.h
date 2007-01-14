@@ -99,8 +99,8 @@
 		{ 0 } }; return CreatorEntries; } }; } \
 	inline OTL::ModuleBase* OTL::GetModule() { return LibraryModule__::instance(); } \
 	extern "C" OMEGA_EXPORT u_long OMEGA_CALL _get_dll_unload_policy() { return (LibraryModule__::instance()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
-	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetObjectFactory,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) { \
-		return LibraryModule__::instance()->GetObjectFactory(oid,flags,iid,pObject); } \
+	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Omega_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags)) \
+	{ return LibraryModule__::instance()->GetObjectFactory(oid,flags); } \
 	OTL_MODULE_INIT_BLOCK(LibraryModule__)
 
 #define BEGIN_PROCESS_OBJECT_MAP(process_class) \
@@ -231,7 +231,7 @@ namespace OTL
 			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateObject(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
 		}
 
-		OBJECT* operator ->() const
+		OBJECT* operator ->()
 		{
 			return m_ptr.value();
 		}
@@ -239,6 +239,11 @@ namespace OTL
 		OBJECT** operator &()
 		{
 			return &m_ptr;
+		}
+
+		operator OBJECT*&()
+		{
+			return m_ptr.value();
 		}
 
 		operator OBJECT*() const
@@ -799,7 +804,7 @@ namespace OTL
 			}
 		};
 
-		void GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		Omega::Activation::IObjectFactory* GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags);
 
 	protected:
 		LibraryModule()

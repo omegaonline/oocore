@@ -20,7 +20,7 @@ namespace Omega
 		};
 		typedef uint16_t Flags_t;
 
-		IObject* GetObjectFactory(const guid_t& oid, Flags_t flags, const guid_t& iid);
+		IObjectFactory* GetObjectFactory(const guid_t& oid, Flags_t flags);
 		IObject* CreateObject(const guid_t& oid, Flags_t flags, IObject* pOuter, const guid_t& iid);
 		guid_t NameToOid(const string_t& strObjectName);
 
@@ -110,12 +110,10 @@ inline void Omega::Activation::INoAggregationException::Throw(const Omega::guid_
 	Activation_INoAggregationException_Throw(oid,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
-inline Omega::IObject* Omega::Activation::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
+OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags));
+inline Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
 {
-	Omega::IObject* pObj = 0;
-	Activation_GetObjectFactory(oid,flags,iid,pObj);
-	return pObj;
+	return Activation_GetObjectFactory(oid,flags);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Activation_CreateObject,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));

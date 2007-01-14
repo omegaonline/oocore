@@ -47,6 +47,7 @@ namespace Remoting
 		virtual void Connect(IChannel* pChannel) = 0;
 		virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) = 0;
 		virtual void Disconnect() = 0;
+		virtual void CreateStaticProxy(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 	};
 	OMEGA_DECLARE_IID(IObjectManager);
 
@@ -88,6 +89,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannel*,pChannel))
 	OMEGA_METHOD_VOID(Invoke,3,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Disconnect,0,())
+	OMEGA_METHOD_VOID(CreateStaticProxy,3,((in),const guid_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 #endif // OOCORE_REMOTING_H_INCLUDED_

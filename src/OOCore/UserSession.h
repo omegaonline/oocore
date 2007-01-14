@@ -6,7 +6,7 @@
 class UserSession
 {
 public:
-	static int init();
+	static Omega::IException* init();
 	static void term();
 		
 	int enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle);
@@ -61,6 +61,9 @@ private:
 
 	std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >	m_mapOMs;
 
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey>			m_ptrRegistry;
+	OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>	m_ptrROT;
+
 	// Accessors for Channel
 	int send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
 	int send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);
@@ -68,6 +71,7 @@ private:
 
 	// Proper private members
 	int init_i();
+	Omega::IException* bootstrap();
 	void term_i();
 	int get_port(u_short& uPort);
 	int pump_requests(ACE_Time_Value* deadline = 0);
@@ -75,6 +79,7 @@ private:
 	int wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline = 0);
 	int build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
 	bool valid_transaction(ACE_CDR::ULong trans_id);
+	OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 };

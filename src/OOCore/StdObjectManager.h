@@ -68,6 +68,7 @@ public:
 	void Connect(Omega::Remoting::IChannel* pChannel);
 	void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout);
 	void Disconnect();
+	void CreateStaticProxy(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 
 // IWireManager members
 public:

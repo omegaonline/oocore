@@ -57,21 +57,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 
 	if (bStart)
 	{
-		ObjectPtr<IException> ptrE;
-		
-		int ret = UserSession::init();
-		if (ret != 0)
-		{
-			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
-			pE->m_strDesc = ACE_OS::strerror(ret);
-            ptrE.Attach(pE);
-		}
-
-		if (ptrE)
+		IException* pE = UserSession::init();
+		if (pE)
 		{
 			ACE::fini();
-
-			return ptrE.AddRefReturn();
+			return pE;
 		}
 	}
 

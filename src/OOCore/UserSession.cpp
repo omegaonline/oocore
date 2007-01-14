@@ -3,6 +3,10 @@
 #include "./UserSession.h"
 #include "./UserConnection.h"
 #include "./Session.h"
+#include "../OOServer/InterProcess.h"
+
+using namespace Omega;
+using namespace OTL;
 
 UserSession::UserSession() : 
 	m_user_handle(ACE_INVALID_HANDLE),
@@ -16,9 +20,17 @@ UserSession::~UserSession()
 		ACE_OS::closesocket(m_user_handle);
 }
 
-int UserSession::init()
+IException* UserSession::init()
 {
-	return USER_SESSION::instance()->init_i();
+	int ret = USER_SESSION::instance()->init_i();
+	if (ret != 0)
+	{
+		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
+		pE->m_strDesc = ACE_OS::strerror(ret);
+        return pE;
+	}
+
+	return USER_SESSION::instance()->bootstrap();
 }
 
 int UserSession::init_i()
@@ -39,7 +51,6 @@ int UserSession::init_i()
 	// Create a new UserConnection
 	UserConnection*	pRC;
 	ACE_NEW_RETURN(pRC,UserConnection(this),-1);
-	
 	if (pRC->open(stream.get_handle()) != 0)
 	{
 		delete pRC;
@@ -65,8 +76,29 @@ int UserSession::init_i()
 		return -1;
 	}
 
-	// Now we bootstrap...
-	
+	return 0;
+}
+
+IException* UserSession::bootstrap()
+{
+	try
+	{
+		// Create a new object manager for the 0 channel
+		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(0);
+
+		// Create a proxy to the server interface
+		IObject* pIP = 0;
+		ptrOM->CreateStaticProxy(OOServer::OID_InterProcess,OOServer::IID_IInterProcess,pIP);
+		ObjectPtr<OOServer::IInterProcess> ptrIP;
+		ptrIP.Attach(static_cast<OOServer::IInterProcess*>(pIP));
+
+		ptrIP->Init(m_ptrRegistry,m_ptrROT);
+	}
+	catch (Omega::IException* pE)
+	{
+		return pE;
+	}
+
 	return 0;
 }
 
@@ -457,8 +489,8 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
 
 	// Write the common header
-	header << trans_id;
-	header << dest_channel_id;
+	header.write_ulong(trans_id);
+	header.write_ushort(dest_channel_id);
 	header.write_boolean(true);	// Is request
 	
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
@@ -505,8 +537,8 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
 
 	// Write out common header
-	header << trans_id;
-	header << dest_channel_id;
+	header.write_ulong(trans_id);
+	header.write_ushort(dest_channel_id);
 	header.write_boolean(false);	// Response
 	
 	if (!header.good_bit())
@@ -558,37 +590,8 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
-		try
-		{
-			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
-
-			std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
-			if (i == m_mapOMs.end())
-			{
-				// Create a new channel
-				OTL::ObjectPtr<OTL::ObjectImpl<Channel> > ptrChannel = OTL::ObjectImpl<Channel>::CreateObjectPtr();
-				ptrChannel->init(this,src_channel_id);
-
-				// Create a new OM
-				ptrOM = OTL::ObjectPtr<Omega::Remoting::IObjectManager>(Omega::OID_StdObjectManager,Omega::Activation::InProcess);
-
-				// Associate it with the channel
-				ptrOM->Connect(ptrChannel);
-
-				// And add to the map
-				m_mapOMs.insert(std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
-			}
-			else
-			{
-				ptrOM = i->second;
-			}
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e.what());
-		}
-
+		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(src_channel_id);
+		
 		// Convert deadline time to #msecs
 		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
 		if (wait <= ACE_Time_Value::zero)
@@ -599,20 +602,20 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 			msecs = ACE_UINT32_MAX;
 
 		// Wrap up the request
-		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::InputCDR> > ptrRequest = OTL::ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
 		ptrRequest->init(*request->input());
 
 		// Create a response if required
-		OTL::ObjectPtr<OTL::ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
 		if (trans_id != 0)
-			ptrResponse = OTL::ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
 
-		OTL::ObjectPtr<Omega::Remoting::ICallContext> ptrPrevCallContext;
+		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
 		try		
 		{
 			void* TODO; // Setup the CallContext...
 
-			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<Omega::uint32_t>(msecs));
+			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
 		}
 		catch (...)
 		{
@@ -622,7 +625,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 		}
 		void* TODO; // Restore CallContext
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		void* TODO; // Report the error
 
@@ -630,4 +633,40 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 	}
 	
 	delete request;
+}
+
+ObjectPtr<Remoting::IObjectManager> UserSession::get_object_manager(ACE_CDR::UShort src_channel_id)
+{
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	try
+	{
+		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+
+		std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
+		if (i == m_mapOMs.end())
+		{
+			// Create a new channel
+			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObjectPtr();
+			ptrChannel->init(this,src_channel_id);
+
+			// Create a new OM
+			ptrOM = ObjectPtr<Remoting::IObjectManager>(OID_StdObjectManager,Activation::InProcess);
+
+			// Associate it with the channel
+			ptrOM->Connect(ptrChannel);
+
+			// And add to the map
+			m_mapOMs.insert(std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
+		}
+		else
+		{
+			ptrOM = i->second;
+		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
+
+	return ptrOM;
 }

@@ -57,18 +57,19 @@ inline OTL::ModuleBase::~ModuleBase()
 	}
 }
 
-inline void OTL::LibraryModule::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject)
+inline Omega::Activation::IObjectFactory* OTL::LibraryModule::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
 {
-	pObject = 0;
+	Omega::IObject* pObject = 0;
     const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
 		if (*(g[i].pfnOid)() == oid)
 		{
-			pObject = g[i].pfnCreate(iid,flags);
+			pObject = g[i].pfnCreate(Omega::Activation::IID_IObjectFactory,flags);
 			break;
 		}
 	}
+	return static_cast<Omega::Activation::IObjectFactory*>(pObject);
 }
 
 #endif  // OTL_BASE_INL_INCLUDED_

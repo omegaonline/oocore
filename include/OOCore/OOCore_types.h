@@ -96,37 +96,37 @@ namespace Omega
 	class string_t
 	{
 	public:
-		string_t();
-		string_t(const string_t& s);
-		string_t(const char_t* sz);
-		~string_t();
+		inline string_t();
+		inline string_t(const string_t& s);
+		inline string_t(const char_t* sz);
+		inline ~string_t();
 		
-		string_t& operator = (const string_t& s);
-		string_t& operator = (const char_t* sz);
+		inline string_t& operator = (const string_t& s);
+		inline string_t& operator = (const char_t* sz);
 		
-		operator const char_t*() const;
-		bool operator == (const string_t& s) const;
-		bool operator == (const char_t* sz) const;
+		inline operator const char_t*() const;
+		inline bool operator == (const string_t& s) const;
+		inline bool operator == (const char_t* sz) const;
 
 		template <class T>
 		bool operator != (T t) const
 		{ return !((*this)==t); }
 
-		string_t& operator += (const string_t& s);
-		string_t& operator += (const char_t* sz);
+		inline string_t& operator += (const string_t& s);
+		inline string_t& operator += (const char_t* sz);
 		
-		int CompareNoCase(const string_t& s) const;
-		int CompareNoCase(const char_t* sz) const;
-		bool IsEmpty() const;
-		size_t Length() const;
-		size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t Find(char_t c, size_t pos = 0, bool bIgnoreCase = false) const;
-		size_t ReverseFind(char_t c, ssize_t pos = npos, bool bIgnoreCase = false) const;
-		string_t Left(size_t length) const;
-		string_t Mid(size_t start, ssize_t length = -1) const;
-		string_t& Clear();
-		string_t ToLower() const;
-		string_t ToUpper() const;
+		inline int CompareNoCase(const string_t& s) const;
+		inline int CompareNoCase(const char_t* sz) const;
+		inline bool IsEmpty() const;
+		inline size_t Length() const;
+		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t Find(char_t c, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t ReverseFind(char_t c, ssize_t pos = npos, bool bIgnoreCase = false) const;
+		inline string_t Left(size_t length) const;
+		inline string_t Mid(size_t start, ssize_t length = -1) const;
+		inline string_t& Clear();
+		inline string_t ToLower() const;
+		inline string_t ToUpper() const;
 
 		static string_t Format(const char_t* pszFormat, ...);
 
@@ -138,7 +138,7 @@ namespace Omega
 			int unused;
 		}* handle_t;
 
-		explicit string_t(handle_t);
+		inline explicit string_t(handle_t);
 		handle_t m_handle;
 	};
 		
@@ -149,10 +149,10 @@ namespace Omega
 		uint16_t	Data3;
 		byte_t		Data4[8];
 
-		bool operator==(const guid_t& rhs) const;
-		bool operator!=(const guid_t& rhs) const;
-		bool operator<(const guid_t& rhs) const;
-		operator string_t() const;
+		inline bool operator==(const guid_t& rhs) const;
+		inline bool operator!=(const guid_t& rhs) const;
+		inline bool operator<(const guid_t& rhs) const;
+		inline operator string_t() const;
 
 		static guid_t FromString(const string_t& str);
 		static const guid_t NIL;
@@ -161,11 +161,11 @@ namespace Omega
 	class CriticalSection
 	{
 	public:
-		CriticalSection();
-		~CriticalSection();
+		inline CriticalSection();
+		inline ~CriticalSection();
 
-		void Lock();
-		void Unlock();
+		inline void Lock();
+		inline void Unlock();
 
 	private:
 		typedef struct tag_handle_t
@@ -203,20 +203,21 @@ namespace Omega
 	{
 	public:
 		AtomicOpImpl() {};
-		AtomicOpImpl(const AtomicOpImpl& rhs);
-		AtomicOpImpl(const T& v);
+		inline AtomicOpImpl(const AtomicOpImpl& rhs);
+		inline AtomicOpImpl(const T& v);
 
-		T operator ++();
-		T operator ++(int);
-		T operator --();
-		T operator --(int);
-		T* operator &();
+		inline T operator ++();
+		inline T operator ++(int);
+		inline T operator --();
+		inline T operator --(int);
+		inline T* operator &();
 
-		AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
-		AtomicOpImpl& operator = (const T& rhs);
+		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
+		inline AtomicOpImpl& operator = (const T& rhs);
 
-		T value() const;
-		T exchange(const T& v);
+		inline T value() const;
+		inline T& value();
+		inline T exchange(const T& v);
 		
 	private:
 		T	m_value;
@@ -228,20 +229,21 @@ namespace Omega
 	{
 	public:
 		AtomicOpImpl() {};
-		AtomicOpImpl(const AtomicOpImpl& rhs);
-		AtomicOpImpl(const T& v);
+		inline AtomicOpImpl(const AtomicOpImpl& rhs);
+		inline AtomicOpImpl(const T& v);
 
-		AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
-		AtomicOpImpl& operator = (const T& rhs);
+		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
+		inline AtomicOpImpl& operator = (const T& rhs);
 
-		T operator ++();
-		T operator ++(int);
-		T operator --();
-		T operator --(int);
-		T* operator &();
+		inline T operator ++();
+		inline T operator ++(int);
+		inline T operator --();
+		inline T operator --(int);
+		inline T* operator &();
 
-		T value() const;
-		T exchange(const T& v);
+		inline T value() const;
+		inline T& value();
+		inline T exchange(const T& v);
 
 	private:
 		T	m_value;
@@ -255,20 +257,21 @@ namespace Omega
 	{
 	public:
 		AtomicOpImpl() {};
-		AtomicOpImpl(const AtomicOpImpl& rhs);
-		AtomicOpImpl(const T& v);
+		inline AtomicOpImpl(const AtomicOpImpl& rhs);
+		inline AtomicOpImpl(const T& v);
 
-		AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
-		AtomicOpImpl& operator = (const T& rhs);
+		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
+		inline AtomicOpImpl& operator = (const T& rhs);
 
-		T operator ++();
-		T operator ++(int);
-		T operator --();
-		T operator --(int);
-		T* operator &();
+		inline T operator ++();
+		inline T operator ++(int);
+		inline T operator --();
+		inline T operator --(int);
+		inline T* operator &();
 
-		T value() const;
-		T exchange(const T& v);
+		inline T value() const;
+		inline T& value();
+		inline T exchange(const T& v);
 
 	private:
 		T	m_value;

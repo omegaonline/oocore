@@ -475,7 +475,7 @@ StdObjectManager::~StdObjectManager()
 {
 }
 
-void StdObjectManager::Connect(Omega::Remoting::IChannel* pChannel)
+void StdObjectManager::Connect(Remoting::IChannel* pChannel)
 {
 	if (m_ptrChannel)
 		OOCORE_THROW_ERRNO(EALREADY);
@@ -485,7 +485,7 @@ void StdObjectManager::Connect(Omega::Remoting::IChannel* pChannel)
 	m_ptrChannel = pChannel;
 }
 
-void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout)
+void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout)
 {
 	if (!pParamsIn)
 		OOCORE_THROW_ERRNO(EINVAL);
@@ -493,11 +493,11 @@ void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Ome
 	// Process an incoming request...
 	try
 	{
-		ObjectPtr<Omega::MetaInfo::IWireStub> ptrStub;
-		Omega::uint32_t method_id;
+		ObjectPtr<MetaInfo::IWireStub> ptrStub;
+		uint32_t method_id;
 		
 		// Read the stub id and method id
-		Omega::uint32_t stub_id = pParamsIn->ReadUInt32();
+		uint32_t stub_id = pParamsIn->ReadUInt32();
 		if (stub_id == 0)
 		{
 			// It's a static interface call...
@@ -537,7 +537,7 @@ void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Ome
 			{
 				ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
-				std::map<Omega::uint32_t,ObjectPtr<Omega::MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
+				std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
 				if (i==m_mapStubIds.end())
 					OMEGA_THROW("Bad stub id");
 				ptrStub = i->second;
@@ -559,7 +559,7 @@ void StdObjectManager::Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Ome
 		// Ask the stub to make the call
 		ptrStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
 		// Make sure we release the exception
 		ObjectPtr<IException> ptrE;
@@ -618,8 +618,8 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 		OMEGA_THROW("No handler for interface");
 
 	// Generate a new key and stub pair
-	ObjectPtr<Omega::MetaInfo::IWireStub> ptrStub;
-	Omega::uint32_t uId = 0;
+	ObjectPtr<MetaInfo::IWireStub> ptrStub;
+	uint32_t uId = 0;
 	try
 	{
 		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
@@ -636,7 +636,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 			OMEGA_THROW("No remote handler for interface");
 
 		// Add to the map...
-		m_mapStubIds.insert(std::map<Omega::uint32_t,ObjectPtr<Omega::MetaInfo::IWireStub> >::value_type(uId,ptrStub));
+		m_mapStubIds.insert(std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::value_type(uId,ptrStub));
 	}
 	catch (std::exception& e)
 	{
@@ -649,12 +649,17 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 	pStream->WriteUInt32(uId);
 }
 
-void StdObjectManager::UnmarshalInterface(Omega::Serialize::IFormattedStream* /*pStream*/, const Omega::guid_t& /*iid*/, Omega::IObject*& /*pObject*/)
+void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* /*pStream*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
 {
 	void* TODO;
 }
 
-void StdObjectManager::ReleaseStub(Omega::uint32_t /*id*/)
+void StdObjectManager::ReleaseStub(uint32_t /*id*/)
+{
+	void* TODO;
+}
+
+void StdObjectManager::CreateStaticProxy(const guid_t& /*oid*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
 {
 	void* TODO;
 }

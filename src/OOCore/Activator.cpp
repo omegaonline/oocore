@@ -5,12 +5,12 @@ using namespace OTL;
 
 void ExecProcess(const string_t& strExeName);
 
-void Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
+Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags);
 
 class ActivationImpl
 {
 public:
-	typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags, MetaInfo::interface_info<const guid_t&>::safe_class iid, MetaInfo::interface_info<IObject*&>::safe_class pObject);
+	typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
 	typedef ACE_DLL_Singleton_T<ActivationImpl,ACE_Recursive_Thread_Mutex> ACTIVATOR;
 
 	ActivationImpl();
@@ -18,7 +18,7 @@ public:
 	const ACE_TCHAR* name();
 	const ACE_TCHAR* dll_name();
 	
-	IObject* GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	Activation::IObjectFactory* GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
 };
 
 class OidNotFoundExceptionImpl :
@@ -102,7 +102,7 @@ ActivationImpl::dll_name()
 	return ACE_TEXT("OOCore");
 }
 
-IObject* ActivationImpl::GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags)
 {
 	ACE_DLL dll;
 	if (dll_name != "OOCore")
@@ -114,18 +114,16 @@ IObject* ActivationImpl::GetObjectFactory(const string_t& dll_name, const guid_t
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 
-		ObjectPtr<IObject> ptrObject;
-		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(MetaInfo::interface_info<const guid_t&>::proxy_functor(oid), MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags), MetaInfo::interface_info<const guid_t&>::proxy_functor(iid), MetaInfo::interface_info<IObject**>::proxy_functor(&ptrObject,iid)); 
+		ObjectPtr<Activation::IObjectFactory> ptrOF;
+		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(MetaInfo::interface_info<Activation::IObjectFactory*&>::proxy_functor(ptrOF),MetaInfo::interface_info<const guid_t&>::proxy_functor(oid), MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags)); 
 		if (GetObjectFactory_Exception) 
 			MetaInfo::throw_correct_exception(GetObjectFactory_Exception); 
-		return ptrObject.AddRefReturn(); 
+		return ptrOF.AddRefReturn(); 
 	}
 	else
 	{
 		// Its us!
-		IObject* pObject = 0;
-		Omega_GetObjectFactory_Impl(oid,flags,iid,pObject);
-		return pObject; 
+		return Omega_GetObjectFactory_Impl(oid,flags);
 	}
 }
 
@@ -176,18 +174,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	return guid_t::NIL;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const guid_t&,oid,(in),Activation::Flags_t,flags))
 {
 	try
 	{
-		pObject = 0;
-
 		// Try ourselves first...
 		if (flags & Activation::InProcess)
 		{
-			Omega_GetObjectFactory_Impl(oid,flags,iid,pObject);
-			if (pObject)
-				return;
+			Activation::IObjectFactory* pOF = Omega_GetObjectFactory_Impl(oid,flags);
+			if (pOF)
+				return pOF;
 		}
 
 		ObjectPtr<Registry::IRegistryKey> ptrOidsKey("Objects/OIDs");
@@ -198,9 +194,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const gu
 			ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid);
 			if (ptrOidKey->IsValue("Library"))
 			{
-				pObject = ActivationImpl::ACTIVATOR::instance()->GetObjectFactory(ptrOidKey->GetStringValue("Library"),oid,flags,iid);
-				if (pObject)
-					return;
+				Activation::IObjectFactory* pOF = ActivationImpl::ACTIVATOR::instance()->GetObjectFactory(ptrOidKey->GetStringValue("Library"),oid,flags);
+				if (pOF)
+					return pOF;
 			}			
 		}
 		
@@ -214,9 +210,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const gu
 				ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 				
 				// Change this to use monikers one day!
-				ptrROT->GetRegisteredObject(oid,iid,pObject);
+				IObject* pObject = 0;
+				ptrROT->GetRegisteredObject(oid,Activation::IID_IObjectFactory,pObject);
 				if (pObject)
-					return;
+					return static_cast<Activation::IObjectFactory*>(pObject);
 				
 				// If we have been told not to launch, break out of the loop
 				if (flags & Activation::DontLaunch || !ptrOidsKey->IsSubKey(oid))
@@ -239,13 +236,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const gu
 	}
 			
 	Activation::IOidNotFoundException::Throw(oid);
+	return 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_CreateObject,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 {
-	IObject* pObj = 0;
-	Activation_GetObjectFactory_Impl(oid,flags,Activation::IID_IObjectFactory,pObj);
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObj));
+	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
 	ptrOF->CreateObject(pOuter,iid,pObject);
 }

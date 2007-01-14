@@ -310,6 +310,12 @@ inline T Omega::AtomicOpImpl<T,4>::value() const
 	return m_value;
 }
 
+template <class T>
+inline T& Omega::AtomicOpImpl<T,4>::value()
+{
+	return m_value;
+}
+
 #endif
 
 // SOME OLD CRAP THAT WILL BE USEFUL SOON...

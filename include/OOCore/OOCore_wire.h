@@ -21,12 +21,14 @@ namespace Omega
 			virtual uint32_t ReadUInt32() = 0;
 			virtual uint64_t ReadUInt64() = 0;
 			virtual guid_t ReadGuid() = 0;
+			virtual string_t ReadString() = 0;
 			
 			virtual void WriteBoolean(bool_t val) = 0;
 			virtual void WriteUInt16(uint16_t val) = 0;
 			virtual void WriteUInt32(uint32_t val) = 0;
 			virtual void WriteUInt64(const uint64_t& val) = 0;
 			virtual void WriteGuid(const guid_t& val) = 0;
+			virtual void WriteString(const string_t& val) = 0;
 		};
 		OMEGA_DECLARE_IID(IFormattedStream);
 	}
@@ -84,19 +86,71 @@ namespace Omega
 			val = pStream->ReadGuid();
 		}
 
+		template <>
+		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)
+		{
+			val = pStream->ReadString();
+		}
+
 		template <class I>
 		inline static void wire_read(IWireManager* pManager, Serialize::IFormattedStream* pStream, I*& val, const guid_t iid = iid_traits<I>::GetIID())
 		{
-			pManager->UnmarshalInterface(pStream,iid,val);
+			IObject* pObject = 0;
+			pManager->UnmarshalInterface(pStream,iid,pObject);
+			val = static_cast<I*>(pObject);
 		}
 
 		template <class T>
 		static void wire_write(IWireManager*, Serialize::IFormattedStream*, const T&);
 
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, byte_t val)
+		{
+			pStream->WriteByte(val);
+		}
+
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, bool_t val)
+		{
+			pStream->WriteBoolean(val);
+		}
+
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t val)
+		{
+			pStream->WriteUInt16(val);
+		}
+
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t val)
+		{
+			pStream->WriteUInt32(val);
+		}
+
+		template <>
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const uint64_t& val)
+		{
+			pStream->WriteUInt64(val);
+		}
+
+		template <>
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const guid_t& val)
+		{
+			pStream->WriteGuid(val);
+		}
+
+		template <>
+		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const string_t& val)
+		{
+			pStream->WriteString(val);
+		}
+
+		template <class I>
+		inline static void wire_write(IWireManager* pManager, Serialize::IFormattedStream* pStream, I* val, const guid_t iid = iid_traits<I>::GetIID())
+		{
+			pManager->MarshalInterface(pStream,val,iid);
+		}
+
 		template <class T>
 		struct std_wire_functor
 		{
-			std_wire_functor() : m_val(m_fixed)
+			std_wire_functor(IWireManager* = 0) : m_val(m_fixed)
 			{}
 
 			std_wire_functor(const T& val) : m_fixed(val), m_val(m_fixed)
@@ -144,7 +198,10 @@ namespace Omega
 		template <class T>
 		struct std_wire_functor<const T>
 		{
-			std_wire_functor() : m_actual()
+			std_wire_functor(IWireManager* pManager = 0) : m_actual(pManager)
+			{}
+
+			std_wire_functor(IWireManager* pManager, const guid_t& iid) : m_actual(pManager,iid)
 			{}
 
 			std_wire_functor(const T& val) : m_actual(val)
@@ -172,9 +229,9 @@ namespace Omega
 				return *this;
 			}
 
-			void attach(T& val_ref)
+			void attach(const T& val_ref)
 			{
-				m_actual.attach(val_ref);
+				m_actual.attach(const_cast<T&>(val_ref));
 			}
 
 			void read(IWireManager* pManager, Serialize::IFormattedStream* pStream)
@@ -217,11 +274,11 @@ namespace Omega
 		template <class T>
 		struct std_wire_functor<T&>
 		{
-			std_wire_functor() : m_actual()
+			std_wire_functor(IWireManager* pManager) : m_actual(pManager)
 			{}
 
-			/*std_wire_functor(const T& val) : m_actual(val)
-			{}*/
+			std_wire_functor(IWireManager* pManager, const guid_t& iid) : m_actual(pManager,iid)
+			{}
 
 			std_wire_functor(IWireManager* pManager, Serialize::IFormattedStream* pStream) :
 				m_actual(pManager,pStream)
@@ -230,12 +287,6 @@ namespace Omega
 			std_wire_functor(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid) :
 				m_actual(pManager,pStream,iid)
 			{}
-
-			/*std_wire_functor& operator = (const T& val)
-			{
-				m_actual = val;
-				return *this;
-			}*/
 
 			void write(IWireManager* pManager, Serialize::IFormattedStream* pStream)
 			{
@@ -262,7 +313,7 @@ namespace Omega
 		template <class T>
 		struct std_wire_functor<T*>
 		{
-			std_wire_functor(uint32_t cbSize = 1) : 
+			std_wire_functor(IWireManager*, uint32_t cbSize = 1) : 
 				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
 			{
 				try
@@ -393,7 +444,7 @@ namespace Omega
 		template <class I>
 		struct iface_wire_functor<I*>
 		{
-			iface_wire_functor() :
+			iface_wire_functor(IWireManager*, const guid_t& = iid_traits<I>::GetIID()) :
 				m_fixed(0), m_pI(m_fixed)
 			{}
 
@@ -410,7 +461,7 @@ namespace Omega
 				read(pManager,pStream,iid);
 			}
 
-			std_wire_functor& operator = (I* val)
+			iface_wire_functor& operator = (I* val)
 			{
 				if (m_pI != val)
 				{
@@ -438,7 +489,7 @@ namespace Omega
 
 			void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid = iid_traits<I>::GetIID())
 			{
-				wire_read(pManager,pStream,m_pI,m_iid);
+				wire_read(pManager,pStream,m_pI,iid);
 			}
 
 			void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid = iid_traits<I>::GetIID())
@@ -455,8 +506,8 @@ namespace Omega
 			I*				m_fixed;
 			I*&				m_pI;
 
-			iface_wire_functor(const std_wire_functor&) {}
-			iface_wire_functor& operator = (const std_wire_functor&) {}
+			iface_wire_functor(const iface_wire_functor&) {}
+			iface_wire_functor& operator = (const iface_wire_functor&) {}
 		};
 
 		template <class I>
@@ -471,7 +522,7 @@ namespace Omega
 		struct IObject_WireStub : public IWireStub
 		{
 			IObject_WireStub(IWireManager* pManager, IObject* pObj, uint32_t id) : 
-				m_pManager(pManager), m_id(id), m_refcount(1), m_remote_refcount(1)
+				m_pManager(pManager), m_pI(0), m_id(id), m_refcount(1), m_remote_refcount(1)
 			{ 
 				m_pI = static_cast<I*>(pObj->QueryInterface(iid_traits<I>::GetIID()));
 				if (!m_pI)
@@ -547,6 +598,7 @@ namespace Omega
 			}
 
 			IWireManager* m_pManager;
+			I* m_pI;
 
 		private:
 			IObject_WireStub() {};
@@ -556,7 +608,6 @@ namespace Omega
 			const uint32_t m_id;
 			AtomicOp<uint32_t>::type m_refcount;
 			AtomicOp<uint32_t>::type m_remote_refcount;
-			I* m_pI;
 		};
 
 		template <class I, class Base>
@@ -648,12 +699,14 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(uint32_t,ReadUInt32,0,())
 	OMEGA_METHOD(uint64_t,ReadUInt64,0,())
 	OMEGA_METHOD(guid_t,ReadGuid,0,())
+	OMEGA_METHOD(string_t,ReadString,0,())
 	
 	OMEGA_METHOD_VOID(WriteBoolean,1,((in),bool_t,val))
 	OMEGA_METHOD_VOID(WriteUInt16,1,((in),uint16_t,val))
 	OMEGA_METHOD_VOID(WriteUInt32,1,((in),uint32_t,val))
 	OMEGA_METHOD_VOID(WriteUInt64,1,((in),const uint64_t&,val))
 	OMEGA_METHOD_VOID(WriteGuid,1,((in),const guid_t&,val))
+	OMEGA_METHOD_VOID(WriteString,1,((in),const string_t&,val))
 )
 
 #endif // OOCORE_WIRE_H_INCLUDED_

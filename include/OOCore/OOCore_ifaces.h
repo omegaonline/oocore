@@ -7,7 +7,7 @@ namespace Omega
 	{
 		interface IObjectFactory : public IObject
 		{
-			virtual void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject** ppObject) = 0;
+			virtual void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject) = 0;
 		};
 		OMEGA_DECLARE_IID(IObjectFactory);
 
@@ -54,7 +54,7 @@ OMEGA_EXPORT_INTERFACE
 	0xd94853ed, 0x35c6, 0x4594, 0x88, 0x2, 0x33, 0xf2, 0x1a, 0xbf, 0xbe, 0xbe,
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateObject,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),IObject**,ppObject))
+	OMEGA_METHOD_VOID(CreateObject,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_EXPORT_INTERFACE_DERIVED
@@ -110,19 +110,19 @@ inline void Omega::Activation::INoAggregationException::Throw(const Omega::guid_
 	Activation_INoAggregationException_Throw(oid,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject**,ppObject));
+OOCORE_EXPORTED_FUNCTION_VOID(Activation_GetObjectFactory,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
 inline Omega::IObject* Omega::Activation::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
 {
 	Omega::IObject* pObj = 0;
-	Activation_GetObjectFactory(oid,flags,iid,&pObj);
+	Activation_GetObjectFactory(oid,flags,iid,pObj);
 	return pObj;
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_CreateObject,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject**,ppObject));
+OOCORE_EXPORTED_FUNCTION_VOID(Activation_CreateObject,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
 inline Omega::IObject* Omega::Activation::CreateObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid)
 {
 	Omega::IObject* pObj = 0;
-	Activation_CreateObject(oid,flags,pOuter,iid,&pObj);
+	Activation_CreateObject(oid,flags,pOuter,iid,pObj);
 	return pObj;
 }
 

@@ -31,10 +31,10 @@ public:
 	bool_t IsValue(const string_t& name);
 	string_t GetStringValue(const string_t& name);
 	uint32_t GetUIntValue(const string_t& name);
-	void GetBinaryValue(const string_t& name, byte_t* pBuffer, uint32_t& cbLen);
+	void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer);
 	void SetStringValue(const string_t& name, const string_t& val);
 	void SetUIntValue(const string_t& name, const uint32_t& val);
-	void SetBinaryValue(const string_t& name, const byte_t* val, uint32_t cbLen);
+	void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val);
 	IRegistryKey::ValueType GetValueType(const string_t& name);
 	IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 	Omega::IEnumString* EnumSubKeys();
@@ -77,7 +77,7 @@ public:
 
 // IEnumString members
 public:
-	void Next(string_t* parrVals, uint32_t& count);
+	void Next(uint32_t& count, string_t* parrVals);
 	void Skip(uint32_t count);
 	void Reset();
 	Omega::IEnumString* Clone();
@@ -196,7 +196,7 @@ public:
 };
 
 // EnumStringImpl
-void EnumStringImpl::Next(string_t* parrVals, uint32_t& count)
+void EnumStringImpl::Next(uint32_t& count, string_t* parrVals)
 {
 	uint32_t c;
 	for (c=0;c<count && !m_iter.done();++c)
@@ -331,7 +331,7 @@ uint32_t RegistryKeyImpl::GetUIntValue(const string_t& name)
 	return static_cast<uint32_t>(val);
 }
 
-void RegistryKeyImpl::GetBinaryValue(const string_t& name, byte_t* pBuffer, uint32_t& cbLen)
+void RegistryKeyImpl::GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer)
 {
 	string_t value;
 	ValueType_Char type;
@@ -381,7 +381,7 @@ void RegistryKeyImpl::SetUIntValue(const string_t& name, const uint32_t& val)
 	set_value(m_strPath + name,ACE_TEXT_ALWAYS_CHAR(szBuf),VALUE_UINT32);
 }
 
-void RegistryKeyImpl::SetBinaryValue(const string_t& name, const byte_t* val, uint32_t cbLen)
+void RegistryKeyImpl::SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val)
 {
 	// Check for a valid name
 	if (name.IsEmpty() || name.Find('/') != -1)

@@ -8,7 +8,7 @@ class RunningObjectTableImpl :
 	public Activation::IRunningObjectTable
 {
 public:
-	void GetRegisteredObject(const guid_t& oid, const guid_t& iid, IObject** ppObject);
+	void GetRegisteredObject(const guid_t& oid, const guid_t& iid, IObject*& pObject);
 
 	BEGIN_INTERFACE_MAP(RunningObjectTableImpl)
 		INTERFACE_ENTRY(Activation::IRunningObjectTable)
@@ -21,7 +21,7 @@ Activation::IRunningObjectTable* Activation::IRunningObjectTable::GetRunningObje
 	return ObjectImpl<RunningObjectTableImpl>::CreateObject();
 }
 
-void RunningObjectTableImpl::GetRegisteredObject(const guid_t&, const guid_t&, IObject**)
+void RunningObjectTableImpl::GetRegisteredObject(const guid_t&, const guid_t&, IObject*&)
 {
 	void* TODO;
 }

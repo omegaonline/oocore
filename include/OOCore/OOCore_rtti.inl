@@ -1,6 +1,231 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
+template <class I>
+inline void Omega::MetaInfo::iface_stub_functor<I*>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
+{
+	if (pS)
+	{
+		IObject_Safe* pObjS = 0;
+		IException_Safe* pSE = pS->QueryInterface_Safe(&pObjS,IID_IObject);
+		if (pSE)
+			throw_correct_exception(pSE);
+		if (!pObjS)
+			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+		try 
+		{
+			m_pI = static_cast<I*>(lookup_proxy(pObjS,iid,false));
+			pObjS->Release_Safe();
+		}
+		catch (...)
+		{
+			if (pObjS)
+				pObjS->Release_Safe();
+			throw;
+		}
+	}
+}
+
+template <class I>
+inline void Omega::MetaInfo::iface_stub_functor<I*>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
+{
+	if (result)
+	{
+		IException_Safe* pSE = result->Release_Safe();
+		if (pSE)
+			throw_correct_exception(pSE);
+	}
+	
+	if (!m_pI)
+		result = 0;
+	else
+	{
+		IObject* pObj = m_pI->QueryInterface(IID_IObject);
+		if (!pObj)
+			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+		try
+		{
+			result = static_cast<typename interface_info<I>::safe_class*>(lookup_stub(pObj,iid));
+			pObj->Release();
+		}
+		catch (...)
+		{
+			if (pObj)
+				pObj->Release();
+			throw;
+		}
+	}
+}
+
+template <class I>
+inline void Omega::MetaInfo::iface_proxy_functor<I*>::init(I* pI, const guid_t& iid)
+{
+	if (pI)
+	{
+		IObject* pObj = 0;
+		try
+		{
+			pObj = pI->QueryInterface(IID_IObject);
+			if (!pObj)
+				INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+			m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(pObj,iid));
+			pObj->Release();
+		}
+		catch (...)
+		{
+			if (pObj)
+				pObj->Release();
+			throw;
+		}
+	}
+}
+
+template <class I>
+inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result, const guid_t& iid)
+{
+	if (result)
+		result->Release();
+
+	if (!m_pS)
+		result = 0;
+	else
+	{
+		IObject_Safe* pObjS = 0;
+		IException_Safe* pSE = m_pS->QueryInterface_Safe(&pObjS,IID_IObject);
+		if (pSE)
+			throw_correct_exception(pSE);
+		if (!pObjS)
+			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+
+		try 
+		{
+			result = static_cast<I*>(lookup_proxy(pObjS,iid,true));
+			pObjS->Release_Safe();
+		}
+		catch (...)
+		{
+			if (pObjS)
+				pObjS->Release_Safe();
+			throw;
+		}
+	}
+}
+
+template <class I>
+inline Omega::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
+{
+	if (m_cbSize > m_alloc_size)
+	{
+		delete [] m_pFunctors;
+		delete [] m_pVals;
+
+		OMEGA_THROW("Array has been resized out of bounds");
+	}
+	
+	if (m_piids)
+	{
+		for (uint32_t i=0;i<m_cbSize;++i)
+			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
+	}
+	else
+	{
+		for (uint32_t i=0;i<m_cbSize;++i)
+			m_pFunctors[i].detach(m_pResults[i],m_iid);
+	}
+
+	delete [] m_pFunctors;
+	delete [] m_pVals;
+}
+
+template <class I>
+void inline Omega::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<I>::safe_class* pVals)
+{
+	try
+	{
+		if (m_cbSize>0)
+		{
+			OMEGA_NEW(m_pFunctors,interface_info<I>::stub_functor[m_cbSize]);
+			OMEGA_NEW(m_pVals,I[m_cbSize]);
+
+			if (m_piids)
+			{
+				for (uint32_t i=0;i<m_cbSize;++i)
+					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
+			}
+			else
+			{
+				for (uint32_t i=0;i<m_cbSize;++i)
+					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
+			}
+		}
+	}
+	catch (...)
+	{
+		delete [] m_pFunctors;
+		delete [] m_pVals;
+		throw;
+	}
+}
+
+template <class I>
+inline Omega::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array()
+{
+	if (m_cbSize > m_alloc_size)
+	{
+		delete [] m_pFunctors;
+		delete [] m_pVals;
+
+		OMEGA_THROW("Array has been resized out of bounds");
+	}
+	
+	if (m_piids)
+	{
+		for (uint32_t i=0;i<m_cbSize;++i)
+			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
+	}
+	else
+	{
+		for (uint32_t i=0;i<m_cbSize;++i)
+			m_pFunctors[i].detach(m_pResults[i],m_iid);
+	}
+
+	delete [] m_pFunctors;
+	delete [] m_pVals;
+}
+
+template <class I>
+inline void Omega::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
+{
+	try
+	{
+		if (m_cbSize>0)
+		{
+			OMEGA_NEW(m_pFunctors,typename interface_info<I>::proxy_functor[m_cbSize]);
+			OMEGA_NEW(m_pVals,typename interface_info<I>::safe_class[m_cbSize]);
+
+			if (m_piids)
+			{
+				for (uint32_t i=0;i<m_cbSize;++i)
+					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
+			}
+			else
+			{
+				for (uint32_t i=0;i<m_cbSize;++i)
+					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
+			}
+		}
+	}
+	catch (...)
+	{
+		delete [] m_pFunctors;
+		delete [] m_pVals;
+		throw;
+	}
+}
+
 inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid)
 {
 	if (iid==IID_IObject)

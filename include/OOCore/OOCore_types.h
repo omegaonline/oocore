@@ -302,6 +302,26 @@ namespace Omega
 			{
 				return T();
 			}
+
+			static void set(T& v)
+			{
+				v = value();
+			}
+		};
+
+		// MSVC gets picky about uint32_t() and confuses it with size_t()
+		template <>
+		struct null_info<uint32_t>
+		{
+			static const uint32_t value()
+			{
+				return uint32_t(0);
+			}
+
+			static void set(uint32_t& v)
+			{
+				v = value();
+			}
 		};
 
 		template <class T>
@@ -311,29 +331,21 @@ namespace Omega
 			{
 				return 0;
 			}
-		};
 
-		template <>
-		struct null_info<Omega::uint32_t>
-		{
-			static const Omega::uint32_t value()
+			static void set(T*& p)
 			{
-				return 0;
+				p = 0;
+			}
+		};	
+
+		template <class T>
+		struct null_info<T&>
+		{
+			static void set(T& p)
+			{
+				null_info<T>::set(p);
 			}
 		};
-
-		template <class T>
-		void set_null(T& p)
-		{
-			p = null_info<T>::value();
-		}
-
-		template <class T>
-		void set_null(T* p)
-		{
-			if (p)
-				*p = null_info<T>::value();
-		}
 	}
 }
 

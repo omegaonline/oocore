@@ -27,10 +27,10 @@ namespace Registry
 		virtual bool_t IsValue(const string_t& name) = 0;
 		virtual string_t GetStringValue(const string_t& name) = 0;
 		virtual uint32_t GetUIntValue(const string_t& name) = 0;
-		virtual void GetBinaryValue(const string_t& name, byte_t* pBuffer, uint32_t& cbLen) = 0;
+		virtual void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer) = 0;
 		virtual void SetStringValue(const string_t& name, const string_t& val) = 0;
 		virtual void SetUIntValue(const string_t& name, const uint32_t& val) = 0;
-		virtual void SetBinaryValue(const string_t& name, const byte_t* val, uint32_t cbLen) = 0;
+		virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
 		virtual ValueType GetValueType(const string_t& name) = 0;
 		virtual IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 		virtual IEnumString* EnumSubKeys() = 0;
@@ -78,10 +78,10 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD(Omega::bool_t,IsValue,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::string_t,GetStringValue,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(uint32_t,GetUIntValue,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const Omega::string_t&,name,(out)(size_is(cbLen)),Omega::byte_t*,pBuffer,(in_out),Omega::uint32_t&,cbLen))
+	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const Omega::string_t&,name,(in_out),Omega::uint32_t&,cbLen,(out)(size_is(cbLen)),Omega::byte_t*,pBuffer))
 	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
 	OMEGA_METHOD_VOID(SetUIntValue,2,((in),const Omega::string_t&,name,(in),const Omega::uint32_t&,val))
-	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in)(size_is(cbLen)),const Omega::byte_t*,val,(in),Omega::uint32_t,cbLen))
+	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType,GetValueType,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))
 	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())

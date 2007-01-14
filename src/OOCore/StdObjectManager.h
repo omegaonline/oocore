@@ -72,7 +72,8 @@ public:
 // IWireManager members
 public:
 	void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, Omega::IObject* pObject, const Omega::guid_t& iid);
-	void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject** pObject);
+	void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
+	void ReleaseStub(Omega::uint32_t id);
 };
 
 #endif // OOCORE_OBJECT_MANAGER_H_INCLUDED_

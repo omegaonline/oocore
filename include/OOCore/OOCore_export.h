@@ -68,6 +68,13 @@
 		typedef iface_stub_functor<n_space::name*> stub_functor; \
 		typedef iface_proxy_functor<n_space::name*> proxy_functor; \
 		typedef iface_wire_functor<n_space::name*> wire_functor; \
+	}; \
+	template <> struct interface_info<n_space::name**> \
+	{ \
+		typedef interface_info<n_space::name*>::safe_class* safe_class; \
+		typedef iface_stub_functor_array<n_space::name*> stub_functor; \
+		typedef iface_proxy_functor_array<n_space::name*> proxy_functor; \
+		typedef iface_wire_functor<n_space::name*> wire_functor; \
 	};
 	 	
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
@@ -109,7 +116,7 @@
 #define OMEGA_PS_PARAM_out(t,name)
 #define OMEGA_PS_PARAM_iid_is(iid)		,iid OMEGA_PS_PARAM_iid_is_I
 #define OMEGA_PS_PARAM_iid_is_I(t,name) 
-#define OMEGA_PS_PARAM_size_is(size)	,size OMEGA_PS_PARAM_size_is_I
+#define OMEGA_PS_PARAM_size_is(size)	OMEGA_PS_PARAM_size_is_I
 #define OMEGA_PS_PARAM_size_is_I(t,name) 
 
 #define OMEGA_PS_PARAM_I(index,meta,d) \
@@ -133,7 +140,7 @@
 // Add extra meta info types here
 #define OMEGA_WIRE_READ_PARAM_in(t,name)		static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
 #define OMEGA_WIRE_READ_PARAM_in_out(t,name)	static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
-#define OMEGA_WIRE_READ_PARAM_out(t,name)		
+#define OMEGA_WIRE_READ_PARAM_out(t,name)		static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager
 #define OMEGA_WIRE_READ_PARAM_iid_is(iid)		,iid OMEGA_WIRE_READ_PARAM_iid_is_I
 #define OMEGA_WIRE_READ_PARAM_iid_is_I(t,name)
 #define OMEGA_WIRE_READ_PARAM_size_is(size)		,static_cast<const uint32_t&>(size) OMEGA_WIRE_READ_PARAM_size_is_I
@@ -174,7 +181,7 @@
 // Add extra meta info types here
 #define OMEGA_ZERO_PARAM_in(p0,p1)
 #define OMEGA_ZERO_PARAM_in_out(p0,p1)
-#define OMEGA_ZERO_PARAM_out(t,name) 	Omega::MetaInfo::set_null(name);
+#define OMEGA_ZERO_PARAM_out(t,name) 	Omega::MetaInfo::null_info<t>::set(name);
 #define OMEGA_ZERO_PARAM_iid_is(id)		OMEGA_ZERO_PARAM_iid_is_I
 #define OMEGA_ZERO_PARAM_iid_is_I(t,name) 
 #define OMEGA_ZERO_PARAM_size_is(size)	OMEGA_ZERO_PARAM_size_is_I
@@ -337,7 +344,8 @@
 		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::MetaInfo::null_info<ret_type>::value(); \
 		OMEGA_ZERO_PARAMS(param_count,params) \
 		IException_Safe* OMEGA_CONCAT(name,_Exception) = this->m_pS->OMEGA_CONCAT(name,_Safe)( \
-		interface_info<ret_type&>::proxy_functor(OMEGA_CONCAT(name,_RetVal)) OMEGA_DECLARE_PARAMS_PROXY(param_count,params) ); \
+			interface_info<ret_type&>::proxy_functor(OMEGA_CONCAT(name,_RetVal)) \
+			OMEGA_DECLARE_PARAMS_PROXY(param_count,params) ); \
 		if (OMEGA_CONCAT(name,_Exception)) throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
@@ -406,7 +414,7 @@
 		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::MetaInfo::null_info<ret_type>::value(); \
 		OMEGA_ZERO_PARAMS(param_count,params) \
 		Omega::MetaInfo::IException_Safe* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)( \
-			Omega::MetaInfo::interface_info<ret_type*>::proxy_functor(&OMEGA_CONCAT(name,_RetVal)) \
+			Omega::MetaInfo::interface_info<ret_type&>::proxy_functor(OMEGA_CONCAT(name,_RetVal)) \
 			OMEGA_DECLARE_PARAMS_PROXY(param_count,params)); \
 		if (OMEGA_CONCAT(name,_Exception)) Omega::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \

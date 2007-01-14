@@ -37,11 +37,11 @@ namespace OOCore
 	public:
 		Omega::byte_t ReadByte() 
 			{ no_access(); return 0; }
-		void ReadBytes(Omega::byte_t*, Omega::uint32_t) 
-			{ no_access(); }
+		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t*) 
+			{ cbBytes = 0; no_access(); }
 		void WriteByte(Omega::byte_t val) 
 			{ if (!write_octet(val)) throw_errno(); }
-		void WriteBytes(const Omega::byte_t* val, Omega::uint32_t cbBytes) 
+		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val) 
 			{ if (!write_octet_array(val,cbBytes)) throw_errno(); }
 
 	// IFormattedStream members
@@ -56,6 +56,8 @@ namespace OOCore
 			{ no_access(); return 0; }
 		Omega::guid_t ReadGuid()
 			{ no_access(); return Omega::guid_t::NIL; }
+		Omega::string_t ReadString()
+		{ no_access(); return Omega::string_t(); }
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) throw_errno(); }
 		void WriteUInt16(Omega::uint16_t val)
@@ -65,6 +67,8 @@ namespace OOCore
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) throw_errno(); }
 		void WriteGuid(const Omega::guid_t& val);
+		void WriteString(const Omega::string_t& val)
+		{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Length()),val)) throw_errno(); }
 	};
 
 	OMEGA_DECLARE_IID(InputCDR);
@@ -104,11 +108,11 @@ namespace OOCore
 	public:
 		Omega::byte_t ReadByte()
 			{ Omega::byte_t val; if (!read_octet(val)) throw_errno(); return val; }
-		void ReadBytes(Omega::byte_t* val, Omega::uint32_t cbBytes)
+		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) throw_errno(); }
 		void WriteByte(Omega::byte_t) 
 			{ no_access(); }
-		void WriteBytes(const Omega::byte_t*, Omega::uint32_t) 
+		void WriteBytes(Omega::uint32_t, const Omega::byte_t*) 
 			{ no_access(); }
 
 	// IFormattedStream members
@@ -122,6 +126,8 @@ namespace OOCore
 		Omega::uint64_t ReadUInt64()
 			{ Omega::uint64_t val; if (!read_ulonglong(val)) throw_errno(); return val; }
 		Omega::guid_t ReadGuid();
+		Omega::string_t ReadString()
+			{ ACE_CString val; if (!read_string(val)) throw_errno(); return Omega::string_t(val.c_str()); }
 		void WriteBoolean(Omega::bool_t) 
 			{ no_access(); }
 		void WriteUInt16(Omega::uint16_t) 
@@ -131,6 +137,8 @@ namespace OOCore
 		void WriteUInt64(const Omega::uint64_t&) 
 			{ no_access(); }
 		void WriteGuid(const Omega::guid_t&) 
+			{ no_access(); }
+		void WriteString(const Omega::string_t&) 
 			{ no_access(); }
 	};
 }

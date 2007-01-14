@@ -45,10 +45,6 @@ namespace Omega
 	namespace MetaInfo
 	{
 		template <typename T> struct iid_traits;
-		template <typename T> inline
-		const Omega::guid_t& uuidof(T&) { return iid_traits<T>::GetIID(); }
-		template <typename T> inline
-		const Omega::guid_t& uuidof(T*) { return iid_traits<T>::GetIID(); }
 	}
 
 	// The root of all objects

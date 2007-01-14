@@ -619,7 +619,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 
 	// Generate a new key and stub pair
 	ObjectPtr<Omega::MetaInfo::IWireStub> ptrStub;
-	Omega::uint32_t uId;
+	Omega::uint32_t uId = 0;
 	try
 	{
 		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
@@ -649,7 +649,12 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 	pStream->WriteUInt32(uId);
 }
 
-void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream*, const guid_t&, IObject**)
+void StdObjectManager::UnmarshalInterface(Omega::Serialize::IFormattedStream* /*pStream*/, const Omega::guid_t& /*iid*/, Omega::IObject*& /*pObject*/)
+{
+	void* TODO;
+}
+
+void StdObjectManager::ReleaseStub(Omega::uint32_t /*id*/)
 {
 	void* TODO;
 }

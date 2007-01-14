@@ -61,6 +61,18 @@ OMEGA_DEFINE_OID(Omega,OID_StdObjectManager, 0xa162a7a2, 0x6c69, 0x4ea8, 0xad, 0
 
 OMEGA_EXPORT_INTERFACE
 (
+	Omega::Remoting, IMarshal,
+	0x2b0ccbdb, 0x4f77, 0x45fe, 0x8c, 0x9c, 0xf7, 0x81, 0xc5, 0x9a, 0x9f, 0x2b,
+
+	OMEGA_METHOD(guid_t,GetUnmarshalOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
+    OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pOutput,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
+    OMEGA_METHOD(IObject*,UnmarshalObject,2,((in),Serialize::IFormattedStream*,pInput,(in),const guid_t&,iid))
+    OMEGA_METHOD_VOID(ReleaseMarshalData,1,((in),Serialize::IFormattedStream*,pInput))
+    OMEGA_METHOD_VOID(DisconnectObject,0,())
+)
+
+OMEGA_EXPORT_INTERFACE
+(
 	Omega::Remoting, IChannel,
 	0x3aa1189, 0x6f97, 0x4352, 0xa4, 0x24, 0x6, 0x2b, 0x33, 0x7, 0x7b, 0x3b,
 

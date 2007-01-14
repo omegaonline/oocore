@@ -2,6 +2,7 @@
 #define OOCORE_USER_SESSION_H_INCLUDED_
 
 #include "./Channel.h"
+#include "../OOServer/InterProcess.h"
 
 class UserSession
 {
@@ -61,9 +62,8 @@ private:
 
 	std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >	m_mapOMs;
 
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey>			m_ptrRegistry;
-	OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>	m_ptrROT;
-
+	OTL::ObjectPtr<OOServer::IInterProcess>		m_ptrServer;
+	
 	// Accessors for Channel
 	int send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
 	int send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);

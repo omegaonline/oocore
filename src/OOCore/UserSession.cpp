@@ -3,7 +3,6 @@
 #include "./UserSession.h"
 #include "./UserConnection.h"
 #include "./Session.h"
-#include "../OOServer/InterProcess.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -87,12 +86,13 @@ IException* UserSession::bootstrap()
 		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(0);
 
 		// Create a proxy to the server interface
-		IObject* pIP = 0;
-		ptrOM->CreateStaticProxy(OOServer::OID_InterProcess,OOServer::IID_IInterProcess,pIP);
-		ObjectPtr<OOServer::IInterProcess> ptrIP;
-		ptrIP.Attach(static_cast<OOServer::IInterProcess*>(pIP));
+		IObject* pSIP = 0;
+		ptrOM->CreateStaticProxy(OOServer::OID_InterProcess,OOServer::IID_IStaticInterProcess,pSIP);
+		ObjectPtr<OOServer::IStaticInterProcess> ptrSIP;
+		ptrSIP.Attach(static_cast<OOServer::IStaticInterProcess*>(pSIP));
 
-		ptrIP->Init(m_ptrRegistry,m_ptrROT);
+		// Attach to the server interface
+		m_ptrServer.Attach(ptrSIP->Init());
 	}
 	catch (Omega::IException* pE)
 	{

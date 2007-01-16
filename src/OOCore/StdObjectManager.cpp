@@ -504,8 +504,11 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 			// N.B. This will always use standard marshalling
 
 			// Read the oid and iid
-			guid_t oid = pParamsIn->ReadGuid();
-			guid_t iid = pParamsIn->ReadGuid();
+			guid_t oid;
+			Omega::MetaInfo::wire_read(this,pParamsIn,oid);
+			guid_t iid;
+			Omega::MetaInfo::wire_read(this,pParamsIn,iid);
+
 			method_id = pParamsIn->ReadUInt32();
 
 			// IObject interface calls are not allowed on static interfaces!
@@ -601,8 +604,8 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 		if (oid != guid_t::NIL)
 		{
 			// Write the marshalling oid and iid
-			pStream->WriteGuid(oid);
-			pStream->WriteGuid(iid);
+			wire_write(this,pStream,oid);
+			wire_write(this,pStream,iid);
 
 			// Let the custom handle marshalling...
 			ptrMarshal->MarshalInterface(pStream,iid,0);
@@ -644,8 +647,8 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 	}
 
 	// Write out the data
-	pStream->WriteGuid(guid_t::NIL);
-	pStream->WriteGuid(iid);
+	wire_write(this,pStream,guid_t::NIL);
+	wire_write(this,pStream,iid);
 	pStream->WriteUInt32(uId);
 }
 

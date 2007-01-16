@@ -8,7 +8,7 @@ namespace Omega
 		interface IStream : public IObject
 		{
 			virtual byte_t ReadByte() = 0;
-			virtual void ReadBytes(uint32_t& cbBytes, byte_t* val) = 0;
+			virtual uint32_t ReadBytes(uint32_t cbBytes, byte_t* val) = 0;
 			virtual void WriteByte(byte_t val) = 0;
 			virtual void WriteBytes(uint32_t cbBytes, const byte_t* val) = 0;
 		};
@@ -20,14 +20,12 @@ namespace Omega
 			virtual uint16_t ReadUInt16() = 0;
 			virtual uint32_t ReadUInt32() = 0;
 			virtual uint64_t ReadUInt64() = 0;
-			virtual guid_t ReadGuid() = 0;
 			virtual string_t ReadString() = 0;
 			
 			virtual void WriteBoolean(bool_t val) = 0;
 			virtual void WriteUInt16(uint16_t val) = 0;
 			virtual void WriteUInt32(uint32_t val) = 0;
 			virtual void WriteUInt64(const uint64_t& val) = 0;
-			virtual void WriteGuid(const guid_t& val) = 0;
 			virtual void WriteString(const string_t& val) = 0;
 		};
 		OMEGA_DECLARE_IID(IFormattedStream);
@@ -83,7 +81,11 @@ namespace Omega
 		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, guid_t& val)
 		{
-			val = pStream->ReadGuid();
+			val.Data1 = pStream->ReadUInt32();
+			val.Data2 = pStream->ReadUInt16();
+			val.Data3 = pStream->ReadUInt16();
+			if (pStream->ReadBytes(8,val.Data4) != 8)
+				OMEGA_THROW("Failed to read guid_t");
 		}
 
 		template <>
@@ -132,7 +134,10 @@ namespace Omega
 		template <>
 		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const guid_t& val)
 		{
-			pStream->WriteGuid(val);
+			pStream->WriteUInt32(val.Data1);
+			pStream->WriteUInt16(val.Data2);
+			pStream->WriteUInt16(val.Data3);
+			pStream->WriteBytes(8,val.Data4);
 		}
 
 		template <>
@@ -311,9 +316,9 @@ namespace Omega
 		};
 
 		template <class T>
-		struct std_wire_type<T*>
+		struct std_wire_type_array
 		{
-			std_wire_type(IWireManager*, uint32_t cbSize = 1) : 
+			std_wire_type_array(IWireManager*, uint32_t cbSize = 1) : 
 				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
 			{
 				try
@@ -328,7 +333,7 @@ namespace Omega
 				}
 			}
 
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, uint32_t cbSize = 1) :
+			std_wire_type_array(IWireManager* pManager, Serialize::IFormattedStream* pStream, uint32_t cbSize = 1) :
 				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
 			{
 				try
@@ -346,7 +351,7 @@ namespace Omega
 				}
 			}
 
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid, uint32_t cbSize = 1) :
+			std_wire_type_array(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid, uint32_t cbSize = 1) :
 				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
 			{
 				try
@@ -364,7 +369,7 @@ namespace Omega
 				}
 			}
 
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t* piids, uint32_t cbSize = 1) :
+			std_wire_type_array(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t* piids, uint32_t cbSize = 1) :
 				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
 			{
 				try
@@ -382,7 +387,7 @@ namespace Omega
 				}
 			}
 
-			~std_wire_type()
+			~std_wire_type_array()
 			{
 				delete [] m_pFunctors;
 				delete [] m_pVals;
@@ -421,9 +426,9 @@ namespace Omega
 			}
 
 		private:
-			typename interface_info<T>::wire_type*	m_pFunctors;
-			T*									m_pVals;
-			const uint32_t						m_alloc_size;
+			typename interface_info<T>::wire_type* m_pFunctors;
+			T*                                     m_pVals;
+			const uint32_t                         m_alloc_size;
 
 			void init(uint32_t cbSize)
 			{
@@ -437,8 +442,8 @@ namespace Omega
 				}
 			}
 
-			std_wire_type(const std_wire_type&) {};
-			std_wire_type& operator = (const std_wire_type&) {};
+			std_wire_type_array(const std_wire_type_array&) {};
+			std_wire_type_array& operator = (const std_wire_type_array&) {};
 		};
 
 		template <class I>
@@ -683,7 +688,7 @@ OMEGA_EXPORT_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(byte_t,ReadByte,0,())
-	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
+	OMEGA_METHOD(uint32_t,ReadBytes,2,((in),uint32_t,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
 	OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 	OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )
@@ -698,14 +703,12 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(uint16_t,ReadUInt16,0,())
 	OMEGA_METHOD(uint32_t,ReadUInt32,0,())
 	OMEGA_METHOD(uint64_t,ReadUInt64,0,())
-	OMEGA_METHOD(guid_t,ReadGuid,0,())
 	OMEGA_METHOD(string_t,ReadString,0,())
 	
 	OMEGA_METHOD_VOID(WriteBoolean,1,((in),bool_t,val))
 	OMEGA_METHOD_VOID(WriteUInt16,1,((in),uint16_t,val))
 	OMEGA_METHOD_VOID(WriteUInt32,1,((in),uint32_t,val))
 	OMEGA_METHOD_VOID(WriteUInt64,1,((in),const uint64_t&,val))
-	OMEGA_METHOD_VOID(WriteGuid,1,((in),const guid_t&,val))
 	OMEGA_METHOD_VOID(WriteString,1,((in),const string_t&,val))
 )
 

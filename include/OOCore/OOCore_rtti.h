@@ -36,6 +36,7 @@ namespace Omega
 		template <class T> struct std_proxy_functor;
 		template <class T> struct std_proxy_functor_array;
 		template <class T> struct std_wire_type;
+		template <class T> struct std_wire_type_array;
 
 		template <class T> struct interface_info
 		{
@@ -64,7 +65,7 @@ namespace Omega
 			typedef typename interface_info<T>::safe_class* safe_class;
 			typedef std_safe_functor<T*> stub_functor;
 			typedef std_safe_functor<T*> proxy_functor;
-			typedef std_wire_type<T*> wire_type;
+			typedef std_wire_type_array<T> wire_type;
 		};
 
 		template <class T> struct std_stub_functor<const T>
@@ -394,7 +395,7 @@ namespace Omega
 		IObject_Safe* lookup_stub(IObject* pObj, const guid_t& iid);
 		IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
 		void throw_correct_exception(IException_Safe* pE);
-		IException_Safe* return_correct_exception(IException* pE);
+		IException_Safe* return_safe_exception(IException* pE);
 
 		template <class I, class Base> struct IObject_SafeStub;
 		template <class I> struct IObject_SafeProxy;
@@ -418,7 +419,7 @@ namespace Omega
 		};
 
 		template <class I> struct iface_wire_type;
-
+		
 		template <> struct interface_info<IObject*>
 		{
 			typedef interface_info<IObject>::safe_class* safe_class;
@@ -431,7 +432,7 @@ namespace Omega
 			typedef interface_info<IObject*>::safe_class* safe_class;
 			typedef iface_stub_functor_array<IObject*> stub_functor;
 			typedef iface_proxy_functor_array<IObject*> proxy_functor;
-			typedef iface_wire_type<IObject**> wire_type;
+			typedef std_wire_type_array<IObject*> wire_type;
 		};
 				
 		template <class I, class Base> struct IException_SafeStub;
@@ -466,7 +467,7 @@ namespace Omega
 			typedef interface_info<IException*>::safe_class* safe_class;
 			typedef iface_stub_functor_array<IException*> stub_functor;
 			typedef iface_proxy_functor_array<IException*> proxy_functor;
-			typedef iface_wire_type<IException**> wire_type;
+			typedef std_wire_type_array<IException*> wire_type;
 		};
 		
 		interface IException_Safe : public IObject_Safe
@@ -540,7 +541,7 @@ namespace Omega
 				}
 				catch (IException* pE)
 				{
-					return return_correct_exception(pE);
+					return return_safe_exception(pE);
 				}
 			}
 
@@ -835,7 +836,7 @@ namespace Omega
 				}
 				catch (IException* pE)
 				{
-					return return_correct_exception(pE);
+					return return_safe_exception(pE);
 				}
 			}
 

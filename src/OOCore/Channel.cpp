@@ -12,40 +12,6 @@ OMEGA_DECLARE_IID_TRAITS(OOCore,OutputCDR)
 using namespace Omega;
 using namespace OTL;
 
-void OOCore::OutputCDR::WriteGuid(const guid_t& val)
-{
-	if (!write_ulong(val.Data1)) 
-		throw_errno();
-
-	if (!write_ushort(val.Data2)) 
-		throw_errno();
-
-	if (!write_ushort(val.Data3)) 
-		throw_errno();
-
-	if (!write_octet_array(val.Data4,sizeof(val.Data4))) 
-		throw_errno();
-}
-
-guid_t OOCore::InputCDR::ReadGuid()
-{
-	guid_t val;
-
-	if (!read_ulong(val.Data1)) 
-		throw_errno();
-
-	if (!read_ushort(val.Data2)) 
-		throw_errno();
-
-	if (!read_ushort(val.Data3)) 
-		throw_errno();
-
-	if (!read_octet_array(val.Data4,sizeof(val.Data4))) 
-		throw_errno();
-
-	return val;
-}
-
 Channel::Channel() :
 	m_pSession(0)
 {

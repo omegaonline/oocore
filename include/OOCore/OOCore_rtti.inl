@@ -301,7 +301,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 	}
 	catch (IException* pE)
 	{
-		return return_correct_exception(pE);
+		return return_safe_exception(pE);
 	}
 	
 	return 0;
@@ -484,7 +484,7 @@ inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Sa
 	return pRet;
 }
 
-inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_correct_exception(Omega::IException* pE)
+inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(Omega::IException* pE)
 {
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	IObject_Safe* pSE2 = 0;
@@ -501,7 +501,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_correct_excepti
 		}
 		catch (IException* pE2)
 		{
-			return return_correct_exception(pE2);
+			return return_safe_exception(pE2);
 		}
 	}
 	

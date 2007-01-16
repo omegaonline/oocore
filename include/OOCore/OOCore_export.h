@@ -74,7 +74,7 @@
 		typedef interface_info<n_space::name*>::safe_class* safe_class; \
 		typedef iface_stub_functor_array<n_space::name*> stub_functor; \
 		typedef iface_proxy_functor_array<n_space::name*> proxy_functor; \
-		typedef iface_wire_type<n_space::name*> wire_type; \
+		typedef std_wire_type_array<n_space::name*> wire_type; \
 	};
 	 	
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
@@ -114,9 +114,9 @@
 #define OMEGA_PS_PARAM_in(p0,p1)
 #define OMEGA_PS_PARAM_in_out(p0,p1)
 #define OMEGA_PS_PARAM_out(t,name)
-#define OMEGA_PS_PARAM_iid_is(iid)		,iid OMEGA_PS_PARAM_iid_is_I
+#define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_iid_is_I
 #define OMEGA_PS_PARAM_iid_is_I(t,name) 
-#define OMEGA_PS_PARAM_size_is(size)	OMEGA_PS_PARAM_size_is_I
+#define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_size_is_I
 #define OMEGA_PS_PARAM_size_is_I(t,name) 
 
 #define OMEGA_PS_PARAM_I(index,meta,d) \
@@ -138,12 +138,12 @@
 
 
 // Add extra meta info types here
-#define OMEGA_WIRE_READ_PARAM_in(t,name)		static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
-#define OMEGA_WIRE_READ_PARAM_in_out(t,name)	static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
-#define OMEGA_WIRE_READ_PARAM_out(t,name)		static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager
-#define OMEGA_WIRE_READ_PARAM_iid_is(iid)		,iid OMEGA_WIRE_READ_PARAM_iid_is_I
+#define OMEGA_WIRE_READ_PARAM_in(t,name)        static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
+#define OMEGA_WIRE_READ_PARAM_in_out(t,name)    static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
+#define OMEGA_WIRE_READ_PARAM_out(t,name)       static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager
+#define OMEGA_WIRE_READ_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PARAM_iid_is_I
 #define OMEGA_WIRE_READ_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_READ_PARAM_size_is(size)		,static_cast<const uint32_t&>(size) OMEGA_WIRE_READ_PARAM_size_is_I
+#define OMEGA_WIRE_READ_PARAM_size_is(size)     ,static_cast<const uint32_t&>(size) OMEGA_WIRE_READ_PARAM_size_is_I
 #define OMEGA_WIRE_READ_PARAM_size_is_I(t,name) 
 
 #define OMEGA_WIRE_READ_PARAM_I(index,meta,d) \
@@ -181,10 +181,10 @@
 // Add extra meta info types here
 #define OMEGA_ZERO_PARAM_in(p0,p1)
 #define OMEGA_ZERO_PARAM_in_out(p0,p1)
-#define OMEGA_ZERO_PARAM_out(t,name) 	Omega::MetaInfo::null_info<t>::set(name);
-#define OMEGA_ZERO_PARAM_iid_is(id)		OMEGA_ZERO_PARAM_iid_is_I
+#define OMEGA_ZERO_PARAM_out(t,name)       Omega::MetaInfo::null_info<t>::set(name);
+#define OMEGA_ZERO_PARAM_iid_is(id)        OMEGA_ZERO_PARAM_iid_is_I
 #define OMEGA_ZERO_PARAM_iid_is_I(t,name) 
-#define OMEGA_ZERO_PARAM_size_is(size)	OMEGA_ZERO_PARAM_size_is_I
+#define OMEGA_ZERO_PARAM_size_is(size)     OMEGA_ZERO_PARAM_size_is_I
 #define OMEGA_ZERO_PARAM_size_is_I(t,name) 
 
 #define OMEGA_ZERO_PARAM_II(index,meta,d) \
@@ -228,7 +228,7 @@
 		} \
 		catch (IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return return_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+			return return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
 		} \
 	}
 	
@@ -242,7 +242,7 @@
 		} \
 		catch (IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return return_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+			return return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
 		} \
 	}
 
@@ -402,7 +402,7 @@
 	{ \
 		OMEGA_ZERO_PARAMS(param_count,params) \
 		Omega::MetaInfo::IException_Safe* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_PROXY_VOID(param_count,params)); \
-		if (OMEGA_CONCAT(name,_Exception)) throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+		if (OMEGA_CONCAT(name,_Exception)) Omega::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 	}
 
 #define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
@@ -445,7 +445,7 @@
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return Omega::MetaInfo::return_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+			return Omega::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
 		} \
 	} \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))
@@ -461,7 +461,7 @@
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return Omega::MetaInfo::return_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+			return Omega::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
 		} \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))

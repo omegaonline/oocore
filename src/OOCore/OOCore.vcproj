@@ -180,9 +180,6 @@
 				RelativePath=".\ROT.cpp">
 			</File>
 			<File
-				RelativePath=".\Session.cpp">
-			</File>
-			<File
 				RelativePath=".\StdObjectManager.cpp">
 			</File>
 			<File

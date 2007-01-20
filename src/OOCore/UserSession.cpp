@@ -112,7 +112,7 @@ int UserSession::get_port(u_short& uPort)
 	{
 		if (ACE_OS::read(file,&pid,sizeof(pid)) == sizeof(pid))
 		{
-            // Check if the process is still running...
+			// Check if the process is still running...
 			if (ACE::process_active(pid)!=1)
 			{
 				pid = ACE_INVALID_PID;
@@ -128,9 +128,7 @@ int UserSession::get_port(u_short& uPort)
 		// Launch the server
 		
 		// Find what the server is called
-		ACE_TString strExec;
-		if (strExec.empty())
-			strExec = ACE_OS::getenv("OOSERVER");
+		ACE_TString strExec = ACE_OS::getenv("OOSERVER");
 		if (strExec.empty())
 			strExec = "OOServer";
 
@@ -174,6 +172,7 @@ int UserSession::get_port(u_short& uPort)
 			return -1;
 		}
 
+#ifndef OMEGA_WIN32
 		// Check the pids match
 		if (pid != process.getpid())
 		{
@@ -181,6 +180,7 @@ int UserSession::get_port(u_short& uPort)
 			ACE_OS::close(file);
 			return -1;
 		}
+#endif
 	}
 
 	// Get the port number from the binding
@@ -399,7 +399,7 @@ int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_B
 	ACE_CDR::ULong trans_id = static_cast<ACE_CDR::ULong>(trans);
 
 	// Write the header info
-	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (build_header(dest_channel_id,trans_id,header,mb,*deadline) != 0)
 		return -1;
 	
@@ -450,7 +450,7 @@ int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_B
 int UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
-	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (build_header(dest_channel_id,0,header,mb,*deadline) == -1)
 		return -1;
 
@@ -501,8 +501,10 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	if (!header.good_bit())
 		return -1;
 
+#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
+#endif
 
 	// Write the request stream	
 	header.write_octet_array_mb(mb);
@@ -526,7 +528,7 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	}
 
 	// Write the header info
-	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
@@ -544,8 +546,10 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	if (!header.good_bit())
 		return -1;
 
+#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
+#endif
 
 	// Write the request stream	
 	header.write_octet_array_mb(mb);

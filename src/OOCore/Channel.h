@@ -55,7 +55,7 @@ namespace OOCore
 		Omega::uint64_t ReadUInt64() 
 			{ no_access(); return 0; }
 		Omega::string_t ReadString()
-		{ no_access(); return Omega::string_t(); }
+			{ no_access(); return Omega::string_t(); }
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) throw_errno(); }
 		void WriteUInt16(Omega::uint16_t val)
@@ -65,7 +65,7 @@ namespace OOCore
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) throw_errno(); }
 		void WriteString(const Omega::string_t& val)
-		{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Length()),val)) throw_errno(); }
+			{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Length()),val)) throw_errno(); }
 	};
 
 	OMEGA_DECLARE_IID(InputCDR);

@@ -32,12 +32,6 @@ guid_t NoInterfaceExceptionImpl::GetUnsupportedIID()
 	return m_iid;
 }
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions contain unreachable code, which we know about, so shut up the warning
-#pragma warning(push)
-#pragma warning(disable : 4702)
-#endif
-
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))
 {
 	ObjectImpl<RealExceptionImpl>* pExcept = ObjectImpl<RealExceptionImpl>::CreateObject();
@@ -50,13 +44,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const guid_t&,iid,(in),const char_t*,source))
 {
 	ObjectImpl<NoInterfaceExceptionImpl>* pExcept = ObjectImpl<NoInterfaceExceptionImpl>::CreateObject();
-	pExcept->m_strDesc = "Object does not support the requested interface {" + iid + "}.";
+	pExcept->m_strDesc = "Object does not support the requested interface";
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;
 	throw pExcept;
 }
-
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions contain unreachable code, which we know about, so shut up the warning
-#pragma warning(pop)
-#endif

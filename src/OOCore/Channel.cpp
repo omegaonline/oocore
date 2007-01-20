@@ -55,8 +55,6 @@ Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_
 			UserSession::Request* response = 0;
 			if (m_pSession->send_synch(m_id,request,response,&deadline) != 0)
 				OOCORE_THROW_LASTERROR();
-
-
 		}
 		else
 		{

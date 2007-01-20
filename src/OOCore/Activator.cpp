@@ -10,7 +10,6 @@ Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activ
 class ActivationImpl
 {
 public:
-	typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
 	typedef ACE_DLL_Singleton_T<ActivationImpl,ACE_Recursive_Thread_Mutex> ACTIVATOR;
 
 	ActivationImpl();
@@ -110,12 +109,17 @@ Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll
         if (dll.open(ACE_TEXT_CHAR_TO_TCHAR(dll_name)) != 0)
 			ILibraryNotFoundException_Throw(dll_name);
 
+		typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
 		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(ACE_TEXT("Omega_GetObjectFactory_Safe"));
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 
 		ObjectPtr<Activation::IObjectFactory> ptrOF;
-		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(MetaInfo::interface_info<Activation::IObjectFactory*&>::proxy_functor(ptrOF),MetaInfo::interface_info<const guid_t&>::proxy_functor(oid), MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags)); 
+		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
+			MetaInfo::interface_info<Activation::IObjectFactory*&>::proxy_functor(ptrOF),
+			MetaInfo::interface_info<const guid_t&>::proxy_functor(oid),
+			MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags)); 
+
 		if (GetObjectFactory_Exception) 
 			MetaInfo::throw_correct_exception(GetObjectFactory_Exception); 
 		return ptrOF.AddRefReturn(); 
@@ -126,12 +130,6 @@ Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll
 		return Omega_GetObjectFactory_Impl(oid,flags);
 	}
 }
-
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions contain unreachable code, which we know about, so shut up the warning
-#pragma warning(push)
-#pragma warning(disable : 4702)
-#endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_IOidNotFoundException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
@@ -150,11 +148,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,(
 	pNCE->m_oid = oid;
 	throw pNCE;
 }
-
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions contain unreachable code, which we know about, so shut up the warning
-#pragma warning(pop)
-#endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
 {

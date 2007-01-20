@@ -1,38 +1,35 @@
 #include "OOCore_precomp.h"
 
-struct StringNode
+namespace 
 {
-	StringNode() : m_refcount(1)
-	{}
-
-	StringNode(const Omega::char_t* sz) : m_str(sz), m_refcount(1)
-	{}
-
-	StringNode(const ACE_String_Base<Omega::char_t>& s) : m_str(s), m_refcount(1)
-	{}
-
-    ACE_String_Base<Omega::char_t>		m_str;
-
-	void AddRef() const
+	struct StringNode
 	{
-		++m_refcount;
-	}
+		StringNode() : m_refcount(1)
+		{}
 
-	void Release()
-	{
-		if (--m_refcount==0)
-			delete this;
-	}
+		StringNode(const Omega::char_t* sz) : m_str(sz), m_refcount(1)
+		{}
 
-private:
-	mutable Omega::AtomicOp<Omega::uint32_t>::type	m_refcount;
-};
+		StringNode(const ACE_String_Base<Omega::char_t>& s) : m_str(s), m_refcount(1)
+		{}
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions contain unreachable code, which we know about, so shut up the warning
-#pragma warning(push)
-#pragma warning(disable : 4702)
-#endif
+		void AddRef()
+		{
+			++m_refcount;
+		}
+
+		void Release()
+		{
+			if (--m_refcount==0)
+				delete this;
+		}
+
+		ACE_String_Base<Omega::char_t>	m_str;
+
+	private:
+		Omega::AtomicOp<Omega::uint32_t>::type	m_refcount;
+	};
+}
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,())
 {
@@ -50,8 +47,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor2,1,((in),const Omega::char_t
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor3,1,((in),const void*,s1))
 {
-	static_cast<const StringNode*>(s1)->AddRef();
-	return const_cast<void*>(s1);
+	StringNode* pNode;
+	OMEGA_NEW(pNode,StringNode(static_cast<const StringNode*>(s1)->m_str));
+	return pNode;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(string_t__dctor,1,((in),void*,s1))
@@ -62,8 +60,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(string_t__dctor,1,((in),void*,s1))
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_1,2,((in),void*,s1,(in),const void*,s2))
 {
 	static_cast<StringNode*>(s1)->Release();
-	static_cast<const StringNode*>(s2)->AddRef();
-	return const_cast<void*>(s2);
+
+	StringNode* pNode;
+	OMEGA_NEW(pNode,StringNode(static_cast<const StringNode*>(s2)->m_str));
+	return pNode;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_2,2,((in),void*,s1,(in),const Omega::char_t*,sz))
@@ -200,12 +200,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 	return s2;
 }
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions warn about 64bit support under MSVC
-#pragma warning(push)
-#pragma warning(disable : 4267)
-#endif
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find1,3,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos))
 {
 	return static_cast<const StringNode*>(s1)->m_str.find(static_cast<const StringNode*>(s2)->m_str,pos);
@@ -225,11 +219,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_len,1,((in),const void*,s1))
 {
 	return static_cast<const StringNode*>(s1)->m_str.length();
 }
-
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions warn about 64bit support under MSVC
-#pragma warning(pop)
-#endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_left,2,((in),const void*,s1,(in),size_t,length))
 {
@@ -268,15 +257,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(string_t_clear,1,((in),void*,s1))
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,guid_t_eq,2,((in),const Omega::guid_t&,lhs,(in),const Omega::guid_t&,rhs))
 {
-	return (lhs.Data1==rhs.Data1 &&
-			lhs.Data2==rhs.Data2 &&
-			lhs.Data3==rhs.Data3 &&
-			ACE_OS::memcmp(lhs.Data4,rhs.Data4,8)==0);
+	return (lhs.Data1==rhs.Data1 && lhs.Data2==rhs.Data2 && lhs.Data3==rhs.Data3 && ACE_OS::memcmp(lhs.Data4,rhs.Data4,8)==0);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,guid_t_less,2,((in),const Omega::guid_t&,lhs,(in),const Omega::guid_t&,rhs))
 {
-	return ACE_OS::memcmp(&lhs,&rhs,sizeof(Omega::guid_t))<0;
+	return (ACE_OS::memcmp(&lhs,&rhs,sizeof(Omega::guid_t)) < 0);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Omega::char_t*,sz))
@@ -286,11 +272,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 
 	if (::sscanf(sz,
 		"{%8x-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
-        &data[0],
-        &data[1],
-        &data[2],
-        &data[3],
-        &data[4],
+		&data[0],
+		&data[1],
+		&data[2],
+		&data[3],
+		&data[4],
 		&data[5],
 		&data[6],
 		&data[7],
@@ -338,8 +324,3 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,m1))
 {
 	static_cast<ACE_Recursive_Thread_Mutex*>(m1)->release();
 }
-
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// These functions contain unreachable code, which we know about, so shut up the warning
-#pragma warning(pop)
-#endif

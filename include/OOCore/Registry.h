@@ -14,6 +14,7 @@ namespace Registry
 			UInt32 = 1,
 			Binary = 2
 		};
+		typedef byte_t ValueType_t;
 
 		enum OpenFlags
 		{
@@ -31,7 +32,7 @@ namespace Registry
 		virtual void SetStringValue(const string_t& name, const string_t& val) = 0;
 		virtual void SetUIntValue(const string_t& name, const uint32_t& val) = 0;
 		virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
-		virtual ValueType GetValueType(const string_t& name) = 0;
+		virtual ValueType_t GetValueType(const string_t& name) = 0;
 		virtual IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 		virtual IEnumString* EnumSubKeys() = 0;
 		virtual IEnumString* EnumValues() = 0;
@@ -62,7 +63,7 @@ namespace Registry
 
 	interface IWrongValueTypeException : public IException
 	{
-		virtual IRegistryKey::ValueType GetValueType() = 0;
+		virtual IRegistryKey::ValueType_t GetValueType() = 0;
 	};
 	OMEGA_DECLARE_IID(IWrongValueTypeException);
 }
@@ -82,7 +83,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
 	OMEGA_METHOD_VOID(SetUIntValue,2,((in),const Omega::string_t&,name,(in),const Omega::uint32_t&,val))
 	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
-	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType,GetValueType,1,((in),const Omega::string_t&,name))
+	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))
 	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())
 	OMEGA_METHOD(IEnumString*,EnumValues,0,())
@@ -105,7 +106,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	0x96b103c, 0x360f, 0x4ada, 0x80, 0x6f, 0xd3, 0x37, 0xd6, 0x32, 0x2e, 0xb6,
 
 	// Methods
-	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType,GetValueType,0,())
+	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType_t,GetValueType,0,())
 )
 
 OMEGA_EXPORT_INTERFACE_DERIVED

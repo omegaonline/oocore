@@ -26,7 +26,7 @@
 #endif /* _WIN64 || WIN64 */
 
 #define OMEGA_HAS_BUILTIN_ATOMIC_OP_4
-#ifdef OMEGA_WIN64
+#if defined(OMEGA_WIN64)
 #define OMEGA_HAS_BUILTIN_ATOMIC_OP_8
 #endif
 

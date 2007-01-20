@@ -488,7 +488,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(
 {
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	IObject_Safe* pSE2 = 0;
-	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,pE->GetActualIID());
+	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,pE->ActualIID());
 	pE->Release();
 
 	if (pSE3)
@@ -497,7 +497,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(
 	{
 		try
 		{
-			INoInterfaceException::Throw(pE->GetActualIID(),OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(pE->ActualIID(),OMEGA_FUNCNAME);
 		}
 		catch (IException* pE2)
 		{
@@ -511,7 +511,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(
 inline void Omega::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 {
 	guid_t iid;
-	IException_Safe* pSE2 = pSE->GetActualIID_Safe(&iid);
+	IException_Safe* pSE2 = pSE->ActualIID_Safe(&iid);
 	if (pSE2)
 		throw_correct_exception(pSE2);
 	else

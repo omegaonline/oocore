@@ -202,7 +202,19 @@ void StdObjectManager::ReleaseStub(uint32_t /*id*/)
 	void* TODO;
 }
 
-void StdObjectManager::CreateStaticProxy(const guid_t& /*oid*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
+void StdObjectManager::CreateUnboundProxy(const guid_t& /*oid*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
 {
 	void* TODO;
+}
+
+Omega::Serialize::IFormattedStream* StdObjectManager::CreateOutputStream()
+{
+	void* TODO;
+	return 0;
+}
+
+Omega::Serialize::IFormattedStream* StdObjectManager::SendAndReceive(Omega::Serialize::IFormattedStream* /*pParams*/)
+{
+	void* TODO;
+	return 0;
 }

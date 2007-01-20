@@ -79,7 +79,7 @@
 /////////////////////////////////////////////////
 // Include Platform SDK components
 
-#ifdef OMEGA_WIN32
+#if defined(ACE_WIN32)
 // For the Windows path functions
 #include <shlwapi.h>
 #include <shlobj.h>

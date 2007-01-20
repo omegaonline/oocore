@@ -37,8 +37,8 @@ namespace OOCore
 	public:
 		Omega::byte_t ReadByte() 
 			{ no_access(); return 0; }
-		Omega::uint32_t ReadBytes(Omega::uint32_t, Omega::byte_t*) 
-			{ no_access(); return 0; }
+		void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
+			{ no_access(); }
 		void WriteByte(Omega::byte_t val) 
 			{ if (!write_octet(val)) throw_errno(); }
 		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val) 
@@ -105,8 +105,8 @@ namespace OOCore
 	public:
 		Omega::byte_t ReadByte()
 			{ Omega::byte_t val; if (!read_octet(val)) throw_errno(); return val; }
-		Omega::uint32_t ReadBytes(Omega::uint32_t cbBytes, Omega::byte_t* val)
-			{ if (!read_octet_array(val,cbBytes)) throw_errno(); return cbBytes; }
+		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
+			{ if (!read_octet_array(val,cbBytes)) throw_errno(); }
 		void WriteByte(Omega::byte_t) 
 			{ no_access(); }
 		void WriteBytes(Omega::uint32_t, const Omega::byte_t*) 

@@ -87,7 +87,7 @@ IException* UserSession::bootstrap()
 
 		// Create a proxy to the server interface
 		IObject* pSIP = 0;
-		ptrOM->CreateStaticProxy(OOServer::OID_InterProcess,OOServer::IID_IStaticInterProcess,pSIP);
+		ptrOM->CreateUnboundProxy(OOServer::OID_InterProcess,OOServer::IID_IStaticInterProcess,pSIP);
 		ObjectPtr<OOServer::IStaticInterProcess> ptrSIP;
 		ptrSIP.Attach(static_cast<OOServer::IStaticInterProcess*>(pSIP));
 
@@ -172,7 +172,7 @@ int UserSession::get_port(u_short& uPort)
 			return -1;
 		}
 
-#ifndef OMEGA_WIN32
+#if !defined(ACE_WIN32)
 		// Check the pids match
 		if (pid != process.getpid())
 		{
@@ -203,7 +203,7 @@ int UserSession::get_port(u_short& uPort)
 	// Send our uid or pid
 	Session::Request request = {0};
 	request.cbSize = sizeof(request);
-#ifdef OMEGA_WIN32
+#if defined(ACE_WIN32)
 	request.uid = ACE_OS::getpid();
 #else
 	request.uid = ACE_OS::getuid();

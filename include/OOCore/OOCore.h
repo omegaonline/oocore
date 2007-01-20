@@ -3,7 +3,7 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#ifdef OOCORE_BUILD_DLL
+#if defined(OOCORE_BUILD_DLL)
 
 #define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)

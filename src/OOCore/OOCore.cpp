@@ -12,7 +12,7 @@ BEGIN_LIBRARY_OBJECT_MAP(OOCore)
 	OBJECT_MAP_ENTRY(StdObjectManager)
 END_LIBRARY_OBJECT_MAP()
 
-#if defined(OMEGA_WIN32)
+#if defined(ACE_WIN32)
 BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 {
 	if (reason == DLL_PROCESS_ATTACH)
@@ -95,7 +95,7 @@ void ExecProcess(const string_t& strExeName)
 
 	// Set the creation flags
 	u_long flags = 0;
-#if defined (OMEGA_WIN32)
+#if defined (ACE_WIN32)
 	flags |= CREATE_NEW_CONSOLE;
 #endif
 	options.creation_flags(flags);

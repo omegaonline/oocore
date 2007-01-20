@@ -35,7 +35,7 @@ public:
 	void SetStringValue(const string_t& name, const string_t& val);
 	void SetUIntValue(const string_t& name, const uint32_t& val);
 	void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val);
-	IRegistryKey::ValueType GetValueType(const string_t& name);
+	IRegistryKey::ValueType_t GetValueType(const string_t& name);
 	IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 	Omega::IEnumString* EnumSubKeys();
 	Omega::IEnumString* EnumValues();
@@ -51,7 +51,7 @@ public:
 	};
 	static bool get_value(const string_t& name, string_t& value, ValueType_Char& type);
 	static void set_value(const string_t& name, const string_t& value, ValueType_Char type);
-	static IRegistryKey::ValueType cast(ValueType_Char val);
+	static IRegistryKey::ValueType_t cast(ValueType_Char val);
 
 	string_t m_strPath;
 
@@ -91,10 +91,10 @@ public:
 		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IWrongValueTypeException>)
 	END_INTERFACE_MAP()
 
-	Registry::IRegistryKey::ValueType m_type;
+	Registry::IRegistryKey::ValueType_t m_type;
 
 public:
-	Registry::IRegistryKey::ValueType GetValueType()
+	Registry::IRegistryKey::ValueType_t GetValueType()
 	{
 		return m_type;
 	}
@@ -399,7 +399,7 @@ void RegistryKeyImpl::SetBinaryValue(const string_t& name, uint32_t cbLen, const
     set_value(m_strPath + name,reinterpret_cast<char_t*>(buf),VALUE_BINARY);
 }
 
-Registry::IRegistryKey::ValueType RegistryKeyImpl::cast(ValueType_Char val)
+Registry::IRegistryKey::ValueType_t RegistryKeyImpl::cast(ValueType_Char val)
 {
 	switch (val)
 	{
@@ -420,7 +420,7 @@ Registry::IRegistryKey::ValueType RegistryKeyImpl::cast(ValueType_Char val)
 	return IRegistryKey::Binary;
 }
 
-Registry::IRegistryKey::ValueType RegistryKeyImpl::GetValueType(const string_t& name)
+Registry::IRegistryKey::ValueType_t RegistryKeyImpl::GetValueType(const string_t& name)
 {
 	string_t value;
 	ValueType_Char type;
@@ -622,7 +622,7 @@ Binding::Binding() :
 {
 	name_options()->database(ACE_TEXT("OmegaOnline.reg_db"));
 	
-#ifdef OMEGA_WIN32
+#if defined(ACE_WIN32)
 	ACE_TCHAR szBuf[MAX_PATH] = {0};
 	if (::SHGetSpecialFolderPath(0,szBuf,CSIDL_COMMON_APPDATA,0))
 	{
@@ -676,7 +676,7 @@ errored:
 	}	
 #endif
 
-#else // OMEGA_WIN32
+#else // ACE_WIN32
 	#warning Need to sort this out under *NIX!
 	// HUGE HACK TO GET THIS WORKING UNDER *NIX
 	name_options()->namespace_dir(ACE_TEXT("/tmp/"));

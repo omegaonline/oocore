@@ -15,7 +15,7 @@
 
 #include <ace/SString.h>
 
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 #include <shlobj.h>
 #include <shlwapi.h>
 #endif
@@ -24,7 +24,7 @@
 
 namespace Session
 {
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 	typedef DWORD TOKEN;
 #else
 	typedef uid_t TOKEN;
@@ -64,7 +64,7 @@ namespace Session
 	{
 	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
 
-	#ifdef ACE_WIN32
+	#if defined(ACE_WIN32)
 
 		ACE_TCHAR szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);

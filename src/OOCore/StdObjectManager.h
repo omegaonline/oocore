@@ -68,13 +68,15 @@ public:
 	void Connect(Omega::Remoting::IChannel* pChannel);
 	void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout);
 	void Disconnect();
-	void CreateStaticProxy(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
+	void CreateUnboundProxy(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 
 // IWireManager members
 public:
 	void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, Omega::IObject* pObject, const Omega::guid_t& iid);
 	void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	void ReleaseStub(Omega::uint32_t id);
+	Omega::Serialize::IFormattedStream* CreateOutputStream();
+	Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Serialize::IFormattedStream* pParams);
 };
 
 #endif // OOCORE_OBJECT_MANAGER_H_INCLUDED_

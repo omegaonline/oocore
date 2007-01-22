@@ -310,7 +310,8 @@
 			if (iid == iid_traits<n_space::name>::GetIID()) \
 			{ \
 				*ppS = this; \
-				return this->AddRef_Safe(); \
+				this->AddRef_Safe(); \
+				return 0; \
 			} \
 			return Base::Internal_QueryInterface_Safe(ppS,iid); \
 		} \
@@ -319,7 +320,7 @@
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(unique,_WireStub) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_WireStub)(IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
+		OMEGA_CONCAT_R(unique,_WireStub)(Remoting::IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
 		{} \
 		virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) \
 		{ \
@@ -420,15 +421,14 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
 	{ \
-		Serialize::IFormattedStream* __wire__pParamsOut = m_pManager->CreateOutputStream(); \
+		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsOut(m_pManager->CreateOutputStream()); \
+		WriteKey(__wire__pParamsOut); \
 		wire_write(m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-		Serialize::IFormattedStream* __wire__pParamsIn; \
-		try { __wire__pParamsIn = m_pManager->SendAndReceive(__wire__pParamsOut); } \
-		catch (...) { __wire__pParamsOut->Release(); throw; } \
-		__wire__pParamsOut->Release(); \
-		if (__wire__pParamsIn) { \
-		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
+		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(m_pManager->SendAndReceive(0,__wire__pParamsOut)); \
+		if (__wire__pParamsIn) \
+		{ \
+			OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 		} \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
@@ -436,18 +436,18 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
 	{ \
-		Serialize::IFormattedStream* __wire__pParamsOut = m_pManager->CreateOutputStream(); \
+		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsOut(m_pManager->CreateOutputStream()); \
+		ret_type OMEGA_CONCAT(name,_RetVal) = null_info<ret_type>::value(); \
+		WriteKey(__wire__pParamsOut); \
 		wire_write(m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-		Serialize::IFormattedStream* __wire__pParamsIn; \
-		try { __wire__pParamsIn = m_pManager->SendAndReceive(__wire__pParamsOut); } \
-		catch (...) { __wire__pParamsOut->Release(); throw; } \
-		__wire__pParamsOut->Release(); \
-		ret_type OMEGA_CONCAT(name,_RetVal) = null_info<ret_type>::value(); \
-		if (__wire__pParamsIn) { \
-		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-		interface_info<ret_type>::wire_type::proxy_read(m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
-		} return OMEGA_CONCAT(name,_RetVal); \
+		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(m_pManager->SendAndReceive(0,__wire__pParamsOut)); \
+		if (__wire__pParamsIn) \
+		{ \
+			OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
+			interface_info<ret_type>::wire_type::proxy_read(m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
+		} \
+		return OMEGA_CONCAT(name,_RetVal); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
 
@@ -478,7 +478,7 @@
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(unique,_WireProxy) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_WireProxy)(IWireManager* pManager) : Base(pManager) \
+		OMEGA_CONCAT_R(unique,_WireProxy)(Remoting::IWireManager* pManager) : Base(pManager) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
 		{ \

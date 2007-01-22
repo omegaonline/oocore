@@ -93,7 +93,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,s1,(in),con
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const void*,s2))
 {
 	StringNode* pOld = static_cast<StringNode*>(s1);
-
 	StringNode* pNode;
 
 	try
@@ -115,7 +114,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const Omega::char_t*,sz))
 {
 	StringNode* pOld = static_cast<StringNode*>(s1);
-
 	StringNode* pNode;
 
 	try
@@ -196,6 +194,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 		free(pszNew);
 		throw;
 	}
+
 	free(pszNew);
 	return s2;
 }

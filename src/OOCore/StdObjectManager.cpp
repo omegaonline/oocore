@@ -5,6 +5,32 @@
 using namespace Omega;
 using namespace OTL;
 
+namespace 
+{
+	class UnboundProxy : 
+		public ObjectBase,
+		public IObject
+	{
+	public:
+		void init(Remoting::IWireManager* pManager, const guid_t& oid)
+		{
+			m_ptrManager = pManager;
+			m_oid = oid;
+		}
+
+	BEGIN_INTERFACE_MAP(UnboundProxy)
+		INTERFACE_ENTRY(IObject)
+		INTERFACE_ENTRY_FUNCTION_BLIND(QI,0)
+	END_INTERFACE_MAP()
+
+	private:
+		guid_t                            m_oid;
+		ObjectPtr<Remoting::IWireManager> m_ptrManager;
+
+		inline IObject* QI(const guid_t& iid, void*);
+	};
+}
+
 StdObjectManager::StdObjectManager() :
 	m_uNextStubId(1)
 {
@@ -32,7 +58,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 	// Process an incoming request...
 	try
 	{
-		ObjectPtr<MetaInfo::IWireStub> ptrStub;
+		ObjectPtr<Remoting::IWireStub> ptrStub;
 		uint32_t method_id;
 		
 		// Read the stub id and method id
@@ -79,7 +105,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 			{
 				ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
-				std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
+				std::map<uint32_t,ObjectPtr<Remoting::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
 				if (i==m_mapStubIds.end())
 					OMEGA_THROW("Bad stub id");
 				ptrStub = i->second;
@@ -144,8 +170,8 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 		{
 			// Write the marshalling oid and iid
 			pStream->WriteByte(1);
-			wire_write(this,pStream,oid);
-			wire_write(this,pStream,iid);
+			MetaInfo::wire_write(this,pStream,oid);
+			MetaInfo::wire_write(this,pStream,iid);
 
 			// Let the custom handle marshalling...
 			ptrMarshal->MarshalInterface(pStream,iid,0);
@@ -161,7 +187,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 		OMEGA_THROW("No handler for interface");
 
 	// Generate a new key and stub pair
-	ObjectPtr<MetaInfo::IWireStub> ptrStub;
+	ObjectPtr<Remoting::IWireStub> ptrStub;
 	uint32_t uId = 0;
 	try
 	{
@@ -179,7 +205,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 			OMEGA_THROW("No remote handler for interface");
 
 		// Add to the map...
-		m_mapStubIds.insert(std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::value_type(uId,ptrStub));
+		m_mapStubIds.insert(std::map<uint32_t,ObjectPtr<Remoting::IWireStub> >::value_type(uId,ptrStub));
 	}
 	catch (std::exception& e)
 	{
@@ -188,7 +214,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IO
 
 	// Write out the data
 	pStream->WriteByte(0);
-	wire_write(this,pStream,iid);
+	MetaInfo::wire_write(this,pStream,iid);
 	pStream->WriteUInt32(uId);
 }
 
@@ -197,24 +223,41 @@ void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* /*pStream
 	void* TODO;
 }
 
-void StdObjectManager::ReleaseStub(uint32_t /*id*/)
+void StdObjectManager::ReleaseStub(uint32_t uId)
 {
-	void* TODO;
-}
+	try
+	{
+		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
-void StdObjectManager::CreateUnboundProxy(const guid_t& /*oid*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
-{
-	void* TODO;
+		std::map<uint32_t,ObjectPtr<Remoting::IWireStub> >::iterator i=m_mapStubIds.find(uId);
+		if (i==m_mapStubIds.end())
+			OOCORE_THROW_ERRNO(EINVAL);
+
+		m_mapStubIds.erase(i);
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
 }
 
 Omega::Serialize::IFormattedStream* StdObjectManager::CreateOutputStream()
 {
-	void* TODO;
-	return 0;
+	return m_ptrChannel->CreateOutputStream();
 }
 
-Omega::Serialize::IFormattedStream* StdObjectManager::SendAndReceive(Omega::Serialize::IFormattedStream* /*pParams*/)
+Omega::Serialize::IFormattedStream* StdObjectManager::SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream)
 {
-	void* TODO;
-	return 0;
+	return m_ptrChannel->SendAndReceive(attribs,pStream);
+}
+
+void StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+{
+/*	if (pObject)
+		pObject->Release();
+
+	ObjectPtr<ObjectImpl<UnboundProxy> > ptrProxy = ObjectImpl<UnboundProxy>::CreateObjectPtr();
+	ptrProxy->init(this,oid);
+	
+	pObject = ptrProxy->QueryInterface(iid);*/
 }

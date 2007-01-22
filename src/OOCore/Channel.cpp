@@ -37,6 +37,7 @@ Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_
 {
 	void* TODO; // Sort out timeout
 	ACE_Time_Value deadline(ACE_OS::gettimeofday());
+	deadline += 5;
 
 	// QI pStream for our private interface
 	ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrOutput;

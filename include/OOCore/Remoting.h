@@ -28,13 +28,6 @@ namespace Remoting
 	{
 	};
 
-	enum MethodAttributes
-	{
-		synchronous = 1,
-		encrypted = 2
-	};
-	typedef uint16_t MethodAttributes_t;
-
 	interface IChannel : public IObject
 	{
 		virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;

@@ -13,17 +13,9 @@ inline void Omega::MetaInfo::iface_stub_functor<I*>::init(typename interface_inf
 		if (!pObjS)
 			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
 
-		try 
-		{
-			m_pI = static_cast<I*>(lookup_proxy(pObjS,iid,false));
-			pObjS->Release_Safe();
-		}
-		catch (...)
-		{
-			if (pObjS)
-				pObjS->Release_Safe();
-			throw;
-		}
+		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
+		m_pI = static_cast<I*>(lookup_proxy(pObjS,iid,false));
+		ptrObjS.detach();
 	}
 }
 
@@ -31,31 +23,17 @@ template <class I>
 inline void Omega::MetaInfo::iface_stub_functor<I*>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
 {
 	if (result)
-	{
-		IException_Safe* pSE = result->Release_Safe();
-		if (pSE)
-			throw_correct_exception(pSE);
-	}
+		result->Release_Safe();
 	
-	if (!m_pI)
-		result = 0;
-	else
+	result = 0;
+	if (m_pI)
 	{
-		IObject* pObj = m_pI->QueryInterface(IID_IObject);
-		if (!pObj)
+		auto_iface_ptr<IObject> ptrObj(m_pI->QueryInterface(IID_IObject));
+		if (!ptrObj)
 			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
 
-		try
-		{
-			result = static_cast<typename interface_info<I>::safe_class*>(lookup_stub(pObj,iid));
-			pObj->Release();
-		}
-		catch (...)
-		{
-			if (pObj)
-				pObj->Release();
-			throw;
-		}
+		result = static_cast<typename interface_info<I>::safe_class*>(lookup_stub(ptrObj,iid));
+		ptrObj.detach();
 	}
 }
 
@@ -64,22 +42,11 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::init(I* pI, const guid_t& 
 {
 	if (pI)
 	{
-		IObject* pObj = 0;
-		try
-		{
-			pObj = pI->QueryInterface(IID_IObject);
-			if (!pObj)
-				INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+		auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(IID_IObject));
+		if (!ptrObj)
+			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
 
-			m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(pObj,iid));
-			pObj->Release();
-		}
-		catch (...)
-		{
-			if (pObj)
-				pObj->Release();
-			throw;
-		}
+		m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(ptrObj,iid));
 	}
 }
 
@@ -89,9 +56,8 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result, const g
 	if (result)
 		result->Release();
 
-	if (!m_pS)
-		result = 0;
-	else
+	result = 0;
+	if (m_pS)
 	{
 		IObject_Safe* pObjS = 0;
 		IException_Safe* pSE = m_pS->QueryInterface_Safe(&pObjS,IID_IObject);
@@ -100,17 +66,9 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result, const g
 		if (!pObjS)
 			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
 
-		try 
-		{
-			result = static_cast<I*>(lookup_proxy(pObjS,iid,true));
-			pObjS->Release_Safe();
-		}
-		catch (...)
-		{
-			if (pObjS)
-				pObjS->Release_Safe();
-			throw;
-		}
+		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
+		result = static_cast<I*>(lookup_proxy(pObjS,iid,true));
+		ptrObjS.detach();
 	}
 }
 
@@ -231,16 +189,18 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 	if (iid==IID_IObject)
 	{
 		*retval = this;
-		return (*retval)->AddRef_Safe();
+		(*retval)->AddRef_Safe();
+		return 0;
 	}
 
 	*retval = 0;
 	try
 	{
-		IObject_Safe* pObjS = 0;
 		try
 		{
 			Guard<CriticalSection> guard(m_cs);
+
+			IObject_Safe* pObjS = 0;
 			std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(iid);
 			if (i == m_iid_map.end())
 			{
@@ -248,19 +208,13 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 				{
 					IException_Safe* pSE = i->second->QueryInterface_Safe(&pObjS,iid);
-					if (pSE)
+                    if (pSE)
 						return pSE;
-
 					if (pObjS)
 					{
-						pSE = i->second->AddRef_Safe();
-						if (pSE)
-						{
-							pObjS->Release_Safe();
-							return pSE;
-						}
-
+						auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 						i = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(iid,i->second)).first;
+						ptrObjS.detach();
 						break;
 					}
 				}
@@ -273,7 +227,10 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 						OMEGA_THROW("No handler for interface");
 
 					pObjS = pRtti->pfnCreateSafeStub(this,m_pObj);
+
+					auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 					i = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(iid,pObjS)).first;
+					ptrObjS.detach();
 				}
 			}
 			
@@ -282,21 +239,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 		}
 		catch (std::exception& e)
 		{
-			if (pObjS)
-				pObjS->Release_Safe();
 			OMEGA_THROW(e.what());
-		}
-		catch (IException*)
-		{
-			if (pObjS)
-				pObjS->Release_Safe();
-			throw;
-		}
-		catch (...)
-		{
-			if (pObjS)
-				pObjS->Release_Safe();
-			OMEGA_THROW("Unexpected exception type caught!");
 		}
 	}
 	catch (IException* pE)
@@ -316,7 +259,6 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 		return this;
 	}
 
-	IObject* pObj = 0;
 	try
 	{
 		Guard<CriticalSection> guard(m_cs);
@@ -326,11 +268,12 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 			// QI all entries
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				pObj = i->second->QueryInterface(iid);
-				if (pObj)
+				auto_iface_ptr<IObject> ptrObj = i->second->QueryInterface(iid);
+				if (ptrObj)
 				{
 					// If we find one, add it to the map...
 					i = m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,i->second)).first;
+					ptrObj.detach();
 					break;
 				}
 			}
@@ -342,8 +285,9 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 				if (!pRtti && !pRtti->pfnCreateSafeProxy)
 					OMEGA_THROW("No handler for interface");
 				
-				pObj = pRtti->pfnCreateSafeProxy(this,m_pS);
-				i = m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,pObj)).first;
+				auto_iface_ptr<IObject> ptrObj = pRtti->pfnCreateSafeProxy(this,m_pS);
+				i = m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,ptrObj)).first;
+				ptrObj.detach();
 			}
 		}
 
@@ -352,8 +296,6 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 	}
 	catch (std::exception& e)
 	{
-		if (pObj)
-			pObj->Release();
 		OMEGA_THROW(e.what());
 	}
 	
@@ -395,42 +337,37 @@ inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObjec
 	SafeProxyStubMap& stub_map = get_stub_map();
 	Guard<CriticalSection> guard(stub_map.m_cs);
 
-	bool bRelease = false;
-	IObject_Safe* pSafeStub = 0;
+	auto_iface_safe_ptr<IObject_Safe> ptrSafeStub;
 	try
 	{
 		std::map<void*,void*>::iterator i=stub_map.m_map.find(pObj);
 		if (i != stub_map.m_map.end())
-			pSafeStub = static_cast<IObject_Safe*>(i->second);
+		{
+			ptrSafeStub = static_cast<IObject_Safe*>(i->second);
+		}
 		else
 		{
-			SafeProxy* pSafeProxy = static_cast<SafeProxy*>(pObj->QueryInterface(IID_SafeProxy));
-			if (pSafeProxy)
+			auto_iface_ptr<SafeProxy> ptrSafeProxy(static_cast<SafeProxy*>(pObj->QueryInterface(IID_SafeProxy)));
+			if (ptrSafeProxy)
 			{
-				pSafeStub = pSafeProxy->GetSafeStub();
-				pSafeProxy->Release();
+				ptrSafeStub = ptrSafeProxy->GetSafeStub();
 			}
 			else
 			{
-                OMEGA_NEW(pSafeStub,SafeStub(pObj));
-				bRelease = true;
+                OMEGA_NEW(ptrSafeStub,SafeStub(pObj));
 			}
 			
-			stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,pSafeStub));
+			stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,ptrSafeStub));
+			ptrSafeStub->AddRef_Safe();
 		}
 	}
 	catch (std::exception& e)
 	{
-		if (pSafeStub && bRelease)
-			pSafeStub->Release_Safe();
 		OMEGA_THROW(e.what());
 	}
 
 	IObject_Safe* pRet = 0;
-	IException_Safe* pSE = pSafeStub->QueryInterface_Safe(&pRet,iid);
-	if (bRelease)
-		pSafeStub->Release_Safe();
-
+	IException_Safe* pSE = ptrSafeStub->QueryInterface_Safe(&pRet,iid);
 	if (pSE)
 		throw_correct_exception(pSE);
 
@@ -445,41 +382,37 @@ inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Sa
 	SafeProxyStubMap& proxy_map = get_proxy_map();
 	Guard<CriticalSection> guard(proxy_map.m_cs);
 
-	bool bRelease = false;
-	IObject* pSafeProxy = 0;
+	auto_iface_ptr<IObject> ptrSafeProxy;
 	try
 	{
 		std::map<void*,void*>::iterator i=proxy_map.m_map.find(pObjS);
 		if (i != proxy_map.m_map.end())
-			pSafeProxy = static_cast<IObject*>(i->second);
+		{
+			ptrSafeProxy = static_cast<IObject*>(i->second);
+		}
 		else
 		{
-			OMEGA_NEW(pSafeProxy,SafeProxy(pObjS));
-			proxy_map.m_map.insert(std::map<void*,void*>::value_type(pObjS,pSafeProxy));
-			bRelease = true;
+			OMEGA_NEW(ptrSafeProxy,SafeProxy(pObjS));
+			proxy_map.m_map.insert(std::map<void*,void*>::value_type(pObjS,ptrSafeProxy));
+			ptrSafeProxy->AddRef();
 		}
 	}
 	catch (std::exception& e)
 	{
-		if (pSafeProxy && bRelease)
-			pSafeProxy->Release();
 		OMEGA_THROW(e.what());
 	}
 
-	IObject* pRet = pSafeProxy->QueryInterface(iid);
+	IObject* pRet = ptrSafeProxy->QueryInterface(iid);
 	if (!pRet)
 	{
 		if (bPartialAllowed)
 		{
-			pRet = pSafeProxy;
-			pRet->AddRef();
+			pRet = ptrSafeProxy;
+			ptrSafeProxy.detach();
 		}
 		else
 			INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
 	}
-
-	if (bRelease)
-		pSafeProxy->Release();
 
 	return pRet;
 }
@@ -487,10 +420,9 @@ inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Sa
 inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(Omega::IException* pE)
 {
 	// Wrap with the correct _SafeStub wrapper by calling QI
+	auto_iface_ptr<IException> ptrE(pE);
 	IObject_Safe* pSE2 = 0;
 	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,pE->ActualIID());
-	pE->Release();
-
 	if (pSE3)
 		return pSE3;
 	if (!pSE2)

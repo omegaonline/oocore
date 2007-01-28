@@ -44,7 +44,21 @@ namespace Remoting
 	};
 	OMEGA_DECLARE_IID(IObjectManager);
 
-	
+	class IInterProcess : public IObject
+	{
+	public:
+		virtual Registry::IRegistryKey* GetRegistryKey() = 0;
+		virtual Activation::IRunningObjectTable* GetROT() = 0;
+	};
+	OMEGA_DECLARE_IID(IInterProcess);
+
+	class IStaticInterProcess : public IObject
+	{
+	public:
+		virtual IInterProcess* Init() = 0;
+	};
+	OMEGA_DECLARE_IID(IStaticInterProcess);
+
 
 	//void MarshalObject(Serialize::IFormattedStream* pOutput, IObject* pObject, const guid_t& iid, IMarshal::Flags_t flags);
 	//IObject* UnmarshalObject(Serialize::IFormattedStream* pInput, const guid_t& iid);*/
@@ -84,5 +98,27 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(Disconnect,0,())
 	OMEGA_METHOD_VOID(CreateUnboundProxy,3,((in),const guid_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
+
+OMEGA_EXPORT_INTERFACE
+(
+	Omega::Remoting, IInterProcess,
+	0x299da443, 0xd8de, 0x45f0, 0xb7, 0x21, 0x74, 0x90, 0xac, 0x8e, 0x60, 0x5,
+
+	OMEGA_METHOD(Registry::IRegistryKey*,GetRegistryKey,0,())
+	OMEGA_METHOD(Activation::IRunningObjectTable*,GetROT,0,())
+)
+
+OMEGA_EXPORT_INTERFACE
+(
+	Omega::Remoting, IStaticInterProcess,
+	0x355c529b, 0x579a, 0x411d, 0xb1, 0x6c, 0x31, 0x23, 0xbc, 0x85, 0x5f, 0xbf,
+
+	OMEGA_METHOD(Remoting::IInterProcess*,Init,0,())
+)
+
+namespace Omega
+{
+	OMEGA_DEFINE_OID(Remoting, OID_InterProcess, 0x525e8e60, 0xdb0f, 0x42d7, 0x93, 0x8b, 0x86, 0x7e, 0x0, 0x8b, 0xe3, 0x6);
+}
 
 #endif // OOCORE_REMOTING_H_INCLUDED_

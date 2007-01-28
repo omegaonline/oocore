@@ -29,7 +29,11 @@ IException* UserSession::init()
         return pE;
 	}
 
-	return USER_SESSION::instance()->bootstrap();
+	IException* pE = USER_SESSION::instance()->bootstrap();
+	if (pE)
+		USER_SESSION::instance()->term_i();
+	
+	return pE;
 }
 
 int UserSession::init_i()
@@ -87,9 +91,9 @@ IException* UserSession::bootstrap()
 
 		// Create a proxy to the server interface
 		IObject* pSIP = 0;
-		ptrOM->CreateUnboundProxy(OOServer::OID_InterProcess,OOServer::IID_IStaticInterProcess,pSIP);
-		ObjectPtr<OOServer::IStaticInterProcess> ptrSIP;
-		ptrSIP.Attach(static_cast<OOServer::IStaticInterProcess*>(pSIP));
+		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,Remoting::IID_IStaticInterProcess,pSIP);
+		ObjectPtr<Remoting::IStaticInterProcess> ptrSIP;
+		ptrSIP.Attach(static_cast<Remoting::IStaticInterProcess*>(pSIP));
 
 		// Attach to the server interface
 		m_ptrServer.Attach(ptrSIP->Init());
@@ -256,6 +260,8 @@ void UserSession::term_i()
 
 	// Stop the message queue
 	m_msg_queue.close();
+
+	ACE_OS::sleep(1);
 }
 
 void UserSession::connection_closed()
@@ -591,51 +597,160 @@ bool UserSession::valid_transaction(ACE_CDR::ULong trans_id)
 
 void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
+	// Init the error stream
+	ACE_OutputCDR error;
+	
+	// Find and/or create the object manager associated with src_channel_id
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(src_channel_id);
-		
-		// Convert deadline time to #msecs
-		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
-		if (wait <= ACE_Time_Value::zero)
-			OOCORE_THROW_ERRNO(ETIMEDOUT);
-		ACE_UINT64 msecs = 0;
-		static_cast<const ACE_Time_Value>(wait).msec(msecs);
-		if (msecs > ACE_UINT32_MAX)
-			msecs = ACE_UINT32_MAX;
-
-		// Wrap up the request
-		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
-		ptrRequest->init(*request->input());
-
-		// Create a response if required
-		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
-		if (trans_id != 0)
-			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
-
-		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-		try		
-		{
-			void* TODO; // Setup the CallContext...
-
-			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
-		}
-		catch (...)
-		{
-			void* TODO; // Restore CallContext
-
-			throw;
-		}
-		void* TODO; // Restore CallContext
+		ptrOM = get_object_manager(src_channel_id);
 	}
 	catch (IException* pE)
 	{
-		void* TODO; // Report the error
-
 		pE->Release();
+		if (trans_id != 0)
+		{
+			// Error code 1 - Failed to resolve ObjectManager
+			error.write_ulong(1);
+			send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+		}
+		delete request;
+		return;
+	}
+
+	// Convert deadline time to #msecs
+	ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
+	if (wait <= ACE_Time_Value::zero)
+	{
+		if (trans_id != 0)
+		{
+			// Error code 2 - Request timed out
+			error.write_ulong(2);
+			send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+		}
+		delete request;
+		return;
 	}
 	
+	ACE_UINT64 msecs = 0;
+	static_cast<const ACE_Time_Value>(wait).msec(msecs);
+	if (msecs > ACE_UINT32_MAX)
+		msecs = ACE_UINT32_MAX;
+
+	// Wrap up the request
+	ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
+	try
+	{
+		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ptrRequest->init(*request->input());
+	}
+	catch (IException* pE)
+	{
+		pE->Release();
+		if (trans_id != 0)
+		{
+			// Error code 3 - Failed to wrap request
+			error.write_ulong(3);
+			send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+		}
+		delete request;
+		return;
+	}
+
+	// Create a response if required
+	ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+	if (trans_id != 0)
+	{
+		try
+		{
+			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+			if (trans_id != 0)
+			{
+				// Error code 4 - Failed to create response
+				error.write_ulong(4);
+				send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+			}
+			delete request;
+			return;
+		}
+	}
+
+	ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
+	
+	void* TODO; // Setup the CallContext...
+
+	try
+	{
+		ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
+	}
+	catch (IException* pE)
+	{
+		// Make sure we release the exception
+		ObjectPtr<IException> ptrE;
+		ptrE.Attach(pE);
+
+		// Reply with an exception if we can send replies...
+		if (trans_id != 0)
+		{
+			// Dump the previous output and create a fresh output
+			try
+			{
+				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+				if (trans_id != 0)
+				{
+					// Error code 4 - Failed to create response
+					error.write_ulong(4);
+					send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+				}
+				delete request;
+				return;
+			}
+
+			try
+			{
+				// Mark that we have failed
+				ptrResponse->WriteBoolean(false);
+
+				// Write the exception onto the wire
+				ObjectPtr<MetaInfo::IWireManager> ptrWM(ptrOM);
+				MetaInfo::wire_write(ptrWM,ptrResponse,pE,pE->ActualIID());
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+				if (trans_id != 0)
+				{
+					// Error code 5 - Failed to marshal exception
+					error.write_ulong(5);
+					send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+				}
+				delete request;
+				return;
+			}
+		}
+	}
+
+	void* TODO2; // Restore CallContext
+
+	if (trans_id != 0)
+	{
+		if (send_response(src_channel_id,trans_id,ptrResponse->GetMessageBlock(),request_deadline) != 0)
+		{
+			// Error code 6 - Failed to send response
+			error.write_ulong(6);
+			send_response(src_channel_id,trans_id,error.begin(),request_deadline);
+		}
+	}
+		
 	delete request;
 }
 

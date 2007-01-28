@@ -11,6 +11,11 @@ namespace OOCore
 		public Omega::Serialize::IFormattedStream
 	{
 	public:
+		OutputCDR()
+		{
+			write_ulong(0);
+		}
+
 		ACE_Message_Block* GetMessageBlock()
 		{
 			return begin()->duplicate();

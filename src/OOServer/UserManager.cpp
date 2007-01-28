@@ -26,6 +26,9 @@ int UserMain(u_short uPort)
 	return ret;
 }
 
+using namespace Omega;
+using namespace OTL;
+
 UserManager::UserManager() : 
 	LocalAcceptor<UserConnection>(),
 	m_root_handle(ACE_INVALID_HANDLE),
@@ -332,7 +335,10 @@ void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_cha
 		if (request->m_bRoot)
 			process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
 		else 
+		{
+			::DebugBreak();
 			process_request(request->handle(),*request->input(),trans_id,request_deadline);
+		}
 	}
 	else
 	{
@@ -359,16 +365,152 @@ void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request,
 
 void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	// Create an IChannel and farm it off to our local StdObjectManager!!
+	// Init the error stream
+	ACE_OutputCDR error;
+	
+	// Find and/or create the object manager associated with src_channel_id
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-        // Ooooh Omega::functionality!
+		ptrOM = get_object_manager(handle);
 	}
-	catch (Omega::IException* pE)
+	catch (IException* pE)
 	{
+		pE->Release();
+		if (trans_id != 0)
+		{
+			// Error code 1 - Failed to resolve ObjectManager
+			error.write_ulong(1);
+			send_response(handle,0,trans_id,error.begin(),request_deadline);
+		}
+		return;
 	}
-	catch (...)
+
+	// Convert deadline time to #msecs
+	ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
+	if (wait <= ACE_Time_Value::zero)
 	{
+		if (trans_id != 0)
+		{
+			// Error code 2 - Request timed out
+			error.write_ulong(2);
+			send_response(handle,0,trans_id,error.begin(),request_deadline);
+		}
+		return;
+	}
+	
+	ACE_UINT64 msecs = 0;
+	static_cast<const ACE_Time_Value>(wait).msec(msecs);
+	if (msecs > ACE_UINT32_MAX)
+		msecs = ACE_UINT32_MAX;
+
+	// Wrap up the request
+	ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
+	try
+	{
+		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ptrRequest->init(request);
+	}
+	catch (IException* pE)
+	{
+		pE->Release();
+		if (trans_id != 0)
+		{
+			// Error code 3 - Failed to wrap request
+			error.write_ulong(3);
+			send_response(handle,0,trans_id,error.begin(),request_deadline);
+		}
+		return;
+	}
+
+	// Create a response if required
+	ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+	if (trans_id != 0)
+	{
+		try
+		{
+			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+			if (trans_id != 0)
+			{
+				// Error code 4 - Failed to create response
+				error.write_ulong(4);
+				send_response(handle,0,trans_id,error.begin(),request_deadline);
+			}
+			return;
+		}
+	}
+
+	ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
+	
+	void* TODO; // Setup the CallContext...
+
+	try
+	{
+		ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
+	}
+	catch (IException* pE)
+	{
+		// Make sure we release the exception
+		ObjectPtr<IException> ptrE;
+		ptrE.Attach(pE);
+
+		// Reply with an exception if we can send replies...
+		if (trans_id != 0)
+		{
+			// Dump the previous output and create a fresh output
+			try
+			{
+				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+				if (trans_id != 0)
+				{
+					// Error code 4 - Failed to create response
+					error.write_ulong(4);
+					send_response(handle,0,trans_id,error.begin(),request_deadline);
+				}
+				return;
+			}
+
+			try
+			{
+				// Mark that we have failed
+				ptrResponse->WriteBoolean(false);
+
+				// Write the exception onto the wire
+				ObjectPtr<MetaInfo::IWireManager> ptrWM(ptrOM);
+				MetaInfo::wire_write(ptrWM,ptrResponse,pE,pE->ActualIID());
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+				if (trans_id != 0)
+				{
+					// Error code 5 - Failed to marshal exception
+					error.write_ulong(5);
+					send_response(handle,0,trans_id,error.begin(),request_deadline);
+				}
+				return;
+			}
+		}
+	}
+
+	void* TODO2; // Restore CallContext
+
+	if (trans_id != 0)
+	{
+		if (send_response(handle,0,trans_id,ptrResponse->GetMessageBlock(),request_deadline) != 0)
+		{
+			// Error code 6 - Failed to send response
+			error.write_ulong(6);
+			send_response(handle,0,trans_id,error.begin(),request_deadline);
+		}
 	}
 }
 

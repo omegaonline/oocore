@@ -60,7 +60,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 		IException* pE = UserSession::init();
 		if (pE)
 		{
-			ACE::fini();
 			return pE;
 		}
 	}

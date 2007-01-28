@@ -68,8 +68,6 @@
 /////////////////////////////////////////////////
 // Include OOCore/OTL components
 
-#include <OOCore/Registry.h>
-#include <OOCore/ROT.h>
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>
 

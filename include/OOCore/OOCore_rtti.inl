@@ -282,7 +282,7 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 			{
 				// New interface required
 				const qi_rtti* pRtti = get_qi_rtti_info(iid);
-				if (!pRtti && !pRtti->pfnCreateSafeProxy)
+				if (!pRtti || !pRtti->pfnCreateSafeProxy)
 					OMEGA_THROW("No handler for interface");
 				
 				auto_iface_ptr<IObject> ptrObj = pRtti->pfnCreateSafeProxy(this,m_pS);
@@ -358,7 +358,6 @@ inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObjec
 			}
 			
 			stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,ptrSafeStub));
-			ptrSafeStub->AddRef_Safe();
 		}
 	}
 	catch (std::exception& e)
@@ -394,7 +393,6 @@ inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Sa
 		{
 			OMEGA_NEW(ptrSafeProxy,SafeProxy(pObjS));
 			proxy_map.m_map.insert(std::map<void*,void*>::value_type(pObjS,ptrSafeProxy));
-			ptrSafeProxy->AddRef();
 		}
 	}
 	catch (std::exception& e)

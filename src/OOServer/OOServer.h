@@ -16,7 +16,5 @@
 #include <ace/Proactor.h>
 #include <ace/CDR_Stream.h>
 
-#include <OOCore/ROT.h>
-#include <OOCore/Registry.h>
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>

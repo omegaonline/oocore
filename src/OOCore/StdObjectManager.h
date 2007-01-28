@@ -5,7 +5,7 @@ class StdObjectManager :
 	public OTL::ObjectBase,
 	public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::OID_StdObjectManager>,
 	public Omega::Remoting::IObjectManager,
-	public Omega::Remoting::IWireManager
+	public Omega::MetaInfo::IWireManager
 {
 public:
 	StdObjectManager();
@@ -13,6 +13,7 @@ public:
 
 	BEGIN_INTERFACE_MAP(StdObjectManager)
 		INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
+		INTERFACE_ENTRY(Omega::MetaInfo::IWireManager)
 	END_INTERFACE_MAP()
 
 private:
@@ -20,7 +21,7 @@ private:
 	OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
 	Omega::uint32_t								m_uNextStubId;
 
-	std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::Remoting::IWireStub> >	m_mapStubIds;
+	std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::MetaInfo::IWireStub> >	m_mapStubIds;
 
 // IObjectManager members
 public:

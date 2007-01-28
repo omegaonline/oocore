@@ -223,7 +223,7 @@ Omega::IEnumString* EnumStringImpl::Clone()
 	ptrEnum->m_set = m_set;
 	ptrEnum->m_iter = ptrEnum->m_set.begin();
 
-	return ptrEnum.AddRefReturn();
+	return ptrEnum.Detach();
 }
 
 // RegistryKeyImpl
@@ -516,7 +516,7 @@ Omega::IEnumString* RegistryKeyImpl::EnumSubKeys()
 
 	ptrEnum->m_iter = ptrEnum->m_set.begin();
 
-	return ptrEnum.AddRefReturn();
+	return ptrEnum.Detach();
 }
 
 Omega::IEnumString* RegistryKeyImpl::EnumValues()
@@ -541,7 +541,7 @@ Omega::IEnumString* RegistryKeyImpl::EnumValues()
 
 	ptrEnum->m_iter = ptrEnum->m_set.begin();
 
-	return ptrEnum.AddRefReturn();
+	return ptrEnum.Detach();
 }
 
 void RegistryKeyImpl::DeleteKey(const string_t& strKey)

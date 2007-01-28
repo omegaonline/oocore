@@ -5,7 +5,6 @@
 
 namespace OTL 
 {
-#if defined(OOCORE_ENUM_H_INCLUDED_)
 	template <>
 	class ObjectPtr<Omega::IEnumString> : public ObjectPtrBase<Omega::IEnumString>
 	{
@@ -25,9 +24,7 @@ namespace OTL
 			return ret;
 		}
 	};
-#endif
 
-#if defined(OOCORE_REGISTRY_H_INCLUDED_)
 	template <>
 	class ObjectPtr<Omega::Registry::IRegistryKey> : public ObjectPtrBase<Omega::Registry::IRegistryKey>
 	{
@@ -67,7 +64,6 @@ namespace OTL
 			return en;
 		}
 	};
-#endif
 
 }
 

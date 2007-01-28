@@ -152,10 +152,10 @@
 #define OMEGA_ZERO_PARAMS(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_ZERO_PARAM,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_SAFE_DECLARED_METHOD_VOID(name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params) ) = 0;
 
-#define OMEGA_DECLARE_SAFE_DECLARED_METHOD(ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type>::safe_class* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) = 0;
 
 #define OMEGA_DECLARE_SAFE_METHOD(index,method,d) \
@@ -171,7 +171,7 @@
 		OMEGA_DECLARE_SAFE_METHODS(methods) \
 	}; 
 
-#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params) ) \
 	{ \
 		try \
@@ -185,7 +185,7 @@
 		} \
 	}
 	
-#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type>::safe_class* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
 		try \
@@ -262,10 +262,10 @@
 #define OMEGA_WRITE_PARAMS_WIRE_STUB(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_WRITE_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD_VOID(name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	OMEGA_CONCAT(name,_Wire),
 	
-#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD(ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	OMEGA_CONCAT(name,_Wire),
 
 #define OMEGA_DECLARE_WIRE_STUB_METHOD(index,method,d) \
@@ -274,7 +274,7 @@
 #define OMEGA_DECLARE_WIRE_STUB_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_STUB_METHOD,methods,0)
 
-#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(name,param_count,params) \
+#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	inline static void OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, I* __wire__pI, Serialize::IFormattedStream* __wire__pParamsIn, Serialize::IFormattedStream* __wire__pParamsOut) \
 	{ \
 		__wire__pParam; __wire__pParamsIn; __wire__pParamsOut; \
@@ -283,7 +283,7 @@
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
 	}
 		
-#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(ret_type,name,param_count,params) \
+#define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	inline static void OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, I* __wire__pI, Serialize::IFormattedStream* __wire__pParamsIn, Serialize::IFormattedStream* __wire__pParamsOut) \
 	{ \
 		__wire__pParam; __wire__pParamsIn; __wire__pParamsOut; \
@@ -320,7 +320,7 @@
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(unique,_WireStub) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_WireStub)(Remoting::IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
+		OMEGA_CONCAT_R(unique,_WireStub)(IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
 		{} \
 		virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) \
 		{ \
@@ -359,7 +359,7 @@
 #define OMEGA_DECLARE_PARAMS_SAFE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_SAFE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD_VOID(name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
 	{ \
 		OMEGA_ZERO_PARAMS(param_count,params) \
@@ -367,7 +367,7 @@
 		if (OMEGA_CONCAT(name,_Exception)) throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 	}
 
-#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
 	{ \
 		ret_type OMEGA_CONCAT(name,_RetVal) = null_info<ret_type>::value(); \
@@ -418,22 +418,19 @@
 #define OMEGA_DECLARE_PARAMS_WIRE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
-#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsOut(m_pManager->CreateOutputStream()); \
 		WriteKey(__wire__pParamsOut); \
 		wire_write(m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(m_pManager->SendAndReceive(0,__wire__pParamsOut)); \
-		if (__wire__pParamsIn) \
-		{ \
-			OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-		} \
+		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(m_pManager->SendAndReceive(attribs,__wire__pParamsOut)); \
+		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
 
-#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(ret_type,name,param_count,params) \
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsOut(m_pManager->CreateOutputStream()); \
@@ -441,12 +438,9 @@
 		WriteKey(__wire__pParamsOut); \
 		wire_write(m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(m_pManager->SendAndReceive(0,__wire__pParamsOut)); \
-		if (__wire__pParamsIn) \
-		{ \
-			OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-			interface_info<ret_type>::wire_type::proxy_read(m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
-		} \
+		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(m_pManager->SendAndReceive(attribs,__wire__pParamsOut)); \
+		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
+		interface_info<ret_type>::wire_type::proxy_read(m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
@@ -478,7 +472,7 @@
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(unique,_WireProxy) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_WireProxy)(Remoting::IWireManager* pManager) : Base(pManager) \
+		OMEGA_CONCAT_R(unique,_WireProxy)(IWireManager* pManager) : Base(pManager) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
 		{ \
@@ -509,10 +503,10 @@
 	OMEGA_EXPORT_INTERFACE_DERIVED(n_space,name,Omega,IObject,l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8, methods)
 	
 #define OMEGA_METHOD_VOID(name,param_count,params) \
-	(DECLARED_METHOD_VOID(name,param_count,params))
+	(DECLARED_METHOD_VOID(0,name,param_count,params))
 
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
-	(DECLARED_METHOD(ret_type,name,param_count,params))
+	(DECLARED_METHOD(0,ret_type,name,param_count,params))
 
 #define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	extern "C" OMEGA_IMPORT Omega::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \

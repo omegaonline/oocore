@@ -249,9 +249,6 @@
 				RelativePath="..\..\include\OOCore\config.h">
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Enum.h">
-			</File>
-			<File
 				RelativePath="..\..\include\OOCore\OOCore.h">
 			</File>
 			<File
@@ -282,13 +279,7 @@
 				RelativePath="..\..\include\OOCore\OOCore_wire.h">
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Registry.h">
-			</File>
-			<File
 				RelativePath="..\..\include\OOCore\Remoting.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\ROT.h">
 			</File>
 		</Filter>
 	</Files>

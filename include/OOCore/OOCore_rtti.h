@@ -3,12 +3,6 @@
 
 namespace Omega
 {	
-	namespace Remoting
-	{
-		interface IWireStub;
-		interface IWireManager;
-	}
-
 	namespace MetaInfo
 	{		
 		template <class T> struct std_safe_functor
@@ -488,10 +482,10 @@ namespace Omega
 		
 		interface IException_Safe : public IObject_Safe
 		{
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(guid_t,ActualIID,0,());
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(IException*,Cause,0,());
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(string_t,Description,0,());
-			OMEGA_DECLARE_SAFE_DECLARED_METHOD(string_t,Source,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,guid_t,ActualIID,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,IException*,Cause,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,string_t,Description,0,());
+			OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,string_t,Source,0,());
 		};
 
 		template <class I> struct auto_iface_ptr
@@ -792,10 +786,10 @@ namespace Omega
 				return Base::Internal_QueryInterface_Safe(ppS,iid);
 			}
 
-			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(guid_t,ActualIID,0,());
-			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(IException*,Cause,0,());
-			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(string_t,Description,0,());
-			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(string_t,Source,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,guid_t,ActualIID,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,IException*,Cause,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,string_t,Description,0,());
+			OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,string_t,Source,0,());
 		};
 
 		template <class I, class Base>
@@ -815,13 +809,16 @@ namespace Omega
 				return Base::Internal_QueryInterface(iid);
 			}
 
-			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(guid_t,ActualIID,0,())
-			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(IException*,Cause,0,())
-			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(string_t,Description,0,())
-			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(string_t,Source,0,())	
+			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,guid_t,ActualIID,0,())
+			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,IException*,Cause,0,())
+			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,string_t,Description,0,())
+			OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,string_t,Source,0,())	
 		};
 
-		template <class T> static Remoting::IWireStub* CreateWireStub(Remoting::IWireManager*, IObject*, uint32_t);
+		interface IWireStub;
+		interface IWireManager;
+
+		template <class T> static IWireStub* CreateWireStub(IWireManager*, IObject*, uint32_t);
 		template <class T, class B> class WireProxyImpl;
 				
 		struct qi_rtti
@@ -829,8 +826,8 @@ namespace Omega
 			IObject_Safe* (*pfnCreateSafeStub)(IObject_Safe* pOuter, IObject* pObj);
 			IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 			void (*pfnSafeThrow)(IException_Safe* pSE);
-			Remoting::IWireStub* (*pfnCreateWireStub)(Remoting::IWireManager* pManager, IObject* pObject, uint32_t id);
-			IObject* (*pfnCreateWireProxy)(IObject* pOuter, Remoting::IWireManager* pManager);
+			IWireStub* (*pfnCreateWireStub)(IWireManager* pManager, IObject* pObject, uint32_t id);
+			IObject* (*pfnCreateWireProxy)(IObject* pOuter, IWireManager* pManager);
 		};
 
 		template <bool C, typename Ta, typename Tb>

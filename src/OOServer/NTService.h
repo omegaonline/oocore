@@ -20,7 +20,7 @@
 #include <ace/Event.h>
 
 #define NTSERVICE_NAME		ACE_TEXT("OOServer")
-#define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Service")
+#define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Gateway")
 #define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online network")
 
 class NTService : public ACE_NT_Service

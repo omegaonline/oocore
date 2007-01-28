@@ -2,7 +2,6 @@
 #define OOCORE_USER_SESSION_H_INCLUDED_
 
 #include "./Channel.h"
-#include "../OOServer/InterProcess.h"
 
 class UserSession
 {
@@ -53,16 +52,14 @@ private:
 		ACE_InputCDR*	m_input;
 	};
     
-	ACE_Recursive_Thread_Mutex					m_lock;
-	int											m_pro_thrd_grp_id;
-	ACE_HANDLE									m_user_handle;
-	ACE_Atomic_Op<ACE_Thread_Mutex,long>		m_next_trans_id;
-	ACE_Message_Queue_Ex<Request,ACE_MT_SYNCH>	m_msg_queue;
-	std::set<ACE_CDR::ULong>					m_setPendingTrans;
-
-	std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >	m_mapOMs;
-
-	OTL::ObjectPtr<OOServer::IInterProcess>		m_ptrServer;
+	ACE_Recursive_Thread_Mutex                                                 m_lock;
+	int                                                                        m_pro_thrd_grp_id;
+	ACE_HANDLE                                                                 m_user_handle;
+	ACE_Atomic_Op<ACE_Thread_Mutex,long>                                       m_next_trans_id;
+	ACE_Message_Queue_Ex<Request,ACE_MT_SYNCH>                                 m_msg_queue;
+	std::set<ACE_CDR::ULong>                                                   m_setPendingTrans;
+	std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
+	OTL::ObjectPtr<Omega::Remoting::IInterProcess>                             m_ptrServer;
 	
 	// Accessors for Channel
 	int send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);

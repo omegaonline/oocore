@@ -122,7 +122,7 @@ Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll
 
 		if (GetObjectFactory_Exception) 
 			MetaInfo::throw_correct_exception(GetObjectFactory_Exception); 
-		return ptrOF.AddRefReturn(); 
+		return ptrOF.Detach(); 
 	}
 	else
 	{

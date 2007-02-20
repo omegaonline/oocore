@@ -54,12 +54,12 @@ private:
 	std::map<ACE_CString,UserProcess>		m_mapUserProcesses;
 	std::map<ACE_HANDLE,ACE_CString>		m_mapUserIds;
 	ACE_CDR::UShort							m_uNextChannelId;
-	struct Channel
+	struct ChannelPair
 	{
 		ACE_HANDLE			handle;
 		ACE_CDR::UShort		channel;
 	};
-	std::map<ACE_CDR::UShort,Channel>		m_mapChannelIds;
+	std::map<ACE_CDR::UShort,ChannelPair>		m_mapChannelIds;
 	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >	m_mapReverseChannelIds;
 	
 	int run_event_loop_i();

@@ -103,6 +103,8 @@
 	{ return LibraryModule__::instance()->GetObjectFactory(oid,flags); } \
 	OTL_MODULE_INIT_BLOCK(LibraryModule__)
 
+
+// THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
 #define BEGIN_PROCESS_OBJECT_MAP(process_class) \
 	namespace { \
 	class OMEGA_CONCAT(process_class,_Module__); \

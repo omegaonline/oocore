@@ -7,6 +7,9 @@
 using namespace Omega;
 using namespace OTL;
 
+// Forward declares used internally
+void SetServiceTable(Activation::IServiceTable* pNewTable);
+
 UserSession::UserSession() : 
 	m_user_handle(ACE_INVALID_HANDLE),
 	m_next_trans_id(1)
@@ -90,13 +93,15 @@ IException* UserSession::bootstrap()
 		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(0);
 
 		// Create a proxy to the server interface
-		IObject* pSIP = 0;
-		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,Remoting::IID_IStaticInterProcess,pSIP);
-		ObjectPtr<Remoting::IStaticInterProcess> ptrSIP;
-		ptrSIP.Attach(static_cast<Remoting::IStaticInterProcess*>(pSIP));
+		IObject* pIPS = 0;
+		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,Remoting::IID_IInterProcessService,pIPS);
+		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
-		// Attach to the server interface
-		m_ptrServer.Attach(ptrSIP->Init());
+		// Set the service table
+		ObjectPtr<Activation::IServiceTable> ptrSIP;
+		ptrSIP.Attach(ptrIPS->GetServiceTable());
+		SetServiceTable(ptrSIP);
 	}
 	catch (Omega::IException* pE)
 	{
@@ -502,8 +507,7 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 	header.write_ushort(0); // src_channel_id
-	header.write_string(0,""); //  UserId
-
+	
 	if (!header.good_bit())
 		return -1;
 

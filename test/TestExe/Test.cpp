@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	try
+	/*try
 	{
 		OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");
 		OTL::ObjectPtr<Test::DllTest> ptrTest2("Test.Dll");
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 	{
 		printf(pE->Description());
 		pE->Release();
-	}
+	}*/
 
 	Omega::Uninitialize();
 

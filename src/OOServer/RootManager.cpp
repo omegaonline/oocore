@@ -170,6 +170,8 @@ void RootManager::end_event_loop_i()
 		}
 
         // Give everyone a chance to shut down
+
+		void* TODO; // Put a timeout here!
 		for (;;)
 		{
 			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
@@ -283,13 +285,13 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 								m_mapUserIds.insert(std::map<ACE_HANDLE,ACE_CString>::value_type(stream.get_handle(),strUserId));
 
 								// Create a new unique channel id
-								Channel channel = {stream.get_handle(), 0};
+								ChannelPair channel = {stream.get_handle(), 0};
 								ACE_CDR::UShort uChannelId = m_uNextChannelId++;
 								while (uChannelId < 2 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 								{
 									uChannelId = m_uNextChannelId++;
 								}
-								m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(uChannelId,channel));
+								m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(uChannelId,channel));
 								m_mapReverseChannelIds.insert(std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(stream.get_handle(),std::map<ACE_CDR::UShort,ACE_CDR::UShort>()));
 								
 								// Clear the handle in the stream, pRC now owns it
@@ -449,13 +451,13 @@ ACE_THR_FUNC_RETURN RootManager::request_worker_fn(void*)
 void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	// Forward to the correct channel...
-	Channel dest_channel;
+	ChannelPair dest_channel;
 	ACE_CDR::UShort reply_channel_id;
 	try
 	{
 		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
-		std::map<ACE_CDR::UShort,Channel>::iterator i=m_mapChannelIds.find(dest_channel_id);
+		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
 		if (i == m_mapChannelIds.end())
 		{
 			if (dest_channel_id != 1)
@@ -473,13 +475,13 @@ void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_cha
 		std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
 		if (k == j->second.end())
 		{
-			Channel channel = {request->handle(), src_channel_id};
+			ChannelPair channel = {request->handle(), src_channel_id};
 			reply_channel_id = m_uNextChannelId++;
 			while (reply_channel_id<2 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}
-			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(reply_channel_id,channel));
+			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(reply_channel_id,channel));
 
 			k = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id)).first;
 		}

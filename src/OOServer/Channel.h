@@ -1,7 +1,7 @@
-#ifndef OOCORE_CHANNEL_H_INCLUDED_
-#define OOCORE_CHANNEL_H_INCLUDED_
+#ifndef OOSERVER_CHANNEL_H_INCLUDED_
+#define OOSERVER_CHANNEL_H_INCLUDED_
 
-namespace OOCore
+namespace OOServer
 {
 	OMEGA_DECLARE_IID(OutputCDR);
 
@@ -12,7 +12,9 @@ namespace OOCore
 	{
 	public:
 		OutputCDR()
-		{ }
+		{
+			write_ulong(0);
+		}
 
 		ACE_Message_Block* GetMessageBlock()
 		{
@@ -28,12 +30,12 @@ namespace OOCore
 	private:
 		void no_access()
 		{
-			OOCORE_THROW_ERRNO(EACCES);
+			OOSERVER_THROW_ERRNO(EACCES);
 		}
 
 		void throw_errno()
 		{
-			OOCORE_THROW_LASTERROR();
+			OOSERVER_THROW_LASTERROR();
 		}
 
 	// IStream members
@@ -96,12 +98,12 @@ namespace OOCore
 	private:
 		void no_access()
 		{
-			OOCORE_THROW_ERRNO(EACCES);
+			OOSERVER_THROW_ERRNO(EACCES);
 		}
 
 		void throw_errno()
 		{
-			OOCORE_THROW_LASTERROR();
+			OOSERVER_THROW_LASTERROR();
 		}
 
 	// IStream members
@@ -140,7 +142,7 @@ namespace OOCore
 	};
 }
 
-class UserSession;
+class UserManager;
 
 class Channel :
 	public OTL::ObjectBase,
@@ -149,15 +151,15 @@ class Channel :
 public:
 	Channel();
 
-	void init(UserSession* pSession, ACE_CDR::UShort dest_channel_id);
+	void init(UserManager* pManager, ACE_HANDLE handle);
 	
 	BEGIN_INTERFACE_MAP(Channel)
 		INTERFACE_ENTRY(Omega::Remoting::IChannel)
 	END_INTERFACE_MAP()
 
 private:
-	UserSession*	m_pSession;
-	ACE_CDR::UShort	m_id;
+	UserManager*     m_pManager;
+	ACE_HANDLE       m_handle;
 
 // IChannel members
 public: 
@@ -165,4 +167,4 @@ public:
 	Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream);
 };
 
-#endif // OOCORE_CHANNEL_H_INCLUDED_
+#endif // OOSERVER_CHANNEL_H_INCLUDED_

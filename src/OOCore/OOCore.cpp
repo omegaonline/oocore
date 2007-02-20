@@ -67,11 +67,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Initialize_Minimal,0,())
-{
-	Omega_Initialize_Impl();
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 {
 	if (--s_initcount==0)

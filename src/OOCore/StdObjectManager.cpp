@@ -180,7 +180,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 		// Create the required object
 		ObjectPtr<IObject> ptrObject;
 
-		// *** TODO ***  Actually get it out of the ROT
+		// *** TODO ***  Actually get it out of the ServiceTable
 		ptrObject.Attach(Activation::CreateObject(oid,Activation::Any,0,iid));
 
 		// Get the handler for the interface
@@ -332,7 +332,7 @@ Omega::Serialize::IFormattedStream* StdObjectManager::SendAndReceive(Omega::Remo
 			OMEGA_THROW("No response received");
 
 		// Read exception status
-		if (ptrResponse->ReadBoolean())
+		if (!ptrResponse->ReadBoolean())
 		{
 			// Unmarshal the exception
 			IException* pE;

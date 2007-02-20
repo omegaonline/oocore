@@ -7,72 +7,75 @@ void ExecProcess(const string_t& strExeName);
 
 Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags);
 
-class ActivationImpl
+namespace
 {
-public:
-	typedef ACE_DLL_Singleton_T<ActivationImpl,ACE_Recursive_Thread_Mutex> ACTIVATOR;
-
-	ActivationImpl();
-
-	const ACE_TCHAR* name();
-	const ACE_TCHAR* dll_name();
-	
-	Activation::IObjectFactory* GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
-};
-
-class OidNotFoundExceptionImpl :
-	public ExceptionImpl<Activation::IOidNotFoundException>
-{
-public:
-	guid_t					m_oid;
-
-	BEGIN_INTERFACE_MAP(OidNotFoundExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
-	END_INTERFACE_MAP()
-
-// Activation::IOidNotFoundException members
-public:
-	guid_t GetMissingOid()
+	class ActivationImpl
 	{
-		return m_oid;
-	}
-};
+	public:
+		typedef ACE_DLL_Singleton_T<ActivationImpl,ACE_Recursive_Thread_Mutex> ACTIVATOR;
 
-class NoAggregationExceptionImpl :
-	public ExceptionImpl<Activation::INoAggregationException>
-{
-public:
-	guid_t					m_oid;
+		ActivationImpl();
 
-	BEGIN_INTERFACE_MAP(NoAggregationExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
-	END_INTERFACE_MAP()
+		const ACE_TCHAR* name();
+		const ACE_TCHAR* dll_name();
+		
+		Activation::IObjectFactory* GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
+	};
 
-// Activation::INoAggregationException members
-public:
-	guid_t GetFailingOid()
+	class OidNotFoundExceptionImpl :
+		public ExceptionImpl<Activation::IOidNotFoundException>
 	{
-		return m_oid;
-	}
-};
+	public:
+		guid_t					m_oid;
 
-class LibraryNotFoundExceptionImpl :
-	public ExceptionImpl<Activation::ILibraryNotFoundException>
-{
-public:
-	string_t m_dll_name;
+		BEGIN_INTERFACE_MAP(OidNotFoundExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
+		END_INTERFACE_MAP()
 
-	BEGIN_INTERFACE_MAP(LibraryNotFoundExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
-	END_INTERFACE_MAP()
+	// Activation::IOidNotFoundException members
+	public:
+		guid_t GetMissingOid()
+		{
+			return m_oid;
+		}
+	};
 
-// Activation::ILibraryNotFoundException members
-public:
-	string_t GetLibraryName()
+	class NoAggregationExceptionImpl :
+		public ExceptionImpl<Activation::INoAggregationException>
 	{
-		return m_dll_name;
-	}
-};
+	public:
+		guid_t					m_oid;
+
+		BEGIN_INTERFACE_MAP(NoAggregationExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
+		END_INTERFACE_MAP()
+
+	// Activation::INoAggregationException members
+	public:
+		guid_t GetFailingOid()
+		{
+			return m_oid;
+		}
+	};
+
+	class LibraryNotFoundExceptionImpl :
+		public ExceptionImpl<Activation::ILibraryNotFoundException>
+	{
+	public:
+		string_t m_dll_name;
+
+		BEGIN_INTERFACE_MAP(LibraryNotFoundExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
+		END_INTERFACE_MAP()
+
+	// Activation::ILibraryNotFoundException members
+	public:
+		string_t GetLibraryName()
+		{
+			return m_dll_name;
+		}
+	};
+}
 
 void ILibraryNotFoundException_Throw(const string_t& strName, IException* pE = 0)
 {
@@ -179,44 +182,59 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 				return pOF;
 		}
 
-		ObjectPtr<Registry::IRegistryKey> ptrOidsKey("Objects/OIDs");
-
-		// Look in-process first if requested and available
-		if ((flags & Activation::InProcess) && ptrOidsKey->IsSubKey(oid))
-		{
-			ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid);
-			if (ptrOidKey->IsValue("Library"))
-			{
-				Activation::IObjectFactory* pOF = ActivationImpl::ACTIVATOR::instance()->GetObjectFactory(ptrOidKey->GetStringValue("Library"),oid,flags);
-				if (pOF)
-					return pOF;
-			}			
-		}
-		
+		// Try ServiceTable if possible
 		if (flags & Activation::OutOfProcess)
 		{
-			// Do twice
-			for (int i=0;i<2;++i)
-			{
-				// If we aren't the server then, ask the local server
-				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-				ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-				
-				// Change this to use monikers one day!
-				IObject* pObject = 0;
-				ptrROT->GetRegisteredObject(oid,Activation::IID_IObjectFactory,pObject);
-				if (pObject)
-					return static_cast<Activation::IObjectFactory*>(pObject);
-				
-				// If we have been told not to launch, break out of the loop
-				if (flags & Activation::DontLaunch || !ptrOidsKey->IsSubKey(oid))
-					break;
+			ObjectPtr<Activation::IServiceTable> ptrServiceTable;
+			ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
-				// Launch the server - Do something cleverer here at some point
+			// Change this to use monikers one day!
+			IObject* pObject = 0;
+			ptrServiceTable->GetObject(oid,Activation::IID_IObjectFactory,pObject);
+			if (pObject)
+				return static_cast<Activation::IObjectFactory*>(pObject);
+		}
+
+		if (!(flags & Activation::DontLaunch))
+		{
+			// Use the registry
+			ObjectPtr<Registry::IRegistryKey> ptrOidsKey("Objects/OIDs");
+			if (ptrOidsKey->IsSubKey(oid))
+			{
 				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid);
-				ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
+
+				if (flags & Activation::InProcess)
+				{
+					if (ptrOidKey->IsValue("Library"))
+					{
+						Activation::IObjectFactory* pOF = ActivationImpl::ACTIVATOR::instance()->GetObjectFactory(ptrOidKey->GetStringValue("Library"),oid,flags);
+						if (pOF)
+							return pOF;
+					}			
+				}
 			
-				ExecProcess(ptrServer->GetStringValue("Exec"));
+				if (flags & Activation::OutOfProcess)
+				{
+					// Launch the server - Do something cleverer here at some point
+					ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
+				
+					ExecProcess(ptrServer->GetStringValue("Exec"));
+
+					ObjectPtr<Activation::IServiceTable> ptrServiceTable;
+					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
+
+					void* TODO;	// Need a timeout...
+					for (int i=0;i<5;++i)
+					{
+						// Change this to use monikers one day!
+						IObject* pObject = 0;
+						ptrServiceTable->GetObject(oid,Activation::IID_IObjectFactory,pObject);
+						if (pObject)
+							return static_cast<Activation::IObjectFactory*>(pObject);
+
+						ACE_OS::sleep(1);
+					}
+				}
 			}
 		}
 	}

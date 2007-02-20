@@ -59,8 +59,7 @@ private:
 	ACE_Message_Queue_Ex<Request,ACE_MT_SYNCH>                                 m_msg_queue;
 	std::set<ACE_CDR::ULong>                                                   m_setPendingTrans;
 	std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
-	OTL::ObjectPtr<Omega::Remoting::IInterProcess>                             m_ptrServer;
-	
+		
 	// Accessors for Channel
 	int send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
 	int send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);

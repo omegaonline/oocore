@@ -46,13 +46,22 @@ namespace Omega
 		};
 		OMEGA_DECLARE_IID(ILibraryNotFoundException);
 
-		interface IRunningObjectTable : public IObject
+		interface IServiceTable : public IObject
 		{
-			virtual void GetRegisteredObject(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
+			enum Flags
+			{
+				Default = 0,
+				AllowAnyUser = 1
+			};
+			typedef uint16_t Flags_t;
 
-			static IRunningObjectTable* GetRunningObjectTable();
+			virtual void Register(const guid_t& oid, Flags_t flags, IObject* pObject) = 0;
+			virtual void Revoke(const guid_t& oid) = 0;
+			virtual void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
+
+			static IServiceTable* GetServiceTable();
 		};
-		OMEGA_DECLARE_IID(IRunningObjectTable);
+		OMEGA_DECLARE_IID(IServiceTable);
 	}
 
 	interface IEnumString : public IObject
@@ -135,7 +144,7 @@ OMEGA_EXPORT_INTERFACE
 	0xd94853ed, 0x35c6, 0x4594, 0x88, 0x2, 0x33, 0xf2, 0x1a, 0xbf, 0xbe, 0xbe,
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateObject,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateObject,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 )
 
 OMEGA_EXPORT_INTERFACE_DERIVED
@@ -175,11 +184,13 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 
 OMEGA_EXPORT_INTERFACE
 (
-	Omega::Activation, IRunningObjectTable, 
+	Omega::Activation, IServiceTable, 
 	0x8e26d026, 0x9988, 0x4f69, 0x93, 0xc3, 0xc4, 0x72, 0x43, 0x4f, 0x9d, 0xde,
 
 	// Methods
-	OMEGA_METHOD_VOID(GetRegisteredObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+	OMEGA_METHOD_VOID(Register,3,((in),const Omega::guid_t&,oid,(in),Omega::Activation::IServiceTable::Flags_t,flags,(in),Omega::IObject*,pObject))
+	OMEGA_METHOD_VOID(Revoke,1,((in),const Omega::guid_t&,oid))
+	OMEGA_METHOD_VOID(GetObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 )
 
 OMEGA_EXPORT_INTERFACE
@@ -189,7 +200,7 @@ OMEGA_EXPORT_INTERFACE
 
 	// Methods
 	OMEGA_METHOD_VOID(Next,2,((in),Omega::uint32_t&,count,(out)(size_is(count)),Omega::string_t*,parrVals))
-	OMEGA_METHOD_VOID(Skip,1,((in),uint32_t,count))
+	OMEGA_METHOD_VOID(Skip,1,((in),Omega::uint32_t,count))
 	OMEGA_METHOD_VOID(Reset,0,())
 	OMEGA_METHOD(IEnumString*,Clone,0,())
 )
@@ -251,6 +262,12 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	// Methods
 	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
 )
+
+OOCORE_EXPORTED_FUNCTION(Omega::Activation::IServiceTable*,Activation_GetServiceTable,0,());
+inline Omega::Activation::IServiceTable* Omega::Activation::IServiceTable::GetServiceTable()
+{
+	return Activation_GetServiceTable();
+}
 
 OOCORE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const Omega::guid_t&,iid,(in),const Omega::char_t*,source));
 inline void Omega::INoInterfaceException::Throw(const Omega::guid_t& iid, const char_t* source)

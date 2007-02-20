@@ -186,11 +186,11 @@
 	}
 	
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
-	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type>::safe_class* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
+	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (interface_info<ret_type&>::safe_class OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
 		try \
 		{ \
-			*static_cast<ret_type*>(interface_info<ret_type*>::stub_functor(OMEGA_CONCAT(name,_RetVal))) = this->m_pI->name( OMEGA_DECLARE_PARAMS_SAFE_STUB(param_count,params) ); \
+			static_cast<ret_type&>(interface_info<ret_type&>::stub_functor(OMEGA_CONCAT(name,_RetVal))) = this->m_pI->name( OMEGA_DECLARE_PARAMS_SAFE_STUB(param_count,params) ); \
 			return 0; \
 		} \
 		catch (IException* OMEGA_CONCAT(name,_Exception)) \

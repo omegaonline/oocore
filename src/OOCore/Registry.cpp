@@ -3,197 +3,200 @@
 using namespace Omega;
 using namespace OTL;
 
-class RegistryKeyImpl;
-
-class Binding : public ACE_Naming_Context
+namespace
 {
-public:
-	ObjectPtr<ObjectImpl<RegistryKeyImpl> > m_ptrRootKey;	
+	class RegistryKeyImpl;
 
-	const ACE_TCHAR* name();
-	const ACE_TCHAR* dll_name();
-		
-	Binding();
-	virtual ~Binding();
-};
-
-class RegistryKeyImpl :
-	public ObjectBase,
-	public Registry::IRegistryKey
-{
-public:
-	typedef ACE_DLL_Singleton_T<Binding, ACE_Thread_Mutex> BINDING;
-
-	virtual ~RegistryKeyImpl()
-	{ }
-
-	bool_t IsSubKey(const string_t& key);
-	bool_t IsValue(const string_t& name);
-	string_t GetStringValue(const string_t& name);
-	uint32_t GetUIntValue(const string_t& name);
-	void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer);
-	void SetStringValue(const string_t& name, const string_t& val);
-	void SetUIntValue(const string_t& name, const uint32_t& val);
-	void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val);
-	IRegistryKey::ValueType_t GetValueType(const string_t& name);
-	IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting);
-	Omega::IEnumString* EnumSubKeys();
-	Omega::IEnumString* EnumValues();
-	void DeleteKey(const string_t& strKey);
-	void DeleteValue(const string_t& strKey);
-
-	enum ValueType_Char
+	class Binding : public ACE_Naming_Context
 	{
-		KEY	= 'K',
-		VALUE_STRING = 'S',
-		VALUE_UINT32 = 'U',
-		VALUE_BINARY = 'B'
+	public:
+		ObjectPtr<ObjectImpl<RegistryKeyImpl> > m_ptrRootKey;	
+
+		const ACE_TCHAR* name();
+		const ACE_TCHAR* dll_name();
+			
+		Binding();
+		virtual ~Binding();
 	};
-	static bool get_value(const string_t& name, string_t& value, ValueType_Char& type);
-	static void set_value(const string_t& name, const string_t& value, ValueType_Char type);
-	static IRegistryKey::ValueType_t cast(ValueType_Char val);
 
-	string_t m_strPath;
-
-	BEGIN_INTERFACE_MAP(RegistryKeyImpl)
-		INTERFACE_ENTRY(Registry::IRegistryKey)
-	END_INTERFACE_MAP()
-};
-
-class EnumStringImpl : 
-	public ObjectBase,
-	public Omega::IEnumString
-{
-public:
-	EnumStringImpl() : m_set(), m_iter(m_set.begin())
-	{}
-
-	ACE_PWSTRING_SET		m_set;
-	ACE_PWSTRING_ITERATOR	m_iter;
-
-	BEGIN_INTERFACE_MAP(EnumStringImpl)
-		INTERFACE_ENTRY(IEnumString)
-	END_INTERFACE_MAP()
-
-// IEnumString members
-public:
-	void Next(uint32_t& count, string_t* parrVals);
-	void Skip(uint32_t count);
-	void Reset();
-	Omega::IEnumString* Clone();
-};
-
-class WrongValueTypeExceptionImpl :
-	public ExceptionImpl<Registry::IWrongValueTypeException>
-{
-public:
-	BEGIN_INTERFACE_MAP(WrongValueTypeExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IWrongValueTypeException>)
-	END_INTERFACE_MAP()
-
-	Registry::IRegistryKey::ValueType_t m_type;
-
-public:
-	Registry::IRegistryKey::ValueType_t GetValueType()
+	class RegistryKeyImpl :
+		public ObjectBase,
+		public Registry::IRegistryKey
 	{
-		return m_type;
-	}
+	public:
+		typedef ACE_DLL_Singleton_T<Binding, ACE_Thread_Mutex> BINDING;
 
-	static void Throw(RegistryKeyImpl::ValueType_Char actual_type, IException* pE = 0)
+		virtual ~RegistryKeyImpl()
+		{ }
+
+		bool_t IsSubKey(const string_t& key);
+		bool_t IsValue(const string_t& name);
+		string_t GetStringValue(const string_t& name);
+		uint32_t GetUIntValue(const string_t& name);
+		void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer);
+		void SetStringValue(const string_t& name, const string_t& val);
+		void SetUIntValue(const string_t& name, const uint32_t& val);
+		void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val);
+		IRegistryKey::ValueType_t GetValueType(const string_t& name);
+		IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting);
+		Omega::IEnumString* EnumSubKeys();
+		Omega::IEnumString* EnumValues();
+		void DeleteKey(const string_t& strKey);
+		void DeleteValue(const string_t& strKey);
+
+		enum ValueType_Char
+		{
+			KEY	= 'K',
+			VALUE_STRING = 'S',
+			VALUE_UINT32 = 'U',
+			VALUE_BINARY = 'B'
+		};
+		static bool get_value(const string_t& name, string_t& value, ValueType_Char& type);
+		static void set_value(const string_t& name, const string_t& value, ValueType_Char type);
+		static IRegistryKey::ValueType_t cast(ValueType_Char val);
+
+		string_t m_strPath;
+
+		BEGIN_INTERFACE_MAP(RegistryKeyImpl)
+			INTERFACE_ENTRY(Registry::IRegistryKey)
+		END_INTERFACE_MAP()
+	};
+
+	class EnumStringImpl : 
+		public ObjectBase,
+		public Omega::IEnumString
 	{
-		ObjectImpl<WrongValueTypeExceptionImpl>* pRE = ObjectImpl<WrongValueTypeExceptionImpl>::CreateObject();
-		pRE->m_type = RegistryKeyImpl::cast(actual_type);
-		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = "Incorrect registry value type, actual value type is ";
-		if (actual_type==RegistryKeyImpl::VALUE_STRING)
-			pRE->m_strDesc += "String";
-		else if (actual_type==RegistryKeyImpl::VALUE_UINT32)
-			pRE->m_strDesc += "UInt32";
-		else if (actual_type==RegistryKeyImpl::VALUE_BINARY)
-			pRE->m_strDesc += "Binary";
-		else
-			pRE->m_strDesc += "Corrupt!";
-		throw pRE;
-	}
-};
+	public:
+		EnumStringImpl() : m_set(), m_iter(m_set.begin())
+		{}
 
-class NotFoundExceptionImpl :
-	public ExceptionImpl<Registry::INotFoundException>
-{
-public:
-	BEGIN_INTERFACE_MAP(NotFoundExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::INotFoundException>)
-	END_INTERFACE_MAP()
+		ACE_PWSTRING_SET		m_set;
+		ACE_PWSTRING_ITERATOR	m_iter;
 
-	string_t m_strName;
+		BEGIN_INTERFACE_MAP(EnumStringImpl)
+			INTERFACE_ENTRY(IEnumString)
+		END_INTERFACE_MAP()
 
-public:
-	string_t GetValueName()
+	// IEnumString members
+	public:
+		void Next(uint32_t& count, string_t* parrVals);
+		void Skip(uint32_t count);
+		void Reset();
+		Omega::IEnumString* Clone();
+	};
+
+	class WrongValueTypeExceptionImpl :
+		public ExceptionImpl<Registry::IWrongValueTypeException>
 	{
-		return m_strName;
-	}
+	public:
+		BEGIN_INTERFACE_MAP(WrongValueTypeExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IWrongValueTypeException>)
+		END_INTERFACE_MAP()
 
-	static void Throw(const string_t& name, IException* pE = 0)
+		Registry::IRegistryKey::ValueType_t m_type;
+
+	public:
+		Registry::IRegistryKey::ValueType_t GetValueType()
+		{
+			return m_type;
+		}
+
+		static void Throw(RegistryKeyImpl::ValueType_Char actual_type, IException* pE = 0)
+		{
+			ObjectImpl<WrongValueTypeExceptionImpl>* pRE = ObjectImpl<WrongValueTypeExceptionImpl>::CreateObject();
+			pRE->m_type = RegistryKeyImpl::cast(actual_type);
+			pRE->m_ptrCause = pE;
+			pRE->m_strDesc = "Incorrect registry value type, actual value type is ";
+			if (actual_type==RegistryKeyImpl::VALUE_STRING)
+				pRE->m_strDesc += "String";
+			else if (actual_type==RegistryKeyImpl::VALUE_UINT32)
+				pRE->m_strDesc += "UInt32";
+			else if (actual_type==RegistryKeyImpl::VALUE_BINARY)
+				pRE->m_strDesc += "Binary";
+			else
+				pRE->m_strDesc += "Corrupt!";
+			throw pRE;
+		}
+	};
+
+	class NotFoundExceptionImpl :
+		public ExceptionImpl<Registry::INotFoundException>
 	{
-		ObjectImpl<NotFoundExceptionImpl>* pRE = ObjectImpl<NotFoundExceptionImpl>::CreateObject();
-		pRE->m_strName = name;
-		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = "Value '" + name + "' not found.";
-		throw pRE;
-	}
-};
+	public:
+		BEGIN_INTERFACE_MAP(NotFoundExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::INotFoundException>)
+		END_INTERFACE_MAP()
 
-class BadNameExceptionImpl :
-	public ExceptionImpl<Registry::IBadNameException>
-{
-public:
-	BEGIN_INTERFACE_MAP(BadNameExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IBadNameException>)
-	END_INTERFACE_MAP()
+		string_t m_strName;
 
-	string_t m_strName;
+	public:
+		string_t GetValueName()
+		{
+			return m_strName;
+		}
 
-public:
-	string_t GetName()
+		static void Throw(const string_t& name, IException* pE = 0)
+		{
+			ObjectImpl<NotFoundExceptionImpl>* pRE = ObjectImpl<NotFoundExceptionImpl>::CreateObject();
+			pRE->m_strName = name;
+			pRE->m_ptrCause = pE;
+			pRE->m_strDesc = "Value '" + name + "' not found.";
+			throw pRE;
+		}
+	};
+
+	class BadNameExceptionImpl :
+		public ExceptionImpl<Registry::IBadNameException>
 	{
-		return m_strName;
-	}
+	public:
+		BEGIN_INTERFACE_MAP(BadNameExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IBadNameException>)
+		END_INTERFACE_MAP()
 
-	static void Throw(const string_t& name, IException* pE = 0)
+		string_t m_strName;
+
+	public:
+		string_t GetName()
+		{
+			return m_strName;
+		}
+
+		static void Throw(const string_t& name, IException* pE = 0)
+		{
+			ObjectImpl<BadNameExceptionImpl>* pRE = ObjectImpl<BadNameExceptionImpl>::CreateObject();
+			pRE->m_strName = name;
+			pRE->m_ptrCause = pE;
+			pRE->m_strDesc = "Invalid name for registry key or value: '" + name + "'.";
+			throw pRE;
+		}
+	};
+
+	class AlreadyExistsExceptionImpl :
+		public ExceptionImpl<Registry::IAlreadyExistsException>
 	{
-		ObjectImpl<BadNameExceptionImpl>* pRE = ObjectImpl<BadNameExceptionImpl>::CreateObject();
-		pRE->m_strName = name;
-		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = "Invalid name for registry key or value: '" + name + "'.";
-		throw pRE;
-	}
-};
+	public:
+		BEGIN_INTERFACE_MAP(AlreadyExistsExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IAlreadyExistsException>)
+		END_INTERFACE_MAP()
 
-class AlreadyExistsExceptionImpl :
-	public ExceptionImpl<Registry::IAlreadyExistsException>
-{
-public:
-	BEGIN_INTERFACE_MAP(AlreadyExistsExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<Registry::IAlreadyExistsException>)
-	END_INTERFACE_MAP()
+		string_t m_strName;
 
-	string_t m_strName;
+	public:
+		string_t GetKeyName()
+		{
+			return m_strName;
+		}
 
-public:
-	string_t GetKeyName()
-	{
-		return m_strName;
-	}
-
-	static void Throw(const string_t& name, IException* pE = 0)
-	{
-		ObjectImpl<AlreadyExistsExceptionImpl>* pRE = ObjectImpl<AlreadyExistsExceptionImpl>::CreateObject();
-		pRE->m_strName = name;
-		pRE->m_ptrCause = pE;
-		pRE->m_strDesc = "Key '" + name + "' already exists.";
-		throw pRE;
-	}
-};
+		static void Throw(const string_t& name, IException* pE = 0)
+		{
+			ObjectImpl<AlreadyExistsExceptionImpl>* pRE = ObjectImpl<AlreadyExistsExceptionImpl>::CreateObject();
+			pRE->m_strName = name;
+			pRE->m_ptrCause = pE;
+			pRE->m_strDesc = "Key '" + name + "' already exists.";
+			throw pRE;
+		}
+	};
+}
 
 // EnumStringImpl
 void EnumStringImpl::Next(uint32_t& count, string_t* parrVals)

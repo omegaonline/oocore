@@ -54,21 +54,12 @@ namespace Omega
 {
 	IException* Initialize();
 	void Uninitialize();
-
-	// Only use this if you know *exactly* what it does!
-	void Initialize_Minimal();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());
 inline Omega::IException* Omega::Initialize()
 {
 	return Omega_Initialize();
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(Omega_Initialize_Minimal,0,());
-inline void Omega::Initialize_Minimal()
-{
-	Omega_Initialize_Minimal();
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,());

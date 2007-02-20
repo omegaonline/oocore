@@ -21,6 +21,8 @@ class UserManager :
 	public RootBase,
 	public RequestHandler<UserRequest>
 {
+	friend class Channel;
+
 public:
 	static int run_event_loop(u_short uPort);
 	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
@@ -35,23 +37,24 @@ private:
 	UserManager(const UserManager&) {}
 	UserManager& operator = (const UserManager&) {}
 
-	ACE_Thread_Mutex		m_lock;
-	ACE_HANDLE				m_root_handle;
-	ACE_CDR::UShort			m_uNextChannelId;
-	struct Channel
+	ACE_Recursive_Thread_Mutex  m_lock;
+	ACE_HANDLE                  m_root_handle;
+	ACE_CDR::UShort             m_uNextChannelId;
+
+	struct ChannelPair
 	{
 		ACE_HANDLE			handle;
 		ACE_CDR::UShort		channel;
 	};
-	std::map<ACE_CDR::UShort,Channel>	m_mapChannelIds;
-
-	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >	m_mapReverseChannelIds;
+	std::map<ACE_CDR::UShort,ChannelPair>                                 m_mapChannelIds;
+	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >       m_mapReverseChannelIds;
+	std::map<ACE_HANDLE,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 	
 	int run_event_loop_i(u_short uPort);
 	int init(u_short uPort);
 	void stop_i();
 	void term();
-	int boostrap();
+	int bootstrap();
 
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
@@ -63,6 +66,7 @@ private:
 
 	void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_HANDLE handle);
 
 	void user_connection_closed_i(ACE_HANDLE handle);
 	int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);

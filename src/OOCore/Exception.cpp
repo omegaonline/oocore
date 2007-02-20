@@ -3,29 +3,32 @@
 using namespace Omega;
 using namespace OTL;
 
-class RealExceptionImpl :
-	public ExceptionImpl<IException>
+namespace
 {
-public:
-	BEGIN_INTERFACE_MAP(RealExceptionImpl )
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<IException>)
-	END_INTERFACE_MAP()
-};
+	class RealExceptionImpl :
+		public ExceptionImpl<IException>
+	{
+	public:
+		BEGIN_INTERFACE_MAP(RealExceptionImpl )
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<IException>)
+		END_INTERFACE_MAP()
+	};
 
-class NoInterfaceExceptionImpl :
-	public ExceptionImpl<INoInterfaceException>
-{
-public:
-	guid_t m_iid;
+	class NoInterfaceExceptionImpl :
+		public ExceptionImpl<INoInterfaceException>
+	{
+	public:
+		guid_t m_iid;
 
-	BEGIN_INTERFACE_MAP(NoInterfaceExceptionImpl)
-		INTERFACE_ENTRY_CHAIN(ExceptionImpl<INoInterfaceException>)
-	END_INTERFACE_MAP()
+		BEGIN_INTERFACE_MAP(NoInterfaceExceptionImpl)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<INoInterfaceException>)
+		END_INTERFACE_MAP()
 
-// INoInterfaceException members
-public:
-	guid_t GetUnsupportedIID();
-};
+	// INoInterfaceException members
+	public:
+		guid_t GetUnsupportedIID();
+	};
+}
 
 guid_t NoInterfaceExceptionImpl::GetUnsupportedIID()
 {

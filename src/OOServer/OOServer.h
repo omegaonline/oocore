@@ -18,3 +18,9 @@
 
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>
+
+#define OOSERVER_THROW_LASTERROR() \
+	OMEGA_THROW(ACE_OS::strerror(ACE_OS::last_error()))
+
+#define OOSERVER_THROW_ERRNO(error) \
+	OMEGA_THROW(ACE_OS::strerror(error))

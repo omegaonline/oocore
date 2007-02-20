@@ -1,34 +1,70 @@
 #include "OOServer.h"
 
 #include "./UserManager.h"
+#include "./Channel.h"
 
 int UserMain(u_short uPort)
 {
-#if defined(ACE_WIN32)
-
-	//::DebugBreak();
-	printf("SPAWNED!!!\n\n");
-
-#endif
-
-	int ret = UserManager::run_event_loop(uPort);
-	
-#ifdef _DEBUG
-	// Give us a chance to read the error message
-	if (ret < 0)
-	{
-		ACE_DEBUG((LM_DEBUG,ACE_TEXT("\nTerminating OOServer user process: exitcode = %d, error = %m.\n\n" \
-									 "OOServer will now wait for 10 seconds so you can read this message...\n"),ret));
-		ACE_OS::sleep(10);
-	}
-#endif
-
-	return ret;
+	return UserManager::run_event_loop(uPort);
 }
 
 using namespace Omega;
 using namespace OTL;
 
+namespace
+{
+	class InterProcessServiceImpl :
+		public ObjectBase,
+		public Remoting::IInterProcessService
+	{
+	public:
+		
+		BEGIN_INTERFACE_MAP(InterProcessServiceImpl)
+			INTERFACE_ENTRY(Remoting::IInterProcessService)
+		END_INTERFACE_MAP()
+
+	public:
+		Registry::IRegistryKey* GetRegistryKey();
+		Activation::IServiceTable* GetServiceTable();
+	};
+
+	class InterProcessServiceFactoryImpl :
+		public ObjectBase,
+		public Activation::IObjectFactory
+	{
+	public:
+		BEGIN_INTERFACE_MAP(InterProcessServiceFactoryImpl)
+			INTERFACE_ENTRY(Activation::IObjectFactory)
+		END_INTERFACE_MAP()
+
+	public:
+		void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject);
+	};
+}
+
+void InterProcessServiceFactoryImpl::CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject)
+{
+	if (pOuter)
+		Omega::Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
+
+	pObject = SingletonObjectImpl<InterProcessServiceImpl>::CreateObjectPtr()->QueryInterface(iid);
+	if (!pObject)
+		Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+}
+
+Registry::IRegistryKey* InterProcessServiceImpl::GetRegistryKey()
+{
+	void* TODO;
+	return 0;
+}
+
+Activation::IServiceTable* InterProcessServiceImpl::GetServiceTable()
+{
+	void* TODO;
+	return 0;
+}
+
+// UserManager
 UserManager::UserManager() : 
 	LocalAcceptor<UserConnection>(),
 	m_root_handle(ACE_INVALID_HANDLE),
@@ -52,6 +88,21 @@ int UserManager::run_event_loop_i(u_short uPort)
 	if (ret != 0)
 		return ret;
 
+	// Register our service
+	try
+	{
+		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
+		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
+
+		ObjectPtr<ObjectImpl<InterProcessServiceFactoryImpl> > ptrOF = ObjectImpl<InterProcessServiceFactoryImpl>::CreateObjectPtr();
+		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
+	}
+	catch (IException* pE)
+	{
+		pE->Release();
+		return -1;
+	}
+
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
 	if (threads < 2)
@@ -70,7 +121,7 @@ int UserManager::run_event_loop_i(u_short uPort)
 		else
 		{
 			// Run out bootstrap functions
-			ret = boostrap();
+			ret = bootstrap();
 			if (ret != 0)
 				ACE_OS::shutdown(m_root_handle,SD_BOTH);
 			else
@@ -164,7 +215,7 @@ int UserManager::init(u_short uPort)
 
 void UserManager::term()
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
@@ -173,7 +224,7 @@ void UserManager::term()
 	}
 }
 
-int UserManager::boostrap()
+int UserManager::bootstrap()
 {
 	// Send a test message
 	ACE_OutputCDR request;
@@ -192,7 +243,7 @@ int UserManager::boostrap()
 		}
 	}
 
-	return ret;
+	return 0;
 }
 
 void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE /*handle*/)
@@ -203,7 +254,8 @@ void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE 
 		ACE_OS::closesocket(handle());
 
 		{
-			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+			ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+
 			// Shutdown all client handles
 			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();)
 			{
@@ -220,9 +272,11 @@ void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE 
 		}
 
 		// Give everyone a chance to shut down
+		void* TODO; // Put a timeout here!
 		for (;;)
 		{
-			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+			ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+
 			if (m_mapReverseChannelIds.empty())
 				break;
 		}
@@ -249,15 +303,15 @@ int UserManager::validate_connection(const ACE_Asynch_Accept::Result& result, co
 
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,-1);
 
-		Channel channel = {result.accept_handle(), 0};
+		ChannelPair channel = {result.accept_handle(), 0};
 		ACE_CDR::UShort uChannelId = m_uNextChannelId++;
 		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 		{
 			uChannelId = m_uNextChannelId++;
 		}
-		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(uChannelId,channel));
+		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(uChannelId,channel));
 		m_mapReverseChannelIds.insert(std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(result.accept_handle(),std::map<ACE_CDR::UShort,ACE_CDR::UShort>()));
 	}
 	catch (...)
@@ -305,7 +359,7 @@ void UserManager::user_connection_closed_i(ACE_HANDLE handle)
 {
 	ACE_OS::closesocket(handle);
 
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 	try
 	{
@@ -335,10 +389,7 @@ void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_cha
 		if (request->m_bRoot)
 			process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
 		else 
-		{
-			::DebugBreak();
 			process_request(request->handle(),*request->input(),trans_id,request_deadline);
-		}
 	}
 	else
 	{
@@ -367,7 +418,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 {
 	// Init the error stream
 	ACE_OutputCDR error;
-	
+
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
@@ -405,10 +456,10 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 		msecs = ACE_UINT32_MAX;
 
 	// Wrap up the request
-	ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
+	ObjectPtr<ObjectImpl<OOServer::InputCDR> > ptrRequest;
 	try
 	{
-		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ptrRequest = ObjectImpl<OOServer::InputCDR>::CreateObjectPtr();
 		ptrRequest->init(request);
 	}
 	catch (IException* pE)
@@ -424,12 +475,12 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 	}
 
 	// Create a response if required
-	ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+	ObjectPtr<ObjectImpl<OOServer::OutputCDR> > ptrResponse;
 	if (trans_id != 0)
 	{
 		try
 		{
-			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OOServer::OutputCDR>::CreateObjectPtr();
 		}
 		catch (IException* pE)
 		{
@@ -450,6 +501,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 
 	try
 	{
+
 		ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
 	}
 	catch (IException* pE)
@@ -464,7 +516,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 			// Dump the previous output and create a fresh output
 			try
 			{
-				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+				ptrResponse = ObjectImpl<OOServer::OutputCDR>::CreateObjectPtr();
 			}
 			catch (IException* pE)
 			{
@@ -516,14 +568,14 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 
 void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	Channel dest_channel;
+	ChannelPair dest_channel;
 	ACE_CDR::UShort reply_channel_id;
 	try
 	{
-		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+		ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		// Find the destination channel
-		std::map<ACE_CDR::UShort,Channel>::iterator i=m_mapChannelIds.find(dest_channel_id);
+		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
 		if (i == m_mapChannelIds.end())
 			return;
 		dest_channel = i->second;
@@ -536,13 +588,13 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 		std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
 		if (k == j->second.end())
 		{
-			Channel channel = {request->handle(), src_channel_id};
+			ChannelPair channel = {request->handle(), src_channel_id};
 			reply_channel_id = m_uNextChannelId++;
 			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}
-			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,Channel>::value_type(reply_channel_id,channel));
+			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(reply_channel_id,channel));
 
 			k = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id)).first;
 		}
@@ -584,4 +636,40 @@ int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 		deadline = ACE_OS::gettimeofday() + *wait;
 
 	return RequestHandler<UserRequest>::send_synch(handle,dest_channel_id,0,request.begin(),response,&deadline);
+}
+
+ObjectPtr<Remoting::IObjectManager> UserManager::get_object_manager(ACE_HANDLE handle)
+{
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	try
+	{
+		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+
+		std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(handle);
+		if (i == m_mapOMs.end())
+		{
+			// Create a new channel
+			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObjectPtr();
+			ptrChannel->init(this,handle);
+
+			// Create a new OM
+			ptrOM = ObjectPtr<Remoting::IObjectManager>(OID_StdObjectManager,Activation::InProcess);
+
+			// Associate it with the channel
+			ptrOM->Connect(ptrChannel);
+
+			// And add to the map
+			m_mapOMs.insert(std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::value_type(handle,ptrOM));
+		}
+		else
+		{
+			ptrOM = i->second;
+		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
+
+	return ptrOM;
 }

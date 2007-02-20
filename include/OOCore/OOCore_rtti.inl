@@ -40,18 +40,20 @@ inline void Omega::MetaInfo::iface_stub_functor<I*>::detach(typename interface_i
 template <class I>
 inline void Omega::MetaInfo::iface_proxy_functor<I*>::init(I* pI, const guid_t& iid)
 {
+	m_iid = iid;
+
 	if (pI)
 	{
 		auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(IID_IObject));
 		if (!ptrObj)
 			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
 
-		m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(ptrObj,iid));
+		m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(ptrObj,m_iid));
 	}
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result, const guid_t& iid)
+inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result)
 {
 	if (result)
 		result->Release();
@@ -67,7 +69,7 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result, const g
 			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
 
 		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
-		result = static_cast<I*>(lookup_proxy(pObjS,iid,true));
+		result = static_cast<I*>(lookup_proxy(pObjS,m_iid,true));
 		ptrObjS.detach();
 	}
 }

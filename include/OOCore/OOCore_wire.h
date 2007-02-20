@@ -902,7 +902,7 @@ OMEGA_EXPORT_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(byte_t,ReadByte,0,())
-	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
+	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(in_out)(size_is(cbBytes)),byte_t*,val))
 	OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 	OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )

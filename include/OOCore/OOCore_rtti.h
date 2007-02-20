@@ -250,11 +250,12 @@ namespace Omega
 				init(pI,iid);	
 			}
 
-			inline void detach(I*& result, const guid_t& iid = iid_traits<I>::GetIID());
+			inline void detach(I*& result);
 			
 		private:
 			typename interface_info<I>::safe_class* m_fixed;
 			typename interface_info<I>::safe_class*& m_pS;
+			guid_t	m_iid;
 
 			inline void init(I* pI, const guid_t& iid);
 
@@ -882,7 +883,9 @@ namespace Omega
 		struct SafeStub : public IObject_Safe
 		{
 			SafeStub(IObject* pObj) : m_refcount(0), m_pObj(pObj)
-			{}
+			{
+				m_pObj->AddRef();
+			}
 
 			virtual ~SafeStub()
 			{
@@ -923,7 +926,9 @@ namespace Omega
 		struct SafeProxy : public IObject
 		{
 			SafeProxy(IObject_Safe* pObjS) : m_refcount(0), m_pS(pObjS)
-			{}
+			{
+				m_pS->AddRef_Safe();
+			}
 
 			virtual ~SafeProxy()
 			{

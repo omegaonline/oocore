@@ -106,14 +106,6 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 	}
 	else
 	{  
-#ifdef _DEBUG
-		if (bDebug)
-		{
-			// Break into debugger from SCM
-			::DebugBreak();
-		}
-#endif // _DEBUG
-
 		// Do the ServiceMain in a seperate thread
 		if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn service thread")),-1);

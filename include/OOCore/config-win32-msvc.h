@@ -17,7 +17,7 @@
 #  error You must link against multi-threaded libraries when using OOCore (check your project settings)
 # endif /* !_MT && !OOCORE_HAS_WINCE */
 
-#define OOCORE_FUNCNAME		__FUNCSIG__
+#define OMEGA_FUNCNAME		__FUNCSIG__
 
 #if defined (_WIN64)
 typedef SSIZE_T ssize_t;

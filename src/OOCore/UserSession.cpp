@@ -743,7 +743,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 		}
 	}
 
-	void* TODO2; // Restore CallContext
+	// Restore CallContext
 
 	if (trans_id != 0)
 	{

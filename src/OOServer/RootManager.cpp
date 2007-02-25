@@ -383,7 +383,7 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 								// Create a new unique channel id
 								ChannelPair channel = {stream.get_handle(), 0};
 								ACE_CDR::UShort uChannelId = m_uNextChannelId++;
-								while (uChannelId == 0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
+								while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 								{
 									uChannelId = m_uNextChannelId++;
 								}
@@ -596,7 +596,7 @@ void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_cha
 		{
 			ChannelPair channel = {request->handle(), src_channel_id};
 			reply_channel_id = m_uNextChannelId++;
-			while (reply_channel_id != 0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
+			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}
@@ -610,6 +610,8 @@ void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_cha
 	{
 		return;
 	}
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
 
 	if (trans_id == 0)
 	{
@@ -657,7 +659,7 @@ void RootManager::process_request(RequestBase* request, ACE_CDR::UShort dest_cha
 		}
 		else*/ 
 		{
-			process_root_request(request,trans_id,request_deadline);
+			process_root_request(request,src_channel_id,trans_id,request_deadline);
 		}
 	}
 	else
@@ -668,10 +670,43 @@ void RootManager::process_request(RequestBase* request, ACE_CDR::UShort dest_cha
 	delete request;
 }
 
-void RootManager::process_root_request(RequestBase* request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void RootManager::process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	ACE_CDR::ULong op_code;
+	ACE_CDR::UShort reply_channel_id;
+	try
+	{
+		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+		// Find the local channel id that matches src_channel_id
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(request->handle());
+		if (j==m_mapReverseChannelIds.end())
+			return; 
+
+		std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
+		if (k == j->second.end())
+		{
+			ChannelPair channel = {request->handle(), src_channel_id};
+			reply_channel_id = m_uNextChannelId++;
+			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
+			{
+				reply_channel_id = m_uNextChannelId++;
+			}
+			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(reply_channel_id,channel));
+
+			k = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id)).first;
+		}
+		reply_channel_id = k->second;
+	}
+	catch (...)
+	{
+		return;
+	}
+
+	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
 	(*request->input()) >> op_code;
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Root request %u from %u(%u)"),op_code,reply_channel_id,src_channel_id));
+
 	if (!request->input()->good_bit())
 		return;
 

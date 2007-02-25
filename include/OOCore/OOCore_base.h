@@ -79,7 +79,15 @@ namespace Omega
 OMEGA_DEFINE_IID(Omega, IObject, 0x6d2040c, 0xba2d, 0x45f5, 0x94, 0x4e, 0x32, 0x9f, 0x69, 0xa8, 0xd3, 0x40);
 OMEGA_DEFINE_IID(Omega, IException, 0x8ce2dc6, 0x2234, 0x4a6f, 0xa0, 0x15, 0x49, 0x18, 0x69, 0x60, 0x9, 0xbe);
 
+#if !defined(OMEGA_FUNCNAME)
+#define OMEGA_THROW_POS \
+	__FILE__ "(" OMEGA_STRINGIZE(__LINE__) ")"
+#else
+#define OMEGA_THROW_POS \
+	OMEGA_FUNCNAME " - " __FILE__ "(" OMEGA_STRINGIZE(__LINE__) ")"
+#endif
+
 #define OMEGA_THROW(msg) \
-	Omega::IException::Throw(msg,OMEGA_FUNCNAME)
+	Omega::IException::Throw(msg,OMEGA_THROW_POS)
 
 #endif // OOCORE_BASE_H_INCLUDED_

@@ -21,8 +21,3 @@
 #define OMEGA_STRINGIZE_I(n)	#n
 #define OMEGA_STRINGIZE(n)		OMEGA_STRINGIZE_I(n)
 #endif
-
-#if !defined(OMEGA_FUNCNAME)
-#define OMEGA_FUNCNAME			__FILE__ "(" OMEGA_STRINGIZE(__LINE__) ")"
-#endif
-

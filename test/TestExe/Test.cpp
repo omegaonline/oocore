@@ -12,8 +12,9 @@ int main(int argc, char* argv[])
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		printf("Init failed %s.\n",(const char*)pE->Description());
+		printf("Init failed: %s at %s.\n\nWaiting for 10 secs so you can read this!\n",(const char*)pE->Description(),(const char*)pE->Source());
 		pE->Release();
+		::Sleep(10000);
 		return -1;
 	}
 

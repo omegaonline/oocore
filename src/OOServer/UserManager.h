@@ -61,13 +61,13 @@ private:
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
 	void process_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	void forward_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-	
+
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);
 
 	void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-	void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-	OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_HANDLE handle);
+	void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id);
 
 	void user_connection_closed_i(ACE_HANDLE handle);
 	int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);

@@ -468,6 +468,9 @@
 			return Base::Internal_QueryInterface(iid); \
 		} \
 		OMEGA_DECLARE_SAFE_PROXY_METHODS(methods) \
+	private: \
+		OMEGA_CONCAT_R(unique,_SafeProxy)(const OMEGA_CONCAT_R(unique,_SafeProxy)&) {}; \
+		OMEGA_CONCAT_R(unique,_SafeProxy)& operator = (const OMEGA_CONCAT_R(unique,_SafeProxy)&) {}; \
 	}; \
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(unique,_WireProxy) : public Base \
@@ -484,6 +487,9 @@
 			return Base::Internal_QueryInterface(iid); \
 		} \
 		OMEGA_DECLARE_WIRE_PROXY_METHODS(methods) \
+	private: \
+		OMEGA_CONCAT_R(unique,_WireProxy)(const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
+		OMEGA_CONCAT_R(unique,_WireProxy)& operator = (const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
 	};
 
 #define OMEGA_EXPORT_INTERFACE_DERIVED_I(n_space,name,unique,d_space,derived,l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8, methods) \

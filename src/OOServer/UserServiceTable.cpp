@@ -1,19 +1,27 @@
 #include "OOServer.h"
 #include ".\UserServiceTable.h"
-#include ".\UserManager.h"
 
 using namespace Omega;
 using namespace OTL;
 
-void UserServiceTable::Init(UserManager* pManager, bool bIsSandbox)
+void UserServiceTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 {
-	m_pManager = pManager;
-	m_bIsSandbox = bIsSandbox;
+	if (ptrOM)
+	{
+		// Create a proxy to the server interface
+		IObject* pIPS = 0;
+		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,Remoting::IID_IInterProcessService,pIPS);
+		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
+
+		// Get the service table
+		m_ptrSIP.Attach(ptrIPS->GetServiceTable());
+	}
 }
 
 void UserServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Flags_t flags, IObject* pObject)
 {
-	if (!m_bIsSandbox && (flags & Activation::IServiceTable::AllowAnyUser))
+	if (m_ptrSIP && (flags & Activation::IServiceTable::AllowAnyUser))
 	{
 		// Route to sandbox!
 	}
@@ -42,7 +50,7 @@ void UserServiceTable::Revoke(const guid_t& oid)
 		}
 	}
 
-	if (!bFound && !m_bIsSandbox)
+	if (!bFound && m_ptrSIP)
 	{
 		// Route to sandbox
 	}
@@ -62,7 +70,7 @@ void UserServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*&
 		}
 	}
 
-	if (!bFound && !m_bIsSandbox)
+	if (!bFound && m_ptrSIP)
 	{
 		// Route to sandbox
 	}

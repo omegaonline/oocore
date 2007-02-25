@@ -651,14 +651,18 @@ namespace Omega
 				{
 					return m_pOuter->QueryInterface(iid);
 				}
-				
+
+			private:
 				IObject* m_pOuter;
+
+				Contained(const Contained&) {};
+				Contained& operator = (const Contained&) {};
 			};
 			Contained					m_contained;
 			AtomicOp<uint32_t>::type	m_refcount;
 
-			virtual ~WireProxyImpl()
-			{}
+			WireProxyImpl(const WireProxyImpl&) {};
+			WireProxyImpl& operator = (const WireProxyImpl&) {};
 
 		public:
 			WireProxyImpl(IObject* pOuter, IWireManager* pManager) : m_contained(pOuter,pManager), m_refcount(1)
@@ -712,7 +716,7 @@ namespace Omega
 			{ 
 				m_pI = static_cast<I*>(pObj->QueryInterface(iid_traits<I>::GetIID()));
 				if (!m_pI)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OOCORE_FUNCNAME);			
+					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_FUNCNAME);			
 			} 
 
 			virtual ~IObject_WireStub()

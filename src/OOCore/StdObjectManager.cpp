@@ -160,6 +160,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 	
 	// Read the stub id and method id
 	uint32_t stub_id = pParamsIn->ReadUInt32();
+
 	if (stub_id == 0)
 	{
 		// It's a static interface call...

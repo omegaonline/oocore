@@ -1,14 +1,12 @@
 #ifndef OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
 #define OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
 
-class UserManager;
-
 class UserServiceTable : 
 	public OTL::ObjectBase,
 	public Omega::Activation::IServiceTable
 {
 public:
-	void Init(UserManager* pManager, bool bIsSandbox);
+	void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM);
 	
 	void Register(const Omega::guid_t& oid, Omega::Activation::IServiceTable::Flags_t flags, Omega::IObject* pObject);
 	void Revoke(const Omega::guid_t& oid);
@@ -19,8 +17,7 @@ public:
 	END_INTERFACE_MAP()
 
 private:
-	UserManager*                                             m_pManager;
-	bool                                                     m_bIsSandbox;
+	OTL::ObjectPtr<Omega::Activation::IServiceTable>         m_ptrSIP;
 	ACE_Thread_Mutex                                         m_lock;
 	std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapServices;
 };

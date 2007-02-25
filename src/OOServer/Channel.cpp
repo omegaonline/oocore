@@ -7,7 +7,24 @@ const Omega::guid_t OOServer::IID_InputCDR = { 0x77b39017, 0xeca2, 0x4073, { 0xa
 OMEGA_DECLARE_IID_TRAITS(OOServer,InputCDR)
 
 const Omega::guid_t OOServer::IID_OutputCDR = { 0x5e8c6ed6, 0xe8b7, 0x4bc6, { 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e } };
-OMEGA_DECLARE_IID_TRAITS(OOServer,OutputCDR)
+//OMEGA_DECLARE_IID_TRAITS(OOServer,OutputCDR)
+
+OMEGA_EXPORT_INTERFACE_DERIVED
+(
+	OOServer, OutputCDR, Omega::Serialize, IStream, 
+	0x5e8c6ed6, 0xe8b7, 0x4bc6, 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e,
+
+	// Methods
+	OMEGA_METHOD_VOID(Null,0,())
+)
+
+namespace Omega
+{
+	namespace MetaInfo
+	{
+		OMEGA_QI_MAGIC(OOServer,OutputCDR)
+	}
+}
 
 using namespace Omega;
 using namespace OTL;
@@ -18,13 +35,14 @@ Channel::Channel() :
 {
 }
 
-void Channel::init(UserManager* pManager, ACE_HANDLE handle)
+void Channel::init(UserManager* pManager, ACE_HANDLE handle, ACE_CDR::UShort channel_id)
 {
 	if (m_pManager)
 		OOSERVER_THROW_ERRNO(EALREADY);
 
 	m_pManager = pManager;
 	m_handle = handle;
+	m_channel_id = channel_id;
 }
 
 Serialize::IFormattedStream* Channel::CreateOutputStream(IObject* pOuter)
@@ -58,13 +76,13 @@ Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_
 	{
 		if (attribs & Remoting::asynchronous)
 		{
-			if (m_pManager->send_asynch(m_handle,0,request,&deadline) != 0)
+			if (m_pManager->send_asynch(m_handle,m_channel_id,request,&deadline) != 0)
 				OOSERVER_THROW_LASTERROR();
 		}
 		else
 		{
 			UserRequest* response = 0;
-			if (m_pManager->send_synch(m_handle,0,request,response,&deadline) != 0)
+			if (m_pManager->send_synch(m_handle,m_channel_id,request,response,&deadline) != 0)
 				OOSERVER_THROW_LASTERROR();
 
 			// Unpack and validate response...

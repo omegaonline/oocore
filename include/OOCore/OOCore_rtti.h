@@ -665,13 +665,17 @@ namespace Omega
 					return m_pOuter->QueryInterface(iid);
 				}
 				
+			private:
 				IObject* m_pOuter;
+
+				Contained(const Contained&) {};
+				Contained& operator = (const Contained&) {};
 			};
 			Contained					m_contained;
 			AtomicOp<uint32_t>::type	m_refcount;
 
-			virtual ~SafeProxyImpl()
-			{}
+			SafeProxyImpl(const SafeProxyImpl&) {};
+			SafeProxyImpl& operator = (const SafeProxyImpl&) {};
 
 		public:
 			SafeProxyImpl(IObject* pOuter, typename interface_info<I*>::safe_class pS) : m_contained(pOuter,pS), m_refcount(1)

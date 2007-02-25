@@ -19,10 +19,9 @@ namespace
 		public Remoting::IInterProcessService
 	{
 	public:
-		void Init(UserManager* pManager, bool bIsSandbox)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 		{
-			m_pManager = pManager;
-			m_bIsSandbox = bIsSandbox;
+			m_ptrOM = ptrOM;
 		}
 		
 		BEGIN_INTERFACE_MAP(InterProcessServiceImpl)
@@ -31,8 +30,7 @@ namespace
 
 	private:
 		ACE_Thread_Mutex                         m_lock;
-		UserManager*                             m_pManager;
-		bool                                     m_bIsSandbox;
+		ObjectPtr<Remoting::IObjectManager>      m_ptrOM;
 		ObjectPtr<ObjectImpl<UserServiceTable> > m_ptrST;
 
 	public:
@@ -45,10 +43,9 @@ namespace
 		public Activation::IObjectFactory
 	{
 	public:
-		void Init(UserManager* pManager, bool bIsSandbox)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 		{
-			m_pManager = pManager;
-			m_bIsSandbox = bIsSandbox;
+			m_ptrOM = ptrOM;
 		}
 
 		BEGIN_INTERFACE_MAP(InterProcessServiceFactoryImpl)
@@ -56,8 +53,7 @@ namespace
 		END_INTERFACE_MAP()
 
 	private:
-		UserManager* m_pManager;
-		bool         m_bIsSandbox;
+		ObjectPtr<Remoting::IObjectManager> m_ptrOM;
 
 	public:
 		void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject);
@@ -70,7 +66,7 @@ void InterProcessServiceFactoryImpl::CreateObject(IObject* pOuter, const Omega::
 		Omega::Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
 
 	ObjectPtr<SingletonObjectImpl<InterProcessServiceImpl> > ptrIPS = SingletonObjectImpl<InterProcessServiceImpl>::CreateObjectPtr();
-	ptrIPS->Init(m_pManager,m_bIsSandbox);
+	ptrIPS->Init(m_ptrOM);
 
 	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
@@ -90,7 +86,7 @@ Activation::IServiceTable* InterProcessServiceImpl::GetServiceTable()
 	if (!m_ptrST)
 	{
 		m_ptrST = ObjectImpl<UserServiceTable>::CreateObjectPtr();
-		m_ptrST->Init(m_pManager,m_bIsSandbox);
+		m_ptrST->Init(m_ptrOM);
 	}
 
 	return m_ptrST.AddRefReturn();
@@ -258,17 +254,17 @@ int UserManager::bootstrap(ACE_SOCK_STREAM& stream)
 	// Register our service
 	try
 	{
+		ObjectPtr<Remoting::IObjectManager> ptrOM;
+		if (!bSandbox)
+			ptrOM = get_object_manager(m_root_handle,1);
+				
 		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
 		ObjectPtr<ObjectImpl<InterProcessServiceFactoryImpl> > ptrOF = ObjectImpl<InterProcessServiceFactoryImpl>::CreateObjectPtr();
-		ptrOF->Init(this,bSandbox);
+		ptrOF->Init(ptrOM);
 
 		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
-
-		if (bSandbox)
-		{
-		}
 	}
 	catch (IException* pE)
 	{
@@ -421,10 +417,10 @@ void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_cha
 {
 	if (dest_channel_id == 0)
 	{
-		if (request->m_bRoot)
+		if (request->m_bRoot && src_channel_id==0)
 			process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
 		else 
-			process_request(request->handle(),*request->input(),trans_id,request_deadline);
+			process_request(request->handle(),*request->input(),src_channel_id,trans_id,request_deadline);
 	}
 	else
 	{
@@ -437,8 +433,11 @@ void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_cha
 
 void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	ACE_CDR::ULong op_code;
-	request >> op_code;
+	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
+    request >> op_code;
+
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process root request %u"),op_code));
+
 	if (!request.good_bit())
 		return;
 
@@ -449,8 +448,10 @@ void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request,
 	}
 }
 
-void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
+
 	// Init the error stream
 	ACE_OutputCDR error;
 
@@ -458,7 +459,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-		ptrOM = get_object_manager(handle);
+		ptrOM = get_object_manager(handle,src_channel_id);
 	}
 	catch (IException* pE)
 	{
@@ -536,7 +537,6 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 
 	try
 	{
-
 		ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
 	}
 	catch (IException* pE)
@@ -544,6 +544,8 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 		// Make sure we release the exception
 		ObjectPtr<IException> ptrE;
 		ptrE.Attach(pE);
+
+		ACE_ERROR((LM_ERROR,ACE_TEXT("Invoke failed: %s at %s"),(LPCTSTR)pE->Description(),(LPCTSTR)pE->Source()));
 
 		// Reply with an exception if we can send replies...
 		if (trans_id != 0)
@@ -555,6 +557,8 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 			}
 			catch (IException* pE)
 			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("Failed to create response")));
+
 				pE->Release();
 				if (trans_id != 0)
 				{
@@ -588,7 +592,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 		}
 	}
 
-	void* TODO2; // Restore CallContext
+	// Restore CallContext
 
 	if (trans_id != 0)
 	{
@@ -640,6 +644,8 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 		return;
 	}
 
+	ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
+
 	if (trans_id == 0)
 	{
 		RequestHandler<UserRequest>::send_asynch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
@@ -679,7 +685,7 @@ int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	return RequestHandler<UserRequest>::send_synch(handle,dest_channel_id,0,request.begin(),response,&deadline);
 }
 
-ObjectPtr<Remoting::IObjectManager> UserManager::get_object_manager(ACE_HANDLE handle)
+ObjectPtr<Remoting::IObjectManager> UserManager::get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id)
 {
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
@@ -691,7 +697,7 @@ ObjectPtr<Remoting::IObjectManager> UserManager::get_object_manager(ACE_HANDLE h
 		{
 			// Create a new channel
 			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObjectPtr();
-			ptrChannel->init(this,handle);
+			ptrChannel->init(this,handle,channel_id);
 
 			// Create a new OM
 			ptrOM = ObjectPtr<Remoting::IObjectManager>(OID_StdObjectManager,Activation::InProcess);

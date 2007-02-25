@@ -9,7 +9,7 @@
 # error This version of Microsoft Visual C++ not supported.
 #endif*/
 
-#define OOCORE_FUNCNAME		__PRETTY_FUNCTION__
+#define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
 
 #include <winsock2.h>
 #include <sys/types.h>

@@ -71,4 +71,8 @@ inline void Omega::Uninitialize()
 #include <OOCore/OOCore_types.inl>
 #include <OOCore/OOCore_rtti.inl>
 
+#if defined(ACE_NLOGGING)
+#error You must not define ACE_NLOGGING, cos we use it!
+#endif
+
 #endif // OOCORE_H_INCLUDED_

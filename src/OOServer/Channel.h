@@ -4,7 +4,7 @@
 namespace OOServer
 {
 	OMEGA_DECLARE_IID(OutputCDR);
-
+	
 	class OutputCDR :
 		public OTL::ObjectBase,
 		public ACE_OutputCDR,
@@ -28,6 +28,9 @@ namespace OOServer
 		END_INTERFACE_MAP()
 
 	private:
+		OutputCDR(const OutputCDR&) {};
+		OutputCDR& operator = (const OutputCDR&) {};
+
 		void no_access()
 		{
 			OOSERVER_THROW_ERRNO(EACCES);
@@ -40,6 +43,8 @@ namespace OOServer
 
 	// IStream members
 	public:
+		void Null() {};
+
 		Omega::byte_t ReadByte() 
 			{ no_access(); return 0; }
 		void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
@@ -151,7 +156,7 @@ class Channel :
 public:
 	Channel();
 
-	void init(UserManager* pManager, ACE_HANDLE handle);
+	void init(UserManager* pManager, ACE_HANDLE handle, ACE_CDR::UShort channel_id);
 	
 	BEGIN_INTERFACE_MAP(Channel)
 		INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -160,6 +165,7 @@ public:
 private:
 	UserManager*     m_pManager;
 	ACE_HANDLE       m_handle;
+	ACE_CDR::UShort  m_channel_id;
 
 // IChannel members
 public: 

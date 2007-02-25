@@ -179,8 +179,6 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 				
 		// Create the required object
 		ObjectPtr<IObject> ptrObject;
-
-		// *** TODO ***  Actually get it out of the ServiceTable
 		ptrObject.Attach(Activation::CreateObject(oid,Activation::Any,0,iid));
 
 		// Get the handler for the interface

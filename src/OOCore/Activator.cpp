@@ -223,8 +223,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
-					void* TODO;	// Need a timeout...
-					for (int i=0;i<5;++i)
+					// Wait for startup
+					ACE_Time_Value wait(5);
+
+					// The timeout needs to be related to the request timeout...
+					void* TODO;
+
+					ACE_Countdown_Time timeout(&wait);
+					while (!timeout.stopped())
 					{
 						// Change this to use monikers one day!
 						IObject* pObject = 0;
@@ -232,7 +238,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 						if (pObject)
 							return static_cast<Activation::IObjectFactory*>(pObject);
 
-						ACE_OS::sleep(1);
+						timeout.update();
 					}
 				}
 			}

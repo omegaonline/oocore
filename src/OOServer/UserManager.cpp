@@ -304,14 +304,16 @@ void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE 
 			}
 		}
 
-		// Give everyone a chance to shut down
-		void* TODO; // Put a timeout here!
-		for (;;)
+		// Wait for everyone to close
+		ACE_Time_Value wait(15);
+		ACE_Countdown_Time timeout(&wait);
+		while (!timeout.stopped())
 		{
 			ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
-
 			if (m_mapReverseChannelIds.empty())
 				break;
+
+			timeout.update();
 		}
 	}
 	catch (...)

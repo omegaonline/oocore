@@ -36,7 +36,11 @@ Serialize::IFormattedStream* Channel::CreateOutputStream(IObject* pOuter)
 
 Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
 {
-	void* TODO; // Sort out timeout
+	// We need to make the timeout cumulative - i.e. catch the first request, and use a kind
+	// of 'time remaining' value to force all calls to occur within the timeout of the
+	// outermost requests timeout...
+	void* TODO;
+
 	ACE_Time_Value deadline(ACE_OS::gettimeofday());
 	deadline += 5;
 

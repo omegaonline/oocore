@@ -47,7 +47,7 @@ namespace Remoting
 	class IInterProcessService : public IObject
 	{
 	public:
-		virtual Registry::IRegistryKey* GetRegistryKey() = 0;
+		virtual Registry::IRegistryKey* GetRegistry() = 0;
 		virtual Activation::IServiceTable* GetServiceTable() = 0;
 	};
 	OMEGA_DECLARE_IID(IInterProcessService);
@@ -94,7 +94,7 @@ OMEGA_EXPORT_INTERFACE
 	Omega::Remoting, IInterProcessService,
 	0x355c529b, 0x579a, 0x411d, 0xb1, 0x6c, 0x31, 0x23, 0xbc, 0x85, 0x5f, 0xbf,
 
-	OMEGA_METHOD(Registry::IRegistryKey*,GetRegistryKey,0,())
+	OMEGA_METHOD(Registry::IRegistryKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IServiceTable*,GetServiceTable,0,())
 )
 

@@ -19,6 +19,7 @@
 #include "./ClientConnection.h"
 
 #include <ace/Singleton.h>
+#include <ace/Configuration.h>
 
 #include <map>
 
@@ -33,6 +34,7 @@ public:
 	static int run_event_loop();
 	static void end_event_loop();
 	static void connect_client(const Session::Request& request, Session::Response& response);
+	static ACE_Configuration_Heap& get_registry();
 		
 private:
 	typedef ACE_Singleton<RootManager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;
@@ -51,22 +53,26 @@ private:
 		u_short			uPort;
 		SpawnedProcess*	pSpawn;
 	};	
-	std::map<ACE_CString,UserProcess>		m_mapUserProcesses;
-	std::map<ACE_HANDLE,ACE_CString>		m_mapUserIds;
-	ACE_CDR::UShort							m_uNextChannelId;
+	std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
+	std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
+	ACE_CDR::UShort                    m_uNextChannelId;
 	struct ChannelPair
 	{
 		ACE_HANDLE			handle;
 		ACE_CDR::UShort		channel;
 	};
-	std::map<ACE_CDR::UShort,ChannelPair>		m_mapChannelIds;
-	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >	m_mapReverseChannelIds;
+	std::map<ACE_CDR::UShort,ChannelPair>                           m_mapChannelIds;
+	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> > m_mapReverseChannelIds;
+	ACE_Configuration_Heap                                          m_registry;
 	
 	int run_event_loop_i();
 	int init();
+	int init_registry();
+	int bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox);
 	void end_event_loop_i();
 	void term();
 	void connect_client_i(const Session::Request& request, Session::Response& response);
+	int spawn_sandbox();
 	void spawn_client(const Session::Request& request, Session::Response& response, const ACE_CString& key);
 	
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);

@@ -2,6 +2,7 @@
 
 #include "./UserManager.h"
 #include "./Channel.h"
+#include "./UserServiceTable.h"
 
 int UserMain(u_short uPort)
 {
@@ -18,13 +19,24 @@ namespace
 		public Remoting::IInterProcessService
 	{
 	public:
+		void Init(UserManager* pManager, bool bIsSandbox)
+		{
+			m_pManager = pManager;
+			m_bIsSandbox = bIsSandbox;
+		}
 		
 		BEGIN_INTERFACE_MAP(InterProcessServiceImpl)
 			INTERFACE_ENTRY(Remoting::IInterProcessService)
 		END_INTERFACE_MAP()
 
+	private:
+		ACE_Thread_Mutex                         m_lock;
+		UserManager*                             m_pManager;
+		bool                                     m_bIsSandbox;
+		ObjectPtr<ObjectImpl<UserServiceTable> > m_ptrST;
+
 	public:
-		Registry::IRegistryKey* GetRegistryKey();
+		Registry::IRegistryKey* GetRegistry();
 		Activation::IServiceTable* GetServiceTable();
 	};
 
@@ -33,9 +45,19 @@ namespace
 		public Activation::IObjectFactory
 	{
 	public:
+		void Init(UserManager* pManager, bool bIsSandbox)
+		{
+			m_pManager = pManager;
+			m_bIsSandbox = bIsSandbox;
+		}
+
 		BEGIN_INTERFACE_MAP(InterProcessServiceFactoryImpl)
 			INTERFACE_ENTRY(Activation::IObjectFactory)
 		END_INTERFACE_MAP()
+
+	private:
+		UserManager* m_pManager;
+		bool         m_bIsSandbox;
 
 	public:
 		void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject);
@@ -47,12 +69,15 @@ void InterProcessServiceFactoryImpl::CreateObject(IObject* pOuter, const Omega::
 	if (pOuter)
 		Omega::Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
 
-	pObject = SingletonObjectImpl<InterProcessServiceImpl>::CreateObjectPtr()->QueryInterface(iid);
+	ObjectPtr<SingletonObjectImpl<InterProcessServiceImpl> > ptrIPS = SingletonObjectImpl<InterProcessServiceImpl>::CreateObjectPtr();
+	ptrIPS->Init(m_pManager,m_bIsSandbox);
+
+	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
 		Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
 }
 
-Registry::IRegistryKey* InterProcessServiceImpl::GetRegistryKey()
+Registry::IRegistryKey* InterProcessServiceImpl::GetRegistry()
 {
 	void* TODO;
 	return 0;
@@ -60,8 +85,15 @@ Registry::IRegistryKey* InterProcessServiceImpl::GetRegistryKey()
 
 Activation::IServiceTable* InterProcessServiceImpl::GetServiceTable()
 {
-	void* TODO;
-	return 0;
+	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+
+	if (!m_ptrST)
+	{
+		m_ptrST = ObjectImpl<UserServiceTable>::CreateObjectPtr();
+		m_ptrST->Init(m_pManager,m_bIsSandbox);
+	}
+
+	return m_ptrST.AddRefReturn();
 }
 
 // UserManager
@@ -88,21 +120,6 @@ int UserManager::run_event_loop_i(u_short uPort)
 	if (ret != 0)
 		return ret;
 
-	// Register our service
-	try
-	{
-		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
-		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
-
-		ObjectPtr<ObjectImpl<InterProcessServiceFactoryImpl> > ptrOF = ObjectImpl<InterProcessServiceFactoryImpl>::CreateObjectPtr();
-		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-		return -1;
-	}
-
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
 	if (threads < 2)
@@ -120,12 +137,9 @@ int UserManager::run_event_loop_i(u_short uPort)
 			ret = -1;
 		else
 		{
-			// Run out bootstrap functions
-			ret = bootstrap();
-			if (ret != 0)
-				ACE_OS::shutdown(m_root_handle,SD_BOTH);
-			else
-				ret = proactor_worker_fn(0);
+			//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
+
+			ret = proactor_worker_fn(0);
 
 			// Wait for all the proactor threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
@@ -137,6 +151,8 @@ int UserManager::run_event_loop_i(u_short uPort)
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
+
+	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has stopped.")));
 
 	return ret;
 }
@@ -184,6 +200,11 @@ int UserManager::init(u_short uPort)
 				}
 				else
 				{
+					ret = bootstrap(stream);
+				}
+
+				if (ret == 0)
+				{
 					// Create a new RootConnection
 					RootConnection*	pRC;
 					ACE_NEW_NORETURN(pRC,RootConnection(this,ACE_CString()));
@@ -219,30 +240,42 @@ void UserManager::term()
 
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
+		ACE_OS::shutdown(m_root_handle,SD_BOTH);
 		ACE_OS::closesocket(m_root_handle);
 		m_root_handle = ACE_INVALID_HANDLE;
 	}
 }
 
-int UserManager::bootstrap()
+int UserManager::bootstrap(ACE_SOCK_STREAM& stream)
 {
-	// Send a test message
-	ACE_OutputCDR request;
-	request.write_ulong(1);
-	request.write_string("Hello!");
+	// Talk to the root...
+	char sandbox = 0;
+	if (stream.recv(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("recv() failed")),-1);
 
-	ACE_Time_Value wait(60);
-	UserRequest* response;	
-	int ret = send_synch(m_root_handle,0,request,response,&wait);
-	if (ret == 0)
+	bool bSandbox = sandbox ? true : false;
+
+	// Register our service
+	try
 	{
-		ACE_CString strResponse;
-		if (response->input()->read_string(strResponse))
+		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
+		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
+
+		ObjectPtr<ObjectImpl<InterProcessServiceFactoryImpl> > ptrOF = ObjectImpl<InterProcessServiceFactoryImpl>::CreateObjectPtr();
+		ptrOF->Init(this,bSandbox);
+
+		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
+
+		if (bSandbox)
 		{
-			printf("Response: %s\n",strResponse.c_str());
 		}
 	}
-
+	catch (IException* pE)
+	{
+		pE->Release();
+		return -1;
+	}
+	
 	return 0;
 }
 
@@ -251,7 +284,7 @@ void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE 
 	try
 	{
 		// Stop accepting
-		ACE_OS::closesocket(handle());
+		ACE_OS::shutdown(get_handle(),SD_BOTH);
 
 		{
 			ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
@@ -622,6 +655,9 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 
 int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait)
 {
+	if (handle == ACE_INVALID_HANDLE)
+		handle = m_root_handle;
+
 	ACE_Time_Value deadline(5);
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
@@ -631,6 +667,9 @@ int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id,
 
 int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait)
 {
+	if (handle == ACE_INVALID_HANDLE)
+		handle = m_root_handle;
+
 	ACE_Time_Value deadline(5);
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;

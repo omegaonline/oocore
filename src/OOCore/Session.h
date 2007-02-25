@@ -14,6 +14,7 @@
 #define OOCORE_SESSION_H_INCLUDED_
 
 #include <ace/SString.h>
+#include <ace/OS.h>
 
 #if defined(ACE_WIN32)
 #include <shlobj.h>
@@ -66,22 +67,30 @@ namespace Session
 
 	#if defined(ACE_WIN32)
 
+		ACE_TString strFilename = ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_BOOTSTRAP_FILE));
+
 		ACE_TCHAR szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-		if FAILED(hr)
-			return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_BOOTSTRAP_FILE)));
+		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
+		if SUCCEEDED(hr)
+		{
+			ACE_TCHAR szBuf2[MAX_PATH] = {0};
+			if (PathCombine(szBuf2,szBuf,ACE_TEXT("OmegaOnline")))
+			{
+				if (!PathFileExists(szBuf2) && ACE_OS::mkdir(szBuf2) != 0)
+					return strFilename;
+			
+				if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
+					strFilename = szBuf;
+			}
+		}
 
-		ACE_TCHAR szBuf2[MAX_PATH] = {0};
-		if (!PathCombine(szBuf2,szBuf,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
-			return ACE_TString(ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_BOOTSTRAP_FILE)));
-
-		return ACE_TString(szBuf2);
+		return strFilename;
 
 	#else
 
-		#define BOOTSTRAP_PREFIX ACE_TEXT("/tmp/")
-		
-		return ACE_TString(ACE_TEXT(OMEGA_CONCAT(BOOTSTRAP_PREFIX,OMEGA_BOOTSTRAP_FILE)));
+		void* TODO; // Sort this out!
+
+		return ACE_TString(ACE_TEXT(OMEGA_CONCAT("/tmp/",OMEGA_BOOTSTRAP_FILE)));
 
 	#endif
 	}

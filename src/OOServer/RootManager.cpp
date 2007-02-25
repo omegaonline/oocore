@@ -22,7 +22,7 @@
 RootManager::RootManager() : 
 	LocalAcceptor<ClientConnection>(),
 	m_config_file(ACE_INVALID_HANDLE),
-	m_uNextChannelId(2)
+	m_uNextChannelId(1)
 {
 }
 
@@ -60,6 +60,8 @@ int RootManager::run_event_loop_i()
 			ret = -1;
 		else
 		{
+			ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer has started successfully.")));
+
 			// Treat this thread as a worker as well
 			ret = proactor_worker_fn(0);
 
@@ -73,6 +75,8 @@ int RootManager::run_event_loop_i()
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
+
+	ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer has stopped.")));
 
 	return ret;
 }
@@ -94,10 +98,12 @@ int RootManager::init()
 			{
 				// Already running on this machine... Fail
 				ACE_OS::close(m_config_file);
+				m_config_file = ACE_INVALID_HANDLE;
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),-1);
 			}
 		}
 		ACE_OS::close(m_config_file);
+		m_config_file = ACE_INVALID_HANDLE;
 	}
 
 	m_config_file = ACE_OS::open(Session::GetBootstrapFileName().c_str(),O_WRONLY | O_CREAT | O_TRUNC | O_TEMPORARY);
@@ -108,8 +114,10 @@ int RootManager::init()
 	pid_t pid = ACE_OS::getpid();
 	if (ACE_OS::write(m_config_file,&pid,sizeof(pid)) != sizeof(pid))
 	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 		ACE_OS::close(m_config_file);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")),-1);
+		m_config_file = ACE_INVALID_HANDLE;
+		return -1;
 	}
 
 	// Bind a tcp socket 
@@ -118,6 +126,7 @@ int RootManager::init()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("open() failed")));
 		ACE_OS::close(m_config_file);
+		m_config_file = ACE_INVALID_HANDLE;
 		return -1;
 	}
 	
@@ -128,6 +137,7 @@ int RootManager::init()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
 		ACE_OS::close(m_config_file);
+		m_config_file = ACE_INVALID_HANDLE;
 		return -1;
 	}
 	sa.set_type(addr->sa_family);
@@ -139,12 +149,59 @@ int RootManager::init()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 		ACE_OS::close(m_config_file);
+		m_config_file = ACE_INVALID_HANDLE;
 		return -1;	
 	}
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Listening for client connections on port %u.\n"),uPort));
-	
+	// Open the root registry
+	if (init_registry() != 0)
+	{
+		ACE_OS::close(m_config_file);
+		m_config_file = ACE_INVALID_HANDLE;
+		return -1;	
+	}
+
 	return 0;
+}
+
+int RootManager::init_registry()
+{
+	ACE_TString strFilename;
+
+#define OMEGA_REGISTRY_FILE "omega_root.regdb"
+
+#if defined(ACE_WIN32)
+
+	strFilename = ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_REGISTRY_FILE));
+
+	ACE_TCHAR szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPath(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	if SUCCEEDED(hr)
+	{
+		ACE_TCHAR szBuf2[MAX_PATH] = {0};
+		if (PathCombine(szBuf2,szBuf,ACE_TEXT("OmegaOnline")))
+		{
+			if (!PathFileExists(szBuf2))
+			{
+				int ret = ACE_OS::mkdir(szBuf2);
+				if (ret != 0)
+					return ret;
+			}
+						
+			if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_REGISTRY_FILE)))
+				strFilename = szBuf;
+		}
+	}
+
+#else
+
+	void* TODO; // Sort this out!
+
+	strFilename = ACE_TEXT(OMEGA_CONCAT("/tmp/",OMEGA_REGISTRY_FILE));
+
+#endif
+
+	return m_registry.open(strFilename.c_str());
 }
 
 void RootManager::end_event_loop()
@@ -157,7 +214,7 @@ void RootManager::end_event_loop_i()
 	try
 	{
 		// Stop accepting
-		ACE_OS::closesocket(handle());
+		ACE_OS::shutdown(get_handle(),SD_BOTH);
 
 		{
 			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
@@ -168,8 +225,6 @@ void RootManager::end_event_loop_i()
 				ACE_OS::shutdown(j->first,SD_SEND);
 			}
 		}
-
-        // Give everyone a chance to shut down
 
 		void* TODO; // Put a timeout here!
 		for (;;)
@@ -211,6 +266,37 @@ void RootManager::term()
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 	}
+}
+
+ACE_Configuration_Heap& RootManager::get_registry()
+{
+	return ROOT_MANAGER::instance()->m_registry;
+}
+
+int RootManager::spawn_sandbox()
+{
+	// Build a request manually
+	Session::Request request;
+	request.cbSize = sizeof(Session::Request);
+	request.uid = static_cast<Session::TOKEN>(-1);
+	
+	// Build a response
+	Session::Response response;
+	response.cbSize = sizeof(response);
+	response.bFailure = 0;
+
+	ACE_CString strUserId;
+	int ret = SpawnedProcess::GetSandboxUid(strUserId);
+	if (ret != 0)
+		return ret;
+
+	// Spawn the sandbox
+	spawn_client(request,response,strUserId);
+
+	if (response.bFailure)
+		return response.err;
+	else
+		return 0;
 }
 
 void RootManager::spawn_client(const Session::Request& request, Session::Response& response, const ACE_CString& strUserId)
@@ -268,6 +354,11 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 					}
 					else
 					{
+						ret = bootstrap_client(stream,request.uid == static_cast<Session::TOKEN>(-1));
+					}
+
+					if (ret == 0)
+					{
 						// Create a new RootConnection
 						RootConnection* pRC = 0;
 						ACE_NEW_NORETURN(pRC,RootConnection(this,strUserId));
@@ -287,7 +378,7 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 								// Create a new unique channel id
 								ChannelPair channel = {stream.get_handle(), 0};
 								ACE_CDR::UShort uChannelId = m_uNextChannelId++;
-								while (uChannelId < 2 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
+								while (uChannelId == 0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 								{
 									uChannelId = m_uNextChannelId++;
 								}
@@ -332,6 +423,17 @@ void RootManager::spawn_client(const Session::Request& request, Session::Respons
 	}
 }
 
+int RootManager::bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox)
+{
+	// This could be changed to a struct if we wanted...
+	char sandbox = bSandbox ? 1 : 0;
+
+	if (stream.send(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send() failed")),-1);
+						
+	return 0;
+}
+
 void RootManager::connect_client(const Session::Request& request, Session::Response& response)
 {
 	return ROOT_MANAGER::instance()->connect_client_i(request,response);
@@ -341,6 +443,7 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 {
 	// Set the response size
 	response.cbSize = sizeof(response);
+	response.bFailure = 0;
 
 	ACE_CString strUserId;
 	int err = SpawnedProcess::ResolveTokenToUid(request.uid,strUserId);
@@ -351,6 +454,7 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 		return;
 	}
 
+	// Lock the cs
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,
 		response.bFailure = 1;
 		response.err = ACE_OS::last_error();
@@ -360,30 +464,42 @@ void RootManager::connect_client_i(const Session::Request& request, Session::Res
 	// See if we have a process already
 	try
 	{
-		std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
-		if (i!=m_mapUserProcesses.end())
+		// See if we have a sandbox yet...
+		if (m_mapUserProcesses.empty())
 		{
-			// See if its still running...
-			if (!i->second.pSpawn->IsRunning())
-			{
-				// No, close it and remove from map
-				i->second.pSpawn->Close();
-				delete i->second.pSpawn;
-				m_mapUserProcesses.erase(i);
-				i = m_mapUserProcesses.end();
-			}
+			// Create a new sandbox...
+			response.err = spawn_sandbox();
+			if (response.err != 0)
+				response.bFailure = 1;
 		}
 
-		if (i==m_mapUserProcesses.end())
+		if (response.bFailure == 0)
 		{
-			// No we don't
-			spawn_client(request,response,strUserId);
-		}
-		else
-		{
-			// Yes we do
-			response.bFailure = 0;
-			response.uNewPort = i->second.uPort;
+			std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
+			if (i!=m_mapUserProcesses.end())
+			{
+				// See if its still running...
+				if (!i->second.pSpawn->IsRunning())
+				{
+					// No, close it and remove from map
+					i->second.pSpawn->Close();
+					delete i->second.pSpawn;
+					m_mapUserProcesses.erase(i);
+					i = m_mapUserProcesses.end();
+				}
+			}
+
+			if (i==m_mapUserProcesses.end())
+			{
+				// No we don't
+				spawn_client(request,response,strUserId);
+			}
+			else
+			{
+				// Yes we do
+				response.bFailure = 0;
+				response.uNewPort = i->second.uPort;
+			}
 		}
 	}
 	catch (...)
@@ -460,10 +576,8 @@ void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_cha
 		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
 		if (i == m_mapChannelIds.end())
 		{
-			if (dest_channel_id != 1)
-				return;
-			
-			void* TODO; // Spawn sandbox!
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Invalid destination channel id.\n")));
+			return;
 		}
 		dest_channel = i->second;
 		
@@ -477,7 +591,7 @@ void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_cha
 		{
 			ChannelPair channel = {request->handle(), src_channel_id};
 			reply_channel_id = m_uNextChannelId++;
-			while (reply_channel_id<2 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
+			while (reply_channel_id != 0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}

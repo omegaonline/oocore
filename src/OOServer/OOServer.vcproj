@@ -4,6 +4,7 @@
 	Version="7.10"
 	Name="OOServer"
 	ProjectGUID="{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}"
+	RootNamespace="OOServer"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -283,6 +284,12 @@
 			<File
 				RelativePath=".\UserManager.cpp">
 			</File>
+			<File
+				RelativePath=".\UserRegistry.cpp">
+			</File>
+			<File
+				RelativePath=".\UserServiceTable.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -310,6 +317,9 @@
 				RelativePath=".\RequestHandler.inl">
 			</File>
 			<File
+				RelativePath=".\resource.h">
+			</File>
+			<File
 				RelativePath=".\RootConnection.h">
 			</File>
 			<File
@@ -324,11 +334,39 @@
 			<File
 				RelativePath=".\UserManager.h">
 			</File>
+			<File
+				RelativePath=".\UserRegistry.h">
+			</File>
+			<File
+				RelativePath=".\UserServiceTable.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			<File
+				RelativePath=".\OOServer.rc">
+			</File>
+			<File
+				RelativePath=".\OOServer_msgs.mc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling messages..."
+						CommandLine="mc $(InputPath)"
+						Outputs=".\$(InputName).rc"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling messages..."
+						CommandLine="mc $(InputPath)"
+						Outputs=".\$(InputName).rc"/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

@@ -21,12 +21,13 @@ class UserManager :
 	public RootBase,
 	public RequestHandler<UserRequest>
 {
-	friend class Channel;
-
 public:
 	static int run_event_loop(u_short uPort);
 	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	static void user_connection_closed(ACE_HANDLE handle);
+
+	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait = 0);
+	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait = 0);
 	
 private:
 	typedef ACE_Singleton<UserManager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
@@ -40,7 +41,7 @@ private:
 	ACE_Recursive_Thread_Mutex  m_lock;
 	ACE_HANDLE                  m_root_handle;
 	ACE_CDR::UShort             m_uNextChannelId;
-
+	
 	struct ChannelPair
 	{
 		ACE_HANDLE			handle;
@@ -54,7 +55,7 @@ private:
 	int init(u_short uPort);
 	void stop_i();
 	void term();
-	int bootstrap();
+	int bootstrap(ACE_SOCK_STREAM& stream);
 
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
@@ -70,9 +71,6 @@ private:
 
 	void user_connection_closed_i(ACE_HANDLE handle);
 	int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);
-
-	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait = 0);
-	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait = 0);
 };
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_

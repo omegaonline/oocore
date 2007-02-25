@@ -17,6 +17,10 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	printf("Everything is cool - we wait for 10 secs so you can read this!\n");
+
+	::Sleep(10000);
+
 	/*try
 	{
 		OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");

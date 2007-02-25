@@ -127,7 +127,8 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 	if (!bSuccess)
 	{
 #ifdef OMEGA_WIN32
-		if (::GetLastError() != ERROR_IO_PENDING)
+		DWORD dwErr = GetLastError();
+		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SUCCESS)
 #endif
 		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::handle_read_stream")));
 		delete this;

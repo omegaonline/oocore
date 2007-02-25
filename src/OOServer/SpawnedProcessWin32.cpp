@@ -11,6 +11,7 @@
 /////////////////////////////////////////////////////////////
 
 #include "./SpawnedProcess.h"
+#include "./RootManager.h"
 
 #ifdef ACE_WIN32
 
@@ -35,7 +36,7 @@ SpawnedProcess::~SpawnedProcess(void)
 int SpawnedProcess::Close(ACE_Time_Value* wait)
 {
 	int exit_code = 0;
-	DWORD dwWait = INFINITE;
+	DWORD dwWait = 10000;
 	if (wait)
 	{
 		ACE_UINT64 val;
@@ -98,7 +99,7 @@ DWORD SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
 	if (!RevertToSelf())
 		abort();
 
-	if (dwRes != ERROR_SUCCESS)
+	if (dwRes != ERROR_SUCCESS && dwRes != ERROR_FILE_NOT_FOUND)
 		return dwRes;
 
 	// Find out all about the user associated with hToken
@@ -255,12 +256,7 @@ DWORD SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 	STARTUPINFO startup_info = {0};
 	startup_info.cb = sizeof(STARTUPINFO);
 	
-#ifdef _DEBUG
-	startup_info.lpDesktop = ACE_TEXT("winsta0\\default");
-	DWORD dwFlags = CREATE_NEW_CONSOLE | CREATE_UNICODE_ENVIRONMENT;
-#else
-	DWORD dwFlags = CREATE_NO_WINDOW | DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT;
-#endif
+	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
 
 	PROCESS_INFORMATION process_info = {0};
 	if (!CreateProcessAsUser(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
@@ -286,19 +282,29 @@ DWORD SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 
 int SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 {
-	// Get the process handle
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
-	if (!hProcess)
-		return GetLastError();
+	HANDLE hToken = INVALID_HANDLE_VALUE;
 
-	// Get the process token
-	HANDLE hToken;
-	BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
+	if (id == static_cast<Session::TOKEN>(-1))
+	{
+		int err = LogonSandboxUser(&hToken);
+		if (err != 0)
+			return err;
+	}
+	else
+	{
+		// Get the process handle
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
+		if (!hProcess)
+			return GetLastError();
 
-	// Done with hProcess
-	CloseHandle(hProcess);
-	if (!bSuccess)
-		return GetLastError();
+		// Get the process token
+		BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
+
+		// Done with hProcess
+		CloseHandle(hProcess);
+		if (!bSuccess)
+			return GetLastError();
+	}
 
 	DWORD dwRes = SpawnFromToken(hToken,uPort);
 	if (dwRes != ERROR_SUCCESS)
@@ -309,6 +315,83 @@ int SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 	}
 	
 	m_hToken = hToken;
+
+	return 0;
+}
+
+int SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
+{
+	// Get the local machine registry
+	ACE_Configuration_Heap& reg_root = RootManager::get_registry();
+
+	// Get the server section
+	ACE_Configuration_Section_Key sandbox_key;
+	int ret = reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key);
+	if (ret != 0)
+		return ret;
+
+	// Get the user name and pwd...
+	ACE_TString strUName;
+	ret = reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName);
+	if (ret != 0)
+		//return ret;
+		strUName = ACE_TEXT("OMEGA_SANDBOX");
+
+	ACE_TString strPwd;
+	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
+	
+	if (!LogonUser(strUName.c_str(),NULL,strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
+		return GetLastError();
+
+	return 0;
+}
+
+int SpawnedProcess::GetSandboxUid(ACE_CString& uid)
+{
+	HANDLE hToken;
+	int err = LogonSandboxUser(&hToken);
+	if (err != 0)
+		return err;		
+
+	DWORD dwLen = 0;
+	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
+	if (dwLen == 0)
+	{
+		err = GetLastError();
+		CloseHandle(hToken);
+		return err;
+	}
+	
+	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(malloc(dwLen));
+	if (!pBuffer)
+	{
+		CloseHandle(hToken);
+		return ERROR_OUTOFMEMORY;
+	}
+
+	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
+	{
+		err = GetLastError();
+		free(pBuffer);
+		CloseHandle(hToken);
+		return err;
+	}
+
+	LPSTR pszString;
+	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
+	{
+		err = GetLastError();
+		free(pBuffer);
+		CloseHandle(hToken);
+		return err;
+	}
+
+	uid = pszString;
+	LocalFree(pszString);
+	free(pBuffer);
+
+	// Done with hToken
+	CloseHandle(hToken);
 
 	return 0;
 }

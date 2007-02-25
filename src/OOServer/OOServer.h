@@ -24,3 +24,7 @@
 
 #define OOSERVER_THROW_ERRNO(error) \
 	OMEGA_THROW(ACE_OS::strerror(error))
+
+#if defined(ACE_NLOGGING)
+#error You must not define ACE_NLOGGING, cos we use it!
+#endif

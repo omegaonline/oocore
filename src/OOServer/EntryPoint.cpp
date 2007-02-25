@@ -14,6 +14,7 @@
 #include "./RootManager.h"
 
 #include <ace/OS.h>
+#include <ace/Log_Msg.h>
 
 // Forward declare UserMain
 int UserMain(u_short uPort);
@@ -21,6 +22,9 @@ int UserMain(u_short uPort);
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 #ifdef ACE_WIN32
+
+	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
+		return -1;
 	
 	// Check to see if we have been spawned
 	if (argc==3 && ACE_OS::strcmp(argv[1],"--spawned")==0)
@@ -29,6 +33,9 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	int ret = NTService::open(argc,argv);
 	
 #else
+
+	if (ACE_LOG_MSG->open(argv[0],ACE_Log_Msg::SYSLOG) != 0)
+		return -1;
 
 	// Daemonize ourselves
 	ACE_TCHAR szCwd[MAXPATHLEN];
@@ -39,21 +46,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #endif
 
-	if (ret == 0)
-	{
-		ret = RootManager::run_event_loop();
-	}
-	
-	if (ret < 0)
-	{
-		ACE_DEBUG((LM_DEBUG,ACE_TEXT("OOServer terminated with error: exitcode = %d, error = %m.\n"),ret));
+	if (ret != 0)
+		return ret;
 
-#ifdef _DEBUG
-		// Give us a chance to read the error message
-		ACE_OS::printf(ACE_TEXT("OOServer will now wait for 10 seconds so you can read this message...\n"));
-		ACE_OS::sleep(10);
-#endif
-	}
-
-	return ret;
+	return RootManager::run_event_loop();
 }

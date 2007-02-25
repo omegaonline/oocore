@@ -67,7 +67,7 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 				return 1;
 			}
 			else
-				ACE_ERROR_RETURN((LM_WARNING,ACE_TEXT("Invalid argument for -%c %s.\n"),cmd_opts.opt_opt(),cmd_opts.opt_arg()),-1);
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument for -%c %s.\n"),cmd_opts.opt_opt(),cmd_opts.opt_arg()),-1);
 			break;
 
 		case ACE_TEXT('d'):

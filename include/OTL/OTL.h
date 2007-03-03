@@ -160,27 +160,21 @@ namespace OTL
 
 		ObjectPtrBase& operator = (const ObjectPtrBase& rhs)
 		{
-			OBJECT* ptr = rhs;
-			if (ptr)
-				ptr->AddRef();
-
-			OBJECT* old = m_ptr.exchange(ptr);
-			
-			if (old)
-				old->Release();
-
-			return *this;
+			return this->operator = (static_cast<OBJECT*>(rhs));
 		}
 
 		ObjectPtrBase& operator = (OBJECT* ptr)
 		{
-			if (ptr)
-				ptr->AddRef();
+			if (ptr != m_ptr.value())
+			{
+				if (ptr)
+					ptr->AddRef();
 
-			OBJECT* old = m_ptr.exchange(ptr);
+				OBJECT* old = m_ptr.exchange(ptr);
 
-			if (old)
-				old->Release();
+				if (old)
+					old->Release();
+			}
 
 			return *this;
 		}
@@ -496,7 +490,7 @@ namespace OTL
 		static ObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				Omega::IException::Throw("ObjectImpl does not support aggregation",OMEGA_FUNCNAME);
+				Omega::IException::Throw("ObjectImpl does not support aggregation",OMEGA_SOURCE_INFO);
 				
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
@@ -638,7 +632,7 @@ namespace OTL
 		static AggregatedObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter)
 		{
 			if (!pOuter)
-				Omega::IException::Throw("AggregatedObjectImpl must be aggregated",OMEGA_FUNCNAME);
+				Omega::IException::Throw("AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
 
 			AggregatedObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,AggregatedObjectImpl<ROOT>(pOuter));
@@ -801,7 +795,7 @@ namespace OTL
 			{
 				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid); 
 				if (!pObject)
-					Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 				return pObject;
 			}
 		};
@@ -823,7 +817,7 @@ namespace OTL
 			{
 				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid); 
 				if (!pObject)
-					Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 				return pObject;
 			}
 		};
@@ -840,7 +834,7 @@ namespace OTL
 		{
 			Omega::IObject* pObject = T::CreateObjectPtr(pOuter)->QueryInterface(iid);
 			if (!pObject)
-				Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+				Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 			return pObject;
 		}
 	};

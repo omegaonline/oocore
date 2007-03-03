@@ -26,8 +26,8 @@ public:
 	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	static void user_connection_closed(ACE_HANDLE handle);
 
-	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait = 0);
-	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait = 0);
+	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait = 0);
+	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, UserRequest*& response, ACE_Time_Value* wait = 0);
 	
 private:
 	typedef ACE_Singleton<UserManager, ACE_Recursive_Thread_Mutex> USER_MANAGER;

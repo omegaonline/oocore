@@ -30,7 +30,8 @@ SpawnedProcess::SpawnedProcess() :
 
 SpawnedProcess::~SpawnedProcess(void)
 {
-	Close();	
+	if (Close() == ETIMEDOUT)
+		Kill();
 }
 
 int SpawnedProcess::Close(ACE_Time_Value* wait)
@@ -54,6 +55,7 @@ int SpawnedProcess::Close(ACE_Time_Value* wait)
 			return GetLastError();
 
 		exit_code = dwRes;
+		CloseHandle(m_hProcess);
 		m_hProcess = NULL;
 	}
 
@@ -70,6 +72,30 @@ int SpawnedProcess::Close(ACE_Time_Value* wait)
 	}
 
 	return exit_code;
+}
+
+void SpawnedProcess::Kill()
+{
+	::DebugBreak();
+
+	if (m_hProcess)
+	{
+		TerminateProcess(m_hProcess,UINT(-1));
+		CloseHandle(m_hProcess);
+		m_hProcess = NULL;
+	}
+
+	if (m_hProfile)
+	{
+		UnloadUserProfile(m_hToken,m_hProfile);
+		m_hProfile = NULL;
+	}
+
+	if (m_hToken)
+	{
+		CloseHandle(m_hToken);
+		m_hToken = NULL;
+	}
 }
 
 bool SpawnedProcess::IsRunning()
@@ -336,7 +362,7 @@ int SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	if (ret != 0)
 		//return ret;
 		strUName = ACE_TEXT("OMEGA_SANDBOX");
-
+		
 	ACE_TString strPwd;
 	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
 	
@@ -392,6 +418,9 @@ int SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 
 	// Done with hToken
 	CloseHandle(hToken);
+
+	// Append a extra to the uid
+	uid += "_SANDBOX";
 
 	return 0;
 }

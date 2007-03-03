@@ -232,7 +232,7 @@ void StdObjectManager::Disconnect()
 	m_mapStubIds.clear();
 }
 
-void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, IObject* pObject, const guid_t& iid)
+void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject)
 {
 	// See if pObject does custom marshalling...
 	ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);

@@ -67,7 +67,7 @@ namespace Session
 
 	#if defined(ACE_WIN32)
 
-		ACE_TString strFilename = ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_BOOTSTRAP_FILE));
+		ACE_TString strFilename = ACE_TEXT("C:\\" OMEGA_BOOTSTRAP_FILE);
 
 		ACE_TCHAR szBuf[MAX_PATH] = {0};
 		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
@@ -88,9 +88,17 @@ namespace Session
 
 	#else
 
-		void* TODO; // Sort this out!
+		#define OMEGA_BOOTSTRAP_DIR "/var/lock/OmegaOnline"
 
-		return ACE_TString(ACE_TEXT(OMEGA_CONCAT("/tmp/",OMEGA_BOOTSTRAP_FILE)));
+		if (ACE_OS::mkdir(OMEGA_BOOTSTRAP_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
+		{
+			int err = ACE_OS::last_error();
+			if (err != EEXIST)
+			{
+				void* TODO; // AAArgh!
+			}
+		}
+		return ACE_TString(ACE_TEXT(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE)));
 
 	#endif
 	}

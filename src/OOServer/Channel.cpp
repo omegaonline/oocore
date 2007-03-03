@@ -3,20 +3,15 @@
 #include "./Channel.h"
 #include "./UserManager.h"
 
-const Omega::guid_t OOServer::IID_InputCDR = { 0x77b39017, 0xeca2, 0x4073, { 0xa6, 0x65, 0x1c, 0x3c, 0xa7, 0x54, 0x20, 0x62 } };
-OMEGA_DECLARE_IID_TRAITS(OOServer,InputCDR)
-
-const Omega::guid_t OOServer::IID_OutputCDR = { 0x5e8c6ed6, 0xe8b7, 0x4bc6, { 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e } };
-//OMEGA_DECLARE_IID_TRAITS(OOServer,OutputCDR)
-
 OMEGA_EXPORT_INTERFACE_DERIVED
 (
-	OOServer, OutputCDR, Omega::Serialize, IStream, 
+	OOServer, OutputCDR, Omega::Serialize, IFormattedStream, 
 	0x5e8c6ed6, 0xe8b7, 0x4bc6, 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e,
 
 	// Methods
-	OMEGA_METHOD_VOID(Null,0,())
+	OMEGA_METHOD(void*,GetMessageBlock,0,())
 )
+const Omega::guid_t OOServer::IID_OutputCDR = { 0x5e8c6ed6, 0xe8b7, 0x4bc6, { 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e } };
 
 namespace Omega
 {
@@ -47,8 +42,8 @@ void Channel::init(UserManager* pManager, ACE_HANDLE handle, ACE_CDR::UShort cha
 
 Serialize::IFormattedStream* Channel::CreateOutputStream(IObject* pOuter)
 {
-	// Create a fresh OOServer::OutputCDR
-	ObjectPtr<ObjectImpl<OOServer::OutputCDR> > ptrOutput = ObjectImpl<OOServer::OutputCDR>::CreateObjectPtr(pOuter);
+	// Create a fresh OutputCDRImpl
+	ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrOutput = ObjectImpl<OutputCDRImpl>::CreateObjectPtr(pOuter);
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(Omega::Serialize::IID_IFormattedStream));
 }
 
@@ -63,13 +58,13 @@ Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_
 	deadline += 5;
 
 	// QI pStream for our private interface
-	ObjectPtr<ObjectImpl<OOServer::OutputCDR> > ptrOutput;
-	ptrOutput.Attach(static_cast<ObjectImpl<OOServer::OutputCDR>*>(pStream->QueryInterface(OOServer::IID_OutputCDR)));
+	ObjectPtr<OOServer::OutputCDR> ptrOutput;
+	ptrOutput.Attach(static_cast<OOServer::OutputCDR*>(pStream->QueryInterface(OOServer::IID_OutputCDR)));
 	if (!ptrOutput)
 		OOSERVER_THROW_ERRNO(EINVAL);
 
 	// Get the message block
-	ACE_Message_Block* request = ptrOutput->GetMessageBlock();
+	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
 	Serialize::IFormattedStream* pResponse = 0;
 	try
@@ -86,26 +81,30 @@ Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_
 				OOSERVER_THROW_LASTERROR();
 
 			// Unpack and validate response...
-			ACE_CDR::ULong ret_code = 0;
-			if (!response->input()->read_ulong(ret_code))
+			ACE_CDR::Octet ret_code = 0;
+			if (!response->input()->read_octet(ret_code))
 				OOSERVER_THROW_LASTERROR();
 
-			// ret_code must match the values in UserSession::process_request
-			switch (ret_code)
+			// ret_code must match the values in UserManager::process_request
+			if (ret_code == 1)
 			{
-			case 1: OMEGA_THROW("Remote service failed to resolve ObjectManager"); break;
-			case 2: OMEGA_THROW("Request timed out"); break;
-			case 3: OMEGA_THROW("Remote service failed to wrap request"); break;
-			case 4: OMEGA_THROW("Remote service failed to create response"); break;
-			case 5: OMEGA_THROW("Remote service failed to marshal exception"); break;
-			case 6: OMEGA_THROW("Remote service failed to send response"); break;
-			case 0:
-			default:
-				break;
+				OMEGA_THROW("Request timed out");
 			}
+			else if (ret_code == 2)
+			{
+				ACE_CString strDesc;
+				if (!response->input()->read_string(strDesc))
+					OOSERVER_THROW_LASTERROR();
 
+				ACE_CString strSrc;
+				if (!response->input()->read_string(strSrc))
+					OOSERVER_THROW_LASTERROR();
+
+				IException::Throw(strDesc.c_str(),strSrc.c_str());
+			}
+						
 			// Wrap the response
-			ObjectPtr<ObjectImpl<OOServer::InputCDR> > ptrResponse = ObjectImpl<OOServer::InputCDR>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<InputCDR> > ptrResponse = ObjectImpl<InputCDR>::CreateObjectPtr();
 			ptrResponse->init(*response->input());
 			pResponse = ptrResponse.Detach();
 		}

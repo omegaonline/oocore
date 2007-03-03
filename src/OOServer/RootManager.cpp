@@ -173,7 +173,7 @@ int RootManager::init_registry()
 
 #if defined(ACE_WIN32)
 
-	strFilename = ACE_TEXT(OMEGA_CONCAT("C:\\",OMEGA_REGISTRY_FILE));
+	strFilename = ACE_TEXT("C:\\" OMEGA_REGISTRY_FILE);
 
 	ACE_TCHAR szBuf[MAX_PATH] = {0};
 	HRESULT hr = SHGetFolderPath(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
@@ -196,9 +196,15 @@ int RootManager::init_registry()
 
 #else
 
-	void* TODO; // Sort this out!
+	#define OMEGA_REGISTRY_DIR "/var/lib/OmegaOnline"
 
-	strFilename = ACE_TEXT(OMEGA_CONCAT("/tmp/",OMEGA_REGISTRY_FILE));
+	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	{
+		int err = ACE_OS::last_error();
+		if (err != EEXIST)
+			return -1;
+	}
+	strFilename = ACE_TEXT(OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE);
 
 #endif
 
@@ -256,7 +262,9 @@ void RootManager::term()
 	{
 		for (std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
 		{
-			i->second.pSpawn->Close();
+			if (i->second.pSpawn->Close() == ETIMEDOUT)
+				i->second.pSpawn->Kill();
+
 			delete i->second.pSpawn;
 		}
 		m_mapUserProcesses.clear();
@@ -611,7 +619,7 @@ void RootManager::forward_request(RequestBase* request, ACE_CDR::UShort dest_cha
 		return;
 	}
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
 
 	if (trans_id == 0)
 	{
@@ -705,7 +713,7 @@ void RootManager::process_root_request(RequestBase* request, ACE_CDR::UShort src
 	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
 	(*request->input()) >> op_code;
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Root request %u from %u(%u)"),op_code,reply_channel_id,src_channel_id));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Root request %u from %u(%u)"),op_code,reply_channel_id,src_channel_id));
 
 	if (!request->input()->good_bit())
 		return;

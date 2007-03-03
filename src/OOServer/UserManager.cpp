@@ -70,7 +70,7 @@ void InterProcessServiceFactoryImpl::CreateObject(IObject* pOuter, const Omega::
 
 	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
-		Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+		Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 }
 
 Registry::IRegistryKey* InterProcessServiceImpl::GetRegistry()
@@ -436,7 +436,7 @@ void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request,
 	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
     request >> op_code;
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process root request %u"),op_code));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process root request %u"),op_code));
 
 	if (!request.good_bit())
 		return;
@@ -450,156 +450,99 @@ void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request,
 
 void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
 
 	// Init the error stream
 	ACE_OutputCDR error;
 
-	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
+		// Find and/or create the object manager associated with src_channel_id
+		ObjectPtr<Remoting::IObjectManager> ptrOM;
 		ptrOM = get_object_manager(handle,src_channel_id);
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-		if (trans_id != 0)
-		{
-			// Error code 1 - Failed to resolve ObjectManager
-			error.write_ulong(1);
-			send_response(handle,0,trans_id,error.begin(),request_deadline);
-		}
-		return;
-	}
 
-	// Convert deadline time to #msecs
-	ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
-	if (wait <= ACE_Time_Value::zero)
-	{
-		if (trans_id != 0)
+		// Convert deadline time to #msecs
+		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
+		if (wait <= ACE_Time_Value::zero)
 		{
-			// Error code 2 - Request timed out
-			error.write_ulong(2);
-			send_response(handle,0,trans_id,error.begin(),request_deadline);
-		}
-		return;
-	}
-	
-	ACE_UINT64 msecs = 0;
-	static_cast<const ACE_Time_Value>(wait).msec(msecs);
-	if (msecs > ACE_UINT32_MAX)
-		msecs = ACE_UINT32_MAX;
-
-	// Wrap up the request
-	ObjectPtr<ObjectImpl<OOServer::InputCDR> > ptrRequest;
-	try
-	{
-		ptrRequest = ObjectImpl<OOServer::InputCDR>::CreateObjectPtr();
-		ptrRequest->init(request);
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-		if (trans_id != 0)
-		{
-			// Error code 3 - Failed to wrap request
-			error.write_ulong(3);
-			send_response(handle,0,trans_id,error.begin(),request_deadline);
-		}
-		return;
-	}
-
-	// Create a response if required
-	ObjectPtr<ObjectImpl<OOServer::OutputCDR> > ptrResponse;
-	if (trans_id != 0)
-	{
-		try
-		{
-			ptrResponse = ObjectImpl<OOServer::OutputCDR>::CreateObjectPtr();
-		}
-		catch (IException* pE)
-		{
-			pE->Release();
 			if (trans_id != 0)
 			{
-				// Error code 4 - Failed to create response
-				error.write_ulong(4);
-				send_response(handle,0,trans_id,error.begin(),request_deadline);
+				// Error code 1 - Request timed out
+				error.write_octet(1);
+				if (send_response(handle,0,trans_id,error.begin(),request_deadline) != 0)
+					OOSERVER_THROW_LASTERROR();
 			}
 			return;
 		}
-	}
+		
+		ACE_UINT64 msecs = 0;
+		static_cast<const ACE_Time_Value>(wait).msec(msecs);
+		if (msecs > ACE_UINT32_MAX)
+			msecs = ACE_UINT32_MAX;
 
-	ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-	
-	void* TODO; // Setup the CallContext...
+		// Wrap up the request
+		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
+		ptrRequest = ObjectImpl<InputCDR>::CreateObjectPtr();
+		ptrRequest->init(request);
 
-	try
-	{
-		ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
-	}
-	catch (IException* pE)
-	{
-		// Make sure we release the exception
-		ObjectPtr<IException> ptrE;
-		ptrE.Attach(pE);
-
-		ACE_ERROR((LM_ERROR,ACE_TEXT("Invoke failed: %s at %s"),(LPCTSTR)pE->Description(),(LPCTSTR)pE->Source()));
-
-		// Reply with an exception if we can send replies...
+		// Create a response if required
+		ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrResponse;
 		if (trans_id != 0)
 		{
-			// Dump the previous output and create a fresh output
-			try
-			{
-				ptrResponse = ObjectImpl<OOServer::OutputCDR>::CreateObjectPtr();
-			}
-			catch (IException* pE)
-			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("Failed to create response")));
+			ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
+			ptrResponse->WriteByte(0);
+		}
 
-				pE->Release();
-				if (trans_id != 0)
-				{
-					// Error code 4 - Failed to create response
-					error.write_ulong(4);
-					send_response(handle,0,trans_id,error.begin(),request_deadline);
-				}
-				return;
-			}
+		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
+		void* TODO; // Setup the CallContext... Use a self-destructing class!
 
-			try
+		try
+		{
+			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
+		}
+		catch (IException* pInner)
+		{
+			// Make sure we release the exception
+			ObjectPtr<IException> ptrInner;
+			ptrInner.Attach(pInner);
+
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Invoke failed: %s\nAt: %s"),(LPCTSTR)pInner->Description(),(LPCTSTR)pInner->Source()));
+
+			// Reply with an exception if we can send replies...
+			if (trans_id != 0)
 			{
-				// Mark that we have failed
+				// Dump the previous output and create a fresh output
+				ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
+				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 
 				// Write the exception onto the wire
 				ObjectPtr<MetaInfo::IWireManager> ptrWM(ptrOM);
-				MetaInfo::wire_write(ptrWM,ptrResponse,pE,pE->ActualIID());
-			}
-			catch (IException* pE)
-			{
-				pE->Release();
-				if (trans_id != 0)
-				{
-					// Error code 5 - Failed to marshal exception
-					error.write_ulong(5);
-					send_response(handle,0,trans_id,error.begin(),request_deadline);
-				}
-				return;
+				MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
 			}
 		}
-	}
 
-	// Restore CallContext
-
-	if (trans_id != 0)
-	{
-		if (send_response(handle,0,trans_id,ptrResponse->GetMessageBlock(),request_deadline) != 0)
+		if (trans_id != 0)
 		{
-			// Error code 6 - Failed to send response
-			error.write_ulong(6);
+			if (send_response(handle,0,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline) != 0)
+				OOSERVER_THROW_LASTERROR();
+		}
+	}
+	catch (IException* pOuter)
+	{
+		// Make sure we release the exception
+		ObjectPtr<IException> ptrOuter;
+		ptrOuter.Attach(pOuter);
+
+		if (trans_id != 0)
+		{
+			// Error code 2 - Exception raw
+			error.write_octet(2);
+			string_t strDesc = pOuter->Description();
+			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Length()),strDesc);
+			string_t strSrc = pOuter->Source();
+			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Length()),strSrc);
+
 			send_response(handle,0,trans_id,error.begin(),request_deadline);
 		}
 	}
@@ -644,7 +587,7 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 		return;
 	}
 
-	ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
+	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
 
 	if (trans_id == 0)
 	{
@@ -661,7 +604,7 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 	}
 }
 
-int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, ACE_Time_Value* wait)
+int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -670,10 +613,10 @@ int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id,
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
 
-	return RequestHandler<UserRequest>::send_asynch(handle,dest_channel_id,0,request.begin(),&deadline);
+	return RequestHandler<UserRequest>::send_asynch(handle,dest_channel_id,0,request,&deadline);
 }
 
-int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_OutputCDR& request, UserRequest*& response, ACE_Time_Value* wait)
+int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, UserRequest*& response, ACE_Time_Value* wait)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -682,7 +625,7 @@ int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
 
-	return RequestHandler<UserRequest>::send_synch(handle,dest_channel_id,0,request.begin(),response,&deadline);
+	return RequestHandler<UserRequest>::send_synch(handle,dest_channel_id,0,request,response,&deadline);
 }
 
 ObjectPtr<Remoting::IObjectManager> UserManager::get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id)

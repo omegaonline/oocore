@@ -26,6 +26,7 @@ public:
 
 	bool IsRunning();
 	int Close(ACE_Time_Value* wait = 0);
+	void Kill();
 
 	static int ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid);
 	static int GetSandboxUid(ACE_CString& uid);

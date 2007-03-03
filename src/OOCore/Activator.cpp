@@ -166,7 +166,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 		strCurName = ptrOidKey->GetStringValue("CurrentVersion");
 	}
 
-	Registry::INotFoundException::Throw(strObjectName,OMEGA_FUNCNAME);
+	Registry::INotFoundException::Throw(strObjectName,OMEGA_SOURCE_INFO);
 	return guid_t::NIL;
 }
 

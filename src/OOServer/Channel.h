@@ -4,148 +4,121 @@
 namespace OOServer
 {
 	OMEGA_DECLARE_IID(OutputCDR);
-	
-	class OutputCDR :
-		public OTL::ObjectBase,
-		public ACE_OutputCDR,
-		public Omega::Serialize::IFormattedStream
+
+	interface OutputCDR : public Omega::Serialize::IFormattedStream
 	{
-	public:
-		OutputCDR()
-		{
-			write_ulong(0);
-		}
-
-		ACE_Message_Block* GetMessageBlock()
-		{
-			return begin()->duplicate();
-		}
-
-		BEGIN_INTERFACE_MAP(OutputCDR)
-			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
-			INTERFACE_ENTRY(Omega::Serialize::IStream)
-			INTERFACE_ENTRY_IID(IID_OutputCDR,OutputCDR)
-		END_INTERFACE_MAP()
-
-	private:
-		OutputCDR(const OutputCDR&) {};
-		OutputCDR& operator = (const OutputCDR&) {};
-
-		void no_access()
-		{
-			OOSERVER_THROW_ERRNO(EACCES);
-		}
-
-		void throw_errno()
-		{
-			OOSERVER_THROW_LASTERROR();
-		}
-
-	// IStream members
-	public:
-		void Null() {};
-
-		Omega::byte_t ReadByte() 
-			{ no_access(); return 0; }
-		void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
-			{ no_access(); }
-		void WriteByte(Omega::byte_t val) 
-			{ if (!write_octet(val)) throw_errno(); }
-		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val) 
-			{ if (!write_octet_array(val,cbBytes)) throw_errno(); }
-
-	// IFormattedStream members
-	public:
-		Omega::bool_t ReadBoolean() 
-			{ no_access(); return 0; }
-		Omega::uint16_t ReadUInt16() 
-			{ no_access(); return 0; }
-		Omega::uint32_t ReadUInt32() 
-			{ no_access(); return 0; }
-		Omega::uint64_t ReadUInt64() 
-			{ no_access(); return 0; }
-		Omega::string_t ReadString()
-			{ no_access(); return Omega::string_t(); }
-		void WriteBoolean(Omega::bool_t val)
-			{ if (!write_boolean(val)) throw_errno(); }
-		void WriteUInt16(Omega::uint16_t val)
-			{ if (!write_ushort(val)) throw_errno(); }
-		void WriteUInt32(Omega::uint32_t val)
-			{ if (!write_ulong(val)) throw_errno(); }
-		void WriteUInt64(const Omega::uint64_t& val)
-			{ if (!write_ulonglong(val)) throw_errno(); }
-		void WriteString(const Omega::string_t& val)
-			{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Length()),val)) throw_errno(); }
-	};
-
-	OMEGA_DECLARE_IID(InputCDR);
-
-	class InputCDR :
-		public OTL::ObjectBase,
-		public ACE_InputCDR,
-		public Omega::Serialize::IFormattedStream
-	{
-	public:
-		InputCDR() : ACE_InputCDR(size_t(0))
-		{}
-
-		void init(const ACE_InputCDR& i)
-		{
-			*static_cast<ACE_InputCDR*>(this) = i;
-		}
-
-		BEGIN_INTERFACE_MAP(InputCDR)
-			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
-			INTERFACE_ENTRY(Omega::Serialize::IStream)
-			INTERFACE_ENTRY_IID(IID_InputCDR,InputCDR)
-		END_INTERFACE_MAP()
-
-	private:
-		void no_access()
-		{
-			OOSERVER_THROW_ERRNO(EACCES);
-		}
-
-		void throw_errno()
-		{
-			OOSERVER_THROW_LASTERROR();
-		}
-
-	// IStream members
-	public:
-		Omega::byte_t ReadByte()
-			{ Omega::byte_t val; if (!read_octet(val)) throw_errno(); return val; }
-		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
-			{ if (!read_octet_array(val,cbBytes)) throw_errno(); }
-		void WriteByte(Omega::byte_t) 
-			{ no_access(); }
-		void WriteBytes(Omega::uint32_t, const Omega::byte_t*) 
-			{ no_access(); }
-
-	// IFormattedStream members
-	public:
-		Omega::bool_t ReadBoolean()
-			{ Omega::bool_t val; if (!read_boolean(val)) throw_errno(); return val; }
-		Omega::uint16_t ReadUInt16()
-			{ Omega::uint16_t val; if (!read_ushort(val)) throw_errno(); return val; }
-		Omega::uint32_t ReadUInt32()
-			{ Omega::uint32_t val; if (!read_ulong(val)) throw_errno(); return val; }
-		Omega::uint64_t ReadUInt64()
-			{ Omega::uint64_t val; if (!read_ulonglong(val)) throw_errno(); return val; }
-		Omega::string_t ReadString()
-			{ ACE_CString val; if (!read_string(val)) throw_errno(); return Omega::string_t(val.c_str()); }
-		void WriteBoolean(Omega::bool_t) 
-			{ no_access(); }
-		void WriteUInt16(Omega::uint16_t) 
-			{ no_access(); }
-		void WriteUInt32(Omega::uint32_t) 
-			{ no_access(); }
-		void WriteUInt64(const Omega::uint64_t&) 
-			{ no_access(); }
-		void WriteString(const Omega::string_t&) 
-			{ no_access(); }
+		virtual void* GetMessageBlock() = 0;
 	};
 }
+	
+class OutputCDRImpl :
+	public OTL::ObjectBase,
+	public ACE_OutputCDR,
+	public OOServer::OutputCDR
+{
+public:
+	OutputCDRImpl()
+	{ }
+
+	void* GetMessageBlock()
+	{
+		return begin()->duplicate();
+	}
+
+	BEGIN_INTERFACE_MAP(OutputCDRImpl)
+		INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
+		INTERFACE_ENTRY(Omega::Serialize::IStream)
+		INTERFACE_ENTRY_IID(OOServer::IID_OutputCDR,OOServer::OutputCDR)
+	END_INTERFACE_MAP()
+
+// IStream members
+public:
+	Omega::byte_t ReadByte() 
+		{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+	void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+	void WriteByte(Omega::byte_t val) 
+		{ if (!write_octet(val)) OOSERVER_THROW_LASTERROR(); }
+	void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val) 
+		{ if (!write_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
+
+// IFormattedStream members
+public:
+	Omega::bool_t ReadBoolean() 
+		{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+	Omega::uint16_t ReadUInt16() 
+		{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+	Omega::uint32_t ReadUInt32() 
+		{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+	Omega::uint64_t ReadUInt64() 
+		{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+	Omega::string_t ReadString()
+		{ OOSERVER_THROW_ERRNO(EACCES); return Omega::string_t(); }
+	void WriteBoolean(Omega::bool_t val)
+		{ if (!write_boolean(val)) OOSERVER_THROW_LASTERROR(); }
+	void WriteUInt16(Omega::uint16_t val)
+		{ if (!write_ushort(val)) OOSERVER_THROW_LASTERROR(); }
+	void WriteUInt32(Omega::uint32_t val)
+		{ if (!write_ulong(val)) OOSERVER_THROW_LASTERROR(); }
+	void WriteUInt64(const Omega::uint64_t& val)
+		{ if (!write_ulonglong(val)) OOSERVER_THROW_LASTERROR(); }
+	void WriteString(const Omega::string_t& val)
+		{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Length()),val)) OOSERVER_THROW_LASTERROR(); }
+};
+
+class InputCDR :
+	public OTL::ObjectBase,
+	public ACE_InputCDR,
+	public Omega::Serialize::IFormattedStream
+{
+public:
+	InputCDR() : ACE_InputCDR(size_t(0))
+	{}
+
+	void init(const ACE_InputCDR& i)
+	{
+		*static_cast<ACE_InputCDR*>(this) = i;
+	}
+
+	BEGIN_INTERFACE_MAP(InputCDR)
+		INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
+		INTERFACE_ENTRY(Omega::Serialize::IStream)
+	END_INTERFACE_MAP()
+
+// IStream members
+public:
+	Omega::byte_t ReadByte()
+		{ Omega::byte_t val; if (!read_octet(val)) OOSERVER_THROW_LASTERROR(); return val; }
+	void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
+		{ if (!read_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
+	void WriteByte(Omega::byte_t) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+	void WriteBytes(Omega::uint32_t, const Omega::byte_t*) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+
+// IFormattedStream members
+public:
+	Omega::bool_t ReadBoolean()
+		{ Omega::bool_t val; if (!read_boolean(val)) OOSERVER_THROW_LASTERROR(); return val; }
+	Omega::uint16_t ReadUInt16()
+		{ Omega::uint16_t val; if (!read_ushort(val)) OOSERVER_THROW_LASTERROR(); return val; }
+	Omega::uint32_t ReadUInt32()
+		{ Omega::uint32_t val; if (!read_ulong(val)) OOSERVER_THROW_LASTERROR(); return val; }
+	Omega::uint64_t ReadUInt64()
+		{ Omega::uint64_t val; if (!read_ulonglong(val)) OOSERVER_THROW_LASTERROR(); return val; }
+	Omega::string_t ReadString()
+		{ ACE_CString val; if (!read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str()); }
+	void WriteBoolean(Omega::bool_t) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+	void WriteUInt16(Omega::uint16_t) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+	void WriteUInt32(Omega::uint32_t) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+	void WriteUInt64(const Omega::uint64_t&) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+	void WriteString(const Omega::string_t&) 
+		{ OOSERVER_THROW_ERRNO(EACCES); }
+};
 
 class UserManager;
 

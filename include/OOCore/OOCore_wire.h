@@ -45,14 +45,14 @@ namespace Omega
 	{
 		interface IWireManager : public IObject
 		{
-			virtual void MarshalInterface(Serialize::IFormattedStream* pStream, IObject* pObject, const guid_t& iid) = 0;
+			virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
 			virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
 			virtual void ReleaseStub(uint32_t id) = 0;
 			virtual Serialize::IFormattedStream* CreateOutputStream() = 0;
 			virtual Serialize::IFormattedStream* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pParams) = 0;
 		};
 		OMEGA_DECLARE_IID(IWireManager);
-
+		
 		interface IWireStub : public IObject
 		{
 			virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) = 0;
@@ -170,7 +170,7 @@ namespace Omega
 		template <class I>
 		inline static void wire_write(IWireManager* pManager, Serialize::IFormattedStream* pStream, I* val, const guid_t iid = iid_traits<I>::GetIID())
 		{
-			pManager->MarshalInterface(pStream,val,iid);
+			pManager->MarshalInterface(pStream,iid,val);
 		}
 
 		template <class T>
@@ -716,7 +716,7 @@ namespace Omega
 			{ 
 				m_pI = static_cast<I*>(pObj->QueryInterface(iid_traits<I>::GetIID()));
 				if (!m_pI)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_FUNCNAME);			
+					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);			
 			} 
 
 			virtual ~IObject_WireStub()
@@ -811,26 +811,23 @@ namespace Omega
 
 			void WriteKey(Serialize::IFormattedStream* pParams)
 			{
-				IWireProxy* pProxy = static_cast<IWireProxy*>(this->QueryInterface(IID_IWireProxy));
-				if (!pProxy)
-					INoInterfaceException::Throw(IID_IWireProxy,OMEGA_FUNCNAME);
+				if (!m_ptrProxy)
+				{
+					m_ptrProxy = static_cast<IWireProxy*>(this->QueryInterface(IID_IWireProxy));
+					if (!m_ptrProxy)
+						INoInterfaceException::Throw(IID_IWireProxy,OMEGA_SOURCE_INFO);
 
-				try
-				{
-					pProxy->WriteKey(pParams);
+					m_ptrProxy->Release();
 				}
-				catch (...)
-				{
-					pProxy->Release();
-					throw;
-				}
-				pProxy->Release();
+				
+				m_ptrProxy->WriteKey(pParams);
 			}
 
 			static const uint32_t MethodCount = 3;
 
 		protected:
-			IWireManager* m_pManager;
+			IWireManager*              m_pManager;
+			auto_iface_ptr<IWireProxy> m_ptrProxy;
 		};
 
 		template <class I, class Base>
@@ -892,6 +889,11 @@ namespace Omega
 			OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(0,string_t,Source,0,()) 3;
 
 			static const uint32_t MethodCount = Base::MethodCount + 4;
+
+		private:
+			IException_WireProxy() {};
+			IException_WireProxy(const IException_WireProxy&) {};
+			IException_WireProxy& operator =(const IException_WireProxy&) {};
 		};
 
 		OMEGA_QI_MAGIC(Omega,IObject)
@@ -930,7 +932,19 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD_VOID(WriteString,1,((in),const string_t&,val))
 )
 
-OMEGA_DEFINE_IID(Omega::MetaInfo,IWireManager,0xd327ea93, 0x660c, 0x408d, 0x81, 0x57, 0x36, 0xba, 0x3b, 0xee, 0xc3, 0x2b);
+OMEGA_EXPORT_INTERFACE
+(
+	Omega::MetaInfo, IWireManager,
+	0xd327ea93, 0x660c, 0x408d, 0x81, 0x57, 0x36, 0xba, 0x3b, 0xee, 0xc3, 0x2b,
+
+	// Methods
+	OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+	OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(ReleaseStub,1,((in),Omega::uint32_t,id))
+	OMEGA_METHOD(Serialize::IFormattedStream*,CreateOutputStream,0,())
+	OMEGA_METHOD(Serialize::IFormattedStream*,SendAndReceive,2,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pParams))
+)
+
 OMEGA_DEFINE_IID(Omega::MetaInfo,IWireProxy,0xe52b96ce, 0xe4ac, 0x4327, 0x91, 0x17, 0x48, 0x68, 0x4c, 0x8a, 0x38, 0x0);
 
 #endif // OOCORE_WIRE_H_INCLUDED_

@@ -11,7 +11,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I*>::init(typename interface_inf
 		if (pSE)
 			throw_correct_exception(pSE);
 		if (!pObjS)
-			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(IID_IObject,OMEGA_SOURCE_INFO);
 
 		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 		m_pI = static_cast<I*>(lookup_proxy(pObjS,iid,false));
@@ -30,7 +30,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I*>::detach(typename interface_i
 	{
 		auto_iface_ptr<IObject> ptrObj(m_pI->QueryInterface(IID_IObject));
 		if (!ptrObj)
-			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(IID_IObject,OMEGA_SOURCE_INFO);
 
 		result = static_cast<typename interface_info<I>::safe_class*>(lookup_stub(ptrObj,iid));
 		ptrObj.detach();
@@ -46,7 +46,7 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::init(I* pI, const guid_t& 
 	{
 		auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(IID_IObject));
 		if (!ptrObj)
-			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(IID_IObject,OMEGA_SOURCE_INFO);
 
 		m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(ptrObj,m_iid));
 	}
@@ -66,7 +66,7 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result)
 		if (pSE)
 			throw_correct_exception(pSE);
 		if (!pObjS)
-			INoInterfaceException::Throw(IID_IObject,OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(IID_IObject,OMEGA_SOURCE_INFO);
 
 		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 		result = static_cast<I*>(lookup_proxy(pObjS,m_iid,true));
@@ -373,7 +373,7 @@ inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObjec
 		throw_correct_exception(pSE);
 
 	if (!pRet)
-		Omega::INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+		Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 	
 	return pRet;
 }
@@ -411,7 +411,7 @@ inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Sa
 			ptrSafeProxy.detach();
 		}
 		else
-			INoInterfaceException::Throw(iid,OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 	}
 
 	return pRet;
@@ -429,7 +429,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(
 	{
 		try
 		{
-			INoInterfaceException::Throw(pE->ActualIID(),OMEGA_FUNCNAME);
+			INoInterfaceException::Throw(pE->ActualIID(),OMEGA_SOURCE_INFO);
 		}
 		catch (IException* pE2)
 		{

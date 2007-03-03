@@ -24,10 +24,36 @@ namespace Omega
 			}
 
 		private:
-			T m_fixed;
+			T  m_fixed;
 			T& m_val;
 
-			std_safe_functor(const std_safe_functor&) {}
+			std_safe_functor(const std_safe_functor&) : m_val(m_fixed) {}
+			std_safe_functor& operator = (const std_safe_functor&) {}
+		};
+
+		template <> struct std_safe_functor<void*>
+		{
+			std_safe_functor() : m_val(m_fixed)
+			{}
+
+			std_safe_functor(void* val) : m_fixed(val), m_val(m_fixed)
+			{}
+
+			operator void*&()
+			{
+				return m_val;
+			}
+
+			void detach(void*& result)
+			{
+				result = m_val;
+			}
+
+		private:
+			void*  m_fixed;
+			void*& m_val;
+
+			std_safe_functor(const std_safe_functor&) : m_val(m_fixed) {}
 			std_safe_functor& operator = (const std_safe_functor&) {}
 		};
 
@@ -59,13 +85,19 @@ namespace Omega
 			typedef std_proxy_functor<const T> proxy_functor;
 			typedef std_wire_type<const T> wire_type;
 		};
-
 		template <class T> struct interface_info<T*>
 		{
 			typedef typename interface_info<T>::safe_class* safe_class;
 			typedef std_safe_functor<T*> stub_functor;
 			typedef std_safe_functor<T*> proxy_functor;
 			typedef std_wire_type_array<T> wire_type;
+		};
+		template <> struct interface_info<void*>
+		{
+			typedef void* safe_class;
+			typedef std_safe_functor<void*> stub_functor;
+			typedef std_safe_functor<void*> proxy_functor;
+			typedef std_wire_type<void*> wire_type;
 		};
 
 		template <class T> struct std_stub_functor<const T>
@@ -137,7 +169,7 @@ namespace Omega
 			{}
 
 			std_stub_functor(typename interface_info<T>::safe_class* val, const guid_t* iid) : 
-				m_result(val), m_actual(*val,*iid)
+				m_result(val), m_actual(*val,iid)
 			{}
 
 			~std_stub_functor()
@@ -189,10 +221,10 @@ namespace Omega
 		template <class I> struct iface_stub_functor;
 		template <class I> struct iface_stub_functor<I*>
 		{
-			iface_stub_functor(typename interface_info<I>::safe_class* pS = 0, const guid_t& iid = iid_traits<I>::GetIID()) :
+			iface_stub_functor(typename interface_info<I>::safe_class* pS = 0, const guid_t* piid = 0) :
 				m_fixed(0), m_pI(m_fixed)
 			{
-				init(pS,iid);
+				init(pS,piid ? *piid : iid_traits<I>::GetIID());
 			}
 
 			~iface_stub_functor()
@@ -206,10 +238,10 @@ namespace Omega
 				return m_pI;
 			}
 
-			void attach(I*& val_ref, typename interface_info<I>::safe_class* pS, const guid_t& iid = iid_traits<I>::GetIID())
+			void attach(I*& val_ref, typename interface_info<I>::safe_class* pS, const guid_t* piid = 0)
 			{
 				m_pI = val_ref;
-				init(pS,iid);				
+				init(pS,piid ? *piid : iid_traits<I>::GetIID());			
 			}
 
 			inline void detach(typename interface_info<I>::safe_class*& result, const guid_t& iid = iid_traits<I>::GetIID());
@@ -502,9 +534,17 @@ namespace Omega
 
 			auto_iface_ptr& operator = (I* pI)
 			{
-				if (m_pI) m_pI->Release();
-				m_pI = pI;
-				if (m_pI) m_pI->AddRef();
+				if (pI != m_pI)
+				{
+					if (m_pI) 
+						m_pI->Release();
+
+					m_pI = pI;
+
+					if (m_pI) 
+						m_pI->AddRef();
+				}
+
 				return *this;
 			}
 
@@ -543,9 +583,16 @@ namespace Omega
 
 			auto_iface_safe_ptr& operator = (S* pS)
 			{
-				if (m_pS) m_pS->Release_Safe();
-				m_pS = pS;
-				if (m_pS) m_pS->AddRef_Safe();
+				if (pS != m_pS)
+				{
+					if (m_pS) 
+						m_pS->Release_Safe();
+
+					m_pS = pS;
+
+					if (m_pS) 
+						m_pS->AddRef_Safe();
+				}
 				return *this;
 			}
 
@@ -609,7 +656,7 @@ namespace Omega
 			{
 				auto_iface_ptr<I> ptrI(static_cast<I*>(pObj->QueryInterface(iid_traits<I>::GetIID())));
 				if (!ptrI)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_FUNCNAME);
+					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
 
 				SafeStubImpl* pRet = 0;
 				OMEGA_NEW(pRet,SafeStubImpl(pOuter,ptrI));
@@ -688,7 +735,7 @@ namespace Omega
 				if (pSE)
 					throw_correct_exception(pSE);
 				if (!pObjS2)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_FUNCNAME);
+					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
 
 				SafeProxyImpl* pRet = 0;
 				auto_iface_safe_ptr<IObject_Safe> ptrObjS2(pObjS2);

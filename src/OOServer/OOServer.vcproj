@@ -311,6 +311,9 @@
 				RelativePath=".\OOServer.h">
 			</File>
 			<File
+				RelativePath=".\Protocol.h">
+			</File>
+			<File
 				RelativePath=".\RequestHandler.h">
 			</File>
 			<File
@@ -355,7 +358,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputPath)"
+						CommandLine="mc $(InputPath)
+"
 						Outputs=".\$(InputName).rc"/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -363,7 +367,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputPath)"
+						CommandLine="mc $(InputPath)
+"
 						Outputs=".\$(InputName).rc"/>
 				</FileConfiguration>
 			</File>

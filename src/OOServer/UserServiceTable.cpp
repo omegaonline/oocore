@@ -24,6 +24,7 @@ void UserServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Fl
 	if (m_ptrSIP && (flags & Activation::IServiceTable::AllowAnyUser))
 	{
 		// Route to sandbox!
+		m_ptrSIP->Register(oid,flags,pObject);
 	}
 	else
 	{
@@ -53,6 +54,7 @@ void UserServiceTable::Revoke(const guid_t& oid)
 	if (!bFound && m_ptrSIP)
 	{
 		// Route to sandbox
+		m_ptrSIP->Revoke(oid);
 	}
 }
 
@@ -73,5 +75,6 @@ void UserServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*&
 	if (!bFound && m_ptrSIP)
 	{
 		// Route to sandbox
+		m_ptrSIP->GetObject(oid,iid,pObject);
 	}
 }

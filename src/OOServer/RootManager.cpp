@@ -20,6 +20,8 @@
 
 #include <OOCore/Preprocessor/base.h>
 
+#include "./Protocol.h"
+
 RootManager::RootManager() : 
 	LocalAcceptor<ClientConnection>(),
 	m_config_file(ACE_INVALID_HANDLE),

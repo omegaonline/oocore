@@ -3,6 +3,7 @@
 #include "./UserManager.h"
 #include "./Channel.h"
 #include "./UserServiceTable.h"
+#include "./UserRegistry.h"
 
 int UserMain(u_short uPort)
 {
@@ -14,17 +15,18 @@ using namespace OTL;
 
 namespace
 {
-	class InterProcessServiceImpl :
+	class InterProcessService :
 		public ObjectBase,
 		public Remoting::IInterProcessService
 	{
 	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, UserManager* pManager)
 		{
 			m_ptrOM = ptrOM;
+			m_pManager = pManager;
 		}
 		
-		BEGIN_INTERFACE_MAP(InterProcessServiceImpl)
+		BEGIN_INTERFACE_MAP(InterProcessService)
 			INTERFACE_ENTRY(Remoting::IInterProcessService)
 		END_INTERFACE_MAP()
 
@@ -32,54 +34,67 @@ namespace
 		ACE_Thread_Mutex                         m_lock;
 		ObjectPtr<Remoting::IObjectManager>      m_ptrOM;
 		ObjectPtr<ObjectImpl<UserServiceTable> > m_ptrST;
+		ObjectPtr<ObjectImpl<UserRegistry> >     m_ptrReg;
+		UserManager*                             m_pManager;
 
+	// Remoting::IInterProcessService members
 	public:
 		Registry::IRegistryKey* GetRegistry();
 		Activation::IServiceTable* GetServiceTable();
 	};
 
-	class InterProcessServiceFactoryImpl :
+	class InterProcessServiceFactory :
 		public ObjectBase,
 		public Activation::IObjectFactory
 	{
 	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, UserManager* pManager)
 		{
 			m_ptrOM = ptrOM;
+			m_pManager = pManager;
 		}
 
-		BEGIN_INTERFACE_MAP(InterProcessServiceFactoryImpl)
+		BEGIN_INTERFACE_MAP(InterProcessServiceFactory)
 			INTERFACE_ENTRY(Activation::IObjectFactory)
 		END_INTERFACE_MAP()
 
 	private:
 		ObjectPtr<Remoting::IObjectManager> m_ptrOM;
+		UserManager*                        m_pManager;
 
+	// Activation::IObjectFactory members
 	public:
 		void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject);
 	};
 }
 
-void InterProcessServiceFactoryImpl::CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject)
+void InterProcessServiceFactory::CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
 		Omega::Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
 
-	ObjectPtr<SingletonObjectImpl<InterProcessServiceImpl> > ptrIPS = SingletonObjectImpl<InterProcessServiceImpl>::CreateObjectPtr();
-	ptrIPS->Init(m_ptrOM);
+	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateObjectPtr();
+	ptrIPS->Init(m_ptrOM,m_pManager);
 
 	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
 		Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 }
 
-Registry::IRegistryKey* InterProcessServiceImpl::GetRegistry()
+Registry::IRegistryKey* InterProcessService::GetRegistry()
 {
-	void* TODO;
-	return 0;
+	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+
+	if (!m_ptrReg)
+	{
+		m_ptrReg = ObjectImpl<UserRegistry>::CreateObjectPtr();
+		m_ptrReg->Init(m_pManager);
+	}
+
+	return m_ptrReg.AddRefReturn();
 }
 
-Activation::IServiceTable* InterProcessServiceImpl::GetServiceTable()
+Activation::IServiceTable* InterProcessService::GetServiceTable()
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
@@ -261,8 +276,8 @@ int UserManager::bootstrap(ACE_SOCK_STREAM& stream)
 		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
-		ObjectPtr<ObjectImpl<InterProcessServiceFactoryImpl> > ptrOF = ObjectImpl<InterProcessServiceFactoryImpl>::CreateObjectPtr();
-		ptrOF->Init(ptrOM);
+		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateObjectPtr();
+		ptrOF->Init(ptrOM,this);
 
 		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
 	}

@@ -98,6 +98,49 @@ void SpawnedProcess::Kill()
 	}
 }
 
+bool SpawnedProcess::AccessCheck(const char* pszFName)
+{
+	PSECURITY_DESCRIPTOR pSD = NULL;
+	DWORD cbNeeded = 0;
+	if (!GetFileSecurity(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
+		return false;
+
+	pSD = static_cast<PSECURITY_DESCRIPTOR>(ACE_OS::malloc(cbNeeded));
+	if (!pSD)
+	{
+		ACE_OS::last_error(ENOMEM);
+		return false;
+	}
+
+	// Map the generic access rights
+	DWORD dwAccessDesired = GENERIC_WRITE;
+	GENERIC_MAPPING generic = 
+	{ 
+		FILE_GENERIC_READ, 
+		FILE_GENERIC_WRITE, 
+		FILE_GENERIC_EXECUTE, 
+		FILE_ALL_ACCESS 
+	};
+	MapGenericMask(&dwAccessDesired,&generic);
+	
+	// Do the access check
+	PRIVILEGE_SET privilege_set = {0};
+	
+	DWORD dwPrivSetSize = sizeof(privilege_set);
+	DWORD dwAccessGranted = 0;
+	BOOL bAllowed = FALSE;
+	BOOL bRes = ::AccessCheck(pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowed);
+
+	ACE_OS::free(pSD);
+
+	if (bRes)
+	{
+		int err = GetLastError();
+		::DebugBreak();
+	}
+	return bAllowed;
+}
+
 bool SpawnedProcess::IsRunning()
 {
 	if (!m_hProcess)

@@ -5,6 +5,7 @@ namespace OOServer
 {
 	enum RootOpCode
 	{
+		Open = 1,
 	};
 	typedef ACE_CDR::UShort RootOpCode_t;
 }

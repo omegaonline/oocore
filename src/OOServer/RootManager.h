@@ -63,12 +63,7 @@ private:
 	};
 	std::map<ACE_CDR::UShort,ChannelPair>                           m_mapChannelIds;
 	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> > m_mapReverseChannelIds;
-<<<<<<< .mine
-		
-=======
-	ACE_Configuration_Heap                                          m_registry;
-		
->>>>>>> .r249
+	
 	int run_event_loop_i();
 	int init();
 	int init_registry();

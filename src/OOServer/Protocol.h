@@ -5,7 +5,6 @@ namespace OOServer
 {
 	enum RootOpCode
 	{
-<<<<<<< .mine
 		KeyExists = 1,
 		CreateKey,
 		DeleteKey,
@@ -17,10 +16,6 @@ namespace OOServer
 		SetUInt32Value,
 		EnumValues,
 		DeleteValue,
-
-=======
-		Open = 1,
->>>>>>> .r249
 	};
 	typedef ACE_CDR::UShort RootOpCode_t;
 }

@@ -755,21 +755,8 @@ void RootManager::process_root_request(RequestBase* request, ACE_CDR::UShort src
 	
 	switch (op_code)
 	{
-<<<<<<< .mine
 	case OOServer::KeyExists:
 		registry_key_exists(request,response);
-=======
-	case OOServer::Open:
-		{
-			ACE_CString strIn;
-			request->input()->read_string(strIn);
-
-			//int err = m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(
-			
-			response.write_string(strIn);
-			send_response(request->handle(),0,trans_id,response.begin(),request_deadline);
-		}
->>>>>>> .r249
 		break;
 
 	case OOServer::CreateKey:

@@ -27,7 +27,7 @@ public:
 	bool IsRunning();
 	int Close(ACE_Time_Value* wait = 0);
 	void Kill();
-	bool AccessCheck(const char* pszFName);
+	bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
 	static int ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid);
 	static int GetSandboxUid(ACE_CString& uid);

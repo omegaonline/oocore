@@ -20,6 +20,8 @@
 
 #include <OOCore/Preprocessor/base.h>
 
+#include <list>
+
 #include "./Protocol.h"
 
 RootManager::RootManager() : 
@@ -169,30 +171,28 @@ int RootManager::init()
 
 int RootManager::init_registry()
 {
-	ACE_TString strFilename;
-
-#define OMEGA_REGISTRY_FILE "omega_root.regdb"
+#define OMEGA_REGISTRY_FILE "system.regdb"
 
 #if defined(ACE_WIN32)
 
-	strFilename = ACE_TEXT("C:\\" OMEGA_REGISTRY_FILE);
+	m_strRegistry = "C:\\" OMEGA_REGISTRY_FILE;
 
-	ACE_TCHAR szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPath(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	char szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if SUCCEEDED(hr)
 	{
-		ACE_TCHAR szBuf2[MAX_PATH] = {0};
-		if (PathCombine(szBuf2,szBuf,ACE_TEXT("OmegaOnline")))
+		char szBuf2[MAX_PATH] = {0};
+		if (PathCombineA(szBuf2,szBuf,"OmegaOnline"))
 		{
-			if (!PathFileExists(szBuf2))
+			if (!PathFileExistsA(szBuf2))
 			{
 				int ret = ACE_OS::mkdir(szBuf2);
 				if (ret != 0)
 					return ret;
 			}
 						
-			if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_REGISTRY_FILE)))
-				strFilename = szBuf;
+			if (PathCombineA(szBuf,szBuf2,OMEGA_REGISTRY_FILE))
+				m_strRegistry = szBuf;
 		}
 	}
 
@@ -206,11 +206,11 @@ int RootManager::init_registry()
 		if (err != EEXIST)
 			return -1;
 	}
-	strFilename = ACE_TEXT(OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE);
+	m_strRegistry = ACE_TEXT(OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE);
 
 #endif
 
-	return m_registry.open(strFilename.c_str());
+	return m_registry.open(m_strRegistry.c_str());
 }
 
 void RootManager::end_event_loop()
@@ -680,6 +680,37 @@ void RootManager::process_request(RequestBase* request, ACE_CDR::UShort dest_cha
 	delete request;
 }
 
+int RootManager::access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed)
+{
+	try
+	{
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
+
+		// Find the user id
+		std::map<ACE_HANDLE,ACE_CString>::iterator i = m_mapUserIds.find(handle);
+		if (i == m_mapUserIds.end())
+		{
+			ACE_OS::last_error(EINVAL);
+			return -1;
+		}
+
+		// Find the process info associated with user id
+		std::map<ACE_CString,UserProcess>::iterator j = m_mapUserProcesses.find(i->second);
+		if (j == m_mapUserProcesses.end())
+		{
+			ACE_OS::last_error(EINVAL);
+			return -1;
+		}
+
+		return (j->second.pSpawn->CheckAccess(pszObject,mode,bAllowed) ? 0 : -1);
+	}
+	catch (...)
+	{
+		ACE_OS::last_error(EINVAL);
+		return -1;
+	}
+}
+
 void RootManager::process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	ACE_CDR::UShort reply_channel_id;
@@ -721,9 +752,13 @@ void RootManager::process_root_request(RequestBase* request, ACE_CDR::UShort src
 		return;
 
 	ACE_OutputCDR response;
-
+	
 	switch (op_code)
 	{
+<<<<<<< .mine
+	case OOServer::KeyExists:
+		registry_key_exists(request,response);
+=======
 	case OOServer::Open:
 		{
 			ACE_CString strIn;
@@ -734,9 +769,381 @@ void RootManager::process_root_request(RequestBase* request, ACE_CDR::UShort src
 			response.write_string(strIn);
 			send_response(request->handle(),0,trans_id,response.begin(),request_deadline);
 		}
+>>>>>>> .r249
+		break;
+
+	case OOServer::CreateKey:
+		registry_create_key(request,response);												
+		break;
+
+	case OOServer::DeleteKey:
+		registry_delete_key(request,response);
+		break;
+
+	case OOServer::EnumSubKeys:
+		registry_enum_subkeys(request,response);
+		break;
+
+	case OOServer::ValueType:
+		registry_value_type(request,response);
+		break;
+
+	case OOServer::GetStringValue:
+		registry_get_string_value(request,response);
+		break;
+
+	case OOServer::GetUInt32Value:
+		registry_get_uint_value(request,response);
+		break;
+
+	case OOServer::SetStringValue:
+		registry_set_string_value(request,response);
+		break;
+
+	case OOServer::SetUInt32Value:
+		registry_set_uint_value(request,response);
+		break;
+
+	case OOServer::EnumValues:
+		registry_enum_values(request,response);
+		break;
+
+	case OOServer::DeleteValue:
+		registry_delete_value(request,response);
 		break;
 
 	default:
-		;
+		response.write_long(EINVAL);
+		break;
 	}
+
+	if (response.good_bit())
+		send_response(request->handle(),0,trans_id,response.begin(),request_deadline);
+}
+
+bool RootManager::registry_open_section(RequestBase* request, ACE_Configuration_Section_Key& key, bool bAccessCheck)
+{
+	ACE_CString strKey;
+	if (!request->input()->read_string(strKey))
+		return false;
+
+	if (bAccessCheck)
+	{
+		bool bAllowed = false;
+		if (strKey.substr(0,9) == "All Users")
+			bAllowed = true;
+		else if (access_check(request->handle(),m_strRegistry.c_str(),O_RDWR,bAllowed) != 0)
+			return false;
+		
+		if (!bAllowed)
+		{
+			ACE_OS::last_error(EACCES);
+			return false;
+		}
+	}
+	
+	if (strKey.length()==0)
+		key = m_registry.root_section();
+	else if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),0,key) != 0)
+		return false;
+	
+	return true;
+}
+
+bool RootManager::registry_open_value(RequestBase* request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck)
+{
+	if (!registry_open_section(request,key,bAccessCheck))
+		return false;
+
+	if (!request->input()->read_string(strValue))
+		return false;
+	
+	return true;
+}
+
+void RootManager::registry_key_exists(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	ACE_CDR::Boolean bRes = false;
+
+	ACE_Configuration_Section_Key key;
+	if (!registry_open_section(request,key))
+	{
+		if (ACE_OS::last_error() != ENOENT)
+			err = ACE_OS::last_error();
+	}
+	else
+	{
+		bRes = true;
+	}
+
+	response.write_long(err);
+	if (err == 0)
+		response.write_boolean(bRes);
+}
+
+void RootManager::registry_create_key(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	ACE_CString strKey;
+	if (!request->input()->read_string(strKey))
+		err = ACE_OS::last_error();
+	else
+	{
+        bool bAllowed = false;
+		if (access_check(request->handle(),m_strRegistry.c_str(),O_RDWR,bAllowed) != 0)
+			err = ACE_OS::last_error();
+		else if (!bAllowed)
+			err = EACCES;
+		else
+		{
+			ACE_Configuration_Section_Key key;
+			if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),1,key) != 0)
+				err = ACE_OS::last_error();
+		}
+	}
+
+	response.write_long(err);
+}
+
+void RootManager::registry_delete_key(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	ACE_Configuration_Section_Key key;
+	if (!registry_open_section(request,key,true))
+		err = ACE_OS::last_error();
+	else
+	{
+		ACE_CString strSubKey;
+
+		if (!request->input()->read_string(strSubKey))
+			err = ACE_OS::last_error();
+		else
+		{
+			if (m_registry.remove_section(key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey).c_str(),1) != 0)
+				err = ACE_OS::last_error();
+		}
+	}
+	
+	response.write_long(err);
+}
+
+void RootManager::registry_enum_subkeys(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	std::list<ACE_TString> listSections;
+	ACE_Configuration_Section_Key key;
+	if (!registry_open_section(request,key))
+		err = ACE_OS::last_error();
+	else
+	{
+		for (int index=0;;++index)
+		{
+			ACE_TString strSubKey;
+			int e = m_registry.enumerate_sections(key,index,strSubKey);
+			if (e == 0)
+				listSections.push_back(strSubKey);
+			else
+			{
+				if (e != 1)
+					err = ACE_OS::last_error();
+				break;
+			}
+		}
+	}				
+	
+	response.write_long(err);
+	if (err == 0)
+	{
+		response.write_ulonglong(listSections.size());
+		for (std::list<ACE_TString>::iterator i=listSections.begin();i!=listSections.end();++i)
+		{
+			response.write_string(ACE_TEXT_ALWAYS_CHAR(*i));
+		}
+	}
+}
+
+void RootManager::registry_value_type(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	ACE_CDR::Octet type = 0;
+
+	ACE_Configuration_Section_Key key;
+	ACE_CString strValue;
+	if (!registry_open_value(request,key,strValue))
+		err = ACE_OS::last_error();
+	else
+	{
+		ACE_Configuration_Heap::VALUETYPE vtype;
+		if (m_registry.find_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),vtype) == 0)
+			type = static_cast<ACE_CDR::Octet>(vtype);
+		else
+			err = ACE_OS::last_error();
+	}
+		
+	response.write_long(err);
+	if (err == 0)
+		response.write_octet(type);
+}
+
+void RootManager::registry_get_string_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	ACE_CString strText;
+
+	ACE_Configuration_Section_Key key;
+	ACE_CString strValue;
+	if (!registry_open_value(request,key,strValue))
+		err = ACE_OS::last_error();
+	else
+	{
+		ACE_TString strTextT;
+		if (m_registry.get_string_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),strTextT) != 0)
+			err = ACE_OS::last_error();
+		else
+			strText = ACE_TEXT_ALWAYS_CHAR(strTextT);
+	}
+
+	response.write_long(err);
+	if (err == 0)
+		response.write_string(strText);
+}
+
+void RootManager::registry_get_uint_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	ACE_CDR::ULong val = 0;
+
+	ACE_Configuration_Section_Key key;
+	ACE_CString strValue;
+	if (!registry_open_value(request,key,strValue))
+		err = ACE_OS::last_error();
+	else
+	{
+		u_int v = 0;
+		if (m_registry.get_integer_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),val) != 0)
+			err = ACE_OS::last_error();
+		else
+			val = v;
+	}
+
+	response.write_long(err);
+	if (err == 0)
+		response.write_ulong(val);
+}
+
+//virtual void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer) = 0;
+
+void RootManager::registry_set_string_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	
+	ACE_Configuration_Section_Key key;
+	ACE_CString strValue;
+	if (!registry_open_value(request,key,strValue,true))
+		err = ACE_OS::last_error();
+	else
+	{
+		ACE_CString strText;
+		if (!request->input()->read_string(strText))
+			err = ACE_OS::last_error();
+		else if (m_registry.set_string_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),ACE_TEXT_CHAR_TO_TCHAR(strText)) != 0)
+			err = ACE_OS::last_error();
+	}
+
+	response.write_long(err);
+}
+
+void RootManager::registry_set_uint_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	
+	ACE_Configuration_Section_Key key;
+	ACE_CString strValue;
+	if (!registry_open_value(request,key,strValue,true))
+		err = ACE_OS::last_error();
+	else
+	{
+		ACE_CDR::ULong iValue;
+		if (!request->input()->read_ulong(iValue))
+			err = ACE_OS::last_error();
+		else if (m_registry.set_integer_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),iValue) != 0)
+			err = ACE_OS::last_error();
+	}
+
+	response.write_long(err);
+}
+
+//virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
+
+void RootManager::registry_enum_values(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+	std::list<ACE_TString> listValues;	
+	ACE_Configuration_Section_Key key;
+	if (!registry_open_section(request,key))
+		err = ACE_OS::last_error();
+	else
+	{
+		for (int index=0;;++index)
+		{
+			ACE_TString strSubKey;
+			ACE_Configuration_Heap::VALUETYPE type;
+			int e = m_registry.enumerate_values(key,index,strSubKey,type);
+			if (e == 0)
+				listValues.push_back(strSubKey);
+			else
+			{
+				if (e != 1)
+					err = ACE_OS::last_error();
+				break;
+			}
+		}
+	}				
+	
+	response.write_long(err);
+	if (err == 0)
+	{
+		response.write_ulonglong(listValues.size());
+		for (std::list<ACE_TString>::iterator i=listValues.begin();i!=listValues.end();++i)
+		{
+			response.write_string(ACE_TEXT_ALWAYS_CHAR(*i));
+		}
+	}
+}
+
+void RootManager::registry_delete_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+
+	ACE_CDR::Long err = 0;
+
+	ACE_Configuration_Section_Key key;
+	ACE_CString strValue;
+	if (!registry_open_value(request,key,strValue,true))
+		err = ACE_OS::last_error();
+	else if (m_registry.remove_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str()) != 0)
+		err = ACE_OS::last_error();
+	
+	response.write_long(err);
 }

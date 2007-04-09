@@ -63,8 +63,12 @@ private:
 	};
 	std::map<ACE_CDR::UShort,ChannelPair>                           m_mapChannelIds;
 	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> > m_mapReverseChannelIds;
+<<<<<<< .mine
+		
+=======
 	ACE_Configuration_Heap                                          m_registry;
 		
+>>>>>>> .r249
 	int run_event_loop_i();
 	int init();
 	int init_registry();
@@ -80,9 +84,29 @@ private:
 	void process_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	void process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 	void forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	int access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
+
+	ACE_Configuration_Heap         m_registry;
+	ACE_CString                    m_strRegistry;
+	ACE_Thread_Mutex               m_registry_lock;
+
+	bool registry_open_section(RequestBase* request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
+	bool registry_open_value(RequestBase* request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck = false);
+	void registry_key_exists(RequestBase* request, ACE_OutputCDR& response);
+	void registry_create_key(RequestBase* request, ACE_OutputCDR& response);
+	void registry_delete_key(RequestBase* request, ACE_OutputCDR& response);
+	void registry_enum_subkeys(RequestBase* request, ACE_OutputCDR& response);
+	void registry_value_type(RequestBase* request, ACE_OutputCDR& response);
+	void registry_get_string_value(RequestBase* request, ACE_OutputCDR& response);
+	void registry_get_uint_value(RequestBase* request, ACE_OutputCDR& response);
+	void registry_set_string_value(RequestBase* request, ACE_OutputCDR& response);
+	void registry_set_uint_value(RequestBase* request, ACE_OutputCDR& response);
+	void registry_enum_values(RequestBase* request, ACE_OutputCDR& response);
+	void registry_delete_value(RequestBase* request, ACE_OutputCDR& response);
 
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);
+
 };
 
 #endif // OOSERVER_ROOT_MANAGER_H_INCLUDED_

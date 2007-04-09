@@ -34,7 +34,7 @@ namespace
 		ACE_Thread_Mutex                         m_lock;
 		ObjectPtr<Remoting::IObjectManager>      m_ptrOM;
 		ObjectPtr<ObjectImpl<UserServiceTable> > m_ptrST;
-		ObjectPtr<ObjectImpl<UserRegistry> >     m_ptrReg;
+		ObjectPtr<ObjectImpl<UserBaseRegistry> > m_ptrReg;
 		UserManager*                             m_pManager;
 
 	// Remoting::IInterProcessService members
@@ -87,7 +87,7 @@ Registry::IRegistryKey* InterProcessService::GetRegistry()
 
 	if (!m_ptrReg)
 	{
-		m_ptrReg = ObjectImpl<UserRegistry>::CreateObjectPtr();
+		m_ptrReg = ObjectImpl<UserBaseRegistry>::CreateObjectPtr();
 		m_ptrReg->Init(m_pManager);
 	}
 

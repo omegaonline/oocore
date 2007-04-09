@@ -15,6 +15,13 @@
 #include <ace/SOCK_Connector.h>
 #include <ace/Proactor.h>
 #include <ace/CDR_Stream.h>
+#include <ace/Configuration.h>
+#include <ace/OS.h>
+
+#if defined(ACE_WIN32)
+#include <shlobj.h>
+#include <shlwapi.h>
+#endif
 
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>

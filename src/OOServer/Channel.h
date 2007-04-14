@@ -1,20 +1,20 @@
 #ifndef OOSERVER_CHANNEL_H_INCLUDED_
 #define OOSERVER_CHANNEL_H_INCLUDED_
 
-namespace OOServer
+namespace User
 {
-	OMEGA_DECLARE_IID(OutputCDR);
 
-	interface OutputCDR : public Omega::Serialize::IFormattedStream
-	{
-		virtual void* GetMessageBlock() = 0;
-	};
-}
+OMEGA_DECLARE_IID(OutputCDR);
+
+interface OutputCDR : public Omega::Serialize::IFormattedStream
+{
+	virtual void* GetMessageBlock() = 0;
+};
 	
 class OutputCDRImpl :
 	public OTL::ObjectBase,
 	public ACE_OutputCDR,
-	public OOServer::OutputCDR
+	public OutputCDR
 {
 public:
 	OutputCDRImpl()
@@ -28,7 +28,7 @@ public:
 	BEGIN_INTERFACE_MAP(OutputCDRImpl)
 		INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
 		INTERFACE_ENTRY(Omega::Serialize::IStream)
-		INTERFACE_ENTRY_IID(OOServer::IID_OutputCDR,OOServer::OutputCDR)
+		INTERFACE_ENTRY_IID(IID_OutputCDR,OutputCDR)
 	END_INTERFACE_MAP()
 
 // IStream members
@@ -120,7 +120,7 @@ public:
 		{ OOSERVER_THROW_ERRNO(EACCES); }
 };
 
-class UserManager;
+class Manager;
 
 class Channel :
 	public OTL::ObjectBase,
@@ -129,14 +129,14 @@ class Channel :
 public:
 	Channel();
 
-	void init(UserManager* pManager, ACE_HANDLE handle, ACE_CDR::UShort channel_id);
+	void init(Manager* pManager, ACE_HANDLE handle, ACE_CDR::UShort channel_id);
 	
 	BEGIN_INTERFACE_MAP(Channel)
 		INTERFACE_ENTRY(Omega::Remoting::IChannel)
 	END_INTERFACE_MAP()
 
 private:
-	UserManager*     m_pManager;
+	Manager*         m_pManager;
 	ACE_HANDLE       m_handle;
 	ACE_CDR::UShort  m_channel_id;
 
@@ -145,5 +145,7 @@ public:
 	Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
 	Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream);
 };
+
+}
 
 #endif // OOSERVER_CHANNEL_H_INCLUDED_

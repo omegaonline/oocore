@@ -1,21 +1,26 @@
 #ifndef OOSERVER_USER_REGISTRY_H_INCLUDED_
 #define OOSERVER_USER_REGISTRY_H_INCLUDED_
 
-class UserManager;
+namespace User
+{
+class Manager;
 
-class UserRootRegistry : 
+namespace Registry
+{
+
+class Root : 
 	public OTL::ObjectBase,
 	public Omega::Registry::IRegistryKey
 {
 public:
-	void Init(UserManager* pManager);
+	void Init(Manager* pManager);
 
-	BEGIN_INTERFACE_MAP(UserRootRegistry)
+	BEGIN_INTERFACE_MAP(Root)
 		INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
 	END_INTERFACE_MAP()
 
 private:
-	UserManager* m_pManager;
+	Manager* m_pManager;
 
 // IRegistry members
 public:
@@ -35,14 +40,14 @@ public:
 	void DeleteValue(const Omega::string_t& strValue);
 };
 
-class UserRegistry : 
+class CurrentUser : 
 	public OTL::ObjectBase,
 	public Omega::Registry::IRegistryKey
 {
 public:
 	void Init(const ACE_Configuration_Section_Key& key);
 
-	BEGIN_INTERFACE_MAP(UserRegistry)
+	BEGIN_INTERFACE_MAP(CurrentUser)
 		INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
 	END_INTERFACE_MAP()
 
@@ -67,21 +72,21 @@ public:
 	void DeleteValue(const Omega::string_t& strValue);
 };
 
-class UserBaseRegistry : 
+class Base : 
 	public OTL::ObjectBase,
 	public Omega::Registry::IRegistryKey
 {
 public:
-	void Init(UserManager* pManager);
+	void Init(Manager* pManager);
 
-	BEGIN_INTERFACE_MAP(UserBaseRegistry)
+	BEGIN_INTERFACE_MAP(Base)
 		INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
 	END_INTERFACE_MAP()
 
 private:
-	OTL::ObjectPtr<OTL::ObjectImpl<UserRootRegistry> > m_ptrRootReg;
-	OTL::ObjectPtr<OTL::ObjectImpl<UserRegistry> >     m_ptrUserReg;
-	ACE_Configuration_Heap                             m_registry;
+	OTL::ObjectPtr<OTL::ObjectImpl<Root> > m_ptrRootReg;
+	OTL::ObjectPtr<OTL::ObjectImpl<CurrentUser> > m_ptrUserReg;
+	ACE_Configuration_Heap                 m_registry;
 	
 	int open_registry();
 
@@ -102,5 +107,8 @@ public:
 	void DeleteKey(const Omega::string_t& strKey);
 	void DeleteValue(const Omega::string_t& strValue);
 };
+
+}
+}
 
 #endif // OOSERVER_USER_REGISTRY_H_INCLUDED_

@@ -7,20 +7,20 @@
 
 int UserMain(u_short uPort)
 {
-	return UserManager::run_event_loop(uPort);
+	return User::Manager::run_event_loop(uPort);
 }
 
 using namespace Omega;
 using namespace OTL;
 
-namespace
+namespace User
 {
 	class InterProcessService :
 		public ObjectBase,
 		public Remoting::IInterProcessService
 	{
 	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, UserManager* pManager)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, Manager* pManager)
 		{
 			m_ptrOM = ptrOM;
 			m_pManager = pManager;
@@ -33,13 +33,13 @@ namespace
 	private:
 		ACE_Thread_Mutex                         m_lock;
 		ObjectPtr<Remoting::IObjectManager>      m_ptrOM;
-		ObjectPtr<ObjectImpl<UserServiceTable> > m_ptrST;
-		ObjectPtr<ObjectImpl<UserBaseRegistry> > m_ptrReg;
-		UserManager*                             m_pManager;
+		ObjectPtr<ObjectImpl<ServiceTable> >     m_ptrST;
+		ObjectPtr<ObjectImpl<Registry::Base> >   m_ptrReg;
+		Manager*                                 m_pManager;
 
 	// Remoting::IInterProcessService members
 	public:
-		Registry::IRegistryKey* GetRegistry();
+		Omega::Registry::IRegistryKey* GetRegistry();
 		Activation::IServiceTable* GetServiceTable();
 	};
 
@@ -48,7 +48,7 @@ namespace
 		public Activation::IObjectFactory
 	{
 	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, UserManager* pManager)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, Manager* pManager)
 		{
 			m_ptrOM = ptrOM;
 			m_pManager = pManager;
@@ -60,47 +60,48 @@ namespace
 
 	private:
 		ObjectPtr<Remoting::IObjectManager> m_ptrOM;
-		UserManager*                        m_pManager;
+		Manager*                            m_pManager;
 
 	// Activation::IObjectFactory members
 	public:
-		void CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject);
+		void CreateObject(IObject* pOuter, const guid_t& iid, IObject*& pObject);
 	};
+	
 }
 
-void InterProcessServiceFactory::CreateObject(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject)
+void User::InterProcessServiceFactory::CreateObject(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
-		Omega::Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
+		Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
 
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateObjectPtr();
 	ptrIPS->Init(m_ptrOM,m_pManager);
 
 	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
-		Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+		INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 }
 
-Registry::IRegistryKey* InterProcessService::GetRegistry()
+Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
 	if (!m_ptrReg)
 	{
-		m_ptrReg = ObjectImpl<UserBaseRegistry>::CreateObjectPtr();
+		m_ptrReg = ObjectImpl<User::Registry::Base>::CreateObjectPtr();
 		m_ptrReg->Init(m_pManager);
 	}
 
 	return m_ptrReg.AddRefReturn();
 }
 
-Activation::IServiceTable* InterProcessService::GetServiceTable()
+Activation::IServiceTable* User::InterProcessService::GetServiceTable()
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
 	if (!m_ptrST)
 	{
-		m_ptrST = ObjectImpl<UserServiceTable>::CreateObjectPtr();
+		m_ptrST = ObjectImpl<User::ServiceTable>::CreateObjectPtr();
 		m_ptrST->Init(m_ptrOM);
 	}
 
@@ -108,24 +109,24 @@ Activation::IServiceTable* InterProcessService::GetServiceTable()
 }
 
 // UserManager
-UserManager::UserManager() : 
-	LocalAcceptor<UserConnection>(),
+User::Manager::Manager() : 
+	LocalAcceptor<Connection>(),
 	m_root_handle(ACE_INVALID_HANDLE),
 	m_uNextChannelId(1)
 {
 }
 
-UserManager::~UserManager()
+User::Manager::~Manager()
 {
 	term();
 }
 
-int UserManager::run_event_loop(u_short uPort)
+int User::Manager::run_event_loop(u_short uPort)
 {
 	return USER_MANAGER::instance()->run_event_loop_i(uPort);
 }
 
-int UserManager::run_event_loop_i(u_short uPort)
+int User::Manager::run_event_loop_i(u_short uPort)
 {
 	int ret = init(uPort);
 	if (ret != 0)
@@ -157,7 +158,7 @@ int UserManager::run_event_loop_i(u_short uPort)
 		}
 
 		// Stop handling requests
-		RequestHandler<UserRequest>::stop();
+		RequestHandler<User::Request>::stop();
 		
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
@@ -168,7 +169,7 @@ int UserManager::run_event_loop_i(u_short uPort)
 	return ret;
 }
 
-int UserManager::init(u_short uPort)
+int User::Manager::init(u_short uPort)
 {
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
@@ -217,8 +218,8 @@ int UserManager::init(u_short uPort)
 				if (ret == 0)
 				{
 					// Create a new RootConnection
-					RootConnection*	pRC;
-					ACE_NEW_NORETURN(pRC,RootConnection(this,ACE_CString()));
+					Root::Connection* pRC;
+					ACE_NEW_NORETURN(pRC,Root::Connection(this,ACE_CString()));
 					if (!pRC)
 					{
 						ret = -1;
@@ -245,7 +246,7 @@ int UserManager::init(u_short uPort)
 	return ret;
 }
 
-void UserManager::term()
+void User::Manager::term()
 {
 	ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
@@ -257,7 +258,7 @@ void UserManager::term()
 	}
 }
 
-int UserManager::bootstrap(ACE_SOCK_STREAM& stream)
+int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 {
 	// Talk to the root...
 	char sandbox = 0;
@@ -290,7 +291,7 @@ int UserManager::bootstrap(ACE_SOCK_STREAM& stream)
 	return 0;
 }
 
-void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE /*handle*/)
+void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE /*handle*/)
 {
 	try
 	{
@@ -336,15 +337,15 @@ void UserManager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE 
 	term();
 }
 
-ACE_THR_FUNC_RETURN UserManager::proactor_worker_fn(void*)
+ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
 {
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-int UserManager::validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local)
+int User::Manager::validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local)
 {
 	// Check we can accept it...
-	if (LocalAcceptor<UserConnection>::validate_connection(result,remote,local) != 0)
+	if (LocalAcceptor<Connection>::validate_connection(result,remote,local) != 0)
 		return -1;
 
 	try
@@ -368,10 +369,10 @@ int UserManager::validate_connection(const ACE_Asynch_Accept::Result& result, co
 	return 0;
 }
 
-int UserManager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
+int User::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
-	UserRequest* req;
-	ACE_NEW_RETURN(req,UserRequest(handle,input),-1);
+	User::Request* req;
+	ACE_NEW_RETURN(req,Request(handle,input),-1);
 
 	req->m_bRoot = true;
 	
@@ -382,10 +383,10 @@ int UserManager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	return ret;
 }
 
-int UserManager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
+int User::Manager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
-	UserRequest* req;
-	ACE_NEW_RETURN(req,UserRequest(handle,input),-1);
+	Request* req;
+	ACE_NEW_RETURN(req,Request(handle,input),-1);
 
 	req->m_bRoot = false;
 	
@@ -396,12 +397,12 @@ int UserManager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	return ret;
 }
 
-void UserManager::user_connection_closed(ACE_HANDLE handle)
+void User::Manager::user_connection_closed(ACE_HANDLE handle)
 {
 	USER_MANAGER::instance()->user_connection_closed_i(handle);
 }
 
-void UserManager::user_connection_closed_i(ACE_HANDLE handle)
+void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
 {
 	ACE_OS::closesocket(handle);
 
@@ -423,12 +424,12 @@ void UserManager::user_connection_closed_i(ACE_HANDLE handle)
 	{}
 }
 
-ACE_THR_FUNC_RETURN UserManager::request_worker_fn(void*)
+ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void*)
 {
 	return (ACE_THR_FUNC_RETURN)USER_MANAGER::instance()->pump_requests();
 }
 
-void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	if (dest_channel_id == 0)
 	{
@@ -446,7 +447,7 @@ void UserManager::process_request(UserRequest* request, ACE_CDR::UShort dest_cha
 	delete request;
 }
 
-void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
     request >> op_code;
@@ -463,7 +464,7 @@ void UserManager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request,
 	}
 }
 
-void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
 
@@ -563,7 +564,7 @@ void UserManager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_
 	}
 }
 
-void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	ChannelPair dest_channel;
 	ACE_CDR::UShort reply_channel_id;
@@ -606,12 +607,12 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 
 	if (trans_id == 0)
 	{
-		RequestHandler<UserRequest>::send_asynch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
+		RequestHandler<Request>::send_asynch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
 	}
 	else
 	{
-		UserRequest* response;
-		if (RequestHandler<UserRequest>::send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		Request* response;
+		if (RequestHandler<Request>::send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
 		{
 			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
 			delete response;
@@ -619,7 +620,7 @@ void UserManager::forward_request(UserRequest* request, ACE_CDR::UShort dest_cha
 	}
 }
 
-int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait)
+void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -628,10 +629,11 @@ int UserManager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id,
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
 
-	return RequestHandler<UserRequest>::send_asynch(handle,dest_channel_id,0,request,&deadline);
+	if (RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,&deadline) != 0)
+		OOSERVER_THROW_LASTERROR();
 }
 
-int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, UserRequest*& response, ACE_Time_Value* wait)
+ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -640,10 +642,17 @@ int UserManager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, 
 	if (wait)
 		deadline = ACE_OS::gettimeofday() + *wait;
 
-	return RequestHandler<UserRequest>::send_synch(handle,dest_channel_id,0,request,response,&deadline);
+	Request* pResponse;
+	int err = RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,&deadline);
+	if (err != 0)
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_InputCDR response = *pResponse->input();
+	delete pResponse;
+	return response;
 }
 
-ObjectPtr<Remoting::IObjectManager> UserManager::get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id)
+ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id)
 {
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try

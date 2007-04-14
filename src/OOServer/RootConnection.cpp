@@ -13,14 +13,14 @@
 #include "./RootConnection.h"
 #include "./RootManager.h"
 
-RootConnection::RootConnection(RootBase* pBase, const ACE_CString& key) : 
+Root::Connection::Connection(RootBase* pBase, const ACE_CString& key) : 
 	ACE_Service_Handler(),
 	m_pBase(pBase),
 	m_id(key)
 {
 }
 
-RootConnection::~RootConnection()
+Root::Connection::~Connection()
 {
 	ACE_HANDLE my_handle = handle();
 	
@@ -31,19 +31,19 @@ RootConnection::~RootConnection()
 		ACE_OS::closesocket(my_handle);
 }
 
-int RootConnection::open(ACE_HANDLE new_handle)
+int Root::Connection::open(ACE_HANDLE new_handle)
 {
 	// Stash the handle
 	this->handle(new_handle);
 
 	// Open the reader
 	if (m_reader.open(*this) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::open")),-1);
+	    ACE_ERROR_RETURN((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::Connection::open")),-1);
 			
 	return read();
 }
 
-int RootConnection::read()
+int Root::Connection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
@@ -56,7 +56,7 @@ int RootConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::read")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::Connection::read")));
 		mb->release();
 		return -1;
 	}
@@ -64,7 +64,7 @@ int RootConnection::read()
 	return 0;
 }
 
-void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
 	
@@ -140,7 +140,7 @@ void RootConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 		DWORD dwErr = GetLastError();
 		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SUCCESS && dwErr != WSAENOTSOCK)
 #endif
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("RootConnection::handle_read_stream")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::Connection::handle_read_stream")));
 		delete this;
 	}
 }

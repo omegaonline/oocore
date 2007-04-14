@@ -6,37 +6,40 @@
 #include "./RootConnection.h"
 #include "./UserConnection.h"
 
-class UserRequest : public RequestBase
+namespace User
+{
+
+class Request : public RequestBase
 {
 public:
-	UserRequest(ACE_HANDLE handle, ACE_InputCDR* input) : 
+	User::Request(ACE_HANDLE handle, ACE_InputCDR* input) : 
 	  RequestBase(handle,input)
 	{}
 
 	bool	m_bRoot;
 };
 
-class UserManager : 
-	public LocalAcceptor<UserConnection>,
+class Manager : 
+	public LocalAcceptor<Connection>,
 	public RootBase,
-	public RequestHandler<UserRequest>
+	public RequestHandler<User::Request>
 {
 public:
 	static int run_event_loop(u_short uPort);
 	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	static void user_connection_closed(ACE_HANDLE handle);
 
-	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait = 0);
-	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, UserRequest*& response, ACE_Time_Value* wait = 0);
+	void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait = 0);
+	ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait = 0);
 	
 private:
-	typedef ACE_Singleton<UserManager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
+	typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
 	friend class USER_MANAGER;
 	
-	UserManager();
-	virtual ~UserManager();
-	UserManager(const UserManager&) {}
-	UserManager& operator = (const UserManager&) {}
+	Manager();
+	virtual ~Manager();
+	Manager(const Manager&) {}
+	Manager& operator = (const Manager&) {}
 
 	ACE_Recursive_Thread_Mutex  m_lock;
 	ACE_HANDLE                  m_root_handle;
@@ -59,8 +62,8 @@ private:
 
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
-	void process_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-	void forward_request(UserRequest* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void process_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+	void forward_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);
@@ -72,5 +75,7 @@ private:
 	void user_connection_closed_i(ACE_HANDLE handle);
 	int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);
 };
+
+}
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_

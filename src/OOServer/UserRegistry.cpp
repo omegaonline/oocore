@@ -5,19 +5,19 @@
 using namespace Omega;
 using namespace OTL;
 
-void UserBaseRegistry::Init(UserManager* pManager)
+void User::Registry::Base::Init(User::Manager* pManager)
 {
 	if (open_registry() != 0)
 		OOSERVER_THROW_LASTERROR();
 
-	m_ptrRootReg = ObjectImpl<UserRootRegistry>::CreateObjectPtr();
+	m_ptrRootReg = ObjectImpl<Root>::CreateObjectPtr();
 	m_ptrRootReg->Init(pManager);
 
-	m_ptrUserReg = ObjectImpl<UserRegistry>::CreateObjectPtr();
+	m_ptrUserReg = ObjectImpl<CurrentUser>::CreateObjectPtr();
 	m_ptrUserReg->Init(m_registry.root_section());
 }
 
-int UserBaseRegistry::open_registry()
+int User::Registry::Base::open_registry()
 {
 #define OMEGA_REGISTRY_FILE "user.regdb"
 
@@ -64,7 +64,7 @@ int UserBaseRegistry::open_registry()
 	return m_registry.open(strRegistry.c_str());
 }
 
-Omega::bool_t UserBaseRegistry::IsSubKey(const Omega::string_t& key)
+Omega::bool_t User::Registry::Base::IsSubKey(const Omega::string_t& key)
 {
 	if (key == "Current User")
 		return true;
@@ -72,47 +72,47 @@ Omega::bool_t UserBaseRegistry::IsSubKey(const Omega::string_t& key)
 		return m_ptrRootReg->IsSubKey(key);
 }
 
-Omega::bool_t UserBaseRegistry::IsValue(const Omega::string_t& name)
+Omega::bool_t User::Registry::Base::IsValue(const Omega::string_t& name)
 {
 	return m_ptrRootReg->IsValue(name);
 }
 
-Omega::string_t UserBaseRegistry::GetStringValue(const Omega::string_t& name)
+Omega::string_t User::Registry::Base::GetStringValue(const Omega::string_t& name)
 {
 	return m_ptrRootReg->GetStringValue(name);
 }
 
-Omega::uint32_t UserBaseRegistry::GetUIntValue(const Omega::string_t& name)
+Omega::uint32_t User::Registry::Base::GetUIntValue(const Omega::string_t& name)
 {
 	return m_ptrRootReg->GetUIntValue(name);
 }
 
-void UserBaseRegistry::GetBinaryValue(const Omega::string_t& name, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
+void User::Registry::Base::GetBinaryValue(const Omega::string_t& name, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
 {
 	return m_ptrRootReg->GetBinaryValue(name,cbLen,pBuffer);
 }
 
-void UserBaseRegistry::SetStringValue(const Omega::string_t& name, const Omega::string_t& val)
+void User::Registry::Base::SetStringValue(const Omega::string_t& name, const Omega::string_t& val)
 {
 	return m_ptrRootReg->SetStringValue(name,val);
 }
 
-void UserBaseRegistry::SetUIntValue(const Omega::string_t& name, const Omega::uint32_t& val)
+void User::Registry::Base::SetUIntValue(const Omega::string_t& name, const Omega::uint32_t& val)
 {
 	return m_ptrRootReg->SetUIntValue(name,val);
 }
 
-void UserBaseRegistry::SetBinaryValue(const Omega::string_t& name, Omega::uint32_t cbLen, const Omega::byte_t* val)
+void User::Registry::Base::SetBinaryValue(const Omega::string_t& name, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
 	return m_ptrRootReg->SetBinaryValue(name,cbLen,val);
 }
 
-Omega::Registry::IRegistryKey::ValueType_t UserBaseRegistry::GetValueType(const Omega::string_t& name)
+Omega::Registry::IRegistryKey::ValueType_t User::Registry::Base::GetValueType(const Omega::string_t& name)
 {
 	return m_ptrRootReg->GetValueType(name);
 }
 
-Omega::Registry::IRegistryKey* UserBaseRegistry::OpenSubKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags)
+Omega::Registry::IRegistryKey* User::Registry::Base::OpenSubKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags)
 {
 	if (key.Left(9) == "Current User")
 	{
@@ -133,19 +133,19 @@ Omega::Registry::IRegistryKey* UserBaseRegistry::OpenSubKey(const Omega::string_
 	}
 }
 
-Omega::IEnumString* UserBaseRegistry::EnumSubKeys()
+Omega::IEnumString* User::Registry::Base::EnumSubKeys()
 {
 	void* TODO;
 
 	return 0;
 }
 
-Omega::IEnumString* UserBaseRegistry::EnumValues()
+Omega::IEnumString* User::Registry::Base::EnumValues()
 {
 	return m_ptrRootReg->EnumValues();
 }
 
-void UserBaseRegistry::DeleteKey(const Omega::string_t& strKey)
+void User::Registry::Base::DeleteKey(const Omega::string_t& strKey)
 {
 	if (strKey == "Current User")
 		OOSERVER_THROW_ERRNO(EACCES);
@@ -153,7 +153,7 @@ void UserBaseRegistry::DeleteKey(const Omega::string_t& strKey)
 	m_ptrRootReg->DeleteKey(strKey);
 }
 
-void UserBaseRegistry::DeleteValue(const Omega::string_t& strValue)
+void User::Registry::Base::DeleteValue(const Omega::string_t& strValue)
 {
 	m_ptrRootReg->DeleteValue(strValue);
 }

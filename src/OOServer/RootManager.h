@@ -23,9 +23,12 @@
 
 #include <map>
 
+namespace Root
+{
+
 class SpawnedProcess;
 
-class RootManager : 
+class Manager : 
 	public LocalAcceptor<ClientConnection>, 
 	public RootBase,
 	public RequestHandler<RequestBase>
@@ -37,13 +40,13 @@ public:
 	static ACE_Configuration_Heap& get_registry();
 		
 private:
-	typedef ACE_Singleton<RootManager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;
+	typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;
 	friend class ROOT_MANAGER;
 
-	RootManager();
-	RootManager(const RootManager&) {}
-	virtual ~RootManager();
-	RootManager& operator = (const RootManager&) {}
+	Manager();
+	Manager(const Manager&) {}
+	virtual ~Manager();
+	Manager& operator = (const Manager&) {}
 
 	ACE_Thread_Mutex				m_lock;
 	ACE_HANDLE						m_config_file;
@@ -101,7 +104,8 @@ private:
 
 	static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 	static ACE_THR_FUNC_RETURN request_worker_fn(void*);
-
 };
+
+}
 
 #endif // OOSERVER_ROOT_MANAGER_H_INCLUDED_

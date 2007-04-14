@@ -15,6 +15,9 @@
 
 #include "../OOCore/Session.h"
 
+namespace Root
+{
+
 class SpawnedProcess
 {
 public:
@@ -49,5 +52,7 @@ private:
 #endif // ACE_WIN32
 
 };
+
+}
 
 #endif // OOSERVER_SPAWNED_PROCESS_H_INCLUDED_

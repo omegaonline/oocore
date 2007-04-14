@@ -4,7 +4,7 @@
 using namespace Omega;
 using namespace OTL;
 
-void UserServiceTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
+void User::ServiceTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 {
 	if (ptrOM)
 	{
@@ -19,7 +19,7 @@ void UserServiceTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	}
 }
 
-void UserServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Flags_t flags, IObject* pObject)
+void User::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Flags_t flags, IObject* pObject)
 {
 	if (m_ptrSIP && (flags & Activation::IServiceTable::AllowAnyUser))
 	{
@@ -37,7 +37,7 @@ void UserServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Fl
 	}
 }
 
-void UserServiceTable::Revoke(const guid_t& oid)
+void User::ServiceTable::Revoke(const guid_t& oid)
 {
 	bool bFound = false;
 	{
@@ -58,7 +58,7 @@ void UserServiceTable::Revoke(const guid_t& oid)
 	}
 }
 
-void UserServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+void User::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	bool bFound = false;
 	{

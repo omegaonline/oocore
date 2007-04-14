@@ -24,17 +24,17 @@
 // For the Windows path functions
 #include <shlwapi.h>
 
-ACE_NT_SERVICE_DEFINE(OOServer,NTService,NTSERVICE_DESC);
+ACE_NT_SERVICE_DEFINE(OOServer,Root::NTService,NTSERVICE_DESC);
 
-NTService::NTService() : ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC)
+Root::NTService::NTService() : ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC)
 {
 }
 
-NTService::~NTService()
+Root::NTService::~NTService()
 {
 }
 
-int NTService::open(int argc, ACE_TCHAR* argv[])
+int Root::NTService::open(int argc, ACE_TCHAR* argv[])
 {
 	// Used for cmdline processing
 	ACE_ARGV svc_argv;
@@ -114,7 +114,7 @@ int NTService::open(int argc, ACE_TCHAR* argv[])
 	return 0;
 }
 
-int NTService::insert(const ACE_TCHAR *cmd_line,
+int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 						DWORD start_type,
 						DWORD error_control,
 						const ACE_TCHAR *group_name,
@@ -139,7 +139,7 @@ int NTService::insert(const ACE_TCHAR *cmd_line,
 	return ACE_NT_Service::insert(start_type,error_control,exe_path.c_str(),group_name,tag_id,dependencies,account_name,password);
 }
 
-int NTService::description(const ACE_TCHAR *desc)
+int Root::NTService::description(const ACE_TCHAR *desc)
 {
 	SC_HANDLE svc = this->svc_sc_handle ();
 	if (svc == 0)
@@ -155,7 +155,7 @@ int NTService::description(const ACE_TCHAR *desc)
 	return ok ? 0 : -1;
 }
 
-ACE_THR_FUNC_RETURN NTService::start_service(void*)
+ACE_THR_FUNC_RETURN Root::NTService::start_service(void*)
 {
 	// This blocks running svc
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
@@ -165,7 +165,7 @@ ACE_THR_FUNC_RETURN NTService::start_service(void*)
 	return 0;
 }
 
-int NTService::svc(void)
+int Root::NTService::svc(void)
 {
 	report_status(SERVICE_RUNNING);
 
@@ -177,23 +177,23 @@ int NTService::svc(void)
 	return ret;
 }
 
-void NTService::pause_requested(DWORD)
+void Root::NTService::pause_requested(DWORD)
 {
 	// We don't pause
 	report_status(SERVICE_RUNNING);
 }
 
-void NTService::continue_requested(DWORD)
+void Root::NTService::continue_requested(DWORD)
 {
 	// We don't pause
 	report_status(SERVICE_RUNNING);
 }
 
-void NTService::stop_requested(DWORD)
+void Root::NTService::stop_requested(DWORD)
 {
 	report_status(SERVICE_STOP_PENDING);
 
-	RootManager::end_event_loop();
+	Manager::end_event_loop();
 
 	// Tell the service thread to stop
 	m_finished.signal();

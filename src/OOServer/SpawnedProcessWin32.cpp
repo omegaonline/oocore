@@ -21,20 +21,20 @@
 #include <lm.h>
 #include <sddl.h>
 
-SpawnedProcess::SpawnedProcess() :
+Root::SpawnedProcess::SpawnedProcess() :
 	m_hToken(NULL),
 	m_hProfile(NULL),
 	m_hProcess(NULL)
 {
 }
 
-SpawnedProcess::~SpawnedProcess(void)
+Root::SpawnedProcess::~SpawnedProcess(void)
 {
 	if (Close() == ETIMEDOUT)
 		Kill();
 }
 
-int SpawnedProcess::Close(ACE_Time_Value* wait)
+int Root::SpawnedProcess::Close(ACE_Time_Value* wait)
 {
 	int exit_code = 0;
 	DWORD dwWait = 10000;
@@ -74,7 +74,7 @@ int SpawnedProcess::Close(ACE_Time_Value* wait)
 	return exit_code;
 }
 
-void SpawnedProcess::Kill()
+void Root::SpawnedProcess::Kill()
 {
 	::DebugBreak();
 
@@ -98,7 +98,7 @@ void SpawnedProcess::Kill()
 	}
 }
 
-bool SpawnedProcess::IsRunning()
+bool Root::SpawnedProcess::IsRunning()
 {
 	if (!m_hProcess)
 		return false;
@@ -110,7 +110,7 @@ bool SpawnedProcess::IsRunning()
 	return (dwRes == STILL_ACTIVE);
 }
 
-DWORD SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
+DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
 {
 	// Impersonate the logged on user
 	if (!ImpersonateLoggedOnUser(hToken))
@@ -252,7 +252,7 @@ DWORD SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
 	return ERROR_SUCCESS;    
 }
 
-DWORD SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 {
 	// Get our module name
 	TCHAR szPath[MAX_PATH];
@@ -306,7 +306,7 @@ DWORD SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 	return ERROR_SUCCESS;
 }
 
-int SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
+int Root::SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
@@ -345,10 +345,10 @@ int SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 	return 0;
 }
 
-int SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
+int Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 {
 	// Get the local machine registry
-	ACE_Configuration_Heap& reg_root = RootManager::get_registry();
+	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Get the server section
 	ACE_Configuration_Section_Key sandbox_key;
@@ -372,7 +372,7 @@ int SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	return 0;
 }
 
-int SpawnedProcess::GetSandboxUid(ACE_CString& uid)
+int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 {
 	HANDLE hToken;
 	int err = LogonSandboxUser(&hToken);
@@ -425,7 +425,7 @@ int SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	return 0;
 }
 
-int SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid)
+int Root::SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid)
 {
 	// Get the process handle
 	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);
@@ -487,7 +487,7 @@ int SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid)
 	return 0;
 }
 
-bool SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
     PSECURITY_DESCRIPTOR pSD = NULL;
 	DWORD cbNeeded = 0;
@@ -530,7 +530,6 @@ bool SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bA
 
 	if (!bRes)
 	{
-		int err = GetLastError();
 		::DebugBreak();
 		return false;
 	}

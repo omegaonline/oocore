@@ -3,21 +3,21 @@
 #include "./UserConnection.h"
 #include "./UserManager.h"
 
-UserConnection::UserConnection() : ACE_Service_Handler()
+User::Connection::Connection() : ACE_Service_Handler()
 {
 }
 
-UserConnection::~UserConnection()
+User::Connection::~Connection()
 {
 	ACE_HANDLE my_handle = handle();
 
-	UserManager::user_connection_closed(my_handle);
+	Manager::user_connection_closed(my_handle);
 	
 	if (my_handle != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(my_handle);
 }
 
-void UserConnection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
+void User::Connection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
 {
 	// Stash the handle
 	this->handle(new_handle);
@@ -25,7 +25,7 @@ void UserConnection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
 	// Open the reader
 	if (m_reader.open(*this) != 0)
 	{
-	    ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::open")));
+	    ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("User::Connection::open")));
 		delete this;
 	}
 			
@@ -33,7 +33,7 @@ void UserConnection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
 		delete this;
 }
 
-int UserConnection::read()
+int User::Connection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
@@ -46,7 +46,7 @@ int UserConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::read")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("User::Connection::read")));
 		mb->release();
 		return -1;
 	}
@@ -54,7 +54,7 @@ int UserConnection::read()
 	return 0;
 }
 
-void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
 	
@@ -109,7 +109,7 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 					// Push into the UserBase queue...
-					if (UserManager::enqueue_user_request(input,handle()) > 0)
+					if (Manager::enqueue_user_request(input,handle()) > 0)
 					{
 						// Start a new read
 						bSuccess = (read() == 0);
@@ -130,7 +130,7 @@ void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& re
 		DWORD dwErr = GetLastError();
 		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SUCCESS && dwErr != WSAENOTSOCK)
 #endif
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::handle_read_stream")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("User::Connection::handle_read_stream")));
 		delete this;
 	}
 }

@@ -23,6 +23,9 @@
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Gateway")
 #define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online network")
 
+namespace Root
+{
+
 class NTService : public ACE_NT_Service
 {
 public:
@@ -55,6 +58,8 @@ private:
 	
 	ACE_Event m_finished;
 };
+
+}
 
 #endif // ACE_WIN32
 

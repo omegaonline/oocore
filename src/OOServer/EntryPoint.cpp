@@ -30,7 +30,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (argc==3 && ACE_OS::strcmp(argv[1],"--spawned")==0)
 		return UserMain(static_cast<u_short>(ACE_OS::atoi(argv[2])));
 
-	int ret = NTService::open(argc,argv);
+	int ret = Root::NTService::open(argc,argv);
 	
 #else
 
@@ -49,5 +49,5 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (ret != 0)
 		return ret;
 
-	return RootManager::run_event_loop();
+	return Root::Manager::run_event_loop();
 }

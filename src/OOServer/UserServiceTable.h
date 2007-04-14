@@ -1,7 +1,10 @@
 #ifndef OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
 #define OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
 
-class UserServiceTable : 
+namespace User
+{
+
+class ServiceTable : 
 	public OTL::ObjectBase,
 	public Omega::Activation::IServiceTable
 {
@@ -12,7 +15,7 @@ public:
 	void Revoke(const Omega::guid_t& oid);
 	void GetObject(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 
-	BEGIN_INTERFACE_MAP(UserServiceTable)
+	BEGIN_INTERFACE_MAP(ServiceTable)
 		INTERFACE_ENTRY(Omega::Activation::IServiceTable)
 	END_INTERFACE_MAP()
 
@@ -21,5 +24,7 @@ private:
 	ACE_Thread_Mutex                                         m_lock;
 	std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapServices;
 };
+
+}
 
 #endif // OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_

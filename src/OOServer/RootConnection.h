@@ -2,7 +2,7 @@
 //
 //	***** THIS IS A SECURE MODULE *****
 //
-//	It will be run as Administrator/setuid root
+//	It can be run as Administrator/setuid root
 //
 //	Therefore it needs to be SAFE AS HOUSES!
 //
@@ -24,18 +24,21 @@ public:
 	virtual void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle) = 0;
 };
 
-class RootConnection : public ACE_Service_Handler
+namespace Root
+{
+
+class Connection : public ACE_Service_Handler
 {		
 public:
-	RootConnection(RootBase* pBase, const ACE_CString& key);
-	virtual ~RootConnection();
+	Connection(RootBase* pBase, const ACE_CString& key);
+	virtual ~Connection();
 
 	int open(ACE_HANDLE new_handle);
 	void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 		
 private:
-	RootConnection(const RootConnection&) {}
-	RootConnection& operator = (const RootConnection&) {}
+	Connection(const Connection&) {}
+	Connection& operator = (const Connection&) {}
 
 	static const size_t			s_initial_read = 8;
 	RootBase*					m_pBase;
@@ -45,5 +48,7 @@ private:
 
 	int read();
 };
+
+}
 
 #endif // OOSERVER_ROOT_CONNECTION_H_INCLUDED_

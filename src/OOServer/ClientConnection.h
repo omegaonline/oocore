@@ -17,7 +17,10 @@
 
 #include "../OOCore/Session.h"
 
-class RootManager;
+namespace Root
+{
+
+class Manager;
 
 class ClientConnection : public ACE_Service_Handler
 {		
@@ -39,5 +42,7 @@ private:
 	ACE_Asynch_Read_Stream		m_reader;
 	ACE_Asynch_Write_Stream		m_writer;
 };
+
+}
 
 #endif // OOSERVER_CLIENT_CONNECTION_H_INCLUDED_

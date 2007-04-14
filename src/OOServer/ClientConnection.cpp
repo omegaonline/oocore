@@ -13,13 +13,13 @@
 #include "./ClientConnection.h"
 #include "./RootManager.h"
 
-ClientConnection::~ClientConnection()
+Root::ClientConnection::~ClientConnection()
 {
 	if (handle() != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(handle());
 }
 
-void ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
+void Root::ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 {
 	// Stash the handle
 	this->handle(new_handle);
@@ -27,7 +27,7 @@ void ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 	// Open the reader and writer
 	if (m_reader.open(*this) != 0 || m_writer.open(*this) != 0)
 	{
-        ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("ClientConnection::open")));
+        ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
 		delete this;
 	}
 	else
@@ -38,14 +38,14 @@ void ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 		ACE_NEW_NORETURN(mb,ACE_Message_Block(16));
 		if (m_reader.read(*mb,sizeof(m_header_len)) != 0)
 		{
-			ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("ClientConnection::open")));
+			ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
 			mb->release();
 			delete this;
 		}
 	}
 }
 
-void ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
 
@@ -83,7 +83,7 @@ void ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 
 				// Ask the root manager for a response...
 				Session::Response response = {0};
-				RootManager::connect_client(*pRequest,response);
+				Manager::connect_client(*pRequest,response);
 			
 				// Try to send the response, reusing mb
 				mb.reset();
@@ -97,13 +97,13 @@ void ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 
 	if (!bSuccess)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("ClientConnection::handle_read_stream")));
+		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::ClientConnection::handle_read_stream")));
 		mb.release();
 		delete this;
 	}
 }
 
-void ClientConnection::handle_write_stream(const ACE_Asynch_Write_Stream::Result& result)
+void Root::ClientConnection::handle_write_stream(const ACE_Asynch_Write_Stream::Result& result)
 {
 	// All done, close
 	result.message_block().release();

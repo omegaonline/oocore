@@ -252,6 +252,11 @@ uint32_t UserKey::GetUIntValue(const string_t& strName)
 	return static_cast<uint32_t>(uValue);
 }
 
+void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
+{
+	void* TODO;
+}
+
 void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
@@ -293,6 +298,11 @@ void UserKey::SetUIntValue(const string_t& strName, const uint32_t& val)
 		else
 			OOSERVER_THROW_ERRNO(err);
 	}
+}
+
+void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
+{
+	void* TODO;
 }
 
 IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
@@ -620,6 +630,11 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	return uValue;
 }
 
+void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
+{
+	void* TODO;
+}
+
 void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 {
 	ACE_OutputCDR request;
@@ -682,6 +697,11 @@ void RootKey::SetUIntValue(const string_t& strName, const uint32_t& uValue)
 		OOSERVER_THROW_ERRNO(err);
 }
 
+void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
+{
+	void* TODO;
+}
+
 IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
 	void* TODO;
@@ -694,10 +714,17 @@ Omega::IEnumString* RootKey::EnumSubKeys()
 	return 0;
 }
 
-Omega::IEnumString* RootKey::EnumValues()
+void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 {
 	void* TODO;
-	return 0;
+}
+
+Omega::IEnumString* RootKey::EnumValues()
+{
+	std::set<Omega::string_t> setStrings;
+	EnumSubKeys(setStrings);
+
+	return EnumString::Create(setStrings.begin(),setStrings.end());
 }
 
 void RootKey::DeleteKey(const string_t& strSubKey)

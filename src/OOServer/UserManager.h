@@ -5,6 +5,7 @@
 #include "./RequestHandler.h"
 #include "./RootConnection.h"
 #include "./UserConnection.h"
+#include "./Protocol.h"
 
 namespace User
 {
@@ -29,8 +30,8 @@ public:
 	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	static void user_connection_closed(ACE_HANDLE handle);
 
-	void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait = 0);
-	ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait = 0);
+	void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait = 0);
+	ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait = 0);
 	
 private:
 	typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> USER_MANAGER;

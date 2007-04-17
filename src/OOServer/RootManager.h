@@ -18,11 +18,6 @@
 #include "./RootConnection.h"
 #include "./ClientConnection.h"
 
-#include <ace/Singleton.h>
-#include <ace/Configuration.h>
-
-#include <map>
-
 namespace Root
 {
 

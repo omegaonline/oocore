@@ -1,8 +1,15 @@
 #ifndef OOCORE_CONFIG_WIN32_H_INCLUDED_
 #define OOCORE_CONFIG_WIN32_H_INCLUDED_
 
+// Complain if WIN32 is not already defined.
+#if !defined (WIN32)
+# error Please define WIN32 in your project settings.
+#endif
+
 #if !defined(_WIN32_WINNT)
-#define _WIN32_WINNT 0x400
+#define _WIN32_WINNT 0x0500
+#elif _WIN32_WINNT < 0x0500
+#error OOCore requires _WIN32_WINNT >= 0x0500!
 #endif
 
 #include <winsock2.h>
@@ -13,11 +20,6 @@
 #include <OOCore/config-win32-gcc.h>
 #else
 #error Unsupported compiler!
-#endif
-
-// Complain if WIN32 is not already defined.
-#if !defined (WIN32)
-# error Please define WIN32 in your project settings.
 #endif
 
 #define OMEGA_WIN32
@@ -31,5 +33,8 @@
 #endif
 
 #define OMEGA_CALL __cdecl
+
+#include <shlobj.h>
+#include <shlwapi.h>
 
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_

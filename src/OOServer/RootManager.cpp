@@ -10,18 +10,9 @@
 //
 /////////////////////////////////////////////////////////////
 
+#include "./OOServer_Root.h"
 #include "./RootManager.h"
 #include "./SpawnedProcess.h"
-
-#include <ace/OS.h>
-#include <ace/Proactor.h>
-#include <ace/SOCK_Acceptor.h>
-#include <ace/Countdown_Time.h>
-
-#include <OOCore/Preprocessor/base.h>
-
-#include <list>
-
 #include "./Protocol.h"
 
 Root::Manager::Manager() : 

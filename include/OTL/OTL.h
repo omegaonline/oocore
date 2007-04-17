@@ -943,6 +943,84 @@ namespace OTL
 			return singleton;
 		}
 	};	
+
+	template <class EnumIFace, class EnumType>
+	class EnumSTL : 
+		public ObjectBase,
+		public EnumIFace
+	{
+		typedef EnumSTL<EnumIFace,EnumType> MyType;
+
+	public:
+		template <class InputIterator>
+		static EnumIFace* Create(InputIterator first, InputIterator last)
+		{
+			ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateObjectPtr();
+			ptrThis->m_pos = ptrThis->m_listItems.begin();
+			std::copy(first,last,ptrThis->m_pos);
+			return ptrThis.AddRefReturn();
+		}
+
+	private:
+		BEGIN_INTERFACE_MAP(MyType)
+			INTERFACE_ENTRY(EnumIFace)
+		END_INTERFACE_MAP()
+
+	private:
+		std::list<EnumType>                      m_listItems;
+		typename std::list<EnumType>::iterator   m_pos;
+		Omega::CriticalSection                   m_cs;
+
+	// IEnumString members
+	public:
+		bool Next(Omega::uint32_t& count, EnumType* parrVals)
+		{
+			Guard<CriticalSection> guard(m_cs);
+
+			uint32_t c = count;
+			count = 0;
+			while (m_pos!=m_listItems.end() && count < c)
+			{
+				parrVals[count] = *m_pos;
+				++count;
+				++m_pos;
+			}
+
+			return (m_pos!=m_listItems.end());
+		}
+
+		bool Skip(Omega::uint32_t count)
+		{
+			Guard<CriticalSection> guard(m_cs);
+
+			while (count > 0 && m_pos!=m_listItems.end())
+			{
+                ++m_pos;
+				--count;
+			}
+
+			return (m_pos!=m_listItems.end());
+		}
+
+		void Reset()
+		{
+			Guard<CriticalSection> guard(m_cs);
+
+			m_pos = m_listItems.begin();
+		}
+
+		EnumIFace* Clone()
+		{
+			Guard<CriticalSection> guard(m_cs);
+
+			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateObjectPtr();
+			ptrNew->m_pos = ptrNew->m_listItems.begin();
+			std::copy(m_listItems.begin(),m_listItems.end(),ptrNew->m_pos);
+			return ptrNew.AddRefReturn();
+		}
+	};
+
+	typedef EnumSTL<Omega::IEnumString,Omega::string_t>	EnumString;
 };
 
 #include <OTL/OTL.inl>

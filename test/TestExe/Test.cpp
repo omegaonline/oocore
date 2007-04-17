@@ -1,6 +1,8 @@
 #define OMEGA_GUID_LINK_HERE
 
+#ifdef OMEGA_HAVE_VLD
 #include <vld.h>
+#endif
 
 #include "../TestDll/testdll.h"
 #include <OTL/OTL.h>

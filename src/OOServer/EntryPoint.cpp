@@ -10,11 +10,9 @@
 //
 /////////////////////////////////////////////////////////////
 
+#include "./OOServer_Root.h"
 #include "./NTService.h"
 #include "./RootManager.h"
-
-#include <ace/OS.h>
-#include <ace/Log_Msg.h>
 
 // Forward declare UserMain
 int UserMain(u_short uPort);

@@ -31,11 +31,11 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex                         m_lock;
-		ObjectPtr<Remoting::IObjectManager>      m_ptrOM;
-		ObjectPtr<ObjectImpl<ServiceTable> >     m_ptrST;
-		ObjectPtr<ObjectImpl<Registry::Base> >   m_ptrReg;
-		Manager*                                 m_pManager;
+		ACE_Thread_Mutex                           m_lock;
+		ObjectPtr<Remoting::IObjectManager>        m_ptrOM;
+		ObjectPtr<ObjectImpl<ServiceTable> >       m_ptrST;
+		ObjectPtr<ObjectImpl<Registry::BaseKey> >  m_ptrReg;
+		Manager*                                   m_pManager;
 
 	// Remoting::IInterProcessService members
 	public:
@@ -88,7 +88,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 
 	if (!m_ptrReg)
 	{
-		m_ptrReg = ObjectImpl<User::Registry::Base>::CreateObjectPtr();
+		m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateObjectPtr();
 		m_ptrReg->Init(m_pManager);
 	}
 
@@ -248,8 +248,8 @@ int User::Manager::init(u_short uPort)
 
 void User::Manager::term()
 {
-	ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
-
+	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+	
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
 		ACE_OS::shutdown(m_root_handle,SD_BOTH);
@@ -299,7 +299,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		ACE_OS::shutdown(get_handle(),SD_BOTH);
 
 		{
-			ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
 			// Shutdown all client handles
 			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();)
@@ -321,7 +321,8 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		ACE_Countdown_Time timeout(&wait);
 		while (!timeout.stopped())
 		{
-			ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+
 			if (m_mapReverseChannelIds.empty())
 				break;
 
@@ -350,7 +351,7 @@ int User::Manager::validate_connection(const ACE_Asynch_Accept::Result& result, 
 
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
 		ChannelPair channel = {result.accept_handle(), 0};
 		ACE_CDR::UShort uChannelId = m_uNextChannelId++;
@@ -406,7 +407,7 @@ void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
 {
 	ACE_OS::closesocket(handle);
 
-	ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
 	try
 	{
@@ -570,7 +571,7 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	ACE_CDR::UShort reply_channel_id;
 	try
 	{
-		ACE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
 
 		// Find the destination channel
 		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
@@ -620,7 +621,7 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	}
 }
 
-void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait)
+void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -633,7 +634,7 @@ void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_
 		OOSERVER_THROW_LASTERROR();
 }
 
-ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_Message_Block* request, ACE_Time_Value* wait)
+ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;

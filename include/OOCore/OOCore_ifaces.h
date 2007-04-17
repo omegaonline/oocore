@@ -66,8 +66,8 @@ namespace Omega
 
 	interface IEnumString : public IObject
 	{
-		virtual void Next(uint32_t& count, string_t* parrVals) = 0;
-		virtual void Skip(uint32_t count) = 0;
+		virtual bool_t Next(uint32_t& count, string_t* parrVals) = 0;
+		virtual bool_t Skip(uint32_t count) = 0;
 		virtual void Reset() = 0;
 		virtual IEnumString* Clone() = 0;
 	};
@@ -130,11 +130,17 @@ namespace Omega
 		};
 		OMEGA_DECLARE_IID(IBadNameException);
 
-		interface IWrongValueTypeException : public IException
+        interface IWrongValueTypeException : public IException
 		{
 			virtual IRegistryKey::ValueType_t GetValueType() = 0;
 		};
 		OMEGA_DECLARE_IID(IWrongValueTypeException);
+
+		interface IAccessDeniedException : public IException
+		{
+			virtual string_t GetName() = 0;
+		};
+		OMEGA_DECLARE_IID(IAccessDeniedException);
 	}
 }
 
@@ -199,8 +205,8 @@ OMEGA_EXPORT_INTERFACE
 	0x154dd0d9, 0xc452, 0x4847, 0xb4, 0xf9, 0xda, 0x64, 0xc0, 0x22, 0xb2, 0x43,
 
 	// Methods
-	OMEGA_METHOD_VOID(Next,2,((in),Omega::uint32_t&,count,(out)(size_is(count)),Omega::string_t*,parrVals))
-	OMEGA_METHOD_VOID(Skip,1,((in),Omega::uint32_t,count))
+	OMEGA_METHOD(bool_t,Next,2,((in),Omega::uint32_t&,count,(out)(size_is(count)),Omega::string_t*,parrVals))
+	OMEGA_METHOD(bool_t,Skip,1,((in),Omega::uint32_t,count))
 	OMEGA_METHOD_VOID(Reset,0,())
 	OMEGA_METHOD(IEnumString*,Clone,0,())
 )
@@ -261,6 +267,15 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
+)
+
+OMEGA_EXPORT_INTERFACE_DERIVED
+(
+	Omega::Registry, IAccessDeniedException, Omega, IException,
+	0xcc5f1542, 0x1475, 0x481f, 0x82, 0xdc, 0x96, 0x6e, 0x5b, 0x87, 0xc, 0x99,
+
+	// Methods
+	OMEGA_METHOD(Omega::string_t,GetName,0,())
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IServiceTable*,Activation_GetServiceTable,0,());

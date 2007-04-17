@@ -1,37 +1,26 @@
 #include <OOCore/OOCore.h>
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-#pragma warning(disable : 4541)
+#if defined(ACE_NLOGGING)
+#error You must not define ACE_NLOGGING, cos we use it!
 #endif
 
-#include <ace/Connector.h>
+#define ACE_AS_STATIC_LIBS 1
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-#pragma warning(default : 4541)
-#endif
-
-#include <ace/SOCK_Stream.h>
-#include <ace/SOCK_Acceptor.h>
-#include <ace/SOCK_Connector.h>
-#include <ace/Proactor.h>
+#include <ace/Asynch_Acceptor.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Configuration.h>
+#include <ace/Connector.h>
 #include <ace/OS.h>
-
-#if defined(ACE_WIN32)
-#include <shlobj.h>
-#include <shlwapi.h>
-#endif
+#include <ace/Proactor.h>
+#include <ace/SOCK_Connector.h>
 
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>
+
+#include <set>
 
 #define OOSERVER_THROW_LASTERROR() \
 	OMEGA_THROW(ACE_OS::strerror(ACE_OS::last_error()))
 
 #define OOSERVER_THROW_ERRNO(error) \
 	OMEGA_THROW(ACE_OS::strerror(error))
-
-#if defined(ACE_NLOGGING)
-#error You must not define ACE_NLOGGING, cos we use it!
-#endif

@@ -13,11 +13,7 @@
 #ifndef OOSERVER_NT_SERVICE_H_INCLUDED_
 #define OOSERVER_NT_SERVICE_H_INCLUDED_
 
-#include <ace/NT_Service.h>
-
 #ifdef ACE_WIN32
-
-#include <ace/Event.h>
 
 #define NTSERVICE_NAME		ACE_TEXT("OOServer")
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Gateway")

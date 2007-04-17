@@ -13,10 +13,6 @@
 #ifndef OOSERVER_ROOT_CONNECTION_H_INCLUDED_
 #define OOSERVER_ROOT_CONNECTION_H_INCLUDED_
 
-#include <ace/Asynch_IO.h>
-#include <ace/SString.h>
-#include <ace/CDR_Stream.h>
-
 class RootBase
 {
 public:

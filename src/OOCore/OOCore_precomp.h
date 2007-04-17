@@ -11,6 +11,9 @@
 /////////////////////////////////////////////////
 // Include ACE components
 
+// Link to the static lib version of ACE...
+#define ACE_AS_STATIC_LIBS 1
+
 #include <ace/OS.h>
 #include <ace/Singleton.h>
 #include <ace/DLL_Manager.h>
@@ -29,11 +32,9 @@
 #include <ace/Codecs.h>
 #include <ace/SString.h>
 #include <ace/CDR_Stream.h>
-
-// New ones...
 #include <ace/Proactor.h>
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 #include <ace/WFMO_Reactor.h>
 #else
 #include <ace/TP_Reactor.h>
@@ -45,22 +46,11 @@
 /////////////////////////////////////////////////
 // Include STL components
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// Some stl functions have warnings
-#pragma warning(push)
-#pragma warning(disable : 4702)
-#endif
-
 #include <list>
 #include <stdexcept>
 #include <map>
 #include <vector>
 #include <set>
-
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// Some stl functions have warnings
-#pragma warning(pop)
-#endif
 
 // End of STL includes
 /////////////////////////////////////////////////
@@ -72,18 +62,6 @@
 #include <OTL/OTL.h>
 
 // End of OOCore/OTL includes
-/////////////////////////////////////////////////
-
-/////////////////////////////////////////////////
-// Include Platform SDK components
-
-#if defined(ACE_WIN32)
-// For the Windows path functions
-#include <shlwapi.h>
-#include <shlobj.h>
-#endif
-
-// End of Platform SDK includes
 /////////////////////////////////////////////////
 
 #define OOCORE_THROW_LASTERROR() \

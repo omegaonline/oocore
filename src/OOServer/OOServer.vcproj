@@ -20,8 +20,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.4&quot;;..\..\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.7&quot;;..\..\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_HAVE_VLD"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -73,7 +73,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.4&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.7&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -309,6 +309,9 @@
 			</File>
 			<File
 				RelativePath=".\OOServer.h">
+			</File>
+			<File
+				RelativePath=".\OOServer_Root.h">
 			</File>
 			<File
 				RelativePath=".\Protocol.h">

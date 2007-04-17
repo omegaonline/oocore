@@ -6,26 +6,6 @@
 namespace OTL 
 {
 	template <>
-	class ObjectPtr<Omega::IEnumString> : public ObjectPtrBase<Omega::IEnumString>
-	{
-	public:
-		ObjectPtr<Omega::IEnumString>(Omega::IEnumString* pKey = 0) : 
-		  ObjectPtrBase<Omega::IEnumString>(pKey)
-		{ }
-
-		ObjectPtr(const ObjectPtr<Omega::IEnumString>& rhs) :
-		  ObjectPtrBase<Omega::IEnumString>(rhs)
-		{ }
-
-		ObjectPtr<Omega::IEnumString> Clone()
-		{
-			ObjectPtr<Omega::IEnumString> ret;
-			ret.Attach(m_ptr.value()->Clone());
-			return ret;
-		}
-	};
-
-	template <>
 	class ObjectPtr<Omega::Registry::IRegistryKey> : public ObjectPtrBase<Omega::Registry::IRegistryKey>
 	{
 	public:

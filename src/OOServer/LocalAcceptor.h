@@ -13,8 +13,6 @@
 #ifndef OOSERVER_LOCAL_ACCEPTOR_H_INCLUDED_
 #define OOSERVER_LOCAL_ACCEPTOR_H_INCLUDED_
 
-#include <ace/Asynch_Acceptor.h>
-
 template <class HANDLER>
 class LocalAcceptor : public ACE_Asynch_Acceptor<HANDLER>
 {

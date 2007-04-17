@@ -100,7 +100,7 @@ namespace Omega
 		inline string_t(const string_t& s);
 		inline string_t(const char_t* sz);
 		inline ~string_t();
-		
+				
 		inline string_t& operator = (const string_t& s);
 		inline string_t& operator = (const char_t* sz);
 		

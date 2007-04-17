@@ -1,17 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ACE_Static", "..\3rd Party Libraries\ACE-5.5.4\ace\ACE_Static.vcproj", "{69A052F0-FECA-1BAD-6757-8A63CF228EC4}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOCore", "..\src\OOCore\OOCore.vcproj", "{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}"
 	ProjectSection(ProjectDependencies) = postProject
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4} = {69A052F0-FECA-1BAD-6757-8A63CF228EC4}
+		{69A052F0-FECA-1BAD-6757-8A6348C86118} = {69A052F0-FECA-1BAD-6757-8A6348C86118}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOServer", "..\src\OOServer\OOServer.vcproj", "{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4} = {69A052F0-FECA-1BAD-6757-8A63CF228EC4}
+		{69A052F0-FECA-1BAD-6757-8A6348C86118} = {69A052F0-FECA-1BAD-6757-8A6348C86118}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestDll", "..\test\TestDll\TestDll.vcproj", "{E1E124DB-9220-4148-9336-9F44912D6E41}"
@@ -25,15 +21,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestExe", "..\test\TestExe\
 		{E1E124DB-9220-4148-9336-9F44912D6E41} = {E1E124DB-9220-4148-9336-9F44912D6E41}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ACE_Static", "..\3rd Party Libraries\ACE-5.5.7\ace\ACE_Static.vcproj", "{69A052F0-FECA-1BAD-6757-8A6348C86118}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
 		Release = Release
 	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Debug.ActiveCfg = Debug|Win32
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Release.ActiveCfg = Release|Win32
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Release.Build.0 = Release|Win32
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.ActiveCfg = Debug|Win32
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.Build.0 = Debug|Win32
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.ActiveCfg = Release|Win32
@@ -50,6 +49,9 @@ Global
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Debug.Build.0 = Debug|Win32
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Release.ActiveCfg = Release|Win32
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Release.Build.0 = Release|Win32
+		{69A052F0-FECA-1BAD-6757-8A6348C86118}.Debug.ActiveCfg = Debug|Win32
+		{69A052F0-FECA-1BAD-6757-8A6348C86118}.Release.ActiveCfg = Release|Win32
+		{69A052F0-FECA-1BAD-6757-8A6348C86118}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

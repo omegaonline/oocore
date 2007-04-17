@@ -10,16 +10,12 @@
 //
 /////////////////////////////////////////////////////////////
 
+#include "./OOServer_Root.h"
 #include "./NTService.h"
 
 #ifdef ACE_WIN32
 
 #include "./RootManager.h"
-
-#include <ace/Get_Opt.h>
-#include <ace/ARGV.h>
-#include <ace/OS.h>
-#include <ace/SString.h>
 
 // For the Windows path functions
 #include <shlwapi.h>

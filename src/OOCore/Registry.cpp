@@ -1,5 +1,12 @@
 #include "OOCore_precomp.h"
 
+#if defined(OMEGA_WIN32)
+// For the Windows path functions
+#include <shlwapi.h>
+#include <shlobj.h>
+#endif
+
+
 using namespace Omega;
 using namespace OTL;
 
@@ -79,8 +86,8 @@ namespace
 
 	// IEnumString members
 	public:
-		void Next(uint32_t& count, string_t* parrVals);
-		void Skip(uint32_t count);
+		bool Next(uint32_t& count, string_t* parrVals);
+		bool Skip(uint32_t count);
 		void Reset();
 		Omega::IEnumString* Clone();
 	};
@@ -199,19 +206,23 @@ namespace
 }
 
 // EnumStringImpl
-void EnumStringImpl::Next(uint32_t& count, string_t* parrVals)
+bool EnumStringImpl::Next(uint32_t& count, string_t* parrVals)
 {
 	uint32_t c;
 	for (c=0;c<count && !m_iter.done();++c)
 		parrVals[c] = ACE_Wide_To_Ascii((*(m_iter++)).c_str()).char_rep();
 	
 	count = c;
+
+	return false;
 }
 
-void EnumStringImpl::Skip(uint32_t count)
+bool EnumStringImpl::Skip(uint32_t count)
 {
 	for (uint32_t c=0;c<count && !m_iter.done();++c)
 		m_iter.advance();
+
+	return false;
 }
 
 void EnumStringImpl::Reset()

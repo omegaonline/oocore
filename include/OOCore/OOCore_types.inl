@@ -321,7 +321,7 @@ inline T& Omega::AtomicOpImpl<T,4>::value()
 // SOME OLD CRAP THAT WILL BE USEFUL SOON...
 #if 0
 {
-#if (defined (ACE_HAS_BUILTIN_ATOMIC_OP) && (ACE_SIZEOF_VOID_P==ACE_SIZEOF_LONG) && !defined(WIN32))
+#if (defined (OMEGA_HAS_BUILTIN_ATOMIC_OP) && (ACE_SIZEOF_VOID_P==ACE_SIZEOF_LONG) && !defined(WIN32))
 	// Lifted from ACE as there is no good way to reuse...
 	public:
 		static void init_functions (void);
@@ -341,7 +341,7 @@ inline T& Omega::AtomicOpImpl<T,4>::value()
 			return reinterpret_cast<OBJECT*>((*exchange_fn_)(reinterpret_cast<volatile long*>(&this->m_ptr),reinterpret_cast<long>(ptr));
 #endif /* WIN32 */
 		}
-#else /* ACE_HAS_BUILTIN_ATOMIC_OP */
+#else /* OMEGA_HAS_BUILTIN_ATOMIC_OP */
 	private:
 		CriticalSection m_cs;
 

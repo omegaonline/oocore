@@ -2,6 +2,6 @@
 #define OMEGA_GUID_LINK_HERE
 #include "./OOServer.h"
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
+#ifdef OMEGA_HAVE_VLD
 #include <vld.h>
 #endif

@@ -1,6 +1,6 @@
 #include "OOCore_precomp.h"
 
-namespace 
+namespace OOCore
 {
 	struct StringNode
 	{
@@ -30,6 +30,8 @@ namespace
 		Omega::AtomicOp<Omega::uint32_t>::type	m_refcount;
 	};
 }
+
+using namespace OOCore;
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,())
 {

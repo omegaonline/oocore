@@ -10,6 +10,7 @@
 //
 /////////////////////////////////////////////////////////////
 
+#include "./OOServer_Root.h"
 #include "./RootConnection.h"
 #include "./RootManager.h"
 

@@ -13,8 +13,6 @@
 #ifndef OOSERVER_CLIENT_CONNECTION_H_INCLUDED_
 #define OOSERVER_CLIENT_CONNECTION_H_INCLUDED_
 
-#include <ace/Asynch_IO.h>
-
 #include "../OOCore/Session.h"
 
 namespace Root

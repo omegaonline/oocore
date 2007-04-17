@@ -10,12 +10,18 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./SpawnedProcess.h"
-#include "./RootManager.h"
+#include "./OOServer_Root.h"
 
 #ifdef ACE_WIN32
 
-#include <ace/OS.h>
+#include "./SpawnedProcess.h"
+#include "./RootManager.h"
+
+#if !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0500
+#elif _WIN32_WINNT < 0x0500
+#error OOServer requires _WIN32_WINNT >= 0x0500!
+#endif
 
 #include <userenv.h>
 #include <lm.h>

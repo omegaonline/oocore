@@ -13,13 +13,6 @@
 #ifndef OOSERVER_REQUEST_HANDLER_H_INCLUDED_
 #define OOSERVER_REQUEST_HANDLER_H_INCLUDED_
 
-#include <ace/CDR_Stream.h>
-#include <ace/Message_Queue_T.h>
-#include <ace/Condition_Thread_Mutex.h>
-#include <ace/Atomic_Op.h>
-
-#include <set>
-
 class RequestBase
 {
 public:

@@ -141,7 +141,7 @@ private:
 
 // IChannel members
 public: 
-	Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
+	Omega::Serialize::IFormattedStream* CreateOutputStream(Omega::IObject* pOuter = 0);
 	Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream);
 };
 

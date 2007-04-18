@@ -31,30 +31,27 @@ namespace Omega
 			std_safe_functor& operator = (const std_safe_functor&) {}
 		};
 
-		template <> struct std_safe_functor<void*>
+		template <class T> struct std_void_functor
 		{
-			std_safe_functor() : m_val(m_fixed)
+			std_void_functor(T* val) : m_fixed(val), m_val(m_fixed)
 			{}
 
-			std_safe_functor(void* val) : m_fixed(val), m_val(m_fixed)
-			{}
-
-			operator void*&()
+			operator T*&()
 			{
 				return m_val;
 			}
 
-			void detach(void*& result)
+			void detach(T*& result)
 			{
 				result = m_val;
 			}
 
 		private:
-			void*  m_fixed;
-			void*& m_val;
+			T*  m_fixed;
+			T*& m_val;
 
-			std_safe_functor(const std_safe_functor&) : m_val(m_fixed) {}
-			std_safe_functor& operator = (const std_safe_functor&) {}
+			std_void_functor(const std_void_functor&) : m_val(m_fixed) {}
+			std_void_functor& operator = (const std_void_functor&) { return *this; }
 		};
 
 		template <class T> struct std_stub_functor;
@@ -88,27 +85,31 @@ namespace Omega
 		template <class T> struct interface_info<T*>
 		{
 			typedef typename interface_info<T>::safe_class* safe_class;
-			typedef std_safe_functor<T*> stub_functor;
-			typedef std_safe_functor<T*> proxy_functor;
+			typedef std_stub_functor_array<T> stub_functor;
+			typedef std_proxy_functor_array<T> proxy_functor;
 			typedef std_wire_type_array<T> wire_type;
 		};
 		template <> struct interface_info<void*>
 		{
 			typedef void* safe_class;
-			typedef std_safe_functor<void*> stub_functor;
-			typedef std_safe_functor<void*> proxy_functor;
+			typedef std_void_functor<void> stub_functor;
+			typedef std_void_functor<void> proxy_functor;
 			typedef std_wire_type<void*> wire_type;
+		};
+		template <> struct interface_info<const void*>
+		{
+			typedef const void* safe_class;
+			typedef std_void_functor<const void> stub_functor;
+			typedef std_void_functor<const void> proxy_functor;
+			typedef std_wire_type<const void*> wire_type;
 		};
 
 		template <class T> struct std_stub_functor<const T>
 		{
-			std_stub_functor() : m_actual()
-			{}
-
 			std_stub_functor(const typename interface_info<T>::safe_class& val) : m_actual(val)
 			{}
 
-			operator T& ()
+			operator const T& ()
 			{
 				return m_actual;
 			}
@@ -133,9 +134,6 @@ namespace Omega
 
 		template <class T> struct std_proxy_functor<const T>
 		{
-			std_proxy_functor() : m_actual()
-			{}
-
 			std_proxy_functor(const T& val) : m_actual(val)
 			{}
 
@@ -218,8 +216,94 @@ namespace Omega
 			std_proxy_functor& operator = (const std_proxy_functor&) {}
 		};
 
-		template <class I> struct iface_stub_functor;
-		template <class I> struct iface_stub_functor<I*>
+		template <class T> struct std_stub_functor_array
+		{
+			std_stub_functor_array(T* /*pVals*/, const uint32_t* /*cbSize*/)
+			{}
+
+			std_stub_functor_array(T* /*pVals*/, const uint32_t& /*cbSize*/)
+			{}
+
+			operator T* ()
+			{
+				return 0;
+			}
+
+		private:
+			std_stub_functor_array(const std_stub_functor_array&) {}
+			std_stub_functor_array& operator = (const std_stub_functor_array&) {}
+		};
+
+		template <> struct std_stub_functor_array<const char_t>
+		{
+			std_stub_functor_array(const char_t* /*pVals*/)
+			{}
+
+			std_stub_functor_array(const char_t* /*pVals*/, const uint32_t* /*cbSize*/)
+			{}
+
+			std_stub_functor_array(const char_t* /*pVals*/, const uint32_t& /*cbSize*/)
+			{}
+
+			operator const char_t*& ()
+			{
+				static const char_t* pV = 0;
+                return pV;
+			}
+
+			void detach(const char_t*&)
+			{}
+
+		private:
+			std_stub_functor_array(const std_stub_functor_array&) {}
+			std_stub_functor_array& operator = (const std_stub_functor_array&) { return *this; }
+		};
+
+		template <class T> struct std_proxy_functor_array
+		{
+			std_proxy_functor_array(T* /*pVals*/, const uint32_t& /*cbSize*/)
+			{}
+
+			operator T* ()
+			{
+				return 0;
+			}
+
+		private:
+			std_proxy_functor_array(const std_proxy_functor_array&) {}
+			std_proxy_functor_array& operator = (const std_proxy_functor_array&) {}
+		};
+
+		template <> struct std_proxy_functor_array<const char_t>
+		{
+			std_proxy_functor_array(const char_t* /*pVals*/)
+			{}
+
+			std_proxy_functor_array(const char_t* /*pVals*/, const uint32_t& /*cbSize*/)
+			{}
+
+			operator const char_t*& ()
+			{
+				static const char_t* pV = 0;
+                return pV;
+			}
+
+			operator char_t*& ()
+			{
+				static char_t* pV = 0;
+                return pV;
+			}
+
+			void detach(const char_t*&)
+			{}
+
+		private:
+			std_proxy_functor_array(const std_proxy_functor_array&) {}
+			std_proxy_functor_array& operator = (const std_proxy_functor_array&) { return *this; }
+		};
+		
+
+		template <class I> struct iface_stub_functor
 		{
 			iface_stub_functor(typename interface_info<I>::safe_class* pS = 0, const guid_t* piid = 0) :
 				m_fixed(0), m_pI(m_fixed)
@@ -256,8 +340,7 @@ namespace Omega
 			iface_stub_functor& operator = (const iface_stub_functor&) {}
 		};
 
-		template <class I> struct iface_proxy_functor;
-		template <class I> struct iface_proxy_functor<I*>
+		template <class I> struct iface_proxy_functor
 		{
 			iface_proxy_functor(I* pI = 0, const guid_t& iid = iid_traits<I>::GetIID()) :
 				m_fixed(0), m_pS(m_fixed)
@@ -461,16 +544,16 @@ namespace Omega
 		template <> struct interface_info<IObject*>
 		{
 			typedef interface_info<IObject>::safe_class* safe_class;
-			typedef iface_stub_functor<IObject*> stub_functor;
-			typedef iface_proxy_functor<IObject*> proxy_functor;
-			typedef iface_wire_type<IObject*> wire_type;
+			typedef iface_stub_functor<IObject> stub_functor;
+			typedef iface_proxy_functor<IObject> proxy_functor;
+			typedef iface_wire_type<IObject> wire_type;
 		};
 		template <> struct interface_info<IObject**>
 		{
 			typedef interface_info<IObject*>::safe_class* safe_class;
-			typedef iface_stub_functor_array<IObject*> stub_functor;
-			typedef iface_proxy_functor_array<IObject*> proxy_functor;
-			typedef std_wire_type_array<IObject*> wire_type;
+			typedef iface_stub_functor_array<IObject> stub_functor;
+			typedef iface_proxy_functor_array<IObject> proxy_functor;
+			typedef std_wire_type_array<IObject> wire_type;
 		};
 				
 		template <class I, class Base> struct IException_SafeStub;
@@ -501,16 +584,16 @@ namespace Omega
 		template <> struct interface_info<IException*>
 		{
 			typedef interface_info<IException>::safe_class* safe_class;
-			typedef iface_stub_functor<IException*> stub_functor;
-			typedef iface_proxy_functor<IException*> proxy_functor;
-			typedef iface_wire_type<IException*> wire_type;
+			typedef iface_stub_functor<IException> stub_functor;
+			typedef iface_proxy_functor<IException> proxy_functor;
+			typedef iface_wire_type<IException> wire_type;
 		};
 		template <> struct interface_info<IException**>
 		{
 			typedef interface_info<IException*>::safe_class* safe_class;
-			typedef iface_stub_functor_array<IException*> stub_functor;
-			typedef iface_proxy_functor_array<IException*> proxy_functor;
-			typedef std_wire_type_array<IException*> wire_type;
+			typedef iface_stub_functor_array<IException> stub_functor;
+			typedef iface_proxy_functor_array<IException> proxy_functor;
+			typedef std_wire_type_array<IException> wire_type;
 		};
 		
 		interface IException_Safe : public IObject_Safe

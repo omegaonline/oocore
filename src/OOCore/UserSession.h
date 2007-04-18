@@ -21,7 +21,7 @@ private:
 	UserSession();
 	virtual ~UserSession();
 	UserSession(const UserSession&) {}
-	UserSession& operator = (const UserSession&) {}
+	UserSession& operator = (const UserSession&) { return *this; }
 
 	class Request
 	{

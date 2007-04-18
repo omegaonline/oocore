@@ -9,13 +9,7 @@
 # error This version of Microsoft Visual C++ not supported.
 #endif*/
 
-# if !defined(_MT)
-// *** DO NOT *** defeat this error message by defining _MT yourself.
-// On MSVC, this is changed by selecting the Multithreaded
-// DLL or Debug Multithreaded DLL in the Project Settings
-// under C++ Code Generation.
-#  error You must link against multi-threaded libraries when using OOCore (check your project settings)
-# endif // !_MT
+#define OMEGA_MAX_DEFINES	249
 
 #define OMEGA_FUNCNAME		__FUNCSIG__
 

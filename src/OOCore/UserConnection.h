@@ -14,7 +14,7 @@ public:
 		
 private:
 	UserConnection(const UserConnection&) {}
-	UserConnection& operator = (const UserConnection&) {}
+	UserConnection& operator = (const UserConnection&) { return *this; }
 
 	static const size_t			s_initial_read = 8;
 

@@ -296,59 +296,7 @@ namespace Omega
 			static const size_t		value = N;
 			typedef size_t_<N>		type;
 			typedef size_t_<N+1>	next;
-		};
-
-		template <class T>
-		struct null_info
-		{
-			static const T value()
-			{
-				return T();
-			}
-
-			static void set(T& v)
-			{
-				v = value();
-			}
-		};
-
-		// MSVC gets picky about uint32_t() and confuses it with size_t()
-		template <>
-		struct null_info<uint32_t>
-		{
-			static const uint32_t value()
-			{
-				return uint32_t(0);
-			}
-
-			static void set(uint32_t& v)
-			{
-				v = value();
-			}
-		};
-
-		template <class T>
-		struct null_info<T*>
-		{
-			static T* value()
-			{
-				return 0;
-			}
-
-			static void set(T*& p)
-			{
-				p = 0;
-			}
 		};	
-
-		template <class T>
-		struct null_info<T&>
-		{
-			static void set(T& p)
-			{
-				null_info<T>::set(p);
-			}
-		};
 	}
 }
 

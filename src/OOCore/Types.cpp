@@ -235,7 +235,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,s1,(in),si
 	return s2;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,sz,(in),va_list,ap))
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,sz,(in)(size_is(sizeof(va_list))),va_list,ap))
 {
 	int len2 = 0;
 	for (int len = 64;;len *= 2)

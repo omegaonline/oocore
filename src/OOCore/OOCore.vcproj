@@ -237,6 +237,9 @@
 			Name="OOCore"
 			Filter="">
 			<File
+				RelativePath="..\..\include\OOCore\config-win32-borland.h">
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\config-win32-gcc.h">
 			</File>
 			<File

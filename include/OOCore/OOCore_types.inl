@@ -161,7 +161,7 @@ inline Omega::string_t Omega::string_t::ToUpper() const
 	return string_t(static_cast<handle_t>(string_t_toupper(m_handle)));
 }
 
-OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,s,(in),va_list,a));
+OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,s,(in)(size_is(sizeof(va_list))),va_list,a));
 inline Omega::string_t Omega::string_t::Format(const char_t* pszFormat, ...)
 {
 	va_list list;

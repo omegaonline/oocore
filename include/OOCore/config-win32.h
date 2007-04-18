@@ -3,7 +3,11 @@
 
 // Complain if WIN32 is not already defined.
 #if !defined (WIN32)
-# error Please define WIN32 in your project settings.
+#if defined(__WIN32) || defined (_WIN32) || defined(__WIN32__)
+#define WIN32
+#else
+#error Please define WIN32 in your project settings.
+#endif
 #endif
 
 #if !defined(_WIN32_WINNT)
@@ -18,6 +22,8 @@
 #include <OOCore/config-win32-msvc.h>
 #elif defined (__GNUC__)
 #include <OOCore/config-win32-gcc.h>
+#elif defined (__BORLANDC__)
+#include <OOCore/config-win32-borland.h>
 #else
 #error Unsupported compiler!
 #endif
@@ -38,3 +44,4 @@
 #include <shlwapi.h>
 
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_
+

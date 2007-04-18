@@ -64,40 +64,31 @@ namespace Omega
 		};
 		OMEGA_DECLARE_IID(IWireProxy);
 
-		template <class T>
-		static void wire_read(IWireManager*, Serialize::IFormattedStream*, T&);
-
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, byte_t& val)
 		{
 			val = pStream->ReadByte();
 		}
 
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, bool_t& val)
 		{
 			val = pStream->ReadBoolean();
 		}
 
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t& val)
 		{
 			val = pStream->ReadUInt16();
 		}
 
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t& val)
 		{
 			val = pStream->ReadUInt32();
 		}
 
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint64_t& val)
 		{
 			val = pStream->ReadUInt64();
 		}
 
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, guid_t& val)
 		{
 			val.Data1 = pStream->ReadUInt32();
@@ -109,7 +100,6 @@ namespace Omega
 				OMEGA_THROW("Failed to read guid_t");
 		}
 
-		template <>
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)
 		{
 			val = pStream->ReadString();
@@ -122,9 +112,6 @@ namespace Omega
 			pManager->UnmarshalInterface(pStream,iid,pObject);
 			val = static_cast<I*>(pObject);
 		}
-
-		template <class T>
-		static void wire_write(IWireManager*, Serialize::IFormattedStream*, const T&);
 
 		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, byte_t val)
 		{
@@ -146,13 +133,11 @@ namespace Omega
 			pStream->WriteUInt32(val);
 		}
 
-		template <>
 		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const uint64_t& val)
 		{
 			pStream->WriteUInt64(val);
 		}
 
-		template <>
 		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const guid_t& val)
 		{
 			pStream->WriteUInt32(val.Data1);
@@ -161,7 +146,6 @@ namespace Omega
 			pStream->WriteBytes(8,val.Data4);
 		}
 
-		template <>
 		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const string_t& val)
 		{
 			pStream->WriteString(val);
@@ -232,6 +216,13 @@ namespace Omega
 
 			std_wire_type(const std_wire_type&) {}
 			std_wire_type& operator = (const std_wire_type&) {}
+		};
+
+		template <>
+		struct std_wire_type<void>
+		{
+			static void proxy_read(IWireManager*, Serialize::IFormattedStream*)
+			{}
 		};
 
 		template <class T>
@@ -549,7 +540,7 @@ namespace Omega
 		};
 
 		template <class I>
-		struct iface_wire_type<I*>
+		struct iface_wire_type
 		{
 			iface_wire_type(IWireManager*, const guid_t& = iid_traits<I>::GetIID()) :
 				m_fixed(0), m_pI(m_fixed)
@@ -774,7 +765,7 @@ namespace Omega
 			inline static void QueryInterface_Wire(void* pParam, I* pI, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
 			{ 
 				interface_info<const guid_t&>::wire_type iid(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn);
-				iface_wire_type<IObject*> retval = pI->QueryInterface(iid);
+				iface_wire_type<IObject> retval = pI->QueryInterface(iid);
 				retval.out(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,iid);
 			}
 
@@ -908,7 +899,7 @@ OMEGA_EXPORT_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(byte_t,ReadByte,0,())
-	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(in_out)(size_is(cbBytes)),byte_t*,val))
+	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
 	OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 	OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )

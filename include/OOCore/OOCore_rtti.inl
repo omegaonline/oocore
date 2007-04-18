@@ -2,7 +2,7 @@
 #define OOCORE_RTTI_INL_INCLUDED_
 
 template <class I>
-inline void Omega::MetaInfo::iface_stub_functor<I*>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
+inline void Omega::MetaInfo::iface_stub_functor<I>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
 {
 	if (pS)
 	{
@@ -20,7 +20,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I*>::init(typename interface_inf
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_stub_functor<I*>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
+inline void Omega::MetaInfo::iface_stub_functor<I>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
 {
 	if (result)
 		result->Release_Safe();
@@ -38,7 +38,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I*>::detach(typename interface_i
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_proxy_functor<I*>::init(I* pI, const guid_t& iid)
+inline void Omega::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid)
 {
 	m_iid = iid;
 
@@ -53,7 +53,7 @@ inline void Omega::MetaInfo::iface_proxy_functor<I*>::init(I* pI, const guid_t& 
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_proxy_functor<I*>::detach(I*& result)
+inline void Omega::MetaInfo::iface_proxy_functor<I>::detach(I*& result)
 {
 	if (result)
 		result->Release();

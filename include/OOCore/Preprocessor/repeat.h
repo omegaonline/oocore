@@ -130,6 +130,7 @@
 #define OMEGA_REPEAT_122(m,d)  OMEGA_REPEAT_121(m,d) m(121,d)
 #define OMEGA_REPEAT_123(m,d)  OMEGA_REPEAT_122(m,d) m(122,d)
 #define OMEGA_REPEAT_124(m,d)  OMEGA_REPEAT_123(m,d) m(123,d)
+#if OMEGA_MAX_DEFINES > 124
 #define OMEGA_REPEAT_125(m,d)  OMEGA_REPEAT_124(m,d) m(124,d)
 #define OMEGA_REPEAT_126(m,d)  OMEGA_REPEAT_125(m,d) m(125,d)
 #define OMEGA_REPEAT_127(m,d)  OMEGA_REPEAT_126(m,d) m(126,d)
@@ -262,6 +263,9 @@
 #define OMEGA_REPEAT_254(m,d)  OMEGA_REPEAT_253(m,d) m(253,d)
 #define OMEGA_REPEAT_255(m,d)  OMEGA_REPEAT_254(m,d) m(254,d)
 #define OMEGA_REPEAT_256(m,d)  OMEGA_REPEAT_255(m,d) m(255,d)
+#endif
+
+
 // That's probably enough!
 #define OMEGA_REPEAT(n,m,d)	OMEGA_CONCAT(OMEGA_REPEAT_,n)(m,d)
 #endif

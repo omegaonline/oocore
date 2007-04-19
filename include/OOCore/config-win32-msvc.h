@@ -38,6 +38,8 @@ typedef int ssize_t;
 #undef interface
 #define interface struct __declspec(novtable)
 
+#define OMEGA_UNUSED_ARG(n)	(n)
+
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)
 

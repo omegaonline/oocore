@@ -24,7 +24,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I>::detach(typename interface_in
 {
 	if (result)
 		result->Release_Safe();
-	
+
 	result = 0;
 	if (m_pI)
 	{
@@ -84,7 +84,7 @@ inline Omega::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
 
 		OMEGA_THROW("Array has been resized out of bounds");
 	}
-	
+
 	if (m_piids)
 	{
 		for (uint32_t i=0;i<m_cbSize;++i)
@@ -107,7 +107,7 @@ void inline Omega::MetaInfo::iface_stub_functor_array<I>::init(typename interfac
 	{
 		if (m_cbSize>0)
 		{
-			OMEGA_NEW(m_pFunctors,interface_info<I>::stub_functor[m_cbSize]);
+			OMEGA_NEW(m_pFunctors,typename interface_info<I>::stub_functor[m_cbSize]);
 			OMEGA_NEW(m_pVals,I[m_cbSize]);
 
 			if (m_piids)
@@ -140,7 +140,7 @@ inline Omega::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array
 
 		OMEGA_THROW("Array has been resized out of bounds");
 	}
-	
+
 	if (m_piids)
 	{
 		for (uint32_t i=0;i<m_cbSize;++i)
@@ -220,7 +220,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 						break;
 					}
 				}
-				
+
 				if (i == m_iid_map.end())
 				{
 					// New interface required
@@ -235,7 +235,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 					ptrObjS.detach();
 				}
 			}
-			
+
 			if (i->second)
 				return i->second->QueryInterface_Safe(retval,iid);
 		}
@@ -248,7 +248,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 	{
 		return return_safe_exception(pE);
 	}
-	
+
 	return 0;
 }
 
@@ -270,7 +270,7 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 			// QI all entries
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				auto_iface_ptr<IObject> ptrObj = i->second->QueryInterface(iid);
+				auto_iface_ptr<IObject> ptrObj(i->second->QueryInterface(iid));
 				if (ptrObj)
 				{
 					// If we find one, add it to the map...
@@ -279,15 +279,15 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 					break;
 				}
 			}
-			
+
 			if (i == m_iid_map.end())
 			{
 				// New interface required
 				const qi_rtti* pRtti = get_qi_rtti_info(iid);
 				if (!pRtti || !pRtti->pfnCreateSafeProxy)
 					OMEGA_THROW("No handler for interface");
-				
-				auto_iface_ptr<IObject> ptrObj = pRtti->pfnCreateSafeProxy(this,m_pS);
+
+				auto_iface_ptr<IObject> ptrObj(pRtti->pfnCreateSafeProxy(this,m_pS));
 				i = m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,ptrObj)).first;
 				ptrObj.detach();
 			}
@@ -300,7 +300,7 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 	{
 		OMEGA_THROW(e.what());
 	}
-	
+
 	return 0;
 }
 
@@ -308,9 +308,9 @@ inline const Omega::MetaInfo::qi_rtti* Omega::MetaInfo::get_qi_rtti_info(const g
 {
 	static std::map<const guid_t,const qi_rtti*> mapRtti;
 	static CriticalSection cs;
-	
+
 	Guard<CriticalSection> guard(cs);
-	
+
 	std::map<const guid_t,const qi_rtti*>::iterator i=mapRtti.find(iid);
 	if (i==mapRtti.end())
 	{
@@ -358,7 +358,7 @@ inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObjec
 			{
                 OMEGA_NEW(ptrSafeStub,SafeStub(pObj));
 			}
-			
+
 			stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,ptrSafeStub));
 		}
 	}
@@ -374,7 +374,7 @@ inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObjec
 
 	if (!pRet)
 		Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
-	
+
 	return pRet;
 }
 
@@ -436,7 +436,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(
 			return return_safe_exception(pE2);
 		}
 	}
-	
+
 	return static_cast<IException_Safe*>(pSE2);
 }
 
@@ -451,7 +451,7 @@ inline void Omega::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 		const qi_rtti* pRtti = get_qi_rtti_info(iid);
 		if (!pRtti || !pRtti->pfnSafeThrow)
 			OMEGA_THROW("No throw handler for exception interface");
-		
+
 		pRtti->pfnSafeThrow(pSE);
 	}
 }

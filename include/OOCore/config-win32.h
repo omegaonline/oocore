@@ -16,6 +16,12 @@
 #error OOCore requires _WIN32_WINNT >= 0x0500!
 #endif
 
+#if !defined(_WIN32_IE)
+#define _WIN32_IE 0x0500
+#elif _WIN32_IE < 0x0500
+#error OOCore requires _WIN32_IE >= 0x0500!
+#endif
+
 #include <winsock2.h>
 
 #if defined (_MSC_VER)

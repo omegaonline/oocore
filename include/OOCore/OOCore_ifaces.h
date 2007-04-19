@@ -73,7 +73,7 @@ namespace Omega
 	};
 	OMEGA_DECLARE_IID(IEnumString);
 
-	namespace Registry 
+	namespace Registry
 	{
 		interface IRegistryKey : public IObject
 		{
@@ -108,7 +108,7 @@ namespace Omega
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
 
-			static IRegistryKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);		
+			static IRegistryKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
 		OMEGA_DECLARE_IID(IRegistryKey);
 
@@ -116,7 +116,7 @@ namespace Omega
 		{
 			virtual string_t GetValueName() = 0;
 		};
-		OMEGA_DECLARE_IID(INotFoundException); 
+		OMEGA_DECLARE_IID(INotFoundException);
 
 		interface IAlreadyExistsException : public IException
 		{
@@ -146,7 +146,7 @@ namespace Omega
 
 OMEGA_EXPORT_INTERFACE
 (
-	Omega::Activation, IObjectFactory, 
+	Omega::Activation, IObjectFactory,
 	0xd94853ed, 0x35c6, 0x4594, 0x88, 0x2, 0x33, 0xf2, 0x1a, 0xbf, 0xbe, 0xbe,
 
 	// Methods
@@ -157,7 +157,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 (
 	Omega, INoInterfaceException, Omega, IException,
 	0x5634e9bf, 0x50e7, 0x47a1, 0xb0, 0xbb, 0x9c, 0xf1, 0x64, 0x12, 0x24, 0x4e,
-	
+
 	OMEGA_METHOD(Omega::guid_t,GetUnsupportedIID,0,())
 )
 
@@ -165,7 +165,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 (
 	Omega::Activation, IOidNotFoundException, Omega, IException,
 	0xcf1e01c0, 0x458, 0x41a4, 0x87, 0xa8, 0xbf, 0x86, 0x62, 0xb2, 0x4d, 0x76,
-		
+
 	// Methods
 	OMEGA_METHOD(Omega::guid_t,GetMissingOid,0,())
 )
@@ -174,7 +174,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 (
 	Omega::Activation, INoAggregationException, Omega, IException,
 	0x327157ac, 0xe474, 0x4c19, 0x9b, 0xb, 0x8e, 0x73, 0xa2, 0x58, 0x91, 0xce,
-		
+
 	// Methods
 	OMEGA_METHOD(Omega::guid_t,GetFailingOid,0,())
 )
@@ -183,14 +183,14 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 (
 	Omega::Activation, ILibraryNotFoundException, Omega, IException,
 	0x1b1baeb6, 0x7fb9, 0x4373, 0x8f, 0x34, 0x48, 0x3f, 0x15, 0xfa, 0x54, 0x21,
-		
+
 	// Methods
 	OMEGA_METHOD(Omega::string_t,GetLibraryName,0,())
 )
 
 OMEGA_EXPORT_INTERFACE
 (
-	Omega::Activation, IServiceTable, 
+	Omega::Activation, IServiceTable,
 	0x8e26d026, 0x9988, 0x4f69, 0x93, 0xc3, 0xc4, 0x72, 0x43, 0x4f, 0x9d, 0xde,
 
 	// Methods

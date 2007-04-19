@@ -12,7 +12,7 @@ namespace Omega
 #if defined(OMEGA_INT16_TYPE)
 	typedef OMEGA_INT16_TYPE      int16_t;
 #elif defined(OMEGA_HAS_INT16_T)
-	typedef int16_t               int16_t;
+	using                       ::int16_t;
 #elif OMEGA_SIZEOF_SHORT == 2
 	typedef short                 int16_t;
 #elif OMEGA_SIZEOF_INT == 2
@@ -24,7 +24,7 @@ namespace Omega
 #if defined(OMEGA_UINT16_TYPE)
 	typedef OMEGA_UINT16_TYPE     uint16_t;
 #elif defined(OMEGA_HAS_UINT16_T)
-	typedef uint16_t              uint16_t;
+	using                       ::uint16_t;
 #elif OMEGA_SIZEOF_SHORT == 2
 	typedef unsigned short        uint16_t;
 #elif OMEGA_SIZEOF_INT == 2
@@ -36,7 +36,7 @@ namespace Omega
 #if defined(OMEGA_INT32_TYPE)
 	typedef OMEGA_INT32_TYPE      int32_t;
 #elif defined(OMEGA_HAS_INT32_T)
-	typedef int32_t               int32_t;
+	using                       ::int32_t;
 #elif OMEGA_SIZEOF_INT == 4
 	typedef int                   int32_t;
 #elif OMEGA_SIZEOF_LONG == 4
@@ -48,7 +48,7 @@ namespace Omega
 #if defined(OMEGA_UINT32_TYPE)
 	typedef OMEGA_UINT32_TYPE     uint32_t;
 #elif defined(OMEGA_HAS_UINT32_T)
-	typedef uint32_t              uint32_t;
+	using                       ::uint32_t;
 #elif OMEGA_SIZEOF_INT == 4
 	typedef unsigned int          uint32_t;
 #elif OMEGA_SIZEOF_LONG == 4
@@ -60,7 +60,7 @@ namespace Omega
 #if defined(OMEGA_INT64_TYPE)
 	typedef OMEGA_INT64_TYPE      int64_t;
 #elif defined(OMEGA_HAS_INT64_T)
-	typedef int64_t               int64_t;
+	using                       ::int64_t;
 #elif OMEGA_SIZEOF_LONG == 8
 	typedef long                  int64_t;
 #elif OMEGA_SIZEOF_LONG_LONG == 8
@@ -72,14 +72,14 @@ namespace Omega
 #if defined(OMEGA_UINT64_TYPE)
 	typedef OMEGA_UINT64_TYPE     uint64_t;
 #elif defined(OMEGA_HAS_UINT64_T)
-	typedef uint64_t              uint64_t;
+	using                       ::uint64_t;
 #elif OMEGA_SIZEOF_LONG == 8
 	typedef unsigned long         uint64_t;
 #elif OMEGA_SIZEOF_LONG_LONG == 8
 	typedef unsigned long long    uint64_t;
 #else  /* no native 64 bit integer type */
 	#error Have to add to the OMEGA_UINT64 type setting
-#endif	
+#endif
 
 #if OMEGA_SIZEOF_FLOAT == 4
 	typedef float real4_t;
@@ -100,10 +100,10 @@ namespace Omega
 		inline string_t(const string_t& s);
 		inline string_t(const char_t* sz);
 		inline ~string_t();
-				
+
 		inline string_t& operator = (const string_t& s);
 		inline string_t& operator = (const char_t* sz);
-		
+
 		inline operator const char_t*() const;
 		inline bool operator == (const string_t& s) const;
 		inline bool operator == (const char_t* sz) const;
@@ -114,24 +114,24 @@ namespace Omega
 
 		inline string_t& operator += (const string_t& s);
 		inline string_t& operator += (const char_t* sz);
-		
+
 		inline int CompareNoCase(const string_t& s) const;
 		inline int CompareNoCase(const char_t* sz) const;
 		inline bool IsEmpty() const;
 		inline size_t Length() const;
 		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
 		inline size_t Find(char_t c, size_t pos = 0, bool bIgnoreCase = false) const;
-		inline size_t ReverseFind(char_t c, ssize_t pos = npos, bool bIgnoreCase = false) const;
+		inline size_t ReverseFind(char_t c, size_t pos = npos, bool bIgnoreCase = false) const;
 		inline string_t Left(size_t length) const;
-		inline string_t Mid(size_t start, ssize_t length = -1) const;
+		inline string_t Mid(size_t start, size_t length = npos) const;
 		inline string_t& Clear();
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
 
 		static string_t Format(const char_t* pszFormat, ...);
 
-		static const ssize_t npos = -1;
-						
+		static const size_t npos = size_t(-1);
+
 	private:
 		typedef struct tag_handle_t
 		{
@@ -141,7 +141,7 @@ namespace Omega
 		inline explicit string_t(handle_t);
 		handle_t m_handle;
 	};
-		
+
 	struct guid_t
 	{
 		uint32_t	Data1;
@@ -172,19 +172,18 @@ namespace Omega
 		{
 			int unused;
 		}* handle_t;
-		
+
 		handle_t m_handle;
 	};
 
-	template <class MUTEX>
-	class Guard
+	template <class MUTEX> class Guard
 	{
 	public:
 		Guard(MUTEX& lock) : m_cs(lock)
 		{
 			m_cs.Lock();
 		}
-		
+
 		~Guard()
 		{
 			m_cs.Unlock();
@@ -194,12 +193,11 @@ namespace Omega
 		// Copying is a really bad idea!
 		Guard& operator = (const Guard& rhs)
 		{ }
-		
+
 		MUTEX& m_cs;
 	};
 
-	template <class T, int S>
-	class AtomicOpImpl
+	template <class T, int S> class AtomicOpImpl
 	{
 	public:
 		AtomicOpImpl() {};
@@ -218,14 +216,13 @@ namespace Omega
 		inline T value() const;
 		inline T& value();
 		inline T exchange(const T& v);
-		
+
 	private:
 		T	m_value;
 	};
 
 #if defined(OMEGA_HAS_BUILTIN_ATOMIC_OP_4)
-	template <class T>
-	class AtomicOpImpl<T,4>
+	template <class T> class AtomicOpImpl<T,4>
 	{
 	public:
 		AtomicOpImpl() {};
@@ -252,8 +249,7 @@ namespace Omega
 #endif
 
 #if defined(OMEGA_HAS_BUILTIN_ATOMIC_OP_8)
-	template <class T>
-	class AtomicOpImpl<T,8>
+	template <class T> class AtomicOpImpl<T,8>
 	{
 	public:
 		AtomicOpImpl() {};
@@ -279,8 +275,7 @@ namespace Omega
 
 #endif
 
-	template <class T>
-	struct AtomicOp
+	template <class T> struct AtomicOp
 	{
 		typedef AtomicOpImpl<T,sizeof(T)> type;
 	};
@@ -290,13 +285,61 @@ namespace Omega
 		typedef bool yes_t;
 		typedef bool (&no_t)[2];
 
-		template <size_t N>
-		struct size_t_
+		template <size_t N> struct size_t_
 		{
 			static const size_t		value = N;
 			typedef size_t_<N>		type;
 			typedef size_t_<N+1>	next;
-		};	
+		};
+
+		template <class T> struct default_value
+		{
+			static T value()
+			{
+				static T v;
+				return v;
+			}
+		};
+
+		template <class T> struct default_value<T&>
+		{
+			static T value()
+			{
+				return default_value<T>::value();
+			}
+		};
+
+		// MSVC gets twitchy about size_t/uint32_t
+		#ifdef _MSC_VER
+		template <> struct default_value<uint32_t>
+		{
+			static uint32_t value()
+			{
+				static uint32_t v;
+				return v;
+			}
+		};
+		#endif
+
+		template <class T> struct remove_const
+		{
+			typedef T type;
+		};
+
+		template <class T> struct remove_const<const T>
+		{
+			typedef T type;
+		};
+
+		template <class T> struct remove_const<T&>
+		{
+			typedef typename remove_const<T>::type& type;
+		};
+
+		template <class T> struct remove_const<T*>
+		{
+			typedef typename remove_const<T>::type* type;
+		};
 	}
 }
 

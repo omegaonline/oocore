@@ -8,16 +8,16 @@ class UserSession
 public:
 	static Omega::IException* init();
 	static void term();
-		
+
 	int enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void connection_closed();
-	
+
 private:
-	typedef ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex> USER_SESSION;
+    friend class Channel;
 	friend class ACE_Singleton<UserSession, ACE_Recursive_Thread_Mutex>;
-	friend class USER_SESSION;
-	friend class Channel;
-	
+	friend class ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex>;
+	typedef ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex> USER_SESSION;
+
 	UserSession();
 	virtual ~UserSession();
 	UserSession(const UserSession&) {}
@@ -51,7 +51,7 @@ private:
 		ACE_HANDLE		m_handle;
 		ACE_InputCDR*	m_input;
 	};
-    
+
 	ACE_Recursive_Thread_Mutex                                                 m_lock;
 	int                                                                        m_pro_thrd_grp_id;
 	ACE_HANDLE                                                                 m_user_handle;
@@ -59,7 +59,7 @@ private:
 	ACE_Message_Queue_Ex<Request,ACE_MT_SYNCH>                                 m_msg_queue;
 	std::set<ACE_CDR::ULong>                                                   m_setPendingTrans;
 	std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
-		
+
 	// Accessors for Channel
 	int send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
 	int send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);

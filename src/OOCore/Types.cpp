@@ -211,7 +211,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find2,4,((in),const void*,s1,(in)
 	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase ? static_cast<Omega::char_t>(ACE_OS::ace_towlower(c)) : c,pos);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind,4,((in),const void*,s1,(in),Omega::char_t,c,(in),ssize_t,pos,(in),bool,bIgnoreCase))
+OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind,4,((in),const void*,s1,(in),Omega::char_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
 	return static_cast<const StringNode*>(s1)->m_str.rfind(bIgnoreCase ? static_cast<Omega::char_t>(ACE_OS::ace_towlower(c)) : c,pos);
 }
@@ -235,7 +235,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,s1,(in),si
 	return s2;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,sz,(in)(size_is(sizeof(va_list))),va_list,ap))
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,sz,(in),va_list,ap))
 {
 	int len2 = 0;
 	for (int len = 64;;len *= 2)

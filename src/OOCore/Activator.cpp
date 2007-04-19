@@ -18,7 +18,7 @@ namespace
 
 		const ACE_TCHAR* name();
 		const ACE_TCHAR* dll_name();
-		
+
 		Activation::IObjectFactory* GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
 	};
 
@@ -92,13 +92,13 @@ ActivationImpl::ActivationImpl()
 	ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
 }
 
-const ACE_TCHAR* 
+const ACE_TCHAR*
 ActivationImpl::name()
 {
 	return ACE_TEXT("ActivationImpl");
 }
 
-const ACE_TCHAR* 
+const ACE_TCHAR*
 ActivationImpl::dll_name()
 {
 	return ACE_TEXT("OOCore");
@@ -121,11 +121,11 @@ Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll
 		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
 			MetaInfo::interface_info<Activation::IObjectFactory*&>::proxy_functor(ptrOF),
 			MetaInfo::interface_info<const guid_t&>::proxy_functor(oid),
-			MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags)); 
+			MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags));
 
-		if (GetObjectFactory_Exception) 
-			MetaInfo::throw_correct_exception(GetObjectFactory_Exception); 
-		return ptrOF.Detach(); 
+		if (GetObjectFactory_Exception)
+			MetaInfo::throw_correct_exception(GetObjectFactory_Exception);
+		return ptrOF.Detach();
 	}
 	else
 	{
@@ -162,7 +162,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 
 		if (ptrOidKey->IsValue("OID"))
 			return guid_t::FromString(ptrOidKey->GetStringValue("OID"));
-				
+
 		strCurName = ptrOidKey->GetStringValue("CurrentVersion");
 	}
 
@@ -210,14 +210,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 						Activation::IObjectFactory* pOF = ActivationImpl::ACTIVATOR::instance()->GetObjectFactory(ptrOidKey->GetStringValue("Library"),oid,flags);
 						if (pOF)
 							return pOF;
-					}			
+					}
 				}
-			
+
 				if (flags & Activation::OutOfProcess)
 				{
 					// Launch the server - Do something cleverer here at some point
 					ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
-				
+
 					ExecProcess(ptrServer->GetStringValue("Exec"));
 
 					ObjectPtr<Activation::IServiceTable> ptrServiceTable;
@@ -251,7 +251,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 
 		Activation::IOidNotFoundException::Throw(oid,ptrE);
 	}
-			
+
 	Activation::IOidNotFoundException::Throw(oid);
 	return 0;
 }

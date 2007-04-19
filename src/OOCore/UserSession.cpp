@@ -10,7 +10,7 @@ using namespace OTL;
 // Forward declares used internally
 void SetServiceTable(Activation::IServiceTable* pNewTable);
 
-UserSession::UserSession() : 
+UserSession::UserSession() :
 	m_user_handle(ACE_INVALID_HANDLE),
 	m_next_trans_id(1)
 {
@@ -35,7 +35,7 @@ IException* UserSession::init()
 	IException* pE = USER_SESSION::instance()->bootstrap();
 	if (pE)
 		USER_SESSION::instance()->term_i();
-	
+
 	return pE;
 }
 
@@ -53,7 +53,7 @@ int UserSession::init_i()
 	// Connect to the root
 	if (connector.connect(stream,addr,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")),-1);
-		
+
 	// Create a new UserConnection
 	UserConnection*	pRC;
 	ACE_NEW_RETURN(pRC,UserConnection(this),-1);
@@ -62,7 +62,7 @@ int UserSession::init_i()
 		delete pRC;
 		return -1;
 	}
-	
+
 	// Stash the user handle
 	m_user_handle = stream.get_handle();
 
@@ -128,14 +128,14 @@ int UserSession::get_port(u_short& uPort)
 			}
 		}
 	}
-		
+
 	if (pid == ACE_INVALID_PID)
 	{
 		if (file != ACE_INVALID_HANDLE)
 			ACE_OS::close(file);
 
 		// Launch the server
-		
+
 		// Find what the server is called
 		ACE_TString strExec = ACE_OS::getenv("OOSERVER");
 		if (strExec.empty())
@@ -172,7 +172,7 @@ int UserSession::get_port(u_short& uPort)
 			process.kill();
 			return -1;
 		}
-	
+
 		// Read pid again
 		if (ACE_OS::read(file,&pid,sizeof(pid)) != sizeof(pid))
 		{
@@ -200,7 +200,7 @@ int UserSession::get_port(u_short& uPort)
 		return -1;
 	}
 	ACE_OS::close(file);
-	
+
 	// Sort out addresses
 	ACE_INET_Addr addr(uPort2,INADDR_LOOPBACK);
 
@@ -223,7 +223,7 @@ int UserSession::get_port(u_short& uPort)
 	// Wait for the response to come back...
 	ACE_Time_Value wait(5);
 	Session::Response response = {0};
-	if (peer.recv(&response.cbSize,sizeof(response.cbSize),&wait) < sizeof(response.cbSize))
+	if (peer.recv(&response.cbSize,sizeof(response.cbSize),&wait) < static_cast<ssize_t>(sizeof(response.cbSize)))
 		return -1;
 
 	// Check the response is valid
@@ -301,7 +301,7 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 		int ret = m_msg_queue.dequeue_prio(req,deadline);
 		if (ret == -1)
 			return -1;
-		
+
 		// Stash the current rd_ptr()
 		char* rd_ptr_start = req->input()->rd_ptr();
 
@@ -320,16 +320,16 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 			ACE_CDR::ULong request_trans_id;
 			ACE_CDR::Boolean bIsRequest = false;
 			ACE_CDR::UShort dest_channel_id;
-			
+
 			input >> msg_len;
 			input >> request_trans_id;
 			input >> dest_channel_id;
 			input.read_boolean(bIsRequest);
-			
+
 			ACE_CDR::ULong req_dline_secs = 0;
 			ACE_CDR::ULong req_dline_usecs = 0;
 			ACE_CDR::UShort src_channel_id = 0;
-			
+
 			if (bIsRequest)
 			{
 				// Read the request data
@@ -345,7 +345,7 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 				{
 					// Check the timeout value...
 					ACE_Time_Value request_deadline(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
-			
+
 					// Rest of data is aligned on next boundary
 					input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -386,7 +386,7 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 				}
 			}
 		}
-		
+
 		// Done with this request
 		delete req;
 	}
@@ -413,7 +413,7 @@ int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_B
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (build_header(dest_channel_id,trans_id,header,mb,*deadline) != 0)
 		return -1;
-	
+
 	// Add to pending trans set
 	try
 	{
@@ -425,7 +425,7 @@ int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_B
 		ACE_OS::last_error(EINVAL);
 		return -1;
 	}
-	
+
 	int ret = 0;
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
@@ -454,7 +454,7 @@ int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_B
 	}
 	catch (...)
 	{}
-	
+
 	return ret;
 }
 
@@ -477,7 +477,7 @@ int UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_
 	ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
 		return -1;
-		
+
 	return 0;
 }
 
@@ -503,11 +503,11 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	header.write_ulong(trans_id);
 	header.write_ushort(dest_channel_id);
 	header.write_boolean(true);	// Is request
-	
+
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 	header.write_ushort(0); // src_channel_id
-	
+
 	if (!header.good_bit())
 		return -1;
 
@@ -516,14 +516,14 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 #endif
 
-	// Write the request stream	
+	// Write the request stream
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
 		return -1;
 
 	// Update the total length
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return -1;	
+		return -1;
 
 	return 0;
 }
@@ -552,7 +552,7 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	header.write_ulong(trans_id);
 	header.write_ushort(dest_channel_id);
 	header.write_boolean(false);	// Response
-	
+
 	if (!header.good_bit())
 		return -1;
 
@@ -561,14 +561,14 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 #endif
 
-	// Write the request stream	
+	// Write the request stream
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
 		return -1;
 
 	// Update the total length
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return -1;	
+		return -1;
 
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
@@ -582,7 +582,7 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
 		return -1;
-		
+
 	return 0;
 }
 
@@ -603,13 +603,13 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 {
 	// Init the error stream
 	ACE_OutputCDR error;
-	
+
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM;
 		ptrOM = get_object_manager(src_channel_id);
-	
+
 		// Convert deadline time to #msecs
 		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
 		if (wait <= ACE_Time_Value::zero)
@@ -624,7 +624,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 			delete request;
 			return;
 		}
-	
+
 		ACE_UINT64 msecs = 0;
 		static_cast<const ACE_Time_Value>(wait).msec(static_cast<ACE_UINT64&>(msecs));
 		if (msecs > ACE_UINT32_MAX)
@@ -634,7 +634,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
 		ptrRequest = ObjectImpl<InputCDR>::CreateObjectPtr();
 		ptrRequest->init(*request->input());
-	
+
 		// Create a response if required
 		ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrResponse;
 		if (trans_id != 0)
@@ -642,7 +642,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 			ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
 			ptrResponse->WriteByte(0);
 		}
-	
+
 		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
 		void* TODO; // Setup the CallContext... Use a self-destructing class!
 
@@ -694,7 +694,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 			send_response(src_channel_id,trans_id,error.begin(),request_deadline);
 		}
 	}
-		
+
 	delete request;
 }
 

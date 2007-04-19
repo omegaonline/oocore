@@ -121,8 +121,8 @@ inline size_t Omega::string_t::Find(char_t c, size_t pos, bool bIgnoreCase) cons
 		return string_t_find2(this->ToLower().m_handle,c,pos,true);
 }
 
-OOCORE_EXPORTED_FUNCTION(size_t,string_t_rfind,4,((in),const void*,a,(in),Omega::char_t,b,(in),ssize_t,c,(in),bool,d));
-inline size_t Omega::string_t::ReverseFind(char_t c, ssize_t pos, bool bIgnoreCase) const
+OOCORE_EXPORTED_FUNCTION(size_t,string_t_rfind,4,((in),const void*,a,(in),Omega::char_t,b,(in),size_t,c,(in),bool,d));
+inline size_t Omega::string_t::ReverseFind(char_t c, size_t pos, bool bIgnoreCase) const
 {
 	if (!bIgnoreCase)
 		return string_t_rfind(m_handle,c,pos,false);
@@ -137,7 +137,7 @@ inline Omega::string_t Omega::string_t::Left(size_t length) const
 }
 
 OOCORE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,h,(in),size_t,a,(in),size_t,b));
-inline Omega::string_t Omega::string_t::Mid(size_t start, ssize_t length) const
+inline Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 {
 	return string_t(static_cast<handle_t>(string_t_mid(m_handle,start,length)));
 }
@@ -161,7 +161,7 @@ inline Omega::string_t Omega::string_t::ToUpper() const
 	return string_t(static_cast<handle_t>(string_t_toupper(m_handle)));
 }
 
-OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,s,(in)(size_is(sizeof(va_list))),va_list,a));
+OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,s,(in),va_list,a));
 inline Omega::string_t Omega::string_t::Format(const char_t* pszFormat, ...)
 {
 	va_list list;
@@ -353,7 +353,7 @@ inline T& Omega::AtomicOpImpl<T,4>::value()
 			m_ptr = ptr;
 			return old;
 		}
-#endif	
+#endif
 }
 #endif // 0
 
@@ -382,5 +382,5 @@ inline void Omega::CriticalSection::Unlock()
 {
 	cs_unlock(m_handle);
 }
-						
+
 #endif // OOCORE_TYPES_INL_INCLUDED_

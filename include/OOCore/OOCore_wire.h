@@ -2,7 +2,7 @@
 #define OOCORE_WIRE_H_INCLUDED_
 
 namespace Omega
-{	
+{
 	namespace Serialize
 	{
 		interface IStream : public IObject
@@ -21,7 +21,7 @@ namespace Omega
 			virtual uint32_t ReadUInt32() = 0;
 			virtual uint64_t ReadUInt64() = 0;
 			virtual string_t ReadString() = 0;
-			
+
 			virtual void WriteBoolean(bool_t val) = 0;
 			virtual void WriteUInt16(uint16_t val) = 0;
 			virtual void WriteUInt32(uint32_t val) = 0;
@@ -52,7 +52,7 @@ namespace Omega
 			virtual Serialize::IFormattedStream* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pParams) = 0;
 		};
 		OMEGA_DECLARE_IID(IWireManager);
-		
+
 		interface IWireStub : public IObject
 		{
 			virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) = 0;
@@ -168,7 +168,7 @@ namespace Omega
 
 			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream) : m_val(m_fixed)
 			{
-				read(pManager,pStream);	
+				read(pManager,pStream);
 			}
 
 			std_wire_type& operator = (const T& val)
@@ -183,7 +183,7 @@ namespace Omega
 			}
 
 			void read(IWireManager* pManager, Serialize::IFormattedStream* pStream)
-			{				
+			{
 				wire_read(pManager,pStream,m_val);
 			}
 
@@ -399,7 +399,7 @@ namespace Omega
 		template <class T>
 		struct std_wire_type_array
 		{
-			std_wire_type_array(IWireManager*, uint32_t cbSize = 1) : 
+			std_wire_type_array(IWireManager*, uint32_t cbSize = 1) :
 				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
 			{
 				try
@@ -527,8 +527,10 @@ namespace Omega
 			{
 				if (cbSize > 0)
 				{
-					OMEGA_NEW(m_pFunctors,interface_info<T>::wire_type[cbSize]);
-					OMEGA_NEW(m_pVals,T[cbSize]);
+					OMEGA_NEW(m_pFunctors,typename interface_info<T>::wire_type[cbSize]);
+					//OMEGA_NEW(m_pVals,T[cbSize]);
+
+					// TODO FIX ME!
 
 					for (uint32_t i=0;i<cbSize;++i)
 						m_pFunctors[i].attach(m_pVals[i]);
@@ -537,6 +539,34 @@ namespace Omega
 
 			std_wire_type_array(const std_wire_type_array&) {};
 			std_wire_type_array& operator = (const std_wire_type_array&) {};
+		};
+
+		template <>
+		struct std_wire_type_array<void>
+		{
+			std_wire_type_array(void*, uint32_t = 1)
+			{
+				Throw(OMEGA_FUNCNAME);
+			}
+
+			static void proxy_read(IWireManager*, Serialize::IFormattedStream*, void*, uint32_t = 1)
+			{
+				Throw(OMEGA_FUNCNAME);
+			}
+
+			void out(IWireManager*, Serialize::IFormattedStream*, uint32_t = 1)
+			{
+				Throw(OMEGA_FUNCNAME);
+			}
+
+		private:
+			static void Throw(const char_t* szFunc)
+			{
+				Omega::IException::Throw("No!",szFunc);
+			}
+
+			std_wire_type_array(const std_wire_type_array&) {};
+			std_wire_type_array& operator = (const std_wire_type_array&) { return *this; };
 		};
 
 		template <class I>
@@ -626,17 +656,17 @@ namespace Omega
 		{
 			struct Contained : public I_WireProxy
 			{
-				Contained(IObject* pOuter, IWireManager* pManager) : 
+				Contained(IObject* pOuter, IWireManager* pManager) :
 					I_WireProxy(pManager), m_pOuter(pOuter)
 				{ }
 
-				virtual void AddRef() 
-				{ 
-					m_pOuter->AddRef(); 
+				virtual void AddRef()
+				{
+					m_pOuter->AddRef();
 				}
-				virtual void Release() 
-				{ 
-					m_pOuter->Release(); 
+				virtual void Release()
+				{
+					m_pOuter->Release();
 				}
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
@@ -657,7 +687,10 @@ namespace Omega
 
 		public:
 			WireProxyImpl(IObject* pOuter, IWireManager* pManager) : m_contained(pOuter,pManager), m_refcount(1)
-			{ }
+			{}
+
+			virtual ~WireProxyImpl()
+			{}
 
 			static IObject* Create(IObject* pOuter, IWireManager* pManager)
 			{
@@ -702,13 +735,13 @@ namespace Omega
 		template <class I>
 		struct IObject_WireStub : public IWireStub
 		{
-			IObject_WireStub(IWireManager* pManager, IObject* pObj, uint32_t id) : 
+			IObject_WireStub(IWireManager* pManager, IObject* pObj, uint32_t id) :
 				m_pManager(pManager), m_pI(0), m_id(id), m_refcount(1), m_remote_refcount(1)
-			{ 
+			{
 				m_pI = static_cast<I*>(pObj->QueryInterface(iid_traits<I>::GetIID()));
 				if (!m_pI)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);			
-			} 
+					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
+			}
 
 			virtual ~IObject_WireStub()
 			{
@@ -751,21 +784,21 @@ namespace Omega
 			static const uint32_t MethodCount = 3;
 
 			inline static void AddRef_Wire(void* pParam,I*,Serialize::IFormattedStream*,Serialize::IFormattedStream*)
-			{ 
+			{
 				++(static_cast<IObject_WireStub<I>*>(pParam)->m_refcount);
 			}
 
 			inline static void Release_Wire(void* pParam,I*,Serialize::IFormattedStream*,Serialize::IFormattedStream*)
-			{ 
+			{
 				IObject_WireStub<I>* pThis = static_cast<IObject_WireStub<I>*>(pParam);
 				if (--pThis->m_refcount==0)
 					pThis->m_pManager->ReleaseStub(pThis->m_id);
 			}
 
 			inline static void QueryInterface_Wire(void* pParam, I* pI, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
-			{ 
+			{
 				interface_info<const guid_t&>::wire_type iid(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn);
-				iface_wire_type<IObject> retval = pI->QueryInterface(iid);
+				iface_wire_type<IObject> retval(pI->QueryInterface(iid));
 				retval.out(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,iid);
 			}
 
@@ -786,15 +819,15 @@ namespace Omega
 		struct IObject_WireProxy : public I
 		{
 			IObject_WireProxy(IWireManager* pManager) : m_pManager(pManager)
-			{ 
+			{
 				m_pManager->AddRef();
-			} 
+			}
 
 			virtual ~IObject_WireProxy()
 			{
 				m_pManager->Release();
 			}
-			
+
 			virtual IObject* Internal_QueryInterface(const guid_t&)
 			{
 				return 0;
@@ -810,7 +843,7 @@ namespace Omega
 
 					m_ptrProxy->Release();
 				}
-				
+
 				m_ptrProxy->WriteKey(pParams);
 			}
 
@@ -829,7 +862,7 @@ namespace Omega
 
 			virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout)
 			{
-				static const MethodTableEntry MethodTable[] =
+				static const typename Base::MethodTableEntry MethodTable[] =
 				{
 					ActualIID_Wire,
 					Cause_Wire,
@@ -840,7 +873,7 @@ namespace Omega
 				if (method_id < Base::MethodCount)
 					Base::Invoke(method_id,pParamsIn,pParamsOut,timeout);
 				else if (method_id < MethodCount)
-					MethodTable[method_id - Base::MethodCount](this,m_pI,pParamsIn,pParamsOut);
+					MethodTable[method_id - Base::MethodCount](this,Base::m_pI,pParamsIn,pParamsOut);
 				else
 					OMEGA_THROW("Invalid method index");
 			}
@@ -861,7 +894,7 @@ namespace Omega
 		struct IException_WireProxy : public Base
 		{
 			IException_WireProxy(IWireManager* pManager) : Base(pManager)
-			{ } 
+			{ }
 
 			virtual IObject* Internal_QueryInterface(const guid_t& iid)
 			{
@@ -908,14 +941,14 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 (
 	Omega::Serialize, IFormattedStream, Omega::Serialize, IStream,
 	0xc3df15dc, 0x10c, 0x4fa0, 0x8d, 0xe6, 0x24, 0x3b, 0x13, 0xe0, 0x1c, 0xf7,
-	
+
 	// Methods
 	OMEGA_METHOD(bool_t,ReadBoolean,0,())
 	OMEGA_METHOD(uint16_t,ReadUInt16,0,())
 	OMEGA_METHOD(uint32_t,ReadUInt32,0,())
 	OMEGA_METHOD(uint64_t,ReadUInt64,0,())
 	OMEGA_METHOD(string_t,ReadString,0,())
-	
+
 	OMEGA_METHOD_VOID(WriteBoolean,1,((in),bool_t,val))
 	OMEGA_METHOD_VOID(WriteUInt16,1,((in),uint16_t,val))
 	OMEGA_METHOD_VOID(WriteUInt32,1,((in),uint32_t,val))

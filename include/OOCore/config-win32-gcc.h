@@ -1,13 +1,7 @@
-#ifndef OOCORE_CONFIG_MSVC_H_INCLUDED_
-#define OOCORE_CONFIG_MSVC_H_INCLUDED_
+#ifndef OOCORE_CONFIG_GCC_H_INCLUDED_
+#define OOCORE_CONFIG_GCC_H_INCLUDED_
 
-/*#if (_MSC_VER >= 1400)
-# include "ace/config-win32-msvc-8.h"
-#elif (_MSC_VER >= 1310)
-# include "ace/config-win32-msvc-7.h"
-#else
-# error This version of Microsoft Visual C++ not supported.
-#endif*/
+#define OMEGA_MAX_DEFINES	256
 
 #define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
 
@@ -16,13 +10,18 @@
 #include <new>
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-	do { POINTER = new (std::nothrow) CONSTRUCTOR; \
+	do { POINTER = new CONSTRUCTOR; \
 		if (POINTER == 0) { OMEGA_THROW("Out of memory."); } \
 	} while (0)
 
 #define OMEGA_IMPORT __declspec(dllimport)
 #define OMEGA_EXPORT __declspec(dllexport)
 
-#define interface struct
+#define OMEGA_HAS_INT16_T
+#define OMEGA_HAS_UINT16_T
+#define OMEGA_HAS_INT32_T
+#define OMEGA_HAS_UINT32_T
+#define OMEGA_HAS_INT64_T
+#define OMEGA_HAS_UINT64_T
 
-#endif // OOCORE_CONFIG_MSVC_H_INCLUDED_
+#endif // OOCORE_CONFIG_GCC_H_INCLUDED_

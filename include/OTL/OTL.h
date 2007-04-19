@@ -93,7 +93,7 @@
 		const CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj) \
-	{ obj::GetOid, Creator<obj::ObjectFactoryClass>::Create },	
+	{ obj::GetOid, Creator<obj::ObjectFactoryClass>::Create },
 
 #define END_LIBRARY_OBJECT_MAP() \
 		{ 0 } }; return CreatorEntries; } }; } \
@@ -120,7 +120,7 @@
 
 #include <OOCore/OOCore.h>
 
-namespace OTL 
+namespace OTL
 {
 	template <class OBJECT>
 	class ObjectPtrBase
@@ -186,8 +186,8 @@ namespace OTL
 
 		bool operator == (Omega::IObject* rhs) const
 		{
-			ObjectPtr<Omega::IObject*> pObj1(rhs);
-			ObjectPtr<Omega::IObject*> pObj2(*this);
+			ObjectPtrBase<Omega::IObject*> pObj1(rhs);
+			ObjectPtrBase<Omega::IObject*> pObj2(*this);
 
 			return (pObj1 == pObj2);
 		}
@@ -196,7 +196,7 @@ namespace OTL
 		{
 			if (m_ptr.value())
 				m_ptr.value()->AddRef();
-			
+
 			return m_ptr.value();
 		}
 
@@ -246,7 +246,7 @@ namespace OTL
 		{
 			return m_ptr.value();
 		}
-	
+
 	protected:
 		typename Omega::AtomicOp<OBJECT*>::type m_ptr;
 	};
@@ -255,7 +255,7 @@ namespace OTL
 	class ObjectPtr : public ObjectPtrBase<OBJECT>
 	{
 	public:
-		ObjectPtr(OBJECT* obj = 0) : 
+		ObjectPtr(OBJECT* obj = 0) :
 		  ObjectPtrBase<OBJECT>(obj)
 		{ }
 
@@ -263,7 +263,7 @@ namespace OTL
 		  ObjectPtrBase<OBJECT>(0)
 		{
 			if (pObject)
-				m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
 		}
 
 		ObjectPtr(const ObjectPtr<OBJECT>& rhs) :
@@ -283,7 +283,7 @@ namespace OTL
 	class ObjectPtr<Omega::IObject> : public ObjectPtrBase<Omega::IObject>
 	{
 	public:
-		ObjectPtr(Omega::IObject* obj = 0) : 
+		ObjectPtr(Omega::IObject* obj = 0) :
 		  ObjectPtrBase<Omega::IObject>(obj)
 		{ }
 
@@ -323,9 +323,33 @@ namespace OTL
 		struct QIEntry
 		{
 			const Omega::guid_t* pGuid;
-            Omega::IObject* (*pfnQI)(const Omega::guid_t& iid, void* pThis, void* param);
+			Omega::IObject* (*pfnQI)(const Omega::guid_t& iid, void* pThis, void* param);
 			void* param;
 		};
+
+		#ifdef __BORLANDC__
+		public:
+		#endif
+		Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
+		{
+			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
+			{
+				if (*(pEntries[i].pGuid) == iid ||
+					*(pEntries[i].pGuid) == Omega::guid_t::NIL ||
+					iid == Omega::IID_IObject)
+				{
+					Omega::IObject* pObj = pEntries[i].pfnQI(iid,this,pEntries[i].param);
+					if (pObj)
+						pObj->AddRef();
+					return pObj;
+				}
+			}
+
+			return 0;
+		}
+		#ifdef __BORLANDC__
+		protected:
+		#endif
 
 		template <class Interface, class Implementation>
 		struct QIDelegate
@@ -381,24 +405,6 @@ namespace OTL
 
 		virtual Omega::IObject* GetControllingObject() = 0;
 
-		Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
-		{
-			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
-			{
-				if (*(pEntries[i].pGuid) == iid ||
-					*(pEntries[i].pGuid) == Omega::guid_t::NIL ||
-					iid == Omega::IID_IObject)
-				{
-					Omega::IObject* pObj = pEntries[i].pfnQI(iid,this,pEntries[i].param);
-					if (pObj)
-						pObj->AddRef();
-					return pObj;
-				}
-			}
-			
-			return 0;
-		}
-		
 	private:
 		Omega::AtomicOp<long>::type m_refcount;
 	};
@@ -448,13 +454,13 @@ namespace OTL
 
 		typedef void (*TERM_FUNC)(void* arg);
 		void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
-		
+
 	protected:
-		ModuleBase() : 
+		ModuleBase() :
 			m_lockCount(0)
 		{ }
 
-		~ModuleBase();
+		virtual ~ModuleBase();
 
 		struct CreatorEntry
 		{
@@ -491,7 +497,7 @@ namespace OTL
 		{
 			if (pOuter)
 				Omega::IException::Throw("ObjectImpl does not support aggregation",OMEGA_SOURCE_INFO);
-				
+
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
 			return pObject;
@@ -505,7 +511,7 @@ namespace OTL
 		}
 
 		ObjectImpl() : ROOT()
-		{ 
+		{
 			GetModule()->IncLockCount();
 			this->AddRef();
 		}
@@ -524,9 +530,9 @@ namespace OTL
 
 	// IObject members
 	public:
-		virtual void AddRef() { Internal_AddRef(); }
-		virtual void Release() { Internal_Release(); }
-		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid) 
+		virtual void AddRef() { this->Internal_AddRef(); }
+		virtual void Release() { this->Internal_Release(); }
+		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
@@ -558,15 +564,14 @@ namespace OTL
 
 	private:
 		NoLockObjectImpl() : ROOT()
-		{ 
-			pObject->AddRef();
+		{
 		}
 
 	// IObject members
 	public:
-		virtual void AddRef() { Internal_AddRef(); }
-		virtual void Release() { Internal_Release(); }
-		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid) 
+		virtual void AddRef() { this->Internal_AddRef(); }
+		virtual void Release() { this->Internal_Release(); }
+		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
@@ -581,7 +586,7 @@ namespace OTL
 		friend class AggregatedObjectImpl<ROOT>;
 
 	public:
-		ContainedObjectImpl(Omega::IObject* pOuter) : 
+		ContainedObjectImpl(Omega::IObject* pOuter) :
 			m_ptrOuter(pOuter)
 		{ }
 
@@ -613,7 +618,7 @@ namespace OTL
 	class AggregatedObjectImpl : public Omega::IObject
 	{
 		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter), m_refcount(1)
-		{ 
+		{
 			GetModule()->IncLockCount();
 		}
 
@@ -622,7 +627,7 @@ namespace OTL
 			GetModule()->DecLockCount();
 		}
 
-		// If the line below is flagged as the source of a compiler warning then 
+		// If the line below is flagged as the source of a compiler warning then
 		// you have missed out at least one virtual function in an interface that
 		// <ROOT> derives from
 		ContainedObjectImpl<ROOT>		m_contained;
@@ -673,7 +678,7 @@ namespace OTL
 			}
 			else
 				return m_contained.Internal_QueryInterface(iid,ROOT::getQIEntries());
-		}		
+		}
 	};
 
 	template <class TYPE>
@@ -686,7 +691,7 @@ namespace OTL
 			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
 			if (!singleton)
 			{
-				Guard<CriticalSection> lock(GetModule()->GetGuard());
+				Omega::Guard<Omega::CriticalSection> lock(GetModule()->GetGuard());
 				if (!singleton)
 				{
 					OMEGA_NEW(singleton,Singleton<TYPE>());
@@ -704,7 +709,7 @@ namespace OTL
 		virtual ~Singleton() {}
 		Singleton(const Singleton&) {}
 		Singleton& operator = (const Singleton&) {}
-		
+
 		static Singleton<TYPE>*& instance_i()
 		{
 			static Singleton<TYPE>* singleton = 0;
@@ -756,7 +761,7 @@ namespace OTL
 	public:
 		virtual void AddRef() { GetModule()->IncLockCount(); }
 		virtual void Release() { GetModule()->DecLockCount(); }
-		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid) 
+		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
@@ -779,7 +784,7 @@ namespace OTL
 	public:
 		virtual void AddRef() { }
 		virtual void Release() { }
-		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid) 
+		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
@@ -788,12 +793,12 @@ namespace OTL
 	class LibraryModule : public ModuleBase
 	{
 	public:
-		template <class T> 
-		struct Creator 
-		{ 
+		template <class T>
+		struct Creator
+		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
 			{
-				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid); 
+				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid);
 				if (!pObject)
 					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 				return pObject;
@@ -815,7 +820,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
 			{
-				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid); 
+				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid);
 				if (!pObject)
 					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 				return pObject;
@@ -847,7 +852,7 @@ namespace OTL
 		{
 			Omega::Activation::INoAggregationException::Throw(*pOID);
 			return 0;
-		}	
+		}
 	};
 
 	template <class T1, class T2>
@@ -942,10 +947,10 @@ namespace OTL
 			static SingletonNoLock<TYPE>* singleton = 0;
 			return singleton;
 		}
-	};	
+	};
 
 	template <class EnumIFace, class EnumType>
-	class EnumSTL : 
+	class EnumSTL :
 		public ObjectBase,
 		public EnumIFace
 	{
@@ -975,7 +980,7 @@ namespace OTL
 	public:
 		bool Next(Omega::uint32_t& count, EnumType* parrVals)
 		{
-			Guard<CriticalSection> guard(m_cs);
+			Omega::Guard<Omega::CriticalSection> guard(m_cs);
 
 			uint32_t c = count;
 			count = 0;
@@ -991,7 +996,7 @@ namespace OTL
 
 		bool Skip(Omega::uint32_t count)
 		{
-			Guard<CriticalSection> guard(m_cs);
+			Omega::Guard<Omega::CriticalSection> guard(m_cs);
 
 			while (count > 0 && m_pos!=m_listItems.end())
 			{
@@ -1004,14 +1009,14 @@ namespace OTL
 
 		void Reset()
 		{
-			Guard<CriticalSection> guard(m_cs);
+			Omega::Guard<Omega::CriticalSection> guard(m_cs);
 
 			m_pos = m_listItems.begin();
 		}
 
 		EnumIFace* Clone()
 		{
-			Guard<CriticalSection> guard(m_cs);
+			Omega::Guard<Omega::CriticalSection> guard(m_cs);
 
 			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateObjectPtr();
 			ptrNew->m_pos = ptrNew->m_listItems.begin();

@@ -17,11 +17,11 @@ namespace
 	class Binding : public ACE_Naming_Context
 	{
 	public:
-		ObjectPtr<ObjectImpl<RegistryKeyImpl> > m_ptrRootKey;	
+		ObjectPtr<ObjectImpl<RegistryKeyImpl> > m_ptrRootKey;
 
 		const ACE_TCHAR* name();
 		const ACE_TCHAR* dll_name();
-			
+
 		Binding();
 		virtual ~Binding();
 	};
@@ -39,13 +39,13 @@ namespace
 		bool_t IsSubKey(const string_t& key);
 		bool_t IsValue(const string_t& name);
 		string_t GetStringValue(const string_t& name);
-		uint32_t GetUIntValue(const string_t& name);
-		void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer);
+		Omega::uint32_t GetUIntValue(const string_t& name);
+		void GetBinaryValue(const string_t& name, Omega::uint32_t& cbLen, byte_t* pBuffer);
 		void SetStringValue(const string_t& name, const string_t& val);
-		void SetUIntValue(const string_t& name, const uint32_t& val);
-		void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val);
-		IRegistryKey::ValueType_t GetValueType(const string_t& name);
-		IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting);
+		void SetUIntValue(const string_t& name, const Omega::uint32_t& val);
+		void SetBinaryValue(const string_t& name, Omega::uint32_t cbLen, const byte_t* val);
+		Registry::IRegistryKey::ValueType_t GetValueType(const string_t& name);
+		Registry::IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		Omega::IEnumString* EnumSubKeys();
 		Omega::IEnumString* EnumValues();
 		void DeleteKey(const string_t& strKey);
@@ -60,7 +60,7 @@ namespace
 		};
 		static bool get_value(const string_t& name, string_t& value, ValueType_Char& type);
 		static void set_value(const string_t& name, const string_t& value, ValueType_Char type);
-		static IRegistryKey::ValueType_t cast(ValueType_Char val);
+		static Registry::IRegistryKey::ValueType_t cast(ValueType_Char val);
 
 		string_t m_strPath;
 
@@ -69,7 +69,7 @@ namespace
 		END_INTERFACE_MAP()
 	};
 
-	class EnumStringImpl : 
+	class EnumStringImpl :
 		public ObjectBase,
 		public Omega::IEnumString
 	{
@@ -81,13 +81,13 @@ namespace
 		ACE_PWSTRING_ITERATOR	m_iter;
 
 		BEGIN_INTERFACE_MAP(EnumStringImpl)
-			INTERFACE_ENTRY(IEnumString)
+			INTERFACE_ENTRY(Omega::IEnumString)
 		END_INTERFACE_MAP()
 
 	// IEnumString members
 	public:
-		bool Next(uint32_t& count, string_t* parrVals);
-		bool Skip(uint32_t count);
+		bool Next(Omega::uint32_t& count, string_t* parrVals);
+		bool Skip(Omega::uint32_t count);
 		void Reset();
 		Omega::IEnumString* Clone();
 	};
@@ -206,20 +206,20 @@ namespace
 }
 
 // EnumStringImpl
-bool EnumStringImpl::Next(uint32_t& count, string_t* parrVals)
+bool EnumStringImpl::Next(Omega::uint32_t& count, string_t* parrVals)
 {
-	uint32_t c;
+	Omega::uint32_t c;
 	for (c=0;c<count && !m_iter.done();++c)
 		parrVals[c] = ACE_Wide_To_Ascii((*(m_iter++)).c_str()).char_rep();
-	
+
 	count = c;
 
 	return false;
 }
 
-bool EnumStringImpl::Skip(uint32_t count)
+bool EnumStringImpl::Skip(Omega::uint32_t count)
 {
-	for (uint32_t c=0;c<count && !m_iter.done();++c)
+	for (Omega::uint32_t c=0;c<count && !m_iter.done();++c)
 		m_iter.advance();
 
 	return false;
@@ -263,7 +263,7 @@ bool RegistryKeyImpl::get_value(const string_t& name, string_t& value, ValueType
 	{
 		OMEGA_THROW("Invalid binding type");
 	}
-	
+
 	value = ACE_Wide_To_Ascii(strValue.c_str()).char_rep();
 
 	return true;
@@ -273,7 +273,7 @@ void RegistryKeyImpl::set_value(const string_t& name, const string_t& value, Val
 {
 	char type_out[2] = {0};
 	type_out[0] = static_cast<char>(type);
-	
+
     if (BINDING::instance()->rebind(ACE_NS_WString(name),ACE_NS_WString(value),type_out) < 0)
 		OOCORE_THROW_LASTERROR();
 }
@@ -304,20 +304,20 @@ string_t RegistryKeyImpl::GetStringValue(const string_t& name)
 {
 	string_t value;
 	ValueType_Char type;
-	
+
 	if (name.IsEmpty())
 		BadNameExceptionImpl::Throw(name);
 
 	if (!RegistryKeyImpl::get_value(m_strPath + name,value,type))
 		NotFoundExceptionImpl::Throw(m_strPath + name);
-	
+
 	if (type != RegistryKeyImpl::VALUE_STRING)
 		WrongValueTypeExceptionImpl::Throw(type);
-		
+
 	return value;
 }
 
-uint32_t RegistryKeyImpl::GetUIntValue(const string_t& name)
+Omega::uint32_t RegistryKeyImpl::GetUIntValue(const string_t& name)
 {
 	string_t value;
 	ValueType_Char type;
@@ -342,32 +342,32 @@ uint32_t RegistryKeyImpl::GetUIntValue(const string_t& name)
 	if (*end_ptr != '\0')
 		WrongValueTypeExceptionImpl::Throw(RegistryKeyImpl::VALUE_STRING);
 
-	return static_cast<uint32_t>(val);
+	return static_cast<Omega::uint32_t>(val);
 }
 
-void RegistryKeyImpl::GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer)
+void RegistryKeyImpl::GetBinaryValue(const string_t& name, Omega::uint32_t& cbLen, byte_t* pBuffer)
 {
 	string_t value;
 	ValueType_Char type;
-	
+
 	if (name.IsEmpty())
 		BadNameExceptionImpl::Throw(name);
 
 	if (!RegistryKeyImpl::get_value(m_strPath + name,value,type))
 		NotFoundExceptionImpl::Throw(m_strPath + name);
-	
+
 	if (type != RegistryKeyImpl::VALUE_BINARY)
 		WrongValueTypeExceptionImpl::Throw(type);
 
 	// This is not an efficient way to store the data - do not make your binary data entries too big!
 	if (pBuffer == 0)
-		cbLen = static_cast<uint32_t>(ACE_Base64::length(reinterpret_cast<const ACE_Byte*>(static_cast<const char_t*>(value))));
+		cbLen = static_cast<Omega::uint32_t>(ACE_Base64::length(reinterpret_cast<const ACE_Byte*>(static_cast<const char_t*>(value))));
 	else
 	{
 		ACE_Byte* pData = ACE_Base64::decode(reinterpret_cast<const ACE_Byte*>(static_cast<const char_t*>(value)),&cbLen);
 		if (!pData)
 			OMEGA_THROW("Bad base64 format");
-				
+
 		memcpy(pBuffer,pData,cbLen);
 		delete [] pData;
 	}
@@ -376,29 +376,29 @@ void RegistryKeyImpl::GetBinaryValue(const string_t& name, uint32_t& cbLen, byte
 void RegistryKeyImpl::SetStringValue(const string_t& name, const string_t& val)
 {
 	// Check for a valid name
-	if (name.IsEmpty() || name.Find('/') != -1)
+	if (name.IsEmpty() || name.Find('/') != string_t::npos)
 		BadNameExceptionImpl::Throw(name);
 
 	set_value(m_strPath + name,val,VALUE_STRING);
 }
 
-void RegistryKeyImpl::SetUIntValue(const string_t& name, const uint32_t& val)
+void RegistryKeyImpl::SetUIntValue(const string_t& name, const Omega::uint32_t& val)
 {
 	// Check for a valid name
-	if (name.IsEmpty() || name.Find('/') != -1)
+	if (name.IsEmpty() || name.Find('/') != string_t::npos)
 		BadNameExceptionImpl::Throw(name);
 
 	ACE_TCHAR szBuf[32] = {0};
 	if (ACE_OS::snprintf(szBuf,31,ACE_UINT32_FORMAT_SPECIFIER,val)<=0)
 		OMEGA_THROW("Bizzare response from snprintf");
-		
+
 	set_value(m_strPath + name,ACE_TEXT_ALWAYS_CHAR(szBuf),VALUE_UINT32);
 }
 
-void RegistryKeyImpl::SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val)
+void RegistryKeyImpl::SetBinaryValue(const string_t& name, Omega::uint32_t cbLen, const byte_t* val)
 {
 	// Check for a valid name
-	if (name.IsEmpty() || name.Find('/') != -1)
+	if (name.IsEmpty() || name.Find('/') != string_t::npos)
 		BadNameExceptionImpl::Throw(name);
 
 	size_t len = 0;
@@ -418,30 +418,30 @@ Registry::IRegistryKey::ValueType_t RegistryKeyImpl::cast(ValueType_Char val)
 	switch (val)
 	{
 	case RegistryKeyImpl::VALUE_STRING:
-		return IRegistryKey::String;
-	
+		return Registry::IRegistryKey::String;
+
 	case RegistryKeyImpl::VALUE_UINT32:
-		return IRegistryKey::UInt32;
-	
+		return Registry::IRegistryKey::UInt32;
+
 	case RegistryKeyImpl::VALUE_BINARY:
-		return IRegistryKey::Binary;
-    
+		return Registry::IRegistryKey::Binary;
+
 	case RegistryKeyImpl::KEY:
 	default:
 		OMEGA_THROW("Corrupt binding type");
 	};
-		
-	return IRegistryKey::Binary;
+
+	return Registry::IRegistryKey::Binary;
 }
 
 Registry::IRegistryKey::ValueType_t RegistryKeyImpl::GetValueType(const string_t& name)
 {
 	string_t value;
 	ValueType_Char type;
-	
+
 	if (!RegistryKeyImpl::get_value(m_strPath + name,value,type))
 		NotFoundExceptionImpl::Throw(m_strPath + name);
-	
+
 	return cast(type);
 }
 
@@ -455,7 +455,7 @@ Registry::IRegistryKey* RegistryKeyImpl::OpenSubKey(const string_t& key, OpenFla
 	{
 		string_t full_key;
 		next = key.Find('/',pos+1);
-		if (next != -1)
+		if (next != string_t::npos)
 		{
 			// Check for //
 			if (next == pos+1)
@@ -467,12 +467,12 @@ Registry::IRegistryKey* RegistryKeyImpl::OpenSubKey(const string_t& key, OpenFla
 		else
 		{
 			// Check for trailing /
-			if (pos+1 == static_cast<ssize_t>(key.Length()))
+			if (pos+1 == key.Length())
 				BadNameExceptionImpl::Throw(key);
 
 			full_key = m_strPath + key + "/";
 		}
-					
+
 		// See if it exists so far
 		string_t value;
 		ValueType_Char type;
@@ -481,29 +481,29 @@ Registry::IRegistryKey* RegistryKeyImpl::OpenSubKey(const string_t& key, OpenFla
 			if (type != RegistryKeyImpl::KEY)
 				OMEGA_THROW("Corrupt binding type");
 
-			if (next == -1)
+			if (next == string_t::npos)
 			{
 				// We have the last part of the path - check we can overwrite it...
-				if (flags & IRegistryKey::FailIfThere)
-					AlreadyExistsExceptionImpl::Throw(full_key.Mid(0,static_cast<ssize_t>(full_key.Length())-1));
+				if (flags & Registry::IRegistryKey::FailIfThere)
+					AlreadyExistsExceptionImpl::Throw(full_key.Mid(0,static_cast<size_t>(full_key.Length())-1));
 			}
 		}
 		else
 		{
 			// Key doesn't exist - check we are allowed to create
-			if (!(flags & IRegistryKey::Create))
-				NotFoundExceptionImpl::Throw(full_key.Mid(0,static_cast<ssize_t>(full_key.Length())-1));
+			if (!(flags & Registry::IRegistryKey::Create))
+				NotFoundExceptionImpl::Throw(full_key.Mid(0,static_cast<size_t>(full_key.Length())-1));
 
 			// Create parent paths as we descend
 			RegistryKeyImpl::set_value(full_key,"",RegistryKeyImpl::KEY);
 		}
 
-	} while (next != -1);
+	} while (next != string_t::npos);
 
 	// Create the object
 	pKey = ObjectImpl<RegistryKeyImpl>::CreateObject();
 	pKey->m_strPath = m_strPath + key + "/";
-		
+
 	return pKey;
 }
 
@@ -522,11 +522,11 @@ Omega::IEnumString* RegistryKeyImpl::EnumSubKeys()
 			size_t pos = (*i).name_.find('/',m_strPath.Length());
 			if (pos == static_cast<size_t>((*i).name_.length())-1)
 			{
-				if (ptrEnum->m_set.insert((*i).name_.substr(m_strPath.Length(),pos-(ssize_t)m_strPath.Length()).c_str()) == -1)
+				if (ptrEnum->m_set.insert((*i).name_.substr(m_strPath.Length(),pos-(size_t)m_strPath.Length()).c_str()) == -1)
 					OOCORE_THROW_LASTERROR();
 			}
 		}
-	}	
+	}
 
 	ptrEnum->m_iter = ptrEnum->m_set.begin();
 
@@ -600,7 +600,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((
 		return RegistryKeyImpl::BINDING::instance()->m_ptrRootKey.AddRefReturn();
 
 	// Open a sub key on the root key
-	return RegistryKeyImpl::BINDING::instance()->m_ptrRootKey->OpenSubKey(key,flags);	
+	return RegistryKeyImpl::BINDING::instance()->m_ptrRootKey->OpenSubKey(key,flags);
 }
 
 // Exceptions
@@ -631,11 +631,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IRegistryKey_IAlreadyExistsException_Throw,2
 }*/
 
 // Binding
-Binding::Binding() : 
+Binding::Binding() :
 	m_ptrRootKey(ObjectImpl<RegistryKeyImpl>::CreateObjectPtr())
 {
 	name_options()->database(ACE_TEXT("OmegaOnline.reg_db"));
-	
+
 #if defined(ACE_WIN32)
 	ACE_TCHAR szBuf[MAX_PATH] = {0};
 	if (::SHGetSpecialFolderPath(0,szBuf,CSIDL_COMMON_APPDATA,0))
@@ -657,7 +657,7 @@ trylocal:
 			::PathRemoveFileSpec(szBuf);
 		}
 	}
-	
+
 	if (szBuf[0] == 0)
 	{
 errored:
@@ -671,7 +671,7 @@ errored:
 
 	// Use a different base address
 	name_options()->base_address((char*)(1024UL*1024*512));
-	
+
 	// Sometimes the base address is already in use - .NET CLR for example
 	// So we check it first - I wish ACE would do this for us!
 	// The problem with just defaulting to address 0x0 - which mean pick any,
@@ -687,7 +687,7 @@ errored:
 			//
 			ACE_OS::abort();
 		}
-	}	
+	}
 #endif
 
 #else // ACE_WIN32

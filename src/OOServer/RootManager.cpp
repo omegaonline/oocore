@@ -197,7 +197,7 @@ int Root::Manager::init_registry()
 		if (err != EEXIST)
 			return -1;
 	}
-	m_strRegistry = ACE_TEXT(OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE);
+	m_strRegistry = OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE;
 
 #endif
 

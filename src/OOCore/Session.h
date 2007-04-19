@@ -31,7 +31,7 @@ namespace Session
 	typedef uid_t TOKEN;
 #endif
 
-// Make sure we are packed 
+// Make sure we are packed
 #if (defined(_MSC_VER) && _MSC_VER>=1300)
 #pragma pack(push, 1)
 #endif
@@ -78,7 +78,7 @@ namespace Session
 			{
 				if (!PathFileExists(szBuf2) && ACE_OS::mkdir(szBuf2) != 0)
 					return strFilename;
-			
+
 				if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
 					strFilename = szBuf;
 			}

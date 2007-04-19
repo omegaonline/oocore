@@ -3,13 +3,13 @@
 
 // Specialisations of ObjectPtr
 
-namespace OTL 
+namespace OTL
 {
 	template <>
 	class ObjectPtr<Omega::Registry::IRegistryKey> : public ObjectPtrBase<Omega::Registry::IRegistryKey>
 	{
 	public:
-		ObjectPtr<Omega::Registry::IRegistryKey>(Omega::Registry::IRegistryKey* pKey = 0) : 
+		ObjectPtr<Omega::Registry::IRegistryKey>(Omega::Registry::IRegistryKey* pKey = 0) :
 		  ObjectPtrBase<Omega::Registry::IRegistryKey>(pKey)
 		{ }
 
@@ -19,7 +19,7 @@ namespace OTL
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags = Omega::Registry::IRegistryKey::OpenExisting) :
 		  ObjectPtrBase<Omega::Registry::IRegistryKey>(0)
-		{ 
+		{
 			Attach(Omega::Registry::IRegistryKey::OpenKey(key,flags));
 		}
 

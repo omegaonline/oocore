@@ -5,19 +5,19 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace 
+namespace
 {
-	class UnboundProxy : 
+	class UnboundProxy :
 		public ObjectBase,
 		public MetaInfo::IWireProxy
 	{
 	public:
 		void init(MetaInfo::IWireManager* pManager, const guid_t& oid, const guid_t& iid)
 		{
-			const MetaInfo::qi_rtti* pRtti = Omega::MetaInfo::get_qi_rtti_info(iid);
+			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
 				OMEGA_THROW("No handler for interface");
-			
+
 			m_ptrProxy.Attach(pRtti->pfnCreateWireProxy(this,pManager));
 			m_ptrManager = pManager;
 			m_oid = oid;
@@ -53,7 +53,7 @@ namespace
 		}
 	};
 
-	class StdProxy : 
+	class StdProxy :
 		public ObjectBase,
 		public MetaInfo::IWireProxy
 	{
@@ -64,7 +64,7 @@ namespace
 		}
 
 	BEGIN_INTERFACE_MAP(StdProxy)
-		INTERFACE_ENTRY(IWireProxy)
+		INTERFACE_ENTRY(MetaInfo::IWireProxy)
 		INTERFACE_ENTRY_FUNCTION_BLIND(QI,0)
 	END_INTERFACE_MAP()
 
@@ -79,7 +79,7 @@ namespace
 	public:
 		void WriteKey(Serialize::IFormattedStream* /*pStream*/)
 		{
-		
+
 		}
 	};
 }
@@ -106,14 +106,14 @@ inline IObject* StdProxy::QI(const guid_t& iid, void*)
 					break;
 				}
 			}
-			
+
 			if (i == m_iid_map.end())
 			{
 				// New interface required
 				const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 				if (!pRtti || !pRtti->pfnCreateWireProxy)
 					OMEGA_THROW("No handler for interface");
-				
+
 				ptrObj.Attach(pRtti->pfnCreateWireProxy(this,m_ptrManager));
 				i = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrObj)).first;
 				ptrObj.Detach();
@@ -157,7 +157,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 
 	ObjectPtr<MetaInfo::IWireStub> ptrStub;
 	uint32_t method_id;
-	
+
 	// Read the stub id and method id
 	uint32_t stub_id = pParamsIn->ReadUInt32();
 
@@ -168,16 +168,16 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 
 		// Read the oid and iid
 		guid_t oid;
-		Omega::MetaInfo::wire_read(this,pParamsIn,oid);
+		MetaInfo::wire_read(this,pParamsIn,oid);
 		guid_t iid;
-		Omega::MetaInfo::wire_read(this,pParamsIn,iid);
+		MetaInfo::wire_read(this,pParamsIn,iid);
 
 		method_id = pParamsIn->ReadUInt32();
 
 		// IObject interface calls are not allowed on static interfaces!
 		if (method_id < 3)
 			OOCORE_THROW_ERRNO(EINVAL);
-				
+
 		// Create the required object
 		ObjectPtr<IObject> ptrObject;
 		ptrObject.Attach(Activation::CreateObject(oid,Activation::Any,0,iid));
@@ -186,7 +186,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 		const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 		if (!pRtti || !pRtti->pfnCreateWireStub)
 			OMEGA_THROW("No handler for interface");
-		
+
 		// And create a stub
 		ptrStub.Attach(pRtti->pfnCreateWireStub(this,ptrObject,0));
 		if (!ptrStub)
@@ -253,7 +253,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, co
 			return;
 		}
 	}
-	
+
 	// Get the handler for the interface
 	const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 	if (!pRtti || !pRtti->pfnCreateWireStub)
@@ -350,6 +350,6 @@ void StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_t& iid, 
 
 	ObjectPtr<ObjectImpl<UnboundProxy> > ptrProxy = ObjectImpl<UnboundProxy>::CreateObjectPtr();
 	ptrProxy->init(this,oid,iid);
-	
+
 	pObject = ptrProxy->QueryInterface(iid);
 }

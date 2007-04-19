@@ -829,7 +829,7 @@ int BaseKey::open_registry()
 			return -1;
 	}
 
-	ACE_CString strRegistry = ACE_TEXT(OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE);
+	ACE_CString strRegistry = OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE;
 
 #endif
 

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OOServer" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug_Win32">
+				<Option output="Debug\OOServer.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE-5.5.7" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE-5.5.7" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="..\..\extern\ACE-5.5.7\lib\libACE.a" />
+					<Add library="..\OOCore\debug\libOOCore.a" />
+					<Add library="shlwapi" />
+					<Add library="userenv" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+			<Target title="Release_Win32">
+				<Option output="Release\OOServer.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE-5.5.7" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE-5.5.7" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="shlwapi" />
+					<Add library="Userenv" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="Channel.cpp" />
+		<Unit filename="Channel.h" />
+		<Unit filename="ClientConnection.cpp" />
+		<Unit filename="ClientConnection.h" />
+		<Unit filename="EntryPoint.cpp" />
+		<Unit filename="LocalAcceptor.h" />
+		<Unit filename="NTService.cpp" />
+		<Unit filename="NTService.h" />
+		<Unit filename="OOServer.cpp" />
+		<Unit filename="OOServer.h" />
+		<Unit filename="OOServer.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="OOServer_Root.h" />
+		<Unit filename="OOServer_link.cpp" />
+		<Unit filename="OOServer_msgs.mc">
+			<Option target="Release_Win32" />
+		</Unit>
+		<Unit filename="Protocol.h" />
+		<Unit filename="RequestHandler.h" />
+		<Unit filename="RequestHandler.inl" />
+		<Unit filename="RootConnection.cpp" />
+		<Unit filename="RootConnection.h" />
+		<Unit filename="RootManager.cpp" />
+		<Unit filename="RootManager.h" />
+		<Unit filename="SpawnedProcess.h" />
+		<Unit filename="SpawnedProcessUnix.cpp" />
+		<Unit filename="SpawnedProcessWin32.cpp" />
+		<Unit filename="UserConnection.cpp" />
+		<Unit filename="UserConnection.h" />
+		<Unit filename="UserManager.cpp" />
+		<Unit filename="UserManager.h" />
+		<Unit filename="UserRegistry.cpp" />
+		<Unit filename="UserRegistry.h" />
+		<Unit filename="UserServiceTable.cpp" />
+		<Unit filename="UserServiceTable.h" />
+		<Unit filename="resource.h" />
+		<Extensions>
+			<code_completion />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

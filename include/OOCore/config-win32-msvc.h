@@ -13,12 +13,6 @@
 
 #define OMEGA_FUNCNAME		__FUNCSIG__
 
-#if defined (_WIN64)
-typedef SSIZE_T ssize_t;
-#else
-typedef int ssize_t;
-#endif /* _WIN64 */
-
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \
 		if (POINTER == 0) { OMEGA_THROW("Out of memory."); } \
@@ -27,18 +21,10 @@ typedef int ssize_t;
 #define OMEGA_IMPORT __declspec(dllimport)
 #define OMEGA_EXPORT __declspec(dllexport)
 
-#if defined(__cplusplus) && !defined(CINTERFACE)
-// Windows.h has set some options
-#undef DECLARE_INTERFACE
-#define DECLARE_INTERFACE(iface)    struct DECLSPEC_NOVTABLE iface
-#undef DECLARE_INTERFACE_
-#define DECLARE_INTERFACE_(iface, baseiface)    struct DECLSPEC_NOVTABLE iface : public baseiface
-#endif
-
-#undef interface
-#define interface struct __declspec(novtable)
-
 #define OMEGA_UNUSED_ARG(n)	(n)
+
+// Prevent inclusion of old winsock
+#define _WINSOCKAPI_
 
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)

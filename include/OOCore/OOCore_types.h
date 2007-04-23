@@ -344,7 +344,7 @@ namespace Omega
 }
 
 #if defined(OMEGA_GUID_LINK_HERE)
-	const Omega::guid_t Omega::guid_t::NIL = {0};
+	const Omega::guid_t Omega::guid_t::NIL = {0,0,0,{0,0,0,0,0,0,0,0}};
 #endif
 
 #endif // OMEGA_TYPES_H_INCLUDED_

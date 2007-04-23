@@ -22,8 +22,6 @@
 #error OOCore requires _WIN32_IE >= 0x0500!
 #endif
 
-#include <winsock2.h>
-
 #if defined (_MSC_VER)
 #include <OOCore/config-win32-msvc.h>
 #elif defined (__GNUC__)

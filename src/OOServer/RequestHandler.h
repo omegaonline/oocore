@@ -51,6 +51,9 @@ protected:
 		 m_next_trans_id(1)
 	{}
 
+	virtual ~RequestHandler()
+	{}
+
 	int enqueue_request(REQUEST* req);
 	int send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
 	int send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, REQUEST*& response, ACE_Time_Value* deadline);
@@ -59,7 +62,7 @@ protected:
 	void stop();
 
 	virtual void process_request(REQUEST* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline) = 0;
-		
+
 private:
 	ACE_Atomic_Op<ACE_Thread_Mutex,long>		m_next_trans_id;
 	ACE_Message_Queue_Ex<REQUEST,ACE_MT_SYNCH>	m_msg_queue;

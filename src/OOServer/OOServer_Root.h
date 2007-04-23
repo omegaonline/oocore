@@ -21,6 +21,16 @@
 #elif _WIN32_WINNT < 0x0500
 #error OOServer requires _WIN32_WINNT >= 0x0500!
 #endif
+
+#ifndef WINVER
+#define WINVER _WIN32_WINNT
+#endif
+
+#if !defined(_WIN32_IE)
+#define _WIN32_IE 0x0500
+#elif _WIN32_IE < 0x0500
+#error OOCore requires _WIN32_IE >= 0x0500!
+#endif
 #endif // WIN32
 
 #define ACE_AS_STATIC_LIBS 1

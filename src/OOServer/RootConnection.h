@@ -24,17 +24,17 @@ namespace Root
 {
 
 class Connection : public ACE_Service_Handler
-{		
+{
 public:
 	Connection(RootBase* pBase, const ACE_CString& key);
 	virtual ~Connection();
 
 	int open(ACE_HANDLE new_handle);
 	void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
-		
+
 private:
 	Connection(const Connection&) {}
-	Connection& operator = (const Connection&) {}
+	Connection& operator = (const Connection&) { return *this; }
 
 	static const size_t			s_initial_read = 8;
 	RootBase*					m_pBase;

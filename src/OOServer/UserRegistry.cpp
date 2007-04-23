@@ -224,7 +224,7 @@ string_t UserKey::GetStringValue(const string_t& strName)
 		else
 			OOSERVER_THROW_ERRNO(err);
 	}
-	
+
 	return string_t(ACE_TEXT_ALWAYS_CHAR(strValue.c_str()));
 }
 
@@ -248,12 +248,13 @@ uint32_t UserKey::GetUIntValue(const string_t& strName)
 		else
 			OOSERVER_THROW_ERRNO(err);
 	}
-	
+
 	return static_cast<uint32_t>(uValue);
 }
 
 void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
 {
+	::DebugBreak();
 	void* TODO;
 }
 
@@ -302,6 +303,7 @@ void UserKey::SetUIntValue(const string_t& strName, const uint32_t& val)
 
 void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
+	::DebugBreak();
 	void* TODO;
 }
 
@@ -328,14 +330,14 @@ IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
 
 	switch (vtype)
 	{
-	case ACE_Configuration_Heap::VALUETYPE::STRING:
-		return IRegistryKey::ValueType::String;
+	case ACE_Configuration_Heap::STRING:
+		return IRegistryKey::String;
 
-	case ACE_Configuration_Heap::VALUETYPE::INTEGER:
-		return IRegistryKey::ValueType::UInt32;
+	case ACE_Configuration_Heap::INTEGER:
+		return IRegistryKey::UInt32;
 
-	case ACE_Configuration_Heap::VALUETYPE::BINARY:
-		return IRegistryKey::ValueType::Binary;
+	case ACE_Configuration_Heap::BINARY:
+		return IRegistryKey::Binary;
 
 	default:
 		OOSERVER_THROW_ERRNO(EINVAL);
@@ -347,7 +349,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
 
-	if (flags & IRegistryKey::OpenFlags::FailIfThere)
+	if (flags & IRegistryKey::FailIfThere)
 	{
 		// Check to see if the key already exists by opening it...
 		ACE_Configuration_Section_Key sub_key;
@@ -355,7 +357,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 			AlreadyExistsException::Throw(strSubKey);
 	}
 
-    int bCreate = (flags & IRegistryKey::OpenFlags::Create) ? 1 : 0;
+    int bCreate = (flags & IRegistryKey::Create) ? 1 : 0;
 
 	ACE_Configuration_Section_Key sub_key;
 	if (m_pRegistry->open_section(m_key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey),bCreate,sub_key) != 0)
@@ -368,7 +370,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		else
 			OOSERVER_THROW_ERRNO(err);
 	}
-	
+
 	// If we get here, then we have a new key!
 	ObjectPtr<ObjectImpl<UserKey> > ptrSubKey = ObjectImpl<UserKey>::CreateObjectPtr();
 	ptrSubKey->Init(m_pRegistry,sub_key,m_pLock);
@@ -379,7 +381,7 @@ Omega::IEnumString* UserKey::EnumSubKeys()
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
 
-	std::set<string_t> setSubKeys;	
+	std::set<string_t> setSubKeys;
 	for (int index=0;;++index)
 	{
 		ACE_TString strSubKey;
@@ -399,7 +401,7 @@ Omega::IEnumString* UserKey::EnumValues()
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
 
-	std::set<string_t> setValues;	
+	std::set<string_t> setValues;
 	for (int index=0;;++index)
 	{
 		ACE_TString strValue;
@@ -429,7 +431,7 @@ void UserKey::DeleteKey(const string_t& strSubKey)
 			BadNameException::Throw(strSubKey);
 		else
 			OOSERVER_THROW_ERRNO(err);
-	}	
+	}
 }
 
 void UserKey::DeleteValue(const string_t& strName)
@@ -445,7 +447,7 @@ void UserKey::DeleteValue(const string_t& strName)
 			BadNameException::Throw(strName);
 		else
 			OOSERVER_THROW_ERRNO(err);
-	}	
+	}
 }
 
 void RootKey::Init(Manager* pManager, const string_t& strKey)
@@ -468,7 +470,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
-		
+
 	ACE_CDR::Boolean bRes = false;
 	if (err==0 && !response.read_boolean(bRes))
 		err = ACE_OS::last_error();
@@ -502,7 +504,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	ACE_CDR::Octet value_type;
 	if (err==0 && !response.read_octet(value_type))
 		err = ACE_OS::last_error();
-	
+
 	if (err != ENOENT)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
@@ -532,7 +534,7 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 	ACE_CDR::Octet value_type = 0;
 	if (err==0 && !response.read_octet(value_type))
 		err = ACE_OS::last_error();
-	
+
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
@@ -547,19 +549,19 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 
 	switch (value_type)
 	{
-	case ACE_Configuration_Heap::VALUETYPE::STRING:
-		return IRegistryKey::ValueType::String;
+	case ACE_Configuration_Heap::STRING:
+		return IRegistryKey::String;
 
-	case ACE_Configuration_Heap::VALUETYPE::INTEGER:
-		return IRegistryKey::ValueType::UInt32;
+	case ACE_Configuration_Heap::INTEGER:
+		return IRegistryKey::UInt32;
 
-	case ACE_Configuration_Heap::VALUETYPE::BINARY:
-		return IRegistryKey::ValueType::Binary;
+	case ACE_Configuration_Heap::BINARY:
+		return IRegistryKey::Binary;
 
 	default:
 		OOSERVER_THROW_ERRNO(EINVAL);
 		return static_cast<IRegistryKey::ValueType_t>(-1);
-	}	
+	}
 }
 
 string_t RootKey::GetStringValue(const string_t& strName)
@@ -580,7 +582,7 @@ string_t RootKey::GetStringValue(const string_t& strName)
 	ACE_CString strValue;
 	if (err==0 && !response.read_string(strValue))
 		err = ACE_OS::last_error();
-	
+
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
@@ -610,11 +612,11 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
-	
+
 	ACE_CDR::ULong uValue = 0;
 	if (err==0 && !response.read_ulong(uValue))
 		err = ACE_OS::last_error();
-	
+
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
@@ -632,6 +634,7 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 
 void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
 {
+	::DebugBreak();
 	void* TODO;
 }
 
@@ -699,23 +702,27 @@ void RootKey::SetUIntValue(const string_t& strName, const uint32_t& uValue)
 
 void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
+	::DebugBreak();
 	void* TODO;
 }
 
 IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
+	::DebugBreak();
 	void* TODO;
 	return 0;
 }
 
 Omega::IEnumString* RootKey::EnumSubKeys()
 {
+	::DebugBreak();
 	void* TODO;
 	return 0;
 }
 
 void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 {
+	::DebugBreak();
 	void* TODO;
 }
 
@@ -810,7 +817,7 @@ int BaseKey::open_registry()
 				if (ret != 0)
 					return ret;
 			}
-						
+
 			if (PathCombineA(szBuf,szBuf2,OMEGA_REGISTRY_FILE))
 				strRegistry = szBuf;
 		}
@@ -819,7 +826,7 @@ int BaseKey::open_registry()
 #else
 
 #error Fix me!
-	
+
 #define OMEGA_REGISTRY_DIR "/var/lib/OmegaOnline"
 
 	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
@@ -891,7 +898,7 @@ IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		string_t sub_strSubKey = strSubKey.Mid(13);
 		if (sub_strSubKey.IsEmpty())
 		{
-			if (flags & IRegistryKey::OpenFlags::FailIfThere)
+			if (flags & IRegistryKey::FailIfThere)
 				OOSERVER_THROW_ERRNO(EEXIST);
 
 			return m_ptrUser.AddRefReturn();

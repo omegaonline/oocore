@@ -530,6 +530,7 @@ namespace Omega
 					OMEGA_NEW(m_pFunctors,typename interface_info<T>::wire_type[cbSize]);
 					//OMEGA_NEW(m_pVals,T[cbSize]);
 
+					::DebugBreak();
 					// TODO FIX ME!
 
 					for (uint32_t i=0;i<cbSize;++i)
@@ -546,17 +547,17 @@ namespace Omega
 		{
 			std_wire_type_array(void*, uint32_t = 1)
 			{
-				Throw(OMEGA_FUNCNAME);
+				Throw(OMEGA_SOURCE_INFO);
 			}
 
 			static void proxy_read(IWireManager*, Serialize::IFormattedStream*, void*, uint32_t = 1)
 			{
-				Throw(OMEGA_FUNCNAME);
+				Throw(OMEGA_SOURCE_INFO);
 			}
 
 			void out(IWireManager*, Serialize::IFormattedStream*, uint32_t = 1)
 			{
-				Throw(OMEGA_FUNCNAME);
+				Throw(OMEGA_SOURCE_INFO);
 			}
 
 		private:

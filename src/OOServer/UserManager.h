@@ -13,14 +13,14 @@ namespace User
 class Request : public RequestBase
 {
 public:
-	User::Request(ACE_HANDLE handle, ACE_InputCDR* input) : 
+	Request::Request(ACE_HANDLE handle, ACE_InputCDR* input) :
 	  RequestBase(handle,input)
 	{}
 
 	bool	m_bRoot;
 };
 
-class Manager : 
+class Manager :
 	public LocalAcceptor<Connection>,
 	public RootBase,
 	public RequestHandler<User::Request>
@@ -32,20 +32,20 @@ public:
 
 	void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait = 0);
 	ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait = 0);
-	
+
 private:
+    friend class ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex>;
 	typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
-	friend class USER_MANAGER;
-	
+
 	Manager();
 	virtual ~Manager();
 	Manager(const Manager&) {}
-	Manager& operator = (const Manager&) {}
+	Manager& operator = (const Manager&) { return *this; }
 
 	ACE_Recursive_Thread_Mutex  m_lock;
 	ACE_HANDLE                  m_root_handle;
 	ACE_CDR::UShort             m_uNextChannelId;
-	
+
 	struct ChannelPair
 	{
 		ACE_HANDLE			handle;
@@ -54,7 +54,7 @@ private:
 	std::map<ACE_CDR::UShort,ChannelPair>                                 m_mapChannelIds;
 	std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >       m_mapReverseChannelIds;
 	std::map<ACE_HANDLE,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
-	
+
 	int run_event_loop_i(u_short uPort);
 	int init(u_short uPort);
 	void stop_i();

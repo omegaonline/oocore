@@ -5,7 +5,7 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace
+namespace OOCore
 {
 	class UnboundProxy :
 		public ObjectBase,
@@ -18,15 +18,15 @@ namespace
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
 				OMEGA_THROW("No handler for interface");
 
-			m_ptrProxy.Attach(pRtti->pfnCreateWireProxy(this,pManager));
-			m_ptrManager = pManager;
+			this->m_ptrProxy.Attach(pRtti->pfnCreateWireProxy(this,pManager));
+			this->m_ptrManager = pManager;
 			m_oid = oid;
 			m_iid = iid;
 		}
 
 	BEGIN_INTERFACE_MAP(UnboundProxy)
 		INTERFACE_ENTRY(MetaInfo::IWireProxy)
-		INTERFACE_ENTRY_FUNCTION_BLIND(QI,0)
+		INTERFACE_ENTRY_FUNCTION_BLIND(QI)
 	END_INTERFACE_MAP()
 
 	private:
@@ -35,7 +35,12 @@ namespace
 		ObjectPtr<MetaInfo::IWireManager>   m_ptrManager;
 		ObjectPtr<IObject>                  m_ptrProxy;
 
-		IObject* QI(const guid_t& iid, void*)
+        static IObject* QI(const guid_t& iid, void* pThis, void*)
+        {
+            return static_cast<RootClass*>(pThis)->QI2(iid);
+        }
+
+		IObject* QI2(const guid_t& iid)
 		{
 			if (iid != m_iid)
 				return 0;
@@ -65,7 +70,7 @@ namespace
 
 	BEGIN_INTERFACE_MAP(StdProxy)
 		INTERFACE_ENTRY(MetaInfo::IWireProxy)
-		INTERFACE_ENTRY_FUNCTION_BLIND(QI,0)
+		INTERFACE_ENTRY_FUNCTION_BLIND(QI)
 	END_INTERFACE_MAP()
 
 	private:
@@ -73,7 +78,12 @@ namespace
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
 		ObjectPtr<MetaInfo::IWireManager>            m_ptrManager;
 
-		inline IObject* QI(const guid_t& iid, void*);
+        static IObject* QI(const guid_t& iid, void* pThis, void*)
+        {
+            return static_cast<RootClass*>(pThis)->QI2(iid);
+        }
+
+		inline IObject* QI2(const guid_t& iid);
 
 	// IWireProxy members
 	public:
@@ -84,7 +94,7 @@ namespace
 	};
 }
 
-inline IObject* StdProxy::QI(const guid_t& iid, void*)
+inline IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 {
 	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
@@ -294,6 +304,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, co
 void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* /*pStream*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
 {
 	// Still wondering if iid is actually required....
+	::DebugBreak();
 	void* TODO;
 }
 
@@ -348,7 +359,7 @@ void StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_t& iid, 
 	if (pObject)
 		pObject->Release();
 
-	ObjectPtr<ObjectImpl<UnboundProxy> > ptrProxy = ObjectImpl<UnboundProxy>::CreateObjectPtr();
+	ObjectPtr<ObjectImpl<OOCore::UnboundProxy> > ptrProxy = ObjectImpl<OOCore::UnboundProxy>::CreateObjectPtr();
 	ptrProxy->init(this,oid,iid);
 
 	pObject = ptrProxy->QueryInterface(iid);

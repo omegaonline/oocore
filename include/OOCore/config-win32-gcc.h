@@ -5,7 +5,6 @@
 
 #define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
 
-#include <winsock2.h>
 #include <sys/types.h>
 #include <new>
 
@@ -23,5 +22,7 @@
 #define OMEGA_HAS_UINT32_T
 #define OMEGA_HAS_INT64_T
 #define OMEGA_HAS_UINT64_T
+
+#define OMEGA_UNUSED_ARG(n)	(void)(n)
 
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

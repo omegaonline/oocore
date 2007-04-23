@@ -3,7 +3,7 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace
+namespace OOCore
 {
 	class ServiceTableImpl :
 		public ObjectBase,
@@ -35,27 +35,27 @@ namespace
 // ServiceTable
 void SetServiceTable(Activation::IServiceTable* pNewTable)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
+	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
 
-	g_ServiceTable.m_ptrSystemServiceTable = pNewTable;
+	OOCore::g_ServiceTable.m_ptrSystemServiceTable = pNewTable;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IServiceTable*,Activation_GetServiceTable,0,())
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
+	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
 
 	// If we have no set ServiceTable, use a default
-	if (!g_ServiceTable.m_ptrSystemServiceTable)
+	if (!OOCore::g_ServiceTable.m_ptrSystemServiceTable)
 	{
-		ObjectPtr<ObjectImpl<ServiceTableImpl> > ptrServiceTable = ObjectImpl<ServiceTableImpl>::CreateObjectPtr();
+		ObjectPtr<ObjectImpl<OOCore::ServiceTableImpl> > ptrServiceTable = ObjectImpl<OOCore::ServiceTableImpl>::CreateObjectPtr();
 
-		g_ServiceTable.m_ptrSystemServiceTable.Attach(ptrServiceTable.Detach());
+		OOCore::g_ServiceTable.m_ptrSystemServiceTable.Attach(ptrServiceTable.Detach());
 	}
 
-	return g_ServiceTable.m_ptrSystemServiceTable.AddRefReturn();
+	return OOCore::g_ServiceTable.m_ptrSystemServiceTable.AddRefReturn();
 }
 
-void ServiceTableImpl::Register(const guid_t& oid, Activation::IServiceTable::Flags_t, IObject* pObject)
+void OOCore::ServiceTableImpl::Register(const guid_t& oid, Activation::IServiceTable::Flags_t, IObject* pObject)
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
@@ -65,7 +65,7 @@ void ServiceTableImpl::Register(const guid_t& oid, Activation::IServiceTable::Fl
 	m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
 }
 
-void ServiceTableImpl::Revoke(const guid_t& oid)
+void OOCore::ServiceTableImpl::Revoke(const guid_t& oid)
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
@@ -76,7 +76,7 @@ void ServiceTableImpl::Revoke(const guid_t& oid)
 	m_mapServices.erase(i);
 }
 
-void ServiceTableImpl::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+void OOCore::ServiceTableImpl::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 

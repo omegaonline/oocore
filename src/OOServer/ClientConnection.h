@@ -21,7 +21,7 @@ namespace Root
 class Manager;
 
 class ClientConnection : public ACE_Service_Handler
-{		
+{
 public:
 	ClientConnection() : ACE_Service_Handler()
 	{}
@@ -31,10 +31,10 @@ public:
 	void open(ACE_HANDLE new_handle, ACE_Message_Block &message_block);
 	void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 	void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);
-	
+
 private:
 	ClientConnection(const ClientConnection&) {}
-	ClientConnection& operator = (const ClientConnection&) {}
+	ClientConnection& operator = (const ClientConnection&) { return *this; }
 
 	Session::Request::Length	m_header_len;
 	ACE_Asynch_Read_Stream		m_reader;

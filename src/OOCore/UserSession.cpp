@@ -9,6 +9,7 @@ using namespace OTL;
 
 // Forward declares used internally
 void SetServiceTable(Activation::IServiceTable* pNewTable);
+void SetRegistry(Registry::IRegistryKey* pRootKey);
 
 UserSession::UserSession() :
 	m_user_handle(ACE_INVALID_HANDLE),
@@ -28,7 +29,8 @@ IException* UserSession::init()
 	if (ret != 0)
 	{
 		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
-		pE->m_strDesc = ACE_OS::strerror(ret);
+		pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
+		pE->m_strSource = OMEGA_SOURCE_INFO;
         return pE;
 	}
 
@@ -102,6 +104,10 @@ IException* UserSession::bootstrap()
 		ObjectPtr<Activation::IServiceTable> ptrSIP;
 		ptrSIP.Attach(ptrIPS->GetServiceTable());
 		SetServiceTable(ptrSIP);
+
+		ObjectPtr<Registry::IRegistryKey> ptrRegistry;
+		ptrRegistry.Attach(ptrIPS->GetRegistry());
+		SetRegistry(ptrRegistry);
 	}
 	catch (Omega::IException* pE)
 	{

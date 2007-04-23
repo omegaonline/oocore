@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="TestExe" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug_Win32">
+				<Option output="Debug\TestExe.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="..\..\3rd Party Libraries\ACE-5.5.1" />
+					<Add directory="..\..\include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\3rd Party Libraries\ACE-5.5.1" />
+					<Add directory="..\..\include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="..\..\src\OOCore\debug\libOOCore.a" />
+				</Linker>
+			</Target>
+			<Target title="Release_Win32">
+				<Option output="Release\TestExe.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add directory="..\..\3rd Party Libraries\ACE-5.5.1" />
+					<Add directory="..\..\include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\3rd Party Libraries\ACE-5.5.1" />
+					<Add directory="..\..\include" />
+				</ResourceCompiler>
+			</Target>
+		</Build>
+		<Unit filename="Test.cpp" />
+		<Extensions>
+			<code_completion />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

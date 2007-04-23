@@ -118,21 +118,7 @@ bool Root::SpawnedProcess::IsRunning()
 
 DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
 {
-	// Impersonate the logged on user
-	if (!ImpersonateLoggedOnUser(hToken))
-		return GetLastError();
-
-	DWORD dwProfileFlags = 0;
-	DWORD dwRes = ERROR_SUCCESS;
-	if (!GetProfileType(&dwProfileFlags))
-		dwRes = GetLastError();
-
-	// If we can't revert we're screwed!
-	if (!RevertToSelf())
-		abort();
-
-	if (dwRes != ERROR_SUCCESS && dwRes != ERROR_FILE_NOT_FOUND)
-		return dwRes;
+    int err = 0;
 
 	// Find out all about the user associated with hToken
 	DWORD dwBufSize = 0;
@@ -152,110 +138,86 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	}
 
 	// Get the names associated with the user SID
+	ACE_WString strUserName;
+	ACE_WString strDomainName;
+
 	SID_NAME_USE name_use;
 	DWORD dwUNameSize = 0;
 	DWORD dwDNameSize = 0;
 	LookupAccountSidW(NULL,pUserInfo->User.Sid,NULL,&dwUNameSize,NULL,&dwDNameSize,&name_use);
-
 	if (dwUNameSize == 0)
+        err = GetLastError();
+    else
 	{
-		delete [] pUserInfo;
-		return GetLastError();
-	}
-	LPWSTR pszUserName = new wchar_t[dwUNameSize];
-	if (!pszUserName)
-	{
-		delete [] pUserInfo;
-		return GetLastError();
-	}
+		LPWSTR pszUserName = new wchar_t[dwUNameSize];
+        if (!pszUserName)
+            err = GetLastError();
+        else
+        {
+            LPWSTR pszDomainName = NULL;
+            if (dwDNameSize)
+            {
+                pszDomainName = new wchar_t[dwDNameSize];
+                if (!pszDomainName)
+                    err = GetLastError();
+            }
 
-	LPWSTR pszDomainName = NULL;
-	if (dwDNameSize)
-	{
-		pszDomainName = new wchar_t[dwDNameSize];
-		if (!pszDomainName)
-		{
-			delete [] pszUserName;
-			delete [] pUserInfo;
-			return GetLastError();
-		}
-	}
-	if (!LookupAccountSidW(NULL,pUserInfo->User.Sid,pszUserName,&dwUNameSize,pszDomainName,&dwDNameSize,&name_use))
-	{
-		delete [] pszDomainName;
-		delete [] pszUserName;
-		delete [] pUserInfo;
-		return GetLastError();
+            if (err == 0)
+            {
+                if (!LookupAccountSidW(NULL,pUserInfo->User.Sid,pszUserName,&dwUNameSize,pszDomainName,&dwDNameSize,&name_use))
+                    err = GetLastError();
+                else
+                {
+                    strUserName = pszUserName;
+                    strDomainName = pszDomainName;
+                }
+            }
+            delete [] pszDomainName;
+            delete [] pszUserName;
+        }
 	}
 
 	// Done with user info
 	delete [] pUserInfo;
 
-	LPWSTR pszUserProfilePath = NULL;
-	LPWSTR pszDCName = NULL;
+    if (err != 0)
+        return err;
 
-	// If the user has a roaming profile
-	if (dwProfileFlags & PT_ROAMING)
-	{
-		// Lookup a DC for pszDomain
-		LPWSTR pszDCName2 = NULL;
-		if (NetGetAnyDCName(NULL,pszDomainName,(LPBYTE*)&pszDCName2) == NERR_Success)
-		{
-			pszDCName = new wchar_t[wcslen(pszDCName2)+1];
-			if (!pszDCName)
-			{
-				delete [] pszDomainName;
-				delete [] pszUserName;
-				return ERROR_OUTOFMEMORY;
-			}
-			wcscpy(pszDCName,pszDCName2);
+	// Lookup a DC for pszDomain
+    ACE_WString strDCName;
+    LPWSTR pszDCName = NULL;
+    if (NetGetAnyDCName(NULL,strDomainName.is_empty() ? NULL : strDomainName.c_str(),(LPBYTE*)&pszDCName) == NERR_Success)
+    {
+        strDCName = pszDCName;
+        NetApiBufferFree(pszDCName);
+    }
 
-			// Try to find the user's roaming profile...
-			USER_INFO_3* pInfo = NULL;
-			if (NetUserGetInfo(pszDCName,pszUserName,3,(LPBYTE*)&pInfo) == NERR_Success)
-			{
-				if (pInfo->usri3_profile)
-				{
-					// Alloc and copy the profile path
-					pszUserProfilePath = new wchar_t[wcslen(pInfo->usri3_profile)+1];
-					if (!pszUserProfilePath)
-					{
-						delete [] pszDCName;
-						delete [] pszDomainName;
-						delete [] pszUserName;
-						return ERROR_OUTOFMEMORY;
-					}
-					wcscpy(pszUserProfilePath,pInfo->usri3_profile);
-				}
-				NetApiBufferFree(pInfo);
-			}
-			NetApiBufferFree(pszDCName2);
-		}
-	}
+    // Try to find the user's profile path...
+    ACE_WString strProfilePath;
+    USER_INFO_3* pInfo = NULL;
+    if (NetUserGetInfo(strDCName.is_empty() ? NULL : strDCName.c_str(),strUserName.c_str(),3,(LPBYTE*)&pInfo) == NERR_Success)
+    {
+        if (pInfo->usri3_profile)
+            strProfilePath = pInfo->usri3_profile;
 
-	// Done with domain name
-	delete [] pszDomainName;
+        NetApiBufferFree(pInfo);
+    }
 
 	// Load the Users Profile
 	PROFILEINFOW profile_info = {0};
     profile_info.dwSize = sizeof(PROFILEINFOW);
 	profile_info.dwFlags = PI_NOUI | PI_APPLYPOLICY;
-	profile_info.lpUserName = pszUserName;
-	profile_info.lpProfilePath = pszUserProfilePath;
-	profile_info.lpServerName = pszDCName;
+	profile_info.lpUserName = (WCHAR*)strUserName.c_str();
+	profile_info.lpProfilePath = (WCHAR*)strProfilePath.c_str();
+	profile_info.lpServerName = (WCHAR*)strDCName.c_str();
 
 	BOOL bSuccess = LoadUserProfileW(hToken,&profile_info);
 
-	// Done with the strings now...
-	delete [] pszDCName;
-	delete [] pszUserName;
-	delete [] pszUserProfilePath;
-
 	if (!bSuccess)
 		return GetLastError();
-	
+
 	hProfile = profile_info.hProfile;
-	return ERROR_SUCCESS;    
+	return ERROR_SUCCESS;
 }
 
 DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
@@ -268,13 +230,13 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 	TCHAR szCmdLine[MAX_PATH+64];
 	if (ACE_OS::sprintf(szCmdLine,ACE_TEXT("\"%s\" --spawned %u"),szPath,uPort)==-1)
 		return ERROR_INVALID_PARAMETER;
-	
+
 	// Load up the users profile
 	HANDLE hProfile = NULL;
 	DWORD dwRes = LoadUserProfileFromToken(hToken,hProfile);
 	if (dwRes != ERROR_SUCCESS)
 		return dwRes;
-	
+
 	// Load the Users Environment vars
 	LPVOID lpEnv = NULL;
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
@@ -283,11 +245,11 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 		UnloadUserProfile(hToken,hProfile);
 		return dwRes;
 	}
-	
+
 	// Init our startup info
 	STARTUPINFO startup_info = {0};
 	startup_info.cb = sizeof(STARTUPINFO);
-	
+
 	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
 
 	PROCESS_INFORMATION process_info = {0};
@@ -301,13 +263,13 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 
 	// Done with environment block...
 	DestroyEnvironmentBlock(lpEnv);
-	
+
 	// Stash handles to close on end...
 	m_hProfile = hProfile;
 	m_hProcess = process_info.hProcess;
 
 	// And close any others
-	CloseHandle(process_info.hThread);	
+	CloseHandle(process_info.hThread);
 
 	return ERROR_SUCCESS;
 }
@@ -345,7 +307,7 @@ int Root::SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 		CloseHandle(hToken);
 		return dwRes;
 	}
-	
+
 	m_hToken = hToken;
 
 	return 0;
@@ -357,23 +319,40 @@ int Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Get the server section
+	bool bNew = false;
 	ACE_Configuration_Section_Key sandbox_key;
 	int ret = reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key);
 	if (ret != 0)
-		return ret;
+	{
+		int err = ACE_OS::last_error();
+		if (err != ENOENT)
+			return err;
+
+		bNew = true;
+	}
 
 	// Get the user name and pwd...
 	ACE_TString strUName;
-	ret = reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName);
-	if (ret != 0)
-		//return ret;
-		strUName = ACE_TEXT("OMEGA_SANDBOX");
-		
 	ACE_TString strPwd;
-	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
+
+	if (!bNew)
+	{
+		ret = reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName);
+		if (ret != 0)
+			strUName = ACE_TEXT("OMEGA_SANDBOX");
+
+		reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
 	
-	if (!LogonUser(strUName.c_str(),NULL,strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
-		return GetLastError();
+		if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
+			return GetLastError();
+	}
+	else
+	{
+		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_ALL_ACCESS,phToken))
+			return GetLastError();
+
+		ACE_OS::printf("WARNING! Spawning as launching user!\n");
+	}
 
 	return 0;
 }
@@ -383,7 +362,7 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	HANDLE hToken;
 	int err = LogonSandboxUser(&hToken);
 	if (err != 0)
-		return err;		
+		return err;
 
 	DWORD dwLen = 0;
 	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
@@ -393,7 +372,7 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 		CloseHandle(hToken);
 		return err;
 	}
-	
+
 	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(malloc(dwLen));
 	if (!pBuffer)
 	{
@@ -458,7 +437,7 @@ int Root::SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, ACE_CString& u
 		CloseHandle(hToken);
 		return err;
 	}
-	
+
 	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(malloc(dwLen));
 	if (!pBuffer)
 	{
@@ -512,21 +491,21 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 
 	// Map the generic access rights
 
-	void* TODO;	// Need to map mode the mode from some kind of common format...
+	void* TODO;	// Need to map the mode from some kind of common format...
 
 	DWORD dwAccessDesired = static_cast<DWORD>(mode);
-	GENERIC_MAPPING generic = 
-	{ 
-		FILE_GENERIC_READ, 
-		FILE_GENERIC_WRITE, 
-		FILE_GENERIC_EXECUTE, 
-		FILE_ALL_ACCESS 
+	GENERIC_MAPPING generic =
+	{
+		FILE_GENERIC_READ,
+		FILE_GENERIC_WRITE,
+		FILE_GENERIC_EXECUTE,
+		FILE_ALL_ACCESS
 	};
 	MapGenericMask(&dwAccessDesired,&generic);
-	
+
 	// Do the access check
 	PRIVILEGE_SET privilege_set = {0};
-	
+
 	DWORD dwPrivSetSize = sizeof(privilege_set);
 	DWORD dwAccessGranted = 0;
 	BOOL bAllowedVal = FALSE;

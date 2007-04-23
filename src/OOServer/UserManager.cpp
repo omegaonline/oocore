@@ -25,7 +25,7 @@ namespace User
 			m_ptrOM = ptrOM;
 			m_pManager = pManager;
 		}
-		
+
 		BEGIN_INTERFACE_MAP(InterProcessService)
 			INTERFACE_ENTRY(Remoting::IInterProcessService)
 		END_INTERFACE_MAP()
@@ -66,7 +66,7 @@ namespace User
 	public:
 		void CreateObject(IObject* pOuter, const guid_t& iid, IObject*& pObject);
 	};
-	
+
 }
 
 void User::InterProcessServiceFactory::CreateObject(IObject* pOuter, const guid_t& iid, IObject*& pObject)
@@ -109,7 +109,7 @@ Activation::IServiceTable* User::InterProcessService::GetServiceTable()
 }
 
 // UserManager
-User::Manager::Manager() : 
+User::Manager::Manager() :
 	LocalAcceptor<Connection>(),
 	m_root_handle(ACE_INVALID_HANDLE),
 	m_uNextChannelId(1)
@@ -159,7 +159,7 @@ int User::Manager::run_event_loop_i(u_short uPort)
 
 		// Stop handling requests
 		RequestHandler<User::Request>::stop();
-		
+
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
@@ -184,7 +184,7 @@ int User::Manager::init(u_short uPort)
 	}
 	else
 	{
-		// Bind a tcp socket 
+		// Bind a tcp socket
 		ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 		if ((ret = open(sa)) != 0)
 		{
@@ -205,7 +205,7 @@ int User::Manager::init(u_short uPort)
 				sa.set_size(len);
 
 				uPort = sa.get_port_number();
-				if (stream.send(&uPort,sizeof(uPort),&wait) < sizeof(uPort))
+				if (stream.send(&uPort,sizeof(uPort),&wait) < static_cast<ssize_t>(sizeof(uPort)))
 				{
 					ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send()")));
 					ret = -1;
@@ -249,7 +249,7 @@ int User::Manager::init(u_short uPort)
 void User::Manager::term()
 {
 	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
-	
+
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
 		ACE_OS::shutdown(m_root_handle,SD_BOTH);
@@ -273,7 +273,7 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 		ObjectPtr<Remoting::IObjectManager> ptrOM;
 		if (!bSandbox)
 			ptrOM = get_object_manager(m_root_handle,1);
-				
+
 		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
@@ -287,7 +287,7 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 		pE->Release();
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -376,7 +376,7 @@ int User::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	ACE_NEW_RETURN(req,Request(handle,input),-1);
 
 	req->m_bRoot = true;
-	
+
 	int ret = enqueue_request(req);
 	if (ret <= 0)
 		delete req;
@@ -390,7 +390,7 @@ int User::Manager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	ACE_NEW_RETURN(req,Request(handle,input),-1);
 
 	req->m_bRoot = false;
-	
+
 	int ret = USER_MANAGER::instance()->enqueue_request(req);
 	if (ret <= 0)
 		delete req;
@@ -436,7 +436,7 @@ void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_chann
 	{
 		if (request->m_bRoot && src_channel_id==0)
 			process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
-		else 
+		else
 			process_request(request->handle(),*request->input(),src_channel_id,trans_id,request_deadline);
 	}
 	else
@@ -491,7 +491,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			}
 			return;
 		}
-		
+
 		ACE_UINT64 msecs = 0;
 		static_cast<const ACE_Time_Value>(wait).msec(msecs);
 		if (msecs > ACE_UINT32_MAX)

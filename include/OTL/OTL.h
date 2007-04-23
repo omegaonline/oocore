@@ -17,37 +17,37 @@
 	public: static const QIEntry* getQIEntries() {static const QIEntry QIEntries[] = {
 
 #define INTERFACE_ENTRY(iface) \
-	{ &Omega::MetaInfo::iid_traits<iface>::GetIID(), &QIDelegate<iface,RootClass>::QI, 0 },
+	{ &Omega::MetaInfo::iid_traits<iface>::GetIID(), &QIDelegate<iface,RootClass>, 0 },
 
 #define INTERFACE_ENTRY_IID(iid,iface) \
-	{ &iid, &QIDelegate<iface,RootClass>::QI, 0 },
+	{ &iid, &QIDelegate<iface,RootClass>, 0 },
 
 #define INTERFACE_ENTRY2(iface,iface2) \
-	{ &Omega::MetaInfo::iid_traits<iface>::GetIID(), &QIDelegate2<iface,iface2,RootClass>::QI, 0 },
+	{ &Omega::MetaInfo::iid_traits<iface>::GetIID(), &QIDelegate2<iface,iface2,RootClass>, 0 },
 
 #define INTERFACE_ENTRY2_IID(iid,iface,iface2) \
-	{ &iid, &QIDelegate2<iface,iface2,RootClass>::QI, 0 },
+	{ &iid, &QIDelegate2<iface,iface2,RootClass>, 0 },
 
 #define INTERFACE_ENTRY_CHAIN(baseClass) \
-	{ &Omega::guid_t::NIL, &QIChain<baseClass,RootClass>::QI, 0 },
+	{ &Omega::guid_t::NIL, &QIChain<baseClass,RootClass>, 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE(iid,member_object) \
-	{ &iid, &QIAggregate::QI, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
+	{ &iid, &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
-	{ &Omega::guid_t::NIL, &QIAggregate::QI, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
+	{ &Omega::guid_t::NIL, &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
 #define INTERFACE_ENTRY_FUNCTION(iid,pfn,param) \
-	{ &iid, &QIFunction<RootClass,pfn>::QI, param },
+	{ &iid, &pfn, param },
 
-#define INTERFACE_ENTRY_FUNCTION_BLIND(pfn,param) \
-	{ &Omega::guid_t::NIL, &QIFunction<RootClass,pfn>::QI, param },
+#define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
+	{ &Omega::guid_t::NIL, &pfn, 0 },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iid) \
-	{ &iid, &QIFail::QI, param },
+	{ &iid, &QIFail, param },
 
 #define END_INTERFACE_MAP() \
-	{ 0 } }; return QIEntries; } \
+	{ 0,0,0 } }; return QIEntries; } \
 	protected: virtual Omega::IObject* GetControllingObject() { \
 	const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(Omega::IID_IObject,this,g0->param); } \
 	Omega::IObject* GetControllingObjectPtr() { \
@@ -85,7 +85,7 @@
 #endif
 
 #define BEGIN_LIBRARY_OBJECT_MAP(dll_name) \
-	namespace { \
+	namespace OTL { \
 	class OMEGA_CONCAT(dll_name,_LibraryModule__); \
 	typedef OTL::SingletonNoLock<OMEGA_CONCAT(dll_name,_LibraryModule__)> LibraryModule__; \
 	class OMEGA_CONCAT(dll_name,_LibraryModule__) : public OTL::LibraryModule { \
@@ -96,17 +96,17 @@
 	{ obj::GetOid, Creator<obj::ObjectFactoryClass>::Create },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0 } }; return CreatorEntries; } }; } \
-	inline OTL::ModuleBase* OTL::GetModule() { return LibraryModule__::instance(); } \
-	extern "C" OMEGA_EXPORT u_long OMEGA_CALL _get_dll_unload_policy() { return (LibraryModule__::instance()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
+		{ 0,0 } }; return CreatorEntries; } }; } \
+	OTL::ModuleBase* OTL::GetModule() { return LibraryModule__::instance(); } \
+	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() { return (OTL::LibraryModule__::instance()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Omega_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags)) \
-	{ return LibraryModule__::instance()->GetObjectFactory(oid,flags); } \
+	{ return OTL::LibraryModule__::instance()->GetObjectFactory(oid,flags); } \
 	OTL_MODULE_INIT_BLOCK(LibraryModule__)
 
 
 // THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
 #define BEGIN_PROCESS_OBJECT_MAP(process_class) \
-	namespace { \
+	namespace OTL { \
 	class OMEGA_CONCAT(process_class,_Module__); \
 	typedef OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)> ProcessModule__; \
 	class OMEGA_CONCAT(process_class,_Module__) : public process_class { \
@@ -115,7 +115,7 @@
 
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0 } }; return CreatorEntries; } }; } \
-	inline OTL::ModuleBase* OTL::GetModule() { return ProcessModule__::instance(); } \
+	OTL::ModuleBase* OTL::GetModule() { return ProcessModule__::instance(); } \
 	OTL_MODULE_INIT_BLOCK(ProcessModule__)
 
 #include <OOCore/OOCore.h>
@@ -352,56 +352,38 @@ namespace OTL
 		#endif
 
 		template <class Interface, class Implementation>
-		struct QIDelegate
-		{
-			static Omega::IObject* QI(const Omega::guid_t&, void* pThis, void*)
-			{
-				return static_cast<Interface*>(static_cast<Implementation*>(pThis));
-			}
-		};
+        static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, void*)
+        {
+            return static_cast<Interface*>(static_cast<Implementation*>(pThis));
+        }
 
 		template <class Interface, class Interface2, class Implementation>
-		struct QIDelegate2
-		{
-			static Omega::IObject* QI(const Omega::guid_t&, void* pThis, void*)
-			{
-				return static_cast<Interface*>(static_cast<Interface2*>(static_cast<Implementation*>(pThis)));
-			}
-		};
+		static Omega::IObject* QIDelegate2(const Omega::guid_t&, void* pThis, void*)
+        {
+			return static_cast<Interface*>(static_cast<Interface2*>(static_cast<Implementation*>(pThis)));
+		}
 
-		template <class Base, class Implementation>
-		struct QIChain
-		{
-			static Omega::IObject* QI(const Omega::guid_t& iid, void* pThis, void*)
-			{
-				return static_cast<Implementation*>(pThis)->Internal_QueryInterface(iid,Base::getQIEntries());
-			}
-		};
+        template <class Base, class Implementation>
+        static Omega::IObject* QIChain(const Omega::guid_t& iid, void* pThis, void*)
+        {
+            return static_cast<Implementation*>(pThis)->Internal_QueryInterface(iid,Base::getQIEntries());
+        }
 
-		struct QIAggregate
-		{
-			static Omega::IObject* QI(const Omega::guid_t& iid, void* pThis, void* param)
-			{
-				return reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+reinterpret_cast<size_t>(param))->QueryInterface(iid);
-			}
-		};
+        static Omega::IObject* QIAggregate(const Omega::guid_t& iid, void* pThis, void* param)
+        {
+            return reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+reinterpret_cast<size_t>(param))->QueryInterface(iid);
+        }
 
-		template <class Implementation, Omega::IObject* (Implementation::*pfnQI)(const Omega::guid_t& iid, void* param)>
-		struct QIFunction
-		{
-			static Omega::IObject* QI(const Omega::guid_t& iid, void* pThis, void* param)
-			{
-				return (static_cast<Implementation*>(pThis)->*pfnQI)(iid,param);
-			}
-		};
+        template <class Implementation, Omega::IObject* (Implementation::*Method)(const Omega::guid_t&)>
+        static Omega::IObject* QIFunction(const Omega::guid_t& iid, void* pThis, void* pfn)
+        {
+            return (static_cast<Implementation*>(pThis)->*Method)(iid);
+        }
 
-		struct QIFail
-		{
-			static Omega::IObject* QI(const Omega::guid_t&, void*, void*)
-			{
-				return 0;
-			}
-		};
+        static Omega::IObject* QIFail(const Omega::guid_t&, void*, void*)
+        {
+            return 0;
+        }
 
 		virtual Omega::IObject* GetControllingObject() = 0;
 
@@ -487,7 +469,7 @@ namespace OTL
 		void fini();
 	};
 
-	extern ModuleBase* GetModule();
+	ModuleBase* GetModule();
 
 	template <class ROOT>
 	class ObjectImpl : public ROOT

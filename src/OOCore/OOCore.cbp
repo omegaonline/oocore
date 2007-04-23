@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OOCore" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug_Win32">
+				<Option output="Debug\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-O0" />
+					<Add option="-frtti" />
+					<Add option="-mno-cygwin" />
+					<Add option="-DWIN32" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DOOCORE_BUILD_DLL" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE-5.5.7" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE-5.5.7" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="shlwapi" />
+					<Add library="..\..\extern\ACE-5.5.7\lib\libACE.a" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+				</Linker>
+			</Target>
+			<Target title="Release_Win32">
+				<Option output="Release\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add option="-DOOCORE_BUILD_DLL" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-O3" />
+					<Add option="-frtti" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\3rd Party Libraries\ACE-5.5.7" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\3rd Party Libraries\ACE-5.5.7" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="shlwapi" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="..\..\include\OOCore\OOCore.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_base.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_export.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_ifaces.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_rtti.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_rtti.inl" />
+		<Unit filename="..\..\include\OOCore\OOCore_type_sizes.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_types.h" />
+		<Unit filename="..\..\include\OOCore\OOCore_types.inl" />
+		<Unit filename="..\..\include\OOCore\OOCore_wire.h" />
+		<Unit filename="..\..\include\OOCore\Remoting.h" />
+		<Unit filename="..\..\include\OOCore\config-win32-borland.h" />
+		<Unit filename="..\..\include\OOCore\config-win32-gcc.h" />
+		<Unit filename="..\..\include\OOCore\config-win32-msvc.h" />
+		<Unit filename="..\..\include\OOCore\config-win32.h" />
+		<Unit filename="..\..\include\OOCore\config.h" />
+		<Unit filename="..\..\include\Otl\OTL.h" />
+		<Unit filename="..\..\include\Otl\OTL.inl" />
+		<Unit filename="..\..\include\Otl\OTL_special.h" />
+		<Unit filename="Activator.cpp" />
+		<Unit filename="Channel.cpp" />
+		<Unit filename="Channel.h" />
+		<Unit filename="Exception.cpp" />
+		<Unit filename="OOCore.cpp" />
+		<Unit filename="OOCore_link.cpp" />
+		<Unit filename="OOCore_precomp.h" />
+		<Unit filename="Registry.cpp" />
+		<Unit filename="ServiceTable.cpp" />
+		<Unit filename="Session.h" />
+		<Unit filename="StdObjectManager.cpp" />
+		<Unit filename="StdObjectManager.h" />
+		<Unit filename="Types.cpp" />
+		<Unit filename="UserConnection.cpp" />
+		<Unit filename="UserConnection.h" />
+		<Unit filename="UserSession.cpp" />
+		<Unit filename="UserSession.h" />
+		<Extensions>
+			<code_completion />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

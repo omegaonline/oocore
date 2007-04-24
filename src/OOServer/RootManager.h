@@ -29,9 +29,9 @@ class Manager :
 	public RequestHandler<RequestBase>
 {
 public:
-	static int run_event_loop();
-	static void end_event_loop();
-	static void connect_client(const Session::Request& request, Session::Response& response);
+	static int run();
+	static void end();
+	static int connect_client(uid_t uid, u_short& uNewPort);
 	static ACE_Configuration_Heap& get_registry();
 
 private:
@@ -65,12 +65,13 @@ private:
 	int run_event_loop_i();
 	int init();
 	int init_registry();
+	ACE_TString get_bootstrap_filename();
 	int bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox);
 	void end_event_loop_i();
 	void term();
-	void connect_client_i(const Session::Request& request, Session::Response& response);
+	int connect_client_i(uid_t uid, u_short& uNewPort);
 	int spawn_sandbox();
-	void spawn_client(const Session::Request& request, Session::Response& response, const ACE_CString& key);
+	int spawn_client(uid_t uid, const ACE_CString& key);
 
 	int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);

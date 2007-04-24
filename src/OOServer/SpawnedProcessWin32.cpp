@@ -220,7 +220,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	return ERROR_SUCCESS;
 }
 
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile)
 {
 	// Get our module name
 	TCHAR szPath[MAX_PATH];
@@ -233,16 +233,21 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
-	DWORD dwRes = LoadUserProfileFromToken(hToken,hProfile);
-	if (dwRes != ERROR_SUCCESS)
-		return dwRes;
+	DWORD dwRes = 0;
+	if (bLoadProfile)
+	{
+		dwRes = LoadUserProfileFromToken(hToken,hProfile);
+		if (dwRes != ERROR_SUCCESS)
+			return dwRes;
+	}
 
 	// Load the Users Environment vars
 	LPVOID lpEnv = NULL;
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
 		dwRes = GetLastError();
-		UnloadUserProfile(hToken,hProfile);
+		if (hProfile)
+			UnloadUserProfile(hToken,hProfile);
 		return dwRes;
 	}
 
@@ -257,7 +262,8 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 	{
 		dwRes = GetLastError();
 		DestroyEnvironmentBlock(lpEnv);
-		UnloadUserProfile(hToken,hProfile);
+		if (hProfile)
+			UnloadUserProfile(hToken,hProfile);
 		return dwRes;
 	}
 
@@ -274,11 +280,12 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort)
 	return ERROR_SUCCESS;
 }
 
-int Root::SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
+int Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
-	if (id == static_cast<Session::TOKEN>(-1))
+	bool bSandbox = (id == static_cast<uid_t>(-1));
+	if (bSandbox)
 	{
 		int err = LogonSandboxUser(&hToken);
 		if (err != 0)
@@ -300,7 +307,7 @@ int Root::SpawnedProcess::Spawn(Session::TOKEN id, u_short uPort)
 			return GetLastError();
 	}
 
-	DWORD dwRes = SpawnFromToken(hToken,uPort);
+	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		// Done with hToken
@@ -410,7 +417,7 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	return 0;
 }
 
-int Root::SpawnedProcess::ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid)
+int Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 {
 	// Get the process handle
 	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);

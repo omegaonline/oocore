@@ -26,7 +26,7 @@ class Manager :
 	public RequestHandler<User::Request>
 {
 public:
-	static int run_event_loop(u_short uPort);
+	static int run(u_short uPort);
 	static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 	static void user_connection_closed(ACE_HANDLE handle);
 

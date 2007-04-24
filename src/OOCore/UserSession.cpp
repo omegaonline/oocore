@@ -2,7 +2,6 @@
 
 #include "./UserSession.h"
 #include "./UserConnection.h"
-#include "./Session.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -117,12 +116,43 @@ IException* UserSession::bootstrap()
 	return 0;
 }
 
+ACE_TString UserSession::get_bootstrap_filename()
+{
+	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
+
+	#if defined(ACE_WIN32)
+
+		ACE_TString strFilename = ACE_TEXT("C:\\" OMEGA_BOOTSTRAP_FILE);
+
+		ACE_TCHAR szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
+		if SUCCEEDED(hr)
+		{
+			ACE_TCHAR szBuf2[MAX_PATH] = {0};
+			if (PathCombine(szBuf2,szBuf,ACE_TEXT("OmegaOnline")))
+			{
+				if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
+					strFilename = szBuf;
+			}
+		}
+
+		return strFilename;
+
+	#else
+
+		#define OMEGA_BOOTSTRAP_DIR "/var/lock/OmegaOnline"
+
+		return ACE_TString(ACE_TEXT(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE)));
+
+	#endif
+}
+
 int UserSession::get_port(u_short& uPort)
 {
 	pid_t pid = ACE_INVALID_PID;
 
 	// Open the Server key file
-	ACE_HANDLE file = ACE_OS::open(Session::GetBootstrapFileName().c_str(),O_RDONLY);
+	ACE_HANDLE file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 	if (file != INVALID_HANDLE_VALUE)
 	{
 		if (ACE_OS::read(file,&pid,sizeof(pid)) == sizeof(pid))
@@ -172,7 +202,7 @@ int UserSession::get_port(u_short& uPort)
 			return -1;
 
 		// Re-open file
-		file = ACE_OS::open(Session::GetBootstrapFileName().c_str(),O_RDONLY);
+		file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 		if (file == INVALID_HANDLE_VALUE)
 		{
 			process.kill();
@@ -216,41 +246,34 @@ int UserSession::get_port(u_short& uPort)
 		return -1;
 
 	// Send our uid or pid
-	Session::Request request = {0};
-	request.cbSize = sizeof(request);
+	ACE_UINT16 cbSize = sizeof(ACE_UINT16) + sizeof(uid_t);
 #if defined(ACE_WIN32)
-	request.uid = ACE_OS::getpid();
+	uid_t uid = ACE_OS::getpid();
 #else
-	request.uid = ACE_OS::getuid();
+	uid_t uid = ACE_OS::getuid();
 #endif
-	if (peer.send(&request,request.cbSize) != request.cbSize)
+	if (peer.send(&cbSize,sizeof(cbSize)) != static_cast<ssize_t>(sizeof(cbSize)) ||
+		peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
+	{
 		return -1;
+	}
 
 	// Wait for the response to come back...
 	ACE_Time_Value wait(5);
-	Session::Response response = {0};
-	if (peer.recv(&response.cbSize,sizeof(response.cbSize),&wait) < static_cast<ssize_t>(sizeof(response.cbSize)))
-		return -1;
-
-	// Check the response is valid
-	if (response.cbSize < sizeof(response))
+	ACE_UINT32 err = 0;
+	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)) ||
+		peer.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
 	{
-		ACE_OS::last_error(EINVAL);
 		return -1;
 	}
-
-	// Recv the rest...
-	if (peer.recv(&response.bFailure,response.cbSize - sizeof(response.cbSize)) < static_cast<ssize_t>(response.cbSize - sizeof(response.cbSize)))
-		return -1;
 
 	// Check failure code
-	if (response.bFailure)
+	if (err != 0)
 	{
-		ACE_OS::last_error(response.err);
+		ACE_OS::last_error(err);
 		return -1;
 	}
 
-	uPort = response.uNewPort;
 	return 0;
 }
 

@@ -189,7 +189,7 @@ void Root::NTService::stop_requested(DWORD)
 {
 	report_status(SERVICE_STOP_PENDING);
 
-	Manager::end_event_loop();
+	Manager::end();
 
 	// Tell the service thread to stop
 	m_finished.signal();

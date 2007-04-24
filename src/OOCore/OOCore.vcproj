@@ -203,9 +203,6 @@
 				RelativePath=".\OOCore_precomp.h">
 			</File>
 			<File
-				RelativePath=".\Session.h">
-			</File>
-			<File
 				RelativePath=".\StdObjectManager.h">
 			</File>
 			<File

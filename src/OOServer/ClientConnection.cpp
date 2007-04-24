@@ -58,10 +58,10 @@ void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 			// Read the header length
 			if (result.bytes_transferred() == sizeof(m_header_len))
 			{
-				m_header_len = *reinterpret_cast<Session::Request::Length*>(mb.rd_ptr());
+				m_header_len = *reinterpret_cast<ACE_UINT16*>(mb.rd_ptr());
 			
 				// Check the request size
-				if (m_header_len == sizeof(Session::Request))
+				if (m_header_len == sizeof(ACE_UINT16) + sizeof(uid_t))
 				{
 					// Resize the message block
 					if (mb.size(m_header_len) == 0)
@@ -80,17 +80,19 @@ void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 			if (result.bytes_transferred() == m_header_len)
 			{
 				// Check the request
-				Session::Request* pRequest = reinterpret_cast<Session::Request*>(mb.rd_ptr());
-
+				mb.rd_ptr(sizeof(m_header_len));
+				
 				// Ask the root manager for a response...
-				Session::Response response = {0};
-				Manager::connect_client(*pRequest,response);
+				u_short uNewPort = 0;
+				ACE_UINT32 err = Manager::connect_client(*reinterpret_cast<const uid_t*>(mb.rd_ptr()),uNewPort);
 			
 				// Try to send the response, reusing mb
 				mb.reset();
-				if (mb.size(response.cbSize)==0 && mb.copy(reinterpret_cast<const char*>(&response),response.cbSize)==0)
+				if (mb.size(sizeof(err) + sizeof(uNewPort))==0 && 
+					mb.copy(reinterpret_cast<const char*>(&err),sizeof(err))==0 &&
+					mb.copy(reinterpret_cast<const char*>(&uNewPort),sizeof(uNewPort))==0)
 				{
-					bSuccess = (m_writer.write(mb,response.cbSize) == 0);
+					bSuccess = (m_writer.write(mb,sizeof(err) + sizeof(uNewPort)) == 0);
 				}
 			}
 		}

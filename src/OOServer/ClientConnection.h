@@ -36,7 +36,7 @@ private:
 	ClientConnection(const ClientConnection&) {}
 	ClientConnection& operator = (const ClientConnection&) { return *this; }
 
-	Session::Request::Length	m_header_len;
+	ACE_UINT16					m_header_len;
 	ACE_Asynch_Read_Stream		m_reader;
 	ACE_Asynch_Write_Stream		m_writer;
 };

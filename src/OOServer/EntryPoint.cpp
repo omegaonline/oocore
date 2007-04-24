@@ -47,5 +47,5 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (ret != 0)
 		return ret;
 
-	return Root::Manager::run_event_loop();
+	return Root::Manager::run();
 }

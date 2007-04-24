@@ -68,6 +68,7 @@ private:
 	// Proper private members
 	int init_i();
 	Omega::IException* bootstrap();
+	ACE_TString get_bootstrap_filename();
 	void term_i();
 	int get_port(u_short& uPort);
 	int pump_requests(ACE_Time_Value* deadline = 0);

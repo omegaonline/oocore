@@ -7,7 +7,7 @@
 
 int UserMain(u_short uPort)
 {
-	return User::Manager::run_event_loop(uPort);
+	return User::Manager::run(uPort);
 }
 
 using namespace Omega;
@@ -121,7 +121,7 @@ User::Manager::~Manager()
 	term();
 }
 
-int User::Manager::run_event_loop(u_short uPort)
+int User::Manager::run(u_short uPort)
 {
 	return USER_MANAGER::instance()->run_event_loop_i(uPort);
 }

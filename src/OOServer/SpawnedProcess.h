@@ -24,7 +24,7 @@ public:
 	SpawnedProcess(void);
 	~SpawnedProcess(void);
 
-	int Spawn(Session::TOKEN id, u_short uPort);
+	int Spawn(uid_t id, u_short uPort);
 	int SpawnSandbox();
 
 	bool IsRunning();
@@ -32,7 +32,7 @@ public:
 	void Kill();
 	bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-	static int ResolveTokenToUid(Session::TOKEN token, ACE_CString& uid);
+	static int ResolveTokenToUid(uid_t token, ACE_CString& uid);
 	static int GetSandboxUid(ACE_CString& uid);
 
 private:
@@ -44,7 +44,7 @@ private:
 	HANDLE	m_hProcess;
 	
 	DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-	DWORD SpawnFromToken(HANDLE hToken, u_short uPort);
+	DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile);
 	static int LogonSandboxUser(HANDLE* phToken);
 
 #else // !ACE_WIN32

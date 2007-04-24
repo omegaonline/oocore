@@ -252,7 +252,7 @@ uint32_t UserKey::GetUIntValue(const string_t& strName)
 	return static_cast<uint32_t>(uValue);
 }
 
-void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
+void UserKey::GetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t& /*cbLen*/, Omega::byte_t* /*pBuffer*/)
 {
 	::DebugBreak();
 	void* TODO;
@@ -301,7 +301,7 @@ void UserKey::SetUIntValue(const string_t& strName, const uint32_t& val)
 	}
 }
 
-void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
+void UserKey::SetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t /*cbLen*/, const Omega::byte_t* /*val*/)
 {
 	::DebugBreak();
 	void* TODO;
@@ -632,7 +632,7 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	return uValue;
 }
 
-void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
+void RootKey::GetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t& /*cbLen*/, Omega::byte_t* /*pBuffer*/)
 {
 	::DebugBreak();
 	void* TODO;
@@ -700,7 +700,7 @@ void RootKey::SetUIntValue(const string_t& strName, const uint32_t& uValue)
 		OOSERVER_THROW_ERRNO(err);
 }
 
-void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
+void RootKey::SetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t /*cbLen*/, const Omega::byte_t* /*val*/)
 {
 	::DebugBreak();
 	void* TODO;
@@ -715,12 +715,13 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 Omega::IEnumString* RootKey::EnumSubKeys()
 {
-	::DebugBreak();
-	void* TODO;
-	return 0;
+	std::set<Omega::string_t> setStrings;
+	EnumSubKeys(setStrings);
+
+	return EnumString::Create(setStrings.begin(),setStrings.end());
 }
 
-void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
+void RootKey::EnumSubKeys(std::set<Omega::string_t>& /*setStrings*/)
 {
 	::DebugBreak();
 	void* TODO;
@@ -728,10 +729,9 @@ void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 
 Omega::IEnumString* RootKey::EnumValues()
 {
-	std::set<Omega::string_t> setStrings;
-	EnumSubKeys(setStrings);
-
-	return EnumString::Create(setStrings.begin(),setStrings.end());
+	::DebugBreak();
+	void* TODO;
+	return 0;
 }
 
 void RootKey::DeleteKey(const string_t& strSubKey)

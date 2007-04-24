@@ -63,9 +63,26 @@ namespace OOCore
 		public MetaInfo::IWireProxy
 	{
 	public:
-		void init(MetaInfo::IWireManager* pManager)
+		void init(MetaInfo::IWireManager* pManager, const guid_t& iid, uint32_t uId)
 		{
+			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			if (!pRtti || !pRtti->pfnCreateWireProxy)
+				OMEGA_THROW("No handler for interface");
+
+			try
+			{
+				ObjectPtr<IObject> ptrObj;
+				ptrObj.Attach(pRtti->pfnCreateWireProxy(this,pManager));
+				m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrObj)).first;
+				ptrObj.Detach();
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e.what());
+			}
+
 			m_ptrManager = pManager;
+			m_uId = uId;
 		}
 
 	BEGIN_INTERFACE_MAP(StdProxy)
@@ -77,19 +94,20 @@ namespace OOCore
 		ACE_Recursive_Thread_Mutex                   m_lock;
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
 		ObjectPtr<MetaInfo::IWireManager>            m_ptrManager;
-
+		uint32_t                                     m_uId;
+		
         static IObject* QI(const guid_t& iid, void* pThis, void*)
         {
-            return static_cast<RootClass*>(pThis)->QI2(iid);
+			return static_cast<RootClass*>(pThis)->QI2(iid);
         }
 
 		inline IObject* QI2(const guid_t& iid);
 
 	// IWireProxy members
 	public:
-		void WriteKey(Serialize::IFormattedStream* /*pStream*/)
+		void WriteKey(Serialize::IFormattedStream* pStream)
 		{
-
+			pStream->WriteUInt32(m_uId);
 		}
 	};
 }
@@ -119,6 +137,9 @@ inline IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 
 			if (i == m_iid_map.end())
 			{
+				if (iid==Omega::MetaInfo::IID_SafeProxy)
+					return 0;
+
 				// New interface required
 				const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 				if (!pRtti || !pRtti->pfnCreateWireProxy)
@@ -244,6 +265,13 @@ void StdObjectManager::Disconnect()
 
 void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject)
 {
+	// See if object is NULL
+	if (!pObject)
+	{
+		pStream->WriteByte(0);
+		return;
+	}
+
 	// See if pObject does custom marshalling...
 	ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
 	if (ptrMarshal)
@@ -251,11 +279,10 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, co
 		guid_t oid = ptrMarshal->GetUnmarshalOID(iid,0);
 		if (oid != guid_t::NIL)
 		{
-			// Write the marshalling oid and iid
-			pStream->WriteByte(1);
+			// Write the marshalling oid
+			pStream->WriteByte(2);
 			MetaInfo::wire_write(this,pStream,oid);
-			MetaInfo::wire_write(this,pStream,iid);
-
+			
 			// Let the custom handle marshalling...
 			ptrMarshal->MarshalInterface(pStream,iid,0);
 
@@ -296,16 +323,46 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, co
 	}
 
 	// Write out the data
-	pStream->WriteByte(0);
+	pStream->WriteByte(1);
 	MetaInfo::wire_write(this,pStream,iid);
 	pStream->WriteUInt32(uId);
 }
 
-void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* /*pStream*/, const guid_t& /*iid*/, IObject*& /*pObject*/)
+void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject)
 {
 	// Still wondering if iid is actually required....
-	::DebugBreak();
-	void* TODO;
+	byte_t flag = pStream->ReadByte();
+	if (flag == 0)
+	{
+		pObject = 0;
+	}
+	else if (flag == 1)
+	{
+		guid_t wire_iid;
+		MetaInfo::wire_read(this,pStream,wire_iid);
+		uint32_t uId = pStream->ReadUInt32();
+
+		ObjectPtr<ObjectImpl<OOCore::StdProxy> > ptrProxy = ObjectImpl<OOCore::StdProxy>::CreateObjectPtr();
+		ptrProxy->init(this,wire_iid,uId);
+
+		if (iid == guid_t::NIL)
+			pObject = ptrProxy->QueryInterface(wire_iid);
+		else
+			pObject = ptrProxy->QueryInterface(iid);
+	}
+	else if (flag == 2)
+	{
+     	guid_t oid;
+		MetaInfo::wire_read(this,pStream,oid);
+		
+		// Create an instance of Oid
+		// QI for IMarshal,
+		// Call UnmarshalInterface(iid)
+		::DebugBreak();
+		void* TODO;
+	}
+	else
+		OMEGA_THROW("Invalid wire argument!");
 }
 
 void StdObjectManager::ReleaseStub(uint32_t uId)

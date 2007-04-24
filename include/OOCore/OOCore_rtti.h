@@ -654,7 +654,7 @@ namespace Omega
 			{
 				auto_iface_ptr<I> ptrI(static_cast<I*>(pObj->QueryInterface(iid_traits<I>::GetIID())));
 				if (!ptrI)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
+					return 0;
 
 				SafeStubImpl* pRet = 0;
 				OMEGA_NEW(pRet,SafeStubImpl(pOuter,ptrI));
@@ -736,7 +736,7 @@ namespace Omega
 				if (pSE)
 					throw_correct_exception(pSE);
 				if (!pObjS2)
-					INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
+					return 0;
 
 				SafeProxyImpl* pRet = 0;
 				auto_iface_safe_ptr<IObject_Safe> ptrObjS2(pObjS2);

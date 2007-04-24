@@ -2,8 +2,8 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="OOCore">
 		<Project filename="..\src\OOCore\OOCore.cbp" />
-		<Project filename="..\src\OOServer\OOServer.cbp" />
+		<Project filename="..\src\OOServer\OOServer.cbp" active="1" />
 		<Project filename="..\test\TestDll\TestDll.cbp" />
-		<Project filename="..\test\TestExe\TestExe.cbp" active="1" />
+		<Project filename="..\test\TestExe\TestExe.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

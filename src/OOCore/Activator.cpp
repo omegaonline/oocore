@@ -226,7 +226,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					// Wait for startup
 					ACE_Time_Value wait(5);
 
-					// The timeout needs to be related to the request timeout...
+					// TODO The timeout needs to be related to the request timeout...
 					void* TODO;
 
 					ACE_Countdown_Time timeout(&wait);

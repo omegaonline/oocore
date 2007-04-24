@@ -490,7 +490,6 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 		return false;
 
 	// Map the generic access rights
-
 	void* TODO;	// Need to map the mode from some kind of common format...
 
 	DWORD dwAccessDesired = static_cast<DWORD>(mode);

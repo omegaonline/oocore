@@ -15,8 +15,7 @@ int RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
 {
 	int nInQueue = m_msg_queue.enqueue_prio(req);
 	
-	// TODO Thread pooling...
-
+	// Thread pooling maybe?
 	/*if (nInQueue > threshhold)
 	{
 		// Spawn an extra thread to take the strain

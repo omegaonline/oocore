@@ -230,7 +230,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_WRITE_PARAM_I,meta,(type,name))
 
 #define OMEGA_WRITE_PARAM_WIRE_STUB_I(meta,t,name) \
-	name.out(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
+	name.stub_out(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
 
 #define OMEGA_WRITE_PARAM_WIRE_STUB(index,param,d) \
 	OMEGA_WRITE_PARAM_WIRE_STUB_I param
@@ -266,7 +266,7 @@
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		interface_info<ret_type>::wire_type OMEGA_CONCAT(name,_RetVal) ( __wire__pI->name( OMEGA_EMIT_PARAMS(param_count,params) ) ); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
-		OMEGA_CONCAT(name,_RetVal).out(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut); \
+		OMEGA_CONCAT(name,_RetVal).stub_out(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut); \
 	}
 
 #define OMEGA_DEFINE_WIRE_STUB_METHOD(index,method,d) \
@@ -360,7 +360,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_PROXY_METHOD,methods,0)
 
 #define OMEGA_READ_PARAM_WIRE_PROXY_I(meta,t,name) \
-	interface_info<t>::wire_type::proxy_read(this->m_pManager,__wire__pParamsIn,name OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
+	interface_info<t>::wire_type::proxy_out(this->m_pManager,__wire__pParamsIn,name OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
 
 #define OMEGA_READ_PARAM_WIRE_PROXY(index,param,d) \
 	OMEGA_READ_PARAM_WIRE_PROXY_I param
@@ -369,7 +369,7 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_READ_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
 #define OMEGA_WRITE_PARAM_WIRE_PROXY_I(meta,t,name) \
-	interface_info<t>::wire_type::proxy_write(this->m_pManager,__wire__pParamsOut,name OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
+	interface_info<t>::wire_type::proxy_in(this->m_pManager,__wire__pParamsOut,name OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
 
 #define OMEGA_WRITE_PARAM_WIRE_PROXY(index,param,d) \
 	OMEGA_WRITE_PARAM_WIRE_PROXY_I param
@@ -414,7 +414,7 @@
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(this->m_pManager->SendAndReceive(attribs,__wire__pParamsOut)); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-		interface_info<ret_type>::wire_type::proxy_read(this->m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
+		interface_info<ret_type>::wire_type::proxy_out(this->m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +

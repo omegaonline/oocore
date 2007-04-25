@@ -16,7 +16,7 @@ namespace OOCore
 		{
 			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
-				OMEGA_THROW("No handler for interface");
+				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 			this->m_ptrProxy.Attach(pRtti->pfnCreateWireProxy(this,pManager));
 			this->m_ptrManager = pManager;
@@ -67,7 +67,7 @@ namespace OOCore
 		{
 			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
-				OMEGA_THROW("No handler for interface");
+				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 			try
 			{
@@ -143,7 +143,7 @@ inline IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 				// New interface required
 				const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 				if (!pRtti || !pRtti->pfnCreateWireProxy)
-					OMEGA_THROW("No handler for interface");
+					INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 				ptrObj.Attach(pRtti->pfnCreateWireProxy(this,m_ptrManager));
 				i = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrObj)).first;
@@ -216,12 +216,12 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		// Get the handler for the interface
 		const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 		if (!pRtti || !pRtti->pfnCreateWireStub)
-			OMEGA_THROW("No handler for interface");
+			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 		// And create a stub
 		ptrStub.Attach(pRtti->pfnCreateWireStub(this,ptrObject,0));
 		if (!ptrStub)
-			OMEGA_THROW("No remote handler for interface");
+			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 	}
 	else
 	{
@@ -294,7 +294,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	// Get the handler for the interface
 	const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 	if (!pRtti || !pRtti->pfnCreateWireStub)
-		OMEGA_THROW("No handler for interface");
+		INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 	// Generate a new key and stub pair
 	ObjectPtr<MetaInfo::IWireStub> ptrStub;
@@ -312,7 +312,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 		// Create a stub
 		ptrStub.Attach(pRtti->pfnCreateWireStub(this,pObject,uId));
 		if (!ptrStub)
-			OMEGA_THROW("No remote handler for interface");
+			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 		// Add to the map...
 		m_mapStubIds.insert(std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::value_type(uId,ptrStub));
@@ -362,7 +362,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 		void* TODO;
 	}
 	else
-		OMEGA_THROW("Invalid wire argument!");
+		OOCORE_THROW_ERRNO(EINVAL);
 }
 
 void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)

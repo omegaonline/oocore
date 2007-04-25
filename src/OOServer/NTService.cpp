@@ -11,14 +11,11 @@
 /////////////////////////////////////////////////////////////
 
 #include "./OOServer_Root.h"
-#include "./NTService.h"
 
 #ifdef ACE_WIN32
 
+#include "./NTService.h"
 #include "./RootManager.h"
-
-// For the Windows path functions
-#include <shlwapi.h>
 
 ACE_NT_SERVICE_DEFINE(OOServer,Root::NTService,NTSERVICE_DESC);
 
@@ -119,17 +116,17 @@ int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 						const ACE_TCHAR *account_name,
 						const ACE_TCHAR *password)
 {
-	ACE_TCHAR this_exe[MAXPATHLEN + 2];
+	char this_exe[MAXPATHLEN + 2];
 
-	if (ACE_TEXT_GetModuleFileName (0, this_exe + 1, MAXPATHLEN) == 0)
+	if (GetModuleFileNameA(0,this_exe+1,MAXPATHLEN) == 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) GetModuleFilename failed.\n")),-1);
 		
 	// Make sure that this_exe is quoted
-	this_exe[0] = ACE_TEXT('\"');
-	ACE_OS::strcat(this_exe, ACE_TEXT("\""));
+	this_exe[0] = '\"';
+	ACE_OS::strcat(this_exe, "\"");
 	
-	ACE_TString exe_path(this_exe);
-	exe_path += ACE_TEXT(" ");
+	ACE_CString exe_path(this_exe);
+	exe_path += " ";
 	exe_path += cmd_line;
 
 	return ACE_NT_Service::insert(start_type,error_control,exe_path.c_str(),group_name,tag_id,dependencies,account_name,password);

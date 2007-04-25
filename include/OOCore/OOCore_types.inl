@@ -362,7 +362,7 @@ inline Omega::CriticalSection::CriticalSection()
 {
 	m_handle = static_cast<handle_t>(cs__ctor());
 	if (!m_handle)
-		OMEGA_THROW("Out of memory.");
+		OMEGA_THROW("Out of memory!");
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));

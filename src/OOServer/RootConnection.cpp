@@ -14,7 +14,7 @@
 #include "./RootConnection.h"
 #include "./RootManager.h"
 
-Root::Connection::Connection(RootBase* pBase, const ACE_CString& key) : 
+Root::Connection::Connection(HandlerBase* pBase, const ACE_CString& key) : 
 	ACE_Service_Handler(),
 	m_pBase(pBase),
 	m_id(key)
@@ -39,7 +39,7 @@ int Root::Connection::open(ACE_HANDLE new_handle)
 
 	// Open the reader
 	if (m_reader.open(*this) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::Connection::open")),-1);
+	    ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::open")),-1);
 			
 	return read();
 }
@@ -57,7 +57,7 @@ int Root::Connection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::Connection::read")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::read")));
 		mb->release();
 		return -1;
 	}
@@ -119,7 +119,7 @@ void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 				{
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-					// Push into the RootBase queue...
+					// Push into the HandlerBase queue...
 					if (m_pBase->enqueue_root_request(input,handle()) > 0)
 					{
 						// Start a new read
@@ -141,7 +141,7 @@ void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 		DWORD dwErr = GetLastError();
 		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SUCCESS && dwErr != WSAENOTSOCK)
 #endif
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::Connection::handle_read_stream")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::handle_read_stream")));
 		delete this;
 	}
 }

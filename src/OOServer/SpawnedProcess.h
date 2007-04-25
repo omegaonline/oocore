@@ -13,46 +13,40 @@
 #ifndef OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 #define OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 
-#include "../OOCore/Session.h"
-
 namespace Root
 {
+	class SpawnedProcess
+	{
+	public:
+		SpawnedProcess(void);
+		~SpawnedProcess(void);
 
-class SpawnedProcess
-{
-public:
-	SpawnedProcess(void);
-	~SpawnedProcess(void);
+		int Spawn(uid_t id, u_short uPort);
+		int SpawnSandbox();
 
-	int Spawn(uid_t id, u_short uPort);
-	int SpawnSandbox();
+		bool IsRunning();
+		int Close(ACE_Time_Value* wait = 0);
+		void Kill();
+		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-	bool IsRunning();
-	int Close(ACE_Time_Value* wait = 0);
-	void Kill();
-	bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
+		static int ResolveTokenToUid(uid_t token, ACE_CString& uid);
+		static int GetSandboxUid(ACE_CString& uid);
 
-	static int ResolveTokenToUid(uid_t token, ACE_CString& uid);
-	static int GetSandboxUid(ACE_CString& uid);
-
-private:
+	private:
 
 #ifdef ACE_WIN32
-
-	HANDLE	m_hToken;
-	HANDLE	m_hProfile;
-	HANDLE	m_hProcess;
-	
-	DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-	DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile);
-	static int LogonSandboxUser(HANDLE* phToken);
-
+		HANDLE	m_hToken;
+		HANDLE	m_hProfile;
+		HANDLE	m_hProcess;
+		
+		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
+		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile);
+		static int LogonSandboxUser(HANDLE* phToken);
 #else // !ACE_WIN32
-	
+		
 #endif // ACE_WIN32
 
-};
-
+	};
 }
 
 #endif // OOSERVER_SPAWNED_PROCESS_H_INCLUDED_

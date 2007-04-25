@@ -44,7 +44,7 @@ namespace Remoting
 	};
 	OMEGA_DECLARE_IID(IObjectManager);
 
-	class IInterProcessService : public IObject
+	interface IInterProcessService : public IObject
 	{
 	public:
 		virtual Registry::IRegistryKey* GetRegistry() = 0;

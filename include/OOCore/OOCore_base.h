@@ -80,11 +80,11 @@ namespace Omega
 OMEGA_DEFINE_IID(Omega, IObject, 0x6d2040c, 0xba2d, 0x45f5, 0x94, 0x4e, 0x32, 0x9f, 0x69, 0xa8, 0xd3, 0x40);
 OMEGA_DEFINE_IID(Omega, IException, 0x8ce2dc6, 0x2234, 0x4a6f, 0xa0, 0x15, 0x49, 0x18, 0x69, 0x60, 0x9, 0xbe);
 
-//#if !defined(OMEGA_FUNCNAME)
-	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s (%u)",__FILE__,__LINE__))
-//#else
-//	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s - %s (%u)",OMEGA_FUNCNAME,__FILE__,__LINE__))
-//#endif
+#if !defined(OMEGA_FUNCNAME)
+	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s(%u)",__FILE__,__LINE__))
+#else
+	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s(%u): ",__FILE__,__LINE__,OMEGA_FUNCNAME))
+#endif
 
 #define OMEGA_THROW(msg)     Omega::IException::Throw(msg,OMEGA_SOURCE_INFO)
 #define OMEGA_THROW2(msg,pE) Omega::IException::Throw(msg,OMEGA_SOURCE_INFO,pE)

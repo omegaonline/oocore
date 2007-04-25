@@ -776,7 +776,7 @@ namespace Omega
 			auto_iface_safe_ptr<IException_Safe> ptrSE(pSE);
 			I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::stub_functor(pSE))->QueryInterface(iid_traits<I>::GetIID()));
 			if (!pI)
-				OMEGA_THROW("No handler for exception interface");
+				INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
 			throw pI;
 		}
 

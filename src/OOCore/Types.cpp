@@ -242,7 +242,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t
 	{
 		const ACE_String_Base<Omega::char_t> s(static_cast<size_t>(len));
 		
-		if ((len2 = ACE_OS::vsnprintf(const_cast<Omega::char_t*>(s.fast_rep()),len,sz,ap)) >=0)
+		if ((len2 = ACE_OS::vsnprintf(const_cast<Omega::char_t*>(s.fast_rep()),len,sz,ap)) <= len)
 		{
 			StringNode* s1;
 			OMEGA_NEW(s1,StringNode(ACE_String_Base<Omega::char_t>(s.c_str(),len2)));

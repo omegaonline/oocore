@@ -5,22 +5,22 @@ using namespace OTL;
 
 namespace OOCore
 {
-	class RealExceptionImpl :
+	class Exception :
 		public ExceptionImpl<IException>
 	{
 	public:
-		BEGIN_INTERFACE_MAP(RealExceptionImpl )
+		BEGIN_INTERFACE_MAP(Exception )
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<IException>)
 		END_INTERFACE_MAP()
 	};
 
-	class NoInterfaceExceptionImpl :
+	class NoInterfaceException :
 		public ExceptionImpl<INoInterfaceException>
 	{
 	public:
 		guid_t m_iid;
 
-		BEGIN_INTERFACE_MAP(NoInterfaceExceptionImpl)
+		BEGIN_INTERFACE_MAP(NoInterfaceException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<INoInterfaceException>)
 		END_INTERFACE_MAP()
 
@@ -30,14 +30,14 @@ namespace OOCore
 	};
 }
 
-guid_t OOCore::NoInterfaceExceptionImpl::GetUnsupportedIID()
+guid_t OOCore::NoInterfaceException::GetUnsupportedIID()
 {
 	return m_iid;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))
 {
-	ObjectImpl<OOCore::RealExceptionImpl>* pExcept = ObjectImpl<OOCore::RealExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateObject();
 	pExcept->m_ptrCause.Attach(pCause); 
 	pExcept->m_strDesc = desc;
 	pExcept->m_strSource = source;
@@ -46,7 +46,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const guid_t&,iid,(in),const char_t*,source))
 {
-	ObjectImpl<OOCore::NoInterfaceExceptionImpl>* pExcept = ObjectImpl<OOCore::NoInterfaceExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateObject();
 	pExcept->m_strDesc = "Object does not support the requested interface";
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;

@@ -25,7 +25,7 @@ int OOCore::UserConnection::open(ACE_HANDLE new_handle)
 
 	// Open the reader
 	if (m_reader.open(*this) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::open")),-1);
+	    return -1;
 				
 	return read();
 }
@@ -43,7 +43,6 @@ int OOCore::UserConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::read")));
 		mb->release();
 		return -1;
 	}
@@ -126,7 +125,6 @@ void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 #ifdef OMEGA_WIN32
 		if (::GetLastError() != ERROR_IO_PENDING)
 #endif
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("UserConnection::handle_read_stream")));
 		delete this;
 	}
 }

@@ -226,7 +226,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 					// New interface required
 					const qi_rtti* pRtti = get_qi_rtti_info(iid);
 					if (!pRtti || !pRtti->pfnCreateSafeStub)
-						OMEGA_THROW("No handler for interface");
+						INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 					pObjS = pRtti->pfnCreateSafeStub(this,m_pObj);
 
@@ -285,7 +285,7 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 				// New interface required
 				const qi_rtti* pRtti = get_qi_rtti_info(iid);
 				if (!pRtti || !pRtti->pfnCreateSafeProxy)
-					OMEGA_THROW("No handler for interface");
+					INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 				auto_iface_ptr<IObject> ptrObj(pRtti->pfnCreateSafeProxy(this,m_pS));
 				i = m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,ptrObj)).first;
@@ -450,7 +450,7 @@ inline void Omega::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	{
 		const qi_rtti* pRtti = get_qi_rtti_info(iid);
 		if (!pRtti || !pRtti->pfnSafeThrow)
-			OMEGA_THROW("No throw handler for exception interface");
+			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 		pRtti->pfnSafeThrow(pSE);
 	}

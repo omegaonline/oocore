@@ -8,13 +8,13 @@ namespace OOCore
 	Activation::IObjectFactory* LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
 	void ExecProcess(const string_t& strExeName);
 
-	class OidNotFoundExceptionImpl :
+	class OidNotFoundException :
 		public ExceptionImpl<Activation::IOidNotFoundException>
 	{
 	public:
 		guid_t					m_oid;
 
-		BEGIN_INTERFACE_MAP(OidNotFoundExceptionImpl)
+		BEGIN_INTERFACE_MAP(OidNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
 		END_INTERFACE_MAP()
 
@@ -26,13 +26,13 @@ namespace OOCore
 		}
 	};
 
-	class NoAggregationExceptionImpl :
+	class NoAggregationException :
 		public ExceptionImpl<Activation::INoAggregationException>
 	{
 	public:
 		guid_t					m_oid;
 
-		BEGIN_INTERFACE_MAP(NoAggregationExceptionImpl)
+		BEGIN_INTERFACE_MAP(NoAggregationException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
 		END_INTERFACE_MAP()
 
@@ -44,13 +44,13 @@ namespace OOCore
 		}
 	};
 
-	class LibraryNotFoundExceptionImpl :
+	class LibraryNotFoundException :
 		public ExceptionImpl<Activation::ILibraryNotFoundException>
 	{
 	public:
 		static void Throw(const string_t& strName, IException* pE = 0);
 
-		BEGIN_INTERFACE_MAP(LibraryNotFoundExceptionImpl)
+		BEGIN_INTERFACE_MAP(LibraryNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
 		END_INTERFACE_MAP()
 
@@ -66,9 +66,9 @@ namespace OOCore
 	};
 }
 
-void OOCore::LibraryNotFoundExceptionImpl::Throw(const string_t& strName, IException* pE)
+void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
 {
-	ObjectImpl<OOCore::LibraryNotFoundExceptionImpl>* pRE = ObjectImpl<OOCore::LibraryNotFoundExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::LibraryNotFoundException>* pRE = ObjectImpl<OOCore::LibraryNotFoundException>::CreateObject();
 	pRE->m_ptrCause = pE;
 	pRE->m_strDesc = string_t::Format("Dynamic library '%s' not found",static_cast<const char_t*>(strName));
 	pRE->m_dll_name = strName;
@@ -87,7 +87,7 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
 		ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
 
         if (dll.open(ACE_TEXT_CHAR_TO_TCHAR(dll_name)) != 0)
-			LibraryNotFoundExceptionImpl::Throw(dll_name);
+			LibraryNotFoundException::Throw(dll_name);
 
 		typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
 		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(ACE_TEXT("Omega_GetObjectFactory_Safe"));
@@ -146,7 +146,7 @@ void OOCore::ExecProcess(const string_t& strExeName)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_IOidNotFoundException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
-	ObjectImpl<OOCore::OidNotFoundExceptionImpl>* pNew = ObjectImpl<OOCore::OidNotFoundExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateObject();
 	pNew->m_strDesc = "OID not found.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
@@ -155,7 +155,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_IOidNotFoundException_Throw,2,((i
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
-	ObjectImpl<OOCore::NoAggregationExceptionImpl>* pNew = ObjectImpl<OOCore::NoAggregationExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateObject();
 	pNew->m_strDesc = "Object does not supported aggregation.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;

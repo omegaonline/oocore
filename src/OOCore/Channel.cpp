@@ -5,13 +5,13 @@
 
 OMEGA_EXPORT_INTERFACE_DERIVED
 (
-	OOCore, OutputCDR, Omega::Serialize, IFormattedStream, 
+	OOCore, IOutputCDR, Omega::Serialize, IFormattedStream, 
 	0x21118e84, 0x2ef8, 0x4f53, 0xb4, 0xfd, 0xdb, 0xd4, 0xee, 0xc3, 0xaf, 0xc3,
 
 	// Methods
 	OMEGA_METHOD(void*,GetMessageBlock,0,())
 )
-const Omega::guid_t OOCore::IID_OutputCDR = { 0x21118e84, 0x2ef8, 0x4f53, { 0xb4, 0xfd, 0xdb, 0xd4, 0xee, 0xc3, 0xaf, 0xc3 } };
+const Omega::guid_t OOCore::IID_IOutputCDR = { 0x21118e84, 0x2ef8, 0x4f53, { 0xb4, 0xfd, 0xdb, 0xd4, 0xee, 0xc3, 0xaf, 0xc3 } };
 
 using namespace Omega;
 using namespace OTL;
@@ -32,8 +32,8 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort dest_channel_i
 
 Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter)
 {
-	// Create a fresh OutputCDRImpl
-	ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrOutput = ObjectImpl<OutputCDRImpl>::CreateObjectPtr(pOuter);
+	// Create a fresh OutputCDR
+	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateObjectPtr(pOuter);
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(Omega::Serialize::IID_IFormattedStream));
 }
 
@@ -48,8 +48,8 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	deadline += 5;
 
 	// QI pStream for our private interface
-	ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrOutput;
-	ptrOutput.Attach(static_cast<ObjectImpl<OutputCDRImpl>*>(pStream->QueryInterface(OOCore::IID_OutputCDR)));
+	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput;
+	ptrOutput.Attach(static_cast<ObjectImpl<OutputCDR>*>(pStream->QueryInterface(OOCore::IID_IOutputCDR)));
 	if (!ptrOutput)
 		OOCORE_THROW_ERRNO(EINVAL);
 

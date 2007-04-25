@@ -784,9 +784,9 @@ void RootKey::DeleteValue(const string_t& strName)
 		OOSERVER_THROW_ERRNO(err);
 }
 
-void BaseKey::Init(Manager* pManager)
+void BaseKey::Init(Manager* pManager, bool bSandbox)
 {
-	if (open_registry() != 0)
+	if (open_registry(bSandbox) != 0)
 		OOSERVER_THROW_LASTERROR();
 
 	m_ptrRoot = ObjectImpl<RootKey>::CreateObjectPtr();
@@ -796,7 +796,7 @@ void BaseKey::Init(Manager* pManager)
 	m_ptrUser->Init(&m_registry,m_registry.root_section(),&m_lock);
 }
 
-int BaseKey::open_registry()
+int BaseKey::open_registry(bool bSandbox)
 {
 #define OMEGA_REGISTRY_FILE "user.regdb"
 
@@ -805,11 +805,15 @@ int BaseKey::open_registry()
 	ACE_CString strRegistry = "C:\\" OMEGA_REGISTRY_FILE;
 
 	char szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	HRESULT hr;
+	if (bSandbox)
+		hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	else
+		hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if SUCCEEDED(hr)
 	{
 		char szBuf2[MAX_PATH] = {0};
-		if (PathCombineA(szBuf2,szBuf,"OmegaOnline"))
+		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
 		{
 			if (!PathFileExistsA(szBuf2))
 			{

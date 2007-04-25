@@ -49,14 +49,13 @@ int OOCore::UserSession::init_i()
 	if (get_port(uPort) != 0)
 		return -1;
 
+	// Connect to the root
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
 	ACE_Time_Value wait(5);
-
-	// Connect to the root
 	if (connector.connect(stream,addr,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")),-1);
+		return -1;
 
 	// Create a new UserConnection
 	UserConnection*	pRC;
@@ -119,22 +118,22 @@ IException* OOCore::UserSession::bootstrap()
 	return 0;
 }
 
-ACE_TString OOCore::UserSession::get_bootstrap_filename()
+ACE_CString OOCore::UserSession::get_bootstrap_filename()
 {
 	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
 
 	#if defined(ACE_WIN32)
 
-		ACE_TString strFilename = ACE_TEXT("C:\\" OMEGA_BOOTSTRAP_FILE);
+		ACE_CString strFilename = "C:\\" OMEGA_BOOTSTRAP_FILE;
 
-		ACE_TCHAR szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
+		char szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
 		if SUCCEEDED(hr)
 		{
-			ACE_TCHAR szBuf2[MAX_PATH] = {0};
-			if (PathCombine(szBuf2,szBuf,ACE_TEXT("OmegaOnline")))
+			char szBuf2[MAX_PATH] = {0};
+			if (PathCombineA(szBuf2,szBuf,"Omega Online"))
 			{
-				if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
+				if (PathCombineA(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
 					strFilename = szBuf;
 			}
 		}
@@ -145,7 +144,7 @@ ACE_TString OOCore::UserSession::get_bootstrap_filename()
 
 		#define OMEGA_BOOTSTRAP_DIR "/var/lock/OmegaOnline"
 
-		return ACE_TString(ACE_TEXT(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE)));
+		return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE));
 
 	#endif
 }
@@ -176,7 +175,7 @@ int OOCore::UserSession::get_port(u_short& uPort)
 		// Launch the server
 
 		// Find what the server is called
-		ACE_TString strExec = ACE_OS::getenv("OOSERVER");
+		ACE_CString strExec = ACE_OS::getenv("OOSERVER");
 		if (strExec.empty())
 			strExec = "OOServer";
 
@@ -668,10 +667,10 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		ptrRequest->init(*request->input());
 
 		// Create a response if required
-		ObjectPtr<ObjectImpl<OOCore::OutputCDRImpl> > ptrResponse;
+		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
 		if (trans_id != 0)
 		{
-			ptrResponse = ObjectImpl<OOCore::OutputCDRImpl>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
 			ptrResponse->WriteByte(0);
 		}
 
@@ -692,7 +691,7 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 			if (trans_id != 0)
 			{
 				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OOCore::OutputCDRImpl>::CreateObjectPtr();
+				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
 				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 

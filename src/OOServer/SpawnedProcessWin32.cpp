@@ -341,7 +341,6 @@ int Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	// Get the user name and pwd...
 	ACE_TString strUName;
 	ACE_TString strPwd;
-
 	if (!bNew)
 	{
 		ret = reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName);

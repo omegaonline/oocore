@@ -5,20 +5,19 @@ namespace OOCore
 {
 	class UserSession;
 
-	OMEGA_DECLARE_IID(OutputCDR);
-
-	interface OutputCDR : public Omega::Serialize::IFormattedStream
+	interface IOutputCDR : public Omega::Serialize::IFormattedStream
 	{
 		virtual void* GetMessageBlock() = 0;
 	};
+	OMEGA_DECLARE_IID(IOutputCDR);
 
-	class OutputCDRImpl :
+	class OutputCDR :
 		public OTL::ObjectBase,
 		public ACE_OutputCDR,
-		public OOCore::OutputCDR
+		public OOCore::IOutputCDR
 	{
 	public:
-		OutputCDRImpl()
+		OutputCDR()
 		{ }
 
 		void* GetMessageBlock()
@@ -26,10 +25,10 @@ namespace OOCore
 			return begin()->duplicate();
 		}
 
-		BEGIN_INTERFACE_MAP(OutputCDRImpl)
+		BEGIN_INTERFACE_MAP(OutputCDR)
 			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
 			INTERFACE_ENTRY(Omega::Serialize::IStream)
-			INTERFACE_ENTRY_IID(OOCore::IID_OutputCDR,OOCore::OutputCDR)
+			INTERFACE_ENTRY_IID(OOCore::IID_IOutputCDR,OOCore::IOutputCDR)
 		END_INTERFACE_MAP()	
 
 	// IStream members

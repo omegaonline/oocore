@@ -15,7 +15,7 @@
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \
-		if (POINTER == 0) { OMEGA_THROW("Out of memory."); } \
+		if (POINTER == 0) { OMEGA_THROW("Out of memory!"); } \
 	} while (0)
 
 #define OMEGA_IMPORT __declspec(dllimport)

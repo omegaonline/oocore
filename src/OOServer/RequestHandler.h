@@ -42,9 +42,16 @@ private:
 	ACE_InputCDR*	m_input;
 };
 
+class HandlerBase
+{
+public:
+	virtual int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle) = 0;
+	virtual void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle) = 0;
+};
+
 // Requests are expected to derive from RequestBase
 template <class REQUEST>
-class RequestHandler
+class RequestHandler : public HandlerBase
 {
 protected:
 	RequestHandler() :

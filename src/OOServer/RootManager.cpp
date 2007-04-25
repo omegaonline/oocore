@@ -77,25 +77,25 @@ int Root::Manager::run_event_loop_i()
 	return ret;
 }
 
-ACE_TString Root::Manager::get_bootstrap_filename()
+ACE_CString Root::Manager::get_bootstrap_filename()
 {
 #define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
 
 #if defined(ACE_WIN32)
 
-	ACE_TString strFilename = ACE_TEXT("C:\\" OMEGA_BOOTSTRAP_FILE);
+	ACE_CString strFilename = "C:\\" OMEGA_BOOTSTRAP_FILE;
 
-	ACE_TCHAR szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPath(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
+	char szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
 	if SUCCEEDED(hr)
 	{
-		ACE_TCHAR szBuf2[MAX_PATH] = {0};
-		if (PathCombine(szBuf2,szBuf,ACE_TEXT("OmegaOnline")))
+		char szBuf2[MAX_PATH] = {0};
+		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
 		{
-			if (!PathFileExists(szBuf2) && ACE_OS::mkdir(szBuf2) != 0)
+			if (!PathFileExistsA(szBuf2) && ACE_OS::mkdir(szBuf2) != 0)
 				return strFilename;
 
-			if (PathCombine(szBuf,szBuf2,ACE_TEXT(OMEGA_BOOTSTRAP_FILE)))
+			if (PathCombineA(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
 				strFilename = szBuf;
 		}
 	}
@@ -109,7 +109,7 @@ ACE_TString Root::Manager::get_bootstrap_filename()
 	// Ignore the errors, they will reoccur when we try to opne the file
 	ACE_OS::mkdir(OMEGA_BOOTSTRAP_DIR,S_IRWXU | S_IRWXG | S_IROTH);
 	
-	return ACE_TString(ACE_TEXT(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE)));
+	return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE));
 
 #endif
 }
@@ -205,11 +205,11 @@ int Root::Manager::init_registry()
 	m_strRegistry = "C:\\" OMEGA_REGISTRY_FILE;
 
 	char szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if SUCCEEDED(hr)
 	{
 		char szBuf2[MAX_PATH] = {0};
-		if (PathCombineA(szBuf2,szBuf,"OmegaOnline"))
+		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
 		{
 			if (!PathFileExistsA(szBuf2))
 			{

@@ -89,7 +89,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 	if (!m_ptrReg)
 	{
 		m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateObjectPtr();
-		m_ptrReg->Init(m_pManager);
+		m_ptrReg->Init(m_pManager,!m_ptrOM);
 	}
 
 	return m_ptrReg.AddRefReturn();
@@ -503,10 +503,10 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 		ptrRequest->init(request);
 
 		// Create a response if required
-		ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrResponse;
+		ObjectPtr<ObjectImpl<OutputCDR> > ptrResponse;
 		if (trans_id != 0)
 		{
-			ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OutputCDR>::CreateObjectPtr();
 			ptrResponse->WriteByte(0);
 		}
 
@@ -529,7 +529,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			if (trans_id != 0)
 			{
 				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
+				ptrResponse = ObjectImpl<OutputCDR>::CreateObjectPtr();
 				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 

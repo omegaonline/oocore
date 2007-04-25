@@ -66,6 +66,10 @@
 //
 // or, for Exe's
 //
+// BEGIN_PROCESS_OBJECT_MAP(dll_name)
+//    OBJECT_MAP_ENTRY(something derived from AutoObjectFactory)
+// END_PROCESS_OBJECT_MAP()
+//
 
 #if defined(OTL_HAS_NONSTATICMODULE)
 #define OTL_MODULE_INIT_BLOCK(name) \
@@ -478,7 +482,7 @@ namespace OTL
 		static ObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				Omega::IException::Throw("ObjectImpl does not support aggregation",OMEGA_SOURCE_INFO);
+				Omega::Activation::INoAggregationException::Throw(guid_t::NIL);
 
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());

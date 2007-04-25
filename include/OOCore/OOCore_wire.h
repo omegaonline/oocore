@@ -97,7 +97,7 @@ namespace Omega
 			uint32_t bytes = 8;
 			pStream->ReadBytes(bytes,val.Data4);
 			if (bytes != 8)
-				OMEGA_THROW("Failed to read guid_t");
+				OMEGA_THROW("Bad read!");
 		}
 
 		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)

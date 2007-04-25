@@ -310,7 +310,7 @@
 			else if (method_id < MethodCount) \
 				MethodTable[method_id - Base::MethodCount](this,this->m_pI,pParamsIn,pParamsOut); \
 			else \
-				OMEGA_THROW("Invalid method index"); \
+				OMEGA_THROW("Invalid index!"); \
 		} \
 		static const uint32_t MethodCount = Base::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 		OMEGA_DEFINE_WIRE_STUB_METHODS(methods) \

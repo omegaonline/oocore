@@ -28,7 +28,7 @@ void Root::ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 	// Open the reader and writer
 	if (m_reader.open(*this) != 0 || m_writer.open(*this) != 0)
 	{
-        ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
+        ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
 		delete this;
 	}
 	else
@@ -39,7 +39,7 @@ void Root::ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 		ACE_NEW_NORETURN(mb,ACE_Message_Block(16));
 		if (m_reader.read(*mb,sizeof(m_header_len)) != 0)
 		{
-			ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
 			mb->release();
 			delete this;
 		}
@@ -100,7 +100,7 @@ void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 
 	if (!bSuccess)
 	{
-		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::ClientConnection::handle_read_stream")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::handle_read_stream")));
 		mb.release();
 		delete this;
 	}

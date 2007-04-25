@@ -18,9 +18,11 @@ namespace OOCore
 		ACE_Thread_Mutex                          m_lock;
 	};
 	Registry	g_Registry;
+
+	void SetRegistry(Omega::Registry::IRegistryKey* pRootKey);
 }
 
-void SetRegistry(Registry::IRegistryKey* pRootKey)
+void OOCore::SetRegistry(Omega::Registry::IRegistryKey* pRootKey)
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_Registry.m_lock,OOCORE_THROW_LASTERROR());
 

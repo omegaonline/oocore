@@ -16,12 +16,12 @@ const Omega::guid_t OOCore::IID_OutputCDR = { 0x21118e84, 0x2ef8, 0x4f53, { 0xb4
 using namespace Omega;
 using namespace OTL;
 
-Channel::Channel() :
+OOCore::Channel::Channel() :
 	m_pSession(0)
 {
 }
 
-void Channel::init(UserSession* pSession, ACE_CDR::UShort dest_channel_id)
+void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort dest_channel_id)
 {
 	if (m_pSession)
 		OOCORE_THROW_ERRNO(EALREADY);
@@ -30,14 +30,14 @@ void Channel::init(UserSession* pSession, ACE_CDR::UShort dest_channel_id)
 	m_id = dest_channel_id;
 }
 
-Serialize::IFormattedStream* Channel::CreateOutputStream(IObject* pOuter)
+Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter)
 {
 	// Create a fresh OutputCDRImpl
 	ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrOutput = ObjectImpl<OutputCDRImpl>::CreateObjectPtr(pOuter);
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(Omega::Serialize::IID_IFormattedStream));
 }
 
-Serialize::IFormattedStream* Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
+Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
 {
 	// We need to make the timeout cumulative - i.e. catch the first request, and use a kind
 	// of 'time remaining' value to force all calls to occur within the timeout of the

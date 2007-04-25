@@ -7,22 +7,25 @@ using namespace Omega;
 using namespace OTL;
 
 // Forward declares used internally
-void SetServiceTable(Activation::IServiceTable* pNewTable);
-void SetRegistry(Registry::IRegistryKey* pRootKey);
+namespace OOCore
+{
+	void SetServiceTable(Activation::IServiceTable* pNewTable);
+	void SetRegistry(Registry::IRegistryKey* pRootKey);
+}
 
-UserSession::UserSession() :
+OOCore::UserSession::UserSession() :
 	m_user_handle(ACE_INVALID_HANDLE),
 	m_next_trans_id(1)
 {
 }
 
-UserSession::~UserSession()
+OOCore::UserSession::~UserSession()
 {
 	if (m_user_handle != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(m_user_handle);
 }
 
-IException* UserSession::init()
+IException* OOCore::UserSession::init()
 {
 	int ret = USER_SESSION::instance()->init_i();
 	if (ret != 0)
@@ -40,7 +43,7 @@ IException* UserSession::init()
 	return pE;
 }
 
-int UserSession::init_i()
+int OOCore::UserSession::init_i()
 {
 	u_short uPort;
 	if (get_port(uPort) != 0)
@@ -86,7 +89,7 @@ int UserSession::init_i()
 	return 0;
 }
 
-IException* UserSession::bootstrap()
+IException* OOCore::UserSession::bootstrap()
 {
 	try
 	{
@@ -116,7 +119,7 @@ IException* UserSession::bootstrap()
 	return 0;
 }
 
-ACE_TString UserSession::get_bootstrap_filename()
+ACE_TString OOCore::UserSession::get_bootstrap_filename()
 {
 	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
 
@@ -147,7 +150,7 @@ ACE_TString UserSession::get_bootstrap_filename()
 	#endif
 }
 
-int UserSession::get_port(u_short& uPort)
+int OOCore::UserSession::get_port(u_short& uPort)
 {
 	pid_t pid = ACE_INVALID_PID;
 
@@ -277,14 +280,14 @@ int UserSession::get_port(u_short& uPort)
 	return 0;
 }
 
-void UserSession::term()
+void OOCore::UserSession::term()
 {
 	USER_SESSION::instance()->term_i();
 
 	USER_SESSION::close();
 }
 
-void UserSession::term_i()
+void OOCore::UserSession::term_i()
 {
 	// Shut down the socket...
 	ACE_OS::shutdown(m_user_handle,SD_BOTH);
@@ -298,18 +301,18 @@ void UserSession::term_i()
 	ACE_OS::sleep(1);
 }
 
-void UserSession::connection_closed()
+void OOCore::UserSession::connection_closed()
 {
 	// Stop the proactor, the socket is closed
 	ACE_Proactor::instance()->proactor_end_event_loop();
 }
 
-ACE_THR_FUNC_RETURN UserSession::proactor_worker_fn(void*)
+ACE_THR_FUNC_RETURN OOCore::UserSession::proactor_worker_fn(void*)
 {
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-int UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle)
+int OOCore::UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	Request* req;
 	ACE_NEW_RETURN(req,Request(handle,input),-1);
@@ -321,7 +324,7 @@ int UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle)
 	return ret;
 }
 
-int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)
+int OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)
 {
 	for (;;)
 	{
@@ -421,7 +424,7 @@ int UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, 
 	}
 }
 
-int UserSession::pump_requests(ACE_Time_Value* deadline)
+int OOCore::UserSession::pump_requests(ACE_Time_Value* deadline)
 {
 	Request* response = 0;
 	int ret = wait_for_response(0,response,deadline);
@@ -430,7 +433,7 @@ int UserSession::pump_requests(ACE_Time_Value* deadline)
 	return ret;
 }
 
-int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
+int OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
 {
 	// Generate next transaction id
 	long trans = m_next_trans_id++;
@@ -487,7 +490,7 @@ int UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_B
 	return ret;
 }
 
-int UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+int OOCore::UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
@@ -510,7 +513,7 @@ int UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_
 	return 0;
 }
 
-int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
+int OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -557,7 +560,7 @@ int UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong tr
 	return 0;
 }
 
-int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+int OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -615,7 +618,7 @@ int UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong t
 	return 0;
 }
 
-bool UserSession::valid_transaction(ACE_CDR::ULong trans_id)
+bool OOCore::UserSession::valid_transaction(ACE_CDR::ULong trans_id)
 {
 	try
 	{
@@ -628,7 +631,7 @@ bool UserSession::valid_transaction(ACE_CDR::ULong trans_id)
 	}
 }
 
-void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	// Init the error stream
 	ACE_OutputCDR error;
@@ -660,15 +663,15 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 			msecs = ACE_UINT32_MAX;
 
 		// Wrap up the request
-		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
-		ptrRequest = ObjectImpl<InputCDR>::CreateObjectPtr();
+		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
+		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
 		ptrRequest->init(*request->input());
 
 		// Create a response if required
-		ObjectPtr<ObjectImpl<OutputCDRImpl> > ptrResponse;
+		ObjectPtr<ObjectImpl<OOCore::OutputCDRImpl> > ptrResponse;
 		if (trans_id != 0)
 		{
-			ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OOCore::OutputCDRImpl>::CreateObjectPtr();
 			ptrResponse->WriteByte(0);
 		}
 
@@ -689,7 +692,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 			if (trans_id != 0)
 			{
 				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OutputCDRImpl>::CreateObjectPtr();
+				ptrResponse = ObjectImpl<OOCore::OutputCDRImpl>::CreateObjectPtr();
 				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 
@@ -727,7 +730,7 @@ void UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_
 	delete request;
 }
 
-ObjectPtr<Remoting::IObjectManager> UserSession::get_object_manager(ACE_CDR::UShort src_channel_id)
+ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_CDR::UShort src_channel_id)
 {
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
@@ -738,7 +741,7 @@ ObjectPtr<Remoting::IObjectManager> UserSession::get_object_manager(ACE_CDR::USh
 		if (i == m_mapOMs.end())
 		{
 			// Create a new channel
-			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ObjectImpl<OOCore::Channel>::CreateObjectPtr();
 			ptrChannel->init(this,src_channel_id);
 
 			// Create a new OM

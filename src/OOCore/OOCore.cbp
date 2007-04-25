@@ -84,7 +84,7 @@
 		<Unit filename="..\..\include\Otl\OTL.h" />
 		<Unit filename="..\..\include\Otl\OTL.inl" />
 		<Unit filename="..\..\include\Otl\OTL_special.h" />
-		<Unit filename="Activator.cpp" />
+		<Unit filename="Activation.cpp" />
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
 		<Unit filename="Exception.cpp" />

@@ -3,24 +3,10 @@
 using namespace Omega;
 using namespace OTL;
 
-void ExecProcess(const string_t& strExeName);
-
-Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags);
-
-namespace
+namespace OOCore
 {
-	class ActivationImpl
-	{
-	public:
-		typedef ACE_DLL_Singleton_T<ActivationImpl,ACE_Recursive_Thread_Mutex> ACTIVATOR;
-
-		ActivationImpl();
-
-		const ACE_TCHAR* name();
-		const ACE_TCHAR* dll_name();
-
-		Activation::IObjectFactory* GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
-	};
+	Activation::IObjectFactory* LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
+	void ExecProcess(const string_t& strExeName);
 
 	class OidNotFoundExceptionImpl :
 		public ExceptionImpl<Activation::IOidNotFoundException>
@@ -62,11 +48,14 @@ namespace
 		public ExceptionImpl<Activation::ILibraryNotFoundException>
 	{
 	public:
-		string_t m_dll_name;
+		static void Throw(const string_t& strName, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(LibraryNotFoundExceptionImpl)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
 		END_INTERFACE_MAP()
+
+	private:
+		string_t m_dll_name;
 
 	// Activation::ILibraryNotFoundException members
 	public:
@@ -77,40 +66,28 @@ namespace
 	};
 }
 
-void ILibraryNotFoundException_Throw(const string_t& strName, IException* pE = 0)
+void OOCore::LibraryNotFoundExceptionImpl::Throw(const string_t& strName, IException* pE)
 {
-	ObjectImpl<LibraryNotFoundExceptionImpl>* pRE = ObjectImpl<LibraryNotFoundExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::LibraryNotFoundExceptionImpl>* pRE = ObjectImpl<OOCore::LibraryNotFoundExceptionImpl>::CreateObject();
 	pRE->m_ptrCause = pE;
 	pRE->m_strDesc = string_t::Format("Dynamic library '%s' not found",static_cast<const char_t*>(strName));
 	pRE->m_dll_name = strName;
 	throw pRE;
 }
 
-ActivationImpl::ActivationImpl()
-{
-	// Ensure we are using per-dll unloading
-	ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
-}
+// External declaration of our version of this entry point
+Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags);
 
-const ACE_TCHAR*
-ActivationImpl::name()
-{
-	return ACE_TEXT("ActivationImpl");
-}
-
-const ACE_TCHAR*
-ActivationImpl::dll_name()
-{
-	return ACE_TEXT("OOCore");
-}
-
-Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags)
+Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags)
 {
 	ACE_DLL dll;
 	if (dll_name != "OOCore")
 	{
+		// Ensure we are using per-dll unloading
+		ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
+
         if (dll.open(ACE_TEXT_CHAR_TO_TCHAR(dll_name)) != 0)
-			ILibraryNotFoundException_Throw(dll_name);
+			LibraryNotFoundExceptionImpl::Throw(dll_name);
 
 		typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
 		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(ACE_TEXT("Omega_GetObjectFactory_Safe"));
@@ -134,22 +111,55 @@ Activation::IObjectFactory* ActivationImpl::GetObjectFactory(const string_t& dll
 	}
 }
 
+void OOCore::ExecProcess(const string_t& strExeName)
+{
+	// Set the process options
+	ACE_Process_Options options;
+	options.avoid_zombies(0);
+	options.handle_inheritence(0);
+	if (options.command_line(strExeName) == -1)
+		OOCORE_THROW_ERRNO(ACE_OS::last_error() ? ACE_OS::last_error() : EINVAL);
+
+	// Set the creation flags
+	u_long flags = 0;
+#if defined (ACE_WIN32)
+	flags |= CREATE_NEW_CONSOLE;
+#endif
+	options.creation_flags(flags);
+
+	// Spawn the process
+	ACE_Process process;
+	if (process.spawn(options)==ACE_INVALID_PID)
+		OOCORE_THROW_LASTERROR();
+
+	void* TODO;	// Make this a smarter countdown timer
+
+	// Wait 1 second for the process to launch, if it takes more than 1 second its probably okay
+	ACE_exitcode exitcode = 0;
+	int ret = process.wait(ACE_Time_Value(1),&exitcode);
+	if (ret==-1)
+		OOCORE_THROW_LASTERROR();
+
+	if (ret!=0)
+		OOCORE_THROW_ERRNO(ret);
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_IOidNotFoundException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
-	ObjectImpl<OidNotFoundExceptionImpl>* pNCE = ObjectImpl<OidNotFoundExceptionImpl>::CreateObject();
-	pNCE->m_strDesc = "OID not found.";
-	pNCE->m_ptrCause = pE;
-	pNCE->m_oid = oid;
-	throw pNCE;
+	ObjectImpl<OOCore::OidNotFoundExceptionImpl>* pNew = ObjectImpl<OOCore::OidNotFoundExceptionImpl>::CreateObject();
+	pNew->m_strDesc = "OID not found.";
+	pNew->m_ptrCause = pE;
+	pNew->m_oid = oid;
+	throw pNew;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
-	ObjectImpl<NoAggregationExceptionImpl>* pNCE = ObjectImpl<NoAggregationExceptionImpl>::CreateObject();
-	pNCE->m_strDesc = "Object does not supported aggregation.";
-	pNCE->m_ptrCause = pE;
-	pNCE->m_oid = oid;
-	throw pNCE;
+	ObjectImpl<OOCore::NoAggregationExceptionImpl>* pNew = ObjectImpl<OOCore::NoAggregationExceptionImpl>::CreateObject();
+	pNew->m_strDesc = "Object does not supported aggregation.";
+	pNew->m_ptrCause = pE;
+	pNew->m_oid = oid;
+	throw pNew;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
@@ -206,11 +216,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 				if (flags & Activation::InProcess)
 				{
 					if (ptrOidKey->IsValue("Library"))
-					{
-						Activation::IObjectFactory* pOF = ActivationImpl::ACTIVATOR::instance()->GetObjectFactory(ptrOidKey->GetStringValue("Library"),oid,flags);
-						if (pOF)
-							return pOF;
-					}
+						return OOCore::LoadObjectLibrary(ptrOidKey->GetStringValue("Library"),oid,flags);
 				}
 
 				if (flags & Activation::OutOfProcess)
@@ -218,7 +224,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					// Launch the server - Do something cleverer here at some point
 					ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
 
-					ExecProcess(ptrServer->GetStringValue("Exec"));
+					OOCore::ExecProcess(ptrServer->GetStringValue("Exec"));
 
 					ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());

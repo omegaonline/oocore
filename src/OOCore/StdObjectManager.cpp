@@ -162,16 +162,16 @@ inline IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 	return 0;
 }
 
-StdObjectManager::StdObjectManager() :
+OOCore::StdObjectManager::StdObjectManager() :
 	m_uNextStubId(1)
 {
 }
 
-StdObjectManager::~StdObjectManager()
+OOCore::StdObjectManager::~StdObjectManager()
 {
 }
 
-void StdObjectManager::Connect(Remoting::IChannel* pChannel)
+void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 {
 	if (m_ptrChannel)
 		OOCORE_THROW_ERRNO(EALREADY);
@@ -181,7 +181,7 @@ void StdObjectManager::Connect(Remoting::IChannel* pChannel)
 	m_ptrChannel = pChannel;
 }
 
-void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout)
+void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout)
 {
 	if (!pParamsIn)
 		OOCORE_THROW_ERRNO(EINVAL);
@@ -255,7 +255,7 @@ void StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize:
 	ptrStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
 }
 
-void StdObjectManager::Disconnect()
+void OOCore::StdObjectManager::Disconnect()
 {
 	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 
@@ -263,7 +263,7 @@ void StdObjectManager::Disconnect()
 	m_mapStubIds.clear();
 }
 
-void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject)
+void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject)
 {
 	// See if object is NULL
 	if (!pObject)
@@ -328,7 +328,7 @@ void StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, co
 	pStream->WriteUInt32(uId);
 }
 
-void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject)
+void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject)
 {
 	// Still wondering if iid is actually required....
 	byte_t flag = pStream->ReadByte();
@@ -365,7 +365,7 @@ void StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* pStream, 
 		OMEGA_THROW("Invalid wire argument!");
 }
 
-void StdObjectManager::ReleaseStub(uint32_t uId)
+void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 {
 	try
 	{
@@ -383,12 +383,12 @@ void StdObjectManager::ReleaseStub(uint32_t uId)
 	}
 }
 
-Omega::Serialize::IFormattedStream* StdObjectManager::CreateOutputStream()
+Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 {
 	return m_ptrChannel->CreateOutputStream();
 }
 
-Omega::Serialize::IFormattedStream* StdObjectManager::SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream)
+Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream)
 {
     ObjectPtr<Serialize::IFormattedStream> ptrResponse;
 	ptrResponse.Attach(m_ptrChannel->SendAndReceive(attribs,pStream));
@@ -411,7 +411,7 @@ Omega::Serialize::IFormattedStream* StdObjectManager::SendAndReceive(Omega::Remo
 	return ptrResponse.Detach();
 }
 
-void StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+void OOCore::StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	if (pObject)
 		pObject->Release();

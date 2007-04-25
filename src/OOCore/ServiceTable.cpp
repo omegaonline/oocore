@@ -30,10 +30,12 @@ namespace OOCore
 		ACE_Thread_Mutex                      m_lock;
 	};
 	ServiceTable	g_ServiceTable;
+
+	void SetServiceTable(Activation::IServiceTable* pNewTable);
 }
 
 // ServiceTable
-void SetServiceTable(Activation::IServiceTable* pNewTable)
+void OOCore::SetServiceTable(Activation::IServiceTable* pNewTable)
 {
 	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
 

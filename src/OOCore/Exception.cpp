@@ -3,7 +3,7 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace
+namespace OOCore
 {
 	class RealExceptionImpl :
 		public ExceptionImpl<IException>
@@ -30,14 +30,14 @@ namespace
 	};
 }
 
-guid_t NoInterfaceExceptionImpl::GetUnsupportedIID()
+guid_t OOCore::NoInterfaceExceptionImpl::GetUnsupportedIID()
 {
 	return m_iid;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))
 {
-	ObjectImpl<RealExceptionImpl>* pExcept = ObjectImpl<RealExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::RealExceptionImpl>* pExcept = ObjectImpl<OOCore::RealExceptionImpl>::CreateObject();
 	pExcept->m_ptrCause.Attach(pCause); 
 	pExcept->m_strDesc = desc;
 	pExcept->m_strSource = source;
@@ -46,7 +46,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const guid_t&,iid,(in),const char_t*,source))
 {
-	ObjectImpl<NoInterfaceExceptionImpl>* pExcept = ObjectImpl<NoInterfaceExceptionImpl>::CreateObject();
+	ObjectImpl<OOCore::NoInterfaceExceptionImpl>* pExcept = ObjectImpl<OOCore::NoInterfaceExceptionImpl>::CreateObject();
 	pExcept->m_strDesc = "Object does not support the requested interface";
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;

@@ -9,7 +9,7 @@ using namespace OTL;
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP(OOCore)
-	OBJECT_MAP_ENTRY(StdObjectManager)
+	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(ACE_WIN32)
@@ -32,12 +32,15 @@ BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 }
 #endif
 
-static AtomicOp<long>::type	s_initcount = 0;
+namespace OOCore
+{
+	static AtomicOp<long>::type	s_initcount = 0;
+}
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 {
 	bool bStart = false;
-	if (++s_initcount==1)
+	if (++OOCore::s_initcount==1)
 	{
 		// Call ACE::init() first
 		bStart = true;
@@ -48,7 +51,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 
 		if (ret != 0)
 		{
-			--s_initcount;
+			--OOCore::s_initcount;
 			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
 			pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
 			return pE;
@@ -57,7 +60,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 
 	if (bStart)
 	{
-		IException* pE = UserSession::init();
+		IException* pE = OOCore::UserSession::init();
 		if (pE)
 		{
 			return pE;
@@ -69,42 +72,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 {
-	if (--s_initcount==0)
+	if (--OOCore::s_initcount==0)
 	{
-		UserSession::term();
+		OOCore::UserSession::term();
 
 		ACE::fini();
 	}
-}
-
-// Helpers
-void ExecProcess(const string_t& strExeName)
-{
-	// Set the process options
-	ACE_Process_Options options;
-	options.avoid_zombies(0);
-	options.handle_inheritence(0);
-	if (options.command_line(strExeName) == -1)
-		OOCORE_THROW_ERRNO(ACE_OS::last_error() ? ACE_OS::last_error() : EINVAL);
-
-	// Set the creation flags
-	u_long flags = 0;
-#if defined (ACE_WIN32)
-	flags |= CREATE_NEW_CONSOLE;
-#endif
-	options.creation_flags(flags);
-
-	// Spawn the process
-	ACE_Process process;
-	if (process.spawn(options)==ACE_INVALID_PID)
-		OOCORE_THROW_LASTERROR();
-
-	// Wait 1 second for the process to launch, if it takes more than 1 second its probably okay
-	ACE_exitcode exitcode = 0;
-	int ret = process.wait(ACE_Time_Value(1),&exitcode);
-	if (ret==-1)
-		OOCORE_THROW_LASTERROR();
-
-	if (ret!=0)
-		OOCORE_THROW_ERRNO(ret);
 }

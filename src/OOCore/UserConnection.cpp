@@ -3,14 +3,14 @@
 #include "./UserConnection.h"
 #include "./UserSession.h"
 
-UserConnection::UserConnection(UserSession* pSession) : 
+OOCore::UserConnection::UserConnection(UserSession* pSession) : 
 	ACE_Service_Handler(),
 	m_pSession(pSession)
 
 {
 }
 
-UserConnection::~UserConnection()
+OOCore::UserConnection::~UserConnection()
 {
 	m_pSession->connection_closed();
 	
@@ -18,7 +18,7 @@ UserConnection::~UserConnection()
 		ACE_OS::closesocket(handle());
 }
 
-int UserConnection::open(ACE_HANDLE new_handle)
+int OOCore::UserConnection::open(ACE_HANDLE new_handle)
 {
 	// Stash the handle
 	this->handle(new_handle);
@@ -30,7 +30,7 @@ int UserConnection::open(ACE_HANDLE new_handle)
 	return read();
 }
 
-int UserConnection::read()
+int OOCore::UserConnection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
@@ -51,7 +51,7 @@ int UserConnection::read()
 	return 0;
 }
 
-void UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
 	

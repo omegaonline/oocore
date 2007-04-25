@@ -482,7 +482,7 @@ namespace OTL
 		static ObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				Omega::Activation::INoAggregationException::Throw(guid_t::NIL);
+				Omega::Activation::INoAggregationException::Throw(Omega::guid_t::NIL);
 
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());

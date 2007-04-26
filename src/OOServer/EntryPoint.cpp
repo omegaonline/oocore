@@ -6,7 +6,7 @@
 //
 //	Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary and do not use precompiled headers
+//	Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -17,35 +17,108 @@
 // Forward declare UserMain
 int UserMain(u_short uPort);
 
+static int Install()
+{
+#ifdef ACE_WIN32
+	if (!Root::NTService::install())
+		return -1;
+#endif
+	
+	if (!Root::Manager::install())
+		return -1;
+
+	ACE_OS::printf("Installed successfully.\n");
+	return 0;
+}
+
+static int Uninstall()
+{
+	#ifdef ACE_WIN32
+	if (!Root::NTService::uninstall())
+		return -1;
+#endif
+	
+	if (!Root::Manager::uninstall())
+		return -1;
+
+	ACE_OS::printf("Uninstalled successfully.\n");
+	return 0;
+}
+
+static int Version()
+{
+	ACE_OS::printf("This is the version string\n\n");
+	return 0;
+}
+
+static int Help()
+{
+	ACE_OS::printf("This is the help string\n\n");
+	return 0;
+}
+
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 #ifdef ACE_WIN32
-
-	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
-		return -1;
-	
 	// Check to see if we have been spawned
 	if (argc==3 && ACE_OS::strcmp(argv[1],"--spawned")==0)
 		return UserMain(static_cast<u_short>(ACE_OS::atoi(argv[2])));
-
-	int ret = Root::NTService::open(argc,argv);
+#endif
 	
-#else
+	// Check command line options
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iuvh"));
+	if (cmd_opts.long_option(ACE_TEXT("install"),ACE_TEXT('i'))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("uninstall"),ACE_TEXT('u'))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
+	{
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("parsing cmdline")),-1);
+	}
 
-	if (ACE_LOG_MSG->open(argv[0],ACE_Log_Msg::SYSLOG) != 0)
+	int option;
+	while ((option = cmd_opts()) != EOF)
+	{
+		switch (option)
+		{
+		case ACE_TEXT('i'):
+			return Install();
+
+		case ACE_TEXT('u'):
+			return Uninstall();
+
+		case ACE_TEXT('v'):
+			return Version();
+
+		case ACE_TEXT('h'):
+			return Help();
+
+		case ACE_TEXT(':'):
+			ACE_OS::printf("Missing argument for -%c.\n\n",cmd_opts.opt_opt());
+			return Help();
+
+		default:
+			ACE_OS::printf("Invalid argument '%c'.\n\n",cmd_opts.opt_opt());
+			return Help();
+		}
+	}
+
+#ifdef ACE_WIN32
+	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening logger")),-1);
+
+	if (!Root::NTService::open())
 		return -1;
 
+#else
 	// Daemonize ourselves
 	ACE_TCHAR szCwd[MAXPATHLEN];
 	ACE_OS::getcwd(szCwd,MAXPATHLEN);
-	int ret = ACE::daemonize(szCwd,0,argv[0]);
+	if (ACE::daemonize(szCwd,0,argv[0]) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("daemonizing")),-1);
 
-	// Do something with the cmdline here if we want...
-
+	if (ACE_LOG_MSG->open(argv[0],ACE_Log_Msg::SYSLOG) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening logger")),-1);
 #endif
-
-	if (ret != 0)
-		return ret;
 
 	return Root::Manager::run();
 }

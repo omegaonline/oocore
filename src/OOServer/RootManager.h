@@ -29,8 +29,10 @@ namespace Root
 	public:
 		static int run();
 		static void end();
-		static int connect_client(uid_t uid, u_short& uNewPort);
+		static bool connect_client(uid_t uid, u_short& uNewPort);
 		static ACE_Configuration_Heap& get_registry();
+		static bool install();
+		static bool uninstall();
 
 	private:
 		friend class ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex>;
@@ -64,12 +66,12 @@ namespace Root
 		int init();
 		int init_registry();
 		ACE_CString get_bootstrap_filename();
-		int bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox);
+		bool bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox);
 		void end_event_loop_i();
 		void term();
-		int connect_client_i(uid_t uid, u_short& uNewPort);
-		int spawn_sandbox();
-		int spawn_client(uid_t uid, const ACE_CString& key);
+		bool connect_client_i(uid_t uid, u_short& uNewPort);
+		bool spawn_sandbox();
+		bool spawn_client(uid_t uid, const ACE_CString& key);
 
 		int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);

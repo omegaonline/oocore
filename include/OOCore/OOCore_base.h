@@ -83,7 +83,7 @@ OMEGA_DEFINE_IID(Omega, IException, 0x8ce2dc6, 0x2234, 0x4a6f, 0xa0, 0x15, 0x49,
 #if !defined(OMEGA_FUNCNAME)
 	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s(%u)",__FILE__,__LINE__))
 #else
-	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s(%u): ",__FILE__,__LINE__,OMEGA_FUNCNAME))
+	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s(%u): %s",__FILE__,__LINE__,OMEGA_FUNCNAME))
 #endif
 
 #define OMEGA_THROW(msg)     Omega::IException::Throw(msg,OMEGA_SOURCE_INFO)

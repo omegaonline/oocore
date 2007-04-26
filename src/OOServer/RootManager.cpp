@@ -27,6 +27,28 @@ Root::Manager::~Manager()
 	term();
 }
 
+bool Root::Manager::install()
+{
+	if (ROOT_MANAGER::instance()->init_registry() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening registry")),false);
+
+	if (!SpawnedProcess::InstallSandbox())
+		return false;
+
+	return true;
+}
+
+bool Root::Manager::uninstall()
+{
+	if (ROOT_MANAGER::instance()->init_registry() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening registry")),false);
+
+	if (!SpawnedProcess::UninstallSandbox())
+		return false;
+
+	return true;
+}
+
 int Root::Manager::run()
 {
 	return ROOT_MANAGER::instance()->run_event_loop_i();
@@ -315,22 +337,21 @@ ACE_Configuration_Heap& Root::Manager::get_registry()
 	return ROOT_MANAGER::instance()->m_registry;
 }
 
-int Root::Manager::spawn_sandbox()
+bool Root::Manager::spawn_sandbox()
 {
 	ACE_CString strUserId;
-	int ret = SpawnedProcess::GetSandboxUid(strUserId);
-	if (ret != 0)
-		return ret;
-
+	if (!SpawnedProcess::GetSandboxUid(strUserId))
+		return false;
+	
 	// Spawn the sandbox
 	return spawn_client(static_cast<uid_t>(-1),strUserId);
 }
 
-int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
+bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
-	ACE_NEW_RETURN(pSpawn,SpawnedProcess,ENOMEM);
+	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
 		
 	// Open an acceptor
 	ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
@@ -338,24 +359,23 @@ int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 	int ret = acceptor.open(addr,0,PF_INET,1);
 	if (ret != 0)
 	{
-		ret = ACE_OS::last_error();
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 	}
 	else
 	{
 		// Get the port we are accepting on
-		if (acceptor.get_local_addr(addr)!=0)
+		ret = acceptor.get_local_addr(addr);
+		if (ret != 0)
 		{
-			ret = ACE_OS::last_error();
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("get_local_addr() failed")));
 		}
 		else
 		{
 			// Spawn the user process
-			ret = pSpawn->Spawn(uid,addr.get_port_number());
-			if (ret != 0)
+			if (!pSpawn->Spawn(uid,addr.get_port_number()))
 			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn() failed")));
+				ACE_OS::last_error(EINVAL);
+				ret = -1;
 			}
 			else
 			{
@@ -365,7 +385,6 @@ int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 				ret = acceptor.accept(stream,0,&wait);
 				if (ret != 0)
 				{
-					ret = ACE_OS::last_error();
 					ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("accept() failed")));
 				}
 				else
@@ -374,12 +393,12 @@ int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 					u_short uNewPort;
 					if (stream.recv(&uNewPort,sizeof(uNewPort),&wait) != static_cast<ssize_t>(sizeof(uNewPort)))
 					{
-						ret = ACE_OS::last_error();
+						ret = -1;
 						ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("recv() failed")));
 					}
-					else
+					else if (!bootstrap_client(stream,uid == static_cast<uid_t>(-1)))
 					{
-						ret = bootstrap_client(stream,uid == static_cast<uid_t>(-1));
+						ret = -1;
 					}
 
 					if (ret == 0)
@@ -389,7 +408,7 @@ int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 						ACE_NEW_NORETURN(pRC,Connection(this,strUserId));
 						if (!pRC)
 						{
-							ret = ENOMEM;
+							ret = -1;
 						}
 						else if ((ret=pRC->open(stream.get_handle())) == 0)
 						{
@@ -416,14 +435,11 @@ int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 							catch (...)
 							{
 								ret = -1;
-								delete pRC;
 							}
 						}
-						else
-						{
-							ret = ACE_OS::last_error();
+						
+						if (ret != 0)
 							delete pRC;
-						}
 					}
 
 					stream.close();
@@ -440,34 +456,33 @@ int Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 	if (ret != 0)
 		delete pSpawn;
 	
-	return ret;
+	return (ret == 0);
 }
 
-int Root::Manager::bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox)
+bool Root::Manager::bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox)
 {
 	// This could be changed to a struct if we wanted...
 	char sandbox = bSandbox ? 1 : 0;
 
 	if (stream.send(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send() failed")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send() failed")),false);
 
-	return 0;
+	return true;
 }
 
-int Root::Manager::connect_client(uid_t uid, u_short& uNewPort)
+bool Root::Manager::connect_client(uid_t uid, u_short& uNewPort)
 {
 	return ROOT_MANAGER::instance()->connect_client_i(uid,uNewPort);
 }
 
-int Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
+bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 {
 	ACE_CString strUserId;
-	int err = SpawnedProcess::ResolveTokenToUid(uid,strUserId);
-	if (err != 0)
-		return err;
+	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId))
+		return false;
 	
 	// Lock the cs
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,false);
 		
 	// See if we have a process already
 	try
@@ -476,9 +491,8 @@ int Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 		if (m_mapUserProcesses.empty())
 		{
 			// Create a new sandbox...
-			err = spawn_sandbox();
-			if (err != 0)
-				return err;
+			if (!spawn_sandbox())
+				return false;
 		}
 
 		std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
@@ -498,7 +512,8 @@ int Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 		if (i==m_mapUserProcesses.end())
 		{
 			// No we don't
-			err = spawn_client(uid,strUserId);
+			if (!spawn_client(uid,strUserId))
+				return false;
 		}
 		else
 		{
@@ -508,10 +523,10 @@ int Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 	}
 	catch (...)
 	{
-		err = ACE_OS::last_error();
+		return false;
 	}
 
-	return err;
+	return true;
 }
 
 ACE_THR_FUNC_RETURN Root::Manager::proactor_worker_fn(void*)

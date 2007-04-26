@@ -24,14 +24,18 @@ namespace Root
 	class NTService : public ACE_NT_Service
 	{
 	public:
-		NTService(void);
-		virtual ~NTService(void);
+		NTService();
+		virtual ~NTService();
 
-		static int open(int argc, ACE_TCHAR* argv[]);
-
-		int svc(void);
+		static bool open();
+		static bool install();
+		static bool uninstall();
 		
-	protected:
+	private:
+		typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
+
+		static ACE_THR_FUNC_RETURN start_service(void*);
+
 		int description(const ACE_TCHAR *desc);
 		int insert(	const ACE_TCHAR *cmd_line = 0,
 					DWORD start_type = SERVICE_DEMAND_START,
@@ -42,14 +46,10 @@ namespace Root
 					const ACE_TCHAR *account_name = 0,
 					const ACE_TCHAR *password = 0);
 
-	private:
-		typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
-
-		static ACE_THR_FUNC_RETURN start_service(void*);
-
-		void stop_requested (DWORD control_code);
-		void pause_requested (DWORD control_code);
-		void continue_requested (DWORD control_code);
+		int svc();
+		void stop_requested(DWORD control_code);
+		void pause_requested(DWORD control_code);
+		void continue_requested(DWORD control_code);
 		
 		ACE_Event m_finished;
 	};

@@ -6,7 +6,7 @@
 //
 //	Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary and do not use precompiled headers
+//	Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -27,99 +27,50 @@ Root::NTService::~NTService()
 {
 }
 
-int Root::NTService::open(int argc, ACE_TCHAR* argv[])
+bool Root::NTService::open()
+{	
+    // Do the ServiceMain in a separate thread
+	if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn service thread")),false);
+	
+	return true;
+}
+
+bool Root::NTService::install()
 {
-	// Used for cmdline processing
-	ACE_ARGV svc_argv;
-	int bInstall = 0;
-	bool bOptionsAlready = false;
-	bool bDebug = false;
+	// Remove the service config first, this allows us to alter the config
+	NTSERVICE::instance()->remove();
 
-	// Check command line options
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":ds:"));
-	int option;
-	while ((option = cmd_opts()) != EOF && !bInstall)
-	{
-		switch (option)
-		{
-		case ACE_TEXT('s'):
-			if (ACE_OS::strcasecmp(ACE_TEXT("install"),cmd_opts.opt_arg())==0)
-			{
-				if (bOptionsAlready)
-					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("-s install must come before all other command line options.\n")),-1);
-				
-				bInstall = cmd_opts.opt_ind();
-			}
-			else if (ACE_OS::strcasecmp(ACE_TEXT("uninstall"),cmd_opts.opt_arg())==0)
-			{
-				// Uninstall the service
-				if (NTSERVICE::instance()->remove() == -1)
-					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("uninstall")),-1);
+	if (NTSERVICE::instance()->insert() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("service install")),false);
 
-				ACE_OS::printf(ACE_TEXT("%s uninstalled successfully.\n"),NTSERVICE_DESC);
-				return 1;
-			}
-			else
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument for -%c %s.\n"),cmd_opts.opt_opt(),cmd_opts.opt_arg()),-1);
-			break;
+	NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
 
-		case ACE_TEXT('d'):
-			bOptionsAlready = true;
-			bDebug = true;
-			break;
+	return true;
+}
 
-		case ACE_TEXT(':'):
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n"),cmd_opts.opt_opt()),-1);
-			break;
+bool Root::NTService::uninstall()
+{
+	// Uninstall the service
+	if (NTSERVICE::instance()->remove() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("service uninstall")),false);
 
-		default:
-			bOptionsAlready = true;
-			break;
-		}
-	}
-
-	if (bInstall)
-	{
-		for (int i=bInstall;i<argc;++i)
-		{
-			svc_argv.add(argv[i]);
-		}
-
-		// Remove the service config first, this allows us to alter the config
-		NTSERVICE::instance()->remove();
-
-		if (NTSERVICE::instance()->insert(svc_argv.buf()) == -1)
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("install")),-1);
-
-		NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
-
-		ACE_OS::printf(ACE_TEXT("%s installed successfully.\n"),NTSERVICE_DESC);
-
-		return 1;
-	}
-	else
-	{  
-		// Do the ServiceMain in a seperate thread
-		if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn service thread")),-1);
-	}
-
-	return 0;
+	return true;
 }
 
 int Root::NTService::insert(const ACE_TCHAR *cmd_line,
-						DWORD start_type,
-						DWORD error_control,
-						const ACE_TCHAR *group_name,
-						LPDWORD tag_id,
-						const ACE_TCHAR *dependencies,
-						const ACE_TCHAR *account_name,
-						const ACE_TCHAR *password)
+							DWORD start_type,
+							DWORD error_control,
+							const ACE_TCHAR *group_name,
+							LPDWORD tag_id,
+							const ACE_TCHAR *dependencies,
+							const ACE_TCHAR *account_name,
+							const ACE_TCHAR *password)
 {
 	char this_exe[MAXPATHLEN + 2];
 
 	if (GetModuleFileNameA(0,this_exe+1,MAXPATHLEN) == 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("(%P|%t) GetModuleFilename failed.\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("GetModuleFilename failed!\n")),-1);
 		
 	// Make sure that this_exe is quoted
 	this_exe[0] = '\"';

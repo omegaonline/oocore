@@ -237,12 +237,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,s1,(in),si
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,sz,(in),va_list,ap))
 {
-	int len2 = 0;
-	for (int len = 64;;len *= 2)
+	for (int len=64;;len*=2)
 	{
 		const ACE_String_Base<Omega::char_t> s(static_cast<size_t>(len));
 		
-		if ((len2 = ACE_OS::vsnprintf(const_cast<Omega::char_t*>(s.fast_rep()),len,sz,ap)) <= len)
+		int len2 = ACE_OS::vsnprintf(const_cast<Omega::char_t*>(s.fast_rep()),len,sz,ap);
+		if (len2 <= len && len2 != -1)
 		{
 			StringNode* s1;
 			OMEGA_NEW(s1,StringNode(ACE_String_Base<Omega::char_t>(s.c_str(),len2)));

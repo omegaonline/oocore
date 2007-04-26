@@ -21,16 +21,17 @@ namespace Root
 		SpawnedProcess(void);
 		~SpawnedProcess(void);
 
-		int Spawn(uid_t id, u_short uPort);
-		int SpawnSandbox();
-
+		bool Spawn(uid_t id, u_short uPort);
+		
 		bool IsRunning();
 		int Close(ACE_Time_Value* wait = 0);
 		void Kill();
 		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-		static int ResolveTokenToUid(uid_t token, ACE_CString& uid);
-		static int GetSandboxUid(ACE_CString& uid);
+		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid);
+		static bool GetSandboxUid(ACE_CString& uid);
+		static bool InstallSandbox();
+		static bool UninstallSandbox();
 
 	private:
 
@@ -41,7 +42,8 @@ namespace Root
 		
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
 		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile);
-		static int LogonSandboxUser(HANDLE* phToken);
+		static DWORD LogonSandboxUser(HANDLE* phToken);
+		static bool LogFailure(DWORD err);
 #else // !ACE_WIN32
 		
 #endif // ACE_WIN32

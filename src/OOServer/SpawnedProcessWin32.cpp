@@ -26,6 +26,7 @@
 #include <userenv.h>
 #include <lm.h>
 #include <sddl.h>
+#include <ntsecapi.h>
 
 Root::SpawnedProcess::SpawnedProcess() :
 	m_hToken(NULL),
@@ -280,7 +281,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	return ERROR_SUCCESS;
 }
 
-int Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
+bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
@@ -289,14 +290,14 @@ int Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
 	{
 		int err = LogonSandboxUser(&hToken);
 		if (err != 0)
-			return err;
+			return LogFailure(err);
 	}
 	else
 	{
 		// Get the process handle
 		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
 		if (!hProcess)
-			return GetLastError();
+			return LogFailure(GetLastError());
 
 		// Get the process token
 		BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
@@ -304,7 +305,7 @@ int Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
 		// Done with hProcess
 		CloseHandle(hProcess);
 		if (!bSuccess)
-			return GetLastError();
+			return LogFailure(GetLastError());
 	}
 
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox);
@@ -312,63 +313,44 @@ int Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
 	{
 		// Done with hToken
 		CloseHandle(hToken);
-		return dwRes;
+		return LogFailure(dwRes);
 	}
 
 	m_hToken = hToken;
 
-	return 0;
+	return true;
 }
 
-int Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
+DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 {
 	// Get the local machine registry
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Get the server section
-	bool bNew = false;
 	ACE_Configuration_Section_Key sandbox_key;
-	int ret = reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key);
-	if (ret != 0)
-	{
-		int err = ACE_OS::last_error();
-		if (err != ENOENT)
-			return err;
-
-		bNew = true;
-	}
-
+	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Server\\Sandbox key missing from registry")),(DWORD)-1);
+		
 	// Get the user name and pwd...
 	ACE_TString strUName;
 	ACE_TString strPwd;
-	if (!bNew)
-	{
-		ret = reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName);
-		if (ret != 0)
-			strUName = ACE_TEXT("OMEGA_SANDBOX");
+	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Sandbox username missing from registry")),(DWORD)-1);
 
-		reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
+	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
 	
-		if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
-			return GetLastError();
-	}
-	else
-	{
-		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_ALL_ACCESS,phToken))
-			return GetLastError();
-
-		ACE_OS::printf("WARNING! Spawning as launching user!\n");
-	}
-
-	return 0;
+	if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
+		return GetLastError();
+	
+	return ERROR_SUCCESS;
 }
 
-int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
+bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 {
 	HANDLE hToken;
 	int err = LogonSandboxUser(&hToken);
 	if (err != 0)
-		return err;
+		return LogFailure(err);
 
 	DWORD dwLen = 0;
 	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
@@ -376,14 +358,14 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	{
 		err = GetLastError();
 		CloseHandle(hToken);
-		return err;
+		return LogFailure(err);
 	}
 
 	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(malloc(dwLen));
 	if (!pBuffer)
 	{
 		CloseHandle(hToken);
-		return ERROR_OUTOFMEMORY;
+		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 
 	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
@@ -391,7 +373,7 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 		err = GetLastError();
 		free(pBuffer);
 		CloseHandle(hToken);
-		return err;
+		return LogFailure(err);
 	}
 
 	LPSTR pszString;
@@ -400,7 +382,7 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 		err = GetLastError();
 		free(pBuffer);
 		CloseHandle(hToken);
-		return err;
+		return LogFailure(err);
 	}
 
 	uid = pszString;
@@ -413,27 +395,25 @@ int Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	// Append a extra to the uid
 	uid += "_SANDBOX";
 
-	return 0;
+	return true;
 }
 
-int Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
+bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 {
 	// Get the process handle
 	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);
 	if (!hProcess)
-		return GetLastError();
+		return LogFailure(GetLastError());
 
 	// Get the process token
 	int err = 0;
 	HANDLE hToken;
 	BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
-	if (!bSuccess)
-		err = GetLastError();
-
+	
 	// Done with hProcess
 	CloseHandle(hProcess);
 	if (!bSuccess)
-		return err;
+		return LogFailure(err);
 
 	DWORD dwLen = 0;
 	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
@@ -441,14 +421,14 @@ int Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 	{
 		err = GetLastError();
 		CloseHandle(hToken);
-		return err;
+		return LogFailure(err);
 	}
 
 	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(malloc(dwLen));
 	if (!pBuffer)
 	{
 		CloseHandle(hToken);
-		return ERROR_OUTOFMEMORY;
+		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 
 	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
@@ -456,7 +436,7 @@ int Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 		err = GetLastError();
 		free(pBuffer);
 		CloseHandle(hToken);
-		return err;
+		return LogFailure(err);
 	}
 
 	LPSTR pszString;
@@ -465,7 +445,7 @@ int Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 		err = GetLastError();
 		free(pBuffer);
 		CloseHandle(hToken);
-		return err;
+		return LogFailure(err);
 	}
 
 	uid = pszString;
@@ -475,7 +455,7 @@ int Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 	// Done with hToken
 	CloseHandle(hToken);
 
-	return 0;
+	return true;
 }
 
 bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
@@ -493,7 +473,10 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	}
 
 	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
+	{
+		ACE_OS::last_error(EINVAL);
 		return false;
+	}
 
 	// Map the generic access rights
 	void* TODO;	// Need to map the mode from some kind of common format...
@@ -520,10 +503,164 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 
 	if (!bRes)
 	{
+		ACE_OS::last_error(EINVAL);
 		::DebugBreak();
 		return false;
 	}
 	bAllowed = (bAllowedVal ? true : false);
+	return true;
+}
+
+bool Root::SpawnedProcess::LogFailure(DWORD err)
+{
+	if (err != (DWORD)-1)
+	{
+		const char szDefault[] = "Unknown error code.";
+		LPVOID lpMsgBuf = (LPVOID)szDefault;
+
+		FormatMessageA( 
+			FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+			FORMAT_MESSAGE_FROM_SYSTEM | 
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			err,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+			(LPSTR) &lpMsgBuf,
+			0,	NULL);
+		
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%s\n"),(LPSTR)lpMsgBuf));
+
+		// Free the buffer.
+		if (lpMsgBuf != (LPVOID)szDefault)
+			LocalFree(lpMsgBuf);
+	}
+
+	return false;
+}
+
+bool Root::SpawnedProcess::InstallSandbox()
+{
+	ACE_Configuration_Heap& reg_root = Manager::get_registry();
+
+	// Create the server section
+	ACE_Configuration_Section_Key sandbox_key;
+	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),1,sandbox_key)!=0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("failed to create Server\\Sandbox key in registry")),false);
+	
+	USER_INFO_2	info = 
+	{
+		L"_OMEGA_SANDBOX_USER_",   // usri2_name;
+		L"_OMEGA_SANDBOX_USER_",   // usri2_password;
+		0,                         // usri2_password_age;
+		USER_PRIV_USER,            // usri2_priv;
+		NULL,                      // usri2_home_dir;
+		L"This account is used by the OmegaOnline sandbox to control access to system resources", // usri2_comment;
+		UF_SCRIPT | UF_PASSWD_CANT_CHANGE | UF_DONT_EXPIRE_PASSWD | UF_NORMAL_ACCOUNT, // usri2_flags;
+		NULL,                      // usri2_script_path;
+		0,                         // usri2_auth_flags;
+		L"Omega Online sandbox user account",   // usri2_full_name;
+		L"This account is used by the OmegaOnline sandbox to control access to system resources", // usri2_usr_comment;
+		0,                         // usri2_parms;
+		NULL,                      // usri2_workstations;
+		0,                         // usri2_last_logon;
+		0,                         // usri2_last_logoff;
+		TIMEQ_FOREVER,             // usri2_acct_expires;
+		USER_MAXSTORAGE_UNLIMITED, // usri2_max_storage;
+		0,                         // usri2_units_per_week;
+		NULL,                      // usri2_logon_hours;
+		(DWORD)-1,                 // usri2_bad_pw_count;
+		(DWORD)-1,                 // usri2_num_logons;
+		NULL,                      // usri2_logon_server;
+		0,                         // usri2_country_code;
+		0,                         // usri2_code_page;
+	};
+	NET_API_STATUS err = NetUserAdd(NULL,2,(LPBYTE)&info,NULL);
+	if (err != NERR_Success)
+		return LogFailure(err);
+
+	// Now we have to add the SE_BATCH_LOGON_NAME priviledge and remove all the others
+	LSA_HANDLE hPolicy;
+	LSA_OBJECT_ATTRIBUTES oa = {0};
+	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_LOOKUP_NAMES,&hPolicy);
+	if (err2 != 0)
+	{
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(err2);
+	}
+	
+	LSA_UNICODE_STRING szName = 
+	{ 
+		(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(info.usri2_name)+1)),
+		(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(info.usri2_name)+1)),
+		
+	};
+
+	
+	LookupAccountName(NULL,info.usri2_name,
+	err2 = LsaLookupNames(hPolicy,1,&szName,&pDList,&pSIDList);
+	if (err2 == 0)
+	{
+		// Done with pDList
+		LsaFreeMemory(pDList);
+
+		if (pSIDList[0].Use == SidTypeUser)
+		{
+			LSA_UNICODE_STRING szName = 
+			{ 
+				(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(SE_BATCH_LOGON_NAME)+1)),
+				(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(SE_BATCH_LOGON_NAME)+1)),
+				L"SeBatchLogonRight"
+			};
+            err2 = LsaAddAccountRights(hPolicy,pSIDList[0].Sid,&szName,1);
+			if (err2 == 0)
+			{
+				// Remove all other priviledges
+				LSA_UNICODE_STRING* pRightsList;
+				ULONG ulRightsCount = 0;
+				err2 = LsaEnumerateAccountRights(hPolicy,pSIDList[0].Sid,&pRightsList,&ulRightsCount);
+				if (err2 == 0)
+				{
+					for (ULONG i=0;i<ulRightsCount;i++)
+					{
+						if (ACE_OS::strcmp(pRightsList[i].Buffer,L"SeBatchLogonRight") != 0)
+						{
+							err2 = LsaRemoveAccountRights(hPolicy,pSIDList[0].Sid,FALSE,&pRightsList[i],1);
+							if (err2 != 0)
+								break;
+						}
+					}
+				}
+			}
+		}
+
+		// Done with pSIDList
+		LsaFreeMemory(pSIDList);
+	}
+
+	// Done with policy handle
+	LsaClose(hPolicy);
+
+	if (err2 != 0)
+	{
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(err2);
+	}
+
+	ACE_TString strUName(ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_name));
+	ACE_TString strPwd(ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_password));
+
+	// Set the user name and pwd...
+	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("failed to set sandbox username in registry")),false);
+
+	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("Password"),strPwd) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("failed to set sandbox password in registry")),false);
+	
+	return true;
+}
+
+bool Root::SpawnedProcess::UninstallSandbox()
+{
 	return true;
 }
 

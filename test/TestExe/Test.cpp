@@ -19,10 +19,18 @@ int main(int argc, char* argv[])
 		if (pE)
 			throw pE;
 
-		OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");
-		OTL::ObjectPtr<Test::DllTest> ptrTest2("Test.Dll");
+		try
+		{
+			OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");
+			OTL::ObjectPtr<Test::DllTest> ptrTest2("Test.Dll");
 		
-		printf(ptrTest->Hello());
+			printf(ptrTest->Hello());
+		}
+		catch (...)
+		{
+			Omega::Uninitialize();
+			throw;
+		}
 
 		Omega::Uninitialize();
 	}

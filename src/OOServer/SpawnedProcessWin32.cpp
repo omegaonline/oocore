@@ -224,12 +224,12 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile)
 {
 	// Get our module name
-	TCHAR szPath[MAX_PATH];
-	if (!GetModuleFileName(NULL,szPath,MAX_PATH))
+	WCHAR szPath[MAX_PATH];
+	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 		return GetLastError();
 
-	TCHAR szCmdLine[MAX_PATH+64];
-	if (ACE_OS::sprintf(szCmdLine,ACE_TEXT("\"%s\" --spawned %u"),szPath,uPort)==-1)
+	WCHAR szCmdLine[MAX_PATH+64];
+	if (ACE_OS::sprintf(szCmdLine,L"\"%s\" --spawned %u",szPath,uPort)==-1)
 		return ERROR_INVALID_PARAMETER;
 
 	// Load up the users profile
@@ -253,13 +253,14 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	}
 
 	// Init our startup info
-	STARTUPINFO startup_info = {0};
-	startup_info.cb = sizeof(STARTUPINFO);
+	STARTUPINFOW startup_info = {0};
+	startup_info.cb = sizeof(STARTUPINFOW);
+	startup_info.lpDesktop = L"";
 
-	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
+	DWORD dwFlags = DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT;
 
 	PROCESS_INFORMATION process_info = {0};
-	if (!CreateProcessAsUser(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		DestroyEnvironmentBlock(lpEnv);
@@ -341,7 +342,7 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	
 	if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 		return GetLastError();
-	
+
 	return ERROR_SUCCESS;
 }
 

@@ -19,11 +19,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.1&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\ACE_wrappers&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				TreatWChar_tAsBuiltInType="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -69,7 +69,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;..\..\3rd Party Libraries\ACE-5.5.1&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\ACE_wrappers&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="4"
 				TreatWChar_tAsBuiltInType="TRUE"

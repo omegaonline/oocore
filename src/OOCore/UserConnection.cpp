@@ -121,10 +121,5 @@ void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 	mb.release();
 
 	if (!bSuccess)
-	{
-#ifdef OMEGA_WIN32
-		if (::GetLastError() != ERROR_IO_PENDING)
-#endif
 		delete this;
-	}
 }

@@ -579,63 +579,89 @@ bool Root::SpawnedProcess::InstallSandbox()
 		return LogFailure(err);
 
 	// Now we have to add the SE_BATCH_LOGON_NAME priviledge and remove all the others
-	LSA_HANDLE hPolicy;
-	LSA_OBJECT_ATTRIBUTES oa = {0};
-	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_LOOKUP_NAMES,&hPolicy);
-	if (err2 != 0)
+
+	// Lookup the account SID
+	DWORD dwSidSize = 0;
+	DWORD dwDnSize = 0;
+	SID_NAME_USE use;
+	LookupAccountNameW(NULL,info.usri2_name,NULL,&dwSidSize,NULL,&dwDnSize,&use);
+	if (dwSidSize==0)
 	{
 		NetUserDel(NULL,info.usri2_name);
-		return LogFailure(err2);
+		err = GetLastError();
+		return LogFailure(err);
 	}
 	
-	LSA_UNICODE_STRING szName = 
-	{ 
-		(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(info.usri2_name)+1)),
-		(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(info.usri2_name)+1)),
-		
-	};
+	PSID pSid = static_cast<PSID>(new char[dwSidSize]);
+	if (!pSid)
+	{
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(ERROR_OUTOFMEMORY);
+	}
+	wchar_t* pszDName = new wchar_t[dwDnSize];
+	if (!pszDName)
+	{
+		delete [] pSid;
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(ERROR_OUTOFMEMORY);
+	}
+	if (!LookupAccountNameW(NULL,info.usri2_name,pSid,&dwSidSize,pszDName,&dwDnSize,&use))
+	{
+		err = GetLastError();
+		delete [] pSid;
+		delete [] pszDName;
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(err);
+	}
+	delete [] pszDName;
 
+	if (use != SidTypeUser)
+	{
+		delete [] pSid;
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(NERR_BadUsername);
+	}
+
+	// Open the local account policy...
+	LSA_HANDLE hPolicy;
+	LSA_OBJECT_ATTRIBUTES oa = {0};
+	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
+	if (err2 != 0)
+	{
+		delete [] pSid;
+		NetUserDel(NULL,info.usri2_name);
+		return LogFailure(LsaNtStatusToWinError(err2));
+	}
 	
-	LookupAccountName(NULL,info.usri2_name,
-	err2 = LsaLookupNames(hPolicy,1,&szName,&pDList,&pSIDList);
+	LSA_UNICODE_STRING szName;
+	szName.Buffer = L"SeBatchLogonRight";
+	size_t len = ACE_OS::strlen(szName.Buffer);
+	szName.Length = static_cast<USHORT>(len * sizeof(WCHAR));
+	szName.MaximumLength = static_cast<USHORT>((len+1) * sizeof(WCHAR));
+
+	err2 = LsaAddAccountRights(hPolicy,pSid,&szName,1);
 	if (err2 == 0)
 	{
-		// Done with pDList
-		LsaFreeMemory(pDList);
-
-		if (pSIDList[0].Use == SidTypeUser)
+		// Remove all other priviledges
+		LSA_UNICODE_STRING* pRightsList;
+		ULONG ulRightsCount = 0;
+		err2 = LsaEnumerateAccountRights(hPolicy,pSid,&pRightsList,&ulRightsCount);
+		if (err2 == 0)
 		{
-			LSA_UNICODE_STRING szName = 
-			{ 
-				(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(SE_BATCH_LOGON_NAME)+1)),
-				(USHORT)(sizeof(WCHAR)*(ACE_OS::strlen(SE_BATCH_LOGON_NAME)+1)),
-				L"SeBatchLogonRight"
-			};
-            err2 = LsaAddAccountRights(hPolicy,pSIDList[0].Sid,&szName,1);
-			if (err2 == 0)
+			for (ULONG i=0;i<ulRightsCount;i++)
 			{
-				// Remove all other priviledges
-				LSA_UNICODE_STRING* pRightsList;
-				ULONG ulRightsCount = 0;
-				err2 = LsaEnumerateAccountRights(hPolicy,pSIDList[0].Sid,&pRightsList,&ulRightsCount);
-				if (err2 == 0)
+				if (ACE_OS::strcmp(pRightsList[i].Buffer,L"SeBatchLogonRight") != 0)
 				{
-					for (ULONG i=0;i<ulRightsCount;i++)
-					{
-						if (ACE_OS::strcmp(pRightsList[i].Buffer,L"SeBatchLogonRight") != 0)
-						{
-							err2 = LsaRemoveAccountRights(hPolicy,pSIDList[0].Sid,FALSE,&pRightsList[i],1);
-							if (err2 != 0)
-								break;
-						}
-					}
+					err2 = LsaRemoveAccountRights(hPolicy,pSid,FALSE,&pRightsList[i],1);
+					if (err2 != 0)
+						break;
 				}
 			}
 		}
-
-		// Done with pSIDList
-		LsaFreeMemory(pSIDList);
 	}
+	
+	// Done with pSid
+	delete [] pSid;
 
 	// Done with policy handle
 	LsaClose(hPolicy);
@@ -643,7 +669,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (err2 != 0)
 	{
 		NetUserDel(NULL,info.usri2_name);
-		return LogFailure(err2);
+		return LogFailure(LsaNtStatusToWinError(err2));
 	}
 
 	ACE_TString strUName(ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_name));
@@ -661,6 +687,21 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 bool Root::SpawnedProcess::UninstallSandbox()
 {
+	ACE_Configuration_Heap& reg_root = Manager::get_registry();
+
+	// Open the server section
+	ACE_Configuration_Section_Key sandbox_key;
+	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key)!=0)
+		return true;
+	
+	ACE_TString strUName;
+	
+	// Set the user name and pwd...
+	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
+		return true;
+
+	NetUserDel(NULL,ACE_TEXT_ALWAYS_WCHAR(strUName.c_str()));
+
 	return true;
 }
 

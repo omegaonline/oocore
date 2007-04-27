@@ -174,9 +174,9 @@ int User::Manager::init(u_short uPort)
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
-	ACE_Time_Value wait(5);
-
+	
 	// Connect to the root
+	ACE_Time_Value wait(15);
 	int ret = connector.connect(stream,addr,&wait);
 	if (ret != 0)
 	{
@@ -621,30 +621,30 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	}
 }
 
-void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait)
+void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
 
-	ACE_Time_Value deadline(5);
-	if (wait)
-		deadline = ACE_OS::gettimeofday() + *wait;
+	ACE_Time_Value request_deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
+	if (deadline)
+		request_deadline = *deadline;
 
-	if (RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,&deadline) != 0)
+	if (RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,&request_deadline) != 0)
 		OOSERVER_THROW_LASTERROR();
 }
 
-ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* wait)
+ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
 
-	ACE_Time_Value deadline(5);
-	if (wait)
-		deadline = ACE_OS::gettimeofday() + *wait;
-
+	ACE_Time_Value request_deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
+	if (deadline)
+		request_deadline = *deadline;
+	
 	Request* pResponse;
-	int err = RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,&deadline);
+	int err = RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,&request_deadline);
 	if (err != 0)
 		OOSERVER_THROW_LASTERROR();
 

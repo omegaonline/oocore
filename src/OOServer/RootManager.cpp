@@ -381,7 +381,7 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 			{
 				// Accept a socket
 				ACE_SOCK_Stream stream;
-				ACE_Time_Value wait(5);
+				ACE_Time_Value wait(15);
 				ret = acceptor.accept(stream,0,&wait);
 				if (ret != 0)
 				{

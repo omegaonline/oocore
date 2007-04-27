@@ -142,6 +142,12 @@ inline Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 	return string_t(static_cast<handle_t>(string_t_mid(m_handle,start,length)));
 }
 
+OOCORE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,a,(in),size_t,b));
+inline Omega::string_t Omega::string_t::Right(size_t length) const
+{
+	return string_t(static_cast<handle_t>(string_t_right(m_handle,length)));
+}
+
 OOCORE_EXPORTED_FUNCTION_VOID(string_t_clear,1,((in),void*,h));
 inline Omega::string_t& Omega::string_t::Clear()
 {

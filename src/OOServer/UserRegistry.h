@@ -23,6 +23,8 @@ namespace User
 			Manager*        m_pManager;
 			Omega::string_t m_strKey;
 
+			Omega::string_t FullKeyPath(const Omega::string_t& strSub);
+
 		// IRegistry members
 		public:
 			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);

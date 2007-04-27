@@ -12,7 +12,9 @@ namespace OOCore
 		public ExceptionImpl<Activation::IOidNotFoundException>
 	{
 	public:
-		guid_t					m_oid;
+		guid_t m_oid;
+
+		static Throw(const guid_t& Oid, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(OidNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
@@ -144,10 +146,10 @@ void OOCore::ExecProcess(const string_t& strExeName)
 		OOCORE_THROW_ERRNO(ret);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_IOidNotFoundException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
+OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 {
 	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateObject();
-	pNew->m_strDesc = "OID not found.";
+	pNew->m_strDesc = "The identified object could not be found.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw pNew;
@@ -165,18 +167,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,(
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
 {
 	string_t strCurName = strObjectName;
-
 	for (int i=0;i<2;++i)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey("Objects/" + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey("Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue("OID"))
 			return guid_t::FromString(ptrOidKey->GetStringValue("OID"));
 
 		strCurName = ptrOidKey->GetStringValue("CurrentVersion");
 	}
-
-	Registry::INotFoundException::Throw(strObjectName,OMEGA_SOURCE_INFO);
+	
 	return guid_t::NIL;
 }
 
@@ -255,10 +255,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 		ObjectPtr<IException> ptrE;
 		ptrE.Attach(pE);
 
-		Activation::IOidNotFoundException::Throw(oid,ptrE);
+		OOCore::OidNotFoundException::Throw(oid,ptrE);
 	}
 
-	Activation::IOidNotFoundException::Throw(oid);
+	OOCore::OidNotFoundException::Throw(oid);
 	return 0;
 }
 

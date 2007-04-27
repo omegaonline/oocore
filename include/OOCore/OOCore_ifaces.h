@@ -27,8 +27,6 @@ namespace Omega
 		interface IOidNotFoundException : public IException
 		{
 			virtual guid_t GetMissingOid() = 0;
-
-			static void Throw(const guid_t& oid, IException* pCause = 0);
 		};
 		OMEGA_DECLARE_IID(IOidNotFoundException);
 
@@ -288,12 +286,6 @@ OOCORE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const Omega::g
 inline void Omega::INoInterfaceException::Throw(const Omega::guid_t& iid, const char_t* source)
 {
 	INoInterfaceException_Throw(iid,source);
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_IOidNotFoundException_Throw,2,((in),const Omega::guid_t&,oid,(in),Omega::IException*,pCause));
-inline void Omega::Activation::IOidNotFoundException::Throw(const Omega::guid_t& oid, Omega::IException* pCause)
-{
-	Activation_IOidNotFoundException_Throw(oid,pCause);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const Omega::guid_t&,oid,(in),Omega::IException*,pCause));

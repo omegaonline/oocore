@@ -44,9 +44,8 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	// outermost requests timeout...
 	void* TODO;
 
-	ACE_Time_Value deadline(ACE_OS::gettimeofday());
-	deadline += 5;
-
+	ACE_Time_Value deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
+	
 	// QI pStream for our private interface
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput;
 	ptrOutput.Attach(static_cast<ObjectImpl<OutputCDR>*>(pStream->QueryInterface(OOCore::IID_IOutputCDR)));

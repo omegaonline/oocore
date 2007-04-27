@@ -124,6 +124,7 @@ namespace Omega
 		inline size_t ReverseFind(char_t c, size_t pos = npos, bool bIgnoreCase = false) const;
 		inline string_t Left(size_t length) const;
 		inline string_t Mid(size_t start, size_t length = npos) const;
+		inline string_t Right(size_t length) const;
 		inline string_t& Clear();
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;

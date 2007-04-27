@@ -41,14 +41,14 @@ Root::SpawnedProcess::~SpawnedProcess(void)
 		Kill();
 }
 
-int Root::SpawnedProcess::Close(ACE_Time_Value* wait)
+int Root::SpawnedProcess::Close(ACE_Time_Value* timeout)
 {
 	int exit_code = 0;
 	DWORD dwWait = 10000;
-	if (wait)
+	if (timeout)
 	{
 		ACE_UINT64 val;
-		wait->to_usec(val);
+		timeout->to_usec(val);
 		dwWait = static_cast<DWORD>(val / 1000);
 	}
 

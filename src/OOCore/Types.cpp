@@ -235,6 +235,19 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,s1,(in),si
 	return s2;
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),size_t,length))
+{
+	size_t start = static_cast<const StringNode*>(s1)->m_str.length();
+	if (length > start)
+		start = 0;
+	else
+		start -= length;
+
+	StringNode* s2;
+	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_str.substr(start)));
+	return s2;
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t*,sz,(in),va_list,ap))
 {
 	for (int len=64;;len*=2)

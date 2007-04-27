@@ -198,7 +198,7 @@ int OOCore::UserSession::get_port(u_short& uPort)
 		if (process.spawn(options)==ACE_INVALID_PID)
 			return -1;
 
-		// Wait 1 second for the process to launch, if it takes more than 10 seconds its probably okay
+		// Wait for the process to launch, if it takes more than 10 seconds its probably okay
 		ACE_exitcode exitcode = 0;
 		if (process.wait(ACE_Time_Value(10),&exitcode) != 0)
 			return -1;
@@ -641,8 +641,24 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		ObjectPtr<Remoting::IObjectManager> ptrOM;
 		ptrOM = get_object_manager(src_channel_id);
 
+		// Wrap up the request
+		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
+		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ptrRequest->init(*request->input());
+
+		// Create a response if required
+		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+		if (trans_id != 0)
+		{
+			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+			ptrResponse->WriteByte(0);
+		}
+
+		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
+		void* TODO; // Setup the CallContext... Use a self-destructing class!
+
 		// Convert deadline time to #msecs
-		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
+		ACE_Time_Value wait = *request_deadline - ACE_OS::gettimeofday();
 		if (wait <= ACE_Time_Value::zero)
 		{
 			if (trans_id != 0)
@@ -660,22 +676,6 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		static_cast<const ACE_Time_Value>(wait).msec(static_cast<ACE_UINT64&>(msecs));
 		if (msecs > ACE_UINT32_MAX)
 			msecs = ACE_UINT32_MAX;
-
-		// Wrap up the request
-		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
-		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
-		ptrRequest->init(*request->input());
-
-		// Create a response if required
-		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
-		if (trans_id != 0)
-		{
-			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
-			ptrResponse->WriteByte(0);
-		}
-
-		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-		void* TODO; // Setup the CallContext... Use a self-destructing class!
 
 		try
 		{

@@ -24,7 +24,7 @@ namespace Root
 		bool Spawn(uid_t id, u_short uPort);
 		
 		bool IsRunning();
-		int Close(ACE_Time_Value* wait = 0);
+		int Close(ACE_Time_Value* timeout = 0);
 		void Kill();
 		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 

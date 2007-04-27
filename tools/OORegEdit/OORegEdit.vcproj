@@ -12,14 +12,14 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
+			OutputDirectory="..\..\bin\Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\wxWidgets-2.6.3\include&quot;;&quot;C:\Program Files\wxWidgets-2.6.3\include\msvc&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.3\include&quot;;&quot;..\..\extern\wxWidgets-2.8.3\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -34,7 +34,7 @@
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\wxWidgets-2.6.3\lib\vc_dll&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.3\lib\vc_dll&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OORegEdit.pdb"
 				SubSystem="2"
@@ -68,7 +68,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\wxWidgets-2.6.3\include&quot;;&quot;C:\Program Files\wxWidgets-2.6.3\include\msvc&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.3\include&quot;;&quot;..\..\extern\wxWidgets-2.8.3\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="4"
 				TreatWChar_tAsBuiltInType="TRUE"

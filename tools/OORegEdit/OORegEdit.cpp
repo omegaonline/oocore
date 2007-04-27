@@ -10,7 +10,16 @@ IMPLEMENT_APP(OORegEditApp)
 
 bool OORegEditApp::OnInit()
 {
-	Omega::Initialize_Minimal();
+	Omega::IException* pE = Omega::Initialize();
+	if (pE)
+	{
+		wxString strText = wxString::Format(_("Exception: %s\nAt: %s."),(const char*)pE->Description(),(const char*)pE->Source());
+
+		wxMessageDialog dlg(NULL,strText,_("Critical Error!"),wxOK | wxICON_EXCLAMATION);
+		dlg.ShowModal();
+		pE->Release();
+		return false;
+	}
 
 	wxFileSystem::AddHandler(new wxZipFSHandler);
 

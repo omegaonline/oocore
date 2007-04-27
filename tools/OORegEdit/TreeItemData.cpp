@@ -19,9 +19,11 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	{
 		size_t count = 1;
 		Omega::string_t strName;
-		ptrEnum->Next(&strName,count);
+		ptrEnum->Next(count,&strName);
 		if (count==0)
 			break;
+
+		OutputDebugString(strName);
 
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey = m_ptrKey.OpenSubKey(strName);
 
@@ -31,7 +33,7 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		if (m_nDepth==0)
 		{
 			OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
-			ptrEnum2->Next(&strName,count);
+			ptrEnum2->Next(count,&strName);
 			if (count==1)
 				pTree->AppendItem(itemId,wxT("DUFF!")); 
 		}
@@ -53,11 +55,11 @@ void TreeItemData::InitList(wxListCtrl* pList)
 	{
 		size_t count = 1;
 		Omega::string_t strName;
-		ptrEnum->Next(&strName,count);
+		ptrEnum->Next(count,&strName);
 		if (count==0)
 			break;
 
-		Omega::Registry::IRegistryKey::ValueType type = m_ptrKey->GetValueType(strName);
+		Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strName);
 
 		long item = pList->InsertItem(i,wxString(strName),type==Omega::Registry::IRegistryKey::String ? 4 : 5);
 		
@@ -76,7 +78,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		{
 			Omega::byte_t szBuf[128];
 			Omega::uint32_t cbLen = sizeof(szBuf)/sizeof(szBuf[0]);
-			m_ptrKey->GetBinaryValue(strName,szBuf,cbLen);
+			m_ptrKey->GetBinaryValue(strName,cbLen,szBuf);
 
 			wxString val;
 			if (cbLen==0)
@@ -118,7 +120,7 @@ void TreeItemData::DeleteValue(const Omega::string_t& strVal)
 
 void TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo)
 {
-	Omega::Registry::IRegistryKey::ValueType type = m_ptrKey->GetValueType(strFrom);
+	Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strFrom);
 
 	if (m_ptrKey->IsValue(strTo))
 		Omega::Registry::IAlreadyExistsException::Throw(strTo);
@@ -138,13 +140,13 @@ void TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::stri
 	else
 	{
 		Omega::uint32_t cbLen = 0;
-		m_ptrKey->GetBinaryValue(strFrom,NULL,cbLen);
+		m_ptrKey->GetBinaryValue(strFrom,cbLen,NULL);
 
 		Omega::byte_t* pBuffer = (Omega::byte_t*)malloc(cbLen);
 		try
 		{
-			m_ptrKey->GetBinaryValue(strFrom,pBuffer,cbLen);
-			m_ptrKey->SetBinaryValue(strTo,pBuffer,cbLen);
+			m_ptrKey->GetBinaryValue(strFrom,cbLen,pBuffer);
+			m_ptrKey->SetBinaryValue(strTo,cbLen,pBuffer);
 		}
 		catch (...)
 		{
@@ -175,11 +177,11 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 	{
 		size_t count = 1;
 		Omega::string_t strName;
-		ptrEnum->Next(&strName,count);
+		ptrEnum->Next(count,&strName);
 		if (count==0)
 			break;
 
-		Omega::Registry::IRegistryKey::ValueType type = ptrOldKey->GetValueType(strName);
+		Omega::Registry::IRegistryKey::ValueType_t type = ptrOldKey->GetValueType(strName);
 
 		if (type==Omega::Registry::IRegistryKey::String)
 		{
@@ -194,13 +196,13 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 		else
 		{
 			Omega::uint32_t cbLen = 0;
-			ptrNewKey->GetBinaryValue(strName,NULL,cbLen);
+			ptrNewKey->GetBinaryValue(strName,cbLen,NULL);
 
 			Omega::byte_t* pBuffer = (Omega::byte_t*)malloc(cbLen);
 			try
 			{
-				ptrOldKey->GetBinaryValue(strName,pBuffer,cbLen);
-				ptrNewKey->SetBinaryValue(strName,pBuffer,cbLen);
+				ptrOldKey->GetBinaryValue(strName,cbLen,pBuffer);
+				ptrNewKey->SetBinaryValue(strName,cbLen,pBuffer);
 			}
 			catch (...)
 			{
@@ -216,7 +218,7 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 	{
 		size_t count = 1;
 		Omega::string_t strName;
-		ptrEnum->Next(&strName,count);
+		ptrEnum->Next(count,&strName);
 		if (count==0)
 			break;
 
@@ -249,7 +251,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	{
 		size_t count = 1;
 		OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
-		ptrEnum2->Next(&strName,count);
+		ptrEnum2->Next(count,&strName);
 		if (count==1)
 			pTree->AppendItem(itemId,wxT("DUFF!")); 
 	}
@@ -334,7 +336,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 {
 	Omega::string_t strName(pList->GetItemText(item_id));
-	Omega::Registry::IRegistryKey::ValueType type = m_ptrKey->GetValueType(strName);
+	Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strName);
 
 	if (type == Omega::Registry::IRegistryKey::String)
 	{
@@ -408,7 +410,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 		Omega::string_t strSubKey;
 		for (;;)
 		{
-			size_t pos = strFoundPos.Find('/');
+			size_t pos = strFoundPos.Find('\\');
 			if (pos != -1)
 			{
 				strSubKey = strFoundPos.Left(pos);
@@ -476,7 +478,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 
 	// Try the next sibling
 	wxTreeItemId next_id = pTree->GetNextSibling(tree_id);
-	while (next_id == 0)
+	while (!next_id)
 	{
 		if (tree_id == pTree->GetRootItem())
 		{
@@ -499,7 +501,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 	{
 		size_t count = 1;
 		Omega::string_t strName;
-		ptrEnum->Next(&strName,count);
+		ptrEnum->Next(count,&strName);
 		if (count==0)
 			break;
 
@@ -536,7 +538,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 		{
 			count = 1;
 			Omega::string_t strValue;
-			ptrEnum->Next(&strValue,count);
+			ptrEnum->Next(count,&strValue);
 			if (count==0)
 				break;
 
@@ -544,7 +546,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 			{
 				// Found it!
 				bKey = false;
-				return strName + "/" + strValue;
+				return strName + "\\" + strValue;
 			}
 		}
 
@@ -552,7 +554,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 		Omega::string_t strNext = Find3(ptrSubKey,strFind,bKeys,bValues,bData,bMatchAll,bIgnoreCase,bKey);
 		if (!strNext.IsEmpty())
 		{
-			return strName + "/" + strNext;
+			return strName + "\\" + strNext;
 		}
 	}
 

@@ -104,7 +104,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Applications/OORegEdit/Layout");
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Current User\\Applications\\OORegEdit\\Layout");
 		
 		wxPoint ptPos;
 		ptPos.x = ptrKey->GetUIntValue("Left");
@@ -136,7 +136,7 @@ void MainFrame::CreateChildWindows(void)
 		{
 			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t::Format("Favourite%u",nFiles));
 
-			ssize_t pos = val.ReverseFind(L'/');
+			size_t pos = val.ReverseFind(L'\\');
 			if (pos != Omega::string_t::npos)
 			{
 				wxString strName(val.Mid(pos+1));
@@ -184,7 +184,7 @@ void MainFrame::CreateChildWindows(void)
 	m_pList->SetColumnWidth(2, col_width[2]); 
 		
 	// Open the registry root
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("/");
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("\\");
 
 	// Init the tree
 	TreeItemData* pItem = new TreeItemData(ptrKey,5);
@@ -205,7 +205,7 @@ void MainFrame::SelectItem(Omega::string_t strSelection)
 	wxTreeItemId tree_id = m_pTree->GetRootItem();
 	for (;;)
 	{
-		size_t pos = strSelection.Find(L'/');
+		size_t pos = strSelection.Find(L'\\');
 		Omega::string_t strSubKey;
 		if (pos != -1)
 		{
@@ -323,7 +323,7 @@ void MainFrame::OnQuit(wxCommandEvent& WXUNUSED(evt))
 void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 {
 	// Set some defaults...
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Applications/OORegEdit/Layout",Omega::Registry::IRegistryKey::Create);
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
 
 	wxPoint pt = GetPosition();
 	ptrKey->SetUIntValue("Top",pt.y);
@@ -356,7 +356,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	{
 		wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
 
-		Omega::string_t strVal = m_mapMRU[strName] + "/" + Omega::string_t(strName);
+		Omega::string_t strVal = m_mapMRU[strName] + "\\" + Omega::string_t(strName);
 
 		ptrKey->SetStringValue(Omega::string_t::Format("Favourite%u",nFiles-1),strVal);
 	}
@@ -532,7 +532,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name contains '/'. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name contains '\\'. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 		m_pTree->EditLabel(evt.GetItem());
 	}
@@ -578,7 +578,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name contains '/'. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name contains '\\'. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 	}
 	catch(...)
@@ -851,10 +851,10 @@ void MainFrame::OnTreeSelChanged(wxTreeEvent& evt)
 
 	wxTreeItemId item_id = evt.GetItem();
 	wxString strText;
-	while (item_id!=NULL)
+	while (item_id)
 	{
 		if (item_id != m_pTree->GetRootItem())
-			strText = m_pTree->GetItemText(item_id) + (strText.IsEmpty() ? wxT("") : wxT("/")) + strText;
+			strText = m_pTree->GetItemText(item_id) + (strText.IsEmpty() ? wxT("") : wxT("\\")) + strText;
 	
 		item_id = m_pTree->GetItemParent(item_id);
 	}
@@ -897,7 +897,7 @@ void MainFrame::OnMRUFavourites(wxCommandEvent& event)
 
 void MainFrame::MustHaveTreeSelection(wxUpdateUIEvent& evt)
 {
-	evt.Enable(m_pTree->GetSelection()!=0);
+	evt.Enable(m_pTree->GetSelection());
 }
 
 void MainFrame::OnAddFav(wxCommandEvent& evt)
@@ -935,7 +935,7 @@ void MainFrame::OnRemoveFav(wxCommandEvent& evt)
 
 void MainFrame::OnUpdateFavouritesAdd(wxUpdateUIEvent& evt)
 {
-	evt.Enable(m_fileHistory.GetCount()<(size_t)m_fileHistory.GetMaxFiles() && m_pTree->GetSelection()!=0);
+	evt.Enable(m_fileHistory.GetCount()<(size_t)m_fileHistory.GetMaxFiles() && m_pTree->GetSelection());
 }
 
 void MainFrame::OnUpdateFavouritesRemove(wxUpdateUIEvent& evt)

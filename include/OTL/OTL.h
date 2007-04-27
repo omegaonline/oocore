@@ -947,8 +947,8 @@ namespace OTL
 		static EnumIFace* Create(InputIterator first, InputIterator last)
 		{
 			ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateObjectPtr();
+			ptrThis->m_listItems.assign(first,last);
 			ptrThis->m_pos = ptrThis->m_listItems.begin();
-			std::copy(first,last,ptrThis->m_pos);
 			return ptrThis.AddRefReturn();
 		}
 
@@ -972,6 +972,9 @@ namespace OTL
 			count = 0;
 			while (m_pos!=m_listItems.end() && count < c)
 			{
+				::DebugBreak();
+				OutputDebugString(*m_pos);
+
 				parrVals[count] = *m_pos;
 				++count;
 				++m_pos;
@@ -1005,8 +1008,8 @@ namespace OTL
 			Omega::Guard<Omega::CriticalSection> guard(m_cs);
 
 			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateObjectPtr();
+			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());
 			ptrNew->m_pos = ptrNew->m_listItems.begin();
-			std::copy(m_listItems.begin(),m_listItems.end(),ptrNew->m_pos);
 			return ptrNew.AddRefReturn();
 		}
 	};

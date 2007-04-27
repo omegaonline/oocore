@@ -317,7 +317,14 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort)
 		return LogFailure(dwRes);
 	}
 
-	m_hToken = hToken;
+	BOOL bRes = DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
+	dwRes = GetLastError();
+
+	// Done with hToken
+	CloseHandle(hToken);
+
+	if (!bRes)
+		return LogFailure(dwRes);
 
 	return true;
 }
@@ -492,20 +499,26 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	};
 	MapGenericMask(&dwAccessDesired,&generic);
 
+	if (!ImpersonateLoggedOnUser(m_hToken))
+	{
+		ACE_OS::last_error(EINVAL);
+		return false;
+	}
+	
 	// Do the access check
 	PRIVILEGE_SET privilege_set = {0};
-
 	DWORD dwPrivSetSize = sizeof(privilege_set);
 	DWORD dwAccessGranted = 0;
 	BOOL bAllowedVal = FALSE;
 	BOOL bRes = ::AccessCheck(pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
-
+	DWORD err = GetLastError();
 	ACE_OS::free(pSD);
+	RevertToSelf();
 
-	if (!bRes)
+	if (!bRes && err!=ERROR_SUCCESS)
 	{
-		ACE_OS::last_error(EINVAL);
 		::DebugBreak();
+		ACE_OS::last_error(EINVAL);
 		return false;
 	}
 	bAllowed = (bAllowedVal ? true : false);

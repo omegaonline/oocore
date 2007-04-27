@@ -781,17 +781,64 @@ Omega::IEnumString* RootKey::EnumSubKeys()
 	return EnumString::Create(setStrings.begin(),setStrings.end());
 }
 
-void RootKey::EnumSubKeys(std::set<Omega::string_t>& /*setStrings*/)
+void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 {
-	::DebugBreak();
-	void* TODO;
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::EnumSubKeys);
+	request.write_string(m_strKey);
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+
+	ACE_CDR::ULong err = 0;
+	if (!response.read_ulong(err))
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_CDR::ULongLong count = 0;
+	if (!response.read_ulonglong(count))
+		OOSERVER_THROW_LASTERROR();
+
+	for (ACE_CDR::ULongLong i=0;i<count;++i)
+	{
+		ACE_CString strName;
+		if (!response.read_string(strName))
+			OOSERVER_THROW_LASTERROR();
+
+		setStrings.insert(strName.c_str());
+	}
 }
 
 Omega::IEnumString* RootKey::EnumValues()
 {
-	::DebugBreak();
-	void* TODO;
-	return 0;
+	std::set<Omega::string_t> setStrings;
+
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::EnumValues);
+	request.write_string(m_strKey);
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+
+	ACE_CDR::ULong err = 0;
+	if (!response.read_ulong(err))
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_CDR::ULongLong count = 0;
+	if (!response.read_ulonglong(count))
+		OOSERVER_THROW_LASTERROR();
+
+	for (ACE_CDR::ULongLong i=0;i<count;++i)
+	{
+		ACE_CString strName;
+		if (!response.read_string(strName))
+			OOSERVER_THROW_LASTERROR();
+
+		setStrings.insert(strName.c_str());
+	}
+	
+	return EnumString::Create(setStrings.begin(),setStrings.end());
 }
 
 void RootKey::DeleteKey(const string_t& strSubKey)
@@ -959,9 +1006,12 @@ IRegistryKey::ValueType_t BaseKey::GetValueType(const string_t& strName)
 
 IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
-	if (strSubKey.Left(12) == "Current User")
+	if (strSubKey.IsEmpty())
+		BadNameException::Throw(strSubKey);
+
+	if (strSubKey.Left(13) == "\\Current User")
 	{
-		string_t sub_strSubKey = strSubKey.Mid(13);
+		string_t sub_strSubKey = strSubKey.Mid(14);
 		if (sub_strSubKey.IsEmpty())
 		{
 			if (flags & IRegistryKey::FailIfThere)
@@ -974,7 +1024,7 @@ IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	}
 	else
 	{
-		return m_ptrRoot->OpenSubKey(strSubKey,flags);
+		return m_ptrRoot->OpenSubKey(strSubKey.Mid(1),flags);
 	}
 }
 

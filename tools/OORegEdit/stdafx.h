@@ -1,9 +1,9 @@
-#include <OOCore/Registry.h>
 #include <OTL/OTL.h>
 
 #include <map>
 
 #define WXUSINGDLL
+#define wxUSE_GUI 1
 
 // For compilers that support precompilation, includes <wx/wx.h>.
 #include <wx/wxprec.h>
@@ -25,5 +25,3 @@
 #include <wx/clipbrd.h>
 #include <wx/valgen.h>
 #include <wx/docview.h>
-
-//#pragma warning(push,4)

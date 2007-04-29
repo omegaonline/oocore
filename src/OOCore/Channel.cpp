@@ -60,13 +60,13 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	{
 		if (attribs & Remoting::asynchronous)
 		{
-			if (m_pSession->send_asynch(m_id,request,&deadline) != 0)
+			if (!m_pSession->send_asynch(m_id,request,&deadline))
 				OOCORE_THROW_LASTERROR();
 		}
 		else
 		{
 			UserSession::Request* response = 0;
-			if (m_pSession->send_synch(m_id,request,response,&deadline) != 0)
+			if (!m_pSession->send_synch(m_id,request,response,&deadline))
 				OOCORE_THROW_LASTERROR();
 
 			// Unpack and validate response...

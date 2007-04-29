@@ -370,32 +370,32 @@ int User::Manager::validate_connection(const ACE_Asynch_Accept::Result& result, 
 	return 0;
 }
 
-int User::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
+bool User::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	User::Request* req;
-	ACE_NEW_RETURN(req,Request(handle,input),-1);
+	ACE_NEW_RETURN(req,Request(handle,input),false);
 
 	req->m_bRoot = true;
 
-	int ret = enqueue_request(req);
-	if (ret <= 0)
+	bool bRet = enqueue_request(req);
+	if (!bRet)
 		delete req;
 
-	return ret;
+	return bRet;
 }
 
-int User::Manager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
+bool User::Manager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	Request* req;
-	ACE_NEW_RETURN(req,Request(handle,input),-1);
+	ACE_NEW_RETURN(req,Request(handle,input),false);
 
 	req->m_bRoot = false;
 
-	int ret = USER_MANAGER::instance()->enqueue_request(req);
-	if (ret <= 0)
+	bool bRet = USER_MANAGER::instance()->enqueue_request(req);
+	if (!bRet)
 		delete req;
 
-	return ret;
+	return bRet;
 }
 
 void User::Manager::user_connection_closed(ACE_HANDLE handle)
@@ -486,7 +486,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			{
 				// Error code 1 - Request timed out
 				error.write_octet(1);
-				if (send_response(handle,0,trans_id,error.begin(),request_deadline) != 0)
+				if (!send_response(handle,0,trans_id,error.begin(),request_deadline))
 					OOSERVER_THROW_LASTERROR();
 			}
 			return;
@@ -541,7 +541,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 
 		if (trans_id != 0)
 		{
-			if (send_response(handle,0,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline) != 0)
+			if (!send_response(handle,0,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline))
 				OOSERVER_THROW_LASTERROR();
 		}
 	}
@@ -630,7 +630,7 @@ void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_
 	if (deadline)
 		request_deadline = *deadline;
 
-	if (RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,&request_deadline) != 0)
+	if (!RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,&request_deadline))
 		OOSERVER_THROW_LASTERROR();
 }
 
@@ -644,8 +644,7 @@ ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_c
 		request_deadline = *deadline;
 	
 	Request* pResponse;
-	int err = RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,&request_deadline);
-	if (err != 0)
+	if (!RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,&request_deadline))
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_InputCDR response = *pResponse->input();

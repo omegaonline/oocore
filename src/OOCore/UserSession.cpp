@@ -27,12 +27,12 @@ OOCore::UserSession::~UserSession()
 
 IException* OOCore::UserSession::init()
 {
-	int ret = USER_SESSION::instance()->init_i();
-	if (ret != 0)
+	string_t strSource;
+	if (!USER_SESSION::instance()->init_i(strSource))
 	{
 		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
 		pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
-		pE->m_strSource = OMEGA_SOURCE_INFO;
+		pE->m_strSource = strSource;
         return pE;
 	}
 
@@ -43,11 +43,11 @@ IException* OOCore::UserSession::init()
 	return pE;
 }
 
-int OOCore::UserSession::init_i()
+bool OOCore::UserSession::init_i(string_t& strSource)
 {
 	u_short uPort;
-	if (get_port(uPort) != 0)
-		return -1;
+	if (!get_port(uPort,strSource))
+		return false;
 
 	// Connect to the root
 	ACE_SOCK_Connector connector;
@@ -55,15 +55,18 @@ int OOCore::UserSession::init_i()
 	ACE_SOCK_Stream stream;
 	ACE_Time_Value wait(5);
 	if (connector.connect(stream,addr,&wait) != 0)
-		return -1;
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
 
 	// Create a new UserConnection
 	UserConnection*	pRC;
-	ACE_NEW_RETURN(pRC,UserConnection(this),-1);
-	if (pRC->open(stream.get_handle()) != 0)
+	ACE_NEW_RETURN(pRC,UserConnection(this),false);
+	if (!pRC->open(stream.get_handle(),strSource))
 	{
 		delete pRC;
-		return -1;
+		return false;
 	}
 
 	// Stash the user handle
@@ -81,11 +84,12 @@ int OOCore::UserSession::init_i()
 	int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
 	if (pro_thrd_grp_id == -1)
 	{
+		strSource = OMEGA_SOURCE_INFO;
 		delete pRC;
-		return -1;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 IException* OOCore::UserSession::bootstrap()
@@ -149,7 +153,7 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 	#endif
 }
 
-int OOCore::UserSession::get_port(u_short& uPort)
+bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 {
 	pid_t pid = ACE_INVALID_PID;
 
@@ -184,7 +188,10 @@ int OOCore::UserSession::get_port(u_short& uPort)
 		options.avoid_zombies(0);
 		options.handle_inheritence(0);
 		if (options.command_line(strExec.c_str()) == -1)
-			return -1;
+		{
+			strSource = OMEGA_SOURCE_INFO;
+			return false;
+		}
 
 		// Set the creation flags
 		u_long flags = 0;
@@ -196,36 +203,45 @@ int OOCore::UserSession::get_port(u_short& uPort)
 		// Spawn the process
 		ACE_Process process;
 		if (process.spawn(options)==ACE_INVALID_PID)
-			return -1;
+		{
+			strSource = OMEGA_SOURCE_INFO;
+			return false;
+		}
 
 		// Wait for the process to launch, if it takes more than 10 seconds its probably okay
 		ACE_exitcode exitcode = 0;
 		if (process.wait(ACE_Time_Value(10),&exitcode) != 0)
-			return -1;
+		{
+			strSource = OMEGA_SOURCE_INFO;
+			return false;
+		}
 
 		// Re-open file
 		file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 		if (file == INVALID_HANDLE_VALUE)
 		{
+			strSource = OMEGA_SOURCE_INFO;
 			process.kill();
-			return -1;
+			return false;
 		}
 
 		// Read pid again
 		if (ACE_OS::read(file,&pid,sizeof(pid)) != sizeof(pid))
 		{
+			strSource = OMEGA_SOURCE_INFO;
 			process.kill();
 			ACE_OS::close(file);
-			return -1;
+			return false;
 		}
 
 #if !defined(ACE_WIN32)
 		// Check the pids match
 		if (pid != process.getpid())
 		{
+			strSource = OMEGA_SOURCE_INFO;
 			process.kill();
 			ACE_OS::close(file);
-			return -1;
+			return false;
 		}
 #endif
 	}
@@ -234,8 +250,9 @@ int OOCore::UserSession::get_port(u_short& uPort)
 	u_short uPort2;
 	if (ACE_OS::read(file,&uPort2,sizeof(uPort2)) != sizeof(uPort2))
 	{
+		strSource = OMEGA_SOURCE_INFO;
 		ACE_OS::close(file);
-		return -1;
+		return false;
 	}
 	ACE_OS::close(file);
 
@@ -245,7 +262,10 @@ int OOCore::UserSession::get_port(u_short& uPort)
 	// Connect to the OOServer main process...
 	ACE_SOCK_Stream peer;
 	if (ACE_SOCK_Connector().connect(peer,addr) == -1)
-		return -1;
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
 
 	// Send our uid or pid
 	ACE_UINT16 cbSize = sizeof(ACE_UINT16) + sizeof(uid_t);
@@ -257,26 +277,50 @@ int OOCore::UserSession::get_port(u_short& uPort)
 	if (peer.send(&cbSize,sizeof(cbSize)) != static_cast<ssize_t>(sizeof(cbSize)) ||
 		peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 	{
-		return -1;
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
 	}
 
 	// Wait for the response to come back...
 	ACE_Time_Value wait(5);
 	ACE_UINT32 err = 0;
-	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)) ||
-		peer.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
+	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)))
 	{
-		return -1;
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
 	}
 
-	// Check failure code
-	if (err != 0)
+	if (err == 0)
 	{
+		if (peer.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
+		{
+			strSource = OMEGA_SOURCE_INFO;
+			return false;
+		}
+
+		return true;
+	}
+	else 
+	{
+		uint16_t nCount;
+		char szBuf[1024];
+		if (peer.recv(&nCount,sizeof(nCount),&wait) != static_cast<ssize_t>(sizeof(nCount)))
+			strSource = OMEGA_SOURCE_INFO;
+		else 
+		{
+			if (nCount >= sizeof(szBuf))
+				nCount = sizeof(szBuf)-1;
+
+			if (peer.recv(szBuf,nCount,&wait) != static_cast<ssize_t>(nCount))
+				strSource = OMEGA_SOURCE_INFO;
+			else
+				strSource = szBuf;
+
+			szBuf[1023] = '\0';
+		}
 		ACE_OS::last_error(err);
-		return -1;
+		return false;
 	}
-
-	return 0;
 }
 
 void OOCore::UserSession::term()
@@ -311,19 +355,19 @@ ACE_THR_FUNC_RETURN OOCore::UserSession::proactor_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-int OOCore::UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle)
+bool OOCore::UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	Request* req;
-	ACE_NEW_RETURN(req,Request(handle,input),-1);
+	ACE_NEW_RETURN(req,Request(handle,input),false);
 
 	int ret = m_msg_queue.enqueue_prio(req);
 	if (ret <= 0)
 		delete req;
 
-	return ret;
+	return (ret != -1);
 }
 
-int OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)
+bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)
 {
 	for (;;)
 	{
@@ -331,7 +375,7 @@ int OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& re
 		Request* req;
 		int ret = m_msg_queue.dequeue_prio(req,deadline);
 		if (ret == -1)
-			return -1;
+			return false;
 
 		// Stash the current rd_ptr()
 		char* rd_ptr_start = req->input()->rd_ptr();
@@ -400,7 +444,7 @@ int OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& re
 					req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
 
 					response = req;
-					return 0;
+					return true;
 				}
 				else
 				{
@@ -409,7 +453,7 @@ int OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& re
 					if (ret < 0)
 					{
 						delete req;
-						return -1;
+						return false;
 					}
 
 					// Don't delete the request
@@ -423,16 +467,16 @@ int OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& re
 	}
 }
 
-int OOCore::UserSession::pump_requests(ACE_Time_Value* deadline)
+bool OOCore::UserSession::pump_requests(ACE_Time_Value* deadline)
 {
 	Request* response = 0;
-	int ret = wait_for_response(0,response,deadline);
+	bool bRet = wait_for_response(0,response,deadline);
 	if (response)
 		delete response;
-	return ret;
+	return bRet;
 }
 
-int OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
+bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
 {
 	// Generate next transaction id
 	long trans = m_next_trans_id++;
@@ -442,89 +486,87 @@ int OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_M
 
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (build_header(dest_channel_id,trans_id,header,mb,*deadline) != 0)
-		return -1;
+	if (!build_header(dest_channel_id,trans_id,header,mb,*deadline))
+		return false;
 
 	// Add to pending trans set
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,false);
 		m_setPendingTrans.insert(trans_id);
 	}
 	catch (...)
 	{
 		ACE_OS::last_error(EINVAL);
-		return -1;
+		return false;
 	}
 
-	int ret = 0;
+	bool bRet = false;
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
 	{
 		// Send to the handle
-		ret = -1;
 		size_t sent = 0;
 		ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 		if (res != -1 && sent == header.total_length())
 		{
 			// Wait for response...
-			ret = wait_for_response(trans_id,response,deadline);
+			bRet = wait_for_response(trans_id,response,deadline);
 		}
 	}
 	else
 	{
 		ACE_OS::last_error(ETIMEDOUT);
-		ret = -1;
 	}
 
 	// Remove from pending trans set
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,false);
 		m_setPendingTrans.erase(trans_id);
 	}
 	catch (...)
 	{}
 
-	return ret;
+	return bRet;
 }
 
-int OOCore::UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+bool OOCore::UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (build_header(dest_channel_id,0,header,mb,*deadline) == -1)
-		return -1;
+	if (!build_header(dest_channel_id,0,header,mb,*deadline))
+		return false;
 
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
 	{
 		ACE_OS::last_error(ETIMEDOUT);
-		return -1;
+		return false;
 	}
 
 	// Send to the handle
 	size_t sent = 0;
 	ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
-		return -1;
+		return false;
 
-	return 0;
+	return true;
 }
 
-int OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
+bool OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
 	{
 		ACE_OS::last_error(E2BIG);
-		return -1;
+		return false;
 	}
 
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
@@ -540,7 +582,7 @@ int OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::
 	header.write_ushort(0); // src_channel_id
 
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
 	// Align the buffer
@@ -550,22 +592,22 @@ int OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::
 	// Write the request stream
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Update the total length
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return -1;
+		return false;
 
-	return 0;
+	return true;
 }
 
-int OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
 	{
 		ACE_OS::last_error(E2BIG);
-		return -1;
+		return false;
 	}
 
 	// Write the header info
@@ -573,7 +615,7 @@ int OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
@@ -585,7 +627,7 @@ int OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	header.write_boolean(false);	// Response
 
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
 	// Align the buffer
@@ -595,26 +637,26 @@ int OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	// Write the request stream
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Update the total length
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return -1;
+		return false;
 
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
 	{
 		ACE_OS::last_error(ETIMEDOUT);
-		return -1;
+		return false;
 	}
 
 	// Send to the handle
 	size_t sent = 0;
 	ssize_t res = ACE::send_n(m_user_handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
-		return -1;
+		return false;
 
-	return 0;
+	return true;
 }
 
 bool OOCore::UserSession::valid_transaction(ACE_CDR::ULong trans_id)
@@ -665,7 +707,7 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 			{
 				// Error code 1 - Request timed out
 				error.write_octet(1);
-				if (send_response(src_channel_id,trans_id,error.begin(),request_deadline) != 0)
+				if (!send_response(src_channel_id,trans_id,error.begin(),request_deadline))
 					OOCORE_THROW_LASTERROR();
 			}
 			delete request;
@@ -703,7 +745,7 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 
 		if (trans_id != 0)
 		{
-			if (send_response(src_channel_id,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline) != 0)
+			if (!send_response(src_channel_id,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline))
 				OOCORE_THROW_LASTERROR();
 		}
 	}

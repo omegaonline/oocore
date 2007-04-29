@@ -29,7 +29,7 @@ namespace Root
 	public:
 		static int run();
 		static void end();
-		static bool connect_client(uid_t uid, u_short& uNewPort);
+		static bool connect_client(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
 		static ACE_Configuration_Heap& get_registry();
 		static bool install();
 		static bool uninstall();
@@ -69,16 +69,16 @@ namespace Root
 		bool bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox);
 		void end_event_loop_i();
 		void term();
-		bool connect_client_i(uid_t uid, u_short& uNewPort);
-		bool spawn_sandbox();
-		bool spawn_client(uid_t uid, const ACE_CString& key);
+		bool connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
+		bool spawn_sandbox(ACE_CString& strSource);
+		bool spawn_client(uid_t uid, const ACE_CString& key, ACE_CString& strSource);
 
-		int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
+		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
 		void process_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 		void process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 		void forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-		int access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
+		bool access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
 
 		ACE_Configuration_Heap         m_registry;
 		ACE_CString                    m_strRegistry;

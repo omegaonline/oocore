@@ -25,7 +25,7 @@ namespace User
 	{
 	public:
 		static int run(u_short uPort);
-		static int enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
+		static bool enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		static void user_connection_closed(ACE_HANDLE handle);
 
 		void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline = 0);
@@ -59,7 +59,7 @@ namespace User
 		void term();
 		int bootstrap(ACE_SOCK_STREAM& stream);
 
-		int enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
+		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
 		void process_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 		void forward_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);

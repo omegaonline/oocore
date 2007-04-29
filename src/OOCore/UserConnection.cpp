@@ -18,24 +18,33 @@ OOCore::UserConnection::~UserConnection()
 		ACE_OS::closesocket(handle());
 }
 
-int OOCore::UserConnection::open(ACE_HANDLE new_handle)
+bool OOCore::UserConnection::open(ACE_HANDLE new_handle, Omega::string_t& strSource)
 {
 	// Stash the handle
 	this->handle(new_handle);
 
 	// Open the reader
-	if (m_reader.open(*this) != 0)
-	    return -1;
+	if (!m_reader.open(*this))
+	{
+		strSource = OMEGA_SOURCE_INFO;
+	    return false;
+	}
 				
-	return read();
+	if (!read())
+	{
+		strSource = OMEGA_SOURCE_INFO;
+	    return false;
+	}
+
+	return true;
 }
 
-int OOCore::UserConnection::read()
+bool OOCore::UserConnection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
 	ACE_Message_Block* mb;
-	ACE_NEW_RETURN(mb,ACE_Message_Block(1024),-1);
+	ACE_NEW_RETURN(mb,ACE_Message_Block(1024),false);
 
 	// Align the message block for CDR
 	ACE_CDR::mb_align(mb);
@@ -44,10 +53,10 @@ int OOCore::UserConnection::read()
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
 		mb->release();
-		return -1;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
@@ -105,10 +114,10 @@ void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 					// Push into the UserBase queue...
-					if (m_pSession->enqueue_request(input,handle()) > 0)
+					if (!m_pSession->enqueue_request(input,handle()))
 					{
 						// Start a new read
-						bSuccess = (read() == 0);
+						bSuccess = read();
 					}
 					
 					if (!bSuccess)

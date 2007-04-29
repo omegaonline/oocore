@@ -85,7 +85,8 @@ void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 				// Ask the root manager for a response...
 				u_short uNewPort = 0;
 				ACE_UINT32 err = 0;
-				if (!Manager::connect_client(*reinterpret_cast<const uid_t*>(mb.rd_ptr()),uNewPort))
+				ACE_CString strSource;
+				if (!Manager::connect_client(*reinterpret_cast<const uid_t*>(mb.rd_ptr()),uNewPort,strSource))
 					err = ACE_OS::last_error();
 			
 				// Try to send the response, reusing mb

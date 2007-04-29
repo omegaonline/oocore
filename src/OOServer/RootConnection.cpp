@@ -32,24 +32,24 @@ Root::Connection::~Connection()
 		ACE_OS::closesocket(my_handle);
 }
 
-int Root::Connection::open(ACE_HANDLE new_handle)
+bool Root::Connection::open(ACE_HANDLE new_handle)
 {
 	// Stash the handle
 	this->handle(new_handle);
 
 	// Open the reader
 	if (m_reader.open(*this) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::open")),-1);
+	    ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::open")),false);
 			
 	return read();
 }
 
-int Root::Connection::read()
+bool Root::Connection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
 	ACE_Message_Block* mb;
-	ACE_NEW_RETURN(mb,ACE_Message_Block(1024),-1);
+	ACE_NEW_RETURN(mb,ACE_Message_Block(1024),false);
 
 	// Align the message block for CDR
 	ACE_CDR::mb_align(mb);
@@ -59,10 +59,10 @@ int Root::Connection::read()
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::read")));
 		mb->release();
-		return -1;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
@@ -120,7 +120,7 @@ void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 					// Push into the HandlerBase queue...
-					if (m_pBase->enqueue_root_request(input,handle()) > 0)
+					if (m_pBase->enqueue_root_request(input,handle()))
 					{
 						// Start a new read
 						bSuccess = (read() == 0);

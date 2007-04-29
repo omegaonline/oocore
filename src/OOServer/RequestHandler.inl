@@ -11,7 +11,7 @@
 /////////////////////////////////////////////////////////////
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
+bool RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
 {
 	int nInQueue = m_msg_queue.enqueue_prio(req);
 	
@@ -21,7 +21,7 @@ int RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
 		// Spawn an extra thread to take the strain
 	}*/
 
-	return nInQueue;
+	return (nInQueue != -1);
 }
 
 template <class REQUEST>
@@ -32,7 +32,7 @@ void RequestHandler<REQUEST>::stop()
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*& response, ACE_Time_Value* deadline)
+bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*& response, ACE_Time_Value* deadline)
 {
 	for (;;)
 	{
@@ -40,7 +40,7 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 		REQUEST* req;
 		int ret = m_msg_queue.dequeue_prio(req,deadline);
 		if (ret == -1)
-			return -1;
+			return false;
 		
 		// Stash the current rd_ptr()
 		char* rd_ptr_start = req->input()->rd_ptr();
@@ -109,7 +109,7 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 					req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
 
 					response = req;
-					return 0;
+					return true;
 				}
 				else
 				{
@@ -118,7 +118,7 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 					if (ret < 0)
 					{
 						delete req;
-						return -1;
+						return false;
 					}
 
 					// Don't delete the request
@@ -133,17 +133,17 @@ int RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST*
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::pump_requests(ACE_Time_Value* deadline)
+bool RequestHandler<REQUEST>::pump_requests(ACE_Time_Value* deadline)
 {
 	REQUEST* response = 0;
-	int ret = wait_for_response(0,response,deadline);
+	bool bRet = wait_for_response(0,response,deadline);
 	if (response)
 		delete response;
-	return ret;
+	return bRet;
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, REQUEST*& response, ACE_Time_Value* deadline)
+bool RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, REQUEST*& response, ACE_Time_Value* deadline)
 {
 	// Generate next transaction id
 	long trans = m_next_trans_id++;
@@ -153,91 +153,89 @@ int RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_
 
 	// Write the header info
 	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (build_header(dest_channel_id,src_channel_id,trans_id,header,mb,*deadline) != 0)
-		return -1;
+	if (!build_header(dest_channel_id,src_channel_id,trans_id,header,mb,*deadline))
+		return false;
 	
 	// Add to pending trans set
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,-1);
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,false);
 		m_setPendingTrans.insert(trans_id);
 	}
 	catch (...)
 	{
 		ACE_OS::last_error(EINVAL);
-		return -1;
+		return false;
 	}
 	
-	int ret = 0;
+	bool bRet = false;
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
 	{
 		// Send to the handle
-		ret = -1;
 		size_t sent = 0;
 		ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
 		if (res != -1 && sent == header.total_length())
 		{
 			// Wait for response...
-			ret = wait_for_response(trans_id,response,deadline);
+			bRet = wait_for_response(trans_id,response,deadline);
 		}
 	}
 	else
 	{
 		ACE_OS::last_error(ETIMEDOUT);
-		ret = -1;
 	}
 
 	// Remove from pending trans set
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,-1);
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,false);
 		m_setPendingTrans.erase(trans_id);
 	}
 	catch (...)
 	{}
 	
-	return ret;
+	return bRet;
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+bool RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Write the header info
 	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (build_header(dest_channel_id,src_channel_id,0,header,mb,*deadline) == -1)
-		return -1;
+	if (!build_header(dest_channel_id,src_channel_id,0,header,mb,*deadline))
+		return false;
 
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
 	{
 		ACE_OS::last_error(ETIMEDOUT);
-		return -1;
+		return false;
 	}
 
 	// Send to the handle
 	size_t sent = 0;
 	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
-		return -1;
+		return false;
 		
-	return 0;
+	return true;
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
+bool RequestHandler<REQUEST>::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
 	{
 		ACE_OS::last_error(E2BIG);
-		return -1;
+		return false;
 	}
 
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
@@ -253,7 +251,7 @@ int RequestHandler<REQUEST>::build_header(ACE_CDR::UShort dest_channel_id, ACE_C
 	header << src_channel_id;
 	
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
@@ -261,23 +259,23 @@ int RequestHandler<REQUEST>::build_header(ACE_CDR::UShort dest_channel_id, ACE_C
 	// Write the request stream	
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Update the total length
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return -1;	
+		return false;	
 
-	return 0;
+	return true;
 }
 
 template <class REQUEST>
-int RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+bool RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
 	{
 		ACE_OS::last_error(E2BIG);
-		return -1;
+		return false;
 	}
 
 	// Write the header info
@@ -285,7 +283,7 @@ int RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort de
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	// version
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
@@ -297,7 +295,7 @@ int RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort de
 	header.write_boolean(false);	// Response
 	
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
@@ -305,26 +303,26 @@ int RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort de
 	// Write the request stream	
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
-		return -1;
+		return false;
 
 	// Update the total length
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return -1;	
+		return false;	
 
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
 	{
 		ACE_OS::last_error(ETIMEDOUT);
-		return -1;
+		return false;
 	}
 
 	// Send to the handle
 	size_t sent = 0;
 	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
-		return -1;
+		return false;
 		
-	return 0;
+	return true;
 }
 
 template <class REQUEST>

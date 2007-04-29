@@ -29,16 +29,16 @@ void User::Connection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
 		delete this;
 	}
 			
-	if (read() != 0)
+	if (!read())
 		delete this;
 }
 
-int User::Connection::read()
+bool User::Connection::read()
 {
 	// Recv the length of the request
 	m_read_len = 0;
 	ACE_Message_Block* mb;
-	ACE_NEW_RETURN(mb,ACE_Message_Block(1024),-1);
+	ACE_NEW_RETURN(mb,ACE_Message_Block(1024),false);
 
 	// Align the message block for CDR
 	ACE_CDR::mb_align(mb);
@@ -48,10 +48,10 @@ int User::Connection::read()
 	{
 		ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("User::Connection::read")));
 		mb->release();
-		return -1;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
@@ -109,10 +109,10 @@ void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 					// Push into the UserBase queue...
-					if (Manager::enqueue_user_request(input,handle()) > 0)
+					if (Manager::enqueue_user_request(input,handle()))
 					{
 						// Start a new read
-						bSuccess = (read() == 0);
+						bSuccess = read();
 					}
 					
 					if (!bSuccess)

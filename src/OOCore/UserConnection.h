@@ -11,7 +11,7 @@ namespace OOCore
 		UserConnection(UserSession* pSession);
 		virtual ~UserConnection();
 
-		int open(ACE_HANDLE new_handle);
+		bool open(ACE_HANDLE new_handle, Omega::string_t& strSource);
 		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 			
 	private:
@@ -24,7 +24,7 @@ namespace OOCore
 		ACE_CDR::ULong				m_read_len;
 		ACE_Asynch_Read_Stream		m_reader;
 
-		int read();
+		bool read();
 	};
 }
 

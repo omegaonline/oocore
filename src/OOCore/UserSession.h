@@ -11,7 +11,7 @@ namespace OOCore
 		static Omega::IException* init();
 		static void term();
 
-		int enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle);
+		bool enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		void connection_closed();
 
 	private:
@@ -63,20 +63,20 @@ namespace OOCore
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
 		// Accessors for Channel
-		int send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
-		int send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);
-		int send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, ACE_Time_Value* deadline);
+		bool send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
+		bool send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);
+		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, ACE_Time_Value* deadline);
 
 		// Proper private members
-		int init_i();
+		bool init_i(Omega::string_t& strSource);
 		Omega::IException* bootstrap();
 		ACE_CString get_bootstrap_filename();
 		void term_i();
-		int get_port(u_short& uPort);
-		int pump_requests(ACE_Time_Value* deadline = 0);
+		bool get_port(u_short& uPort, Omega::string_t& strSource);
+		bool pump_requests(ACE_Time_Value* deadline = 0);
 		void process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-		int wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline = 0);
-		int build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
+		bool wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline = 0);
+		bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
 		bool valid_transaction(ACE_CDR::ULong trans_id);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 

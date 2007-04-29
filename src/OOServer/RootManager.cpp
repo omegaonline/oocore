@@ -140,7 +140,7 @@ int Root::Manager::init()
 {
     // Open the Server lock file
 	if (m_config_file != ACE_INVALID_HANDLE)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Already open.\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),-1);
 
 	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 	if (m_config_file != INVALID_HANDLE_VALUE)
@@ -337,17 +337,17 @@ ACE_Configuration_Heap& Root::Manager::get_registry()
 	return ROOT_MANAGER::instance()->m_registry;
 }
 
-bool Root::Manager::spawn_sandbox()
+bool Root::Manager::spawn_sandbox(ACE_CString& strSource)
 {
 	ACE_CString strUserId;
-	if (!SpawnedProcess::GetSandboxUid(strUserId))
+	if (!SpawnedProcess::GetSandboxUid(strUserId,strSource))
 		return false;
 	
 	// Spawn the sandbox
-	return spawn_client(static_cast<uid_t>(-1),strUserId);
+	return spawn_client(static_cast<uid_t>(-1),strUserId,strSource);
 }
 
-bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
+bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CString& strSource)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
@@ -359,6 +359,7 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 	int ret = acceptor.open(addr,0,PF_INET,1);
 	if (ret != 0)
 	{
+		strSource = "Root::Manager::spawn_client - acceptor.open";
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 	}
 	else
@@ -367,12 +368,13 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId)
 		ret = acceptor.get_local_addr(addr);
 		if (ret != 0)
 		{
+			strSource = "Root::Manager::spawn_client - acceptor.get_local_addr";
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("get_local_addr() failed")));
 		}
 		else
 		{
 			// Spawn the user process
-			if (!pSpawn->Spawn(uid,addr.get_port_number()))
+			if (!pSpawn->Spawn(uid,addr.get_port_number(),strSource))
 			{
 				ACE_OS::last_error(EINVAL);
 				ret = -1;
@@ -470,15 +472,15 @@ bool Root::Manager::bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox)
 	return true;
 }
 
-bool Root::Manager::connect_client(uid_t uid, u_short& uNewPort)
+bool Root::Manager::connect_client(uid_t uid, u_short& uNewPort, ACE_CString& strSource)
 {
-	return ROOT_MANAGER::instance()->connect_client_i(uid,uNewPort);
+	return ROOT_MANAGER::instance()->connect_client_i(uid,uNewPort,strSource);
 }
 
-bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
+bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& strSource)
 {
 	ACE_CString strUserId;
-	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId))
+	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId,strSource))
 		return false;
 	
 	// Lock the cs
@@ -491,7 +493,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 		if (m_mapUserProcesses.empty())
 		{
 			// Create a new sandbox...
-			if (!spawn_sandbox())
+			if (!spawn_sandbox(strSource))
 				return false;
 		}
 
@@ -512,7 +514,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 		if (i==m_mapUserProcesses.end())
 		{
 			// No we don't
-			if (!spawn_client(uid,strUserId))
+			if (!spawn_client(uid,strUserId,strSource))
 				return false;
 		}
 		else
@@ -523,6 +525,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort)
 	}
 	catch (...)
 	{
+		strSource = "Unhandled exception in Root::Manager::connect_client_i";
 		return false;
 	}
 
@@ -566,16 +569,16 @@ void Root::Manager::root_connection_closed(const ACE_CString& strUserId, ACE_HAN
 	{}
 }
 
-int Root::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
+bool Root::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 {
 	RequestBase* req;
-	ACE_NEW_RETURN(req,RequestBase(handle,input),-1);
+	ACE_NEW_RETURN(req,RequestBase(handle,input),false);
 
-	int ret = enqueue_request(req);
-	if (ret <= 0)
+	bool bRet = enqueue_request(req);
+	if (!bRet)
 		delete req;
 
-	return ret;
+	return bRet;
 }
 
 ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void*)
@@ -684,18 +687,18 @@ void Root::Manager::process_request(RequestBase* request, ACE_CDR::UShort dest_c
 	delete request;
 }
 
-int Root::Manager::access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed)
+bool Root::Manager::access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed)
 {
 	try
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,false);
 
 		// Find the user id
 		std::map<ACE_HANDLE,ACE_CString>::iterator i = m_mapUserIds.find(handle);
 		if (i == m_mapUserIds.end())
 		{
 			ACE_OS::last_error(EINVAL);
-			return -1;
+			return false;
 		}
 
 		// Find the process info associated with user id
@@ -703,15 +706,15 @@ int Root::Manager::access_check(ACE_HANDLE handle, const char* pszObject, ACE_UI
 		if (j == m_mapUserProcesses.end())
 		{
 			ACE_OS::last_error(EINVAL);
-			return -1;
+			return false;
 		}
 
-		return (j->second.pSpawn->CheckAccess(pszObject,mode,bAllowed) ? 0 : -1);
+		return j->second.pSpawn->CheckAccess(pszObject,mode,bAllowed);
 	}
 	catch (...)
 	{
 		ACE_OS::last_error(EINVAL);
-		return -1;
+		return false;
 	}
 }
 
@@ -886,7 +889,7 @@ void Root::Manager::registry_create_key(RequestBase* request, ACE_OutputCDR& res
 	else
 	{
         bool bAllowed = false;
-		if (access_check(request->handle(),m_strRegistry.c_str(),O_RDWR,bAllowed) != 0)
+		if (!access_check(request->handle(),m_strRegistry.c_str(),O_RDWR,bAllowed))
 			err = ACE_OS::last_error();
 		else if (!bAllowed)
 			err = EACCES;

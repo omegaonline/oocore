@@ -20,7 +20,7 @@ namespace User
 		ACE_CDR::ULong				m_read_len;
 		ACE_Asynch_Read_Stream		m_reader;
 
-		int read();
+		bool read();
 	};
 }
 

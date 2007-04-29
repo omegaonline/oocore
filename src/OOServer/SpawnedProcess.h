@@ -28,8 +28,8 @@ namespace Root
 		void Kill();
 		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid);
-		static bool GetSandboxUid(ACE_CString& uid);
+		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_CString& strSource);
+		static bool GetSandboxUid(ACE_CString& uid, ACE_CString& strSource);
 		static bool InstallSandbox();
 		static bool UninstallSandbox();
 
@@ -42,7 +42,7 @@ namespace Root
 		
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
 		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile);
-		static DWORD LogonSandboxUser(HANDLE* phToken);
+		static DWORD LogonSandboxUser(HANDLE* phToken, ACE_CString& strSource);
 		static bool LogFailure(DWORD err);
 #else // !ACE_WIN32
 		

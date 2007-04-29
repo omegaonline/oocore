@@ -23,7 +23,7 @@ namespace Root
 		Connection(HandlerBase* pBase, const ACE_CString& key);
 		virtual ~Connection();
 
-		int open(ACE_HANDLE new_handle);
+		bool open(ACE_HANDLE new_handle);
 		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 
 	private:
@@ -36,7 +36,7 @@ namespace Root
 		ACE_CDR::ULong              m_read_len;
 		ACE_Asynch_Read_Stream      m_reader;
 
-		int read();
+		bool read();
 	};
 }
 

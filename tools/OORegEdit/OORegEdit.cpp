@@ -27,6 +27,7 @@ bool OORegEditApp::OnInit()
 
 	// create and show the main frame
     MainFrame* frame = new MainFrame;
+
     frame->Show(true);
 
 	return true;

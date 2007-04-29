@@ -23,7 +23,7 @@ namespace User
 			Manager*        m_pManager;
 			Omega::string_t m_strKey;
 
-			Omega::string_t FullKeyPath(const Omega::string_t& strSub);
+			Omega::string_t FullKeyPath(const Omega::string_t& strSub, bool bAppend);
 
 		// IRegistry members
 		public:

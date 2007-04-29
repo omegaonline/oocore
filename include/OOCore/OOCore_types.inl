@@ -36,7 +36,8 @@ inline Omega::string_t::~string_t()
 OOCORE_EXPORTED_FUNCTION(void*,string_t_assign_1,2,((in),void*,h1,(in),const void*,h2));
 inline Omega::string_t& Omega::string_t::operator = (const string_t& s)
 {
-	m_handle = static_cast<handle_t>(string_t_assign_1(m_handle,s.m_handle));
+	if (this != &s)
+		m_handle = static_cast<handle_t>(string_t_assign_1(m_handle,s.m_handle));
 	return *this;
 }
 

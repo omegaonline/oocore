@@ -169,7 +169,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (int i=0;i<2;++i)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey("Objects\\" + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey("\\Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue("OID"))
 			return guid_t::FromString(ptrOidKey->GetStringValue("OID"));

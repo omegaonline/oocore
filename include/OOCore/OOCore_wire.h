@@ -461,8 +461,6 @@ namespace Omega
 
 			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, uint32_t cbSize)
 			{
-				::DebugBreak();
-
 				if (cbSize > m_alloc_size)
 					OMEGA_THROW("Array has been resized out of bounds");
 
@@ -496,8 +494,6 @@ namespace Omega
 
 			static void proxy_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, T* pVals, uint32_t cbSize)
 			{
-				::DebugBreak();
-
 				for (uint32_t i=0;i<cbSize;++i)
 					interface_info<T>::wire_type::proxy_out(pManager,pStream,pVals[i]);
 			}

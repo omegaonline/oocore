@@ -456,12 +456,16 @@ void RootKey::Init(Manager* pManager, const string_t& strKey)
 	m_strKey = strKey;
 }
 
-string_t RootKey::FullKeyPath(const string_t& strSub)
+string_t RootKey::FullKeyPath(const string_t& strSub, bool bAppend)
 {
 	string_t strRet(m_strKey);
+
+	if (strRet.Left(1) != "\\")
+		strRet = "\\" + strRet;
+
 	strRet += strSub;
 
-	if (strRet.Length() > 1 && strRet.Right(1) != "\\")
+	if (bAppend && strRet.Length() > 1 && strRet.Right(1) != "\\")
 		strRet += "\\";
 
 	OutputDebugStringA(strRet);
@@ -491,7 +495,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	if (err != ENOENT)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(FullKeyPath(strSubKey));
+			BadNameException::Throw(FullKeyPath(strSubKey,true));
 		else
 			OOSERVER_THROW_ERRNO(err);
 	}
@@ -521,7 +525,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	if (err != ENOENT)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(FullKeyPath(strName));
+			BadNameException::Throw(FullKeyPath(strName,false));
 		else
 			OOSERVER_THROW_ERRNO(err);
 	}
@@ -551,12 +555,12 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName));
+			WrongValueTypeException::Throw(FullKeyPath(strName,false),GetValueType(strName));
 		else
-			NotFoundException::Throw(FullKeyPath(strName));
+			NotFoundException::Throw(FullKeyPath(strName,false));
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName));
+		BadNameException::Throw(FullKeyPath(strName,false));
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -599,12 +603,12 @@ string_t RootKey::GetStringValue(const string_t& strName)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName));
+			WrongValueTypeException::Throw(FullKeyPath(strName,false),GetValueType(strName));
 		else
-			NotFoundException::Throw(FullKeyPath(strName));
+			NotFoundException::Throw(FullKeyPath(strName,false));
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName));
+		BadNameException::Throw(FullKeyPath(strName,false));
 	else if (err!=0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -633,12 +637,12 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName));
+			WrongValueTypeException::Throw(FullKeyPath(strName,false),GetValueType(strName));
 		else
-			NotFoundException::Throw(FullKeyPath(strName));
+			NotFoundException::Throw(FullKeyPath(strName,false));
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName));
+		BadNameException::Throw(FullKeyPath(strName,false));
 	else if (err!=0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -670,14 +674,14 @@ void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName));
+			WrongValueTypeException::Throw(FullKeyPath(strName,false),GetValueType(strName));
 		else
-			NotFoundException::Throw(FullKeyPath(strName));
+			NotFoundException::Throw(FullKeyPath(strName,false));
 	}
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName));
+		AccessDeniedException::Throw(FullKeyPath(strName,false));
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName));
+		BadNameException::Throw(FullKeyPath(strName,false));
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -701,14 +705,14 @@ void RootKey::SetUIntValue(const string_t& strName, const uint32_t& uValue)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName));
+			WrongValueTypeException::Throw(FullKeyPath(strName,false),GetValueType(strName));
 		else
-			NotFoundException::Throw(FullKeyPath(strName));
+			NotFoundException::Throw(FullKeyPath(strName,false));
 	}
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName));
+		AccessDeniedException::Throw(FullKeyPath(strName,false));
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName));
+		BadNameException::Throw(FullKeyPath(strName,false));
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -733,6 +737,8 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	ACE_CDR::ULong err = 0;
     if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
+	else if (err != 0)
+		OOSERVER_THROW_ERRNO(err);
 
 	ACE_CDR::Boolean bRes;
 	if (!response.read_boolean(bRes))
@@ -741,7 +747,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	if (!bRes)
 	{
 		if (!(flags & IRegistryKey::Create))
-			NotFoundException::Throw(FullKeyPath(strSubKey));
+			NotFoundException::Throw(FullKeyPath(strSubKey,true));
 
 		// It doesn't yet exist, and we want to create it!
 		request.reset();
@@ -757,18 +763,23 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 			OOSERVER_THROW_LASTERROR();
 
 		if (err==EACCES)
-			AccessDeniedException::Throw(FullKeyPath(strSubKey));
+			AccessDeniedException::Throw(FullKeyPath(strSubKey,true));
 		else if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(FullKeyPath(strSubKey));
+			BadNameException::Throw(FullKeyPath(strSubKey,true));
 		else if (err != 0)
 			OOSERVER_THROW_ERRNO(err);
 	}
 	else if (flags & IRegistryKey::FailIfThere)
-		AlreadyExistsException::Throw(FullKeyPath(strSubKey));
+		AlreadyExistsException::Throw(FullKeyPath(strSubKey,true));
 
 	// By the time we get here then we have successfully created the key...
 	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateObjectPtr();
-	ptrNew->Init(m_pManager,FullKeyPath(strSubKey));
+
+	string_t strNewKey = m_strKey + strSubKey;
+	if (strNewKey.Right(1) != "\\")
+		strNewKey += "\\";
+
+	ptrNew->Init(m_pManager,strNewKey);
 
 	return ptrNew.AddRefReturn();
 }
@@ -794,6 +805,8 @@ void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
+	else if (err != 0)
+		OOSERVER_THROW_ERRNO(err);
 
 	ACE_CDR::ULongLong count = 0;
 	if (!response.read_ulonglong(count))
@@ -824,6 +837,8 @@ Omega::IEnumString* RootKey::EnumValues()
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
+	else if (err != 0)
+		OOSERVER_THROW_ERRNO(err);
 
 	ACE_CDR::ULongLong count = 0;
 	if (!response.read_ulonglong(count))
@@ -857,11 +872,11 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
-		NotFoundException::Throw(FullKeyPath(strSubKey));
+		NotFoundException::Throw(FullKeyPath(strSubKey,true));
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strSubKey));
+		AccessDeniedException::Throw(FullKeyPath(strSubKey,true));
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strSubKey));
+		BadNameException::Throw(FullKeyPath(strSubKey,true));
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -882,11 +897,11 @@ void RootKey::DeleteValue(const string_t& strName)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
-		NotFoundException::Throw(FullKeyPath(strName));
+		NotFoundException::Throw(FullKeyPath(strName,false));
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName));
+		AccessDeniedException::Throw(FullKeyPath(strName,false));
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName));
+		BadNameException::Throw(FullKeyPath(strName,false));
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -956,9 +971,9 @@ int BaseKey::open_registry(bool bSandbox)
 
 bool_t BaseKey::IsSubKey(const string_t& strSubKey)
 {
-	if (strSubKey == "Current User" || strSubKey == "Current User\\")
+	if (strSubKey == "\\Current User" || strSubKey == "\\Current User\\")
 		return true;
-	else if (strSubKey.Left(13) == "Current User\\")
+	else if (strSubKey.Left(14) == "\\Current User\\")
 		return m_ptrUser->IsSubKey(strSubKey.Mid(14));
 	else
 		return m_ptrRoot->IsSubKey(strSubKey);
@@ -1006,12 +1021,18 @@ IRegistryKey::ValueType_t BaseKey::GetValueType(const string_t& strName)
 
 IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
-	if (strSubKey.IsEmpty())
+	if (strSubKey.IsEmpty() || strSubKey.Left(1)!="\\")
 		BadNameException::Throw(strSubKey);
 
-	if (strSubKey.Left(13) == "\\Current User")
+	if (strSubKey=="\\")
 	{
-		string_t sub_strSubKey = strSubKey.Mid(14);
+		AddRef();
+		return this;
+	}
+
+	if (strSubKey=="\\Current User" || strSubKey.Left(14) == "\\Current User\\")
+	{
+		/*string_t sub_strSubKey = strSubKey.Mid(14);
 		if (sub_strSubKey.IsEmpty())
 		{
 			if (flags & IRegistryKey::FailIfThere)
@@ -1019,8 +1040,8 @@ IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 			return m_ptrUser.AddRefReturn();
 		}
-		else
-			return m_ptrUser->OpenSubKey(sub_strSubKey,flags);
+		else*/
+			return m_ptrUser->OpenSubKey(strSubKey.Mid(14),flags);
 	}
 	else
 	{

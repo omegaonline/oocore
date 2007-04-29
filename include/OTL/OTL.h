@@ -972,9 +972,6 @@ namespace OTL
 			count = 0;
 			while (m_pos!=m_listItems.end() && count < c)
 			{
-				::DebugBreak();
-				OutputDebugString(*m_pos);
-
 				parrVals[count] = *m_pos;
 				++count;
 				++m_pos;

@@ -21,7 +21,7 @@ namespace Root
 		SpawnedProcess(void);
 		~SpawnedProcess(void);
 
-		bool Spawn(uid_t id, u_short uPort);
+		bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
 		
 		bool IsRunning();
 		int Close(ACE_Time_Value* timeout = 0);
@@ -40,8 +40,8 @@ namespace Root
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 		
-		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile);
+		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_CString& strSource);
+		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_CString& strSource);
 		static DWORD LogonSandboxUser(HANDLE* phToken, ACE_CString& strSource);
 		static bool LogFailure(DWORD err);
 #else // !ACE_WIN32

@@ -230,7 +230,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
 					// Wait for startup
-					ACE_Time_Value wait(5);
+					ACE_Time_Value wait(15);
 
 					// TODO The timeout needs to be related to the request timeout...
 					void* TODO;

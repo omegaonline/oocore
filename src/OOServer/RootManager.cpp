@@ -30,7 +30,7 @@ Root::Manager::~Manager()
 bool Root::Manager::install()
 {
 	if (ROOT_MANAGER::instance()->init_registry() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening registry")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening registry")),false);
 
 	if (!SpawnedProcess::InstallSandbox())
 		return false;
@@ -41,7 +41,7 @@ bool Root::Manager::install()
 bool Root::Manager::uninstall()
 {
 	if (ROOT_MANAGER::instance()->init_registry() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening registry")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening registry")),false);
 
 	if (!SpawnedProcess::UninstallSandbox())
 		return false;
@@ -162,13 +162,13 @@ int Root::Manager::init()
 
 	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),O_WRONLY | O_CREAT | O_TRUNC | O_TEMPORARY);
 	if (m_config_file == INVALID_HANDLE_VALUE)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("open() failed")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - open() failed")),-1);
 
 	// Write our pid instead
 	pid_t pid = ACE_OS::getpid();
 	if (ACE_OS::write(m_config_file,&pid,sizeof(pid)) != sizeof(pid))
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - pid write() failed")));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return -1;
@@ -178,7 +178,7 @@ int Root::Manager::init()
 	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	if (open(sa) != 0)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("open() failed")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - open() failed")));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return -1;
@@ -189,7 +189,7 @@ int Root::Manager::init()
 	sockaddr* addr = reinterpret_cast<sockaddr*>(sa.get_addr());
 	if (ACE_OS::getsockname(this->get_handle(),addr,&len) == -1)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - Failed to discover local port")));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return -1;
@@ -201,7 +201,7 @@ int Root::Manager::init()
 	u_short uPort = sa.get_port_number();
 	if (ACE_OS::write(m_config_file,&uPort,sizeof(uPort)) != sizeof(uPort))
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - port write() failed")));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return -1;
@@ -344,10 +344,11 @@ bool Root::Manager::spawn_sandbox(ACE_CString& strSource)
 		return false;
 	
 	// Spawn the sandbox
-	return spawn_client(static_cast<uid_t>(-1),strUserId,strSource);
+	u_short uPort;
+	return spawn_client(static_cast<uid_t>(-1),strUserId,uPort,strSource);
 }
 
-bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CString& strSource)
+bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, u_short& uNewPort, ACE_CString& strSource)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
@@ -360,7 +361,6 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CS
 	if (ret != 0)
 	{
 		strSource = "Root::Manager::spawn_client - acceptor.open";
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("write() failed")));
 	}
 	else
 	{
@@ -369,7 +369,6 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CS
 		if (ret != 0)
 		{
 			strSource = "Root::Manager::spawn_client - acceptor.get_local_addr";
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("get_local_addr() failed")));
 		}
 		else
 		{
@@ -387,22 +386,19 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CS
 				ret = acceptor.accept(stream,0,&wait);
 				if (ret != 0)
 				{
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("accept() failed")));
+					strSource = "Root::Manager::spawn_client - acceptor.accept";
 				}
 				else
 				{
 					// Read the port the user session is listening on...
-					u_short uNewPort;
-					if (stream.recv(&uNewPort,sizeof(uNewPort),&wait) != static_cast<ssize_t>(sizeof(uNewPort)))
+					if (stream.recv(&uNewPort,sizeof(uNewPort)) != static_cast<ssize_t>(sizeof(uNewPort)))
 					{
 						ret = -1;
-						ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("recv() failed")));
+						strSource = "Root::Manager::spawn_client - stream.recv";
 					}
-					else if (!bootstrap_client(stream,uid == static_cast<uid_t>(-1)))
-					{
+					else if (!bootstrap_client(stream,uid == static_cast<uid_t>(-1),strSource))
 						ret = -1;
-					}
-
+										
 					if (ret == 0)
 					{
 						// Create a new Root::Connection
@@ -411,8 +407,14 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CS
 						if (!pRC)
 						{
 							ret = -1;
+							strSource = "Root::Manager::spawn_client - new Connection";
 						}
-						else if ((ret=pRC->open(stream.get_handle())) == 0)
+						else if (!pRC->open(stream.get_handle()))
+						{
+							ret = -1;
+							strSource = "Root::Manager::spawn_client - Connection::open";
+						}
+						else
 						{
 							// Insert the data into various maps...
 							try
@@ -437,9 +439,10 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CS
 							catch (...)
 							{
 								ret = -1;
+								strSource = "Root::Manager::spawn_client - unhandled exception";
 							}
 						}
-						
+												
 						if (ret != 0)
 							delete pRC;
 					}
@@ -461,13 +464,16 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, ACE_CS
 	return (ret == 0);
 }
 
-bool Root::Manager::bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox)
+bool Root::Manager::bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource)
 {
 	// This could be changed to a struct if we wanted...
 	char sandbox = bSandbox ? 1 : 0;
 
 	if (stream.send(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send() failed")),false);
+	{
+		strSource = "Root::Manager::bootstrap_client - send";
+		return false;
+	}
 
 	return true;
 }
@@ -514,7 +520,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& 
 		if (i==m_mapUserProcesses.end())
 		{
 			// No we don't
-			if (!spawn_client(uid,strUserId,strSource))
+			if (!spawn_client(uid,strUserId,uNewPort,strSource))
 				return false;
 		}
 		else
@@ -525,7 +531,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& 
 	}
 	catch (...)
 	{
-		strSource = "Unhandled exception in Root::Manager::connect_client_i";
+		strSource = "Root::Manager::connect_client_i - unhandled exception";
 		return false;
 	}
 
@@ -583,7 +589,7 @@ bool Root::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 
 ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void*)
 {
-	return (ACE_THR_FUNC_RETURN)ROOT_MANAGER::instance()->pump_requests();
+	return (ACE_THR_FUNC_RETURN)(ROOT_MANAGER::instance()->pump_requests() ? 0 : -1);
 }
 
 void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
@@ -637,7 +643,7 @@ void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_c
 	else
 	{
 		RequestBase* response;
-		if (send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		if (send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline))
 		{
 			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
 			delete response;

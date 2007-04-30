@@ -66,12 +66,12 @@ namespace Root
 		int init();
 		int init_registry();
 		ACE_CString get_bootstrap_filename();
-		bool bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox);
+		bool bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource);
 		void end_event_loop_i();
 		void term();
 		bool connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
 		bool spawn_sandbox(ACE_CString& strSource);
-		bool spawn_client(uid_t uid, const ACE_CString& key, ACE_CString& strSource);
+		bool spawn_client(uid_t uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
 
 		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);

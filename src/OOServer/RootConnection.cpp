@@ -123,7 +123,7 @@ void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 					if (m_pBase->enqueue_root_request(input,handle()))
 					{
 						// Start a new read
-						bSuccess = (read() == 0);
+						bSuccess = read();
 					}
 					
 					if (!bSuccess)

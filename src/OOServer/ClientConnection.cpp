@@ -84,19 +84,33 @@ void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 				
 				// Ask the root manager for a response...
 				u_short uNewPort = 0;
-				ACE_UINT32 err = 0;
+				ACE_CDR::ULong err = 0;
 				ACE_CString strSource;
 				if (!Manager::connect_client(*reinterpret_cast<const uid_t*>(mb.rd_ptr()),uNewPort,strSource))
 					err = ACE_OS::last_error();
 			
 				// Try to send the response, reusing mb
 				mb.reset();
-				if (mb.size(sizeof(err) + sizeof(uNewPort))==0 && 
-					mb.copy(reinterpret_cast<const char*>(&err),sizeof(err))==0 &&
-					mb.copy(reinterpret_cast<const char*>(&uNewPort),sizeof(uNewPort))==0)
+				bSuccess = (mb.size(1200) != -1 && mb.copy(reinterpret_cast<const char*>(&err),sizeof(err)) != -1);
+				if (bSuccess)
 				{
-					bSuccess = (m_writer.write(mb,sizeof(err) + sizeof(uNewPort)) == 0);
-				}
+					if (err == 0)
+					{
+						bSuccess = (mb.copy(reinterpret_cast<const char*>(&uNewPort),sizeof(uNewPort)) != -1);
+					}
+					else
+					{
+						ACE_UINT16 len = strSource.length();
+						if (len > 1023)
+							len = 1023;
+						bSuccess = (mb.copy(reinterpret_cast<const char*>(&len),sizeof(len)) != -1);
+						if (bSuccess)
+							bSuccess = (mb.copy(strSource.c_str(),len) != -1);
+					}
+				}		
+
+				if (bSuccess)
+					bSuccess = (m_writer.write(mb,mb.length()) == 0);
 			}
 		}
 	}

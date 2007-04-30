@@ -59,20 +59,25 @@ static int Help()
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
+	int skip_args = 1;
+
 #ifdef ACE_WIN32
+	if (argc>=2 && ACE_OS::strcmp(argv[1],"--service")==0)
+		skip_args = 2;
+
 	// Check to see if we have been spawned
 	if (argc==3 && ACE_OS::strcmp(argv[1],"--spawned")==0)
 		return UserMain(static_cast<u_short>(ACE_OS::atoi(argv[2])));
 #endif
 	
 	// Check command line options
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iuvh"));
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iuvh"),skip_args);
 	if (cmd_opts.long_option(ACE_TEXT("install"),ACE_TEXT('i'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("uninstall"),ACE_TEXT('u'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("parsing cmdline")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),-1);
 	}
 
 	int option;
@@ -103,9 +108,12 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	}
 
 #ifdef ACE_WIN32
+	if (argc<2 || ACE_OS::strcmp(argv[1],"--service")!=0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be run as a Win32 service.\n")),-1);
+		
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening logger")),-1);
-
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+	
 	if (!Root::NTService::open())
 		return -1;
 
@@ -114,10 +122,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	ACE_TCHAR szCwd[MAXPATHLEN];
 	ACE_OS::getcwd(szCwd,MAXPATHLEN);
 	if (ACE::daemonize(szCwd,0,argv[0]) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("daemonizing")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),-1);
 
 	if (ACE_LOG_MSG->open(argv[0],ACE_Log_Msg::SYSLOG) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("opening logger")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
 #endif
 
 	return Root::Manager::run();

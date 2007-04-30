@@ -29,6 +29,7 @@
 #include <ace/Method_Request.h>
 #include <ace/Reactor.h>
 #include <ace/Naming_Context.h>
+#include <ace/NT_Service.h>
 #include <ace/Codecs.h>
 #include <ace/SString.h>
 #include <ace/CDR_Stream.h>

@@ -908,7 +908,7 @@ namespace OTL
 			SingletonNoLock<TYPE>*& singleton = SingletonNoLock<TYPE>::instance_i();
 			if (!singleton)
 			{
-				singleton = new SingletonNoLock<TYPE>();
+				OMEGA_NEW(singleton,SingletonNoLock<TYPE>());
 				if (!singleton)
 					return 0;
 			}

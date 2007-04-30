@@ -21,7 +21,7 @@ bool RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
 		// Spawn an extra thread to take the strain
 	}*/
 
-	return (nInQueue != -1);
+	return (nInQueue > 0);
 }
 
 template <class REQUEST>

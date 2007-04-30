@@ -24,7 +24,7 @@ bool OOCore::UserConnection::open(ACE_HANDLE new_handle, Omega::string_t& strSou
 	this->handle(new_handle);
 
 	// Open the reader
-	if (!m_reader.open(*this))
+	if (m_reader.open(*this) != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
 	    return false;
@@ -114,7 +114,7 @@ void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 					// Push into the UserBase queue...
-					if (!m_pSession->enqueue_request(input,handle()))
+					if (m_pSession->enqueue_request(input,handle()))
 					{
 						// Start a new read
 						bSuccess = read();

@@ -31,7 +31,7 @@ bool Root::NTService::open()
 {	
     // Do the ServiceMain in a separate thread
 	if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("spawn service thread")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error spawning service thread")),false);
 	
 	return true;
 }
@@ -41,8 +41,8 @@ bool Root::NTService::install()
 	// Remove the service config first, this allows us to alter the config
 	NTSERVICE::instance()->remove();
 
-	if (NTSERVICE::instance()->insert() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("service install")),false);
+	if (NTSERVICE::instance()->insert(ACE_TEXT("--service")) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service install")),false);
 
 	NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
 
@@ -53,7 +53,7 @@ bool Root::NTService::uninstall()
 {
 	// Uninstall the service
 	if (NTSERVICE::instance()->remove() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("service uninstall")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service uninstall")),false);
 
 	return true;
 }
@@ -104,8 +104,8 @@ ACE_THR_FUNC_RETURN Root::NTService::start_service(void*)
 	// This blocks running svc
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
 	if (!ret)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),NTSERVICE_NAME),(ACE_THR_FUNC_RETURN)-1);
-
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service start failed")),(ACE_THR_FUNC_RETURN)-1);
+	
 	return 0;
 }
 

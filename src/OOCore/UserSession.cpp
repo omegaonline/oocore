@@ -53,7 +53,7 @@ bool OOCore::UserSession::init_i(string_t& strSource)
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
-	ACE_Time_Value wait(5);
+	ACE_Time_Value wait(15);
 	if (connector.connect(stream,addr,&wait) != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
@@ -153,6 +153,56 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 	#endif
 }
 
+bool OOCore::UserSession::launch_server(string_t& strSource)
+{
+#ifdef OMEGA_WIN32
+	ACE_NT_Service service(ACE_TEXT("OOServer"));
+	if (service.start_svc() != 0)
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
+
+#else
+	// Find what the server is called
+	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
+	if (strExec.empty())
+		strExec = "OOServer";
+
+	// Set the process options
+	ACE_Process_Options options;
+	options.avoid_zombies(0);
+	options.handle_inheritence(0);
+	if (options.command_line(strExec.c_str()) == -1)
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
+
+	// Set the creation flags
+	u_long flags = 0;
+	options.creation_flags(flags);
+
+	// Spawn the process
+	ACE_Process process;
+	if (process.spawn(options)==ACE_INVALID_PID)
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
+
+	// Wait for the process to launch, if it takes more than 0.5 second its probably okay
+	ACE_exitcode exitcode = 0;
+	if (process.wait(ACE_Time_Value(0,500),&exitcode) != 0)
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
+#endif
+
+	return true;
+}
+
 bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 {
 	pid_t pid = ACE_INVALID_PID;
@@ -177,51 +227,14 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 			ACE_OS::close(file);
 
 		// Launch the server
-
-		// Find what the server is called
-		ACE_CString strExec = ACE_OS::getenv("OOSERVER");
-		if (strExec.empty())
-			strExec = "OOServer";
-
-		// Set the process options
-		ACE_Process_Options options;
-		options.avoid_zombies(0);
-		options.handle_inheritence(0);
-		if (options.command_line(strExec.c_str()) == -1)
-		{
-			strSource = OMEGA_SOURCE_INFO;
-			return false;
-		}
-
-		// Set the creation flags
-		u_long flags = 0;
-#if defined (ACE_WIN32) && defined(_DEBUG)
-		flags |= CREATE_NEW_CONSOLE;
-#endif
-		options.creation_flags(flags);
-
-		// Spawn the process
-		ACE_Process process;
-		if (process.spawn(options)==ACE_INVALID_PID)
-		{
-			strSource = OMEGA_SOURCE_INFO;
-			return false;
-		}
-
-		// Wait for the process to launch, if it takes more than 10 seconds its probably okay
-		ACE_exitcode exitcode = 0;
-		if (process.wait(ACE_Time_Value(10),&exitcode) != 0)
-		{
-			strSource = OMEGA_SOURCE_INFO;
-			return false;
-		}
+		if (!launch_server(strSource))
+			return false;		
 
 		// Re-open file
 		file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 		if (file == INVALID_HANDLE_VALUE)
 		{
 			strSource = OMEGA_SOURCE_INFO;
-			process.kill();
 			return false;
 		}
 
@@ -229,7 +242,6 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 		if (ACE_OS::read(file,&pid,sizeof(pid)) != sizeof(pid))
 		{
 			strSource = OMEGA_SOURCE_INFO;
-			process.kill();
 			ACE_OS::close(file);
 			return false;
 		}
@@ -239,7 +251,6 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 		if (pid != process.getpid())
 		{
 			strSource = OMEGA_SOURCE_INFO;
-			process.kill();
 			ACE_OS::close(file);
 			return false;
 		}
@@ -282,7 +293,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 	}
 
 	// Wait for the response to come back...
-	ACE_Time_Value wait(5);
+	ACE_Time_Value wait(15);
 	ACE_UINT32 err = 0;
 	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)))
 	{
@@ -302,7 +313,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 	}
 	else 
 	{
-		uint16_t nCount;
+		ACE_UINT16 nCount;
 		char szBuf[1024];
 		if (peer.recv(&nCount,sizeof(nCount),&wait) != static_cast<ssize_t>(sizeof(nCount)))
 			strSource = OMEGA_SOURCE_INFO;
@@ -314,7 +325,10 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 			if (peer.recv(szBuf,nCount,&wait) != static_cast<ssize_t>(nCount))
 				strSource = OMEGA_SOURCE_INFO;
 			else
+			{
+				szBuf[nCount] = '\0';
 				strSource = szBuf;
+			}
 
 			szBuf[1023] = '\0';
 		}
@@ -364,7 +378,7 @@ bool OOCore::UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle
 	if (ret <= 0)
 		delete req;
 
-	return (ret != -1);
+	return (ret > 0);
 }
 
 bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)

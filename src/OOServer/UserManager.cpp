@@ -195,19 +195,14 @@ int User::Manager::init(u_short uPort)
 			// Get our port number
 			int len = sa.get_size ();
 			sockaddr* addr = reinterpret_cast<sockaddr*>(sa.get_addr());
-			if ((ret = ACE_OS::getsockname(this->get_handle(),addr,&len)) == -1)
-			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to discover local port")));
-			}
-			else
+			if ((ret = ACE_OS::getsockname(this->get_handle(),addr,&len)) != -1)
 			{
 				sa.set_type(addr->sa_family);
 				sa.set_size(len);
 
 				uPort = sa.get_port_number();
-				if (stream.send(&uPort,sizeof(uPort),&wait) < static_cast<ssize_t>(sizeof(uPort)))
+				if (stream.send(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
 				{
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("send()")));
 					ret = -1;
 				}
 				else
@@ -224,7 +219,7 @@ int User::Manager::init(u_short uPort)
 					{
 						ret = -1;
 					}
-					else if ((ret=pRC->open(stream.get_handle())) == 0)
+					else if (pRC->open(stream.get_handle()))
 					{
 						// Stash the root handle
 						m_root_handle = stream.get_handle();
@@ -234,6 +229,7 @@ int User::Manager::init(u_short uPort)
 					}
 					else
 					{
+						ret = -1;
 						delete pRC;
 					}
 				}
@@ -263,7 +259,7 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 	// Talk to the root...
 	char sandbox = 0;
 	if (stream.recv(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("recv() failed")),-1);
+		return -1;
 
 	bool bSandbox = sandbox ? true : false;
 
@@ -427,7 +423,7 @@ void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
 
 ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void*)
 {
-	return (ACE_THR_FUNC_RETURN)USER_MANAGER::instance()->pump_requests();
+	return (ACE_THR_FUNC_RETURN)(USER_MANAGER::instance()->pump_requests() ? 0 : -1);
 }
 
 void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
@@ -613,7 +609,7 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	else
 	{
 		Request* response;
-		if (RequestHandler<Request>::send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline) == 0)
+		if (RequestHandler<Request>::send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline))
 		{
 			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
 			delete response;

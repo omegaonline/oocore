@@ -73,6 +73,7 @@ namespace OOCore
 		ACE_CString get_bootstrap_filename();
 		void term_i();
 		bool get_port(u_short& uPort, Omega::string_t& strSource);
+		bool launch_server(Omega::string_t& strSource);
 		bool pump_requests(ACE_Time_Value* deadline = 0);
 		void process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 		bool wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline = 0);

@@ -832,7 +832,7 @@ bool Root::Manager::registry_open_section(RequestBase* request, ACE_Configuratio
 		bool bAllowed = false;
 		if (strKey.substr(0,9) == "All Users")
 			bAllowed = true;
-		else if (access_check(request->handle(),m_strRegistry.c_str(),O_RDWR,bAllowed) != 0)
+		else if (!access_check(request->handle(),m_strRegistry.c_str(),O_RDWR,bAllowed))
 			return false;
 
 		if (!bAllowed)

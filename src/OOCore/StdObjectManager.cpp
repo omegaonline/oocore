@@ -404,7 +404,12 @@ Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Ome
 			// Unmarshal the exception
 			IException* pE;
 			MetaInfo::wire_read(this,ptrResponse,pE);
-			throw pE;
+			guid_t iid = pE->ActualIID();
+			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			if (!pRtti || !pRtti->pfnThrow)
+				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+
+			pRtti->pfnThrow(pE);
 		}
 	}
 

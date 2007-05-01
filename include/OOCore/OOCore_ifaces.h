@@ -97,7 +97,7 @@ namespace Omega
 			virtual uint32_t GetUIntValue(const string_t& name) = 0;
 			virtual void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer) = 0;
 			virtual void SetStringValue(const string_t& name, const string_t& val) = 0;
-			virtual void SetUIntValue(const string_t& name, const uint32_t& val) = 0;
+			virtual void SetUIntValue(const string_t& name, uint32_t val) = 0;
 			virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
 			virtual ValueType_t GetValueType(const string_t& name) = 0;
 			virtual IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
@@ -203,7 +203,7 @@ OMEGA_EXPORT_INTERFACE
 	0x154dd0d9, 0xc452, 0x4847, 0xb4, 0xf9, 0xda, 0x64, 0xc0, 0x22, 0xb2, 0x43,
 
 	// Methods
-	OMEGA_METHOD(bool_t,Next,2,((in),Omega::uint32_t&,count,(out)(size_is(count)),Omega::string_t*,parrVals))
+	OMEGA_METHOD(bool_t,Next,2,((in_out),Omega::uint32_t&,count,(out)(size_is(count)),Omega::string_t*,parrVals))
 	OMEGA_METHOD(bool_t,Skip,1,((in),Omega::uint32_t,count))
 	OMEGA_METHOD_VOID(Reset,0,())
 	OMEGA_METHOD(IEnumString*,Clone,0,())
@@ -221,7 +221,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD(uint32_t,GetUIntValue,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const Omega::string_t&,name,(in_out),Omega::uint32_t&,cbLen,(out)(size_is(cbLen)),Omega::byte_t*,pBuffer))
 	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
-	OMEGA_METHOD_VOID(SetUIntValue,2,((in),const Omega::string_t&,name,(in),const Omega::uint32_t&,val))
+	OMEGA_METHOD_VOID(SetUIntValue,2,((in),const Omega::string_t&,name,(in),Omega::uint32_t,val))
 	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))

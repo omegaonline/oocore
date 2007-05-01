@@ -106,7 +106,7 @@ namespace Omega
 		}
 
 		template <class I>
-		inline static void wire_read(IWireManager* pManager, Serialize::IFormattedStream* pStream, I*& val, const guid_t iid = guid_t::NIL)
+		inline static void wire_read(IWireManager* pManager, Serialize::IFormattedStream* pStream, I*& val, const guid_t iid = iid_traits<I>::GetIID())
 		{
 			IObject* pObject = 0;
 			pManager->UnmarshalInterface(pStream,iid,pObject);
@@ -160,478 +160,184 @@ namespace Omega
 		template <class T>
 		struct std_wire_type
 		{
-			std_wire_type(IWireManager* = 0) : m_val(m_fixed)
-			{}
+			typedef T type;
 
-			std_wire_type(const T& val) : m_fixed(val), m_val(m_fixed)
-			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream) : m_val(m_fixed)
+			static void init(type& val)
 			{
-				stub_in(pManager,pStream);
+				val = default_value<type>::value;
 			}
 
-			std_wire_type& operator = (const T& val)
-			{
-				m_val = val;
-				return *this;
-			}
-
-			void attach(T& val_ref)
-			{
-				m_val = val_ref;
-			}
-
-			void stub_in(IWireManager* pManager, Serialize::IFormattedStream* pStream)
-			{
-				wire_read(pManager,pStream,m_val);
-			}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream)
-			{
-				wire_write(pManager,pStream,m_val);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, const T& val)
-			{
-				wire_write(pManager,pStream,val);
-			}
-
-			static void proxy_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, T& val)
+			static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val)
 			{
 				wire_read(pManager,pStream,val);
 			}
 
-			operator T&()
+			static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const type& val)
 			{
-				return m_val;
+				wire_write(pManager,pStream,val);
 			}
 
-		private:
-			T	m_fixed;
-			T&	m_val;
-
-			std_wire_type(const std_wire_type&) {}
-			std_wire_type& operator = (const std_wire_type&) {}
+			static void no_op(bool)
+			{}
 		};
 
 		template <class T>
 		struct std_wire_type<const T>
 		{
-			std_wire_type(IWireManager* pManager = 0) : m_actual(pManager)
-			{}
+			typedef typename interface_info<T>::wire_type::type type;
 
-			std_wire_type(IWireManager* pManager, const guid_t& iid) : m_actual(pManager,iid)
-			{}
-
-			std_wire_type(const T& val) : m_actual(val)
-			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream) :
-				m_actual(pManager,pStream)
-			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, uint32_t cbSize) :
-				m_actual(pManager,pStream,cbSize)
-			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid) :
-				m_actual(pManager,pStream,iid)
-			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid, uint32_t cbSize) :
-				m_actual(pManager,pStream,iid,cbSize)
-			{}
-
-			std_wire_type& operator = (const T& val)
+			static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val)
 			{
-				m_actual = val;
-				return *this;
+				interface_info<T>::wire_type::read(pManager,pStream,val);
 			}
 
-			void attach(const T& val_ref)
+			/*static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val, uint32_t cbSize)
 			{
-				m_actual.attach(const_cast<T&>(val_ref));
+				interface_info<T>::wire_type::read(pManager,pStream,val,cbSize);
+			}*/
+
+			static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const type& val)
+			{
+				interface_info<T>::wire_type::write(pManager,pStream,val);
 			}
 
-			void stub_in(IWireManager* pManager, Serialize::IFormattedStream* pStream)
-			{
-				m_actual.stub_in(pManager,pStream);
-			}
-
-			void stub_out(IWireManager*, Serialize::IFormattedStream*)
+			static void no_op(bool)
 			{}
-
-			void stub_out(IWireManager*, Serialize::IFormattedStream*, uint32_t)
-			{}
-
-			void stub_out(IWireManager*, Serialize::IFormattedStream*, const guid_t&)
-			{}
-
-			void stub_out(IWireManager*, Serialize::IFormattedStream*, const guid_t&, uint32_t)
-			{}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, const T& pVal)
-			{
-				interface_info<T>::wire_type::proxy_in(pManager,pStream,pVal);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, const T& pVal, uint32_t cbSize)
-			{
-				interface_info<T>::wire_type::proxy_in(pManager,pStream,pVal,cbSize);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, const T& pVal, const guid_t& iid)
-			{
-				interface_info<T>::wire_type::proxy_in(pManager,pStream,pVal,iid);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, const T& pVal, const guid_t& iid, uint32_t cbSize)
-			{
-				interface_info<T>::wire_type::proxy_in(pManager,pStream,pVal,iid,cbSize);
-			}
-
-			static void proxy_out(IWireManager*, Serialize::IFormattedStream*, const T&)
-			{}
-
-			static void proxy_out(IWireManager*, Serialize::IFormattedStream*, const T&, uint32_t)
-			{}
-
-			static void proxy_out(IWireManager*, Serialize::IFormattedStream*, const T&, const guid_t&)
-			{}
-
-			static void proxy_out(IWireManager*, Serialize::IFormattedStream*, const T&, const guid_t&, uint32_t)
-			{}
-
-			operator const T&()
-			{
-				return m_actual;
-			}
-
-		private:
-			typename interface_info<T>::wire_type	m_actual;
-
-			std_wire_type(const std_wire_type&) {}
-			std_wire_type& operator = (const std_wire_type&) {}
 		};
 
 		template <class T>
 		struct std_wire_type<T&>
 		{
-			std_wire_type(IWireManager* pManager) : m_actual(pManager)
+			typedef typename interface_info<T>::wire_type::type type;
+
+			static void init(type& val)
+			{
+				interface_info<T>::wire_type::init(val);
+			}
+
+			static void init(type& val, const guid_t& iid)
+			{
+				interface_info<T>::wire_type::init(val,iid);
+			}
+
+			static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val)
+			{
+				interface_info<T>::wire_type::read(pManager,pStream,val);
+			}
+
+			static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val, const guid_t& iid)
+			{
+				interface_info<T>::wire_type::read(pManager,pStream,val,iid);
+			}
+
+			/*static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val, uint32_t cbSize)
+			{
+				interface_info<T>::wire_type::read(pManager,pStream,val,cbSize);
+			}*/
+
+			static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const type& val)
+			{
+				interface_info<T>::wire_type::write(pManager,pStream,val);
+			}
+
+			static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const type& val, const guid_t& iid)
+			{
+				interface_info<T>::wire_type::write(pManager,pStream,val,iid);
+			}
+
+			static void no_op(bool, uint32_t)
 			{}
 
-			std_wire_type(IWireManager* pManager, const guid_t& iid) : m_actual(pManager,iid)
+			static void no_op(bool, const guid_t& = guid_t::NIL, uint32_t = 0)
 			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream) :
-				m_actual(pManager,pStream)
-			{}
-
-			std_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid) :
-				m_actual(pManager,pStream,iid)
-			{}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream)
-			{
-				m_actual.stub_out(pManager,pStream);
-			}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid)
-			{
-				m_actual.stub_out(pManager,pStream,iid);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, T& val)
-			{
-				interface_info<T>::wire_type::proxy_in(pManager,pStream,val);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, T& val, const guid_t& iid)
-			{
-				interface_info<T>::wire_type::proxy_in(pManager,pStream,val,iid);
-			}
-
-			static void proxy_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, T& val)
-			{
-				interface_info<T>::wire_type::proxy_out(pManager,pStream,val);
-			}
-
-			static void proxy_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, T& val, const guid_t& iid)
-			{
-				interface_info<T>::wire_type::proxy_out(pManager,pStream,val,iid);
-			}
-
-			operator T& ()
-			{
-				return m_actual;
-			}
-
-		private:
-			typename interface_info<T>::wire_type	m_actual;
-
-			std_wire_type(const std_wire_type&) {}
-			std_wire_type& operator = (const std_wire_type&) {}
 		};
 
 		template <class T>
 		struct std_wire_type_array
 		{
-			std_wire_type_array(IWireManager*, uint32_t cbSize) :
-				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
+			template <class A>
+			struct auto_ptr
 			{
-				try
-				{
-					init(cbSize);
+				auto_ptr() : m_pVals(0)
+				{}
 
-					for (uint32_t i=0;i<cbSize;++i)
-						m_pFunctors[i].attach(m_pVals[i]);
-				}
-				catch (...)
+				~auto_ptr()
 				{
-					cleanup();
-					throw;
+					delete [] m_pVals;
 				}
+
+				void init(uint32_t cbSize)
+				{
+					OMEGA_NEW(m_pVals,A[cbSize]);
+					if (!m_pVals)
+						OMEGA_THROW("Out of memory!");
+				}
+
+				operator A*()
+				{
+					return m_pVals;
+				}
+
+			private:
+				A* m_pVals;
+			};
+			typedef auto_ptr<typename interface_info<T>::wire_type::type> type;
+
+			static void init(type& val, uint32_t cbSize)
+			{
+				val.init(cbSize);
 			}
 
-			std_wire_type_array(IWireManager* pManager, Serialize::IFormattedStream* pStream, uint32_t cbSize) :
-				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
-			{
-				try
-				{
-					init(cbSize);
-
-					for (uint32_t i=0;i<cbSize;++i)
-					{
-						m_pFunctors[i].attach(m_pVals[i]);
-						m_pFunctors[i].stub_in(pManager,pStream);
-					}
-				}
-				catch (...)
-				{
-					cleanup();
-					throw;
-				}
-			}
-
-			std_wire_type_array(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid, uint32_t cbSize) :
-				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
-			{
-				try
-				{
-					init(cbSize);
-
-					for (uint32_t i=0;i<cbSize;++i)
-					{
-						m_pFunctors[i].attach(m_pVals[i]);
-						m_pFunctors[i].stub_in(pManager,pStream,iid);
-					}
-				}
-				catch (...)
-				{
-					cleanup();
-					throw;
-				}
-			}
-
-			std_wire_type_array(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t* piids, uint32_t cbSize) :
-				m_pFunctors(0), m_pVals(0), m_alloc_size(cbSize)
-			{
-				try
-				{
-					init(cbSize);
-
-					for (uint32_t i=0;i<cbSize;++i)
-					{
-						m_pFunctors[i].attach(m_pVals[i]);
-						m_pFunctors[i].stub_in(pManager,pStream,piids[i]);
-					}
-				}
-				catch (...)
-				{
-					cleanup();
-					throw;
-				}
-			}
-
-			~std_wire_type_array()
-			{
-				cleanup();
-			}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, uint32_t cbSize)
-			{
-				if (cbSize > m_alloc_size)
-					OMEGA_THROW("Array has been resized out of bounds");
-
-				for (uint32_t i=0;i<cbSize;++i)
-					m_pFunctors[i].stub_out(pManager,pStream);
-			}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid, uint32_t cbSize)
-			{
-				if (cbSize > m_alloc_size)
-					OMEGA_THROW("Array has been resized out of bounds");
-
-				for (uint32_t i=0;i<cbSize;++i)
-					m_pFunctors[i].stub_out(pManager,pStream,iid);
-			}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t* piids, uint32_t cbSize)
-			{
-				if (cbSize > m_alloc_size)
-					OMEGA_THROW("Array has been resized out of bounds");
-
-				for (uint32_t i=0;i<cbSize;++i)
-					m_pFunctors[i].stub_out(pManager,pStream,piids[i]);
-			}
-
-            static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, T* pVals, uint32_t cbSize)
+			static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, typename interface_info<T>::wire_type::type* pVals, uint32_t cbSize)
 			{
 				for (uint32_t i=0;i<cbSize;++i)
-					interface_info<T>::wire_type::proxy_in(pManager,pStream,pVals[i]);
+					interface_info<T>::wire_type::read(pManager,pStream,pVals[i]);
 			}
 
-			static void proxy_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, T* pVals, uint32_t cbSize)
+			static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const typename interface_info<T>::wire_type::type* pVals, uint32_t cbSize)
 			{
 				for (uint32_t i=0;i<cbSize;++i)
-					interface_info<T>::wire_type::proxy_out(pManager,pStream,pVals[i]);
+					interface_info<T>::wire_type::write(pManager,pStream,pVals[i]);
 			}
 
-			operator T*()
-			{
-				return m_pVals;
-			}
-
-		private:
-			typename interface_info<T>::wire_type* m_pFunctors;
-			T*                                     m_pVals;
-			const uint32_t                         m_alloc_size;
-
-			void init(uint32_t cbSize)
-			{
-				if (cbSize > 0)
-				{
-					OMEGA_NEW(m_pFunctors,typename interface_info<T>::wire_type[cbSize]);
-					OMEGA_NEW(m_pVals,typename remove_const<T>::type[cbSize]);
-				}
-			}
-
-			void cleanup()
-			{
-				delete [] m_pFunctors;
-				delete [] m_pVals;
-			}
-
-			std_wire_type_array(const std_wire_type_array&) {};
-			std_wire_type_array& operator = (const std_wire_type_array&) {};
+			static void no_op(bool, uint32_t)
+			{}
 		};
 
 		template <>
 		struct std_wire_type_array<void>
 		{
-			std_wire_type_array(void*)
-			{
-				Throw(OMEGA_SOURCE_INFO);
-			}
+			typedef void* type;
 
-			static void proxy_out(IWireManager*, Serialize::IFormattedStream*, void*)
-			{
-				Throw(OMEGA_SOURCE_INFO);
-			}
+			static void read(IWireManager*, Serialize::IFormattedStream*, type&)
+			{}
 
-			void stub_out(IWireManager*, Serialize::IFormattedStream*)
-			{
-				Throw(OMEGA_SOURCE_INFO);
-			}
-
-		private:
-			static void Throw(const char_t* szFunc)
-			{
-				Omega::IException::Throw("Unable to make a remote call with void* parameters!",szFunc);
-			}
-
-			std_wire_type_array(const std_wire_type_array&) {};
-			std_wire_type_array& operator = (const std_wire_type_array&) { return *this; };
+			static void write(IWireManager*, Serialize::IFormattedStream*, const type&)
+			{}
 		};
 
 		template <class I>
 		struct iface_wire_type
 		{
-			iface_wire_type(IWireManager*, const guid_t& = iid_traits<I>::GetIID()) :
-				m_fixed(0), m_pI(m_fixed)
-			{}
+			typedef I* type;
 
-			iface_wire_type(I* pI) :
-				m_fixed(pI), m_pI(m_fixed)
+			static void init(type& val, const guid_t& = guid_t::NIL)
 			{
-				if (m_pI)
-					m_pI->AddRef();
+				val = 0;
 			}
 
-			iface_wire_type(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid = guid_t::NIL) :
-				m_fixed(0), m_pI(m_fixed)
-			{
-				stub_in(pManager,pStream,iid);
-			}
-
-			iface_wire_type& operator = (I* val)
-			{
-				if (m_pI != val)
-				{
-					if (m_pI)
-						m_pI->Release();
-
-					m_pI = val;
-
-					if (m_pI)
-						m_pI->AddRef();
-				}
-				return *this;
-			}
-
-			virtual ~iface_wire_type()
-			{
-				if (m_pI)
-					m_pI->Release();
-			}
-
-			void attach(I*& val_ref)
-			{
-				m_pI = val_ref;
-			}
-
-			void stub_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid = guid_t::NIL)
-			{
-				wire_read(pManager,pStream,m_pI,iid);
-			}
-
-			void stub_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, const guid_t& iid = iid_traits<I>::GetIID())
-			{
-				wire_write(pManager,pStream,m_pI,iid);
-			}
-
-			static void proxy_in(IWireManager* pManager, Serialize::IFormattedStream* pStream, I* pI, const guid_t& iid = iid_traits<I>::GetIID())
-			{
-				wire_write(pManager,pStream,pI,iid);
-			}
-
-			static void proxy_out(IWireManager* pManager, Serialize::IFormattedStream* pStream, I*& pI, const guid_t& iid = guid_t::NIL)
+			static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& pI, const guid_t& iid = iid_traits<I>::GetIID())
 			{
 				wire_read(pManager,pStream,pI,iid);
 			}
 
-			operator I*&()
+			static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const type& pI, const guid_t& iid = iid_traits<I>::GetIID())
 			{
-				return m_pI;
+				wire_write(pManager,pStream,pI,iid);
 			}
 
-		private:
-			I*				m_fixed;
-			I*&				m_pI;
-
-			iface_wire_type(const iface_wire_type&) {}
-			iface_wire_type& operator = (const iface_wire_type&) {}
+			static void no_op(bool, const guid_t& = guid_t::NIL)
+			{}
 		};
 
 		template <class I_WireProxy, class I>
@@ -743,7 +449,7 @@ namespace Omega
 					delete this;
 			}
 
-			IObject* QueryInterface(const guid_t& /*iid*/)
+			IObject* QueryInterface(const guid_t&)
 			{
                 return 0;
 			}
@@ -780,9 +486,10 @@ namespace Omega
 
 			inline static void QueryInterface_Wire(void* pParam, I* pI, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
 			{
-				interface_info<const guid_t&>::wire_type iid(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn);
-				iface_wire_type<IObject> retval(pI->QueryInterface(iid));
-				retval.stub_out(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,iid);
+				interface_info<const guid_t&>::wire_type::type iid;
+				interface_info<const guid_t&>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);
+				interface_info<IObject*>::wire_type::type retval(pI->QueryInterface(iid));
+				interface_info<IObject*>::wire_type::write(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,retval,iid);
 			}
 
 			IWireManager* m_pManager;

@@ -23,7 +23,7 @@
 					<Add option="-D_USRDLL" />
 					<Add option="-DOOCORE_BUILD_DLL" />
 					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE-5.5.7" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\include" />
@@ -44,17 +44,17 @@
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-frtti" />
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DOOCORE_BUILD_DLL" />
-					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-O3" />
-					<Add option="-frtti" />
 					<Add directory="..\..\include" />
-					<Add directory="..\..\3rd Party Libraries\ACE-5.5.7" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\include" />

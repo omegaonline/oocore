@@ -844,8 +844,11 @@ bool Root::Manager::registry_open_section(RequestBase* request, ACE_Configuratio
 
 	if (strKey.length()==0)
 		key = m_registry.root_section();
-	else if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),0,key) != 0)
-		return false;
+	else 
+	{
+		if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),0,key) != 0)
+			return false;
+	}
 
 	return true;
 }

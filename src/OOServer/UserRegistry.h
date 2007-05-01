@@ -23,7 +23,7 @@ namespace User
 			Manager*        m_pManager;
 			Omega::string_t m_strKey;
 
-			Omega::string_t FullKeyPath(const Omega::string_t& strSub, bool bAppend);
+			Omega::string_t FullKeyPath(const Omega::string_t& strSub);
 
 		// IRegistry members
 		public:
@@ -33,7 +33,7 @@ namespace User
 			Omega::uint32_t GetUIntValue(const Omega::string_t& strName);
 			void GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer);
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
-			void SetUIntValue(const Omega::string_t& strName, const Omega::uint32_t& uValue);
+			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
 			Omega::Registry::IRegistryKey::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
@@ -69,7 +69,7 @@ namespace User
 			Omega::uint32_t GetUIntValue(const Omega::string_t& strName);
 			void GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer);
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
-			void SetUIntValue(const Omega::string_t& strName, const Omega::uint32_t& uValue);
+			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
 			Omega::Registry::IRegistryKey::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
@@ -106,7 +106,7 @@ namespace User
 			Omega::uint32_t GetUIntValue(const Omega::string_t& strName);
 			void GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer);
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
-			void SetUIntValue(const Omega::string_t& strName, const Omega::uint32_t& uValue);
+			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
 			Omega::Registry::IRegistryKey::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);

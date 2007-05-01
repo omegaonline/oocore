@@ -18,7 +18,7 @@
 					<Add option="-DWIN32" />
 					<Add option="-D_CONSOLE" />
 					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE-5.5.7" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\include" />
@@ -40,13 +40,13 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add option="-W" />
-					<Add option="-g" />
 					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE-5.5.7" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\include" />

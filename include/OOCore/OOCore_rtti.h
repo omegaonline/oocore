@@ -7,10 +7,10 @@ namespace Omega
 	{
 		template <class T> struct std_safe_functor
 		{
-			std_safe_functor() : m_val(m_fixed)
+			std_safe_functor()
 			{}
 
-			std_safe_functor(const T& val) : m_fixed(val), m_val(m_fixed)
+			std_safe_functor(const T& val) : m_val(val)
 			{}
 
 			// BorlandC is broken, and misses the const specialisation!
@@ -33,16 +33,15 @@ namespace Omega
 			}
 
 		private:
-			T  m_fixed;
-			T& m_val;
+			T m_val;
 
-			std_safe_functor(const std_safe_functor&) : m_val(m_fixed) {}
+			std_safe_functor(const std_safe_functor&) {}
 			std_safe_functor& operator = (const std_safe_functor&) {}
 		};
 
 		template <> struct std_safe_functor<void*>
 		{
-			std_safe_functor(void* val) : m_fixed(val), m_val(m_fixed)
+			std_safe_functor(void* val) : m_val(val)
 			{}
 
 			operator void*&()
@@ -56,10 +55,9 @@ namespace Omega
 			}
 
 		private:
-			void*  m_fixed;
-			void*& m_val;
+			void* m_val;
 
-			std_safe_functor(const std_safe_functor&) : m_val(m_fixed) {}
+			std_safe_functor(const std_safe_functor&) {}
 			std_safe_functor& operator = (const std_safe_functor&) { return *this; }
 		};
 
@@ -295,7 +293,7 @@ namespace Omega
 
 		template <class I> struct iface_stub_functor_array
 		{
-			iface_stub_functor_array(typename interface_info<I>::safe_class* pVals, const uint32_t& cbSize = s_default) :
+			iface_stub_functor_array(typename interface_info<I>::safe_class* pVals, uint32_t cbSize = s_default) :
 				m_pFunctors(0), m_pVals(0), m_pResults(pVals),
 				m_cbSize(cbSize), m_alloc_size(cbSize),
 				m_piids(0), m_iid(iid_traits<I>::GetIID())
@@ -303,7 +301,7 @@ namespace Omega
 				init(pVals);
 			}
 
-			iface_stub_functor_array(typename interface_info<I>::safe_class* pVals, const guid_t& iid, const uint32_t& cbSize = s_default) :
+			iface_stub_functor_array(typename interface_info<I>::safe_class* pVals, const guid_t& iid, uint32_t cbSize = s_default) :
 				m_pFunctors(0), m_pVals(0), m_pResults(pVals),
 				m_cbSize(cbSize), m_alloc_size(cbSize),
 				m_piids(0), m_iid(iid)
@@ -327,7 +325,7 @@ namespace Omega
 				init(pVals);
 			}
 
-			iface_stub_functor_array(typename interface_info<I>::safe_class* pVals, const guid_t* piids, const uint32_t& cbSize = s_default) :
+			iface_stub_functor_array(typename interface_info<I>::safe_class* pVals, const guid_t* piids, uint32_t cbSize = s_default) :
 				m_pFunctors(0), m_pVals(0), m_pResults(pVals),
 				m_cbSize(cbSize), m_alloc_size(cbSize),
 				m_piids(piids), m_iid(guid_t::NIL)
@@ -355,7 +353,7 @@ namespace Omega
 			typename interface_info<I>::stub_functor* m_pFunctors;
 			I* m_pVals;
 			typename interface_info<I>::safe_class* m_pResults;
-			const uint32_t& m_cbSize;
+			uint32_t m_cbSize;
 			const uint32_t m_alloc_size;
 			const guid_t* m_piids;
 			const guid_t& m_iid;
@@ -368,7 +366,7 @@ namespace Omega
 
 		template <class I> struct iface_proxy_functor_array
 		{
-			iface_proxy_functor_array(I* pVals, const uint32_t& cbSize = s_default) :
+			iface_proxy_functor_array(I* pVals, uint32_t cbSize = s_default) :
 				m_pFunctors(0), m_pVals(0), m_pResults(pVals),
 				m_cbSize(cbSize), m_alloc_size(cbSize),
 				m_piids(0), m_iid(iid_traits<I>::GetIID())
@@ -376,7 +374,7 @@ namespace Omega
 				init(pVals);
 			}
 
-			iface_proxy_functor_array(I* pVals, const guid_t& iid, const uint32_t& cbSize = s_default) :
+			iface_proxy_functor_array(I* pVals, const guid_t& iid, uint32_t cbSize = s_default) :
 				m_pFunctors(0), m_pVals(0), m_pResults(pVals),
 				m_cbSize(cbSize), m_alloc_size(cbSize),
 				m_piids(0), m_iid(iid)
@@ -384,7 +382,7 @@ namespace Omega
 				init(pVals);
 			}
 
-			iface_proxy_functor_array(I* pVals, const guid_t* piids, const uint32_t& cbSize = s_default) :
+			iface_proxy_functor_array(I* pVals, const guid_t* piids, uint32_t cbSize = s_default) :
 				m_pFunctors(0), m_pVals(0), m_pResults(pVals),
 				m_cbSize(cbSize), m_alloc_size(cbSize),
 				m_piids(piids), m_iid(iid_traits<I>::GetIID())
@@ -404,7 +402,7 @@ namespace Omega
 			typename interface_info<I>::proxy_functor* m_pFunctors;
 			typename interface_info<I>::safe_class* m_pVals;
 			I* m_pResults;
-			const uint32_t& m_cbSize;
+			uint32_t m_cbSize;
 			const uint32_t m_alloc_size;
 			const guid_t* m_piids;
 			const guid_t& m_iid;
@@ -780,6 +778,16 @@ namespace Omega
 			throw pI;
 		}
 
+		template <class I>
+		inline void DynamicThrow(IException* pE)
+		{
+			auto_iface_ptr<IException> ptrE(pE);
+			I* pI = static_cast<I*>(pE->QueryInterface(iid_traits<I>::GetIID()));
+			if (!pI)
+				INoInterfaceException::Throw(iid_traits<I>::GetIID(),OMEGA_SOURCE_INFO);
+			throw pI;
+		}
+
 		template <class I, class Base>
 		struct IObject_SafeStub : public Base
 		{
@@ -879,6 +887,7 @@ namespace Omega
 			IObject_Safe* (*pfnCreateSafeStub)(IObject_Safe* pOuter, IObject* pObj);
 			IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 			void (*pfnSafeThrow)(IException_Safe* pSE);
+			void (*pfnThrow)(IException* pE);
 			IWireStub* (*pfnCreateWireStub)(IWireManager* pManager, IObject* pObject, uint32_t id);
 			IObject* (*pfnCreateWireProxy)(IObject* pOuter, IWireManager* pManager);
 		};

@@ -104,7 +104,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("\\Current User\\Applications\\OORegEdit\\Layout");
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Current User\\Applications\\OORegEdit\\Layout");
 		
 		wxPoint ptPos;
 		ptPos.x = ptrKey->GetUIntValue("Left");
@@ -150,7 +150,7 @@ void MainFrame::CreateChildWindows(void)
 	{
 		e->Release();
 	}
-
+	
 	// Create the splitter
 	m_pSplitter = new wxSplitterWindow(this);
     m_pSplitter->SetSashGravity(0.25);
@@ -323,7 +323,7 @@ void MainFrame::OnQuit(wxCommandEvent& WXUNUSED(evt))
 void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 {
 	// Set some defaults...
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("\\Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
 
 	wxPoint pt = GetPosition();
 	ptrKey->SetUIntValue("Top",pt.y);
@@ -349,7 +349,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 
 	ptrKey->SetStringValue("Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
 
-	size_t nFiles = m_fileHistory.GetCount();
+	Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
 	ptrKey->SetUIntValue("Favourites",nFiles);
 
 	for (nFiles;nFiles>0;--nFiles)

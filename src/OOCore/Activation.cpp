@@ -14,7 +14,7 @@ namespace OOCore
 	public:
 		guid_t m_oid;
 
-		static Throw(const guid_t& Oid, IException* pE = 0);
+		static void Throw(const guid_t& Oid, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(OidNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
@@ -146,7 +146,7 @@ void OOCore::ExecProcess(const string_t& strExeName)
 		OOCORE_THROW_ERRNO(ret);
 }
 
-OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
+void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 {
 	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateObject();
 	pNew->m_strDesc = "The identified object could not be found.";
@@ -169,14 +169,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (int i=0;i<2;++i)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey("\\Objects\\" + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey("Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue("OID"))
 			return guid_t::FromString(ptrOidKey->GetStringValue("OID"));
 
 		strCurName = ptrOidKey->GetStringValue("CurrentVersion");
 	}
-	
+
 	return guid_t::NIL;
 }
 

@@ -28,6 +28,7 @@
 				SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
 				SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
 				SafeThrow<n_space::iface>, \
+				DynamicThrow<n_space::iface>, \
 				CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>, \
 				WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create \
 			}; \
@@ -191,22 +192,8 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_STUB_METHOD,methods,0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_READ_PARAM_in(t,name)        static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
-#define OMEGA_WIRE_READ_PARAM_in_out(t,name)    static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager, __wire__pParamsIn
-#define OMEGA_WIRE_READ_PARAM_out(t,name)       static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager
-#define OMEGA_WIRE_READ_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PARAM_iid_is_I
-#define OMEGA_WIRE_READ_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_READ_PARAM_size_is(size)     ,static_cast<const uint32_t&>(size) OMEGA_WIRE_READ_PARAM_size_is_I
-#define OMEGA_WIRE_READ_PARAM_size_is_I(t,name)
-
-#define OMEGA_WIRE_READ_PARAM_I(index,meta,d) \
-	OMEGA_CONCAT(OMEGA_WIRE_READ_PARAM_,meta) d
-
-#define OMEGA_WIRE_READ_PARAM(meta,type,name) \
-	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_READ_PARAM_I,meta,(type,name))
-
 #define OMEGA_DECLARE_PARAM_WIRE_STUB_I(meta,t,name) \
-	interface_info<t>::wire_type name( OMEGA_WIRE_READ_PARAM(meta,t,name) );
+	interface_info<t>::wire_type::type name;
 
 #define OMEGA_DECLARE_PARAM_WIRE_STUB(index,param,d) \
 	OMEGA_DECLARE_PARAM_WIRE_STUB_I param
@@ -215,22 +202,46 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_WRITE_PARAM_in(t,name)
-#define OMEGA_WIRE_WRITE_PARAM_in_out(t,name)
-#define OMEGA_WIRE_WRITE_PARAM_out(t,name)
-#define OMEGA_WIRE_WRITE_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PARAM_iid_is_I
-#define OMEGA_WIRE_WRITE_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_WRITE_PARAM_size_is(size)     ,static_cast<const uint32_t&>(size) OMEGA_WIRE_WRITE_PARAM_size_is_I
-#define OMEGA_WIRE_WRITE_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
+#define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_iid_is_I
+#define OMEGA_WIRE_READ_STUB_PARAM_iid_is_I(t,name)
+#define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_size_is_I
+#define OMEGA_WIRE_READ_STUB_PARAM_size_is_I(t,name)
 
-#define OMEGA_WIRE_WRITE_PARAM_I(index,meta,d) \
-	OMEGA_CONCAT(OMEGA_WIRE_WRITE_PARAM_,meta) d
+#define OMEGA_WIRE_READ_STUB_PARAM_I(index,meta,d) \
+	OMEGA_CONCAT(OMEGA_WIRE_READ_STUB_PARAM_,meta) d
 
-#define OMEGA_WIRE_WRITE_PARAM(meta,type,name) \
-	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_WRITE_PARAM_I,meta,(type,name))
+#define OMEGA_WIRE_READ_STUB_PARAM(meta,type,name) \
+	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_READ_STUB_PARAM_I,meta,(type,name))
+
+#define OMEGA_READ_PARAM_WIRE_STUB_I(meta,t,name) \
+	interface_info<t>::wire_type:: OMEGA_WIRE_READ_STUB_PARAM(meta,t,name) );
+
+#define OMEGA_READ_PARAM_WIRE_STUB(index,param,d) \
+	OMEGA_READ_PARAM_WIRE_STUB_I param
+
+#define OMEGA_READ_PARAMS_WIRE_STUB(count,params) \
+	OMEGA_TUPLE_FOR_EACH(count,OMEGA_READ_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
+
+// Add extra meta info types here
+#define OMEGA_WIRE_WRITE_STUB_PARAM_in(t,name)        no_op(false
+#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_iid_is_I
+#define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is_I(t,name)
+#define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_size_is_I
+#define OMEGA_WIRE_WRITE_STUB_PARAM_size_is_I(t,name)
+
+#define OMEGA_WIRE_WRITE_STUB_PARAM_I(index,meta,d) \
+	OMEGA_CONCAT(OMEGA_WIRE_WRITE_STUB_PARAM_,meta) d
+
+#define OMEGA_WIRE_WRITE_STUB_PARAM(meta,type,name) \
+	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_WRITE_STUB_PARAM_I,meta,(type,name))
 
 #define OMEGA_WRITE_PARAM_WIRE_STUB_I(meta,t,name) \
-	name.stub_out(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
+	interface_info<t>::wire_type:: OMEGA_WIRE_WRITE_STUB_PARAM(meta,t,name) );
 
 #define OMEGA_WRITE_PARAM_WIRE_STUB(index,param,d) \
 	OMEGA_WRITE_PARAM_WIRE_STUB_I param
@@ -255,6 +266,7 @@
 	{ \
 		OMEGA_UNUSED_ARG(__wire__pParam); OMEGA_UNUSED_ARG(__wire__pParamsIn); OMEGA_UNUSED_ARG(__wire__pParamsOut); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
+		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		__wire__pI->name( OMEGA_EMIT_PARAMS(param_count,params) ); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
 	}
@@ -264,9 +276,10 @@
 	{ \
 		OMEGA_UNUSED_ARG(__wire__pParam); OMEGA_UNUSED_ARG(__wire__pParamsIn); OMEGA_UNUSED_ARG(__wire__pParamsOut); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
-		interface_info<ret_type>::wire_type OMEGA_CONCAT(name,_RetVal) ( __wire__pI->name( OMEGA_EMIT_PARAMS(param_count,params) ) ); \
+		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
+		interface_info<ret_type>::wire_type::type OMEGA_CONCAT(name,_RetVal) ( __wire__pI->name( OMEGA_EMIT_PARAMS(param_count,params) ) ); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
-		OMEGA_CONCAT(name,_RetVal).stub_out(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut); \
+		interface_info<ret_type>::wire_type::write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_RetVal)); \
 	}
 
 #define OMEGA_DEFINE_WIRE_STUB_METHOD(index,method,d) \
@@ -359,8 +372,23 @@
 #define OMEGA_DECLARE_SAFE_PROXY_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_PROXY_METHOD,methods,0)
 
+// Add extra meta info types here
+#define OMEGA_WIRE_READ_PROXY_PARAM_in(t,name)        no_op(false
+#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(this->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(this->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_iid_is_I
+#define OMEGA_WIRE_READ_PROXY_PARAM_iid_is_I(t,name)
+#define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_size_is_I
+#define OMEGA_WIRE_READ_PROXY_PARAM_size_is_I(t,name)
+
+#define OMEGA_WIRE_READ_PROXY_PARAM_I(index,meta,d) \
+	OMEGA_CONCAT(OMEGA_WIRE_READ_PROXY_PARAM_,meta) d
+
+#define OMEGA_WIRE_READ_PROXY_PARAM(meta,type,name) \
+	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_READ_PROXY_PARAM_I,meta,(type,name))
+
 #define OMEGA_READ_PARAM_WIRE_PROXY_I(meta,t,name) \
-	interface_info<t>::wire_type::proxy_out(this->m_pManager,__wire__pParamsIn,name OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
+    interface_info<t>::wire_type:: OMEGA_WIRE_READ_PROXY_PARAM(meta,t,name) );
 
 #define OMEGA_READ_PARAM_WIRE_PROXY(index,param,d) \
 	OMEGA_READ_PARAM_WIRE_PROXY_I param
@@ -368,8 +396,23 @@
 #define OMEGA_READ_PARAMS_WIRE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_READ_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
+// Add extra meta info types here
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(this->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(this->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is_I
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is_I(t,name)
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_size_is_I
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is_I(t,name)
+
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_I(index,meta,d) \
+	OMEGA_CONCAT(OMEGA_WIRE_WRITE_PROXY_PARAM_,meta) d
+
+#define OMEGA_WIRE_WRITE_PROXY_PARAM(meta,type,name) \
+	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_WRITE_PROXY_PARAM_I,meta,(type,name))
+
 #define OMEGA_WRITE_PARAM_WIRE_PROXY_I(meta,t,name) \
-	interface_info<t>::wire_type::proxy_in(this->m_pManager,__wire__pParamsOut,name OMEGA_WIRE_WRITE_PARAM(meta,t,name) );
+	interface_info<t>::wire_type::  OMEGA_WIRE_WRITE_PROXY_PARAM(meta,t,name) );
 
 #define OMEGA_WRITE_PARAM_WIRE_PROXY(index,param,d) \
 	OMEGA_WRITE_PARAM_WIRE_PROXY_I param
@@ -414,7 +457,7 @@
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(this->m_pManager->SendAndReceive(attribs,__wire__pParamsOut)); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-		interface_info<ret_type>::wire_type::proxy_out(this->m_pManager,__wire__pParamsIn,static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal))); \
+		interface_info<ret_type>::wire_type::read(this->m_pManager,__wire__pParamsIn,OMEGA_CONCAT(name,_RetVal)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +

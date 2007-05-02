@@ -8,6 +8,9 @@
 #include <sys/types.h>
 #include <new>
 
+#undef interface
+#define interface struct __attribute__((com_interface))
+
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \
 		if (POINTER == 0) { OMEGA_THROW("Out of memory."); } \

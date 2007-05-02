@@ -100,7 +100,7 @@ void Root::ClientConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 					}
 					else
 					{
-						ACE_UINT16 len = strSource.length();
+						ACE_UINT16 len = static_cast<ACE_UINT16>(strSource.length());
 						if (len > 1023)
 							len = 1023;
 						bSuccess = (mb.copy(reinterpret_cast<const char*>(&len),sizeof(len)) != -1);

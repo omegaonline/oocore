@@ -14,7 +14,7 @@
 #include "./RootConnection.h"
 #include "./RootManager.h"
 
-Root::Connection::Connection(HandlerBase* pBase, const ACE_CString& key) : 
+Root::Connection::Connection(HandlerBase* pBase, const ACE_CString& key) :
 	ACE_Service_Handler(),
 	m_pBase(pBase),
 	m_id(key)
@@ -24,7 +24,7 @@ Root::Connection::Connection(HandlerBase* pBase, const ACE_CString& key) :
 Root::Connection::~Connection()
 {
 	ACE_HANDLE my_handle = handle();
-	
+
 	if (m_pBase)
 		m_pBase->root_connection_closed(m_id,my_handle);
 
@@ -40,7 +40,7 @@ bool Root::Connection::open(ACE_HANDLE new_handle)
 	// Open the reader
 	if (m_reader.open(*this) != 0)
 	    ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Connection::open")),false);
-			
+
 	return read();
 }
 
@@ -68,7 +68,7 @@ bool Root::Connection::read()
 void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
-	
+
 	bool bSuccess = false;
 	if (result.success())
 	{
@@ -114,7 +114,9 @@ void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 			{
 				// Create a new input CDR
 				ACE_InputCDR* input = 0;
-				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,static_cast<size_t>(mb.rd_ptr() - mb.base()),static_cast<size_t>(mb.wr_ptr() - mb.base())));
+				size_t rd_ptr = static_cast<size_t>(mb.rd_ptr() - mb.base());
+				size_t wr_ptr = static_cast<size_t>(mb.wr_ptr() - mb.base());
+				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,rd_ptr,wr_ptr));
 				if (input)
 				{
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
@@ -125,7 +127,7 @@ void Root::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 						// Start a new read
 						bSuccess = read();
 					}
-					
+
 					if (!bSuccess)
 						delete input;
 				}

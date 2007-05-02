@@ -23,11 +23,12 @@ inline Omega::Guard<Omega::CriticalSection> OTL::ModuleBase::GetGuard()
 
 inline void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 {
-	Term term = { pfnTerm, arg };
-
-	Omega::Guard<Omega::CriticalSection> lock(m_csMain);
 	try
 	{
+		Omega::Guard<Omega::CriticalSection> lock(m_csMain);
+
+		Term term = { pfnTerm, arg };
+
 		m_listTerminators.push_front(term);
 	}
 	catch (std::exception& e)

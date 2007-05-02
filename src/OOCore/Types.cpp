@@ -95,20 +95,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,s1,(in),con
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const void*,s2))
 {
 	StringNode* pOld = static_cast<StringNode*>(s1);
-	StringNode* pNode;
 
-	try
-	{
-		OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	}
-	catch (...)
-	{
-		pOld->Release();
-		throw;
-	}
+	StringNode* pNode;
+	OMEGA_NEW(pNode,StringNode(pOld->m_str));
+	if (!pNode)
+		OOCORE_THROW_ERRNO(ENOMEM);
 
 	pOld->Release();
-
+	
 	pNode->m_str += static_cast<const StringNode*>(s2)->m_str;
 	return pNode;
 }
@@ -116,17 +110,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const Omega::char_t*,sz))
 {
 	StringNode* pOld = static_cast<StringNode*>(s1);
+	
 	StringNode* pNode;
-
-	try
-	{
-		OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	}
-	catch (...)
-	{
-		pOld->Release();
-		throw;
-	}
+	OMEGA_NEW(pNode,StringNode(pOld->m_str));
+	if (!pNode)
+		OOCORE_THROW_ERRNO(ENOMEM);	
 
 	pOld->Release();
 
@@ -161,17 +149,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 	}
 
 	StringNode* s2;
-	try
-	{
-		OMEGA_NEW(s2,StringNode(pszNew));
-	}
-	catch (...)
-	{
-		free(pszNew);
-		throw;
-	}
+	OMEGA_NEW(s2,StringNode(pszNew));
 
 	free(pszNew);
+
+	if (!s2)
+		OOCORE_THROW_ERRNO(ENOMEM);	
+	
 	return s2;
 }
 
@@ -187,17 +171,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 	}
 
 	StringNode* s2;
-	try
-	{
-		OMEGA_NEW(s2,StringNode(pszNew));
-	}
-	catch (...)
-	{
-		free(pszNew);
-		throw;
-	}
-
+	OMEGA_NEW(s2,StringNode(pszNew));
+	
 	free(pszNew);
+		
+	if (!s2)
+		OOCORE_THROW_ERRNO(ENOMEM);	
+
 	return s2;
 }
 

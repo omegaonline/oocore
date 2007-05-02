@@ -15,6 +15,7 @@
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add option="-Wall" />
+					<Add option="-g" />
 					<Add option="-O0" />
 					<Add option="-frtti" />
 					<Add option="-mno-cygwin" />
@@ -31,7 +32,7 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add library="shlwapi" />
-					<Add library="..\..\extern\ACE-5.5.7\lib\libACE.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
 				</Linker>

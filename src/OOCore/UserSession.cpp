@@ -49,7 +49,7 @@ bool OOCore::UserSession::init_i(string_t& strSource)
 	if (!get_port(uPort,strSource))
 		return false;
 
-	// Connect to the root
+    // Connect to the root
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
@@ -116,6 +116,7 @@ IException* OOCore::UserSession::bootstrap()
 	}
 	catch (Omega::IException* pE)
 	{
+		::DebugBreak();
 		return pE;
 	}
 
@@ -228,7 +229,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 
 		// Launch the server
 		if (!launch_server(strSource))
-			return false;		
+			return false;
 
 		// Re-open file
 		file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
@@ -311,13 +312,13 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 
 		return true;
 	}
-	else 
+	else
 	{
 		ACE_UINT16 nCount;
 		char szBuf[1024];
 		if (peer.recv(&nCount,sizeof(nCount),&wait) != static_cast<ssize_t>(sizeof(nCount)))
 			strSource = OMEGA_SOURCE_INFO;
-		else 
+		else
 		{
 			if (nCount >= sizeof(szBuf))
 				nCount = sizeof(szBuf)-1;
@@ -511,6 +512,7 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 	}
 	catch (...)
 	{
+		::DebugBreak();
 		ACE_OS::last_error(EINVAL);
 		return false;
 	}
@@ -540,7 +542,9 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 		m_setPendingTrans.erase(trans_id);
 	}
 	catch (...)
-	{}
+	{
+		::DebugBreak();
+	}
 
 	return bRet;
 }
@@ -682,6 +686,7 @@ bool OOCore::UserSession::valid_transaction(ACE_CDR::ULong trans_id)
 	}
 	catch (...)
 	{
+		::DebugBreak();
 		return false;
 	}
 }
@@ -739,6 +744,8 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		}
 		catch (IException* pInner)
 		{
+			::DebugBreak();
+
 			// Make sure we release the exception
 			ObjectPtr<IException> ptrInner;
 			ptrInner.Attach(pInner);
@@ -759,12 +766,21 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 
 		if (trans_id != 0)
 		{
-			if (!send_response(src_channel_id,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline))
+		    int err = 0;
+		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
+			if (!send_response(src_channel_id,trans_id,mb,request_deadline))
+                err = ACE_OS::last_error();
+
+            mb->release();
+
+            if (err != 0)
 				OOCORE_THROW_LASTERROR();
 		}
 	}
 	catch (IException* pOuter)
 	{
+		::DebugBreak();
+
 		// Make sure we release the exception
 		ObjectPtr<IException> ptrOuter;
 		ptrOuter.Attach(pOuter);

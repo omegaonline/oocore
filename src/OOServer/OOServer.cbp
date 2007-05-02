@@ -25,7 +25,7 @@
 					<Add directory="..\..\extern\ACE-5.5.7" />
 				</ResourceCompiler>
 				<Linker>
-					<Add library="..\..\extern\ACE-5.5.7\lib\libACE.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
 					<Add library="..\OOCore\debug\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="userenv" />

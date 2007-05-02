@@ -12,7 +12,7 @@ User::Connection::~Connection()
 	ACE_HANDLE my_handle = handle();
 
 	Manager::user_connection_closed(my_handle);
-	
+
 	if (my_handle != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(my_handle);
 }
@@ -28,7 +28,7 @@ void User::Connection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
 	    ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("User::Connection::open")));
 		delete this;
 	}
-			
+
 	if (!read())
 		delete this;
 }
@@ -57,7 +57,7 @@ bool User::Connection::read()
 void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
-	
+
 	bool bSuccess = false;
 	if (result.success())
 	{
@@ -103,7 +103,9 @@ void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 			{
 				// Create a new input CDR
 				ACE_InputCDR* input = 0;
-				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,static_cast<size_t>(mb.rd_ptr() - mb.base()),static_cast<size_t>(mb.wr_ptr() - mb.base())));
+				size_t rd_ptr = static_cast<size_t>(mb.rd_ptr() - mb.base());
+				size_t wr_ptr = static_cast<size_t>(mb.wr_ptr() - mb.base());
+				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,rd_ptr,wr_ptr));
 				if (input)
 				{
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
@@ -114,7 +116,7 @@ void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 						// Start a new read
 						bSuccess = read();
 					}
-					
+
 					if (!bSuccess)
 						delete input;
 				}

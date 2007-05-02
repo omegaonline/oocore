@@ -3,7 +3,7 @@
 #include "./UserConnection.h"
 #include "./UserSession.h"
 
-OOCore::UserConnection::UserConnection(UserSession* pSession) : 
+OOCore::UserConnection::UserConnection(UserSession* pSession) :
 	ACE_Service_Handler(),
 	m_pSession(pSession)
 
@@ -13,7 +13,7 @@ OOCore::UserConnection::UserConnection(UserSession* pSession) :
 OOCore::UserConnection::~UserConnection()
 {
 	m_pSession->connection_closed();
-	
+
 	if (handle() != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(handle());
 }
@@ -29,7 +29,7 @@ bool OOCore::UserConnection::open(ACE_HANDLE new_handle, Omega::string_t& strSou
 		strSource = OMEGA_SOURCE_INFO;
 	    return false;
 	}
-				
+
 	if (!read())
 	{
 		strSource = OMEGA_SOURCE_INFO;
@@ -62,7 +62,7 @@ bool OOCore::UserConnection::read()
 void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
 {
 	ACE_Message_Block& mb = result.message_block();
-	
+
 	bool bSuccess = false;
 	if (result.success())
 	{
@@ -108,7 +108,9 @@ void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 			{
 				// Create a new input CDR
 				ACE_InputCDR* input = 0;
-				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,static_cast<size_t>(mb.rd_ptr() - mb.base()),static_cast<size_t>(mb.wr_ptr() - mb.base())));
+				size_t rd_ptr = static_cast<size_t>(mb.rd_ptr() - mb.base());
+				size_t wr_ptr = static_cast<size_t>(mb.wr_ptr() - mb.base());
+				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.replace_data_block(0),0,rd_ptr,wr_ptr));
 				if (input)
 				{
 					input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
@@ -119,7 +121,7 @@ void OOCore::UserConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Re
 						// Start a new read
 						bSuccess = read();
 					}
-					
+
 					if (!bSuccess)
 						delete input;
 				}

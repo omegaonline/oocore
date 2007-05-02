@@ -37,6 +37,8 @@ guid_t OOCore::NoInterfaceException::GetUnsupportedIID()
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))
 {
+	OutputDebugString(string_t::Format("Exception: %s at %s\n",desc,source));
+
 	ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateObject();
 	pExcept->m_ptrCause.Attach(pCause); 
 	pExcept->m_strDesc = desc;

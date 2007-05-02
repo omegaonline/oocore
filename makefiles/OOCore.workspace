@@ -2,8 +2,14 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="OOCore">
 		<Project filename="..\src\OOCore\OOCore.cbp" />
-		<Project filename="..\src\OOServer\OOServer.cbp" />
-		<Project filename="..\test\TestDll\TestDll.cbp" />
-		<Project filename="..\test\TestExe\TestExe.cbp" active="1" />
+		<Project filename="..\src\OOServer\OOServer.cbp" active="1">
+			<Depends filename="..\src\OOCore\OOCore.cbp" />
+		</Project>
+		<Project filename="..\test\TestDll\TestDll.cbp">
+			<Depends filename="..\src\OOCore\OOCore.cbp" />
+		</Project>
+		<Project filename="..\test\TestExe\TestExe.cbp">
+			<Depends filename="..\test\TestDll\TestDll.cbp" />
+		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

@@ -270,12 +270,11 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 		if (!bSandbox)
 			ptrOM = get_object_manager(m_root_handle,1);
 
-		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
-		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
-
 		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateObjectPtr();
 		ptrOF->Init(ptrOM,this);
 
+		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
+		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
 	}
 	catch (IException* pE)
@@ -537,8 +536,14 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 
 		if (trans_id != 0)
 		{
-			if (!send_response(handle,0,trans_id,static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock()),request_deadline))
-				OOSERVER_THROW_LASTERROR();
+			int err = 0;
+			ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
+			if (!send_response(handle,0,trans_id,mb,request_deadline))
+				err = ACE_OS::last_error();
+			
+			mb->release();
+			if (err != 0)
+				OOSERVER_THROW_ERRNO(err);
 		}
 	}
 	catch (IException* pOuter)

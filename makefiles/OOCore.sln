@@ -1,9 +1,4 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOCore", "..\src\OOCore\OOCore.vcproj", "{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}"
-	ProjectSection(ProjectDependencies) = postProject
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4} = {69A052F0-FECA-1BAD-6757-8A63CF228EC4}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOServer", "..\src\OOServer\OOServer.vcproj", "{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
@@ -30,6 +25,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OORegEdit", "..\tools\OOReg
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOCore", "..\src\OOCore\OOCore.vcproj", "{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{69A052F0-FECA-1BAD-6757-8A63CF228EC4} = {69A052F0-FECA-1BAD-6757-8A63CF228EC4}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -38,10 +38,6 @@ Global
 	GlobalSection(ProjectDependencies) = postSolution
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
-		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.ActiveCfg = Debug|Win32
-		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.Build.0 = Debug|Win32
-		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.ActiveCfg = Release|Win32
-		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.Build.0 = Release|Win32
 		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}.Debug.ActiveCfg = Debug|Win32
 		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}.Debug.Build.0 = Debug|Win32
 		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}.Release.ActiveCfg = Release|Win32
@@ -55,13 +51,16 @@ Global
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Release.ActiveCfg = Release|Win32
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Release.Build.0 = Release|Win32
 		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Debug.ActiveCfg = Debug|Win32
-		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Debug.Build.0 = Debug|Win32
 		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Release.ActiveCfg = Release|Win32
 		{69A052F0-FECA-1BAD-6757-8A63CF228EC4}.Release.Build.0 = Release|Win32
 		{F58C0775-A7D3-4B50-8370-EFFCD4727AFA}.Debug.ActiveCfg = Debug|Win32
 		{F58C0775-A7D3-4B50-8370-EFFCD4727AFA}.Debug.Build.0 = Debug|Win32
 		{F58C0775-A7D3-4B50-8370-EFFCD4727AFA}.Release.ActiveCfg = Release|Win32
 		{F58C0775-A7D3-4B50-8370-EFFCD4727AFA}.Release.Build.0 = Release|Win32
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.ActiveCfg = Debug|Win32
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.Build.0 = Debug|Win32
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.ActiveCfg = Release|Win32
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

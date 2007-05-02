@@ -80,6 +80,18 @@ Omega::string_t& Omega::string_t::operator += (const char_t* sz)
 	return *this;
 }
 
+OOCORE_EXPORTED_FUNCTION(int,string_t_cmp1,2,((in),const void*,h1,(in),const void*,h2));
+int Omega::string_t::Compare(const string_t& s) const
+{
+	return string_t_cmp1(m_handle,s.m_handle);
+}
+
+OOCORE_EXPORTED_FUNCTION(int,string_t_cmp2,2,((in),const void*,h1,(in),const Omega::char_t*,sz));
+int Omega::string_t::Compare(const char_t* sz) const
+{
+	return string_t_cmp2(m_handle,sz);
+}
+
 OOCORE_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,h1,(in),const void*,h2));
 int Omega::string_t::CompareNoCase(const string_t& s) const
 {

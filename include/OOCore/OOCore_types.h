@@ -115,6 +115,8 @@ namespace Omega
 		inline string_t& operator += (const string_t& s);
 		inline string_t& operator += (const char_t* sz);
 
+		inline int Compare(const string_t& s) const;
+		inline int Compare(const char_t* sz) const;
 		inline int CompareNoCase(const string_t& s) const;
 		inline int CompareNoCase(const char_t* sz) const;
 		inline bool IsEmpty() const;

@@ -122,6 +122,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const O
 	return pNode;
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp1,2,((in),const void*,s1,(in),const void*,s2))
+{
+	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp2,2,((in),const void*,s1,(in),const Omega::char_t*,sz))
+{
+	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),sz);
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,s1,(in),const void*,s2))
 {
 	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());

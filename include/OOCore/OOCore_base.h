@@ -18,8 +18,8 @@
 
 #define OMEGA_DECLARE_IID_TRAITS(n_space,type) \
 	namespace Omega { namespace MetaInfo { \
-	template<> struct iid_traits<n_space::type> { inline static const guid_t& GetIID() { return n_space::OMEGA_CONCAT(IID_,type); } }; \
-	template<> struct iid_traits<n_space::type*> { inline static const guid_t& GetIID() { return n_space::OMEGA_CONCAT(IID_,type); } }; \
+	template<> struct iid_traits<n_space::type> { static const guid_t& GetIID() { return n_space::OMEGA_CONCAT(IID_,type); } }; \
+	template<> struct iid_traits<n_space::type*> { static const guid_t& GetIID() { return n_space::OMEGA_CONCAT(IID_,type); } }; \
 	} }
 
 #if (defined(OMEGA_GUID_LINK_HERE))
@@ -63,7 +63,7 @@ namespace Omega
 		virtual string_t Description() = 0;
 		virtual string_t Source() = 0;
 	
-		static void Throw(const char_t* desc, const char_t* source = 0, IException* pCause = 0);
+		inline static void Throw(const char_t* desc, const char_t* source = 0, IException* pCause = 0);
 	};
 	OMEGA_DECLARE_IID(IException);
 
@@ -71,7 +71,7 @@ namespace Omega
 	{
 		virtual guid_t GetUnsupportedIID() = 0;
 
-		static void Throw(const guid_t& iid, const char_t* source = 0);
+		inline static void Throw(const guid_t& iid, const char_t* source = 0);
 	};
 	OMEGA_DECLARE_IID(INoInterfaceException);
 

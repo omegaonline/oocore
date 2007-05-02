@@ -232,7 +232,8 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey;
 	Omega::string_t strName;
 
-	for (size_t c = 1;;++c)
+	size_t c;
+	for (c = 1;c<100;++c)
 	{
 		strName = Omega::string_t::Format(_("New Key #%lu"),c);
 		if (!m_ptrKey->IsSubKey(strName))
@@ -240,6 +241,11 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 			ptrKey = m_ptrKey.OpenSubKey(strName,Omega::Registry::IRegistryKey::Create | Omega::Registry::IRegistryKey::FailIfThere);
 			break;
 		}
+	}
+	if (c >= 100)
+	{
+		wxMessageBox(_("Too many new keys!"),_("new Key"),wxOK|wxICON_INFORMATION,NULL);
+		return;
 	}
 
 	TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));

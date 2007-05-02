@@ -2,7 +2,7 @@
 #define OOCORE_RTTI_INL_INCLUDED_
 
 template <class I>
-inline void Omega::MetaInfo::iface_stub_functor<I>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
+void Omega::MetaInfo::iface_stub_functor<I>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
 {
 	if (pS)
 	{
@@ -20,7 +20,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I>::init(typename interface_info
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_stub_functor<I>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
+void Omega::MetaInfo::iface_stub_functor<I>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
 {
 	if (result)
 		result->Release_Safe();
@@ -38,7 +38,7 @@ inline void Omega::MetaInfo::iface_stub_functor<I>::detach(typename interface_in
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid)
+void Omega::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid)
 {
 	m_iid = iid;
 
@@ -53,7 +53,7 @@ inline void Omega::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& i
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_proxy_functor<I>::detach(I*& result)
+void Omega::MetaInfo::iface_proxy_functor<I>::detach(I*& result)
 {
 	if (result)
 		result->Release();
@@ -75,7 +75,7 @@ inline void Omega::MetaInfo::iface_proxy_functor<I>::detach(I*& result)
 }
 
 template <class I>
-inline Omega::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
+Omega::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
 {
 	if (m_cbSize > m_alloc_size)
 	{
@@ -101,7 +101,7 @@ inline Omega::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
 }
 
 template <class I>
-void inline Omega::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<I>::safe_class* pVals)
+void Omega::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<I>::safe_class* pVals)
 {
 	try
 	{
@@ -132,7 +132,7 @@ void inline Omega::MetaInfo::iface_stub_functor_array<I>::init(typename interfac
 }
 
 template <class I>
-inline Omega::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array()
+Omega::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array()
 {
 	if (m_cbSize > m_alloc_size)
 	{
@@ -158,7 +158,7 @@ inline Omega::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array
 }
 
 template <class I>
-inline void Omega::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
+void Omega::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
 {
 	try
 	{
@@ -188,7 +188,7 @@ inline void Omega::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
 	}
 }
 
-inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid)
+Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid)
 {
 	if (iid==IID_IObject)
 	{
@@ -254,7 +254,7 @@ inline Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::Q
 	return 0;
 }
 
-inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
+Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
 {
 	if (iid==IID_IObject ||
 		iid==IID_SafeProxy)
@@ -306,7 +306,7 @@ inline Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& 
 	return 0;
 }
 
-inline const Omega::MetaInfo::qi_rtti* Omega::MetaInfo::get_qi_rtti_info(const guid_t& iid)
+const Omega::MetaInfo::qi_rtti* Omega::MetaInfo::get_qi_rtti_info(const guid_t& iid)
 {
 	static std::map<const guid_t,const qi_rtti*> mapRtti;
 	static CriticalSection cs;
@@ -324,19 +324,19 @@ inline const Omega::MetaInfo::qi_rtti* Omega::MetaInfo::get_qi_rtti_info(const g
 	return i->second;
 };
 
-inline Omega::MetaInfo::SafeProxyStubMap& Omega::MetaInfo::get_proxy_map()
+Omega::MetaInfo::SafeProxyStubMap& Omega::MetaInfo::get_proxy_map()
 {
 	static SafeProxyStubMap proxy_map;
 	return proxy_map;
 }
 
-inline Omega::MetaInfo::SafeProxyStubMap& Omega::MetaInfo::get_stub_map()
+Omega::MetaInfo::SafeProxyStubMap& Omega::MetaInfo::get_stub_map()
 {
 	static SafeProxyStubMap stub_map;
 	return stub_map;
 }
 
-inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObject* pObj, const Omega::guid_t& iid)
+Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObject* pObj, const Omega::guid_t& iid)
 {
 	SafeProxyStubMap& stub_map = get_stub_map();
 	Guard<CriticalSection> guard(stub_map.m_cs);
@@ -380,7 +380,7 @@ inline Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObjec
 	return pRet;
 }
 
-inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Safe* pObjS, const Omega::guid_t& iid, bool bPartialAllowed)
+Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Safe* pObjS, const Omega::guid_t& iid, bool bPartialAllowed)
 {
 	SafeProxyStubMap& proxy_map = get_proxy_map();
 	Guard<CriticalSection> guard(proxy_map.m_cs);
@@ -419,7 +419,7 @@ inline Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Sa
 	return pRet;
 }
 
-inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(Omega::IException* pE)
+Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(Omega::IException* pE)
 {
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	auto_iface_ptr<IException> ptrE(pE);
@@ -442,7 +442,7 @@ inline Omega::MetaInfo::IException_Safe* Omega::MetaInfo::return_safe_exception(
 	return static_cast<IException_Safe*>(pSE2);
 }
 
-inline void Omega::MetaInfo::throw_correct_exception(IException_Safe* pSE)
+void Omega::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 {
 	guid_t iid;
 	IException_Safe* pSE2 = pSE->ActualIID_Safe(&iid);
@@ -459,7 +459,7 @@ inline void Omega::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const Omega::char_t*,desc,(in),const Omega::char_t*,source,(in),Omega::IException*,pCause));
-inline void Omega::IException::Throw(const Omega::char_t* desc, const Omega::char_t* source, Omega::IException* pCause)
+void Omega::IException::Throw(const Omega::char_t* desc, const Omega::char_t* source, Omega::IException* pCause)
 {
 	IException_Throw(desc,source,pCause);
 }

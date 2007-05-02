@@ -20,9 +20,9 @@ namespace Omega
 		};
 		typedef uint16_t Flags_t;
 
-		IObjectFactory* GetObjectFactory(const guid_t& oid, Flags_t flags);
-		IObject* CreateObject(const guid_t& oid, Flags_t flags, IObject* pOuter, const guid_t& iid);
-		guid_t NameToOid(const string_t& strObjectName);
+		inline IObjectFactory* GetObjectFactory(const guid_t& oid, Flags_t flags);
+		inline IObject* CreateObject(const guid_t& oid, Flags_t flags, IObject* pOuter, const guid_t& iid);
+		inline guid_t NameToOid(const string_t& strObjectName);
 
 		interface IOidNotFoundException : public IException
 		{
@@ -34,7 +34,7 @@ namespace Omega
 		{
 			virtual guid_t GetFailingOid() = 0;
 
-			static void Throw(const guid_t& oid, IException* pCause = 0);
+			inline static void Throw(const guid_t& oid, IException* pCause = 0);
 		};
 		OMEGA_DECLARE_IID(INoAggregationException);
 
@@ -57,7 +57,7 @@ namespace Omega
 			virtual void Revoke(const guid_t& oid) = 0;
 			virtual void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 
-			static IServiceTable* GetServiceTable();
+			inline static IServiceTable* GetServiceTable();
 		};
 		OMEGA_DECLARE_IID(IServiceTable);
 	}
@@ -106,7 +106,7 @@ namespace Omega
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
 
-			static IRegistryKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
+			inline static IRegistryKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
 		OMEGA_DECLARE_IID(IRegistryKey);
 
@@ -277,31 +277,31 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IServiceTable*,Activation_GetServiceTable,0,());
-inline Omega::Activation::IServiceTable* Omega::Activation::IServiceTable::GetServiceTable()
+Omega::Activation::IServiceTable* Omega::Activation::IServiceTable::GetServiceTable()
 {
 	return Activation_GetServiceTable();
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const Omega::guid_t&,iid,(in),const Omega::char_t*,source));
-inline void Omega::INoInterfaceException::Throw(const Omega::guid_t& iid, const char_t* source)
+void Omega::INoInterfaceException::Throw(const Omega::guid_t& iid, const char_t* source)
 {
 	INoInterfaceException_Throw(iid,source);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const Omega::guid_t&,oid,(in),Omega::IException*,pCause));
-inline void Omega::Activation::INoAggregationException::Throw(const Omega::guid_t& oid, Omega::IException* pCause)
+void Omega::Activation::INoAggregationException::Throw(const Omega::guid_t& oid, Omega::IException* pCause)
 {
 	Activation_INoAggregationException_Throw(oid,pCause);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags));
-inline Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
+Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
 {
 	return Activation_GetObjectFactory(oid,flags);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Activation_CreateObject,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
-inline Omega::IObject* Omega::Activation::CreateObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid)
+Omega::IObject* Omega::Activation::CreateObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid)
 {
 	Omega::IObject* pObj = 0;
 	Activation_CreateObject(oid,flags,pOuter,iid,pObj);
@@ -309,13 +309,13 @@ inline Omega::IObject* Omega::Activation::CreateObject(const Omega::guid_t& oid,
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,Activation_NameToOid,1,((in),const Omega::string_t&,strObjectName));
-inline Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
+Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
 {
 	return Activation_NameToOid(strObjectName);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags));
-inline Omega::Registry::IRegistryKey* Omega::Registry::IRegistryKey::OpenKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags)
+Omega::Registry::IRegistryKey* Omega::Registry::IRegistryKey::OpenKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags)
 {
 	return IRegistryKey_OpenKey(key,flags);
 }

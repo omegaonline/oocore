@@ -53,18 +53,18 @@
 
 namespace Omega
 {
-	IException* Initialize();
-	void Uninitialize();
+	inline IException* Initialize();
+	inline void Uninitialize();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());
-inline Omega::IException* Omega::Initialize()
+Omega::IException* Omega::Initialize()
 {
 	return Omega_Initialize();
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,());
-inline void Omega::Uninitialize()
+void Omega::Uninitialize()
 {
 	Omega_Uninitialize();
 }

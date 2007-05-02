@@ -129,7 +129,7 @@ namespace Omega
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
 
-		static string_t Format(const char_t* pszFormat, ...);
+		inline static string_t Format(const char_t* pszFormat, ...);
 
 		static const size_t npos = size_t(-1);
 
@@ -155,7 +155,7 @@ namespace Omega
 		inline bool operator<(const guid_t& rhs) const;
 		inline operator string_t() const;
 
-		static guid_t FromString(const string_t& str);
+		inline static guid_t FromString(const string_t& str);
 		static const guid_t NIL;
 	};
 

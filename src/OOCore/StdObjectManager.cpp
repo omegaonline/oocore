@@ -112,7 +112,7 @@ namespace OOCore
 	};
 }
 
-inline IObject* OOCore::StdProxy::QI2(const guid_t& iid)
+IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 {
 	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
 

@@ -167,7 +167,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,(
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
 {
 	string_t strCurName = strObjectName;
-	for (int i=0;i<2;++i)
+	for (;;)
 	{
 		ObjectPtr<Registry::IRegistryKey> ptrOidKey("Objects\\" + strCurName);
 
@@ -176,8 +176,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 
 		strCurName = ptrOidKey->GetStringValue("CurrentVersion");
 	}
-
-	return guid_t::NIL;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const guid_t&,oid,(in),Activation::Flags_t,flags))

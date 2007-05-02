@@ -74,13 +74,13 @@
 #if defined(OTL_HAS_NONSTATICMODULE)
 #define OTL_MODULE_INIT_BLOCK(name) \
 	namespace OTL { \
-	inline void ModuleInitialize() { name::instance(); } \
-	inline void ModuleUninitialize() { name::fini(); } }
+	void ModuleInitialize() { name::instance(); } \
+	void ModuleUninitialize() { name::fini(); } }
 #else
 #define OTL_MODULE_INIT_BLOCK(name) \
 	namespace OTL { \
-	inline void ModuleInitialize() {  } \
-	inline void ModuleUninitialize() {  } \
+	void ModuleInitialize() {  } \
+	void ModuleUninitialize() {  } \
 	class ModuleStaticInitializer { \
 	public: \
 	ModuleStaticInitializer() { name::instance(); } \
@@ -433,20 +433,20 @@ namespace OTL
 	class ModuleBase
 	{
 	public:
-		size_t GetLockCount() const;
-		void IncLockCount();
-		void DecLockCount();
-		Omega::Guard<Omega::CriticalSection> GetGuard();
+		inline size_t GetLockCount() const;
+		inline void IncLockCount();
+		inline void DecLockCount();
+		inline Omega::Guard<Omega::CriticalSection> GetGuard();
 
 		typedef void (*TERM_FUNC)(void* arg);
-		void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
+		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
 
 	protected:
 		ModuleBase() :
 			m_lockCount(0)
 		{ }
 
-		virtual ~ModuleBase();
+		inline virtual ~ModuleBase();
 
 		struct CreatorEntry
 		{
@@ -791,7 +791,7 @@ namespace OTL
 			}
 		};
 
-		Omega::Activation::IObjectFactory* GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags);
+		inline Omega::Activation::IObjectFactory* GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags);
 
 	protected:
 		LibraryModule()

@@ -1,27 +1,27 @@
 #ifndef OTL_BASE_INL_INCLUDED_
 #define OTL_BASE_INL_INCLUDED_
 
-inline size_t OTL::ModuleBase::GetLockCount() const
+size_t OTL::ModuleBase::GetLockCount() const
 {
 	return static_cast<size_t>(m_lockCount.value());
 }
 
-inline void OTL::ModuleBase::IncLockCount()
+void OTL::ModuleBase::IncLockCount()
 {
 	++m_lockCount;
 }
 
-inline void OTL::ModuleBase::DecLockCount()
+void OTL::ModuleBase::DecLockCount()
 {
 	--m_lockCount;
 }
 
-inline Omega::Guard<Omega::CriticalSection> OTL::ModuleBase::GetGuard()
+Omega::Guard<Omega::CriticalSection> OTL::ModuleBase::GetGuard()
 {
 	return Omega::Guard<Omega::CriticalSection>(m_csMain);
 }
 
-inline void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
+void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 {
 	try
 	{
@@ -37,7 +37,7 @@ inline void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, voi
 	}
 }
 
-inline OTL::ModuleBase::~ModuleBase()
+OTL::ModuleBase::~ModuleBase()
 {
 	try
 	{
@@ -58,7 +58,7 @@ inline OTL::ModuleBase::~ModuleBase()
 	}
 }
 
-inline Omega::Activation::IObjectFactory* OTL::LibraryModule::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
+Omega::Activation::IObjectFactory* OTL::LibraryModule::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
 {
 	Omega::IObject* pObject = 0;
     const CreatorEntry* g=getCreatorEntries();

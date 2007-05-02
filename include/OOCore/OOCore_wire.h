@@ -64,32 +64,32 @@ namespace Omega
 		};
 		OMEGA_DECLARE_IID(IWireProxy);
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, byte_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, byte_t& val)
 		{
 			val = pStream->ReadByte();
 		}
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, bool_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, bool_t& val)
 		{
 			val = pStream->ReadBoolean();
 		}
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t& val)
 		{
 			val = pStream->ReadUInt16();
 		}
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t& val)
 		{
 			val = pStream->ReadUInt32();
 		}
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint64_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint64_t& val)
 		{
 			val = pStream->ReadUInt64();
 		}
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, guid_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, guid_t& val)
 		{
 			val.Data1 = pStream->ReadUInt32();
 			val.Data2 = pStream->ReadUInt16();
@@ -100,45 +100,45 @@ namespace Omega
 				OMEGA_THROW("Bad read!");
 		}
 
-		inline static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)
+		static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)
 		{
 			val = pStream->ReadString();
 		}
 
 		template <class I>
-		inline static void wire_read(IWireManager* pManager, Serialize::IFormattedStream* pStream, I*& val, const guid_t iid = iid_traits<I>::GetIID())
+		static void wire_read(IWireManager* pManager, Serialize::IFormattedStream* pStream, I*& val, const guid_t iid = iid_traits<I>::GetIID())
 		{
 			IObject* pObject = 0;
 			pManager->UnmarshalInterface(pStream,iid,pObject);
 			val = static_cast<I*>(pObject);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, byte_t val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, byte_t val)
 		{
 			pStream->WriteByte(val);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, bool_t val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, bool_t val)
 		{
 			pStream->WriteBoolean(val);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t val)
 		{
 			pStream->WriteUInt16(val);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t val)
 		{
 			pStream->WriteUInt32(val);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const uint64_t& val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const uint64_t& val)
 		{
 			pStream->WriteUInt64(val);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const guid_t& val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const guid_t& val)
 		{
 			pStream->WriteUInt32(val.Data1);
 			pStream->WriteUInt16(val.Data2);
@@ -146,13 +146,13 @@ namespace Omega
 			pStream->WriteBytes(8,val.Data4);
 		}
 
-		inline static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const string_t& val)
+		static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const string_t& val)
 		{
 			pStream->WriteString(val);
 		}
 
 		template <class I>
-		inline static void wire_write(IWireManager* pManager, Serialize::IFormattedStream* pStream, I* val, const guid_t iid = iid_traits<I>::GetIID())
+		static void wire_write(IWireManager* pManager, Serialize::IFormattedStream* pStream, I* val, const guid_t iid = iid_traits<I>::GetIID())
 		{
 			pManager->MarshalInterface(pStream,iid,val);
 		}
@@ -472,19 +472,19 @@ namespace Omega
 			}
 			static const uint32_t MethodCount = 3;
 
-			inline static void AddRef_Wire(void* pParam,I*,Serialize::IFormattedStream*,Serialize::IFormattedStream*)
+			static void AddRef_Wire(void* pParam,I*,Serialize::IFormattedStream*,Serialize::IFormattedStream*)
 			{
 				++(static_cast<IObject_WireStub<I>*>(pParam)->m_refcount);
 			}
 
-			inline static void Release_Wire(void* pParam,I*,Serialize::IFormattedStream*,Serialize::IFormattedStream*)
+			static void Release_Wire(void* pParam,I*,Serialize::IFormattedStream*,Serialize::IFormattedStream*)
 			{
 				IObject_WireStub<I>* pThis = static_cast<IObject_WireStub<I>*>(pParam);
 				if (--pThis->m_refcount==0)
 					pThis->m_pManager->ReleaseStub(pThis->m_id);
 			}
 
-			inline static void QueryInterface_Wire(void* pParam, I* pI, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
+			static void QueryInterface_Wire(void* pParam, I* pI, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
 			{
 				interface_info<const guid_t&>::wire_type::type iid;
 				interface_info<const guid_t&>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);

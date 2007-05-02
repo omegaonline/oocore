@@ -475,8 +475,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-	request.write_string(m_strKey);
-	request.write_string(strSubKey);
+	request.write_string(FullKeyPath(strSubKey));
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -494,7 +493,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::IsSubKey");
-		else
+		else if (err != 0)
 			OOSERVER_THROW_ERRNO(err);
 	}
 
@@ -524,7 +523,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::IsValue");
-		else
+		else if (err != 0)
 			OOSERVER_THROW_ERRNO(err);
 	}
 
@@ -607,7 +606,7 @@ string_t RootKey::GetStringValue(const string_t& strName)
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetStringValue");
-	else if (err!=0)
+	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
 	return strValue.c_str();
@@ -641,7 +640,7 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetUIntValue");
-	else if (err!=0)
+	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
 	return uValue;
@@ -725,8 +724,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-	request.write_string(m_strKey);
-	request.write_string(strSubKey);
+	request.write_string(FullKeyPath(strSubKey));
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -750,8 +748,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		// It doesn't yet exist, and we want to create it!
 		request.reset();
 		request << static_cast<Root::RootOpCode_t>(Root::CreateKey);
-		request.write_string(m_strKey);
-		request.write_string(strSubKey);
+		request.write_string(FullKeyPath(strSubKey));
 		if (!request.good_bit())
 			OOSERVER_THROW_LASTERROR();
 

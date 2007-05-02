@@ -421,10 +421,10 @@ namespace Omega
 			virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid) = 0;
 		};
 
-		IObject_Safe* lookup_stub(IObject* pObj, const guid_t& iid);
-		IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
-		void throw_correct_exception(IException_Safe* pE);
-		IException_Safe* return_safe_exception(IException* pE);
+		inline IObject_Safe* lookup_stub(IObject* pObj, const guid_t& iid);
+		inline IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
+		inline void throw_correct_exception(IException_Safe* pE);
+		inline IException_Safe* return_safe_exception(IException* pE);
 
 		template <class I, class Base> struct IObject_SafeStub;
 		template <class I> struct IObject_SafeProxy;
@@ -769,7 +769,7 @@ namespace Omega
 		};
 
 		template <class I>
-		inline void SafeThrow(IException_Safe* pSE)
+		void SafeThrow(IException_Safe* pSE)
 		{
 			auto_iface_safe_ptr<IException_Safe> ptrSE(pSE);
 			I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::stub_functor(pSE))->QueryInterface(iid_traits<I>::GetIID()));
@@ -779,7 +779,7 @@ namespace Omega
 		}
 
 		template <class I>
-		inline void DynamicThrow(IException* pE)
+		void DynamicThrow(IException* pE)
 		{
 			auto_iface_ptr<IException> ptrE(pE);
 			I* pI = static_cast<I*>(pE->QueryInterface(iid_traits<I>::GetIID()));
@@ -898,13 +898,13 @@ namespace Omega
 		template <typename Ta, typename Tb>
 		struct if_then_else_<true, Ta, Tb>
 		{
-		typedef Ta type;
+			typedef Ta type;
 		};
 
 		template <typename Ta, typename Tb>
 		struct if_then_else_<false, Ta, Tb>
 		{
-		typedef Tb type;
+			typedef Tb type;
 		};
 
 		no_t get_qi_rtti(const qi_rtti** ppRtti, ...);
@@ -930,7 +930,7 @@ namespace Omega
 			}
 		};
 
-		const qi_rtti* get_qi_rtti_info(const guid_t& iid);
+		inline const qi_rtti* get_qi_rtti_info(const guid_t& iid);
 
 		struct SafeProxyStubMap
 		{

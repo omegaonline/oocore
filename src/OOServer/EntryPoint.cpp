@@ -19,7 +19,7 @@ int UserMain(u_short uPort);
 
 static int Install()
 {
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 	if (!Root::NTService::install())
 		return -1;
 #endif
@@ -33,7 +33,7 @@ static int Install()
 
 static int Uninstall()
 {
-	#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 	if (!Root::NTService::uninstall())
 		return -1;
 #endif
@@ -61,7 +61,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	int skip_args = 1;
 
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 	if (argc>=2 && ACE_OS::strcmp(argv[1],"--service")==0)
 		skip_args = 2;
 
@@ -107,7 +107,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		}
 	}
 
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 	if (argc<2 || ACE_OS::strcmp(argv[1],"--service")!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be run as a Win32 service.\n")),-1);
 		

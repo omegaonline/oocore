@@ -128,7 +128,7 @@ void User::Connection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& 
 
 	if (!bSuccess)
 	{
-#ifdef OMEGA_WIN32
+#if defined(OMEGA_WIN32)
 		DWORD dwErr = GetLastError();
 		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SUCCESS && dwErr != WSAENOTSOCK)
 #endif

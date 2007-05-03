@@ -124,7 +124,6 @@ void Omega::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<
 	}
 	catch (...)
 	{
-		::DebugBreak();
 		delete [] m_pFunctors;
 		delete [] m_pVals;
 		throw;
@@ -181,7 +180,6 @@ void Omega::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
 	}
 	catch (...)
 	{
-		::DebugBreak();
 		delete [] m_pFunctors;
 		delete [] m_pVals;
 		throw;

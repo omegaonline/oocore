@@ -331,7 +331,7 @@ namespace OTL
 			void* param;
 		};
 
-		#ifdef __BORLANDC__
+		#if defined(__BORLANDC__)
 		public:
 		#endif
 		Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
@@ -351,7 +351,7 @@ namespace OTL
 
 			return 0;
 		}
-		#ifdef __BORLANDC__
+		#if defined(__BORLANDC__)
 		protected:
 		#endif
 

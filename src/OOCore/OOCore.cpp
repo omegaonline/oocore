@@ -12,7 +12,7 @@ BEGIN_LIBRARY_OBJECT_MAP(OOCore)
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
 END_LIBRARY_OBJECT_MAP()
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 {
 	if (reason == DLL_PROCESS_ATTACH)

@@ -15,7 +15,7 @@ namespace Omega
 
 			// BorlandC is broken, and misses the const specialisation!
 			// So we must explicitly remove the const here, to allow it through
-			#ifdef __BORLANDC__
+			#if defined(__BORLANDC__)
 			operator remove_const<T>::type&()
 			{
 				return const_cast<remove_const<T>::type&>(m_val);
@@ -196,7 +196,7 @@ namespace Omega
 
 			// BorlandC is broken, and misses the const specialisation!
 			// So we must explicitly remove the const here, to allow it through
-			#ifdef __BORLANDC__
+			#if defined(__BORLANDC__)
 			operator typename interface_info<typename remove_const<T>::type>::safe_class* ()
 			{
 				return const_cast<typename interface_info<typename remove_const<T>::type>::safe_class*>(&static_cast<typename interface_info<T>::safe_class&>(m_actual));

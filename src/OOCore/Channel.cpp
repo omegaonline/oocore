@@ -100,7 +100,6 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	}
 	catch (...)
 	{
-		::DebugBreak();
 		request->release();
 		throw;
 	}

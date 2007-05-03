@@ -12,7 +12,7 @@
 
 #include "./OOServer_Root.h"
 
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 
 #include "./NTService.h"
 #include "./RootManager.h"

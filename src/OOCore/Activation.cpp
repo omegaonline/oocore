@@ -6,8 +6,9 @@ using namespace OTL;
 namespace OOCore
 {
 	Activation::IObjectFactory* LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
-	void ExecProcess(const string_t& strExeName);
-
+	void ExecProcess(ACE_Process& process, const string_t& strExeName);
+	ACE_CString ShellParse(const char* pszFile);
+    
 	class OidNotFoundException :
 		public ExceptionImpl<Activation::IOidNotFoundException>
 	{
@@ -113,37 +114,70 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
 	}
 }
 
-void OOCore::ExecProcess(const string_t& strExeName)
+ACE_CString OOCore::ShellParse(const char* pszFile)
 {
-	// Set the process options
-	ACE_Process_Options options;
+	ACE_CString strRet = pszFile;
+
+#if defined(OMEGA_WIN32)
+		
+	const char* pszExt = PathFindExtensionA(pszFile);
+	if (pszExt)
+	{
+		DWORD dwLen = 1024;
+		char szBuf[1024];	
+		HRESULT hRes = AssocQueryStringA(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
+		if (hRes == S_OK)
+			strRet = szBuf;
+		else if (hRes == E_POINTER)
+		{
+			char* pszBuf = new char[dwLen+1];
+			hRes = AssocQueryStringA(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
+			if (hRes==S_OK)
+				strRet = pszBuf;
+
+			delete [] pszBuf;
+		}
+
+		if (hRes == S_OK)
+		{
+			LPVOID lpBuffer = 0;
+			if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+				strRet.c_str(),0,0,(LPSTR)&lpBuffer,0,(va_list*)&pszFile))
+			{
+				strRet = (LPSTR)lpBuffer;
+				LocalFree(lpBuffer);
+			}
+		}	
+	}
+
+#endif
+
+	return strRet;
+}
+
+void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
+{
+	// Set the process options 
+	ACE_Process_Options options(0);
 	options.avoid_zombies(0);
 	options.handle_inheritence(0);
-	if (options.command_line(strExeName) == -1)
+
+	// Do a ShellExecute style lookup for the actual thing to call..
+	ACE_CString strActualName = ShellParse(strExeName);
+
+	if (options.command_line(strActualName.c_str()) == -1)
 		OOCORE_THROW_ERRNO(ACE_OS::last_error() ? ACE_OS::last_error() : EINVAL);
 
 	// Set the creation flags
 	u_long flags = 0;
-#if defined (ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	flags |= CREATE_NEW_CONSOLE;
 #endif
 	options.creation_flags(flags);
 
 	// Spawn the process
-	ACE_Process process;
 	if (process.spawn(options)==ACE_INVALID_PID)
 		OOCORE_THROW_LASTERROR();
-
-	void* TODO;	// Make this a smarter countdown timer
-
-	// Wait 1 second for the process to launch, if it takes more than 1 second its probably okay
-	ACE_exitcode exitcode = 0;
-	int ret = process.wait(ACE_Time_Value(1),&exitcode);
-	if (ret==-1)
-		OOCORE_THROW_LASTERROR();
-
-	if (ret!=0)
-		OOCORE_THROW_ERRNO(ret);
 }
 
 void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
@@ -219,20 +253,22 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 
 				if (flags & Activation::OutOfProcess)
 				{
-					// Launch the server - Do something cleverer here at some point
-					ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
-
-					OOCore::ExecProcess(ptrServer->GetStringValue("Exec"));
-
+					// Get the service table
 					ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
-					// Wait for startup
-					ACE_Time_Value wait(15);
+					// Find the name of the executeable to run
+					ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
+
+					// Launch the executeable
+					ACE_Process process;
+					OOCore::ExecProcess(process,ptrServer->GetStringValue("Exec"));
 
 					// TODO The timeout needs to be related to the request timeout...
 					void* TODO;
 
+					// Wait for startup
+					ACE_Time_Value wait(15);
 					ACE_Countdown_Time timeout(&wait);
 					while (!timeout.stopped())
 					{
@@ -242,8 +278,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 						if (pObject)
 							return static_cast<Activation::IObjectFactory*>(pObject);
 
+						// Check if the process is still running...
+						if (!process.running())
+							break;
+
+						// Update our countdown
 						timeout.update();
 					}
+
+					// Kill the process - TODO - Do we *really* want to do this?
+					process.kill();
 				}
 			}
 		}

@@ -15,7 +15,7 @@
 #error You must not define ACE_NLOGGING, cos we use it!
 #endif
 
-#ifdef WIN32
+#if defined(WIN32)
 	#if !defined(_WIN32_WINNT)
 	#define _WIN32_WINNT 0x0500
 	#elif _WIN32_WINNT < 0x0500
@@ -58,7 +58,7 @@
 #error You must not define ACE_NLOGGING, cos we use it!
 #endif
 
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 // For the Windows path functions
 #include <shlwapi.h>
 #include <shlobj.h>

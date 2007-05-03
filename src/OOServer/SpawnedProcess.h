@@ -35,7 +35,7 @@ namespace Root
 
 	private:
 
-#ifdef ACE_WIN32
+#if defined(ACE_WIN32)
 		HANDLE	m_hToken;
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;

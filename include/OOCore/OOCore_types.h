@@ -313,7 +313,7 @@ namespace Omega
 		};
 
 		// MSVC gets twitchy about size_t/uint32_t
-		#ifdef _MSC_VER
+		#if defined(_MSC_VER)
 		template <> struct default_value<uint32_t>
 		{
 			static uint32_t value()

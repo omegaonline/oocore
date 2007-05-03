@@ -116,7 +116,6 @@ IException* OOCore::UserSession::bootstrap()
 	}
 	catch (Omega::IException* pE)
 	{
-		::DebugBreak();
 		return pE;
 	}
 
@@ -127,7 +126,7 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 {
 	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
 
-	#if defined(ACE_WIN32)
+	#if defined(OMEGA_WIN32)
 
 		ACE_CString strFilename = "C:\\" OMEGA_BOOTSTRAP_FILE;
 
@@ -156,14 +155,13 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 
 bool OOCore::UserSession::launch_server(string_t& strSource)
 {
-#ifdef OMEGA_WIN32
+#if defined(OMEGA_WIN32)
 	ACE_NT_Service service(ACE_TEXT("OOServer"));
 	if (service.start_svc() != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
 	}
-
 #else
 	// Find what the server is called
 	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
@@ -246,16 +244,6 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 			ACE_OS::close(file);
 			return false;
 		}
-
-#if !defined(ACE_WIN32)
-		// Check the pids match
-		if (pid != process.getpid())
-		{
-			strSource = OMEGA_SOURCE_INFO;
-			ACE_OS::close(file);
-			return false;
-		}
-#endif
 	}
 
 	// Get the port number from the binding
@@ -281,7 +269,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 
 	// Send our uid or pid
 	ACE_UINT16 cbSize = sizeof(ACE_UINT16) + sizeof(uid_t);
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	uid_t uid = ACE_OS::getpid();
 #else
 	uid_t uid = ACE_OS::getuid();
@@ -512,7 +500,6 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 	}
 	catch (...)
 	{
-		::DebugBreak();
 		ACE_OS::last_error(EINVAL);
 		return false;
 	}
@@ -542,9 +529,7 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 		m_setPendingTrans.erase(trans_id);
 	}
 	catch (...)
-	{
-		::DebugBreak();
-	}
+	{ }
 
 	return bRet;
 }
@@ -686,7 +671,6 @@ bool OOCore::UserSession::valid_transaction(ACE_CDR::ULong trans_id)
 	}
 	catch (...)
 	{
-		::DebugBreak();
 		return false;
 	}
 }
@@ -744,8 +728,6 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		}
 		catch (IException* pInner)
 		{
-			::DebugBreak();
-
 			// Make sure we release the exception
 			ObjectPtr<IException> ptrInner;
 			ptrInner.Attach(pInner);
@@ -779,8 +761,6 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 	}
 	catch (IException* pOuter)
 	{
-		::DebugBreak();
-
 		// Make sure we release the exception
 		ObjectPtr<IException> ptrOuter;
 		ptrOuter.Attach(pOuter);

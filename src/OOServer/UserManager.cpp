@@ -443,7 +443,7 @@ void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_chann
 	delete request;
 }
 
-void User::Manager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::process_root_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::ULong /*trans_id*/, ACE_Time_Value* /*request_deadline*/)
 {
 	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
     request >> op_code;
@@ -455,6 +455,9 @@ void User::Manager::process_root_request(ACE_HANDLE handle, ACE_InputCDR& reques
 
 	switch (op_code)
 	{
+	case 0:
+		// Do something!
+
 	default:
 		;
 	}

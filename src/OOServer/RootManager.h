@@ -35,8 +35,8 @@ namespace Root
 		static bool uninstall();
 
 	private:
-		friend class ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex>;
-		typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;
+		friend class ACE_Singleton<Manager,ACE_Thread_Mutex>;
+		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
 		Manager();
 		Manager(const Manager&) {}

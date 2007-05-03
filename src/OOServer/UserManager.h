@@ -32,8 +32,8 @@ namespace User
 		ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline = 0);
 
 	private:
-		friend class ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex>;
-		typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
+		friend class ACE_Singleton<Manager, ACE_Thread_Mutex>;
+		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> USER_MANAGER;
 
 		Manager();
 		virtual ~Manager();

@@ -32,7 +32,7 @@ namespace Root
 		static bool uninstall();
 		
 	private:
-		typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
+		typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
 
 		static ACE_THR_FUNC_RETURN start_service(void*);
 

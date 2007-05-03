@@ -176,8 +176,6 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 	if (m_ptrChannel)
 		OOCORE_THROW_ERRNO(EALREADY);
 
-	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
-
 	m_ptrChannel = pChannel;
 }
 

@@ -16,9 +16,9 @@ namespace OOCore
 
 	private:
 		friend class Channel;
-		friend class ACE_Singleton<UserSession, ACE_Recursive_Thread_Mutex>;
-		friend class ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex>;
-		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex> USER_SESSION;
+		friend class ACE_Singleton<UserSession, ACE_Thread_Mutex>;
+		friend class ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex>;
+		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
 
 		UserSession();
 		virtual ~UserSession();

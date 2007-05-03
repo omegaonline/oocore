@@ -482,9 +482,12 @@ bool OOCore::UserSession::pump_requests(ACE_Time_Value* deadline)
 bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
 {
 	// Generate next transaction id
-	long trans = m_next_trans_id++;
-	if (trans == 0)
+	long trans = 0;
+	while (trans == 0)
+	{
 		trans = m_next_trans_id++;
+	}
+
 	ACE_CDR::ULong trans_id = static_cast<ACE_CDR::ULong>(trans);
 
 	// Write the header info

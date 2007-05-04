@@ -47,5 +47,11 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 
+#if defined(OMEGA_WIN64)
+#define OMEGA_PLATFORM_STRING	"Win64"
+#else
+#define OMEGA_PLATFORM_STRING	"Win32"
+#endif
+
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_
 

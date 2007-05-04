@@ -28,4 +28,6 @@
 
 #define OMEGA_UNUSED_ARG(n)	(void)(n)
 
+#define OMEGA_COMPILER_STRING	(const char*)(Omega::string_t::Format("gcc %lu.%lu.%lu",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__))
+
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

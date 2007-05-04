@@ -53,8 +53,15 @@
 
 namespace Omega
 {
+	inline string_t GetVersion();
 	inline IException* Initialize();
 	inline void Uninitialize();
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,());
+Omega::string_t Omega::GetVersion()
+{
+	return Omega_GetVersion();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());

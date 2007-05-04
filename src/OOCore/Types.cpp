@@ -307,6 +307,36 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 	return guid;
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
+{
+#ifdef OMEGA_WIN32
+	UUID uuid = {0};
+	UuidCreate(&uuid);
+
+	Omega::guid_t guid;
+	guid = *(Omega::guid_t*)(&uuid);
+	return guid;
+
+#else
+	static bool bInit = false;
+	if (!bInit)
+	{
+		// We don't care if this gets called twice...
+		ACE_Utils::UUID_GENERATOR::instance()->init();
+		bInit = true;
+	}		
+
+	ACE_Utils::UUID uuid;
+	ACE_Utils::UUID_GENERATOR::instance()->generateUUID(uuid);
+
+	const ACE_CString* pStr = uuid.to_string();
+	if (!pStr)
+		OOCORE_THROW_LASTERROR();
+
+	return Omega::guid_t::FromString(Omega::string_t::Format("{%s}",pStr->c_str()));
+#endif
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,cs__ctor,0,())
 {
 	ACE_Recursive_Thread_Mutex* pm;

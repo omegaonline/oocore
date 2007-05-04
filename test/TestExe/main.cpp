@@ -9,10 +9,12 @@
 #include "Test.h"
 
 bool string_tests();
+bool guid_tests();
 
 int main(int argc, char* argv[])
 {
 	RUN_TEST(string_tests);
+	RUN_TEST(guid_tests);
 
 	return test_summary();
 }

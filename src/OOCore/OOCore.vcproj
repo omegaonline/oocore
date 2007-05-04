@@ -36,9 +36,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OOCore.dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
 				SubSystem="2"

@@ -153,11 +153,13 @@ namespace Omega
 		byte_t		Data4[8];
 
 		inline bool operator==(const guid_t& rhs) const;
+		inline bool operator==(const string_t& str) const;
 		inline bool operator!=(const guid_t& rhs) const;
 		inline bool operator<(const guid_t& rhs) const;
 		inline operator string_t() const;
 
 		inline static guid_t FromString(const string_t& str);
+		inline static guid_t Create();
 		static const guid_t NIL;
 	};
 

@@ -34,6 +34,7 @@
 #include <ace/SString.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Proactor.h>
+#include <ace/UUID.h>
 
 #if defined(OMEGA_WIN32)
 #include <ace/WFMO_Reactor.h>

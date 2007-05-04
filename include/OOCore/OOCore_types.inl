@@ -214,7 +214,12 @@ bool Omega::guid_t::operator==(const guid_t& rhs) const
 	return guid_t_eq(*this,rhs);
 }
 
-bool Omega::guid_t::operator!=(const guid_t& rhs) const
+bool Omega::guid_t::operator==(const Omega::string_t& str) const
+{
+	return str.CompareNoCase(*this) == 0;
+}
+
+bool Omega::guid_t::operator!=(const Omega::guid_t& rhs) const
 {
 	return !guid_t_eq(*this,rhs);
 }
@@ -245,6 +250,12 @@ OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Omega::c
 Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
 	return guid_t_from_string(str);
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,());
+Omega::guid_t Omega::guid_t::Create()
+{
+	return guid_t_create();
 }
 
 #if (defined OMEGA_HAS_BUILTIN_ATOMIC_OP_4)

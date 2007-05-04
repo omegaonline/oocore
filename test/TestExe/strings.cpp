@@ -27,8 +27,6 @@ bool string_tests()
 	TEST(s3 == s1 && !(s3 != s1));
 	TEST(s3.Compare(s1) == 0);
 
-	throw 2;
-		
 	s3 = s2;
 	TEST(s3 == s2);
 	TEST(strcmp(s3,sz2) == 0);
@@ -66,6 +64,36 @@ bool string_tests()
 	TEST(s1.Mid(15) == "fghij");
 	TEST(s1.Mid(15,3) == "fgh");
 	TEST(s1.Right(3) == "hij");
+
+	return true;
+}
+
+bool guid_tests()
+{
+	Omega::guid_t guid(Omega::guid_t::NIL);
+	TEST(guid == Omega::guid_t::NIL);
+
+	const char sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
+
+	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
+	TEST(guid2 != guid);
+	TEST(guid2 != Omega::guid_t::NIL);
+	TEST(guid2 == sz);
+
+	// Create a load of unique guid_t's
+	Omega::guid_t arr[100];
+	for (int i=0;i<sizeof(arr)/sizeof(arr[0]);++i)
+		arr[i] = Omega::guid_t::Create();
+
+	// Make sure they are unique!
+	for (int j=0;j<sizeof(arr)/sizeof(arr[0]);++j)
+	{
+		for (int k=0;k<sizeof(arr)/sizeof(arr[0]);++k)
+		{
+			if (j != k)
+				TEST(arr[j] != arr[k]);
+		}
+	}
 
 	return true;
 }

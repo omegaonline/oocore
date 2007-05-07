@@ -161,7 +161,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 	StringNode* s2;
 	OMEGA_NEW(s2,StringNode(pszNew));
 
-	free(pszNew);
+	ACE_OS::free(pszNew);
 
 	if (!s2)
 		OOCORE_THROW_ERRNO(ENOMEM);	
@@ -183,7 +183,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 	StringNode* s2;
 	OMEGA_NEW(s2,StringNode(pszNew));
 	
-	free(pszNew);
+	ACE_OS::free(pszNew);
 		
 	if (!s2)
 		OOCORE_THROW_ERRNO(ENOMEM);	
@@ -274,7 +274,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 	// We use an array here because sscanf reads int's...
 	int data[11] = { 0 };
 
-	if (::sscanf(sz,
+#if defined (ACE_HAS_TR24731_2005_CRT)
+    if (sscanf_s(sz,
+#else
+	if (sscanf(sz,
+#endif
 		"{%8x-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
 		&data[0],
 		&data[1],

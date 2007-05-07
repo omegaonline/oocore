@@ -49,7 +49,8 @@ void TreeItemData::InitList(wxListCtrl* pList)
 	pList->DeleteAllItems();
 
 	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = m_ptrKey.EnumValues();
-	for (int i=0;;++i)
+	int i;
+	for (i=0;;++i)
 	{
 		size_t count = 1;
 		Omega::string_t strName;

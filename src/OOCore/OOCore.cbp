@@ -35,6 +35,7 @@
 					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
+					<Add library="librpcrt4" />
 				</Linker>
 			</Target>
 			<Target title="Release_Win32">

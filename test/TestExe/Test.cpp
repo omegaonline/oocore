@@ -56,12 +56,12 @@ void run_test(pfnTest t, const char* pszName)
 		printf_exception("Omega::Initialize",pE);
 		return -1;
 	}
-	
+
 	try
 	{
 		OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");
 		OTL::ObjectPtr<Test::DllTest> ptrTest2("Test.Dll");
-	
+
 		printf(ptrTest->Hello());
 	}
 	catch(Omega::IException* pE)
@@ -72,5 +72,4 @@ void run_test(pfnTest t, const char* pszName)
 	}
 
 	Omega::Uninitialize();
-
 */

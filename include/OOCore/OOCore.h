@@ -2,6 +2,13 @@
 #define OOCORE_H_INCLUDED_
 
 //////////////////////////////////////////////
+// Version defines
+
+#define OMEGA_MAJOR_VERSION	0
+#define OMEGA_MINOR_VERSION 3
+#define OMEGA_BUILD_VERSION 0
+
+//////////////////////////////////////////////
 // Set up the export macros for OOCORE
 #if defined(OOCORE_BUILD_DLL)
 

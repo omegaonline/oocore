@@ -7,34 +7,34 @@ bool string_tests()
 	const char sz1[] = "abcdef";
 	const char sz1_1[] = "abcdef";
 	const char sz1_2[] = "ABCDEF";
-		
+
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
-		
+
 	s1 = sz1;
 	TEST(!s1.IsEmpty());
 	TEST(s1.Length() == sizeof(sz1)-1);
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
-	
+
 	const char sz2[] = "ghijk";
 	Omega::string_t s2(sz2);
 	TEST(s2 == sz2);
-		
+
 	Omega::string_t s3(s1);
 	TEST(s3 == sz1);
-		
+
 	TEST(s3 == s1 && !(s3 != s1));
 	TEST(s3.Compare(s1) == 0);
 
 	s3 = s2;
 	TEST(s3 == s2);
 	TEST(strcmp(s3,sz2) == 0);
-		
+
 	s3.Clear();
 	TEST(s3.IsEmpty())
 	TEST(s1.CompareNoCase(sz1_2) == 0);
-		
+
 	s3 = sz1_2;
 	TEST(s1.CompareNoCase(s3) == 0);
 	TEST(s1 == s3.ToLower());
@@ -82,13 +82,13 @@ bool guid_tests()
 
 	// Create a load of unique guid_t's
 	Omega::guid_t arr[100];
-	for (int i=0;i<sizeof(arr)/sizeof(arr[0]);++i)
+	for (size_t i=0;i<sizeof(arr)/sizeof(arr[0]);++i)
 		arr[i] = Omega::guid_t::Create();
 
 	// Make sure they are unique!
-	for (int j=0;j<sizeof(arr)/sizeof(arr[0]);++j)
+	for (size_t j=0;j<sizeof(arr)/sizeof(arr[0]);++j)
 	{
-		for (int k=0;k<sizeof(arr)/sizeof(arr[0]);++k)
+		for (size_t k=0;k<sizeof(arr)/sizeof(arr[0]);++k)
 		{
 			if (j != k)
 				TEST(arr[j] != arr[k]);

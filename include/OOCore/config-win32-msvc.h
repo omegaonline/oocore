@@ -1,14 +1,6 @@
 #ifndef OOCORE_CONFIG_MSVC_H_INCLUDED_
 #define OOCORE_CONFIG_MSVC_H_INCLUDED_
 
-/*#if (_MSC_VER >= 1400)
-# include "ace/config-win32-msvc-8.h"
-#elif (_MSC_VER >= 1310)
-# include "ace/config-win32-msvc-7.h"
-#else
-# error This version of Microsoft Visual C++ not supported.
-#endif*/
-
 #define OMEGA_MAX_DEFINES	249
 
 #define OMEGA_FUNCNAME		__FUNCSIG__

@@ -57,9 +57,8 @@ namespace OOCore
 		ACE_Recursive_Thread_Mutex                                                 m_lock;
 		int                                                                        m_pro_thrd_grp_id;
 		ACE_HANDLE                                                                 m_user_handle;
-		ACE_Atomic_Op<ACE_Thread_Mutex,long>                                       m_next_trans_id;
+		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long>                              m_next_trans_id;
 		ACE_Message_Queue_Ex<Request,ACE_MT_SYNCH>                                 m_msg_queue;
-		std::set<ACE_CDR::ULong>                                                   m_setPendingTrans;
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
 		// Accessors for Channel
@@ -78,7 +77,6 @@ namespace OOCore
 		void process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
 		bool wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline = 0);
 		bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
-		bool valid_transaction(ACE_CDR::ULong trans_id);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);

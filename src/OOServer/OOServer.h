@@ -24,3 +24,15 @@
 
 #define OOSERVER_THROW_ERRNO(error) \
 	OMEGA_THROW(ACE_OS::strerror(error))
+
+#define OOSERVER_GUARD(MUTEX,OBJ,LOCK) \
+	ACE_Guard< MUTEX > OBJ (LOCK); \
+	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();
+
+#define OOSERVER_READ_GUARD(MUTEX,OBJ,LOCK) \
+	ACE_Read_Guard< MUTEX > OBJ (LOCK); \
+	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();
+
+#define OOSERVER_WRITE_GUARD(MUTEX,OBJ,LOCK) \
+	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
+	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();

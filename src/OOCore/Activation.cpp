@@ -99,7 +99,7 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
 
 		ObjectPtr<Activation::IObjectFactory> ptrOF;
 		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
-			MetaInfo::interface_info<Activation::IObjectFactory*&>::proxy_functor(ptrOF),
+			MetaInfo::interface_info<Activation::IObjectFactory* volatile &>::proxy_functor(ptrOF),
 			MetaInfo::interface_info<const guid_t&>::proxy_functor(oid),
 			MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags));
 

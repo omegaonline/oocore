@@ -53,7 +53,7 @@ void Omega::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid)
 }
 
 template <class I>
-void Omega::MetaInfo::iface_proxy_functor<I>::detach(I*& result)
+void Omega::MetaInfo::iface_proxy_functor<I>::detach(I* volatile & result)
 {
 	if (result)
 		result->Release();

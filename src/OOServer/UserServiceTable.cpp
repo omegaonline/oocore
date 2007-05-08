@@ -28,7 +28,7 @@ void User::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::
 	}
 	else
 	{
-		ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		if (m_mapServices.find(oid) != m_mapServices.end())
 			OOSERVER_THROW_ERRNO(EALREADY);
@@ -41,7 +41,7 @@ void User::ServiceTable::Revoke(const guid_t& oid)
 {
 	bool bFound = false;
 	{
-		ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
 		if (i != m_mapServices.end())
@@ -62,7 +62,7 @@ void User::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject
 {
 	bool bFound = false;
 	{
-		ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
 		if (i != m_mapServices.end())

@@ -114,7 +114,7 @@ namespace OOCore
 
 IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 {
-	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+	OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 	try
 	{
@@ -228,7 +228,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		// Look up the stub
 		try
 		{
-			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+			OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 			std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
 			if (i==m_mapStubIds.end())
@@ -255,7 +255,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 void OOCore::StdObjectManager::Disconnect()
 {
-	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+	OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 	// clear the stub map
 	m_mapStubIds.clear();
@@ -299,7 +299,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	uint32_t uId = 0;
 	try
 	{
-		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+		OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		uId = m_uNextStubId++;
 		while (uId<1 || m_mapStubIds.find(uId)!=m_mapStubIds.end())
@@ -367,7 +367,7 @@ void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 {
 	try
 	{
-		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+		OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::iterator i=m_mapStubIds.find(uId);
 		if (i==m_mapStubIds.end())

@@ -436,10 +436,10 @@ bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& r
 					// process_request() is expected to delete req;
 					req = 0;
 				}
-				else if (valid_transaction(request_trans_id) && request_trans_id == trans_id)
+				else if (request_trans_id == trans_id)
 				{
-					// Its the request we have been waiting for...
-
+                    // Its the request we have been waiting for...
+					
 					// Rest of data is aligned on next boundary
 					input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -495,18 +495,6 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 	if (!build_header(dest_channel_id,trans_id,header,mb,*deadline))
 		return false;
 
-	// Add to pending trans set
-	try
-	{
-		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,false);
-		m_setPendingTrans.insert(trans_id);
-	}
-	catch (...)
-	{
-		ACE_OS::last_error(EINVAL);
-		return false;
-	}
-
 	bool bRet = false;
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
@@ -524,15 +512,6 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 	{
 		ACE_OS::last_error(ETIMEDOUT);
 	}
-
-	// Remove from pending trans set
-	try
-	{
-		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,false);
-		m_setPendingTrans.erase(trans_id);
-	}
-	catch (...)
-	{ }
 
 	return bRet;
 }
@@ -665,19 +644,6 @@ bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	return true;
 }
 
-bool OOCore::UserSession::valid_transaction(ACE_CDR::ULong trans_id)
-{
-	try
-	{
-		ACE_GUARD_RETURN(ACE_Recursive_Thread_Mutex,guard,m_lock,false);
-		return (m_setPendingTrans.find(trans_id) != m_setPendingTrans.end());
-	}
-	catch (...)
-	{
-		return false;
-	}
-}
-
 void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	// Init the error stream
@@ -789,7 +755,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+		OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
 		if (i == m_mapOMs.end())

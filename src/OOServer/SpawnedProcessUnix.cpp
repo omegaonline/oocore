@@ -12,7 +12,7 @@
 
 #include "./OOServer_Root.h"
 
-#ifndef ACE_WIN32
+#if !defined(ACE_WIN32)
 
 #include "./SpawnedProcess.h"
 #include "./UserSession.h"

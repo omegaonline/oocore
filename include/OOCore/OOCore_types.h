@@ -219,7 +219,7 @@ namespace Omega
 		inline AtomicOpImpl& operator = (const T& rhs);
 
 		inline T value() const;
-		inline T& value();
+		inline volatile T& value();
 		inline T exchange(const T& v);
 
 	private:
@@ -244,7 +244,7 @@ namespace Omega
 		inline T* operator &();
 
 		inline T value() const;
-		inline T& value();
+		inline volatile T& value();
 		inline T exchange(const T& v);
 
 	private:
@@ -271,7 +271,7 @@ namespace Omega
 		inline T* operator &();
 
 		inline T value() const;
-		inline T& value();
+		inline volatile T& value();
 		inline T exchange(const T& v);
 
 	private:

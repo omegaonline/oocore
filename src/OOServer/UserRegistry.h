@@ -50,7 +50,7 @@ namespace User
 		public:
 			UserKey();
 
-			void Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_Thread_Mutex* pLock);
+			void Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock);
 
 			BEGIN_INTERFACE_MAP(UserKey)
 				INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
@@ -59,7 +59,7 @@ namespace User
 		private:
 			ACE_Configuration_Heap*        m_pRegistry;
 			ACE_Configuration_Section_Key  m_key;
-			ACE_Thread_Mutex*              m_pLock;
+			ACE_RW_Thread_Mutex*           m_pLock;
 			
 		// IRegistry members
 		public:
@@ -94,7 +94,7 @@ namespace User
 			OTL::ObjectPtr<OTL::ObjectImpl<RootKey> >   m_ptrRoot;
 			OTL::ObjectPtr<OTL::ObjectImpl<UserKey> >   m_ptrUser;
 			ACE_Configuration_Heap                      m_registry;
-			ACE_Thread_Mutex                            m_lock;
+			ACE_RW_Thread_Mutex                         m_lock;
 			
 			int open_registry(bool bSandbox);
 

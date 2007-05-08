@@ -164,7 +164,7 @@ UserKey::UserKey() :
 {
 }
 
-void UserKey::Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_Thread_Mutex* pLock)
+void UserKey::Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock)
 {
 	m_pRegistry = pRegistry;
 	m_key = strKey;
@@ -173,7 +173,7 @@ void UserKey::Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Se
 
 bool_t UserKey::IsSubKey(const string_t& strSubKey)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_Configuration_Section_Key sub_key;
 	if (m_pRegistry->open_section(m_key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey),0,sub_key) == 0)
@@ -192,7 +192,7 @@ bool_t UserKey::IsSubKey(const string_t& strSubKey)
 
 bool_t UserKey::IsValue(const string_t& strName)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_Configuration_Heap::VALUETYPE vtype;
 	if (m_pRegistry->find_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),vtype) == 0)
@@ -211,7 +211,7 @@ bool_t UserKey::IsValue(const string_t& strName)
 
 string_t UserKey::GetStringValue(const string_t& strName)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_TString strValue;
 	if (m_pRegistry->get_string_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),strValue) != 0)
@@ -235,7 +235,7 @@ string_t UserKey::GetStringValue(const string_t& strName)
 
 uint32_t UserKey::GetUIntValue(const string_t& strName)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	u_int uValue = 0;
 	if (m_pRegistry->get_integer_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),uValue) != 0)
@@ -265,7 +265,7 @@ void UserKey::GetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t
 
 void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_TString strValue(ACE_TEXT_CHAR_TO_TCHAR(val));
 	if (m_pRegistry->set_string_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),strValue) != 0)
@@ -287,7 +287,7 @@ void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 
 void UserKey::SetUIntValue(const string_t& strName, uint32_t val)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (m_pRegistry->set_integer_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),val) != 0)
 	{
@@ -314,7 +314,7 @@ void UserKey::SetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t
 
 IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_Configuration_Heap::VALUETYPE vtype;
 	if (m_pRegistry->find_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),vtype) != 0)
@@ -347,7 +347,7 @@ IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
 
 IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (strSubKey.IsEmpty())
 	{
@@ -385,7 +385,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 Omega::IEnumString* UserKey::EnumSubKeys()
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	std::set<string_t> setSubKeys;
 	for (int index=0;;++index)
@@ -405,7 +405,7 @@ Omega::IEnumString* UserKey::EnumSubKeys()
 
 Omega::IEnumString* UserKey::EnumValues()
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	std::set<string_t> setValues;
 	for (int index=0;;++index)
@@ -426,7 +426,7 @@ Omega::IEnumString* UserKey::EnumValues()
 
 void UserKey::DeleteKey(const string_t& strSubKey)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (m_pRegistry->remove_section(m_key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey),1) != 0)
 	{
@@ -442,7 +442,7 @@ void UserKey::DeleteKey(const string_t& strSubKey)
 
 void UserKey::DeleteValue(const string_t& strName)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,*m_pLock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (m_pRegistry->remove_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName)) != 0)
 	{

@@ -341,7 +341,7 @@ T Omega::AtomicOpImpl<T,4>::value() const
 }
 
 template <class T>
-T& Omega::AtomicOpImpl<T,4>::value()
+volatile T& Omega::AtomicOpImpl<T,4>::value()
 {
 	return m_value;
 }

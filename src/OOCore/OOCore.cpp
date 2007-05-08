@@ -34,14 +34,14 @@ BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 
 namespace OOCore
 {
-	static AtomicOp<long>::type	s_initcount = 0;
+	static AtomicOp<Omega::uint32_t>::type s_initcount = 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 {
-	string_t strVersion = "0.0.0.X";
+	string_t strVersion = string_t::Format("%lu.%lu.%lu",OMEGA_MAJOR_VERSION,OMEGA_MINOR_VERSION,OMEGA_BUILD_VERSION);
 	string_t strACE = string_t::Format("%lu.%lu.%lu",ACE_MAJOR_VERSION,ACE_MINOR_VERSION,ACE_BETA_VERSION);
-	return string_t::Format("Version: %s, Platform: %s, Compiler: %s, ACE: %s",(const char*)strVersion,(OMEGA_PLATFORM_STRING),(OMEGA_COMPILER_STRING),(const char*)strACE);
+	return string_t::Format("Version: %s\nPlatform: %s\nCompiler: %s\nACE: %s",(const char*)strVersion,(OMEGA_PLATFORM_STRING),(OMEGA_COMPILER_STRING),(const char*)strACE);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())

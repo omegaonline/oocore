@@ -50,6 +50,9 @@
 			</Target>
 		</Build>
 		<Unit filename="Test.cpp" />
+		<Unit filename="Test.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="strings.cpp" />
 		<Extensions>
 			<code_completion />
 		</Extensions>

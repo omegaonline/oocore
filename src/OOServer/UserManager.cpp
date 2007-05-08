@@ -84,12 +84,17 @@ void User::InterProcessServiceFactory::CreateObject(IObject* pOuter, const guid_
 
 Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
-
 	if (!m_ptrReg)
 	{
-		m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateObjectPtr();
-		m_ptrReg->Init(m_pManager,!m_ptrOM);
+		// Double lock for speed
+		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+		if (!m_ptrReg)
+		{
+
+			m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateObjectPtr();
+			m_ptrReg->Init(m_pManager,!m_ptrOM);
+		}
 	}
 
 	return m_ptrReg.AddRefReturn();
@@ -97,12 +102,16 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 
 Activation::IServiceTable* User::InterProcessService::GetServiceTable()
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
-
 	if (!m_ptrST)
 	{
-		m_ptrST = ObjectImpl<User::ServiceTable>::CreateObjectPtr();
-		m_ptrST->Init(m_ptrOM);
+		// Double lock for speed
+		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	
+		if (!m_ptrST)
+		{
+			m_ptrST = ObjectImpl<User::ServiceTable>::CreateObjectPtr();
+			m_ptrST->Init(m_ptrOM);
+		}
 	}
 
 	return m_ptrST.AddRefReturn();
@@ -244,7 +253,7 @@ int User::Manager::init(u_short uPort)
 
 void User::Manager::term()
 {
-	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
@@ -294,7 +303,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		ACE_OS::shutdown(get_handle(),SD_BOTH);
 
 		{
-			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+			OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 			// Shutdown all client handles
 			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();)
@@ -316,7 +325,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		ACE_Countdown_Time timeout(&wait);
 		while (!timeout.stopped())
 		{
-			ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+			OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 			if (m_mapReverseChannelIds.empty())
 				break;
@@ -346,7 +355,7 @@ int User::Manager::validate_connection(const ACE_Asynch_Accept::Result& result, 
 
 	try
 	{
-		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+		OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		ChannelPair channel = {result.accept_handle(), 0};
 		ACE_CDR::UShort uChannelId = m_uNextChannelId++;
@@ -402,7 +411,7 @@ void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
 {
 	ACE_OS::closesocket(handle);
 
-	ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+	OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 	try
 	{
@@ -575,7 +584,7 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	ACE_CDR::UShort reply_channel_id;
 	try
 	{
-		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+		OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		// Find the destination channel
 		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
@@ -607,8 +616,6 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	{
 		return;
 	}
-
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
 
 	if (trans_id == 0)
 	{
@@ -661,7 +668,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-		ACE_GUARD_REACTION(ACE_Recursive_Thread_Mutex,guard,m_lock,OOSERVER_THROW_LASTERROR());
+		OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
 
 		std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(handle);
 		if (i == m_mapOMs.end())

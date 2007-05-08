@@ -98,10 +98,10 @@ bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST
 					// process_request() is expected to delete req;
 					req = 0;
 				}
-				else if (valid_transaction(request_trans_id) && request_trans_id == trans_id)
+				else if (request_trans_id == trans_id)
 				{
 					// Its the request we have been waiting for...
-
+					
 					// Rest of data is aligned on next boundary
 					input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -159,18 +159,6 @@ bool RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest
 	if (!build_header(dest_channel_id,src_channel_id,trans_id,header,mb,*deadline))
 		return false;
 	
-	// Add to pending trans set
-	try
-	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,false);
-		m_setPendingTrans.insert(trans_id);
-	}
-	catch (...)
-	{
-		ACE_OS::last_error(EINVAL);
-		return false;
-	}
-	
 	bool bRet = false;
 	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
@@ -188,15 +176,6 @@ bool RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest
 	{
 		ACE_OS::last_error(ETIMEDOUT);
 	}
-
-	// Remove from pending trans set
-	try
-	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,false);
-		m_setPendingTrans.erase(trans_id);
-	}
-	catch (...)
-	{}
 	
 	return bRet;
 }
@@ -326,18 +305,4 @@ bool RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort d
 		return false;
 		
 	return true;
-}
-
-template <class REQUEST>
-bool RequestHandler<REQUEST>::valid_transaction(ACE_CDR::ULong trans_id)
-{
-	try
-	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_trans_lock,false);
-		return (m_setPendingTrans.find(trans_id) != m_setPendingTrans.end());
-	}
-	catch (...)
-	{
-		return false;
-	}
 }

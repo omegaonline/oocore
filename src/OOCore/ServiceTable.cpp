@@ -19,7 +19,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex                      m_lock;
+		ACE_RW_Thread_Mutex                   m_lock;
 		std::map<guid_t,ObjectPtr<IObject> >  m_mapServices;
 	};
 
@@ -37,21 +37,25 @@ namespace OOCore
 // ServiceTable
 void OOCore::SetServiceTable(Activation::IServiceTable* pNewTable)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
+	OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock);
 
 	OOCore::g_ServiceTable.m_ptrSystemServiceTable = pNewTable;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IServiceTable*,Activation_GetServiceTable,0,())
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock,OOCORE_THROW_LASTERROR());
-
 	// If we have no set ServiceTable, use a default
 	if (!OOCore::g_ServiceTable.m_ptrSystemServiceTable)
 	{
-		ObjectPtr<ObjectImpl<OOCore::ServiceTable> > ptrServiceTable = ObjectImpl<OOCore::ServiceTable>::CreateObjectPtr();
+		// Do a double lock here...
+		OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock);
 
-		OOCore::g_ServiceTable.m_ptrSystemServiceTable.Attach(ptrServiceTable.Detach());
+		if (!OOCore::g_ServiceTable.m_ptrSystemServiceTable)
+		{
+			ObjectPtr<ObjectImpl<OOCore::ServiceTable> > ptrServiceTable = ObjectImpl<OOCore::ServiceTable>::CreateObjectPtr();
+
+			OOCore::g_ServiceTable.m_ptrSystemServiceTable.Attach(ptrServiceTable.Detach());
+		}
 	}
 
 	return OOCore::g_ServiceTable.m_ptrSystemServiceTable.AddRefReturn();
@@ -59,7 +63,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IServiceTable*,Activation_GetServiceT
 
 void OOCore::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Flags_t, IObject* pObject)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	if (m_mapServices.find(oid) != m_mapServices.end())
 		OOCORE_THROW_ERRNO(EALREADY);
@@ -69,7 +73,7 @@ void OOCore::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable
 
 void OOCore::ServiceTable::Revoke(const guid_t& oid)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
 	if (i == m_mapServices.end())
@@ -80,7 +84,7 @@ void OOCore::ServiceTable::Revoke(const guid_t& oid)
 
 void OOCore::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,m_lock,OOCORE_THROW_LASTERROR());
+	OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
 	if (i == m_mapServices.end())

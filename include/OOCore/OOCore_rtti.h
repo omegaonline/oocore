@@ -87,6 +87,13 @@ namespace Omega
 			typedef std_proxy_functor<const T> proxy_functor;
 			typedef std_wire_type<const T> wire_type;
 		};
+		template <class T> struct interface_info<volatile T>
+		{
+			typedef typename interface_info<T>::safe_class safe_class;
+			typedef std_stub_functor<T> stub_functor;
+			typedef std_proxy_functor<volatile T> proxy_functor;
+			typedef std_wire_type<T> wire_type;
+		};
 		template <class T> struct interface_info<T*>
 		{
 			typedef typename interface_info<T>::safe_class* safe_class;
@@ -94,7 +101,7 @@ namespace Omega
 			typedef std_safe_functor<T*> proxy_functor;
 			typedef std_wire_type_array<T> wire_type;
 		};
-				
+
 		template <class T> struct std_stub_functor<const T>
 		{
 			std_stub_functor(const typename interface_info<T>::safe_class& val) : m_actual(val)
@@ -143,6 +150,38 @@ namespace Omega
 
 			void detach(const T&, const guid_t&)
 			{}
+
+		private:
+			typename interface_info<T>::proxy_functor	m_actual;
+
+			std_proxy_functor(const std_proxy_functor&) {}
+			std_proxy_functor& operator = (const std_proxy_functor&) {}
+		};
+
+		template <class T> struct std_proxy_functor<volatile T>
+		{
+			std_proxy_functor(volatile T& val) : m_actual(val)
+			{}
+
+			operator typename interface_info<T>::safe_class& ()
+			{
+				return m_actual;
+			}
+
+			/*void attach(typename interface_info<T>::safe_class& val_ref, const T& val)
+			{
+				m_actual.attach(val_ref,val);
+			}*/
+
+			void detach(T volatile & val)
+			{
+				m_actual.detach(val);
+			}
+
+			/*void detach(T volatile & val, const guid_t& iid)
+			{
+				m_actual.detach(val,iid);
+			}*/
 
 		private:
 			typename interface_info<T>::proxy_functor	m_actual;
@@ -278,7 +317,7 @@ namespace Omega
 				init(pI,iid);
 			}
 
-			inline void detach(I*& result);
+			inline void detach(I* volatile & result);
 
 		private:
 			typename interface_info<I>::safe_class* m_fixed;

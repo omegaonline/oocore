@@ -20,6 +20,7 @@
 #include <ace/DLL.h>
 #include <ace/Thread_Mutex.h>
 #include <ace/Recursive_Thread_Mutex.h>
+#include <ace/RW_Thread_Mutex.h>
 #include <ace/Process.h>
 #include <ace/MEM_Connector.h>
 #include <ace/Auto_Ptr.h>
@@ -71,6 +72,19 @@
 
 #define OOCORE_THROW_ERRNO(error) \
 	OMEGA_THROW(ACE_OS::strerror(error))
+
+#define OOCORE_GUARD(MUTEX, OBJ, LOCK) \
+	ACE_Guard< MUTEX > OBJ (LOCK); \
+	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
+
+#define OOCORE_READ_GUARD(MUTEX,OBJ,LOCK) \
+	ACE_Read_Guard< MUTEX > OBJ (LOCK); \
+	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
+
+#define OOCORE_WRITE_GUARD(MUTEX,OBJ,LOCK) \
+	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
+	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
+
 
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_
 

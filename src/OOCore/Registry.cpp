@@ -11,27 +11,17 @@ using namespace OTL;
 
 namespace OOCore
 {
-	// The instance wide ServiceTable instance
-	struct Registry
-	{
-		ObjectPtr<Omega::Registry::IRegistryKey>  m_ptrRegistryRoot;
-		ACE_Thread_Mutex                          m_lock;
-	};
-	Registry	g_Registry;
-
+	ObjectPtr<Omega::Registry::IRegistryKey>  g_ptrRegistryRoot;
+	
 	void SetRegistry(Omega::Registry::IRegistryKey* pRootKey);
 }
 
 void OOCore::SetRegistry(Omega::Registry::IRegistryKey* pRootKey)
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_Registry.m_lock,OOCORE_THROW_LASTERROR());
-
-	OOCore::g_Registry.m_ptrRegistryRoot = pRootKey;
+	OOCore::g_ptrRegistryRoot = pRootKey;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 {
-	ACE_GUARD_REACTION(ACE_Thread_Mutex,guard,OOCore::g_Registry.m_lock,OOCORE_THROW_LASTERROR());
-
-	return OOCore::g_Registry.m_ptrRegistryRoot->OpenSubKey(key,flags);
+	return OOCore::g_ptrRegistryRoot->OpenSubKey(key,flags);
 }

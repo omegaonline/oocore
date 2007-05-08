@@ -241,7 +241,7 @@ namespace OTL
 			return &m_ptr;
 		}
 
-		operator OBJECT*&()
+		operator OBJECT* volatile &()
 		{
 			return m_ptr.value();
 		}
@@ -392,7 +392,7 @@ namespace OTL
 		virtual Omega::IObject* GetControllingObject() = 0;
 
 	private:
-		Omega::AtomicOp<long>::type m_refcount;
+		Omega::AtomicOp<Omega::uint32_t>::type m_refcount;
 	};
 
 	template <class E>
@@ -457,8 +457,8 @@ namespace OTL
 		virtual const CreatorEntry* getCreatorEntries() const = 0;
 
 	private:
-		Omega::CriticalSection			m_csMain;
-		Omega::AtomicOp<long>::type		m_lockCount;
+		Omega::CriticalSection                 m_csMain;
+		Omega::AtomicOp<Omega::uint32_t>::type m_lockCount;
 
 		struct Term
 		{
@@ -616,8 +616,8 @@ namespace OTL
 		// If the line below is flagged as the source of a compiler warning then
 		// you have missed out at least one virtual function in an interface that
 		// <ROOT> derives from
-		ContainedObjectImpl<ROOT>		m_contained;
-		Omega::AtomicOp<long>::type		m_refcount;
+		ContainedObjectImpl<ROOT>              m_contained;
+		Omega::AtomicOp<Omega::uint32_t>::type m_refcount;
 
 	public:
 		static AggregatedObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter)

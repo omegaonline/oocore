@@ -866,7 +866,7 @@ bool Root::Manager::registry_open_value(RequestBase* request, ACE_Configuration_
 
 void Root::Manager::registry_key_exists(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_READ_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	ACE_CDR::Boolean bRes = false;
@@ -889,7 +889,7 @@ void Root::Manager::registry_key_exists(RequestBase* request, ACE_OutputCDR& res
 
 void Root::Manager::registry_create_key(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_WRITE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	ACE_CString strKey;
@@ -915,7 +915,7 @@ void Root::Manager::registry_create_key(RequestBase* request, ACE_OutputCDR& res
 
 void Root::Manager::registry_delete_key(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_WRITE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	ACE_Configuration_Section_Key key;
@@ -939,7 +939,7 @@ void Root::Manager::registry_delete_key(RequestBase* request, ACE_OutputCDR& res
 
 void Root::Manager::registry_enum_subkeys(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_READ_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	std::list<ACE_TString> listSections;
@@ -976,7 +976,7 @@ void Root::Manager::registry_enum_subkeys(RequestBase* request, ACE_OutputCDR& r
 
 void Root::Manager::registry_value_type(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_READ_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	ACE_CDR::Octet type = 0;
@@ -1001,7 +1001,7 @@ void Root::Manager::registry_value_type(RequestBase* request, ACE_OutputCDR& res
 
 void Root::Manager::registry_get_string_value(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_READ_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	ACE_CString strText;
@@ -1026,7 +1026,7 @@ void Root::Manager::registry_get_string_value(RequestBase* request, ACE_OutputCD
 
 void Root::Manager::registry_get_uint_value(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_READ_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	ACE_CDR::ULong val = 0;
@@ -1053,7 +1053,7 @@ void Root::Manager::registry_get_uint_value(RequestBase* request, ACE_OutputCDR&
 
 void Root::Manager::registry_set_string_value(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_WRITE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 
@@ -1075,7 +1075,7 @@ void Root::Manager::registry_set_string_value(RequestBase* request, ACE_OutputCD
 
 void Root::Manager::registry_set_uint_value(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_WRITE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 
@@ -1099,7 +1099,7 @@ void Root::Manager::registry_set_uint_value(RequestBase* request, ACE_OutputCDR&
 
 void Root::Manager::registry_enum_values(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_READ_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 	std::list<ACE_TString> listValues;
@@ -1137,7 +1137,7 @@ void Root::Manager::registry_enum_values(RequestBase* request, ACE_OutputCDR& re
 
 void Root::Manager::registry_delete_value(RequestBase* request, ACE_OutputCDR& response)
 {
-	ACE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
+	ACE_WRITE_GUARD(ACE_Thread_Mutex,guard,m_registry_lock);
 
 	ACE_CDR::Long err = 0;
 

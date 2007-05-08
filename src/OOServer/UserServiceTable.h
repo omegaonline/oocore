@@ -20,7 +20,7 @@ namespace User
 
 	private:
 		OTL::ObjectPtr<Omega::Activation::IServiceTable>         m_ptrSIP;
-		ACE_Thread_Mutex                                         m_lock;
+		ACE_RW_Thread_Mutex                                      m_lock;
 		std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapServices;
 	};
 }

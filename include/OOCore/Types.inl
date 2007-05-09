@@ -305,7 +305,7 @@ T Omega::AtomicOpImpl<T,4>::operator --(int)
 }
 
 template <class T>
-T* Omega::AtomicOpImpl<T,4>::operator &()
+volatile T* Omega::AtomicOpImpl<T,4>::operator &()
 {
 	return &m_value;
 }

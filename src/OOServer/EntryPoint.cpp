@@ -14,8 +14,6 @@
 #include "./NTService.h"
 #include "./RootManager.h"
 
-#include <OOCore/OOCore.h>
-
 // Forward declare UserMain
 int UserMain(u_short uPort);
 
@@ -47,14 +45,7 @@ static int Uninstall()
 	return 0;
 }
 
-static int Version()
-{
-	ACE_OS::printf("Version: lu.%lu.%lu\n",OOSERVER_MAJOR_VERSION,OOSERVER_MINOR_VERSION,OOSERVER_BUILD_VERSION);
-	ACE_OS::printf("OOCore: lu.%lu.%lu\n",OMEGA_MAJOR_VERSION,OMEGA_MINOR_VERSION,OMEGA_BUILD_VERSION);
-	ACE_OS::printf("Platform: %s\nCompiler: %s\n",(OMEGA_PLATFORM_STRING),(OMEGA_COMPILER_STRING));
-	ACE_OS::printf("ACE: %lu.%lu.%lu",ACE_MAJOR_VERSION,ACE_MINOR_VERSION,ACE_BETA_VERSION);
-	return 0;
-}
+static int Version();
 
 static int Help()
 {
@@ -134,4 +125,11 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #endif
 
 	return Root::Manager::run();
+}
+
+#include "./Version.h"
+static int Version()
+{
+	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	return 0;
 }

@@ -2,13 +2,6 @@
 #define OOCORE_H_INCLUDED_
 
 //////////////////////////////////////////////
-// Version defines
-
-#define OMEGA_MAJOR_VERSION	0
-#define OMEGA_MINOR_VERSION 3
-#define OMEGA_BUILD_VERSION 0
-
-//////////////////////////////////////////////
 // Set up the export macros for OOCORE
 #if defined(OOCORE_BUILD_DLL)
 
@@ -51,12 +44,13 @@
 // End of STL includes
 //////////////////////////////////////////////
 
-#include <OOCore/OOCore_types.h>
-#include <OOCore/OOCore_base.h>
-#include <OOCore/OOCore_export.h>
-#include <OOCore/OOCore_rtti.h>
-#include <OOCore/OOCore_wire.h>
-#include <OOCore/OOCore_ifaces.h>
+#include <OOCore/Version.h>
+#include <OOCore/Types.h>
+#include <OOCore/Base.h>
+#include <OOCore/Export.h>
+#include <OOCore/Rtti.h>
+#include <OOCore/Wire.h>
+#include <OOCore/Interfaces.h>
 
 namespace Omega
 {
@@ -83,8 +77,8 @@ void Omega::Uninitialize()
 	Omega_Uninitialize();
 }
 
-#include <OOCore/OOCore_types.inl>
-#include <OOCore/OOCore_rtti.inl>
+#include <OOCore/Types.inl>
+#include <OOCore/Rtti.inl>
 
 #if defined(ACE_NLOGGING)
 #error You must not define ACE_NLOGGING, cos we use it!

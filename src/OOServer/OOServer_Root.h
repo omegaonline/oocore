@@ -14,10 +14,6 @@
 //////////////////////////////////////////////
 // Version defines
 
-#define OOSERVER_MAJOR_VERSION	0
-#define OOSERVER_MINOR_VERSION	3
-#define OOSERVER_BUILD_VERSION	0
-
 #if defined(ACE_NLOGGING)
 #error You must not define ACE_NLOGGING, cos we use it!
 #endif

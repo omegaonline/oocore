@@ -241,10 +241,7 @@
 			Name="OOCore"
 			Filter="">
 			<File
-				RelativePath="..\..\include\OOCore\config-win32-borland.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\config-win32-gcc.h">
+				RelativePath="..\..\include\OOCore\Base.h">
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\config-win32-msvc.h">
@@ -256,37 +253,37 @@
 				RelativePath="..\..\include\OOCore\config.h">
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\Export.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Interfaces.h">
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\OOCore.h">
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\OOCore_base.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_export.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_ifaces.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_rtti.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_rtti.inl">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_type_sizes.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_types.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_types.inl">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\OOCore_wire.h">
-			</File>
-			<File
 				RelativePath="..\..\include\OOCore\Remoting.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Rtti.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Rtti.inl">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Types.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Types.inl">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\TypeSizes.h">
+			</File>
+			<File
+				RelativePath=".\Version.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Wire.h">
 			</File>
 		</Filter>
 	</Files>

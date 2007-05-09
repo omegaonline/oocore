@@ -21,6 +21,8 @@
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)
 
-#define OMEGA_COMPILER_STRING	(const char*)(Omega::string_t::Format("MSVC %lu",_MSC_VER))
+#define OMEGA_COMPILER_STRING_II(a,b) a # b
+#define OMEGA_COMPILER_STRING_I(a,b)  OMEGA_COMPILER_STRING_II(a,b)
+#define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I("MSVC ",_MSC_VER)
 
 #endif // OOCORE_CONFIG_MSVC_H_INCLUDED_

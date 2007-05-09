@@ -1,7 +1,7 @@
 #ifndef OMEGA_TYPES_H_INCLUDED_
 #define OMEGA_TYPES_H_INCLUDED_
 
-#include <OOCore/OOCore_type_sizes.h>
+#include <OOCore/TypeSizes.h>
 
 namespace Omega
 {
@@ -213,7 +213,7 @@ namespace Omega
 		inline T operator ++(int);
 		inline T operator --();
 		inline T operator --(int);
-		inline T* operator &();
+		inline volatile T* operator &();
 
 		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
 		inline AtomicOpImpl& operator = (const T& rhs);
@@ -241,7 +241,7 @@ namespace Omega
 		inline T operator ++(int);
 		inline T operator --();
 		inline T operator --(int);
-		inline T* operator &();
+		inline volatile T* operator &();
 
 		inline T value() const;
 		inline volatile T& value();
@@ -268,7 +268,7 @@ namespace Omega
 		inline T operator ++(int);
 		inline T operator --();
 		inline T operator --(int);
-		inline T* operator &();
+		inline volatile T* operator &();
 
 		inline T value() const;
 		inline volatile T& value();

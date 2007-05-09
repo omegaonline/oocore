@@ -343,7 +343,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,cs__ctor,0,())
 {
-	ACE_Recursive_Thread_Mutex* pm;
+	ACE_Recursive_Thread_Mutex* pm = 0;
 	OMEGA_NEW(pm,ACE_Recursive_Thread_Mutex);
 	return pm;
 }
@@ -355,10 +355,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,m1))
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,m1))
 {
-	static_cast<ACE_Recursive_Thread_Mutex*>(m1)->acquire();
+	if (static_cast<ACE_Recursive_Thread_Mutex*>(m1)->acquire() != 0)
+		OOCORE_THROW_LASTERROR();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,m1))
 {
-	static_cast<ACE_Recursive_Thread_Mutex*>(m1)->release();
+	if (static_cast<ACE_Recursive_Thread_Mutex*>(m1)->release() != 0)
+		OOCORE_THROW_LASTERROR();
 }

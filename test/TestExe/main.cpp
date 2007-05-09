@@ -13,7 +13,7 @@ bool guid_tests();
 
 int main(int argc, char* argv[])
 {
-	printf("%s\n",(const char*)Omega::GetVersion());
+	printf("%s\n\n",(const char*)Omega::GetVersion());
 
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);

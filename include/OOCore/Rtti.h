@@ -677,8 +677,8 @@ namespace Omega
 
 				IObject_Safe* m_pOuter;
 			};
-			Contained					m_contained;
-			AtomicOp<uint32_t>::type	m_refcount;
+			Contained           m_contained;
+			AtomicOp<uint32_t>  m_refcount;
 
 			SafeStubImpl(IObject_Safe* pOuter, I* pI) : m_contained(pOuter,pI), m_refcount(1)
 			{}
@@ -753,8 +753,8 @@ namespace Omega
 				Contained(const Contained&) {};
 				Contained& operator = (const Contained&) {};
 			};
-			Contained					m_contained;
-			AtomicOp<uint32_t>::type	m_refcount;
+			Contained          m_contained;
+			AtomicOp<uint32_t> m_refcount;
 
 			SafeProxyImpl(const SafeProxyImpl&) {};
 			SafeProxyImpl& operator = (const SafeProxyImpl&) {};
@@ -998,7 +998,7 @@ namespace Omega
 				// Remove ourselves from the stub_map
 				SafeProxyStubMap& stub_map = get_stub_map();
 
-				Guard<CriticalSection> guard(stub_map.m_cs);
+				Guard guard(stub_map.m_cs);
 				stub_map.m_map.erase(m_pObj);
 			}
 
@@ -1016,10 +1016,10 @@ namespace Omega
 			inline IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid);
 
 		private:
-			AtomicOp<uint32_t>::type m_refcount;
-			CriticalSection m_cs;
+			AtomicOp<uint32_t>                   m_refcount;
+			CriticalSection                      m_cs;
 			std::map<const guid_t,IObject_Safe*> m_iid_map;
-			auto_iface_ptr<IObject> m_pObj;
+			auto_iface_ptr<IObject>              m_pObj;
 		};
 
 		OMEGA_DECLARE_IID(SafeProxy);
@@ -1041,7 +1041,7 @@ namespace Omega
 				// Remove ourselves from the proxy_map
 				SafeProxyStubMap& proxy_map = get_proxy_map();
 
-				Guard<CriticalSection> guard(proxy_map.m_cs);
+				Guard guard(proxy_map.m_cs);
 				proxy_map.m_map.erase(m_pS);
 			}
 
@@ -1064,9 +1064,9 @@ namespace Omega
 			}
 
 		private:
-			AtomicOp<uint32_t>::type m_refcount;
-			CriticalSection m_cs;
-			std::map<const guid_t,IObject*> m_iid_map;
+			AtomicOp<uint32_t>                m_refcount;
+			CriticalSection                   m_cs;
+			std::map<const guid_t,IObject*>   m_iid_map;
 			auto_iface_safe_ptr<IObject_Safe> m_pS;
 		};
 	}

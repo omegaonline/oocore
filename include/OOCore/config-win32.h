@@ -37,11 +37,6 @@
 #  define OMEGA_WIN64
 #endif /* _WIN64 || WIN64 */
 
-#define OMEGA_HAS_BUILTIN_ATOMIC_OP_4
-#if defined(OMEGA_WIN64)
-#define OMEGA_HAS_BUILTIN_ATOMIC_OP_8
-#endif
-
 #define OMEGA_CALL __cdecl
 
 #include <shlobj.h>

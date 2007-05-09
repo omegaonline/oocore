@@ -34,7 +34,7 @@ BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 
 namespace OOCore
 {
-	static AtomicOp<Omega::uint32_t>::type s_initcount = 0;
+	static AtomicOp<Omega::uint32_t> s_initcount = 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())

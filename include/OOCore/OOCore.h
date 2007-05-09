@@ -46,6 +46,7 @@
 
 #include <OOCore/Version.h>
 #include <OOCore/Types.h>
+#include <OOCore/Threading.h>
 #include <OOCore/Base.h>
 #include <OOCore/Export.h>
 #include <OOCore/Rtti.h>
@@ -78,6 +79,7 @@ void Omega::Uninitialize()
 }
 
 #include <OOCore/Types.inl>
+#include <OOCore/Threading.inl>
 #include <OOCore/Rtti.inl>
 
 #if defined(ACE_NLOGGING)

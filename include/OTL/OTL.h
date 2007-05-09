@@ -252,7 +252,7 @@ namespace OTL
 		}
 
 	protected:
-		typename Omega::AtomicOp<OBJECT*>::type m_ptr;
+		typename Omega::AtomicOp<OBJECT*> m_ptr;
 	};
 
 	template <class OBJECT>
@@ -392,7 +392,7 @@ namespace OTL
 		virtual Omega::IObject* GetControllingObject() = 0;
 
 	private:
-		Omega::AtomicOp<Omega::uint32_t>::type m_refcount;
+		Omega::AtomicOp<Omega::uint32_t> m_refcount;
 	};
 
 	template <class E>
@@ -436,7 +436,7 @@ namespace OTL
 		inline size_t GetLockCount() const;
 		inline void IncLockCount();
 		inline void DecLockCount();
-		inline Omega::Guard<Omega::CriticalSection> GetGuard();
+		inline Omega::CriticalSection& GetLock();
 
 		typedef void (*TERM_FUNC)(void* arg);
 		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
@@ -457,8 +457,8 @@ namespace OTL
 		virtual const CreatorEntry* getCreatorEntries() const = 0;
 
 	private:
-		Omega::CriticalSection                 m_csMain;
-		Omega::AtomicOp<Omega::uint32_t>::type m_lockCount;
+		Omega::CriticalSection           m_csMain;
+		Omega::AtomicOp<Omega::uint32_t> m_lockCount;
 
 		struct Term
 		{
@@ -616,8 +616,8 @@ namespace OTL
 		// If the line below is flagged as the source of a compiler warning then
 		// you have missed out at least one virtual function in an interface that
 		// <ROOT> derives from
-		ContainedObjectImpl<ROOT>              m_contained;
-		Omega::AtomicOp<Omega::uint32_t>::type m_refcount;
+		ContainedObjectImpl<ROOT>        m_contained;
+		Omega::AtomicOp<Omega::uint32_t> m_refcount;
 
 	public:
 		static AggregatedObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter)
@@ -677,7 +677,7 @@ namespace OTL
 			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
 			if (!singleton)
 			{
-				Omega::Guard<Omega::CriticalSection> lock(GetModule()->GetGuard());
+				Omega::Guard guard(GetModule()->GetLock());
 				if (!singleton)
 				{
 					OMEGA_NEW(singleton,Singleton<TYPE>());
@@ -966,7 +966,7 @@ namespace OTL
 	public:
 		bool Next(Omega::uint32_t& count, EnumType* parrVals)
 		{
-			Omega::Guard<Omega::CriticalSection> guard(m_cs);
+			Omega::Guard guard(m_cs);
 
 			uint32_t c = count;
 			count = 0;
@@ -982,7 +982,7 @@ namespace OTL
 
 		bool Skip(Omega::uint32_t count)
 		{
-			Omega::Guard<Omega::CriticalSection> guard(m_cs);
+			Omega::Guard guard(m_cs);
 
 			while (count > 0 && m_pos!=m_listItems.end())
 			{
@@ -995,14 +995,14 @@ namespace OTL
 
 		void Reset()
 		{
-			Omega::Guard<Omega::CriticalSection> guard(m_cs);
+			Omega::Guard guard(m_cs);
 
 			m_pos = m_listItems.begin();
 		}
 
 		EnumIFace* Clone()
 		{
-			Omega::Guard<Omega::CriticalSection> guard(m_cs);
+			Omega::Guard guard(m_cs);
 
 			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateObjectPtr();
 			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());

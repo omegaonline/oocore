@@ -368,8 +368,8 @@ namespace Omega
 				Contained(const Contained&) {};
 				Contained& operator = (const Contained&) {};
 			};
-			Contained					m_contained;
-			AtomicOp<uint32_t>::type	m_refcount;
+			Contained          m_contained;
+			AtomicOp<uint32_t> m_refcount;
 
 			WireProxyImpl(const WireProxyImpl&) {};
 			WireProxyImpl& operator = (const WireProxyImpl&) {};
@@ -500,9 +500,9 @@ namespace Omega
 			IObject_WireStub(const IObject_WireStub&) {};
 			IObject_WireStub& operator =(const IObject_WireStub&) {};
 
-			const uint32_t m_id;
-			AtomicOp<uint32_t>::type m_refcount;
-			AtomicOp<uint32_t>::type m_remote_refcount;
+			const uint32_t     m_id;
+			AtomicOp<uint32_t> m_refcount;
+			AtomicOp<uint32_t> m_remote_refcount;
 		};
 
 		template <class I>

@@ -200,7 +200,7 @@ Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::QueryInt
 	{
 		try
 		{
-			Guard<CriticalSection> guard(m_cs);
+			Guard guard(m_cs);
 
 			IObject_Safe* pObjS = 0;
 			std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(iid);
@@ -263,7 +263,7 @@ Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
 
 	try
 	{
-		Guard<CriticalSection> guard(m_cs);
+		Guard guard(m_cs);
 		std::map<const guid_t,IObject*>::iterator i=m_iid_map.find(iid);
 		if (i == m_iid_map.end())
 		{
@@ -309,7 +309,7 @@ const Omega::MetaInfo::qi_rtti* Omega::MetaInfo::get_qi_rtti_info(const guid_t& 
 	static std::map<const guid_t,const qi_rtti*> mapRtti;
 	static CriticalSection cs;
 
-	Guard<CriticalSection> guard(cs);
+	Guard guard(cs);
 
 	std::map<const guid_t,const qi_rtti*>::iterator i=mapRtti.find(iid);
 	if (i==mapRtti.end())
@@ -337,7 +337,7 @@ Omega::MetaInfo::SafeProxyStubMap& Omega::MetaInfo::get_stub_map()
 Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObject* pObj, const Omega::guid_t& iid)
 {
 	SafeProxyStubMap& stub_map = get_stub_map();
-	Guard<CriticalSection> guard(stub_map.m_cs);
+	Guard guard(stub_map.m_cs);
 
 	auto_iface_safe_ptr<IObject_Safe> ptrSafeStub;
 	try
@@ -381,7 +381,7 @@ Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObject* pObj
 Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Safe* pObjS, const Omega::guid_t& iid, bool bPartialAllowed)
 {
 	SafeProxyStubMap& proxy_map = get_proxy_map();
-	Guard<CriticalSection> guard(proxy_map.m_cs);
+	Guard guard(proxy_map.m_cs);
 
 	auto_iface_ptr<IObject> ptrSafeProxy;
 	try

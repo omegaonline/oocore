@@ -204,9 +204,6 @@
 				RelativePath=".\OOCore_precomp.h">
 			</File>
 			<File
-				RelativePath=".\resource.h">
-			</File>
-			<File
 				RelativePath=".\StdObjectManager.h">
 			</File>
 			<File
@@ -269,6 +266,12 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Rtti.inl">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Threading.h">
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Threading.inl">
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Types.h">

@@ -16,16 +16,16 @@ void OTL::ModuleBase::DecLockCount()
 	--m_lockCount;
 }
 
-Omega::Guard<Omega::CriticalSection> OTL::ModuleBase::GetGuard()
+Omega::CriticalSection& OTL::ModuleBase::GetLock()
 {
-	return Omega::Guard<Omega::CriticalSection>(m_csMain);
+	return m_csMain;
 }
 
 void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 {
 	try
 	{
-		Omega::Guard<Omega::CriticalSection> lock(m_csMain);
+		Omega::Guard lock(m_csMain);
 
 		Term term = { pfnTerm, arg };
 

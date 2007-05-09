@@ -1,0 +1,121 @@
+#ifndef OMEGA_THREADING_H_INCLUDED_
+#define OMEGA_THREADING_H_INCLUDED_
+
+namespace Omega
+{
+	class CriticalSection
+	{
+	public:
+		inline CriticalSection();
+		inline ~CriticalSection();
+
+		inline void Lock();
+		inline void Unlock();
+
+	private:
+		typedef struct tag_handle_t
+		{
+			int unused;
+		}* handle_t;
+
+		handle_t m_handle;
+	};
+
+	class Guard
+	{
+	public:
+		Guard(CriticalSection& lock) : m_cs(lock)
+		{
+			m_cs.Lock();
+		}
+
+		~Guard()
+		{
+			m_cs.Unlock();
+		}
+
+	private:
+		// Copying is a really bad idea!
+		Guard& operator = (const Guard&) { }
+
+		CriticalSection& m_cs;
+	};
+
+	template <class T> class AtomicOp
+	{
+	public:
+		AtomicOp() {};
+		inline AtomicOp(const AtomicOp& rhs);
+		inline AtomicOp(const T& v);
+
+		inline T operator ++();
+		inline T operator ++(int);
+		inline T operator --();
+		inline T operator --(int);
+		inline volatile T* operator &();
+
+		inline AtomicOp& operator = (const AtomicOp& rhs);
+		inline AtomicOp& operator = (const T& rhs);
+
+		inline T value() const;
+		inline volatile T& value();
+		inline T exchange(const T& v);
+
+	private:
+		mutable CriticalSection m_cs;
+		T                       m_value;
+	};
+
+#if 0
+	template <> class AtomicOp<int32_t>
+	{
+	public:
+		AtomicOp() {};
+		inline AtomicOp(const AtomicOp& rhs);
+		inline AtomicOp(const int32_t& v);
+
+		inline AtomicOp& operator = (const AtomicOp& rhs);
+		inline AtomicOp& operator = (const int32_t& rhs);
+
+		inline int32_t operator ++();
+		inline int32_t operator ++(int) { return ++*this - 1; }
+		inline int32_t operator --();
+		inline int32_t operator --(int) { return --*this + 1; }
+		inline volatile int32_t* operator &();
+
+		inline int32_t value() const;
+		inline volatile int32_t& value();
+		inline int32_t exchange(const int32_t& v);
+
+	private:
+		int32_t	m_value;
+	};
+
+	template <> class AtomicOp<uint32_t>
+	{
+	public:
+		AtomicOp() {};
+		inline AtomicOp(const AtomicOp& rhs);
+		inline AtomicOp(const uint32_t& v);
+
+		inline AtomicOp& operator = (const AtomicOp& rhs);
+		inline AtomicOp& operator = (const uint32_t& rhs);
+
+		inline uint32_t operator ++();
+		inline uint32_t operator ++(int);
+		inline uint32_t operator --();
+		inline uint32_t operator --(int);
+		inline volatile uint32_t* operator &();
+
+		inline uint32_t value() const;
+		inline volatile uint32_t& value();
+		inline uint32_t exchange(const uint32_t& v);
+
+	private:
+		uint32_t	m_value;
+	};
+#endif
+
+}
+
+#endif // OMEGA_THREADING_H_INCLUDED_

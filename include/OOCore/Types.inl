@@ -5,6 +5,14 @@
 // we export a whole set of extern "C" functions and call them in
 // the member functions of the class.  Horrible I know!
 
+#ifdef _DEBUG
+#define STASH_STRING()	m_string_value = string_t_cast(m_handle)
+#else
+#define STASH_STRING()	(void)0
+#endif
+
+OOCORE_EXPORTED_FUNCTION(const Omega::char_t*,string_t_cast,1,((in),const void*,h));
+
 Omega::string_t::string_t(handle_t h) : m_handle(h)
 {
 }
@@ -19,12 +27,14 @@ OOCORE_EXPORTED_FUNCTION(void*,string_t__ctor2,1,((in),const Omega::char_t*,sz))
 Omega::string_t::string_t(const char_t* sz)
 {
 	m_handle = static_cast<handle_t>(string_t__ctor2(sz));
+	STASH_STRING();
 }
 
 OOCORE_EXPORTED_FUNCTION(void*,string_t__ctor3,1,((in),const void*,s1));
 Omega::string_t::string_t(const Omega::string_t& s)
 {
 	m_handle = static_cast<handle_t>(string_t__ctor3(s.m_handle));
+	STASH_STRING();
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(string_t__dctor,1,((in),void*,h));
@@ -38,6 +48,7 @@ Omega::string_t& Omega::string_t::operator = (const string_t& s)
 {
 	if (this != &s)
 		m_handle = static_cast<handle_t>(string_t_assign_1(m_handle,s.m_handle));
+	STASH_STRING();
 	return *this;
 }
 
@@ -45,10 +56,10 @@ OOCORE_EXPORTED_FUNCTION(void*,string_t_assign_2,2,((in),void*,h,(in),const Omeg
 Omega::string_t& Omega::string_t::operator = (const char_t* sz)
 {
 	m_handle = static_cast<handle_t>(string_t_assign_2(m_handle,sz));
+	STASH_STRING();
 	return *this;
 }
 
-OOCORE_EXPORTED_FUNCTION(const Omega::char_t*,string_t_cast,1,((in),const void*,h));
 Omega::string_t::operator const Omega::char_t*() const
 {
 	return string_t_cast(m_handle);
@@ -70,6 +81,7 @@ OOCORE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,h,(in),const void*,h2
 Omega::string_t& Omega::string_t::operator += (const string_t& s)
 {
 	m_handle = static_cast<handle_t>(string_t_add1(m_handle,s.m_handle));
+	STASH_STRING();
 	return *this;
 }
 
@@ -77,6 +89,7 @@ OOCORE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,h,(in),const Omega::c
 Omega::string_t& Omega::string_t::operator += (const char_t* sz)
 {
 	m_handle = static_cast<handle_t>(string_t_add2(m_handle,sz));
+	STASH_STRING();
 	return *this;
 }
 
@@ -165,6 +178,7 @@ OOCORE_EXPORTED_FUNCTION_VOID(string_t_clear,1,((in),void*,h));
 Omega::string_t& Omega::string_t::Clear()
 {
 	string_t_clear(m_handle);
+	STASH_STRING();
 	return *this;
 }
 
@@ -256,161 +270,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,());
 Omega::guid_t Omega::guid_t::Create()
 {
 	return guid_t_create();
-}
-
-#if (defined OMEGA_HAS_BUILTIN_ATOMIC_OP_4)
-
-template <class T>
-Omega::AtomicOpImpl<T,4>::AtomicOpImpl(const AtomicOpImpl& rhs) :
-	m_value(rhs.m_value)
-{ }
-
-template <class T>
-Omega::AtomicOpImpl<T,4>::AtomicOpImpl(const T& v) :
-	m_value(v)
-{ }
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator ++()
-{
-	// Prefix
-#if defined(OMEGA_WIN32)
-	return (T)(static_cast<LONG_PTR>(InterlockedIncrement(reinterpret_cast<LONG_PTR*>(&this->m_value))));
-#else
-#error  Use funky asm function!
-#endif
-}
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator ++(int)
-{
-	return ++*this - 1;
-}
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator --()
-{
-	// Prefix
-#if defined(OMEGA_WIN32)
-	return (T)(static_cast<LONG_PTR>(InterlockedDecrement(reinterpret_cast<LONG_PTR*>(&this->m_value))));
-#else
-#error  Use funky asm function!
-#endif
-}
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator --(int)
-{
-	return --*this + 1;
-}
-
-template <class T>
-volatile T* Omega::AtomicOpImpl<T,4>::operator &()
-{
-	return &m_value;
-}
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::exchange(const T& v)
-{
-#if defined(OMEGA_WIN32)
-	return (T)(static_cast<LONG_PTR>(InterlockedExchange(reinterpret_cast<LONG_PTR*>(&this->m_value),static_cast<const LONG>((LONG_PTR)(v)))));
-#else
-#error  Use funky asm function!
-#endif
-}
-
-template <class T>
-Omega::AtomicOpImpl<T,4>& Omega::AtomicOpImpl<T,4>::operator = (const AtomicOpImpl& rhs)
-{
-	exchange(rhs.m_value);
-	return (*this);
-}
-
-template <class T>
-Omega::AtomicOpImpl<T,4>& Omega::AtomicOpImpl<T,4>::operator = (const T& rhs)
-{
-	exchange(rhs);
-	return (*this);
-}
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::value() const
-{
-	return m_value;
-}
-
-template <class T>
-volatile T& Omega::AtomicOpImpl<T,4>::value()
-{
-	return m_value;
-}
-
-#endif
-
-// SOME OLD CRAP THAT WILL BE USEFUL SOON...
-#if 0
-{
-#if (defined (OMEGA_HAS_BUILTIN_ATOMIC_OP) && (ACE_SIZEOF_VOID_P==ACE_SIZEOF_LONG) && !defined(WIN32))
-	// Lifted from ACE as there is no good way to reuse...
-	public:
-		static void init_functions (void);
-	private:
-		static long (*exchange_fn_) (volatile long *, long);
-
-	#error Still need to implement this!
-#endif
-
-#if (defined (OMEGA_HAS_BUILTIN_ATOMIC_OP))
-	protected:
-		OBJECT* ExchangePtr(OBJECT* ptr)
-		{
-#if defined(WIN32)
-			return reinterpret_cast<OBJECT*>(static_cast<LONG_PTR>(InterlockedExchange(reinterpret_cast<LONG*>(&this->m_ptr), static_cast<LONG>(reinterpret_cast<LONG_PTR>(ptr)))));
-#else
-			return reinterpret_cast<OBJECT*>((*exchange_fn_)(reinterpret_cast<volatile long*>(&this->m_ptr),reinterpret_cast<long>(ptr));
-#endif /* WIN32 */
-		}
-#else /* OMEGA_HAS_BUILTIN_ATOMIC_OP */
-	private:
-		CriticalSection m_cs;
-
-	protected:
-		OBJECT* ExchangePtr(OBJECT* ptr)
-		{
-			Guard lock(m_cs);
-			OBJECT* old = m_ptr;
-			m_ptr = ptr;
-			return old;
-		}
-#endif
-}
-#endif // 0
-
-OOCORE_EXPORTED_FUNCTION(void*,cs__ctor,0,());
-Omega::CriticalSection::CriticalSection()
-{
-	m_handle = static_cast<handle_t>(cs__ctor());
-	if (!m_handle)
-		OMEGA_THROW("Out of memory!");
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));
-Omega::CriticalSection::~CriticalSection()
-{
-	cs__dctor(m_handle);
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,h));
-void Omega::CriticalSection::Lock()
-{
-	cs_lock(m_handle);
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,h));
-void Omega::CriticalSection::Unlock()
-{
-	cs_unlock(m_handle);
 }
 
 #endif // OOCORE_TYPES_INL_INCLUDED_

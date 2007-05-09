@@ -86,14 +86,16 @@ bool guid_tests()
 		arr[i] = Omega::guid_t::Create();
 
 	// Make sure they are unique!
-	for (size_t j=0;j<sizeof(arr)/sizeof(arr[0]);++j)
+	bool bTest = true;
+	for (size_t j=0;j<sizeof(arr)/sizeof(arr[0]) && bTest;++j)
 	{
-		for (size_t k=0;k<sizeof(arr)/sizeof(arr[0]);++k)
+		for (size_t k=0;k<sizeof(arr)/sizeof(arr[0]) && bTest;++k)
 		{
 			if (j != k)
-				TEST(arr[j] != arr[k]);
+				bTest = (arr[j] != arr[k]);
 		}
 	}
+	TEST(bTest);
 
 	return true;
 }

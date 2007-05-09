@@ -141,6 +141,10 @@ namespace Omega
 			int unused;
 		}* handle_t;
 
+#ifdef _DEBUG
+		const char* m_string_value;
+#endif
+
 		inline explicit string_t(handle_t);
 		handle_t m_handle;
 	};
@@ -161,128 +165,6 @@ namespace Omega
 		inline static guid_t FromString(const string_t& str);
 		inline static guid_t Create();
 		static const guid_t NIL;
-	};
-
-	class CriticalSection
-	{
-	public:
-		inline CriticalSection();
-		inline ~CriticalSection();
-
-		inline void Lock();
-		inline void Unlock();
-
-	private:
-		typedef struct tag_handle_t
-		{
-			int unused;
-		}* handle_t;
-
-		handle_t m_handle;
-	};
-
-	template <class MUTEX> class Guard
-	{
-	public:
-		Guard(MUTEX& lock) : m_cs(lock)
-		{
-			m_cs.Lock();
-		}
-
-		~Guard()
-		{
-			m_cs.Unlock();
-		}
-
-	private:
-		// Copying is a really bad idea!
-		Guard& operator = (const Guard& rhs)
-		{ }
-
-		MUTEX& m_cs;
-	};
-
-	template <class T, int S> class AtomicOpImpl
-	{
-	public:
-		AtomicOpImpl() {};
-		inline AtomicOpImpl(const AtomicOpImpl& rhs);
-		inline AtomicOpImpl(const T& v);
-
-		inline T operator ++();
-		inline T operator ++(int);
-		inline T operator --();
-		inline T operator --(int);
-		inline volatile T* operator &();
-
-		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
-		inline AtomicOpImpl& operator = (const T& rhs);
-
-		inline T value() const;
-		inline volatile T& value();
-		inline T exchange(const T& v);
-
-	private:
-		T	m_value;
-	};
-
-#if defined(OMEGA_HAS_BUILTIN_ATOMIC_OP_4)
-	template <class T> class AtomicOpImpl<T,4>
-	{
-	public:
-		AtomicOpImpl() {};
-		inline AtomicOpImpl(const AtomicOpImpl& rhs);
-		inline AtomicOpImpl(const T& v);
-
-		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
-		inline AtomicOpImpl& operator = (const T& rhs);
-
-		inline T operator ++();
-		inline T operator ++(int);
-		inline T operator --();
-		inline T operator --(int);
-		inline volatile T* operator &();
-
-		inline T value() const;
-		inline volatile T& value();
-		inline T exchange(const T& v);
-
-	private:
-		T	m_value;
-	};
-
-#endif
-
-#if defined(OMEGA_HAS_BUILTIN_ATOMIC_OP_8)
-	template <class T> class AtomicOpImpl<T,8>
-	{
-	public:
-		AtomicOpImpl() {};
-		inline AtomicOpImpl(const AtomicOpImpl& rhs);
-		inline AtomicOpImpl(const T& v);
-
-		inline AtomicOpImpl& operator = (const AtomicOpImpl& rhs);
-		inline AtomicOpImpl& operator = (const T& rhs);
-
-		inline T operator ++();
-		inline T operator ++(int);
-		inline T operator --();
-		inline T operator --(int);
-		inline volatile T* operator &();
-
-		inline T value() const;
-		inline volatile T& value();
-		inline T exchange(const T& v);
-
-	private:
-		T	m_value;
-	};
-
-#endif
-
-	template <class T> struct AtomicOp
-	{
-		typedef AtomicOpImpl<T,sizeof(T)> type;
 	};
 
 	namespace MetaInfo

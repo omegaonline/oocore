@@ -1,0 +1,205 @@
+#ifndef OMEGA_THREADING_INL_INCLUDED_
+#define OMEGA_THREADING_INL_INCLUDED_
+
+template <class T>
+Omega::AtomicOp<T>::AtomicOp(const AtomicOp& rhs) :
+	m_value(rhs.value())
+{
+}
+
+template <class T>
+Omega::AtomicOp<T>::AtomicOp(const T& v) :
+	m_value(v)
+{
+}
+
+template <class T>
+T Omega::AtomicOp<T>::operator ++()
+{
+	Guard guard(m_cs);
+	return ++m_value;
+}
+
+template <class T>
+T Omega::AtomicOp<T>::operator ++(int)
+{
+	return ++*this - 1;
+}
+
+template <class T>
+T Omega::AtomicOp<T>::operator --()
+{
+	Guard guard(m_cs);
+	return --m_value;
+}
+
+template <class T>
+T Omega::AtomicOp<T>::operator --(int)
+{
+	return --*this + 1;
+}
+
+template <class T>
+volatile T* Omega::AtomicOp<T>::operator &()
+{
+	return &m_value;
+}
+
+template <class T>
+Omega::AtomicOp<T>& Omega::AtomicOp<T>::operator = (const AtomicOp& rhs)
+{
+	if (&rhs != this)
+	{
+		Guard guard(m_cs);
+		m_value = rhs.value();
+	}
+	return *this;
+}
+
+template <class T>
+Omega::AtomicOp<T>& Omega::AtomicOp<T>::operator = (const T& rhs)
+{
+	Guard guard(m_cs);
+	m_value = rhs;
+	return *this;
+}
+
+template <class T>
+T Omega::AtomicOp<T>::value() const
+{
+	Guard guard(m_cs);
+	return m_value;
+}
+
+template <class T>
+volatile T& Omega::AtomicOp<T>::value()
+{
+	return m_value;
+}
+
+template <class T>
+T Omega::AtomicOp<T>::exchange(const T& v)
+{
+	Guard guard(m_cs);
+	T ret = m_value;
+	m_value = v;
+	return ret;
+}
+
+#if 0
+
+template <class T>
+Omega::AtomicOpImpl<T,4>::AtomicOpImpl(const AtomicOpImpl& rhs) :
+	m_value(rhs.m_value)
+{ }
+
+template <class T>
+Omega::AtomicOpImpl<T,4>::AtomicOpImpl(const T& v) :
+	m_value(v)
+{ }
+
+template <class T>
+T Omega::AtomicOpImpl<T,4>::operator ++()
+{
+	// Prefix
+#if defined(OMEGA_WIN32)
+	return (T)(static_cast<LONG_PTR>(InterlockedIncrement(reinterpret_cast<LONG_PTR*>(&this->m_value))));
+#else
+#error  Use funky asm function!
+#endif
+}
+
+template <class T>
+T Omega::AtomicOpImpl<T,4>::operator ++(int)
+{
+	return ++*this - 1;
+}
+
+template <class T>
+T Omega::AtomicOpImpl<T,4>::operator --()
+{
+	// Prefix
+#if defined(OMEGA_WIN32)
+	return (T)(static_cast<LONG_PTR>(InterlockedDecrement(reinterpret_cast<LONG_PTR*>(&this->m_value))));
+#else
+#error  Use funky asm function!
+#endif
+}
+
+template <class T>
+T Omega::AtomicOpImpl<T,4>::operator --(int)
+{
+	return --*this + 1;
+}
+
+template <class T>
+volatile T* Omega::AtomicOpImpl<T,4>::operator &()
+{
+	return &m_value;
+}
+
+template <class T>
+T Omega::AtomicOpImpl<T,4>::exchange(const T& v)
+{
+#if defined(OMEGA_WIN32)
+	return (T)(static_cast<LONG_PTR>(InterlockedExchange(reinterpret_cast<LONG_PTR*>(&this->m_value),static_cast<const LONG>((LONG_PTR)(v)))));
+#else
+#error  Use funky asm function!
+#endif
+}
+
+template <class T>
+Omega::AtomicOpImpl<T,4>& Omega::AtomicOpImpl<T,4>::operator = (const AtomicOpImpl& rhs)
+{
+	exchange(rhs.m_value);
+	return (*this);
+}
+
+template <class T>
+Omega::AtomicOpImpl<T,4>& Omega::AtomicOpImpl<T,4>::operator = (const T& rhs)
+{
+	exchange(rhs);
+	return (*this);
+}
+
+template <class T>
+T Omega::AtomicOpImpl<T,4>::value() const
+{
+	return m_value;
+}
+
+template <class T>
+volatile T& Omega::AtomicOpImpl<T,4>::value()
+{
+	return m_value;
+}
+
+#endif
+
+OOCORE_EXPORTED_FUNCTION(void*,cs__ctor,0,());
+Omega::CriticalSection::CriticalSection()
+{
+	m_handle = static_cast<handle_t>(cs__ctor());
+	if (!m_handle)
+		OMEGA_THROW("Out of memory!");
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));
+Omega::CriticalSection::~CriticalSection()
+{
+	cs__dctor(m_handle);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,h));
+void Omega::CriticalSection::Lock()
+{
+	cs_lock(m_handle);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,h));
+void Omega::CriticalSection::Unlock()
+{
+	cs_unlock(m_handle);
+}
+
+#endif // OMEGA_THREADING_INL_INCLUDED_

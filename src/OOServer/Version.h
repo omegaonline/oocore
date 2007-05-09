@@ -9,6 +9,4 @@
 #define OOSERVER_BUILD_VERSION  1
 #define OOSERVER_VERSION        "0.3.1"
 
-#include <OOCore/config.h>
-
 #endif // OOSERVER_VERSION_H_INCLUDED_

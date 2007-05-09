@@ -13,6 +13,7 @@
 #include "./OOServer_Root.h"
 #include "./NTService.h"
 #include "./RootManager.h"
+#include "./Version.h"
 
 // Forward declare UserMain
 int UserMain(u_short uPort);
@@ -127,7 +128,9 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	return Root::Manager::run();
 }
 
-#include "./Version.h"
+///////////////////////////////////////////////////////////////////////////////////////////
+// Leave this function last, because we include <OOCore/config.h> which might be dangerous!
+#include <OOCore/config.h>
 static int Version()
 {
 	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);

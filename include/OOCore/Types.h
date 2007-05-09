@@ -141,12 +141,12 @@ namespace Omega
 			int unused;
 		}* handle_t;
 
-#ifdef _DEBUG
-		const char* m_string_value;
-#endif
-
 		inline explicit string_t(handle_t);
 		handle_t m_handle;
+
+#ifdef _DEBUG
+		const char* m_debug_value;
+#endif
 	};
 
 	struct guid_t

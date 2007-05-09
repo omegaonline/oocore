@@ -45,9 +45,9 @@ namespace Omega
 	{
 	public:
 		AtomicOp() {};
-		inline AtomicOp(const AtomicOp& rhs);
 		inline AtomicOp(const T& v);
-
+		inline AtomicOp(const AtomicOp& rhs);
+		
 		inline T operator ++();
 		inline T operator ++(int);
 		inline T operator --();
@@ -66,14 +66,15 @@ namespace Omega
 		T                       m_value;
 	};
 
-#if 0
+	#ifdef OMEGA_HAS_ATOMIC_OP
+
 	template <> class AtomicOp<int32_t>
 	{
 	public:
-		AtomicOp() {};
-		inline AtomicOp(const AtomicOp& rhs);
+		AtomicOp() {}
 		inline AtomicOp(const int32_t& v);
-
+		inline AtomicOp(const AtomicOp& rhs);
+		
 		inline AtomicOp& operator = (const AtomicOp& rhs);
 		inline AtomicOp& operator = (const int32_t& rhs);
 
@@ -81,41 +82,41 @@ namespace Omega
 		inline int32_t operator ++(int) { return ++*this - 1; }
 		inline int32_t operator --();
 		inline int32_t operator --(int) { return --*this + 1; }
-		inline volatile int32_t* operator &();
+		inline volatile int32_t* operator &() { return &m_value; }
 
-		inline int32_t value() const;
-		inline volatile int32_t& value();
+		inline int32_t value() const { return m_value; }
+		inline volatile int32_t& value()  { return m_value; }
 		inline int32_t exchange(const int32_t& v);
 
 	private:
-		int32_t	m_value;
+		int32_t m_value;
 	};
 
 	template <> class AtomicOp<uint32_t>
 	{
 	public:
 		AtomicOp() {};
-		inline AtomicOp(const AtomicOp& rhs);
 		inline AtomicOp(const uint32_t& v);
+		inline AtomicOp(const AtomicOp& rhs);
 
 		inline AtomicOp& operator = (const AtomicOp& rhs);
 		inline AtomicOp& operator = (const uint32_t& rhs);
 
 		inline uint32_t operator ++();
-		inline uint32_t operator ++(int);
+		inline uint32_t operator ++(int) { return ++*this - 1; }
 		inline uint32_t operator --();
-		inline uint32_t operator --(int);
-		inline volatile uint32_t* operator &();
+		inline uint32_t operator --(int) { return --*this + 1; }
+		inline volatile uint32_t* operator &()  { return &m_value; }
 
-		inline uint32_t value() const;
-		inline volatile uint32_t& value();
+		inline uint32_t value() const  { return m_value; }
+		inline volatile uint32_t& value()  { return m_value; }
 		inline uint32_t exchange(const uint32_t& v);
 
 	private:
 		uint32_t	m_value;
 	};
-#endif
 
+	#endif // OMEGA_HAS_ATOMIC_OP
 }
 
 #endif // OMEGA_THREADING_H_INCLUDED_

@@ -27,7 +27,7 @@ namespace OOCore
 		ACE_String_Base<Omega::char_t>	m_str;
 
 	private:
-		Omega::AtomicOp<Omega::uint32_t> m_refcount;
+		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
 	};
 }
 

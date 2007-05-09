@@ -48,5 +48,15 @@
 #define OMEGA_PLATFORM_STRING	"Win32"
 #endif
 
+#define OMEGA_HAS_ATOMIC_OP
+#define OMEGA_ATOMIC_OP_EXCHANGE(p,q) \
+	InterlockedExchange((LPLONG)(p),(LONG)(q))
+
+#define OMEGA_ATOMIC_OP_INCREMENT(p) \
+	InterlockedIncrement((LPLONG)p)
+
+#define OMEGA_ATOMIC_OP_DECREMENT(p) \
+	InterlockedDecrement((LPLONG)p)
+
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_
 

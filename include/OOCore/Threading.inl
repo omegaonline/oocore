@@ -2,14 +2,14 @@
 #define OMEGA_THREADING_INL_INCLUDED_
 
 template <class T>
-Omega::AtomicOp<T>::AtomicOp(const AtomicOp& rhs) :
-	m_value(rhs.value())
+Omega::AtomicOp<T>::AtomicOp(const T& v) :
+	m_value(v)
 {
 }
 
 template <class T>
-Omega::AtomicOp<T>::AtomicOp(const T& v) :
-	m_value(v)
+Omega::AtomicOp<T>::AtomicOp(const AtomicOp& rhs) :
+	m_value(rhs.value())
 {
 }
 
@@ -86,95 +86,83 @@ T Omega::AtomicOp<T>::exchange(const T& v)
 	return ret;
 }
 
-#if 0
+#ifdef OMEGA_HAS_ATOMIC_OP
 
-template <class T>
-Omega::AtomicOpImpl<T,4>::AtomicOpImpl(const AtomicOpImpl& rhs) :
-	m_value(rhs.m_value)
-{ }
-
-template <class T>
-Omega::AtomicOpImpl<T,4>::AtomicOpImpl(const T& v) :
+Omega::AtomicOp<Omega::int32_t>::AtomicOp(const int32_t& v) :
 	m_value(v)
-{ }
-
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator ++()
 {
-	// Prefix
-#if defined(OMEGA_WIN32)
-	return (T)(static_cast<LONG_PTR>(InterlockedIncrement(reinterpret_cast<LONG_PTR*>(&this->m_value))));
-#else
-#error  Use funky asm function!
-#endif
 }
 
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator ++(int)
+Omega::AtomicOp<Omega::int32_t>::AtomicOp(const AtomicOp& rhs) :
+	m_value(rhs.m_value)
 {
-	return ++*this - 1;
 }
 
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator --()
+Omega::AtomicOp<Omega::int32_t>& Omega::AtomicOp<Omega::int32_t>::operator = (const AtomicOp& rhs)
 {
-	// Prefix
-#if defined(OMEGA_WIN32)
-	return (T)(static_cast<LONG_PTR>(InterlockedDecrement(reinterpret_cast<LONG_PTR*>(&this->m_value))));
-#else
-#error  Use funky asm function!
-#endif
+	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs.m_value);
+	return *this;
 }
 
-template <class T>
-T Omega::AtomicOpImpl<T,4>::operator --(int)
+Omega::AtomicOp<Omega::int32_t>& Omega::AtomicOp<Omega::int32_t>::operator = (const int32_t& rhs)
 {
-	return --*this + 1;
+	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs);
+	return *this;
 }
 
-template <class T>
-volatile T* Omega::AtomicOpImpl<T,4>::operator &()
+Omega::int32_t Omega::AtomicOp<Omega::int32_t>::operator ++()
 {
-	return &m_value;
+	return OMEGA_ATOMIC_OP_INCREMENT(&m_value);
 }
 
-template <class T>
-T Omega::AtomicOpImpl<T,4>::exchange(const T& v)
+Omega::int32_t Omega::AtomicOp<Omega::int32_t>::operator --()
 {
-#if defined(OMEGA_WIN32)
-	return (T)(static_cast<LONG_PTR>(InterlockedExchange(reinterpret_cast<LONG_PTR*>(&this->m_value),static_cast<const LONG>((LONG_PTR)(v)))));
-#else
-#error  Use funky asm function!
-#endif
+	return OMEGA_ATOMIC_OP_DECREMENT(&m_value);
 }
 
-template <class T>
-Omega::AtomicOpImpl<T,4>& Omega::AtomicOpImpl<T,4>::operator = (const AtomicOpImpl& rhs)
+Omega::int32_t Omega::AtomicOp<Omega::int32_t>::exchange(const int32_t& v)
 {
-	exchange(rhs.m_value);
-	return (*this);
+	return OMEGA_ATOMIC_OP_EXCHANGE(&m_value,v);
 }
 
-template <class T>
-Omega::AtomicOpImpl<T,4>& Omega::AtomicOpImpl<T,4>::operator = (const T& rhs)
+Omega::AtomicOp<Omega::uint32_t>::AtomicOp(const uint32_t& v) :
+	m_value(v)
 {
-	exchange(rhs);
-	return (*this);
 }
 
-template <class T>
-T Omega::AtomicOpImpl<T,4>::value() const
+Omega::AtomicOp<Omega::uint32_t>::AtomicOp(const AtomicOp& rhs) :
+	m_value(rhs.m_value)
 {
-	return m_value;
 }
 
-template <class T>
-volatile T& Omega::AtomicOpImpl<T,4>::value()
+Omega::AtomicOp<Omega::uint32_t>& Omega::AtomicOp<Omega::uint32_t>::operator = (const AtomicOp& rhs)
 {
-	return m_value;
+	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs.m_value);
+	return *this;
 }
 
-#endif
+Omega::AtomicOp<Omega::uint32_t>& Omega::AtomicOp<Omega::uint32_t>::operator = (const uint32_t& rhs)
+{
+	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs);
+	return *this;
+}
+
+Omega::uint32_t Omega::AtomicOp<Omega::uint32_t>::operator ++()
+{
+	return OMEGA_ATOMIC_OP_INCREMENT(&m_value);
+}
+
+Omega::uint32_t Omega::AtomicOp<Omega::uint32_t>::operator --()
+{
+	return OMEGA_ATOMIC_OP_DECREMENT(&m_value);
+}
+
+Omega::uint32_t Omega::AtomicOp<Omega::uint32_t>::exchange(const uint32_t& v)
+{
+	return OMEGA_ATOMIC_OP_EXCHANGE(&m_value,v);
+}
+
+#endif // OMEGA_HAS_ATOMIC_OP
 
 OOCORE_EXPORTED_FUNCTION(void*,cs__ctor,0,());
 Omega::CriticalSection::CriticalSection()

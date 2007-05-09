@@ -35,6 +35,10 @@ bool Root::Manager::install()
 	if (!SpawnedProcess::InstallSandbox())
 		return false;
 
+	// Add the default All Users key
+	ACE_Configuration_Section_Key res;
+	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),"All Users",1,res);
+
 	return true;
 }
 
@@ -929,7 +933,9 @@ void Root::Manager::registry_delete_key(RequestBase* request, ACE_OutputCDR& res
 			err = ACE_OS::last_error();
 		else
 		{
-			if (m_registry.remove_section(key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey).c_str(),1) != 0)
+			if (strSubKey == "All Users")
+				err = EACCES;
+			else if (m_registry.remove_section(key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey).c_str(),1) != 0)
 				err = ACE_OS::last_error();
 		}
 	}

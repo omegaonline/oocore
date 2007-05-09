@@ -631,7 +631,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 				{
 					pE->Release();
 
-					wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
+					wxMessageBox(_("You do not have permission to delete this key."),_("Access Denied"),wxOK|wxICON_ERROR,this);
 				}
 			}
 		}

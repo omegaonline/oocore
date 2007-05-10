@@ -39,7 +39,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,
 {
 	OutputDebugString(string_t::Format("Exception: %s at %s\n",desc,source));
 
-	ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateObject();
+	ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
 	pExcept->m_ptrCause.Attach(pCause); 
 	pExcept->m_strDesc = desc;
 	pExcept->m_strSource = source;
@@ -48,7 +48,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const guid_t&,iid,(in),const char_t*,source))
 {
-	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateObject();
+	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 	pExcept->m_strDesc = "Object does not support the requested interface";
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;

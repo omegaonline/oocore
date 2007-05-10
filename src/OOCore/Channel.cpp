@@ -33,7 +33,7 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort dest_channel_i
 Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter)
 {
 	// Create a fresh OutputCDR
-	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateObjectPtr(pOuter);
+	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr(pOuter);
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(Omega::Serialize::IID_IFormattedStream));
 }
 
@@ -93,7 +93,7 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 			}
 			
 			// Wrap the response
-			ObjectPtr<ObjectImpl<InputCDR> > ptrResponse = ObjectImpl<InputCDR>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<InputCDR> > ptrResponse = ObjectImpl<InputCDR>::CreateInstancePtr();
 			ptrResponse->init(*response->input());
 			pResponse = ptrResponse.Detach();
 		}

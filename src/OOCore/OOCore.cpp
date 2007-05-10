@@ -57,7 +57,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 		if (ret != 0)
 		{
 			--OOCore::s_initcount;
-			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
+			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
 			pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
 			pE->m_strSource = OMEGA_SOURCE_INFO;
 			return pE;

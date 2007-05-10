@@ -30,7 +30,7 @@ IException* OOCore::UserSession::init()
 	string_t strSource;
 	if (!USER_SESSION::instance()->init_i(strSource))
 	{
-		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateObject();
+		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
 		pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
 		pE->m_strSource = strSource;
         return pE;
@@ -659,14 +659,14 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
-		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateObjectPtr();
+		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
 		ptrRequest->init(*request->input());
 
 		// Create a response if required
 		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
 		if (trans_id != 0)
 		{
-			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
 		}
 
@@ -707,7 +707,7 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 			if (trans_id != 0)
 			{
 				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateObjectPtr();
+				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
 				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 
@@ -769,7 +769,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_
 		if (!ptrOM)
 		{
 			// Create a new channel
-			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ObjectImpl<OOCore::Channel>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ObjectImpl<OOCore::Channel>::CreateInstancePtr();
 			ptrChannel->init(this,src_channel_id);
 
 			// Create a new OM

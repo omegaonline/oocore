@@ -52,7 +52,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IServiceTable*,Activation_GetServiceT
 
 		if (!OOCore::g_ServiceTable.m_ptrSystemServiceTable)
 		{
-			ObjectPtr<ObjectImpl<OOCore::ServiceTable> > ptrServiceTable = ObjectImpl<OOCore::ServiceTable>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<OOCore::ServiceTable> > ptrServiceTable = ObjectImpl<OOCore::ServiceTable>::CreateInstancePtr();
 
 			OOCore::g_ServiceTable.m_ptrSystemServiceTable.Attach(ptrServiceTable.Detach());
 		}

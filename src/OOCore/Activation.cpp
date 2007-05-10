@@ -71,7 +71,7 @@ namespace OOCore
 
 void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
 {
-	ObjectImpl<OOCore::LibraryNotFoundException>* pRE = ObjectImpl<OOCore::LibraryNotFoundException>::CreateObject();
+	ObjectImpl<OOCore::LibraryNotFoundException>* pRE = ObjectImpl<OOCore::LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
 	pRE->m_strDesc = string_t::Format("Dynamic library '%s' not found",static_cast<const char_t*>(strName));
 	pRE->m_dll_name = strName;
@@ -182,7 +182,7 @@ void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
 
 void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 {
-	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateObject();
+	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
 	pNew->m_strDesc = "The identified object could not be found.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
@@ -191,7 +191,7 @@ void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
-	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateObject();
+	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
 	pNew->m_strDesc = "Object does not supported aggregation.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
@@ -304,9 +304,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_CreateObject,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 {
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
-	ptrOF->CreateObject(pOuter,iid,pObject);
+	ptrOF->CreateInstance(pOuter,iid,pObject);
 }

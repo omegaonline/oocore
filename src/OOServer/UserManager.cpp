@@ -64,17 +64,17 @@ namespace User
 
 	// Activation::IObjectFactory members
 	public:
-		void CreateObject(IObject* pOuter, const guid_t& iid, IObject*& pObject);
+		void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject);
 	};
 
 }
 
-void User::InterProcessServiceFactory::CreateObject(IObject* pOuter, const guid_t& iid, IObject*& pObject)
+void User::InterProcessServiceFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
 		Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
 
-	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateObjectPtr();
+	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 	ptrIPS->Init(m_ptrOM,m_pManager);
 
 	pObject = ptrIPS->QueryInterface(iid);
@@ -92,7 +92,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 		if (!m_ptrReg)
 		{
 
-			m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateObjectPtr();
+			m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateInstancePtr();
 			m_ptrReg->Init(m_pManager,!m_ptrOM);
 		}
 	}
@@ -109,7 +109,7 @@ Activation::IServiceTable* User::InterProcessService::GetServiceTable()
 	
 		if (!m_ptrST)
 		{
-			m_ptrST = ObjectImpl<User::ServiceTable>::CreateObjectPtr();
+			m_ptrST = ObjectImpl<User::ServiceTable>::CreateInstancePtr();
 			m_ptrST->Init(m_ptrOM);
 		}
 	}
@@ -279,7 +279,7 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 		if (!bSandbox)
 			ptrOM = get_object_manager(m_root_handle,1);
 
-		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateObjectPtr();
+		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();
 		ptrOF->Init(ptrOM,this);
 
 		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
@@ -506,14 +506,14 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
-		ptrRequest = ObjectImpl<InputCDR>::CreateObjectPtr();
+		ptrRequest = ObjectImpl<InputCDR>::CreateInstancePtr();
 		ptrRequest->init(request);
 
 		// Create a response if required
 		ObjectPtr<ObjectImpl<OutputCDR> > ptrResponse;
 		if (trans_id != 0)
 		{
-			ptrResponse = ObjectImpl<OutputCDR>::CreateObjectPtr();
+			ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
 		}
 
@@ -536,7 +536,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			if (trans_id != 0)
 			{
 				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OutputCDR>::CreateObjectPtr();
+				ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 
@@ -691,7 +691,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE
 		if (!ptrOM)
 		{
 			// Create a new channel
-			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
 			ptrChannel->init(this,handle,channel_id);
 
 			// Create a new OM

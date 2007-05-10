@@ -147,13 +147,13 @@ namespace OTL
 		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateObject(oid,flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(oid,flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
 		}
 
 		ObjectPtrBase(const Omega::string_t& object_name, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateObject(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
 		}
 
 		virtual ~ObjectPtrBase()
@@ -221,14 +221,14 @@ namespace OTL
 			Attach(0);
 		}
 
-		void CreateObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
+		void CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateObject(oid,flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(oid,flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
 		}
 
-		void CreateObject(const Omega::string_t& object_name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
+		void CreateInstance(const Omega::string_t& object_name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateObject(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
 		}
 
 		OBJECT* operator ->()
@@ -479,7 +479,7 @@ namespace OTL
 	class ObjectImpl : public ROOT
 	{
 	public:
-		static ObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter = 0)
+		static ObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
 				Omega::Activation::INoAggregationException::Throw(Omega::guid_t::NIL);
@@ -489,10 +489,10 @@ namespace OTL
 			return pObject;
 		}
 
-		static ObjectPtr<ObjectImpl<ROOT> > CreateObjectPtr(Omega::IObject* pOuter = 0)
+		static ObjectPtr<ObjectImpl<ROOT> > CreateInstancePtr(Omega::IObject* pOuter = 0)
 		{
 			ObjectPtr<ObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateObject(pOuter));
+			ptr.Attach(CreateInstance(pOuter));
 			return ptr;
 		}
 
@@ -528,17 +528,17 @@ namespace OTL
 	class NoLockObjectImpl : public ROOT
 	{
 	public:
-		static NoLockObjectImpl<ROOT>* CreateObject()
+		static NoLockObjectImpl<ROOT>* CreateInstance()
 		{
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
 			return pObject;
 		}
 
-		static ObjectPtr<NoLockObjectImpl<ROOT> > CreateObjectPtr(Omega::IObject* pOuter = 0)
+		static ObjectPtr<NoLockObjectImpl<ROOT> > CreateInstancePtr(Omega::IObject* pOuter = 0)
 		{
 			ObjectPtr<NoLockObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateObject(pOuter));
+			ptr.Attach(CreateInstance(pOuter));
 			return ptr;
 		}
 
@@ -620,7 +620,7 @@ namespace OTL
 		Omega::AtomicOp<Omega::uint32_t> m_refcount;
 
 	public:
-		static AggregatedObjectImpl<ROOT>* CreateObject(Omega::IObject* pOuter)
+		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
 		{
 			if (!pOuter)
 				Omega::IException::Throw("AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
@@ -630,10 +630,10 @@ namespace OTL
 			return pObject;
 		}
 
-		static ObjectPtr<AggregatedObjectImpl<ROOT> > CreateObjectPtr(Omega::IObject* pOuter = 0)
+		static ObjectPtr<AggregatedObjectImpl<ROOT> > CreateInstancePtr(Omega::IObject* pOuter = 0)
 		{
 			ObjectPtr<AggregatedObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateObject(pOuter));
+			ptr.Attach(CreateInstance(pOuter));
 			return ptr;
 		}
 
@@ -716,17 +716,17 @@ namespace OTL
 		typedef Singleton<SingletonObjectImpl<ROOT> > singleton;
 
 	public:
-		static SingletonObjectImpl<ROOT>* CreateObject(Omega::IObject* = 0)
+		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* = 0)
 		{
 			SingletonObjectImpl<ROOT>* pObject = singleton::instance();
 			pObject->AddRef();
 			return pObject;
 		}
 
-		static ObjectPtr<SingletonObjectImpl<ROOT> > CreateObjectPtr(Omega::IObject* pOuter = 0)
+		static ObjectPtr<SingletonObjectImpl<ROOT> > CreateInstancePtr(Omega::IObject* pOuter = 0)
 		{
 			ObjectPtr<SingletonObjectImpl<ROOT> > ptr;
-			ptr.Attach(CreateObject(pOuter));
+			ptr.Attach(CreateInstance(pOuter));
 			return ptr;
 		}
 
@@ -784,7 +784,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
 			{
-				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid);
+				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
 					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 				return pObject;
@@ -806,7 +806,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
 			{
-				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateObjectPtr()->QueryInterface(iid);
+				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
 					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 				return pObject;
@@ -821,9 +821,9 @@ namespace OTL
 	class ObjectFactoryCallCreate
 	{
 	public:
-		static Omega::IObject* CreateObject(Omega::IObject* pOuter, const Omega::guid_t& iid)
+		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
 		{
-			Omega::IObject* pObject = T::CreateObjectPtr(pOuter)->QueryInterface(iid);
+			Omega::IObject* pObject = T::CreateInstancePtr(pOuter)->QueryInterface(iid);
 			if (!pObject)
 				Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 			return pObject;
@@ -834,7 +834,7 @@ namespace OTL
 	class ObjectFactoryCallCreate<bool,pOID>
 	{
 	public:
-		static Omega::IObject* CreateObject(Omega::IObject*, const Omega::guid_t&)
+		static Omega::IObject* CreateInstance(Omega::IObject*, const Omega::guid_t&)
 		{
 			Omega::Activation::INoAggregationException::Throw(*pOID);
 			return 0;
@@ -853,12 +853,12 @@ namespace OTL
 
 	// IObjectFactory members
 	public:
-		void CreateObject(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject)
+		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject)
 		{
 			if (pOuter)
-				pObject = T1::CreateObject(pOuter,iid);
+				pObject = T1::CreateInstance(pOuter,iid);
 			else
-				pObject = T2::CreateObject(0,iid);
+				pObject = T2::CreateInstance(0,iid);
 		}
 	};
 
@@ -946,7 +946,7 @@ namespace OTL
 		template <class InputIterator>
 		static EnumIFace* Create(InputIterator first, InputIterator last)
 		{
-			ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateInstancePtr();
 			ptrThis->m_listItems.assign(first,last);
 			ptrThis->m_pos = ptrThis->m_listItems.begin();
 			return ptrThis.AddRefReturn();
@@ -1004,7 +1004,7 @@ namespace OTL
 		{
 			Omega::Guard guard(m_cs);
 
-			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateObjectPtr();
+			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateInstancePtr();
 			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());
 			ptrNew->m_pos = ptrNew->m_listItems.begin();
 			return ptrNew.AddRefReturn();

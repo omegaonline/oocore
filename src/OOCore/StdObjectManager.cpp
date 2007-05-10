@@ -229,7 +229,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 		// Create the required object
 		ObjectPtr<IObject> ptrObject;
-		ptrObject.Attach(Activation::CreateObject(oid,Activation::Any,0,iid));
+		ptrObject.Attach(Activation::CreateInstance(oid,Activation::Any,0,iid));
 
 		// Get the handler for the interface
 		const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
@@ -360,7 +360,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 		MetaInfo::wire_read(this,pStream,wire_iid);
 		uint32_t uId = pStream->ReadUInt32();
 
-		ObjectPtr<ObjectImpl<OOCore::StdProxy> > ptrProxy = ObjectImpl<OOCore::StdProxy>::CreateObjectPtr();
+		ObjectPtr<ObjectImpl<OOCore::StdProxy> > ptrProxy = ObjectImpl<OOCore::StdProxy>::CreateInstancePtr();
 		ptrProxy->init(this,wire_iid,uId);
 
 		if (iid == guid_t::NIL)
@@ -439,7 +439,7 @@ void OOCore::StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_
 	if (pObject)
 		pObject->Release();
 
-	ObjectPtr<ObjectImpl<OOCore::UnboundProxy> > ptrProxy = ObjectImpl<OOCore::UnboundProxy>::CreateObjectPtr();
+	ObjectPtr<ObjectImpl<OOCore::UnboundProxy> > ptrProxy = ObjectImpl<OOCore::UnboundProxy>::CreateInstancePtr();
 	ptrProxy->init(this,oid,iid);
 
 	pObject = ptrProxy->QueryInterface(iid);

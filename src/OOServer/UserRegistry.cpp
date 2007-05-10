@@ -28,7 +28,7 @@ namespace Registry
 
 		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
 		{
-			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateObject();
+			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
@@ -55,7 +55,7 @@ namespace Registry
 
 		static void Throw(string_t strValue, IRegistryKey::ValueType_t actual_type, const string_t& strSource, IException* pE = 0)
 		{
-			ObjectImpl<WrongValueTypeException>* pRE = ObjectImpl<WrongValueTypeException>::CreateObject();
+			ObjectImpl<WrongValueTypeException>* pRE = ObjectImpl<WrongValueTypeException>::CreateInstance();
 			pRE->m_type = actual_type;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
@@ -90,7 +90,7 @@ namespace Registry
 
 		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
 		{
-			ObjectImpl<NotFoundException>* pRE = ObjectImpl<NotFoundException>::CreateObject();
+			ObjectImpl<NotFoundException>* pRE = ObjectImpl<NotFoundException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
@@ -117,7 +117,7 @@ namespace Registry
 
 		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
 		{
-			ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateObject();
+			ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
@@ -144,7 +144,7 @@ namespace Registry
 
 		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
 		{
-			ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateObject();
+			ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
@@ -378,7 +378,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	}
 
 	// If we get here, then we have a new key!
-	ObjectPtr<ObjectImpl<UserKey> > ptrSubKey = ObjectImpl<UserKey>::CreateObjectPtr();
+	ObjectPtr<ObjectImpl<UserKey> > ptrSubKey = ObjectImpl<UserKey>::CreateInstancePtr();
 	ptrSubKey->Init(m_pRegistry,sub_key,m_pLock);
 	return ptrSubKey.AddRefReturn();
 }
@@ -786,7 +786,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		AlreadyExistsException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::OpenSubKey");
 
 	// By the time we get here then we have successfully created the key...
-	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateObjectPtr();
+	ObjectPtr<ObjectImpl<RootKey> > ptrNew = ObjectImpl<RootKey>::CreateInstancePtr();
 
 	ptrNew->Init(m_pManager,FullKeyPath(strSubKey));
 
@@ -937,10 +937,10 @@ void BaseKey::Init(Manager* pManager, bool bSandbox)
 	if (open_registry(bSandbox) != 0)
 		OOSERVER_THROW_LASTERROR();
 
-	m_ptrRoot = ObjectImpl<RootKey>::CreateObjectPtr();
+	m_ptrRoot = ObjectImpl<RootKey>::CreateInstancePtr();
 	m_ptrRoot->Init(pManager,"");
 
-	m_ptrUser = ObjectImpl<UserKey>::CreateObjectPtr();
+	m_ptrUser = ObjectImpl<UserKey>::CreateInstancePtr();
 	m_ptrUser->Init(&m_registry,m_registry.root_section(),&m_lock);
 }
 

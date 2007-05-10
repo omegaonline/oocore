@@ -39,12 +39,12 @@ Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter
 
 Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
 {
-	// We need to make the timeout cumulative - i.e. catch the first request, and use a kind
+	// TODO We need to make the timeout cumulative - i.e. catch the first request, and use a kind
 	// of 'time remaining' value to force all calls to occur within the timeout of the
-	// outermost requests timeout...
+	// outermost request's timeout...
 	void* TODO;
 
-	ACE_Time_Value deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
+	ACE_Time_Value deadline = ACE_OS::gettimeofday() + ACE_Time_Value(15);
 	
 	// QI pStream for our private interface
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput;

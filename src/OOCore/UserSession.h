@@ -54,7 +54,7 @@ namespace OOCore
 			ACE_InputCDR*	m_input;
 		};
 
-		ACE_Recursive_Thread_Mutex                                                 m_lock;
+		ACE_RW_Thread_Mutex                                                        m_lock;
 		int                                                                        m_pro_thrd_grp_id;
 		ACE_HANDLE                                                                 m_user_handle;
 		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long>                              m_next_trans_id;

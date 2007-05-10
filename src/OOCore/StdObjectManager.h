@@ -19,7 +19,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Recursive_Thread_Mutex					m_lock;
+		ACE_RW_Thread_Mutex							m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
 		Omega::uint32_t								m_uNextStubId;
 

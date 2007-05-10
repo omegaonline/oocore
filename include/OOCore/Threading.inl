@@ -190,4 +190,37 @@ void Omega::CriticalSection::Unlock()
 	cs_unlock(m_handle);
 }
 
+
+OOCORE_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,());
+Omega::ReaderWriterLock::ReaderWriterLock()
+{
+	m_handle = static_cast<handle_t>(rw_lock__ctor());
+	if (!m_handle)
+		OMEGA_THROW("Out of memory!");
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,h));
+Omega::ReaderWriterLock::~ReaderWriterLock()
+{
+	rw_lock__dctor(m_handle);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(rw_lock_lockread,1,((in),void*,h));
+void Omega::ReaderWriterLock::LockRead()
+{
+	rw_lock_lockread(m_handle);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(rw_lock_lockwrite,1,((in),void*,h));
+void Omega::ReaderWriterLock::LockWrite()
+{
+	rw_lock_lockwrite(m_handle);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(rw_lock_unlock,1,((in),void*,h));
+void Omega::ReaderWriterLock::Unlock()
+{
+	rw_lock_unlock(m_handle);
+}
+
 #endif // OMEGA_THREADING_INL_INCLUDED_

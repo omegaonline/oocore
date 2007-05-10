@@ -228,7 +228,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		// Look up the stub
 		try
 		{
-			OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 			std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
 			if (i==m_mapStubIds.end())
@@ -247,7 +247,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	// Assume we succeed...
 	pParamsOut->WriteBoolean(true);
 
-	void* TODO; // decrease the wait time...
+	void* TODO; // TODO decrease the wait time...
 
 	// Ask the stub to make the call
 	ptrStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
@@ -255,7 +255,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 void OOCore::StdObjectManager::Disconnect()
 {
-	OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	// clear the stub map
 	m_mapStubIds.clear();
@@ -299,7 +299,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	uint32_t uId = 0;
 	try
 	{
-		OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		uId = m_uNextStubId++;
 		while (uId<1 || m_mapStubIds.find(uId)!=m_mapStubIds.end())
@@ -353,7 +353,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
      	guid_t oid;
 		MetaInfo::wire_read(this,pStream,oid);
 		
-		// Create an instance of Oid
+		// TODO Create an instance of Oid
 		// QI for IMarshal,
 		// Call UnmarshalInterface(iid)
 		::DebugBreak();
@@ -367,7 +367,7 @@ void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 {
 	try
 	{
-		OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::iterator i=m_mapStubIds.find(uId);
 		if (i==m_mapStubIds.end())

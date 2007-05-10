@@ -53,7 +53,7 @@ bool OOCore::UserSession::init_i(string_t& strSource)
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
-	ACE_Time_Value wait(15);
+	ACE_Time_Value wait(5);
 	if (connector.connect(stream,addr,&wait) != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
@@ -189,14 +189,6 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
 	}
-
-	// Wait for the process to launch, if it takes more than 0.5 second its probably okay
-	ACE_exitcode exitcode = 0;
-	if (process.wait(ACE_Time_Value(0,500),&exitcode) != 0)
-	{
-		strSource = OMEGA_SOURCE_INFO;
-		return false;
-	}
 #endif
 
 	return true;
@@ -229,10 +221,20 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 		if (!launch_server(strSource))
 			return false;
 
-		// Re-open file
-		file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
+        // Re-open file
+		ACE_Time_Value wait(5);
+		ACE_Countdown_Time timeout(&wait);
+		while (!timeout.stopped())
+		{
+			file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
+			if (file != INVALID_HANDLE_VALUE)
+				break;
+
+			timeout.update();
+		}
 		if (file == INVALID_HANDLE_VALUE)
 		{
+			// If we fail here, then the server has crashed...
 			strSource = OMEGA_SOURCE_INFO;
 			return false;
 		}
@@ -282,7 +284,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 	}
 
 	// Wait for the response to come back...
-	ACE_Time_Value wait(15);
+	ACE_Time_Value wait(5);
 	ACE_UINT32 err = 0;
 	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)))
 	{
@@ -669,7 +671,7 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		}
 
 		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-		void* TODO; // Setup the CallContext... Use a self-destructing class!
+		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
 
 		// Convert deadline time to #msecs
 		ACE_Time_Value wait = *request_deadline - ACE_OS::gettimeofday();
@@ -755,10 +757,16 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-		OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+		// Lookup existing..
+		{
+			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
-		if (i == m_mapOMs.end())
+            std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
+			if (i != m_mapOMs.end())
+				ptrOM = i->second;
+		}
+
+		if (!ptrOM)
 		{
 			// Create a new channel
 			ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = ObjectImpl<OOCore::Channel>::CreateObjectPtr();
@@ -771,11 +779,9 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_
 			ptrOM->Connect(ptrChannel);
 
 			// And add to the map
+			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 			m_mapOMs.insert(std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
-		}
-		else
-		{
-			ptrOM = i->second;
 		}
 	}
 	catch (std::exception& e)

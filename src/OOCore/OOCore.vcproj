@@ -184,6 +184,9 @@
 				RelativePath=".\StdObjectManager.cpp">
 			</File>
 			<File
+				RelativePath=".\Threading.cpp">
+			</File>
+			<File
 				RelativePath=".\Types.cpp">
 			</File>
 			<File

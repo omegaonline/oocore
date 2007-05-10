@@ -518,7 +518,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 		}
 
 		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-		void* TODO; // Setup the CallContext... Use a self-destructing class!
+		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
 
 		try
 		{

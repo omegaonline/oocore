@@ -35,10 +35,66 @@ namespace Omega
 		}
 
 	private:
-		// Copying is a really bad idea!
 		Guard& operator = (const Guard&) { }
 
 		CriticalSection& m_cs;
+	};
+
+	class ReaderWriterLock
+	{
+	public:
+		inline ReaderWriterLock();
+		inline ~ReaderWriterLock();
+
+		inline void LockRead();
+		inline void LockWrite();
+		inline void Unlock();
+
+	private:
+		typedef struct tag_handle_t
+		{
+			int unused;
+		}* handle_t;
+
+		handle_t m_handle;
+	};
+
+	class ReadGuard
+	{
+	public:
+		ReadGuard(ReaderWriterLock& lock) : m_lock(lock)
+		{
+			m_lock.LockRead();
+		}
+
+		~ReadGuard()
+		{
+			m_lock.Unlock();
+		}
+
+	private:
+		ReadGuard& operator = (const ReadGuard&) { }
+
+		ReaderWriterLock& m_lock;
+	};
+
+	class WriteGuard
+	{
+	public:
+		WriteGuard(ReaderWriterLock& lock) : m_lock(lock)
+		{
+			m_lock.LockWrite();
+		}
+
+		~WriteGuard()
+		{
+			m_lock.Unlock();
+		}
+
+	private:
+		WriteGuard& operator = (const WriteGuard&) { }
+
+		ReaderWriterLock& m_lock;
 	};
 
 	template <class T> class AtomicOp

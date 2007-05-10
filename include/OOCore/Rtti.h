@@ -973,7 +973,7 @@ namespace Omega
 
 		struct SafeProxyStubMap
 		{
-			CriticalSection m_cs;
+			ReaderWriterLock      m_lock;
 			std::map<void*,void*> m_map;
 		};
 
@@ -998,7 +998,7 @@ namespace Omega
 				// Remove ourselves from the stub_map
 				SafeProxyStubMap& stub_map = get_stub_map();
 
-				Guard guard(stub_map.m_cs);
+				WriteGuard guard(stub_map.m_lock);
 				stub_map.m_map.erase(m_pObj);
 			}
 
@@ -1017,7 +1017,7 @@ namespace Omega
 
 		private:
 			AtomicOp<uint32_t>                   m_refcount;
-			CriticalSection                      m_cs;
+			ReaderWriterLock                     m_lock;
 			std::map<const guid_t,IObject_Safe*> m_iid_map;
 			auto_iface_ptr<IObject>              m_pObj;
 		};
@@ -1041,7 +1041,7 @@ namespace Omega
 				// Remove ourselves from the proxy_map
 				SafeProxyStubMap& proxy_map = get_proxy_map();
 
-				Guard guard(proxy_map.m_cs);
+				WriteGuard guard(proxy_map.m_lock);
 				proxy_map.m_map.erase(m_pS);
 			}
 
@@ -1065,7 +1065,7 @@ namespace Omega
 
 		private:
 			AtomicOp<uint32_t>                m_refcount;
-			CriticalSection                   m_cs;
+			ReaderWriterLock                  m_lock;
 			std::map<const guid_t,IObject*>   m_iid_map;
 			auto_iface_safe_ptr<IObject_Safe> m_pS;
 		};

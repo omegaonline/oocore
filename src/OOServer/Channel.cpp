@@ -41,7 +41,7 @@ Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
 
 Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
 {
-	// We need to make the timeout cumulative - i.e. catch the first request, and use a kind
+	// TODO We need to make the timeout cumulative - i.e. catch the first request, and use a kind
 	// of 'time remaining' value to force all calls to occur within the timeout of the
 	// outermost requests timeout...
 	void* TODO;

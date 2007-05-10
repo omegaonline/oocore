@@ -200,27 +200,32 @@ Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::QueryInt
 	{
 		try
 		{
-			bool bNew = false;
 			IObject_Safe* pObjS = 0;
-
+			IObject_Safe* pQI = 0;
+			
 			// See if we have it already, or can QI for it...
 			{
 				ReadGuard guard(m_lock);
 
 				std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(iid);
-				if (i == m_iid_map.end())
+				if (i != m_iid_map.end())
 				{
-					// QI all entries
-					for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+					if (i->second)
+						return i->second->QueryInterface_Safe(retval,iid);
+					else
+						return 0;
+				}
+				
+				// QI all entries
+				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+				{
+					IException_Safe* pSE = i->second->QueryInterface_Safe(&pQI,iid);
+					if (pSE)
+						return pSE;
+					if (pQI)
 					{
-						IException_Safe* pSE = i->second->QueryInterface_Safe(&pObjS,iid);
-						if (pSE)
-							return pSE;
-						if (pObjS)
-						{
-							bNew = true;
-							break;
-						}
+						pObjS = i->second;
+						break;
 					}
 				}
 			}
@@ -233,18 +238,24 @@ Omega::MetaInfo::IException_Safe* OMEGA_CALL Omega::MetaInfo::SafeStub::QueryInt
 					INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 				pObjS = pRtti->pfnCreateSafeStub(this,m_pObj);
-				bNew = true;
 			}
 
-			if (bNew)
-			{
-				WriteGuard guard(m_lock);
-                
-				auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
-				m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(iid,pObjS));
+			WriteGuard guard(m_lock);
+            
+			auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
+			std::pair<std::map<const guid_t,IObject_Safe*>::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(iid,pObjS));
+			if (p.second)
 				ptrObjS.detach();
-			}
+			else
+				pObjS = p.first->second;
 
+			if (pQI)
+			{
+				*retval = pQI;
+				(*retval)->AddRef_Safe();
+				return 0;
+			}
+			
 			if (pObjS)
 				return pObjS->QueryInterface_Safe(retval,iid);
 		}
@@ -272,25 +283,30 @@ Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
 
 	try
 	{
-		bool bNew = false;
 		IObject* pObj = 0;
+		IObject* pQI = 0;
 
 		// See if we have it already or can QI for it...
 		{
 			ReadGuard guard(m_lock);
 
 			std::map<const guid_t,IObject*>::iterator i=m_iid_map.find(iid);
-			if (i == m_iid_map.end())
+			if (i != m_iid_map.end())
 			{
-				// QI all entries
-				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+				if (i->second)
+					return i->second->QueryInterface(iid);
+				else
+					return 0;
+			}
+			
+			// QI all entries
+			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+			{
+				pQI = i->second->QueryInterface(iid);
+				if (pQI)
 				{
-					pObj = i->second->QueryInterface(iid);
-					if (pObj)
-					{
-						bNew = true;
-						break;
-					}
+					pObj = i->second;
+					break;
 				}
 			}
 		}
@@ -303,16 +319,21 @@ Omega::IObject* Omega::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
 				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 			pObj = pRtti->pfnCreateSafeProxy(this,m_pS);
-			bNew = true;
 		}
 
-		if (bNew)
-		{
-			WriteGuard guard(m_lock);
+		WriteGuard guard(m_lock);
 
-			auto_iface_ptr<IObject> ptrObj(pObj);
-			m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,pObj));
+		auto_iface_ptr<IObject> ptrObj(pObj);
+		std::pair<std::map<const guid_t,IObject*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,pObj));
+		if (p.second)
 			ptrObj.detach();
+		else
+			pObj = p.first->second;
+		
+		if (pQI)
+		{
+			pQI->AddRef();
+			return pQI;
 		}
 
 		if (pObj)
@@ -350,7 +371,7 @@ const Omega::MetaInfo::qi_rtti* Omega::MetaInfo::get_qi_rtti_info(const guid_t& 
 
 			WriteGuard guard(rw_lock);
 
-			mapRtti.insert(std::map<const guid_t,const qi_rtti*>::value_type(iid,pRet)).first;
+			mapRtti.insert(std::map<const guid_t,const qi_rtti*>::value_type(iid,pRet));
 		}
 	}
 	catch (std::exception& e)
@@ -405,7 +426,9 @@ Omega::MetaInfo::IObject_Safe* Omega::MetaInfo::lookup_stub(Omega::IObject* pObj
 
 			WriteGuard guard(stub_map.m_lock);
 
-			stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,static_cast<IObject_Safe*>(ptrSafeStub)));
+			std::pair<std::map<void*,void*>::iterator,bool> p = stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,static_cast<IObject_Safe*>(ptrSafeStub)));
+			if (!p.second)
+				ptrSafeStub = static_cast<IObject_Safe*>(p.first->second);
 		}
 	}
 	catch (std::exception& e)
@@ -448,7 +471,9 @@ Omega::IObject* Omega::MetaInfo::lookup_proxy(Omega::MetaInfo::IObject_Safe* pOb
 
 			WriteGuard guard(proxy_map.m_lock);
 
-			proxy_map.m_map.insert(std::map<void*,void*>::value_type(pObjS,static_cast<IObject*>(ptrSafeProxy)));
+			std::pair<std::map<void*,void*>::iterator,bool> p = proxy_map.m_map.insert(std::map<void*,void*>::value_type(pObjS,static_cast<IObject*>(ptrSafeProxy)));
+			if (!p.second)
+				ptrSafeProxy = static_cast<IObject*>(p.first->second);
 		}
 	}
 	catch (std::exception& e)

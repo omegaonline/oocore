@@ -73,7 +73,7 @@ namespace OOCore
 			{
 				ObjectPtr<IObject> ptrObj;
 				ptrObj.Attach(pRtti->pfnCreateWireProxy(this,pManager));
-				m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrObj)).first;
+				m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrObj));
 				ptrObj.Detach();
 			}
 			catch (std::exception& e)
@@ -91,7 +91,7 @@ namespace OOCore
 	END_INTERFACE_MAP()
 
 	private:
-		ACE_Recursive_Thread_Mutex                   m_lock;
+		ACE_RW_Thread_Mutex                          m_lock;
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
 		ObjectPtr<MetaInfo::IWireManager>            m_ptrManager;
 		uint32_t                                     m_uId;
@@ -114,45 +114,65 @@ namespace OOCore
 
 IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 {
-	OOCORE_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
-
 	try
 	{
-		std::map<const guid_t,ObjectPtr<IObject> >::iterator i=m_iid_map.find(iid);
-		if (i == m_iid_map.end())
+		ObjectPtr<IObject> ptrNew;
+		ObjectPtr<IObject> ptrQI;
+
+		// Lookup first...
 		{
-			// QI all entries
-			ObjectPtr<IObject> ptrObj;
-			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
-			{
-				ptrObj.Attach(i->second->QueryInterface(iid));
-				if (ptrObj)
-				{
-					// If we find one, add it to the map...
-					i = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,i->second)).first;
-					ptrObj.Detach();
-					break;
-				}
-			}
+			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			if (i == m_iid_map.end())
+			std::map<const guid_t,ObjectPtr<IObject> >::iterator i=m_iid_map.find(iid);
+			if (i != m_iid_map.end())
 			{
-				if (iid==Omega::MetaInfo::IID_SafeProxy)
+				if (i->second)
+					return i->second->QueryInterface(iid);
+				else
 					return 0;
-
-				// New interface required
-				const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
-				if (!pRtti || !pRtti->pfnCreateWireProxy)
-					INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
-
-				ptrObj.Attach(pRtti->pfnCreateWireProxy(this,m_ptrManager));
-				i = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrObj)).first;
-				ptrObj.Detach();
+			}
+			else
+			{
+				// QI all entries
+				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+				{
+					ptrQI = i->second->QueryInterface(iid);
+					if (ptrQI)
+					{
+						ptrNew = i->second;
+						break;
+					}
+				}
 			}
 		}
 
-		if (i->second)
-			return i->second->QueryInterface(iid);
+		if (!ptrNew)
+		{
+			if (iid==Omega::MetaInfo::IID_SafeProxy)
+				return 0;
+
+			// New interface required
+			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			if (!pRtti || !pRtti->pfnCreateWireProxy)
+				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+
+			ptrNew.Attach(pRtti->pfnCreateWireProxy(this,m_ptrManager));
+		}
+
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::pair<std::map<const guid_t,ObjectPtr<IObject> >::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrNew));
+		if (!p.second)
+		{
+			ptrNew = 0;
+			ptrNew.Attach(p.first->second);
+		}
+		
+		if (ptrQI)
+			return ptrQI.AddRefReturn();
+
+		if (ptrNew)
+			return ptrNew->QueryInterface(iid);
 	}
 	catch (std::exception& e)
 	{

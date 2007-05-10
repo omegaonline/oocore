@@ -6,7 +6,7 @@
 //
 //	Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary and do not use precompiled headers
+//	Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -321,7 +321,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 	bool bSandbox = (id == static_cast<uid_t>(-1));
 	if (bSandbox)
 	{
-		int err = LogonSandboxUser(&hToken,strSource);
+		int err = LogonSandboxUser(&hToken);
 		if (err != 0)
 			return LogFailure(err);
 	}
@@ -372,7 +372,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 	return true;
 }
 
-DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken, ACE_CString& strSource)
+DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 {
 	// Get the local machine registry
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
@@ -380,36 +380,29 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken, ACE_CString& strSo
 	// Get the server section
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key) != 0)
-	{
-		strSource = "Root::SpawnedProcess::LogonSandboxUser - Server\\Sandbox key missing from registry";
 		return (DWORD)-1;
-	}
-			
+				
 	// Get the user name and pwd...
 	ACE_TString strUName;
 	ACE_TString strPwd;
 	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
-	{
-		strSource = "Root::SpawnedProcess::LogonSandboxUser - Sandbox username missing from registry";
 		return (DWORD)-1;
-	}
-
+	
 	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
 	
 	if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
 		DWORD dwErr = GetLastError();
-		strSource = "Root::SpawnedProcess::LogonSandboxUser - LogonUser";
 		return dwErr;
 	}
 
 	return ERROR_SUCCESS;
 }
 
-bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid, ACE_CString& strSource)
+bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 {
 	HANDLE hToken;
-	int err = LogonSandboxUser(&hToken,strSource);
+	int err = LogonSandboxUser(&hToken);
 	if (err != 0)
 		return LogFailure(err);
 
@@ -418,7 +411,6 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid, ACE_CString& strSourc
 	if (dwLen == 0)
 	{
 		err = GetLastError();
-		strSource = "Root::SpawnedProcess::GetSandboxUid - GetTokenInformation(1)";
 		CloseHandle(hToken);
 		return LogFailure(err);
 	}
@@ -426,7 +418,6 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid, ACE_CString& strSourc
 	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
 	if (!pBuffer)
 	{
-		strSource = "Root::SpawnedProcess::GetSandboxUid - malloc TOKEN_USER*";
 		CloseHandle(hToken);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
@@ -434,7 +425,6 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid, ACE_CString& strSourc
 	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
 	{
 		err = GetLastError();
-		strSource = "Root::SpawnedProcess::GetSandboxUid - GetTokenInformation(1)";
 		ACE_OS::free(pBuffer);
 		CloseHandle(hToken);
 		return LogFailure(err);
@@ -444,7 +434,6 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid, ACE_CString& strSourc
 	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
 	{
 		err = GetLastError();
-		strSource = "Root::SpawnedProcess::GetSandboxUid - ConvertSidToStringSid";
 		ACE_OS::free(pBuffer);
 		CloseHandle(hToken);
 		return LogFailure(err);

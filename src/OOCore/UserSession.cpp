@@ -781,7 +781,9 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_
 			// And add to the map
 			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			m_mapOMs.insert(std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
+			std::pair<std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,ObjectPtr<Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
+			if (!p.second)
+				ptrOM = p.first->second;
 		}
 	}
 	catch (std::exception& e)

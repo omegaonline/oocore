@@ -40,7 +40,7 @@ namespace User
 		Manager(const Manager&) {}
 		Manager& operator = (const Manager&) { return *this; }
 
-		ACE_Recursive_Thread_Mutex  m_lock;
+		ACE_RW_Thread_Mutex			m_lock;
 		ACE_HANDLE                  m_root_handle;
 		ACE_CDR::UShort             m_uNextChannelId;
 

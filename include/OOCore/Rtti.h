@@ -989,11 +989,16 @@ namespace Omega
 
 			virtual ~SafeStub()
 			{
-				for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+				try
 				{
-					if (i->second)
-						i->second->Release_Safe();
+					for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+					{
+						if (i->second)
+							i->second->Release_Safe();
+					}
 				}
+				catch (...)
+				{}
 
 				// Remove ourselves from the stub_map
 				SafeProxyStubMap& stub_map = get_stub_map();
@@ -1032,11 +1037,16 @@ namespace Omega
 
 			virtual ~SafeProxy()
 			{
-				for (std::map<const guid_t,IObject*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+				try
 				{
-					if (i->second)
-						i->second->Release();
+					for (std::map<const guid_t,IObject*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+					{
+						if (i->second)
+							i->second->Release();
+					}
 				}
+				catch (...)
+				{}
 
 				// Remove ourselves from the proxy_map
 				SafeProxyStubMap& proxy_map = get_proxy_map();

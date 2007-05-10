@@ -165,11 +165,9 @@ Omega::uint32_t Omega::AtomicOp<Omega::uint32_t>::exchange(const uint32_t& v)
 #endif // OMEGA_HAS_ATOMIC_OP
 
 OOCORE_EXPORTED_FUNCTION(void*,cs__ctor,0,());
-Omega::CriticalSection::CriticalSection()
+Omega::CriticalSection::CriticalSection() :
+	m_handle(static_cast<handle_t>(cs__ctor()))
 {
-	m_handle = static_cast<handle_t>(cs__ctor());
-	if (!m_handle)
-		OMEGA_THROW("Out of memory!");
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));
@@ -192,11 +190,9 @@ void Omega::CriticalSection::Unlock()
 
 
 OOCORE_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,());
-Omega::ReaderWriterLock::ReaderWriterLock()
-{
-	m_handle = static_cast<handle_t>(rw_lock__ctor());
-	if (!m_handle)
-		OMEGA_THROW("Out of memory!");
+Omega::ReaderWriterLock::ReaderWriterLock() :
+	m_handle(static_cast<handle_t>(rw_lock__ctor()))
+{	
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,h));

@@ -6,7 +6,7 @@
 //
 //	Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary and do not use precompiled headers
+//	Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 

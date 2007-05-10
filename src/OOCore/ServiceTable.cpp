@@ -65,30 +65,51 @@ void OOCore::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable
 {
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-	if (m_mapServices.find(oid) != m_mapServices.end())
-		OOCORE_THROW_ERRNO(EALREADY);
+	try
+	{
+		if (m_mapServices.find(oid) != m_mapServices.end())
+			OOCORE_THROW_ERRNO(EALREADY);
 
-	m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
+		m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
 }
 
 void OOCore::ServiceTable::Revoke(const guid_t& oid)
 {
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-	std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
-	if (i == m_mapServices.end())
-		OOCORE_THROW_ERRNO(EINVAL);
+	try
+	{
+		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
+		if (i == m_mapServices.end())
+			OOCORE_THROW_ERRNO(EINVAL);
 
-	m_mapServices.erase(i);
+		m_mapServices.erase(i);
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
 }
 
 void OOCore::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-	std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
-	if (i == m_mapServices.end())
-		OOCORE_THROW_ERRNO(EINVAL);
+	try
+	{
+		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
+		if (i == m_mapServices.end())
+			OOCORE_THROW_ERRNO(EINVAL);
 
-	pObject = i->second->QueryInterface(iid);
+		pObject = i->second->QueryInterface(iid);
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
 }

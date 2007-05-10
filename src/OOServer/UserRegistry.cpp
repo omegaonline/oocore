@@ -387,41 +387,59 @@ Omega::IEnumString* UserKey::EnumSubKeys()
 {
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	std::set<string_t> setSubKeys;
-	for (int index=0;;++index)
+	try
 	{
-		ACE_TString strSubKey;
-		int err = m_pRegistry->enumerate_sections(m_key,index,strSubKey);
-		if (err == 0)
-			setSubKeys.insert(ACE_TEXT_ALWAYS_CHAR(strSubKey.c_str()));
-		else if (err == 1)
-			break;
-		else
-			OOSERVER_THROW_ERRNO(err);
+		std::set<string_t> setSubKeys;
+		for (int index=0;;++index)
+		{
+			ACE_TString strSubKey;
+			int err = m_pRegistry->enumerate_sections(m_key,index,strSubKey);
+			if (err == 0)
+				setSubKeys.insert(ACE_TEXT_ALWAYS_CHAR(strSubKey.c_str()));
+			else if (err == 1)
+				break;
+			else
+				OOSERVER_THROW_ERRNO(err);
+		}
+
+		return EnumString::Create(setSubKeys.begin(),setSubKeys.end());
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
 	}
 
-	return EnumString::Create(setSubKeys.begin(),setSubKeys.end());
+	return 0;
 }
 
 Omega::IEnumString* UserKey::EnumValues()
 {
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	std::set<string_t> setValues;
-	for (int index=0;;++index)
+	try
 	{
-		ACE_TString strValue;
-		ACE_Configuration_Heap::VALUETYPE type;
-		int err = m_pRegistry->enumerate_values(m_key,index,strValue,type);
-		if (err == 0)
-			setValues.insert(ACE_TEXT_ALWAYS_CHAR(strValue.c_str()));
-		else if (err == 1)
-			break;
-		else
-			OOSERVER_THROW_ERRNO(err);
+		std::set<string_t> setValues;
+		for (int index=0;;++index)
+		{
+			ACE_TString strValue;
+			ACE_Configuration_Heap::VALUETYPE type;
+			int err = m_pRegistry->enumerate_values(m_key,index,strValue,type);
+			if (err == 0)
+				setValues.insert(ACE_TEXT_ALWAYS_CHAR(strValue.c_str()));
+			else if (err == 1)
+				break;
+			else
+				OOSERVER_THROW_ERRNO(err);
+		}
+
+		return EnumString::Create(setValues.begin(),setValues.end());
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
 	}
 
-	return EnumString::Create(setValues.begin(),setValues.end());
+	return 0;
 }
 
 void UserKey::DeleteKey(const string_t& strSubKey)
@@ -777,10 +795,19 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 Omega::IEnumString* RootKey::EnumSubKeys()
 {
-	std::set<Omega::string_t> setStrings;
-	EnumSubKeys(setStrings);
+	try
+	{
+		std::set<Omega::string_t> setStrings;
+		EnumSubKeys(setStrings);
 
-	return EnumString::Create(setStrings.begin(),setStrings.end());
+		return EnumString::Create(setStrings.begin(),setStrings.end());
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
+
+	return 0;
 }
 
 void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
@@ -815,8 +842,6 @@ void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 
 Omega::IEnumString* RootKey::EnumValues()
 {
-	std::set<Omega::string_t> setStrings;
-
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::EnumValues);
 	request.write_string(m_strKey);
@@ -835,16 +860,26 @@ Omega::IEnumString* RootKey::EnumValues()
 	if (!response.read_ulonglong(count))
 		OOSERVER_THROW_LASTERROR();
 
-	for (ACE_CDR::ULongLong i=0;i<count;++i)
+	try
 	{
-		ACE_CString strName;
-		if (!response.read_string(strName))
-			OOSERVER_THROW_LASTERROR();
+		std::set<Omega::string_t> setStrings;
+		for (ACE_CDR::ULongLong i=0;i<count;++i)
+		{
+			ACE_CString strName;
+			if (!response.read_string(strName))
+				OOSERVER_THROW_LASTERROR();
 
-		setStrings.insert(strName.c_str());
+			setStrings.insert(strName.c_str());
+		}
+		
+		return EnumString::Create(setStrings.begin(),setStrings.end());
 	}
-	
-	return EnumString::Create(setStrings.begin(),setStrings.end());
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
+
+	return 0;
 }
 
 void RootKey::DeleteKey(const string_t& strSubKey)
@@ -1039,12 +1074,21 @@ IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 Omega::IEnumString* BaseKey::EnumSubKeys()
 {
-	std::set<string_t>	setStrings;
-	m_ptrRoot->EnumSubKeys(setStrings);
+	try
+	{
+		std::set<string_t>	setStrings;
+		m_ptrRoot->EnumSubKeys(setStrings);
 
-	setStrings.insert("Current User");
+		setStrings.insert("Current User");
 
-	return EnumString::Create(setStrings.begin(),setStrings.end());
+		return EnumString::Create(setStrings.begin(),setStrings.end());
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
+	}
+
+	return 0;
 }
 
 Omega::IEnumString* BaseKey::EnumValues()

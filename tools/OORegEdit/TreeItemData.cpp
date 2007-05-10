@@ -408,7 +408,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 	TreeItemData* pItem = (TreeItemData*)pTree->GetItemData(tree_id);
 
 	bool bKey = false;
-	Omega::string_t strFoundPos = Find3(pItem->m_ptrKey,strFind,bKeys,bValues,bData,bMatchAll,bKey,bIgnoreCase);
+	Omega::string_t strFoundPos = Find3(pItem->m_ptrKey,strFind,bKeys,bValues,bData,bMatchAll,bIgnoreCase,bKey);
 	if (!strFoundPos.IsEmpty())
 	{
 		// Expand and select the item

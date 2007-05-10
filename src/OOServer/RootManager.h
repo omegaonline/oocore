@@ -6,7 +6,7 @@
 //
 //	Therefore it needs to be SAFE AS HOUSES!
 //
-//	Do not include anything unecessary and do not use precompiled headers
+//	Do not include anything unecessary
 //
 /////////////////////////////////////////////////////////////
 
@@ -43,8 +43,8 @@ namespace Root
 		virtual ~Manager();
 		Manager& operator = (const Manager&) { return *this; }
 
-		ACE_Thread_Mutex				m_lock;
-		ACE_HANDLE						m_config_file;
+		ACE_RW_Thread_Mutex  m_lock;
+		ACE_HANDLE           m_config_file;
 
 		struct UserProcess
 		{
@@ -70,7 +70,7 @@ namespace Root
 		void end_event_loop_i();
 		void term();
 		bool connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
-		bool spawn_sandbox(ACE_CString& strSource);
+		bool spawn_sandbox();
 		bool spawn_client(uid_t uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
 
 		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
@@ -82,7 +82,7 @@ namespace Root
 
 		ACE_Configuration_Heap         m_registry;
 		ACE_CString                    m_strRegistry;
-		ACE_Thread_Mutex               m_registry_lock;
+		ACE_RW_Thread_Mutex            m_registry_lock;
 
 		bool registry_open_section(RequestBase* request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
 		bool registry_open_value(RequestBase* request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck = false);

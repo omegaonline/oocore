@@ -253,7 +253,7 @@ int User::Manager::init(u_short uPort)
 
 void User::Manager::term()
 {
-	OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
@@ -303,7 +303,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		ACE_OS::shutdown(get_handle(),SD_BOTH);
 
 		{
-			OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 			// Shutdown all client handles
 			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();)
@@ -325,7 +325,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		ACE_Countdown_Time timeout(&wait);
 		while (!timeout.stopped())
 		{
-			OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 			if (m_mapReverseChannelIds.empty())
 				break;
@@ -355,7 +355,7 @@ int User::Manager::validate_connection(const ACE_Asynch_Accept::Result& result, 
 
 	try
 	{
-		OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		ChannelPair channel = {result.accept_handle(), 0};
 		ACE_CDR::UShort uChannelId = m_uNextChannelId++;
@@ -411,7 +411,7 @@ void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
 {
 	ACE_OS::closesocket(handle);
 
-	OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	try
 	{
@@ -581,36 +581,47 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
 {
 	ChannelPair dest_channel;
-	ACE_CDR::UShort reply_channel_id;
+	ACE_CDR::UShort reply_channel_id = 0;
 	try
 	{
-		OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
-
-		// Find the destination channel
-		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
-		if (i == m_mapChannelIds.end())
-			return;
-		dest_channel = i->second;
-
-		// Find the local channel id that matches src_channel_id
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(request->handle());
-		if (j==m_mapReverseChannelIds.end())
-			return;
-
-		std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
-		if (k == j->second.end())
+		// Lookup first...
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j;
 		{
+			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			// Find the destination channel
+			std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
+			if (i == m_mapChannelIds.end())
+				return;
+			dest_channel = i->second;
+
+			// Find the local channel id that matches src_channel_id
+			j=m_mapReverseChannelIds.find(request->handle());
+			if (j==m_mapReverseChannelIds.end())
+				return;
+
+			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
+			if (k != j->second.end())
+				reply_channel_id = k->second;
+		}
+
+		if (reply_channel_id == 0)
+		{
+			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 			ChannelPair channel = {request->handle(), src_channel_id};
 			reply_channel_id = m_uNextChannelId++;
 			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}
-			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(reply_channel_id,channel));
-
-			k = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id)).first;
+			
+			std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id));
+			if (!p.second)
+				reply_channel_id = p.first->second;
+			else
+				m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(reply_channel_id,channel));
 		}
-		reply_channel_id = k->second;
 	}
 	catch (...)
 	{
@@ -668,10 +679,16 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
-		OOSERVER_GUARD(ACE_Recursive_Thread_Mutex,guard,m_lock);
+		// Lookup first...
+		{
+			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(handle);
-		if (i == m_mapOMs.end())
+			std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(handle);
+			if (i != m_mapOMs.end())
+				ptrOM = i->second;
+		}
+
+		if (!ptrOM)
 		{
 			// Create a new channel
 			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateObjectPtr();
@@ -684,11 +701,11 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE
 			ptrOM->Connect(ptrChannel);
 
 			// And add to the map
-			m_mapOMs.insert(std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::value_type(handle,ptrOM));
-		}
-		else
-		{
-			ptrOM = i->second;
+			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			std::pair<std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator,bool> p = m_mapOMs.insert(std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::value_type(handle,ptrOM));
+			if (!p.second)
+				ptrOM = p.first->second;
 		}
 	}
 	catch (std::exception& e)

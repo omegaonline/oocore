@@ -28,18 +28,27 @@ void User::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::
 	}
 	else
 	{
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		try
+		{
+			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		if (m_mapServices.find(oid) != m_mapServices.end())
-			OOSERVER_THROW_ERRNO(EALREADY);
+			if (m_mapServices.find(oid) != m_mapServices.end())
+				OOSERVER_THROW_ERRNO(EALREADY);
 
-		m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
+			m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e.what());
+		}
 	}
 }
 
 void User::ServiceTable::Revoke(const guid_t& oid)
 {
 	bool bFound = false;
+
+	try
 	{
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -49,6 +58,10 @@ void User::ServiceTable::Revoke(const guid_t& oid)
 			m_mapServices.erase(i);
 			bFound = true;
 		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
 	}
 
 	if (!bFound && m_ptrSIP)
@@ -61,6 +74,8 @@ void User::ServiceTable::Revoke(const guid_t& oid)
 void User::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	bool bFound = false;
+
+	try
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -70,6 +85,10 @@ void User::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject
 			pObject = i->second->QueryInterface(iid);
 			bFound = true;
 		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e.what());
 	}
 
 	if (!bFound && m_ptrSIP)

@@ -620,7 +620,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 	USER_INFO_2	info = 
 	{
 		L"_OMEGA_SANDBOX_USER_",   // usri2_name;
-		L"_OMEGA_SANDBOX_USER_",   // usri2_password;
+		L"4th£(*%LGe895y£$N&¬2",   // usri2_password;
 		0,                         // usri2_password_age;
 		USER_PRIV_USER,            // usri2_priv;
 		NULL,                      // usri2_home_dir;

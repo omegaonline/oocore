@@ -323,7 +323,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 		// Wait for everyone to close
 		ACE_Time_Value wait(15);
 		ACE_Countdown_Time timeout(&wait);
-		while (!timeout.stopped())
+		while (wait != ACE_Time_Value::zero)
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 

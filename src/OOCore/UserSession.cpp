@@ -224,7 +224,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
         // Re-open file
 		ACE_Time_Value wait(5);
 		ACE_Countdown_Time timeout(&wait);
-		while (!timeout.stopped())
+		while (wait != ACE_Time_Value::zero)
 		{
 			file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 			if (file != INVALID_HANDLE_VALUE)

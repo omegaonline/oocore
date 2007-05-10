@@ -270,7 +270,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					// Wait for startup
 					ACE_Time_Value wait(15);
 					ACE_Countdown_Time timeout(&wait);
-					while (!timeout.stopped())
+					while (wait != ACE_Time_Value::zero)
 					{
 						// Change this to use monikers one day!
 						IObject* pObject = 0;

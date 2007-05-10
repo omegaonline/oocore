@@ -291,7 +291,7 @@ void Root::Manager::end_event_loop_i()
 		// Wait for everyone to close
 		ACE_Time_Value wait(15);
 		ACE_Countdown_Time timeout(&wait);
-		while (!timeout.stopped())
+		while (wait != ACE_Time_Value::zero)
 		{
 			ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -345,17 +345,19 @@ ACE_Configuration_Heap& Root::Manager::get_registry()
 bool Root::Manager::spawn_sandbox()
 {
 	ACE_CString strUserId;
-	if (!SpawnedProcess::GetSandboxUid(strUserId))
-		return false;
-	
-	// Spawn the sandbox
-	ACE_CString strSource;
-	u_short uPort;
-	if (!spawn_client(static_cast<uid_t>(-1),strUserId,uPort,strSource))
+	if (SpawnedProcess::GetSandboxUid(strUserId))
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::spawn_sandbox() failed")));
-		return false;
+		// Spawn the sandbox
+		ACE_CString strSource;
+		u_short uPort;
+		if (!spawn_client(static_cast<uid_t>(-1),strUserId,uPort,strSource))
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::spawn_sandbox() failed")));
+			return false;
+		}
 	}
+	else
+		ACE_ERROR((LM_ERROR,ACE_TEXT("Sandbox failed to start. See previous error for cause.\n")));
 
 	return true;
 }

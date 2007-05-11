@@ -62,9 +62,9 @@ namespace OOCore
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
 		// Accessors for Channel
-		bool send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
-		bool send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, ACE_Time_Value* deadline);
-		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, ACE_Time_Value* deadline);
+		bool send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value& deadline);
+		bool send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, const ACE_Time_Value& deadline);
+		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline);
 
 		// Proper private members
 		bool init_i(Omega::string_t& strSource);
@@ -73,9 +73,9 @@ namespace OOCore
 		void term_i();
 		bool get_port(u_short& uPort, Omega::string_t& strSource);
 		bool launch_server(Omega::string_t& strSource);
-		bool pump_requests(ACE_Time_Value* deadline = 0);
-		void process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-		bool wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline = 0);
+		bool pump_requests(const ACE_Time_Value* deadline = 0);
+		void process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
+		bool wait_for_response(ACE_CDR::ULong trans_id, Request*& response, const ACE_Time_Value* deadline = 0);
 		bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 

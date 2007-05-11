@@ -62,19 +62,19 @@ protected:
 	{}
 
 	bool enqueue_request(REQUEST* req);
-	bool send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline);
-	bool send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, REQUEST*& response, ACE_Time_Value* deadline);
-	bool send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, ACE_Time_Value* deadline);
-	bool pump_requests(ACE_Time_Value* deadline = 0);
+	bool send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, const ACE_Time_Value& deadline);
+	bool send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, const ACE_Message_Block* request, REQUEST*& response, const ACE_Time_Value& deadline);
+	bool send_response(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline);
+	bool pump_requests(const ACE_Time_Value* deadline = 0);
 	void stop();
 
-	virtual void process_request(REQUEST* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline) = 0;
+	virtual void process_request(REQUEST* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline) = 0;
 
 private:
 	ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_next_trans_id;
 	ACE_Message_Queue_Ex<REQUEST,ACE_MT_SYNCH>    m_msg_queue;
 	
-	bool wait_for_response(ACE_CDR::ULong trans_id, REQUEST*& response, ACE_Time_Value* deadline = 0);
+	bool wait_for_response(ACE_CDR::ULong trans_id, REQUEST*& response, const ACE_Time_Value* deadline = 0);
 	bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
 };
 

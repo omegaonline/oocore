@@ -601,7 +601,7 @@ ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)(ROOT_MANAGER::instance()->pump_requests() ? 0 : -1);
 }
 
-void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	// Forward to the correct channel...
 	ChannelPair dest_channel;
@@ -670,7 +670,7 @@ void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_c
 	}
 }
 
-void Root::Manager::process_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void Root::Manager::process_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	// Get the corresponding UserId
 	/*ACE_CString strRealUserId(strUserId);
@@ -748,7 +748,7 @@ bool Root::Manager::access_check(ACE_HANDLE handle, const char* pszObject, ACE_U
 	}
 }
 
-void Root::Manager::process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void Root::Manager::process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	ACE_CDR::UShort reply_channel_id = 0;
 	try

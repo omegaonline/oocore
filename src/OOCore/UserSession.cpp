@@ -372,13 +372,13 @@ bool OOCore::UserSession::enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle
 	return (ret > 0);
 }
 
-bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, ACE_Time_Value* deadline)
+bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& response, const ACE_Time_Value* deadline)
 {
 	for (;;)
 	{
 		// Get the next message
 		Request* req;
-		int ret = m_msg_queue.dequeue_prio(req,deadline);
+		int ret = m_msg_queue.dequeue_prio(req,const_cast<ACE_Time_Value*>(deadline));
 		if (ret == -1)
 			return false;
 
@@ -400,32 +400,27 @@ bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& r
 			ACE_CDR::ULong request_trans_id;
 			ACE_CDR::Boolean bIsRequest = false;
 			ACE_CDR::UShort dest_channel_id;
+			ACE_CDR::ULong req_dline_secs;
+			ACE_CDR::ULong req_dline_usecs;
 
 			input >> msg_len;
 			input >> request_trans_id;
 			input >> dest_channel_id;
 			input.read_boolean(bIsRequest);
 
-			ACE_CDR::ULong req_dline_secs = 0;
-			ACE_CDR::ULong req_dline_usecs = 0;
+			input >> req_dline_secs;
+			input >> req_dline_usecs;
+			ACE_Time_Value request_deadline(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
+			
 			ACE_CDR::UShort src_channel_id = 0;
-
 			if (bIsRequest)
-			{
-				// Read the request data
-				input >> req_dline_secs;
-				input >> req_dline_usecs;
 				input >> src_channel_id;
-			}
-
-			if (input.good_bit())
+			
+			if (input.good_bit() && request_deadline > ACE_OS::gettimeofday())
 			{
 				// See if we want to process it...
 				if (bIsRequest)
 				{
-					// Check the timeout value...
-					ACE_Time_Value request_deadline(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
-
 					// Rest of data is aligned on next boundary
 					input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -433,36 +428,39 @@ bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& r
 					req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
 
 					// Process the message...
-					process_request(req,src_channel_id,request_trans_id,&request_deadline);
+					process_request(req,src_channel_id,request_trans_id,request_deadline);
 
 					// process_request() is expected to delete req;
 					req = 0;
 				}
-				else if (request_trans_id == trans_id)
+				else 
 				{
-                    // Its the request we have been waiting for...
-					
-					// Rest of data is aligned on next boundary
-					input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-					// Skip the actual input to where we are at
-					req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
-
-					response = req;
-					return true;
-				}
-				else
-				{
-					// Put the response back in the queue, its not for us...
-					ret = m_msg_queue.enqueue_head(req,deadline);
-					if (ret < 0)
+					if (request_trans_id == trans_id)
 					{
-						delete req;
-						return false;
-					}
+						// Its the request we have been waiting for...
+						
+						// Rest of data is aligned on next boundary
+						input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-					// Don't delete the request
-					req = 0;
+						// Skip the actual input to where we are at
+						req->input()->skip_bytes(static_cast<size_t>(input.rd_ptr() - rd_ptr_start));
+
+						response = req;
+						return true;
+					}
+					else
+					{
+						// Put the response back in the queue, its not for us...
+						ret = m_msg_queue.enqueue_head(req,const_cast<ACE_Time_Value*>(deadline));
+						if (ret < 0)
+						{
+							delete req;
+							return false;
+						}
+
+						// Don't delete the request
+						req = 0;
+					}
 				}
 			}
 		}
@@ -472,7 +470,7 @@ bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& r
 	}
 }
 
-bool OOCore::UserSession::pump_requests(ACE_Time_Value* deadline)
+bool OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 {
 	Request* response = 0;
 	bool bRet = wait_for_response(0,response,deadline);
@@ -481,7 +479,7 @@ bool OOCore::UserSession::pump_requests(ACE_Time_Value* deadline)
 	return bRet;
 }
 
-bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, ACE_Time_Value* deadline)
+bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, Request*& response, const ACE_Time_Value& deadline)
 {
 	// Generate next transaction id
 	long trans = 0;
@@ -494,11 +492,11 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(dest_channel_id,trans_id,header,mb,*deadline))
+	if (!build_header(dest_channel_id,trans_id,header,mb,deadline))
 		return false;
 
 	bool bRet = false;
-	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
+	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
 	{
 		// Send to the handle
@@ -507,7 +505,7 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 		if (res != -1 && sent == header.total_length())
 		{
 			// Wait for response...
-			bRet = wait_for_response(trans_id,response,deadline);
+			bRet = wait_for_response(trans_id,response,&deadline);
 		}
 	}
 	else
@@ -518,14 +516,14 @@ bool OOCore::UserSession::send_synch(ACE_CDR::UShort dest_channel_id, const ACE_
 	return bRet;
 }
 
-bool OOCore::UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+bool OOCore::UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(dest_channel_id,0,header,mb,*deadline))
+	if (!build_header(dest_channel_id,0,header,mb,deadline))
 		return false;
 
-	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
+	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
 	{
 		ACE_OS::last_error(ETIMEDOUT);
@@ -588,7 +586,7 @@ bool OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	return true;
 }
 
-bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, ACE_Time_Value* deadline)
+bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -613,6 +611,9 @@ bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	header.write_ushort(dest_channel_id);
 	header.write_boolean(false);	// Response
 
+	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
+	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
+
 	if (!header.good_bit())
 		return false;
 
@@ -630,7 +631,7 @@ bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
 		return false;
 
-	ACE_Time_Value wait = *deadline - ACE_OS::gettimeofday();
+	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
 	{
 		ACE_OS::last_error(ETIMEDOUT);
@@ -646,7 +647,7 @@ bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	return true;
 }
 
-void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	// Init the error stream
 	ACE_OutputCDR error;
@@ -674,7 +675,7 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
 
 		// Convert deadline time to #msecs
-		ACE_Time_Value wait = *request_deadline - ACE_OS::gettimeofday();
+		ACE_Time_Value wait = request_deadline - ACE_OS::gettimeofday();
 		if (wait <= ACE_Time_Value::zero)
 		{
 			if (trans_id != 0)

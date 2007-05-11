@@ -434,7 +434,7 @@ ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void*)
 	return (ACE_THR_FUNC_RETURN)(USER_MANAGER::instance()->pump_requests() ? 0 : -1);
 }
 
-void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	if (dest_channel_id == 0)
 	{
@@ -452,7 +452,7 @@ void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_chann
 	delete request;
 }
 
-void User::Manager::process_root_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::ULong /*trans_id*/, ACE_Time_Value* /*request_deadline*/)
+void User::Manager::process_root_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::ULong /*trans_id*/, const ACE_Time_Value& /*request_deadline*/)
 {
 	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
     request >> op_code;
@@ -472,7 +472,7 @@ void User::Manager::process_root_request(ACE_HANDLE /*handle*/, ACE_InputCDR& re
 	}
 }
 
-void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
 
@@ -486,7 +486,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 		ptrOM = get_object_manager(handle,src_channel_id);
 
 		// Convert deadline time to #msecs
-		ACE_Time_Value wait(*request_deadline - ACE_OS::gettimeofday());
+		ACE_Time_Value wait(request_deadline - ACE_OS::gettimeofday());
 		if (wait <= ACE_Time_Value::zero)
 		{
 			if (trans_id != 0)
@@ -578,7 +578,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 	}
 }
 
-void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline)
+void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
 {
 	ChannelPair dest_channel;
 	ACE_CDR::UShort reply_channel_id = 0;
@@ -643,7 +643,7 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 	}
 }
 
-void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline)
+void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -652,11 +652,11 @@ void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_
 	if (deadline)
 		request_deadline = *deadline;
 
-	if (!RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,&request_deadline))
+	if (!RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,request_deadline))
 		OOSERVER_THROW_LASTERROR();
 }
 
-ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline)
+ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline)
 {
 	if (handle == ACE_INVALID_HANDLE)
 		handle = m_root_handle;
@@ -666,7 +666,7 @@ ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_c
 		request_deadline = *deadline;
 	
 	Request* pResponse;
-	if (!RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,&request_deadline))
+	if (!RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,request_deadline))
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_InputCDR response = *pResponse->input();

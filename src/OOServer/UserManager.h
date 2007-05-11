@@ -28,8 +28,8 @@ namespace User
 		static bool enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		static void user_connection_closed(ACE_HANDLE handle);
 
-		void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline = 0);
-		ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_Time_Value* deadline = 0);
+		void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline = 0);
+		ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline = 0);
 
 	private:
 		friend class ACE_Singleton<Manager, ACE_Thread_Mutex>;
@@ -61,14 +61,14 @@ namespace User
 
 		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
 		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
-		void process_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-		void forward_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+		void process_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
+		void forward_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void*);
 
-		void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
-		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_Time_Value* request_deadline);
+		void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
+		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id);
 
 		void user_connection_closed_i(ACE_HANDLE handle);

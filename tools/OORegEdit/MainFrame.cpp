@@ -155,19 +155,23 @@ void MainFrame::CreateChildWindows(void)
 	m_pSplitter = new wxSplitterWindow(this);
     m_pSplitter->SetSashGravity(0.25);
 	m_pSplitter->SetMinimumPaneSize(150);
-	
-	// Load the imagelist
-	wxImage* pImage = wxGetApp().LoadImage(wxT("imagelist.bmp"));
-	wxImageList* pImagelist = new wxImageList(16,16);
-	pImagelist->Add(wxBitmap(*pImage),wxColor(255,0,255));
-	delete pImage;
 
 	// Create the list and tree
 	m_pList = new wxListCtrl(m_pSplitter,ID_LIST,wxPoint(0,0),wxSize(0,0),wxNO_BORDER | wxLC_SORT_ASCENDING | wxLC_REPORT | wxLC_NO_SORT_HEADER | wxLC_EDIT_LABELS);
-	m_pList->SetImageList(pImagelist,wxIMAGE_LIST_SMALL);
-
 	m_pTree = new wxTreeCtrl(m_pSplitter,ID_TREE,wxPoint(0,0),wxSize(0,0),wxNO_BORDER | wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_EDIT_LABELS); 
-	m_pTree->AssignImageList(pImagelist);
+
+	// Load the imagelist
+	wxImage* pImage = wxGetApp().LoadImage(wxT("imagelist.bmp"));
+	if (pImage)
+	{
+		wxImageList* pImagelist = new wxImageList(16,16);
+        pImagelist->Add(wxBitmap(*pImage),wxColor(255,0,255));
+
+		m_pList->SetImageList(pImagelist,wxIMAGE_LIST_SMALL);
+		m_pTree->AssignImageList(pImagelist);
+
+		delete pImage;
+	}
 
 	m_pSplitter->SplitVertically(m_pTree, m_pList, split_width);
 

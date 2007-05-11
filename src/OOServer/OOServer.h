@@ -1,9 +1,19 @@
 #include <OOCore/OOCore.h>
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4267)
+#endif
+
+/////////////////////////////////////////////////
+// Include ACE components
+
 #if defined(ACE_NLOGGING)
 #error You must not define ACE_NLOGGING, cos we use it!
 #endif
 
+// Link to the static lib version of ACE...
 #define ACE_AS_STATIC_LIBS 1
 
 #include <ace/Asynch_Acceptor.h>
@@ -14,10 +24,29 @@
 #include <ace/Proactor.h>
 #include <ace/SOCK_Connector.h>
 
+// End of ACE includes
+/////////////////////////////////////////////////
+
+//////////////////////////////////////////////
+// Include STL components
+
+#include <set>
+
+// End of STL includes
+//////////////////////////////////////////////
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
+/////////////////////////////////////////////////
+// Include OOCore/OTL components
+
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>
 
-#include <set>
+// End of OOCore/OTL includes
+/////////////////////////////////////////////////
 
 #define OOSERVER_THROW_LASTERROR() \
 	OMEGA_THROW(ACE_OS::strerror(ACE_OS::last_error()))

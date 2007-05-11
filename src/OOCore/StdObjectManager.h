@@ -19,6 +19,9 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
+		StdObjectManager(const StdObjectManager&) {};
+		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
+
 		ACE_RW_Thread_Mutex							m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
 		Omega::uint32_t								m_uNextStubId;

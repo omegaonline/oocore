@@ -27,20 +27,11 @@
 
 //////////////////////////////////////////////
 // Include STL components
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// Some stl functions have warnings
-#pragma warning(push)
-#pragma warning(disable : 4702)
-#endif
 
 #include <list>
 #include <map>
 #include <vector>
 
-#if (defined(_MSC_VER) && _MSC_VER>=1300)
-// Some stl functions have warnings
-#pragma warning(pop)
-#endif
 // End of STL includes
 //////////////////////////////////////////////
 

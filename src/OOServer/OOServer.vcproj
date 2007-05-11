@@ -27,6 +27,7 @@
 				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
 				TreatWChar_tAsBuiltInType="TRUE"
+				ForceConformanceInForLoopScope="TRUE"
 				UsePrecompiledHeader="3"
 				PrecompiledHeaderThrough="OOServer.h"
 				WarningLevel="4"
@@ -67,21 +68,27 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="Release"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
+				EnableIntrinsicFunctions="TRUE"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				StringPooling="TRUE"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				TreatWChar_tAsBuiltInType="TRUE"
+				ForceConformanceInForLoopScope="TRUE"
 				UsePrecompiledHeader="3"
 				PrecompiledHeaderThrough="OOServer.h"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="TRUE"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -90,7 +97,6 @@
 				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
-				GenerateDebugInformation="TRUE"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

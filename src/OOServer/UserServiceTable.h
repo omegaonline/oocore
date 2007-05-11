@@ -8,6 +8,8 @@ namespace User
 		public Omega::Activation::IServiceTable
 	{
 	public:
+		ServiceTable() {}
+
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM);
 
 		void Register(const Omega::guid_t& oid, Omega::Activation::IServiceTable::Flags_t flags, Omega::IObject* pObject);
@@ -19,6 +21,9 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
+		ServiceTable(const ServiceTable&) {}
+		ServiceTable& operator = (const ServiceTable&) { return *this; }
+
 		OTL::ObjectPtr<Omega::Activation::IServiceTable>         m_ptrSIP;
 		ACE_RW_Thread_Mutex                                      m_lock;
 		std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapServices;

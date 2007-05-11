@@ -10,6 +10,8 @@ namespace OOCore
 		public Activation::IServiceTable
 	{
 	public:
+		ServiceTable() {}
+
 		void Register(const guid_t& oid, Activation::IServiceTable::Flags_t flags, IObject* pObject);
 		void Revoke(const guid_t& oid);
 		void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject);
@@ -19,6 +21,9 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
+		ServiceTable(const ServiceTable&) {}
+		ServiceTable& operator = (const ServiceTable&) { return *this; }
+
 		ACE_RW_Thread_Mutex                   m_lock;
 		std::map<guid_t,ObjectPtr<IObject> >  m_mapServices;
 	};

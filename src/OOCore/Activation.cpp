@@ -189,15 +189,6 @@ void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 	throw pNew;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
-{
-	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = "Object does not supported aggregation.";
-	pNew->m_ptrCause = pE;
-	pNew->m_oid = oid;
-	throw pNew;
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
 {
 	string_t strCurName = strObjectName;
@@ -309,4 +300,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_CreateInstance,5,((in),const guid
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
 	ptrOF->CreateInstance(pOuter,iid,pObject);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
+{
+	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
+	pNew->m_strDesc = "Object does not supported aggregation.";
+	pNew->m_ptrCause = pE;
+	pNew->m_oid = oid;
+	throw pNew;
 }

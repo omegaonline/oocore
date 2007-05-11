@@ -63,6 +63,8 @@ namespace OOCore
 		public MetaInfo::IWireProxy
 	{
 	public:
+		StdProxy() {}
+
 		void init(MetaInfo::IWireManager* pManager, const guid_t& iid, uint32_t uId)
 		{
 			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
@@ -91,6 +93,9 @@ namespace OOCore
 	END_INTERFACE_MAP()
 
 	private:
+		StdProxy(const StdProxy&) {};
+		StdProxy& operator = (const StdProxy&) { return *this; };
+
 		ACE_RW_Thread_Mutex                          m_lock;
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
 		ObjectPtr<MetaInfo::IWireManager>            m_ptrManager;

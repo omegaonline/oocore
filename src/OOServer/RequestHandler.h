@@ -71,6 +71,9 @@ protected:
 	virtual void process_request(REQUEST* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline) = 0;
 
 private:
+	RequestHandler(const RequestHandler&) {}
+	RequestHandler& operator = (const RequestHandler&) { return *this; }
+
 	ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_next_trans_id;
 	ACE_Message_Queue_Ex<REQUEST,ACE_MT_SYNCH>    m_msg_queue;
 	

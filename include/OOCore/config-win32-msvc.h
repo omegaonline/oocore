@@ -21,6 +21,11 @@
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)
 
+#ifndef _DEBUG
+// Optimization sometimes re-orders things causing this error
+#pragma warning(disable : 4702)
+#endif
+
 #define OMEGA_COMPILER_STRING_II(a,b) a # b
 #define OMEGA_COMPILER_STRING_I(a,b)  OMEGA_COMPILER_STRING_II(a,b)
 #define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I("MSVC ",_MSC_VER)

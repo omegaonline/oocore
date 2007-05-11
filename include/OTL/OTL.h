@@ -751,6 +751,10 @@ namespace OTL
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
+
+	private:
+		SingletonObjectImpl(const SingletonObjectImpl&) {}
+		SingletonObjectImpl& operator = (const SingletonObjectImpl&) { return *this; }
 	};
 
 	template <class ROOT>

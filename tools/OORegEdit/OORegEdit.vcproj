@@ -23,7 +23,9 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
+				SmallerTypeCheck="FALSE"
 				RuntimeLibrary="1"
+				BufferSecurityCheck="TRUE"
 				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -62,16 +64,21 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="Release"
 			ConfigurationType="1"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
+				InlineFunctionExpansion="0"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.3\include&quot;;&quot;..\..\extern\wxWidgets-2.8.3\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
-				RuntimeLibrary="4"
-				TreatWChar_tAsBuiltInType="TRUE"
+				StringPooling="TRUE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -82,8 +89,7 @@
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\wxWidgets-2.6.3\lib\vc_dll&quot;"
-				GenerateDebugInformation="TRUE"
+				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.3\lib\vc_dll&quot;"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -137,6 +143,9 @@
 			</File>
 			<File
 				RelativePath=".\OORegEdit.cpp">
+			</File>
+			<File
+				RelativePath=".\OORegEdit_link.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool

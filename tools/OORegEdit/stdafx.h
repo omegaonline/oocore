@@ -2,7 +2,6 @@
 
 #include <map>
 
-#define WXUSINGDLL
 #define wxUSE_GUI 1
 
 // For compilers that support precompilation, includes <wx/wx.h>.

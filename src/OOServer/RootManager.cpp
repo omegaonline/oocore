@@ -830,12 +830,20 @@ void Root::Manager::process_root_request(RequestBase* request, ACE_CDR::UShort s
 		registry_get_uint_value(request,response);
 		break;
 
+	case GetBinaryValue:
+		registry_get_binary_value(request,response);
+		break;
+
 	case SetStringValue:
 		registry_set_string_value(request,response);
 		break;
 
 	case SetUInt32Value:
 		registry_set_uint_value(request,response);
+		break;
+
+	case SetBinaryValue:
+		registry_set_binary_value(request,response);
 		break;
 
 	case EnumValues:
@@ -1111,7 +1119,43 @@ void Root::Manager::registry_get_uint_value(RequestBase* request, ACE_OutputCDR&
 		response.write_ulong(val);
 }
 
-//virtual void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer) = 0;
+void Root::Manager::registry_get_binary_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_CDR::Long err = 0;
+	ACE_CDR::ULong len = 0;
+	void* data = 0;
+
+	{
+		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
+
+		ACE_Configuration_Section_Key key;
+		ACE_CString strValue;
+		if (!registry_open_value(request,key,strValue))
+			err = ACE_OS::last_error();
+		else
+		{
+			if (!request->input()->read_ulong(len))
+				err = ACE_OS::last_error();
+			else
+			{
+				size_t dlen = 0;
+                if (m_registry.get_binary_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),data,dlen) != 0)
+					err = ACE_OS::last_error();
+				else
+					dlen = std::min(len,static_cast<ACE_CDR::ULong>(dlen));
+			}
+		}
+	}
+
+	response.write_long(err);
+	if (err == 0)
+	{
+		response.write_ulong(len);
+		response.write_octet_array(static_cast<const ACE_CDR::Octet*>(data),len);
+	}
+
+	delete [] data;
+}
 
 void Root::Manager::registry_set_string_value(RequestBase* request, ACE_OutputCDR& response)
 {
@@ -1161,7 +1205,44 @@ void Root::Manager::registry_set_uint_value(RequestBase* request, ACE_OutputCDR&
 	response.write_long(err);
 }
 
-//virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
+void Root::Manager::registry_set_binary_value(RequestBase* request, ACE_OutputCDR& response)
+{
+	ACE_CDR::Long err = 0;
+
+	{
+		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
+
+		ACE_Configuration_Section_Key key;
+		ACE_CString strValue;
+		if (!registry_open_value(request,key,strValue,true))
+			err = ACE_OS::last_error();
+		else
+		{
+			ACE_CDR::ULong len;
+			if (!request->input()->read_ulong(len))
+				err = ACE_OS::last_error();
+			else 
+			{
+				// TODO - This could be made quicker by aligning the read_ptr and not copying... but not today...
+				ACE_CDR::Octet* data = 0;
+				ACE_NEW_NORETURN(data,ACE_CDR::Octet[len]);
+				if (!data)
+					err = ENOMEM;
+				else
+				{
+					if (!request->input()->read_octet_array(data,len))
+						err = ACE_OS::last_error();
+					else if (m_registry.set_binary_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),data,len) != 0)
+						err = ACE_OS::last_error();
+
+					delete [] data;
+				}
+			}
+		}
+	}
+
+	response.write_long(err);
+}
 
 void Root::Manager::registry_enum_values(RequestBase* request, ACE_OutputCDR& response)
 {

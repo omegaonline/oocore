@@ -12,8 +12,10 @@ namespace Root
 		ValueType,
 		GetStringValue,
 		GetUInt32Value,
+		GetBinaryValue,
 		SetStringValue,
 		SetUInt32Value,
+		SetBinaryValue,
 		EnumValues,
 		DeleteValue,
 	};

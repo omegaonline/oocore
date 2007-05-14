@@ -257,10 +257,33 @@ uint32_t UserKey::GetUIntValue(const string_t& strName)
 	return static_cast<uint32_t>(uValue);
 }
 
-void UserKey::GetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t& /*cbLen*/, Omega::byte_t* /*pBuffer*/)
+void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
 {
-	::DebugBreak();
-	void* TODO;
+	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
+
+	void* data = 0;
+	size_t len = 0;
+	if (m_pRegistry->get_binary_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),data,len) != 0)
+	{
+		int err = ACE_OS::last_error();
+		if (err == ENOENT)
+		{
+			if (IsValue(strName))
+				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::GetUIntValue");
+			else
+				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
+		}
+		else if (err==EINVAL || err==ENAMETOOLONG)
+			BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
+		else
+			OOSERVER_THROW_ERRNO(err);
+	}
+
+	cbLen = std::min(cbLen,static_cast<Omega::uint32_t>(len));
+	if (data)
+		memcpy(pBuffer,data,cbLen);
+
+	delete [] data;
 }
 
 void UserKey::SetStringValue(const string_t& strName, const string_t& val)
@@ -306,10 +329,25 @@ void UserKey::SetUIntValue(const string_t& strName, uint32_t val)
 	}
 }
 
-void UserKey::SetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t /*cbLen*/, const Omega::byte_t* /*val*/)
+void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
-	::DebugBreak();
-	void* TODO;
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
+
+	if (m_pRegistry->set_binary_value(m_key,ACE_TEXT_CHAR_TO_TCHAR(strName),val,cbLen) != 0)
+	{
+		int err = ACE_OS::last_error();
+		if (err == ENOENT)
+		{
+			if (IsValue(strName))
+				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::SetUIntValue");
+			else
+				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
+		}
+		else if (err==EINVAL || err==ENAMETOOLONG)
+			BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
+		else
+			OOSERVER_THROW_ERRNO(err);
+	}
 }
 
 IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
@@ -503,18 +541,15 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
 
+	if (err==EINVAL || err==ENAMETOOLONG)
+		BadNameException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::IsSubKey");
+	else if (err != 0)
+		OOSERVER_THROW_ERRNO(err);
+
 	ACE_CDR::Boolean bRes = false;
-	if (err==0 && !response.read_boolean(bRes))
-		err = ACE_OS::last_error();
-
-	if (err != ENOENT)
-	{
-		if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::IsSubKey");
-		else if (err != 0)
-			OOSERVER_THROW_ERRNO(err);
-	}
-
+	if (!response.read_boolean(bRes))
+		OOSERVER_THROW_LASTERROR();
+	
 	return bRes;
 }
 
@@ -563,10 +598,6 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_CDR::Octet value_type = 0;
-	if (err==0 && !response.read_octet(value_type))
-		err = ACE_OS::last_error();
-
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
@@ -578,6 +609,10 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetValueType");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
+
+	ACE_CDR::Octet value_type = 0;
+	if (!response.read_octet(value_type))
+		OOSERVER_THROW_LASTERROR();
 
 	switch (value_type)
 	{
@@ -611,10 +646,6 @@ string_t RootKey::GetStringValue(const string_t& strName)
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_CString strValue;
-	if (err==0 && !response.read_string(strValue))
-		err = ACE_OS::last_error();
-
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
@@ -626,6 +657,10 @@ string_t RootKey::GetStringValue(const string_t& strName)
 		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetStringValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
+
+	ACE_CString strValue;
+	if (!response.read_string(strValue))
+		OOSERVER_THROW_LASTERROR();
 
 	return strValue.c_str();
 }
@@ -645,10 +680,6 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	if (!response.read_ulong(err))
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_CDR::ULong uValue = 0;
-	if (err==0 && !response.read_ulong(uValue))
-		err = ACE_OS::last_error();
-
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
@@ -661,13 +692,43 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
+	ACE_CDR::ULong uValue = 0;
+	if (!response.read_ulong(uValue))
+		OOSERVER_THROW_LASTERROR();
+
 	return uValue;
 }
 
-void RootKey::GetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t& /*cbLen*/, Omega::byte_t* /*pBuffer*/)
+void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer)
 {
-	::DebugBreak();
-	void* TODO;
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::GetBinaryValue);
+	request.write_string(m_strKey);
+	request.write_string(strName);
+	request.write_ulong(cbLen);
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+
+	ACE_CDR::ULong err = 0;
+	if (!response.read_ulong(err))
+		OOSERVER_THROW_LASTERROR();
+
+	if (err == ENOENT)
+	{
+		if (IsValue(strName))
+			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::GetBinaryValue");
+		else
+			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetBinaryValue");
+	}
+	else if (err==EINVAL || err==ENAMETOOLONG)
+		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetBinaryValue");
+	else if (err != 0)
+		OOSERVER_THROW_ERRNO(err);
+
+	if (!response.read_ulong(cbLen) || !response.read_octet_array(pBuffer,cbLen))
+		OOSERVER_THROW_LASTERROR();
 }
 
 void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
@@ -732,10 +793,36 @@ void RootKey::SetUIntValue(const string_t& strName, uint32_t uValue)
 		OOSERVER_THROW_ERRNO(err);
 }
 
-void RootKey::SetBinaryValue(const Omega::string_t& /*strName*/, Omega::uint32_t /*cbLen*/, const Omega::byte_t* /*val*/)
+void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
-	::DebugBreak();
-	void* TODO;
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::SetBinaryValue);
+	request.write_string(m_strKey);
+	request.write_string(strName);
+	request.write_ulong(cbLen);
+	request.write_octet_array(val,cbLen);
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+
+	ACE_CDR::ULong err = 0;
+	if (!response.read_ulong(err))
+		OOSERVER_THROW_LASTERROR();
+
+	if (err == ENOENT)
+	{
+		if (IsValue(strName))
+			WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::SetBinaryValue");
+		else
+			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetBinaryValue");
+	}
+	else if (err==EACCES)
+		AccessDeniedException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetBinaryValue");
+	else if (err==EINVAL || err==ENAMETOOLONG)
+		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetBinaryValue");
+	else if (err != 0)
+		OOSERVER_THROW_ERRNO(err);
 }
 
 IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)

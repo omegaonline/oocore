@@ -93,8 +93,10 @@ namespace Root
 		void registry_value_type(RequestBase* request, ACE_OutputCDR& response);
 		void registry_get_string_value(RequestBase* request, ACE_OutputCDR& response);
 		void registry_get_uint_value(RequestBase* request, ACE_OutputCDR& response);
+		void registry_get_binary_value(RequestBase* request, ACE_OutputCDR& response);
 		void registry_set_string_value(RequestBase* request, ACE_OutputCDR& response);
 		void registry_set_uint_value(RequestBase* request, ACE_OutputCDR& response);
+		void registry_set_binary_value(RequestBase* request, ACE_OutputCDR& response);
 		void registry_enum_values(RequestBase* request, ACE_OutputCDR& response);
 		void registry_delete_value(RequestBase* request, ACE_OutputCDR& response);
 

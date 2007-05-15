@@ -78,6 +78,8 @@
 		<Unit filename="..\..\include\OOCore\OOCore_types.inl" />
 		<Unit filename="..\..\include\OOCore\OOCore_wire.h" />
 		<Unit filename="..\..\include\OOCore\Remoting.h" />
+		<Unit filename="..\..\include\OOCore\Threading.h" />
+		<Unit filename="..\..\include\OOCore\Version.h" />
 		<Unit filename="..\..\include\OOCore\config-win32-borland.h" />
 		<Unit filename="..\..\include\OOCore\config-win32-gcc.h" />
 		<Unit filename="..\..\include\OOCore\config-win32-msvc.h" />
@@ -91,6 +93,9 @@
 		<Unit filename="Channel.h" />
 		<Unit filename="Exception.cpp" />
 		<Unit filename="OOCore.cpp" />
+		<Unit filename="OOCore.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
 		<Unit filename="OOCore_link.cpp" />
 		<Unit filename="OOCore_precomp.h" />
 		<Unit filename="Registry.cpp" />
@@ -98,6 +103,7 @@
 		<Unit filename="Session.h" />
 		<Unit filename="StdObjectManager.cpp" />
 		<Unit filename="StdObjectManager.h" />
+		<Unit filename="Threading.cpp" />
 		<Unit filename="Types.cpp" />
 		<Unit filename="UserConnection.cpp" />
 		<Unit filename="UserConnection.h" />

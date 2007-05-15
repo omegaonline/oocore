@@ -35,7 +35,7 @@ namespace Omega
 		}
 
 	private:
-		Guard& operator = (const Guard&) { }
+		Guard& operator = (const Guard&) { return *this; }
 
 		CriticalSection& m_cs;
 	};
@@ -73,7 +73,7 @@ namespace Omega
 		}
 
 	private:
-		ReadGuard& operator = (const ReadGuard&) { }
+		ReadGuard& operator = (const ReadGuard&) { return *this; }
 
 		ReaderWriterLock& m_lock;
 	};
@@ -92,7 +92,7 @@ namespace Omega
 		}
 
 	private:
-		WriteGuard& operator = (const WriteGuard&) { }
+		WriteGuard& operator = (const WriteGuard&) { return *this; }
 
 		ReaderWriterLock& m_lock;
 	};
@@ -103,7 +103,7 @@ namespace Omega
 		AtomicOp() {};
 		inline AtomicOp(const T& v);
 		inline AtomicOp(const AtomicOp& rhs);
-		
+
 		inline T operator ++();
 		inline T operator ++(int);
 		inline T operator --();
@@ -130,7 +130,7 @@ namespace Omega
 		AtomicOp() {}
 		inline AtomicOp(const int32_t& v);
 		inline AtomicOp(const AtomicOp& rhs);
-		
+
 		inline AtomicOp& operator = (const AtomicOp& rhs);
 		inline AtomicOp& operator = (const int32_t& rhs);
 

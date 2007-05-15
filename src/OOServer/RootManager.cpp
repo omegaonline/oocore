@@ -134,7 +134,7 @@ ACE_CString Root::Manager::get_bootstrap_filename()
 
 	// Ignore the errors, they will reoccur when we try to opne the file
 	ACE_OS::mkdir(OMEGA_BOOTSTRAP_DIR,S_IRWXU | S_IRWXG | S_IROTH);
-	
+
 	return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE));
 
 #endif
@@ -367,7 +367,7 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, u_shor
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
 	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
-		
+
 	// Open an acceptor
 	ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Acceptor acceptor;
@@ -412,7 +412,7 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, u_shor
 					}
 					else if (!bootstrap_client(stream,uid == static_cast<uid_t>(-1),strSource))
 						ret = -1;
-										
+
 					if (ret == 0)
 					{
 						// Create a new Root::Connection
@@ -458,7 +458,7 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, u_shor
 								strSource = "Root::Manager::spawn_client - unhandled exception";
 							}
 						}
-												
+
 						if (ret != 0)
 							delete pRC;
 					}
@@ -476,7 +476,7 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, u_shor
 
 	if (ret != 0)
 		delete pSpawn;
-	
+
 	return (ret == 0);
 }
 
@@ -504,7 +504,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& 
 	ACE_CString strUserId;
 	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId,strSource))
 		return false;
-	
+
 	try
 	{
 		// See if we have a process already
@@ -536,7 +536,7 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& 
 				return true;
 			}
 		}
-		
+
 		return spawn_client(uid,strUserId,uNewPort,strSource);
 	}
 	catch (std::exception&)
@@ -640,7 +640,7 @@ void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_c
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}
-			
+
 			std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id));
 			if (!p.second)
 				reply_channel_id = p.first->second;
@@ -886,7 +886,7 @@ bool Root::Manager::registry_open_section(RequestBase* request, ACE_Configuratio
 
 	if (strKey.length()==0)
 		key = m_registry.root_section();
-	else 
+	else
 	{
 		if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),0,key) != 0)
 			return false;
@@ -993,7 +993,7 @@ void Root::Manager::registry_enum_subkeys(RequestBase* request, ACE_OutputCDR& r
 
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-		
+
 		ACE_Configuration_Section_Key key;
 		if (!registry_open_section(request,key))
 			err = ACE_OS::last_error();
@@ -1154,7 +1154,7 @@ void Root::Manager::registry_get_binary_value(RequestBase* request, ACE_OutputCD
 		response.write_octet_array(static_cast<const ACE_CDR::Octet*>(data),len);
 	}
 
-	delete [] data;
+	delete [] static_cast<char*>(data);
 }
 
 void Root::Manager::registry_set_string_value(RequestBase* request, ACE_OutputCDR& response)
@@ -1221,7 +1221,7 @@ void Root::Manager::registry_set_binary_value(RequestBase* request, ACE_OutputCD
 			ACE_CDR::ULong len;
 			if (!request->input()->read_ulong(len))
 				err = ACE_OS::last_error();
-			else 
+			else
 			{
 				// TODO - This could be made quicker by aligning the read_ptr and not copying... but not today...
 				ACE_CDR::Octet* data = 0;

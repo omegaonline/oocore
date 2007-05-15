@@ -95,7 +95,7 @@
 		<Unit filename="UserRegistry.h" />
 		<Unit filename="UserServiceTable.cpp" />
 		<Unit filename="UserServiceTable.h" />
-		<Unit filename="resource.h" />
+		<Unit filename="Version.h" />
 		<Extensions>
 			<code_completion />
 		</Extensions>

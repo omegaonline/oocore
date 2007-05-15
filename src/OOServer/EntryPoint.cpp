@@ -24,7 +24,7 @@ static int Install()
 	if (!Root::NTService::install())
 		return -1;
 #endif
-	
+
 	if (!Root::Manager::install())
 		return -1;
 
@@ -38,7 +38,7 @@ static int Uninstall()
 	if (!Root::NTService::uninstall())
 		return -1;
 #endif
-	
+
 	if (!Root::Manager::uninstall())
 		return -1;
 
@@ -59,14 +59,14 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	int skip_args = 1;
 
 #if defined(ACE_WIN32)
-	if (argc>=2 && ACE_OS::strcmp(argv[1],"--service")==0)
-		skip_args = 2;
-
 	// Check to see if we have been spawned
 	if (argc==3 && ACE_OS::strcmp(argv[1],"--spawned")==0)
 		return UserMain(static_cast<u_short>(ACE_OS::atoi(argv[2])));
+
+	if (argc>=2 && ACE_OS::strcmp(argv[1],"--service")==0)
+		skip_args = 2;
 #endif
-	
+
 	// Check command line options
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iuvh"),skip_args);
 	if (cmd_opts.long_option(ACE_TEXT("install"),ACE_TEXT('i'))!=0 ||
@@ -95,11 +95,11 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			return Help();
 
 		case ACE_TEXT(':'):
-			ACE_OS::printf("Missing argument for -%c.\n\n",cmd_opts.opt_opt());
+			ACE_OS::printf("Missing argument for %s.\n\n",cmd_opts.last_option());
 			return Help();
 
 		default:
-			ACE_OS::printf("Invalid argument '%c'.\n\n",cmd_opts.opt_opt());
+			ACE_OS::printf("Invalid argument '%s'.\n\n",cmd_opts.last_option());
 			return Help();
 		}
 	}
@@ -107,10 +107,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #if defined(ACE_WIN32)
 	if (argc<2 || ACE_OS::strcmp(argv[1],"--service")!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be run as a Win32 service.\n")),-1);
-		
+
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
-	
+
 	if (!Root::NTService::open())
 		return -1;
 

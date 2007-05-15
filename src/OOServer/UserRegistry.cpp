@@ -283,7 +283,7 @@ void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 	if (data)
 		memcpy(pBuffer,data,cbLen);
 
-	delete [] data;
+	delete [] static_cast<char*>(data);
 }
 
 void UserKey::SetStringValue(const string_t& strName, const string_t& val)
@@ -549,7 +549,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	ACE_CDR::Boolean bRes = false;
 	if (!response.read_boolean(bRes))
 		OOSERVER_THROW_LASTERROR();
-	
+
 	return bRes;
 }
 
@@ -844,7 +844,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	ACE_CDR::Boolean bRes;
 	if (!response.read_boolean(bRes))
 		OOSERVER_THROW_LASTERROR();
-	
+
 	if (!bRes)
 	{
 		if (!(flags & IRegistryKey::Create))
@@ -958,7 +958,7 @@ Omega::IEnumString* RootKey::EnumValues()
 
 			setStrings.insert(strName.c_str());
 		}
-		
+
 		return EnumString::Create(setStrings.begin(),setStrings.end());
 	}
 	catch (std::exception& e)

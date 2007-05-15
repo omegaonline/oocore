@@ -381,15 +381,15 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key) != 0)
 		return (DWORD)-1;
-				
+
 	// Get the user name and pwd...
 	ACE_TString strUName;
 	ACE_TString strPwd;
 	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
 		return (DWORD)-1;
-	
+
 	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
-	
+
 	if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
 		DWORD dwErr = GetLastError();
@@ -467,7 +467,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	DWORD err = 0;
 	HANDLE hToken;
 	BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
-	
+
 	// Done with hProcess
 	CloseHandle(hProcess);
 	if (!bSuccess)
@@ -561,7 +561,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 		ACE_OS::last_error(EINVAL);
 		return false;
 	}
-	
+
 	// Do the access check
 	PRIVILEGE_SET privilege_set = {0};
 	DWORD dwPrivSetSize = sizeof(privilege_set);
@@ -588,16 +588,16 @@ bool Root::SpawnedProcess::LogFailure(DWORD err)
 		const char szDefault[] = "Unknown error code.";
 		LPVOID lpMsgBuf = (LPVOID)szDefault;
 
-		FormatMessageA( 
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-			FORMAT_MESSAGE_FROM_SYSTEM | 
+		FormatMessageA(
+			FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
 			FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL,
 			err,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
 			(LPSTR) &lpMsgBuf,
 			0,	NULL);
-		
+
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%s\n"),(LPSTR)lpMsgBuf));
 
 		// Free the buffer.
@@ -616,11 +616,11 @@ bool Root::SpawnedProcess::InstallSandbox()
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),1,sandbox_key)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to create Server\\Sandbox key in registry")),false);
-	
-	USER_INFO_2	info = 
+
+	USER_INFO_2	info =
 	{
 		L"_OMEGA_SANDBOX_USER_",   // usri2_name;
-		L"4th£(*%LGe895y£$N&¬2",   // usri2_password;
+		L"4th_(*%LGe895y^$N|2",   // usri2_password;
 		0,                         // usri2_password_age;
 		USER_PRIV_USER,            // usri2_priv;
 		NULL,                      // usri2_home_dir;
@@ -661,7 +661,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 		err = GetLastError();
 		return LogFailure(err);
 	}
-	
+
 	PSID pSid = static_cast<PSID>(ACE_OS::malloc(dwSidSize));
 	if (!pSid)
 	{
@@ -703,7 +703,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 		NetUserDel(NULL,info.usri2_name);
 		return LogFailure(LsaNtStatusToWinError(err2));
 	}
-	
+
 	LSA_UNICODE_STRING szName;
 	szName.Buffer = L"SeBatchLogonRight";
 	size_t len = ACE_OS::strlen(szName.Buffer);
@@ -730,7 +730,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 			}
 		}
 	}
-	
+
 	// Done with pSid
 	ACE_OS::free(pSid);
 
@@ -752,7 +752,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("Password"),strPwd) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox password in registry")),false);
-	
+
 	return true;
 }
 
@@ -764,9 +764,9 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key)!=0)
 		return true;
-	
+
 	ACE_TString strUName;
-	
+
 	// Set the user name and pwd...
 	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
 		return true;

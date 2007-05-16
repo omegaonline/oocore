@@ -16,7 +16,7 @@ void OTL::ModuleBase::DecLockCount()
 	--m_lockCount;
 }
 
-Omega::CriticalSection& OTL::ModuleBase::GetLock()
+Omega::System::CriticalSection& OTL::ModuleBase::GetLock()
 {
 	return m_csMain;
 }
@@ -25,7 +25,7 @@ void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 {
 	try
 	{
-		Omega::Guard lock(m_csMain);
+		Omega::System::Guard lock(m_csMain);
 
 		Term term = { pfnTerm, arg };
 
@@ -66,7 +66,7 @@ Omega::Activation::IObjectFactory* OTL::LibraryModule::GetObjectFactory(const Om
 	{
 		if (*(g[i].pfnOid)() == oid)
 		{
-			pObject = g[i].pfnCreate(Omega::Activation::IID_IObjectFactory,flags);
+			pObject = g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),flags);
 			break;
 		}
 	}

@@ -541,8 +541,8 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 				ptrResponse->WriteBoolean(false);
 
 				// Write the exception onto the wire
-				ObjectPtr<MetaInfo::IWireManager> ptrWM(ptrOM);
-				MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
+				ObjectPtr<System::MetaInfo::IWireManager> ptrWM(ptrOM);
+				System::MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
 			}
 		}
 
@@ -695,7 +695,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE
 			ptrChannel->init(this,handle,channel_id);
 
 			// Create a new OM
-			ptrOM = ObjectPtr<Remoting::IObjectManager>(OID_StdObjectManager,Activation::InProcess);
+			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 			// Associate it with the channel
 			ptrOM->Connect(ptrChannel);

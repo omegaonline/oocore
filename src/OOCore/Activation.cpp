@@ -92,19 +92,19 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
         if (dll.open(ACE_TEXT_CHAR_TO_TCHAR(dll_name)) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
-		typedef MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, MetaInfo::interface_info<const guid_t&>::safe_class oid, MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
+		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(System::MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, System::MetaInfo::interface_info<const guid_t&>::safe_class oid, System::MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
 		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(ACE_TEXT("Omega_GetObjectFactory_Safe"));
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 
 		ObjectPtr<Activation::IObjectFactory> ptrOF;
-		MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
-			MetaInfo::interface_info<Activation::IObjectFactory* volatile &>::proxy_functor(ptrOF),
-			MetaInfo::interface_info<const guid_t&>::proxy_functor(oid),
-			MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags));
+		System::MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
+			System::MetaInfo::interface_info<Activation::IObjectFactory* volatile &>::proxy_functor(ptrOF),
+			System::MetaInfo::interface_info<const guid_t&>::proxy_functor(oid),
+			System::MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags));
 
 		if (GetObjectFactory_Exception)
-			MetaInfo::throw_correct_exception(GetObjectFactory_Exception);
+			System::MetaInfo::throw_correct_exception(GetObjectFactory_Exception);
 		return ptrOF.Detach();
 	}
 	else
@@ -223,7 +223,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 
 			// Change this to use monikers one day!
 			IObject* pObject = 0;
-			ptrServiceTable->GetObject(oid,Activation::IID_IObjectFactory,pObject);
+			ptrServiceTable->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
 			if (pObject)
 				return static_cast<Activation::IObjectFactory*>(pObject);
 		}
@@ -265,7 +265,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					{
 						// Change this to use monikers one day!
 						IObject* pObject = 0;
-						ptrServiceTable->GetObject(oid,Activation::IID_IObjectFactory,pObject);
+						ptrServiceTable->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
 						if (pObject)
 							return static_cast<Activation::IObjectFactory*>(pObject);
 
@@ -295,13 +295,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-{
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
-	ptrOF->CreateInstance(pOuter,iid,pObject);
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
 {
 	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
@@ -309,4 +302,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,(
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw pNew;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+{
+	ObjectPtr<Activation::IObjectFactory> ptrOF;
+	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
+	ptrOF->CreateInstance(pOuter,iid,pObject);
 }

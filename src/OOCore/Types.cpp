@@ -292,7 +292,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 		&data[9],
 		&data[10]) != 11)
 	{
-		return Omega::guid_t::NIL;
+		return Omega::guid_t::Null();
 	}
 
 	Omega::guid_t guid;

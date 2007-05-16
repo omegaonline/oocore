@@ -9,8 +9,18 @@ namespace User
 	{
 		virtual void* GetMessageBlock() = 0;
 	};
-	OMEGA_DECLARE_IID(IOutputCDR);
-		
+}
+
+OMEGA_EXPORT_INTERFACE_DERIVED
+(
+	User, IOutputCDR, Omega::Serialize, IFormattedStream, "{9C4FFF8C-93E4-49f9-A11C-99249C321206}",
+
+	// Methods
+	OMEGA_METHOD(void*,GetMessageBlock,0,())
+)
+
+namespace User
+{		
 	class OutputCDR :
 		public OTL::ObjectBase,
 		public ACE_OutputCDR,
@@ -28,7 +38,7 @@ namespace User
 		BEGIN_INTERFACE_MAP(OutputCDR)
 			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
 			INTERFACE_ENTRY(Omega::Serialize::IStream)
-			INTERFACE_ENTRY_IID(IID_IOutputCDR,IOutputCDR)
+			INTERFACE_ENTRY(IOutputCDR)
 		END_INTERFACE_MAP()
 
 	// IStream members

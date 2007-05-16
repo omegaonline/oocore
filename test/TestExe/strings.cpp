@@ -1,4 +1,4 @@
-#include <OOCore/OOCore.h>
+#include <OOCore/Remoting.h>
 
 #include "Test.h"
 
@@ -70,14 +70,14 @@ bool string_tests()
 
 bool guid_tests()
 {
-	Omega::guid_t guid(Omega::guid_t::NIL);
-	TEST(guid == Omega::guid_t::NIL);
+	Omega::guid_t guid(Omega::guid_t::Null());
+	TEST(guid == Omega::guid_t::Null());
 
 	const char sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
 	TEST(guid2 != guid);
-	TEST(guid2 != Omega::guid_t::NIL);
+	TEST(guid2 != Omega::guid_t::Null());
 	TEST(guid2 == sz);
 
 	// Create a load of unique guid_t's
@@ -96,6 +96,9 @@ bool guid_tests()
 		}
 	}
 	TEST(bTest);
+
+	// Check to see if we can export OID's properly
+	TEST(Omega::Remoting::OID_StdObjectManager == "{63EB243E-6AE3-43bd-B073-764E096775F8}");
 
 	return true;
 }

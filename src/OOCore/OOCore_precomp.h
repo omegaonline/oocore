@@ -1,8 +1,8 @@
 #ifndef OOCORE_LOCAL_MACROS_H_INCLUDED_
 #define OOCORE_LOCAL_MACROS_H_INCLUDED_
 
-#ifndef OOCORE_BUILD_DLL
-#define OOCORE_BUILD_DLL
+#ifndef OOCORE_BUILD_LIBRARY
+#define OOCORE_BUILD_LIBRARY
 #endif
 
 // Pre include config...

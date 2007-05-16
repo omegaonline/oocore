@@ -9,12 +9,12 @@ namespace OOCore
 {
 	class UnboundProxy :
 		public ObjectBase,
-		public MetaInfo::IWireProxy
+		public System::MetaInfo::IWireProxy
 	{
 	public:
-		void init(MetaInfo::IWireManager* pManager, const guid_t& oid, const guid_t& iid)
+		void init(System::MetaInfo::IWireManager* pManager, const guid_t& oid, const guid_t& iid)
 		{
-			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			const System::MetaInfo::qi_rtti* pRtti = System::MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
 				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
@@ -25,15 +25,15 @@ namespace OOCore
 		}
 
 	BEGIN_INTERFACE_MAP(UnboundProxy)
-		INTERFACE_ENTRY(MetaInfo::IWireProxy)
+		INTERFACE_ENTRY(System::MetaInfo::IWireProxy)
 		INTERFACE_ENTRY_FUNCTION_BLIND(QI)
 	END_INTERFACE_MAP()
 
 	private:
-		guid_t                              m_oid;
-		guid_t                              m_iid;
-		ObjectPtr<MetaInfo::IWireManager>   m_ptrManager;
-		ObjectPtr<IObject>                  m_ptrProxy;
+		guid_t                                    m_oid;
+		guid_t                                    m_iid;
+		ObjectPtr<System::MetaInfo::IWireManager> m_ptrManager;
+		ObjectPtr<IObject>                        m_ptrProxy;
 
         static IObject* QI(const guid_t& iid, void* pThis, void*)
         {
@@ -53,21 +53,21 @@ namespace OOCore
 		void WriteKey(Serialize::IFormattedStream* pStream)
 		{
 			pStream->WriteUInt32(0);
-			MetaInfo::wire_write(m_ptrManager,pStream,m_oid);
-			MetaInfo::wire_write(m_ptrManager,pStream,m_iid);
+			System::MetaInfo::wire_write(m_ptrManager,pStream,m_oid);
+			System::MetaInfo::wire_write(m_ptrManager,pStream,m_iid);
 		}
 	};
 
 	class StdProxy :
 		public ObjectBase,
-		public MetaInfo::IWireProxy
+		public System::MetaInfo::IWireProxy
 	{
 	public:
 		StdProxy() {}
 
-		void init(MetaInfo::IWireManager* pManager, const guid_t& iid, uint32_t uId)
+		void init(System::MetaInfo::IWireManager* pManager, const guid_t& iid, uint32_t uId)
 		{
-			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			const System::MetaInfo::qi_rtti* pRtti = System::MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
 				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
@@ -88,7 +88,7 @@ namespace OOCore
 		}
 
 	BEGIN_INTERFACE_MAP(StdProxy)
-		INTERFACE_ENTRY(MetaInfo::IWireProxy)
+		INTERFACE_ENTRY(System::MetaInfo::IWireProxy)
 		INTERFACE_ENTRY_FUNCTION_BLIND(QI)
 	END_INTERFACE_MAP()
 
@@ -98,7 +98,7 @@ namespace OOCore
 
 		ACE_RW_Thread_Mutex                          m_lock;
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
-		ObjectPtr<MetaInfo::IWireManager>            m_ptrManager;
+		ObjectPtr<System::MetaInfo::IWireManager>    m_ptrManager;
 		uint32_t                                     m_uId;
 		
         static IObject* QI(const guid_t& iid, void* pThis, void*)
@@ -153,11 +153,11 @@ IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 
 		if (!ptrNew)
 		{
-			if (iid==Omega::MetaInfo::IID_SafeProxy)
+			if (iid==OMEGA_UUIDOF(System::MetaInfo::SafeProxy))
 				return 0;
 
 			// New interface required
-			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			const System::MetaInfo::qi_rtti* pRtti = System::MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateWireProxy)
 				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
@@ -209,7 +209,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	if (!pParamsIn)
 		OOCORE_THROW_ERRNO(EINVAL);
 
-	ObjectPtr<MetaInfo::IWireStub> ptrStub;
+	ObjectPtr<System::MetaInfo::IWireStub> ptrStub;
 	uint32_t method_id;
 
 	// Read the stub id and method id
@@ -222,9 +222,9 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 		// Read the oid and iid
 		guid_t oid;
-		MetaInfo::wire_read(this,pParamsIn,oid);
+		System::MetaInfo::wire_read(this,pParamsIn,oid);
 		guid_t iid;
-		MetaInfo::wire_read(this,pParamsIn,iid);
+		System::MetaInfo::wire_read(this,pParamsIn,iid);
 
 		method_id = pParamsIn->ReadUInt32();
 
@@ -234,10 +234,10 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 		// Create the required object
 		ObjectPtr<IObject> ptrObject;
-		ptrObject.Attach(Activation::CreateInstance(oid,Activation::Any,0,iid));
+		ptrObject.Attach(CreateInstance(oid,Activation::Any,0,iid));
 
 		// Get the handler for the interface
-		const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+		const System::MetaInfo::qi_rtti* pRtti = System::MetaInfo::get_qi_rtti_info(iid);
 		if (!pRtti || !pRtti->pfnCreateWireStub)
 			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
@@ -255,7 +255,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		{
 			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
+			std::map<uint32_t,ObjectPtr<System::MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
 			if (i==m_mapStubIds.end())
 				OMEGA_THROW("Bad stub id");
 			ptrStub = i->second;
@@ -300,14 +300,14 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	if (ptrMarshal)
 	{
 		guid_t oid = ptrMarshal->GetUnmarshalOID(iid,0);
-		if (oid != guid_t::NIL)
+		if (oid != guid_t::Null())
 		{
 			// Write the marshalling oid
 			pStream->WriteByte(2);
-			MetaInfo::wire_write(this,pStream,oid);
+			System::MetaInfo::wire_write(this,pStream,oid);
 			
 			// Let the custom handle marshalling...
-			ptrMarshal->MarshalInterface(pStream,iid,0);
+			ptrMarshal->Marshal(pStream,iid,0);
 
 			// Done
 			return;
@@ -315,12 +315,12 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	}
 
 	// Get the handler for the interface
-	const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+	const System::MetaInfo::qi_rtti* pRtti = System::MetaInfo::get_qi_rtti_info(iid);
 	if (!pRtti || !pRtti->pfnCreateWireStub)
 		INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 	// Generate a new key and stub pair
-	ObjectPtr<MetaInfo::IWireStub> ptrStub;
+	ObjectPtr<System::MetaInfo::IWireStub> ptrStub;
 	uint32_t uId = 0;
 	try
 	{
@@ -338,7 +338,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 			INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
 		// Add to the map...
-		m_mapStubIds.insert(std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::value_type(uId,ptrStub));
+		m_mapStubIds.insert(std::map<uint32_t,ObjectPtr<System::MetaInfo::IWireStub> >::value_type(uId,ptrStub));
 	}
 	catch (std::exception& e)
 	{
@@ -347,7 +347,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 
 	// Write out the data
 	pStream->WriteByte(1);
-	MetaInfo::wire_write(this,pStream,iid);
+	System::MetaInfo::wire_write(this,pStream,iid);
 	pStream->WriteUInt32(uId);
 }
 
@@ -362,13 +362,13 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 	else if (flag == 1)
 	{
 		guid_t wire_iid;
-		MetaInfo::wire_read(this,pStream,wire_iid);
+		System::MetaInfo::wire_read(this,pStream,wire_iid);
 		uint32_t uId = pStream->ReadUInt32();
 
 		ObjectPtr<ObjectImpl<OOCore::StdProxy> > ptrProxy = ObjectImpl<OOCore::StdProxy>::CreateInstancePtr();
 		ptrProxy->init(this,wire_iid,uId);
 
-		if (iid == guid_t::NIL)
+		if (iid == guid_t::Null())
 			pObject = ptrProxy->QueryInterface(wire_iid);
 		else
 			pObject = ptrProxy->QueryInterface(iid);
@@ -376,13 +376,14 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 	else if (flag == 2)
 	{
      	guid_t oid;
-		MetaInfo::wire_read(this,pStream,oid);
+		System::MetaInfo::wire_read(this,pStream,oid);
 		
 		// TODO Create an instance of Oid
-		// QI for IMarshal,
-		// Call UnmarshalInterface(iid)
-		::DebugBreak();
-		void* TODO;
+		ObjectPtr<Remoting::IMarshal> ptrMarshal(oid,Activation::InProcess);
+		if (!ptrMarshal)
+			INoInterfaceException::Throw(OMEGA_UUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
+
+		pObject = ptrMarshal->Unmarshal(pStream,iid);
 	}
 	else
 		OOCORE_THROW_ERRNO(EINVAL);
@@ -394,7 +395,7 @@ void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 	{
 		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<uint32_t,ObjectPtr<MetaInfo::IWireStub> >::iterator i=m_mapStubIds.find(uId);
+		std::map<uint32_t,ObjectPtr<System::MetaInfo::IWireStub> >::iterator i=m_mapStubIds.find(uId);
 		if (i==m_mapStubIds.end())
 			OOCORE_THROW_ERRNO(EINVAL);
 
@@ -426,9 +427,9 @@ Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Ome
 		{
 			// Unmarshal the exception
 			IException* pE;
-			MetaInfo::wire_read(this,ptrResponse,pE);
+			System::MetaInfo::wire_read(this,ptrResponse,pE);
 			guid_t iid = pE->ActualIID();
-			const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
+			const System::MetaInfo::qi_rtti* pRtti = System::MetaInfo::get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnThrow)
 				INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
 
@@ -449,3 +450,6 @@ void OOCore::StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_
 
 	pObject = ptrProxy->QueryInterface(iid);
 }
+
+OMEGA_DEFINE_OID(Omega::Remoting,OID_StdObjectManager,"{63EB243E-6AE3-43bd-B073-764E096775F8}");
+OMEGA_DEFINE_OID(Omega::Remoting,OID_InterProcess,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");

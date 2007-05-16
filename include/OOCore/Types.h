@@ -164,74 +164,77 @@ namespace Omega
 
 		inline static guid_t FromString(const string_t& str);
 		inline static guid_t Create();
-		static const guid_t NIL;
+		inline static const guid_t& Null()
+		{
+			static const Omega::guid_t Null = {0,0,0,{0,0,0,0,0,0,0,0}};
+			return Null;
+		}
 	};
 
-	namespace MetaInfo
+	namespace System
 	{
-		typedef bool yes_t;
-		typedef bool (&no_t)[2];
-
-		template <size_t N> struct size_t_
+		namespace MetaInfo
 		{
-			static const size_t		value = N;
-			typedef size_t_<N>		type;
-			typedef size_t_<N+1>	next;
-		};
+			typedef bool yes_t;
+			typedef bool (&no_t)[2];
 
-		template <class T> struct default_value
-		{
-			static T value()
+			template <size_t N> struct size_t_
 			{
-				static T v;
-				return v;
-			}
-		};
+				static const size_t		value = N;
+				typedef size_t_<N>		type;
+				typedef size_t_<N+1>	next;
+			};
 
-		template <class T> struct default_value<T&>
-		{
-			static T value()
+			template <class T> struct default_value
 			{
-				return default_value<T>::value();
-			}
-		};
+				static T value()
+				{
+					static T v;
+					return v;
+				}
+			};
 
-		// MSVC gets twitchy about size_t/uint32_t
-		#if defined(_MSC_VER)
-		template <> struct default_value<uint32_t>
-		{
-			static uint32_t value()
+			template <class T> struct default_value<T&>
 			{
-				static uint32_t v;
-				return v;
-			}
-		};
-		#endif
+				static T value()
+				{
+					return default_value<T>::value();
+				}
+			};
 
-		template <class T> struct remove_const
-		{
-			typedef T type;
-		};
+			// MSVC gets twitchy about size_t/uint32_t
+			#if defined(_MSC_VER)
+			template <> struct default_value<uint32_t>
+			{
+				static uint32_t value()
+				{
+					static uint32_t v;
+					return v;
+				}
+			};
+			#endif
 
-		template <class T> struct remove_const<const T>
-		{
-			typedef T type;
-		};
+			template <class T> struct remove_const
+			{
+				typedef T type;
+			};
 
-		template <class T> struct remove_const<T&>
-		{
-			typedef typename remove_const<T>::type& type;
-		};
+			template <class T> struct remove_const<const T>
+			{
+				typedef T type;
+			};
 
-		template <class T> struct remove_const<T*>
-		{
-			typedef typename remove_const<T>::type* type;
-		};
+			template <class T> struct remove_const<T&>
+			{
+				typedef typename remove_const<T>::type& type;
+			};
+
+			template <class T> struct remove_const<T*>
+			{
+				typedef typename remove_const<T>::type* type;
+			};
+		}
 	}
 }
-
-#if defined(OMEGA_GUID_LINK_HERE)
-	const Omega::guid_t Omega::guid_t::NIL = {0,0,0,{0,0,0,0,0,0,0,0}};
-#endif
 
 #endif // OMEGA_TYPES_H_INCLUDED_

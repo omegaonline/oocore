@@ -28,8 +28,9 @@
 
 #define OMEGA_UNUSED_ARG(n)	(void)(n)
 
-#define OMEGA_COMPILER_STRING_I(a,b,c,d) a#b#c#d
-#define OMEGA_COMPILER_STRING            OMEGA_COMPILER_STRING_I("gcc",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__)
+#define OMEGA_COMPILER_STRING_II(a,b,c,d)   a #b "." #c "." #d
+#define OMEGA_COMPILER_STRING_I(a,b,c,d)    OMEGA_COMPILER_STRING_II(a,b,c,d)
+#define OMEGA_COMPILER_STRING               OMEGA_COMPILER_STRING_I("mingw32-gcc-",__GNUC__,__GNUC_MINOR__,__GNUC_PATCHLEVEL__)
 
 // These are missing from mingGW
 enum {

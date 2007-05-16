@@ -15,6 +15,8 @@
 
 #define OMEGA_UNUSED_ARG(n)	(n)
 
+#define OMEGA_HAS_UUIDOF
+
 // Prevent inclusion of old winsock
 #define _WINSOCKAPI_
 
@@ -26,7 +28,7 @@
 #pragma warning(disable : 4702)
 #endif
 
-#define OMEGA_COMPILER_STRING_II(a,b) a # b
+#define OMEGA_COMPILER_STRING_II(a,b) a #b
 #define OMEGA_COMPILER_STRING_I(a,b)  OMEGA_COMPILER_STRING_II(a,b)
 #define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I("MSVC ",_MSC_VER)
 

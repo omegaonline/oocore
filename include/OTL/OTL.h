@@ -17,31 +17,31 @@
 	public: static const QIEntry* getQIEntries() {static const QIEntry QIEntries[] = {
 
 #define INTERFACE_ENTRY(iface) \
-	{ &Omega::MetaInfo::iid_traits<iface>::GetIID(), &QIDelegate<iface,RootClass>, 0 },
+	{ &OMEGA_UUIDOF(iface), &QIDelegate<iface,RootClass>, 0 },
 
 #define INTERFACE_ENTRY_IID(iid,iface) \
 	{ &iid, &QIDelegate<iface,RootClass>, 0 },
 
 #define INTERFACE_ENTRY2(iface,iface2) \
-	{ &Omega::MetaInfo::iid_traits<iface>::GetIID(), &QIDelegate2<iface,iface2,RootClass>, 0 },
+	{ &OMEGA_UUIDOF(iface), &QIDelegate2<iface,iface2,RootClass>, 0 },
 
 #define INTERFACE_ENTRY2_IID(iid,iface,iface2) \
 	{ &iid, &QIDelegate2<iface,iface2,RootClass>, 0 },
 
 #define INTERFACE_ENTRY_CHAIN(baseClass) \
-	{ &Omega::guid_t::NIL, &QIChain<baseClass,RootClass>, 0 },
+	{ &Omega::guid_t::Null(), &QIChain<baseClass,RootClass>, 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE(iid,member_object) \
 	{ &iid, &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
-	{ &Omega::guid_t::NIL, &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
+	{ &Omega::guid_t::Null(), &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
 #define INTERFACE_ENTRY_FUNCTION(iid,pfn,param) \
 	{ &iid, &pfn, param },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::NIL, &pfn, 0 },
+	{ &Omega::guid_t::Null(), &pfn, 0 },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iid) \
 	{ &iid, &QIFail, param },
@@ -49,7 +49,7 @@
 #define END_INTERFACE_MAP() \
 	{ 0,0,0 } }; return QIEntries; } \
 	protected: virtual Omega::IObject* GetControllingObject() { \
-	const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(Omega::IID_IObject,this,g0->param); } \
+	const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(OMEGA_UUIDOF(Omega::IObject),this,g0->param); } \
 	Omega::IObject* GetControllingObjectPtr() { \
 	OTL::ObjectPtr<Omega::IObject> ptr; ptr.Attach(GetControllingObject()); return ptr; }
 
@@ -147,13 +147,13 @@ namespace OTL
 		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(oid,flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_UUIDOF(OBJECT)));
 		}
 
 		ObjectPtrBase(const Omega::string_t& object_name, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_UUIDOF(OBJECT)));
 		}
 
 		virtual ~ObjectPtrBase()
@@ -223,12 +223,12 @@ namespace OTL
 
 		void CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(oid,flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_UUIDOF(OBJECT)));
 		}
 
 		void CreateInstance(const Omega::string_t& object_name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::Activation::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_UUIDOF(OBJECT)));
 		}
 
 		OBJECT* operator ->()
@@ -252,7 +252,7 @@ namespace OTL
 		}
 
 	protected:
-		typename Omega::AtomicOp<OBJECT*> m_ptr;
+		typename Omega::System::AtomicOp<OBJECT*> m_ptr;
 	};
 
 	template <class OBJECT>
@@ -267,7 +267,7 @@ namespace OTL
 		  ObjectPtrBase<OBJECT>(0)
 		{
 			if (pObject)
-				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(Omega::MetaInfo::iid_traits<OBJECT>::GetIID()));
+				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(OMEGA_UUIDOF(OBJECT)));
 		}
 
 		ObjectPtr(const ObjectPtr<OBJECT>& rhs) :
@@ -339,8 +339,8 @@ namespace OTL
 			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
 			{
 				if (*(pEntries[i].pGuid) == iid ||
-					*(pEntries[i].pGuid) == Omega::guid_t::NIL ||
-					iid == Omega::IID_IObject)
+					*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
+					iid == OMEGA_UUIDOF(Omega::IObject))
 				{
 					Omega::IObject* pObj = pEntries[i].pfnQI(iid,this,pEntries[i].param);
 					if (pObj)
@@ -392,7 +392,7 @@ namespace OTL
 		virtual Omega::IObject* GetControllingObject() = 0;
 
 	private:
-		Omega::AtomicOp<Omega::uint32_t> m_refcount;
+		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
 	};
 
 	template <class E>
@@ -414,7 +414,7 @@ namespace OTL
 	public:
 		virtual Omega::guid_t ActualIID()
 		{
-			return Omega::MetaInfo::iid_traits<E>::GetIID();
+			return OMEGA_UUIDOF(E);
 		}
 		virtual Omega::IException* Cause()
 		{
@@ -436,7 +436,7 @@ namespace OTL
 		inline size_t GetLockCount() const;
 		inline void IncLockCount();
 		inline void DecLockCount();
-		inline Omega::CriticalSection& GetLock();
+		inline Omega::System::CriticalSection& GetLock();
 
 		typedef void (*TERM_FUNC)(void* arg);
 		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
@@ -457,8 +457,8 @@ namespace OTL
 		virtual const CreatorEntry* getCreatorEntries() const = 0;
 
 	private:
-		Omega::CriticalSection           m_csMain;
-		Omega::AtomicOp<Omega::uint32_t> m_lockCount;
+		Omega::System::CriticalSection           m_csMain;
+		Omega::System::AtomicOp<Omega::uint32_t> m_lockCount;
 
 		struct Term
 		{
@@ -482,7 +482,7 @@ namespace OTL
 		static ObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				Omega::Activation::INoAggregationException::Throw(Omega::guid_t::NIL);
+				Omega::Activation::INoAggregationException::Throw(Omega::guid_t::Null());
 
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
@@ -616,8 +616,8 @@ namespace OTL
 		// If the line below is flagged as the source of a compiler warning then
 		// you have missed out at least one virtual function in an interface that
 		// <ROOT> derives from
-		ContainedObjectImpl<ROOT>        m_contained;
-		Omega::AtomicOp<Omega::uint32_t> m_refcount;
+		ContainedObjectImpl<ROOT>                m_contained;
+		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
 
 	public:
 		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
@@ -657,7 +657,7 @@ namespace OTL
 
 		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			if (iid==Omega::IID_IObject)
+			if (iid==OMEGA_UUIDOF(Omega::IObject))
 			{
 				++m_refcount;
 				return this;
@@ -677,7 +677,7 @@ namespace OTL
 			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
 			if (!singleton)
 			{
-				Omega::Guard guard(GetModule()->GetLock());
+				Omega::System::Guard guard(GetModule()->GetLock());
 				if (!singleton)
 				{
 					OMEGA_NEW(singleton,Singleton<TYPE>());
@@ -962,15 +962,15 @@ namespace OTL
 		END_INTERFACE_MAP()
 
 	private:
-		std::list<EnumType>                      m_listItems;
-		typename std::list<EnumType>::iterator   m_pos;
-		Omega::CriticalSection                   m_cs;
+		std::list<EnumType>                    m_listItems;
+		typename std::list<EnumType>::iterator m_pos;
+		Omega::System::CriticalSection         m_cs;
 
 	// IEnumString members
 	public:
 		bool Next(Omega::uint32_t& count, EnumType* parrVals)
 		{
-			Omega::Guard guard(m_cs);
+			Omega::System::Guard guard(m_cs);
 
 			uint32_t c = count;
 			count = 0;
@@ -986,7 +986,7 @@ namespace OTL
 
 		bool Skip(Omega::uint32_t count)
 		{
-			Omega::Guard guard(m_cs);
+			Omega::System::Guard guard(m_cs);
 
 			while (count > 0 && m_pos!=m_listItems.end())
 			{
@@ -999,14 +999,14 @@ namespace OTL
 
 		void Reset()
 		{
-			Omega::Guard guard(m_cs);
+			Omega::System::Guard guard(m_cs);
 
 			m_pos = m_listItems.begin();
 		}
 
 		EnumIFace* Clone()
 		{
-			Omega::Guard guard(m_cs);
+			Omega::System::Guard guard(m_cs);
 
 			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateInstancePtr();
 			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());

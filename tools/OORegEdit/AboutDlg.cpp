@@ -12,7 +12,7 @@ AboutDlg::AboutDlg(wxWindow* parent, int id, const wxString& title, const wxPoin
 	if (pImage)
 		pImage->SetMaskColour(255,0,255);
 
-	wxString strVersion = Omega::GetVersion();
+	wxString strVersion = Omega::System::GetVersion();
 
     // begin wxGlade: AboutDlg::AboutDlg
     m_picIcon = new wxStaticBitmap(this, -1, wxBitmap(*pImage,wxBITMAP_TYPE_ANY));

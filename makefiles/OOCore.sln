@@ -30,6 +30,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOCore", "..\src\OOCore\OOC
 		{69A052F0-FECA-1BAD-6757-8A63CF228EC4} = {69A052F0-FECA-1BAD-6757-8A63CF228EC4}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OORegistry", "..\tools\OORegistry\OORegistry.vcproj", "{7DAE74E4-431B-4290-8A98-3C9D2D74B860}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+		{69A052F0-FECA-1BAD-6757-8A63CF228EC4} = {69A052F0-FECA-1BAD-6757-8A63CF228EC4}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -60,6 +66,10 @@ Global
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Debug.Build.0 = Debug|Win32
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.ActiveCfg = Release|Win32
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}.Release.Build.0 = Release|Win32
+		{7DAE74E4-431B-4290-8A98-3C9D2D74B860}.Debug.ActiveCfg = Debug|Win32
+		{7DAE74E4-431B-4290-8A98-3C9D2D74B860}.Debug.Build.0 = Debug|Win32
+		{7DAE74E4-431B-4290-8A98-3C9D2D74B860}.Release.ActiveCfg = Release|Win32
+		{7DAE74E4-431B-4290-8A98-3C9D2D74B860}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

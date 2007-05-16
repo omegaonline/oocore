@@ -3,16 +3,6 @@
 #include "./Channel.h"
 #include "./UserManager.h"
 
-OMEGA_EXPORT_INTERFACE_DERIVED
-(
-	User, IOutputCDR, Omega::Serialize, IFormattedStream, 
-	0x5e8c6ed6, 0xe8b7, 0x4bc6, 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e,
-
-	// Methods
-	OMEGA_METHOD(void*,GetMessageBlock,0,())
-)
-const Omega::guid_t User::IID_IOutputCDR = { 0x5e8c6ed6, 0xe8b7, 0x4bc6, { 0xa2, 0x65, 0x79, 0xe3, 0xb5, 0x51, 0xa4, 0x3e } };
-
 using namespace Omega;
 using namespace OTL;
 
@@ -36,7 +26,7 @@ Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
 {
 	// Create a fresh OutputCDR
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr(pOuter);
-	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(Omega::Serialize::IID_IFormattedStream));
+	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
 }
 
 Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
@@ -50,7 +40,7 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 	
 	// QI pStream for our private interface
 	ObjectPtr<IOutputCDR> ptrOutput;
-	ptrOutput.Attach(static_cast<IOutputCDR*>(pStream->QueryInterface(IID_IOutputCDR)));
+	ptrOutput.Attach(static_cast<IOutputCDR*>(pStream->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
 	if (!ptrOutput)
 		OOSERVER_THROW_ERRNO(EINVAL);
 

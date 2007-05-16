@@ -1,5 +1,9 @@
 #include "OOServer.h"
 
+#ifdef OMEGA_HAVE_VLD
+#include <vld.h>
+#endif
+
 using namespace Omega;
 using namespace OTL;
 

@@ -67,22 +67,23 @@
 				</Linker>
 			</Target>
 		</Build>
+		<Unit filename="..\..\include\OOCore\Base.h" />
+		<Unit filename="..\..\include\OOCore\Export.h" />
+		<Unit filename="..\..\include\OOCore\Interfaces.h" />
 		<Unit filename="..\..\include\OOCore\OOCore.h" />
-		<Unit filename="..\..\include\OOCore\OOCore_base.h" />
-		<Unit filename="..\..\include\OOCore\OOCore_export.h" />
-		<Unit filename="..\..\include\OOCore\OOCore_ifaces.h" />
-		<Unit filename="..\..\include\OOCore\OOCore_rtti.h" />
 		<Unit filename="..\..\include\OOCore\OOCore_rtti.inl" />
-		<Unit filename="..\..\include\OOCore\OOCore_type_sizes.h" />
-		<Unit filename="..\..\include\OOCore\OOCore_types.h" />
 		<Unit filename="..\..\include\OOCore\OOCore_types.inl" />
-		<Unit filename="..\..\include\OOCore\OOCore_wire.h" />
 		<Unit filename="..\..\include\OOCore\Remoting.h" />
+		<Unit filename="..\..\include\OOCore\Rtti.h" />
+		<Unit filename="..\..\include\OOCore\Rtti.inl" />
 		<Unit filename="..\..\include\OOCore\Threading.h" />
+		<Unit filename="..\..\include\OOCore\Threading.inl" />
+		<Unit filename="..\..\include\OOCore\TypeSizes.h" />
+		<Unit filename="..\..\include\OOCore\Types.h" />
+		<Unit filename="..\..\include\OOCore\Types.inl" />
 		<Unit filename="..\..\include\OOCore\Version.h" />
-		<Unit filename="..\..\include\OOCore\config-win32-borland.h" />
+		<Unit filename="..\..\include\OOCore\Wire.h" />
 		<Unit filename="..\..\include\OOCore\config-win32-gcc.h" />
-		<Unit filename="..\..\include\OOCore\config-win32-msvc.h" />
 		<Unit filename="..\..\include\OOCore\config-win32.h" />
 		<Unit filename="..\..\include\OOCore\config.h" />
 		<Unit filename="..\..\include\Otl\OTL.h" />

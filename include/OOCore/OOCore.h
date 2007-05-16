@@ -3,13 +3,16 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#if defined(OOCORE_BUILD_DLL)
+#if defined(OOCORE_BUILD_LIBRARY)
 
 #define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)
 
 #define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
+
+#define OOCORE_DECLARE_OID(n) \
+	OMEGA_EXPORT_OID(n)
 
 #else
 
@@ -18,6 +21,9 @@
 
 #define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params)
+
+#define OOCORE_DECLARE_OID(n) \
+	OMEGA_IMPORT_OID(n)
 
 #endif
 
@@ -46,13 +52,17 @@
 
 namespace Omega
 {
-	inline string_t GetVersion();
 	inline IException* Initialize();
 	inline void Uninitialize();
+
+	namespace System
+	{
+		inline string_t GetVersion();
+	}
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,());
-Omega::string_t Omega::GetVersion()
+Omega::string_t Omega::System::GetVersion()
 {
 	return Omega_GetVersion();
 }

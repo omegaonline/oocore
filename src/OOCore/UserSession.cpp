@@ -101,7 +101,7 @@ IException* OOCore::UserSession::bootstrap()
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,Remoting::IID_IInterProcessService,pIPS);
+		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
@@ -713,8 +713,8 @@ void OOCore::UserSession::process_request(Request* request, ACE_CDR::UShort src_
 				ptrResponse->WriteBoolean(false);
 
 				// Write the exception onto the wire
-				ObjectPtr<MetaInfo::IWireManager> ptrWM(ptrOM);
-				MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
+				ObjectPtr<System::MetaInfo::IWireManager> ptrWM(ptrOM);
+				System::MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
 			}
 		}
 
@@ -774,7 +774,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_
 			ptrChannel->init(this,src_channel_id);
 
 			// Create a new OM
-			ptrOM = ObjectPtr<Remoting::IObjectManager>(OID_StdObjectManager,Activation::InProcess);
+			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 			// Associate it with the channel
 			ptrOM->Connect(ptrChannel);

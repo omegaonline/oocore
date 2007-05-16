@@ -1,4 +1,3 @@
-#define OMEGA_GUID_LINK_HERE
 #include <OOCore/OOCore.h>
 
 #ifdef OMEGA_HAVE_VLD
@@ -13,7 +12,7 @@ bool guid_tests();
 
 int main(int argc, char* argv[])
 {
-	printf("%s\n\n",(const char*)Omega::GetVersion());
+	printf("%s\n\n",(const char*)Omega::System::GetVersion());
 
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);

@@ -5,9 +5,9 @@ namespace OOCore
 {
 	class StdObjectManager :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::OID_StdObjectManager>,
+		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager>,
 		public Omega::Remoting::IObjectManager,
-		public Omega::MetaInfo::IWireManager
+		public Omega::System::MetaInfo::IWireManager
 	{
 	public:
 		StdObjectManager();
@@ -15,7 +15,7 @@ namespace OOCore
 
 		BEGIN_INTERFACE_MAP(StdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
-			INTERFACE_ENTRY(Omega::MetaInfo::IWireManager)
+			INTERFACE_ENTRY(Omega::System::MetaInfo::IWireManager)
 		END_INTERFACE_MAP()
 
 	private:
@@ -26,7 +26,7 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
 		Omega::uint32_t								m_uNextStubId;
 
-		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::MetaInfo::IWireStub> >	m_mapStubIds;
+		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::MetaInfo::IWireStub> >	m_mapStubIds;
 
 	// IObjectManager members
 	public:

@@ -9,8 +9,19 @@ namespace OOCore
 	{
 		virtual void* GetMessageBlock() = 0;
 	};
-	OMEGA_DECLARE_IID(IOutputCDR);
+}
 
+OMEGA_EXPORT_INTERFACE_DERIVED
+(
+	OOCore, IOutputCDR, Omega::Serialize, IFormattedStream, "{5251283B-95C8-4e5b-9136-5DDCBE636A4E}",
+
+	// Methods
+	OMEGA_METHOD(void*,GetMessageBlock,0,())
+)
+//const Omega::guid_t OOCore::IID_IOutputCDR = { 0x21118e84, 0x2ef8, 0x4f53, { 0xb4, 0xfd, 0xdb, 0xd4, 0xee, 0xc3, 0xaf, 0xc3 } };
+
+namespace OOCore
+{
 	class OutputCDR :
 		public OTL::ObjectBase,
 		public ACE_OutputCDR,
@@ -28,7 +39,7 @@ namespace OOCore
 		BEGIN_INTERFACE_MAP(OutputCDR)
 			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
 			INTERFACE_ENTRY(Omega::Serialize::IStream)
-			INTERFACE_ENTRY_IID(OOCore::IID_IOutputCDR,OOCore::IOutputCDR)
+			INTERFACE_ENTRY(OOCore::IOutputCDR)
 		END_INTERFACE_MAP()	
 
 	// IStream members

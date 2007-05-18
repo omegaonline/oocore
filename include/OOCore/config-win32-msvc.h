@@ -1,6 +1,14 @@
 #ifndef OOCORE_CONFIG_MSVC_H_INCLUDED_
 #define OOCORE_CONFIG_MSVC_H_INCLUDED_
 
+#ifndef _CPPUNWIND
+#error You must enable exception handling /GX
+#endif
+
+#ifndef _MT
+#error You must enable multithreaded library use /MT, /MTd, /MD or /MDd
+#endif 
+
 #define OMEGA_MAX_DEFINES	249
 
 #define OMEGA_FUNCNAME		__FUNCSIG__

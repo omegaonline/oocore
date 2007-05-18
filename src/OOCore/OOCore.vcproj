@@ -265,7 +265,7 @@
 				RelativePath="..\..\include\OOCore\TypeSizes.h">
 			</File>
 			<File
-				RelativePath=".\Version.h">
+				RelativePath="..\..\include\OOCore\Version.h">
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Wire.h">

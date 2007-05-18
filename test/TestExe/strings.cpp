@@ -1,12 +1,12 @@
-#include <OOCore/Remoting.h>
-
 #include "Test.h"
+
+#include <OOCore/Remoting.h>
 
 bool string_tests()
 {
-	const char sz1[] = "abcdef";
-	const char sz1_1[] = "abcdef";
-	const char sz1_2[] = "ABCDEF";
+	const Omega::char_t sz1[] = "abcdef";
+	const Omega::char_t sz1_1[] = "abcdef";
+	const Omega::char_t sz1_2[] = "ABCDEF";
 
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
@@ -17,7 +17,7 @@ bool string_tests()
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
 
-	const char sz2[] = "ghijk";
+	const Omega::char_t sz2[] = "ghijk";
 	Omega::string_t s2(sz2);
 	TEST(s2 == sz2);
 
@@ -73,7 +73,7 @@ bool guid_tests()
 	Omega::guid_t guid(Omega::guid_t::Null());
 	TEST(guid == Omega::guid_t::Null());
 
-	const char sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
+	const Omega::char_t sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
 	TEST(guid2 != guid);
@@ -99,6 +99,9 @@ bool guid_tests()
 
 	// Check to see if we can export OID's properly
 	TEST(Omega::Remoting::OID_StdObjectManager == "{63EB243E-6AE3-43bd-B073-764E096775F8}");
+
+	// Check whether OMEGA_UUIDOF works...
+	TEST(OMEGA_UUIDOF(Omega::IObject) == OMEGA_UUIDOF(Omega::IObject*));
 
 	return true;
 }

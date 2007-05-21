@@ -35,12 +35,13 @@ guid_t OOCore::NoInterfaceException::GetUnsupportedIID()
 	return m_iid;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const char_t*,desc,(in),const char_t*,source,(in_out),IException*&,pCause))
 {
 	OutputDebugString(string_t::Format("Exception: %s at %s\n",desc,source));
 
 	ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
 	pExcept->m_ptrCause.Attach(pCause); 
+	pCause = 0;
 	pExcept->m_strDesc = desc;
 	pExcept->m_strSource = source;
 	throw pExcept;

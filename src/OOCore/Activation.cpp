@@ -295,11 +295,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const guid_t&,oid,(in),IException*,pE))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,1,((in),const guid_t&,oid))
 {
 	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
 	pNew->m_strDesc = "Object does not supported aggregation.";
-	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw pNew;
 }

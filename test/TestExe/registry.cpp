@@ -1,3 +1,4 @@
+#include <OOCore/Remoting.h>
 #include "Test.h"
 
 bool registry_tests()

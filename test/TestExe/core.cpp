@@ -1,23 +1,23 @@
+#include <OOCore/OOCore.h>
 #include "Test.h"
 
-struct AutoUninit
+bool core_tests()
 {
-	AutoUninit() : bInitCalled(false)
-	{}
-
-	~AutoUninit()
+	static struct AutoUninit
 	{
-		if (bInitCalled)
-			Omega::Uninitialize();
-	}
+		AutoUninit() : bInitCalled(false)
+		{}
 
-	bool bInitCalled;
-};
+		~AutoUninit()
+		{
+			if (bInitCalled)
+				Omega::Uninitialize();
+		}
 
-static AutoUninit s_auto_init;
+		bool bInitCalled;
+	} auto_init;
 
-static void call_init()
-{
+	// Call Omega::Initialze and remember we have...
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
@@ -26,13 +26,7 @@ static void call_init()
 		exit(test_summary());
 	}
 
-	s_auto_init.bInitCalled = true;
-}
-
-bool core_tests()
-{
-	call_init();
-	
+	auto_init.bInitCalled = true;
 	return true;
 }
 
@@ -58,17 +52,17 @@ static bool complex_throw()
 			Omega::IException::Throw(szDesc,szFile,pE);
 		}
 	}
-	catch (Omega::IException* pE)
+	catch (Omega::IException* pE3)
 	{
-		TEST(pE->Description() == szDesc);
-		TEST(pE->Source() == szFile);
+		TEST(pE3->Description() == szDesc);
+		TEST(pE3->Source() == szFile);
 
-		Omega::IException* pE2 = pE->Cause();
+		Omega::IException* pE2 = pE3->Cause();
 		TEST(pE2->ActualIID() == OMEGA_UUIDOF(Omega::INoInterfaceException));
 		TEST(pE2->Source() == szFile);
 
 		pE2->Release();
-		pE->Release();
+		pE3->Release();
 	}
 
 	return true;

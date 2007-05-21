@@ -1,11 +1,9 @@
 #include <OOCore/OOCore.h>
+#include "Test.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
 #endif
-
-#include <stdio.h>
-#include "Test.h"
 
 // List the test entry points here rather than using header files...
 bool string_tests();

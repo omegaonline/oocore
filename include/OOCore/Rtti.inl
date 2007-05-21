@@ -535,7 +535,7 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	}
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const Omega::char_t*,desc,(in),const Omega::char_t*,source,(in),Omega::IException*,pCause));
+OOCORE_EXPORTED_FUNCTION_VOID(IException_Throw,3,((in),const Omega::char_t*,desc,(in),const Omega::char_t*,source,(in_out),Omega::IException*&,pCause));
 void Omega::IException::Throw(const Omega::char_t* desc, const Omega::char_t* source, Omega::IException* pCause)
 {
 	IException_Throw(desc,source,pCause);

@@ -1,8 +1,6 @@
 #ifndef TEST_H_INCLUDED_
 #define TEST_H_INCLUDED_
 
-#include <OOCore/OOCore.h>
-
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();
 void add_success();

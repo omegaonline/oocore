@@ -31,7 +31,7 @@ namespace Omega
 		{
 			virtual guid_t GetFailingOid() = 0;
 
-			inline static void Throw(const guid_t& oid, IException* pCause = 0);
+			inline static void Throw(const guid_t& oid);
 		};
 		
 		interface ILibraryNotFoundException : public IException
@@ -264,10 +264,10 @@ void Omega::INoInterfaceException::Throw(const Omega::guid_t& iid, const char_t*
 	INoInterfaceException_Throw(iid,source);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,2,((in),const Omega::guid_t&,oid,(in),Omega::IException*,pCause));
-void Omega::Activation::INoAggregationException::Throw(const Omega::guid_t& oid, Omega::IException* pCause)
+OOCORE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,1,((in),const Omega::guid_t&,oid));
+void Omega::Activation::INoAggregationException::Throw(const Omega::guid_t& oid)
 {
-	Activation_INoAggregationException_Throw(oid,pCause);
+	Activation_INoAggregationException_Throw(oid);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags));

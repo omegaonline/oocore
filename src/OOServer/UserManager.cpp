@@ -72,14 +72,14 @@ namespace User
 void User::InterProcessServiceFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
 	if (pOuter)
-		Activation::INoAggregationException::Throw(Remoting::OID_InterProcess);
+		throw Activation::INoAggregationException::Create(Remoting::OID_InterProcess);
 
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
 	ptrIPS->Init(m_ptrOM,m_pManager);
 
 	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
-		INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 }
 
 Registry::IRegistryKey* User::InterProcessService::GetRegistry()

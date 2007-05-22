@@ -20,14 +20,14 @@ namespace Omega
 		virtual string_t Description() = 0;
 		virtual string_t Source() = 0;
 
-		inline static void Throw(const char_t* desc, const char_t* source = 0, IException* pCause = 0);
+		inline static IException* Create(const char_t* desc, const char_t* source = 0, IException* pCause = 0);
 	};
 
 	interface INoInterfaceException : public IException
 	{
 		virtual guid_t GetUnsupportedIID() = 0;
 
-		inline static void Throw(const guid_t& iid, const char_t* source = 0);
+		inline static INoInterfaceException* Create(const guid_t& iid, const char_t* source = 0);
 	};
 }
 
@@ -86,7 +86,7 @@ OMEGA_DEFINE_IID(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 	#define OMEGA_SOURCE_INFO    static_cast<const Omega::char_t*>(Omega::string_t::Format("%s(%u): %s",__FILE__,__LINE__,OMEGA_FUNCNAME))
 #endif
 
-#define OMEGA_THROW(msg)     Omega::IException::Throw(msg,OMEGA_SOURCE_INFO)
-#define OMEGA_THROW2(msg,pE) Omega::IException::Throw(msg,OMEGA_SOURCE_INFO,pE)
+#define OMEGA_THROW(msg)     throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO)
+#define OMEGA_THROW2(msg,pE) throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO,pE)
 
 #endif // OOCORE_BASE_H_INCLUDED_

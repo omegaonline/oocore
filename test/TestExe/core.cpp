@@ -22,7 +22,8 @@ bool core_tests()
 	if (pE)
 	{
 		add_failure();
-		printf("[Failed]\n\tOmega::Initialize failed: %s\n",(const char*)pE->Description());
+		printf("[Failed]\n\tOmega::Initialize failed: %s\n\t%s\n",(const char*)pE->Description(),(const char*)pE->Source());
+		pE->Release();
 		exit(test_summary());
 	}
 
@@ -40,7 +41,7 @@ static bool complex_throw()
 	{
 		try
 		{
-			Omega::INoInterfaceException::Throw(OMEGA_UUIDOF(Omega::IObject),szFile);
+			throw Omega::INoInterfaceException::Create(OMEGA_UUIDOF(Omega::IObject),szFile);
 		}
 		catch (Omega::INoInterfaceException* pE)
 		{
@@ -49,20 +50,22 @@ static bool complex_throw()
 			TEST(!pE->Cause());
 			TEST(pE->Source() == szFile);
 			
-			Omega::IException::Throw(szDesc,szFile,pE);
+			Omega::IException* pE2 = Omega::IException::Create(szDesc,szFile,pE);
+			pE->Release();
+			throw pE2;
 		}
 	}
-	catch (Omega::IException* pE3)
+	catch (Omega::IException* pE)
 	{
-		TEST(pE3->Description() == szDesc);
-		TEST(pE3->Source() == szFile);
+		TEST(pE->Description() == szDesc);
+		TEST(pE->Source() == szFile);
 
-		Omega::IException* pE2 = pE3->Cause();
+		Omega::IException* pE2 = pE->Cause();
 		TEST(pE2->ActualIID() == OMEGA_UUIDOF(Omega::INoInterfaceException));
 		TEST(pE2->Source() == szFile);
 
 		pE2->Release();
-		pE3->Release();
+		pE->Release();
 	}
 
 	return true;
@@ -75,7 +78,7 @@ bool exception_tests()
 	const Omega::char_t szFile[] = __FILE__;
 	try
 	{
-		Omega::IException::Throw(szDesc,szFile);
+		throw Omega::IException::Create(szDesc,szFile);
 	}
 	catch (Omega::IException* pE)
 	{
@@ -88,7 +91,7 @@ bool exception_tests()
 	// Try another simple throw
 	try
 	{
-		Omega::INoInterfaceException::Throw(OMEGA_UUIDOF(Omega::IObject),szFile);
+		throw Omega::INoInterfaceException::Create(OMEGA_UUIDOF(Omega::IObject),szFile);
 	}
 	catch (Omega::INoInterfaceException* pE)
 	{

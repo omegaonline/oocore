@@ -44,7 +44,7 @@ namespace User
 	// IStream members
 	public:
 		Omega::byte_t ReadByte() 
-			{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
 			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void WriteByte(Omega::byte_t val) 
@@ -55,15 +55,15 @@ namespace User
 	// IFormattedStream members
 	public:
 		Omega::bool_t ReadBoolean() 
-			{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		Omega::uint16_t ReadUInt16() 
-			{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		Omega::uint32_t ReadUInt32() 
-			{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		Omega::uint64_t ReadUInt64() 
-			{ OOSERVER_THROW_ERRNO(EACCES); return 0; }
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		Omega::string_t ReadString()
-			{ OOSERVER_THROW_ERRNO(EACCES); return Omega::string_t(); }
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteUInt16(Omega::uint16_t val)

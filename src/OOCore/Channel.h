@@ -45,7 +45,7 @@ namespace OOCore
 	// IStream members
 	public:
 		Omega::byte_t ReadByte() 
-			{ OOCORE_THROW_ERRNO(EACCES); return 0; }
+			{ OOCORE_THROW_ERRNO(EACCES); }
 		void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
 			{ OOCORE_THROW_ERRNO(EACCES); }
 		void WriteByte(Omega::byte_t val) 
@@ -56,15 +56,15 @@ namespace OOCore
 	// IFormattedStream members
 	public:
 		Omega::bool_t ReadBoolean() 
-			{ OOCORE_THROW_ERRNO(EACCES); return 0; }
+			{ OOCORE_THROW_ERRNO(EACCES); }
 		Omega::uint16_t ReadUInt16() 
-			{ OOCORE_THROW_ERRNO(EACCES); return 0; }
+			{ OOCORE_THROW_ERRNO(EACCES); }
 		Omega::uint32_t ReadUInt32() 
-			{ OOCORE_THROW_ERRNO(EACCES); return 0; }
+			{ OOCORE_THROW_ERRNO(EACCES); }
 		Omega::uint64_t ReadUInt64() 
-			{ OOCORE_THROW_ERRNO(EACCES); return 0; }
+			{ OOCORE_THROW_ERRNO(EACCES); }
 		Omega::string_t ReadString()
-			{ OOCORE_THROW_ERRNO(EACCES); return Omega::string_t(); }
+			{ OOCORE_THROW_ERRNO(EACCES); }
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) OOCORE_THROW_LASTERROR(); }
 		void WriteUInt16(Omega::uint16_t val)

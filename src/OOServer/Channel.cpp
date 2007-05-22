@@ -78,7 +78,7 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 				if (!response.read_string(strSrc))
 					OOSERVER_THROW_LASTERROR();
 
-				IException::Throw(strDesc.c_str(),strSrc.c_str());
+				throw IException::Create(strDesc.c_str(),strSrc.c_str());
 			}
 						
 			// Wrap the response

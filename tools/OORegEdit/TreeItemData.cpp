@@ -117,12 +117,12 @@ void TreeItemData::DeleteValue(const Omega::string_t& strVal)
 	m_ptrKey->DeleteValue(strVal);
 }
 
-void TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo)
+bool TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo)
 {
 	Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strFrom);
 
 	if (m_ptrKey->IsValue(strTo))
-		Omega::Registry::IAlreadyExistsException::Throw(strTo);
+		return false;
 
 	if (type==Omega::Registry::IRegistryKey::String)
 	{
@@ -156,6 +156,8 @@ void TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::stri
 
 		m_ptrKey->DeleteValue(strFrom);
 	}
+
+	return true;
 }
 
 void TreeItemData::RenameKey(const Omega::string_t& strFrom, const Omega::string_t& strTo, TreeItemData* pItem)

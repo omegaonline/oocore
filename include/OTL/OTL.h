@@ -482,7 +482,7 @@ namespace OTL
 		static ObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				Omega::Activation::INoAggregationException::Throw(Omega::guid_t::Null());
+				throw Omega::Activation::INoAggregationException::Create(Omega::guid_t::Null());
 
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
@@ -623,7 +623,7 @@ namespace OTL
 		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
 		{
 			if (!pOuter)
-				Omega::IException::Throw("AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
+				throw Omega::IException::Create("AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
 
 			AggregatedObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,AggregatedObjectImpl<ROOT>(pOuter));
@@ -790,7 +790,7 @@ namespace OTL
 			{
 				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
-					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 				return pObject;
 			}
 		};
@@ -812,7 +812,7 @@ namespace OTL
 			{
 				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
-					Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 				return pObject;
 			}
 		};
@@ -829,7 +829,7 @@ namespace OTL
 		{
 			Omega::IObject* pObject = T::CreateInstancePtr(pOuter)->QueryInterface(iid);
 			if (!pObject)
-				Omega::INoInterfaceException::Throw(iid,OMEGA_SOURCE_INFO);
+				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 			return pObject;
 		}
 	};
@@ -840,8 +840,7 @@ namespace OTL
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject*, const Omega::guid_t&)
 		{
-			Omega::Activation::INoAggregationException::Throw(*pOID);
-			return 0;
+			throw Omega::Activation::INoAggregationException::Create(*pOID);
 		}
 	};
 

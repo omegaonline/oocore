@@ -379,7 +379,6 @@ IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
 
 	default:
 		OOSERVER_THROW_ERRNO(EINVAL);
-		return static_cast<IRegistryKey::ValueType_t>(-1);
 	}
 }
 
@@ -446,8 +445,6 @@ Omega::IEnumString* UserKey::EnumSubKeys()
 	{
 		OMEGA_THROW(e.what());
 	}
-
-	return 0;
 }
 
 Omega::IEnumString* UserKey::EnumValues()
@@ -476,8 +473,6 @@ Omega::IEnumString* UserKey::EnumValues()
 	{
 		OMEGA_THROW(e.what());
 	}
-
-	return 0;
 }
 
 void UserKey::DeleteKey(const string_t& strSubKey)
@@ -627,7 +622,6 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 
 	default:
 		OOSERVER_THROW_ERRNO(EINVAL);
-		return static_cast<IRegistryKey::ValueType_t>(-1);
 	}
 }
 
@@ -893,8 +887,6 @@ Omega::IEnumString* RootKey::EnumSubKeys()
 	{
 		OMEGA_THROW(e.what());
 	}
-
-	return 0;
 }
 
 void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
@@ -965,8 +957,6 @@ Omega::IEnumString* RootKey::EnumValues()
 	{
 		OMEGA_THROW(e.what());
 	}
-
-	return 0;
 }
 
 void RootKey::DeleteKey(const string_t& strSubKey)
@@ -1174,8 +1164,6 @@ Omega::IEnumString* BaseKey::EnumSubKeys()
 	{
 		OMEGA_THROW(e.what());
 	}
-
-	return 0;
 }
 
 Omega::IEnumString* BaseKey::EnumValues()

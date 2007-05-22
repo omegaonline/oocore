@@ -31,7 +31,7 @@ namespace Omega
 		{
 			virtual guid_t GetFailingOid() = 0;
 
-			inline static void Throw(const guid_t& oid);
+			inline static INoAggregationException* Create(const guid_t& oid);
 		};
 		
 		interface ILibraryNotFoundException : public IException
@@ -258,16 +258,10 @@ Omega::Activation::IServiceTable* Omega::Activation::IServiceTable::GetServiceTa
 	return Activation_GetServiceTable();
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(INoInterfaceException_Throw,2,((in),const Omega::guid_t&,iid,(in),const Omega::char_t*,source));
-void Omega::INoInterfaceException::Throw(const Omega::guid_t& iid, const char_t* source)
+OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const Omega::guid_t&,oid));
+Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::guid_t& oid)
 {
-	INoInterfaceException_Throw(iid,source);
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_INoAggregationException_Throw,1,((in),const Omega::guid_t&,oid));
-void Omega::Activation::INoAggregationException::Throw(const Omega::guid_t& oid)
-{
-	Activation_INoAggregationException_Throw(oid);
+	return Activation_INoAggregationException_Create(oid);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags));

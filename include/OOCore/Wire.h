@@ -438,7 +438,7 @@ namespace Omega
 				{
 					m_pI = static_cast<I*>(pObj->QueryInterface(OMEGA_UUIDOF(I)));
 					if (!m_pI)
-						INoInterfaceException::Throw(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
+						throw INoInterfaceException::Create(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
 				}
 
 				virtual ~IObject_WireStub()
@@ -538,7 +538,7 @@ namespace Omega
 					{
 						m_ptrProxy = static_cast<IWireProxy*>(this->QueryInterface(OMEGA_UUIDOF(IWireProxy)));
 						if (!m_ptrProxy)
-							INoInterfaceException::Throw(OMEGA_UUIDOF(IWireProxy),OMEGA_SOURCE_INFO);
+							throw INoInterfaceException::Create(OMEGA_UUIDOF(IWireProxy),OMEGA_SOURCE_INFO);
 
 						m_ptrProxy->Release();
 					}

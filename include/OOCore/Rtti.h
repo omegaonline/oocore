@@ -815,7 +815,7 @@ namespace Omega
 				auto_iface_safe_ptr<IException_Safe> ptrSE(pSE);
 				I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::stub_functor(pSE))->QueryInterface(OMEGA_UUIDOF(I)));
 				if (!pI)
-					INoInterfaceException::Throw(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
+					throw INoInterfaceException::Create(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
 				throw pI;
 			}
 
@@ -825,7 +825,7 @@ namespace Omega
 				auto_iface_ptr<IException> ptrE(pE);
 				I* pI = static_cast<I*>(pE->QueryInterface(OMEGA_UUIDOF(I)));
 				if (!pI)
-					INoInterfaceException::Throw(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
+					throw INoInterfaceException::Create(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
 				throw pI;
 			}
 

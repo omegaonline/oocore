@@ -79,7 +79,7 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 				if (!response->input()->read_string(strSrc))
 					OOCORE_THROW_LASTERROR();
 
-				IException::Throw(strDesc.c_str(),strSrc.c_str());
+				throw IException::Create(strDesc.c_str(),strSrc.c_str());
 			}
 			
 			// Wrap the response

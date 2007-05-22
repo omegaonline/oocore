@@ -577,7 +577,11 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 
 	try
 	{
-		pItem->RenameValue(Omega::string_t(strOld),Omega::string_t(evt.GetLabel()));
+		if (!pItem->RenameValue(Omega::string_t(strOld),Omega::string_t(evt.GetLabel())))
+		{
+			wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+			evt.Veto();
+		}
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{

@@ -12,7 +12,7 @@ public:
 	void Refresh(wxListCtrl* pList, wxTreeCtrl* pTree, const wxTreeItemId& id);
 	void DeleteKey(const Omega::string_t& strKey);
 	void DeleteValue(const Omega::string_t& strVal);
-	void RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo);
+	bool RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo);
 	void RenameKey(const Omega::string_t& strFrom, const Omega::string_t& strTo, TreeItemData* pItem);
 	void NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id);
 	void NewString(wxListCtrl* pList);

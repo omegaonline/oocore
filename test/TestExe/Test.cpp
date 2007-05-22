@@ -49,7 +49,7 @@ void run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		printf("[Unhandled Omega::IException]\n\t%s\n",(const char*)pE->Description());
+		printf("[Unhandled Omega::IException]\n\t%s\n\t%s\n",(const char*)pE->Description(),(const char*)pE->Source());
 		pE->Release();
 	}
 	catch (std::exception& e)

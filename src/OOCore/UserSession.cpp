@@ -263,7 +263,18 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 
 	// Connect to the OOServer main process...
 	ACE_SOCK_Stream peer;
-	if (ACE_SOCK_Connector().connect(peer,addr) == -1)
+	ACE_Time_Value wait(5);
+	ACE_Countdown_Time timeout(&wait);
+	int conn_err = 0;
+	while (wait != ACE_Time_Value::zero)
+	{
+		conn_err = ACE_SOCK_Connector().connect(peer,addr,&wait);
+		if (conn_err == 0)
+			break;
+
+		timeout.update();
+	}
+	if (conn_err == -1)
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
@@ -284,7 +295,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 	}
 
 	// Wait for the response to come back...
-	ACE_Time_Value wait(5);
+	wait = ACE_Time_Value(5);
 	ACE_UINT32 err = 0;
 	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)))
 	{

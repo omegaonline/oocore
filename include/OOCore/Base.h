@@ -87,6 +87,5 @@ OMEGA_DEFINE_IID(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 #endif
 
 #define OMEGA_THROW(msg)     throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO)
-#define OMEGA_THROW2(msg,pE) throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO,pE)
 
 #endif // OOCORE_BASE_H_INCLUDED_

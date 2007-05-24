@@ -15,19 +15,19 @@ bool core_tests()
 		}
 
 		bool bInitCalled;
-	} auto_init;
+	} auto_uninit;
 
 	// Call Omega::Initialze and remember we have...
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
 		add_failure();
-		printf("[Failed]\n\tOmega::Initialize failed: %s\n\t%s\n",(const char*)pE->Description(),(const char*)pE->Source());
+		printf("[Failed]\n\tOmega::Initialize failed: %s\n%s\n",(const char*)pE->Description(),(const char*)pE->Source());
 		pE->Release();
 		exit(test_summary());
 	}
 
-	auto_init.bInitCalled = true;
+	auto_uninit.bInitCalled = true;
 	return true;
 }
 

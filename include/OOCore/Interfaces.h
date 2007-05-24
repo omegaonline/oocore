@@ -66,16 +66,16 @@ namespace Omega
 	
 	namespace Registry
 	{
+		enum ValueType
+		{
+			String = 0,
+			UInt32 = 1,
+			Binary = 2
+		};
+		typedef byte_t ValueType_t;
+
 		interface IRegistryKey : public IObject
 		{
-			enum ValueType
-			{
-				String = 0,
-				UInt32 = 1,
-				Binary = 2
-			};
-			typedef byte_t ValueType_t;
-
 			enum OpenFlags
 			{
 				OpenExisting = 0,
@@ -119,12 +119,13 @@ namespace Omega
 		
         interface IWrongValueTypeException : public IException
 		{
-			virtual IRegistryKey::ValueType_t GetValueType() = 0;
+			virtual string_t GetValueName() = 0;
+			virtual ValueType_t GetValueType() = 0;
 		};
 		
 		interface IAccessDeniedException : public IException
 		{
-			virtual string_t GetName() = 0;
+			virtual string_t GetKeyName() = 0;
 		};
 	}
 
@@ -204,7 +205,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
 	OMEGA_METHOD_VOID(SetUIntValue,2,((in),const Omega::string_t&,name,(in),Omega::uint32_t,val))
 	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
-	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
+	OMEGA_METHOD(Omega::Registry::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))
 	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())
 	OMEGA_METHOD(IEnumString*,EnumValues,0,())
@@ -225,7 +226,8 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	Omega::Registry, IWrongValueTypeException, Omega, IException, "{B7FF3FE7-11AF-4f62-9341-8470BCB8F0D7}",
 
 	// Methods
-	OMEGA_METHOD(Omega::Registry::IRegistryKey::ValueType_t,GetValueType,0,())
+	OMEGA_METHOD(Omega::Registry::ValueType_t,GetValueType,0,())
+	OMEGA_METHOD(Omega::string_t,GetValueName,0,())
 )
 
 OMEGA_EXPORT_INTERFACE_DERIVED
@@ -249,7 +251,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	Omega::Registry, IAccessDeniedException, Omega, IException, "{08AE0A04-1765-493b-93A3-8738768F09BC}",
 	
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetName,0,())
+	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IServiceTable*,Activation_GetServiceTable,0,());

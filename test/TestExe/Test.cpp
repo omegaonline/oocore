@@ -9,7 +9,7 @@ static unsigned long fail_count = 0;
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
 	add_failure();
-	printf("[Failed]\n\tAssertion '%s' failed at %s:%lu\n",pszExpr,pszSrc,nLine);
+	printf("[Failed]\n\nAssertion '%s' failed at %s:%lu\n",pszExpr,pszSrc,nLine);
 	return false;
 }
 
@@ -49,13 +49,13 @@ void run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		printf("[Unhandled Omega::IException]\n\t%s\n\t%s\n",(const char*)pE->Description(),(const char*)pE->Source());
+		printf("[Unhandled Omega::IException]\n\n%s\n%s\n",(const char*)pE->Description(),(const char*)pE->Source());
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		printf("[Unhandled std::exception]\n\t%s\n",e.what());
+		printf("[Unhandled std::exception]\n\n%s\n",e.what());
 	}
 	catch (...)
 	{

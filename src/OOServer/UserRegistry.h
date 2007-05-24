@@ -35,7 +35,7 @@ namespace User
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
 			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
-			Omega::Registry::IRegistryKey::ValueType_t GetValueType(const Omega::string_t& strName);
+			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
 			Omega::IEnumString* EnumSubKeys();
 			Omega::IEnumString* EnumValues();
@@ -50,7 +50,7 @@ namespace User
 		public:
 			UserKey();
 
-			void Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock);
+			void Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock, const ACE_CString& strKeyName);
 
 			BEGIN_INTERFACE_MAP(UserKey)
 				INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
@@ -60,6 +60,9 @@ namespace User
 			ACE_Configuration_Heap*        m_pRegistry;
 			ACE_Configuration_Section_Key  m_key;
 			ACE_RW_Thread_Mutex*           m_pLock;
+			ACE_CString                    m_strKeyName;
+
+			Omega::string_t FullKeyPath(const Omega::string_t& strSub);
 			
 		// IRegistry members
 		public:
@@ -71,7 +74,7 @@ namespace User
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
 			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
-			Omega::Registry::IRegistryKey::ValueType_t GetValueType(const Omega::string_t& strName);
+			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
 			Omega::IEnumString* EnumSubKeys();
 			Omega::IEnumString* EnumValues();
@@ -108,7 +111,7 @@ namespace User
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
 			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
-			Omega::Registry::IRegistryKey::ValueType_t GetValueType(const Omega::string_t& strName);
+			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
 			Omega::IEnumString* EnumSubKeys();
 			Omega::IEnumString* EnumValues();

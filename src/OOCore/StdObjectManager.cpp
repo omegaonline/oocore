@@ -409,6 +409,9 @@ void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 
 Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 {
+	if (!m_ptrChannel)
+		OOCORE_THROW_ERRNO(EINVAL);
+
 	return m_ptrChannel->CreateOutputStream();
 }
 

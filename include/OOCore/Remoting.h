@@ -35,14 +35,14 @@ namespace Omega
 			virtual Serialize::IFormattedStream* SendAndReceive(MethodAttributes_t attribs, Serialize::IFormattedStream* pStream) = 0;
 		};
 		
-		interface IObjectManager : public IObject
+		interface IObjectManager : public System::MetaInfo::IWireManager
 		{
 			virtual void Connect(IChannel* pChannel) = 0;
 			virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) = 0;
 			virtual void Disconnect() = 0;
 			virtual void CreateUnboundProxy(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 		};
-		
+
 		interface IInterProcessService : public IObject
 		{
 		public:
@@ -77,9 +77,9 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD(Serialize::IFormattedStream*,SendAndReceive,2,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pStream))
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_EXPORT_INTERFACE_DERIVED
 (
-	Omega::Remoting, IObjectManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
+	Omega::Remoting, IObjectManager, Omega::System::MetaInfo, IWireManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
 
 	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannel*,pChannel))
 	OMEGA_METHOD_VOID(Invoke,3,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut,(in),uint32_t,timeout))

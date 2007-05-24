@@ -45,26 +45,33 @@ namespace Registry
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<IWrongValueTypeException>)
 		END_INTERFACE_MAP()
 
-		IRegistryKey::ValueType_t m_type;
+		ValueType_t m_type;
+		string_t    m_strValue;
 
 	public:
-		IRegistryKey::ValueType_t GetValueType()
+		ValueType_t GetValueType()
 		{
 			return m_type;
 		}
 
-		static void Throw(string_t strValue, IRegistryKey::ValueType_t actual_type, const string_t& strSource, IException* pE = 0)
+		string_t GetValueName()
+		{
+			return m_strValue;
+		}
+
+		static void Throw(string_t strValue, ValueType_t actual_type, const string_t& strSource, IException* pE = 0)
 		{
 			ObjectImpl<WrongValueTypeException>* pRE = ObjectImpl<WrongValueTypeException>::CreateInstance();
 			pRE->m_type = actual_type;
+			pRE->m_strValue = strValue;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
 			pRE->m_strDesc = "Incorrect registry value type, actual value type is ";
-			if (actual_type==IRegistryKey::String)
+			if (actual_type==String)
 				pRE->m_strDesc += "String";
-			else if (actual_type==IRegistryKey::UInt32)
+			else if (actual_type==UInt32)
 				pRE->m_strDesc += "UInt32";
-			else if (actual_type==IRegistryKey::Binary)
+			else if (actual_type==Binary)
 				pRE->m_strDesc += "Binary";
 			else
 				pRE->m_strDesc += "Corrupt!";
@@ -137,7 +144,7 @@ namespace Registry
 		string_t m_strName;
 
 	public:
-		string_t GetName()
+		string_t GetKeyName()
 		{
 			return m_strName;
 		}
@@ -164,11 +171,22 @@ UserKey::UserKey() :
 {
 }
 
-void UserKey::Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock)
+void UserKey::Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock, const ACE_CString& strKeyName)
 {
 	m_pRegistry = pRegistry;
 	m_key = strKey;
 	m_pLock = pLock;
+	m_strKeyName = strKeyName;
+}
+
+string_t UserKey::FullKeyPath(const string_t& strSub)
+{
+	string_t strRet = m_strKeyName.c_str();
+	strRet += "\\" + strSub;
+	if (strRet.Left(1) == "\\")
+		return strRet.Mid(1);
+	else
+		return strRet;
 }
 
 bool_t UserKey::IsSubKey(const string_t& strSubKey)
@@ -220,9 +238,9 @@ string_t UserKey::GetStringValue(const string_t& strName)
 		if (err == ENOENT)
 		{
 			if (IsValue(strName))
-				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::GetStringValue");
+				WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::GetStringValue");
 			else
-				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::GetStringValue");
+				NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetStringValue");
 		}
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetStringValue");
@@ -244,9 +262,9 @@ uint32_t UserKey::GetUIntValue(const string_t& strName)
 		if (err == ENOENT)
 		{
 			if (IsValue(strName))
-				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::GetUIntValue");
+				WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::GetUIntValue");
 			else
-				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
+				NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetUIntValue");
 		}
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
@@ -269,9 +287,9 @@ void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 		if (err == ENOENT)
 		{
 			if (IsValue(strName))
-				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::GetUIntValue");
+				WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::GetUIntValue");
 			else
-				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
+				NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetUIntValue");
 		}
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
@@ -279,9 +297,16 @@ void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 			OOSERVER_THROW_ERRNO(err);
 	}
 
-	cbLen = std::min(cbLen,static_cast<Omega::uint32_t>(len));
-	if (data)
-		memcpy(pBuffer,data,cbLen);
+	if (cbLen && pBuffer)
+	{
+		cbLen = std::min(cbLen,static_cast<Omega::uint32_t>(len));
+		if (data)
+			memcpy(pBuffer,data,cbLen);
+	}
+	else
+	{
+		cbLen = static_cast<Omega::uint32_t>(len);
+	}
 
 	delete [] static_cast<char*>(data);
 }
@@ -297,9 +322,9 @@ void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 		if (err == ENOENT)
 		{
 			if (IsValue(strName))
-				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::SetStringValue");
+				WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::SetStringValue");
 			else
-				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::SetStringValue");
+				NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetStringValue");
 		}
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetStringValue");
@@ -318,9 +343,9 @@ void UserKey::SetUIntValue(const string_t& strName, uint32_t val)
 		if (err == ENOENT)
 		{
 			if (IsValue(strName))
-				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::SetUIntValue");
+				WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::SetUIntValue");
 			else
-				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
+				NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetUIntValue");
 		}
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
@@ -339,9 +364,9 @@ void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 		if (err == ENOENT)
 		{
 			if (IsValue(strName))
-				WrongValueTypeException::Throw(strName,GetValueType(strName),"Omega::Registry::IRegistry::SetUIntValue");
+				WrongValueTypeException::Throw(FullKeyPath(strName),GetValueType(strName),"Omega::Registry::IRegistry::SetUIntValue");
 			else
-				NotFoundException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
+				NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetUIntValue");
 		}
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
@@ -350,7 +375,7 @@ void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 	}
 }
 
-IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
+ValueType_t UserKey::GetValueType(const string_t& strName)
 {
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
@@ -359,7 +384,7 @@ IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
-			NotFoundException::Throw(strName,"Omega::Registry::IRegistry::GetValueType");
+			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetValueType");
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetValueType");
 		else
@@ -369,13 +394,13 @@ IRegistryKey::ValueType_t UserKey::GetValueType(const string_t& strName)
 	switch (vtype)
 	{
 	case ACE_Configuration_Heap::STRING:
-		return IRegistryKey::String;
+		return String;
 
 	case ACE_Configuration_Heap::INTEGER:
-		return IRegistryKey::UInt32;
+		return UInt32;
 
 	case ACE_Configuration_Heap::BINARY:
-		return IRegistryKey::Binary;
+		return Binary;
 
 	default:
 		OOSERVER_THROW_ERRNO(EINVAL);
@@ -397,7 +422,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		// Check to see if the key already exists by opening it...
 		ACE_Configuration_Section_Key sub_key;
 		if (m_pRegistry->open_section(m_key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey),0,sub_key) == 0)
-			AlreadyExistsException::Throw(strSubKey,"Omega::Registry::IRegistry::OpenSubKey");
+			AlreadyExistsException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::OpenSubKey");
 	}
 
     int bCreate = (flags & IRegistryKey::Create) ? 1 : 0;
@@ -407,7 +432,7 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
-			NotFoundException::Throw(strSubKey,"Omega::Registry::IRegistry::OpenSubKey");
+			NotFoundException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::OpenSubKey");
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strSubKey,"Omega::Registry::IRegistry::OpenSubKey");
 		else
@@ -416,7 +441,10 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 	// If we get here, then we have a new key!
 	ObjectPtr<ObjectImpl<UserKey> > ptrSubKey = ObjectImpl<UserKey>::CreateInstancePtr();
-	ptrSubKey->Init(m_pRegistry,sub_key,m_pLock);
+	ACE_CString strNewName = m_strKeyName;
+	strNewName += "\\";
+	strNewName += strSubKey;
+	ptrSubKey->Init(m_pRegistry,sub_key,m_pLock,strNewName);
 	return ptrSubKey.AddRefReturn();
 }
 
@@ -483,7 +511,7 @@ void UserKey::DeleteKey(const string_t& strSubKey)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
-			NotFoundException::Throw(strSubKey,"Omega::Registry::IRegistry::DeleteKey");
+			NotFoundException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::DeleteKey");
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strSubKey,"Omega::Registry::IRegistry::DeleteKey");
 		else
@@ -499,7 +527,7 @@ void UserKey::DeleteValue(const string_t& strName)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
-			NotFoundException::Throw(strName,"Omega::Registry::IRegistry::DeleteValue");
+			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::DeleteValue");
 		else if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,"Omega::Registry::IRegistry::DeleteValue");
 		else
@@ -537,7 +565,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::IsSubKey");
+		BadNameException::Throw(strSubKey,"Omega::Registry::IRegistry::IsSubKey");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -570,7 +598,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	if (err != ENOENT)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::IsValue");
+			BadNameException::Throw(strName,"Omega::Registry::IRegistry::IsValue");
 		else if (err != 0)
 			OOSERVER_THROW_ERRNO(err);
 	}
@@ -578,7 +606,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	return (err==0);
 }
 
-IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
+ValueType_t RootKey::GetValueType(const string_t& strName)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
@@ -601,7 +629,7 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetValueType");
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetValueType");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetValueType");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -612,13 +640,13 @@ IRegistryKey::ValueType_t RootKey::GetValueType(const string_t& strName)
 	switch (value_type)
 	{
 	case ACE_Configuration_Heap::STRING:
-		return IRegistryKey::String;
+		return String;
 
 	case ACE_Configuration_Heap::INTEGER:
-		return IRegistryKey::UInt32;
+		return UInt32;
 
 	case ACE_Configuration_Heap::BINARY:
-		return IRegistryKey::Binary;
+		return Binary;
 
 	default:
 		OOSERVER_THROW_ERRNO(EINVAL);
@@ -648,7 +676,7 @@ string_t RootKey::GetStringValue(const string_t& strName)
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetStringValue");
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetStringValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetStringValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -682,7 +710,7 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetUIntValue");
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetUIntValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetUIntValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
@@ -700,6 +728,7 @@ void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 	request.write_string(m_strKey);
 	request.write_string(strName);
 	request.write_ulong(cbLen);
+	bool bNoDataBack = (cbLen == 0);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -717,11 +746,14 @@ void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetBinaryValue");
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::GetBinaryValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 
-	if (!response.read_ulong(cbLen) || !response.read_octet_array(pBuffer,cbLen))
+	if (!response.read_ulong(cbLen))
+		OOSERVER_THROW_LASTERROR();
+
+	if (!bNoDataBack && !response.read_octet_array(pBuffer,cbLen))
 		OOSERVER_THROW_LASTERROR();
 }
 
@@ -749,9 +781,9 @@ void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetStringValue");
 	}
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetStringValue");
+		AccessDeniedException::Throw(m_strKey,"Omega::Registry::IRegistry::SetStringValue");
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetStringValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetStringValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -780,9 +812,9 @@ void RootKey::SetUIntValue(const string_t& strName, uint32_t uValue)
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetUIntValue");
 	}
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetUIntValue");
+		AccessDeniedException::Throw(m_strKey,"Omega::Registry::IRegistry::SetUIntValue");
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetUIntValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetUIntValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -812,9 +844,9 @@ void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 			NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetBinaryValue");
 	}
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetBinaryValue");
+		AccessDeniedException::Throw(m_strKey,"Omega::Registry::IRegistry::SetBinaryValue");
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::SetBinaryValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::SetBinaryValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -857,9 +889,9 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 			OOSERVER_THROW_LASTERROR();
 
 		if (err==EACCES)
-			AccessDeniedException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::OpenSubKey");
+			AccessDeniedException::Throw(m_strKey,"Omega::Registry::IRegistry::OpenSubKey");
 		else if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::OpenSubKey");
+			BadNameException::Throw(strSubKey,"Omega::Registry::IRegistry::OpenSubKey");
 		else if (err != 0)
 			OOSERVER_THROW_ERRNO(err);
 	}
@@ -979,7 +1011,7 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	else if (err==EACCES)
 		AccessDeniedException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::DeleteKey");
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strSubKey),"Omega::Registry::IRegistry::DeleteKey");
+		BadNameException::Throw(strSubKey,"Omega::Registry::IRegistry::DeleteKey");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -1002,9 +1034,9 @@ void RootKey::DeleteValue(const string_t& strName)
 	if (err == ENOENT)
 		NotFoundException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::DeleteValue");
 	else if (err==EACCES)
-		AccessDeniedException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::DeleteValue");
+		AccessDeniedException::Throw(m_strKey,"Omega::Registry::IRegistry::DeleteValue");
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(FullKeyPath(strName),"Omega::Registry::IRegistry::DeleteValue");
+		BadNameException::Throw(strName,"Omega::Registry::IRegistry::DeleteValue");
 	else if (err != 0)
 		OOSERVER_THROW_ERRNO(err);
 }
@@ -1018,7 +1050,7 @@ void BaseKey::Init(Manager* pManager, bool bSandbox)
 	m_ptrRoot->Init(pManager,"");
 
 	m_ptrUser = ObjectImpl<UserKey>::CreateInstancePtr();
-	m_ptrUser->Init(&m_registry,m_registry.root_section(),&m_lock);
+	m_ptrUser->Init(&m_registry,m_registry.root_section(),&m_lock,"Current User");
 }
 
 int BaseKey::open_registry(bool bSandbox)
@@ -1117,7 +1149,7 @@ void BaseKey::SetBinaryValue(const string_t& strName, uint32_t cbLen, const byte
 	return m_ptrRoot->SetBinaryValue(strName,cbLen,val);
 }
 
-IRegistryKey::ValueType_t BaseKey::GetValueType(const string_t& strName)
+ValueType_t BaseKey::GetValueType(const string_t& strName)
 {
 	return m_ptrRoot->GetValueType(strName);
 }
@@ -1131,22 +1163,9 @@ IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	}
 
     if (strSubKey=="Current User" || strSubKey.Left(13) == "Current User\\")
-	{
-		/*string_t sub_strSubKey = strSubKey.Mid(14);
-		if (sub_strSubKey.IsEmpty())
-		{
-			if (flags & IRegistryKey::FailIfThere)
-				OOSERVER_THROW_ERRNO(EEXIST);
-
-			return m_ptrUser.AddRefReturn();
-		}
-		else*/
-			return m_ptrUser->OpenSubKey(strSubKey.Mid(13),flags);
-	}
+		return m_ptrUser->OpenSubKey(strSubKey.Mid(13),flags);
 	else
-	{
 		return m_ptrRoot->OpenSubKey(strSubKey,flags);
-	}
 }
 
 Omega::IEnumString* BaseKey::EnumSubKeys()

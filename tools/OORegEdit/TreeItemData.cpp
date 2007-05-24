@@ -58,16 +58,16 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		if (count==0)
 			break;
 
-		Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strName);
+		Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
 
-		long item = pList->InsertItem(i,wxString(strName),type==Omega::Registry::IRegistryKey::String ? 4 : 5);
+		long item = pList->InsertItem(i,wxString(strName),type==Omega::Registry::String ? 4 : 5);
 		
-		if (type==Omega::Registry::IRegistryKey::String)
+		if (type==Omega::Registry::String)
 		{
 			pList->SetItem(item,1,_("String"));
 			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(strName)));
 		}
-		else if (type==Omega::Registry::IRegistryKey::UInt32)
+		else if (type==Omega::Registry::UInt32)
 		{
 			Omega::uint32_t val = m_ptrKey->GetUIntValue(strName);
 			pList->SetItem(item,1,_("UInt32"));
@@ -76,7 +76,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		else
 		{
 			Omega::byte_t szBuf[128];
-			Omega::uint32_t cbLen = sizeof(szBuf)/sizeof(szBuf[0]);
+			Omega::uint32_t cbLen = sizeof(szBuf);
 			m_ptrKey->GetBinaryValue(strName,cbLen,szBuf);
 
 			wxString val;
@@ -119,18 +119,18 @@ void TreeItemData::DeleteValue(const Omega::string_t& strVal)
 
 bool TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::string_t& strTo)
 {
-	Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strFrom);
+	Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strFrom);
 
 	if (m_ptrKey->IsValue(strTo))
 		return false;
 
-	if (type==Omega::Registry::IRegistryKey::String)
+	if (type==Omega::Registry::String)
 	{
 		Omega::string_t val = m_ptrKey->GetStringValue(strFrom);
 		m_ptrKey->SetStringValue(strTo,val);
 		m_ptrKey->DeleteValue(strFrom);
 	}
-	else if (type==Omega::Registry::IRegistryKey::UInt32)
+	else if (type==Omega::Registry::UInt32)
 	{
 		Omega::uint32_t val = m_ptrKey->GetUIntValue(strFrom);
 		m_ptrKey->SetUIntValue(strTo,val);
@@ -182,14 +182,14 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 		if (count==0)
 			break;
 
-		Omega::Registry::IRegistryKey::ValueType_t type = ptrOldKey->GetValueType(strName);
+		Omega::Registry::ValueType_t type = ptrOldKey->GetValueType(strName);
 
-		if (type==Omega::Registry::IRegistryKey::String)
+		if (type==Omega::Registry::String)
 		{
 			Omega::string_t val = ptrOldKey->GetStringValue(strName);
 			ptrNewKey->SetStringValue(strName,val);
 		}
-		else if (type==Omega::Registry::IRegistryKey::UInt32)
+		else if (type==Omega::Registry::UInt32)
 		{
 			Omega::uint32_t val = ptrOldKey->GetUIntValue(strName);
 			ptrNewKey->SetUIntValue(strName,val);
@@ -343,9 +343,9 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 {
 	Omega::string_t strName(pList->GetItemText(item_id));
-	Omega::Registry::IRegistryKey::ValueType_t type = m_ptrKey->GetValueType(strName);
+	Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
 
-	if (type == Omega::Registry::IRegistryKey::String)
+	if (type == Omega::Registry::String)
 	{
 		EditStringDlg dialog(NULL,-1,wxT(""));
 
@@ -359,7 +359,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 			pList->SetItem(item_id,2,dialog.m_strValue);
 		}
 	}
-	else if (type == Omega::Registry::IRegistryKey::UInt32)
+	else if (type == Omega::Registry::UInt32)
 	{
 		EditUIntDlg dialog(NULL,-1,wxT(""));
 
@@ -583,7 +583,7 @@ bool TreeItemData::MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Ome
 			return true;
 	}
 
-	if (bData && ptrKey->GetValueType(strName)==Omega::Registry::IRegistryKey::String)
+	if (bData && ptrKey->GetValueType(strName)==Omega::Registry::String)
 	{
 		Omega::string_t strValue = ptrKey->GetStringValue(strName);
 		if (bMatchAll)

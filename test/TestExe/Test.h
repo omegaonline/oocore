@@ -17,5 +17,7 @@ void run_test(pfnTest t, const char* pszName);
 	else \
 		add_success(); \
 
+#define TEST_VOID(expr) \
+	(expr); add_success();
 
 #endif // TEST_H_INCLUDED_

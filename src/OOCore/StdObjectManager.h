@@ -6,8 +6,7 @@ namespace OOCore
 	class StdObjectManager :
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager>,
-		public Omega::Remoting::IObjectManager,
-		public Omega::System::MetaInfo::IWireManager
+		public Omega::Remoting::IObjectManager
 	{
 	public:
 		StdObjectManager();
@@ -28,13 +27,6 @@ namespace OOCore
 
 		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::MetaInfo::IWireStub> >	m_mapStubIds;
 
-	// IObjectManager members
-	public:
-		void Connect(Omega::Remoting::IChannel* pChannel);
-		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout);
-		void Disconnect();
-		void CreateUnboundProxy(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
-
 	// IWireManager members
 	public:
 		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
@@ -42,6 +34,13 @@ namespace OOCore
 		void ReleaseStub(Omega::uint32_t id);
 		Omega::Serialize::IFormattedStream* CreateOutputStream();
 		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pParams);
+
+	// IObjectManager members
+	public:
+		void Connect(Omega::Remoting::IChannel* pChannel);
+		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout);
+		void Disconnect();
+		void CreateUnboundProxy(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }
 

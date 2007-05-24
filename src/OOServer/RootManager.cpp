@@ -970,7 +970,6 @@ void Root::Manager::registry_delete_key(RequestBase* request, ACE_OutputCDR& res
 		else
 		{
 			ACE_CString strSubKey;
-
 			if (!request->input()->read_string(strSubKey))
 				err = ACE_OS::last_error();
 			else
@@ -1106,11 +1105,8 @@ void Root::Manager::registry_get_uint_value(RequestBase* request, ACE_OutputCDR&
 			err = ACE_OS::last_error();
 		else
 		{
-			u_int v = 0;
 			if (m_registry.get_integer_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),val) != 0)
 				err = ACE_OS::last_error();
-			else
-				val = v;
 		}
 	}
 
@@ -1124,6 +1120,7 @@ void Root::Manager::registry_get_binary_value(RequestBase* request, ACE_OutputCD
 	ACE_CDR::Long err = 0;
 	ACE_CDR::ULong len = 0;
 	void* data = 0;
+	bool bReplyWithData = false;
 
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -1138,11 +1135,14 @@ void Root::Manager::registry_get_binary_value(RequestBase* request, ACE_OutputCD
 				err = ACE_OS::last_error();
 			else
 			{
+				bReplyWithData = (len != 0);
 				size_t dlen = 0;
                 if (m_registry.get_binary_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),data,dlen) != 0)
 					err = ACE_OS::last_error();
+				else if (len != 0)
+					len = std::min(len,static_cast<ACE_CDR::ULong>(dlen));
 				else
-					dlen = std::min(len,static_cast<ACE_CDR::ULong>(dlen));
+					len = static_cast<ACE_CDR::ULong>(dlen);
 			}
 		}
 	}
@@ -1151,7 +1151,8 @@ void Root::Manager::registry_get_binary_value(RequestBase* request, ACE_OutputCD
 	if (err == 0)
 	{
 		response.write_ulong(len);
-		response.write_octet_array(static_cast<const ACE_CDR::Octet*>(data),len);
+		if (bReplyWithData)
+			response.write_octet_array(static_cast<const ACE_CDR::Octet*>(data),len);
 	}
 
 	delete [] static_cast<char*>(data);

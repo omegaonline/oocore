@@ -277,7 +277,8 @@ namespace Omega
 
 					void init(uint32_t cbSize)
 					{
-						OMEGA_NEW(m_pVals,A[cbSize]);
+						m_alloc_size = cbSize;
+						OMEGA_NEW(m_pVals,A[m_alloc_size]);
 						if (!m_pVals)
 							OMEGA_THROW("Out of memory!");
 					}
@@ -286,6 +287,18 @@ namespace Omega
 					{
 						return m_pVals;
 					}
+
+					A& operator [](size_t n)
+					{
+						return m_pVals[n];
+					}
+
+					const A& operator [](size_t n) const
+					{
+						return m_pVals[n];
+					}
+
+					uint32_t m_alloc_size;
 
 				private:
 					A* m_pVals;
@@ -297,16 +310,38 @@ namespace Omega
 					val.init(cbSize);
 				}
 
+				static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, type& val, uint32_t cbSize)
+				{
+					val.init(cbSize);
+					for (uint32_t i=0;i<cbSize;++i)
+						interface_info<T>::wire_type::read(pManager,pStream,val[i]);
+				}
+
+				static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const type& val, uint32_t cbSize)
+				{
+					if (cbSize > val.m_alloc_size)
+						cbSize = val.m_alloc_size;
+
+					for (uint32_t i=0;i<cbSize;++i)
+						interface_info<T>::wire_type::write(pManager,pStream,val[i]);
+				}
+
 				static void read(IWireManager* pManager, Serialize::IFormattedStream* pStream, typename interface_info<T>::wire_type::type* pVals, uint32_t cbSize)
 				{
-					for (uint32_t i=0;i<cbSize;++i)
-						interface_info<T>::wire_type::read(pManager,pStream,pVals[i]);
+					if (pVals)
+					{
+						for (uint32_t i=0;i<cbSize;++i)
+							interface_info<T>::wire_type::read(pManager,pStream,pVals[i]);
+					}
 				}
 
 				static void write(IWireManager* pManager, Serialize::IFormattedStream* pStream, const typename interface_info<T>::wire_type::type* pVals, uint32_t cbSize)
 				{
-					for (uint32_t i=0;i<cbSize;++i)
-						interface_info<T>::wire_type::write(pManager,pStream,pVals[i]);
+					if (pVals)
+					{
+						for (uint32_t i=0;i<cbSize;++i)
+							interface_info<T>::wire_type::write(pManager,pStream,pVals[i]);
+					}
 				}
 
 				static void no_op(bool, uint32_t)

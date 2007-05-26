@@ -104,7 +104,7 @@ namespace Omega
 		
 		interface INotFoundException : public IException
 		{
-			virtual string_t GetValueName() = 0;
+			virtual string_t GetName() = 0;
 		};
 		
 		interface IAlreadyExistsException : public IException
@@ -218,7 +218,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	Omega::Registry, INotFoundException, Omega, IException, "{A851A685-A3AB-430b-BA52-E277655AC9CF}",
 
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetValueName,0,())
+	OMEGA_METHOD(Omega::string_t,GetName,0,())
 )
 
 OMEGA_EXPORT_INTERFACE_DERIVED

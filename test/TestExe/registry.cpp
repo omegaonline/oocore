@@ -3,6 +3,7 @@
 
 static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)
 {
+	// Generate a unique value name
 	Omega::string_t strTestValue = "TestValue";
 	while (pKey->IsValue(strTestValue))
 	{
@@ -79,7 +80,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetValueName() == strFQKeyName);
+		TEST(pE->GetName() == strFQKeyName);
 		pE->Release();
 	}
 
@@ -105,7 +106,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetValueName() == strFQKeyName);
+		TEST(pE->GetName() == strFQKeyName);
 		pE->Release();
 	}
 
@@ -139,6 +140,50 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 		TEST(pE->GetName() == "]");
 		pE->Release();
 	}
+
+	TEST_VOID(pKey->SetStringValue(strTestValue,"Yes"));
+
+	Omega::IEnumString* pValues = pKey->EnumValues();
+	TEST(pValues);
+
+	Omega::uint32_t nFound = 0;
+	Omega::bool_t bMore;
+	do
+	{
+		Omega::string_t vals[10];
+		Omega::uint32_t count = 10;
+
+		bMore = pValues->Next(count,vals);
+
+		for (Omega::uint32_t i=0;i<count;++i)
+		{
+			if (vals[i] == strTestValue)
+				++nFound;
+		}
+	} while (bMore);
+	pValues->Release();
+	TEST(nFound == 1);
+
+	TEST_VOID(pKey->DeleteValue(strTestValue));
+
+	pValues = pKey->EnumValues();
+	TEST(pValues);
+	nFound = 0;
+	do
+	{
+		Omega::string_t vals[10];
+		Omega::uint32_t count = 10;
+
+		bMore = pValues->Next(count,vals);
+
+		for (Omega::uint32_t i=0;i<count;++i)
+		{
+			if (vals[i] == strTestValue)
+				++nFound;
+		}
+	} while (bMore);
+	pValues->Release();
+	TEST(nFound == 0);
 	
 	return true;
 }
@@ -148,6 +193,94 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	if (!test_values(pKey,strKey))
 		return false;
 
+	Omega::string_t strTestKey = "TestKey";
+	while (pKey->IsSubKey(strTestKey))
+	{
+		strTestKey = "_" + strTestKey;
+	}
+
+	Omega::string_t strFQKeyName = strKey + "\\" + strTestKey;
+	if (strFQKeyName.Left(1) == "\\")
+		strFQKeyName = strFQKeyName.Mid(1);
+
+	Omega::Registry::IRegistryKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create);
+	TEST(pSubKey);
+	TEST(pKey->IsSubKey(strTestKey));
+	
+	if (!test_values(pSubKey,strFQKeyName))
+		return false;
+	
+	pSubKey->Release();
+
+	pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
+	TEST(pSubKey);
+	pSubKey->Release();
+
+	Omega::IEnumString* pKeys = pKey->EnumSubKeys();
+	TEST(pKeys);
+
+	Omega::uint32_t nFound = 0;
+	Omega::bool_t bMore;
+	do
+	{
+		Omega::string_t keys[10];
+		Omega::uint32_t count = 10;
+
+		bMore = pKeys->Next(count,keys);
+
+		for (Omega::uint32_t i=0;i<count;++i)
+		{
+			if (keys[i] == strTestKey)
+				++nFound;
+		}
+	} while (bMore);
+	pKeys->Release();
+	TEST(nFound == 1);
+	
+	try
+	{
+		pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create | Omega::Registry::IRegistryKey::FailIfThere);
+		TEST(("No exception thrown!",false));
+	}
+	catch (Omega::Registry::IAlreadyExistsException* pE)
+	{
+		TEST(pE->GetKeyName() == strFQKeyName);
+		pE->Release();
+	}
+
+	TEST_VOID(pKey->DeleteKey(strTestKey));
+	TEST(!pKey->IsSubKey(strTestKey));
+
+	try
+	{
+		pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
+		TEST(("No exception thrown!",false));
+	}
+	catch (Omega::Registry::INotFoundException* pE)
+	{
+		TEST(pE->GetName() == strFQKeyName);
+		pE->Release();
+	}
+
+	pKeys = pKey->EnumSubKeys();
+	TEST(pKeys);
+	nFound = 0;
+	do
+	{
+		Omega::string_t keys[10];
+		Omega::uint32_t count = 10;
+
+		bMore = pKeys->Next(count,keys);
+
+		for (Omega::uint32_t i=0;i<count;++i)
+		{
+			if (keys[i] == strTestKey)
+				++nFound;
+		}
+	} while (bMore);
+	pKeys->Release();
+	TEST(nFound == 0);
+	
 	return true;
 }
 

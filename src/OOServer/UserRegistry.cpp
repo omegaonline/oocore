@@ -90,7 +90,7 @@ namespace Registry
 		string_t m_strName;
 
 	public:
-		string_t GetValueName()
+		string_t GetName()
 		{
 			return m_strName;
 		}
@@ -101,7 +101,7 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
-			pRE->m_strDesc = "Value '" + name + "' not found.";
+			pRE->m_strDesc = "'" + name + "' not found.";
 			throw pRE;
 		}
 	};

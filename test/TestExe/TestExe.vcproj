@@ -63,7 +63,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
+			OutputDirectory="..\..\bin"
 			IntermediateDirectory="Release"
 			ConfigurationType="1"
 			CharacterSet="2">
@@ -71,7 +71,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;..\..\extern\ACE_wrappers&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="4"
+				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -120,6 +120,9 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
 				RelativePath=".\core.cpp">
+			</File>
+			<File
+				RelativePath=".\interfaces.cpp">
 			</File>
 			<File
 				RelativePath=".\main.cpp">

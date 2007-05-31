@@ -11,17 +11,47 @@
 /////////////////////////////////////////////////////////////
 
 template <class REQUEST>
-bool RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
+int RequestHandler<REQUEST>::start(int threads)
 {
-	int nInQueue = m_msg_queue.enqueue_prio(req);
-	
-	// Thread pooling maybe?
-	/*if (nInQueue > threshhold)
-	{
-		// Spawn an extra thread to take the strain
-	}*/
+	ThreadParams* params;
+	ACE_NEW_RETURN(params,ThreadParams,-1);
 
-	return (nInQueue > 0);
+	params->pThis = this;
+	params->deadline = ACE_Time_Value::zero;
+	params->refcount = threads;
+
+	// Spawn off the request threads
+	m_req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,params);
+	if (m_req_thrd_grp_id == -1)
+	{
+		delete params;
+		return -1;
+	}
+		
+	return 0;
+}
+
+template <class REQUEST>
+ACE_THR_FUNC_RETURN RequestHandler<REQUEST>::request_worker_fn(void* param)
+{
+	ThreadParams* params = static_cast<ThreadParams*>(param);
+
+	RequestHandler* pThis = params->pThis;
+	ACE_Time_Value v = params->deadline;
+	ACE_Time_Value* deadline = 0;
+	if (v != ACE_Time_Value::zero)
+		deadline = &v;
+
+	if (--params->refcount == 0)
+		delete params;
+
+	++pThis->m_thread_count;
+
+	pThis->pump_requests(deadline);
+
+	--pThis->m_thread_count;
+
+	return 0;
 }
 
 template <class REQUEST>
@@ -29,6 +59,44 @@ void RequestHandler<REQUEST>::stop()
 {
 	// Stop the message queue
 	m_msg_queue.close();
+
+    // Wait for all the request threads to finish
+	if (m_req_thrd_grp_id != -1)
+		ACE_Thread_Manager::instance()->wait_grp(m_req_thrd_grp_id);
+}
+
+template <class REQUEST>
+bool RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
+{
+	int nInQueue = m_msg_queue.enqueue_prio(req);
+	
+	// Thread pooling maybe?
+	if (nInQueue > m_thread_count.value()+1)
+	{
+		ACE_Guard<ACE_Thread_Mutex> guard(m_spawn_lock);
+		if (guard.locked () != 0 && nInQueue > m_thread_count.value()+1)
+		{
+			// Spawn an extra thread to take the strain
+			ThreadParams* params;
+			ACE_NEW_NORETURN(params,ThreadParams);
+
+			if (params)
+			{
+				params->pThis = this;
+				params->deadline = ACE_Time_Value(60);
+				params->refcount = 1;
+
+				// Spawn off the request threads
+				int ret = ACE_Thread_Manager::instance()->spawn(request_worker_fn,params,THR_NEW_LWP | THR_JOINABLE | THR_INHERIT_SCHED,0,0,ACE_DEFAULT_THREAD_PRIORITY,m_req_thrd_grp_id);
+				if (ret == -1)
+				{
+					delete params;
+				}
+			}
+		}
+	}
+
+	return (nInQueue > 0);
 }
 
 template <class REQUEST>
@@ -169,6 +237,8 @@ bool RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest
 			// Wait for response...
 			bRet = wait_for_response(trans_id,response,&deadline);
 		}
+		else
+			::DebugBreak();
 	}
 	else
 	{
@@ -197,7 +267,10 @@ bool RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort des
 	size_t sent = 0;
 	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
+	{
+		::DebugBreak();
 		return false;
+	}
 		
 	return true;
 }

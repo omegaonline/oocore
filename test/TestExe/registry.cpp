@@ -370,10 +370,16 @@ bool registry_tests()
 	return true;
 }
 
-/*
-	OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");
-	printf(ptrTest->Hello());
+#include <OTL/OTL.h>
 
-	OTL::ObjectPtr<Test::DllTest> ptrTest2("Test.Dll");
+bool registry_tests_2()
+{
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey;
+	TEST(!ptrKey);
+	TEST(ptrKey == (Omega::IObject*)0);
+	TEST(ptrKey == (Omega::Registry::IRegistryKey*)0);
 	
-*/
+
+
+	return true;
+}

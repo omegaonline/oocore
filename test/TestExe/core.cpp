@@ -106,3 +106,16 @@ bool exception_tests()
 	
 	return true;
 }
+
+#include <OTL/OTL.h>
+
+bool otl_tests()
+{
+	OTL::ObjectPtr<Omega::IObject> ptrObj;
+	TEST(!ptrObj);
+	TEST(ptrObj == (Omega::IObject*)0);
+	TEST(ptrObj == ptrObj);
+	TEST(ptrObj == static_cast<Omega::IObject*>(ptrObj));
+	
+	return true;
+}

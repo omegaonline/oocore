@@ -65,7 +65,6 @@ namespace User
 		void forward_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
-		static ACE_THR_FUNC_RETURN request_worker_fn(void*);
 
 		void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);

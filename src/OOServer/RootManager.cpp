@@ -71,10 +71,8 @@ int Root::Manager::run_event_loop_i()
 		threads = 2;
 
 	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn);
-	if (req_thrd_grp_id == -1)
-		ret = -1;
-	else
+	ret = RequestHandler<RequestBase>::start(threads);
+	if (ret == 0)
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,proactor_worker_fn);
@@ -93,9 +91,6 @@ int Root::Manager::run_event_loop_i()
 
 		// Stop handling requests
 		RequestHandler<RequestBase>::stop();
-
-		// Wait for all the request threads to finish
-		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
 	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer has stopped.")));
@@ -357,7 +352,7 @@ bool Root::Manager::spawn_sandbox()
 		}
 	}
 	else
-		ACE_ERROR((LM_ERROR,ACE_TEXT("Sandbox failed to start. See previous error for cause.\n")));
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Sandbox failed to start. See previous error for cause.\n")),false);
 
 	return true;
 }
@@ -594,11 +589,6 @@ bool Root::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
 		delete req;
 
 	return bRet;
-}
-
-ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void*)
-{
-	return (ACE_THR_FUNC_RETURN)(ROOT_MANAGER::instance()->pump_requests() ? 0 : -1);
 }
 
 void Root::Manager::forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)

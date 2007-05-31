@@ -255,6 +255,23 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 		return dwErr;
 	}
 
+#ifdef _DEBUG
+	if (s_config_state.bAlternateSpawn)
+	{
+		static ACE_Atomic_Op<ACE_Thread_Mutex,long> c = 1;
+
+		++c;
+
+		size_t l = wcslen(szPath);
+		szPath[l-4] = (char)(c.value())+L'0';
+		szPath[l-3] = L'.';
+		szPath[l-2] = L'e';
+		szPath[l-1] = L'x';
+		szPath[l] = L'e';
+		szPath[l+1] = L'\0';
+	}
+#endif
+
 	WCHAR szCmdLine[MAX_PATH+64];
 	if (ACE_OS::sprintf(szCmdLine,L"\"%s\" --spawned %u",szPath,uPort)==-1)
 	{
@@ -352,9 +369,20 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		// Done with hToken
-		CloseHandle(hToken);
-		return LogFailure(dwRes);
+#ifdef _DEBUG
+		if (dwRes == 1314 && s_config_state.bNoSandbox && bSandbox)
+		{
+			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
+			SpawnFromToken(hToken,uPort,!bSandbox,strSource);
+			ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
+		}
+		else
+#endif
+		{
+			// Done with hToken
+			CloseHandle(hToken);
+			return LogFailure(dwRes);
+		}
 	}
 
 	BOOL bRes = DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
@@ -644,8 +672,11 @@ bool Root::SpawnedProcess::InstallSandbox()
 		0,                         // usri2_country_code;
 		0,                         // usri2_code_page;
 	};
+	bool bAddedUser = true;
 	NET_API_STATUS err = NetUserAdd(NULL,2,(LPBYTE)&info,NULL);
-	if (err != NERR_Success)
+	if (err == NERR_UserExists)
+		bAddedUser = false;
+	else if (err != NERR_Success)
 		return LogFailure(err);
 
 	// Now we have to add the SE_BATCH_LOGON_NAME priviledge and remove all the others
@@ -657,15 +688,15 @@ bool Root::SpawnedProcess::InstallSandbox()
 	LookupAccountNameW(NULL,info.usri2_name,NULL,&dwSidSize,NULL,&dwDnSize,&use);
 	if (dwSidSize==0)
 	{
-		NetUserDel(NULL,info.usri2_name);
 		err = GetLastError();
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(err);
 	}
 
 	PSID pSid = static_cast<PSID>(ACE_OS::malloc(dwSidSize));
 	if (!pSid)
 	{
-		NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 	wchar_t* pszDName;
@@ -673,7 +704,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (!pszDName)
 	{
 		ACE_OS::free(pSid);
-		NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 	if (!LookupAccountNameW(NULL,info.usri2_name,pSid,&dwSidSize,pszDName,&dwDnSize,&use))
@@ -681,7 +712,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 		err = GetLastError();
 		ACE_OS::free(pSid);
 		delete [] pszDName;
-		NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(err);
 	}
 	delete [] pszDName;
@@ -689,7 +720,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (use != SidTypeUser)
 	{
 		ACE_OS::free(pSid);
-		NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(NERR_BadUsername);
 	}
 
@@ -700,7 +731,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (err2 != 0)
 	{
 		ACE_OS::free(pSid);
-		NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(LsaNtStatusToWinError(err2));
 	}
 
@@ -739,7 +770,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 	if (err2 != 0)
 	{
-		NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
 		return LogFailure(LsaNtStatusToWinError(err2));
 	}
 
@@ -752,6 +783,9 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("Password"),strPwd) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox password in registry")),false);
+
+	if (bAddedUser)
+		reg_root.set_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),1);
 
 	return true;
 }
@@ -771,7 +805,10 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
 		return true;
 
-	NetUserDel(NULL,ACE_TEXT_ALWAYS_WCHAR(strUName.c_str()));
+	u_int bUserAdded = 0;
+	reg_root.get_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),bUserAdded);
+	if (bUserAdded)
+		NetUserDel(NULL,ACE_TEXT_ALWAYS_WCHAR(strUName.c_str()));
 
 	return true;
 }

@@ -219,10 +219,13 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 				// QI all entries
 				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 				{
-					IException_Safe* pSE = i->second->QueryInterface_Safe(&pQI,iid);
-					if (pSE)
-						return pSE;
-					if (pQI)
+					if (i->second)
+					{
+						IException_Safe* pSE = i->second->QueryInterface_Safe(&pQI,iid);
+						if (pSE)
+							return pSE;
+					}
+                    if (pQI)
 					{
 						pObjS = i->second;
 						break;
@@ -302,7 +305,9 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 			// QI all entries
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				pQI = i->second->QueryInterface(iid);
+				if (i->second)
+					pQI = i->second->QueryInterface(iid);
+
 				if (pQI)
 				{
 					pObj = i->second;

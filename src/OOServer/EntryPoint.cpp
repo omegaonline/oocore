@@ -15,6 +15,11 @@
 #include "./RootManager.h"
 #include "./Version.h"
 
+Root::ConfigState Root::s_config_state =
+{
+	false, false
+};
+
 // Forward declare UserMain
 int UserMain(u_short uPort);
 
@@ -72,6 +77,13 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (cmd_opts.long_option(ACE_TEXT("install"),ACE_TEXT('i'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("uninstall"),ACE_TEXT('u'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
+		
+#ifdef _DEBUG
+		// The following are special flags
+		cmd_opts.long_option(ACE_TEXT("no_sandbox"))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("alt_spawn"))!=0 ||
+#endif
+
 		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
 	{
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),-1);
@@ -99,8 +111,17 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			return Help();
 
 		default:
-			ACE_OS::printf("Invalid argument '%s'.\n\n",cmd_opts.last_option());
-			return Help();
+#ifdef _DEBUG
+			if (ACE_OS::strcmp(cmd_opts.long_option(),"no_sandbox") == 0)
+				Root::s_config_state.bNoSandbox = true;
+			else if (ACE_OS::strcmp(cmd_opts.long_option(),"alt_spawn") == 0)
+				Root::s_config_state.bAlternateSpawn = true;
+			else
+#endif
+			{
+				ACE_OS::printf("Invalid argument '%s'.\n\n",cmd_opts.last_option());
+				return Help();
+			}
 		}
 	}
 

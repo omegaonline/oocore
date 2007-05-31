@@ -38,6 +38,9 @@ bool Root::NTService::open()
 
 bool Root::NTService::install()
 {
+	// Stop the service if it is running
+	NTSERVICE::instance()->stop_svc();
+
 	// Remove the service config first, this allows us to alter the config
 	NTSERVICE::instance()->remove();
 
@@ -51,6 +54,9 @@ bool Root::NTService::install()
 
 bool Root::NTService::uninstall()
 {
+	// Stop the service if it is running
+	NTSERVICE::instance()->stop_svc();
+	
 	// Uninstall the service
 	if (NTSERVICE::instance()->remove() != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service uninstall")),false);

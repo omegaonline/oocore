@@ -10,7 +10,10 @@ bool string_tests();
 bool guid_tests();
 bool core_tests();
 bool exception_tests();
+bool otl_tests();
 bool registry_tests();
+bool registry_tests_2();
+bool interface_tests();
 
 int main(int argc, char* argv[])
 {
@@ -20,7 +23,10 @@ int main(int argc, char* argv[])
 	RUN_TEST(guid_tests);
 	RUN_TEST(core_tests);
 	RUN_TEST(exception_tests);
+	RUN_TEST(otl_tests);
 	RUN_TEST(registry_tests);
+	RUN_TEST(registry_tests_2);
+	RUN_TEST(interface_tests);
 	
 	return test_summary();
 }

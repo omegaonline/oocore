@@ -147,10 +147,8 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		threads = 2;
 
 	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn);
-	if (req_thrd_grp_id == -1)
-		ret = -1;
-	else
+	ret = RequestHandler<User::Request>::start(threads);
+	if (ret == 0)
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,proactor_worker_fn);
@@ -168,9 +166,6 @@ int User::Manager::run_event_loop_i(u_short uPort)
 
 		// Stop handling requests
 		RequestHandler<User::Request>::stop();
-
-		// Wait for all the request threads to finish
-		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
 	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has stopped.")));
@@ -427,11 +422,6 @@ void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
 	}
 	catch (...)
 	{}
-}
-
-ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void*)
-{
-	return (ACE_THR_FUNC_RETURN)(USER_MANAGER::instance()->pump_requests() ? 0 : -1);
 }
 
 void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)

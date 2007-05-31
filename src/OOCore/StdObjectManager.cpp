@@ -168,11 +168,8 @@ IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 
 		std::pair<std::map<const guid_t,ObjectPtr<IObject> >::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrNew));
 		if (!p.second)
-		{
-			ptrNew = 0;
 			ptrNew.Attach(p.first->second);
-		}
-		
+				
 		if (ptrQI)
 			return ptrQI.AddRefReturn();
 

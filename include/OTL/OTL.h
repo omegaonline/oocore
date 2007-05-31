@@ -130,14 +130,14 @@ namespace OTL
 	class ObjectPtrBase
 	{
 	public:
-		ObjectPtrBase(OBJECT* obj) :
+		explicit ObjectPtrBase(OBJECT* obj) :
 			m_ptr(obj)
 		{
 			if (m_ptr.value())
 				m_ptr.value()->AddRef();
 		}
 
-		ObjectPtrBase(const ObjectPtrBase<OBJECT>& rhs) :
+		ObjectPtrBase(const ObjectPtrBase& rhs) :
 			m_ptr(rhs.m_ptr)
 		{
 			if (m_ptr.value())
@@ -188,14 +188,6 @@ namespace OTL
 			return (m_ptr.value() == 0);
 		}
 
-		bool operator == (Omega::IObject* rhs) const
-		{
-			ObjectPtrBase<Omega::IObject*> pObj1(rhs);
-			ObjectPtrBase<Omega::IObject*> pObj2(*this);
-
-			return (pObj1 == pObj2);
-		}
-
 		OBJECT* AddRefReturn()
 		{
 			if (m_ptr.value())
@@ -236,7 +228,7 @@ namespace OTL
 			return m_ptr.value();
 		}
 
-		OBJECT** operator &()
+		OBJECT* volatile * operator &()
 		{
 			return &m_ptr;
 		}
@@ -252,7 +244,7 @@ namespace OTL
 		}
 
 	protected:
-		typename Omega::System::AtomicOp<OBJECT*> m_ptr;
+		Omega::System::AtomicOp<OBJECT*> m_ptr;
 	};
 
 	template <class OBJECT>

@@ -101,7 +101,6 @@ namespace Root
 		void registry_delete_value(RequestBase* request, ACE_OutputCDR& response);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
-		static ACE_THR_FUNC_RETURN request_worker_fn(void*);
 	};
 }
 

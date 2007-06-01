@@ -265,13 +265,11 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 	if (stream.recv(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
 		return -1;
 
-	bool bSandbox = sandbox ? true : false;
-
 	// Register our service
 	try
 	{
 		ObjectPtr<Remoting::IObjectManager> ptrOM;
-		if (!bSandbox)
+		if (!sandbox)
 			ptrOM = get_object_manager(m_root_handle,1);
 
 		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();

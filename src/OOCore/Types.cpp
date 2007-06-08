@@ -272,6 +272,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,guid_t_less,2,((in),const Omega::guid_t&,lhs
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Omega::char_t*,sz))
 {
 	// We use an array here because sscanf reads int's...
+	long data0 = 0;
 	int data[11] = { 0 };
 
 #if defined (ACE_HAS_TR24731_2005_CRT)
@@ -279,7 +280,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 #else
 	if (sscanf(sz,
 #endif
-		"{%8x-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
+		"{%8lx-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
+		&data0,
 		&data[0],
 		&data[1],
 		&data[2],
@@ -289,24 +291,23 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 		&data[6],
 		&data[7],
 		&data[8],
-		&data[9],
-		&data[10]) != 11)
+		&data[9]) != 11)
 	{
 		return Omega::guid_t::Null();
 	}
 
 	Omega::guid_t guid;
-	guid.Data1 = data[0];
-	guid.Data2 = static_cast<Omega::uint16_t>(data[1]);
-	guid.Data3 = static_cast<Omega::uint16_t>(data[2]);
-	guid.Data4[0] = static_cast<Omega::byte_t>(data[3]);
-	guid.Data4[1] = static_cast<Omega::byte_t>(data[4]);
-	guid.Data4[2] = static_cast<Omega::byte_t>(data[5]);
-	guid.Data4[3] = static_cast<Omega::byte_t>(data[6]);
-	guid.Data4[4] = static_cast<Omega::byte_t>(data[7]);
-	guid.Data4[5] = static_cast<Omega::byte_t>(data[8]);
-	guid.Data4[6] = static_cast<Omega::byte_t>(data[9]);
-	guid.Data4[7] = static_cast<Omega::byte_t>(data[10]);
+	guid.Data1 = data0;
+	guid.Data2 = static_cast<Omega::uint16_t>(data[0]);
+	guid.Data3 = static_cast<Omega::uint16_t>(data[1]);
+	guid.Data4[0] = static_cast<Omega::byte_t>(data[2]);
+	guid.Data4[1] = static_cast<Omega::byte_t>(data[3]);
+	guid.Data4[2] = static_cast<Omega::byte_t>(data[4]);
+	guid.Data4[3] = static_cast<Omega::byte_t>(data[5]);
+	guid.Data4[4] = static_cast<Omega::byte_t>(data[6]);
+	guid.Data4[5] = static_cast<Omega::byte_t>(data[7]);
+	guid.Data4[6] = static_cast<Omega::byte_t>(data[8]);
+	guid.Data4[7] = static_cast<Omega::byte_t>(data[9]);
 
 	return guid;
 }

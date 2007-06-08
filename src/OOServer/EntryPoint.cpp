@@ -150,8 +150,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// Leave this function last, because we include <OOCore/config.h> which might be dangerous!
-#include <OOCore/config.h>
+// Leave this function last, because we include <OOCore/Version.h> which might be dangerous!
+#include <OOCore/Version.h>
 static int Version()
 {
 	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);

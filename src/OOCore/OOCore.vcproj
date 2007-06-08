@@ -223,13 +223,13 @@
 				RelativePath="..\..\include\OOCore\Base.h">
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\config-guess.h">
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\config-win32-msvc.h">
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\config-win32.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\config.h">
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Export.h">

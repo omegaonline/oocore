@@ -1,12 +1,10 @@
 #ifndef OOCORE_CONFIG_WIN32_H_INCLUDED_
 #define OOCORE_CONFIG_WIN32_H_INCLUDED_
 
-// Complain if WIN32 is not already defined.
+// Check WIN32 is already defined.
 #if !defined (WIN32)
 #if defined(__WIN32) || defined (_WIN32) || defined(__WIN32__)
 #define WIN32
-#else
-#error Please define WIN32 in your project settings.
 #endif
 #endif
 
@@ -34,7 +32,7 @@
 
 #define OMEGA_WIN32
 #if defined (__WIN64) || defined (_WIN64) || defined (WIN64)
-#  define OMEGA_WIN64
+#define OMEGA_WIN64
 #endif /* _WIN64 || WIN64 */
 
 #define OMEGA_CALL __cdecl
@@ -59,4 +57,3 @@
 	InterlockedDecrement((LPLONG)p)
 
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_
-

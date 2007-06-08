@@ -5,8 +5,8 @@
 #define OOCORE_BUILD_LIBRARY
 #endif
 
-// Pre include config...
-#include <OOCore/config.h>
+// Pre-include config...
+#include <OOCore/config-guess.h>
 
 #if defined(_MSC_VER)
 #pragma warning(push)

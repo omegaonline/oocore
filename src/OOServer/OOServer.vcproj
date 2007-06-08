@@ -372,9 +372,6 @@
 				</FileConfiguration>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\VTune\OOServer.vpj">
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

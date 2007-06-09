@@ -93,14 +93,16 @@ namespace OOCore
 	END_INTERFACE_MAP()
 
 	private:
-		StdProxy(const StdProxy&) {};
+		StdProxy(const StdProxy&) :
+            ObjectBase(), System::MetaInfo::IWireProxy()
+        {};
 		StdProxy& operator = (const StdProxy&) { return *this; };
 
 		ACE_RW_Thread_Mutex                          m_lock;
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
 		ObjectPtr<System::MetaInfo::IWireManager>    m_ptrManager;
 		uint32_t                                     m_uId;
-		
+
         static IObject* QI(const guid_t& iid, void* pThis, void*)
         {
 			return static_cast<RootClass*>(pThis)->QI2(iid);
@@ -169,7 +171,7 @@ IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 		std::pair<std::map<const guid_t,ObjectPtr<IObject> >::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,ObjectPtr<IObject> >::value_type(iid,ptrNew));
 		if (!p.second)
 			ptrNew.Attach(p.first->second);
-				
+
 		if (ptrQI)
 			return ptrQI.AddRefReturn();
 
@@ -302,7 +304,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 			// Write the marshalling oid
 			pStream->WriteByte(2);
 			System::MetaInfo::wire_write(this,pStream,oid);
-			
+
 			// Let the custom handle marshalling...
 			ptrMarshal->Marshal(pStream,iid,0);
 
@@ -374,7 +376,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 	{
      	guid_t oid;
 		System::MetaInfo::wire_read(this,pStream,oid);
-		
+
 		// TODO Create an instance of Oid
 		ObjectPtr<Remoting::IMarshal> ptrMarshal(oid,Activation::InProcess);
 		if (!ptrMarshal)

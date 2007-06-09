@@ -7,88 +7,147 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug_Win32">
-				<Option output="Debug\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug/OOCore.so" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
+					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-O0" />
-					<Add option="-frtti" />
 					<Add option="-mno-cygwin" />
 					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DOOCORE_BUILD_DLL" />
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE-5.5.7" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE-5.5.7" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="shlwapi" />
-					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
 					<Add library="librpcrt4" />
 				</Linker>
 			</Target>
 			<Target title="Release_Win32">
-				<Option output="Release\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Release/OOCore.so" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
+					<Add option="-march=i686" />
+					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
+					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-frtti" />
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DOOCORE_BUILD_DLL" />
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
-					<Add directory="..\..\3rd Party Libraries\ACE-5.5.7" />
+					<Add directory="../../include" />
+					<Add directory="../../3rd Party Libraries/ACE-5.5.7" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="shlwapi" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+					<Add library="librpcrt4" />
+				</Linker>
+			</Target>
+			<Target title="Debug_Unix">
+				<Option output="Debug/OOCore.so" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-D_DEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add library="libACE.a" />
+				</Linker>
+			</Target>
+			<Target title="Release_Unix">
+				<Option output="Release/OOCore.so" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-march=i686" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-W" />
+					<Add option="-Wall" />
+					<Add option="-DNDEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add library="libACE.a" />
 				</Linker>
 			</Target>
 		</Build>
-		<Unit filename="..\..\include\OOCore\Base.h" />
-		<Unit filename="..\..\include\OOCore\Export.h" />
-		<Unit filename="..\..\include\OOCore\Interfaces.h" />
-		<Unit filename="..\..\include\OOCore\OOCore.h" />
-		<Unit filename="..\..\include\OOCore\OOCore_rtti.inl" />
-		<Unit filename="..\..\include\OOCore\OOCore_types.inl" />
-		<Unit filename="..\..\include\OOCore\Remoting.h" />
-		<Unit filename="..\..\include\OOCore\Rtti.h" />
-		<Unit filename="..\..\include\OOCore\Rtti.inl" />
-		<Unit filename="..\..\include\OOCore\Threading.h" />
-		<Unit filename="..\..\include\OOCore\Threading.inl" />
-		<Unit filename="..\..\include\OOCore\TypeSizes.h" />
-		<Unit filename="..\..\include\OOCore\Types.h" />
-		<Unit filename="..\..\include\OOCore\Types.inl" />
-		<Unit filename="..\..\include\OOCore\Version.h" />
-		<Unit filename="..\..\include\OOCore\Wire.h" />
-		<Unit filename="..\..\include\OOCore\config-win32-gcc.h" />
-		<Unit filename="..\..\include\OOCore\config-win32.h" />
-		<Unit filename="..\..\include\OOCore\config.h" />
-		<Unit filename="..\..\include\Otl\OTL.h" />
-		<Unit filename="..\..\include\Otl\OTL.inl" />
-		<Unit filename="..\..\include\Otl\OTL_special.h" />
+		<Unit filename="../../include/OOCore/Base.h" />
+		<Unit filename="../../include/OOCore/Export.h" />
+		<Unit filename="../../include/OOCore/Interfaces.h" />
+		<Unit filename="../../include/OOCore/OOCore.h" />
+		<Unit filename="../../include/OOCore/OOCore_rtti.inl" />
+		<Unit filename="../../include/OOCore/OOCore_types.inl" />
+		<Unit filename="../../include/OOCore/Remoting.h" />
+		<Unit filename="../../include/OOCore/Rtti.h" />
+		<Unit filename="../../include/OOCore/Rtti.inl" />
+		<Unit filename="../../include/OOCore/Threading.h" />
+		<Unit filename="../../include/OOCore/Threading.inl" />
+		<Unit filename="../../include/OOCore/TypeSizes.h" />
+		<Unit filename="../../include/OOCore/Types.h" />
+		<Unit filename="../../include/OOCore/Types.inl" />
+		<Unit filename="../../include/OOCore/Version.h" />
+		<Unit filename="../../include/OOCore/Wire.h" />
+		<Unit filename="../../include/OOCore/config-gcc.h" />
+		<Unit filename="../../include/OOCore/config-guess.h" />
+		<Unit filename="../../include/OOCore/config-unix-gcc.h">
+			<Option target="Debug_Unix" />
+			<Option target="Release_Unix" />
+		</Unit>
+		<Unit filename="../../include/OOCore/config-unix.h">
+			<Option target="Debug_Unix" />
+			<Option target="Release_Unix" />
+		</Unit>
+		<Unit filename="../../include/OOCore/config-win32-gcc.h">
+			<Option target="Debug_Win32" />
+			<Option target="Release_Win32" />
+		</Unit>
+		<Unit filename="../../include/OOCore/config-win32.h">
+			<Option target="Debug_Win32" />
+			<Option target="Release_Win32" />
+		</Unit>
+		<Unit filename="../../include/OTL/OTL.h" />
+		<Unit filename="../../include/OTL/OTL.inl" />
+		<Unit filename="../../include/OTL/OTL_special.h" />
 		<Unit filename="Activation.cpp" />
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
@@ -96,12 +155,12 @@
 		<Unit filename="OOCore.cpp" />
 		<Unit filename="OOCore.rc">
 			<Option compilerVar="WINDRES" />
+			<Option target="Debug_Win32" />
+			<Option target="Release_Win32" />
 		</Unit>
-		<Unit filename="OOCore_link.cpp" />
 		<Unit filename="OOCore_precomp.h" />
 		<Unit filename="Registry.cpp" />
 		<Unit filename="ServiceTable.cpp" />
-		<Unit filename="Session.h" />
 		<Unit filename="StdObjectManager.cpp" />
 		<Unit filename="StdObjectManager.h" />
 		<Unit filename="Threading.cpp" />

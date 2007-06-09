@@ -460,7 +460,11 @@ namespace Omega
 				virtual void OMEGA_CALL AddRef_Safe() = 0;
 				virtual void OMEGA_CALL Release_Safe() = 0;
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid) = 0;
+
+            protected:
+                virtual ~IObject_Safe() {};
 			};
+
 
 			inline IObject_Safe* lookup_stub(IObject* pObj, const guid_t& iid);
 			inline IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);

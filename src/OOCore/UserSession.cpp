@@ -148,7 +148,7 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 
 		#define OMEGA_BOOTSTRAP_DIR "/var/lock/OmegaOnline"
 
-		return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE));
+		return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE);
 
 	#endif
 }
@@ -165,7 +165,7 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 #else
 	// Find what the server is called
 	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
-	if (strExec.empty())
+	if (strExec.length() == 0)
 		strExec = "OOServer";
 
 	// Set the process options
@@ -200,7 +200,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 
 	// Open the Server key file
 	ACE_HANDLE file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
-	if (file != INVALID_HANDLE_VALUE)
+	if (file != ACE_INVALID_HANDLE)
 	{
 		if (ACE_OS::read(file,&pid,sizeof(pid)) == sizeof(pid))
 		{
@@ -227,12 +227,12 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 		while (wait != ACE_Time_Value::zero)
 		{
 			file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
-			if (file != INVALID_HANDLE_VALUE)
+			if (file != ACE_INVALID_HANDLE)
 				break;
 
 			timeout.update();
 		}
-		if (file == INVALID_HANDLE_VALUE)
+		if (file == ACE_INVALID_HANDLE)
 		{
 			// If we fail here, then the server has crashed...
 			strSource = OMEGA_SOURCE_INFO;
@@ -349,7 +349,7 @@ void OOCore::UserSession::term()
 void OOCore::UserSession::term_i()
 {
 	// Shut down the socket...
-	ACE_OS::shutdown(m_user_handle,SD_BOTH);
+	ACE_OS::shutdown(m_user_handle,ACE_SHUTDOWN_BOTH);
 
 	// Wait for all the proactor threads to finish
 	ACE_Thread_Manager::instance()->wait_grp(m_pro_thrd_grp_id);
@@ -422,11 +422,11 @@ bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& r
 			input >> req_dline_secs;
 			input >> req_dline_usecs;
 			ACE_Time_Value request_deadline(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
-			
+
 			ACE_CDR::UShort src_channel_id = 0;
 			if (bIsRequest)
 				input >> src_channel_id;
-			
+
 			if (input.good_bit() && request_deadline > ACE_OS::gettimeofday())
 			{
 				// See if we want to process it...
@@ -444,12 +444,12 @@ bool OOCore::UserSession::wait_for_response(ACE_CDR::ULong trans_id, Request*& r
 					// process_request() is expected to delete req;
 					req = 0;
 				}
-				else 
+				else
 				{
 					if (request_trans_id == trans_id)
 					{
 						// Its the request we have been waiting for...
-						
+
 						// Rest of data is aligned on next boundary
 						input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -550,6 +550,27 @@ bool OOCore::UserSession::send_asynch(ACE_CDR::UShort dest_channel_id, const ACE
 	return true;
 }
 
+static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
+{
+#if ACE_MAJOR_VERSION <= 5 && ACE_MINOR_VERSION <= 5 && ACE_BETA_VERSION == 0
+
+    ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
+
+#if !defined (ACE_ENABLE_SWAP_ON_WRITE)
+    *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+#else
+    if (!stream.do_byte_swap())
+        *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+    else
+        ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
+#endif
+
+    return true;
+#else
+    return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
+#endif
+}
+
 bool OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline)
 {
 	// Check the size
@@ -591,7 +612,7 @@ bool OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 		return false;
 
 	// Update the total length
-	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
+	if (!ACE_OutputCDR_replace(header,msg_len_point))
 		return false;
 
 	return true;
@@ -639,7 +660,7 @@ bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 		return false;
 
 	// Update the total length
-	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
+	if (!ACE_OutputCDR_replace(header,msg_len_point))
 		return false;
 
 	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();

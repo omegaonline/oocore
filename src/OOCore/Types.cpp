@@ -71,7 +71,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_1,2,((in),void*,s1,(in),con
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_2,2,((in),void*,s1,(in),const Omega::char_t*,sz))
 {
 	static_cast<StringNode*>(s1)->Release();
-	
+
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(sz));
 	return pNode;
@@ -102,7 +102,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 		OOCORE_THROW_ERRNO(ENOMEM);
 
 	pOld->Release();
-	
+
 	pNode->m_str += static_cast<const StringNode*>(s2)->m_str;
 	return pNode;
 }
@@ -110,11 +110,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const Omega::char_t*,sz))
 {
 	StringNode* pOld = static_cast<StringNode*>(s1);
-	
+
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
 	if (!pNode)
-		OOCORE_THROW_ERRNO(ENOMEM);	
+		OOCORE_THROW_ERRNO(ENOMEM);
 
 	pOld->Release();
 
@@ -144,7 +144,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc2,2,((in),const void*,s1,(in),con
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_isempty,1,((in),const void*,s1))
 {
-	return static_cast<const StringNode*>(s1)->m_str.empty();
+	return (static_cast<const StringNode*>(s1)->m_str.length() == 0);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
@@ -164,8 +164,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 	ACE_OS::free(pszNew);
 
 	if (!s2)
-		OOCORE_THROW_ERRNO(ENOMEM);	
-	
+		OOCORE_THROW_ERRNO(ENOMEM);
+
 	return s2;
 }
 
@@ -182,11 +182,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 
 	StringNode* s2;
 	OMEGA_NEW(s2,StringNode(pszNew));
-	
+
 	ACE_OS::free(pszNew);
-		
+
 	if (!s2)
-		OOCORE_THROW_ERRNO(ENOMEM);	
+		OOCORE_THROW_ERRNO(ENOMEM);
 
 	return s2;
 }
@@ -243,7 +243,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const Omega::char_t
 	for (int len=64;;len*=2)
 	{
 		const ACE_String_Base<Omega::char_t> s(static_cast<size_t>(len));
-		
+
 		int len2 = ACE_OS::vsnprintf(const_cast<Omega::char_t*>(s.fast_rep()),len,sz,ap);
 		if (len2 <= len && len2 != -1)
 		{
@@ -329,7 +329,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 		// We don't care if this gets called twice...
 		ACE_Utils::UUID_GENERATOR::instance()->init();
 		bInit = true;
-	}		
+	}
 
 	ACE_Utils::UUID uuid;
 	ACE_Utils::UUID_GENERATOR::instance()->generateUUID(uuid);

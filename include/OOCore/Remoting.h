@@ -3,7 +3,7 @@
 
 #include <OOCore/OOCore.h>
 
-namespace Omega 
+namespace Omega
 {
 	namespace Remoting
 	{
@@ -24,7 +24,7 @@ namespace Omega
 			//virtual void ReleaseMarshalData(Serialize::IFormattedStream* pInput) = 0;
 			//virtual void DisconnectObject() = 0;
 		};
-		
+
 		interface ICallContext : public IObject
 		{
 		};
@@ -34,7 +34,7 @@ namespace Omega
 			virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;
 			virtual Serialize::IFormattedStream* SendAndReceive(MethodAttributes_t attribs, Serialize::IFormattedStream* pStream) = 0;
 		};
-		
+
 		interface IObjectManager : public System::MetaInfo::IWireManager
 		{
 			virtual void Connect(IChannel* pChannel) = 0;
@@ -45,11 +45,10 @@ namespace Omega
 
 		interface IInterProcessService : public IObject
 		{
-		public:
 			virtual Registry::IRegistryKey* GetRegistry() = 0;
 			virtual Activation::IServiceTable* GetServiceTable() = 0;
 		};
-		
+
 		// {63EB243E-6AE3-43bd-B073-764E096775F8}
 		OOCORE_DECLARE_OID(OID_StdObjectManager);
 

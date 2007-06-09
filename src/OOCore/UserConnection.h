@@ -6,16 +6,18 @@ namespace OOCore
 	class UserSession;
 
 	class UserConnection : public ACE_Service_Handler
-	{		
+	{
 	public:
 		UserConnection(UserSession* pSession);
 		virtual ~UserConnection();
 
 		bool open(ACE_HANDLE new_handle, Omega::string_t& strSource);
 		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
-			
+
 	private:
-		UserConnection(const UserConnection&) {}
+		UserConnection(const UserConnection&) :
+            ACE_Service_Handler()
+        {}
 		UserConnection& operator = (const UserConnection&) { return *this; }
 
 		static const size_t			s_initial_read = 8;

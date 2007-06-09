@@ -7,9 +7,9 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug_Win32">
-				<Option output="Debug\OOServer.exe" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug/OOServer" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
-				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
+				<Option external_deps="../OOCore/debug/libOOCore.a;" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -18,16 +18,16 @@
 					<Add option="-O0" />
 					<Add option="-DWIN32" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE-5.5.7" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE-5.5.7" />
 				</ResourceCompiler>
 				<Linker>
-					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
-					<Add library="..\OOCore\debug\libOOCore.a" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
+					<Add library="../OOCore/debug/libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
@@ -36,7 +36,7 @@
 				</Linker>
 			</Target>
 			<Target title="Release_Win32">
-				<Option output="Release\OOServer.exe" prefix_auto="1" extension_auto="1" />
+				<Option output="Release/OOServer" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -46,12 +46,12 @@
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE-5.5.7" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE-5.5.7" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="shlwapi" />

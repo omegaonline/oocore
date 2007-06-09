@@ -21,7 +21,9 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		ServiceTable(const ServiceTable&) {}
+		ServiceTable(const ServiceTable&) :
+            ObjectBase(), Activation::IServiceTable()
+        {}
 		ServiceTable& operator = (const ServiceTable&) { return *this; }
 
 		ACE_RW_Thread_Mutex                   m_lock;

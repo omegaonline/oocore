@@ -27,7 +27,9 @@ namespace Root
 		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 
 	private:
-		Connection(const Connection&) {}
+		Connection(const Connection&) :
+            ACE_Service_Handler()
+        {}
 		Connection& operator = (const Connection&) { return *this; }
 
 		static const size_t         s_initial_read = 8;

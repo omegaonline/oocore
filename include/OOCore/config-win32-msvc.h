@@ -9,6 +9,10 @@
 #error You must enable multithreaded library use /MT, /MTd, /MD or /MDd
 #endif 
 
+#if defined(_DEBUG) && !defined(OMEGA_DEBUG)
+#define OMEGA_DEBUG
+#endif
+
 #define OMEGA_MAX_DEFINES	249
 
 #define OMEGA_FUNCNAME		__FUNCSIG__

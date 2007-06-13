@@ -21,7 +21,9 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		ServiceTable(const ServiceTable&) {}
+		ServiceTable(const ServiceTable&) :
+            OTL::ObjectBase(), Omega::Activation::IServiceTable()
+        {}
 		ServiceTable& operator = (const ServiceTable&) { return *this; }
 
 		OTL::ObjectPtr<Omega::Activation::IServiceTable>         m_ptrSIP;

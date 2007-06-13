@@ -76,7 +76,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	try
 	{
 		pKey->GetStringValue(strTestValue);
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -88,13 +88,13 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	try
 	{
 		pKey->GetStringValue(strTestValue);
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IWrongValueTypeException* pE)
 	{
 		TEST(pE->GetValueName() == strFQKeyName);
 		TEST(pE->GetValueType() == Omega::Registry::UInt32);
-		
+
 		pE->Release();
 	}
 
@@ -102,7 +102,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	try
 	{
 		pKey->DeleteValue(strTestValue);
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -113,7 +113,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	try
 	{
 		pKey->SetStringValue("\\","Invalid name");
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -123,7 +123,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	try
 	{
 		pKey->SetStringValue("[","Invalid name");
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -133,7 +133,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	try
 	{
 		pKey->SetStringValue("]","Invalid name");
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -184,7 +184,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	} while (bMore);
 	pValues->Release();
 	TEST(nFound == 0);
-	
+
 	return true;
 }
 
@@ -206,10 +206,10 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	Omega::Registry::IRegistryKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create);
 	TEST(pSubKey);
 	TEST(pKey->IsSubKey(strTestKey));
-	
+
 	if (!test_values(pSubKey,strFQKeyName))
 		return false;
-	
+
 	pSubKey->Release();
 
 	pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
@@ -236,11 +236,11 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	} while (bMore);
 	pKeys->Release();
 	TEST(nFound == 1);
-	
+
 	try
 	{
 		pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create | Omega::Registry::IRegistryKey::FailIfThere);
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
@@ -254,7 +254,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	try
 	{
 		pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
-		TEST(("No exception thrown!",false));
+		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -280,7 +280,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	} while (bMore);
 	pKeys->Release();
 	TEST(nFound == 0);
-	
+
 	return true;
 }
 
@@ -298,7 +298,7 @@ static bool test_key(const Omega::string_t& strKey)
 	{
 		pKey->Release();
 		throw;
-	}	
+	}
 	pKey->Release();
 	if (!bTest)
 		return false;
@@ -356,7 +356,7 @@ bool registry_tests()
 	{
 		pRootKey->Release();
 		throw;
-	}	
+	}
 	pRootKey->Release();
 	if (!bTest)
 		return false;
@@ -378,7 +378,7 @@ bool registry_tests_2()
 	TEST(!ptrKey);
 	TEST(ptrKey == (Omega::IObject*)0);
 	TEST(ptrKey == (Omega::Registry::IRegistryKey*)0);
-	
+
 
 
 	return true;

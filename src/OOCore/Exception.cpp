@@ -26,13 +26,11 @@ namespace OOCore
 
 	// INoInterfaceException members
 	public:
-		guid_t GetUnsupportedIID();
+		inline guid_t GetUnsupportedIID()
+		{
+			return m_iid;
+		}
 	};
-}
-
-guid_t OOCore::NoInterfaceException::GetUnsupportedIID()
-{
-	return m_iid;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))

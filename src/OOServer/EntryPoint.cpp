@@ -150,7 +150,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// Leave this function last, because we include <OOCore/Version.h> which might be dangerous!
+// Leave this function last, because we include <OOCore/config-guess.h> which might be dangerous!
+#include <OOCore/config-guess.h>
 #include <OOCore/Version.h>
 static int Version()
 {

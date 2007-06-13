@@ -39,7 +39,9 @@ namespace Root
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
 		Manager();
-		Manager(const Manager&) {}
+		Manager(const Manager&) :
+            LocalAcceptor<ClientConnection>(), RequestHandler<RequestBase>()
+        {}
 		virtual ~Manager();
 		Manager& operator = (const Manager&) { return *this; }
 

@@ -118,7 +118,7 @@
 		const CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0 } }; return CreatorEntries; } }; } \
+		{ 0,0 } }; return CreatorEntries; } }; } \
 	OTL::ModuleBase* OTL::GetModule() { return ProcessModule__::instance(); } \
 	OTL_MODULE_INIT_BLOCK(ProcessModule__)
 

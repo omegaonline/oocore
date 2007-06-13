@@ -23,5 +23,12 @@ void OOCore::SetRegistry(Omega::Registry::IRegistryKey* pRootKey)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 {
+	if (!OOCore::g_ptrRegistryRoot)
+	{
+		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
+		pE->m_strDesc = "Omega::Initialize not called.";
+		throw pE;
+	}
+
 	return OOCore::g_ptrRegistryRoot->OpenSubKey(key,flags);
 }

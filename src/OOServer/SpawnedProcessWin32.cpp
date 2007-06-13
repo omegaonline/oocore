@@ -224,7 +224,8 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
     }
 
 	// Load the Users Profile
-	PROFILEINFOW profile_info = {0};
+	PROFILEINFOW profile_info;
+	ACE_OS::memset(&profile_info,0,sizeof(profile_info));
     profile_info.dwSize = sizeof(PROFILEINFOW);
 	profile_info.dwFlags = PI_NOUI | PI_APPLYPOLICY;
 	profile_info.lpUserName = (WCHAR*)strUserName.c_str();
@@ -255,7 +256,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 		return dwErr;
 	}
 
-#ifdef _DEBUG
+#ifdef OMEGA_DEBUG
 	if (s_config_state.bAlternateSpawn)
 	{
 		static ACE_Atomic_Op<ACE_Thread_Mutex,long> c = 1;
@@ -301,13 +302,14 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	}
 
 	// Init our startup info
-	STARTUPINFOW startup_info = {0};
+	STARTUPINFOW startup_info;
+	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.lpDesktop = L"";
 
 	DWORD dwFlags = DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT;
 
-	PROCESS_INFORMATION process_info = {0};
+	PROCESS_INFORMATION process_info;
 	if (!CreateProcessAsUserW(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
@@ -369,7 +371,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
-#ifdef _DEBUG
+#ifdef OMEGA_DEBUG
 		if (dwRes == 1314 && s_config_state.bNoSandbox && bSandbox)
 		{
 			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
@@ -591,7 +593,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	}
 
 	// Do the access check
-	PRIVILEGE_SET privilege_set = {0};
+	PRIVILEGE_SET privilege_set;
 	DWORD dwPrivSetSize = sizeof(privilege_set);
 	DWORD dwAccessGranted = 0;
 	BOOL bAllowedVal = FALSE;
@@ -726,7 +728,7 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 	// Open the local account policy...
 	LSA_HANDLE hPolicy;
-	LSA_OBJECT_ATTRIBUTES oa = {0};
+	LSA_OBJECT_ATTRIBUTES oa;
 	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
 	if (err2 != 0)
 	{

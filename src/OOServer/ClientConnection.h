@@ -30,7 +30,9 @@ namespace Root
 		void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);
 
 	private:
-		ClientConnection(const ClientConnection&) {}
+		ClientConnection(const ClientConnection&) :
+            ACE_Service_Handler()
+        {}
 		ClientConnection& operator = (const ClientConnection&) { return *this; }
 
 		ACE_UINT16					m_header_len;

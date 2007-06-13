@@ -37,7 +37,9 @@ namespace User
 
 		Manager();
 		virtual ~Manager();
-		Manager(const Manager&) {}
+		Manager(const Manager&) :
+            LocalAcceptor<Connection>(), RequestHandler<User::Request>()
+        {}
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex			m_lock;

@@ -315,7 +315,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const Om
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 {
 #ifdef OMEGA_WIN32
-	UUID uuid = {0};
+	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
 	UuidCreate(&uuid);
 
 	Omega::guid_t guid;

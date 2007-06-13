@@ -9,7 +9,7 @@ static unsigned long fail_count = 0;
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
 	add_failure();
-	printf("[Failed]\n\nAssertion '%s' failed at %s:%lu\n",pszExpr,pszSrc,nLine);
+	printf("[Failed]\n\nAssertion '%s' failed at %s:%u\n",pszExpr,pszSrc,nLine);
 	return false;
 }
 

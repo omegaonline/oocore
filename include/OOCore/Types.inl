@@ -5,7 +5,7 @@
 // we export a whole set of extern "C" functions and call them in
 // the member functions of the class.  Horrible I know!
 
-#ifdef _DEBUG
+#ifdef OMEGA_DEBUG
 #define OMEGA_DEBUG_STASH_STRING()	m_debug_value = string_t_cast(m_handle)
 #else
 #define OMEGA_DEBUG_STASH_STRING()	(void)0
@@ -13,7 +13,7 @@
 
 OOCORE_EXPORTED_FUNCTION(const Omega::char_t*,string_t_cast,1,((in),const void*,h));
 
-Omega::string_t::string_t(handle_t h) : 
+Omega::string_t::string_t(handle_t h) :
 	m_handle(h)
 {
 	OMEGA_DEBUG_STASH_STRING();
@@ -22,7 +22,7 @@ Omega::string_t::string_t(handle_t h) :
 OOCORE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,());
 Omega::string_t::string_t() :
 	m_handle(static_cast<handle_t>(string_t__ctor1()))
-{	
+{
 }
 
 OOCORE_EXPORTED_FUNCTION(void*,string_t__ctor2,1,((in),const Omega::char_t*,sz));

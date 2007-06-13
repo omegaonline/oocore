@@ -3,6 +3,10 @@
 // The basic macros
 //
 
+#if !defined(OMEGA_MAX_DEFINES)
+#define OMEGA_MAX_DEFINES	256
+#endif
+
 #if !defined(OMEGA_CONCAT)
 #define OMEGA_CONCAT(a,b)		OMEGA_CONCAT_I(a,b)
 #define OMEGA_CONCAT_R(a,b)		OMEGA_CONCAT_R_I(a,b)

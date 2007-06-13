@@ -358,6 +358,8 @@ void OOCore::UserSession::term_i()
 	m_msg_queue.close();
 
 	ACE_OS::sleep(1);
+
+	SetRegistry(0);
 }
 
 void OOCore::UserSession::connection_closed()

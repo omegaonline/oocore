@@ -144,7 +144,7 @@ namespace Omega
 		inline explicit string_t(handle_t);
 		handle_t m_handle;
 
-#ifdef _DEBUG
+#ifdef OMEGA_DEBUG
 		const char* m_debug_value;
 #endif
 	};

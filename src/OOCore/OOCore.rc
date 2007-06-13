@@ -35,6 +35,7 @@ BEGIN
     BEGIN
         BLOCK "080004b0"
         BEGIN
+            VALUE "CompanyName", "www.omegaonline.org.uk"
             VALUE "FileDescription", "OOCore Dynamic Link Library"
             VALUE "FileVersion", OMEGA_VERSION
             VALUE "InternalName", "OOCore"

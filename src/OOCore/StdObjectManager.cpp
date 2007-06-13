@@ -377,7 +377,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
      	guid_t oid;
 		System::MetaInfo::wire_read(this,pStream,oid);
 
-		// TODO Create an instance of Oid
+		// Create an instance of Oid
 		ObjectPtr<Remoting::IMarshal> ptrMarshal(oid,Activation::InProcess);
 		if (!ptrMarshal)
 			throw INoInterfaceException::Create(OMEGA_UUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);

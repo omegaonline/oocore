@@ -49,6 +49,7 @@ BEGIN
     BEGIN
         BLOCK "080004b0"
         BEGIN
+            VALUE "CompanyName", "www.omegaonline.org.uk"
             VALUE "FileDescription", "Omega Online Network Gateway"
             VALUE "FileVersion", OOSERVER_VERSION
             VALUE "InternalName", "OOServer"

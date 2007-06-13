@@ -295,7 +295,7 @@ bool OOCore::UserSession::get_port(u_short& uPort, string_t& strSource)
 	}
 
 	// Wait for the response to come back...
-	wait = ACE_Time_Value(5);
+	wait = ACE_Time_Value(30);
 	ACE_UINT32 err = 0;
 	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)))
 	{

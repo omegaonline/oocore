@@ -13,13 +13,14 @@ BEGIN_LIBRARY_OBJECT_MAP(OOCore)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
-BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
+BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason)
 {
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-#if defined (ACE_DISABLES_THREAD_LIBRARY_CALLS) && (ACE_DISABLES_THREAD_LIBRARY_CALLS == 1)
-		::DisableThreadLibraryCalls(instance);
-#endif /* ACE_DISABLES_THREAD_LIBRARY_CALLS */
+#if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
+		// If ACE is linked statically we need to do this...
+		ACE_OS::set_win32_resource_module(instance);
+#endif
 
 		ModuleInitialize();
 	}
@@ -27,6 +28,13 @@ BOOL WINAPI DllMain(HINSTANCE /*instance*/, DWORD reason)
 	{
 		ModuleUninitialize();
 	}
+#if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
+	else if (reason == DLL_THREAD_DETACH)
+	{
+		// If ACE is linked statically we need to do this...
+		ACE_OS::cleanup_tss(0);
+	}
+#endif
 
 	return TRUE;
 }

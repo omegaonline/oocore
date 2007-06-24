@@ -1,5 +1,5 @@
 #include "OOServer.h"
-#include ".\UserServiceTable.h"
+#include "./UserServiceTable.h"
 
 using namespace Omega;
 using namespace OTL;

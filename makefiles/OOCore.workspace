@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="OOCore">
-		<Project filename="..\src\OOCore\OOCore.cbp" />
-		<Project filename="..\src\OOServer\OOServer.cbp">
-			<Depends filename="..\src\OOCore\OOCore.cbp" />
+		<Project filename="../src/OOCore/OOCore.cbp" />
+		<Project filename="../src/OOServer/OOServer.cbp" active="1">
+			<Depends filename="../src/OOCore/OOCore.cbp" />
 		</Project>
-		<Project filename="..\test\TestExe\TestExe.cbp" />
-		<Project filename="..\test\TestExe\TestDll\TestDll.cbp" active="1" />
+		<Project filename="../test/TestExe/TestExe.cbp" />
+		<Project filename="../test/TestExe/TestDll/TestDll.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

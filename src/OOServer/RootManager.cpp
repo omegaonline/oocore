@@ -83,7 +83,7 @@ int Root::Manager::run_event_loop_i()
 			//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer has started successfully.")));
 
 			// Treat this thread as a worker as well
-			ret = proactor_worker_fn(0);
+			ret = (int)proactor_worker_fn(0);
 
 			// Wait for all the proactor threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
@@ -125,12 +125,12 @@ ACE_CString Root::Manager::get_bootstrap_filename()
 
 #else
 
-	#define OMEGA_BOOTSTRAP_DIR "/var/lock/OmegaOnline"
+	#define OMEGA_BOOTSTRAP_DIR "/var/lock/omegaonline"
 
 	// Ignore the errors, they will reoccur when we try to opne the file
 	ACE_OS::mkdir(OMEGA_BOOTSTRAP_DIR,S_IRWXU | S_IRWXG | S_IROTH);
 
-	return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE));
+	return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE);
 
 #endif
 }
@@ -142,7 +142,7 @@ int Root::Manager::init()
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),-1);
 
 	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
-	if (m_config_file != INVALID_HANDLE_VALUE)
+	if (m_config_file != ACE_INVALID_HANDLE)
 	{
 		pid_t pid;
 		if (ACE_OS::read(m_config_file,&pid,sizeof(pid)) == sizeof(pid))
@@ -159,8 +159,13 @@ int Root::Manager::init()
 		ACE_OS::close(m_config_file);
 	}
 
-	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),O_WRONLY | O_CREAT | O_TRUNC | O_TEMPORARY);
-	if (m_config_file == INVALID_HANDLE_VALUE)
+	int flags = O_WRONLY | O_CREAT | O_TRUNC;
+#if defined(ACE_WIN32)
+	flags |= O_TEMPORARY;
+#endif
+
+	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),flags);
+	if (m_config_file == ACE_INVALID_HANDLE)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - open() failed")),-1);
 
 	// Write our pid instead
@@ -246,7 +251,7 @@ int Root::Manager::init_registry()
 
 #else
 
-	#define OMEGA_REGISTRY_DIR "/var/lib/OmegaOnline"
+	#define OMEGA_REGISTRY_DIR "/var/lib/omegaonline"
 
 	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
@@ -271,7 +276,7 @@ void Root::Manager::end_event_loop_i()
 	try
 	{
 		// Stop accepting
-		ACE_OS::shutdown(get_handle(),SD_BOTH);
+		ACE_OS::shutdown(get_handle(),ACE_SHUTDOWN_BOTH);
 
 		{
 			ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -279,7 +284,7 @@ void Root::Manager::end_event_loop_i()
 			// Shutdown all client handles
 			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();++j)
 			{
-				ACE_OS::shutdown(j->first,SD_SEND);
+				ACE_OS::shutdown(j->first,ACE_SHUTDOWN_WRITE);
 			}
 		}
 

@@ -106,7 +106,7 @@ Activation::IServiceTable* User::InterProcessService::GetServiceTable()
 	{
 		// Double lock for speed
 		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-	
+
 		if (!m_ptrST)
 		{
 			m_ptrST = ObjectImpl<User::ServiceTable>::CreateInstancePtr();
@@ -158,7 +158,7 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		{
 			//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
 
-			ret = proactor_worker_fn(0);
+			ret = (int)proactor_worker_fn(0);
 
 			// Wait for all the proactor threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
@@ -178,7 +178,7 @@ int User::Manager::init(u_short uPort)
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
-	
+
 	// Connect to the root
 	ACE_Time_Value wait(15);
 	int ret = connector.connect(stream,addr,&wait);
@@ -252,7 +252,7 @@ void User::Manager::term()
 
 	if (m_root_handle != ACE_INVALID_HANDLE)
 	{
-		ACE_OS::shutdown(m_root_handle,SD_BOTH);
+		ACE_OS::shutdown(m_root_handle,ACE_SHUTDOWN_BOTH);
 		ACE_OS::closesocket(m_root_handle);
 		m_root_handle = ACE_INVALID_HANDLE;
 	}
@@ -293,7 +293,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 	try
 	{
 		// Stop accepting
-		ACE_OS::shutdown(get_handle(),SD_BOTH);
+		ACE_OS::shutdown(get_handle(),ACE_SHUTDOWN_BOTH);
 
 		{
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -307,7 +307,7 @@ void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDL
 				}
 				else
 				{
-					ACE_OS::shutdown(j->first,SD_SEND);
+					ACE_OS::shutdown(j->first,ACE_SHUTDOWN_WRITE);
 					++j;
 				}
 			}
@@ -518,7 +518,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			ObjectPtr<IException> ptrInner;
 			ptrInner.Attach(pInner);
 
-			ACE_ERROR((LM_ERROR,ACE_TEXT("Invoke failed: %s\nAt: %s"),(LPCTSTR)pInner->Description(),(LPCTSTR)pInner->Source()));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Invoke failed: %s\nAt: %s"),(const ACE_TCHAR*)pInner->Description(),(const ACE_TCHAR*)pInner->Source()));
 
 			// Reply with an exception if we can send replies...
 			if (trans_id != 0)
@@ -540,7 +540,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
 			if (!send_response(handle,0,trans_id,mb,request_deadline))
 				err = ACE_OS::last_error();
-			
+
 			mb->release();
 			if (err != 0)
 				OOSERVER_THROW_ERRNO(err);
@@ -603,7 +603,7 @@ void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_chann
 			{
 				reply_channel_id = m_uNextChannelId++;
 			}
-			
+
 			std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id));
 			if (!p.second)
 				reply_channel_id = p.first->second;
@@ -652,7 +652,7 @@ ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_c
 	ACE_Time_Value request_deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
 	if (deadline)
 		request_deadline = *deadline;
-	
+
 	Request* pResponse;
 	if (!RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,request_deadline))
 		OOSERVER_THROW_LASTERROR();

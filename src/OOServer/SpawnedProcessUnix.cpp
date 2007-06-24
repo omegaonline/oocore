@@ -15,21 +15,21 @@
 #if !defined(ACE_WIN32)
 
 #include "./SpawnedProcess.h"
-#include "./UserSession.h"
+#include "./RootManager.h"
 
-SpawnedProcess::SpawnedProcess(void)
+Root::SpawnedProcess::SpawnedProcess()
 {
 }
 
-SpawnedProcess::~SpawnedProcess(void)
+Root::SpawnedProcess::~SpawnedProcess()
 {
 }
 
-int SpawnedProcess::Spawn(Session::USERID id, u_short uPort)
+bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource)
 {
 #error FIX ME!
 
-	pid_t child_id = ACE_OS::fork();
+/*	pid_t child_id = ACE_OS::fork();
 	if (child_id==-1)
 	{
 		// Error
@@ -51,7 +51,7 @@ int SpawnedProcess::Spawn(Session::USERID id, u_short uPort)
 	{
 		// We are the parent...
 		return 0;
-	}
+	}*/
 }
 
 #endif // !ACE_WIN32

@@ -20,6 +20,8 @@
 #include <ace/CDR_Stream.h>
 #include <ace/Configuration.h>
 #include <ace/Connector.h>
+#include <ace/Countdown_Time.h>
+#include <ace/Message_Queue.h>
 #include <ace/OS.h>
 #include <ace/Proactor.h>
 #include <ace/SOCK_Connector.h>

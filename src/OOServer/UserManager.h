@@ -12,8 +12,8 @@ namespace User
 	class Request : public RequestBase
 	{
 	public:
-		Request::Request(ACE_HANDLE handle, ACE_InputCDR* input) :
-		RequestBase(handle,input)
+		Request(ACE_HANDLE handle, ACE_InputCDR* input) :
+			RequestBase(handle,input)
 		{}
 
 		bool	m_bRoot;

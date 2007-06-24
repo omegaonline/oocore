@@ -47,6 +47,7 @@
 #include <ace/Event.h>
 #include <ace/Get_Opt.h>
 #include <ace/Log_Msg.h>
+#include <ace/Message_Queue.h>
 #include <ace/NT_Service.h>
 #include <ace/OS.h>
 #include <ace/Proactor.h>

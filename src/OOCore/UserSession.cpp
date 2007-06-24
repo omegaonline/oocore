@@ -146,7 +146,7 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 
 	#else
 
-		#define OMEGA_BOOTSTRAP_DIR "/var/lock/OmegaOnline"
+		#define OMEGA_BOOTSTRAP_DIR "/var/lock/omegaonline"
 
 		return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE);
 

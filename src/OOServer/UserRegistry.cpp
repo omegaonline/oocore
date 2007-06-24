@@ -1,6 +1,6 @@
 #include "OOServer.h"
-#include ".\UserRegistry.h"
-#include ".\UserManager.h"
+#include "./UserRegistry.h"
+#include "./UserManager.h"
 
 using namespace Omega;
 using namespace Omega::Registry;
@@ -1086,9 +1086,7 @@ int BaseKey::open_registry(bool bSandbox)
 
 #else
 
-#error Fix me!
-
-#define OMEGA_REGISTRY_DIR "/var/lib/OmegaOnline"
+#define OMEGA_REGISTRY_DIR "/var/lib/omegaonline"
 
 	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{

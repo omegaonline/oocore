@@ -27,7 +27,7 @@ int RequestHandler<REQUEST>::start(int threads)
 		delete params;
 		return -1;
 	}
-		
+
 	return 0;
 }
 
@@ -69,7 +69,7 @@ template <class REQUEST>
 bool RequestHandler<REQUEST>::enqueue_request(REQUEST* req)
 {
 	int nInQueue = m_msg_queue.enqueue_prio(req);
-	
+
 	// Thread pooling maybe?
 	if (nInQueue > m_thread_count.value()+1)
 	{
@@ -109,7 +109,7 @@ bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST
 		int ret = m_msg_queue.dequeue_prio(req,const_cast<ACE_Time_Value*>(deadline));
 		if (ret == -1)
 			return false;
-		
+
 		// Stash the current rd_ptr()
 		char* rd_ptr_start = req->input()->rd_ptr();
 
@@ -130,12 +130,12 @@ bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST
 			ACE_CDR::UShort dest_channel_id;
 			ACE_CDR::ULong req_dline_secs;
 			ACE_CDR::ULong req_dline_usecs;
-			
+
 			input >> msg_len;
 			input >> request_trans_id;
 			input >> dest_channel_id;
 			input.read_boolean(bIsRequest);
-			
+
 			input >> req_dline_secs;
 			input >> req_dline_usecs;
 			ACE_Time_Value request_deadline(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
@@ -143,7 +143,7 @@ bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST
 			ACE_CDR::UShort src_channel_id = 0;
 			if (bIsRequest)
 				input >> src_channel_id;
-			
+
 			if (input.good_bit() && request_deadline > ACE_OS::gettimeofday())
 			{
 				// See if we want to process it...
@@ -161,12 +161,12 @@ bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST
 					// process_request() is expected to delete req;
 					req = 0;
 				}
-				else 
+				else
 				{
 					if (request_trans_id == trans_id)
 					{
 						// Its the request we have been waiting for...
-						
+
 						// Rest of data is aligned on next boundary
 						input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -192,7 +192,7 @@ bool RequestHandler<REQUEST>::wait_for_response(ACE_CDR::ULong trans_id, REQUEST
 				}
 			}
 		}
-		
+
 		// Done with this request
 		delete req;
 	}
@@ -224,7 +224,7 @@ bool RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest
 	ACE_OutputCDR header(40 + ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(dest_channel_id,src_channel_id,trans_id,header,mb,deadline))
 		return false;
-	
+
 	bool bRet = false;
 	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
 	if (wait > ACE_Time_Value::zero)
@@ -237,14 +237,12 @@ bool RequestHandler<REQUEST>::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest
 			// Wait for response...
 			bRet = wait_for_response(trans_id,response,&deadline);
 		}
-		else
-			::DebugBreak();
 	}
 	else
 	{
 		ACE_OS::last_error(ETIMEDOUT);
 	}
-	
+
 	return bRet;
 }
 
@@ -267,12 +265,30 @@ bool RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort des
 	size_t sent = 0;
 	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
-	{
-		::DebugBreak();
 		return false;
-	}
-		
+
 	return true;
+}
+
+static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
+{
+#if ACE_MAJOR_VERSION <= 5 && ACE_MINOR_VERSION <= 5 && ACE_BETA_VERSION == 0
+
+    ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
+
+#if !defined (ACE_ENABLE_SWAP_ON_WRITE)
+    *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+#else
+    if (!stream.do_byte_swap())
+        *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+    else
+        ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
+#endif
+
+    return true;
+#else
+    return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
+#endif
 }
 
 template <class REQUEST>
@@ -298,25 +314,25 @@ bool RequestHandler<REQUEST>::build_header(ACE_CDR::UShort dest_channel_id, ACE_
 	header << trans_id;
 	header << dest_channel_id;
 	header.write_boolean(true);	// Is request
-	
+
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 	header << src_channel_id;
-	
+
 	if (!header.good_bit())
 		return false;
 
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-	// Write the request stream	
+	// Write the request stream
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
 		return false;
 
 	// Update the total length
-	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return false;	
+	if (!ACE_OutputCDR_replace(header,msg_len_point))
+		return false;
 
 	return true;
 }
@@ -349,21 +365,21 @@ bool RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort d
 
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
-	
+
 	if (!header.good_bit())
 		return false;
 
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-	// Write the request stream	
+	// Write the request stream
 	header.write_octet_array_mb(mb);
 	if (!header.good_bit())
 		return false;
 
 	// Update the total length
-	if (!header.replace(static_cast<ACE_CDR::Long>(header.total_length()),msg_len_point))
-		return false;	
+	if (!ACE_OutputCDR_replace(header,msg_len_point))
+		return false;
 
 	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
 	if (wait <= ACE_Time_Value::zero)
@@ -377,6 +393,6 @@ bool RequestHandler<REQUEST>::send_response(ACE_HANDLE handle, ACE_CDR::UShort d
 	ssize_t res = ACE::send_n(handle,header.begin(),&wait,&sent);
 	if (res == -1 || sent < header.total_length())
 		return false;
-		
+
 	return true;
 }

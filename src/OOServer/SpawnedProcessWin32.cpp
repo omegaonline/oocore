@@ -35,7 +35,7 @@ Root::SpawnedProcess::SpawnedProcess() :
 {
 }
 
-Root::SpawnedProcess::~SpawnedProcess(void)
+Root::SpawnedProcess::~SpawnedProcess()
 {
 	if (Close() == ETIMEDOUT)
 		Kill();

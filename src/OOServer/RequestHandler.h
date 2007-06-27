@@ -45,7 +45,7 @@ private:
 class HandlerBase
 {
 public:
-	virtual ~HandlerBase();
+	virtual ~HandlerBase() {}
 
 	virtual bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle) = 0;
 	virtual void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle) = 0;
@@ -95,6 +95,7 @@ private:
 
 	bool wait_for_response(ACE_CDR::ULong trans_id, REQUEST*& response, const ACE_Time_Value* deadline = 0);
 	bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
+	bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point);
 
 	static ACE_THR_FUNC_RETURN request_worker_fn(void* param);
 };

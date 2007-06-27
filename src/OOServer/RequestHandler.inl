@@ -270,7 +270,8 @@ bool RequestHandler<REQUEST>::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort des
 	return true;
 }
 
-static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
+template <class REQUEST>
+bool RequestHandler<REQUEST>::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 {
 #if ACE_MAJOR_VERSION <= 5 && ACE_MINOR_VERSION <= 5 && ACE_BETA_VERSION == 0
 

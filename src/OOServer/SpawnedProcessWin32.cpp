@@ -37,70 +37,21 @@ Root::SpawnedProcess::SpawnedProcess() :
 
 Root::SpawnedProcess::~SpawnedProcess()
 {
-	if (Close() == ETIMEDOUT)
-		Kill();
-}
-
-int Root::SpawnedProcess::Close(ACE_Time_Value* timeout)
-{
-	int exit_code = 0;
-	DWORD dwWait = 10000;
-	if (timeout)
-	{
-		ACE_UINT64 val;
-		timeout->to_usec(val);
-		dwWait = static_cast<DWORD>(val / 1000);
-	}
-
 	if (m_hProcess)
 	{
+		DWORD dwWait = 10000;
 		DWORD dwRes = WaitForSingleObject(m_hProcess,dwWait);
-		if (dwRes == WAIT_TIMEOUT)
-			return ETIMEDOUT;
-
-		if (!GetExitCodeProcess(m_hProcess,&dwRes))
-			return GetLastError();
-
-		exit_code = dwRes;
+		if (dwRes != WAIT_OBJECT_0)
+			TerminateProcess(m_hProcess,UINT(-1));
+			
 		CloseHandle(m_hProcess);
-		m_hProcess = NULL;
 	}
 
 	if (m_hProfile)
-	{
 		UnloadUserProfile(m_hToken,m_hProfile);
-		m_hProfile = NULL;
-	}
-
+	
 	if (m_hToken)
-	{
 		CloseHandle(m_hToken);
-		m_hToken = NULL;
-	}
-
-	return exit_code;
-}
-
-void Root::SpawnedProcess::Kill()
-{
-	if (m_hProcess)
-	{
-		TerminateProcess(m_hProcess,UINT(-1));
-		CloseHandle(m_hProcess);
-		m_hProcess = NULL;
-	}
-
-	if (m_hProfile)
-	{
-		UnloadUserProfile(m_hToken,m_hProfile);
-		m_hProfile = NULL;
-	}
-
-	if (m_hToken)
-	{
-		CloseHandle(m_hToken);
-		m_hToken = NULL;
-	}
 }
 
 bool Root::SpawnedProcess::IsRunning()
@@ -574,9 +525,14 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	}
 
 	// Map the generic access rights
-	void* TODO;	// Need to map the mode from some kind of common format...
+	DWORD dwAccessDesired = 0;
+	if (mode & O_RDONLY)
+		dwAccessDesired = FILE_GENERIC_READ;
+	else if (mode & O_WRONLY)
+		dwAccessDesired = FILE_GENERIC_WRITE;
+	else if (mode & O_RDWR)
+		dwAccessDesired = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
 
-	DWORD dwAccessDesired = static_cast<DWORD>(mode);
 	GENERIC_MAPPING generic =
 	{
 		FILE_GENERIC_READ,
@@ -584,6 +540,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 		FILE_GENERIC_EXECUTE,
 		FILE_ALL_ACCESS
 	};
+
 	MapGenericMask(&dwAccessDesired,&generic);
 
 	if (!ImpersonateLoggedOnUser(m_hToken))
@@ -691,14 +648,16 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (dwSidSize==0)
 	{
 		err = GetLastError();
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(err);
 	}
 
 	PSID pSid = static_cast<PSID>(ACE_OS::malloc(dwSidSize));
 	if (!pSid)
 	{
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 	wchar_t* pszDName;
@@ -706,7 +665,8 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (!pszDName)
 	{
 		ACE_OS::free(pSid);
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 	if (!LookupAccountNameW(NULL,info.usri2_name,pSid,&dwSidSize,pszDName,&dwDnSize,&use))
@@ -714,7 +674,8 @@ bool Root::SpawnedProcess::InstallSandbox()
 		err = GetLastError();
 		ACE_OS::free(pSid);
 		delete [] pszDName;
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(err);
 	}
 	delete [] pszDName;
@@ -722,7 +683,8 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (use != SidTypeUser)
 	{
 		ACE_OS::free(pSid);
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(NERR_BadUsername);
 	}
 
@@ -733,7 +695,8 @@ bool Root::SpawnedProcess::InstallSandbox()
 	if (err2 != 0)
 	{
 		ACE_OS::free(pSid);
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(LsaNtStatusToWinError(err2));
 	}
 
@@ -772,7 +735,8 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 	if (err2 != 0)
 	{
-		if (bAddedUser) NetUserDel(NULL,info.usri2_name);
+		if (bAddedUser)
+			NetUserDel(NULL,info.usri2_name);
 		return LogFailure(LsaNtStatusToWinError(err2));
 	}
 
@@ -801,9 +765,8 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key)!=0)
 		return true;
 
+	// Get the user name and pwd...
 	ACE_TString strUName;
-
-	// Set the user name and pwd...
 	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
 		return true;
 

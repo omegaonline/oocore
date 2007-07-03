@@ -318,9 +318,6 @@ void Root::Manager::term()
 	{
 		for (std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
 		{
-			if (i->second.pSpawn->Close() == ETIMEDOUT)
-				i->second.pSpawn->Kill();
-
 			delete i->second.pSpawn;
 		}
 		m_mapUserProcesses.clear();
@@ -465,9 +462,6 @@ bool Root::Manager::spawn_client(uid_t uid, const ACE_CString& strUserId, u_shor
 
 					stream.close();
 				}
-
-				if (ret != 0)
-					pSpawn->Close();
 			}
 		}
 
@@ -526,7 +520,6 @@ bool Root::Manager::connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& 
 			{
 				ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-				process.pSpawn->Close();
 				delete process.pSpawn;
 				m_mapUserProcesses.erase(strUserId);
 			}
@@ -563,7 +556,6 @@ void Root::Manager::root_connection_closed(const ACE_CString& strUserId, ACE_HAN
 		std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
 		if (i != m_mapUserProcesses.end())
 		{
-			i->second.pSpawn->Close();
 			delete i->second.pSpawn;
 			m_mapUserProcesses.erase(i);
 		}

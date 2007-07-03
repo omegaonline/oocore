@@ -22,10 +22,7 @@ namespace Root
 		~SpawnedProcess(void);
 
 		bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
-		
 		bool IsRunning();
-		int Close(ACE_Time_Value* timeout = 0);
-		void Kill();
 		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
 		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_CString& strSource);
@@ -45,7 +42,8 @@ namespace Root
 		static DWORD LogonSandboxUser(HANDLE* phToken);
 		static bool LogFailure(DWORD err);
 #else // !ACE_WIN32
-		
+		pid_t	m_pid;
+		uid_t	m_uid;		
 #endif // ACE_WIN32
 
 	};

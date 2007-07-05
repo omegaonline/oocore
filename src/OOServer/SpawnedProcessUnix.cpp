@@ -106,42 +106,127 @@ Root::SpawnedProcess::~SpawnedProcess()
 // Forward declare UserMain
 int UserMain(u_short uPort);
 
+extern char **environ;
+
+#define SAFE_PATH "/usr/local/bin:/usr/bin:/bin"
+
+bool Root::SpawnedProcess::CleanEnvironment()
+{
+	// Add other safe ebvironment variable names here
+	// NOTE: PATH is set by hand!
+	static const char* safe_env_lst[] =
+	{
+		"LANG",
+		"TZ",
+		NULL
+	};
+
+	static const env_max = 256;
+	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*));
+	if (!cleanenv)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::calloc() failed!")),false);
+
+	char pathbuf[MAX_PATH + 6];
+	sprintf(pathbuf,"PATH=%s",SAFE_PATH);
+	cleanenv[0] = strdup(pathbuf);
+	
+	int cidx = 1;
+	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
+	{
+		if (!ACE_OS::strncmp(*ep,"OMEGA_",6)==0)
+		{
+			cleanenv[cidx] = *ep;
+			cidx++;
+		}
+		else 
+		{
+			for (int idx = 0; safe_env_lst[idx]; idx++) 
+			{
+				if (ACE_OS::strncmp(*ep,safe_env_lst[idx],strlen(safe_env_lst[idx]))==0)
+				{
+					cleanenv[cidx] = *ep;
+					cidx++;
+					break;
+				}
+			}
+		}
+	}
+
+	cleanenv[cidx] = NULL;
+	environ = cleanenv;
+
+	return true;
+}
+
 bool Root::SpawnedProcess::Spawn(uid_t uid, u_short uPort, ACE_CString& strSource)
 {
 	pid_t child_id = ACE_OS::fork();
 	if (child_id == -1)
 	{
 		// Error
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::fork() failed!")));
-		return false;
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::fork() failed!")),false);
 	}
 	else if (child_id == 0)
 	{
 		// We are the child...
 
-		// TODO: Set the correct user id to uid, init the groups and clean up the environment variables...
-		#error TODO!
-		/*
-		ACE_OS::setuid(uid);
-		ACE_OS::setregid();
-		ACE_OS::setgid
-		init_groups();
+		// TODO:  We might want to check for uid == 0 || uid < UID_MIN
 
-		// Do something with environment...
-		getpwuid();
-		*/
+		// get our pw_info
+		Root::pw_info pw(uid);
+		if (!pw)
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("::getpwuid() failed!")));
+			ACE_OS::exit(errno);
+		}
 
+		// TODO:  We might want to check for pw->pw_gid == 0 || pw->pw_gid < UID_MIN
+
+		// Set our gid...
+		if (ACE_OS::setgid(pw->pw_gid) != 0)
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("setgid() failed!")));
+			ACE_OS::exit(errno);
+		}
+
+		// Init our groups...
+		if (::initgroups(pw->pw_name,pw->pw_gid) != 0)
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("::initgroups() failed!")));
+			ACE_OS::exit(errno);
+		}
+
+		// Stop being priviledged!
+		if (!ACE_OS::setuid(uid) != 0)
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("setuid() failed!")));
+			ACE_OS::exit(errno);
+		}
+
+		// Clean up environment...
+		if (!CleanEnvironment())
+			ACE_OS::exit(errno);
+
+		// Set cwd
+		if (ACE_OS::chdir(pw->pw_dir) != 0) 
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chdir() failed!")));
+			ACE_OS::exit(errno);
+		}
+				
 		// Now just run UserMain and exit
-		ACE_OS::exit(UserMain(uPort));
-		return true;
+		int err = UserMain(uPort);
+
+		ACE_OS::exit(err);
 	}
 	else
 	{
 		// We are the parent...
 		m_uid = uid;
 		m_pid = child_id;
-		return true;
 	}
+
+	return true;
 }
 
 bool Root::SpawnedProcess::IsRunning()
@@ -204,9 +289,8 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	Root::pw_info pw(token);
 	if (!pw)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("::getpwuid() failed!")));
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - getpwuid";
-		return false;
+		strSource = "Root::SpawnedProcess::ResolveTokenToUid - getpwuid";		
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("::getpwuid() failed!")),false);
 	}
 
 	// Return the username

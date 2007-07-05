@@ -43,7 +43,9 @@ namespace Root
 		static bool LogFailure(DWORD err);
 #else // !ACE_WIN32
 		pid_t	m_pid;
-		uid_t	m_uid;		
+		uid_t	m_uid;	
+
+		void CleanEnvironment();
 #endif // ACE_WIN32
 
 	};

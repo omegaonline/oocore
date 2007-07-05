@@ -73,9 +73,9 @@ int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 							const ACE_TCHAR *account_name,
 							const ACE_TCHAR *password)
 {
-	char this_exe[MAXPATHLEN + 2];
+	char this_exe[PATH_MAX + 2];
 
-	if (GetModuleFileNameA(0,this_exe+1,MAXPATHLEN) == 0)
+	if (GetModuleFileNameA(0,this_exe+1,PATH_MAX) == 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("GetModuleFilename failed!\n")),-1);
 		
 	// Make sure that this_exe is quoted

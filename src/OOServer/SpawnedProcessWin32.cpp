@@ -595,8 +595,16 @@ bool Root::SpawnedProcess::LogFailure(DWORD err)
 	return false;
 }
 
-bool Root::SpawnedProcess::InstallSandbox()
+bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 {
+	ACE_WString strUName = L"_OMEGA_SANDBOX_USER_";
+	ACE_WString strPwd = L"4th_(*%LGe895y^$N|2";
+
+	if (argc>=1)
+		strUName = ACE_TEXT_ALWAYS_WCHAR(argv[0]);
+	if (argc>=2)
+		strPwd = ACE_TEXT_ALWAYS_WCHAR(argv[1]);
+	
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Create the server section
@@ -606,8 +614,8 @@ bool Root::SpawnedProcess::InstallSandbox()
 
 	USER_INFO_2	info =
 	{
-		L"_OMEGA_SANDBOX_USER_",   // usri2_name;
-		L"4th_(*%LGe895y^$N|2",   // usri2_password;
+		(LPWSTR)strUName.c_str(),  // usri2_name;
+		(LPWSTR)strPwd.c_str(),    // usri2_password;
 		0,                         // usri2_password_age;
 		USER_PRIV_USER,            // usri2_priv;
 		NULL,                      // usri2_home_dir;
@@ -740,14 +748,11 @@ bool Root::SpawnedProcess::InstallSandbox()
 		return LogFailure(LsaNtStatusToWinError(err2));
 	}
 
-	ACE_TString strUName(ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_name));
-	ACE_TString strPwd(ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_password));
-
 	// Set the user name and pwd...
-	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
+	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("UserName"),ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_name)) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox username in registry")),false);
 
-	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("Password"),strPwd) != 0)
+	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("Password"),ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_password)) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox password in registry")),false);
 
 	if (bAddedUser)
@@ -762,19 +767,18 @@ bool Root::SpawnedProcess::UninstallSandbox()
 
 	// Open the server section
 	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key)!=0)
-		return true;
-
-	// Get the user name and pwd...
-	ACE_TString strUName;
-	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
-		return true;
-
-	u_int bUserAdded = 0;
-	reg_root.get_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),bUserAdded);
-	if (bUserAdded)
-		NetUserDel(NULL,ACE_TEXT_ALWAYS_WCHAR(strUName.c_str()));
-
+	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key) == 0)
+	{
+		// Get the user name and pwd...
+		ACE_TString strUName;
+		if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) == 0)
+		{
+			u_int bUserAdded = 0;
+			reg_root.get_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),bUserAdded);
+			if (bUserAdded)
+				NetUserDel(NULL,ACE_TEXT_ALWAYS_WCHAR(strUName.c_str()));
+		}
+	}
 	return true;
 }
 

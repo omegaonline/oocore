@@ -122,11 +122,11 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	};
 
 	static const env_max = 256;
-	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*));
+	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*)));
 	if (!cleanenv)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::calloc() failed!")),false);
 
-	char pathbuf[MAX_PATH + 6];
+	char pathbuf[PATH_MAX + 6];
 	sprintf(pathbuf,"PATH=%s",SAFE_PATH);
 	cleanenv[0] = strdup(pathbuf);
 	
@@ -323,26 +323,28 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	return true;
 }
 
-bool Root::SpawnedProcess::InstallSandbox()
+bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 {
+	ACE_CString strUName = "omega_sandbox";
+	if (argc>=1)
+		strUName = argv[0];
+
+	ACE_OS::setpwent();
+	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
+	if (!pw)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("getpwnam() failed!")),false);
+	ACE_OS::endpwent();
+	
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Create the server section
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),1,sandbox_key)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to create Server\\Sandbox key in registry")),false);
-
-	#error TODO:  Set up a sandbox user!
-
-	bool bAddedUser = false;
-	uid_t uid_sandbox;
 	
 	// Set the user name and pwd...
-	if (reg_root.set_integer_value(sandbox_key,ACE_TEXT("Uid"),uid_sandbox) != 0)
+	if (reg_root.set_integer_value(sandbox_key,ACE_TEXT("Uid"),pw->pw_uid) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox uid in registry")),false);
-
-	if (bAddedUser)
-		reg_root.set_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),1);
 }
 
 bool Root::SpawnedProcess::UninstallSandbox()
@@ -351,19 +353,9 @@ bool Root::SpawnedProcess::UninstallSandbox()
 
 	// Open the server section
 	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key)!=0)
-		return true;
-
-	// Get the user name and pwd...
-	uid_t uid_sandbox;
-	if (reg_root.get_integer_value(sandbox_key,ACE_TEXT("Uid"),uid_sandbox) != 0)
-		return true;
-
-	u_int bUserAdded = 0;
-	reg_root.get_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),bUserAdded);
-	if (bUserAdded)
+	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key)==0)
 	{
-		#error TODO:  Remove the user...
+		reg_root.remove_value(sandbox_key,ACE_TEXT("Uid"));
 	}
 
 	return true;

@@ -27,7 +27,7 @@ namespace Root
 
 		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_CString& strSource);
 		static bool GetSandboxUid(ACE_CString& uid);
-		static bool InstallSandbox();
+		static bool InstallSandbox(int argc, ACE_TCHAR* argv[]);
 		static bool UninstallSandbox();
 
 	private:

@@ -23,14 +23,14 @@ Root::ConfigState Root::s_config_state =
 // Forward declare UserMain
 int UserMain(u_short uPort);
 
-static int Install()
+static int Install(int argc, ACE_TCHAR* argv[])
 {
 #if defined(ACE_WIN32)
 	if (!Root::NTService::install())
 		return -1;
 #endif
 
-	if (!Root::Manager::install())
+	if (!Root::Manager::install(argc,argv))
 		return -1;
 
 	ACE_OS::printf("Installed successfully.\n");
@@ -95,7 +95,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		switch (option)
 		{
 		case ACE_TEXT('i'):
-			return Install();
+			return Install(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
 
 		case ACE_TEXT('u'):
 			return Uninstall();
@@ -127,7 +127,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #if defined(ACE_WIN32)
 	if (argc<2 || ACE_OS::strcmp(argv[1],"--service")!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be run as a Win32 service.\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a Win32 service.\n")),-1);
 
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
@@ -137,13 +137,15 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #else
 	// Daemonize ourselves
-	ACE_TCHAR szCwd[MAXPATHLEN];
-	ACE_OS::getcwd(szCwd,MAXPATHLEN);
-	if (ACE::daemonize(szCwd,0,argv[0]) != 0)
+	ACE_TCHAR szCwd[PATH_MAX];
+	ACE_OS::getcwd(szCwd,PATH_MAX);
+	if (ACE::daemonize(szCwd,1,argv[0]) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),-1);
 
 	if (ACE_LOG_MSG->open(argv[0],ACE_Log_Msg::SYSLOG) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+
+	// TODO - Install signal handlers...
 #endif
 
 	return Root::Manager::run();

@@ -31,7 +31,7 @@ namespace Root
 		static void end();
 		static bool connect_client(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
 		static ACE_Configuration_Heap& get_registry();
-		static bool install();
+		static bool install(int argc, ACE_TCHAR* argv[]);
 		static bool uninstall();
 
 	private:

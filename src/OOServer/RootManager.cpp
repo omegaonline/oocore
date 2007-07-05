@@ -27,12 +27,12 @@ Root::Manager::~Manager()
 	term();
 }
 
-bool Root::Manager::install()
+bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 {
 	if (ROOT_MANAGER::instance()->init_registry() != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening registry")),false);
 
-	if (!SpawnedProcess::InstallSandbox())
+	if (!SpawnedProcess::InstallSandbox(argc,argv))
 		return false;
 
 	// Add the default All Users key

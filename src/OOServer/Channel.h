@@ -137,7 +137,8 @@ namespace User
 	public:
 		Channel();
 
-		void init(Manager* pManager, ACE_HANDLE handle, ACE_CDR::UShort channel_id);
+		void init(Manager* pManager, ACE_CDR::UShort channel_id);
+		ACE_CDR::UShort set_thread_id(ACE_CDR::UShort thread_id);
 		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -145,13 +146,20 @@ namespace User
 
 	private:
 		Manager*         m_pManager;
-		ACE_HANDLE       m_handle;
 		ACE_CDR::UShort  m_channel_id;
+
+		ACE_TSS<ACE_TSS_Type_Adapter<ACE_CDR::UShort> > m_thread_id;
+
+		Channel(const Channel&)
+		{}
+
+		Channel& operator = (const Channel&)
+		{ return *this; }
 
 	// IChannel members
 	public: 
 		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
-		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream);
+		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream, Omega::uint16_t timeout);
 	};
 }
 

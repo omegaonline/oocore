@@ -11,11 +11,10 @@
 /////////////////////////////////////////////////////////////
 
 #include "./OOServer_Root.h"
-
-#if defined(ACE_WIN32)
-
 #include "./SpawnedProcess.h"
 #include "./RootManager.h"
+
+#if defined(ACE_WIN32)
 
 #if !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x0500
@@ -207,23 +206,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 		return dwErr;
 	}
 
-#ifdef OMEGA_DEBUG
-	if (s_config_state.bAlternateSpawn)
-	{
-		static ACE_Atomic_Op<ACE_Thread_Mutex,long> c = 1;
-
-		++c;
-
-		size_t l = wcslen(szPath);
-		szPath[l-4] = (char)(c.value())+L'0';
-		szPath[l-3] = L'.';
-		szPath[l-2] = L'e';
-		szPath[l-1] = L'x';
-		szPath[l] = L'e';
-		szPath[l+1] = L'\0';
-	}
-#endif
-
 	WCHAR szCmdLine[MAX_PATH+64];
 	if (ACE_OS::sprintf(szCmdLine,L"\"%s\" --spawned %u",szPath,uPort)==-1)
 	{
@@ -322,15 +304,13 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
-#ifdef OMEGA_DEBUG
-		if (dwRes == 1314 && s_config_state.bNoSandbox && bSandbox)
+		/*if (dwRes == 1314 && bSandbox)
 		{
 			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
 			SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 			ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
 		}
-		else
-#endif
+		else*/
 		{
 			// Done with hToken
 			CloseHandle(hToken);
@@ -509,18 +489,18 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
     PSECURITY_DESCRIPTOR pSD = NULL;
 	DWORD cbNeeded = 0;
 	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
-		return false;
-
-	pSD = static_cast<PSECURITY_DESCRIPTOR>(ACE_OS::malloc(cbNeeded));
-	if (!pSD)
 	{
-		ACE_OS::last_error(ENOMEM);
+		ACE_OS::set_errno_to_last_error();
 		return false;
 	}
 
+	pSD = static_cast<PSECURITY_DESCRIPTOR>(ACE_OS::malloc(cbNeeded));
+	if (!pSD)
+		return false;
+	
 	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
 	{
-		ACE_OS::last_error(EINVAL);
+		ACE_OS::set_errno_to_last_error();
 		return false;
 	}
 
@@ -545,7 +525,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 
 	if (!ImpersonateLoggedOnUser(m_hToken))
 	{
-		ACE_OS::last_error(EINVAL);
+		ACE_OS::set_errno_to_last_error();
 		return false;
 	}
 
@@ -561,7 +541,8 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 
 	if (!bRes && err!=ERROR_SUCCESS)
 	{
-		ACE_OS::last_error(EINVAL);
+		ACE_OS::last_error(err);
+		ACE_OS::set_errno_to_last_error();
 		return false;
 	}
 	bAllowed = (bAllowedVal ? true : false);
@@ -699,6 +680,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	// Open the local account policy...
 	LSA_HANDLE hPolicy;
 	LSA_OBJECT_ATTRIBUTES oa;
+	memset(&oa,0,sizeof(oa));
 	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
 	if (err2 != 0)
 	{
@@ -782,4 +764,96 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	return true;
 }
 
+/*bool Root::SpawnedThread::LogonUser(uid_t id)
+{
+	HANDLE hToken;
+
+	bool bSandbox = (id == static_cast<uid_t>(-1));
+	if (bSandbox)
+	{
+		int err = SpawnedProcess::LogonSandboxUser(&hToken);
+		if (err != 0)
+			return false;
+	}
+	else
+	{
+		// Get the process handle
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
+		if (!hProcess)
+			return false;
+
+		// Get the process token
+		BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
+
+		// Done with hProcess
+		CloseHandle(hProcess);
+		
+		if (!bSuccess)
+			return false;
+	}
+	
+	BOOL bSuccess = ImpersonateLoggedOnUser(hToken);
+	
+	CloseHandle(hToken);
+	
+	return (bSuccess ? true : false);	
+}*/
+
 #endif // ACE_WIN32
+
+/*Root::SpawnedThread::SpawnedThread() :
+	SpawnedProcess(),
+	m_thread_id(0)
+{
+}
+
+Root::SpawnedThread::~SpawnedThread()
+{
+	if (m_thread_id != 0)
+		ACE_Thread_Manager::instance()->kill(m_thread_id,9);
+}
+
+bool Root::SpawnedThread::Spawn(uid_t id, u_short uPort, ACE_CString& strSource)
+{
+	Params* pParams = 0;
+	ACE_NEW_NORETURN(pParams,Params);
+	if (!pParams)
+	{
+		strSource = "Root::SpawnedThread::Spawn - malloc Params";
+		return false;
+	}
+
+	pParams->id = id;
+	pParams->uPort = uPort;
+
+	int grp = ACE_Thread_Manager::instance()->spawn(worker_fn,pParams,THR_NEW_LWP | THR_JOINABLE | THR_INHERIT_SCHED,&m_thread_id);
+	if (grp == -1)
+	{
+		strSource = "Root::SpawnedThread::Spawn - spawn thread";
+		delete pParams;
+		return false;
+	}
+	
+	return true;	
+}
+
+bool Root::SpawnedThread::IsRunning()
+{
+	if (m_thread_id == 0)
+		return false;
+	else 
+		return !(ACE_Thread_Manager::instance()->testterminate(m_thread_id));
+}
+
+// Forward declare UserMain
+int UserMain(u_short uPort);
+
+ACE_THR_FUNC_RETURN Root::SpawnedThread::worker_fn(void* pParams)
+{
+	Params* p = static_cast<Params*>(pParams);
+
+	if (!LogonUser(p->id))
+		return (ACE_THR_FUNC_RETURN)-1;
+
+	return (ACE_THR_FUNC_RETURN)UserMain(p->uPort);
+}*/

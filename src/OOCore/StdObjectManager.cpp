@@ -414,10 +414,10 @@ Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream
 	return m_ptrChannel->CreateOutputStream();
 }
 
-Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream)
+Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream, uint16_t timeout)
 {
     ObjectPtr<Serialize::IFormattedStream> ptrResponse;
-	ptrResponse.Attach(m_ptrChannel->SendAndReceive(attribs,pStream));
+	ptrResponse.Attach(m_ptrChannel->SendAndReceive(attribs,pStream,timeout));
 
 	if (!(attribs & Remoting::asynchronous))
 	{
@@ -439,7 +439,7 @@ Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Ome
 		}
 	}
 
-	return ptrResponse.Detach();
+	return ptrResponse.AddRefReturn();
 }
 
 void OOCore::StdObjectManager::CreateUnboundProxy(const guid_t& oid, const guid_t& iid, IObject*& pObject)

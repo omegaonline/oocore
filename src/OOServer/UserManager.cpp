@@ -119,15 +119,12 @@ Activation::IServiceTable* User::InterProcessService::GetServiceTable()
 
 // UserManager
 User::Manager::Manager() :
-	LocalAcceptor<Connection>(),
-	m_root_handle(ACE_INVALID_HANDLE),
-	m_uNextChannelId(1)
+	m_root_channel(0)
 {
 }
 
 User::Manager::~Manager()
 {
-	term();
 }
 
 int User::Manager::run(u_short uPort)
@@ -139,33 +136,35 @@ int User::Manager::run_event_loop_i(u_short uPort)
 {
 	int ret = init(uPort);
 	if (ret != 0)
-		return ret;
+		return ret;				
 
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
 	if (threads < 2)
 		threads = 2;
 
-	// Spawn off the request threads
-	ret = RequestHandler<User::Request>::start(threads);
-	if (ret == 0)
+	// Spawn off the proactor threads
+	int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
+	if (pro_thrd_grp_id == -1)
+		ret = -1;
+	else
 	{
-		// Spawn off the proactor threads
-		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,proactor_worker_fn);
-		if (pro_thrd_grp_id == -1)
+		// Spawn off the request threads
+		int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,request_worker_fn,this);
+		if (req_thrd_grp_id == -1)
 			ret = -1;
 		else
 		{
+			ret = (int)request_worker_fn(this);
+
 			//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
 
-			ret = (int)proactor_worker_fn(0);
-
-			// Wait for all the proactor threads to finish
-			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
+			// Wait for all the request threads to finish
+			ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 		}
 
-		// Stop handling requests
-		RequestHandler<User::Request>::stop();
+		// Wait for all the request threads to finish
+		ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 	}
 
 	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has stopped.")));
@@ -180,7 +179,7 @@ int User::Manager::init(u_short uPort)
 	ACE_SOCK_Stream stream;
 
 	// Connect to the root
-	ACE_Time_Value wait(15);
+	ACE_Time_Value wait(5);
 	int ret = connector.connect(stream,addr,&wait);
 	if (ret != 0)
 	{
@@ -205,36 +204,39 @@ int User::Manager::init(u_short uPort)
 				sa.set_size(len);
 
 				uPort = sa.get_port_number();
-				if (stream.send(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
-				{
+
+				// Talk to the root...
+				ACE_CDR::UShort sandbox_channel = 0;
+				if (stream.recv(&sandbox_channel,sizeof(sandbox_channel),&wait) != sizeof(sandbox_channel))
 					ret = -1;
-				}
 				else
 				{
-					ret = bootstrap(stream);
-				}
-
-				if (ret == 0)
-				{
-					// Create a new RootConnection
-					Root::Connection* pRC;
-					ACE_NEW_NORETURN(pRC,Root::Connection(this,ACE_CString()));
-					if (!pRC)
-					{
+					// Create a new MessageConnection
+					Root::MessageConnection* pMC;
+					ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
+					if (!pMC)
 						ret = -1;
-					}
-					else if (pRC->open(stream.get_handle()))
+					else 
 					{
-						// Stash the root handle
-						m_root_handle = stream.get_handle();
+						ACE_HANDLE handle = stream.get_handle();
+						m_root_channel = pMC->attach(handle);
+						if (m_root_channel == 0)
+							ret = -1;
+						else
+						{
+							// Clear the handle in the stream, pMC now owns it
+							stream.set_handle(ACE_INVALID_HANDLE);							
 
-						// Clear the handle in the stream, pRC now owns it
-						stream.set_handle(ACE_INVALID_HANDLE);
-					}
-					else
-					{
-						ret = -1;
-						delete pRC;
+							ret = bootstrap(sandbox_channel);
+							if (ret != 0)
+								uPort = 0;
+								
+							if (ACE::send(handle,&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
+								ret = -1;
+						}
+						
+						if (ret != 0)
+							delete pMC;
 					}
 				}
 			}
@@ -246,34 +248,25 @@ int User::Manager::init(u_short uPort)
 	return ret;
 }
 
-void User::Manager::term()
+int User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 {
-	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-	if (m_root_handle != ACE_INVALID_HANDLE)
-	{
-		ACE_OS::shutdown(m_root_handle,ACE_SHUTDOWN_BOTH);
-		ACE_OS::closesocket(m_root_handle);
-		m_root_handle = ACE_INVALID_HANDLE;
-	}
-}
-
-int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
-{
-	// Talk to the root...
-	char sandbox = 0;
-	if (stream.recv(&sandbox,sizeof(sandbox)) != sizeof(sandbox))
-		return -1;
+	bool bSandbox = (sandbox_channel == 0);
 
 	// Register our service
 	try
 	{
-		ObjectPtr<Remoting::IObjectManager> ptrOM;
-		if (!sandbox)
-			ptrOM = get_object_manager(m_root_handle,1);
+		OMInfo oim;
+		if (!bSandbox)
+		{
+			sandbox_channel = add_routing(m_root_channel,sandbox_channel);
+			if (!sandbox_channel)
+				return -1;
+
+			oim = get_object_manager(sandbox_channel);
+		}
 
 		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();
-		ptrOF->Init(ptrOM,this);
+		ptrOF->Init(oim.m_ptrOM,this);
 
 		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
@@ -288,159 +281,41 @@ int User::Manager::bootstrap(ACE_SOCK_STREAM& stream)
 	return 0;
 }
 
-void User::Manager::root_connection_closed(const ACE_CString& /*key*/, ACE_HANDLE /*handle*/)
-{
-	try
-	{
-		// Stop accepting
-		ACE_OS::shutdown(get_handle(),ACE_SHUTDOWN_BOTH);
-
-		{
-			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			// Shutdown all client handles
-			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();)
-			{
-				if (j->first == m_root_handle)
-				{
-					m_mapReverseChannelIds.erase(j++);
-				}
-				else
-				{
-					ACE_OS::shutdown(j->first,ACE_SHUTDOWN_WRITE);
-					++j;
-				}
-			}
-		}
-
-		// Wait for everyone to close
-		ACE_Time_Value wait(15);
-		ACE_Countdown_Time timeout(&wait);
-		while (wait != ACE_Time_Value::zero)
-		{
-			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			if (m_mapReverseChannelIds.empty())
-				break;
-
-			timeout.update();
-		}
-	}
-	catch (...)
-	{}
-
-	// We close when the root connection closes
-	ACE_Proactor::instance()->proactor_end_event_loop();
-
-	term();
-}
-
 ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
 {
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
 }
 
-int User::Manager::validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local)
+ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void* pParam)
 {
-	// Check we can accept it...
-	if (LocalAcceptor<Connection>::validate_connection(result,remote,local) != 0)
-		return -1;
+	return (ACE_THR_FUNC_RETURN)(static_cast<Manager*>(pParam)->pump_requests() ? 0 : -1);
+}
 
-	try
+void User::Manager::process_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
+{
+	if (src_channel_id == m_root_channel)
 	{
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		ChannelPair channel = {result.accept_handle(), 0};
-		ACE_CDR::UShort uChannelId = m_uNextChannelId++;
-		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
-		{
-			uChannelId = m_uNextChannelId++;
-		}
-		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(uChannelId,channel));
-		m_mapReverseChannelIds.insert(std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(result.accept_handle(),std::map<ACE_CDR::UShort,ACE_CDR::UShort>()));
-	}
-	catch (...)
-	{
-		return -1;
-	}
-
-	return 0;
-}
-
-bool User::Manager::enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle)
-{
-	User::Request* req;
-	ACE_NEW_RETURN(req,Request(handle,input),false);
-
-	req->m_bRoot = true;
-
-	bool bRet = enqueue_request(req);
-	if (!bRet)
-		delete req;
-
-	return bRet;
-}
-
-bool User::Manager::enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle)
-{
-	Request* req;
-	ACE_NEW_RETURN(req,Request(handle,input),false);
-
-	req->m_bRoot = false;
-
-	bool bRet = USER_MANAGER::instance()->enqueue_request(req);
-	if (!bRet)
-		delete req;
-
-	return bRet;
-}
-
-void User::Manager::user_connection_closed(ACE_HANDLE handle)
-{
-	USER_MANAGER::instance()->user_connection_closed_i(handle);
-}
-
-void User::Manager::user_connection_closed_i(ACE_HANDLE handle)
-{
-	ACE_OS::closesocket(handle);
-
-	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-	try
-	{
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(handle);
-		if (j!=m_mapReverseChannelIds.end())
-		{
-			for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
-			{
-				m_mapChannelIds.erase(k->second);
-			}
-			m_mapReverseChannelIds.erase(j);
-		}
-	}
-	catch (...)
-	{}
-}
-
-void User::Manager::process_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
-{
-	if (dest_channel_id == 0)
-	{
-		if (request->m_bRoot && src_channel_id==0)
-			process_root_request(request->handle(),*request->input(),trans_id,request_deadline);
-		else
-			process_request(request->handle(),*request->input(),src_channel_id,trans_id,request_deadline);
+		process_root_request(request,src_channel_id,src_thread_id,deadline,attribs);
 	}
 	else
 	{
-		// Forward to the correct channel...
-		forward_request(request,dest_channel_id,src_channel_id,trans_id,request_deadline);
-	}
+		// Find and/or create the object manager associated with src_channel_id
+		OMInfo oim = get_object_manager(src_channel_id);
 
-	delete request;
+		ACE_CDR::UShort old_thread_id = oim.m_ptrChannel->set_thread_id(src_thread_id);
+		
+		// Process the message...
+		process_user_request(oim.m_ptrOM,request,src_channel_id,src_thread_id,deadline,attribs);
+
+		// Restore old context
+		old_thread_id = oim.m_ptrChannel->set_thread_id(old_thread_id);
+		
+		if (old_thread_id != src_thread_id)
+			::DebugBreak();
+	}
 }
 
-void User::Manager::process_root_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::ULong /*trans_id*/, const ACE_Time_Value& /*request_deadline*/)
+void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort /*src_channel_id*/, ACE_CDR::UShort /*src_thread_id*/, const ACE_Time_Value& /*deadline*/, ACE_CDR::UShort /*attribs*/)
 {
 	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
     request >> op_code;
@@ -460,7 +335,7 @@ void User::Manager::process_root_request(ACE_HANDLE /*handle*/, ACE_InputCDR& re
 	}
 }
 
-void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
+void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptrOM, const ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
 {
 	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
 
@@ -469,29 +344,6 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 
 	try
 	{
-		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM;
-		ptrOM = get_object_manager(handle,src_channel_id);
-
-		// Convert deadline time to #msecs
-		ACE_Time_Value wait(request_deadline - ACE_OS::gettimeofday());
-		if (wait <= ACE_Time_Value::zero)
-		{
-			if (trans_id != 0)
-			{
-				// Error code 1 - Request timed out
-				error.write_octet(1);
-				if (!send_response(handle,0,trans_id,error.begin(),request_deadline))
-					OOSERVER_THROW_LASTERROR();
-			}
-			return;
-		}
-
-		ACE_UINT64 msecs = 0;
-		static_cast<const ACE_Time_Value>(wait).msec(msecs);
-		if (msecs > ACE_UINT32_MAX)
-			msecs = ACE_UINT32_MAX;
-
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
 		ptrRequest = ObjectImpl<InputCDR>::CreateInstancePtr();
@@ -499,18 +351,39 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 
 		// Create a response if required
 		ObjectPtr<ObjectImpl<OutputCDR> > ptrResponse;
-		if (trans_id != 0)
+		if (!(attribs & Remoting::asynchronous))
 		{
 			ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
 		}
-
+		
 		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
 		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
 
+		// Check timeout
+		ACE_Time_Value now = ACE_OS::gettimeofday();
+		if (deadline <= now)
+		{
+			if (!(attribs & Remoting::asynchronous))
+			{
+				// Error code 1 - Request timed out
+				error.write_octet(1);
+				if (!send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs))
+					OOSERVER_THROW_LASTERROR();
+			}
+			return;
+		}
+
+		// Convert deadline time to #msecs
+		ACE_Time_Value wait = deadline - now;
+		ACE_UINT64 msecs = 0;
+		static_cast<const ACE_Time_Value>(wait).msec(static_cast<ACE_UINT64&>(msecs));
+		if (msecs > ACE_UINT32_MAX)
+			msecs = ACE_UINT32_MAX;
+
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
+			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<Omega::uint32_t>(msecs));
 		}
 		catch (IException* pInner)
 		{
@@ -518,10 +391,8 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			ObjectPtr<IException> ptrInner;
 			ptrInner.Attach(pInner);
 
-			ACE_ERROR((LM_ERROR,ACE_TEXT("Invoke failed: %s\nAt: %s"),(const ACE_TCHAR*)pInner->Description(),(const ACE_TCHAR*)pInner->Source()));
-
 			// Reply with an exception if we can send replies...
-			if (trans_id != 0)
+			if (!(attribs & Remoting::asynchronous))
 			{
 				// Dump the previous output and create a fresh output
 				ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
@@ -534,16 +405,17 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			}
 		}
 
-		if (trans_id != 0)
+		if (!(attribs & Remoting::asynchronous))
 		{
-			int err = 0;
-			ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			if (!send_response(handle,0,trans_id,mb,request_deadline))
-				err = ACE_OS::last_error();
+		    int err = 0;
+		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
+			if (!send_response(src_channel_id,src_thread_id,mb,deadline,attribs))
+                err = ACE_OS::last_error();
 
-			mb->release();
-			if (err != 0)
-				OOSERVER_THROW_ERRNO(err);
+            mb->release();
+
+            if (err != 0)
+				OOSERVER_THROW_LASTERROR();
 		}
 	}
 	catch (IException* pOuter)
@@ -552,7 +424,7 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 		ObjectPtr<IException> ptrOuter;
 		ptrOuter.Attach(pOuter);
 
-		if (trans_id != 0)
+		if (!(attribs & Remoting::asynchronous))
 		{
 			// Error code 2 - Exception raw
 			error.write_octet(2);
@@ -561,139 +433,43 @@ void User::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 			string_t strSrc = pOuter->Source();
 			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Length()),strSrc);
 
-			send_response(handle,0,trans_id,error.begin(),request_deadline);
+			send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs);
 		}
 	}
 }
 
-void User::Manager::forward_request(Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline)
+User::Manager::OMInfo User::Manager::get_object_manager(ACE_CDR::UShort src_channel_id)
 {
-	ChannelPair dest_channel;
-	ACE_CDR::UShort reply_channel_id = 0;
+	OMInfo info;
 	try
 	{
-		// Lookup first...
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j;
+		// Lookup existing..
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			// Find the destination channel
-			std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
-			if (i == m_mapChannelIds.end())
-				return;
-			dest_channel = i->second;
-
-			// Find the local channel id that matches src_channel_id
-			j=m_mapReverseChannelIds.find(request->handle());
-			if (j==m_mapReverseChannelIds.end())
-				return;
-
-			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k = j->second.find(src_channel_id);
-			if (k != j->second.end())
-				reply_channel_id = k->second;
-		}
-
-		if (reply_channel_id == 0)
-		{
-			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			ChannelPair channel = {request->handle(), src_channel_id};
-			reply_channel_id = m_uNextChannelId++;
-			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
-			{
-				reply_channel_id = m_uNextChannelId++;
-			}
-
-			std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(src_channel_id,reply_channel_id));
-			if (!p.second)
-				reply_channel_id = p.first->second;
-			else
-				m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelPair>::value_type(reply_channel_id,channel));
-		}
-	}
-	catch (...)
-	{
-		return;
-	}
-
-	if (trans_id == 0)
-	{
-		RequestHandler<Request>::send_asynch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),request_deadline);
-	}
-	else
-	{
-		Request* response;
-		if (RequestHandler<Request>::send_synch(dest_channel.handle,dest_channel.channel,reply_channel_id,request->input()->start(),response,request_deadline))
-		{
-			send_response(request->handle(),src_channel_id,trans_id,response->input()->start(),request_deadline);
-			delete response;
-		}
-	}
-}
-
-void User::Manager::send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline)
-{
-	if (handle == ACE_INVALID_HANDLE)
-		handle = m_root_handle;
-
-	ACE_Time_Value request_deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
-	if (deadline)
-		request_deadline = *deadline;
-
-	if (!RequestHandler<Request>::send_asynch(handle,dest_channel_id,0,request,request_deadline))
-		OOSERVER_THROW_LASTERROR();
-}
-
-ACE_InputCDR User::Manager::send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline)
-{
-	if (handle == ACE_INVALID_HANDLE)
-		handle = m_root_handle;
-
-	ACE_Time_Value request_deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
-	if (deadline)
-		request_deadline = *deadline;
-
-	Request* pResponse;
-	if (!RequestHandler<Request>::send_synch(handle,dest_channel_id,0,request,pResponse,request_deadline))
-		OOSERVER_THROW_LASTERROR();
-
-	ACE_InputCDR response = *pResponse->input();
-	delete pResponse;
-	return response;
-}
-
-ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id)
-{
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	try
-	{
-		// Lookup first...
-		{
-			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(handle);
+            std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
-				ptrOM = i->second;
+				info = i->second;
 		}
 
-		if (!ptrOM)
+		if (!info.m_ptrOM)
 		{
 			// Create a new channel
-			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-			ptrChannel->init(this,handle,channel_id);
+			info.m_ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+			info.m_ptrChannel->init(this,src_channel_id);
 
 			// Create a new OM
-			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+			info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 			// Associate it with the channel
-			ptrOM->Connect(ptrChannel);
+			info.m_ptrOM->Connect(info.m_ptrChannel);
 
 			// And add to the map
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::pair<std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::iterator,bool> p = m_mapOMs.insert(std::map<ACE_HANDLE,ObjectPtr<Remoting::IObjectManager> >::value_type(handle,ptrOM));
+			std::pair<std::map<ACE_CDR::UShort,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OMInfo>::value_type(src_channel_id,info));
 			if (!p.second)
-				ptrOM = p.first->second;
+				info = p.first->second;
 		}
 	}
 	catch (std::exception& e)
@@ -701,5 +477,16 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_HANDLE
 		OMEGA_THROW(e.what());
 	}
 
-	return ptrOM;
+	return info;
+}
+
+ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
+{
+	ACE_InputCDR* response = 0;
+	if (!send_request(m_root_channel,0,request.begin(),response,15000,0))
+		OOSERVER_THROW_LASTERROR();
+	
+	ACE_InputCDR ret = *response;
+	delete response;
+	return ret;
 }

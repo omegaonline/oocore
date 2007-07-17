@@ -12,7 +12,7 @@ OOCore::UserConnection::UserConnection(UserSession* pSession) :
 
 OOCore::UserConnection::~UserConnection()
 {
-	m_pSession->connection_closed();
+	//m_pSession->connection_closed();
 
 	if (handle() != ACE_INVALID_HANDLE)
 		ACE_OS::closesocket(handle());

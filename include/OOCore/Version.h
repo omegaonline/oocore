@@ -6,7 +6,7 @@
 
 #define OMEGA_MAJOR_VERSION  0
 #define OMEGA_MINOR_VERSION  3
-#define OMEGA_BUILD_VERSION  2
+#define OMEGA_BUILD_VERSION  3
 
 #define OMEGA_VERSION_II(a,b,c)	#a "." #b "." #c
 #define OMEGA_VERSION_I(a,b,c)	OMEGA_VERSION_II(a,b,c)

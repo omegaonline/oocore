@@ -49,7 +49,7 @@ namespace Omega
 				virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
 				virtual void ReleaseStub(uint32_t id) = 0;
 				virtual Serialize::IFormattedStream* CreateOutputStream() = 0;
-				virtual Serialize::IFormattedStream* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pParams) = 0;
+				virtual Serialize::IFormattedStream* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pParams, uint16_t timeout = 15000) = 0;
 			};
 			
 			interface IWireStub : public IObject
@@ -698,7 +698,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD_VOID(ReleaseStub,1,((in),Omega::uint32_t,id))
 	OMEGA_METHOD(Serialize::IFormattedStream*,CreateOutputStream,0,())
-	OMEGA_METHOD(Serialize::IFormattedStream*,SendAndReceive,2,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pParams))
+	OMEGA_METHOD(Serialize::IFormattedStream*,SendAndReceive,3,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pParams,(in),uint16_t,timeout))
 )
 
 #endif // OOCORE_WIRE_H_INCLUDED_

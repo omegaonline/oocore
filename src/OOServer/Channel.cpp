@@ -7,19 +7,24 @@ using namespace Omega;
 using namespace OTL;
 
 User::Channel::Channel() :
-	m_pManager(0),
-	m_handle(ACE_INVALID_HANDLE)
+	m_pManager(0), m_thread_id(0)
 {
 }
 
-void User::Channel::init(Manager* pManager, ACE_HANDLE handle, ACE_CDR::UShort channel_id)
+void User::Channel::init(Manager* pManager, ACE_CDR::UShort channel_id)
 {
 	if (m_pManager)
 		OOSERVER_THROW_ERRNO(EALREADY);
 
 	m_pManager = pManager;
-	m_handle = handle;
 	m_channel_id = channel_id;
+}
+
+ACE_CDR::UShort User::Channel::set_thread_id(ACE_CDR::UShort thread_id)
+{
+	ACE_CDR::UShort prev = *m_thread_id;
+	*m_thread_id = thread_id;
+	return prev;
 }
 
 Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
@@ -29,15 +34,8 @@ Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
 }
 
-Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream)
+Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
 {
-	// TODO We need to make the timeout cumulative - i.e. catch the first request, and use a kind
-	// of 'time remaining' value to force all calls to occur within the timeout of the
-	// outermost requests timeout...
-	void* TODO;
-
-	ACE_Time_Value deadline = ACE_OS::gettimeofday() + ACE_Time_Value(30);
-	
 	// QI pStream for our private interface
 	ObjectPtr<IOutputCDR> ptrOutput;
 	ptrOutput.Attach(static_cast<IOutputCDR*>(pStream->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
@@ -48,19 +46,17 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
 	Serialize::IFormattedStream* pResponse = 0;
+	ACE_InputCDR* response = 0;
 	try
 	{
-		if (attribs & Remoting::asynchronous)
+		if (!m_pManager->send_request(m_channel_id,*m_thread_id,request,response,timeout,attribs))
+			OOSERVER_THROW_LASTERROR();
+		
+		if (response)
 		{
-			m_pManager->send_asynch(m_handle,m_channel_id,request,&deadline);
-		}
-		else
-		{
-			ACE_InputCDR response = m_pManager->send_synch(m_handle,m_channel_id,request,&deadline);
-
 			// Unpack and validate response...
 			ACE_CDR::Octet ret_code = 0;
-			if (!response.read_octet(ret_code))
+			if (!response->read_octet(ret_code))
 				OOSERVER_THROW_LASTERROR();
 
 			// ret_code must match the values in UserManager::process_request
@@ -71,11 +67,11 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 			else if (ret_code == 2)
 			{
 				ACE_CString strDesc;
-				if (!response.read_string(strDesc))
+				if (!response->read_string(strDesc))
 					OOSERVER_THROW_LASTERROR();
 
 				ACE_CString strSrc;
-				if (!response.read_string(strSrc))
+				if (!response->read_string(strSrc))
 					OOSERVER_THROW_LASTERROR();
 
 				throw IException::Create(strDesc.c_str(),strSrc.c_str());
@@ -83,12 +79,14 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 						
 			// Wrap the response
 			ObjectPtr<ObjectImpl<InputCDR> > ptrResponse = ObjectImpl<InputCDR>::CreateInstancePtr();
-			ptrResponse->init(response);
+			ptrResponse->init(*response);
+			response = 0;
 			pResponse = ptrResponse.Detach();
 		}
 	}
 	catch (...)
 	{
+		delete response;
 		request->release();
 		throw;
 	}

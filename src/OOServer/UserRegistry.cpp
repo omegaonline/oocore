@@ -558,7 +558,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -585,7 +585,7 @@ bool_t RootKey::IsValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -615,7 +615,7 @@ ValueType_t RootKey::GetValueType(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -662,7 +662,7 @@ string_t RootKey::GetStringValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -696,7 +696,7 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -732,7 +732,7 @@ void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -767,7 +767,7 @@ void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -798,7 +798,7 @@ void RootKey::SetUIntValue(const string_t& strName, uint32_t uValue)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -830,7 +830,7 @@ void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -859,7 +859,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
     if (!response.read_ulong(err))
@@ -883,7 +883,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		if (!request.good_bit())
 			OOSERVER_THROW_LASTERROR();
 
-		response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+		response = m_pManager->sendrecv_root(request);
 
 		if (!response.read_ulong(err))
 			OOSERVER_THROW_LASTERROR();
@@ -929,7 +929,7 @@ void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -959,7 +959,7 @@ Omega::IEnumString* RootKey::EnumValues()
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -1000,7 +1000,7 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))
@@ -1025,7 +1025,7 @@ void RootKey::DeleteValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->send_synch(ACE_INVALID_HANDLE,0,request.begin());
+	ACE_InputCDR response = m_pManager->sendrecv_root(request);
 
 	ACE_CDR::ULong err = 0;
 	if (!response.read_ulong(err))

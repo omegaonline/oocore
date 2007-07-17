@@ -105,7 +105,7 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
 
 		if (GetObjectFactory_Exception)
 			System::MetaInfo::throw_correct_exception(GetObjectFactory_Exception);
-		return ptrOF.Detach();
+		return ptrOF.AddRefReturn();
 	}
 	else
 	{

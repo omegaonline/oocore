@@ -18,11 +18,12 @@ namespace Root
 	class SpawnedProcess
 	{
 	public:
-		SpawnedProcess(void);
-		~SpawnedProcess(void);
+		SpawnedProcess();
+		virtual ~SpawnedProcess();
 
-		bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
-		bool IsRunning();
+		virtual bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
+		virtual bool IsRunning();
+
 		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
 		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_CString& strSource);
@@ -30,25 +31,50 @@ namespace Root
 		static bool InstallSandbox(int argc, ACE_TCHAR* argv[]);
 		static bool UninstallSandbox();
 
-	private:
-
 #if defined(ACE_WIN32)
+	protected:
 		HANDLE	m_hToken;
+
+		static DWORD LogonSandboxUser(HANDLE* phToken);
+		static bool LogFailure(DWORD err);
+
+	private:
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 		
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_CString& strSource);
 		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_CString& strSource);
-		static DWORD LogonSandboxUser(HANDLE* phToken);
-		static bool LogFailure(DWORD err);
 #else // !ACE_WIN32
-		pid_t	m_pid;
+	protected:
 		uid_t	m_uid;	
 
+	private:
+		pid_t	m_pid;
 		void CleanEnvironment();
 #endif // ACE_WIN32
 
 	};
+
+	/*class SpawnedThread : public SpawnedProcess
+	{
+	public:
+		SpawnedThread();
+		virtual ~SpawnedThread();
+
+		virtual bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
+		virtual bool IsRunning();
+
+	private:
+		ACE_thread_t m_thread_id;
+
+		struct Params
+		{
+			uid_t   id;
+			u_short uPort;
+		};
+		static ACE_THR_FUNC_RETURN worker_fn(void* pParam);
+		static bool LogonUser(uid_t id);
+	};*/
 }
 
 #endif // OOSERVER_SPAWNED_PROCESS_H_INCLUDED_

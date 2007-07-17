@@ -11,11 +11,9 @@ namespace OOCore
 		static Omega::IException* init();
 		static void term();
 
-		bool enqueue_request(ACE_InputCDR* input, ACE_HANDLE handle);
-		void connection_closed();
-
 	private:
 		friend class Channel;
+		friend class ThreadContext;
 		friend class ACE_Singleton<UserSession, ACE_Thread_Mutex>;
 		friend class ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex>;
 		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
@@ -25,61 +23,72 @@ namespace OOCore
 		UserSession(const UserSession&) {}
 		UserSession& operator = (const UserSession&) { return *this; }
 
-		class Request
+		ACE_RW_Thread_Mutex m_lock;
+		int                 m_thrd_grp_id;
+		ACE_SOCK_Stream     m_stream;
+
+		struct OMInfo
 		{
-		public:
-			Request(ACE_HANDLE handle, ACE_InputCDR* input) :
-				m_handle(handle),
-				m_input(input)
-			{}
+			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
+			OTL::ObjectPtr<OTL::ObjectImpl<Channel> >       m_ptrChannel;
+		};
+		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
 
-			virtual ~Request()
-			{
-				if (m_input)
-					delete m_input;
-			}
-
-			ACE_HANDLE handle() const
-			{
-				return m_handle;
-			}
-
-			ACE_InputCDR* input() const
-			{
-				return m_input;
-			}
-
-		private:
-			ACE_HANDLE		m_handle;
-			ACE_InputCDR*	m_input;
+		struct Message
+		{
+			ACE_CDR::UShort  m_dest_channel_id;
+			ACE_CDR::UShort  m_dest_thread_id;
+			ACE_CDR::UShort  m_src_channel_id;
+			ACE_CDR::UShort  m_src_thread_id;
+			ACE_Time_Value   m_deadline;
+			ACE_CDR::UShort  m_attribs;
+			ACE_CDR::Boolean m_bIsRequest;
+			ACE_InputCDR*    m_pPayload;
 		};
 
-		ACE_RW_Thread_Mutex                                                        m_lock;
-		int                                                                        m_pro_thrd_grp_id;
-		ACE_HANDLE                                                                 m_user_handle;
-		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long>                              m_next_trans_id;
-		ACE_Message_Queue_Ex<Request,ACE_MT_SYNCH>                                 m_msg_queue;
-		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
+		struct ThreadContext
+		{
+			ACE_CDR::UShort                             m_thread_id;
+			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
+			bool                                        m_bWaitingOnZero;
+			ACE_Time_Value                              m_deadline;
+			
+			static ThreadContext* instance();
+
+		private:
+			friend class ACE_TSS_Singleton<ThreadContext,ACE_Thread_Mutex>;
+			friend class ACE_TSS<ThreadContext>;
+
+			ThreadContext();
+			virtual ~ThreadContext();
+		};
+		
+		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
+
+		// Accessors for ThreadContext
+		ACE_CDR::UShort insert_thread_context(const ThreadContext* pContext);
+		void remove_thread_context(const ThreadContext* pContext);
 
 		// Accessors for Channel
-		bool send_asynch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value& deadline);
-		bool send_synch(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, Request*& response, const ACE_Time_Value& deadline);
-		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline);
-
+		bool send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs);
+		
 		// Proper private members
 		bool init_i(Omega::string_t& strSource);
+		void term_i();
 		Omega::IException* bootstrap();
 		ACE_CString get_bootstrap_filename();
-		void term_i();
-		bool get_port(u_short& uPort, Omega::string_t& strSource);
+		bool discover_server_port(u_short& uPort, Omega::string_t& strSource);
 		bool launch_server(Omega::string_t& strSource);
-		bool pump_requests(const ACE_Time_Value* deadline = 0);
-		void process_request(Request* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-		bool wait_for_response(ACE_CDR::ULong trans_id, Request*& response, const ACE_Time_Value* deadline = 0);
-		bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::ULong trans_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 
-		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
+		int run_read_loop();
+		bool pump_requests(const ACE_Time_Value* deadline = 0);
+		void process_request(OMInfo& oim, const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
+		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
+		bool build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, bool bIsRequest, ACE_CDR::UShort attribs);
+		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
+		OMInfo get_object_manager(ACE_CDR::UShort src_channel_id);
+
+		static ACE_THR_FUNC_RETURN io_worker_fn(void* pParam);
 	};
 }
 

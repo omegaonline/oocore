@@ -13,21 +13,19 @@
 #ifndef OOSERVER_ROOT_MANAGER_H_INCLUDED_
 #define OOSERVER_ROOT_MANAGER_H_INCLUDED_
 
-#include "./LocalAcceptor.h"
-#include "./RequestHandler.h"
-#include "./RootConnection.h"
+#include "./MessageConnection.h"
 #include "./ClientConnection.h"
 
 namespace Root
 {
 	class SpawnedProcess;
 
-	class Manager :
-		public LocalAcceptor<ClientConnection>,
-		public RequestHandler<RequestBase>
+	class Manager : 
+		public MessageHandler,
+		public ACE_Asynch_Acceptor<ClientConnection>
 	{
 	public:
-		static int run();
+		static int run(int argc, ACE_TCHAR* argv[]);
 		static void end();
 		static bool connect_client(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
 		static ACE_Configuration_Heap& get_registry();
@@ -39,14 +37,13 @@ namespace Root
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
 		Manager();
-		Manager(const Manager&) :
-            LocalAcceptor<ClientConnection>(), RequestHandler<RequestBase>()
-        {}
+		Manager(const Manager&) {}
 		virtual ~Manager();
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_HANDLE           m_config_file;
+		//bool                 m_bThreaded;
 
 		struct UserProcess
 		{
@@ -55,16 +52,8 @@ namespace Root
 		};
 		std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
 		std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
-		ACE_CDR::UShort                    m_uNextChannelId;
-		struct ChannelPair
-		{
-			ACE_HANDLE			handle;
-			ACE_CDR::UShort		channel;
-		};
-		std::map<ACE_CDR::UShort,ChannelPair>                           m_mapChannelIds;
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> > m_mapReverseChannelIds;
-
-		int run_event_loop_i();
+		
+		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
 		int init();
 		int init_registry();
 		ACE_CString get_bootstrap_filename();
@@ -75,34 +64,31 @@ namespace Root
 		bool spawn_sandbox();
 		bool spawn_client(uid_t uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
 
-		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
-		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
-		void process_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-		void process_root_request(RequestBase* request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-		void forward_request(RequestBase* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
+		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
 
 		ACE_Configuration_Heap         m_registry;
 		ACE_CString                    m_strRegistry;
 		ACE_RW_Thread_Mutex            m_registry_lock;
 
-		bool registry_open_section(RequestBase* request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
-		bool registry_open_value(RequestBase* request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck = false);
-		void registry_key_exists(RequestBase* request, ACE_OutputCDR& response);
-		void registry_create_key(RequestBase* request, ACE_OutputCDR& response);
-		void registry_delete_key(RequestBase* request, ACE_OutputCDR& response);
-		void registry_enum_subkeys(RequestBase* request, ACE_OutputCDR& response);
-		void registry_value_type(RequestBase* request, ACE_OutputCDR& response);
-		void registry_get_string_value(RequestBase* request, ACE_OutputCDR& response);
-		void registry_get_uint_value(RequestBase* request, ACE_OutputCDR& response);
-		void registry_get_binary_value(RequestBase* request, ACE_OutputCDR& response);
-		void registry_set_string_value(RequestBase* request, ACE_OutputCDR& response);
-		void registry_set_uint_value(RequestBase* request, ACE_OutputCDR& response);
-		void registry_set_binary_value(RequestBase* request, ACE_OutputCDR& response);
-		void registry_enum_values(RequestBase* request, ACE_OutputCDR& response);
-		void registry_delete_value(RequestBase* request, ACE_OutputCDR& response);
+		bool registry_open_section(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
+		bool registry_open_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck = false);
+		void registry_key_exists(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_value_type(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_string_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_uint_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_string_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_delete_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
+		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
 	};
 }
 

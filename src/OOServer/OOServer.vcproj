@@ -21,7 +21,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_HAVE_VLD"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_HAVE_VLD;OMEGA_DEBUG"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -169,6 +169,21 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\MessageConnection.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\NTService.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -198,23 +213,6 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="1"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\RootConnection.cpp">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -269,9 +267,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UserConnection.cpp">
-			</File>
-			<File
 				RelativePath=".\UserManager.cpp">
 			</File>
 			<File
@@ -292,7 +287,7 @@
 				RelativePath=".\ClientConnection.h">
 			</File>
 			<File
-				RelativePath=".\LocalAcceptor.h">
+				RelativePath=".\MessageConnection.h">
 			</File>
 			<File
 				RelativePath=".\NTService.h">
@@ -307,25 +302,13 @@
 				RelativePath=".\Protocol.h">
 			</File>
 			<File
-				RelativePath=".\RequestHandler.h">
-			</File>
-			<File
-				RelativePath=".\RequestHandler.inl">
-			</File>
-			<File
 				RelativePath=".\resource.h">
-			</File>
-			<File
-				RelativePath=".\RootConnection.h">
 			</File>
 			<File
 				RelativePath=".\RootManager.h">
 			</File>
 			<File
 				RelativePath=".\SpawnedProcess.h">
-			</File>
-			<File
-				RelativePath=".\UserConnection.h">
 			</File>
 			<File
 				RelativePath=".\UserManager.h">

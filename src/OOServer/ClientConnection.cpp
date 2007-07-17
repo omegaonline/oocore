@@ -16,17 +16,12 @@
 
 Root::ClientConnection::~ClientConnection()
 {
-	if (handle() != ACE_INVALID_HANDLE)
-		ACE_OS::closesocket(handle());
 }
 
 void Root::ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 {
-	// Stash the handle
-	this->handle(new_handle);
-
 	// Open the reader and writer
-	if (m_reader.open(*this) != 0 || m_writer.open(*this) != 0)
+	if (m_reader.open(*this,new_handle) != 0 || m_writer.open(*this,new_handle) != 0)
 	{
         ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::ClientConnection::open")));
 		delete this;

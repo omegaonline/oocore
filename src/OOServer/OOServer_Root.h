@@ -68,15 +68,4 @@
 #include <shlobj.h>
 #endif
 
-namespace Root
-{
-	struct ConfigState
-	{
-		bool		bNoSandbox;
-		bool		bAlternateSpawn;
-	};
-
-	extern ConfigState s_config_state;
-}
-
 #endif // OOSERVER_ROOT_H_INCLUDED_

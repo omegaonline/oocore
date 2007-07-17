@@ -1,79 +1,50 @@
 #ifndef OOSERVER_USER_MANAGER_H_INCLUDED_
 #define OOSERVER_USER_MANAGER_H_INCLUDED_
 
-#include "./LocalAcceptor.h"
-#include "./RequestHandler.h"
-#include "./RootConnection.h"
-#include "./UserConnection.h"
+#include "./MessageConnection.h"
 #include "./Protocol.h"
+#include "./Channel.h"
 
 namespace User
 {
-	class Request : public RequestBase
-	{
-	public:
-		Request(ACE_HANDLE handle, ACE_InputCDR* input) :
-			RequestBase(handle,input)
-		{}
-
-		bool	m_bRoot;
-	};
-
-	class Manager :
-		public LocalAcceptor<Connection>,
-		public RequestHandler<User::Request>
+	class Manager : public Root::MessageHandler
 	{
 	public:
 		static int run(u_short uPort);
-		static bool enqueue_user_request(ACE_InputCDR* input, ACE_HANDLE handle);
-		static void user_connection_closed(ACE_HANDLE handle);
-
-		void send_asynch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline = 0);
-		ACE_InputCDR send_synch(ACE_HANDLE handle, ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, const ACE_Time_Value* deadline = 0);
+		
+		ACE_InputCDR sendrecv_root(const ACE_OutputCDR& request);
 
 	private:
+		friend class Channel;
 		friend class ACE_Singleton<Manager, ACE_Thread_Mutex>;
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> USER_MANAGER;
 
 		Manager();
 		virtual ~Manager();
-		Manager(const Manager&) :
-            LocalAcceptor<Connection>(), RequestHandler<User::Request>()
-        {}
+		Manager(const Manager&) {}
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex			m_lock;
-		ACE_HANDLE                  m_root_handle;
-		ACE_CDR::UShort             m_uNextChannelId;
-
-		struct ChannelPair
+		ACE_CDR::UShort             m_root_channel;
+				
+		struct OMInfo
 		{
-			ACE_HANDLE			handle;
-			ACE_CDR::UShort		channel;
+			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
+			OTL::ObjectPtr<OTL::ObjectImpl<User::Channel> > m_ptrChannel;
 		};
-		std::map<ACE_CDR::UShort,ChannelPair>                                 m_mapChannelIds;
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >       m_mapReverseChannelIds;
-		std::map<ACE_HANDLE,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
+		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
 
 		int run_event_loop_i(u_short uPort);
 		int init(u_short uPort);
-		void stop_i();
-		void term();
-		int bootstrap(ACE_SOCK_STREAM& stream);
+		int bootstrap(ACE_CDR::UShort sandbox_channel);
 
-		bool enqueue_root_request(ACE_InputCDR* input, ACE_HANDLE handle);
-		void root_connection_closed(const ACE_CString& key, ACE_HANDLE handle);
-		void process_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-		void forward_request(User::Request* request, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-
+		OMInfo get_object_manager(ACE_CDR::UShort src_channel_id);
+		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
+		void process_user_request(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM, const ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
+		void process_root_request(ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
+				
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
-
-		void process_root_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::ULong trans_id, const ACE_Time_Value& request_deadline);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_HANDLE handle, ACE_CDR::UShort channel_id);
-
-		void user_connection_closed_i(ACE_HANDLE handle);
-		int validate_connection(const ACE_Asynch_Accept::Result& result, const ACE_INET_Addr& remote, const ACE_INET_Addr& local);
+		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
 	};
 }
 

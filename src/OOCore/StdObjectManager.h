@@ -35,7 +35,7 @@ namespace OOCore
 		void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		void ReleaseStub(Omega::uint32_t id);
 		Omega::Serialize::IFormattedStream* CreateOutputStream();
-		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pParams);
+		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pParams, Omega::uint16_t timeout);
 
 	// IObjectManager members
 	public:

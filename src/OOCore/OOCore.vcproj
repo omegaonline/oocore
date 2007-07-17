@@ -169,9 +169,6 @@
 				RelativePath=".\Types.cpp">
 			</File>
 			<File
-				RelativePath=".\UserConnection.cpp">
-			</File>
-			<File
 				RelativePath=".\UserSession.cpp">
 			</File>
 		</Filter>
@@ -187,9 +184,6 @@
 			</File>
 			<File
 				RelativePath=".\StdObjectManager.h">
-			</File>
-			<File
-				RelativePath=".\UserConnection.h">
 			</File>
 			<File
 				RelativePath=".\UserSession.h">

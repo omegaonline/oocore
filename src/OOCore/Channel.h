@@ -138,7 +138,8 @@ namespace OOCore
 	public:
 		Channel();
 
-		void init(UserSession* pSession, ACE_CDR::UShort dest_channel_id);
+		void init(UserSession* pSession, ACE_CDR::UShort channel_id);
+		ACE_CDR::UShort set_thread_id(ACE_CDR::UShort thread_id);
 		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -146,12 +147,20 @@ namespace OOCore
 
 	private:
 		UserSession*	m_pSession;
-		ACE_CDR::UShort	m_id;
+		ACE_CDR::UShort	m_channel_id;
+
+		ACE_TSS<ACE_TSS_Type_Adapter<ACE_CDR::UShort> > m_thread_id;
+
+		Channel(const Channel&)
+		{}
+
+		Channel& operator = (const Channel&)
+		{ return *this; }
 
 	// IChannel members
 	public: 
 		Omega::Serialize::IFormattedStream* CreateOutputStream(Omega::IObject* pOuter = 0);
-		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream);
+		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream, Omega::uint16_t timeout);
 	};
 }
 

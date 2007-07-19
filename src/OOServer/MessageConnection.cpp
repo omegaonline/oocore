@@ -188,11 +188,9 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 
 	if (!bSuccess)
 	{
-#if defined(ACE_WIN32)
-		DWORD dwErr = GetLastError();
-		if (dwErr != ERROR_IO_PENDING && dwErr != ERROR_SUCCESS && dwErr != WSAENOTSOCK)
-#endif
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::MessageConnection::handle_read_stream")));
+		int err = ACE_OS::last_error();
+		if (err != 0 && err != ENOTSOCK)
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::MessageConnection::handle_read_stream")));
 		
 		m_pHandler->handle_closed(result.handle());
 		delete this;
@@ -472,6 +470,16 @@ void Root::MessageHandler::remove_thread_context(const Root::MessageHandler::Thr
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
+void Root::MessageHandler::stop()
+{
+	ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+	{
+		i->second->m_msg_queue->deactivate();
+	}
+}
+
 bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
@@ -482,7 +490,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 		int ret = pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline));
 		if (ret == -1)
 			return false;
-
+		
 		if (msg->m_bIsRequest)
 		{
 			// Update deadline

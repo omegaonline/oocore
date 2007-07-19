@@ -50,7 +50,7 @@ static int Version();
 
 static int Help()
 {
-	ACE_OS::printf("This is the help string\n\n");
+	ACE_OS::printf("This is the help string... I'm sure something will go here at some point\n\n");
 	return 0;
 }
 

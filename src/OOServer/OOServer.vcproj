@@ -135,23 +135,6 @@
 				RelativePath=".\Channel.cpp">
 			</File>
 			<File
-				RelativePath=".\ClientConnection.cpp">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath=".\EntryPoint.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -282,9 +265,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
 				RelativePath=".\Channel.h">
-			</File>
-			<File
-				RelativePath=".\ClientConnection.h">
 			</File>
 			<File
 				RelativePath=".\MessageConnection.h">

@@ -139,6 +139,8 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 	}
 #else
 	// Find what the server is called
+	void* TODO;
+
 	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
 	if (strExec.length() == 0)
 		strExec = "OOServer";
@@ -236,7 +238,7 @@ bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSour
 	// Sort out addresses
 	ACE_INET_Addr addr(uPort2,INADDR_LOOPBACK);
 
-	// Connect to the OOServer main process...
+	// Connect to the OOServer root process...
 	ACE_SOCK_Stream peer;
 	ACE_Time_Value wait(5);
 	ACE_Countdown_Time timeout(&wait);
@@ -256,62 +258,46 @@ bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSour
 	}
 
 	// Send our uid or pid
-	ACE_UINT16 cbSize = sizeof(ACE_UINT16) + sizeof(uid_t);
 #if defined(OMEGA_WIN32)
-	uid_t uid = ACE_OS::getpid();
+	pid_t uid = ACE_OS::getpid();
 #else
 	uid_t uid = ACE_OS::getuid();
 #endif
-	if (peer.send(&cbSize,sizeof(cbSize)) != static_cast<ssize_t>(sizeof(cbSize)) ||
-		peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
+	if (peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
 	}
 
-	// Wait for the response to come back...
+	// Read the port
 	wait = ACE_Time_Value(30);
-	ACE_UINT32 err = 0;
-	if (peer.recv(&err,sizeof(err),&wait) != static_cast<ssize_t>(sizeof(err)))
+	if (peer.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
 	}
 
-	if (err == 0)
+	if (uPort == 0)
 	{
-		if (peer.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
+		// Error!
+		strSource = OMEGA_SOURCE_INFO;
+		int err = 0;
+		if (peer.recv(&err,sizeof(err)) == static_cast<ssize_t>(sizeof(err)))
 		{
-			strSource = OMEGA_SOURCE_INFO;
-			return false;
-		}
+			strSource.Clear();
 
-		return true;
-	}
-	else
-	{
-		ACE_UINT16 nCount;
-		char szBuf[1024];
-		if (peer.recv(&nCount,sizeof(nCount),&wait) != static_cast<ssize_t>(sizeof(nCount)))
-			strSource = OMEGA_SOURCE_INFO;
-		else
-		{
-			if (nCount >= sizeof(szBuf))
-				nCount = sizeof(szBuf)-1;
-
-			if (peer.recv(szBuf,nCount,&wait) != static_cast<ssize_t>(nCount))
-				strSource = OMEGA_SOURCE_INFO;
-			else
+			char szBuf[1024];
+			ssize_t r;
+			while ((r=peer.recv(szBuf,1024)) > 0)
 			{
-				szBuf[nCount] = '\0';
-				strSource = szBuf;
+				strSource += ACE_CString(szBuf,static_cast<size_t>(r)).c_str();
 			}
-
-			szBuf[1023] = '\0';
 		}
 		ACE_OS::last_error(err);
 		return false;
 	}
+
+	return true;
 }
 
 void OOCore::UserSession::term()
@@ -354,12 +340,18 @@ int OOCore::UserSession::run_read_loop()
 	for (;;)
 	{
 		// Read the header
-		size_t nRead = m_stream.recv(pBuffer,s_initial_read);
+		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
+		size_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
+		if (nRead == -1 && ACE_OS::last_error() == ETIMEDOUT)
+			continue;
+
 		if (nRead != s_initial_read)
 		{
 			int err = ACE_OS::last_error();
+			if (err == ENOTSOCK)
+				err = 0;
 			m_stream.close();
-			return -1;
+			return err;
 		}
 
 		// Create a temp input CDR
@@ -370,8 +362,9 @@ int OOCore::UserSession::run_read_loop()
 		ACE_CDR::Octet version;
 		if (!header.read_octet(byte_order) || !header.read_octet(version))
 		{
+			int err = ACE_OS::last_error();
 			m_stream.close();
-			return -1;
+			return err;
 		}
 		header.reset_byte_order(byte_order);
 
@@ -379,8 +372,9 @@ int OOCore::UserSession::run_read_loop()
 		ACE_CDR::ULong nReadLen = 0;
 		if (!header.read_ulong(nReadLen))
 		{
+			int err = ACE_OS::last_error();
 			m_stream.close();
-			return -1;
+			return err;
 		}
 
 		// Subtract what we have already read
@@ -391,8 +385,9 @@ int OOCore::UserSession::run_read_loop()
 		ACE_NEW_NORETURN(mb,ACE_Message_Block(nReadLen));
 		if (!mb)
 		{
+			int err = ACE_OS::last_error();
 			m_stream.close();
-			return -1;
+			return err;
 		}
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
 		ACE_CDR::mb_align(mb);
@@ -402,9 +397,10 @@ int OOCore::UserSession::run_read_loop()
 		nRead = m_stream.recv(mb->wr_ptr(),nReadLen);
 		if (nRead != nReadLen)
 		{
+			int err = ACE_OS::last_error();
 			mb->release();
 			m_stream.close();
-			return -1;
+			return err;
 		}
 		mb->wr_ptr(nRead);
 
@@ -419,8 +415,9 @@ int OOCore::UserSession::run_read_loop()
 
 		if (!input)
 		{
+			int err = ACE_OS::last_error();
 			m_stream.close();
-			return -1;
+			return err;
 		}
 
 		// Read in the message info
@@ -428,9 +425,10 @@ int OOCore::UserSession::run_read_loop()
 		ACE_NEW_NORETURN(msg,Message);
 		if (!msg)
 		{
-			m_stream.close();
+			int err = ACE_OS::last_error();
 			delete input;
-			return -1;
+			m_stream.close();
+			return err;
 		}
 
 		// Read the message
@@ -450,10 +448,11 @@ int OOCore::UserSession::run_read_loop()
 
 		if (!input->good_bit())
 		{
+			int err = ACE_OS::last_error();
 			delete msg;
 			delete input;
 			m_stream.close();
-			return -1;
+			return err;
 		}
 
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
@@ -465,10 +464,11 @@ int OOCore::UserSession::run_read_loop()
 			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 			if (guard.locked() == 0)
 			{
+				int err = ACE_OS::last_error();
 				delete msg;
 				delete input;
 				m_stream.close();
-				return -1;
+				return err;
 			}
 
 			std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.end();
@@ -611,6 +611,11 @@ bool OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 
 	ACE_InputCDR* response = 0;
 	bool bRet = wait_for_response(response,deadline);
+	if (!bRet)
+	{
+		if (ACE_OS::last_error() == ESHUTDOWN)
+			bRet = true;
+	}
 	if (response)
 		delete response;
 

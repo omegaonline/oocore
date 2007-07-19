@@ -14,11 +14,23 @@
 #define OOSERVER_ROOT_MANAGER_H_INCLUDED_
 
 #include "./MessageConnection.h"
-#include "./ClientConnection.h"
 
 namespace Root
 {
 	class SpawnedProcess;
+
+	class ClientConnection : public ACE_Service_Handler
+	{
+	public:
+		ClientConnection() : ACE_Service_Handler() {}
+		virtual ~ClientConnection() {}
+
+		void open(ACE_HANDLE new_handle, ACE_Message_Block &message_block);
+		
+	private:
+		ClientConnection(const ClientConnection&) : ACE_Service_Handler() {}
+		ClientConnection& operator = (const ClientConnection&) { return *this; }
+	};
 
 	class Manager : 
 		public MessageHandler,
@@ -27,12 +39,12 @@ namespace Root
 	public:
 		static int run(int argc, ACE_TCHAR* argv[]);
 		static void end();
-		static bool connect_client(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
 		static ACE_Configuration_Heap& get_registry();
 		static bool install(int argc, ACE_TCHAR* argv[]);
 		static bool uninstall();
 
 	private:
+		friend class ClientConnection;
 		friend class ACE_Singleton<Manager,ACE_Thread_Mutex>;
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
@@ -43,8 +55,13 @@ namespace Root
 
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_HANDLE           m_config_file;
-		//bool                 m_bThreaded;
-
+		
+		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
+		bool init();
+		int init_registry();
+		ACE_CString get_bootstrap_filename();
+		void end_event_loop_i();
+		
 		struct UserProcess
 		{
 			u_short			uPort;
@@ -52,18 +69,21 @@ namespace Root
 		};
 		std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
 		std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
-		
-		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
-		int init();
-		int init_registry();
-		ACE_CString get_bootstrap_filename();
-		bool bootstrap_client(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource);
-		void end_event_loop_i();
-		void term();
-		bool connect_client_i(uid_t uid, u_short& uNewPort, ACE_CString& strSource);
-		bool spawn_sandbox();
-		bool spawn_client(uid_t uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
 
+		ACE_Message_Queue_Ex<ACE_HANDLE,ACE_MT_SYNCH> m_queue_clients;
+		
+#if defined(ACE_WIN32)
+		typedef pid_t user_id_type;
+#else
+		typedef uid_t user_id_type;
+#endif
+		static void connect_client(ACE_HANDLE handle);
+		int process_client_connects();
+		bool spawn_sandbox();
+		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
+		u_short bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource);
+		bool connect_client(user_id_type uid, u_short& uNewPort, ACE_CString& strSource);
+		
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
 

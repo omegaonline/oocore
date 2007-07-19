@@ -55,6 +55,8 @@ namespace Root
 		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool pump_requests(const ACE_Time_Value* deadline = 0);
 
+		void stop();
+
 		virtual void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs) = 0;
 
 		ACE_CDR::UShort add_routing(ACE_CDR::UShort dest_channel, ACE_CDR::UShort dest_route);

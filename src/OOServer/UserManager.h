@@ -10,7 +10,7 @@ namespace User
 	class Manager : public Root::MessageHandler
 	{
 	public:
-		static int run(u_short uPort);
+        static int run(u_short uPort);
 		
 		ACE_InputCDR sendrecv_root(const ACE_OutputCDR& request);
 
@@ -35,8 +35,8 @@ namespace User
 		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
 
 		int run_event_loop_i(u_short uPort);
-		int init(u_short uPort);
-		int bootstrap(ACE_CDR::UShort sandbox_channel);
+		bool init(u_short uPort);
+		bool bootstrap(ACE_CDR::UShort sandbox_channel);
 
 		OMInfo get_object_manager(ACE_CDR::UShort src_channel_id);
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);

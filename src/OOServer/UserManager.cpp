@@ -7,6 +7,9 @@
 
 int UserMain(u_short uPort)
 {
+	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+
 	return User::Manager::run(uPort);
 }
 
@@ -134,37 +137,35 @@ int User::Manager::run(u_short uPort)
 
 int User::Manager::run_event_loop_i(u_short uPort)
 {
-	int ret = init(uPort);
-	if (ret != 0)
-		return ret;				
+	int ret = -1;		
 
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
 	if (threads < 2)
 		threads = 2;
 
-	// Spawn off the proactor threads
-	int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
-	if (pro_thrd_grp_id == -1)
-		ret = -1;
-	else
+	// Spawn off the request threads
+	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,request_worker_fn,this);
+	if (req_thrd_grp_id != -1)
 	{
-		// Spawn off the request threads
-		int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,request_worker_fn,this);
-		if (req_thrd_grp_id == -1)
-			ret = -1;
-		else
+		// Spawn off the proactor threads
+		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
+		if (pro_thrd_grp_id != -1)
 		{
-			ret = (int)request_worker_fn(this);
+			if (init(uPort))
+			{
+				// Just process requests...
+				ret = (int)request_worker_fn(this);
+			}
 
 			//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
 
 			// Wait for all the request threads to finish
-			ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
+			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
 
 		// Wait for all the request threads to finish
-		ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
+		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
 	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has stopped.")));
@@ -172,83 +173,64 @@ int User::Manager::run_event_loop_i(u_short uPort)
 	return ret;
 }
 
-int User::Manager::init(u_short uPort)
+bool User::Manager::init(u_short uPort)
 {
+	ACE_CDR::UShort sandbox_channel = 0;
+
 	ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Stream stream;
 
 	// Connect to the root
 	ACE_Time_Value wait(5);
-	int ret = connector.connect(stream,addr,&wait);
-	if (ret != 0)
+	if (connector.connect(stream,addr,&wait) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")),false);
+
+	// Bind a tcp socket
+	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
+	if (open(sa) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("acceptor::open() failed")),false);
+	
+	// Get our port number
+	int len = sa.get_size ();
+	sockaddr* addr2 = reinterpret_cast<sockaddr*>(sa.get_addr());
+	if (ACE_OS::getsockname(this->get_handle(),addr2,&len) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
+	
+	sa.set_type(addr2->sa_family);
+	sa.set_size(len);
+	uPort = sa.get_port_number();
+
+	// Talk to the root...
+	if (stream.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
+
+	// Create a new MessageConnection
+	Root::MessageConnection* pMC;
+	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
+
+	m_root_channel = pMC->attach(stream.get_handle());
+	if (m_root_channel == 0)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")));
-	}
-	else
-	{
-		// Bind a tcp socket
-		ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
-		if ((ret = open(sa)) != 0)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("acceptor::open() failed")));
-		}
-		else
-		{
-			// Get our port number
-			int len = sa.get_size ();
-			sockaddr* addr = reinterpret_cast<sockaddr*>(sa.get_addr());
-			if ((ret = ACE_OS::getsockname(this->get_handle(),addr,&len)) != -1)
-			{
-				sa.set_type(addr->sa_family);
-				sa.set_size(len);
-
-				uPort = sa.get_port_number();
-
-				// Talk to the root...
-				ACE_CDR::UShort sandbox_channel = 0;
-				if (stream.recv(&sandbox_channel,sizeof(sandbox_channel),&wait) != sizeof(sandbox_channel))
-					ret = -1;
-				else
-				{
-					// Create a new MessageConnection
-					Root::MessageConnection* pMC;
-					ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
-					if (!pMC)
-						ret = -1;
-					else 
-					{
-						ACE_HANDLE handle = stream.get_handle();
-						m_root_channel = pMC->attach(handle);
-						if (m_root_channel == 0)
-							ret = -1;
-						else
-						{
-							// Clear the handle in the stream, pMC now owns it
-							stream.set_handle(ACE_INVALID_HANDLE);							
-
-							ret = bootstrap(sandbox_channel);
-							if (ret != 0)
-								uPort = 0;
-								
-							if (ACE::send(handle,&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
-								ret = -1;
-						}
-						
-						if (ret != 0)
-							delete pMC;
-					}
-				}
-			}
-		}
-
-		stream.close();
+		delete pMC;
+		return false;
 	}
 
-	return ret;
+	// Now bootstrap
+	if (!bootstrap(sandbox_channel))
+		return false;
+
+	// Then send back our port number
+	if (stream.send(&uPort,sizeof(uPort)) != static_cast<ssize_t>(sizeof(uPort)))
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
+
+	// Clear the handle in the stream, pMC now owns it
+	stream.set_handle(ACE_INVALID_HANDLE);
+
+	return true;
 }
 
-int User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
+bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 {
 	bool bSandbox = (sandbox_channel == 0);
 
@@ -260,7 +242,7 @@ int User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 		{
 			sandbox_channel = add_routing(m_root_channel,sandbox_channel);
 			if (!sandbox_channel)
-				return -1;
+				return false;
 
 			oim = get_object_manager(sandbox_channel);
 		}
@@ -275,10 +257,10 @@ int User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	catch (IException* pE)
 	{
 		pE->Release();
-		return -1;
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)

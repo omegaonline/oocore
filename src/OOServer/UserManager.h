@@ -11,7 +11,7 @@ namespace User
 	{
 	public:
         static int run(u_short uPort);
-		
+
 		ACE_InputCDR sendrecv_root(const ACE_OutputCDR& request);
 
 	private:
@@ -21,12 +21,12 @@ namespace User
 
 		Manager();
 		virtual ~Manager();
-		Manager(const Manager&) {}
+		Manager(const Manager&) : Root::MessageHandler() {}
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex			m_lock;
 		ACE_CDR::UShort             m_root_channel;
-				
+
 		struct OMInfo
 		{
 			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
@@ -42,7 +42,7 @@ namespace User
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void process_user_request(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM, const ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void process_root_request(ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
-				
+
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
 	};

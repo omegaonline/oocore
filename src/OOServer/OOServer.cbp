@@ -8,9 +8,9 @@
 		<Build>
 			<Target title="Debug_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Debug/OOServer" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\OOServer.exe" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
-				<Option external_deps="../OOCore/debug/libOOCore.a;" />
+				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -22,15 +22,15 @@
 					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
-					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
-					<Add library="../OOCore/debug/libOOCore.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\OOCore\debug\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
@@ -40,7 +40,7 @@
 			</Target>
 			<Target title="Release_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Release/OOServer" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\OOServer.exe" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -55,15 +55,15 @@
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
-					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
-					<Add library="../OOCore/debug/libOOCore.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\OOCore\debug\libOOCore.a" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
@@ -72,10 +72,10 @@
 			</Target>
 			<Target title="Debug_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Debug/ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\ooserverd.sys" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="Debug" />
-				<Option external_deps="../OOCore/debug/libOOCore.a;" />
+				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
 				<Option type="5" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -84,8 +84,8 @@
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
@@ -94,7 +94,7 @@
 			</Target>
 			<Target title="Release_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Release/ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\ooserverd.sys" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="Release" />
 				<Option type="5" />
@@ -107,8 +107,8 @@
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-DNDEBUG" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
@@ -118,10 +118,9 @@
 		</Build>
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
-		<Unit filename="ClientConnection.cpp" />
-		<Unit filename="ClientConnection.h" />
 		<Unit filename="EntryPoint.cpp" />
-		<Unit filename="LocalAcceptor.h" />
+		<Unit filename="MessageConnection.cpp" />
+		<Unit filename="MessageConnection.h" />
 		<Unit filename="NTService.cpp" />
 		<Unit filename="NTService.h" />
 		<Unit filename="OOServer.cpp" />
@@ -136,17 +135,11 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="Protocol.h" />
-		<Unit filename="RequestHandler.h" />
-		<Unit filename="RequestHandler.inl" />
-		<Unit filename="RootConnection.cpp" />
-		<Unit filename="RootConnection.h" />
 		<Unit filename="RootManager.cpp" />
 		<Unit filename="RootManager.h" />
 		<Unit filename="SpawnedProcess.h" />
 		<Unit filename="SpawnedProcessUnix.cpp" />
 		<Unit filename="SpawnedProcessWin32.cpp" />
-		<Unit filename="UserConnection.cpp" />
-		<Unit filename="UserConnection.h" />
 		<Unit filename="UserManager.cpp" />
 		<Unit filename="UserManager.h" />
 		<Unit filename="UserRegistry.cpp" />

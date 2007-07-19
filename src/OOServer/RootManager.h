@@ -26,13 +26,13 @@ namespace Root
 		virtual ~ClientConnection() {}
 
 		void open(ACE_HANDLE new_handle, ACE_Message_Block &message_block);
-		
+
 	private:
 		ClientConnection(const ClientConnection&) : ACE_Service_Handler() {}
 		ClientConnection& operator = (const ClientConnection&) { return *this; }
 	};
 
-	class Manager : 
+	class Manager :
 		public MessageHandler,
 		public ACE_Asynch_Acceptor<ClientConnection>
 	{
@@ -49,19 +49,19 @@ namespace Root
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
 		Manager();
-		Manager(const Manager&) {}
+		Manager(const Manager&) : MessageHandler(), ACE_Asynch_Acceptor<ClientConnection>() {}
 		virtual ~Manager();
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_HANDLE           m_config_file;
-		
+
 		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
 		bool init();
 		int init_registry();
 		ACE_CString get_bootstrap_filename();
 		void end_event_loop_i();
-		
+
 		struct UserProcess
 		{
 			u_short			uPort;
@@ -71,7 +71,7 @@ namespace Root
 		std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
 
 		ACE_Message_Queue_Ex<ACE_HANDLE,ACE_MT_SYNCH> m_queue_clients;
-		
+
 #if defined(ACE_WIN32)
 		typedef pid_t user_id_type;
 #else
@@ -83,7 +83,7 @@ namespace Root
 		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
 		u_short bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource);
 		bool connect_client(user_id_type uid, u_short& uNewPort, ACE_CString& strSource);
-		
+
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
 

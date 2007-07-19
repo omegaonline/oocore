@@ -40,28 +40,28 @@ namespace OOCore
 			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
 			INTERFACE_ENTRY(Omega::Serialize::IStream)
 			INTERFACE_ENTRY(OOCore::IOutputCDR)
-		END_INTERFACE_MAP()	
+		END_INTERFACE_MAP()
 
 	// IStream members
 	public:
-		Omega::byte_t ReadByte() 
+		Omega::byte_t ReadByte()
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void ReadBytes(Omega::uint32_t&, Omega::byte_t*) 
+		void ReadBytes(Omega::uint32_t&, Omega::byte_t*)
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void WriteByte(Omega::byte_t val) 
+		void WriteByte(Omega::byte_t val)
 			{ if (!write_octet(val)) OOCORE_THROW_LASTERROR(); }
-		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val) 
+		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
 			{ if (!write_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
 
 	// IFormattedStream members
 	public:
-		Omega::bool_t ReadBoolean() 
+		Omega::bool_t ReadBoolean()
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		Omega::uint16_t ReadUInt16() 
+		Omega::uint16_t ReadUInt16()
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		Omega::uint32_t ReadUInt32() 
+		Omega::uint32_t ReadUInt32()
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		Omega::uint64_t ReadUInt64() 
+		Omega::uint64_t ReadUInt64()
 			{ OOCORE_THROW_ERRNO(EACCES); }
 		Omega::string_t ReadString()
 			{ OOCORE_THROW_ERRNO(EACCES); }
@@ -102,9 +102,9 @@ namespace OOCore
 			{ Omega::byte_t val; if (!read_octet(val)) OOCORE_THROW_LASTERROR(); return val; }
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
-		void WriteByte(Omega::byte_t) 
+		void WriteByte(Omega::byte_t)
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void WriteBytes(Omega::uint32_t, const Omega::byte_t*) 
+		void WriteBytes(Omega::uint32_t, const Omega::byte_t*)
 			{ OOCORE_THROW_ERRNO(EACCES); }
 
 	// IFormattedStream members
@@ -119,15 +119,15 @@ namespace OOCore
 			{ Omega::uint64_t val; if (!read_ulonglong(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
 			{ ACE_CString val; if (!read_string(val)) OOCORE_THROW_LASTERROR(); return Omega::string_t(val.c_str()); }
-		void WriteBoolean(Omega::bool_t) 
+		void WriteBoolean(Omega::bool_t)
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void WriteUInt16(Omega::uint16_t) 
+		void WriteUInt16(Omega::uint16_t)
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void WriteUInt32(Omega::uint32_t) 
+		void WriteUInt32(Omega::uint32_t)
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void WriteUInt64(const Omega::uint64_t&) 
+		void WriteUInt64(const Omega::uint64_t&)
 			{ OOCORE_THROW_ERRNO(EACCES); }
-		void WriteString(const Omega::string_t&) 
+		void WriteString(const Omega::string_t&)
 			{ OOCORE_THROW_ERRNO(EACCES); }
 	};
 
@@ -140,7 +140,7 @@ namespace OOCore
 
 		void init(UserSession* pSession, ACE_CDR::UShort channel_id);
 		ACE_CDR::UShort set_thread_id(ACE_CDR::UShort thread_id);
-		
+
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
 		END_INTERFACE_MAP()
@@ -151,14 +151,11 @@ namespace OOCore
 
 		ACE_TSS<ACE_TSS_Type_Adapter<ACE_CDR::UShort> > m_thread_id;
 
-		Channel(const Channel&)
-		{}
-
-		Channel& operator = (const Channel&)
-		{ return *this; }
+		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
+		Channel& operator = (const Channel&) { return *this; }
 
 	// IChannel members
-	public: 
+	public:
 		Omega::Serialize::IFormattedStream* CreateOutputStream(Omega::IObject* pOuter = 0);
 		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream, Omega::uint16_t timeout);
 	};

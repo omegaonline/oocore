@@ -42,13 +42,13 @@ Root::SpawnedProcess::~SpawnedProcess()
 		DWORD dwRes = WaitForSingleObject(m_hProcess,dwWait);
 		if (dwRes != WAIT_OBJECT_0)
 			TerminateProcess(m_hProcess,UINT(-1));
-			
+
 		CloseHandle(m_hProcess);
 	}
 
 	if (m_hProfile)
 		UnloadUserProfile(m_hToken,m_hProfile);
-	
+
 	if (m_hToken)
 		CloseHandle(m_hToken);
 }
@@ -497,7 +497,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	pSD = static_cast<PSECURITY_DESCRIPTOR>(ACE_OS::malloc(cbNeeded));
 	if (!pSD)
 		return false;
-	
+
 	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
 	{
 		ACE_OS::set_errno_to_last_error();
@@ -585,7 +585,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 		strUName = ACE_TEXT_ALWAYS_WCHAR(argv[0]);
 	if (argc>=2)
 		strPwd = ACE_TEXT_ALWAYS_WCHAR(argv[1]);
-	
+
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Create the server section
@@ -787,16 +787,16 @@ bool Root::SpawnedProcess::UninstallSandbox()
 
 		// Done with hProcess
 		CloseHandle(hProcess);
-		
+
 		if (!bSuccess)
 			return false;
 	}
-	
+
 	BOOL bSuccess = ImpersonateLoggedOnUser(hToken);
-	
+
 	CloseHandle(hToken);
-	
-	return (bSuccess ? true : false);	
+
+	return (bSuccess ? true : false);
 }*/
 
 #endif // ACE_WIN32
@@ -833,15 +833,15 @@ bool Root::SpawnedThread::Spawn(uid_t id, u_short uPort, ACE_CString& strSource)
 		delete pParams;
 		return false;
 	}
-	
-	return true;	
+
+	return true;
 }
 
 bool Root::SpawnedThread::IsRunning()
 {
 	if (m_thread_id == 0)
 		return false;
-	else 
+	else
 		return !(ACE_Thread_Manager::instance()->testterminate(m_thread_id));
 }
 

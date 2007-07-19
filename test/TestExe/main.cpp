@@ -15,7 +15,7 @@ bool registry_tests();
 bool registry_tests_2();
 bool interface_tests();
 
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
 	printf("%s\n\n",(const char*)Omega::System::GetVersion());
 
@@ -27,6 +27,6 @@ int main(int argc, char* argv[])
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_tests);
-	
+
 	return test_summary();
 }

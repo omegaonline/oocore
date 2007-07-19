@@ -60,7 +60,7 @@ namespace Root
 		virtual void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs) = 0;
 
 		ACE_CDR::UShort add_routing(ACE_CDR::UShort dest_channel, ACE_CDR::UShort dest_route);
-		
+
 	private:
 		friend class MessageConnection;
 
@@ -97,7 +97,7 @@ namespace Root
 			bool                                        m_bWaitingOnZero;
 			ACE_Time_Value                              m_deadline;
 			MessageHandler*                             m_pHandler;
-			
+
 			static ThreadContext* instance(Root::MessageHandler* pHandler);
 
 		private:
@@ -107,7 +107,7 @@ namespace Root
 			ThreadContext();
 			virtual ~ThreadContext();
 		};
-		
+
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
 
 		// Accessors for ThreadContext

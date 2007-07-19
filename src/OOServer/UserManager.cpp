@@ -137,7 +137,7 @@ int User::Manager::run(u_short uPort)
 
 int User::Manager::run_event_loop_i(u_short uPort)
 {
-	int ret = -1;		
+	int ret = -1;
 
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
@@ -190,13 +190,13 @@ bool User::Manager::init(u_short uPort)
 	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	if (open(sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("acceptor::open() failed")),false);
-	
+
 	// Get our port number
 	int len = sa.get_size ();
 	sockaddr* addr2 = reinterpret_cast<sockaddr*>(sa.get_addr());
 	if (ACE_OS::getsockname(this->get_handle(),addr2,&len) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
-	
+
 	sa.set_type(addr2->sa_family);
 	sa.set_size(len);
 	uPort = sa.get_port_number();
@@ -285,13 +285,13 @@ void User::Manager::process_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request
 		OMInfo oim = get_object_manager(src_channel_id);
 
 		ACE_CDR::UShort old_thread_id = oim.m_ptrChannel->set_thread_id(src_thread_id);
-		
+
 		// Process the message...
 		process_user_request(oim.m_ptrOM,request,src_channel_id,src_thread_id,deadline,attribs);
 
 		// Restore old context
 		old_thread_id = oim.m_ptrChannel->set_thread_id(old_thread_id);
-		
+
 		if (old_thread_id != src_thread_id)
 			::DebugBreak();
 	}
@@ -338,7 +338,7 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 			ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
 		}
-		
+
 		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
 		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
 
@@ -467,7 +467,7 @@ ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 	ACE_InputCDR* response = 0;
 	if (!send_request(m_root_channel,0,request.begin(),response,15000,0))
 		OOSERVER_THROW_LASTERROR();
-	
+
 	ACE_InputCDR ret = *response;
 	delete response;
 	return ret;

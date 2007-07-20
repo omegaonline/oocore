@@ -317,7 +317,7 @@ void OOCore::UserSession::term_i()
 		ACE_Thread_Manager::instance()->wait_grp(m_thrd_grp_id);
 
 	// Stop the message queue
-	
+
 	SetRegistry(0);
 }
 
@@ -328,7 +328,7 @@ ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
 
 int OOCore::UserSession::run_read_loop()
 {
-	static const size_t	s_initial_read = 8;
+	static const ssize_t	s_initial_read = 8;
 	char szBuffer[20];
 
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
@@ -336,12 +336,12 @@ int OOCore::UserSession::run_read_loop()
 #else
 	char* pBuffer = szBuffer;
 #endif
-	
+
 	for (;;)
 	{
 		// Read the header
 		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
-		size_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
+		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
 		if (nRead == -1 && ACE_OS::last_error() == ETIMEDOUT)
 			continue;
 
@@ -356,7 +356,7 @@ int OOCore::UserSession::run_read_loop()
 
 		// Create a temp input CDR
 		ACE_InputCDR header(pBuffer,nRead);
-		
+
 		// Read and set the byte order
 		ACE_CDR::Octet byte_order;
 		ACE_CDR::Octet version;
@@ -378,7 +378,7 @@ int OOCore::UserSession::run_read_loop()
 		}
 
 		// Subtract what we have already read
-		nReadLen -= static_cast<ACE_CDR::ULong>(nRead);
+		nReadLen -= nRead;
 
 		// Create a new message block
 		ACE_Message_Block* mb = 0;
@@ -395,7 +395,7 @@ int OOCore::UserSession::run_read_loop()
 
 		// Issue another read for the rest of the data
 		nRead = m_stream.recv(mb->wr_ptr(),nReadLen);
-		if (nRead != nReadLen)
+		if (nRead != static_cast<ssize_t>(nReadLen))
 		{
 			int err = ACE_OS::last_error();
 			mb->release();
@@ -457,7 +457,7 @@ int OOCore::UserSession::run_read_loop()
 
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
 		input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-#endif		
+#endif
 
 		// Find the right queue to send it to...
 		{
@@ -536,9 +536,6 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 			// Restore old context
 			pContext->m_deadline = old_deadline;
 			old_thread_id = oim.m_ptrChannel->set_thread_id(old_thread_id);
-			
-			if (old_thread_id != msg->m_src_thread_id)
-				::DebugBreak();
 		}
 		else
 		{
@@ -568,7 +565,7 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 }
 
 OOCore::UserSession::ThreadContext::ThreadContext() :
-	m_thread_id(0), 
+	m_thread_id(0),
 	m_msg_queue(0),
 	m_bWaitingOnZero(false),
 	m_deadline(ACE_Time_Value::max_time)
@@ -629,13 +626,13 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	ACE_Time_Value deadline = ThreadContext::instance()->m_deadline;
 	ACE_Time_Value deadline2 = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000);
 	if (deadline2 < deadline)
-		deadline = deadline2;	
+		deadline = deadline2;
 
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
 		return false;
-	
+
 	// Send to the handle
 	ACE_Time_Value now = ACE_OS::gettimeofday();
 	if (deadline <= now)
@@ -655,14 +652,14 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 			// Wait for response...
 			bRet = wait_for_response(response,&deadline);
 	}
-		
+
 	return bRet;
 }
 
 bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb)
 {
 	ACE_Time_Value deadline = ThreadContext::instance()->m_deadline;
-	
+
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(dest_channel_id,dest_thread_id,header,mb,deadline,false,0))
@@ -731,14 +728,14 @@ bool OOCore::UserSession::build_header(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	header.write_ushort(dest_thread_id);
 	header.write_ushort(0);	// src_channel_id
 	header.write_ushort(ThreadContext::instance()->m_thread_id);
-		
+
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 
 	header.write_ushort(attribs);
 
 	header.write_boolean(bIsRequest);
-	
+
 	if (!header.good_bit())
 		return false;
 

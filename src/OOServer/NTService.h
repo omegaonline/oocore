@@ -35,7 +35,7 @@ namespace Root
 		typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
 
 		static ACE_THR_FUNC_RETURN start_service(void*);
-
+		
 		int description(const ACE_TCHAR *desc);
 		int insert(	const ACE_TCHAR *cmd_line = 0,
 					DWORD start_type = SERVICE_DEMAND_START,

@@ -274,6 +274,44 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 	return uChannelId;
 }
 
+ACE_CDR::UShort Root::MessageHandler::get_handle_channel(ACE_HANDLE handle, ACE_CDR::UShort channel)
+{
+	ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+
+	try
+	{
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::const_iterator j=m_mapReverseChannelIds.find(handle);
+		if (j!=m_mapReverseChannelIds.end())
+		{
+			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::const_iterator i=j->second.find(channel);
+			if (i!=j->second.end())
+				return i->second;
+		}
+	}
+	catch (...)
+	{
+	}
+
+	return 0;
+}
+
+ACE_HANDLE Root::MessageHandler::get_channel_handle(ACE_CDR::UShort channel)
+{
+	ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+
+	try
+	{
+		std::map<ACE_CDR::UShort,ChannelPair>::const_iterator i=m_mapChannelIds.find(channel);
+		if (i != m_mapChannelIds.end())
+			return i->second.handle;
+	}
+	catch (...)
+	{
+	}
+
+	return ACE_INVALID_HANDLE;
+}
+
 void Root::MessageHandler::handle_closed(ACE_HANDLE handle)
 {
 	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);

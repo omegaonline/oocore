@@ -145,7 +145,7 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		threads = 2;
 
 	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads-1,request_worker_fn,this);
+	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
 	if (req_thrd_grp_id != -1)
 	{
 		// Spawn off the proactor threads
@@ -154,15 +154,27 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		{
 			if (init(uPort))
 			{
-				// Just process requests...
-				ret = (int)request_worker_fn(this);
+				//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
+
+                // Wait for stop
+				ret = m_stop.wait();
 			}
 
-			//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
+			// Stop accepting clients
+			cancel();
+
+			// Close the user processes
+			close_channels();
+
+			// Stop the proactor
+			ACE_Proactor::instance()->end_event_loop();
 
 			// Wait for all the request threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
+
+		// Stop the MessageHandler
+		stop();
 
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
@@ -263,6 +275,44 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	return true;
 }
 
+void User::Manager::close_channels()
+{
+	try
+	{
+		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		for (std::map<ACE_CDR::UShort,OMInfo>::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
+		{
+			try
+			{
+				i->second.m_ptrOM->Disconnect();
+			}
+			catch (IException* pE)
+			{
+				pE->Release();
+			}
+			catch (...)
+			{
+			}
+
+			ACE_OS::closesocket(get_channel_handle(i->first));
+		}
+	}
+	catch (...)
+	{
+	}
+
+	try
+	{
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		m_mapOMs.clear();
+	}
+	catch (...)
+	{
+	}
+}
+
 ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
 {
 	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
@@ -291,16 +341,13 @@ void User::Manager::process_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request
 
 		// Restore old context
 		old_thread_id = oim.m_ptrChannel->set_thread_id(old_thread_id);
-
-		if (old_thread_id != src_thread_id)
-			::DebugBreak();
 	}
 }
 
 void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort /*src_channel_id*/, ACE_CDR::UShort /*src_thread_id*/, const ACE_Time_Value& /*deadline*/, ACE_CDR::UShort /*attribs*/)
 {
-	ACE_CDR::ULong op_code = ACE_CDR::ULong(-1);
-    request >> op_code;
+	Root::RootOpCode_t op_code;
+	request >> op_code;
 
 	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process root request %u"),op_code));
 
@@ -309,8 +356,10 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 
 	switch (op_code)
 	{
-	case 0:
-		// Do something!
+	case Root::End:
+		// We have been told to end!
+		m_stop.signal();
+		return;
 
 	default:
 		;

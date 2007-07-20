@@ -26,6 +26,7 @@ namespace User
 
 		ACE_RW_Thread_Mutex			m_lock;
 		ACE_CDR::UShort             m_root_channel;
+		ACE_Event                   m_stop;
 
 		struct OMInfo
 		{
@@ -37,6 +38,7 @@ namespace User
 		int run_event_loop_i(u_short uPort);
 		bool init(u_short uPort);
 		bool bootstrap(ACE_CDR::UShort sandbox_channel);
+		void close_channels();
 
 		OMInfo get_object_manager(ACE_CDR::UShort src_channel_id);
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);

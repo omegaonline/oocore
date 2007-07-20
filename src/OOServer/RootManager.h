@@ -83,6 +83,7 @@ namespace Root
 		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
 		u_short bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource);
 		bool connect_client(user_id_type uid, u_short& uNewPort, ACE_CString& strSource);
+		void close_users();
 
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);

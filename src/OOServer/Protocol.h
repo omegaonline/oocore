@@ -5,7 +5,11 @@ namespace Root
 {
 	enum RootOpCode
 	{
-		KeyExists = 1,
+		// Root -> User
+		End,
+
+		// User -> Root
+		KeyExists,
 		CreateKey,
 		DeleteKey,
 		EnumSubKeys,

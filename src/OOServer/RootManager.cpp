@@ -22,15 +22,6 @@ Root::Manager::Manager() :
 
 Root::Manager::~Manager()
 {
-	try
-	{
-		for (std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
-		{
-			delete i->second.pSpawn;
-		}
-	}
-	catch (...)
-	{}
 }
 
 bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
@@ -89,7 +80,7 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
-		if (pro_thrd_grp_id != -1)	
+		if (pro_thrd_grp_id != -1)
 		{
 			if (init())
 			{
@@ -99,12 +90,18 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 				ret = process_client_connects();
 			}
 
+			// Stop accepting clients
+			ACE_Asynch_Acceptor<ClientConnection>::cancel();
+
 			// Close the config file...
 			ACE_OS::close(m_config_file);
-		
+
+			// Close the user processes
+			close_users();
+
 			// Stop the proactor
 			ACE_Proactor::instance()->end_event_loop();
-			
+
 			// Wait for all the proactor threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
@@ -301,38 +298,7 @@ int Root::Manager::init_registry()
 
 void Root::Manager::end_event_loop_i()
 {
-	/*try
-	{
-		// Stop accepting
-		ACE_OS::shutdown(get_handle(),ACE_SHUTDOWN_BOTH);
-
-		{
-			ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			// Shutdown all client handles
-			for (std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.begin();j!=m_mapReverseChannelIds.end();++j)
-			{
-				ACE_OS::shutdown(j->first,ACE_SHUTDOWN_WRITE);
-			}
-		}
-
-		// Wait for everyone to close
-		ACE_Time_Value wait(15);
-		ACE_Countdown_Time timeout(&wait);
-		while (wait != ACE_Time_Value::zero)
-		{
-			ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			if (m_mapReverseChannelIds.empty())
-				break;
-
-			timeout.update();
-		}
-	}
-	catch (...)
-	{}*/
-
-	ACE_Proactor::instance()->proactor_end_event_loop();
+	m_queue_clients.deactivate();
 }
 
 void Root::ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
@@ -371,7 +337,7 @@ int Root::Manager::process_client_connects()
 
 		ACE_SOCK_Stream stream(*handle);
 		delete handle;
-		
+
 		// Read the uid
 		ACE_Time_Value wait(1);
 		user_id_type uid;
@@ -420,23 +386,19 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
 	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
-	
+
+	bool bSuccess = false;
+
 	// Open an acceptor
 	ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Acceptor acceptor;
-	int ret = acceptor.open(addr,0,PF_INET,1);
-	if (ret != 0)
-	{
+	if (acceptor.open(addr,0,PF_INET,1) != 0)
 		strSource = "Root::Manager::spawn_user - acceptor.open";
-	}
 	else
 	{
 		// Get the port we are accepting on
-		ret = acceptor.get_local_addr(addr);
-		if (ret != 0)
-		{
+		if (acceptor.get_local_addr(addr) != 0)
 			strSource = "Root::Manager::spawn_user - acceptor.get_local_addr";
-		}
 		else
 		{
 			// Spawn the user process
@@ -445,11 +407,8 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 				// Accept a socket
 				ACE_SOCK_Stream stream;
 				ACE_Time_Value wait(15);
-				ret = acceptor.accept(stream,0,&wait);
-				if (ret != 0)
-				{
+				if (acceptor.accept(stream,0,&wait) != 0)
 					strSource = "Root::Manager::spawn_user - acceptor.accept";
-				}
 				else
 				{
 					uNewPort = bootstrap_user(stream,uid == static_cast<user_id_type>(-1),strSource);
@@ -460,15 +419,9 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 						MessageConnection* pMC = 0;
 						ACE_NEW_NORETURN(pMC,MessageConnection(this));
 						if (!pMC)
-						{
-							ret = -1;
 							strSource = "Root::Manager::spawn_user - new MessageConnection";
-						}
 						else if (pMC->attach(handle) == 0)
-						{
-							ret = -1;
 							strSource = "Root::Manager::spawn_user - MessageConnection::attach";
-						}
 						else
 						{
 							// Clear the handle in the stream, pMC now owns it
@@ -482,15 +435,16 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 								UserProcess process = {uNewPort, pSpawn};
 								m_mapUserProcesses.insert(std::map<ACE_CString,UserProcess>::value_type(strUserId,process));
 								m_mapUserIds.insert(std::map<ACE_HANDLE,ACE_CString>::value_type(handle,strUserId));
+
+								bSuccess = true;
 							}
 							catch (...)
 							{
-								ret = -1;
 								strSource = "Root::Manager::spawn_user - unhandled exception";
 							}
 						}
 
-						if (ret != 0)
+						if (!bSuccess)
 							delete pMC;
 					}
 
@@ -502,10 +456,45 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 		acceptor.close();
 	}
 
-	if (ret != 0)
+	if (!bSuccess)
 		delete pSpawn;
 
-	return (ret == 0);
+	return bSuccess;
+}
+
+void Root::Manager::close_users()
+{
+    // Tell all user processes to close
+	ACE_OutputCDR request;
+	request << static_cast<RootOpCode_t>(Root::End);
+	if (request.good_bit())
+	{
+		try
+		{
+			// Iterate backwards
+			for (std::map<ACE_HANDLE,ACE_CString>::reverse_iterator i=m_mapUserIds.rbegin();i!=m_mapUserIds.rend();++i)
+			{
+                ACE_CDR::UShort channel = get_handle_channel(i->first,0);
+
+				ACE_InputCDR* response = 0;
+				send_request(channel,0,request.begin(),response,1000,1);
+			}
+		}
+		catch (...)
+		{
+		}
+	}
+
+	// Close all connections to user processes
+	try
+	{
+		for (std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
+		{
+			delete i->second.pSpawn;
+		}
+	}
+	catch (...)
+	{}
 }
 
 u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource)
@@ -526,7 +515,7 @@ u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, AC
 		strSource = "Root::Manager::bootstrap_user - recv";
 		return 0;
 	}
-	
+
 	return uPort;
 }
 
@@ -733,7 +722,7 @@ bool Root::Manager::registry_open_value(ACE_HANDLE handle, ACE_InputCDR& request
 
 void Root::Manager::registry_key_exists(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	ACE_CDR::Boolean bRes = false;
 
 	{
@@ -751,14 +740,14 @@ void Root::Manager::registry_key_exists(ACE_HANDLE handle, ACE_InputCDR& request
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 		response.write_boolean(bRes);
 }
 
 void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	ACE_CString strKey;
 	if (!request.read_string(strKey))
 		err = ACE_OS::last_error();
@@ -779,12 +768,12 @@ void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 }
 
 void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -807,12 +796,12 @@ void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 }
 
 void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	std::list<ACE_TString> listSections;
 
 	{
@@ -846,7 +835,7 @@ void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& reque
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 	{
 		try
@@ -864,7 +853,7 @@ void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& reque
 
 void Root::Manager::registry_value_type(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	ACE_CDR::Octet type = 0;
 
 	{
@@ -884,14 +873,14 @@ void Root::Manager::registry_value_type(ACE_HANDLE handle, ACE_InputCDR& request
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 		response.write_octet(type);
 }
 
 void Root::Manager::registry_get_string_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	ACE_CString strText;
 
 	{
@@ -911,14 +900,14 @@ void Root::Manager::registry_get_string_value(ACE_HANDLE handle, ACE_InputCDR& r
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 		response.write_string(strText);
 }
 
 void Root::Manager::registry_get_uint_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	ACE_CDR::ULong val = 0;
 
 	{
@@ -935,14 +924,14 @@ void Root::Manager::registry_get_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 		response.write_ulong(val);
 }
 
 void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	ACE_CDR::ULong len = 0;
 	void* data = 0;
 	bool bReplyWithData = false;
@@ -972,7 +961,7 @@ void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 	{
 		response.write_ulong(len);
@@ -985,7 +974,7 @@ void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 
 void Root::Manager::registry_set_string_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -1004,12 +993,12 @@ void Root::Manager::registry_set_string_value(ACE_HANDLE handle, ACE_InputCDR& r
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 }
 
 void Root::Manager::registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -1028,12 +1017,12 @@ void Root::Manager::registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 }
 
 void Root::Manager::registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -1067,12 +1056,12 @@ void Root::Manager::registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 }
 
 void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 	std::list<ACE_TString> listValues;
 
 	{
@@ -1107,7 +1096,7 @@ void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& reques
 		}
 	}
 
-	response.write_long(err);
+	response << err;
 	if (err == 0)
 	{
 		try
@@ -1125,7 +1114,7 @@ void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& reques
 
 void Root::Manager::registry_delete_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Long err = 0;
+	int err = 0;
 
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -1138,5 +1127,5 @@ void Root::Manager::registry_delete_value(ACE_HANDLE handle, ACE_InputCDR& reque
 			err = ACE_OS::last_error();
 	}
 
-	response.write_long(err);
+	response << err;
 }

@@ -105,12 +105,23 @@ int Root::NTService::description(const ACE_TCHAR *desc)
 	return ok ? 0 : -1;
 }
 
+static BOOL WINAPI control_c(DWORD /*dwCtrlType*/)
+{
+	Root::Manager::end();
+
+	return TRUE;
+}
+
 ACE_THR_FUNC_RETURN Root::NTService::start_service(void*)
 {
 	// This blocks running svc
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
 	if (!ret)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service start failed")),(ACE_THR_FUNC_RETURN)-1);
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service start failed")));
+
+		SetConsoleCtrlHandler(control_c,TRUE);
+	}
 	
 	return 0;
 }

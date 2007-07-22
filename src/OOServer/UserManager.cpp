@@ -460,9 +460,9 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 			// Error code 2 - Exception raw
 			error.write_octet(2);
 			string_t strDesc = pOuter->Description();
-			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Length()),strDesc);
+			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Size()),strDesc);
 			string_t strSrc = pOuter->Source();
-			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Length()),strSrc);
+			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Size()),strSrc);
 
 			send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs);
 		}

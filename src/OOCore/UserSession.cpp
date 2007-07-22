@@ -847,9 +847,9 @@ void OOCore::UserSession::process_request(OMInfo& oim, const UserSession::Messag
 			// Error code 2 - Exception raw
 			error.write_octet(2);
 			string_t strDesc = pOuter->Description();
-			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Length()),strDesc);
+			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Size()),strDesc);
 			string_t strSrc = pOuter->Source();
-			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Length()),strSrc);
+			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Size()),strSrc);
 
 			send_response(pMsg->m_src_channel_id,pMsg->m_src_thread_id,error.begin());
 		}

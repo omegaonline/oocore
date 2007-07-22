@@ -73,7 +73,7 @@ namespace User
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteString(const Omega::string_t& val)
-			{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Length()),val)) OOSERVER_THROW_LASTERROR(); }
+			{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Size()),val)) OOSERVER_THROW_LASTERROR(); }
 	};
 
 	class InputCDR :
@@ -117,7 +117,7 @@ namespace User
 		Omega::uint64_t ReadUInt64()
 			{ Omega::uint64_t val; if (!read_ulonglong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
-			{ ACE_CString val; if (!read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str()); }
+			{ ACE_CString val; if (!read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
 		void WriteBoolean(Omega::bool_t)
 			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void WriteUInt16(Omega::uint16_t)

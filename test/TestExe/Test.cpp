@@ -23,11 +23,14 @@ void add_failure()
 	++pass_count;
 }
 
+#include <conio.h>
+
 int test_summary()
 {
 	if (fail_count || exception_count)
 	{
 		printf("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
+		_getch();
 		return -1;
 	}
 	else

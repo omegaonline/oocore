@@ -3,20 +3,21 @@
 
 bool string_tests()
 {
-	const Omega::char_t sz1[] = "abcdef";
-	const Omega::char_t sz1_1[] = "abcdef";
-	const Omega::char_t sz1_2[] = "ABCDEF";
+	const char sz1[] = "abcdef";
+	const char sz1_1[] = "abcdef";
+	const char sz1_2[] = "ABCDEF";
 
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
 
 	s1 = sz1;
 	TEST(!s1.IsEmpty());
-	TEST(s1.Length() == sizeof(sz1)-1);
+	TEST(s1.Length() == 6);
+	TEST(s1.Size() == sizeof(sz1)-1);
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
 
-	const Omega::char_t sz2[] = "ghijk";
+	const char sz2[] = "ghijk";
 	Omega::string_t s2(sz2);
 	TEST(s2 == sz2);
 
@@ -72,7 +73,7 @@ bool guid_tests()
 	Omega::guid_t guid(Omega::guid_t::Null());
 	TEST(guid == Omega::guid_t::Null());
 
-	const Omega::char_t sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
+	const char sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
 	TEST(guid2 != guid);

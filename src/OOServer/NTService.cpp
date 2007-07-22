@@ -73,17 +73,17 @@ int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 							const ACE_TCHAR *account_name,
 							const ACE_TCHAR *password)
 {
-	char this_exe[PATH_MAX + 2];
+	ACE_TCHAR this_exe[PATH_MAX + 2];
 
 	if (GetModuleFileNameA(0,this_exe+1,PATH_MAX) == 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("GetModuleFilename failed!\n")),-1);
 		
 	// Make sure that this_exe is quoted
-	this_exe[0] = '\"';
-	ACE_OS::strcat(this_exe, "\"");
+	this_exe[0] = ACE_TEXT('\"');
+	ACE_OS::strcat(this_exe, ACE_TEXT("\""));
 	
-	ACE_CString exe_path(this_exe);
-	exe_path += " ";
+	ACE_TString exe_path(this_exe);
+	exe_path += ACE_TEXT(" ");
 	exe_path += cmd_line;
 
 	return ACE_NT_Service::insert(start_type,error_control,exe_path.c_str(),group_name,tag_id,dependencies,account_name,password);

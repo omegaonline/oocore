@@ -26,7 +26,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((
 	if (!OOCore::g_ptrRegistryRoot)
 	{
 		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
-		pE->m_strDesc = "Omega::Initialize not called.";
+		pE->m_strDesc = L"Omega::Initialize not called.";
 		throw pE;
 	}
 

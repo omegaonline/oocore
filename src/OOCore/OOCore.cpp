@@ -47,7 +47,7 @@ namespace OOCore
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 {
-	return string_t::Format("Version: %s\nPlatform: %s\nCompiler: %s\nACE: %s",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	return string_t::Format(string_t("Version: %s\nPlatform: %s\nCompiler: %s\nACE: %s",true),OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())

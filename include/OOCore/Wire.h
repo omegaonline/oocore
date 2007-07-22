@@ -106,7 +106,7 @@ namespace Omega
 				uint32_t bytes = 8;
 				pStream->ReadBytes(bytes,val.Data4);
 				if (bytes != 8)
-					OMEGA_THROW("Bad read!");
+					OMEGA_THROW(L"Bad read!");
 			}
 
 			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)
@@ -280,7 +280,7 @@ namespace Omega
 						m_alloc_size = cbSize;
 						OMEGA_NEW(m_pVals,A[m_alloc_size]);
 						if (!m_pVals)
-							OMEGA_THROW("Out of memory!");
+							OMEGA_THROW(L"Out of memory!");
 					}
 
 					operator A*()
@@ -512,7 +512,7 @@ namespace Omega
 					if (method_id < MethodCount)
 						MethodTable[method_id](this,m_pI,pParamsIn,pParamsOut);
 					else
-						OMEGA_THROW("Invalid method index");
+						OMEGA_THROW(L"Invalid method index");
 				}
 				static const uint32_t MethodCount = 3;
 
@@ -609,7 +609,7 @@ namespace Omega
 					else if (method_id < MethodCount)
 						MethodTable[method_id - Base::MethodCount](this,Base::m_pI,pParamsIn,pParamsOut);
 					else
-						OMEGA_THROW("Invalid method index");
+						OMEGA_THROW(L"Invalid method index");
 				}
 				static const uint32_t MethodCount = Base::MethodCount + 4;
 

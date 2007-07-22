@@ -37,6 +37,7 @@
 #endif // WIN32
 
 #define ACE_AS_STATIC_LIBS 1
+#define ACE_USES_WCHAR
 
 #include <ace/ARGV.h>
 #include <ace/Asynch_Acceptor.h>

@@ -60,10 +60,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #if defined(ACE_WIN32)
 	// Check to see if we have been spawned
-	if (argc==3 && ACE_OS::strcmp(argv[1],"--spawned")==0)
+	if (argc==3 && ACE_OS::strcmp(argv[1],ACE_TEXT("--spawned"))==0)
 		return UserMain(static_cast<u_short>(ACE_OS::atoi(argv[2])));
 
-	if (argc>=2 && ACE_OS::strcmp(argv[1],"--service")==0)
+	if (argc>=2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--service"))==0)
 		skip_args = 2;
 #endif
 
@@ -107,7 +107,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	}
 
 #if defined(ACE_WIN32)
-	if (argc<2 || ACE_OS::strcmp(argv[1],"--service")!=0)
+	if (argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service"))!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a Win32 service.\n")),-1);
 
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)

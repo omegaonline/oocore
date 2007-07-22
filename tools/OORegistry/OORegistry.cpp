@@ -19,18 +19,18 @@ static int PrintException(Omega::IException* pE)
 	return -1;
 }
 
-static int Process(Omega::string_t& strKey, const std::vector<std::string>& args)
+static int Process(Omega::string_t& strKey, const std::vector<Omega::string_t>& args)
 {
 	return 0;
 }
 
-static int Parse(char* szBuf, Omega::string_t& strKey)
+static int Parse(ACE_TCHAR* szBuf, Omega::string_t& strKey)
 {
-	std::vector<std::string> args; 
-	char* context = 0;
+	std::vector<Omega::string_t> args; 
+	ACE_TCHAR* context = 0;
 	for(;;)
 	{
-		char* command = ACE_OS::strtok_r(szBuf," \t\r\n",&context);
+		ACE_TCHAR* command = ACE_OS::strtok_r(szBuf," \t\r\n",&context);
 		if (command == NULL)
 			break;
 
@@ -52,7 +52,7 @@ static int Interactive()
 			ACE_OS::printf("%s > ",(const char*)strKey);
 			
 			// Get the next input...
-			char szBuf[1024];
+			ACE_TCHAR szBuf[1024];
 			ACE_OS::fgets(szBuf,1024,stdin);
 
 			// And process it...
@@ -106,7 +106,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	int next = cmd_opts.opt_ind();
 	if (next < argc)
 	{
-		std::vector<std::string> args; 
+		std::vector<Omega::string_t> args; 
 		for (int i=next;i<argc;++i)
 			args.push_back(argv[i]);
 

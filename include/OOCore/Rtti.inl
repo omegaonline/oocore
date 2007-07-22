@@ -82,7 +82,7 @@ Omega::System::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array(
 		delete [] m_pFunctors;
 		delete [] m_pVals;
 
-		OMEGA_THROW("Array has been resized out of bounds");
+		OMEGA_THROW(L"Array has been resized out of bounds");
 	}
 
 	if (m_piids)
@@ -138,7 +138,7 @@ Omega::System::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_arra
 		delete [] m_pFunctors;
 		delete [] m_pVals;
 
-		OMEGA_THROW("Array has been resized out of bounds");
+		OMEGA_THROW(L"Array has been resized out of bounds");
 	}
 
 	if (m_piids)
@@ -531,14 +531,14 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	}
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::char_t*,desc,(in),const Omega::char_t*,source,(in),Omega::IException*,pCause));
-Omega::IException* Omega::IException::Create(const Omega::char_t* desc, const Omega::char_t* source, Omega::IException* pCause)
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
+Omega::IException* Omega::IException::Create(const Omega::string_t& desc, const Omega::string_t& source, Omega::IException* pCause)
 {
 	return IException_Create(desc,source,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::char_t*,source));
-Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const Omega::guid_t& iid, const char_t* source)
+OOCORE_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source));
+Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const Omega::guid_t& iid, const string_t& source)
 {
 	return INoInterfaceException_Create(iid,source);
 }

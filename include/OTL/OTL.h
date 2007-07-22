@@ -615,7 +615,7 @@ namespace OTL
 		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
 		{
 			if (!pOuter)
-				throw Omega::IException::Create("AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
+				throw Omega::IException::Create(L"AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
 
 			AggregatedObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,AggregatedObjectImpl<ROOT>(pOuter));

@@ -62,7 +62,7 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 			// ret_code must match the values in UserSession::process_request
 			if (ret_code == 1)
 			{
-				OMEGA_THROW("Request timed out");
+				OMEGA_THROW(L"Request timed out");
 			}
 			else if (ret_code == 2)
 			{

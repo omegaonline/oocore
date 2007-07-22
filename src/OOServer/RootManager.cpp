@@ -34,7 +34,7 @@ bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 
 	// Add the default All Users key
 	ACE_Configuration_Section_Key res;
-	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),"All Users",1,res);
+	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),ACE_TEXT("All Users"),1,res);
 
 	return true;
 }
@@ -281,7 +281,7 @@ int Root::Manager::init_registry()
 
 #else
 
-	#define OMEGA_REGISTRY_DIR "/var/lib/omegaonline"
+	#define OMEGA_REGISTRY_DIR ACE_TEXT("/var/lib/omegaonline")
 
 	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
@@ -289,7 +289,7 @@ int Root::Manager::init_registry()
 		if (err != EEXIST)
 			return -1;
 	}
-	m_strRegistry = OMEGA_REGISTRY_DIR "/" OMEGA_REGISTRY_FILE;
+	m_strRegistry = OMEGA_REGISTRY_DIR ACE_TEXT("/") OMEGA_REGISTRY_FILE;
 
 #endif
 

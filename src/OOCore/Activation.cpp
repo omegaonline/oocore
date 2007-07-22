@@ -7,7 +7,7 @@ namespace OOCore
 {
 	Activation::IObjectFactory* LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
 	void ExecProcess(ACE_Process& process, const string_t& strExeName);
-	ACE_CString ShellParse(const char* pszFile);
+	ACE_WString ShellParse(const wchar_t* pszFile);
     
 	class OidNotFoundException :
 		public ExceptionImpl<Activation::IOidNotFoundException>
@@ -73,7 +73,7 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 {
 	ObjectImpl<OOCore::LibraryNotFoundException>* pRE = ObjectImpl<OOCore::LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = string_t::Format("Dynamic library '%s' not found",static_cast<const char_t*>(strName));
+	pRE->m_strDesc = string_t::Format(string_t("Dynamic library '%s' not found",true),strName);
 	pRE->m_dll_name = strName;
 	throw pRE;
 }
@@ -84,12 +84,12 @@ Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activ
 Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags)
 {
 	ACE_DLL dll;
-	if (dll_name != "OOCore")
+	if (dll_name != string_t("OOCore",true))
 	{
 		// Ensure we are using per-dll unloading
 		ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
 
-        if (dll.open(ACE_TEXT_CHAR_TO_TCHAR(dll_name)) != 0)
+        if (dll.open(dll_name.ToWide()) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(System::MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, System::MetaInfo::interface_info<const guid_t&>::safe_class oid, System::MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
@@ -114,24 +114,24 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
 	}
 }
 
-ACE_CString OOCore::ShellParse(const char* pszFile)
+ACE_WString OOCore::ShellParse(const wchar_t* pszFile)
 {
-	ACE_CString strRet = pszFile;
+	ACE_WString strRet = pszFile;
 
 #if defined(OMEGA_WIN32)
 		
-	const char* pszExt = PathFindExtensionA(pszFile);
+	const wchar_t* pszExt = PathFindExtensionW(pszFile);
 	if (pszExt)
 	{
 		DWORD dwLen = 1024;
-		char szBuf[1024];	
-		HRESULT hRes = AssocQueryStringA(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
+		wchar_t szBuf[1024];	
+		HRESULT hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
 		if (hRes == S_OK)
 			strRet = szBuf;
 		else if (hRes == E_POINTER)
 		{
-			char* pszBuf = new char[dwLen+1];
-			hRes = AssocQueryStringA(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
+			wchar_t* pszBuf = new wchar_t[dwLen+1];
+			hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
 			if (hRes==S_OK)
 				strRet = pszBuf;
 
@@ -141,13 +141,13 @@ ACE_CString OOCore::ShellParse(const char* pszFile)
 		if (hRes == S_OK)
 		{
 			LPVOID lpBuffer = 0;
-			if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-				strRet.c_str(),0,0,(LPSTR)&lpBuffer,0,(va_list*)&pszFile))
+			if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+				strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
 			{
-				strRet = (LPSTR)lpBuffer;
+				strRet = (LPWSTR)lpBuffer;
 				LocalFree(lpBuffer);
 			}
-		}	
+		}
 	}
 
 #endif
@@ -163,7 +163,7 @@ void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	options.handle_inheritence(0);
 
 	// Do a ShellExecute style lookup for the actual thing to call..
-	ACE_CString strActualName = ShellParse(strExeName);
+	ACE_WString strActualName = ShellParse(strExeName.ToWide());
 
 	if (options.command_line(strActualName.c_str()) == -1)
 		OOCORE_THROW_ERRNO(ACE_OS::last_error() ? ACE_OS::last_error() : EINVAL);
@@ -183,7 +183,7 @@ void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
 void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 {
 	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = "The identified object could not be found.";
+	pNew->m_strDesc = L"The identified object could not be found.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw pNew;
@@ -194,12 +194,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey("Objects\\" + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey(string_t("Objects\\",true) + strCurName);
 
-		if (ptrOidKey->IsValue("OID"))
-			return guid_t::FromString(ptrOidKey->GetStringValue("OID"));
+		if (ptrOidKey->IsValue(string_t("OID",true)))
+			return guid_t::FromString(ptrOidKey->GetStringValue(string_t("OID",true)));
 
-		strCurName = ptrOidKey->GetStringValue("CurrentVersion");
+		strCurName = ptrOidKey->GetStringValue(string_t("CurrentVersion",true));
 	}
 }
 
@@ -231,15 +231,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 		if (!(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IRegistryKey> ptrOidsKey("Objects/OIDs");
+			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(string_t("Objects/OIDs",true));
 			if (ptrOidsKey->IsSubKey(oid))
 			{
 				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid);
 
 				if (flags & Activation::InProcess)
 				{
-					if (ptrOidKey->IsValue("Library"))
-						return OOCore::LoadObjectLibrary(ptrOidKey->GetStringValue("Library"),oid,flags);
+					if (ptrOidKey->IsValue(string_t("Library",true)))
+						return OOCore::LoadObjectLibrary(ptrOidKey->GetStringValue(string_t("Library",true)),oid,flags);
 				}
 
 				if (flags & Activation::OutOfProcess)
@@ -249,11 +249,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
 					// Find the name of the executeable to run
-					ObjectPtr<Registry::IRegistryKey> ptrServer("Applications/" + ptrOidKey->GetStringValue("Application") + "/Activation");
+					ObjectPtr<Registry::IRegistryKey> ptrServer(string_t("Applications/",true) + ptrOidKey->GetStringValue(string_t("Application",true)) + string_t("/Activation",true));
 
 					// Launch the executeable
 					ACE_Process process;
-					OOCore::ExecProcess(process,ptrServer->GetStringValue("Exec"));
+					OOCore::ExecProcess(process,ptrServer->GetStringValue(string_t("Exec",true)));
 
 					// TODO The timeout needs to be related to the request timeout...
 					void* TODO;
@@ -298,7 +298,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
 {
 	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = "Object does not supported aggregation.";
+	pNew->m_strDesc = L"Object does not supported aggregation.";
 	pNew->m_oid = oid;
 	return pNew;
 }

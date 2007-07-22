@@ -33,7 +33,7 @@ namespace OOCore
 	};
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const char_t*,desc,(in),const char_t*,source,(in),IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const string_t&,desc,(in),const string_t&,source,(in),IException*,pCause))
 {
     ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
 	pExcept->m_ptrCause = pCause;
@@ -42,10 +42,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const char_
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const char_t*,source))
+OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
-	pExcept->m_strDesc = "Object does not support the requested interface";
+	pExcept->m_strDesc = L"Object does not support the requested interface";
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;
 	return pExcept;

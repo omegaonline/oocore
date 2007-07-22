@@ -7,8 +7,7 @@ namespace Omega
 {
 	typedef bool bool_t;
 	typedef unsigned char byte_t;
-	typedef char char_t;
-
+	
 #if defined(OMEGA_INT16_TYPE)
 	typedef OMEGA_INT16_TYPE      int16_t;
 #elif defined(OMEGA_HAS_INT16_T)
@@ -98,32 +97,44 @@ namespace Omega
 	public:
 		inline string_t();
 		inline string_t(const string_t& s);
-		inline string_t(const char_t* sz);
+		inline string_t(const char* sz, bool_t bUTF8 = false);
+		inline string_t(const wchar_t* wsz);
 		inline ~string_t();
 
 		inline string_t& operator = (const string_t& s);
-		inline string_t& operator = (const char_t* sz);
+		inline string_t& operator = (const char* sz);
+		inline string_t& operator = (const wchar_t* wsz);
 
-		inline operator const char_t*() const;
+		inline operator const char*() const;
+		inline size_t ToNative(char* sz, size_t size) const;
+		inline size_t ToWide(wchar_t* sz, size_t size) const;
+
 		inline bool operator == (const string_t& s) const;
-		inline bool operator == (const char_t* sz) const;
+		inline bool operator == (const char* sz) const;
+		inline bool operator == (const wchar_t* wsz) const;
 
 		template <class T>
 		bool operator != (T t) const
 		{ return !((*this)==t); }
 
 		inline string_t& operator += (const string_t& s);
-		inline string_t& operator += (const char_t* sz);
+		inline string_t& operator += (const char* sz);
+		inline string_t& operator += (const wchar_t* wsz);
 
 		inline int Compare(const string_t& s) const;
-		inline int Compare(const char_t* sz) const;
+		inline int Compare(const char* sz) const;
+		inline int Compare(const wchar_t* sz) const;
 		inline int CompareNoCase(const string_t& s) const;
-		inline int CompareNoCase(const char_t* sz) const;
+		inline int CompareNoCase(const char* sz) const;
+		inline int CompareNoCase(const wchar_t* sz) const;
 		inline bool IsEmpty() const;
 		inline size_t Length() const;
+		inline size_t Size() const;
 		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
-		inline size_t Find(char_t c, size_t pos = 0, bool bIgnoreCase = false) const;
-		inline size_t ReverseFind(char_t c, size_t pos = npos, bool bIgnoreCase = false) const;
+		inline size_t Find(char c, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t Find(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t ReverseFind(char c, size_t pos = npos, bool bIgnoreCase = false) const;
+		inline size_t ReverseFind(wchar_t c, size_t pos = npos, bool bIgnoreCase = false) const;
 		inline string_t Left(size_t length) const;
 		inline string_t Mid(size_t start, size_t length = npos) const;
 		inline string_t Right(size_t length) const;
@@ -131,7 +142,7 @@ namespace Omega
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
 
-		inline static string_t Format(const char_t* pszFormat, ...);
+		inline static string_t Format(const string_t& pszFormat, ...);
 
 		static const size_t npos = size_t(-1);
 

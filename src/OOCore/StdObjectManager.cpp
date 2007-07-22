@@ -256,7 +256,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 			std::map<uint32_t,ObjectPtr<System::MetaInfo::IWireStub> >::const_iterator i=m_mapStubIds.find(stub_id);
 			if (i==m_mapStubIds.end())
-				OMEGA_THROW("Bad stub id");
+				OMEGA_THROW(L"Bad stub id");
 			ptrStub = i->second;
 		}
 		catch (std::exception& e)
@@ -422,7 +422,7 @@ Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Ome
 	if (!(attribs & Remoting::asynchronous))
 	{
 		if (!ptrResponse)
-			OMEGA_THROW("No response received");
+			OMEGA_THROW(L"No response received");
 
 		// Read exception status
 		if (!ptrResponse->ReadBoolean())

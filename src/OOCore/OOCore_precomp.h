@@ -19,12 +19,15 @@
 
 // Link to the static lib version of ACE...
 #define ACE_AS_STATIC_LIBS 1
+#define ACE_USES_WCHAR
 
 #include <ace/CDR_Stream.h>
 #include <ace/Codecs.h>
 #include <ace/Countdown_Time.h>
 #include <ace/DLL.h>
 #include <ace/DLL_Manager.h>
+#include <ace/Encoding_Converter.h>
+#include <ace/Encoding_Converter_Factory.h>
 #include <ace/SOCK_Connector.h>
 #include <ace/Message_Queue.h>
 #include <ace/NT_Service.h>

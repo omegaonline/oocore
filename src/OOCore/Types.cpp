@@ -2,17 +2,43 @@
 
 namespace OOCore
 {
+	class UTF_Converter
+	{
+	public:
+		ACE_WString from_utf8(const char* sz);
+		ACE_CString to_utf8(const wchar_t* wsz);
+
+	private:
+		friend class ACE_Singleton<UTF_Converter,ACE_Thread_Mutex>;
+
+		UTF_Converter() :
+			m_conv(0)
+		{
+			wchar_t szBuf[] = L"This is my exciting text string, that should hopefully be picked up as the correct native wchar_t encoding";
+			m_conv = ACE_Encoding_Converter_Factory::create(reinterpret_cast<const ACE_Byte*>(szBuf),sizeof(szBuf));
+		}
+
+		~UTF_Converter()
+		{
+			delete m_conv;
+		}
+
+		ACE_Encoding_Converter* m_conv;
+	};
+	typedef ACE_Singleton<UTF_Converter,ACE_Thread_Mutex> UTF_CONVERTER;
+
 	struct StringNode
 	{
 		StringNode() : m_refcount(1)
 		{}
 
-		StringNode(const char* sz) : m_str(sz), m_refcount(1)
-		{} // Assumed to be utf8
+		StringNode(const char* sz) : m_str(UTF_CONVERTER::instance()->from_utf8(sz)), m_refcount(1)
+		{}
 
-		StringNode(const wchar_t* sz);
+		StringNode(const wchar_t* sz) : m_str(sz), m_refcount(1)
+		{}
 
-		StringNode(const ACE_CString& s) : m_str(s), m_refcount(1)
+		StringNode(const ACE_WString& s) : m_str(s), m_refcount(1)
 		{}
 
 		void AddRef()
@@ -26,56 +52,65 @@ namespace OOCore
 				delete this;
 		}
 
-		ACE_CString	m_str;
+		ACE_WString	m_str;
 
 	private:
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
 	};
-
-	class UTF_Converter
-	{
-	public:
-		ACE_Encoding_Converter* wchar_conv();
-
-	private:
-		friend class ACE_Singleton<UTF_Converter,ACE_Thread_Mutex>;
-
-		UTF_Converter() :
-			m_wchar_conv(0)
-		{
-		}
-
-		~UTF_Converter()
-		{
-			delete m_wchar_conv;
-		}
-
-		ACE_Encoding_Converter* m_wchar_conv;
-		ACE_Thread_Mutex        m_lock;
-	};
-	typedef ACE_Singleton<UTF_Converter,ACE_Thread_Mutex> CONVERTERS;
-
-	ACE_CString to_utf8(const wchar_t* wsz);
-	ACE_CString to_utf8(const char* sz);
-	ACE_WString from_utf8(const char* sz);
 }
 
 using namespace OOCore;
 
-ACE_Encoding_Converter* UTF_Converter::wchar_conv()
+ACE_WString OOCore::UTF_Converter::from_utf8(const char* sz)
 {
-	if (!m_wchar_conv)
+	if (!m_conv)
+		OMEGA_THROW(L"Failed to construct utf converter!");
+
+	for (int len=128;;len*=2)
 	{
-		// Do the double lock...
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,0);
+		wchar_t* pszBuf;
+		OMEGA_NEW(pszBuf,wchar_t[len]);
 
-		if (!m_wchar_conv)
+		ACE_Encoding_Converter::Result res = m_conv->from_utf8(reinterpret_cast<const ACE_Byte*>(sz),ACE_OS::strlen(sz)+1,pszBuf,len*sizeof(wchar_t));
+
+		if (res == ACE_Encoding_Converter::CONVERSION_OK)
 		{
-			//m_wchar_conv = ACE_Encoding_Converter_Factory::create(
+			ACE_WString strRet = pszBuf;
+			delete [] pszBuf;
+			return strRet;
 		}
-	}
 
-	return m_wchar_conv;
+		delete [] pszBuf;
+
+		if (res != ACE_Encoding_Converter::TARGET_EXHAUSTED)
+			OMEGA_THROW(L"utf8 decoding failed!");
+	}
+}
+
+ACE_CString OOCore::UTF_Converter::to_utf8(const wchar_t* wsz)
+{
+	if (!m_conv)
+		OMEGA_THROW(L"Failed to construct utf converter!");
+
+	for (int len=256;;len*=2)
+	{
+		char* pszBuf;
+		OMEGA_NEW(pszBuf,char[len]);
+
+		ACE_Encoding_Converter::Result res = m_conv->to_utf8(reinterpret_cast<const ACE_Byte*>(wsz),(ACE_OS::strlen(wsz)+1)*sizeof(wchar_t),(ACE_Byte*)(pszBuf),len);
+
+		if (res == ACE_Encoding_Converter::CONVERSION_OK)
+		{
+			ACE_CString strRet = pszBuf;
+			delete [] pszBuf;
+			return strRet;
+		}
+
+		delete [] pszBuf;
+
+		if (res != ACE_Encoding_Converter::TARGET_EXHAUSTED)
+			OMEGA_THROW(L"utf8 encoding failed!");
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,())
@@ -128,7 +163,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_2,2,((in),void*,s1,(in),con
 	static_cast<StringNode*>(s1)->Release();
 
 	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(sz));
+	OMEGA_NEW(pNode,StringNode(ACE_Ascii_To_Wide(sz).wchar_rep()));
 	return pNode;
 }
 
@@ -141,9 +176,24 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_3,2,((in),void*,s1,(in),con
 	return pNode;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(const char*,string_t_cast,1,((in),const void*,s1))
+OMEGA_DEFINE_EXPORTED_FUNCTION(const wchar_t*,string_t_cast,1,((in),const void*,s1))
 {
 	return static_cast<const StringNode*>(s1)->m_str.c_str();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size))
+{
+	ACE_CString str = UTF_CONVERTER::instance()->to_utf8(static_cast<const StringNode*>(h)->m_str.c_str());
+	if (size < str.length()+1)
+	{
+		ACE_OS::strncpy(sz,str.c_str(),size-1);
+		sz[size-1] = '\0';
+	}
+	else
+	{
+		ACE_OS::strcpy(sz,str.c_str());
+	}
+	return str.length() + 1;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq1,2,((in),const void*,s1,(in),const void*,s2))
@@ -153,12 +203,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq1,2,((in),const void*,s1,(in),con
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,s1,(in),const char*,sz))
 {
-	return (static_cast<const StringNode*>(s1)->m_str == to_utf8(sz));
+	return (static_cast<const StringNode*>(s1)->m_str == ACE_Ascii_To_Wide(sz).wchar_rep());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
-	return (static_cast<const StringNode*>(s1)->m_str == to_utf8(wsz));
+	return (static_cast<const StringNode*>(s1)->m_str == wsz);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const void*,s2))
@@ -187,7 +237,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const c
 
 	pOld->Release();
 
-	pNode->m_str += to_utf8(sz);
+	pNode->m_str += ACE_Ascii_To_Wide(sz).wchar_rep();
 	return pNode;
 }
 
@@ -202,7 +252,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add3,2,((in),void*,s1,(in),const w
 
 	pOld->Release();
 
-	pNode->m_str += to_utf8(wsz);
+	pNode->m_str += wsz;
 	return pNode;
 }
 
@@ -213,12 +263,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp1,2,((in),const void*,s1,(in),con
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp2,2,((in),const void*,s1,(in),const char*,sz))
 {
-	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),to_utf8(sz).c_str());
+	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),ACE_Ascii_To_Wide(sz).wchar_rep());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
-	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),to_utf8(wsz).c_str());
+	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,s1,(in),const void*,s2))
@@ -228,10 +278,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,s1,(in),con
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc2,2,((in),const void*,s1,(in),const char*,sz))
 {
-	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),sz);
+	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),ACE_Ascii_To_Wide(sz).wchar_rep());
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc3,2,((in),const void*,s1,(in),const char*,wsz))
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
 	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
 }
@@ -243,13 +293,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_isempty,1,((in),const void*,s1))
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 {
-	char* pszNew = ACE_OS::strdup(static_cast<const StringNode*>(s1)->m_str.c_str());
+	wchar_t* pszNew = ACE_OS::strdup(static_cast<const StringNode*>(s1)->m_str.c_str());
 	if (!pszNew)
 		return 0;
 
-	for (char* p=pszNew;*p!='\0';++p)
+	for (wchar_t* p=pszNew;*p!=L'\0';++p)
 	{
-		*p = static_cast<char>(ACE_OS::ace_tolower(*p));
+		*p = static_cast<wchar_t>(ACE_OS::ace_towlower(*p));
 	}
 
 	StringNode* s2;
@@ -265,13 +315,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 {
-	char* pszNew = ACE_OS::strdup(static_cast<const StringNode*>(s1)->m_str.c_str());
+	wchar_t* pszNew = ACE_OS::strdup(static_cast<const StringNode*>(s1)->m_str.c_str());
 	if (!pszNew)
 		return 0;
 
-	for (char* p=pszNew;*p!='\0';++p)
+	for (wchar_t* p=pszNew;*p!=L'\0';++p)
 	{
-		*p = static_cast<char>(ACE_OS::ace_toupper(*p));
+		*p = static_cast<wchar_t>(ACE_OS::ace_towupper(*p));
 	}
 
 	StringNode* s2;
@@ -292,36 +342,34 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find1,3,((in),const void*,s1,(in)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find2,4,((in),const void*,s1,(in),char,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
-	ACE_WString str1 = from_utf8(static_cast<const StringNode*>(s1)->m_str.c_str());
+	ACE_WString str2 = ACE_Ascii_To_Wide(ACE_CString(c).c_str()).wchar_rep();
+	wchar_t c2 = str2[0];
 
-	char c2 = bIgnoreCase ? static_cast<char>(ACE_OS::ace_towlower(c)) : c;
-	ACE_WString str2 = from_utf8(to_utf8(ACE_CString(&c2,1).c_str()).c_str());
-
-	return str1.find(str2[0],pos);
+	if (bIgnoreCase)
+		c2 = static_cast<wchar_t>(ACE_OS::ace_towlower(c2));
+	
+	return static_cast<const StringNode*>(s1)->m_str.find(c2,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find3,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
-	ACE_WString str = from_utf8(static_cast<const StringNode*>(s1)->m_str.c_str());
-
-	return str.find(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
+	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind1,4,((in),const void*,s1,(in),char,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
-	ACE_WString str1 = from_utf8(static_cast<const StringNode*>(s1)->m_str.c_str());
+	ACE_WString str2 = ACE_Ascii_To_Wide(ACE_CString(c).c_str()).wchar_rep();
+	wchar_t c2 = str2[0];
 
-	char c2 = bIgnoreCase ? static_cast<char>(ACE_OS::ace_towlower(c)) : c;
-	ACE_WString str2 = from_utf8(to_utf8(ACE_CString(&c2,1).c_str()).c_str());
+	if (bIgnoreCase)
+		c2 = static_cast<wchar_t>(ACE_OS::ace_towlower(c2));
 
-	return str1.rfind(str2[0],pos);
+	return static_cast<const StringNode*>(s1)->m_str.rfind(c2,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind2,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
-	ACE_WString str = from_utf8(static_cast<const StringNode*>(s1)->m_str.c_str());
-
-	return str.rfind(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
+	return static_cast<const StringNode*>(s1)->m_str.rfind(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_len,1,((in),const void*,s1))
@@ -356,17 +404,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),
 	return s2;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const char*,sz,(in),va_list,ap))
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list,ap))
 {
-	for (int len=64;;len*=2)
+	for (int len=256;;len*=2)
 	{
-		const ACE_CString s(static_cast<size_t>(len));
+		const ACE_WString s(static_cast<size_t>(len));
 
-		int len2 = ACE_OS::vsnprintf(const_cast<char*>(s.fast_rep()),len,sz,ap);
+		int len2 = ACE_OS::vsnprintf(const_cast<wchar_t*>(s.fast_rep()),len,sz,ap);
 		if (len2 <= len && len2 != -1)
 		{
 			StringNode* s1;
-			OMEGA_NEW(s1,StringNode(ACE_CString(s.c_str(),len2)));
+			OMEGA_NEW(s1,StringNode(ACE_WString(s.c_str(),len2)));
 			return s1;
 		}
 	}
@@ -387,18 +435,18 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,guid_t_less,2,((in),const Omega::guid_t&,lhs
 	return (ACE_OS::memcmp(&lhs,&rhs,sizeof(Omega::guid_t)) < 0);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const char*,sz))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wchar_t*,sz))
 {
 	// We use an array here because sscanf reads int's...
 	long data0 = 0;
 	int data[11] = { 0 };
 
 #if defined (ACE_HAS_TR24731_2005_CRT)
-	if (sscanf_s(sz,
+	if (swscanf_s(sz,
 #else
-	if (sscanf(sz,
+	if (swscanf(sz,
 #endif
-		"{%8lx-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
+		L"{%8lx-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
 		&data0,
 		&data[0],
 		&data[1],
@@ -456,6 +504,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	if (!pStr)
 		OOCORE_THROW_LASTERROR();
 
-	return Omega::guid_t::FromString(Omega::string_t::Format(string_t("{%s}",true),pStr->c_str()));
+	char szBuf[64];
+	ACE_OS::sprintf(szBuf,"{%s}",pStr->c_str());
+
+	return Omega::guid_t::FromString(szBuf);
 #endif
 }

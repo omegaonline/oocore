@@ -21,6 +21,8 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 
 namespace User
 {
+	ACE_CString string_t_to_utf8(const Omega::string_t& val);
+
 	class OutputCDR :
 		public OTL::ObjectBase,
 		public ACE_OutputCDR,
@@ -73,7 +75,7 @@ namespace User
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteString(const Omega::string_t& val)
-			{ if (!write_string(static_cast<ACE_CDR::ULong>(val.Size()),val)) OOSERVER_THROW_LASTERROR(); }
+			{ if (!write_string(string_t_to_utf8(val))) OOSERVER_THROW_LASTERROR(); }
 	};
 
 	class InputCDR :

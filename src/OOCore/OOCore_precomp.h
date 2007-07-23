@@ -41,6 +41,10 @@
 #include <ace/TSS_T.h>
 #include <ace/UUID.h>
 
+#if !defined(ACE_HAS_WCHAR)
+#error OmegaOnline requires wchar_t support!
+#endif
+
 // End of ACE includes
 /////////////////////////////////////////////////
 
@@ -74,7 +78,6 @@
 #define OOCORE_WRITE_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
 	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
-
 
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_
 

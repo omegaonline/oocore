@@ -21,7 +21,7 @@ namespace
 Omega::string_t 
 TestDllImpl::Hello()
 {
-	return "Hello!";
+	return L"Hello!";
 }
 
 BEGIN_LIBRARY_OBJECT_MAP(TestDll)

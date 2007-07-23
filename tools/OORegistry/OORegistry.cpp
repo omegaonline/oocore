@@ -14,7 +14,7 @@ static int Version()
 
 static int PrintException(Omega::IException* pE)
 {
-	ACE_OS::printf("%s.\n",(const char*)pE->Description());
+	ACE_OS::printf("%ls.\n",(const wchar_t*)pE->Description());
 	pE->Release();
 	return -1;
 }
@@ -30,7 +30,7 @@ static int Parse(ACE_TCHAR* szBuf, Omega::string_t& strKey)
 	ACE_TCHAR* context = 0;
 	for(;;)
 	{
-		ACE_TCHAR* command = ACE_OS::strtok_r(szBuf," \t\r\n",&context);
+		ACE_TCHAR* command = ACE_OS::strtok_r(szBuf,ACE_TEXT(" \t\r\n"),&context);
 		if (command == NULL)
 			break;
 
@@ -49,7 +49,7 @@ static int Interactive()
 		for (;;)
 		{
 			// Print the prompt
-			ACE_OS::printf("%s > ",(const char*)strKey);
+			ACE_OS::printf("%ls > ",(const wchar_t*)strKey);
 			
 			// Get the next input...
 			ACE_TCHAR szBuf[1024];

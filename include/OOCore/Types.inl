@@ -11,7 +11,7 @@
 #define OMEGA_DEBUG_STASH_STRING()	(void)0
 #endif
 
-OOCORE_EXPORTED_FUNCTION(const char*,string_t_cast,1,((in),const void*,h));
+OOCORE_EXPORTED_FUNCTION(const wchar_t*,string_t_cast,1,((in),const void*,h));
 
 Omega::string_t::string_t(handle_t h) :
 	m_handle(h)
@@ -77,21 +77,15 @@ Omega::string_t& Omega::string_t::operator = (const wchar_t* wsz)
 	return *this;
 }
 
-Omega::string_t::operator const char*() const
+Omega::string_t::operator const wchar_t*() const
 {
 	return string_t_cast(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION(size_t,string_t_tonative,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
-size_t Omega::string_t::ToNative(char* sz, size_t size) const
+OOCORE_EXPORTED_FUNCTION(size_t,string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
+size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
 {
-	return string_t_tonative(m_handle,sz,size);
-}
-
-OOCORE_EXPORTED_FUNCTION(size_t,string_t_towide,3,((in),const void*,h,(in),wchar_t*,sz,(in),size_t,size));
-size_t Omega::string_t::ToWide(wchar_t* sz, size_t size) const
-{
-	return string_t_towide(m_handle,sz,size);
+	return string_t_toutf8(m_handle,sz,size);
 }
 
 OOCORE_EXPORTED_FUNCTION(bool,string_t_eq1,2,((in),const void*,h1,(in),const void*,h2));
@@ -184,12 +178,6 @@ size_t Omega::string_t::Length() const
 	return string_t_len(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION(size_t,string_t_size,1,((in),const void*,h));
-size_t Omega::string_t::Size() const
-{
-	return string_t_size(m_handle);
-}
-
 OOCORE_EXPORTED_FUNCTION(size_t,string_t_find1,3,((in),const void*,h1,(in),const void*,h2,(in),size_t,s));
 size_t Omega::string_t::Find(const string_t& str, size_t pos, bool bIgnoreCase) const
 {
@@ -273,13 +261,13 @@ Omega::string_t Omega::string_t::ToUpper() const
 	return string_t(static_cast<handle_t>(string_t_toupper(m_handle)));
 }
 
-OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const void*,h,(in),va_list,a));
-Omega::string_t Omega::string_t::Format(const string_t& strFormat, ...)
+OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list,a));
+Omega::string_t Omega::string_t::Format(const wchar_t* pszFormat, ...)
 {
 	va_list list;
-	va_start(list,strFormat);
+	va_start(list,pszFormat);
 
-	handle_t h2 = static_cast<handle_t>(string_t_format(strFormat.m_handle,list));
+	handle_t h2 = static_cast<handle_t>(string_t_format(pszFormat,list));
 
 	va_end(list);
 
@@ -335,7 +323,7 @@ bool Omega::guid_t::operator<(const guid_t& rhs) const
 
 Omega::guid_t::operator Omega::string_t() const
 {
-	return string_t::Format(string_t("{%8.8X-%4.4X-%4.4X-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",true),
+	return string_t::Format(L"{%8.8X-%4.4X-%4.4X-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
         Data1,
         Data2,
         Data3,
@@ -349,7 +337,7 @@ Omega::guid_t::operator Omega::string_t() const
 		Data4[7]);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const char*,sz));
+OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wchar_t*,sz));
 Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
 	return guid_t_from_string(str);

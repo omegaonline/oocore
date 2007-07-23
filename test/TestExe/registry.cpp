@@ -4,18 +4,18 @@
 static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)
 {
 	// Generate a unique value name
-	Omega::string_t strTestValue = "TestValue";
+	Omega::string_t strTestValue = L"TestValue";
 	while (pKey->IsValue(strTestValue))
 	{
 		strTestValue = "_" + strTestValue;
 	}
 
-	TEST_VOID(pKey->SetStringValue(strTestValue,"Yes"));
+	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::String);
 	TEST(pKey->IsValue(strTestValue));
-	TEST(pKey->GetStringValue(strTestValue) ==  "Yes");
-	TEST_VOID(pKey->SetStringValue(strTestValue,"No"));
-	TEST(pKey->GetStringValue(strTestValue) ==  "No");
+	TEST(pKey->GetStringValue(strTestValue) ==  L"Yes");
+	TEST_VOID(pKey->SetStringValue(strTestValue,L"No"));
+	TEST(pKey->GetStringValue(strTestValue) ==  L"No");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 	TEST_VOID(pKey->SetUIntValue(strTestValue,100));
@@ -112,7 +112,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 
 	try
 	{
-		pKey->SetStringValue("\\","Invalid name");
+		pKey->SetStringValue(L"\\",L"Invalid name");
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -122,7 +122,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	try
 	{
-		pKey->SetStringValue("[","Invalid name");
+		pKey->SetStringValue(L"[",L"Invalid name");
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -132,7 +132,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	try
 	{
-		pKey->SetStringValue("]","Invalid name");
+		pKey->SetStringValue(L"]",L"Invalid name");
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -141,7 +141,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 		pE->Release();
 	}
 
-	TEST_VOID(pKey->SetStringValue(strTestValue,"Yes"));
+	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 
 	Omega::IEnumString* pValues = pKey->EnumValues();
 	TEST(pValues);
@@ -193,7 +193,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	if (!test_values(pKey,strKey))
 		return false;
 
-	Omega::string_t strTestKey = "TestKey";
+	Omega::string_t strTestKey = L"TestKey";
 	while (pKey->IsSubKey(strTestKey))
 	{
 		strTestKey = "_" + strTestKey;
@@ -308,21 +308,21 @@ static bool test_key(const Omega::string_t& strKey)
 
 static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 {
-	TEST(pKey->IsSubKey("All Users"));
-	TEST(pKey->IsSubKey("Server"));
-	TEST(pKey->IsSubKey("Server\\Sandbox"));
-	TEST(pKey->IsSubKey("Current User"));
+	TEST(pKey->IsSubKey(L"All Users"));
+	TEST(pKey->IsSubKey(L"Server"));
+	TEST(pKey->IsSubKey(L"Server\\Sandbox"));
+	TEST(pKey->IsSubKey(L"Current User"));
 
-	Omega::string_t strTestValue = "TestValue";
+	Omega::string_t strTestValue = L"TestValue";
 	while (pKey->IsValue(strTestValue))
 	{
-		strTestValue = "_" + strTestValue;
+		strTestValue = L"_" + strTestValue;
 	}
 
 	bool bCanWriteToRoot = true;
 	try
 	{
-		TEST_VOID(pKey->SetStringValue(strTestValue,"Yes"));
+		TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
@@ -335,7 +335,7 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 	{
 		TEST_VOID(pKey->DeleteValue(strTestValue));
 
-		if (!test_values(pKey,""))
+		if (!test_values(pKey,L""))
 			return false;
 	}
 
@@ -344,7 +344,7 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 
 bool registry_tests()
 {
-	Omega::Registry::IRegistryKey* pRootKey = Omega::Registry::IRegistryKey::OpenKey("\\");
+	Omega::Registry::IRegistryKey* pRootKey = Omega::Registry::IRegistryKey::OpenKey(L"\\");
 	TEST(pRootKey);
 
 	bool bTest;
@@ -361,10 +361,10 @@ bool registry_tests()
 	if (!bTest)
 		return false;
 
-	if (!test_key("All Users"))
+	if (!test_key(L"All Users"))
 		return false;
 
-	if (!test_key("Current User"))
+	if (!test_key(L"Current User"))
 		return false;
 
 	return true;

@@ -105,9 +105,9 @@ namespace Omega
 		inline string_t& operator = (const char* sz);
 		inline string_t& operator = (const wchar_t* wsz);
 
-		inline operator const char*() const;
-		inline size_t ToNative(char* sz, size_t size) const;
-		inline size_t ToWide(wchar_t* sz, size_t size) const;
+		inline operator const wchar_t*() const;
+
+		inline size_t ToUTF8(char* sz, size_t size) const;
 
 		inline bool operator == (const string_t& s) const;
 		inline bool operator == (const char* sz) const;
@@ -129,7 +129,6 @@ namespace Omega
 		inline int CompareNoCase(const wchar_t* sz) const;
 		inline bool IsEmpty() const;
 		inline size_t Length() const;
-		inline size_t Size() const;
 		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
 		inline size_t Find(char c, size_t pos = 0, bool bIgnoreCase = false) const;
 		inline size_t Find(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
@@ -142,7 +141,7 @@ namespace Omega
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
 
-		inline static string_t Format(const string_t& pszFormat, ...);
+		inline static string_t Format(const wchar_t* pszFormat, ...);
 
 		static const size_t npos = size_t(-1);
 
@@ -156,7 +155,7 @@ namespace Omega
 		handle_t m_handle;
 
 #ifdef OMEGA_DEBUG
-		const char* m_debug_value;
+		const wchar_t* m_debug_value;
 #endif
 	};
 

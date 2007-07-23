@@ -4,32 +4,41 @@
 bool string_tests()
 {
 	const char sz1[] = "abcdef";
+	const wchar_t wsz1[] = L"abcdef";
 	const char sz1_1[] = "abcdef";
+	const wchar_t wsz1_1[] = L"abcdef";
 	const char sz1_2[] = "ABCDEF";
 
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
 
+	s1 = wsz1;
+	TEST(!s1.IsEmpty());
+	TEST(s1.Length() == 6);
+	TEST(s1 == wsz1_1 && !(s1 != wsz1_1));
+	TEST(s1 == wsz1_1 && wsz1_1 != s1);
+	TEST(s1.Compare(wsz1_1) == 0);
+
 	s1 = sz1;
 	TEST(!s1.IsEmpty());
 	TEST(s1.Length() == 6);
-	TEST(s1.Size() == sizeof(sz1)-1);
-	TEST(s1 == sz1_1 && !(s1 != sz1_1));
-	TEST(s1.Compare(sz1_1) == 0);
+	TEST(s1 == wsz1_1 && !(s1 != wsz1_1));
+	TEST(s1 == wsz1_1 && wsz1_1 != s1);
+	TEST(s1.Compare(wsz1_1) == 0);
 
-	const char sz2[] = "ghijk";
-	Omega::string_t s2(sz2);
-	TEST(s2 == sz2);
+	const wchar_t wsz2[] = L"ghijk";
+	Omega::string_t s2(wsz2);
+	TEST(s2 == wsz2);
 
 	Omega::string_t s3(s1);
-	TEST(s3 == sz1);
+	TEST(s3 == wsz1);
 
 	TEST(s3 == s1 && !(s3 != s1));
 	TEST(s3.Compare(s1) == 0);
 
 	s3 = s2;
 	TEST(s3 == s2);
-	TEST(strcmp(s3,sz2) == 0);
+	TEST(wcscmp(s3,wsz2) == 0);
 
 	s3.Clear();
 	TEST(s3.IsEmpty())
@@ -58,7 +67,7 @@ bool string_tests()
 	TEST(s1.Find(s2.ToUpper(),1,true) == 10);
 
 	// Some more here maybe?
-	TEST(Omega::string_t::Format("%s:%d","hello",1) == "hello:1");
+	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == "hello:1");
 
 	TEST(s1.Left(5) == "abcde");
 	TEST(s1.Mid(15) == "fghij");
@@ -73,7 +82,7 @@ bool guid_tests()
 	Omega::guid_t guid(Omega::guid_t::Null());
 	TEST(guid == Omega::guid_t::Null());
 
-	const char sz[] = "{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
+	const wchar_t sz[] = L"{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
 	TEST(guid2 != guid);
@@ -98,7 +107,7 @@ bool guid_tests()
 	TEST(bTest);
 
 	// Check to see if we can export OID's properly
-	TEST(Omega::Remoting::OID_StdObjectManager == "{63EB243E-6AE3-43bd-B073-764E096775F8}");
+	TEST(Omega::Remoting::OID_StdObjectManager == L"{63EB243E-6AE3-43bd-B073-764E096775F8}");
 
 	// Check whether OMEGA_UUIDOF works...
 	TEST(OMEGA_UUIDOF(Omega::IObject) == OMEGA_UUIDOF(Omega::IObject*));

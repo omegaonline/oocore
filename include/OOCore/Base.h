@@ -65,7 +65,7 @@ namespace Omega
 
 #define OMEGA_DEFINE_IID(n_space, type, guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(string_t(guid,true) ); return v; } }; \
+	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid) ); return v; } }; \
 	} } }
 
 #define OMEGA_UUIDOF(n)	(Omega::System::MetaInfo::uid_traits<n>::GetUID())
@@ -79,15 +79,15 @@ namespace Omega
 	extern "C" OMEGA_IMPORT const Omega::guid_t name;
 
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
-	extern "C" const Omega::guid_t n_space::name = Omega::guid_t::FromString(Omega::string_t(guid,true));
+	extern "C" const Omega::guid_t n_space::name = Omega::guid_t::FromString(OMEGA_WIDEN_STRING(guid));
 
 OMEGA_DEFINE_IID(Omega, IObject, "{076DADE7-2D08-40f9-9AFA-AC883EB8BA9B}");
 OMEGA_DEFINE_IID(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 
 #if !defined(OMEGA_FUNCNAME)
-	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(Omega::string_t("%s(%u)",true),__FILE__,__LINE__))
+	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%ls(%u)",OMEGA_WIDEN_STRING(__FILE__),__LINE__))
 #else
-	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(Omega::string_t("%s(%u): %s",true),__FILE__,__LINE__,OMEGA_FUNCNAME))
+#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%ls(%u): %ls",OMEGA_WIDEN_STRING(__FILE__),__LINE__,(const wchar_t*)Omega::string_t(OMEGA_FUNCNAME)))
 #endif
 
 #define OMEGA_THROW(msg)     throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO)

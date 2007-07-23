@@ -16,6 +16,7 @@
 
 // Link to the static lib version of ACE...
 #define ACE_AS_STATIC_LIBS 1
+#define ACE_USES_WCHAR
 
 #include <ace/Asynch_Acceptor.h>
 #include <ace/CDR_Stream.h>

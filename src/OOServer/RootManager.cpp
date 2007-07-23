@@ -24,17 +24,17 @@ Root::Manager::~Manager()
 {
 }
 
-bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
+bool Root::Manager::install(int argc, wchar_t* argv[])
 {
 	if (ROOT_MANAGER::instance()->init_registry() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening registry")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening registry"),false);
 
 	if (!SpawnedProcess::InstallSandbox(argc,argv))
 		return false;
 
 	// Add the default All Users key
 	ACE_Configuration_Section_Key res;
-	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),ACE_TEXT("All Users"),1,res);
+	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),L"All Users",1,res);
 
 	return true;
 }
@@ -42,7 +42,7 @@ bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 bool Root::Manager::uninstall()
 {
 	if (ROOT_MANAGER::instance()->init_registry() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening registry")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening registry"),false);
 
 	if (!SpawnedProcess::UninstallSandbox())
 		return false;
@@ -50,7 +50,7 @@ bool Root::Manager::uninstall()
 	return true;
 }
 
-int Root::Manager::run(int argc, ACE_TCHAR* argv[])
+int Root::Manager::run(int argc, wchar_t* argv[])
 {
 	return ROOT_MANAGER::instance()->run_event_loop_i(argc,argv);
 }
@@ -65,7 +65,7 @@ void Root::Manager::end()
 	ROOT_MANAGER::instance()->end_event_loop_i();
 }
 
-int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
+int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 {
 	int ret = -1;
 
@@ -84,7 +84,7 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 		{
 			if (init())
 			{
-				//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer has started successfully.")));
+				//ACE_DEBUG((LM_INFO,L"OOServer has started successfully."));
 
 				// Now just process client requests
 				ret = process_client_connects();
@@ -113,7 +113,7 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
-	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer has stopped.")));
+	//ACE_DEBUG((LM_INFO,L"OOServer has stopped."));
 
 	return ret;
 }
@@ -132,7 +132,7 @@ bool Root::Manager::init()
 {
 	// Open the Server lock file
 	if (m_config_file != ACE_INVALID_HANDLE)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"OOServer already running.\n"),false);
 
 	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
 	if (m_config_file != ACE_INVALID_HANDLE)
@@ -146,7 +146,7 @@ bool Root::Manager::init()
 				// Already running on this machine... Fail
 				ACE_OS::close(m_config_file);
 				m_config_file = ACE_INVALID_HANDLE;
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer already running.\n")),false);
+				ACE_ERROR_RETURN((LM_ERROR,L"OOServer already running.\n"),false);
 			}
 		}
 		ACE_OS::close(m_config_file);
@@ -159,13 +159,13 @@ bool Root::Manager::init()
 
 	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),flags);
 	if (m_config_file == ACE_INVALID_HANDLE)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - open() failed")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::init - open() failed"),false);
 
 	// Write our pid instead
 	pid_t pid = ACE_OS::getpid();
 	if (ACE_OS::write(m_config_file,&pid,sizeof(pid)) != sizeof(pid))
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - pid write() failed")));
+		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - pid write() failed"));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return false;
@@ -175,7 +175,7 @@ bool Root::Manager::init()
 	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	if (ACE_Asynch_Acceptor<ClientConnection>::open(sa) != 0)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - open() failed")));
+		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - open() failed"));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return false;
@@ -186,7 +186,7 @@ bool Root::Manager::init()
 	sockaddr* addr = reinterpret_cast<sockaddr*>(sa.get_addr());
 	if (ACE_OS::getsockname(ACE_Asynch_Acceptor<ClientConnection>::get_handle(),addr,&len) == -1)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - Failed to discover local port")));
+		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - Failed to discover local port"));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return false;
@@ -198,7 +198,7 @@ bool Root::Manager::init()
 	u_short uPort = sa.get_port_number();
 	if (ACE_OS::write(m_config_file,&uPort,sizeof(uPort)) != sizeof(uPort))
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::init - port write() failed")));
+		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - port write() failed"));
 		ACE_OS::close(m_config_file);
 		m_config_file = ACE_INVALID_HANDLE;
 		return false;
@@ -215,25 +215,25 @@ bool Root::Manager::init()
 	return true;
 }
 
-ACE_CString Root::Manager::get_bootstrap_filename()
+ACE_WString Root::Manager::get_bootstrap_filename()
 {
-#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
+#define OMEGA_BOOTSTRAP_FILE L"ooserver.bootstrap"
 
 #if defined(ACE_WIN32)
 
-	ACE_CString strFilename = "C:\\" OMEGA_BOOTSTRAP_FILE;
+	ACE_WString strFilename = L"C:\\" OMEGA_BOOTSTRAP_FILE;
 
-	char szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
+	wchar_t szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
 	if SUCCEEDED(hr)
 	{
-		char szBuf2[MAX_PATH] = {0};
-		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
+		wchar_t szBuf2[MAX_PATH] = {0};
+		if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
 		{
-			if (!PathFileExistsA(szBuf2) && ACE_OS::mkdir(szBuf2) != 0)
+			if (!PathFileExistsW(szBuf2) && ACE_OS::mkdir(szBuf2) != 0)
 				return strFilename;
 
-			if (PathCombineA(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
+			if (PathCombineW(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
 				strFilename = szBuf;
 		}
 	}
@@ -242,46 +242,46 @@ ACE_CString Root::Manager::get_bootstrap_filename()
 
 #else
 
-	#define OMEGA_BOOTSTRAP_DIR "/var/lock/omegaonline"
+	#define OMEGA_BOOTSTRAP_DIR L"/var/lock/omegaonline"
 
 	// Ignore the errors, they will reoccur when we try to opne the file
 	ACE_OS::mkdir(OMEGA_BOOTSTRAP_DIR,S_IRWXU | S_IRWXG | S_IROTH);
 
-	return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE);
+	return ACE_WString(OMEGA_BOOTSTRAP_DIR L"/" OMEGA_BOOTSTRAP_FILE);
 
 #endif
 }
 
 int Root::Manager::init_registry()
 {
-#define OMEGA_REGISTRY_FILE "system.regdb"
+#define OMEGA_REGISTRY_FILE L"system.regdb"
 
 #if defined(ACE_WIN32)
 
-	m_strRegistry = "C:\\" OMEGA_REGISTRY_FILE;
+	m_strRegistry = L"C:\\" OMEGA_REGISTRY_FILE;
 
-	char szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	wchar_t szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if SUCCEEDED(hr)
 	{
-		char szBuf2[MAX_PATH] = {0};
-		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
+		wchar_t szBuf2[MAX_PATH] = {0};
+		if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
 		{
-			if (!PathFileExistsA(szBuf2))
+			if (!PathFileExistsW(szBuf2))
 			{
 				int ret = ACE_OS::mkdir(szBuf2);
 				if (ret != 0)
 					return ret;
 			}
 
-			if (PathCombineA(szBuf,szBuf2,OMEGA_REGISTRY_FILE))
+			if (PathCombineW(szBuf,szBuf2,OMEGA_REGISTRY_FILE))
 				m_strRegistry = szBuf;
 		}
 	}
 
 #else
 
-	#define OMEGA_REGISTRY_DIR ACE_TEXT("/var/lib/omegaonline")
+	#define OMEGA_REGISTRY_DIR L"/var/lib/omegaonline"
 
 	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
@@ -289,7 +289,7 @@ int Root::Manager::init_registry()
 		if (err != EEXIST)
 			return -1;
 	}
-	m_strRegistry = OMEGA_REGISTRY_DIR ACE_TEXT("/") OMEGA_REGISTRY_FILE;
+	m_strRegistry = OMEGA_REGISTRY_DIR L"/" OMEGA_REGISTRY_FILE;
 
 #endif
 
@@ -345,7 +345,7 @@ int Root::Manager::process_client_connects()
 			continue;
 
 		u_short uPort = 0;
-		ACE_CString strSource;
+		ACE_WString strSource;
 		if (!connect_client(uid,uPort,strSource))
 		{
 			int err = ACE_OS::last_error();
@@ -367,21 +367,21 @@ bool Root::Manager::spawn_sandbox()
 	if (SpawnedProcess::GetSandboxUid(strUserId))
 	{
 		// Spawn the sandbox
-		ACE_CString strSource;
+		ACE_WString strSource;
 		u_short uPort;
 		if (!spawn_user(static_cast<user_id_type>(-1),strUserId,uPort,strSource))
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::Manager::spawn_sandbox() failed")));
+			ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::spawn_sandbox() failed"));
 			return false;
 		}
 	}
 	else
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Sandbox failed to start. See previous error for cause.\n")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"Sandbox failed to start. See previous error for cause.\n"),false);
 
 	return true;
 }
 
-bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u_short& uNewPort, ACE_CString& strSource)
+bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u_short& uNewPort, ACE_WString& strSource)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn;
@@ -393,12 +393,12 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 	ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	ACE_SOCK_Acceptor acceptor;
 	if (acceptor.open(addr,0,PF_INET,1) != 0)
-		strSource = "Root::Manager::spawn_user - acceptor.open";
+		strSource = L"Root::Manager::spawn_user - acceptor.open";
 	else
 	{
 		// Get the port we are accepting on
 		if (acceptor.get_local_addr(addr) != 0)
-			strSource = "Root::Manager::spawn_user - acceptor.get_local_addr";
+			strSource = L"Root::Manager::spawn_user - acceptor.get_local_addr";
 		else
 		{
 			// Spawn the user process
@@ -408,7 +408,7 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 				ACE_SOCK_Stream stream;
 				ACE_Time_Value wait(15);
 				if (acceptor.accept(stream,0,&wait) != 0)
-					strSource = "Root::Manager::spawn_user - acceptor.accept";
+					strSource = L"Root::Manager::spawn_user - acceptor.accept";
 				else
 				{
 					uNewPort = bootstrap_user(stream,uid == static_cast<user_id_type>(-1),strSource);
@@ -419,9 +419,9 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 						MessageConnection* pMC = 0;
 						ACE_NEW_NORETURN(pMC,MessageConnection(this));
 						if (!pMC)
-							strSource = "Root::Manager::spawn_user - new MessageConnection";
+							strSource = L"Root::Manager::spawn_user - new MessageConnection";
 						else if (pMC->attach(handle) == 0)
-							strSource = "Root::Manager::spawn_user - MessageConnection::attach";
+							strSource = L"Root::Manager::spawn_user - MessageConnection::attach";
 						else
 						{
 							// Clear the handle in the stream, pMC now owns it
@@ -440,7 +440,7 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 							}
 							catch (...)
 							{
-								strSource = "Root::Manager::spawn_user - unhandled exception";
+								strSource = L"Root::Manager::spawn_user - unhandled exception";
 							}
 						}
 
@@ -497,14 +497,14 @@ void Root::Manager::close_users()
 	{}
 }
 
-u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource)
+u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_WString& strSource)
 {
 	// This could be changed to a struct if we wanted...
 	ACE_CDR::UShort sandbox_channel = bSandbox ? 0 : 1;
 
 	if (stream.send(&sandbox_channel,sizeof(sandbox_channel)) != sizeof(sandbox_channel))
 	{
-		strSource = "Root::Manager::bootstrap_user - send";
+		strSource = L"Root::Manager::bootstrap_user - send";
 		return 0;
 	}
 
@@ -512,14 +512,14 @@ u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, AC
 	ACE_Time_Value wait(15);
 	if (stream.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
 	{
-		strSource = "Root::Manager::bootstrap_user - recv";
+		strSource = L"Root::Manager::bootstrap_user - recv";
 		return 0;
 	}
 
 	return uPort;
 }
 
-bool Root::Manager::connect_client(user_id_type uid, u_short& uNewPort, ACE_CString& strSource)
+bool Root::Manager::connect_client(user_id_type uid, u_short& uNewPort, ACE_WString& strSource)
 {
 	ACE_CString strUserId;
 	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId,strSource))
@@ -560,13 +560,13 @@ bool Root::Manager::connect_client(user_id_type uid, u_short& uNewPort, ACE_CStr
 	}
 	catch (std::exception&)
 	{
-		strSource = "Root::Manager::connect_client_i - std::exception";
+		strSource = L"Root::Manager::connect_client_i - std::exception";
 	}
 
 	return false;
 }
 
-bool Root::Manager::access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed)
+bool Root::Manager::access_check(ACE_HANDLE handle, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed)
 {
 	try
 	{
@@ -607,7 +607,7 @@ void Root::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 	RootOpCode_t op_code;
 	request >> op_code;
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Root request %u from %u(%u)"),op_code,reply_channel_id,src_channel_id));
+	//ACE_DEBUG((LM_DEBUG,L"Root context: Root request %u from %u(%u)",op_code,reply_channel_id,src_channel_id));
 
 	if (!request.good_bit())
 		return;
@@ -677,16 +677,31 @@ void Root::Manager::process_request(ACE_HANDLE handle, ACE_InputCDR& request, AC
 		send_response(src_channel_id,src_thread_id,response.begin(),deadline,0);
 }
 
+// Annoyingly this is missing from ACE...  A direct lift and translate of the ACE_CString version
+static ACE_CDR::Boolean read_wstring(ACE_InputCDR& stream, ACE_WString& x)
+{
+	ACE_CDR::WChar *data = 0;
+	if (stream.read_wstring(data))
+	{
+		x = data;
+		delete [] data;
+		return true;
+	}
+
+	x = L"";
+	return stream.good_bit();
+}
+
 bool Root::Manager::registry_open_section(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck)
 {
-	ACE_CString strKey;
-	if (!request.read_string(strKey))
+	ACE_WString strKey;
+	if (!read_wstring(request,strKey))
 		return false;
 
 	if (bAccessCheck)
 	{
 		bool bAllowed = false;
-		if (strKey.substr(0,9) == "All Users")
+		if (strKey.substr(0,9) == L"All Users")
 			bAllowed = true;
 		else if (!access_check(handle,m_strRegistry.c_str(),O_RDWR,bAllowed))
 			return false;
@@ -702,19 +717,19 @@ bool Root::Manager::registry_open_section(ACE_HANDLE handle, ACE_InputCDR& reque
 		key = m_registry.root_section();
 	else
 	{
-		if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),0,key) != 0)
+		if (m_registry.open_section(m_registry.root_section(),strKey.c_str(),0,key) != 0)
 			return false;
 	}
 
 	return true;
 }
 
-bool Root::Manager::registry_open_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck)
+bool Root::Manager::registry_open_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_WString& strValue, bool bAccessCheck)
 {
 	if (!registry_open_section(handle,request,key,bAccessCheck))
 		return false;
 
-	if (!request.read_string(strValue))
+	if (!read_wstring(request,strValue))
 		return false;
 
 	return true;
@@ -748,8 +763,8 @@ void Root::Manager::registry_key_exists(ACE_HANDLE handle, ACE_InputCDR& request
 void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-	ACE_CString strKey;
-	if (!request.read_string(strKey))
+	ACE_WString strKey;
+	if (!read_wstring(request,strKey))
 		err = ACE_OS::last_error();
 	else
 	{
@@ -763,7 +778,7 @@ void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request
 			ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 			ACE_Configuration_Section_Key key;
-			if (m_registry.open_section(m_registry.root_section(),ACE_TEXT_CHAR_TO_TCHAR(strKey).c_str(),1,key) != 0)
+			if (m_registry.open_section(m_registry.root_section(),strKey.c_str(),1,key) != 0)
 				err = ACE_OS::last_error();
 		}
 	}
@@ -783,14 +798,14 @@ void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_CString strSubKey;
-			if (!request.read_string(strSubKey))
+			ACE_WString strSubKey;
+			if (!read_wstring(request,strSubKey))
 				err = ACE_OS::last_error();
 			else
 			{
-				if (strSubKey == "All Users")
+				if (strSubKey == L"All Users")
 					err = EACCES;
-				else if (m_registry.remove_section(key,ACE_TEXT_CHAR_TO_TCHAR(strSubKey).c_str(),1) != 0)
+				else if (m_registry.remove_section(key,strSubKey.c_str(),1) != 0)
 					err = ACE_OS::last_error();
 			}
 		}
@@ -802,7 +817,7 @@ void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request
 void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-	std::list<ACE_TString> listSections;
+	std::list<ACE_WString> listSections;
 
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -816,7 +831,7 @@ void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& reque
 			{
 				for (int index=0;;++index)
 				{
-					ACE_TString strSubKey;
+					ACE_WString strSubKey;
 					int e = m_registry.enumerate_sections(key,index,strSubKey);
 					if (e == 0)
 						listSections.push_back(strSubKey);
@@ -841,9 +856,9 @@ void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& reque
 		try
 		{
 			response.write_ulonglong(listSections.size());
-			for (std::list<ACE_TString>::iterator i=listSections.begin();i!=listSections.end();++i)
+			for (std::list<ACE_WString>::iterator i=listSections.begin();i!=listSections.end();++i)
 			{
-				response.write_string(ACE_TEXT_ALWAYS_CHAR(*i));
+				response.write_wstring(i->c_str());
 			}
 		}
 		catch (std::exception&)
@@ -860,13 +875,13 @@ void Root::Manager::registry_value_type(ACE_HANDLE handle, ACE_InputCDR& request
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue))
 			err = ACE_OS::last_error();
 		else
 		{
 			ACE_Configuration_Heap::VALUETYPE vtype;
-			if (m_registry.find_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),vtype) == 0)
+			if (m_registry.find_value(key,strValue.c_str(),vtype) == 0)
 				type = static_cast<ACE_CDR::Octet>(vtype);
 			else
 				err = ACE_OS::last_error();
@@ -881,28 +896,25 @@ void Root::Manager::registry_value_type(ACE_HANDLE handle, ACE_InputCDR& request
 void Root::Manager::registry_get_string_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-	ACE_CString strText;
+	ACE_WString strText;
 
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue))
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_TString strTextT;
-			if (m_registry.get_string_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),strTextT) != 0)
+			if (m_registry.get_string_value(key,strValue.c_str(),strText) != 0)
 				err = ACE_OS::last_error();
-			else
-				strText = ACE_TEXT_ALWAYS_CHAR(strTextT);
 		}
 	}
 
 	response << err;
 	if (err == 0)
-		response.write_string(strText);
+		response.write_wstring(strText.c_str());
 }
 
 void Root::Manager::registry_get_uint_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
@@ -914,12 +926,12 @@ void Root::Manager::registry_get_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue))
 			err = ACE_OS::last_error();
 		else
 		{
-			if (m_registry.get_integer_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),val) != 0)
+			if (m_registry.get_integer_value(key,strValue.c_str(),val) != 0)
 				err = ACE_OS::last_error();
 		}
 	}
@@ -940,7 +952,7 @@ void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue))
 			err = ACE_OS::last_error();
 		else
@@ -951,7 +963,7 @@ void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 			{
 				bReplyWithData = (len != 0);
 				size_t dlen = 0;
-                if (m_registry.get_binary_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),data,dlen) != 0)
+                if (m_registry.get_binary_value(key,strValue.c_str(),data,dlen) != 0)
 					err = ACE_OS::last_error();
 				else if (len != 0)
 					len = std::min(len,static_cast<ACE_CDR::ULong>(dlen));
@@ -980,15 +992,15 @@ void Root::Manager::registry_set_string_value(ACE_HANDLE handle, ACE_InputCDR& r
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue,true))
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_CString strText;
-			if (!request.read_string(strText))
+			ACE_WString strText;
+			if (!read_wstring(request,strText))
 				err = ACE_OS::last_error();
-			else if (m_registry.set_string_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),ACE_TEXT_CHAR_TO_TCHAR(strText)) != 0)
+			else if (m_registry.set_string_value(key,strValue.c_str(),strText) != 0)
 				err = ACE_OS::last_error();
 		}
 	}
@@ -1004,7 +1016,7 @@ void Root::Manager::registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue,true))
 			err = ACE_OS::last_error();
 		else
@@ -1012,7 +1024,7 @@ void Root::Manager::registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 			ACE_CDR::ULong iValue;
 			if (!request.read_ulong(iValue))
 				err = ACE_OS::last_error();
-			else if (m_registry.set_integer_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),iValue) != 0)
+			else if (m_registry.set_integer_value(key,strValue.c_str(),iValue) != 0)
 				err = ACE_OS::last_error();
 		}
 	}
@@ -1028,7 +1040,7 @@ void Root::Manager::registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue,true))
 			err = ACE_OS::last_error();
 		else
@@ -1047,7 +1059,7 @@ void Root::Manager::registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 				{
 					if (!request.read_octet_array(data,len))
 						err = ACE_OS::last_error();
-					else if (m_registry.set_binary_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str(),data,len) != 0)
+					else if (m_registry.set_binary_value(key,strValue.c_str(),data,len) != 0)
 						err = ACE_OS::last_error();
 
 					delete [] data;
@@ -1062,7 +1074,7 @@ void Root::Manager::registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-	std::list<ACE_TString> listValues;
+	std::list<ACE_WString> listValues;
 
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
@@ -1076,7 +1088,7 @@ void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& reques
 			{
 				for (int index=0;;++index)
 				{
-					ACE_TString strSubKey;
+					ACE_WString strSubKey;
 					ACE_Configuration_Heap::VALUETYPE type;
 					int e = m_registry.enumerate_values(key,index,strSubKey,type);
 					if (e == 0)
@@ -1102,9 +1114,9 @@ void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& reques
 		try
 		{
 			response.write_ulonglong(listValues.size());
-			for (std::list<ACE_TString>::iterator i=listValues.begin();i!=listValues.end();++i)
+			for (std::list<ACE_WString>::iterator i=listValues.begin();i!=listValues.end();++i)
 			{
-				response.write_string(ACE_TEXT_ALWAYS_CHAR(*i));
+				response.write_wstring(i->c_str());
 			}
 		}
 		catch (std::exception&)
@@ -1120,10 +1132,10 @@ void Root::Manager::registry_delete_value(ACE_HANDLE handle, ACE_InputCDR& reque
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
 
 		ACE_Configuration_Section_Key key;
-		ACE_CString strValue;
+		ACE_WString strValue;
 		if (!registry_open_value(handle,request,key,strValue,true))
 			err = ACE_OS::last_error();
-		else if (m_registry.remove_value(key,ACE_TEXT_CHAR_TO_TCHAR(strValue).c_str()) != 0)
+		else if (m_registry.remove_value(key,strValue.c_str()) != 0)
 			err = ACE_OS::last_error();
 	}
 

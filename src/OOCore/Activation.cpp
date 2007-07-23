@@ -73,7 +73,7 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 {
 	ObjectImpl<OOCore::LibraryNotFoundException>* pRE = ObjectImpl<OOCore::LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = string_t::Format(string_t("Dynamic library '%s' not found",true),strName);
+	pRE->m_strDesc = string_t::Format(L"Dynamic library '%s' not found",static_cast<const wchar_t*>(strName));
 	pRE->m_dll_name = strName;
 	throw pRE;
 }
@@ -84,16 +84,16 @@ Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activ
 Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags)
 {
 	ACE_DLL dll;
-	if (dll_name != string_t("OOCore",true))
+	if (dll_name != L"OOCore")
 	{
 		// Ensure we are using per-dll unloading
 		ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
 
-        if (dll.open(dll_name.ToWide()) != 0)
+        if (dll.open(dll_name) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(System::MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, System::MetaInfo::interface_info<const guid_t&>::safe_class oid, System::MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
-		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(ACE_TEXT("Omega_GetObjectFactory_Safe"));
+		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(L"Omega_GetObjectFactory_Safe");
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 
@@ -163,7 +163,7 @@ void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	options.handle_inheritence(0);
 
 	// Do a ShellExecute style lookup for the actual thing to call..
-	ACE_WString strActualName = ShellParse(strExeName.ToWide());
+	ACE_WString strActualName = ShellParse(strExeName);
 
 	if (options.command_line(strActualName.c_str()) == -1)
 		OOCORE_THROW_ERRNO(ACE_OS::last_error() ? ACE_OS::last_error() : EINVAL);
@@ -194,12 +194,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey(string_t("Objects\\",true) + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"Objects\\" + strCurName);
 
-		if (ptrOidKey->IsValue(string_t("OID",true)))
-			return guid_t::FromString(ptrOidKey->GetStringValue(string_t("OID",true)));
+		if (ptrOidKey->IsValue(L"OID"))
+			return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));
 
-		strCurName = ptrOidKey->GetStringValue(string_t("CurrentVersion",true));
+		strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
 	}
 }
 
@@ -231,15 +231,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 		if (!(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(string_t("Objects/OIDs",true));
+			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(L"Objects\\OIDs");
 			if (ptrOidsKey->IsSubKey(oid))
 			{
 				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid);
 
 				if (flags & Activation::InProcess)
 				{
-					if (ptrOidKey->IsValue(string_t("Library",true)))
-						return OOCore::LoadObjectLibrary(ptrOidKey->GetStringValue(string_t("Library",true)),oid,flags);
+					if (ptrOidKey->IsValue(L"Library"))
+						return OOCore::LoadObjectLibrary(ptrOidKey->GetStringValue(L"Library"),oid,flags);
 				}
 
 				if (flags & Activation::OutOfProcess)
@@ -249,11 +249,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
 
 					// Find the name of the executeable to run
-					ObjectPtr<Registry::IRegistryKey> ptrServer(string_t("Applications/",true) + ptrOidKey->GetStringValue(string_t("Application",true)) + string_t("/Activation",true));
+					ObjectPtr<Registry::IRegistryKey> ptrServer(L"Applications\\" + ptrOidKey->GetStringValue(L"Application") + L"\\Activation");
 
 					// Launch the executeable
 					ACE_Process process;
-					OOCore::ExecProcess(process,ptrServer->GetStringValue(string_t("Exec",true)));
+					OOCore::ExecProcess(process,ptrServer->GetStringValue(L"Exec"));
 
 					// TODO The timeout needs to be related to the request timeout...
 					void* TODO;

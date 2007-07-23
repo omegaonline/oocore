@@ -21,14 +21,14 @@ namespace Root
 		SpawnedProcess();
 		virtual ~SpawnedProcess();
 
-		virtual bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
+		virtual bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
 		virtual bool IsRunning();
 
-		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
+		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_CString& strSource);
+		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_WString& strSource);
 		static bool GetSandboxUid(ACE_CString& uid);
-		static bool InstallSandbox(int argc, ACE_TCHAR* argv[]);
+		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
 
 #if defined(ACE_WIN32)
@@ -42,8 +42,8 @@ namespace Root
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 		
-		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_CString& strSource);
-		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_CString& strSource);
+		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_WString& strSource);
+		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_WString& strSource);
 #else // !ACE_WIN32
 	protected:
 		uid_t	m_uid;	
@@ -61,7 +61,7 @@ namespace Root
 		SpawnedThread();
 		virtual ~SpawnedThread();
 
-		virtual bool Spawn(uid_t id, u_short uPort, ACE_CString& strSource);
+		virtual bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
 		virtual bool IsRunning();
 
 	private:

@@ -5,10 +5,10 @@
 
 bool interface_tests()
 {
-	OTL::ObjectPtr<Test::DllTest> ptrTest("Test.Dll");
-	printf(ptrTest->Hello());
+	OTL::ObjectPtr<Test::DllTest> ptrTest(L"Test.Dll");
+	wprintf(ptrTest->Hello());
 
-	OTL::ObjectPtr<Test::DllTest> ptrTest2("Test.Dll");
+	OTL::ObjectPtr<Test::DllTest> ptrTest2(L"Test.Dll");
 
 	return false;
 }

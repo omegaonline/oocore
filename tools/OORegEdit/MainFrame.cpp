@@ -134,7 +134,7 @@ void MainFrame::CreateChildWindows(void)
 
 		for (Omega::uint32_t nFiles = ptrKey->GetUIntValue("Favourites")-1;nFiles>=0;--nFiles)
 		{
-			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t::Format("Favourite%u",nFiles));
+			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles));
 
 			size_t pos = val.ReverseFind(L'\\');
 			if (pos != Omega::string_t::npos)
@@ -362,7 +362,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 
 		Omega::string_t strVal = m_mapMRU[strName] + "\\" + Omega::string_t(strName);
 
-		ptrKey->SetStringValue(Omega::string_t::Format("Favourite%u",nFiles-1),strVal);
+		ptrKey->SetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles-1),strVal);
 	}
 	
 	Destroy();

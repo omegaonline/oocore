@@ -97,22 +97,22 @@ IException* OOCore::UserSession::bootstrap()
 	return 0;
 }
 
-ACE_CString OOCore::UserSession::get_bootstrap_filename()
+ACE_WString OOCore::UserSession::get_bootstrap_filename()
 {
-	#define OMEGA_BOOTSTRAP_FILE "ooserver.bootstrap"
+	#define OMEGA_BOOTSTRAP_FILE L"ooserver.bootstrap"
 
 	#if defined(OMEGA_WIN32)
 
-		ACE_CString strFilename = "C:\\" OMEGA_BOOTSTRAP_FILE;
+		ACE_WString strFilename = L"C:\\" OMEGA_BOOTSTRAP_FILE;
 
-		char szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
+		wchar_t szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
 		if SUCCEEDED(hr)
 		{
-			char szBuf2[MAX_PATH] = {0};
-			if (PathCombineA(szBuf2,szBuf,"Omega Online"))
+			wchar_t szBuf2[MAX_PATH] = {0};
+			if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
 			{
-				if (PathCombineA(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
+				if (PathCombineW(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
 					strFilename = szBuf;
 			}
 		}
@@ -121,9 +121,9 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 
 	#else
 
-		#define OMEGA_BOOTSTRAP_DIR "/var/lock/omegaonline"
+		#define OMEGA_BOOTSTRAP_DIR L"/var/lock/omegaonline"
 
-		return ACE_CString(OMEGA_BOOTSTRAP_DIR "/" OMEGA_BOOTSTRAP_FILE);
+		return ACE_WString(OMEGA_BOOTSTRAP_DIR L"/" OMEGA_BOOTSTRAP_FILE);
 
 	#endif
 }
@@ -131,7 +131,7 @@ ACE_CString OOCore::UserSession::get_bootstrap_filename()
 bool OOCore::UserSession::launch_server(string_t& strSource)
 {
 #if defined(OMEGA_WIN32)
-	ACE_NT_Service service(ACE_TEXT("OOServer"));
+	ACE_NT_Service service(L"OOServer");
 	if (service.start_svc() != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
@@ -141,9 +141,9 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 	// Find what the server is called
 	void* TODO;
 
-	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
+	ACE_WString strExec = ACE_OS::getenv(L"OOSERVER");
 	if (strExec.length() == 0)
-		strExec = "OOServer";
+		strExec = L"OOServer";
 
 	// Set the process options
 	ACE_Process_Options options;
@@ -846,10 +846,10 @@ void OOCore::UserSession::process_request(OMInfo& oim, const UserSession::Messag
 		{
 			// Error code 2 - Exception raw
 			error.write_octet(2);
-			string_t strDesc = pOuter->Description();
-			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Size()),strDesc);
-			string_t strSrc = pOuter->Source();
-			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Size()),strSrc);
+			ACE_CString strDesc = string_t_to_utf8(pOuter->Description());
+			error.write_string(strDesc);
+			ACE_CString strSrc = string_t_to_utf8(pOuter->Source());
+			error.write_string(strSrc);
 
 			send_response(pMsg->m_src_channel_id,pMsg->m_src_thread_id,error.begin());
 		}

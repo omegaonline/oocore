@@ -6,6 +6,25 @@
 using namespace Omega;
 using namespace OTL;
 
+ACE_CString OOCore::string_t_to_utf8(const Omega::string_t& val)
+{
+	ACE_CString str;
+	char szBuf[256];
+	size_t len = val.ToUTF8(szBuf,256);
+	if (len > 256)
+	{
+		char* pszBuf;
+		OMEGA_NEW(pszBuf,char[len]);
+		val.ToUTF8(pszBuf,len);
+		str = pszBuf;
+		delete [] pszBuf;
+	}
+	else
+		str = szBuf;
+
+	return str;
+}
+
 OOCore::Channel::Channel() :
 	m_pSession(0), m_thread_id(0)
 {
@@ -74,7 +93,7 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 				if (!response->read_string(strSrc))
 					OOCORE_THROW_LASTERROR();
 
-				throw IException::Create(strDesc.c_str(),strSrc.c_str());
+				throw IException::Create(string_t(strDesc.c_str(),true),string_t(strSrc.c_str(),true));
 			}
 			
 			// Wrap the response

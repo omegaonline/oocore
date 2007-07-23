@@ -22,7 +22,7 @@ bool core_tests()
 	if (pE)
 	{
 		add_failure();
-		printf("[Failed]\n\tOmega::Initialize failed: %s\n%s\n",(const char*)pE->Description(),(const char*)pE->Source());
+		wprintf(L"[Failed]\n\tOmega::Initialize failed: %ls\n%ls\n",(const wchar_t*)pE->Description(),(const wchar_t*)pE->Source());
 		pE->Release();
 		exit(test_summary());
 	}
@@ -33,7 +33,7 @@ bool core_tests()
 
 static bool complex_throw()
 {
-	const char szDesc[] = "A test description";
+	const wchar_t szDesc[] = L"A test description";
 	const char szFile[] = __FILE__;
 
 	// try a more complex throw
@@ -74,7 +74,7 @@ static bool complex_throw()
 bool exception_tests()
 {
 	// Try a simple throw...
-	const char szDesc[] = "A test description";
+	const wchar_t szDesc[] = L"A test description";
 	const char szFile[] = __FILE__;
 	try
 	{

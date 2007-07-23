@@ -31,7 +31,7 @@ bool Root::NTService::open()
 {	
     // Do the ServiceMain in a separate thread
 	if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error spawning service thread")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning service thread"),false);
 	
 	return true;
 }
@@ -44,8 +44,8 @@ bool Root::NTService::install()
 	// Remove the service config first, this allows us to alter the config
 	NTSERVICE::instance()->remove();
 
-	if (NTSERVICE::instance()->insert(ACE_TEXT("--service")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service install")),false);
+	if (NTSERVICE::instance()->insert(L"--service") != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Service install"),false);
 
 	NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
 
@@ -59,46 +59,46 @@ bool Root::NTService::uninstall()
 	
 	// Uninstall the service
 	if (NTSERVICE::instance()->remove() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service uninstall")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Service uninstall"),false);
 
 	return true;
 }
 
-int Root::NTService::insert(const ACE_TCHAR *cmd_line,
+int Root::NTService::insert(const wchar_t *cmd_line,
 							DWORD start_type,
 							DWORD error_control,
-							const ACE_TCHAR *group_name,
+							const wchar_t *group_name,
 							LPDWORD tag_id,
-							const ACE_TCHAR *dependencies,
-							const ACE_TCHAR *account_name,
-							const ACE_TCHAR *password)
+							const wchar_t *dependencies,
+							const wchar_t *account_name,
+							const wchar_t *password)
 {
-	ACE_TCHAR this_exe[PATH_MAX + 2];
+	wchar_t this_exe[PATH_MAX + 2];
 
-	if (GetModuleFileNameA(0,this_exe+1,PATH_MAX) == 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("GetModuleFilename failed!\n")),-1);
+	if (GetModuleFileNameW(0,this_exe+1,PATH_MAX) == 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"GetModuleFilename failed!\n"),-1);
 		
 	// Make sure that this_exe is quoted
-	this_exe[0] = ACE_TEXT('\"');
-	ACE_OS::strcat(this_exe, ACE_TEXT("\""));
+	this_exe[0] = L'\"';
+	ACE_OS::strcat(this_exe,L"\"");
 	
-	ACE_TString exe_path(this_exe);
-	exe_path += ACE_TEXT(" ");
+	ACE_WString exe_path(this_exe);
+	exe_path += L" ";
 	exe_path += cmd_line;
 
 	return ACE_NT_Service::insert(start_type,error_control,exe_path.c_str(),group_name,tag_id,dependencies,account_name,password);
 }
 
-int Root::NTService::description(const ACE_TCHAR *desc)
+int Root::NTService::description(const wchar_t *desc)
 {
 	SC_HANDLE svc = this->svc_sc_handle ();
 	if (svc == 0)
 		return -1;
 
-	SERVICE_DESCRIPTION sdesc;
-	sdesc.lpDescription = const_cast<LPTSTR>(desc);
+	SERVICE_DESCRIPTIONW sdesc;
+	sdesc.lpDescription = const_cast<LPWSTR>(desc);
 
-	BOOL ok = ::ChangeServiceConfig2(svc,
+	BOOL ok = ::ChangeServiceConfig2W(svc,
 							(DWORD)SERVICE_CONFIG_DESCRIPTION,	// Change the description
 							(LPVOID)&sdesc);
 
@@ -118,7 +118,7 @@ ACE_THR_FUNC_RETURN Root::NTService::start_service(void*)
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
 	if (!ret)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Service start failed")));
+		ACE_ERROR((LM_ERROR,L"%p\n",L"Service start failed"));
 
 		SetConsoleCtrlHandler(control_c,TRUE);
 	}

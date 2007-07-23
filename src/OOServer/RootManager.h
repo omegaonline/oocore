@@ -37,10 +37,10 @@ namespace Root
 		public ACE_Asynch_Acceptor<ClientConnection>
 	{
 	public:
-		static int run(int argc, ACE_TCHAR* argv[]);
+		static int run(int argc, wchar_t* argv[]);
 		static void end();
 		static ACE_Configuration_Heap& get_registry();
-		static bool install(int argc, ACE_TCHAR* argv[]);
+		static bool install(int argc, wchar_t* argv[]);
 		static bool uninstall();
 
 	private:
@@ -56,10 +56,10 @@ namespace Root
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_HANDLE           m_config_file;
 
-		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
+		int run_event_loop_i(int argc, wchar_t* argv[]);
 		bool init();
 		int init_registry();
-		ACE_CString get_bootstrap_filename();
+		ACE_WString get_bootstrap_filename();
 		void end_event_loop_i();
 
 		struct UserProcess
@@ -80,20 +80,20 @@ namespace Root
 		static void connect_client(ACE_HANDLE handle);
 		int process_client_connects();
 		bool spawn_sandbox();
-		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_CString& strSource);
-		u_short bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_CString& strSource);
-		bool connect_client(user_id_type uid, u_short& uNewPort, ACE_CString& strSource);
+		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_WString& strSource);
+		u_short bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_WString& strSource);
+		bool connect_client(user_id_type uid, u_short& uNewPort, ACE_WString& strSource);
 		void close_users();
 
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
-		bool access_check(ACE_HANDLE handle, const char* pszObject, ACE_UINT32 mode, bool& bAllowed);
+		bool access_check(ACE_HANDLE handle, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);
 
 		ACE_Configuration_Heap         m_registry;
-		ACE_CString                    m_strRegistry;
+		ACE_WString                    m_strRegistry;
 		ACE_RW_Thread_Mutex            m_registry_lock;
 
 		bool registry_open_section(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
-		bool registry_open_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_CString& strValue, bool bAccessCheck = false);
+		bool registry_open_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_WString& strValue, bool bAccessCheck = false);
 		void registry_key_exists(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response);

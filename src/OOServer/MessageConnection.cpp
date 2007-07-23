@@ -26,7 +26,7 @@ ACE_CDR::UShort Root::MessageConnection::attach(ACE_HANDLE new_handle)
 {
 	// Open the reader
 	if (m_reader.open(*this,new_handle) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::MessageConnection::connect")),0);
+	    ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::MessageConnection::connect"),0);
 
 	ACE_CDR::UShort uId = m_pHandler->register_channel(new_handle);
 	if (uId == 0)
@@ -46,7 +46,7 @@ void Root::MessageConnection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*m
 	// Open the reader
 	if (m_reader.open(*this,new_handle) != 0)
 	{
-	    ACE_ERROR((LM_ERROR, ACE_TEXT("%p\n"), ACE_TEXT("Root::MessageConnection::open")));
+	    ACE_ERROR((LM_ERROR,L"%p\n",L"Root::MessageConnection::open"));
 		delete this;
 		return;
 	}
@@ -75,7 +75,7 @@ bool Root::MessageConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::MessageConnection::read")));
+		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::MessageConnection::read"));
 		mb->release();
 		return false;
 	}
@@ -190,7 +190,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 	{
 		int err = ACE_OS::last_error();
 		if (err != 0 && err != ENOTSOCK)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Root::MessageConnection::handle_read_stream")));
+			ACE_ERROR((LM_ERROR,L"%p\n",L"Root::MessageConnection::handle_read_stream"));
 		
 		m_pHandler->handle_closed(result.handle());
 		delete this;
@@ -435,7 +435,7 @@ bool Root::MessageHandler::parse_message(Message* msg)
 	}
 	else
 	{
-		//ACE_DEBUG((LM_DEBUG,ACE_TEXT("Root context: Forwarding request from %u(%u) to %u(%u)"),reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
+		//ACE_DEBUG((LM_DEBUG,L"Root context: Forwarding request from %u(%u) to %u(%u)",reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
 
 		// Forward it...
 		msg->m_dest_channel_id = dest_channel.channel_id;

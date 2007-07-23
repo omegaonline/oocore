@@ -7,8 +7,8 @@
 
 int UserMain(u_short uPort)
 {
-	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
 
 	return User::Manager::run(uPort);
 }
@@ -154,7 +154,7 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		{
 			if (init(uPort))
 			{
-				//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has started successfully.")));
+				//ACE_DEBUG((LM_INFO,L"OOServer user context has started successfully."));
 
                 // Wait for stop
 				ret = m_stop.wait();
@@ -180,7 +180,7 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
-	//ACE_DEBUG((LM_INFO,ACE_TEXT("OOServer user context has stopped.")));
+	//ACE_DEBUG((LM_INFO,L"OOServer user context has stopped."));
 
 	return ret;
 }
@@ -196,18 +196,18 @@ bool User::Manager::init(u_short uPort)
 	// Connect to the root
 	ACE_Time_Value wait(5);
 	if (connector.connect(stream,addr,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("connect() failed")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"connect() failed"),false);
 
 	// Bind a tcp socket
 	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	if (open(sa) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("acceptor::open() failed")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"acceptor::open() failed"),false);
 
 	// Get our port number
 	int len = sa.get_size ();
 	sockaddr* addr2 = reinterpret_cast<sockaddr*>(sa.get_addr());
 	if (ACE_OS::getsockname(this->get_handle(),addr2,&len) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
 
 	sa.set_type(addr2->sa_family);
 	sa.set_size(len);
@@ -215,7 +215,7 @@ bool User::Manager::init(u_short uPort)
 
 	// Talk to the root...
 	if (stream.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
 
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC;
@@ -234,7 +234,7 @@ bool User::Manager::init(u_short uPort)
 
 	// Then send back our port number
 	if (stream.send(&uPort,sizeof(uPort)) != static_cast<ssize_t>(sizeof(uPort)))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("ACE_OS::getsockname() failed")),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
 
 	// Clear the handle in the stream, pMC now owns it
 	stream.set_handle(ACE_INVALID_HANDLE);
@@ -349,7 +349,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 	Root::RootOpCode_t op_code;
 	request >> op_code;
 
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process root request %u"),op_code));
+	//ACE_DEBUG((LM_DEBUG,L"User context: Process root request %u",op_code));
 
 	if (!request.good_bit())
 		return;
@@ -368,7 +368,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 
 void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptrOM, const ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
 {
-	//ACE_DEBUG((LM_DEBUG,ACE_TEXT("User context: Process request %u from %u"),trans_id,src_channel_id));
+	//ACE_DEBUG((LM_DEBUG,L"User context: Process request %u from %u",trans_id,src_channel_id));
 
 	// Init the error stream
 	ACE_OutputCDR error;
@@ -459,10 +459,8 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 		{
 			// Error code 2 - Exception raw
 			error.write_octet(2);
-			string_t strDesc = pOuter->Description();
-			error.write_string(static_cast<ACE_CDR::ULong>(strDesc.Size()),strDesc);
-			string_t strSrc = pOuter->Source();
-			error.write_string(static_cast<ACE_CDR::ULong>(strSrc.Size()),strSrc);
+			error.write_string(string_t_to_utf8(pOuter->Description()));
+			error.write_string(string_t_to_utf8(pOuter->Source()));
 
 			send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs);
 		}

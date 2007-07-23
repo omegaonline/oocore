@@ -6,6 +6,25 @@
 using namespace Omega;
 using namespace OTL;
 
+ACE_CString User::string_t_to_utf8(const Omega::string_t& val)
+{
+	ACE_CString str;
+	char szBuf[256];
+	size_t len = val.ToUTF8(szBuf,256);
+	if (len > 256)
+	{
+		char* pszBuf;
+		OMEGA_NEW(pszBuf,char[len]);
+		val.ToUTF8(pszBuf,len);
+		str = pszBuf;
+		delete [] pszBuf;
+	}
+	else
+		str = szBuf;
+
+	return str;
+}
+
 User::Channel::Channel() :
 	m_pManager(0), m_thread_id(0)
 {
@@ -62,7 +81,7 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 			// ret_code must match the values in UserManager::process_request
 			if (ret_code == 1)
 			{
-				OMEGA_THROW("Request timed out");
+				OMEGA_THROW(L"Request timed out");
 			}
 			else if (ret_code == 2)
 			{

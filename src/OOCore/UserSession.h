@@ -76,7 +76,7 @@ namespace OOCore
 		bool init_i(Omega::string_t& strSource);
 		void term_i();
 		Omega::IException* bootstrap();
-		ACE_CString get_bootstrap_filename();
+		ACE_WString get_bootstrap_filename();
 		bool discover_server_port(u_short& uPort, Omega::string_t& strSource);
 		bool launch_server(Omega::string_t& strSource);
 

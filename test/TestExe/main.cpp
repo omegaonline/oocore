@@ -17,7 +17,7 @@ bool interface_tests();
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	printf("%s\n\n",(const char*)Omega::System::GetVersion());
+	wprintf(L"%ls\n\n",(const wchar_t*)Omega::System::GetVersion());
 
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);

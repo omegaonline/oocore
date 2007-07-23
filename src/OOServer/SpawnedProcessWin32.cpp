@@ -65,7 +65,7 @@ bool Root::SpawnedProcess::IsRunning()
 	return (dwRes == STILL_ACTIVE);
 }
 
-DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_CString& strSource)
+DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_WString& strSource)
 {
     int err = 0;
 
@@ -75,21 +75,21 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	if (dwBufSize == 0)
 	{
 		DWORD err = GetLastError();
-		strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - GetTokenInformation(1)";
+		strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - GetTokenInformation(1)";
 		return err;
 	}
 
 	PTOKEN_USER pUserInfo = (PTOKEN_USER)ACE_OS::malloc(dwBufSize);
 	if (!pUserInfo)
 	{
-		strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - malloc TOKEN_USER";
+		strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - malloc TOKEN_USER";
 		return ERROR_OUTOFMEMORY;
 	}
 
 	memset(pUserInfo,0,dwBufSize);
 	if (!GetTokenInformation(hToken,TokenUser,pUserInfo,dwBufSize,&dwBufSize))
 	{
-		strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - GetTokenInformation(2)";
+		strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - GetTokenInformation(2)";
 		ACE_OS::free(pUserInfo);
 		return GetLastError();
 	}
@@ -104,7 +104,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	LookupAccountSidW(NULL,pUserInfo->User.Sid,NULL,&dwUNameSize,NULL,&dwDNameSize,&name_use);
 	if (dwUNameSize == 0)
 	{
-		strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - LookupAccountSid(2)";
+		strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - LookupAccountSid(2)";
         err = GetLastError();
 	}
     else
@@ -114,7 +114,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
         if (!pszUserName)
 		{
             err = ERROR_OUTOFMEMORY;
-			strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - new pszUserName";
+			strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - new pszUserName";
 		}
         else
         {
@@ -125,7 +125,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
                 if (!pszDomainName)
 				{
 					err = ERROR_OUTOFMEMORY;
-					strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - new pszDomainName";
+					strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - new pszDomainName";
 				}
             }
 
@@ -134,7 +134,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
                 if (!LookupAccountSidW(NULL,pUserInfo->User.Sid,pszUserName,&dwUNameSize,pszDomainName,&dwDNameSize,&name_use))
 				{
                     err = GetLastError();
-					strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - LookupAccountSid";
+					strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - LookupAccountSid";
 				}
                 else
                 {
@@ -187,7 +187,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	if (!bSuccess)
 	{
 		DWORD dwErr = GetLastError();
-		strSource = "Root::SpawnedProcess::LoadUserProfileFromToken - LoadUserProfile";
+		strSource = L"Root::SpawnedProcess::LoadUserProfileFromToken - LoadUserProfile";
 		return dwErr;
 	}
 
@@ -195,21 +195,21 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	return ERROR_SUCCESS;
 }
 
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_CString& strSource)
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_WString& strSource)
 {
 	// Get our module name
 	WCHAR szPath[MAX_PATH];
 	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 	{
 		DWORD dwErr = GetLastError();
-		strSource = "Root::SpawnedProcess::SpawnFromToken - GetModuleFileName";
+		strSource = L"Root::SpawnedProcess::SpawnFromToken - GetModuleFileName";
 		return dwErr;
 	}
 
 	WCHAR szCmdLine[MAX_PATH+64];
 	if (ACE_OS::sprintf(szCmdLine,L"\"%s\" --spawned %u",szPath,uPort)==-1)
 	{
-		strSource = "Root::SpawnedProcess::SpawnFromToken - sprintf";
+		strSource = L"Root::SpawnedProcess::SpawnFromToken - sprintf";
 		return ERROR_INVALID_PARAMETER;
 	}
 
@@ -228,7 +228,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
 		dwRes = GetLastError();
-		strSource = "Root::SpawnedProcess::SpawnFromToken - CreateEnvironmentBlock";
+		strSource = L"Root::SpawnedProcess::SpawnFromToken - CreateEnvironmentBlock";
 		if (hProfile)
 			UnloadUserProfile(hToken,hProfile);
 		return dwRes;
@@ -246,7 +246,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	if (!CreateProcessAsUserW(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
-		strSource = "Root::SpawnedProcess::SpawnFromToken - CreateProcessAsUser";
+		strSource = L"Root::SpawnedProcess::SpawnFromToken - CreateProcessAsUser";
 		DestroyEnvironmentBlock(lpEnv);
 		if (hProfile)
 			UnloadUserProfile(hToken,hProfile);
@@ -266,7 +266,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	return ERROR_SUCCESS;
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource)
+bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_WString& strSource)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
@@ -284,7 +284,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 		if (!hProcess)
 		{
 			DWORD err = GetLastError();
-			strSource = "Root::SpawnedProcess::Spawn - OpenProcess";
+			strSource = L"Root::SpawnedProcess::Spawn - OpenProcess";
 			return LogFailure(err);
 		}
 
@@ -296,7 +296,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 		if (!bSuccess)
 		{
 			DWORD err = GetLastError();
-			strSource = "Root::SpawnedProcess::Spawn - OpenProcessToken";
+			strSource = L"Root::SpawnedProcess::Spawn - OpenProcessToken";
 			return LogFailure(err);
 		}
 	}
@@ -304,13 +304,13 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == 1314 && bSandbox)
+		/*if (dwRes == 1314 && bSandbox)
 		{
 			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
 			SpawnFromToken(hToken,uPort,!bSandbox,strSource);
-			ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
+			ACE_OS::printf(L"RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
 		}
-		else
+		else*/
 		{
 			// Done with hToken
 			CloseHandle(hToken);
@@ -326,7 +326,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_CString& strSource
 
 	if (!bRes)
 	{
-		strSource = "Root::SpawnedProcess::Spawn - DuplicateToken";
+		strSource = L"Root::SpawnedProcess::Spawn - DuplicateToken";
 		return LogFailure(dwRes);
 	}
 
@@ -340,18 +340,18 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 
 	// Get the server section
 	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key) != 0)
+	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key) != 0)
 		return (DWORD)-1;
 
 	// Get the user name and pwd...
-	ACE_TString strUName;
-	ACE_TString strPwd;
-	if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) != 0)
+	ACE_WString strUName;
+	ACE_WString strPwd;
+	if (reg_root.get_string_value(sandbox_key,L"UserName",strUName) != 0)
 		return (DWORD)-1;
 
-	reg_root.get_string_value(sandbox_key,ACE_TEXT("Password"),strPwd);
+	reg_root.get_string_value(sandbox_key,L"Password",strPwd);
 
-	if (!LogonUser((TCHAR*)strUName.c_str(),NULL,(TCHAR*)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
+	if (!LogonUserW(strUName.c_str(),NULL,strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
 		DWORD dwErr = GetLastError();
 		return dwErr;
@@ -413,14 +413,14 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	return true;
 }
 
-bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_CString& strSource)
+bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_WString& strSource)
 {
 	// Get the process handle
 	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);
 	if (!hProcess)
 	{
 		DWORD err = GetLastError();
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - OpenProcess";
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - OpenProcess";
 		return LogFailure(err);
 	}
 
@@ -433,7 +433,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	CloseHandle(hProcess);
 	if (!bSuccess)
 	{
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - OpenProcessToken";
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - OpenProcessToken";
 		return LogFailure(err);
 	}
 
@@ -442,7 +442,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	if (dwLen == 0)
 	{
 		err = GetLastError();
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - GetTokenInformation(1)";
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - GetTokenInformation(1)";
 		CloseHandle(hToken);
 		return LogFailure(err);
 	}
@@ -450,7 +450,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
 	if (!pBuffer)
 	{
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - malloc TOKEN_USER*";
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - malloc TOKEN_USER*";
 		CloseHandle(hToken);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
@@ -458,7 +458,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
 	{
 		err = GetLastError();
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - GetTokenInformation(2)";
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - GetTokenInformation(2)";
 		ACE_OS::free(pBuffer);
 		CloseHandle(hToken);
 		return LogFailure(err);
@@ -468,7 +468,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
 	{
 		err = GetLastError();
-		strSource = "Root::SpawnedProcess::ResolveTokenToUid - ConvertSidToStringSid";
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - ConvertSidToStringSid";
 		ACE_OS::free(pBuffer);
 		CloseHandle(hToken);
 		return LogFailure(err);
@@ -484,11 +484,11 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	return true;
 }
 
-bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
     PSECURITY_DESCRIPTOR pSD = NULL;
 	DWORD cbNeeded = 0;
-	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
+	if (!GetFileSecurityW(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
 	{
 		ACE_OS::set_errno_to_last_error();
 		return false;
@@ -498,7 +498,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	if (!pSD)
 		return false;
 
-	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
+	if (!GetFileSecurityW(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
 	{
 		ACE_OS::set_errno_to_last_error();
 		return false;
@@ -553,20 +553,20 @@ bool Root::SpawnedProcess::LogFailure(DWORD err)
 {
 	if (err != (DWORD)-1)
 	{
-		const char szDefault[] = "Unknown error code.";
+		const wchar_t szDefault[] = L"Unknown error code.";
 		LPVOID lpMsgBuf = (LPVOID)szDefault;
 
-		FormatMessageA(
+		FormatMessageW(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER |
 			FORMAT_MESSAGE_FROM_SYSTEM |
 			FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL,
 			err,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-			(LPSTR) &lpMsgBuf,
+			(LPWSTR)&lpMsgBuf,
 			0,	NULL);
 
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%s\n"),(LPSTR)lpMsgBuf));
+		ACE_ERROR((LM_ERROR,L"%s\n",(LPWSTR)lpMsgBuf));
 
 		// Free the buffer.
 		if (lpMsgBuf != (LPVOID)szDefault)
@@ -576,22 +576,22 @@ bool Root::SpawnedProcess::LogFailure(DWORD err)
 	return false;
 }
 
-bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
+bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 {
 	ACE_WString strUName = L"_OMEGA_SANDBOX_USER_";
 	ACE_WString strPwd = L"4th_(*%LGe895y^$N|2";
 
 	if (argc>=1)
-		strUName = ACE_TEXT_ALWAYS_WCHAR(argv[0]);
+		strUName = argv[0];
 	if (argc>=2)
-		strPwd = ACE_TEXT_ALWAYS_WCHAR(argv[1]);
+		strPwd = argv[1];
 
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Create the server section
 	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),1,sandbox_key)!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to create Server\\Sandbox key in registry")),false);
+	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",1,sandbox_key)!=0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to create Server\\Sandbox key in registry"),false);
 
 	USER_INFO_2	info =
 	{
@@ -731,14 +731,14 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	}
 
 	// Set the user name and pwd...
-	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("UserName"),ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_name)) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox username in registry")),false);
+	if (reg_root.set_string_value(sandbox_key,L"UserName",info.usri2_name) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to set sandbox username in registry"),false);
 
-	if (reg_root.set_string_value(sandbox_key,ACE_TEXT("Password"),ACE_TEXT_WCHAR_TO_TCHAR(info.usri2_password)) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Failed to set sandbox password in registry")),false);
+	if (reg_root.set_string_value(sandbox_key,L"Password",info.usri2_password) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to set sandbox password in registry"),false);
 
 	if (bAddedUser)
-		reg_root.set_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),1);
+		reg_root.set_integer_value(sandbox_key,L"AutoAdded",1);
 
 	return true;
 }
@@ -749,16 +749,16 @@ bool Root::SpawnedProcess::UninstallSandbox()
 
 	// Open the server section
 	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),ACE_TEXT("Server\\Sandbox"),0,sandbox_key) == 0)
+	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key) == 0)
 	{
 		// Get the user name and pwd...
-		ACE_TString strUName;
-		if (reg_root.get_string_value(sandbox_key,ACE_TEXT("UserName"),strUName) == 0)
+		ACE_WString strUName;
+		if (reg_root.get_string_value(sandbox_key,L"UserName",strUName) == 0)
 		{
 			u_int bUserAdded = 0;
-			reg_root.get_integer_value(sandbox_key,ACE_TEXT("AutoAdded"),bUserAdded);
+			reg_root.get_integer_value(sandbox_key,L"AutoAdded",bUserAdded);
 			if (bUserAdded)
-				NetUserDel(NULL,ACE_TEXT_ALWAYS_WCHAR(strUName.c_str()));
+				NetUserDel(NULL,strUName.c_str());
 		}
 	}
 	return true;
@@ -813,7 +813,7 @@ Root::SpawnedThread::~SpawnedThread()
 		ACE_Thread_Manager::instance()->kill(m_thread_id,9);
 }
 
-bool Root::SpawnedThread::Spawn(uid_t id, u_short uPort, ACE_CString& strSource)
+bool Root::SpawnedThread::Spawn(uid_t id, u_short uPort, ACE_WString& strSource)
 {
 	Params* pParams = 0;
 	ACE_NEW_NORETURN(pParams,Params);

@@ -320,7 +320,8 @@ ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
 
 ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void* pParam)
 {
-	return (ACE_THR_FUNC_RETURN)(static_cast<Manager*>(pParam)->pump_requests() ? 0 : -1);
+	static_cast<Manager*>(pParam)->pump_requests();
+	return 0;
 }
 
 void User::Manager::process_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)

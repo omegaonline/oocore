@@ -56,8 +56,8 @@ Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter
 Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
 {
 	// QI pStream for our private interface
-	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput;
-	ptrOutput.Attach(static_cast<ObjectImpl<OutputCDR>*>(pStream->QueryInterface(OMEGA_UUIDOF(OOCore::IOutputCDR))));
+	ObjectPtr<IOutputCDR> ptrOutput;
+	ptrOutput.Attach(static_cast<IOutputCDR*>(pStream->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
 	if (!ptrOutput)
 		OOCORE_THROW_ERRNO(EINVAL);
 

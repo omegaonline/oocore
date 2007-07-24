@@ -643,7 +643,14 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR:
 	ACE_Time_Value wait = deadline - now;
 	bool bRet = false;
 	size_t sent = 0;
-	ssize_t res = m_stream.send_n(header.begin(),&wait,&sent);
+	ssize_t res = -1;
+	
+	// Critical section around send
+	{
+		OOCORE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
+		res = m_stream.send_n(header.begin(),&wait,&sent);
+	}
+
 	if (res != -1 && sent == header.total_length())
 	{
 		if (attribs & Remoting::asynchronous)
@@ -675,7 +682,14 @@ bool OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	// Send to the handle
 	ACE_Time_Value wait = deadline - now;
 	size_t sent = 0;
-	ssize_t res = m_stream.send_n(header.begin(),&wait,&sent);
+	ssize_t res = -1;
+
+	// Critical section around the send
+	{
+		OOCORE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
+		res = m_stream.send_n(header.begin(),&wait,&sent);
+	}
+
 	if (res == -1 || sent < header.total_length())
 		return false;
 

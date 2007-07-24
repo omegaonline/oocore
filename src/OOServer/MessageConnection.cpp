@@ -216,7 +216,10 @@ ACE_CDR::UShort Root::MessageHandler::register_channel(ACE_HANDLE handle)
 	ACE_CDR::UShort uChannelId = 0;
 	try
 	{
-		ChannelPair channel = {handle, 0};
+		ACE_Thread_Mutex* lock = 0;
+		ACE_NEW_RETURN(lock,ACE_Thread_Mutex,0);
+		ChannelPair channel(handle, 0, lock);
+		
 		uChannelId = ++m_uNextChannelId;
 		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 		{
@@ -248,17 +251,22 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 	{
 		// Find the handle for dest_channel
 		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel);
+		if (i==m_mapChannelIds.end())
+			return 0;
 		
-		ChannelPair channel = {i->second.handle, dest_route};
+		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(i->second.handle);
+		if (j==m_mapReverseChannelIds.end())
+			return 0;
+
+		ACE_Thread_Mutex* lock = 0;
+		ACE_NEW_RETURN(lock,ACE_Thread_Mutex,0);
+		ChannelPair channel(i->second.handle, dest_route, lock);
+
 		uChannelId = ++m_uNextChannelId;
 		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 		{
 			uChannelId = ++m_uNextChannelId;
 		}
-
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(i->second.handle);
-		if (j==m_mapReverseChannelIds.end())
-			return 0;
 
 		std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(dest_channel,uChannelId));
 		if (!p.second)
@@ -334,7 +342,7 @@ void Root::MessageHandler::handle_closed(ACE_HANDLE handle)
 
 bool Root::MessageHandler::parse_message(Message* msg)
 {
-	ChannelPair dest_channel = {ACE_INVALID_HANDLE, 0};
+	ChannelPair dest_channel;
 
 	// Update the source, so we can send it back the right way...
 	try
@@ -370,16 +378,19 @@ bool Root::MessageHandler::parse_message(Message* msg)
 		{
 			ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-			ChannelPair channel = {msg->m_handle, msg->m_src_channel_id};
+			std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_handle);
+			if (j==m_mapReverseChannelIds.end())
+				return false;
+
+			ACE_Thread_Mutex* lock = 0;
+			ACE_NEW_RETURN(lock,ACE_Thread_Mutex,0);
+			ChannelPair channel(msg->m_handle, msg->m_src_channel_id, lock);
+
 			reply_channel_id = ++m_uNextChannelId;
 			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
 			{
 				reply_channel_id = ++m_uNextChannelId;
 			}
-
-			std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_handle);
-			if (j==m_mapReverseChannelIds.end())
-				return false;
 
 			std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,reply_channel_id));
 			if (!p.second)
@@ -397,41 +408,21 @@ bool Root::MessageHandler::parse_message(Message* msg)
 
 	if (msg->m_dest_channel_id == 0)
 	{
-		// Find the right queue to send it to...
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-		std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.end();
 		if (msg->m_dest_thread_id != 0)
 		{
-			i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+			// Find the right queue to send it to...
+			ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+
+			std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+			if (i == m_mapThreadContexts.end())
+				return false;
+		
+			return (i->second->m_msg_queue->enqueue_tail(msg,&msg->m_deadline) != -1);
 		}
 		else
 		{
-			for (int k=0;k<2;++k)
-			{
-				size_t max = (size_t)-1;
-				for (std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator j=m_mapThreadContexts.begin();j!=m_mapThreadContexts.end();++j)
-				{
-					size_t c = j->second->m_msg_queue->message_count();
-					if (c < max)
-					{
-						if (k==1 || j->second->m_bWaitingOnZero)
-						{
-							i = j;
-							max = c;
-						}
-					}
-				}
-
-				if (i!=m_mapThreadContexts.end())
-					break;
-			}
-		}
-
-		if (i == m_mapThreadContexts.end())
-			return false;
-		
-		return (i->second->m_msg_queue->enqueue_tail(msg,&msg->m_deadline) != -1);
+			return (m_default_msg_queue.enqueue_tail(msg,&msg->m_deadline) != -1);
+		}		
 	}
 	else
 	{
@@ -446,7 +437,10 @@ bool Root::MessageHandler::parse_message(Message* msg)
 			// Send to the handle
 			ACE_Time_Value wait = msg->m_deadline - ACE_OS::gettimeofday();
 			size_t sent = 0;
-			ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+
+			ACE_Guard<ACE_Thread_Mutex> guard(*dest_channel.lock);
+			if (guard.locked() != 0)
+				ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
 		}
 
 		// We are done with the message...
@@ -473,7 +467,6 @@ Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instan
 Root::MessageHandler::ThreadContext::ThreadContext() :
 	m_thread_id(0), 
 	m_msg_queue(0),
-	m_bWaitingOnZero(false),
 	m_deadline(ACE_Time_Value::max_time),
 	m_pHandler(0)
 {
@@ -553,20 +546,29 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 	}
 }
 
-bool Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
+void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 {
 	ThreadContext* pContext = ThreadContext::instance(this);
-	bool bWas = pContext->m_bWaitingOnZero;
-	pContext->m_bWaitingOnZero = true;
+	for (;;)
+	{
+		// Get the next message
+		Message* msg;
+		int ret = m_default_msg_queue.dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline));
+		if (ret == -1)
+			return;
+		
+		if (msg->m_bIsRequest)
+		{
+			// Update deadline
+			pContext->m_deadline = msg->m_deadline < *deadline ? msg->m_deadline : *deadline;
 
-	ACE_InputCDR* response = 0;
-	bool bRet = wait_for_response(response,deadline);
-	if (response)
-		delete response;
-
-	pContext->m_bWaitingOnZero = bWas;
-
-	return bRet;
+			// Process the message...
+			process_request(msg->m_handle,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+		}
+		
+		delete msg->m_pPayload;
+		delete msg;
+	}
 }
 
 bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs)
@@ -586,7 +588,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	if (deadline < msg.m_deadline)
 		msg.m_deadline = deadline;	
 
-	ChannelPair dest_channel = {ACE_INVALID_HANDLE, 0};
+	ChannelPair dest_channel;
 	try
 	{
 		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
@@ -622,7 +624,14 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	ACE_Time_Value wait = msg.m_deadline - now;
 	bool bRet = false;
 	size_t sent = 0;
-	ssize_t res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+	ssize_t res = -1;
+
+	// Critical section around the send
+	{
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
+		res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+	}
+
 	if (res != -1 && sent == header.total_length())
 	{
 		if (attribs & 1)
@@ -651,7 +660,7 @@ bool Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	if (deadline < msg.m_deadline)
 		msg.m_deadline = deadline;	
 
-	ChannelPair dest_channel = {ACE_INVALID_HANDLE, 0};
+	ChannelPair dest_channel;
 	try
 	{
 		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
@@ -686,7 +695,14 @@ bool Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	// Send to the handle
 	ACE_Time_Value wait = msg.m_deadline - now;
 	size_t sent = 0;
-	int res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+	ssize_t res = -1;
+
+	// Critical section around the send
+	{
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
+		res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+	}
+
 	if (res == -1 || sent != header.total_length())
 		return false;
 		

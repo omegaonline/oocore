@@ -24,6 +24,7 @@ namespace OOCore
 		UserSession& operator = (const UserSession&) { return *this; }
 
 		ACE_RW_Thread_Mutex m_lock;
+		ACE_Thread_Mutex    m_send_lock;
 		int                 m_thrd_grp_id;
 		ACE_SOCK_Stream     m_stream;
 

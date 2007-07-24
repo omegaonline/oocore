@@ -125,7 +125,8 @@ ACE_THR_FUNC_RETURN Root::Manager::proactor_worker_fn(void*)
 
 ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void* pParam)
 {
-	return (ACE_THR_FUNC_RETURN)(static_cast<Manager*>(pParam)->pump_requests() ? 0 : -1);
+	static_cast<Manager*>(pParam)->pump_requests();
+	return 0;
 }
 
 bool Root::Manager::init()
@@ -739,19 +740,22 @@ void Root::Manager::registry_key_exists(ACE_HANDLE handle, ACE_InputCDR& request
 {
 	int err = 0;
 	ACE_CDR::Boolean bRes = false;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		if (!registry_open_section(handle,request,key))
-		{
-			if (ACE_OS::last_error() != ENOENT)
-				err = ACE_OS::last_error();
-		}
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
+			err = ACE_OS::last_error();
 		else
 		{
-			bRes = true;
+			ACE_Configuration_Section_Key key;
+			if (!registry_open_section(handle,request,key))
+			{
+				if (ACE_OS::last_error() != ENOENT)
+					err = ACE_OS::last_error();
+			}
+			else
+			{
+				bRes = true;
+			}
 		}
 	}
 
@@ -775,11 +779,15 @@ void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request
 			err = EACCES;
 		else
 		{
-			ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-			ACE_Configuration_Section_Key key;
-			if (m_registry.open_section(m_registry.root_section(),strKey.c_str(),1,key) != 0)
+			ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+			if (guard.locked () == 0)
 				err = ACE_OS::last_error();
+			else
+			{
+				ACE_Configuration_Section_Key key;
+				if (m_registry.open_section(m_registry.root_section(),strKey.c_str(),1,key) != 0)
+					err = ACE_OS::last_error();
+			}
 		}
 	}
 
@@ -789,24 +797,27 @@ void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request
 void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		if (!registry_open_section(handle,request,key,true))
+		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_WString strSubKey;
-			if (!read_wstring(request,strSubKey))
+			ACE_Configuration_Section_Key key;
+			if (!registry_open_section(handle,request,key,true))
 				err = ACE_OS::last_error();
 			else
 			{
-				if (strSubKey == L"All Users")
-					err = EACCES;
-				else if (m_registry.remove_section(key,strSubKey.c_str(),1) != 0)
+				ACE_WString strSubKey;
+				if (!read_wstring(request,strSubKey))
 					err = ACE_OS::last_error();
+				else
+				{
+					if (strSubKey == L"All Users")
+						err = EACCES;
+					else if (m_registry.remove_section(key,strSubKey.c_str(),1) != 0)
+						err = ACE_OS::last_error();
+				}
 			}
 		}
 	}
@@ -818,34 +829,37 @@ void Root::Manager::registry_enum_subkeys(ACE_HANDLE handle, ACE_InputCDR& reque
 {
 	int err = 0;
 	std::list<ACE_WString> listSections;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		if (!registry_open_section(handle,request,key))
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			try
+			ACE_Configuration_Section_Key key;
+			if (!registry_open_section(handle,request,key))
+				err = ACE_OS::last_error();
+			else
 			{
-				for (int index=0;;++index)
+				try
 				{
-					ACE_WString strSubKey;
-					int e = m_registry.enumerate_sections(key,index,strSubKey);
-					if (e == 0)
-						listSections.push_back(strSubKey);
-					else
+					for (int index=0;;++index)
 					{
-						if (e != 1)
-							err = ACE_OS::last_error();
-						break;
+						ACE_WString strSubKey;
+						int e = m_registry.enumerate_sections(key,index,strSubKey);
+						if (e == 0)
+							listSections.push_back(strSubKey);
+						else
+						{
+							if (e != 1)
+								err = ACE_OS::last_error();
+							break;
+						}
 					}
 				}
-			}
-			catch (std::exception&)
-			{
-				err = EINVAL;
+				catch (std::exception&)
+				{
+					err = EINVAL;
+				}
 			}
 		}
 	}
@@ -870,21 +884,24 @@ void Root::Manager::registry_value_type(ACE_HANDLE handle, ACE_InputCDR& request
 {
 	int err = 0;
 	ACE_CDR::Octet type = 0;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue))
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_Configuration_Heap::VALUETYPE vtype;
-			if (m_registry.find_value(key,strValue.c_str(),vtype) == 0)
-				type = static_cast<ACE_CDR::Octet>(vtype);
-			else
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue))
 				err = ACE_OS::last_error();
+			else
+			{
+				ACE_Configuration_Heap::VALUETYPE vtype;
+				if (m_registry.find_value(key,strValue.c_str(),vtype) == 0)
+					type = static_cast<ACE_CDR::Octet>(vtype);
+				else
+					err = ACE_OS::last_error();
+			}
 		}
 	}
 
@@ -897,18 +914,21 @@ void Root::Manager::registry_get_string_value(ACE_HANDLE handle, ACE_InputCDR& r
 {
 	int err = 0;
 	ACE_WString strText;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue))
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			if (m_registry.get_string_value(key,strValue.c_str(),strText) != 0)
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue))
 				err = ACE_OS::last_error();
+			else
+			{
+				if (m_registry.get_string_value(key,strValue.c_str(),strText) != 0)
+					err = ACE_OS::last_error();
+			}
 		}
 	}
 
@@ -921,18 +941,21 @@ void Root::Manager::registry_get_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 {
 	int err = 0;
 	ACE_CDR::ULong val = 0;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue))
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			if (m_registry.get_integer_value(key,strValue.c_str(),val) != 0)
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue))
 				err = ACE_OS::last_error();
+			else
+			{
+				if (m_registry.get_integer_value(key,strValue.c_str(),val) != 0)
+					err = ACE_OS::last_error();
+			}
 		}
 	}
 
@@ -947,28 +970,31 @@ void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 	ACE_CDR::ULong len = 0;
 	void* data = 0;
 	bool bReplyWithData = false;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue))
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			if (!request.read_ulong(len))
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue))
 				err = ACE_OS::last_error();
 			else
 			{
-				bReplyWithData = (len != 0);
-				size_t dlen = 0;
-                if (m_registry.get_binary_value(key,strValue.c_str(),data,dlen) != 0)
+				if (!request.read_ulong(len))
 					err = ACE_OS::last_error();
-				else if (len != 0)
-					len = std::min(len,static_cast<ACE_CDR::ULong>(dlen));
 				else
-					len = static_cast<ACE_CDR::ULong>(dlen);
+				{
+					bReplyWithData = (len != 0);
+					size_t dlen = 0;
+					if (m_registry.get_binary_value(key,strValue.c_str(),data,dlen) != 0)
+						err = ACE_OS::last_error();
+					else if (len != 0)
+						len = std::min(len,static_cast<ACE_CDR::ULong>(dlen));
+					else
+						len = static_cast<ACE_CDR::ULong>(dlen);
+				}
 			}
 		}
 	}
@@ -987,21 +1013,24 @@ void Root::Manager::registry_get_binary_value(ACE_HANDLE handle, ACE_InputCDR& r
 void Root::Manager::registry_set_string_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue,true))
+		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_WString strText;
-			if (!read_wstring(request,strText))
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue,true))
 				err = ACE_OS::last_error();
-			else if (m_registry.set_string_value(key,strValue.c_str(),strText) != 0)
-				err = ACE_OS::last_error();
+			else
+			{
+				ACE_WString strText;
+				if (!read_wstring(request,strText))
+					err = ACE_OS::last_error();
+				else if (m_registry.set_string_value(key,strValue.c_str(),strText) != 0)
+					err = ACE_OS::last_error();
+			}
 		}
 	}
 
@@ -1011,21 +1040,24 @@ void Root::Manager::registry_set_string_value(ACE_HANDLE handle, ACE_InputCDR& r
 void Root::Manager::registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue,true))
+		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_CDR::ULong iValue;
-			if (!request.read_ulong(iValue))
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue,true))
 				err = ACE_OS::last_error();
-			else if (m_registry.set_integer_value(key,strValue.c_str(),iValue) != 0)
-				err = ACE_OS::last_error();
+			else
+			{
+				ACE_CDR::ULong iValue;
+				if (!request.read_ulong(iValue))
+					err = ACE_OS::last_error();
+				else if (m_registry.set_integer_value(key,strValue.c_str(),iValue) != 0)
+					err = ACE_OS::last_error();
+			}
 		}
 	}
 
@@ -1035,34 +1067,37 @@ void Root::Manager::registry_set_uint_value(ACE_HANDLE handle, ACE_InputCDR& req
 void Root::Manager::registry_set_binary_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue,true))
+		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_CDR::ULong len;
-			if (!request.read_ulong(len))
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue,true))
 				err = ACE_OS::last_error();
 			else
 			{
-				// TODO - This could be made quicker by aligning the read_ptr and not copying... but not today...
-				ACE_CDR::Octet* data = 0;
-				ACE_NEW_NORETURN(data,ACE_CDR::Octet[len]);
-				if (!data)
-					err = ENOMEM;
+				ACE_CDR::ULong len;
+				if (!request.read_ulong(len))
+					err = ACE_OS::last_error();
 				else
 				{
-					if (!request.read_octet_array(data,len))
-						err = ACE_OS::last_error();
-					else if (m_registry.set_binary_value(key,strValue.c_str(),data,len) != 0)
-						err = ACE_OS::last_error();
+					// TODO - This could be made quicker by aligning the read_ptr and not copying... but not today...
+					ACE_CDR::Octet* data = 0;
+					ACE_NEW_NORETURN(data,ACE_CDR::Octet[len]);
+					if (!data)
+						err = ENOMEM;
+					else
+					{
+						if (!request.read_octet_array(data,len))
+							err = ACE_OS::last_error();
+						else if (m_registry.set_binary_value(key,strValue.c_str(),data,len) != 0)
+							err = ACE_OS::last_error();
 
-					delete [] data;
+						delete [] data;
+					}
 				}
 			}
 		}
@@ -1075,35 +1110,38 @@ void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& reques
 {
 	int err = 0;
 	std::list<ACE_WString> listValues;
-
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		if (!registry_open_section(handle,request,key))
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
 		else
 		{
-			try
+			ACE_Configuration_Section_Key key;
+			if (!registry_open_section(handle,request,key))
+				err = ACE_OS::last_error();
+			else
 			{
-				for (int index=0;;++index)
+				try
 				{
-					ACE_WString strSubKey;
-					ACE_Configuration_Heap::VALUETYPE type;
-					int e = m_registry.enumerate_values(key,index,strSubKey,type);
-					if (e == 0)
-						listValues.push_back(strSubKey);
-					else
+					for (int index=0;;++index)
 					{
-						if (e != 1)
-							err = ACE_OS::last_error();
-						break;
+						ACE_WString strValue;
+						ACE_Configuration_Heap::VALUETYPE type;
+						int e = m_registry.enumerate_values(key,index,strValue,type);
+						if (e == 0)
+							listValues.push_back(strValue);
+						else
+						{
+							if (e != 1)
+								err = ACE_OS::last_error();
+							break;
+						}
 					}
 				}
-			}
-			catch (std::exception&)
-			{
-				err = EINVAL;
+				catch (std::exception&)
+				{
+					err = EINVAL;
+				}
 			}
 		}
 	}
@@ -1127,16 +1165,19 @@ void Root::Manager::registry_enum_values(ACE_HANDLE handle, ACE_InputCDR& reques
 void Root::Manager::registry_delete_value(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	int err = 0;
-
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_registry_lock);
-
-		ACE_Configuration_Section_Key key;
-		ACE_WString strValue;
-		if (!registry_open_value(handle,request,key,strValue,true))
+		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
+		if (guard.locked () == 0)
 			err = ACE_OS::last_error();
-		else if (m_registry.remove_value(key,strValue.c_str()) != 0)
-			err = ACE_OS::last_error();
+		else
+		{
+			ACE_Configuration_Section_Key key;
+			ACE_WString strValue;
+			if (!registry_open_value(handle,request,key,strValue,true))
+				err = ACE_OS::last_error();
+			else if (m_registry.remove_value(key,strValue.c_str()) != 0)
+				err = ACE_OS::last_error();
+		}
 	}
 
 	response << err;

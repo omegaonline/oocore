@@ -252,6 +252,9 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			else
 				pObjS = p.first->second;
 
+			if (!pObjS && iid != guid_t::FromString(L"{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}"))
+				DebugBreak();
+
 			if (pQI)
 			{
 				*retval = pQI;
@@ -448,7 +451,7 @@ Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(Omeg
 
 	if (!pRet)
 		throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-
+	
 	return pRet;
 }
 
@@ -503,15 +506,17 @@ Omega::IObject* Omega::System::MetaInfo::lookup_proxy(Omega::System::MetaInfo::I
 
 Omega::System::MetaInfo::IException_Safe* Omega::System::MetaInfo::return_safe_exception(Omega::IException* pE)
 {
+	guid_t iid = pE->ActualIID();
+
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	auto_iface_ptr<IException> ptrE(pE);
 	IObject_Safe* pSE2 = 0;
-	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,pE->ActualIID());
+	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,iid);
 	if (pSE3)
 		return pSE3;
 	if (!pSE2)
-		return return_safe_exception(INoInterfaceException::Create(pE->ActualIID(),OMEGA_SOURCE_INFO));
-	
+		return return_safe_exception(INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO));
+		
 	return static_cast<IException_Safe*>(pSE2);
 }
 
@@ -529,6 +534,16 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 
 		pRtti->pfnSafeThrow(pSE);
 	}
+}
+
+const Omega::string_t& Omega::System::MetaInfo::lookup_iid(const guid_t& iid)
+{
+	static const string_t strUnk = L"Unknown";
+	const qi_rtti* pRtti = get_qi_rtti_info(iid);
+	if (!pRtti)
+		return strUnk;
+
+	return pRtti->strName;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));

@@ -15,6 +15,12 @@
 #include "./SpawnedProcess.h"
 #include "./Protocol.h"
 
+#if defined(ACE_WIN32)
+// For the Windows path functions
+#include <shlwapi.h>
+#include <shlobj.h>
+#endif
+
 Root::Manager::Manager() :
 	m_config_file(ACE_INVALID_HANDLE)
 {
@@ -478,7 +484,7 @@ void Root::Manager::close_users()
                 ACE_CDR::UShort channel = get_handle_channel(i->first,0);
 
 				ACE_InputCDR* response = 0;
-				send_request(channel,0,request.begin(),response,1000,1);
+				send_request(channel,request.begin(),response,1000,1);
 			}
 		}
 		catch (...)

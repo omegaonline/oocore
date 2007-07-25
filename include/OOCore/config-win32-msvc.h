@@ -13,6 +13,10 @@
 #define OMEGA_DEBUG
 #endif
 
+// We use the unicode CRT
+#define _UNICODE
+#include <objbase.h>
+
 #define OMEGA_MAX_DEFINES	249
 
 #define OMEGA_FUNCNAME		__FUNCSIG__
@@ -28,9 +32,6 @@
 #define OMEGA_UNUSED_ARG(n)	(n)
 
 #define OMEGA_HAS_UUIDOF
-
-// Prevent inclusion of old winsock
-#define _WINSOCKAPI_
 
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)

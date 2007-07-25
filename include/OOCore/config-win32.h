@@ -20,6 +20,9 @@
 #error OOCore requires _WIN32_IE >= 0x0500!
 #endif
 
+// Prevent inclusion of old winsock
+#define _WINSOCKAPI_
+
 #if defined (_MSC_VER)
 #include <OOCore/config-win32-msvc.h>
 #elif defined (__GNUC__)
@@ -36,9 +39,6 @@
 #endif /* _WIN64 || WIN64 */
 
 #define OMEGA_CALL __cdecl
-
-#include <shlobj.h>
-#include <shlwapi.h>
 
 #if defined(OMEGA_WIN64)
 #define OMEGA_PLATFORM_STRING	"Win64"

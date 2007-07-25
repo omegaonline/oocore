@@ -132,9 +132,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 			{
 				// Create a new input CDR wrapping mb
 				ACE_InputCDR* input = 0;
-				size_t rd_ptr = static_cast<size_t>(mb.rd_ptr() - mb.base());
-				size_t wr_ptr = static_cast<size_t>(mb.wr_ptr() - mb.base());
-				ACE_NEW_NORETURN(input,ACE_InputCDR(mb.data_block()->duplicate(),0,rd_ptr,wr_ptr,static_cast<int>(m_byte_order)));
+				ACE_NEW_NORETURN(input,ACE_InputCDR(&mb,m_byte_order));
 				if (input)
 				{
 					// Read in the message info
@@ -528,15 +526,25 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 			ACE_Time_Value old_deadline = pContext->m_deadline;
 			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
 
+			ACE_CDR::UShort old_thread_id = 0;
+			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+			if (i != pContext->m_mapChannelThreads.end())
+				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
+
+			old_thread_id = i->second;
+			i->second = msg->m_src_thread_id;
+
 			// Process the message...
 			process_request(msg->m_handle,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
 
-			// Restore deadline
+			// Restore old context
 			pContext->m_deadline = old_deadline;
+			i->second = old_thread_id;
 		}
 		else
 		{
 			response = msg->m_pPayload;
+			msg->m_pPayload = 0;
 			delete msg;
 			return true;
 		}
@@ -560,8 +568,10 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 		if (msg->m_bIsRequest)
 		{
 			// Update deadline
-			pContext->m_deadline = msg->m_deadline < *deadline ? msg->m_deadline : *deadline;
-
+			pContext->m_deadline = msg->m_deadline;
+			if (deadline && *deadline < pContext->m_deadline)
+				pContext->m_deadline = *deadline;
+			
 			// Process the message...
 			process_request(msg->m_handle,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
 		}
@@ -571,14 +581,18 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 	}
 }
 
-bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs)
+bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
 	// Build a header
 	Message msg;
 	msg.m_dest_channel_id = dest_channel_id;
-	msg.m_dest_thread_id = dest_thread_id;
+	msg.m_dest_thread_id = 0;
+	std::map<ACE_CDR::UShort,ACE_CDR::UShort>::const_iterator i=pContext->m_mapChannelThreads.find(pContext->m_thread_id);
+	if (i != pContext->m_mapChannelThreads.end())
+		msg.m_dest_thread_id = i->second;
+		
 	msg.m_src_channel_id = 0;
 	msg.m_src_thread_id = pContext->m_thread_id;
 	msg.m_attribs = attribs;
@@ -644,7 +658,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	return bRet;
 }
 
-bool Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
+void Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -663,17 +677,17 @@ bool Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	ChannelPair dest_channel;
 	try
 	{
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		std::map<ACE_CDR::UShort,ChannelPair>::iterator i=m_mapChannelIds.find(dest_channel_id);
 		if (i == m_mapChannelIds.end())
-			return false;
+			return;
 		
 		dest_channel = i->second;
 	}
 	catch (...)
 	{
-		return false;
+		return;
 	}
 
 	// Remap the destination channel...
@@ -682,31 +696,20 @@ bool Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(header,msg,mb))
-		return false;
+		return;
 	
 	// Check the timeout
 	ACE_Time_Value now = ACE_OS::gettimeofday();
 	if (msg.m_deadline <= now)
-	{
-		ACE_OS::last_error(ETIMEDOUT);
-		return false;
-	}
-
-	// Send to the handle
-	ACE_Time_Value wait = msg.m_deadline - now;
-	size_t sent = 0;
-	ssize_t res = -1;
-
+		return;
+	
 	// Critical section around the send
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
-		res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
-	}
+		ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
 
-	if (res == -1 || sent != header.total_length())
-		return false;
-		
-	return true;
+		ACE_Time_Value wait = msg.m_deadline - now;
+		ACE::send_n(dest_channel.handle,header.begin(),&wait);
+	}
 }
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)

@@ -414,7 +414,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 	if (!strFoundPos.IsEmpty())
 	{
 		// Expand and select the item
-		Omega::string_t strSubKey;
+		wxString strSubKey;
 		for (;;)
 		{
 			size_t pos = strFoundPos.Find('\\');
@@ -435,7 +435,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 			//pTree->SelectItem(tree_id);
 			pTree->Expand(tree_id);
 
-			if (strSubKey == (const char*)pTree->GetItemText(tree_id))
+			if (strSubKey == pTree->GetItemText(tree_id))
 				continue;
 
 			if (pTree->ItemHasChildren(tree_id))
@@ -443,7 +443,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 				wxTreeItemIdValue cookie;
 				wxTreeItemId id_child = pTree->GetFirstChild(tree_id,cookie);
 
-				while (id_child && strSubKey != (const char*)pTree->GetItemText(id_child))
+				while (id_child && strSubKey != pTree->GetItemText(id_child))
 				{
 					id_child = pTree->GetNextChild(tree_id,cookie);
 				}

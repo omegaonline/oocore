@@ -249,18 +249,18 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	// Register our service
 	try
 	{
-		OMInfo oim;
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
 		if (!bSandbox)
 		{
 			sandbox_channel = add_routing(m_root_channel,sandbox_channel);
 			if (!sandbox_channel)
 				return false;
 
-			oim = get_object_manager(sandbox_channel);
+			ptrOM = get_object_manager(sandbox_channel);
 		}
 
 		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();
-		ptrOF->Init(oim.m_ptrOM,this);
+		ptrOF->Init(ptrOM,this);
 
 		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
 		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
@@ -281,11 +281,11 @@ void User::Manager::close_channels()
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		for (std::map<ACE_CDR::UShort,OMInfo>::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
+		for (std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
 		{
 			try
 			{
-				i->second.m_ptrOM->Disconnect();
+				i->second->Disconnect();
 			}
 			catch (IException* pE)
 			{
@@ -333,15 +333,10 @@ void User::Manager::process_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request
 	else
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		OMInfo oim = get_object_manager(src_channel_id);
-
-		ACE_CDR::UShort old_thread_id = oim.m_ptrChannel->set_thread_id(src_thread_id);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM = get_object_manager(src_channel_id);
 
 		// Process the message...
-		process_user_request(oim.m_ptrOM,request,src_channel_id,src_thread_id,deadline,attribs);
-
-		// Restore old context
-		old_thread_id = oim.m_ptrChannel->set_thread_id(old_thread_id);
+		process_user_request(ptrOM,request,src_channel_id,src_thread_id,deadline,attribs);
 	}
 }
 
@@ -371,9 +366,6 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 {
 	//ACE_DEBUG((LM_DEBUG,L"User context: Process request %u from %u",trans_id,src_channel_id));
 
-	// Init the error stream
-	ACE_OutputCDR error;
-
 	try
 	{
 		// Wrap up the request
@@ -395,17 +387,8 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 		// Check timeout
 		ACE_Time_Value now = ACE_OS::gettimeofday();
 		if (deadline <= now)
-		{
-			if (!(attribs & Remoting::asynchronous))
-			{
-				// Error code 1 - Request timed out
-				error.write_octet(1);
-				if (!send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs))
-					OOSERVER_THROW_LASTERROR();
-			}
 			return;
-		}
-
+		
 		// Convert deadline time to #msecs
 		ACE_Time_Value wait = deadline - now;
 		ACE_UINT64 msecs = 0;
@@ -439,15 +422,9 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 
 		if (!(attribs & Remoting::asynchronous))
 		{
-		    int err = 0;
 		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			if (!send_response(src_channel_id,src_thread_id,mb,deadline,attribs))
-                err = ACE_OS::last_error();
-
+			send_response(src_channel_id,src_thread_id,mb,deadline,attribs);
             mb->release();
-
-            if (err != 0)
-				OOSERVER_THROW_LASTERROR();
 		}
 	}
 	catch (IException* pOuter)
@@ -458,8 +435,10 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 
 		if (!(attribs & Remoting::asynchronous))
 		{
-			// Error code 2 - Exception raw
-			error.write_octet(2);
+			ACE_OutputCDR error;
+
+			// Error code 1 - Exception raw
+			error.write_octet(1);
 			error.write_string(string_t_to_utf8(pOuter->Description()));
 			error.write_string(string_t_to_utf8(pOuter->Source()));
 
@@ -468,38 +447,38 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 	}
 }
 
-User::Manager::OMInfo User::Manager::get_object_manager(ACE_CDR::UShort src_channel_id)
+OTL::ObjectPtr<Omega::Remoting::IObjectManager> User::Manager::get_object_manager(ACE_CDR::UShort src_channel_id)
 {
-	OMInfo info;
+	OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
 	try
 	{
 		// Lookup existing..
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+            std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
-				info = i->second;
+				ptrOM = i->second;
 		}
 
-		if (!info.m_ptrOM)
+		if (!ptrOM)
 		{
 			// Create a new channel
-			info.m_ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-			info.m_ptrChannel->init(this,src_channel_id);
+			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+			ptrChannel->init(this,src_channel_id);
 
 			// Create a new OM
-			info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 			// Associate it with the channel
-			info.m_ptrOM->Connect(info.m_ptrChannel);
+			ptrOM->Connect(ptrChannel);
 
 			// And add to the map
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::pair<std::map<ACE_CDR::UShort,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OMInfo>::value_type(src_channel_id,info));
+			std::pair<std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
 			if (!p.second)
-				info = p.first->second;
+				ptrOM = p.first->second;
 		}
 	}
 	catch (std::exception& e)
@@ -507,13 +486,13 @@ User::Manager::OMInfo User::Manager::get_object_manager(ACE_CDR::UShort src_chan
 		OMEGA_THROW(e.what());
 	}
 
-	return info;
+	return ptrOM;
 }
 
 ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 {
 	ACE_InputCDR* response = 0;
-	if (!send_request(m_root_channel,0,request.begin(),response,15000,0))
+	if (!send_request(m_root_channel,request.begin(),response,15000,0))
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_InputCDR ret = *response;

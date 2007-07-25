@@ -4,7 +4,7 @@
 static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)
 {
 	// Generate a unique value name
-	Omega::string_t strTestValue = L"TestValue";
+	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
 	while (pKey->IsValue(strTestValue))
 	{
 		strTestValue = "_" + strTestValue;

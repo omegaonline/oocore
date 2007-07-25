@@ -47,11 +47,11 @@
 	{ &iid, &QIFail, param },
 
 #define END_INTERFACE_MAP() \
-	{ 0,0,0 } }; return QIEntries; } \
-	protected: virtual Omega::IObject* GetControllingObject() { \
-	const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(OMEGA_UUIDOF(Omega::IObject),this,g0->param); } \
-	Omega::IObject* GetControllingObjectPtr() { \
-	OTL::ObjectPtr<Omega::IObject> ptr; ptr.Attach(GetControllingObject()); return ptr; }
+	{ 0,0,0 } }; return QIEntries; } 
+	//protected: virtual Omega::IObject* GetControllingObject() { \
+	//const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(OMEGA_UUIDOF(Omega::IObject),this,g0->param); } \
+	//Omega::IObject* GetControllingObjectPtr() { \
+	//OTL::ObjectPtr<Omega::IObject> ptr; ptr.Attach(GetControllingObject()); return ptr; }
 
 ///////////////////////////////////////////////////////////////////
 // Object map macros
@@ -381,7 +381,7 @@ namespace OTL
             return 0;
         }
 
-		virtual Omega::IObject* GetControllingObject() = 0;
+		//virtual Omega::IObject* GetControllingObject() = 0;
 
 	private:
 		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
@@ -534,11 +534,11 @@ namespace OTL
 			return ptr;
 		}
 
-	protected:
+	/*protected:
 		virtual Omega::IObject* GetControllingObject()
 		{
 			return this;
-		}
+		}*/
 
 	private:
 		NoLockObjectImpl() : ROOT()
@@ -570,10 +570,10 @@ namespace OTL
 
 		ObjectPtr<Omega::IObject> m_ptrOuter;
 
-		virtual Omega::IObject* GetControllingObject()
+		/*virtual Omega::IObject* GetControllingObject()
 		{
 			return m_ptrOuter;
-		}
+		}*/
 
 	private:
 		ContainedObjectImpl(const ContainedObjectImpl& rhs)
@@ -756,11 +756,11 @@ namespace OTL
 		StackObjectImpl() : ROOT()
 		{ }
 
-	protected:
+	/*protected:
 		virtual Omega::IObject* GetControllingObject()
 		{
 			return this;
-		}
+		}*/
 
 	// IObject members
 	public:

@@ -26,7 +26,7 @@ ACE_CString User::string_t_to_utf8(const Omega::string_t& val)
 }
 
 User::Channel::Channel() :
-	m_pManager(0), m_thread_id(0)
+	m_pManager(0)
 {
 }
 
@@ -37,13 +37,6 @@ void User::Channel::init(Manager* pManager, ACE_CDR::UShort channel_id)
 
 	m_pManager = pManager;
 	m_channel_id = channel_id;
-}
-
-ACE_CDR::UShort User::Channel::set_thread_id(ACE_CDR::UShort thread_id)
-{
-	ACE_CDR::UShort prev = *m_thread_id;
-	*m_thread_id = thread_id;
-	return prev;
 }
 
 Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
@@ -68,7 +61,7 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 	ACE_InputCDR* response = 0;
 	try
 	{
-		if (!m_pManager->send_request(m_channel_id,*m_thread_id,request,response,timeout,attribs))
+		if (!m_pManager->send_request(m_channel_id,request,response,timeout,attribs))
 			OOSERVER_THROW_LASTERROR();
 		
 		if (response)
@@ -78,12 +71,8 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 			if (!response->read_octet(ret_code))
 				OOSERVER_THROW_LASTERROR();
 
-			// ret_code must match the values in UserManager::process_request
+			// ret_code must match the values in UserManager::process_user_request
 			if (ret_code == 1)
-			{
-				OMEGA_THROW(L"Request timed out");
-			}
-			else if (ret_code == 2)
 			{
 				ACE_CString strDesc;
 				if (!response->read_string(strDesc))

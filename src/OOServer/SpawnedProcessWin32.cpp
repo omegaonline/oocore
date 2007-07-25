@@ -304,13 +304,13 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_WString& strSource
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		/*if (dwRes == 1314 && bSandbox)
+		if (dwRes == 1314 && bSandbox)
 		{
 			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
 			SpawnFromToken(hToken,uPort,!bSandbox,strSource);
-			ACE_OS::printf(L"RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
+			ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
 		}
-		else*/
+		else
 		{
 			// Done with hToken
 			CloseHandle(hToken);

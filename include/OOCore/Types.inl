@@ -94,16 +94,10 @@ bool Omega::string_t::operator == (const string_t& s) const
 	return string_t_eq1(m_handle,s.m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,h,(in),const char*,sz));
-bool Omega::string_t::operator == (const char* sz) const
-{
-	return string_t_eq2(m_handle,sz);
-}
-
-OOCORE_EXPORTED_FUNCTION(bool,string_t_eq3,2,((in),const void*,h,(in),const wchar_t*,wsz));
+OOCORE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,h,(in),const wchar_t*,wsz));
 bool Omega::string_t::operator == (const wchar_t* wsz) const
 {
-	return string_t_eq3(m_handle,wsz);
+	return string_t_eq2(m_handle,wsz);
 }
 
 OOCORE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,h,(in),const void*,h2));

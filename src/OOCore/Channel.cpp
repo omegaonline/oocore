@@ -26,7 +26,7 @@ ACE_CString OOCore::string_t_to_utf8(const Omega::string_t& val)
 }
 
 OOCore::Channel::Channel() :
-	m_pSession(0), m_thread_id(0)
+	m_pSession(0)
 {
 }
 
@@ -37,13 +37,6 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort channel_id)
 
 	m_pSession = pSession;
 	m_channel_id = channel_id;
-}
-
-ACE_CDR::UShort OOCore::Channel::set_thread_id(ACE_CDR::UShort thread_id)
-{
-	ACE_CDR::UShort prev = *m_thread_id;
-	*m_thread_id = thread_id;
-	return prev;
 }
 
 Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter)
@@ -68,7 +61,7 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	ACE_InputCDR* response = 0;
 	try
 	{
-		if (!m_pSession->send_request(m_channel_id,*m_thread_id,request,response,timeout,attribs))
+		if (!m_pSession->send_request(m_channel_id,request,response,timeout,attribs))
 			OOCORE_THROW_LASTERROR();
 		
 		if (response)
@@ -80,10 +73,6 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 
 			// ret_code must match the values in UserSession::process_request
 			if (ret_code == 1)
-			{
-				OMEGA_THROW(L"Request timed out");
-			}
-			else if (ret_code == 2)
 			{
 				ACE_CString strDesc;
 				if (!response->read_string(strDesc))

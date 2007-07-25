@@ -35,7 +35,7 @@ namespace Root
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
         static const size_t         s_initial_read = 8;
-
+        
 		MessageHandler*             m_pHandler;
 		ACE_Asynch_Read_Stream      m_reader;
 		ACE_CDR::ULong              m_read_len;
@@ -51,10 +51,11 @@ namespace Root
 		MessageHandler();
 		virtual ~MessageHandler() {}
 
-		bool send_request(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs);
-		bool send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
+		bool send_request(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs);
+		void send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 
+		ACE_CDR::UShort get_channel_thread_id(ACE_CDR::UShort channel);
 		ACE_CDR::UShort get_handle_channel(ACE_HANDLE handle, ACE_CDR::UShort channel);
 		ACE_HANDLE get_channel_handle(ACE_CDR::UShort channel);
 		void stop();
@@ -103,6 +104,7 @@ namespace Root
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
 			ACE_Time_Value                              m_deadline;
 			MessageHandler*                             m_pHandler;
+			std::map<ACE_CDR::UShort,ACE_CDR::UShort>   m_mapChannelThreads;
 
 			static ThreadContext* instance(Root::MessageHandler* pHandler);
 

@@ -30,7 +30,8 @@
 				SafeThrow<n_space::iface>, \
 				DynamicThrow<n_space::iface>, \
 				CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>, \
-				WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create \
+				WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
+				OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
 			}; \
 			*ppRtti = &rtti; \
 			return true; \

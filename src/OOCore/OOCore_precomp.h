@@ -19,6 +19,8 @@
 
 // Link to the static lib version of ACE...
 #define ACE_AS_STATIC_LIBS 1
+
+// We use the wchar_t version of ACE
 #define ACE_USES_WCHAR
 
 #include <ace/CDR_Stream.h>
@@ -59,6 +61,19 @@
 #include <OTL/OTL.h>
 
 // End of OOCore/OTL includes
+/////////////////////////////////////////////////
+
+/////////////////////////////////////////////////
+// Include Windows components
+#ifdef OMEGA_WIN32
+
+// We use the unicode CRT
+#define _UNICODE
+#include <shlobj.h>
+#include <shlwapi.h>
+
+#endif
+// End of Windows includes
 /////////////////////////////////////////////////
 
 #define OOCORE_THROW_LASTERROR() \

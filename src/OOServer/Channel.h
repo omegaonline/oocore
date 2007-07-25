@@ -140,8 +140,7 @@ namespace User
 		Channel();
 
 		void init(Manager* pManager, ACE_CDR::UShort channel_id);
-		ACE_CDR::UShort set_thread_id(ACE_CDR::UShort thread_id);
-
+		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
 		END_INTERFACE_MAP()
@@ -149,8 +148,6 @@ namespace User
 	private:
 		Manager*         m_pManager;
 		ACE_CDR::UShort  m_channel_id;
-
-		ACE_TSS<ACE_TSS_Type_Adapter<ACE_CDR::UShort> > m_thread_id;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
 		Channel& operator = (const Channel&) { return *this; }

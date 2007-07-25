@@ -470,6 +470,7 @@ namespace Omega
 			inline IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
 			inline void throw_correct_exception(IException_Safe* pE);
 			inline IException_Safe* return_safe_exception(IException* pE);
+			inline const Omega::string_t& lookup_iid(const guid_t& iid);
 
 			template <class I, class Base> struct IObject_SafeStub;
 			template <class I> struct IObject_SafeProxy;
@@ -935,6 +936,7 @@ namespace Omega
 				void (*pfnThrow)(IException* pE);
 				IWireStub* (*pfnCreateWireStub)(IWireManager* pManager, IObject* pObject, uint32_t id);
 				IObject* (*pfnCreateWireProxy)(IObject* pOuter, IWireManager* pManager);
+				string_t strName;
 			};
 
 			template <bool C, typename Ta, typename Tb>

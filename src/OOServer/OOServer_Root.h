@@ -34,6 +34,10 @@
 	#elif _WIN32_IE < 0x0500
 	#error OOCore requires _WIN32_IE >= 0x0500!
 	#endif
+
+	// We use the unicode CRT
+	#define _UNICODE
+
 #endif // WIN32
 
 #define ACE_AS_STATIC_LIBS 1
@@ -58,15 +62,5 @@
 #include <list>
 #include <map>
 #include <set>
-
-#if defined(ACE_NLOGGING)
-#error You must not define ACE_NLOGGING, cos we use it!
-#endif
-
-#if defined(ACE_WIN32)
-// For the Windows path functions
-#include <shlwapi.h>
-#include <shlobj.h>
-#endif
 
 #endif // OOSERVER_ROOT_H_INCLUDED_

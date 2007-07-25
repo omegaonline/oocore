@@ -210,7 +210,7 @@ void MainFrame::SelectItem(Omega::string_t strSelection)
 	for (;;)
 	{
 		size_t pos = strSelection.Find(L'\\');
-		Omega::string_t strSubKey;
+		wxString strSubKey;
 		if (pos != -1)
 		{
 			strSubKey = strSelection.Left(pos);
@@ -224,7 +224,7 @@ void MainFrame::SelectItem(Omega::string_t strSelection)
 
 		m_pTree->Expand(tree_id);
 
-		if (strSubKey == (const char*)m_pTree->GetItemText(tree_id))
+		if (strSubKey == m_pTree->GetItemText(tree_id))
 			continue;
 
 		if (m_pTree->ItemHasChildren(tree_id))
@@ -232,7 +232,7 @@ void MainFrame::SelectItem(Omega::string_t strSelection)
 			wxTreeItemIdValue cookie;
 			wxTreeItemId id_child = m_pTree->GetFirstChild(tree_id,cookie);
 
-			while (id_child && strSubKey != (const char*)m_pTree->GetItemText(id_child))
+			while (id_child && strSubKey != m_pTree->GetItemText(id_child))
 			{
 				id_child = m_pTree->GetNextChild(tree_id,cookie);
 			}

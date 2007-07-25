@@ -28,19 +28,14 @@ namespace User
 		ACE_CDR::UShort             m_root_channel;
 		ACE_Event                   m_stop;
 
-		struct OMInfo
-		{
-			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
-			OTL::ObjectPtr<OTL::ObjectImpl<User::Channel> > m_ptrChannel;
-		};
-		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
+		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
 		int run_event_loop_i(u_short uPort);
 		bool init(u_short uPort);
 		bool bootstrap(ACE_CDR::UShort sandbox_channel);
 		void close_channels();
 
-		OMInfo get_object_manager(ACE_CDR::UShort src_channel_id);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void process_user_request(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM, const ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void process_root_request(ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);

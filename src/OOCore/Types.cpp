@@ -71,7 +71,7 @@ ACE_WString OOCore::UTF_Converter::from_utf8(const char* sz)
 		wchar_t* pszBuf;
 		OMEGA_NEW(pszBuf,wchar_t[len]);
 
-		ACE_Encoding_Converter::Result res = m_conv->from_utf8(reinterpret_cast<const ACE_Byte*>(sz),ACE_OS::strlen(sz)+1,pszBuf,len*sizeof(wchar_t));
+		ACE_Encoding_Converter::Result res = m_conv->from_utf8(reinterpret_cast<const ACE_Byte*>(sz),ACE_OS::strlen(sz)+1,pszBuf,len);
 
 		if (res == ACE_Encoding_Converter::CONVERSION_OK)
 		{
@@ -201,12 +201,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq1,2,((in),const void*,s1,(in),con
 	return (static_cast<const StringNode*>(s1)->m_str == static_cast<const StringNode*>(s2)->m_str);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,s1,(in),const char*,sz))
-{
-	return (static_cast<const StringNode*>(s1)->m_str == ACE_Ascii_To_Wide(sz).wchar_rep());
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
 	return (static_cast<const StringNode*>(s1)->m_str == wsz);
 }

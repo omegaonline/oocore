@@ -10,10 +10,6 @@
 /////////////////////////////////////////////////
 // Include ACE components
 
-#if defined(ACE_NLOGGING)
-#error You must not define ACE_NLOGGING, cos we use it!
-#endif
-
 // Link to the static lib version of ACE...
 #define ACE_AS_STATIC_LIBS 1
 #define ACE_USES_WCHAR
@@ -50,6 +46,20 @@
 #include <OTL/OTL.h>
 
 // End of OOCore/OTL includes
+/////////////////////////////////////////////////
+
+/////////////////////////////////////////////////
+// Include Windows components
+#if defined(ACE_WIN32)
+
+// We use the unicode CRT
+#define _UNICODE
+
+#include <shlobj.h>
+#include <shlwapi.h>
+
+#endif
+// End of Windows includes
 /////////////////////////////////////////////////
 
 #define OOSERVER_THROW_LASTERROR() \

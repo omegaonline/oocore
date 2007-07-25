@@ -110,7 +110,6 @@ namespace Omega
 		inline size_t ToUTF8(char* sz, size_t size) const;
 
 		inline bool operator == (const string_t& s) const;
-		inline bool operator == (const char* sz) const;
 		inline bool operator == (const wchar_t* wsz) const;
 
 		template <class T>

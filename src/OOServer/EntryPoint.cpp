@@ -132,6 +132,18 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	return Root::Manager::run(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
 }
 
+#if defined(ACE_WIN32) && defined(__MINGW32__)
+#include <shellapi.h>
+int main(int argc, char* /*argv*/[])
+{
+	// MinGW doesn't understand wmain, so...
+	wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(),&argc);
+
+	ACE_Main m;
+	return ace_os_wmain_i (m, argc, wargv);   /* what the user calls "main" */
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last, because we include <OOCore/config-guess.h> which might be dangerous!
 #include <OOCore/config-guess.h>
@@ -141,3 +153,4 @@ static int Version()
 	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 	return 0;
 }
+

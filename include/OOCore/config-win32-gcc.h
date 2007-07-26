@@ -3,8 +3,14 @@
 
 #include <OOCore/config-gcc.h>
 
+// We use the unicode CRT
+#define _UNICODE
+#include <objbase.h>
+
+#define ACE_LACKS_SYSTEM
+
 #undef interface
-#define interface struct __attribute__((com_interface))
+#define interface struct
 
 #define OMEGA_IMPORT __declspec(dllimport)
 #define OMEGA_EXPORT __declspec(dllexport)

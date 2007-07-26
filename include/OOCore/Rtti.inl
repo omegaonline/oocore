@@ -252,9 +252,6 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			else
 				pObjS = p.first->second;
 
-			if (!pObjS && iid != guid_t::FromString(L"{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}"))
-				DebugBreak();
-
 			if (pQI)
 			{
 				*retval = pQI;
@@ -430,13 +427,13 @@ Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(Omeg
 			else
 			{
                 OMEGA_NEW(ptrSafeStub,SafeStub(pObj));
+			
+				System::WriteGuard guard(stub_map.m_lock);
+
+				std::pair<std::map<void*,void*>::iterator,bool> p = stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,static_cast<IObject_Safe*>(ptrSafeStub)));
+				if (!p.second)
+					ptrSafeStub = static_cast<IObject_Safe*>(p.first->second);
 			}
-
-			System::WriteGuard guard(stub_map.m_lock);
-
-			std::pair<std::map<void*,void*>::iterator,bool> p = stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,static_cast<IObject_Safe*>(ptrSafeStub)));
-			if (!p.second)
-				ptrSafeStub = static_cast<IObject_Safe*>(p.first->second);
 		}
 	}
 	catch (std::exception& e)

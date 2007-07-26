@@ -47,11 +47,11 @@
 	{ &iid, &QIFail, param },
 
 #define END_INTERFACE_MAP() \
-	{ 0,0,0 } }; return QIEntries; } 
-	//protected: virtual Omega::IObject* GetControllingObject() { \
-	//const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(OMEGA_UUIDOF(Omega::IObject),this,g0->param); } \
-	//Omega::IObject* GetControllingObjectPtr() { \
-	//OTL::ObjectPtr<Omega::IObject> ptr; ptr.Attach(GetControllingObject()); return ptr; }
+	{ 0,0,0 } }; return QIEntries; }
+	/*protected: virtual Omega::IObject* GetControllingObject() { \
+	const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(OMEGA_UUIDOF(Omega::IObject),this,g0->param); } \
+	Omega::IObject* GetControllingObjectPtr() { \
+	OTL::ObjectPtr<Omega::IObject> ptr; ptr.Attach(GetControllingObject()); return ptr; } */
 
 ///////////////////////////////////////////////////////////////////
 // Object map macros

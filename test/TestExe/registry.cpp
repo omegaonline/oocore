@@ -193,7 +193,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	if (!test_values(pKey,strKey))
 		return false;
 
-	Omega::string_t strTestKey = L"TestKey";
+	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
 	while (pKey->IsSubKey(strTestKey))
 	{
 		strTestKey = "_" + strTestKey;
@@ -313,7 +313,7 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 	TEST(pKey->IsSubKey(L"Server\\Sandbox"));
 	TEST(pKey->IsSubKey(L"Current User"));
 
-	Omega::string_t strTestValue = L"TestValue";
+	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
 	while (pKey->IsValue(strTestValue))
 	{
 		strTestValue = L"_" + strTestValue;

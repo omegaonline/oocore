@@ -351,7 +351,7 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 
 	reg_root.get_string_value(sandbox_key,L"Password",strPwd);
 
-	if (!LogonUserW(strUName.c_str(),NULL,strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
+	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
 		DWORD dwErr = GetLastError();
 		return dwErr;

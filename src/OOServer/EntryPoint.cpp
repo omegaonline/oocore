@@ -107,7 +107,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	}
 
 #if defined(ACE_WIN32)
-	if (argc<2 || ACE_OS::strcmp(argv[1],L"--service")!=0)
+	if (!IsDebuggerPresent() && (argc<2 || ACE_OS::strcmp(argv[1],L"--service")!=0))
 		ACE_ERROR_RETURN((LM_ERROR,L"OOServer must be started as a Win32 service.\n"),-1);
 
 	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)

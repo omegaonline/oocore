@@ -146,11 +146,15 @@ int User::Manager::run_event_loop_i(u_short uPort)
 
 	// Spawn off the request threads
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
-	if (req_thrd_grp_id != -1)
+	if (req_thrd_grp_id == -1)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning threads"),-1);
+	else
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
-		if (pro_thrd_grp_id != -1)
+		if (pro_thrd_grp_id == -1)
+			ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning threads"),-1);
+		else
 		{
 			if (init(uPort))
 			{
@@ -268,6 +272,7 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	}
 	catch (IException* pE)
 	{
+		ACE_ERROR((LM_ERROR,L"Exception thrown: %ls - %ls\n",(const wchar_t*)pE->Description(),(const wchar_t*)pE->Source()));
 		pE->Release();
 		return false;
 	}
@@ -388,7 +393,7 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 		ACE_Time_Value now = ACE_OS::gettimeofday();
 		if (deadline <= now)
 			return;
-		
+
 		// Convert deadline time to #msecs
 		ACE_Time_Value wait = deadline - now;
 		ACE_UINT64 msecs = 0;

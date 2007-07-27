@@ -240,7 +240,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.lpDesktop = L"";
 
-	DWORD dwFlags = DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT;
+	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT;
 
 	PROCESS_INFORMATION process_info;
 	if (!CreateProcessAsUserW(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
@@ -264,6 +264,24 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	CloseHandle(process_info.hThread);
 
 	return ERROR_SUCCESS;
+}
+
+bool Root::SpawnedProcess::unsafe_sandbox()
+{
+	// Get the local machine registry
+	ACE_Configuration_Heap& reg_root = Manager::get_registry();
+
+	// Get the server section
+	ACE_Configuration_Section_Key sandbox_key;
+	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key) != 0)
+		return false;
+
+	// Get the user name and pwd...
+	u_int v = 0;
+	if (reg_root.get_integer_value(sandbox_key,L"Unsafe",v) != 0)
+		return false;
+
+	return (v == 1);
 }
 
 bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_WString& strSource)
@@ -304,7 +322,7 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_WString& strSource
 	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == 1314 && bSandbox)
+		if (dwRes == 1314 && bSandbox && unsafe_sandbox())
 		{
 			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
 			SpawnFromToken(hToken,uPort,!bSandbox,strSource);

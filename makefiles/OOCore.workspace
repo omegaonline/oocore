@@ -2,10 +2,10 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="OOCore">
 		<Project filename="..\src\OOCore\OOCore.cbp" />
-		<Project filename="..\src\OOServer\OOServer.cbp">
+		<Project filename="..\src\OOServer\OOServer.cbp" active="1">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 		</Project>
-		<Project filename="..\test\TestExe\TestExe.cbp" active="1">
+		<Project filename="..\test\TestExe\TestExe.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OOServer\OOServer.cbp" />
 			<Depends filename="..\test\TestExe\TestDll\TestDll.cbp" />

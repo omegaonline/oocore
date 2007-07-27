@@ -41,12 +41,13 @@ namespace Root
 	private:
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
-		
+
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_WString& strSource);
 		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_WString& strSource);
+		bool unsafe_sandbox();
 #else // !ACE_WIN32
 	protected:
-		uid_t	m_uid;	
+		uid_t	m_uid;
 
 	private:
 		pid_t	m_pid;

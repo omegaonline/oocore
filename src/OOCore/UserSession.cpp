@@ -141,7 +141,7 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 	// Find what the server is called
 	void* TODO;
 
-	ACE_WString strExec = ACE_OS::getenv(L"OOSERVER");
+	ACE_WString strExec = ACE_Ascii_To_Wide(ACE_OS::getenv("OOSERVER")).wchar_rep();
 	if (strExec.length() == 0)
 		strExec = L"OOServer";
 
@@ -508,7 +508,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
 
 			old_thread_id = i->second;
-			i->second = msg->m_src_thread_id;				
+			i->second = msg->m_src_thread_id;
 
 			ACE_Time_Value old_deadline = pContext->m_deadline;
 			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
@@ -520,7 +520,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 			pContext->m_deadline = old_deadline;
 			i->second = old_thread_id;
 		}
-		
+
 		delete msg->m_pPayload;
 		delete msg;
 	}
@@ -548,7 +548,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
 
 			old_thread_id = i->second;
-			i->second = msg->m_src_thread_id;				
+			i->second = msg->m_src_thread_id;
 
 			ACE_Time_Value old_deadline = pContext->m_deadline;
 			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
@@ -637,7 +637,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 	std::map<ACE_CDR::UShort,ACE_CDR::UShort>::const_iterator i=pContext->m_mapChannelThreads.find(pContext->m_thread_id);
 	if (i != pContext->m_mapChannelThreads.end())
 		dest_thread_id = i->second;
-	
+
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(pContext,dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
@@ -654,7 +654,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 	bool bRet = false;
 	size_t sent = 0;
 	ssize_t res = -1;
-	
+
 	// Critical section around send
 	{
 		OOCORE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
@@ -794,7 +794,7 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 		ACE_Time_Value now = ACE_OS::gettimeofday();
 		if (deadline <= now)
 			return;
-		
+
 		// Convert deadline time to #msecs
 		ACE_Time_Value wait = deadline - now;
 		ACE_UINT64 msecs = 0;

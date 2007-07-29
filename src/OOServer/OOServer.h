@@ -19,6 +19,7 @@
 #include <ace/Configuration.h>
 #include <ace/Connector.h>
 #include <ace/Countdown_Time.h>
+#include <ace/Event.h>
 #include <ace/Message_Queue.h>
 #include <ace/OS.h>
 #include <ace/Proactor.h>

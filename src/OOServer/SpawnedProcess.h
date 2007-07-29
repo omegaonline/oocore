@@ -51,7 +51,10 @@ namespace Root
 
 	private:
 		pid_t	m_pid;
-		void CleanEnvironment();
+		bool CleanEnvironment();
+
+	public:
+		static ACE_CString get_home_dir();
 #endif // ACE_WIN32
 
 	};

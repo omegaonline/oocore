@@ -17,6 +17,8 @@
 #include "./SpawnedProcess.h"
 #include "./RootManager.h"
 
+#include <grp.h>
+
 // Helper for the recusive getpwuid_r fns()
 namespace Root
 {
@@ -35,7 +37,7 @@ namespace Root
 		{
 			return (m_pwd==0);
 		}
-		
+
 	private:
 		pw_info() {};
 
@@ -56,7 +58,7 @@ Root::pw_info::pw_info(uid_t uid) :
     // _SC_GETPW_R_SIZE_MAX is defined on Mac OS X. However,
     // sysconf(_SC_GETPW_R_SIZE_MAX) returns an error. Therefore, the
     // constant is used as below when error was retured.
-    if (m_buf_len <= 0) 
+    if (m_buf_len <= 0)
 		m_buf_len = 1024;
 
 	m_pBuffer = new char[m_buf_len];
@@ -121,7 +123,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 		NULL
 	};
 
-	static const env_max = 256;
+	static const int env_max = 256;
 	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*)));
 	if (!cleanenv)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::calloc() failed!"),false);
@@ -129,7 +131,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	char pathbuf[PATH_MAX + 6];
 	sprintf(pathbuf,"PATH=%s",SAFE_PATH);
 	cleanenv[0] = strdup(pathbuf);
-	
+
 	int cidx = 1;
 	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
 	{
@@ -138,9 +140,9 @@ bool Root::SpawnedProcess::CleanEnvironment()
 			cleanenv[cidx] = *ep;
 			cidx++;
 		}
-		else 
+		else
 		{
-			for (int idx = 0; safe_env_lst[idx]; idx++) 
+			for (int idx = 0; safe_env_lst[idx]; idx++)
 			{
 				if (ACE_OS::strncmp(*ep,safe_env_lst[idx],strlen(safe_env_lst[idx]))==0)
 				{
@@ -164,6 +166,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, u_short uPort, ACE_WString& strSourc
 	if (child_id == -1)
 	{
 		// Error
+		strSource = L"Root::SpawnedProcess::Spawn - ACE_OS::fork()";
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::fork() failed!"),false);
 	}
 	else if (child_id == 0)
@@ -208,12 +211,12 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, u_short uPort, ACE_WString& strSourc
 			ACE_OS::exit(errno);
 
 		// Set cwd
-		if (ACE_OS::chdir(pw->pw_dir) != 0) 
+		if (ACE_OS::chdir(pw->pw_dir) != 0)
 		{
 			ACE_ERROR((LM_ERROR,L"%p\n",L"chdir() failed!"));
 			ACE_OS::exit(errno);
 		}
-				
+
 		// Now just run UserMain and exit
 		int err = UserMain(uPort);
 
@@ -233,37 +236,55 @@ bool Root::SpawnedProcess::IsRunning()
 {
 	if (m_pid == ACE_INVALID_PID)
 		return false;
-	
+
 	return (ACE_OS::kill(m_pid,0) == 0 || errno != ESRCH);
 }
 
-bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
-	int rc = 0;
-	ACE_stat sb;
+	bAllowed = false;
 
 	// Get file info
+	ACE_stat sb;
 	if (ACE_OS::stat(pszFName,&sb) != 0)
 		return false;
 
 	if (mode==O_RDONLY && (sb.st_mode & S_IROTH))
+	{
+		bAllowed = true;
 		return true;
+	}
 	else if (mode==O_WRONLY && (sb.st_mode & S_IWOTH))
+	{
+		bAllowed = true;
 		return true;
+	}
 	else if (mode==O_RDWR && (sb.st_mode & (S_IROTH | S_IWOTH)))
+	{
+		bAllowed = true;
 		return true;
+	}
 
 	// Is the supplied user the file's owner
 	if (sb.st_uid == m_uid)
 	{
 		if (mode==O_RDONLY && (sb.st_mode & S_IRUSR))
+		{
+			bAllowed = true;
 			return true;
+		}
 		else if (mode==O_WRONLY && (sb.st_mode & S_IWUSR))
+		{
+			bAllowed = true;
 			return true;
+		}
 		else if (mode==O_RDWR && (sb.st_mode & (S_IRUSR | S_IWUSR)))
+		{
+			bAllowed = true;
 			return true;
+		}
 	}
-	
+
 	// Get the suppied user's group see if that is the same as the file's group
 	Root::pw_info pw(m_uid);
 	if (!pw)
@@ -273,14 +294,23 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	if (pw->pw_gid == sb.st_gid)
 	{
 		if (mode==O_RDONLY && (sb.st_mode & S_IRGRP))
+		{
+			bAllowed = true;
 			return true;
+		}
 		else if (mode==O_WRONLY && (sb.st_mode & S_IWGRP))
+		{
+			bAllowed = true;
 			return true;
+		}
 		else if (mode==O_RDWR && (sb.st_mode & (S_IRGRP | S_IWGRP)))
-			return true;	
-	}		
+		{
+			bAllowed = true;
+			return true;
+		}
+	}
 
-	return false;
+	return true;
 }
 
 bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_WString& strSource)
@@ -289,7 +319,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	Root::pw_info pw(token);
 	if (!pw)
 	{
-		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - getpwuid";		
+		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - getpwuid";
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"::getpwuid() failed!"),false);
 	}
 
@@ -311,7 +341,7 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	uid_t uid_sandbox;
 	if (reg_root.get_integer_value(sandbox_key,L"Uid",uid_sandbox) != 0)
 		return false;
-	
+
 	// Resolve it...
 	ACE_WString strSource;
 	if (!ResolveTokenToUid(uid_sandbox,uid,strSource))
@@ -325,26 +355,28 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 
 bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 {
-	ACE_WString strUName = L"omega_sandbox";
+	ACE_CString strUName = "omega_sandbox";
 	if (argc>=1)
-		strUName = argv[0];
+		strUName = ACE_Wide_To_Ascii(argv[0]).char_rep();
 
 	ACE_OS::setpwent();
 	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
 	if (!pw)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"getpwnam() failed!"),false);
 	ACE_OS::endpwent();
-	
+
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
 	// Create the server section
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",1,sandbox_key)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to create Server\\Sandbox key in registry"),false);
-	
+
 	// Set the user name and pwd...
 	if (reg_root.set_integer_value(sandbox_key,L"Uid",pw->pw_uid) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to set sandbox uid in registry"),false);
+
+	return true;
 }
 
 bool Root::SpawnedProcess::UninstallSandbox()
@@ -359,6 +391,15 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	}
 
 	return true;
+}
+
+ACE_CString Root::SpawnedProcess::get_home_dir()
+{
+	pw_info pw(ACE_OS::getuid());
+	if (!pw)
+		return "";
+
+	return pw->pw_dir;
 }
 
 #endif // !ACE_WIN32

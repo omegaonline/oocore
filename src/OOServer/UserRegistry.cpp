@@ -1,6 +1,7 @@
 #include "OOServer.h"
 #include "./UserRegistry.h"
 #include "./UserManager.h"
+#include "./SpawnedProcess.h"
 
 using namespace Omega;
 using namespace Omega::Registry;
@@ -74,9 +75,9 @@ namespace Registry
 				tp = "UInt32";
 			else if (actual_type==Binary)
 				tp = "Binary";
-			
+
 			pRE->m_strDesc = string_t::Format(L"Incorrect registry value type, actual value type is %ls.",static_cast<const wchar_t*>(tp));
-			
+
 			throw pRE;
 		}
 	};
@@ -1118,16 +1119,20 @@ int BaseKey::open_registry(bool bSandbox)
 
 #else
 
-#define OMEGA_REGISTRY_DIR L"/var/lib/omegaonline"
+	ACE_WString strDir;
+	if (bSandbox)
+		strDir = L"/var/lib/omegaonline";
+	else
+		strDir = ACE_Ascii_To_Wide((Root::SpawnedProcess::get_home_dir() + "/.omegaonline").c_str()).wchar_rep();
 
-	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (ACE_OS::mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)
 			return -1;
 	}
 
-	ACE_WString strRegistry = OMEGA_REGISTRY_DIR L"/" OMEGA_REGISTRY_FILE;
+	ACE_WString strRegistry = strDir + L"/" OMEGA_REGISTRY_FILE;
 
 #endif
 

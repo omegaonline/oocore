@@ -17,8 +17,6 @@
 					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-mno-cygwin" />
-					<Add option="-fno-rtti" />
 					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_WINDOWS" />
@@ -47,8 +45,6 @@
 					<Add option="-O3" />
 					<Add option="-W" />
 					<Add option="-Wall" />
-					<Add option="-mno-cygwin" />
-					<Add option="-fno-rtti" />
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_WINDOWS" />
@@ -70,6 +66,8 @@
 		<Unit filename="testdll.h" />
 		<Extensions>
 			<code_completion />
+			<envvars />
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

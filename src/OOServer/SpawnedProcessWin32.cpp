@@ -240,7 +240,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.lpDesktop = L"";
 
-	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT;
+	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
 
 	PROCESS_INFORMATION process_info;
 	if (!CreateProcessAsUserW(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))

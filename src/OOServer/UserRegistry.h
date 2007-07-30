@@ -50,7 +50,7 @@ namespace User
 		public:
 			UserKey();
 
-			void Init(ACE_Configuration_Heap* pRegistry, const ACE_Configuration_Section_Key& strKey, ACE_RW_Thread_Mutex* pLock, const ACE_WString& strKeyName);
+			void Init(ACE_Configuration_Heap* pRegistry, ACE_RW_Thread_Mutex* pLock, const Omega::string_t& strKeyName);
 
 			BEGIN_INTERFACE_MAP(UserKey)
 				INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
@@ -58,11 +58,11 @@ namespace User
 
 		private:
 			ACE_Configuration_Heap*        m_pRegistry;
-			ACE_Configuration_Section_Key  m_key;
 			ACE_RW_Thread_Mutex*           m_pLock;
-			ACE_WString                    m_strKeyName;
+			Omega::string_t                m_strKeyName;
 
 			Omega::string_t FullKeyPath(const Omega::string_t& strSub);
+			ACE_Configuration_Section_Key open_key();
 			
 		// IRegistry members
 		public:

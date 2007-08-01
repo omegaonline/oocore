@@ -140,7 +140,11 @@
 		<Unit filename="RootManager.h" />
 		<Unit filename="SpawnedProcess.h" />
 		<Unit filename="SpawnedProcessUnix.cpp" />
-		<Unit filename="SpawnedProcessWin32.cpp" />
+		<Unit filename="SpawnedProcessWin32.cpp">
+			<Option target="Debug_Win32" />
+			<Option target="Release_Win32" />
+			<Option target="Debug_Unix" />
+		</Unit>
 		<Unit filename="UserManager.cpp" />
 		<Unit filename="UserManager.h" />
 		<Unit filename="UserRegistry.cpp" />

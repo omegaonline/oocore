@@ -49,7 +49,7 @@ static bool complex_throw()
 			TEST(pE->GetUnsupportedIID() == OMEGA_UUIDOF(Omega::IObject));
 			TEST(!pE->Cause());
 			TEST(pE->Source() == szFile);
-			
+
 			Omega::IException* pE2 = Omega::IException::Create(szDesc,szFile,pE);
 			pE->Release();
 			throw pE2;
@@ -87,7 +87,7 @@ bool exception_tests()
 		TEST(pE->Source() == szFile);
 		pE->Release();
 	}
-	
+
 	// Try another simple throw
 	try
 	{
@@ -103,7 +103,7 @@ bool exception_tests()
 	}
 
 	TEST(complex_throw());
-	
+
 	return true;
 }
 
@@ -116,6 +116,6 @@ bool otl_tests()
 	TEST(ptrObj == (Omega::IObject*)0);
 	TEST(ptrObj == ptrObj);
 	TEST(ptrObj == static_cast<Omega::IObject*>(ptrObj));
-	
+
 	return true;
 }

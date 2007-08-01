@@ -241,13 +241,13 @@ static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Seri
 		LPEXCEPTION_POINTERS ex = 0;
 		ACE_SEH_TRY
 		{
-			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);			
+			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
 		}
 		ACE_SEH_EXCEPT((ex = GetExceptionInformation(),EXCEPTION_EXECUTE_HANDLER))
 		{
-			err = ex->ExceptionRecord->ExceptionCode;			
+			err = ex->ExceptionRecord->ExceptionCode;
 		}
-	#elif 0 && defined (__GNUC__) && !defined(ACE_WIN64)
+	#elif defined (__GNUC__) && !defined(ACE_WIN64)
 
 		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
 		jmp_buf jmpb;
@@ -262,7 +262,16 @@ static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Seri
 		err = setjmp(jmpb);
 		if (err == 0)
 		{
-			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+			try
+			{
+				DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+			}
+			catch (...)
+			{
+				// Remove SEH handler
+				__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
+				throw;
+			}
 		}
 
 		// Remove SEH handler
@@ -271,12 +280,12 @@ static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Seri
 	#else
 
 		void* TODO; // You have no protection around Invoke for your compiler...
-		DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);	
+		DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
 
 	#endif
 #else
 	void* TODO; // Some kind of signal handler here please?
-	DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);	
+	DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
 #endif
 
 	return err;

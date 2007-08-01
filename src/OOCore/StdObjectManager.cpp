@@ -203,6 +203,87 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 	m_ptrChannel = pChannel;
 }
 
+#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
+
+#include <setjmp.h>
+struct ExceptInfo
+{
+	ExceptInfo* prev;
+	int (WINAPI *handler)(PEXCEPTION_RECORD,ExceptInfo*,PCONTEXT,PEXCEPTION_RECORD);
+	jmp_buf* pjb;
+};
+
+static int WINAPI ExceptHandler(PEXCEPTION_RECORD record, ExceptInfo* frame, PCONTEXT, PEXCEPTION_RECORD)
+{
+	longjmp(*frame->pjb,record->ExceptionCode);
+	return 0;
+}
+#endif
+
+static void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
+{
+	try
+	{
+		int* x = 0;
+		*x = 1;
+		pStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
+	}
+	catch (IException* pE2)
+	{
+		pE = pE2;
+	}
+}
+
+static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
+{
+	int err = 0;
+
+#if defined(ACE_WIN32)
+	#if defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS)
+		LPEXCEPTION_POINTERS ex = 0;
+		ACE_SEH_TRY
+		{
+			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);			
+		}
+		ACE_SEH_EXCEPT((ex = GetExceptionInformation(),EXCEPTION_EXECUTE_HANDLER))
+		{
+			err = ex->ExceptionRecord->ExceptionCode;			
+		}
+	#elif 0 && defined (__GNUC__) && !defined(ACE_WIN64)
+
+		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
+		jmp_buf jmpb;
+		ExceptInfo xc;
+		xc.handler = ExceptHandler;
+		xc.pjb = &jmpb;
+
+		// Install SEH handler
+		__asm__ __volatile__ ("movl %%fs:0, %0" : "=r" (xc.prev));
+		__asm__ __volatile__ ("movl %0, %%fs:0" : : "r" (&xc));
+
+		err = setjmp(jmpb);
+		if (err == 0)
+		{
+			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+		}
+
+		// Remove SEH handler
+		__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
+
+	#else
+
+		void* TODO; // You have no protection around Invoke for your compiler...
+		DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);	
+
+	#endif
+#else
+	void* TODO; // Some kind of signal handler here please?
+	DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);	
+#endif
+
+	return err;
+}
+
 void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout)
 {
 	if (!pParamsIn)
@@ -271,10 +352,13 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	// Assume we succeed...
 	pParamsOut->WriteBoolean(true);
 
-	void* TODO; // TODO decrease the wait time...
-
 	// Ask the stub to make the call
-	ptrStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
+	IException* pE = 0;
+	int err = DoInvoke(method_id,ptrStub,pParamsIn,pParamsOut,timeout,pE);
+	if (pE)
+		throw pE;
+	else if (err != 0)
+		OOCORE_THROW_ERRNO(err);
 }
 
 void OOCore::StdObjectManager::Disconnect()

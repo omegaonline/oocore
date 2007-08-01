@@ -224,8 +224,6 @@ static void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Se
 {
 	try
 	{
-		int* x = 0;
-		*x = 1;
 		pStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
 	}
 	catch (IException* pE2)

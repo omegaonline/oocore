@@ -63,6 +63,6 @@ void run_test(pfnTest t, const char* pszName)
 	catch (...)
 	{
 		++exception_count;
-		printf("[Unhandled exception!]\n");
+		printf("[Unhandled C++ exception!]\n");
 	}
 }

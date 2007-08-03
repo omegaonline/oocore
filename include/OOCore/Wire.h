@@ -660,7 +660,7 @@ namespace Omega
 	}
 }
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Serialize, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}",
 
@@ -671,7 +671,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Serialize, IFormattedStream, Omega::Serialize, IStream, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}",
 
@@ -689,7 +689,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD_VOID(WriteString,1,((in),const string_t&,val))
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}",
 

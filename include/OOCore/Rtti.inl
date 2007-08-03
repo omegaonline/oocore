@@ -320,10 +320,13 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 		{
 			// New interface required
 			const qi_rtti* pRtti = get_qi_rtti_info(iid);
-			if (!pRtti || !pRtti->pfnCreateSafeProxy)
-				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+			if (pRtti)
+			{
+				if (!pRtti->pfnCreateSafeProxy)
+					throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
-			pObj = pRtti->pfnCreateSafeProxy(this,m_pS);
+				pObj = pRtti->pfnCreateSafeProxy(this,m_pS);
+			}
 		}
 
 		System::WriteGuard guard(m_lock);
@@ -357,8 +360,6 @@ const Omega::System::MetaInfo::qi_rtti* Omega::System::MetaInfo::get_qi_rtti_inf
 	static std::map<const guid_t,const qi_rtti*> mapRtti;
 	static System::ReaderWriterLock rw_lock;
 
-	const qi_rtti* pRet = 0;
-
 	try
 	{
 		// See if we have it already
@@ -367,25 +368,23 @@ const Omega::System::MetaInfo::qi_rtti* Omega::System::MetaInfo::get_qi_rtti_inf
 
 			std::map<const guid_t,const qi_rtti*>::iterator i=mapRtti.find(iid);
 			if (i!=mapRtti.end())
-				pRet = i->second;
+				return i->second;
 		}
 	
-		if (!pRet)
-		{
-			get_qi_rtti_info_impl<(sizeof(get_qi_rtti(&pRet,(size_t_<0>::type*)0,iid)) == sizeof(yes_t))>::execute(&pRet,(size_t_<0>*)0,iid);
+		const qi_rtti* pRet = 0;
+		get_qi_rtti_info_impl<(sizeof(get_qi_rtti((int*)0,&pRet,(size_t_<0>::type*)0,iid)) == sizeof(yes_t))>::execute(&pRet,(size_t_<0>*)0,iid);
 
-			System::WriteGuard guard(rw_lock);
+		System::WriteGuard guard(rw_lock);
 
-			mapRtti.insert(std::map<const guid_t,const qi_rtti*>::value_type(iid,pRet));
-		}
+		mapRtti.insert(std::map<const guid_t,const qi_rtti*>::value_type(iid,pRet));
+		
+		return pRet;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e.what());
 	}
-
-	return pRet;
-};
+}
 
 Omega::System::MetaInfo::SafeProxyStubMap& Omega::System::MetaInfo::get_proxy_map()
 {

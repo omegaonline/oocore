@@ -11,7 +11,7 @@ namespace User
 	};
 }
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	User, IOutputCDR, Omega::Serialize, IFormattedStream, "{9C4FFF8C-93E4-49f9-A11C-99249C321206}",
 

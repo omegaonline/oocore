@@ -1,4 +1,4 @@
-#include <OOCore/Remoting.h>
+#include <OOCore/OOCore.h>
 #include "Test.h"
 
 static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)

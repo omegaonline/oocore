@@ -520,10 +520,13 @@ namespace OTL
 	class NoLockObjectImpl : public ROOT
 	{
 	public:
-		static NoLockObjectImpl<ROOT>* CreateInstance()
+		static NoLockObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
-			ObjectImpl<ROOT>* pObject;
-			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
+			if (pOuter)
+				throw Omega::Activation::INoAggregationException::Create(Omega::guid_t::Null());
+
+			NoLockObjectImpl<ROOT>* pObject;
+			OMEGA_NEW(pObject,NoLockObjectImpl<ROOT>());
 			return pObject;
 		}
 

@@ -132,7 +132,7 @@ namespace Omega
 	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 }
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
@@ -140,14 +140,14 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(CreateInstance,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega, INoInterfaceException, Omega, IException, "{68778245-9EA7-49f7-9EF4-D5D742E781D5}",
 
 	OMEGA_METHOD(Omega::guid_t,GetUnsupportedIID,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Activation, IOidNotFoundException, Omega, IException, "{162BBEBD-770B-4925-A8E7-48DEC7224ABE}",
 
@@ -155,7 +155,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::guid_t,GetMissingOid,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Activation, INoAggregationException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
 
@@ -163,7 +163,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::guid_t,GetFailingOid,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Activation, ILibraryNotFoundException, Omega, IException, "{C7D970C0-D5D9-42e2-B927-E6E2E5624E50}",
 
@@ -171,7 +171,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetLibraryName,0,())
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Activation, IServiceTable, "{0A36F849-8DBC-49c6-9ECA-8AD71BF3C8D0}",
 
@@ -181,7 +181,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(GetObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega, IEnumString, "{0D796351-7197-4444-B6E0-74A669289D8F}",
 
@@ -192,7 +192,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD(IEnumString*,Clone,0,())
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Registry, IRegistryKey, "{F33E828A-BF5E-4c26-A541-BDB2CA736DBD}",
 
@@ -213,7 +213,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD_VOID(DeleteValue,1,((in),const Omega::string_t&,strValue))
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, INotFoundException, Omega, IException, "{A851A685-A3AB-430b-BA52-E277655AC9CF}",
 
@@ -221,7 +221,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetName,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, IWrongValueTypeException, Omega, IException, "{B7FF3FE7-11AF-4f62-9341-8470BCB8F0D7}",
 
@@ -230,7 +230,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetValueName,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, IBadNameException, Omega, IException, "{5ADD9FB6-2044-40fd-9F3C-31E9B66B865E}",
 
@@ -238,7 +238,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetName,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, IAlreadyExistsException, Omega, IException, "{5EC948EA-D7F1-4733-80A3-FF4BF5B2F4A7}",
 
@@ -246,7 +246,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Registry, IAccessDeniedException, Omega, IException, "{08AE0A04-1765-493b-93A3-8738768F09BC}",
 	

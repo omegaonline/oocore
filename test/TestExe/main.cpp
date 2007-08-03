@@ -26,7 +26,7 @@ int main(int /*argc*/, char* /*argv*/[])
 	RUN_TEST(otl_tests);
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
-	//RUN_TEST(interface_tests);
+	RUN_TEST(interface_tests);
 
 	return test_summary();
 }

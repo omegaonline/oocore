@@ -954,7 +954,8 @@ namespace Omega
 				typedef Tb type;
 			};
 
-			no_t get_qi_rtti(const qi_rtti** ppRtti, ...);
+			template <class T>
+			no_t get_qi_rtti(const T*,const qi_rtti** ppRtti, ...);
 
 			template <bool more = false>
 			struct get_qi_rtti_info_impl
@@ -972,8 +973,8 @@ namespace Omega
 				template <class I>
 				static void execute(const qi_rtti** ppRtti, I* i, const guid_t& iid)
 				{
-					if (!get_qi_rtti(ppRtti,i,iid))
-						get_qi_rtti_info_impl<sizeof(get_qi_rtti(ppRtti,(typename I::next::type*)0,iid)) == sizeof(yes_t)>::execute(ppRtti,(typename I::next::type*)0,iid);
+					if (!get_qi_rtti((int*)0,ppRtti,i,iid))
+						get_qi_rtti_info_impl<sizeof(get_qi_rtti((int*)0,ppRtti,(typename I::next::type*)0,iid)) == sizeof(yes_t)>::execute(ppRtti,(typename I::next::type*)0,iid);
 				}
 			};
 

@@ -11,7 +11,7 @@ namespace OOCore
 	};
 }
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	OOCore, IOutputCDR, Omega::Serialize, IFormattedStream, "{5251283B-95C8-4e5b-9136-5DDCBE636A4E}",
 

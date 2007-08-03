@@ -1,6 +1,6 @@
-#include "./Testdll.h"
-
 #include <OTL/OTL.h>
+
+#include "./Testdll.h"
 
 namespace 
 {
@@ -10,6 +10,10 @@ namespace
 		public Test::DllTest
 	{
 	public:
+		TestDllImpl()
+		{
+			wprintf(L"%s\n",(const wchar_t*)Omega::System::MetaInfo::lookup_iid(OMEGA_UUIDOF(Test::DllTest)));
+		}
 		Omega::string_t Hello();
 		
 		BEGIN_INTERFACE_MAP(TestDllImpl)
@@ -28,4 +32,4 @@ BEGIN_LIBRARY_OBJECT_MAP(TestDll)
 	OBJECT_MAP_ENTRY(TestDllImpl)
 END_LIBRARY_OBJECT_MAP()
 
-OMEGA_DEFINE_OID(Test, OID_TestDll, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}" );
+OMEGA_DEFINE_OID(Test, OID_TestDll, "{16C07AEA-242F-48F5-A10E-1DCA3FADB9A6}" );

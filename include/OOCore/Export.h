@@ -13,13 +13,13 @@
 #define OMEGA_UNIQUE_NAME(name) \
 	OMEGA_CONCAT(name,__LINE__)
 
-#define OMEGA_MAGIC_BEGIN(N,D)		if_then_else_< (sizeof(get_qi_rtti((const qi_rtti**)0,(size_t_<N>*)0,Omega::guid_t::Null())) != sizeof(yes_t)),size_t_<N>*,
+#define OMEGA_MAGIC_BEGIN(N,D)		if_then_else_< (sizeof(get_qi_rtti((int*)0,(const qi_rtti**)0,(size_t_<N>*)0,Omega::guid_t::Null())) != sizeof(yes_t)),size_t_<N>*,
 #define OMEGA_MAGIC_END(N,D)		>::type
-#define OMEGA_THROW_MAGIC(N,D)		if_then_else_< (sizeof(safe_throw((qi_rtti*)0,(size_t_<N>*)0,Omega::guid_t::Null(),(IException_Safe*)0)) != sizeof(yes_t)),size_t_<N>*,
 
 #define OMEGA_QI_MAGIC(n_space,iface) \
 	typedef OMEGA_REPEAT(OMEGA_MAX_INTERFACES,OMEGA_MAGIC_BEGIN,G) char OMEGA_REPEAT(OMEGA_MAX_INTERFACES,OMEGA_MAGIC_END,G) OMEGA_UNIQUE_NAME(iface); \
-	inline yes_t get_qi_rtti(const qi_rtti** ppRtti,OMEGA_UNIQUE_NAME(iface),const guid_t& iid) \
+	template <class T> \
+	inline yes_t get_qi_rtti(const T*,const qi_rtti** ppRtti,OMEGA_UNIQUE_NAME(iface),const guid_t& iid) \
 	{ \
 		if (OMEGA_UUIDOF(n_space::iface) == iid) \
 		{ \
@@ -510,7 +510,7 @@
 		OMEGA_CONCAT_R(unique,_WireProxy)& operator = (const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
 	};
 
-#define OMEGA_EXPORT_INTERFACE_DERIVED_I(n_space,name,unique,d_space,derived,guid,methods) \
+#define OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,unique,d_space,derived,guid,methods) \
 	OMEGA_DEFINE_IID(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	OMEGA_DECLARE_FORWARDS(n_space,name,unique,d_space,derived) \
@@ -520,11 +520,11 @@
 	OMEGA_QI_MAGIC(n_space,name) \
 	} } }
 
-#define OMEGA_EXPORT_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
-	OMEGA_EXPORT_INTERFACE_DERIVED_I(n_space,name,OMEGA_UNIQUE_NAME(name),d_space,derived,guid,methods)
+#define OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
+	OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,OMEGA_UNIQUE_NAME(name),d_space,derived,guid,methods)
 
-#define OMEGA_EXPORT_INTERFACE(n_space,name,guid,methods) \
-	OMEGA_EXPORT_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
+#define OMEGA_DEFINE_INTERFACE(n_space,name,guid,methods) \
+	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
 
 #define OMEGA_METHOD_VOID(name,param_count,params) \
 	(DECLARED_METHOD_VOID(0,name,param_count,params))

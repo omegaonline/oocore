@@ -57,7 +57,7 @@ namespace Omega
 	}
 }
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IMarshal, "{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}",
 
@@ -68,7 +68,7 @@ OMEGA_EXPORT_INTERFACE
     //OMEGA_METHOD_VOID(DisconnectObject,0,())
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IChannel, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
 
@@ -76,7 +76,7 @@ OMEGA_EXPORT_INTERFACE
 	OMEGA_METHOD(Serialize::IFormattedStream*,SendAndReceive,3,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pStream,(in),uint16_t,timeout))
 )
 
-OMEGA_EXPORT_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Remoting, IObjectManager, Omega::System::MetaInfo, IWireManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
 
@@ -86,7 +86,7 @@ OMEGA_EXPORT_INTERFACE_DERIVED
 	OMEGA_METHOD_VOID(CreateUnboundProxy,3,((in),const guid_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
-OMEGA_EXPORT_INTERFACE
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
 

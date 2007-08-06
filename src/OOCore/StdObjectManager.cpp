@@ -255,7 +255,7 @@ static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Seri
 
 		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
 		jmp_buf jmpb;
-		ExceptInfo xc;
+		OOCore::ExceptInfo xc;
 		xc.handler = OOCore::ExceptHandler;
 		xc.pjb = &jmpb;
 

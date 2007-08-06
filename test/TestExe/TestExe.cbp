@@ -15,6 +15,8 @@
 					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
 					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_CONSOLE" />
@@ -25,6 +27,7 @@
 					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="-mthreads" />
 					<Add library="..\..\src\OOCore\debug\libOOCore.a" />
 				</Linker>
 			</Target>
@@ -39,6 +42,8 @@
 					<Add option="-O3" />
 					<Add option="-W" />
 					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
@@ -49,6 +54,7 @@
 					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="-mthreads" />
 					<Add library="..\..\src\OOCore\debug\libOOCore.a" />
 				</Linker>
 			</Target>

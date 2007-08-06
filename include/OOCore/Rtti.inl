@@ -355,37 +355,6 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 	return 0;
 }
 
-const Omega::System::MetaInfo::qi_rtti* Omega::System::MetaInfo::get_qi_rtti_info(const guid_t& iid)
-{
-	static std::map<const guid_t,const qi_rtti*> mapRtti;
-	static System::ReaderWriterLock rw_lock;
-
-	try
-	{
-		// See if we have it already
-		{
-			System::ReadGuard guard(rw_lock);
-
-			std::map<const guid_t,const qi_rtti*>::iterator i=mapRtti.find(iid);
-			if (i!=mapRtti.end())
-				return i->second;
-		}
-	
-		const qi_rtti* pRet = 0;
-		get_qi_rtti_info_impl<(sizeof(get_qi_rtti((int*)0,&pRet,(size_t_<0>::type*)0,iid)) == sizeof(yes_t))>::execute(&pRet,(size_t_<0>*)0,iid);
-
-		System::WriteGuard guard(rw_lock);
-
-		mapRtti.insert(std::map<const guid_t,const qi_rtti*>::value_type(iid,pRet));
-		
-		return pRet;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e.what());
-	}
-}
-
 Omega::System::MetaInfo::SafeProxyStubMap& Omega::System::MetaInfo::get_proxy_map()
 {
 	static SafeProxyStubMap proxy_map;

@@ -206,17 +206,21 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 #if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
 
 #include <setjmp.h>
-struct ExceptInfo
-{
-	ExceptInfo* prev;
-	int (WINAPI *handler)(PEXCEPTION_RECORD,ExceptInfo*,PCONTEXT,PEXCEPTION_RECORD);
-	jmp_buf* pjb;
-};
 
-static int WINAPI ExceptHandler(PEXCEPTION_RECORD record, ExceptInfo* frame, PCONTEXT, PEXCEPTION_RECORD)
+namespace OOCore
 {
-	longjmp(*frame->pjb,record->ExceptionCode);
-	return 0;
+	struct ExceptInfo
+	{
+		ExceptInfo* prev;
+		int (WINAPI *handler)(PEXCEPTION_RECORD,ExceptInfo*,PCONTEXT,PEXCEPTION_RECORD);
+		jmp_buf* pjb;
+	};
+
+	static int WINAPI ExceptHandler(PEXCEPTION_RECORD record, ExceptInfo* frame, PCONTEXT, PEXCEPTION_RECORD)
+	{
+		longjmp(*frame->pjb,record->ExceptionCode);
+		return 0;
+	}
 }
 #endif
 
@@ -252,7 +256,7 @@ static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Seri
 		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
 		jmp_buf jmpb;
 		ExceptInfo xc;
-		xc.handler = ExceptHandler;
+		xc.handler = OOCore::ExceptHandler;
 		xc.pjb = &jmpb;
 
 		// Install SEH handler

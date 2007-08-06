@@ -184,16 +184,6 @@ namespace Omega
 	{
 		namespace MetaInfo
 		{
-			typedef bool yes_t;
-			typedef bool (&no_t)[2];
-
-			template <size_t N> struct size_t_
-			{
-				static const size_t		value = N;
-				typedef size_t_<N>		type;
-				typedef size_t_<N+1>	next;
-			};
-
 			template <class T> struct default_value
 			{
 				static T value()

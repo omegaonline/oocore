@@ -13,58 +13,54 @@
 #define OMEGA_UNIQUE_NAME(name) \
 	OMEGA_CONCAT(name,__LINE__)
 
-#define OMEGA_MAGIC_BEGIN(N,D)		if_then_else_< (sizeof(get_qi_rtti((int*)0,(const qi_rtti**)0,(size_t_<N>*)0,Omega::guid_t::Null())) != sizeof(yes_t)),size_t_<N>*,
-#define OMEGA_MAGIC_END(N,D)		>::type
-
 #define OMEGA_QI_MAGIC(n_space,iface) \
-	typedef OMEGA_REPEAT(OMEGA_MAX_INTERFACES,OMEGA_MAGIC_BEGIN,G) char OMEGA_REPEAT(OMEGA_MAX_INTERFACES,OMEGA_MAGIC_END,G) OMEGA_UNIQUE_NAME(iface); \
-	template <class T> \
-	inline yes_t get_qi_rtti(const T*,const qi_rtti** ppRtti,OMEGA_UNIQUE_NAME(iface),const guid_t& iid) \
+	namespace \
 	{ \
-		if (OMEGA_UUIDOF(n_space::iface) == iid) \
+		struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit) \
 		{ \
-			static const qi_rtti rtti = \
+			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit)() \
 			{ \
-				SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
-				SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
-				SafeThrow<n_space::iface>, \
-				DynamicThrow<n_space::iface>, \
-				CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>, \
-				WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
-				OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
-			}; \
-			*ppRtti = &rtti; \
-			return true; \
-		} \
-		else \
-			return false; \
+				static const qi_rtti s_rtti = \
+				{ \
+					SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
+					SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
+					SafeThrow<n_space::iface>, \
+					DynamicThrow<n_space::iface>, \
+					CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>, \
+					WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
+					OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
+				}; \
+				Omega::System::MetaInfo::register_rtti_info(OMEGA_UUIDOF(n_space::iface),&s_rtti); \
+			} \
+		}; \
+		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit_i); \
 	}
 
-#define OMEGA_DECLARE_FORWARDS(n_space,name,unique,d_space,derived) \
-	template <class Base> interface OMEGA_CONCAT_R(unique,_Safe); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_SafeStub); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_SafeProxy); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_WireStub); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(unique,_WireProxy); \
+#define OMEGA_DECLARE_FORWARDS(n_space,name,d_space,derived) \
+	template <class Base> interface OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_Safe); \
+	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeStub); \
+	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy); \
+	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub); \
+	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy); \
 	template <> \
 	struct interface_info<n_space::name> \
 	{ \
-		typedef OMEGA_CONCAT_R(unique,_Safe)<interface_info<d_space::derived>::safe_class> safe_class; \
+		typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_Safe)<interface_info<d_space::derived>::safe_class> safe_class; \
 		template <class I> struct safe_stub_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(unique,_SafeStub)<I,typename interface_info<d_space::derived>::safe_stub_factory<I>::type> type; \
+			typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeStub)<I,typename interface_info<d_space::derived>::safe_stub_factory<I>::type> type; \
 		}; \
 		template <class I> struct safe_proxy_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(unique,_SafeProxy)<I,typename interface_info<d_space::derived>::safe_proxy_factory<I>::type> type; \
+			typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)<I,typename interface_info<d_space::derived>::safe_proxy_factory<I>::type> type; \
 		}; \
 		template <class I> struct wire_stub_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(unique,_WireStub)<I,typename interface_info<d_space::derived>::wire_stub_factory<I>::type> type; \
+			typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)<I,typename interface_info<d_space::derived>::wire_stub_factory<I>::type> type; \
 		}; \
 		template <class I> struct wire_proxy_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(unique,_WireProxy)<I,typename interface_info<d_space::derived>::wire_proxy_factory<I>::type> type; \
+			typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)<I,typename interface_info<d_space::derived>::wire_proxy_factory<I>::type> type; \
 		}; \
 	}; \
 	template <> struct interface_info<n_space::name*> \
@@ -142,9 +138,9 @@
 #define OMEGA_DECLARE_SAFE_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_METHOD,methods,0)
 
-#define OMEGA_DECLARE_SAFE(methods,unique,d_space,derived) \
+#define OMEGA_DECLARE_SAFE(methods,name,d_space,derived) \
 	template <class Base> \
-	interface OMEGA_CONCAT_R(unique,_Safe) : public Base \
+	interface OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_Safe) : public Base \
 	{ \
 		OMEGA_DECLARE_SAFE_METHODS(methods) \
 	};
@@ -289,11 +285,11 @@
 #define OMEGA_DEFINE_WIRE_STUB_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DEFINE_WIRE_STUB_METHOD,methods,0)
 
-#define OMEGA_DECLARE_STUB(n_space,name,unique,methods) \
+#define OMEGA_DECLARE_STUB(n_space,name,methods) \
 	template <class I, class Base> \
-	struct OMEGA_CONCAT_R(unique,_SafeStub) : public Base \
+	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeStub) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_SafeStub)(I* pI) : Base(pI) \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeStub)(I* pI) : Base(pI) \
 		{ } \
 		virtual IException_Safe* Internal_QueryInterface_Safe(IObject_Safe** ppS, const guid_t& iid) \
 		{ \
@@ -308,9 +304,9 @@
 		OMEGA_DECLARE_SAFE_STUB_METHODS(methods) \
 	}; \
 	template <class I, class Base> \
-	struct OMEGA_CONCAT_R(unique,_WireStub) : public Base \
+	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_WireStub)(IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)(IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
 		{} \
 		virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) \
 		{ \
@@ -329,9 +325,9 @@
 		static const uint32_t MethodCount = Base::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 		OMEGA_DEFINE_WIRE_STUB_METHODS(methods) \
 	private: \
-		OMEGA_CONCAT_R(unique,_WireStub)() {}; \
-		OMEGA_CONCAT_R(unique,_WireStub)(const OMEGA_CONCAT_R(unique,_WireStub)&) {}; \
-		OMEGA_CONCAT_R(unique,_WireStub)& operator =(const OMEGA_CONCAT_R(unique,_WireStub)&) {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)() {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)(const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)&) {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)& operator =(const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)&) {}; \
 	};
 
 #define OMEGA_DECLARE_PARAM_SAFE_PROXY_I(meta,t,name) \
@@ -470,11 +466,11 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_PROXY_METHOD,methods,0) \
 	static const uint32_t MethodCount = Base::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods);
 
-#define OMEGA_DECLARE_PROXY(n_space,name,unique,methods) \
+#define OMEGA_DECLARE_PROXY(n_space,name,methods) \
 	template <class I, class Base> \
-	struct OMEGA_CONCAT_R(unique,_SafeProxy) : public Base \
+	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_SafeProxy)(typename interface_info<I*>::safe_class pS) : Base(pS) \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)(typename interface_info<I*>::safe_class pS) : Base(pS) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
 		{ \
@@ -487,13 +483,13 @@
 		} \
 		OMEGA_DECLARE_SAFE_PROXY_METHODS(methods) \
 	private: \
-		OMEGA_CONCAT_R(unique,_SafeProxy)(const OMEGA_CONCAT_R(unique,_SafeProxy)&) {}; \
-		OMEGA_CONCAT_R(unique,_SafeProxy)& operator = (const OMEGA_CONCAT_R(unique,_SafeProxy)&) {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)(const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)&) {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)& operator = (const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)&) {}; \
 	}; \
 	template <class I, class Base> \
-	struct OMEGA_CONCAT_R(unique,_WireProxy) : public Base \
+	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy) : public Base \
 	{ \
-		OMEGA_CONCAT_R(unique,_WireProxy)(IWireManager* pManager) : Base(pManager) \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)(IWireManager* pManager) : Base(pManager) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
 		{ \
@@ -506,22 +502,22 @@
 		} \
 		OMEGA_DECLARE_WIRE_PROXY_METHODS(methods) \
 	private: \
-		OMEGA_CONCAT_R(unique,_WireProxy)(const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
-		OMEGA_CONCAT_R(unique,_WireProxy)& operator = (const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)(const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)&) {}; \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)& operator = (const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)&) {}; \
 	};
 
-#define OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,unique,d_space,derived,guid,methods) \
+#define OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,d_space,derived,guid,methods) \
 	OMEGA_DEFINE_IID(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
-	OMEGA_DECLARE_FORWARDS(n_space,name,unique,d_space,derived) \
-	OMEGA_DECLARE_SAFE(methods,unique,d_space,derived) \
-	OMEGA_DECLARE_STUB(n_space,name,unique,methods) \
-	OMEGA_DECLARE_PROXY(n_space,name,unique,methods) \
+	OMEGA_DECLARE_FORWARDS(n_space,name,d_space,derived) \
+	OMEGA_DECLARE_SAFE(methods,name,d_space,derived) \
+	OMEGA_DECLARE_STUB(n_space,name,methods) \
+	OMEGA_DECLARE_PROXY(n_space,name,methods) \
 	OMEGA_QI_MAGIC(n_space,name) \
-	} } }
+	} } } \
 
 #define OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
-	OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,OMEGA_UNIQUE_NAME(name),d_space,derived,guid,methods)
+	OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,d_space,derived,guid,methods)
 
 #define OMEGA_DEFINE_INTERFACE(n_space,name,guid,methods) \
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)

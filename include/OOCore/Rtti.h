@@ -939,47 +939,31 @@ namespace Omega
 				string_t strName;
 			};
 
-			template <bool C, typename Ta, typename Tb>
-			struct if_then_else_;
-
-			template <typename Ta, typename Tb>
-			struct if_then_else_<true, Ta, Tb>
+			struct qi_holder
 			{
-				typedef Ta type;
-			};
-
-			template <typename Ta, typename Tb>
-			struct if_then_else_<false, Ta, Tb>
-			{
-				typedef Tb type;
-			};
-
-			template <class T>
-			no_t get_qi_rtti(const T*,const qi_rtti** ppRtti, ...);
-
-			template <bool more = false>
-			struct get_qi_rtti_info_impl
-			{
-				template <class I>
-				static void execute(const qi_rtti** ppRtti, I*, const guid_t&)
+				static qi_holder& instance()
 				{
-					*ppRtti = 0;
+					static qi_holder i;					
+					return i;
 				}
-			};
 
-			template <>
-			struct get_qi_rtti_info_impl<true>
+				std::map<Omega::guid_t,const Omega::System::MetaInfo::qi_rtti*> map;
+			};			
+
+			inline void register_rtti_info(const Omega::guid_t& iid, const Omega::System::MetaInfo::qi_rtti* pRtti)
 			{
-				template <class I>
-				static void execute(const qi_rtti** ppRtti, I* i, const guid_t& iid)
-				{
-					if (!get_qi_rtti((int*)0,ppRtti,i,iid))
-						get_qi_rtti_info_impl<sizeof(get_qi_rtti((int*)0,ppRtti,(typename I::next::type*)0,iid)) == sizeof(yes_t)>::execute(ppRtti,(typename I::next::type*)0,iid);
-				}
-			};
+				qi_holder::instance().map.insert(std::map<Omega::guid_t,const Omega::System::MetaInfo::qi_rtti*>::value_type(iid,pRtti));
+			}
 
-			inline const qi_rtti* get_qi_rtti_info(const guid_t& iid);
-
+			inline const Omega::System::MetaInfo::qi_rtti* get_qi_rtti_info(const Omega::guid_t& iid)
+			{
+				std::map<Omega::guid_t,const Omega::System::MetaInfo::qi_rtti*>::const_iterator i=qi_holder::instance().map.find(iid);
+				if (i == qi_holder::instance().map.end())
+					return 0;
+				else
+					return i->second;
+			}
+			
 			struct SafeProxyStubMap
 			{
 				System::ReaderWriterLock m_lock;

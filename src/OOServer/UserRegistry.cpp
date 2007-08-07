@@ -27,12 +27,21 @@ namespace Registry
 			return m_strName;
 		}
 
-		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
+		static void Validate(const string_t& strName, const string_t& strSource)
+		{
+			if (strName.IsEmpty() || strName.Left(1) == L"\\" ||
+				strName.Find(L']') != string_t::npos ||
+				strName.Find(L'[') != string_t::npos)
+			{
+				Throw(strName,strSource);
+			}
+		}
+
+		static void Throw(const string_t& name, const string_t& strSource)
 		{
 			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_ptrCause = pE;
 			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",static_cast<const wchar_t*>(name));
 			throw pRE;
 		}
@@ -60,14 +69,13 @@ namespace Registry
 			return m_strValue;
 		}
 
-		static void Throw(string_t strValue, ValueType_t actual_type, const string_t& strSource, IException* pE = 0)
+		static void Throw(string_t strValue, ValueType_t actual_type, const string_t& strSource)
 		{
 			ObjectImpl<WrongValueTypeException>* pRE = ObjectImpl<WrongValueTypeException>::CreateInstance();
 			pRE->m_type = actual_type;
 			pRE->m_strValue = strValue;
 			pRE->m_strSource = strSource;
-			pRE->m_ptrCause = pE;
-
+			
 			string_t tp = L"Corrupt!";
 			if (actual_type==String)
 				tp = "String";
@@ -125,12 +133,11 @@ namespace Registry
 			return m_strName;
 		}
 
-		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
+		static void Throw(const string_t& name, const string_t& strSource)
 		{
 			ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_ptrCause = pE;
 			pRE->m_strDesc = string_t::Format(L"Key '%ls' already exists.",static_cast<const wchar_t*>(name));
 			throw pRE;
 		}
@@ -152,12 +159,11 @@ namespace Registry
 			return m_strName;
 		}
 
-		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
+		static void Throw(const string_t& name, const string_t& strSource)
 		{
 			ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_ptrCause = pE;
 			pRE->m_strDesc = string_t::Format(L"Write attempt illegal for '%ls'.",static_cast<const wchar_t*>(name));
 			throw pRE;
 		}
@@ -334,6 +340,8 @@ void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 
 void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 {
+	BadNameException::Validate(strName,L"Omega::Registry::IRegistry::SetStringValue");
+
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_WString strValue(val);
@@ -356,6 +364,8 @@ void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 
 void UserKey::SetUIntValue(const string_t& strName, uint32_t val)
 {
+	BadNameException::Validate(strName,L"Omega::Registry::IRegistry::SetUIntValue");
+
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (m_pRegistry->set_integer_value(open_key(),strName,val) != 0)
@@ -377,6 +387,8 @@ void UserKey::SetUIntValue(const string_t& strName, uint32_t val)
 
 void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
+	BadNameException::Validate(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
+
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (m_pRegistry->set_binary_value(open_key(),strName,val,cbLen) != 0)
@@ -430,13 +442,9 @@ ValueType_t UserKey::GetValueType(const string_t& strName)
 
 IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
-	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
+	BadNameException::Validate(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 
-	if (strSubKey.IsEmpty())
-	{
-		AddRef();
-		return this;
-	}
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	if (flags & IRegistryKey::FailIfThere)
 	{
@@ -800,6 +808,8 @@ void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 
 void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 {
+	BadNameException::Validate(strName,L"Omega::Registry::IRegistry::SetStringValue");
+
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetStringValue);
 	request.write_wstring(m_strKey);
@@ -832,6 +842,8 @@ void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 
 void RootKey::SetUIntValue(const string_t& strName, uint32_t uValue)
 {
+	BadNameException::Validate(strName,L"Omega::Registry::IRegistry::SetUIntValue");
+
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetUInt32Value);
 	request.write_wstring(m_strKey);
@@ -864,6 +876,8 @@ void RootKey::SetUIntValue(const string_t& strName, uint32_t uValue)
 
 void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
 {
+	BadNameException::Validate(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
+
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetBinaryValue);
 	request.write_wstring(m_strKey);
@@ -897,6 +911,8 @@ void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 
 IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
 {
+	BadNameException::Validate(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
+
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
 	request.write_wstring(FullKeyPath(strSubKey));
@@ -1214,7 +1230,9 @@ IRegistryKey* BaseKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		return this;
 	}
 
-    if (strSubKey==L"Current User" || strSubKey.Left(13) == L"Current User\\")
+    if (strSubKey==L"Current User")
+		return m_ptrUser.AddRefReturn();
+	else if (strSubKey.Left(13) == L"Current User\\")
 		return m_ptrUser->OpenSubKey(strSubKey.Mid(13),flags);
 	else
 		return m_ptrRoot->OpenSubKey(strSubKey,flags);

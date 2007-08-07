@@ -112,7 +112,17 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 
 	try
 	{
-		pKey->SetStringValue(L"\\",L"Invalid name");
+		pKey->SetStringValue(L"",L"Invalid name");
+		TEST(!"No exception thrown!");
+	}
+	catch (Omega::Registry::IBadNameException* pE)
+	{
+		TEST(pE->GetName() == "");
+		pE->Release();
+	}
+	try
+	{
+		pKey->SetUIntValue(L"\\",0);
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -122,7 +132,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	try
 	{
-		pKey->SetStringValue(L"[",L"Invalid name");
+		pKey->SetBinaryValue(L"[",orig_size,szBuf);
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -215,6 +225,51 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
 	TEST(pSubKey);
 	pSubKey->Release();
+
+	try
+	{
+		pSubKey = pKey->OpenSubKey(L"",Omega::Registry::IRegistryKey::Create);
+		pSubKey->Release();
+		TEST(!"No exception thrown!");
+	}
+	catch (Omega::Registry::IBadNameException* pE)
+	{
+		TEST(pE->GetName() == "");
+		pE->Release();
+	}
+	try
+	{
+		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IRegistryKey::Create);
+		pSubKey->Release();
+		TEST(!"No exception thrown!");
+	}
+	catch (Omega::Registry::IBadNameException* pE)
+	{
+		TEST(pE->GetName() == "\\");
+		pE->Release();
+	}
+	try
+	{
+		pSubKey = pKey->OpenSubKey(L"[",Omega::Registry::IRegistryKey::Create);
+		pSubKey->Release();
+		TEST(!"No exception thrown!");
+	}
+	catch (Omega::Registry::IBadNameException* pE)
+	{
+		TEST(pE->GetName() == "[");
+		pE->Release();
+	}
+	try
+	{
+		pSubKey = pKey->OpenSubKey(L"]",Omega::Registry::IRegistryKey::Create);
+		pSubKey->Release();
+		TEST(!"No exception thrown!");
+	}
+	catch (Omega::Registry::IBadNameException* pE)
+	{
+		TEST(pE->GetName() == "]");
+		pE->Release();
+	}
 
 	Omega::IEnumString* pKeys = pKey->EnumSubKeys();
 	TEST(pKeys);

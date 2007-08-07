@@ -132,7 +132,7 @@ void MainFrame::CreateChildWindows(void)
 		m_bMatchAll = ptrKey->GetUIntValue("MatchAll")!=0;
 		m_bIgnoreCase = ptrKey->GetUIntValue("IgnoreCase")!=0;
 
-		for (Omega::uint32_t nFiles = ptrKey->GetUIntValue("Favourites")-1;nFiles>=0;--nFiles)
+		for (int nFiles = (int)ptrKey->GetUIntValue("Favourites")-1;nFiles>=0;--nFiles)
 		{
 			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles));
 
@@ -146,7 +146,7 @@ void MainFrame::CreateChildWindows(void)
 			}
 		}
 	}
-	catch (Omega::Registry::INotFoundException* e)
+	catch (Omega::IException* e)
 	{
 		e->Release();
 	}
@@ -548,6 +548,13 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 		evt.Veto();
 		m_pTree->EditLabel(evt.GetItem());
 	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+		SetCursor(*wxSTANDARD_CURSOR);
+		evt.Veto();
+		m_pTree->EditLabel(evt.GetItem());
+	}
 	catch(...)
 	{
 		SetCursor(*wxSTANDARD_CURSOR);
@@ -604,6 +611,11 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 		wxMessageBox(wxString::Format(_("Cannot rename %s: You do not have permission to edit this part of the registry."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+		evt.Veto();
+	}
 	catch(...)
 	{
 		evt.Veto();
@@ -640,6 +652,10 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 					pE->Release();
 
 					wxMessageBox(_("You do not have permission to delete this key."),_("Access Denied"),wxOK|wxICON_ERROR,this);
+				}
+				catch (Omega::IException* pE)
+				{
+					pE->Release();
 				}
 			}
 		}
@@ -679,6 +695,10 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 
 					wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
 				}
+				catch (Omega::IException* pE)
+				{
+					pE->Release();
+				}
 			}
 		}
 	}
@@ -715,6 +735,10 @@ void MainFrame::OnNewKey(wxCommandEvent& WXUNUSED(evt))
 
 		wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
 	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
 }
 
 void MainFrame::OnNewString(wxCommandEvent& WXUNUSED(evt))
@@ -736,6 +760,10 @@ void MainFrame::OnNewString(wxCommandEvent& WXUNUSED(evt))
 		pE->Release();
 
 		wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
 	}
 }
 
@@ -759,6 +787,10 @@ void MainFrame::OnNewUInt(wxCommandEvent& WXUNUSED(evt))
 
 		wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
 	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
 }
 
 void MainFrame::OnNewBinary(wxCommandEvent& WXUNUSED(evt))
@@ -780,6 +812,10 @@ void MainFrame::OnNewBinary(wxCommandEvent& WXUNUSED(evt))
 		pE->Release();
 
 		wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
 	}
 }
 
@@ -845,6 +881,10 @@ void MainFrame::OnModify(wxCommandEvent& WXUNUSED(evt))
 				pE->Release();
 
 				wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
+			}
+			catch (Omega::IException* pE)
+			{
+				pE->Release();
 			}
 		}
 	}
@@ -971,6 +1011,10 @@ void MainFrame::OnListDblClk(wxListEvent& evt)
 		pE->Release();
 
 		wxMessageBox(_("You do not have permission to edit this part of the registry."),_("Access Denied"),wxOK|wxICON_ERROR,this);
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
 	}
 }
 

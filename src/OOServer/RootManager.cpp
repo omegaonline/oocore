@@ -44,6 +44,22 @@ bool Root::Manager::install(int argc, wchar_t* argv[])
 	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),L"Objects",1,res);
 	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),L"Objects\\OIDs",1,res);
 
+	// Close the registry.. we are about to manipulate the file security
+	//ROOT_MANAGER::instance()->m_registry.close();
+
+	// Create the bootstrap file
+	ACE_HANDLE h = ACE_OS::open(ROOT_MANAGER::instance()->get_bootstrap_filename().c_str(),O_WRONLY | O_CREAT | O_TRUNC);
+	if (h == ACE_INVALID_HANDLE)
+		return false;
+	ACE_OS::close(h);
+
+	// Now secure the files we will use...
+	if (!SpawnedProcess::SecureFile(ROOT_MANAGER::instance()->m_strRegistry) ||
+		!SpawnedProcess::SecureFile(ROOT_MANAGER::instance()->get_bootstrap_filename()))
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -163,7 +179,7 @@ bool Root::Manager::init()
 
 	int flags = O_WRONLY | O_CREAT | O_TRUNC;
 #if defined(ACE_WIN32)
-	flags |= O_TEMPORARY;
+	//flags |= O_TEMPORARY;
 #endif
 
 	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),flags);
@@ -393,7 +409,7 @@ bool Root::Manager::spawn_sandbox()
 bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u_short& uNewPort, ACE_WString& strSource)
 {
 	// Alloc a new SpawnedProcess
-	SpawnedProcess* pSpawn;
+	SpawnedProcess* pSpawn = 0;
 	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
 
 	bool bSuccess = false;

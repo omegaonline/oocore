@@ -26,6 +26,11 @@
 #include <lm.h>
 #include <sddl.h>
 #include <ntsecapi.h>
+#include <aclapi.h>
+
+#ifndef PROTECTED_DACL_SECURITY_INFORMATION
+#define PROTECTED_DACL_SECURITY_INFORMATION     (0x80000000L)
+#endif
 
 Root::SpawnedProcess::SpawnedProcess() :
 	m_hToken(NULL),
@@ -109,7 +114,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	}
     else
 	{
-		LPWSTR pszUserName;
+		LPWSTR pszUserName = 0;
 		ACE_NEW_NORETURN(pszUserName,wchar_t[dwUNameSize]);
         if (!pszUserName)
 		{
@@ -782,96 +787,77 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	return true;
 }
 
-/*bool Root::SpawnedThread::LogonUser(uid_t id)
+bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 {
-	HANDLE hToken;
-
-	bool bSandbox = (id == static_cast<uid_t>(-1));
-	if (bSandbox)
+	// Specify the DACL to use.
+	// Create a SID for the Users group.
+	PSID pSIDUsers = NULL;
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
+		SECURITY_BUILTIN_DOMAIN_RID,
+		DOMAIN_ALIAS_RID_USERS,
+		0, 0, 0, 0, 0, 0,
+		&pSIDUsers))
 	{
-		int err = SpawnedProcess::LogonSandboxUser(&hToken);
-		if (err != 0)
-			return false;
-	}
-	else
-	{
-		// Get the process handle
-		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
-		if (!hProcess)
-			return false;
-
-		// Get the process token
-		BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
-
-		// Done with hProcess
-		CloseHandle(hProcess);
-
-		if (!bSuccess)
-			return false;
+		return false;
 	}
 
-	BOOL bSuccess = ImpersonateLoggedOnUser(hToken);
+	// Create a SID for the BUILTIN\Administrators group.
+	PSID pSIDAdmin = NULL;
 
-	CloseHandle(hToken);
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
+		SECURITY_BUILTIN_DOMAIN_RID,
+		DOMAIN_ALIAS_RID_ADMINS,
+		0, 0, 0, 0, 0, 0,
+		&pSIDAdmin))
+	{
+		FreeSid(pSIDUsers);
+		return false;
+	}
 
-	return (bSuccess ? true : false);
-}*/
+	const int NUM_ACES  = 2;
+	EXPLICIT_ACCESSW ea[NUM_ACES];
+	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+
+	// Set read access for Users.
+	ea[0].grfAccessPermissions = GENERIC_READ;
+	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfInheritance = NO_INHERITANCE;
+	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[0].Trustee.ptstrName = (LPWSTR) pSIDUsers;
+
+	// Set full control for Administrators.
+	ea[1].grfAccessPermissions = GENERIC_ALL;
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+	ea[1].Trustee.ptstrName = (LPWSTR) pSIDAdmin;
+
+	PACL pACL = NULL;
+	if (ERROR_SUCCESS != SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL))
+	{
+		FreeSid(pSIDAdmin);
+		FreeSid(pSIDUsers);
+		return false;
+	}
+
+	// Try to modify the object's DACL.
+	DWORD dwRes = SetNamedSecurityInfoW(
+		const_cast<LPWSTR>(strFilename.c_str()),         // name of the object
+		SE_FILE_OBJECT,              // type of object
+		DACL_SECURITY_INFORMATION |  // change only the object's DACL
+		PROTECTED_DACL_SECURITY_INFORMATION, // And don't inherit!
+		NULL, NULL,                  // don't change owner or group
+		pACL,                        // DACL specified
+		NULL);                       // don't change SACL
+
+	FreeSid(pSIDAdmin);
+	FreeSid(pSIDUsers);
+	LocalFree(pACL);
+
+	return (ERROR_SUCCESS == dwRes);
+}
 
 #endif // ACE_WIN32
-
-/*Root::SpawnedThread::SpawnedThread() :
-	SpawnedProcess(),
-	m_thread_id(0)
-{
-}
-
-Root::SpawnedThread::~SpawnedThread()
-{
-	if (m_thread_id != 0)
-		ACE_Thread_Manager::instance()->kill(m_thread_id,9);
-}
-
-bool Root::SpawnedThread::Spawn(uid_t id, u_short uPort, ACE_WString& strSource)
-{
-	Params* pParams = 0;
-	ACE_NEW_NORETURN(pParams,Params);
-	if (!pParams)
-	{
-		strSource = "Root::SpawnedThread::Spawn - malloc Params";
-		return false;
-	}
-
-	pParams->id = id;
-	pParams->uPort = uPort;
-
-	int grp = ACE_Thread_Manager::instance()->spawn(worker_fn,pParams,THR_NEW_LWP | THR_JOINABLE | THR_INHERIT_SCHED,&m_thread_id);
-	if (grp == -1)
-	{
-		strSource = "Root::SpawnedThread::Spawn - spawn thread";
-		delete pParams;
-		return false;
-	}
-
-	return true;
-}
-
-bool Root::SpawnedThread::IsRunning()
-{
-	if (m_thread_id == 0)
-		return false;
-	else
-		return !(ACE_Thread_Manager::instance()->testterminate(m_thread_id));
-}
-
-// Forward declare UserMain
-int UserMain(u_short uPort);
-
-ACE_THR_FUNC_RETURN Root::SpawnedThread::worker_fn(void* pParams)
-{
-	Params* p = static_cast<Params*>(pParams);
-
-	if (!LogonUser(p->id))
-		return (ACE_THR_FUNC_RETURN)-1;
-
-	return (ACE_THR_FUNC_RETURN)UserMain(p->uPort);
-}*/

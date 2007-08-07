@@ -82,9 +82,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/TestExe.exe"
-				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
-				GenerateDebugInformation="TRUE"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

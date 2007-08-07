@@ -39,6 +39,7 @@
 				<Compiler>
 					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
+					<Add option="-Os" />
 					<Add option="-O3" />
 					<Add option="-W" />
 					<Add option="-Wall" />
@@ -54,6 +55,7 @@
 					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="-s" />
 					<Add option="-mthreads" />
 					<Add library="..\..\src\OOCore\debug\libOOCore.a" />
 				</Linker>

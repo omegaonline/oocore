@@ -402,4 +402,20 @@ ACE_CString Root::SpawnedProcess::get_home_dir()
 	return pw->pw_dir;
 }
 
+bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
+{
+	ACE_CString strShortName = ACE_Wide_To_Ascii(strFilename).char_rep();
+
+	// Make sure the file is owned by root (0)
+	if (::chown(strShortName.c_str(),0,(gid_t)-1) != 0)
+		return false;
+
+	void* TODO; // Check the group permissions...
+
+	if (::chmod(strShortName.c_str(),S_IRWXU | IRWXG | S_IROTH) != 0)
+		return false;
+
+	return true;
+}
+
 #endif // !ACE_WIN32

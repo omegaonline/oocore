@@ -30,6 +30,7 @@ namespace Root
 		static bool GetSandboxUid(ACE_CString& uid);
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
+		static bool SecureFile(const ACE_WString& strFilename);
 
 #if defined(ACE_WIN32)
 	protected:
@@ -58,27 +59,6 @@ namespace Root
 #endif // ACE_WIN32
 
 	};
-
-	/*class SpawnedThread : public SpawnedProcess
-	{
-	public:
-		SpawnedThread();
-		~SpawnedThread();
-
-		virtual bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
-		virtual bool IsRunning();
-
-	private:
-		ACE_thread_t m_thread_id;
-
-		struct Params
-		{
-			uid_t   id;
-			u_short uPort;
-		};
-		static ACE_THR_FUNC_RETURN worker_fn(void* pParam);
-		static bool LogonUser(uid_t id);
-	};*/
 }
 
 #endif // OOSERVER_SPAWNED_PROCESS_H_INCLUDED_

@@ -66,6 +66,7 @@
 					<Add option="-mthreads" />
 					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
 					<Add library="..\OOCore\debug\libOOCore.a" />
+					<Add library="shlwapi" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />

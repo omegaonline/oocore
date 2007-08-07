@@ -105,9 +105,9 @@ int Root::NTService::description(const wchar_t *desc)
 	return ok ? 0 : -1;
 }
 
-static BOOL WINAPI control_c(DWORD /*dwCtrlType*/)
+BOOL Root::NTService::control_c(DWORD)
 {
-	Root::Manager::end();
+	Root::NTService::NTSERVICE::instance()->stop_requested(0);
 
 	return TRUE;
 }

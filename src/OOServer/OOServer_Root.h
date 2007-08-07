@@ -40,6 +40,17 @@
 
 #endif // WIN32
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4127)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4267)
+#endif
+
+/////////////////////////////////////////////////
+// Include ACE components
+
+// Link to the static lib version of ACE...
 #define ACE_AS_STATIC_LIBS 1
 #define ACE_USES_WCHAR
 
@@ -59,8 +70,33 @@
 #include <ace/Singleton.h>
 #include <ace/SOCK_Acceptor.h>
 
+// End of ACE includes
+/////////////////////////////////////////////////
+
+//////////////////////////////////////////////
+// Include STL components
+
 #include <list>
 #include <map>
 #include <set>
+
+// End of STL includes
+//////////////////////////////////////////////
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
+#if defined(_MSC_VER)
+
+// Warning 4127 is rubbish!
+#pragma warning(disable : 4127)
+
+#ifndef _DEBUG
+// Optimization sometimes re-orders things causing this error
+#pragma warning(disable : 4702)
+#endif
+
+#endif
 
 #endif // OOSERVER_ROOT_H_INCLUDED_

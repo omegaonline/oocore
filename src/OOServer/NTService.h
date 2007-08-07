@@ -35,6 +35,7 @@ namespace Root
 		typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
 
 		static ACE_THR_FUNC_RETURN start_service(void*);
+		static BOOL WINAPI control_c(DWORD);
 		
 		int description(const wchar_t *desc);
 		int insert(	const wchar_t *cmd_line = 0,

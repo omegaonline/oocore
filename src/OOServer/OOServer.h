@@ -5,6 +5,12 @@
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4267)
+
+#ifndef _DEBUG
+// Optimization sometimes re-orders things causing this error
+#pragma warning(disable : 4702)
+#endif
+
 #endif
 
 /////////////////////////////////////////////////

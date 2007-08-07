@@ -196,10 +196,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	{
 		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"Objects\\" + strCurName);
 
-		if (ptrOidKey->IsValue(L"OID"))
-			return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));
+		if (ptrOidKey->IsValue(L"CurrentVersion"))
+		{
+			strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
+			continue;
+		}
 
-		strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
+		return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));		
 	}
 }
 

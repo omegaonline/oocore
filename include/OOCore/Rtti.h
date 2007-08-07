@@ -459,10 +459,7 @@ namespace Omega
 			{
 				virtual void OMEGA_CALL AddRef_Safe() = 0;
 				virtual void OMEGA_CALL Release_Safe() = 0;
-				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid) = 0;
-
-            protected:
-                virtual ~IObject_Safe() {};
+				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid) = 0;
 			};
 
 
@@ -677,9 +674,9 @@ namespace Omega
 					{
 						m_pOuter->Release_Safe();
 					}
-					virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** ppS, const guid_t& iid)
+					virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** ppS, const guid_t* piid)
 					{
-						return m_pOuter->QueryInterface_Safe(ppS,iid);
+						return m_pOuter->QueryInterface_Safe(ppS,piid);
 					}
 
 					IObject_Safe* m_pOuter;
@@ -708,27 +705,27 @@ namespace Omega
 
 			// IObject_Safe members
 			public:
-				void OMEGA_CALL AddRef_Safe()
+				virtual void OMEGA_CALL AddRef_Safe()
 				{
 					++m_refcount;
 				}
 
-				void OMEGA_CALL Release_Safe()
+				virtual void OMEGA_CALL Release_Safe()
 				{
 					if (--m_refcount==0)
 						delete this;
 				}
 
-				IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** ppS, const guid_t& iid)
+				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** ppS, const guid_t* piid)
 				{
-					if (iid==OMEGA_UUIDOF(IObject))
+					if (*piid==OMEGA_UUIDOF(IObject))
 					{
 						*ppS = this;
 						AddRef_Safe();
 						return 0;
 					}
 					else
-						return m_contained.Internal_QueryInterface_Safe(ppS,iid);
+						return m_contained.Internal_QueryInterface_Safe(ppS,*piid);
 				}
 			};
 
@@ -776,7 +773,7 @@ namespace Omega
 				static IObject* Create(IObject* pOuter, IObject_Safe* pObjS)
 				{
 					IObject_Safe* pObjS2 = 0;
-					IException_Safe* pSE = pObjS->QueryInterface_Safe(&pObjS2,OMEGA_UUIDOF(I));
+					IException_Safe* pSE = pObjS->QueryInterface_Safe(&pObjS2,&OMEGA_UUIDOF(I));
 					if (pSE)
 						throw_correct_exception(pSE);
 					if (!pObjS2)
@@ -791,18 +788,18 @@ namespace Omega
 
 			// IObject members
 			public:
-				void AddRef()
+				virtual void AddRef()
 				{
 					++m_refcount;
 				}
 
-				void Release()
+				virtual void Release()
 				{
 					if (--m_refcount==0)
 						delete this;
 				}
 
-				IObject* QueryInterface(const guid_t& iid)
+				virtual IObject* QueryInterface(const guid_t& iid)
 				{
 					if (iid==OMEGA_UUIDOF(IObject))
 					{
@@ -1000,18 +997,18 @@ namespace Omega
 					stub_map.m_map.erase(m_pObj);
 				}
 
-				void OMEGA_CALL AddRef_Safe()
+				virtual void OMEGA_CALL AddRef_Safe()
 				{
 					++m_refcount;
 				}
 
-				void OMEGA_CALL Release_Safe()
+				virtual void OMEGA_CALL Release_Safe()
 				{
 					if (--m_refcount==0)
 						delete this;
 				}
 
-				inline IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid);
+				inline virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid);
 
 			private:
 				System::AtomicOp<uint32_t>           m_refcount;

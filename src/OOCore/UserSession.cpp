@@ -132,7 +132,8 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 {
 #if defined(OMEGA_WIN32)
 	ACE_NT_Service service(L"OOServer");
-	if (service.start_svc() != 0)
+	ACE_Time_Value wait(30);
+	if (service.start_svc(&wait) != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;

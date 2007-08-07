@@ -19,7 +19,7 @@ namespace OOCore
 		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
 
 		UserSession();
-		virtual ~UserSession();
+		~UserSession();
 		UserSession(const UserSession&) {}
 		UserSession& operator = (const UserSession&) { return *this; }
 
@@ -57,7 +57,7 @@ namespace OOCore
 			friend class ACE_TSS<ThreadContext>;
 
 			ThreadContext();
-			virtual ~ThreadContext();
+			~ThreadContext();
 		};
 		
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;

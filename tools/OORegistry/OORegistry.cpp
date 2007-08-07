@@ -45,7 +45,7 @@ static int Interactive()
 {
 	try
 	{
-		Omega::string_t strKey = "\\";
+		Omega::string_t strKey = L"\\";
 		for (;;)
 		{
 			// Print the prompt
@@ -110,7 +110,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		for (int i=next;i<argc;++i)
 			args.push_back(argv[i]);
 
-		Omega::string_t strKey = "\\";
+		Omega::string_t strKey = L"\\";
 		err = Process(strKey,args);
 	}
 	else

@@ -361,6 +361,22 @@ static bool test_key(const Omega::string_t& strKey)
 	return true;
 }
 
+static bool test_privates(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strSubKey)
+{
+	try
+	{
+		pKey->DeleteKey(strSubKey);
+		TEST(!"No exception thrown!");
+	}
+	catch (Omega::Registry::IAccessDeniedException* pE)
+	{
+		TEST(pE->GetKeyName() == strSubKey);
+		pE->Release();
+	}
+
+	return true;
+}
+
 static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 {
 	TEST(pKey->IsSubKey(L"All Users"));
@@ -393,6 +409,13 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 		if (!test_values(pKey,L""))
 			return false;
 	}
+
+	// Test the private root keys
+	test_privates(pKey,L"All Users");
+	test_privates(pKey,L"Objects");
+	test_privates(pKey,L"Objects\\OIDs");
+	test_privates(pKey,L"Server");
+	test_privates(pKey,L"Server\\Sandbox");
 
 	return true;
 }
@@ -434,7 +457,8 @@ bool registry_tests_2()
 	TEST(ptrKey == (Omega::IObject*)0);
 	TEST(ptrKey == (Omega::Registry::IRegistryKey*)0);
 
-
+	// More here!
+	void* TODO;
 
 	return true;
 }

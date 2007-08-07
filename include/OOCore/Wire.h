@@ -434,18 +434,18 @@ namespace Omega
 
 			// IObject members
 			public:
-				void AddRef()
+				virtual void AddRef()
 				{
 					++m_refcount;
 				}
 
-				void Release()
+				virtual void Release()
 				{
 					if (--m_refcount==0)
 						delete this;
 				}
 
-				IObject* QueryInterface(const guid_t& iid)
+				virtual IObject* QueryInterface(const guid_t& iid)
 				{
 					if (iid==OMEGA_UUIDOF(IObject))
 					{
@@ -482,18 +482,18 @@ namespace Omega
 						m_pI->Release();
 				}
 
-				void AddRef()
+				virtual void AddRef()
 				{
 					++m_refcount;
 				}
 
-				void Release()
+				virtual void Release()
 				{
 					if (--m_refcount==0)
 						delete this;
 				}
 
-				IObject* QueryInterface(const guid_t&)
+				virtual IObject* QueryInterface(const guid_t&)
 				{
 					return 0;
 				}

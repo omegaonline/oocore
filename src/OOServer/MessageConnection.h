@@ -113,7 +113,7 @@ namespace Root
 			friend class ACE_TSS<ThreadContext>;
 
 			ThreadContext();
-			virtual ~ThreadContext();
+			~ThreadContext();
 		};
 
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;

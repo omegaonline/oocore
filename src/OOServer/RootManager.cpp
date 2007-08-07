@@ -38,9 +38,11 @@ bool Root::Manager::install(int argc, wchar_t* argv[])
 	if (!SpawnedProcess::InstallSandbox(argc,argv))
 		return false;
 
-	// Add the default All Users key
+	// Add the default keys
 	ACE_Configuration_Section_Key res;
 	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),L"All Users",1,res);
+	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),L"Objects",1,res);
+	ROOT_MANAGER::instance()->m_registry.open_section(ROOT_MANAGER::instance()->m_registry.root_section(),L"Objects\\OIDs",1,res);
 
 	return true;
 }
@@ -802,7 +804,7 @@ void Root::Manager::registry_create_key(ACE_HANDLE handle, ACE_InputCDR& request
 
 void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	int err = 0;
+    int err = 0;
 	{
 		ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_registry_lock);
 		if (guard.locked () == 0)
@@ -819,8 +821,14 @@ void Root::Manager::registry_delete_key(ACE_HANDLE handle, ACE_InputCDR& request
 					err = ACE_OS::last_error();
 				else
 				{
-					if (strSubKey == L"All Users")
+					if (strSubKey == L"All Users" ||
+						strSubKey == L"Objects" ||
+						strSubKey == L"Objects\\OIDs" ||
+						strSubKey == L"Server" ||
+						strSubKey == L"Server\\Sandbox")
+					{
 						err = EACCES;
+					}
 					else if (m_registry.remove_section(key,strSubKey.c_str(),1) != 0)
 						err = ACE_OS::last_error();
 				}

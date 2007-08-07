@@ -11,10 +11,6 @@ namespace Omega
 		virtual void AddRef() = 0;
 		virtual void Release() = 0;
 		virtual IObject* QueryInterface(const guid_t& iid) = 0;
-
-
-    protected:
-        virtual ~IObject() {};
 	};
 
 	interface IException : public IObject

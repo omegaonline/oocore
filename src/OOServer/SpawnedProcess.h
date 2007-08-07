@@ -19,7 +19,7 @@ namespace Root
 	{
 	public:
 		SpawnedProcess();
-		virtual ~SpawnedProcess();
+		~SpawnedProcess();
 
 		virtual bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
 		virtual bool IsRunning();
@@ -63,7 +63,7 @@ namespace Root
 	{
 	public:
 		SpawnedThread();
-		virtual ~SpawnedThread();
+		~SpawnedThread();
 
 		virtual bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
 		virtual bool IsRunning();

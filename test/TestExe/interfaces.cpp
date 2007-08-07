@@ -7,7 +7,7 @@ bool interface_tests()
 {
 	OTL::ObjectPtr<Test::DllTest> ptrTest(L"Test.Dll");
 	
-	TEST(ptrTest->Hello() == L"Hello");
+	TEST(ptrTest->Hello() == L"Hello!");
 
 	return true;
 }

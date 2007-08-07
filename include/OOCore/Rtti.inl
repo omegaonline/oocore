@@ -7,7 +7,7 @@ void Omega::System::MetaInfo::iface_stub_functor<I>::init(typename interface_inf
 	if (pS)
 	{
 		IObject_Safe* pObjS = 0;
-		IException_Safe* pSE = pS->QueryInterface_Safe(&pObjS,OMEGA_UUIDOF(IObject));
+		IException_Safe* pSE = pS->QueryInterface_Safe(&pObjS,&OMEGA_UUIDOF(IObject));
 		if (pSE)
 			throw_correct_exception(pSE);
 		if (!pObjS)
@@ -62,7 +62,7 @@ void Omega::System::MetaInfo::iface_proxy_functor<I>::detach(I* volatile & resul
 	if (m_pS)
 	{
 		IObject_Safe* pObjS = 0;
-		IException_Safe* pSE = m_pS->QueryInterface_Safe(&pObjS,OMEGA_UUIDOF(IObject));
+		IException_Safe* pSE = m_pS->QueryInterface_Safe(&pObjS,&OMEGA_UUIDOF(IObject));
 		if (pSE)
 			throw_correct_exception(pSE);
 		if (!pObjS)
@@ -186,9 +186,9 @@ void Omega::System::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
 	}
 }
 
-Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(IObject_Safe** retval, const guid_t& iid)
+Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid)
 {
-	if (iid==OMEGA_UUIDOF(IObject))
+	if (*piid==OMEGA_UUIDOF(IObject))
 	{
 		*retval = this;
 		(*retval)->AddRef_Safe();
@@ -207,11 +207,11 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			{
 				System::ReadGuard guard(m_lock);
 
-				std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(iid);
+				std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(*piid);
 				if (i != m_iid_map.end())
 				{
 					if (i->second)
-						return i->second->QueryInterface_Safe(retval,iid);
+						return i->second->QueryInterface_Safe(retval,piid);
 					else
 						return 0;
 				}
@@ -221,7 +221,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 				{
 					if (i->second)
 					{
-						IException_Safe* pSE = i->second->QueryInterface_Safe(&pQI,iid);
+						IException_Safe* pSE = i->second->QueryInterface_Safe(&pQI,piid);
 						if (pSE)
 							return pSE;
 					}
@@ -236,9 +236,9 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			if (!pObjS)
 			{
 				// New stub required
-				const qi_rtti* pRtti = get_qi_rtti_info(iid);
+				const qi_rtti* pRtti = get_qi_rtti_info(*piid);
 				if (!pRtti || !pRtti->pfnCreateSafeStub)
-					throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+					throw INoInterfaceException::Create(*piid,OMEGA_SOURCE_INFO);
 
 				pObjS = pRtti->pfnCreateSafeStub(this,m_pObj);
 			}
@@ -246,7 +246,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			System::WriteGuard guard(m_lock);
             
 			auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
-			std::pair<std::map<const guid_t,IObject_Safe*>::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(iid,pObjS));
+			std::pair<std::map<const guid_t,IObject_Safe*>::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(*piid,pObjS));
 			if (p.second)
 				ptrObjS.detach();
 			else
@@ -260,7 +260,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			}
 			
 			if (pObjS)
-				return pObjS->QueryInterface_Safe(retval,iid);
+				return pObjS->QueryInterface_Safe(retval,piid);
 		}
 		catch (std::exception& e)
 		{
@@ -410,7 +410,7 @@ Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(Omeg
 	}
 
 	IObject_Safe* pRet = 0;
-	IException_Safe* pSE = ptrSafeStub->QueryInterface_Safe(&pRet,iid);
+	IException_Safe* pSE = ptrSafeStub->QueryInterface_Safe(&pRet,&iid);
 	if (pSE)
 		throw_correct_exception(pSE);
 
@@ -476,7 +476,7 @@ Omega::System::MetaInfo::IException_Safe* Omega::System::MetaInfo::return_safe_e
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	auto_iface_ptr<IException> ptrE(pE);
 	IObject_Safe* pSE2 = 0;
-	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,iid);
+	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,&iid);
 	if (pSE3)
 		return pSE3;
 	if (!pSE2)

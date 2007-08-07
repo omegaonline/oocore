@@ -20,8 +20,6 @@
 
 #define OMEGA_UNUSED_ARG(n)	(void)(n)
 
-#define OMEGA_COMPILER_STRING_II(a,b)   a #b
-#define OMEGA_COMPILER_STRING_I(a,b)    OMEGA_COMPILER_STRING_II(a,b)
-#define OMEGA_COMPILER_STRING           OMEGA_COMPILER_STRING_I("gcc ",__VERSION__)
+#define OMEGA_COMPILER_STRING           "gcc " __VERSION__
 
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

@@ -2,22 +2,10 @@
 // Set up the export macros for TEST
 #if defined(TEST_BUILD_LIBRARY)
 
-//#define TEST_EXPORTED_FUNCTION_VOID(name,param_count,params) \
-//	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)
-
-//#define TEST_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-//	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
-
 #define TEST_DECLARE_OID(n) \
 	OMEGA_EXPORT_OID(n)
 
 #else
-
-//#define TEST_EXPORTED_FUNCTION_VOID(name,param_count,params) \
-//	OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params)
-
-//#define TEST_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-//	OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params)
 
 #define TEST_DECLARE_OID(n) \
 	OMEGA_IMPORT_OID(n)

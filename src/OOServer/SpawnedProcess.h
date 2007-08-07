@@ -21,8 +21,8 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		virtual bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
-		virtual bool IsRunning();
+		bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
+		bool IsRunning();
 
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
 

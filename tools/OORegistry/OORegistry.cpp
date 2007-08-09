@@ -14,7 +14,7 @@ static int Version()
 
 static int PrintException(Omega::IException* pE)
 {
-	ACE_OS::printf("%ls.\n",(const wchar_t*)pE->Description());
+	ACE_OS::printf("%ls.\n",pE->Description().c_str());
 	pE->Release();
 	return -1;
 }
@@ -49,7 +49,7 @@ static int Interactive()
 		for (;;)
 		{
 			// Print the prompt
-			ACE_OS::printf("%ls > ",(const wchar_t*)strKey);
+			ACE_OS::printf("%ls > ",strKey.c_str());
 			
 			// Get the next input...
 			ACE_TCHAR szBuf[1024];

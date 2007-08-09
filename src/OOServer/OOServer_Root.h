@@ -45,6 +45,12 @@
 #pragma warning(disable : 4127)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4267)
+
+#ifndef _DEBUG
+// Optimization sometimes re-orders things causing this error
+#pragma warning(disable : 4702)
+#endif
+
 #endif
 
 /////////////////////////////////////////////////
@@ -91,11 +97,6 @@
 
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)
-
-#ifndef _DEBUG
-// Optimization sometimes re-orders things causing this error
-#pragma warning(disable : 4702)
-#endif
 
 #endif
 

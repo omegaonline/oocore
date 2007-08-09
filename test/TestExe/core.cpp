@@ -22,7 +22,7 @@ bool core_tests()
 	if (pE)
 	{
 		add_failure();
-		wprintf(L"[Failed]\n\tOmega::Initialize failed: %ls\n%ls\n",(const wchar_t*)pE->Description(),(const wchar_t*)pE->Source());
+		wprintf(L"[Failed]\n\tOmega::Initialize failed: %ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str());
 		pE->Release();
 		exit(test_summary());
 	}

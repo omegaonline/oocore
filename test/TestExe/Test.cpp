@@ -54,7 +54,7 @@ void run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		wprintf(L"[Unhandled Omega::IException]\n\n%ls\n%ls\n",(const wchar_t*)pE->Description(),(const wchar_t*)pE->Source());
+		wprintf(L"[Unhandled Omega::IException]\n\n%ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str());
 		pE->Release();
 	}
 	catch (std::exception& e)

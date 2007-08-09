@@ -42,7 +42,7 @@ namespace Registry
 			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",static_cast<const wchar_t*>(name));
+			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",name.c_str());
 			throw pRE;
 		}
 	};
@@ -84,7 +84,7 @@ namespace Registry
 			else if (actual_type==Binary)
 				tp = "Binary";
 
-			pRE->m_strDesc = string_t::Format(L"Incorrect registry value type, actual value type is %ls.",static_cast<const wchar_t*>(tp));
+			pRE->m_strDesc = string_t::Format(L"Incorrect registry value type, actual value type is %ls.",tp.c_str());
 
 			throw pRE;
 		}
@@ -112,7 +112,7 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
-			pRE->m_strDesc = string_t::Format(L"'%ls' not found.",static_cast<const wchar_t*>(name));
+			pRE->m_strDesc = string_t::Format(L"'%ls' not found.",name.c_str());
 			throw pRE;
 		}
 	};
@@ -138,7 +138,7 @@ namespace Registry
 			ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Key '%ls' already exists.",static_cast<const wchar_t*>(name));
+			pRE->m_strDesc = string_t::Format(L"Key '%ls' already exists.",name.c_str());
 			throw pRE;
 		}
 	};
@@ -164,7 +164,7 @@ namespace Registry
 			ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Write attempt illegal for '%ls'.",static_cast<const wchar_t*>(name));
+			pRE->m_strDesc = string_t::Format(L"Write attempt illegal for '%ls'.",name.c_str());
 			throw pRE;
 		}
 	};
@@ -204,7 +204,7 @@ ACE_Configuration_Section_Key UserKey::open_key()
 		return m_pRegistry->root_section();
 
 	ACE_Configuration_Section_Key sub_key;
-	if (m_pRegistry->open_section(m_pRegistry->root_section(),strKey,0,sub_key) != 0)
+	if (m_pRegistry->open_section(m_pRegistry->root_section(),strKey.c_str(),0,sub_key) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -221,7 +221,7 @@ bool_t UserKey::IsSubKey(const string_t& strSubKey)
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_Configuration_Section_Key sub_key;
-	if (m_pRegistry->open_section(open_key(),strSubKey,0,sub_key) == 0)
+	if (m_pRegistry->open_section(open_key(),strSubKey.c_str(),0,sub_key) == 0)
 		return true;
 
 	int err = ACE_OS::last_error();
@@ -240,7 +240,7 @@ bool_t UserKey::IsValue(const string_t& strName)
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_Configuration_Heap::VALUETYPE vtype;
-	if (m_pRegistry->find_value(open_key(),strName,vtype) == 0)
+	if (m_pRegistry->find_value(open_key(),strName.c_str(),vtype) == 0)
 		return true;
 
 	int err = ACE_OS::last_error();
@@ -259,7 +259,7 @@ string_t UserKey::GetStringValue(const string_t& strName)
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_WString strValue;
-	if (m_pRegistry->get_string_value(open_key(),strName,strValue) != 0)
+	if (m_pRegistry->get_string_value(open_key(),strName.c_str(),strValue) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -283,7 +283,7 @@ uint32_t UserKey::GetUIntValue(const string_t& strName)
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	u_int uValue = 0;
-	if (m_pRegistry->get_integer_value(open_key(),strName,uValue) != 0)
+	if (m_pRegistry->get_integer_value(open_key(),strName.c_str(),uValue) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -308,7 +308,7 @@ void UserKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 
 	void* data = 0;
 	size_t len = 0;
-	if (m_pRegistry->get_binary_value(open_key(),strName,data,len) != 0)
+	if (m_pRegistry->get_binary_value(open_key(),strName.c_str(),data,len) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -344,8 +344,8 @@ void UserKey::SetStringValue(const string_t& strName, const string_t& val)
 
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	ACE_WString strValue(val);
-	if (m_pRegistry->set_string_value(open_key(),strName,strValue) != 0)
+	ACE_WString strValue(val.c_str());
+	if (m_pRegistry->set_string_value(open_key(),strName.c_str(),strValue) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -368,7 +368,7 @@ void UserKey::SetUIntValue(const string_t& strName, uint32_t val)
 
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	if (m_pRegistry->set_integer_value(open_key(),strName,val) != 0)
+	if (m_pRegistry->set_integer_value(open_key(),strName.c_str(),val) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -391,7 +391,7 @@ void UserKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	if (m_pRegistry->set_binary_value(open_key(),strName,val,cbLen) != 0)
+	if (m_pRegistry->set_binary_value(open_key(),strName.c_str(),val,cbLen) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -413,7 +413,7 @@ ValueType_t UserKey::GetValueType(const string_t& strName)
 	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
 	ACE_Configuration_Heap::VALUETYPE vtype;
-	if (m_pRegistry->find_value(open_key(),strName,vtype) != 0)
+	if (m_pRegistry->find_value(open_key(),strName.c_str(),vtype) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -450,14 +450,14 @@ IRegistryKey* UserKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 	{
 		// Check to see if the key already exists by opening it...
 		ACE_Configuration_Section_Key sub_key;
-		if (m_pRegistry->open_section(open_key(),strSubKey,0,sub_key) == 0)
+		if (m_pRegistry->open_section(open_key(),strSubKey.c_str(),0,sub_key) == 0)
 			AlreadyExistsException::Throw(FullKeyPath(strSubKey),L"Omega::Registry::IRegistry::OpenSubKey");
 	}
 
     int bCreate = (flags & IRegistryKey::Create) ? 1 : 0;
 
 	ACE_Configuration_Section_Key sub_key;
-	if (m_pRegistry->open_section(open_key(),strSubKey,bCreate,sub_key) != 0)
+	if (m_pRegistry->open_section(open_key(),strSubKey.c_str(),bCreate,sub_key) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -535,7 +535,7 @@ void UserKey::DeleteKey(const string_t& strSubKey)
 {
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	if (m_pRegistry->remove_section(open_key(),strSubKey,1) != 0)
+	if (m_pRegistry->remove_section(open_key(),strSubKey.c_str(),1) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -551,7 +551,7 @@ void UserKey::DeleteValue(const string_t& strName)
 {
 	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,*m_pLock);
 
-	if (m_pRegistry->remove_value(open_key(),strName) != 0)
+	if (m_pRegistry->remove_value(open_key(),strName.c_str()) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err == ENOENT)
@@ -582,7 +582,7 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-	request.write_wstring(FullKeyPath(strSubKey));
+	request.write_wstring(FullKeyPath(strSubKey).c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -609,8 +609,8 @@ bool_t RootKey::IsValue(const string_t& strName)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -640,8 +640,8 @@ ValueType_t RootKey::GetValueType(const string_t& strName)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -703,8 +703,8 @@ string_t RootKey::GetStringValue(const string_t& strName)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::GetStringValue);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -738,8 +738,8 @@ uint32_t RootKey::GetUIntValue(const string_t& strName)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::GetUInt32Value);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -773,8 +773,8 @@ void RootKey::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cb
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::GetBinaryValue);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	request.write_ulong(cbLen);
 	bool bNoDataBack = (cbLen == 0);
 	if (!request.good_bit())
@@ -812,9 +812,9 @@ void RootKey::SetStringValue(const string_t& strName, const string_t& strValue)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetStringValue);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
-	request.write_wstring(strValue);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
+	request.write_wstring(strValue.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -846,8 +846,8 @@ void RootKey::SetUIntValue(const string_t& strName, uint32_t uValue)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetUInt32Value);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	request.write_ulong(uValue);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
@@ -880,8 +880,8 @@ void RootKey::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbL
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetBinaryValue);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	request.write_ulong(cbLen);
 	request.write_octet_array(val,cbLen);
 	if (!request.good_bit())
@@ -915,7 +915,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-	request.write_wstring(FullKeyPath(strSubKey));
+	request.write_wstring(FullKeyPath(strSubKey).c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -940,7 +940,7 @@ IRegistryKey* RootKey::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenF
 		// It doesn't yet exist, and we want to create it!
 		request.reset();
 		request << static_cast<Root::RootOpCode_t>(Root::CreateKey);
-		request.write_wstring(FullKeyPath(strSubKey));
+		request.write_wstring(FullKeyPath(strSubKey).c_str());
 		if (!request.good_bit())
 			OOSERVER_THROW_LASTERROR();
 
@@ -987,7 +987,7 @@ void RootKey::EnumSubKeys(std::set<Omega::string_t>& setStrings)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::EnumSubKeys);
-	request.write_wstring(m_strKey);
+	request.write_wstring(m_strKey.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -1018,7 +1018,7 @@ Omega::IEnumString* RootKey::EnumValues()
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::EnumValues);
-	request.write_wstring(m_strKey);
+	request.write_wstring(m_strKey.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -1059,8 +1059,8 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::DeleteKey);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strSubKey);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strSubKey.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
@@ -1085,8 +1085,8 @@ void RootKey::DeleteValue(const string_t& strName)
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::DeleteValue);
-	request.write_wstring(m_strKey);
-	request.write_wstring(strName);
+	request.write_wstring(m_strKey.c_str());
+	request.write_wstring(strName.c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 

@@ -171,6 +171,8 @@
 		<Unit filename="Types.cpp" />
 		<Unit filename="UserSession.cpp" />
 		<Unit filename="UserSession.h" />
+		<Unit filename="Xml.cpp" />
+		<Unit filename="Xml.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

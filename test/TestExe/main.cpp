@@ -13,11 +13,12 @@ bool exception_tests();
 bool otl_tests();
 bool registry_tests();
 bool registry_tests_2();
+bool registry_tests_3();
 bool interface_tests();
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	wprintf(L"%ls\n\n",(const wchar_t*)Omega::System::GetVersion());
+	wprintf(L"%ls\n\n",Omega::System::GetVersion().c_str());
 
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);
@@ -26,6 +27,7 @@ int main(int /*argc*/, char* /*argv*/[])
 	RUN_TEST(otl_tests);
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
+	RUN_TEST(registry_tests_3);
 	RUN_TEST(interface_tests);
 
 	return test_summary();

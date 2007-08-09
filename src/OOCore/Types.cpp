@@ -38,6 +38,9 @@ namespace OOCore
 		StringNode(const wchar_t* sz) : m_str(sz), m_refcount(1)
 		{}
 
+		StringNode(const wchar_t* sz, size_t length) : m_str(sz,length), m_refcount(1)
+		{}
+
 		StringNode(const ACE_WString& s) : m_str(s), m_refcount(1)
 		{}
 
@@ -137,10 +140,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor3,1,((in),const void*,s1))
 	return pNode;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor4,1,((in),const wchar_t*,wsz))
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor4,2,((in),const wchar_t*,wsz,(in),size_t,length))
 {
 	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(wsz));
+	if (length == Omega::string_t::npos)
+		OMEGA_NEW(pNode,StringNode(wsz));
+	else
+		OMEGA_NEW(pNode,StringNode(wsz,length));
 	return pNode;
 }
 
@@ -194,16 +200,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_toutf8,3,((in),const void*,h,(in)
 		ACE_OS::strcpy(sz,str.c_str());
 	}
 	return str.length() + 1;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq1,2,((in),const void*,s1,(in),const void*,s2))
-{
-	return (static_cast<const StringNode*>(s1)->m_str == static_cast<const StringNode*>(s2)->m_str);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,s1,(in),const wchar_t*,wsz))
-{
-	return (static_cast<const StringNode*>(s1)->m_str == wsz);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const void*,s2))

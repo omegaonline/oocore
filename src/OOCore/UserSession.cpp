@@ -697,7 +697,12 @@ void OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	}
 }
 
-static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
+namespace OOCore
+{
+	bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point);
+}
+
+bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 {
 #if ACE_MAJOR_VERSION <= 5 && ACE_MINOR_VERSION <= 5 && ACE_BETA_VERSION == 0
 

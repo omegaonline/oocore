@@ -26,7 +26,7 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey = m_ptrKey.OpenSubKey(strName);
 
 		TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-		wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName),2,3,pNewItem); 
+		wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem); 
 
 		if (m_nDepth==0)
 		{
@@ -60,12 +60,12 @@ void TreeItemData::InitList(wxListCtrl* pList)
 
 		Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
 
-		long item = pList->InsertItem(i,wxString(strName),type==Omega::Registry::String ? 4 : 5);
+		long item = pList->InsertItem(i,wxString(strName.c_str()),type==Omega::Registry::String ? 4 : 5);
 		
 		if (type==Omega::Registry::String)
 		{
 			pList->SetItem(item,1,_("String"));
-			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(strName)));
+			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(strName).c_str()));
 		}
 		else if (type==Omega::Registry::UInt32)
 		{
@@ -252,7 +252,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	}
 
 	TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-	wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName),2,3,pNewItem); 
+	wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem); 
 
 	if (m_nDepth==0)
 	{
@@ -286,7 +286,7 @@ void TreeItemData::NewString(wxListCtrl* pList)
 
 	m_ptrKey->SetStringValue(strName,"");
 	
-	long item = pList->InsertItem(-1,wxString(strName),4);
+	long item = pList->InsertItem(-1,wxString(strName.c_str()),4);
 	pList->SetItem(item,1,_("String"));
 
 	pList->EnsureVisible(item);
@@ -308,7 +308,7 @@ void TreeItemData::NewUInt(wxListCtrl* pList)
 
 	m_ptrKey->SetUIntValue(strName,0);
 
-	long item = pList->InsertItem(-1,wxString(strName),5);
+	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
 	pList->SetItem(item,1,_("UInt32"));
 	pList->SetItem(item,2,wxT("0x00000000 (0)"));
 
@@ -331,7 +331,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 
 	m_ptrKey->SetBinaryValue(strName,0,0);
 
-	long item = pList->InsertItem(-1,wxString(strName),5);
+	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
 	pList->SetItem(item,1,_("Binary"));
 	pList->SetItem(item,2,_("(Zero length binary value)"));
 
@@ -349,8 +349,8 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 	{
 		EditStringDlg dialog(NULL,-1,wxT(""));
 
-		dialog.m_strName = wxString(strName);
-		dialog.m_strValue = wxString(m_ptrKey->GetStringValue(strName));
+		dialog.m_strName = wxString(strName.c_str());
+		dialog.m_strValue = wxString(m_ptrKey->GetStringValue(strName).c_str());
 	
 		if (dialog.ShowModal() == wxID_OK)
 		{
@@ -364,7 +364,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 		EditUIntDlg dialog(NULL,-1,wxT(""));
 
 		dialog.m_nBase = 0;
-		dialog.m_strName = wxString(strName);
+		dialog.m_strName = wxString(strName.c_str());
 		dialog.m_strValue = wxString::Format(wxT("%x"),m_ptrKey->GetUIntValue(strName));
 	
 		if (dialog.ShowModal() == wxID_OK)
@@ -420,12 +420,12 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 			size_t pos = strFoundPos.Find('\\');
 			if (pos != -1)
 			{
-				strSubKey = strFoundPos.Left(pos);
+				strSubKey = strFoundPos.Left(pos).c_str();
 				strFoundPos = strFoundPos.Mid(pos+1);
 			}
 			else
 			{
-				strSubKey = strFoundPos;
+				strSubKey = strFoundPos.c_str();
 				strFoundPos.Clear();
 
 				if (!bKey)

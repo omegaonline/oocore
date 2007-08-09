@@ -272,7 +272,7 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,L"Exception thrown: %ls - %ls\n",(const wchar_t*)pE->Description(),(const wchar_t*)pE->Source()));
+		ACE_ERROR((LM_ERROR,L"Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
 		pE->Release();
 		return false;
 	}

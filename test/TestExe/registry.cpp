@@ -462,3 +462,65 @@ bool registry_tests_2()
 
 	return true;
 }
+
+bool registry_tests_3()
+{
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\");
+
+	// Generate a unique value name
+	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
+	while (ptrKey->IsSubKey(strTestKey))
+	{
+		strTestKey = "_" + strTestKey;
+	}
+
+	Omega::string_t strXML =
+		L"<?xml version=\"1.0\" ?>\r\n"
+		L"<oo:root xmlns:oo=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">\r\n"
+			L"<oo:key name=\"%TESTKEY%\">\r\n"
+				L"<oo:key name=\"Testkey\" uninstall=\"Remove\"/>\r\n"
+				L"<oo:key name=\"%MODULE%\">\r\n"
+					L"<oo:value name=\"TestVal1\">Testing testing 1,2,3</oo:value>\r\n"
+					L"<oo:value name=\"TestVal2\">%MODULE%</oo:value>\r\n"
+					L"<oo:value name=\"TestVal3\" type=\"UInt32\">  0x12345  </oo:value>\r\n"
+					L"<oo:value name=\"TestVal4\" type=\"UInt32\" uninstall=\"Keep\">12345</oo:value>\r\n"
+				L"</oo:key>\r\n"
+			L"</oo:key>\r\n"
+		L"</oo:root>\r\n";
+
+	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=" + strTestKey;
+	
+	Omega::Activation::RegisterObjectFactory(strXML,true,strSubsts);
+	TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
+	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
+	
+	Omega::Activation::RegisterObjectFactory(strXML,false,strSubsts);
+	TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
+	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
+
+	if (ptrKey->IsSubKey(strTestKey))
+		ptrKey->DeleteKey(strTestKey);
+
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"Current User");
+	// Generate a unique value name
+	strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
+	while (ptrKey->IsSubKey(strTestKey))
+	{
+		strTestKey = "_" + strTestKey;
+	}
+
+	strSubsts = L"  MODULE  =My Module;  TESTKEY=Current User\\" + strTestKey;
+
+	Omega::Activation::RegisterObjectFactory(strXML,true,strSubsts);
+	TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
+	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
+
+	Omega::Activation::RegisterObjectFactory(strXML,false,strSubsts);
+	TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
+	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
+	
+	if (ptrKey->IsSubKey(strTestKey))
+		ptrKey->DeleteKey(strTestKey);
+
+	return true;
+}

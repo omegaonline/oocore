@@ -98,23 +98,34 @@ namespace Omega
 		inline string_t();
 		inline string_t(const string_t& s);
 		inline string_t(const char* sz, bool_t bUTF8 = false);
-		inline string_t(const wchar_t* wsz);
+		inline string_t(const wchar_t* wsz, size_t length = npos);
 		inline ~string_t();
 
 		inline string_t& operator = (const string_t& s);
 		inline string_t& operator = (const char* sz);
 		inline string_t& operator = (const wchar_t* wsz);
 
-		inline operator const wchar_t*() const;
+		inline const wchar_t* c_str() const;
+		const wchar_t operator[](size_t i) const
+		{ return c_str()[i]; }
 
 		inline size_t ToUTF8(char* sz, size_t size) const;
 
-		inline bool operator == (const string_t& s) const;
-		inline bool operator == (const wchar_t* wsz) const;
-
+		template <class T>
+		bool operator == (T t) const
+		{ return Compare(t) == 0; }
+		
 		template <class T>
 		bool operator != (T t) const
-		{ return !((*this)==t); }
+		{ return Compare(t) != 0; }
+
+		template <class T>
+		bool operator < (T t) const
+		{ return Compare(t) < 0; }
+
+		template <class T>
+		bool operator > (T t) const
+		{ return Compare(t) > 0; }
 
 		inline string_t& operator += (const string_t& s);
 		inline string_t& operator += (const char* sz);

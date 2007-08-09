@@ -39,9 +39,9 @@ Omega::string_t::string_t(const Omega::string_t& s) :
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OOCORE_EXPORTED_FUNCTION(void*,string_t__ctor4,1,((in),const wchar_t*,wsz));
-Omega::string_t::string_t(const wchar_t* wsz) :
-	m_handle(static_cast<handle_t>(string_t__ctor4(wsz)))
+OOCORE_EXPORTED_FUNCTION(void*,string_t__ctor4,2,((in),const wchar_t*,wsz,(in),size_t,length));
+Omega::string_t::string_t(const wchar_t* wsz, size_t length) :
+	m_handle(static_cast<handle_t>(string_t__ctor4(wsz,length)))
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -77,7 +77,7 @@ Omega::string_t& Omega::string_t::operator = (const wchar_t* wsz)
 	return *this;
 }
 
-Omega::string_t::operator const wchar_t*() const
+const wchar_t* Omega::string_t::c_str() const
 {
 	return string_t_cast(m_handle);
 }
@@ -86,18 +86,6 @@ OOCORE_EXPORTED_FUNCTION(size_t,string_t_toutf8,3,((in),const void*,h,(in),char*
 size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
 {
 	return string_t_toutf8(m_handle,sz,size);
-}
-
-OOCORE_EXPORTED_FUNCTION(bool,string_t_eq1,2,((in),const void*,h1,(in),const void*,h2));
-bool Omega::string_t::operator == (const string_t& s) const
-{
-	return string_t_eq1(m_handle,s.m_handle);
-}
-
-OOCORE_EXPORTED_FUNCTION(bool,string_t_eq2,2,((in),const void*,h,(in),const wchar_t*,wsz));
-bool Omega::string_t::operator == (const wchar_t* wsz) const
-{
-	return string_t_eq2(m_handle,wsz);
 }
 
 OOCORE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,h,(in),const void*,h2));
@@ -334,7 +322,7 @@ Omega::guid_t::operator Omega::string_t() const
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wchar_t*,sz));
 Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
-	return guid_t_from_string(str);
+	return guid_t_from_string(str.c_str());
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,());

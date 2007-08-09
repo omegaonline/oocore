@@ -21,6 +21,7 @@ namespace Omega
 
 		inline IObjectFactory* GetObjectFactory(const guid_t& oid, Flags_t flags);
 		inline guid_t NameToOid(const string_t& strObjectName);
+		inline void RegisterObjectFactory(const string_t& strXML, bool_t bRegister = true, const string_t& strSubstitutions = L"");
 
 		interface IOidNotFoundException : public IException
 		{
@@ -276,6 +277,12 @@ OOCORE_EXPORTED_FUNCTION(Omega::guid_t,Activation_NameToOid,1,((in),const Omega:
 Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
 {
 	return Activation_NameToOid(strObjectName);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(Activation_RegisterObjectFactory,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bRegister,(in),const Omega::string_t&,strSubstitutions));
+void Omega::Activation::RegisterObjectFactory(const Omega::string_t& strXML, Omega::bool_t bRegister, const Omega::string_t& strSubstitutions)
+{
+	Activation_RegisterObjectFactory(strXML,bRegister,strSubstitutions);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags));

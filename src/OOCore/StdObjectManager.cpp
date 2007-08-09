@@ -2,6 +2,10 @@
 
 #include "./StdObjectManager.h"
 
+#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
+#include <setjmp.h>
+#endif
+
 using namespace Omega;
 using namespace OTL;
 
@@ -203,28 +207,33 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 	m_ptrChannel = pChannel;
 }
 
-#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
-
-#include <setjmp.h>
-
 namespace OOCore
 {
-	struct ExceptInfo
+	namespace SEH
 	{
-		ExceptInfo* prev;
-		int (WINAPI *handler)(PEXCEPTION_RECORD,ExceptInfo*,PCONTEXT,PEXCEPTION_RECORD);
-		jmp_buf* pjb;
-	};
 
-	static int WINAPI ExceptHandler(PEXCEPTION_RECORD record, ExceptInfo* frame, PCONTEXT, PEXCEPTION_RECORD)
-	{
-		longjmp(*frame->pjb,record->ExceptionCode);
-		return 0;
-	}
-}
+#if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
+
+		struct ExceptInfo
+		{
+			ExceptInfo* prev;
+			int (WINAPI *handler)(PEXCEPTION_RECORD,ExceptInfo*,PCONTEXT,PEXCEPTION_RECORD);
+			jmp_buf* pjb;
+		};
+
+		int WINAPI ExceptHandler(PEXCEPTION_RECORD record, ExceptInfo* frame, PCONTEXT, PEXCEPTION_RECORD)
+		{
+			longjmp(*frame->pjb,record->ExceptionCode);
+			return 0;
+		}
 #endif
 
-static void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
+		void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE);
+		int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE);
+	}
+}
+
+void OOCore::SEH::DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
 {
 	try
 	{
@@ -236,7 +245,7 @@ static void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Se
 	}
 }
 
-static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
+int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
 {
 	int err = 0;
 
@@ -255,8 +264,8 @@ static int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Seri
 
 		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
 		jmp_buf jmpb;
-		OOCore::ExceptInfo xc;
-		xc.handler = OOCore::ExceptHandler;
+		ExceptInfo xc;
+		xc.handler = ExceptHandler;
 		xc.pjb = &jmpb;
 
 		// Install SEH handler
@@ -365,7 +374,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 	// Ask the stub to make the call
 	IException* pE = 0;
-	int err = DoInvoke(method_id,ptrStub,pParamsIn,pParamsOut,timeout,pE);
+	int err = SEH::DoInvoke(method_id,ptrStub,pParamsIn,pParamsOut,timeout,pE);
 	if (pE)
 		throw pE;
 	else if (err != 0)

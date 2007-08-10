@@ -43,6 +43,8 @@
 #include <ace/TSS_T.h>
 #include <ace/UUID.h>
 
+#include <ace/SPIPE_Connector.h>
+
 #if !defined(ACE_HAS_WCHAR)
 #error OmegaOnline requires wchar_t support!
 #endif

@@ -174,7 +174,7 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 
 bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSource)
 {
-	pid_t pid = ACE_INVALID_PID;
+	/*pid_t pid = ACE_INVALID_PID;
 
 	// Open the Server key file
 	ACE_HANDLE file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
@@ -256,14 +256,17 @@ bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSour
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
-	}
+	}*/
 
-	// Send our uid or pid
-#if defined(OMEGA_WIN32)
-	pid_t uid = ACE_OS::getpid();
-#else
+	ACE_SPIPE_Connector connector;
+	ACE_SPIPE_Stream peer;
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr(L"ooserver");
+	ACE_Time_Value wait(5);
+	connector.connect(peer,addr,&wait);
+
+	// Send our uid
 	uid_t uid = ACE_OS::getuid();
-#endif
 	if (peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 	{
 		strSource = OMEGA_SOURCE_INFO;
@@ -271,8 +274,7 @@ bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSour
 	}
 
 	// Read the port
-	wait = ACE_Time_Value(30);
-	if (peer.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
+	if (peer.recv(&uPort,sizeof(uPort)) != static_cast<ssize_t>(sizeof(uPort)))
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;

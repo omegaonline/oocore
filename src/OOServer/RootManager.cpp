@@ -102,20 +102,21 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
 	if (req_thrd_grp_id != -1)
 	{
+		bool bInited = false;
+
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
 		if (pro_thrd_grp_id != -1)
 		{
 			if (init())
 			{
+				bInited = true;
+
 				//ACE_DEBUG((LM_INFO,L"OOServer has started successfully."));
 
 				// Now just process client requests
 				ret = process_client_connects();
 			}
-
-			// Stop accepting clients
-			ACE_Asynch_Acceptor<ClientConnection>::cancel();
 
 			// Close the config file...
 			ACE_OS::close(m_config_file);
@@ -130,8 +131,11 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
 
-		// Stop the MessageHandler
-		stop();
+		if (bInited)
+		{
+			// Stop the MessageHandler
+			stop();
+		}
 
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
@@ -197,7 +201,7 @@ bool Root::Manager::init()
 	}
 
 	// Bind a tcp socket
-	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
+	/*ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
 	if (ACE_Asynch_Acceptor<ClientConnection>::open(sa) != 0)
 	{
 		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - open() failed"));
@@ -220,7 +224,11 @@ bool Root::Manager::init()
 	sa.set_size(len);
 
 	// Write it back...
-	u_short uPort = sa.get_port_number();
+	u_short uPort = sa.get_port_number();*/
+
+	u_short uPort = 666;
+
+
 	if (ACE_OS::write(m_config_file,&uPort,sizeof(uPort)) != sizeof(uPort))
 	{
 		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - port write() failed"));
@@ -323,67 +331,70 @@ int Root::Manager::init_registry()
 
 void Root::Manager::end_event_loop_i()
 {
-	m_queue_clients.deactivate();
+	ACE_Reactor::instance()->end_event_loop();
 }
 
-void Root::ClientConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
+int Root::Manager::ClientConnector::start(Manager* pManager, const wchar_t* pszAddr)
 {
-	Root::Manager::connect_client(new_handle);
+	m_pParent = pManager;
+	m_addr.string_to_addr(pszAddr);
+
+	if (m_acceptor.open(m_addr) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects acceptor.open failed"),-1);
+
+	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects, register_handler failed"),-1);
+
+	return 0;
 }
 
-void Root::Manager::connect_client(ACE_HANDLE handle)
+void Root::Manager::ClientConnector::stop()
 {
-	ACE_HANDLE* ph = 0;
-	ACE_NEW_NORETURN(ph,ACE_HANDLE(handle));
-	if (!ph)
-		return;
+	m_acceptor.close();
+}
 
-	ACE_Time_Value wait(1);
-	if (ROOT_MANAGER::instance()->m_queue_clients.enqueue_tail(ph,&wait) == -1)
-	{
-		delete ph;
-		ACE_OS::closesocket(handle);
-	}
+int Root::Manager::ClientConnector::handle_signal(int, siginfo_t*, ucontext_t*)
+{
+	ACE_SPIPE_Stream stream;
+	if (m_acceptor.accept(stream) != 0)
+		return -1;
+
+	return m_pParent->connect_client(stream);
 }
 
 int Root::Manager::process_client_connects()
 {
-	int ret = 0;
-	for (;;)
-	{
-		ACE_HANDLE* handle;
-		ret = m_queue_clients.dequeue_head(handle);
-		if (ret == -1)
-		{
-			if (ACE_OS::last_error() == ESHUTDOWN)
-				ret = 0;
-			break;
-		}
+	if (m_client_connector.start(this,L"ooserver") != 0)
+		return -1;
+	
+	int ret = ACE_Reactor::instance()->run_event_loop();
 
-		ACE_SOCK_Stream stream(*handle);
-		delete handle;
-
-		// Read the uid
-		ACE_Time_Value wait(1);
-		user_id_type uid;
-		if (stream.recv(&uid,sizeof(uid),&wait) != static_cast<ssize_t>(sizeof(uid)))
-			continue;
-
-		u_short uPort = 0;
-		ACE_WString strSource;
-		if (!connect_client(uid,uPort,strSource))
-		{
-			int err = ACE_OS::last_error();
-			uPort = 0;
-			stream.send(&uPort,sizeof(uPort));
-			stream.send(&err,sizeof(err));
-			stream.send(strSource.c_str(),strSource.length());
-		}
-		else
-            stream.send(&uPort,sizeof(uPort));
-	}
+	m_client_connector.stop();
 
 	return ret;
+}
+
+int Root::Manager::connect_client(ACE_SPIPE_Stream& stream)
+{
+	// Read the uid
+	user_id_type uid;
+	if (stream.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
+		return -1;
+
+	u_short uPort = 0;
+	ACE_WString strSource;
+	if (!connect_client(uid,uPort,strSource))
+	{
+		int err = ACE_OS::last_error();
+		uPort = 0;
+		stream.send(&uPort,sizeof(uPort));
+		stream.send(&err,sizeof(err));
+		stream.send(strSource.c_str(),strSource.length());
+	}
+	else
+        stream.send(&uPort,sizeof(uPort));
+	
+	return 0;
 }
 
 bool Root::Manager::spawn_sandbox()

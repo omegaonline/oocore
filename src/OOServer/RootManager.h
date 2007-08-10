@@ -19,22 +19,8 @@ namespace Root
 {
 	class SpawnedProcess;
 
-	class ClientConnection : public ACE_Service_Handler
-	{
-	public:
-		ClientConnection() : ACE_Service_Handler() {}
-		virtual ~ClientConnection() {}
-
-		void open(ACE_HANDLE new_handle, ACE_Message_Block &message_block);
-
-	private:
-		ClientConnection(const ClientConnection&) : ACE_Service_Handler() {}
-		ClientConnection& operator = (const ClientConnection&) { return *this; }
-	};
-
 	class Manager :
-		public MessageHandler,
-		public ACE_Asynch_Acceptor<ClientConnection>
+		public MessageHandler
 	{
 	public:
 		static int run(int argc, wchar_t* argv[]);
@@ -44,12 +30,12 @@ namespace Root
 		static bool uninstall();
 
 	private:
-		friend class ClientConnection;
+		friend class ClientConnector;
 		friend class ACE_Singleton<Manager,ACE_Thread_Mutex>;
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
 		Manager();
-		Manager(const Manager&) : MessageHandler(), ACE_Asynch_Acceptor<ClientConnection>() {}
+		Manager(const Manager&) {}
 		virtual ~Manager();
 		Manager& operator = (const Manager&) { return *this; }
 
@@ -70,14 +56,34 @@ namespace Root
 		std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
 		std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
 
-		ACE_Message_Queue_Ex<ACE_HANDLE,ACE_MT_SYNCH> m_queue_clients;
-
 #if defined(ACE_WIN32)
 		typedef pid_t user_id_type;
 #else
 		typedef uid_t user_id_type;
 #endif
-		static void connect_client(ACE_HANDLE handle);
+
+		class ClientConnector : public ACE_Event_Handler
+		{
+		public:
+			ClientConnector() : ACE_Event_Handler()
+			{}
+
+			int start(Manager* pManager, const wchar_t* pszAddr);
+			void stop();
+			
+		private:
+			Manager*           m_pParent;
+			ACE_SPIPE_Addr     m_addr;
+			ACE_SPIPE_Acceptor m_acceptor;
+
+			int handle_signal(int, siginfo_t*, ucontext_t*);
+
+			ClientConnector(const ClientConnector&) {};
+			ClientConnector& operator = (const ClientConnector&) { return *this; };
+		};
+		ClientConnector m_client_connector;
+		
+		int connect_client(ACE_SPIPE_Stream& stream);
 		int process_client_connects();
 		bool spawn_sandbox();
 		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_WString& strSource);

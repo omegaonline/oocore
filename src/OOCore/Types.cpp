@@ -397,18 +397,22 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list,ap))
 {
-	ACE_WString s;
 	for (int len=256;;len*=2)
 	{
-		s.fast_resize(static_cast<size_t>(len));
-
-		int len2 = ACE_OS::vsnprintf(const_cast<wchar_t*>(s.fast_rep()),len,sz,ap);
-		if (len2 <= len && len2 != -1)
+		wchar_t* buf = 0;
+		OMEGA_NEW(buf,wchar_t[len]);
+		
+		int len2 = ACE_OS::vsnprintf(buf,len,sz,ap);
+        if (len2 <= len && len2 != -1)
 		{
-			StringNode* s1;
-			OMEGA_NEW(s1,StringNode(ACE_WString(s.c_str(),len2)));
+            StringNode* s1;
+			OMEGA_NEW(s1,StringNode(ACE_WString(buf,len2)));
+
+			delete [] buf;
 			return s1;
 		}
+
+		delete [] buf;
 	}
 }
 
@@ -472,7 +476,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wc
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 {
-#ifdef OMEGA_WIN32
+#if defined(OMEGA_WIN32)
 	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
 	UuidCreate(&uuid);
 

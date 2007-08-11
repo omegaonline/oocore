@@ -290,12 +290,43 @@ int Root::Manager::process_client_connects()
 
 int Root::Manager::connect_client(ACE_SPIPE_Stream& stream)
 {
-	void* TODO;	// Only do this under unix
+	user_id_type uid = 0;
 
-	// Read the uid
-	user_id_type uid;
+	// Read the uid - we must read even for Windows
 	if (stream.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 		return -1;
+
+#if defined(ACE_WIN32)
+	if (!ImpersonateNamedPipeClient(stream.get_handle()))
+		return -1;
+
+	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_DUPLICATE,FALSE,&uid);
+
+	if (!RevertToSelf())
+	{
+		CloseHandle(uid);
+		abort();
+	}
+
+	if (bRes)
+	{
+        HANDLE hToken;
+		bRes = DuplicateTokenEx(uid,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,NULL,SecurityImpersonation,TokenPrimary,&hToken);
+		
+		if (bRes)
+		{
+			CloseHandle(uid);
+			uid = hToken;
+		}
+	}
+
+	if (!bRes)
+	{
+		CloseHandle(uid);
+		return -1;
+	}
+
+#endif
 
 	ACE_WString strPipe;
 	ACE_WString strSource;
@@ -327,7 +358,7 @@ bool Root::Manager::spawn_sandbox()
 		// Spawn the sandbox
 		ACE_WString strSource;
 		ACE_WString strPipe;
-		if (!spawn_user(static_cast<user_id_type>(-1),strUserId,strPipe,strSource))
+		if (!spawn_user(static_cast<user_id_type>(0),strUserId,strPipe,strSource))
 		{
 			ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::spawn_sandbox() failed"));
 			return false;
@@ -369,12 +400,12 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, A
 			// Accept
 			ACE_SPIPE_Stream stream;
 
-			ACE_Time_Value wait(15);
+			ACE_Time_Value wait(30);
 			if (acceptor.accept(stream,0,&wait) != 0)
 				strSource = L"Root::Manager::spawn_user - acceptor.accept";
 			else
 			{
-				strPipe = bootstrap_user(stream,uid == static_cast<user_id_type>(-1),strSource);
+				strPipe = bootstrap_user(stream,uid == static_cast<user_id_type>(0),strSource);
 				if (!strPipe.empty())
 				{
 					// Create a new MessageConnection
@@ -477,13 +508,18 @@ ACE_WString Root::Manager::bootstrap_user(ACE_SPIPE_STREAM& stream, bool bSandbo
 		return L"";
 	}
 
-	ACE_WString strRet;
-	strRet.fast_resize(uLen);
-	if (stream.recv((void*)(strRet.fast_rep()),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	wchar_t* buf;
+	ACE_NEW_RETURN(buf,wchar_t[uLen],L"");
+
+	if (stream.recv(buf,uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
 	{
+		delete [] buf;
 		strSource = L"Root::Manager::bootstrap_user - recv";
 		return L"";
 	}
+
+	ACE_WString strRet = buf;
+	delete [] buf;
 
 	return strRet;
 }

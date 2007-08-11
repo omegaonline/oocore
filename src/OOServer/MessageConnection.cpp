@@ -59,7 +59,11 @@ bool Root::MessageConnection::read()
 	return true;
 }
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+void Root::MessageConnection::handle_read_file(const ACE_Asynch_Read_File::Result& result)
+#else
 void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
+#endif
 {
 	ACE_Message_Block& mb = result.message_block();
 

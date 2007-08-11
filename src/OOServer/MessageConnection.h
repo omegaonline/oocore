@@ -25,11 +25,7 @@ namespace Root
 
 		ACE_CDR::UShort open(ACE_HANDLE new_handle);
 		
-		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
-
 	private:
-		friend class ACE_Asynch_Acceptor<MessageConnection>;
-
 		MessageConnection() : ACE_Service_Handler() {}
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
@@ -37,7 +33,14 @@ namespace Root
         static const size_t         s_initial_read = 8;
         
 		MessageHandler*             m_pHandler;
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+		ACE_Asynch_Read_File        m_reader;
+		void handle_read_file(const ACE_Asynch_Read_File::Result& result);
+#else
 		ACE_Asynch_Read_Stream      m_reader;
+		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
+#endif
+
 		ACE_CDR::ULong              m_read_len;
 		ACE_CDR::Octet              m_byte_order;
 		ACE_CDR::Octet              m_version;

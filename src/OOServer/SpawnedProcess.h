@@ -13,6 +13,8 @@
 #ifndef OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 #define OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 
+#include "./RootManager.h"
+
 namespace Root
 {
 	class SpawnedProcess
@@ -21,18 +23,19 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		bool Spawn(uid_t id, const ACE_WString& strPipe, ACE_WString& strSource);
+		bool Spawn(Manager::user_id_type id, const ACE_WString& strPipe, ACE_WString& strSource);
 		bool IsRunning();
 
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-		static bool ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_WString& strSource);
 		static bool GetSandboxUid(ACE_CString& uid);
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
 		static bool SecureFile(const ACE_WString& strFilename);
+		static bool ResolveTokenToUid(Manager::user_id_type token, ACE_CString& uid, ACE_WString& strSource);
 
 #if defined(ACE_WIN32)
+
 	protected:
 		HANDLE	m_hToken;
 
@@ -48,6 +51,7 @@ namespace Root
 		static bool unsafe_sandbox();
 
 #else // !ACE_WIN32
+
 	protected:
 		uid_t	m_uid;
 

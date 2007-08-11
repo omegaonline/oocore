@@ -12,7 +12,6 @@
 
 #include "./OOServer_Root.h"
 #include "./SpawnedProcess.h"
-#include "./RootManager.h"
 
 #if defined(ACE_WIN32)
 
@@ -238,7 +237,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.lpDesktop = L"";
 
-	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT | DETACHED_PROCESS;
+	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
 
 	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
 	
@@ -268,6 +267,8 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 
 bool Root::SpawnedProcess::unsafe_sandbox()
 {
+	return true;
+
 	// Get the local machine registry
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
@@ -284,11 +285,11 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 	return (v == 1);
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t id, const ACE_WString& strPipe, ACE_WString& strSource)
+bool Root::SpawnedProcess::Spawn(Manager::user_id_type id, const ACE_WString& strPipe, ACE_WString& strSource)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
-	bool bSandbox = (id == static_cast<uid_t>(-1));
+	bool bSandbox = (id == static_cast<Manager::user_id_type>(0));
 	if (bSandbox)
 	{
 		int err = LogonSandboxUser(&hToken);
@@ -296,29 +297,8 @@ bool Root::SpawnedProcess::Spawn(uid_t id, const ACE_WString& strPipe, ACE_WStri
 			return LogFailure(err);
 	}
 	else
-	{
-		// Get the process handle
-		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,id);
-		if (!hProcess)
-		{
-			DWORD err = GetLastError();
-			strSource = L"Root::SpawnedProcess::Spawn - OpenProcess";
-			return LogFailure(err);
-		}
-
-		// Get the process token
-		BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
-
-		// Done with hProcess
-		CloseHandle(hProcess);
-		if (!bSuccess)
-		{
-			DWORD err = GetLastError();
-			strSource = L"Root::SpawnedProcess::Spawn - OpenProcessToken";
-			return LogFailure(err);
-		}
-	}
-
+		hToken = id;
+	
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
@@ -339,8 +319,11 @@ bool Root::SpawnedProcess::Spawn(uid_t id, const ACE_WString& strPipe, ACE_WStri
 	BOOL bRes = DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
 	dwRes = GetLastError();
 
-	// Done with hToken
-	CloseHandle(hToken);
+	if (bSandbox)
+	{
+		// Done with hToken
+		CloseHandle(hToken);
+	}
 
 	if (!bRes)
 	{
@@ -368,6 +351,9 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 		return (DWORD)-1;
 
 	reg_root.get_string_value(sandbox_key,L"Password",strPwd);
+
+	strUName = L"rick";
+	strPwd = L"gobsh1te";
 
 	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
@@ -437,37 +423,14 @@ bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
 	return true;
 }
 
-bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_WString& strSource)
+bool Root::SpawnedProcess::ResolveTokenToUid(HANDLE token, ACE_CString& uid, ACE_WString& strSource)
 {
-	// Get the process handle
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,token);
-	if (!hProcess)
-	{
-		DWORD err = GetLastError();
-		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - OpenProcess";
-		return LogFailure(err);
-	}
-
-	// Get the process token
-	DWORD err = 0;
-	HANDLE hToken;
-	BOOL bSuccess = OpenProcessToken(hProcess,TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
-
-	// Done with hProcess
-	CloseHandle(hProcess);
-	if (!bSuccess)
-	{
-		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - OpenProcessToken";
-		return LogFailure(err);
-	}
-
 	DWORD dwLen = 0;
-	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
+	GetTokenInformation(token,TokenUser,NULL,0,&dwLen);
 	if (dwLen == 0)
 	{
-		err = GetLastError();
+		DWORD err = GetLastError();
 		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - GetTokenInformation(1)";
-		CloseHandle(hToken);
 		return LogFailure(err);
 	}
 
@@ -475,35 +438,29 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid, ACE_
 	if (!pBuffer)
 	{
 		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - malloc TOKEN_USER*";
-		CloseHandle(hToken);
 		return LogFailure(ERROR_OUTOFMEMORY);
 	}
 
-	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
+	if (!GetTokenInformation(token,TokenUser,pBuffer,dwLen,&dwLen))
 	{
-		err = GetLastError();
+		DWORD err = GetLastError();
 		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - GetTokenInformation(2)";
 		ACE_OS::free(pBuffer);
-		CloseHandle(hToken);
 		return LogFailure(err);
 	}
 
 	LPSTR pszString;
 	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
 	{
-		err = GetLastError();
+		DWORD err = GetLastError();
 		strSource = L"Root::SpawnedProcess::ResolveTokenToUid - ConvertSidToStringSid";
 		ACE_OS::free(pBuffer);
-		CloseHandle(hToken);
 		return LogFailure(err);
 	}
 
 	uid = pszString;
 	LocalFree(pszString);
 	ACE_OS::free(pBuffer);
-
-	// Done with hToken
-	CloseHandle(hToken);
 
 	return true;
 }

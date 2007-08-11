@@ -158,7 +158,7 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 		{
 			if (init(strPipe))
 			{
-	            // Wait for stop
+				// Wait for stop
 				ret = ACE_Reactor::instance()->run_event_loop();
 
 				// Stop accepting clients
@@ -202,7 +202,7 @@ bool User::Manager::init(const ACE_WString& strPipe)
 
 	// Connect to the root
 	ACE_Time_Value wait(5);
-	if (connector.connect(stream,addr,&wait) != 0)
+	if (connector.connect(stream,addr,&wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"connect() failed"),false);
 
 	// Talk to the root...

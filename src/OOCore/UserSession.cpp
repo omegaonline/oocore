@@ -200,8 +200,13 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe, string_t& s
 		}
 	}
 	
+#if defined(OMEGA_WIN32)
+	// Send nothing
+	HANDLE uid = 0;
+#else
 	// Send our uid
 	uid_t uid = ACE_OS::getuid();
+#endif
 	if (peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 	{
 		strSource = OMEGA_SOURCE_INFO;
@@ -225,13 +230,18 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe, string_t& s
 	}
 
 	// Read the string
-	ACE_WString str;
-	str.fast_resize(uLen);
-	if (peer.recv((void*)str.fast_rep(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	wchar_t* buf;
+	ACE_NEW_RETURN(buf,wchar_t[uLen],false);
+
+	if (peer.recv(buf,uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
 	{
+		delete [] buf;
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
 	}
+
+	ACE_WString str = buf;
+	delete [] buf;
 
 	if (err != 0)
 	{

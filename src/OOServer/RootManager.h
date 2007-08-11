@@ -29,6 +29,12 @@ namespace Root
 		static bool install(int argc, wchar_t* argv[]);
 		static bool uninstall();
 
+#if defined(ACE_WIN32)
+		typedef HANDLE user_id_type;
+#else
+		typedef uid_t user_id_type;
+#endif
+
 	private:
 		friend class ClientConnector;
 		friend class ACE_Singleton<Manager,ACE_Thread_Mutex>;
@@ -54,12 +60,6 @@ namespace Root
 		};
 		std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
 		std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
-
-#if defined(ACE_WIN32)
-		typedef pid_t user_id_type;
-#else
-		typedef uid_t user_id_type;
-#endif
 
 		class ClientConnector : public ACE_Event_Handler
 		{

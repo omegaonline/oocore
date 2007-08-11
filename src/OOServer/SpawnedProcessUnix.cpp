@@ -15,7 +15,6 @@
 #if !defined(ACE_WIN32)
 
 #include "./SpawnedProcess.h"
-#include "./RootManager.h"
 
 #include <grp.h>
 

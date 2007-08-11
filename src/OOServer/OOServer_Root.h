@@ -76,9 +76,9 @@
 #include <ace/Singleton.h>
 #include <ace/SOCK_Acceptor.h>
 
-#include <ace/Acceptor.h>
+//#include <ace/Acceptor.h>
+#include <ace/Reactor.h>
 #include <ace/SPIPE_Acceptor.h>
-//#include <ace/SPIPE.h>
 
 // End of ACE includes
 /////////////////////////////////////////////////

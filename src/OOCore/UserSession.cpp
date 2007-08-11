@@ -41,13 +41,18 @@ IException* OOCore::UserSession::init()
 
 bool OOCore::UserSession::init_i(string_t& strSource)
 {
-	u_short uPort;
-	if (!discover_server_port(uPort,strSource))
+	ACE_WString strPipe;
+	if (!discover_server_port(strPipe,strSource))
 		return false;
 
+	void* TODO_UNIX;
+
     // Connect to the root
-	ACE_SOCK_Connector connector;
-	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
+	ACE_SPIPE_Connector connector;
+	ACE_SPIPE_Stream peer;
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr(strPipe.c_str());
+
 	ACE_Time_Value wait(5);
 	if (connector.connect(m_stream,addr,&wait) != 0)
 	{
@@ -172,99 +177,29 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 	return true;
 }
 
-bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSource)
-{
-	/*pid_t pid = ACE_INVALID_PID;
-
-	// Open the Server key file
-	ACE_HANDLE file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
-	if (file != ACE_INVALID_HANDLE)
-	{
-		if (ACE_OS::read(file,&pid,sizeof(pid)) == sizeof(pid))
-		{
-			// Check if the process is still running...
-			if (ACE::process_active(pid)!=1)
-			{
-				pid = ACE_INVALID_PID;
-			}
-		}
-	}
-
-	if (pid == ACE_INVALID_PID)
-	{
-		if (file != ACE_INVALID_HANDLE)
-			ACE_OS::close(file);
-
-		// Launch the server
-		if (!launch_server(strSource))
-			return false;
-
-        // Re-open file
-		ACE_Time_Value wait(5);
-		ACE_Countdown_Time timeout(&wait);
-		while (wait != ACE_Time_Value::zero)
-		{
-			file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
-			if (file != ACE_INVALID_HANDLE)
-				break;
-
-			timeout.update();
-		}
-		if (file == ACE_INVALID_HANDLE)
-		{
-			// If we fail here, then the server has crashed...
-			strSource = OMEGA_SOURCE_INFO;
-			return false;
-		}
-
-		// Read pid again
-		if (ACE_OS::read(file,&pid,sizeof(pid)) != sizeof(pid))
-		{
-			strSource = OMEGA_SOURCE_INFO;
-			ACE_OS::close(file);
-			return false;
-		}
-	}
-
-	// Get the port number from the binding
-	u_short uPort2;
-	if (ACE_OS::read(file,&uPort2,sizeof(uPort2)) != sizeof(uPort2))
-	{
-		strSource = OMEGA_SOURCE_INFO;
-		ACE_OS::close(file);
-		return false;
-	}
-	ACE_OS::close(file);
-
-	// Sort out addresses
-	ACE_INET_Addr addr(uPort2,INADDR_LOOPBACK);
-
-	// Connect to the OOServer root process...
-	ACE_SOCK_Stream peer;
-	ACE_Time_Value wait(5);
-	ACE_Countdown_Time timeout(&wait);
-	int conn_err = 0;
-	while (wait != ACE_Time_Value::zero)
-	{
-		conn_err = ACE_SOCK_Connector().connect(peer,addr,&wait);
-		if (conn_err == 0)
-			break;
-
-		timeout.update();
-	}
-	if (conn_err == -1)
-	{
-		strSource = OMEGA_SOURCE_INFO;
-		return false;
-	}*/
+bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe, string_t& strSource)
+{	
+	void* TODO_UNIX;
 
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Stream peer;
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(L"ooserver");
-	ACE_Time_Value wait(5);
-	connector.connect(peer,addr,&wait);
 
+	if (connector.connect(peer,addr) != 0)
+	{
+		// Launch the server
+		if (!launch_server(strSource))
+			return false;
+
+		// Try again
+		if (connector.connect(peer,addr) != 0)
+		{
+			strSource = OMEGA_SOURCE_INFO;
+			return false;
+		}
+	}
+	
 	// Send our uid
 	uid_t uid = ACE_OS::getuid();
 	if (peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
@@ -273,34 +208,42 @@ bool OOCore::UserSession::discover_server_port(u_short& uPort, string_t& strSour
 		return false;
 	}
 
-	// Read the port
-	if (peer.recv(&uPort,sizeof(uPort)) != static_cast<ssize_t>(sizeof(uPort)))
+	// Read the error
+	int err = 0;
+	if (peer.recv(&err,sizeof(err)) != static_cast<ssize_t>(sizeof(err)))
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
 	}
 
-	if (uPort == 0)
+	// Read the string length
+	size_t uLen = 0;
+	if (peer.recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 	{
-		// Error!
 		strSource = OMEGA_SOURCE_INFO;
-		int err = 0;
-		if (peer.recv(&err,sizeof(err)) == static_cast<ssize_t>(sizeof(err)))
-		{
-			strSource.Clear();
+		return false;
+	}
 
-			char szBuf[1024];
-			ssize_t r;
-			while ((r=peer.recv(szBuf,1024)) > 0)
-			{
-				strSource += ACE_CString(szBuf,static_cast<size_t>(r)).c_str();
-			}
-		}
+	// Read the string
+	ACE_WString str;
+	str.fast_resize(uLen);
+	if (peer.recv((void*)str.fast_rep(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	{
+		strSource = OMEGA_SOURCE_INFO;
+		return false;
+	}
+
+	if (err != 0)
+	{
+		strSource = str.c_str();
 		ACE_OS::last_error(err);
 		return false;
 	}
-
-	return true;
+	else
+	{
+		strPipe = str;
+		return true;
+	}
 }
 
 void OOCore::UserSession::term()
@@ -343,8 +286,13 @@ int OOCore::UserSession::run_read_loop()
 	for (;;)
 	{
 		// Read the header
+
+#if defined(OMEGA_WIN32)
+		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read);
+#else
 		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
+#endif
 		if (nRead == -1 && ACE_OS::last_error() == ETIMEDOUT)
 			continue;
 
@@ -660,8 +608,12 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 
 	// Critical section around send
 	{
+#if defined(OMEGA_WIN32)
+		res = ACE::write_n(m_stream.get_handle(),header.begin(),&sent);
+#else
 		OOCORE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
 		res = m_stream.send_n(header.begin(),&wait,&sent);
+#endif
 	}
 
 	if (res != -1 && sent == header.total_length())
@@ -692,10 +644,13 @@ void OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 
 	// Critical section around the send
 	{
+#if defined(OMEGA_WIN32)
+		ACE::write_n(m_stream.get_handle(),header.begin());
+#else
 		ACE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
-
 		ACE_Time_Value wait = deadline - now;
 		m_stream.send_n(header.begin(),&wait);
+#endif
 	}
 }
 

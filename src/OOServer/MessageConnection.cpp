@@ -22,11 +22,11 @@ Root::MessageConnection::~MessageConnection()
 {
 }
 
-ACE_CDR::UShort Root::MessageConnection::attach(ACE_HANDLE new_handle)
+ACE_CDR::UShort Root::MessageConnection::open(ACE_HANDLE new_handle)
 {
 	// Open the reader
 	if (m_reader.open(*this,new_handle) != 0)
-	    ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::MessageConnection::connect"),0);
+	    ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::MessageConnection::open"),0);
 
 	ACE_CDR::UShort uId = m_pHandler->register_channel(new_handle);
 	if (uId == 0)
@@ -36,30 +36,6 @@ ACE_CDR::UShort Root::MessageConnection::attach(ACE_HANDLE new_handle)
 		return 0;
 
 	return uId;
-}
-
-void Root::MessageConnection::open(ACE_HANDLE new_handle, ACE_Message_Block& /*mb*/)
-{
-	// Stash the handle
-	this->handle(new_handle);
-
-	// Open the reader
-	if (m_reader.open(*this,new_handle) != 0)
-	{
-	    ACE_ERROR((LM_ERROR,L"%p\n",L"Root::MessageConnection::open"));
-		delete this;
-		return;
-	}
-
-	ACE_CDR::UShort uId = m_pHandler->register_channel(new_handle);
-	if (uId == 0)
-	{
-	    delete this;
-		return;
-	}
-
-	if (!read())
-		delete this;
 }
 
 bool Root::MessageConnection::read()
@@ -424,8 +400,6 @@ bool Root::MessageHandler::parse_message(Message* msg)
 	}
 	else
 	{
-		//ACE_DEBUG((LM_DEBUG,L"Root context: Forwarding request from %u(%u) to %u(%u)",reply_channel_id,src_channel_id,dest_channel_id,dest_channel.channel));
-
 		// Forward it...
 		msg->m_dest_channel_id = dest_channel.channel_id;
 
@@ -497,6 +471,65 @@ void Root::MessageHandler::remove_thread_context(const Root::MessageHandler::Thr
 	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	m_mapThreadContexts.erase(pContext->m_thread_id);
+}
+
+int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, const wchar_t* pszAddr)
+{
+	void* TODO_UNIX;
+
+	m_pParent = pManager;
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr(pszAddr);
+
+	if (m_acceptor.open(addr) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects acceptor.open failed"),-1);
+
+	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects, register_handler failed"),-1);
+
+	return 0;
+}
+
+int Root::MessageHandler::MessageConnector::handle_signal(int, siginfo_t*, ucontext_t*)
+{
+	ACE_SPIPE_Stream stream;
+	if (m_acceptor.accept(stream) != 0)
+		return -1;
+
+	int r = new_handle(stream.get_handle());
+	if (r == 0)
+		stream.set_handle(ACE_INVALID_HANDLE);
+
+	return r;
+}
+
+int Root::MessageHandler::MessageConnector::new_handle(ACE_HANDLE handle)
+{
+	Root::MessageConnection* pMC = 0;
+	ACE_NEW_RETURN(pMC,Root::MessageConnection(m_pParent),-1);
+
+	if (pMC->open(handle) == 0)
+	{
+		delete pMC;
+		return -1;
+	}
+
+	return 0;
+}
+
+void Root::MessageHandler::MessageConnector::stop()
+{
+	m_acceptor.close();
+}
+
+int Root::MessageHandler::start(const wchar_t* pszName)
+{
+	return m_connector.start(this,pszName);
+}
+
+void Root::MessageHandler::stop_accepting()
+{
+	m_connector.stop();
 }
 
 void Root::MessageHandler::stop()

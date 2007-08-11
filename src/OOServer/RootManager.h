@@ -40,8 +40,7 @@ namespace Root
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex  m_lock;
-		ACE_HANDLE           m_config_file;
-
+		
 		int run_event_loop_i(int argc, wchar_t* argv[]);
 		bool init();
 		int init_registry();
@@ -50,8 +49,8 @@ namespace Root
 
 		struct UserProcess
 		{
-			u_short			uPort;
-			SpawnedProcess*	pSpawn;
+			ACE_WString     strPipe;
+			SpawnedProcess* pSpawn;
 		};
 		std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
 		std::map<ACE_HANDLE,ACE_CString>   m_mapUserIds;
@@ -73,7 +72,6 @@ namespace Root
 			
 		private:
 			Manager*           m_pParent;
-			ACE_SPIPE_Addr     m_addr;
 			ACE_SPIPE_Acceptor m_acceptor;
 
 			int handle_signal(int, siginfo_t*, ucontext_t*);
@@ -86,9 +84,9 @@ namespace Root
 		int connect_client(ACE_SPIPE_Stream& stream);
 		int process_client_connects();
 		bool spawn_sandbox();
-		bool spawn_user(user_id_type uid, const ACE_CString& key, u_short& uNewPort, ACE_WString& strSource);
-		u_short bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_WString& strSource);
-		bool connect_client(user_id_type uid, u_short& uNewPort, ACE_WString& strSource);
+		bool spawn_user(user_id_type uid, const ACE_CString& key, ACE_WString& strPipe, ACE_WString& strSource);
+		ACE_WString bootstrap_user(ACE_SPIPE_STREAM& stream, bool bSandbox, ACE_WString& strSource);
+		bool connect_client(user_id_type uid, ACE_WString& strPipe, ACE_WString& strSource);
 		void close_users();
 
 		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);

@@ -397,9 +397,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list,ap))
 {
+	ACE_WString s;
 	for (int len=256;;len*=2)
 	{
-		const ACE_WString s(static_cast<size_t>(len));
+		s.fast_resize(static_cast<size_t>(len));
 
 		int len2 = ACE_OS::vsnprintf(const_cast<wchar_t*>(s.fast_rep()),len,sz,ap);
 		if (len2 <= len && len2 != -1)

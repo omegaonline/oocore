@@ -106,7 +106,7 @@ Root::SpawnedProcess::~SpawnedProcess()
 }
 
 // Forward declare UserMain
-int UserMain(u_short uPort);
+int UserMain(const ACE_WString& strPipe);
 
 extern char **environ;
 
@@ -160,7 +160,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	return true;
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t uid, u_short uPort, ACE_WString& strSource)
+bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe, ACE_WString& strSource)
 {
 	pid_t child_id = ACE_OS::fork();
 	if (child_id == -1)

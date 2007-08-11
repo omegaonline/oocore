@@ -21,7 +21,7 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		bool Spawn(uid_t id, u_short uPort, ACE_WString& strSource);
+		bool Spawn(uid_t id, const ACE_WString& strPipe, ACE_WString& strSource);
 		bool IsRunning();
 
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
@@ -44,8 +44,9 @@ namespace Root
 		HANDLE	m_hProcess;
 
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_WString& strSource);
-		DWORD SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_WString& strSource);
-		bool unsafe_sandbox();
+		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile, ACE_WString& strSource);
+		static bool unsafe_sandbox();
+
 #else // !ACE_WIN32
 	protected:
 		uid_t	m_uid;

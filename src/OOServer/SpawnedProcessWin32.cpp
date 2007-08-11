@@ -200,7 +200,7 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	return ERROR_SUCCESS;
 }
 
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bLoadProfile, ACE_WString& strSource)
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile, ACE_WString& strSource)
 {
 	// Get our module name
 	WCHAR szPath[MAX_PATH];
@@ -209,13 +209,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 		DWORD dwErr = GetLastError();
 		strSource = L"Root::SpawnedProcess::SpawnFromToken - GetModuleFileName";
 		return dwErr;
-	}
-
-	WCHAR szCmdLine[MAX_PATH+64];
-	if (ACE_OS::sprintf(szCmdLine,L"\"%s\" --spawned %u",szPath,uPort)==-1)
-	{
-		strSource = L"Root::SpawnedProcess::SpawnFromToken - sprintf";
-		return ERROR_INVALID_PARAMETER;
 	}
 
 	// Load up the users profile
@@ -245,10 +238,12 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, u_short uPort, bool bL
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.lpDesktop = L"";
 
-	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
+	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT | DETACHED_PROCESS;
 
+	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
+	
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hToken,NULL,szCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		strSource = L"Root::SpawnedProcess::SpawnFromToken - CreateProcessAsUser";
@@ -289,7 +284,7 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 	return (v == 1);
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_WString& strSource)
+bool Root::SpawnedProcess::Spawn(uid_t id, const ACE_WString& strPipe, ACE_WString& strSource)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
@@ -324,13 +319,13 @@ bool Root::SpawnedProcess::Spawn(uid_t id, u_short uPort, ACE_WString& strSource
 		}
 	}
 
-	DWORD dwRes = SpawnFromToken(hToken,uPort,!bSandbox,strSource);
+	DWORD dwRes = SpawnFromToken(hToken,strPipe,!bSandbox,strSource);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		if (dwRes == 1314 && bSandbox && unsafe_sandbox())
 		{
 			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken);
-			SpawnFromToken(hToken,uPort,!bSandbox,strSource);
+			SpawnFromToken(hToken,strPipe,!bSandbox,strSource);
 			ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
 		}
 		else
@@ -377,7 +372,13 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
 		DWORD dwErr = GetLastError();
-		return dwErr;
+		if (dwErr == 1314 && unsafe_sandbox())
+		{
+			OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,phToken);
+			ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
+		}
+		else
+			return dwErr;
 	}
 
 	return ERROR_SUCCESS;

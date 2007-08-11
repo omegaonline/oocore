@@ -5,12 +5,12 @@
 #include "./UserServiceTable.h"
 #include "./UserRegistry.h"
 
-int UserMain(u_short uPort)
+int UserMain(const ACE_WString& strPipe)
 {
 	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
 
-	return User::Manager::run(uPort);
+	return User::Manager::run(strPipe);
 }
 
 using namespace Omega;
@@ -130,12 +130,12 @@ User::Manager::~Manager()
 {
 }
 
-int User::Manager::run(u_short uPort)
+int User::Manager::run(const ACE_WString& strPipe)
 {
-	return USER_MANAGER::instance()->run_event_loop_i(uPort);
+	return USER_MANAGER::instance()->run_event_loop_i(strPipe);
 }
 
-int User::Manager::run_event_loop_i(u_short uPort)
+int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 {
 	int ret = -1;
 
@@ -156,16 +156,14 @@ int User::Manager::run_event_loop_i(u_short uPort)
 			ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning threads"),-1);
 		else
 		{
-			if (init(uPort))
+			if (init(strPipe))
 			{
-				//ACE_DEBUG((LM_INFO,L"OOServer user context has started successfully."));
+	            // Wait for stop
+				ret = ACE_Reactor::instance()->run_event_loop();
 
-                // Wait for stop
-				ret = m_stop.wait();
+				// Stop accepting clients
+				stop_accepting();
 			}
-
-			// Stop accepting clients
-			cancel();
 
 			// Close the user processes
 			close_channels();
@@ -184,38 +182,28 @@ int User::Manager::run_event_loop_i(u_short uPort)
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
-	//ACE_DEBUG((LM_INFO,L"OOServer user context has stopped."));
-
 	return ret;
 }
 
-bool User::Manager::init(u_short uPort)
+bool User::Manager::init(const ACE_WString& strPipe)
 {
 	ACE_CDR::UShort sandbox_channel = 0;
 
-	ACE_SOCK_Connector connector;
+	void* TODO_UNIX;
+
+	/*ACE_SOCK_Connector connector;
 	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
-	ACE_SOCK_Stream stream;
+	ACE_SOCK_Stream stream;*/
+
+	ACE_SPIPE_Connector connector;
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr(strPipe.c_str());
+	ACE_SPIPE_Stream stream;
 
 	// Connect to the root
 	ACE_Time_Value wait(5);
 	if (connector.connect(stream,addr,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"connect() failed"),false);
-
-	// Bind a tcp socket
-	ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
-	if (open(sa) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"acceptor::open() failed"),false);
-
-	// Get our port number
-	int len = sa.get_size ();
-	sockaddr* addr2 = reinterpret_cast<sockaddr*>(sa.get_addr());
-	if (ACE_OS::getsockname(this->get_handle(),addr2,&len) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
-
-	sa.set_type(addr2->sa_family);
-	sa.set_size(len);
-	uPort = sa.get_port_number();
 
 	// Talk to the root...
 	if (stream.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
@@ -225,7 +213,7 @@ bool User::Manager::init(u_short uPort)
 	Root::MessageConnection* pMC;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
 
-	m_root_channel = pMC->attach(stream.get_handle());
+	m_root_channel = pMC->open(stream.get_handle());
 	if (m_root_channel == 0)
 	{
 		delete pMC;
@@ -236,9 +224,22 @@ bool User::Manager::init(u_short uPort)
 	if (!bootstrap(sandbox_channel))
 		return false;
 
+	// Invent a new pipe name..
+	void* TODO_UNIX2;
+
+	ACE_WString strNewPipe = ((string_t)guid_t::Create()).c_str();
+
+	// Now start accepting client connections
+	if (start(strNewPipe.c_str()) != 0)
+		return false;
+
+	size_t uLen = strNewPipe.length()+1;
+	if (stream.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"stream.send() failed"),false);
+
 	// Then send back our port number
-	if (stream.send(&uPort,sizeof(uPort)) != static_cast<ssize_t>(sizeof(uPort)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
+	if (stream.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"stream.send() failed"),false);
 
 	// Clear the handle in the stream, pMC now owns it
 	stream.set_handle(ACE_INVALID_HANDLE);
@@ -359,7 +360,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 	{
 	case Root::End:
 		// We have been told to end!
-		m_stop.signal();
+		ACE_Reactor::instance()->end_event_loop();
 		return;
 
 	default:

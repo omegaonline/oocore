@@ -21,8 +21,7 @@
 #include <shlobj.h>
 #endif
 
-Root::Manager::Manager() :
-	m_config_file(ACE_INVALID_HANDLE)
+Root::Manager::Manager()
 {
 }
 
@@ -118,9 +117,6 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 				ret = process_client_connects();
 			}
 
-			// Close the config file...
-			ACE_OS::close(m_config_file);
-
 			// Close the user processes
 			close_users();
 
@@ -131,12 +127,9 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
 
-		if (bInited)
-		{
-			// Stop the MessageHandler
-			stop();
-		}
-
+		// Stop the MessageHandler
+		stop();
+		
 		// Wait for all the request threads to finish
 		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
@@ -159,91 +152,9 @@ ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void* pParam)
 
 bool Root::Manager::init()
 {
-	// Open the Server lock file
-	if (m_config_file != ACE_INVALID_HANDLE)
-		ACE_ERROR_RETURN((LM_ERROR,L"OOServer already running.\n"),false);
-
-	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),O_RDONLY);
-	if (m_config_file != ACE_INVALID_HANDLE)
-	{
-		pid_t pid;
-		if (ACE_OS::read(m_config_file,&pid,sizeof(pid)) == sizeof(pid))
-		{
-			// Check if the process is still running...
-			if (ACE::process_active(pid)==1)
-			{
-				// Already running on this machine... Fail
-				ACE_OS::close(m_config_file);
-				m_config_file = ACE_INVALID_HANDLE;
-				ACE_ERROR_RETURN((LM_ERROR,L"OOServer already running.\n"),false);
-			}
-		}
-		ACE_OS::close(m_config_file);
-	}
-
-	int flags = O_WRONLY | O_CREAT | O_TRUNC;
-#if defined(ACE_WIN32)
-	//flags |= O_TEMPORARY;
-#endif
-
-	m_config_file = ACE_OS::open(get_bootstrap_filename().c_str(),flags);
-	if (m_config_file == ACE_INVALID_HANDLE)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::init - open() failed"),false);
-
-	// Write our pid instead
-	pid_t pid = ACE_OS::getpid();
-	if (ACE_OS::write(m_config_file,&pid,sizeof(pid)) != sizeof(pid))
-	{
-		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - pid write() failed"));
-		ACE_OS::close(m_config_file);
-		m_config_file = ACE_INVALID_HANDLE;
-		return false;
-	}
-
-	// Bind a tcp socket
-	/*ACE_INET_Addr sa((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
-	if (ACE_Asynch_Acceptor<ClientConnection>::open(sa) != 0)
-	{
-		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - open() failed"));
-		ACE_OS::close(m_config_file);
-		m_config_file = ACE_INVALID_HANDLE;
-		return false;
-	}
-
-	// Get our port number
-	int len = sa.get_size ();
-	sockaddr* addr = reinterpret_cast<sockaddr*>(sa.get_addr());
-	if (ACE_OS::getsockname(ACE_Asynch_Acceptor<ClientConnection>::get_handle(),addr,&len) == -1)
-	{
-		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - Failed to discover local port"));
-		ACE_OS::close(m_config_file);
-		m_config_file = ACE_INVALID_HANDLE;
-		return false;
-	}
-	sa.set_type(addr->sa_family);
-	sa.set_size(len);
-
-	// Write it back...
-	u_short uPort = sa.get_port_number();*/
-
-	u_short uPort = 666;
-
-
-	if (ACE_OS::write(m_config_file,&uPort,sizeof(uPort)) != sizeof(uPort))
-	{
-		ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::init - port write() failed"));
-		ACE_OS::close(m_config_file);
-		m_config_file = ACE_INVALID_HANDLE;
-		return false;
-	}
-
 	// Open the root registry and create a new sandbox...
 	if (init_registry() != 0 || !spawn_sandbox())
-	{
-		ACE_OS::close(m_config_file);
-		m_config_file = ACE_INVALID_HANDLE;
 		return false;
-	}
 
 	return true;
 }
@@ -336,14 +247,17 @@ void Root::Manager::end_event_loop_i()
 
 int Root::Manager::ClientConnector::start(Manager* pManager, const wchar_t* pszAddr)
 {
-	m_pParent = pManager;
-	m_addr.string_to_addr(pszAddr);
+	void* TODO_UNIX;
 
-	if (m_acceptor.open(m_addr) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects acceptor.open failed"),-1);
+	m_pParent = pManager;
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr(pszAddr);
+
+	if (m_acceptor.open(addr) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::ClientConnector::start acceptor.open failed"),-1);
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects, register_handler failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::ClientConnector::start, register_handler failed"),-1);
 
 	return 0;
 }
@@ -376,23 +290,31 @@ int Root::Manager::process_client_connects()
 
 int Root::Manager::connect_client(ACE_SPIPE_Stream& stream)
 {
+	void* TODO;	// Only do this under unix
+
 	// Read the uid
 	user_id_type uid;
 	if (stream.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 		return -1;
 
-	u_short uPort = 0;
+	ACE_WString strPipe;
 	ACE_WString strSource;
-	if (!connect_client(uid,uPort,strSource))
+	if (!connect_client(uid,strPipe,strSource))
 	{
 		int err = ACE_OS::last_error();
-		uPort = 0;
-		stream.send(&uPort,sizeof(uPort));
 		stream.send(&err,sizeof(err));
-		stream.send(strSource.c_str(),strSource.length());
+		size_t uLen = strSource.length()+1;	
+		stream.send(&uLen,sizeof(uLen));
+		stream.send(strSource.c_str(),uLen);
 	}
 	else
-        stream.send(&uPort,sizeof(uPort));
+	{
+		int err = 0;
+		stream.send(&err,sizeof(err));
+		size_t uLen = strPipe.length()+1;	
+		stream.send(&uLen,sizeof(uLen));
+		stream.send(strPipe.c_str(),uLen);
+	}
 	
 	return 0;
 }
@@ -404,8 +326,8 @@ bool Root::Manager::spawn_sandbox()
 	{
 		// Spawn the sandbox
 		ACE_WString strSource;
-		u_short uPort;
-		if (!spawn_user(static_cast<user_id_type>(-1),strUserId,uPort,strSource))
+		ACE_WString strPipe;
+		if (!spawn_user(static_cast<user_id_type>(-1),strUserId,strPipe,strSource))
 		{
 			ACE_ERROR((LM_ERROR,L"%p\n",L"Root::Manager::spawn_sandbox() failed"));
 			return false;
@@ -417,7 +339,7 @@ bool Root::Manager::spawn_sandbox()
 	return true;
 }
 
-bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u_short& uNewPort, ACE_WString& strSource)
+bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, ACE_WString& strPipe, ACE_WString& strSource)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn = 0;
@@ -426,69 +348,73 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, u
 	bool bSuccess = false;
 
 	// Open an acceptor
-	ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
-	ACE_SOCK_Acceptor acceptor;
-	if (acceptor.open(addr,0,PF_INET,1) != 0)
+	/*ACE_INET_Addr addr((u_short)0,(ACE_UINT32)INADDR_LOOPBACK);
+	ACE_SOCK_Acceptor acceptor;*/
+
+	void* TODO_UNIX;
+
+	ACE_WString strNewPipe = L"ooserver_root";
+
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr(strNewPipe.c_str());
+	ACE_SPIPE_Acceptor acceptor;
+
+	if (acceptor.open(addr) != 0)
 		strSource = L"Root::Manager::spawn_user - acceptor.open";
 	else
 	{
-		// Get the port we are accepting on
-		if (acceptor.get_local_addr(addr) != 0)
-			strSource = L"Root::Manager::spawn_user - acceptor.get_local_addr";
-		else
+		// Spawn the user process
+		if (pSpawn->Spawn(uid,strNewPipe,strSource))
 		{
-			// Spawn the user process
-			if (pSpawn->Spawn(uid,addr.get_port_number(),strSource))
+			// Accept
+			ACE_SPIPE_Stream stream;
+
+			ACE_Time_Value wait(15);
+			if (acceptor.accept(stream,0,&wait) != 0)
+				strSource = L"Root::Manager::spawn_user - acceptor.accept";
+			else
 			{
-				// Accept a socket
-				ACE_SOCK_Stream stream;
-				ACE_Time_Value wait(15);
-				if (acceptor.accept(stream,0,&wait) != 0)
-					strSource = L"Root::Manager::spawn_user - acceptor.accept";
-				else
+				strPipe = bootstrap_user(stream,uid == static_cast<user_id_type>(-1),strSource);
+				if (!strPipe.empty())
 				{
-					uNewPort = bootstrap_user(stream,uid == static_cast<user_id_type>(-1),strSource);
-					if (uNewPort != 0)
+					// Create a new MessageConnection
+					ACE_HANDLE handle = stream.get_handle();
+					MessageConnection* pMC = 0;
+					ACE_NEW_NORETURN(pMC,MessageConnection(this));
+					if (!pMC)
+						strSource = L"Root::Manager::spawn_user - new MessageConnection";
+					else if (pMC->open(handle) == 0)
+						strSource = L"Root::Manager::spawn_user - MessageConnection::open";
+					else
 					{
-						// Create a new MessageConnection
-						ACE_HANDLE handle = stream.get_handle();
-						MessageConnection* pMC = 0;
-						ACE_NEW_NORETURN(pMC,MessageConnection(this));
-						if (!pMC)
-							strSource = L"Root::Manager::spawn_user - new MessageConnection";
-						else if (pMC->attach(handle) == 0)
-							strSource = L"Root::Manager::spawn_user - MessageConnection::attach";
-						else
+						// Clear the handle in the stream, pMC now owns it
+						stream.set_handle(ACE_INVALID_HANDLE);
+
+						// Insert the data into various maps...
+						try
 						{
-							// Clear the handle in the stream, pMC now owns it
-							stream.set_handle(ACE_INVALID_HANDLE);
+							ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-							// Insert the data into various maps...
-							try
-							{
-								ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+							UserProcess process = {strPipe, pSpawn};
+							m_mapUserProcesses.insert(std::map<ACE_CString,UserProcess>::value_type(strUserId,process));
+							m_mapUserIds.insert(std::map<ACE_HANDLE,ACE_CString>::value_type(handle,strUserId));
 
-								UserProcess process = {uNewPort, pSpawn};
-								m_mapUserProcesses.insert(std::map<ACE_CString,UserProcess>::value_type(strUserId,process));
-								m_mapUserIds.insert(std::map<ACE_HANDLE,ACE_CString>::value_type(handle,strUserId));
-
-								bSuccess = true;
-							}
-							catch (...)
-							{
-								strSource = L"Root::Manager::spawn_user - unhandled exception";
-							}
+							bSuccess = true;
 						}
-
-						if (!bSuccess)
-							delete pMC;
+						catch (...)
+						{
+							strSource = L"Root::Manager::spawn_user - unhandled exception";
+						}
 					}
 
-					stream.close();
+					if (!bSuccess)
+						delete pMC;
 				}
+
+				stream.close();
 			}
 		}
-
+		
 		acceptor.close();
 	}
 
@@ -533,7 +459,7 @@ void Root::Manager::close_users()
 	{}
 }
 
-u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, ACE_WString& strSource)
+ACE_WString Root::Manager::bootstrap_user(ACE_SPIPE_STREAM& stream, bool bSandbox, ACE_WString& strSource)
 {
 	// This could be changed to a struct if we wanted...
 	ACE_CDR::UShort sandbox_channel = bSandbox ? 0 : 1;
@@ -541,21 +467,28 @@ u_short Root::Manager::bootstrap_user(ACE_SOCK_STREAM& stream, bool bSandbox, AC
 	if (stream.send(&sandbox_channel,sizeof(sandbox_channel)) != sizeof(sandbox_channel))
 	{
 		strSource = L"Root::Manager::bootstrap_user - send";
-		return 0;
+		return L"";
 	}
 
-	u_short uPort = 0;
-	ACE_Time_Value wait(15);
-	if (stream.recv(&uPort,sizeof(uPort),&wait) != static_cast<ssize_t>(sizeof(uPort)))
+	size_t uLen = 0;
+	if (stream.recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 	{
 		strSource = L"Root::Manager::bootstrap_user - recv";
-		return 0;
+		return L"";
 	}
 
-	return uPort;
+	ACE_WString strRet;
+	strRet.fast_resize(uLen);
+	if (stream.recv((void*)(strRet.fast_rep()),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	{
+		strSource = L"Root::Manager::bootstrap_user - recv";
+		return L"";
+	}
+
+	return strRet;
 }
 
-bool Root::Manager::connect_client(user_id_type uid, u_short& uNewPort, ACE_WString& strSource)
+bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe, ACE_WString& strSource)
 {
 	ACE_CString strUserId;
 	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId,strSource))
@@ -564,7 +497,7 @@ bool Root::Manager::connect_client(user_id_type uid, u_short& uNewPort, ACE_WStr
 	try
 	{
 		// See if we have a process already
-		UserProcess process = {0,0};
+		UserProcess process = {L"",0};
 		{
 			ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
@@ -587,12 +520,12 @@ bool Root::Manager::connect_client(user_id_type uid, u_short& uNewPort, ACE_WStr
 			}
 			else
 			{
-				uNewPort = process.uPort;
+				strPipe = process.strPipe;
 				return true;
 			}
 		}
 
-		return spawn_user(uid,strUserId,uNewPort,strSource);
+		return spawn_user(uid,strUserId,strPipe,strSource);
 	}
 	catch (std::exception&)
 	{

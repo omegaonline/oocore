@@ -23,8 +23,8 @@ namespace Root
 		MessageConnection(MessageHandler* pHandler);
 		virtual ~MessageConnection();
 
-		ACE_CDR::UShort attach(ACE_HANDLE new_handle);
-		void open(ACE_HANDLE new_handle, ACE_Message_Block& mb);
+		ACE_CDR::UShort open(ACE_HANDLE new_handle);
+		
 		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 
 	private:
@@ -45,7 +45,7 @@ namespace Root
 		bool read();
 	};
 
-	class MessageHandler : public ACE_Asynch_Acceptor<MessageConnection>
+	class MessageHandler
 	{
 	protected:
 		MessageHandler();
@@ -55,9 +55,11 @@ namespace Root
 		void send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 
+		int start(const wchar_t* pszName);
 		ACE_CDR::UShort get_channel_thread_id(ACE_CDR::UShort channel);
 		ACE_CDR::UShort get_handle_channel(ACE_HANDLE handle, ACE_CDR::UShort channel);
 		ACE_HANDLE get_channel_handle(ACE_CDR::UShort channel);
+		void stop_accepting();
 		void stop();
 
 		virtual void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs) = 0;
@@ -67,8 +69,29 @@ namespace Root
 	private:
 		friend class MessageConnection;
 
-		MessageHandler(const MessageHandler&) : ACE_Asynch_Acceptor<MessageConnection>() {}
+		MessageHandler(const MessageHandler&) {}
 		MessageHandler& operator = (const MessageHandler&) { return *this; }
+
+		class MessageConnector : public ACE_Event_Handler
+		{
+		public:
+			MessageConnector() : ACE_Event_Handler()
+			{}
+
+			int start(MessageHandler* pManager, const wchar_t* pszAddr);
+			void stop();
+			
+		private:
+			MessageHandler*    m_pParent;
+			ACE_SPIPE_Acceptor m_acceptor;
+
+			int handle_signal(int, siginfo_t*, ucontext_t*);
+			int new_handle(ACE_HANDLE handle);
+
+			MessageConnector(const MessageConnector&) : ACE_Event_Handler() {};
+			MessageConnector& operator = (const MessageConnector&) { return *this; };
+		};
+		MessageConnector     m_connector;
 
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_CDR::UShort      m_uNextChannelId;

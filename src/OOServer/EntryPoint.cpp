@@ -16,7 +16,7 @@
 #include "./Version.h"
 
 // Forward declare UserMain
-int UserMain(u_short uPort);
+int UserMain(const ACE_WString& strPipe);
 
 static int Install(int argc, wchar_t* argv[])
 {
@@ -61,7 +61,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #if defined(ACE_WIN32)
 	// Check to see if we have been spawned
 	if (argc==3 && ACE_OS::strcmp(argv[1],L"--spawned")==0)
-		return UserMain(static_cast<u_short>(ACE_OS::atoi(argv[2])));
+		return UserMain(argv[2]);
 
 	if (argc>=2 && ACE_OS::strcmp(argv[1],L"--service")==0)
 		skip_args = 2;

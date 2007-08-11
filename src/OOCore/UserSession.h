@@ -26,7 +26,7 @@ namespace OOCore
 		ACE_RW_Thread_Mutex m_lock;
 		ACE_Thread_Mutex    m_send_lock;
 		int                 m_thrd_grp_id;
-		ACE_SOCK_Stream     m_stream;
+		ACE_SPIPE_Stream    m_stream;
 
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
@@ -75,7 +75,7 @@ namespace OOCore
 		void term_i();
 		Omega::IException* bootstrap();
 		ACE_WString get_bootstrap_filename();
-		bool discover_server_port(u_short& uPort, Omega::string_t& strSource);
+		bool discover_server_port(ACE_WString& uPort, Omega::string_t& strSource);
 		bool launch_server(Omega::string_t& strSource);
 
 		int run_read_loop();

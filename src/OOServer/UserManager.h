@@ -10,7 +10,7 @@ namespace User
 	class Manager : public Root::MessageHandler
 	{
 	public:
-        static int run(u_short uPort);
+        static int run(const ACE_WString& strPipe);
 
 		ACE_InputCDR sendrecv_root(const ACE_OutputCDR& request);
 
@@ -26,12 +26,11 @@ namespace User
 
 		ACE_RW_Thread_Mutex			m_lock;
 		ACE_CDR::UShort             m_root_channel;
-		ACE_Event                   m_stop;
-
+		
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
-		int run_event_loop_i(u_short uPort);
-		bool init(u_short uPort);
+		int run_event_loop_i(const ACE_WString& strPipe);
+		bool init(const ACE_WString& strPipe);
 		bool bootstrap(ACE_CDR::UShort sandbox_channel);
 		void close_channels();
 

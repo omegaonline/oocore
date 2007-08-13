@@ -336,7 +336,7 @@ int Root::Manager::connect_client(ACE_SPIPE_Stream& stream)
 		stream.send(&err,sizeof(err));
 		size_t uLen = strSource.length()+1;	
 		stream.send(&uLen,sizeof(uLen));
-		stream.send(strSource.c_str(),uLen);
+		stream.send(strSource.c_str(),uLen*sizeof(wchar_t));
 	}
 	else
 	{
@@ -344,7 +344,7 @@ int Root::Manager::connect_client(ACE_SPIPE_Stream& stream)
 		stream.send(&err,sizeof(err));
 		size_t uLen = strPipe.length()+1;	
 		stream.send(&uLen,sizeof(uLen));
-		stream.send(strPipe.c_str(),uLen);
+		stream.send(strPipe.c_str(),uLen*sizeof(wchar_t));
 	}
 	
 	return 0;
@@ -390,7 +390,7 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, A
 	addr.string_to_addr(strNewPipe.c_str());
 	ACE_SPIPE_Acceptor acceptor;
 
-	if (acceptor.open(addr) != 0)
+	if (acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,0,PIPE_TYPE_MESSAGE | PIPE_READMODE_BYTE | PIPE_WAIT) != 0)
 		strSource = L"Root::Manager::spawn_user - acceptor.open";
 	else
 	{

@@ -267,8 +267,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 
 bool Root::SpawnedProcess::unsafe_sandbox()
 {
-	return true;
-
 	// Get the local machine registry
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
 
@@ -351,9 +349,6 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 		return (DWORD)-1;
 
 	reg_root.get_string_value(sandbox_key,L"Password",strPwd);
-
-	strUName = L"rick";
-	strPwd = L"gobsh1te";
 
 	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{

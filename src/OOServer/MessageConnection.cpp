@@ -68,6 +68,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 	ACE_Message_Block& mb = result.message_block();
 
 	bool bSuccess = false;
+
 	if (result.success())
 	{
 		if (m_read_len==0)
@@ -411,12 +412,18 @@ bool Root::MessageHandler::parse_message(Message* msg)
 		if (build_header(header,*msg,msg->m_pPayload->start()))
 		{
 			// Send to the handle
-			ACE_Time_Value wait = msg->m_deadline - ACE_OS::gettimeofday();
 			size_t sent = 0;
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+			ACE::write_n(dest_channel.handle,header.begin(),&sent);
+#else
 			ACE_Guard<ACE_Thread_Mutex> guard(*dest_channel.lock);
 			if (guard.locked() != 0)
+			{
+				ACE_Time_Value wait = msg->m_deadline - ACE_OS::gettimeofday();
 				ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+			}
+#endif
 		}
 
 		// We are done with the message...
@@ -485,7 +492,7 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(pszAddr);
 
-	if (m_acceptor.open(addr) != 0)
+	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,0,PIPE_TYPE_MESSAGE | PIPE_READMODE_BYTE | PIPE_WAIT) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects acceptor.open failed"),-1);
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
@@ -672,15 +679,19 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, const A
 	}
 
 	// Send to the handle
-	ACE_Time_Value wait = msg.m_deadline - now;
 	bool bRet = false;
 	size_t sent = 0;
 	ssize_t res = -1;
 
 	// Critical section around the send
 	{
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+		res = ACE::write_n(dest_channel.handle,header.begin(),&sent);
+#else
 		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
+		ACE_Time_Value wait = msg.m_deadline - now;
 		res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
+#endif
 	}
 
 	if (res != -1 && sent == header.total_length())
@@ -742,10 +753,13 @@ void Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	
 	// Critical section around the send
 	{
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+		ACE::write_n(dest_channel.handle,header.begin());
+#else
 		ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
-
 		ACE_Time_Value wait = msg.m_deadline - now;
 		ACE::send_n(dest_channel.handle,header.begin(),&wait);
+#endif
 	}
 }
 

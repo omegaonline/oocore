@@ -54,7 +54,7 @@ bool OOCore::UserSession::init_i(string_t& strSource)
 	addr.string_to_addr(strPipe.c_str());
 
 	ACE_Time_Value wait(5);
-	if (connector.connect(m_stream,addr,&wait) != 0)
+	if (connector.connect(m_stream,addr,&wait,ACE_Addr::sap_any,0,O_RDWR,0,0,PIPE_READMODE_BYTE | PIPE_WAIT) != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
@@ -299,13 +299,15 @@ int OOCore::UserSession::run_read_loop()
 
 #if defined(OMEGA_WIN32)
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read);
+		if (nRead == -1 && ACE_OS::last_error() == ERROR_MORE_DATA)
+			nRead = s_initial_read;
 #else
 		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
-#endif
 		if (nRead == -1 && ACE_OS::last_error() == ETIMEDOUT)
 			continue;
-
+#endif
+		
 		if (nRead != s_initial_read)
 		{
 			int err = ACE_OS::last_error();

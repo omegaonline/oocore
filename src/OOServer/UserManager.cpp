@@ -161,25 +161,13 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 				// Wait for stop
 				ret = ACE_Reactor::instance()->run_event_loop();
 
-				// Stop accepting clients
-				stop_accepting();
+				// Wait for all the request threads to finish
+				ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
+
+				// Wait for all the request threads to finish
+				ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 			}
-
-			// Close the user processes
-			close_channels();
-
-			// Stop the proactor
-			ACE_Proactor::instance()->end_event_loop();
-
-			// Wait for all the request threads to finish
-			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
-		}
-
-		// Stop the MessageHandler
-		stop();
-
-		// Wait for all the request threads to finish
-		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
+		}	
 	}
 
 	return ret;
@@ -189,31 +177,21 @@ bool User::Manager::init(const ACE_WString& strPipe)
 {
 	ACE_CDR::UShort sandbox_channel = 0;
 
-	void* TODO_UNIX;
-
-	/*ACE_SOCK_Connector connector;
-	ACE_INET_Addr addr(uPort,(ACE_UINT32)INADDR_LOOPBACK);
-	ACE_SOCK_Stream stream;*/
-
-	ACE_SPIPE_Connector connector;
-	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(strPipe.c_str());
-	ACE_SPIPE_Stream stream;
-
 	// Connect to the root
 	ACE_Time_Value wait(5);
-	if (connector.connect(stream,addr,&wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED,0,0,PIPE_READMODE_BYTE | PIPE_WAIT) != 0)
+	Root::MessagePipe pipe;
+	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"connect() failed"),false);
 
 	// Talk to the root...
-	if (stream.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
+	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
 
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
 
-	m_root_channel = pMC->open(stream.get_handle());
+	m_root_channel = pMC->open(pipe);
 	if (m_root_channel == 0)
 	{
 		delete pMC;
@@ -225,24 +203,19 @@ bool User::Manager::init(const ACE_WString& strPipe)
 		return false;
 
 	// Invent a new pipe name..
-	void* TODO_UNIX2;
-
-	ACE_WString strNewPipe = ((string_t)guid_t::Create()).c_str();
+	ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oo");
 
 	// Now start accepting client connections
 	if (start(strNewPipe.c_str()) != 0)
 		return false;
 
 	size_t uLen = strNewPipe.length()+1;
-	if (stream.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"stream.send() failed"),false);
+	if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"pipe.send() failed"),false);
 
 	// Then send back our port number
-	if (stream.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"stream.send() failed"),false);
-
-	// Clear the handle in the stream, pMC now owns it
-	stream.set_handle(ACE_INVALID_HANDLE);
+	if (pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"pipe.send() failed"),false);
 
 	return true;
 }
@@ -281,6 +254,24 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	return true;
 }
 
+void User::Manager::end_event_loop()
+{
+	// Stop accepting new clients
+	stop_accepting();
+	
+	// Stop the reactor
+	ACE_Reactor::instance()->end_reactor_event_loop();
+
+	// Close the user processes
+	close_channels();
+
+	// Stop the proactor
+	ACE_Proactor::instance()->end_event_loop();
+
+	// Stop the MessageHandler
+	stop();
+}
+
 void User::Manager::close_channels()
 {
 	try
@@ -301,7 +292,7 @@ void User::Manager::close_channels()
 			{
 			}
 
-			ACE_OS::closesocket(get_channel_handle(i->first));
+			get_channel_pipe(i->first).close();
 		}
 	}
 	catch (...)
@@ -330,7 +321,7 @@ ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void* pParam)
 	return 0;
 }
 
-void User::Manager::process_request(ACE_HANDLE /*handle*/, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
+void User::Manager::process_request(const Root::MessagePipe& /*handle*/, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
 {
 	if (src_channel_id == m_root_channel)
 	{
@@ -360,7 +351,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 	{
 	case Root::End:
 		// We have been told to end!
-		ACE_Reactor::instance()->end_event_loop();
+		end_event_loop();
 		return;
 
 	default:

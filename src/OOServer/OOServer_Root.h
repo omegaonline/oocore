@@ -79,6 +79,7 @@
 //#include <ace/Acceptor.h>
 #include <ace/Reactor.h>
 #include <ace/SPIPE_Acceptor.h>
+#include <ace/SPIPE_Connector.h>
 
 // End of ACE includes
 /////////////////////////////////////////////////

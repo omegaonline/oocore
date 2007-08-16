@@ -13,22 +13,183 @@
 #include "./OOServer_Root.h"
 #include "./MessageConnection.h"
 
-Root::MessageConnection::MessageConnection(Root::MessageHandler* pHandler) :
-	m_pHandler(pHandler)
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+Root::MessagePipe::MessagePipe() :
+	m_hRead(ACE_INVALID_HANDLE), m_hWrite(ACE_INVALID_HANDLE)
 {
 }
 
-Root::MessageConnection::~MessageConnection()
+ACE_WString Root::MessagePipe::unique_name(const ACE_WString& strPrefix)
 {
+	ACE_Time_Value t = ACE_OS::gettimeofday();
+
+	wchar_t szBuf[32];
+	ACE_OS::sprintf(szBuf,L"%lx%lx",t.sec(),t.usec());
+
+	return strPrefix + szBuf;
 }
 
-ACE_CDR::UShort Root::MessageConnection::open(ACE_HANDLE new_handle)
+int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
 {
-	// Open the reader
-	if (m_reader.open(*this,new_handle) != 0)
+	ACE_Time_Value val(30);
+	if (!wait)
+		wait = &val;
+
+	ACE_Countdown_Time countdown(wait);
+
+	ACE_SPIPE_Connector connector;
+	ACE_SPIPE_Addr addr;
+		
+	ACE_SPIPE_Stream up;
+	addr.string_to_addr((strAddr + L"\\up").c_str());
+	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
+		return -1;
+
+	countdown.update();
+
+	ACE_SPIPE_Stream down;
+	addr.string_to_addr((strAddr + L"\\down").c_str());
+	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
+		return -1;
+		
+	pipe.m_hRead = down.get_handle();
+	pipe.m_hWrite = up.get_handle();
+
+	up.set_handle(ACE_INVALID_HANDLE);
+	down.set_handle(ACE_INVALID_HANDLE);
+
+	return 0;
+}
+
+void Root::MessagePipe::close()
+{
+	ACE_HANDLE hRead = m_hRead;
+	m_hRead = ACE_INVALID_HANDLE;
+	ACE_HANDLE hWrite = m_hWrite;
+	m_hWrite = ACE_INVALID_HANDLE;
+
+	if (hRead != ACE_INVALID_HANDLE)
+		ACE_OS::close(hRead);
+
+	if (hWrite != ACE_INVALID_HANDLE)
+	{
+		ACE_OS::fsync(hWrite);
+		ACE_OS::close(hWrite);
+	}
+}
+
+ACE_HANDLE Root::MessagePipe::get_read_handle() const
+{
+	return m_hRead;
+}
+
+bool Root::MessagePipe::operator < (const MessagePipe& rhs) const
+{
+	return (m_hRead < rhs.m_hRead || !(rhs.m_hRead < m_hRead) && m_hWrite < rhs.m_hWrite);
+}
+
+ssize_t Root::MessagePipe::send(const void* buf, size_t len, ACE_Time_Value*, size_t* sent)
+{
+	return ACE_OS::write_n(m_hWrite,buf,len,sent);
+}
+
+ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value*, size_t* sent)
+{
+	return ACE::write_n(m_hWrite,mb,sent);
+}
+
+ssize_t Root::MessagePipe::recv(void* buf, size_t len, ACE_Time_Value*)
+{
+	ssize_t nRead = ACE_OS::read_n(m_hRead,buf,len);
+	if (nRead == -1 && ACE_OS::last_error() == ERROR_MORE_DATA)
+		nRead = static_cast<ssize_t>(len);
+
+	return nRead;
+}
+
+int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr)
+{
+	ACE_SPIPE_Addr addr;
+	addr.string_to_addr((strAddr + L"\\up").c_str());
+	if (m_acceptor_up.open(addr) != 0)
+		return -1;
+
+	addr.string_to_addr((strAddr + L"\\down").c_str());
+	return m_acceptor_down.open(addr);
+}
+
+int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout)
+{
+	ACE_Time_Value val(30);
+	if (!timeout)
+		timeout = &val;
+
+	ACE_Countdown_Time countdown(timeout);
+
+	ACE_SPIPE_Stream up;
+	if (m_acceptor_up.accept(up,0,timeout) != 0)
+		return -1;
+
+	countdown.update();
+
+	ACE_SPIPE_Stream down;
+	if (m_acceptor_down.accept(down,0,timeout) != 0)
+		return -1;
+
+	pipe.m_hRead = up.get_handle();
+	pipe.m_hWrite = down.get_handle();
+
+	up.set_handle(ACE_INVALID_HANDLE);
+	down.set_handle(ACE_INVALID_HANDLE);
+
+	return 0;
+}
+
+#else // defined(ACE_HAS_WIN32_NAMED_PIPES)
+
+
+int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr)
+{
+	ACE_UNIX_Addr addr(strAddr.c_str());
+	return m_acceptor.open(strAddr);
+}
+
+int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout)
+{
+	void* TODO; // Aggregate the timeout
+
+	ACE_SOCK_Stream stream;
+	if (m_acceptor.accept(stream,0,timeout) != 0)
+		return -1;
+
+	pipe.m_hSocket = stream.get_handle();
+	
+	stream.set_handle(ACE_INVALID_HANDLE);
+	
+	return 0;
+}
+
+#endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
+
+ACE_HANDLE Root::MessagePipeAcceptor::get_handle()
+{
+	return m_acceptor_up.get_handle();
+}
+
+void Root::MessagePipeAcceptor::close()
+{
+	m_acceptor_up.close();
+	m_acceptor_down.close();
+}
+
+ACE_CDR::UShort Root::MessageConnection::open(MessagePipe& pipe)
+{
+	m_pipe = pipe;
+
+	if (m_reader.open(*this,pipe.get_read_handle()) != 0)
 	    ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::MessageConnection::open"),0);
 
-	ACE_CDR::UShort uId = m_pHandler->register_channel(new_handle);
+	ACE_CDR::UShort uId = m_pHandler->register_channel(pipe);
 	if (uId == 0)
 		return 0;
 
@@ -40,14 +201,15 @@ ACE_CDR::UShort Root::MessageConnection::open(ACE_HANDLE new_handle)
 
 bool Root::MessageConnection::read()
 {
-	// We read the header first
-	m_read_len = 0;
-	ACE_Message_Block* mb;
+	ACE_Message_Block* mb = 0;
 	ACE_NEW_RETURN(mb,ACE_Message_Block(2048),false);
-
+		
 	// Align the message block for CDR
 	ACE_CDR::mb_align(mb);
 
+	// We read the header first
+	m_read_len = 0;
+	
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
@@ -69,11 +231,14 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 
 	bool bSuccess = false;
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	if (result.success() || result.error() == ERROR_MORE_DATA)
+#else
 	if (result.success())
+#endif
 	{
-		if (m_read_len==0)
+		if (m_read_len == 0)
 		{
-			// Read the header length
 			if (result.bytes_transferred() == s_initial_read)
 			{
 				// Create a temp input CDR
@@ -94,10 +259,9 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 						{
 							// Subtract what we have already read
 							m_read_len -= static_cast<ACE_CDR::ULong>(mb.length());
-
+							
 							mb.rd_ptr(s_initial_read);
 
-							// Issue another read for the rest of the data
 							bSuccess = (m_reader.read(mb,m_read_len) == 0);
 							if (bSuccess)
 								return;
@@ -106,10 +270,15 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 				}
 			}
 		}
-		else
+		else 
 		{
-			// Check the header length
-			if (result.bytes_transferred() == m_read_len)
+			if (result.bytes_transferred() < m_read_len)
+			{
+				m_read_len -= result.bytes_transferred();
+				if (m_reader.read(mb,m_read_len) == 0)
+					return;
+			}
+			else if (result.bytes_transferred() == m_read_len)
 			{
 				// Create a new input CDR wrapping mb
 				ACE_InputCDR* input = 0;
@@ -121,7 +290,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 					ACE_NEW_NORETURN(msg,MessageHandler::Message);
 					if (msg)
 					{
-						msg->m_handle = result.handle();
+						msg->m_pipe = m_pipe;
 
 						// Read the message
 						(*input) >> msg->m_dest_channel_id;
@@ -151,7 +320,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 								msg = 0;
 								input = 0;
 							}
-														
+
 							// Start a new read
 							bSuccess = read();
 						}
@@ -171,7 +340,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 		if (err != 0 && err != ENOTSOCK)
 			ACE_ERROR((LM_ERROR,L"%p\n",L"Root::MessageConnection::handle_read_stream"));
 		
-		m_pHandler->handle_closed(result.handle());
+		m_pHandler->pipe_closed(m_pipe);
 		delete this;
 	}
 }
@@ -188,16 +357,14 @@ Root::MessageHandler::MessageHandler() :
 {
 }
 
-ACE_CDR::UShort Root::MessageHandler::register_channel(ACE_HANDLE handle)
+ACE_CDR::UShort Root::MessageHandler::register_channel(MessagePipe& pipe)
 {
 	ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
 
 	ACE_CDR::UShort uChannelId = 0;
 	try
 	{
-		ACE_Thread_Mutex* lock = 0;
-		ACE_NEW_RETURN(lock,ACE_Thread_Mutex,0);
-		ChannelPair channel(handle, 0, lock);
+		ChannelPair channel(pipe);
 		
 		uChannelId = ++m_uNextChannelId;
 		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
@@ -209,7 +376,7 @@ ACE_CDR::UShort Root::MessageHandler::register_channel(ACE_HANDLE handle)
 		std::map<ACE_CDR::UShort,ACE_CDR::UShort> reverse_map;
 		reverse_map.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(0,uChannelId));
 
-		m_mapReverseChannelIds.insert(std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(handle,reverse_map));
+		m_mapReverseChannelIds.insert(std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(pipe,reverse_map));
 	}
 	catch (...)
 	{
@@ -233,13 +400,11 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 		if (i==m_mapChannelIds.end())
 			return 0;
 		
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(i->second.handle);
+		std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(i->second.pipe);
 		if (j==m_mapReverseChannelIds.end())
 			return 0;
 
-		ACE_Thread_Mutex* lock = 0;
-		ACE_NEW_RETURN(lock,ACE_Thread_Mutex,0);
-		ChannelPair channel(i->second.handle, dest_route, lock);
+		ChannelPair channel(i->second.pipe, dest_route);
 
 		uChannelId = ++m_uNextChannelId;
 		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
@@ -261,13 +426,13 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 	return uChannelId;
 }
 
-ACE_CDR::UShort Root::MessageHandler::get_handle_channel(ACE_HANDLE handle, ACE_CDR::UShort channel)
+ACE_CDR::UShort Root::MessageHandler::get_pipe_channel(const MessagePipe& pipe, ACE_CDR::UShort channel)
 {
 	ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
 
 	try
 	{
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::const_iterator j=m_mapReverseChannelIds.find(handle);
+		std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::const_iterator j=m_mapReverseChannelIds.find(pipe);
 		if (j!=m_mapReverseChannelIds.end())
 		{
 			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::const_iterator i=j->second.find(channel);
@@ -282,30 +447,32 @@ ACE_CDR::UShort Root::MessageHandler::get_handle_channel(ACE_HANDLE handle, ACE_
 	return 0;
 }
 
-ACE_HANDLE Root::MessageHandler::get_channel_handle(ACE_CDR::UShort channel)
+Root::MessagePipe Root::MessageHandler::get_channel_pipe(ACE_CDR::UShort channel)
 {
-	ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+	static Root::MessagePipe ret;
+
+	ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,ret);
 
 	try
 	{
 		std::map<ACE_CDR::UShort,ChannelPair>::const_iterator i=m_mapChannelIds.find(channel);
 		if (i != m_mapChannelIds.end())
-			return i->second.handle;
+			return i->second.pipe;
 	}
 	catch (...)
 	{
 	}
 
-	return ACE_INVALID_HANDLE;
+	return ret;
 }
 
-void Root::MessageHandler::handle_closed(ACE_HANDLE handle)
+void Root::MessageHandler::pipe_closed(const MessagePipe& pipe)
 {
 	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	try
 	{
-		std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(handle);
+		std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(pipe);
 		if (j!=m_mapReverseChannelIds.end())
 		{
 			for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
@@ -341,7 +508,7 @@ bool Root::MessageHandler::parse_message(Message* msg)
 			}
 
 			// Find the local channel id that matches src_channel_id
-			std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_handle);
+			std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_pipe);
 			if (j==m_mapReverseChannelIds.end())
 				return false;
 
@@ -357,13 +524,11 @@ bool Root::MessageHandler::parse_message(Message* msg)
 		{
 			ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-			std::map<ACE_HANDLE,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_handle);
+			std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_pipe);
 			if (j==m_mapReverseChannelIds.end())
 				return false;
 
-			ACE_Thread_Mutex* lock = 0;
-			ACE_NEW_RETURN(lock,ACE_Thread_Mutex,0);
-			ChannelPair channel(msg->m_handle, msg->m_src_channel_id, lock);
+			ChannelPair channel(msg->m_pipe, msg->m_src_channel_id);
 
 			reply_channel_id = ++m_uNextChannelId;
 			while (reply_channel_id==0 || m_mapChannelIds.find(reply_channel_id)!=m_mapChannelIds.end())
@@ -412,18 +577,8 @@ bool Root::MessageHandler::parse_message(Message* msg)
 		if (build_header(header,*msg,msg->m_pPayload->start()))
 		{
 			// Send to the handle
-			size_t sent = 0;
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-			ACE::write_n(dest_channel.handle,header.begin(),&sent);
-#else
-			ACE_Guard<ACE_Thread_Mutex> guard(*dest_channel.lock);
-			if (guard.locked() != 0)
-			{
-				ACE_Time_Value wait = msg->m_deadline - ACE_OS::gettimeofday();
-				ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
-			}
-#endif
+			ACE_Time_Value wait = msg->m_deadline - ACE_OS::gettimeofday();
+			dest_channel.pipe.send(header.begin(),&wait);
 		}
 
 		// We are done with the message...
@@ -484,42 +639,29 @@ void Root::MessageHandler::remove_thread_context(const Root::MessageHandler::Thr
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
-int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, const wchar_t* pszAddr)
+int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, const ACE_WString& strAddr)
 {
-	void* TODO_UNIX;
-
 	m_pParent = pManager;
-	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(pszAddr);
-
-	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,0,PIPE_TYPE_MESSAGE | PIPE_READMODE_BYTE | PIPE_WAIT) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects acceptor.open failed"),-1);
+	
+	if (m_acceptor.open(strAddr) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::MessageHandler::MessageConnector::start acceptor.open failed"),-1);
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::Manager::process_client_connects, register_handler failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Root::MessageHandler::MessageConnector::start register_handler failed"),-1);
 
 	return 0;
 }
 
 int Root::MessageHandler::MessageConnector::handle_signal(int, siginfo_t*, ucontext_t*)
 {
-	ACE_SPIPE_Stream stream;
-	if (m_acceptor.accept(stream) != 0)
+	MessagePipe pipe;
+	if (m_acceptor.accept(pipe) != 0)
 		return -1;
 
-	int r = new_handle(stream.get_handle());
-	if (r == 0)
-		stream.set_handle(ACE_INVALID_HANDLE);
-
-	return r;
-}
-
-int Root::MessageHandler::MessageConnector::new_handle(ACE_HANDLE handle)
-{
 	Root::MessageConnection* pMC = 0;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(m_pParent),-1);
 
-	if (pMC->open(handle) == 0)
+	if (pMC->open(pipe) == 0)
 	{
 		delete pMC;
 		return -1;
@@ -530,12 +672,14 @@ int Root::MessageHandler::MessageConnector::new_handle(ACE_HANDLE handle)
 
 void Root::MessageHandler::MessageConnector::stop()
 {
-	m_acceptor.close();
+	ACE_Reactor::instance()->remove_handler(m_acceptor.get_handle(),ACE_Event_Handler::ALL_EVENTS_MASK);
+
+    m_acceptor.close();
 }
 
-int Root::MessageHandler::start(const wchar_t* pszName)
+int Root::MessageHandler::start(const ACE_WString& strName)
 {
-	return m_connector.start(this,pszName);
+	return m_connector.start(this,strName);
 }
 
 void Root::MessageHandler::stop_accepting()
@@ -549,8 +693,10 @@ void Root::MessageHandler::stop()
 
 	for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 	{
-		i->second->m_msg_queue->deactivate();
+		i->second->m_msg_queue->close();
 	}
+
+	m_default_msg_queue.close();
 }
 
 bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline)
@@ -579,7 +725,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 			i->second = msg->m_src_thread_id;
 
 			// Process the message...
-			process_request(msg->m_handle,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+			process_request(msg->m_pipe,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
 
 			// Restore old context
 			pContext->m_deadline = old_deadline;
@@ -617,7 +763,7 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 				pContext->m_deadline = *deadline;
 			
 			// Process the message...
-			process_request(msg->m_handle,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+			process_request(msg->m_pipe,*msg->m_pPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
 		}
 		
 		delete msg->m_pPayload;
@@ -681,20 +827,9 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, const A
 	// Send to the handle
 	bool bRet = false;
 	size_t sent = 0;
-	ssize_t res = -1;
-
-	// Critical section around the send
-	{
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		res = ACE::write_n(dest_channel.handle,header.begin(),&sent);
-#else
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
-		ACE_Time_Value wait = msg.m_deadline - now;
-		res = ACE::send_n(dest_channel.handle,header.begin(),&wait,&sent);
-#endif
-	}
-
-	if (res != -1 && sent == header.total_length())
+	ACE_Time_Value wait = msg.m_deadline - now;
+	if (dest_channel.pipe.send(header.begin(),&wait,&sent) != -1 && 
+		sent == header.total_length())
 	{
 		if (attribs & 1)
 			bRet = true;
@@ -751,16 +886,8 @@ void Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	if (msg.m_deadline <= now)
 		return;
 	
-	// Critical section around the send
-	{
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		ACE::write_n(dest_channel.handle,header.begin());
-#else
-		ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
-		ACE_Time_Value wait = msg.m_deadline - now;
-		ACE::send_n(dest_channel.handle,header.begin(),&wait);
-#endif
-	}
+	ACE_Time_Value wait = msg.m_deadline - now;
+	dest_channel.pipe.send(header.begin(),&wait);
 }
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)

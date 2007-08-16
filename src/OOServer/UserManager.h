@@ -33,9 +33,10 @@ namespace User
 		bool init(const ACE_WString& strPipe);
 		bool bootstrap(ACE_CDR::UShort sandbox_channel);
 		void close_channels();
+		void end_event_loop();
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
-		void process_request(ACE_HANDLE handle, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
+		void process_request(const Root::MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void process_user_request(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM, const ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		void process_root_request(ACE_InputCDR& input, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 

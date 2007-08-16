@@ -12,6 +12,75 @@ namespace OOCore
 	void SetRegistry(Registry::IRegistryKey* pRootKey);
 }
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+
+int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
+{
+	ACE_Time_Value val(30);
+	if (!wait)
+		wait = &val;
+
+	ACE_Countdown_Time countdown(wait);
+
+	ACE_SPIPE_Connector connector;
+	ACE_SPIPE_Addr addr;
+		
+	ACE_SPIPE_Stream up;
+	addr.string_to_addr((strAddr + L"\\up").c_str());
+	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
+		return -1;
+
+	countdown.update();
+
+	ACE_SPIPE_Stream down;
+	addr.string_to_addr((strAddr + L"\\down").c_str());
+	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
+		return -1;
+		
+	pipe.m_hRead = down.get_handle();
+	pipe.m_hWrite = up.get_handle();
+
+	up.set_handle(ACE_INVALID_HANDLE);
+	down.set_handle(ACE_INVALID_HANDLE);
+
+	return 0;
+}
+
+void OOCore::UserSession::MessagePipe::close()
+{
+	ACE_HANDLE hRead = m_hRead;
+	m_hRead = ACE_INVALID_HANDLE;
+	ACE_HANDLE hWrite = m_hWrite;
+	m_hWrite = ACE_INVALID_HANDLE;
+
+	if (hRead != ACE_INVALID_HANDLE)
+		ACE_OS::close(hRead);
+
+	if (hWrite != ACE_INVALID_HANDLE)
+	{
+		ACE_OS::fsync(hWrite);
+		ACE_OS::close(hWrite);
+	}
+}
+
+ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value*, size_t* sent)
+{
+	return ACE::write_n(m_hWrite,mb,sent);
+}
+
+ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len, ACE_Time_Value*)
+{
+	ssize_t nRead = ACE_OS::read_n(m_hRead,buf,len);
+	if (nRead == -1 && ACE_OS::last_error() == ERROR_MORE_DATA)
+		nRead = static_cast<ssize_t>(len);
+
+	return nRead;
+}
+
+#else // defined(ACE_HAS_WIN32_NAMED_PIPES)
+
+#endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
+
 OOCore::UserSession::UserSession() :
 	m_thrd_grp_id(-1)
 {
@@ -45,16 +114,9 @@ bool OOCore::UserSession::init_i(string_t& strSource)
 	if (!discover_server_port(strPipe,strSource))
 		return false;
 
-	void* TODO_UNIX;
-
     // Connect to the root
-	ACE_SPIPE_Connector connector;
-	ACE_SPIPE_Stream peer;
-	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(strPipe.c_str());
-
 	ACE_Time_Value wait(5);
-	if (connector.connect(m_stream,addr,&wait,ACE_Addr::sap_any,0,O_RDWR,0,0,PIPE_READMODE_BYTE | PIPE_WAIT) != 0)
+	if (MessagePipe::connect(m_stream,strPipe,&wait) != 0)
 	{
 		strSource = OMEGA_SOURCE_INFO;
 		return false;
@@ -100,37 +162,6 @@ IException* OOCore::UserSession::bootstrap()
 	}
 
 	return 0;
-}
-
-ACE_WString OOCore::UserSession::get_bootstrap_filename()
-{
-	#define OMEGA_BOOTSTRAP_FILE L"ooserver.bootstrap"
-
-	#if defined(OMEGA_WIN32)
-
-		ACE_WString strFilename = L"C:\\" OMEGA_BOOTSTRAP_FILE;
-
-		wchar_t szBuf[MAX_PATH] = {0};
-		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_CURRENT,szBuf);
-		if SUCCEEDED(hr)
-		{
-			wchar_t szBuf2[MAX_PATH] = {0};
-			if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
-			{
-				if (PathCombineW(szBuf,szBuf2,OMEGA_BOOTSTRAP_FILE))
-					strFilename = szBuf;
-			}
-		}
-
-		return strFilename;
-
-	#else
-
-		#define OMEGA_BOOTSTRAP_DIR L"/var/lock/omegaonline"
-
-		return ACE_WString(OMEGA_BOOTSTRAP_DIR L"/" OMEGA_BOOTSTRAP_FILE);
-
-	#endif
 }
 
 bool OOCore::UserSession::launch_server(string_t& strSource)
@@ -179,12 +210,16 @@ bool OOCore::UserSession::launch_server(string_t& strSource)
 
 bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe, string_t& strSource)
 {	
-	void* TODO_UNIX;
-
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Stream peer;
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(L"ooserver");
+#else
+	ACE_SOCK_Connector connector;
+	ACE_SOCK_Stream peer;
+	ACE_UNIX_Addr addr(L"ooserver");
+#endif
 
 	if (connector.connect(peer,addr) != 0)
 	{
@@ -200,7 +235,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe, string_t& s
 		}
 	}
 	
-#if defined(OMEGA_WIN32)
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	// Send nothing
 	HANDLE uid = 0;
 #else
@@ -299,8 +334,6 @@ int OOCore::UserSession::run_read_loop()
 
 #if defined(OMEGA_WIN32)
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read);
-		if (nRead == -1 && ACE_OS::last_error() == ERROR_MORE_DATA)
-			nRead = s_initial_read;
 #else
 		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
@@ -613,22 +646,11 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 		ACE_OS::last_error(ETIMEDOUT);
 		return false;
 	}
-	ACE_Time_Value wait = deadline - now;
+	
 	bool bRet = false;
 	size_t sent = 0;
-	ssize_t res = -1;
-
-	// Critical section around send
-	{
-#if defined(OMEGA_WIN32)
-		res = ACE::write_n(m_stream.get_handle(),header.begin(),&sent);
-#else
-		OOCORE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
-		res = m_stream.send_n(header.begin(),&wait,&sent);
-#endif
-	}
-
-	if (res != -1 && sent == header.total_length())
+	ACE_Time_Value wait = deadline - now;
+	if (m_stream.send(header.begin(),&wait,&sent) != -1 && sent == header.total_length())
 	{
 		if (attribs & Remoting::asynchronous)
 			bRet = true;
@@ -654,16 +676,8 @@ void OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR
 	if (deadline <= now)
 		return;
 
-	// Critical section around the send
-	{
-#if defined(OMEGA_WIN32)
-		ACE::write_n(m_stream.get_handle(),header.begin());
-#else
-		ACE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
-		ACE_Time_Value wait = deadline - now;
-		m_stream.send_n(header.begin(),&wait);
-#endif
-	}
+	ACE_Time_Value wait = deadline - now;
+	m_stream.send(header.begin(),&wait);
 }
 
 namespace OOCore

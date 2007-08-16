@@ -18,15 +18,32 @@ namespace OOCore
 		friend class ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex>;
 		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
 
+		class MessagePipe
+		{
+		public:
+			static int connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait = 0);
+			void close();
+			
+			ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
+			ssize_t recv(void* buf, size_t len, ACE_Time_Value* timeout = 0);
+			
+		private:
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+			ACE_HANDLE m_hRead;
+			ACE_HANDLE m_hWrite;
+#else
+			ACE_HANDLE m_hSocket;
+#endif
+		};
+
 		UserSession();
 		~UserSession();
 		UserSession(const UserSession&) {}
 		UserSession& operator = (const UserSession&) { return *this; }
 
 		ACE_RW_Thread_Mutex m_lock;
-		ACE_Thread_Mutex    m_send_lock;
 		int                 m_thrd_grp_id;
-		ACE_SPIPE_Stream    m_stream;
+		MessagePipe         m_stream;
 
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
@@ -74,7 +91,6 @@ namespace OOCore
 		bool init_i(Omega::string_t& strSource);
 		void term_i();
 		Omega::IException* bootstrap();
-		ACE_WString get_bootstrap_filename();
 		bool discover_server_port(ACE_WString& uPort, Omega::string_t& strSource);
 		bool launch_server(Omega::string_t& strSource);
 

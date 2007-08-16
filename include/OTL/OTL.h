@@ -94,7 +94,7 @@
 	typedef OTL::SingletonNoLock<OMEGA_CONCAT(dll_name,_LibraryModule__)> LibraryModule__; \
 	class OMEGA_CONCAT(dll_name,_LibraryModule__) : public OTL::LibraryModule { \
 		friend class OTL::SingletonNoLock<OMEGA_CONCAT(dll_name,_LibraryModule__)>; \
-		const CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
+		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj) \
 	{ obj::GetOid, Creator<obj::ObjectFactoryClass>::Create },
@@ -110,18 +110,20 @@
 
 // THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
 #define BEGIN_PROCESS_OBJECT_MAP(process_class) \
-	BEGIN_PROCESS_OBJECT_MAP_EX_I(::,process_class)
-
-#define BEGIN_PROCESS_OBJECT_MAP_EX(nspace,process_class) \
-	BEGIN_PROCESS_OBJECT_MAP_EX_I(nspace::,process_class)
-
-#define BEGIN_PROCESS_OBJECT_MAP_EX_I(nspace,process_class) \
 	namespace OTL { \
 	class OMEGA_CONCAT(process_class,_Module__); \
 	typedef OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)> ProcessModule__; \
-	class OMEGA_CONCAT(process_class,_Module__) : public OMEGA_CONCAT(nspace,process_class) { \
+	class OMEGA_CONCAT(process_class,_Module__) : public OMEGA_CONCAT(process_class) { \
 		friend class OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)>; \
-		const CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
+		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
+
+#define BEGIN_PROCESS_OBJECT_MAP_EX(nspace,process_class) \
+	namespace OTL { \
+	class OMEGA_CONCAT(process_class,_Module__); \
+	typedef OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)> ProcessModule__; \
+	class OMEGA_CONCAT(process_class,_Module__) : public nspace::process_class { \
+		friend class OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)>; \
+		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0,0 } }; return CreatorEntries; } }; } \

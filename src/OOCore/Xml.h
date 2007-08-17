@@ -1,8 +1,6 @@
 #ifndef OOCORE_XML_H_INCLUDED_
 #define OOCORE_XML_H_INCLUDED_
 
-#include "./Channel.h"
-
 namespace OOCore
 {
 	namespace Xml

@@ -91,9 +91,9 @@ namespace Root
 #endif
 		int process_client_connects();
 		bool spawn_sandbox();
-		bool spawn_user(user_id_type uid, const ACE_CString& key, ACE_WString& strPipe, ACE_WString& strSource);
-		ACE_WString bootstrap_user(MessagePipe& pipe, bool bSandbox, ACE_WString& strSource);
-		bool connect_client(user_id_type uid, ACE_WString& strPipe, ACE_WString& strSource);
+		bool spawn_user(user_id_type uid, const ACE_CString& key, ACE_WString& strPipe);
+		ACE_WString bootstrap_user(MessagePipe& pipe, bool bSandbox);
+		bool connect_client(user_id_type uid, ACE_WString& strPipe);
 		void close_users();
 
 		void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);

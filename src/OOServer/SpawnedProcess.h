@@ -23,7 +23,7 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		bool Spawn(Manager::user_id_type id, const ACE_WString& strPipe, ACE_WString& strSource);
+		bool Spawn(Manager::user_id_type id, const ACE_WString& strPipe);
 		bool IsRunning();
 
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
@@ -32,7 +32,7 @@ namespace Root
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
 		static bool SecureFile(const ACE_WString& strFilename);
-		static bool ResolveTokenToUid(Manager::user_id_type token, ACE_CString& uid, ACE_WString& strSource);
+		static bool ResolveTokenToUid(Manager::user_id_type token, ACE_CString& uid);
 
 #if defined(ACE_WIN32)
 
@@ -40,14 +40,14 @@ namespace Root
 		HANDLE	m_hToken;
 
 		static DWORD LogonSandboxUser(HANDLE* phToken);
-		static bool LogFailure(DWORD err);
+		static bool LogFailure(DWORD err, const char* pszFile, unsigned int nLine);
 
 	private:
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 
-		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile, ACE_WString& strSource);
-		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile, ACE_WString& strSource);
+		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
+		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile);
 		static bool unsafe_sandbox();
 
 #else // !ACE_WIN32

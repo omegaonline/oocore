@@ -8,7 +8,7 @@
 int UserMain(const ACE_WString& strPipe)
 {
 	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error opening logger"),-1);
 
 	return User::Manager::run(strPipe);
 }
@@ -147,13 +147,13 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 	// Spawn off the request threads
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning threads"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning threads"),-1);
 	else
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
-			ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning threads"),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning threads"),-1);
 		else
 		{
 			if (init(strPipe))
@@ -181,11 +181,11 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	ACE_Time_Value wait(5);
 	Root::MessagePipe pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"connect() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connect() failed"),false);
 
 	// Talk to the root...
 	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"ACE_OS::getsockname() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"ACE_OS::getsockname() failed"),false);
 
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC;
@@ -211,11 +211,11 @@ bool User::Manager::init(const ACE_WString& strPipe)
 
 	size_t uLen = strNewPipe.length()+1;
 	if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"pipe.send() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"),false);
 
 	// Then send back our port number
 	if (pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"pipe.send() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"),false);
 
 	return true;
 }
@@ -246,7 +246,7 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,L"Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %W - %W\n",pE->Description().c_str(),pE->Source().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -345,7 +345,10 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 	//ACE_DEBUG((LM_DEBUG,L"User context: Process root request %u",op_code));
 
 	if (!request.good_bit())
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Bad request"));
 		return;
+	}
 
 	switch (op_code)
 	{
@@ -355,7 +358,8 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 		return;
 
 	default:
-		;
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Bad request op_code\n"));
+		return;
 	}
 }
 

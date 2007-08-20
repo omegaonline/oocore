@@ -25,7 +25,7 @@ namespace OOCore
 			void close();
 			
 			ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
-			ssize_t recv(void* buf, size_t len, ACE_Time_Value* timeout = 0);
+			ssize_t recv(void* buf, size_t len);
 			
 		private:
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -44,6 +44,7 @@ namespace OOCore
 		ACE_RW_Thread_Mutex m_lock;
 		int                 m_thrd_grp_id;
 		MessagePipe         m_stream;
+		ACE_Thread_Mutex    m_send_lock;
 
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
@@ -88,11 +89,11 @@ namespace OOCore
 		bool send_request(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs);
 		
 		// Proper private members
-		bool init_i(Omega::string_t& strSource);
+		bool init_i();
 		void term_i();
 		Omega::IException* bootstrap();
-		bool discover_server_port(ACE_WString& uPort, Omega::string_t& strSource);
-		bool launch_server(Omega::string_t& strSource);
+		bool discover_server_port(ACE_WString& uPort);
+		bool launch_server();
 
 		int run_read_loop();
 		void pump_requests(const ACE_Time_Value* deadline = 0);

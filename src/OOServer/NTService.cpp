@@ -31,7 +31,7 @@ bool Root::NTService::open()
 {	
     // Do the ServiceMain in a separate thread
 	if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error spawning service thread"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning service thread"),false);
 	
 	return true;
 }
@@ -76,7 +76,7 @@ int Root::NTService::insert(const wchar_t *cmd_line,
 	wchar_t this_exe[PATH_MAX + 2];
 
 	if (GetModuleFileNameW(0,this_exe+1,PATH_MAX) == 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"GetModuleFilename failed!\n"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] GetModuleFilename failed: %x\n",GetLastError()),-1);
 		
 	// Make sure that this_exe is quoted
 	this_exe[0] = L'\"';
@@ -117,12 +117,8 @@ ACE_THR_FUNC_RETURN Root::NTService::start_service(void*)
 	// This blocks running svc
 	ACE_NT_SERVICE_RUN(OOServer,NTSERVICE::instance(),ret);
 	if (!ret)
-	{
-		ACE_ERROR((LM_ERROR,L"%p\n",L"Service start failed"));
-
 		SetConsoleCtrlHandler(control_c,TRUE);
-	}
-	
+		
 	return 0;
 }
 

@@ -29,9 +29,9 @@ namespace Root
 		inline ACE_HANDLE get_read_handle() const;
 		bool operator < (const MessagePipe& rhs) const;
 		
-		ssize_t send(const void* buf, size_t len, ACE_Time_Value* timeout = 0, size_t* sent = 0);
+		ssize_t send(const void* buf, size_t len, size_t* sent = 0);
 		ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
-		ssize_t recv(void* buf, size_t len, ACE_Time_Value* timeout = 0);
+		ssize_t recv(void* buf, size_t len);
 		
 	private:
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -151,20 +151,21 @@ namespace Root
 
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_CDR::UShort      m_uNextChannelId;
-		struct ChannelPair
+		struct ChannelInfo
 		{
-			ChannelPair() :
-				channel_id(0)
+			ChannelInfo() :
+				channel_id(0), lock(0)
 			{}
 
-			ChannelPair(const MessagePipe& p, ACE_CDR::UShort c = 0) :
-				pipe(p), channel_id(c)
+			ChannelInfo(const MessagePipe& p, ACE_CDR::UShort c = 0, ACE_Thread_Mutex* l = 0) :
+				pipe(p), channel_id(c), lock(l)
 			{}
 
 			MessagePipe         pipe;
 			ACE_CDR::UShort     channel_id;
+			ACE_Refcounted_Auto_Ptr<ACE_Thread_Mutex,ACE_Null_Mutex> lock;
 		};
-		std::map<ACE_CDR::UShort,ChannelPair>                            m_mapChannelIds;
+		std::map<ACE_CDR::UShort,ChannelInfo>                            m_mapChannelIds;
 		std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> > m_mapReverseChannelIds;
 
 		struct Message

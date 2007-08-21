@@ -45,15 +45,25 @@ namespace Root
 	class MessagePipeAcceptor
 	{
 	public:
-		MessagePipeAcceptor()
-		{}
+		MessagePipeAcceptor();
+		~MessagePipeAcceptor();
+		
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+		int open(const ACE_WString& strAddr, HANDLE hToken);
+#else
+		int open(const ACE_WString& strAddr, uid_t uid);
+#endif
 
-		int open(const ACE_WString& strAddr);
 		int accept(MessagePipe& pipe, ACE_Time_Value* timeout = 0);
 		ACE_HANDLE get_handle();
 		void close();
 	private:
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
+		SECURITY_ATTRIBUTES sa;
+		PACL pACL;
+
+		bool CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL);
+
 		ACE_SPIPE_Acceptor m_acceptor_up;
 		ACE_SPIPE_Acceptor m_acceptor_down;
 #else

@@ -50,6 +50,8 @@ static int Version();
 
 static int Help()
 {
+	void* TODO;
+
 	ACE_OS::printf("This is the help string... I'm sure something will go here at some point\n\n");
 	return 0;
 }

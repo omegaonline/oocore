@@ -333,7 +333,7 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, A
 	ACE_WString strNewPipe = MessagePipe::unique_name(L"oo");
 
 	MessagePipeAcceptor acceptor;
-	if (acceptor.open(strNewPipe.c_str()) != 0)
+	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"));
 	else
 	{

@@ -27,7 +27,13 @@
 #include <ntsecapi.h>
 #include <aclapi.h>
 
-#define LOG_FAILURE(err) LogFailure((err),__FILE__,__LINE__)
+#if !defined(OMEGA_WIDEN_STRING)
+#define OMEGA_WIDEN_STRING_II(STRING) L ## STRING
+#define OMEGA_WIDEN_STRING_I(STRING)  OMEGA_WIDEN_STRING_II(STRING)
+#define OMEGA_WIDEN_STRING(STRING)    OMEGA_WIDEN_STRING_I(STRING)
+#endif
+
+#define LOG_FAILURE(err) LogFailure((err),OMEGA_WIDEN_STRING(__FILE__),__LINE__)
 
 #ifndef PROTECTED_DACL_SECURITY_INFORMATION
 #define PROTECTED_DACL_SECURITY_INFORMATION     (0x80000000L)
@@ -532,7 +538,7 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 	return true;
 }
 
-bool Root::SpawnedProcess::LogFailure(DWORD err, const char* pszFile, unsigned int nLine)
+bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine)
 {
 	if (err != (DWORD)-1)
 	{
@@ -549,7 +555,7 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const char* pszFile, unsigned i
 			(LPWSTR)&lpMsgBuf,
 			0,	NULL);
 
-		ACE_ERROR((LM_ERROR,L"%s:%d [%P:%t] %W\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
+		ACE_ERROR((LM_ERROR,L"%W:%d [%P:%t] %W\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
 
 		// Free the buffer.
 		if (lpMsgBuf != (LPVOID)szDefault)
@@ -791,7 +797,7 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 	ea[1].grfAccessMode = SET_ACCESS;
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[1].Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
 	ea[1].Trustee.ptstrName = (LPWSTR) pSIDAdmin;
 
 	PACL pACL = NULL;
@@ -801,6 +807,9 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 		FreeSid(pSIDUsers);
 		return false;
 	}
+
+	FreeSid(pSIDAdmin);
+	FreeSid(pSIDUsers);
 
 	// Try to modify the object's DACL.
 	DWORD dwRes = SetNamedSecurityInfoW(
@@ -812,8 +821,6 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 		pACL,                        // DACL specified
 		NULL);                       // don't change SACL
 
-	FreeSid(pSIDAdmin);
-	FreeSid(pSIDUsers);
 	LocalFree(pACL);
 
 	return (ERROR_SUCCESS == dwRes);

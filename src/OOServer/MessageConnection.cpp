@@ -24,6 +24,9 @@ ACE_WString Root::MessagePipe::unique_name(const ACE_WString& strPrefix)
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
+
+#include <aclapi.h>
+
 Root::MessagePipe::MessagePipe() :
 	m_hRead(ACE_INVALID_HANDLE), m_hWrite(ACE_INVALID_HANDLE)
 {
@@ -42,7 +45,7 @@ int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, AC
 
 	ACE_SPIPE_Stream up;
 	addr.string_to_addr((strAddr + L"\\up").c_str());
-	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
+	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
 
 	countdown.update();
@@ -107,17 +110,180 @@ ssize_t Root::MessagePipe::recv(void* buf, size_t len)
 	return nRead;
 }
 
-int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr)
+Root::MessagePipeAcceptor::MessagePipeAcceptor()
 {
+	sa.lpSecurityDescriptor = NULL;
+	sa.nLength = 0;
+	pACL = NULL;
+}
+
+Root::MessagePipeAcceptor::~MessagePipeAcceptor()
+{
+	LocalFree(pACL);
+	LocalFree(sa.lpSecurityDescriptor);
+}
+
+bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL)
+{
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
+
+	const int NUM_ACES  = 2;
+	EXPLICIT_ACCESSW ea[NUM_ACES];
+	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+
+	PSID pSIDUsers = NULL;
+	PSID pSIDToken = NULL;
+	if (!hToken)
+	{
+		// Create a SID for the Users group.
+		if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
+			SECURITY_BUILTIN_DOMAIN_RID,
+			DOMAIN_ALIAS_RID_USERS,
+			0, 0, 0, 0, 0, 0,
+			&pSIDUsers))
+		{
+			return false;
+		}
+
+		// Set read access for Users.
+		ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+		ea[0].Trustee.ptstrName = (LPWSTR) pSIDUsers;
+	}
+	else
+	{
+		// Get the SID for the token's user
+		DWORD dwLen = 0;
+		GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
+		if (dwLen == 0)
+			return false;
+
+		TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
+		if (!pBuffer)
+			return false;
+		
+		if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
+		{
+			ACE_OS::free(pBuffer);
+			return false;
+		}
+
+		dwLen = GetLengthSid(pBuffer->User.Sid);
+		pSIDToken = static_cast<PSID>(ACE_OS::malloc(dwLen));
+		if (!pSIDToken)
+		{
+			ACE_OS::free(pBuffer);
+			return false;
+		}
+
+		if (!CopySid(dwLen,pSIDToken,pBuffer->User.Sid))
+		{
+			ACE_OS::free(pSIDToken);
+			ACE_OS::free(pBuffer);
+			return false;
+		}
+
+		ACE_OS::free(pBuffer);
+
+		// Set read access for Specific user.
+		ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDToken;
+	}
+
+	// Create a SID for the BUILTIN\Administrators group.
+	PSID pSIDAdmin = NULL;
+
+	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
+		SECURITY_BUILTIN_DOMAIN_RID,
+		DOMAIN_ALIAS_RID_ADMINS,
+		0, 0, 0, 0, 0, 0,
+		&pSIDAdmin))
+	{
+		if (pSIDUsers)
+			FreeSid(pSIDUsers);
+		if (pSIDToken)
+			ACE_OS::free(pSIDToken);
+		return false;
+	}
+
+	// Set full control for Administrators.
+	ea[1].grfAccessPermissions = GENERIC_ALL;
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+	ea[1].Trustee.ptstrName = (LPWSTR) pSIDAdmin;
+
+	if (ERROR_SUCCESS != SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL))
+	{
+		FreeSid(pSIDAdmin);
+		if (pSIDUsers)
+			FreeSid(pSIDUsers);
+		if (pSIDToken)
+			ACE_OS::free(pSIDToken);
+		return false;
+	}
+
+	FreeSid(pSIDAdmin);
+	if (pSIDUsers)
+		FreeSid(pSIDUsers);
+	if (pSIDToken)
+		ACE_OS::free(pSIDToken);
+
+	// Create a new security descriptor
+	pSD = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
+	if (pSD == NULL) 
+	{ 
+		LocalFree(pACL);
+		return false;
+	}
+
+	// Initialize a security descriptor. 
+	if (!InitializeSecurityDescriptor(pSD,SECURITY_DESCRIPTOR_REVISION))
+	{
+		LocalFree(pSD);
+		LocalFree(pACL);
+		return false;
+	} 
+
+	// Add the ACL to the SD
+	if (!SetSecurityDescriptorDacl(pSD,TRUE,pACL,FALSE))
+	{	
+		LocalFree(pSD);
+		LocalFree(pACL);
+		return false;
+	} 
+
+	return true;//(ERROR_SUCCESS == dwRes);
+}
+
+int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
+{
+	if (sa.nLength == 0)
+	{
+		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		sa.bInheritHandle = FALSE;
+		
+		if (!CreateSA(hToken,sa.lpSecurityDescriptor,pACL))
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
+	}
+
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr((strAddr + L"\\up").c_str());
-	if (m_acceptor_up.open(addr) != 0)
+	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
-
+	
 	addr.string_to_addr((strAddr + L"\\down").c_str());
-	if (m_acceptor_down.open(addr) != 0)
+	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
-
+	
 	return 0;
 }
 
@@ -130,13 +296,13 @@ int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout
 	ACE_Countdown_Time countdown(timeout);
 
 	ACE_SPIPE_Stream up;
-	if (m_acceptor_up.accept(up,0,timeout) != 0)
+	if (m_acceptor_up.accept(up,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
 
 	countdown.update();
 
 	ACE_SPIPE_Stream down;
-	if (m_acceptor_down.accept(down,0,timeout) != 0)
+	if (m_acceptor_down.accept(down,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
 
 	pipe.m_hRead = up.get_handle();
@@ -214,6 +380,14 @@ ssize_t Root::MessagePipe::recv(void* buf, size_t len)
 	return ACE_OS::recv(m_hSocket,(char*)buf,len);
 }
 
+Root::MessagePipeAcceptor::MessagePipeAcceptor()
+{
+}
+
+Root::MessagePipeAcceptor::~MessagePipeAcceptor()
+{
+}
+
 int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr)
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
@@ -223,10 +397,12 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr)
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout)
+int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout, uid_t uid)
 {
-	void* TODO; // Aggregate the timeout
-
+	// If uid==0 - it means everyone!
+	if (uid == 0)
+		uid = -1;
+	
 	ACE_SOCK_Stream stream;
 	if (m_acceptor.accept(stream,0,timeout) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
@@ -250,15 +426,20 @@ void Root::MessagePipeAcceptor::close()
 	ACE_OS::unlink(m_acceptor.get_addr());
 }
 
-
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
 
 ACE_CDR::UShort Root::MessageConnection::open(MessagePipe& pipe)
 {
 	m_pipe = pipe;
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	if (m_reader.open(*this,pipe.get_read_handle()) != 0 && GetLastError() != ERROR_MORE_DATA)
+#else
 	if (m_reader.open(*this,pipe.get_read_handle()) != 0)
+#endif
+	{
 	    ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"reader.open() failed"),0);
+	}
 
 	ACE_CDR::UShort uId = m_pHandler->register_channel(pipe);
 	if (uId == 0)
@@ -734,7 +915,7 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 {
 	m_pParent = pManager;
 
-	if (m_acceptor.open(strAddr) != 0)
+	if (m_acceptor.open(strAddr,0) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
@@ -746,7 +927,7 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 int Root::MessageHandler::MessageConnector::handle_signal(int, siginfo_t*, ucontext_t*)
 {
 	MessagePipe pipe;
-	if (m_acceptor.accept(pipe) != 0)
+	if (m_acceptor.accept(pipe) != 0 && GetLastError() != ERROR_MORE_DATA)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
 
 	Root::MessageConnection* pMC = 0;

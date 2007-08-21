@@ -40,7 +40,7 @@ namespace Root
 		HANDLE	m_hToken;
 
 		static DWORD LogonSandboxUser(HANDLE* phToken);
-		static bool LogFailure(DWORD err, const char* pszFile, unsigned int nLine);
+		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
 
 	private:
 		HANDLE	m_hProfile;

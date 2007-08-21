@@ -27,7 +27,7 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WStri
 		
 	ACE_SPIPE_Stream up;
 	addr.string_to_addr((strAddr + L"\\up").c_str());
-	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
+	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
 		return -1;
 
 	countdown.update();

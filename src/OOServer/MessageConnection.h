@@ -50,6 +50,8 @@ namespace Root
 		
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		int open(const ACE_WString& strAddr, HANDLE hToken);
+
+		static bool CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL);
 #else
 		int open(const ACE_WString& strAddr, uid_t uid);
 #endif
@@ -59,15 +61,12 @@ namespace Root
 		void close();
 	private:
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		SECURITY_ATTRIBUTES sa;
-		PACL pACL;
-
-		bool CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL);
-
-		ACE_SPIPE_Acceptor m_acceptor_up;
-		ACE_SPIPE_Acceptor m_acceptor_down;
+		SECURITY_ATTRIBUTES m_sa;
+		PACL                m_pACL;
+		ACE_SPIPE_Acceptor  m_acceptor_up;
+		ACE_SPIPE_Acceptor  m_acceptor_down;
 #else
-		ACE_SOCK_Acceptor  m_acceptor;
+		ACE_SOCK_Acceptor   m_acceptor;
 #endif
 
 		MessagePipeAcceptor(const MessagePipeAcceptor&) {}

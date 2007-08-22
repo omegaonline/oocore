@@ -190,10 +190,12 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	PROFILEINFOW profile_info;
 	ACE_OS::memset(&profile_info,0,sizeof(profile_info));
     profile_info.dwSize = sizeof(PROFILEINFOW);
-	profile_info.dwFlags = PI_NOUI | PI_APPLYPOLICY;
+	profile_info.dwFlags = PI_NOUI;
 	profile_info.lpUserName = (WCHAR*)strUserName.c_str();
-	profile_info.lpProfilePath = (WCHAR*)strProfilePath.c_str();
-	profile_info.lpServerName = (WCHAR*)strDCName.c_str();
+	if (!strProfilePath.empty())
+		profile_info.lpProfilePath = (WCHAR*)strProfilePath.c_str();
+	if (!strDCName.empty())
+		profile_info.lpServerName = (WCHAR*)strDCName.c_str();
 
 	BOOL bSuccess = LoadUserProfileW(hToken,&profile_info);
 

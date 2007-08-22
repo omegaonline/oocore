@@ -63,8 +63,8 @@ namespace Root
 		class ClientConnector : public ACE_Event_Handler
 		{
 		public:
-			ClientConnector() : ACE_Event_Handler()
-			{}
+			ClientConnector();
+			virtual ~ClientConnector();
 
 			int start(Manager* pManager, const ACE_WString& strAddr);
 			void stop();
@@ -73,6 +73,8 @@ namespace Root
 			Manager*            m_pParent;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
+			SECURITY_ATTRIBUTES m_sa;
+			PACL                m_pACL;
 			ACE_SPIPE_Acceptor  m_acceptor;
 #else
 			ACE_SOCK_Acceptor   m_acceptor;

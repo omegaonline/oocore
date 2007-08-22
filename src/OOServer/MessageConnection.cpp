@@ -112,15 +112,15 @@ ssize_t Root::MessagePipe::recv(void* buf, size_t len)
 
 Root::MessagePipeAcceptor::MessagePipeAcceptor()
 {
-	sa.lpSecurityDescriptor = NULL;
-	sa.nLength = 0;
-	pACL = NULL;
+	m_sa.lpSecurityDescriptor = NULL;
+	m_sa.nLength = 0;
+	m_pACL = NULL;
 }
 
 Root::MessagePipeAcceptor::~MessagePipeAcceptor()
 {
-	LocalFree(pACL);
-	LocalFree(sa.lpSecurityDescriptor);
+	LocalFree(m_pACL);
+	LocalFree(m_sa.lpSecurityDescriptor);
 }
 
 bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL)
@@ -242,6 +242,7 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pS
 	if (pSD == NULL) 
 	{ 
 		LocalFree(pACL);
+		pACL = NULL;
 		return false;
 	}
 
@@ -250,6 +251,7 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pS
 	{
 		LocalFree(pSD);
 		LocalFree(pACL);
+		pACL = NULL;
 		return false;
 	} 
 
@@ -258,6 +260,7 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pS
 	{	
 		LocalFree(pSD);
 		LocalFree(pACL);
+		pACL = NULL;
 		return false;
 	} 
 
@@ -266,22 +269,22 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pS
 
 int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
 {
-	if (sa.nLength == 0)
+	if (m_sa.nLength == 0)
 	{
-		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-		sa.bInheritHandle = FALSE;
+		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		m_sa.bInheritHandle = FALSE;
 		
-		if (!CreateSA(hToken,sa.lpSecurityDescriptor,pACL))
+		if (!CreateSA(hToken,m_sa.lpSecurityDescriptor,m_pACL))
 			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
 	}
 
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr((strAddr + L"\\up").c_str());
-	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&sa) != 0)
+	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 	
 	addr.string_to_addr((strAddr + L"\\down").c_str());
-	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&sa) != 0)
+	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 	
 	return 0;

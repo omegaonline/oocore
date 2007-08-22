@@ -205,17 +205,44 @@ void Root::Manager::end_event_loop_i()
 	stop();
 }
 
+Root::Manager::ClientConnector::ClientConnector() : ACE_Event_Handler()
+{
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	m_sa.lpSecurityDescriptor = NULL;
+	m_sa.nLength = 0;
+	m_pACL = NULL;
+#endif
+}
+
+Root::Manager::ClientConnector::~ClientConnector()
+{
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	LocalFree(m_pACL);
+	LocalFree(m_sa.lpSecurityDescriptor);
+#endif
+}
+
 int Root::Manager::ClientConnector::start(Manager* pManager, const ACE_WString& strAddr)
 {
 	m_pParent = pManager;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	if (m_sa.nLength == 0)
+	{
+		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		m_sa.bInheritHandle = FALSE;
+		
+		if (!MessagePipeAcceptor::CreateSA(0,m_sa.lpSecurityDescriptor,m_pACL))
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
+	}
+	
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(strAddr.c_str());
+	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 #else
 	ACE_UNIX_Addr addr(strAddr.c_str());
-#endif
 	if (m_acceptor.open(addr) != 0)
+#endif
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::ClientConnector::start acceptor.open failed"),-1);
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
@@ -715,9 +742,12 @@ void Root::Manager::registry_create_key(const MessagePipe& pipe, ACE_InputCDR& r
 	else
 	{
         bool bAllowed = false;
-		if (!access_check(pipe,m_strRegistry.c_str(),O_RDWR,bAllowed))
+		if (strKey.substr(0,9) == L"All Users")
+			bAllowed = true;
+		else if (!access_check(pipe,m_strRegistry.c_str(),O_RDWR,bAllowed))
 			err = ACE_OS::last_error();
-		else if (!bAllowed)
+
+		if (!bAllowed)
 			err = EACCES;
 		else
 		{

@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="TestExe"
+	Name="CoreTests"
 	ProjectGUID="{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -33,11 +33,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestExe.exe"
+				OutputFile="$(OutDir)/CoreTests_msvc.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/TestExe.pdb"
+				ProgramDatabaseFile="$(OutDir)/CoreTests.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
@@ -81,7 +81,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestExe.exe"
+				OutputFile="$(OutDir)/CoreTests_msvc.exe"
 				AdditionalLibraryDirectories=""
 				SubSystem="1"
 				OptimizeReferences="2"

@@ -25,14 +25,14 @@ namespace Root
 		static ACE_WString unique_name(const ACE_WString& strPrefix);
 		static int connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait = 0);
 		void close();
-		
+
 		inline ACE_HANDLE get_read_handle() const;
 		bool operator < (const MessagePipe& rhs) const;
-		
+
 		ssize_t send(const void* buf, size_t len, size_t* sent = 0);
 		ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
 		ssize_t recv(void* buf, size_t len);
-		
+
 	private:
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		ACE_HANDLE m_hRead;
@@ -47,11 +47,11 @@ namespace Root
 	public:
 		MessagePipeAcceptor();
 		~MessagePipeAcceptor();
-		
+
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		int open(const ACE_WString& strAddr, HANDLE hToken);
 
-		static bool CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL);
+		static bool CreateSA(HANDLE hToken, void*& pSD, PACL& pACL);
 #else
 		int open(const ACE_WString& strAddr, uid_t uid);
 #endif
@@ -82,24 +82,24 @@ namespace Root
 			m_pHandler(pHandler)
 		{ }
 
-		virtual ~MessageConnection() 
+		virtual ~MessageConnection()
 		{ }
 
 		ACE_CDR::UShort open(MessagePipe& pipe);
-		
+
 	private:
 		MessageConnection() : ACE_Service_Handler() {}
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
         static const size_t         s_initial_read = 8;
-        
+
         MessageHandler*             m_pHandler;
 		MessagePipe                 m_pipe;
 		size_t                      m_read_len;
 		ACE_CDR::Octet              m_byte_order;
 		ACE_CDR::Octet              m_version;
-		
+
 		bool read();
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -146,13 +146,13 @@ namespace Root
 
 			int start(MessageHandler* pManager, const ACE_WString& strAddr);
 			void stop();
-			
+
 		private:
 			MessageHandler*     m_pParent;
 			MessagePipeAcceptor m_acceptor;
 
 			int handle_signal(int, siginfo_t*, ucontext_t*);
-			
+
 			MessageConnector(const MessageConnector&) : ACE_Event_Handler() {};
 			MessageConnector& operator = (const MessageConnector&) { return *this; };
 		};

@@ -14,17 +14,17 @@
 
 namespace Test
 {
-	interface DllTest : public Omega::IObject
+	interface Library : public Omega::IObject
 	{
 		virtual Omega::string_t Hello() = 0;
 	};
 
-	TEST_DECLARE_OID(OID_TestDll)
+	TEST_DECLARE_OID(OID_TestLibrary)
 }
 
 OMEGA_DEFINE_INTERFACE
 (
-	Test, DllTest, "{8488359E-C953-4e99-B7E5-ECA150C92F48}",
+	Test, Library, "{8488359E-C953-4e99-B7E5-ECA150C92F48}",
 
 	// Methods
 	OMEGA_METHOD(Omega::string_t,Hello,0,())

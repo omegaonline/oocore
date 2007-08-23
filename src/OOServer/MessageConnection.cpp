@@ -123,7 +123,7 @@ Root::MessagePipeAcceptor::~MessagePipeAcceptor()
 	LocalFree(m_sa.lpSecurityDescriptor);
 }
 
-bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pSD, PACL& pACL)
+bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, void*& pSD, PACL& pACL)
 {
 	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
 
@@ -164,7 +164,7 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pS
 		TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
 		if (!pBuffer)
 			return false;
-		
+
 		if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
 		{
 			ACE_OS::free(pBuffer);
@@ -238,31 +238,31 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, PSECURITY_DESCRIPTOR& pS
 		ACE_OS::free(pSIDToken);
 
 	// Create a new security descriptor
-	pSD = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
-	if (pSD == NULL) 
-	{ 
+	pSD = LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
+	if (pSD == NULL)
+	{
 		LocalFree(pACL);
 		pACL = NULL;
 		return false;
 	}
 
-	// Initialize a security descriptor. 
-	if (!InitializeSecurityDescriptor(pSD,SECURITY_DESCRIPTOR_REVISION))
+	// Initialize a security descriptor.
+	if (!InitializeSecurityDescriptor(static_cast<PSECURITY_DESCRIPTOR>(pSD),SECURITY_DESCRIPTOR_REVISION))
 	{
 		LocalFree(pSD);
 		LocalFree(pACL);
 		pACL = NULL;
 		return false;
-	} 
+	}
 
 	// Add the ACL to the SD
-	if (!SetSecurityDescriptorDacl(pSD,TRUE,pACL,FALSE))
-	{	
+	if (!SetSecurityDescriptorDacl(static_cast<PSECURITY_DESCRIPTOR>(pSD),TRUE,pACL,FALSE))
+	{
 		LocalFree(pSD);
 		LocalFree(pACL);
 		pACL = NULL;
 		return false;
-	} 
+	}
 
 	return true;//(ERROR_SUCCESS == dwRes);
 }
@@ -273,7 +273,7 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
 	{
 		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 		m_sa.bInheritHandle = FALSE;
-		
+
 		if (!CreateSA(hToken,m_sa.lpSecurityDescriptor,m_pACL))
 			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
 	}
@@ -282,11 +282,11 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
 	addr.string_to_addr((strAddr + L"\\up").c_str());
 	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
-	
+
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
-	
+
 	return 0;
 }
 
@@ -405,7 +405,7 @@ int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout
 	// If uid==0 - it means everyone!
 	if (uid == 0)
 		uid = -1;
-	
+
 	ACE_SOCK_Stream stream;
 	if (m_acceptor.accept(stream,0,timeout) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);

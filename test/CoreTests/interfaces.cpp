@@ -1,11 +1,11 @@
 #include <OTL/OTL.h>
-#include "TestDll/TestDll.h"
+#include "TestLibrary/TestLibrary.h"
 
 #include "Test.h"
 
 bool interface_tests()
 {
-	OTL::ObjectPtr<Test::DllTest> ptrTest(L"Test.Dll");
+	OTL::ObjectPtr<Test::Library> ptrTest(L"Test.Library");
 	
 	TEST(ptrTest->Hello() == L"Hello!");
 

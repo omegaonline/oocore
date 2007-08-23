@@ -23,6 +23,8 @@ namespace Omega
 		inline guid_t NameToOid(const string_t& strObjectName);
 		inline void RegisterObjectFactory(const string_t& strXML, bool_t bRegister = true, const string_t& strSubstitutions = L"");
 
+		typedef void (OMEGA_CALL *RegisterLib_Function)(bool_t bInstall);
+
 		interface IOidNotFoundException : public IException
 		{
 			virtual guid_t GetMissingOid() = 0;

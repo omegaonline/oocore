@@ -63,9 +63,10 @@
 					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="-s" />
 					<Add option="-mthreads" />
 					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
-					<Add library="..\OOCore\debug\libOOCore.a" />
+					<Add library="..\OOCore\release\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
@@ -92,7 +93,6 @@
 				<Linker>
 					<Add library="ACE" />
 					<Add library="libOOCore" />
-					<Add directory="..\OOCore\Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release_Unix">
@@ -113,6 +113,7 @@
 					<Add directory="..\..\extern\ACE_wrappers" />
 				</Compiler>
 				<Linker>
+					<Add option="-s" />
 					<Add library="ACE" />
 					<Add library="OOCore" />
 				</Linker>

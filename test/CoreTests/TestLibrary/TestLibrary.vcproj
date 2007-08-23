@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="TestDll"
+	Name="TestLibrary"
 	ProjectGUID="{E1E124DB-9220-4148-9336-9F44912D6E41}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -33,13 +33,13 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestDll.dll"
+				OutputFile="$(OutDir)/TestLibrary.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/TestDll.pdb"
+				ProgramDatabaseFile="$(OutDir)/TestLibrary.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/TestDll.lib"
+				ImportLibrary="$(OutDir)/TestLibrary.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -64,7 +64,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
+			OutputDirectory="..\..\..\bin"
 			IntermediateDirectory="Release"
 			ConfigurationType="2"
 			CharacterSet="2">
@@ -77,19 +77,19 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				DebugInformationFormat="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestDll.dll"
+				OutputFile="$(OutDir)/TestLibrary.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="FALSE"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ImportLibrary="$(OutDir)/TestDll.lib"
+				ImportLibrary="$(OutDir)/TestLibrary.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -121,7 +121,7 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath=".\testdll.cpp">
+				RelativePath=".\testlibrary.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -129,7 +129,7 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath=".\testdll.h">
+				RelativePath=".\testlibrary.h">
 			</File>
 		</Filter>
 		<Filter

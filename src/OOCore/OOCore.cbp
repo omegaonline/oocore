@@ -68,6 +68,7 @@
 					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
+					<Add option="-s" />
 					<Add option="-mthreads" />
 					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
 					<Add library="shlwapi" />
@@ -113,6 +114,7 @@
 					<Add directory="..\..\include" />
 				</Compiler>
 				<Linker>
+					<Add option="-s" />
 					<Add library="ACE" />
 				</Linker>
 			</Target>

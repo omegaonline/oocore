@@ -462,7 +462,6 @@ namespace Omega
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid) = 0;
 			};
 
-
 			inline IObject_Safe* lookup_stub(IObject* pObj, const guid_t& iid);
 			inline IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
 			inline void throw_correct_exception(IException_Safe* pE);

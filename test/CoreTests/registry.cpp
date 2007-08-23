@@ -478,30 +478,36 @@ bool registry_tests_3()
 		L"<?xml version=\"1.0\" ?>\r\n"
 		L"<oo:root xmlns:oo=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">\r\n"
 			L"<oo:key name=\"%TESTKEY%\">\r\n"
-				L"<oo:key name=\"%TESTKEY%\">\r\n"
-					L"<oo:key name=\"Testkey\" uninstall=\"Remove\"/>\r\n"
-					L"<oo:key name=\"%MODULE%\">\r\n"
-						L"<oo:value name=\"TestVal1\">Testing testing 1,2,3</oo:value>\r\n"
-						L"<oo:value name=\"TestVal2\">%MODULE%</oo:value>\r\n"
-						L"<oo:value name=\"TestVal3\" type=\"UInt32\">  0x12345  </oo:value>\r\n"
-						L"<oo:value name=\"TestVal4\" type=\"UInt32\" uninstall=\"Keep\">12345</oo:value>\r\n"
-					L"</oo:key>\r\n"
+				L"<oo:key name=\"Testkey\" uninstall=\"Remove\"/>\r\n"
+				L"<oo:key name=\"%MODULE%\">\r\n"
+					L"<oo:value name=\"TestVal1\">Testing testing 1,2,3</oo:value>\r\n"
+					L"<oo:value name=\"TestVal2\">%MODULE%</oo:value>\r\n"
+					L"<oo:value name=\"TestVal3\" type=\"UInt32\">  0x12345  </oo:value>\r\n"
+					L"<oo:value name=\"TestVal4\" type=\"UInt32\" uninstall=\"Keep\">12345</oo:value>\r\n"
 				L"</oo:key>\r\n"
 			L"</oo:key>\r\n"
 		L"</oo:root>\r\n";
 
 	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=" + strTestKey;
 	
-	Omega::Activation::RegisterObjectFactory(strXML,true,strSubsts);
-	TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
-	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
-	
-	Omega::Activation::RegisterObjectFactory(strXML,false,strSubsts);
-	TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
-	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
+	try
+	{
+		Omega::Activation::RegisterObjectFactory(strXML,true,strSubsts);
+		TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
+		TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
+		
+		Omega::Activation::RegisterObjectFactory(strXML,false,strSubsts);
+		TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
+		TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
 
-	if (ptrKey->IsSubKey(strTestKey))
-		ptrKey->DeleteKey(strTestKey);
+		if (ptrKey->IsSubKey(strTestKey))
+			ptrKey->DeleteKey(strTestKey);
+	}
+	catch (Omega::Registry::IAccessDeniedException* pE)
+	{
+		// This is okay...
+		pE->Release();
+	}
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"Current User");
 	// Generate a unique value name

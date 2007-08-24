@@ -104,35 +104,35 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Current User\\Applications\\OORegEdit\\Layout");
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"Current User\\Applications\\OORegEdit\\Layout");
 		
 		wxPoint ptPos;
-		ptPos.x = ptrKey->GetUIntValue("Left");
-		ptPos.y = ptrKey->GetUIntValue("Top");
+		ptPos.x = ptrKey->GetUIntValue(L"Left");
+		ptPos.y = ptrKey->GetUIntValue(L"Top");
 		SetPosition(ptPos);
 	
 		wxSize sz;
-		sz.x = ptrKey->GetUIntValue("Width");
-		sz.y = ptrKey->GetUIntValue("Height");
+		sz.x = ptrKey->GetUIntValue(L"Width");
+		sz.y = ptrKey->GetUIntValue(L"Height");
 		SetSize(sz);
 
-        split_width = ptrKey->GetUIntValue("SplitWidth");
+        split_width = ptrKey->GetUIntValue(L"SplitWidth");
 
-		col_width[0] = ptrKey->GetUIntValue("ColWidth0");
-		col_width[1] = ptrKey->GetUIntValue("ColWidth1");
-		col_width[2] = ptrKey->GetUIntValue("ColWidth2");
+		col_width[0] = ptrKey->GetUIntValue(L"ColWidth0");
+		col_width[1] = ptrKey->GetUIntValue(L"ColWidth1");
+		col_width[2] = ptrKey->GetUIntValue(L"ColWidth2");
 
-		bShowBar = ptrKey->GetUIntValue("Statusbar")!=0;
+		bShowBar = ptrKey->GetUIntValue(L"Statusbar")!=0;
 
-		strSelection = ptrKey->GetStringValue("Selection");
+		strSelection = ptrKey->GetStringValue(L"Selection");
 
-		m_bKeys = ptrKey->GetUIntValue("FindKeys")!=0;
-		m_bValues = ptrKey->GetUIntValue("FindValues")!=0;
-		m_bData = ptrKey->GetUIntValue("FindData")!=0;
-		m_bMatchAll = ptrKey->GetUIntValue("MatchAll")!=0;
-		m_bIgnoreCase = ptrKey->GetUIntValue("IgnoreCase")!=0;
+		m_bKeys = ptrKey->GetUIntValue(L"FindKeys")!=0;
+		m_bValues = ptrKey->GetUIntValue(L"FindValues")!=0;
+		m_bData = ptrKey->GetUIntValue(L"FindData")!=0;
+		m_bMatchAll = ptrKey->GetUIntValue(L"MatchAll")!=0;
+		m_bIgnoreCase = ptrKey->GetUIntValue(L"IgnoreCase")!=0;
 
-		for (int nFiles = (int)ptrKey->GetUIntValue("Favourites")-1;nFiles>=0;--nFiles)
+		for (int nFiles = (int)ptrKey->GetUIntValue(L"Favourites")-1;nFiles>=0;--nFiles)
 		{
 			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles));
 
@@ -188,7 +188,7 @@ void MainFrame::CreateChildWindows(void)
 	m_pList->SetColumnWidth(2, col_width[2]); 
 		
 	// Open the registry root
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("\\");
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\");
 
 	// Init the tree
 	TreeItemData* pItem = new TreeItemData(ptrKey,5);
@@ -327,34 +327,34 @@ void MainFrame::OnQuit(wxCommandEvent& WXUNUSED(evt))
 void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 {
 	// Set some defaults...
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey("Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
 
 	wxPoint pt = GetPosition();
-	ptrKey->SetUIntValue("Top",pt.y);
-	ptrKey->SetUIntValue("Left",pt.x);
+	ptrKey->SetUIntValue(L"Top",pt.y);
+	ptrKey->SetUIntValue(L"Left",pt.x);
 
 	wxSize sz = GetSize();
-	ptrKey->SetUIntValue("Height",sz.y);
-	ptrKey->SetUIntValue("Width",sz.x);
+	ptrKey->SetUIntValue(L"Height",sz.y);
+	ptrKey->SetUIntValue(L"Width",sz.x);
 
-	ptrKey->SetUIntValue("SplitWidth",m_pSplitter->GetSashPosition());
+	ptrKey->SetUIntValue(L"SplitWidth",m_pSplitter->GetSashPosition());
 
-	ptrKey->SetUIntValue("ColWidth0",m_pList->GetColumnWidth(0));
-	ptrKey->SetUIntValue("ColWidth1",m_pList->GetColumnWidth(1));
-	ptrKey->SetUIntValue("ColWidth2",m_pList->GetColumnWidth(2));
+	ptrKey->SetUIntValue(L"ColWidth0",m_pList->GetColumnWidth(0));
+	ptrKey->SetUIntValue(L"ColWidth1",m_pList->GetColumnWidth(1));
+	ptrKey->SetUIntValue(L"ColWidth2",m_pList->GetColumnWidth(2));
 
-	ptrKey->SetUIntValue("Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
+	ptrKey->SetUIntValue(L"Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
 
-    ptrKey->SetUIntValue("FindKeys",m_bKeys ? 1 : 0);
-	ptrKey->SetUIntValue("FindValues",m_bValues ? 1 : 0);
-	ptrKey->SetUIntValue("FindData",m_bData ? 1 : 0);
-	ptrKey->SetUIntValue("MatchAll",m_bMatchAll ? 1 : 0);
-	ptrKey->SetUIntValue("IgnoreCase",m_bIgnoreCase? 1 : 0);
+    ptrKey->SetUIntValue(L"FindKeys",m_bKeys ? 1 : 0);
+	ptrKey->SetUIntValue(L"FindValues",m_bValues ? 1 : 0);
+	ptrKey->SetUIntValue(L"FindData",m_bData ? 1 : 0);
+	ptrKey->SetUIntValue(L"MatchAll",m_bMatchAll ? 1 : 0);
+	ptrKey->SetUIntValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
 
-	ptrKey->SetStringValue("Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
+	ptrKey->SetStringValue(L"Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
 
 	Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
-	ptrKey->SetUIntValue("Favourites",nFiles);
+	ptrKey->SetUIntValue(L"Favourites",nFiles);
 
 	for (nFiles;nFiles>0;--nFiles)
 	{

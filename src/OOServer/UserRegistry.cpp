@@ -498,7 +498,7 @@ Omega::IEnumString* UserKey::EnumSubKeys()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 
@@ -527,7 +527,7 @@ Omega::IEnumString* UserKey::EnumValues()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 
@@ -979,7 +979,7 @@ Omega::IEnumString* RootKey::EnumSubKeys()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 
@@ -1051,7 +1051,7 @@ Omega::IEnumString* RootKey::EnumValues()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 
@@ -1251,7 +1251,7 @@ Omega::IEnumString* BaseKey::EnumSubKeys()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 

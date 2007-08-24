@@ -1,13 +1,16 @@
 #include <OTL/OTL.h>
 
+#include "../interfaces.h"
 #include "./TestLibrary.h"
 
 namespace
 {
+	extern const wchar_t TestLibraryName[] = L"Test.Library";
+
 	class TestLibraryImpl :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactory<TestLibraryImpl,&Test::OID_TestLibrary>,
-		public Test::Library
+		public OTL::AutoObjectFactory<TestLibraryImpl,&Test::OID_TestLibrary,TestLibraryName>,
+		public Test::Iface
 	{
 	public:
 		TestLibraryImpl()
@@ -16,7 +19,7 @@ namespace
 		Omega::string_t Hello();
 
 		BEGIN_INTERFACE_MAP(TestLibraryImpl)
-			INTERFACE_ENTRY(Test::Library)
+			INTERFACE_ENTRY(Test::Iface)
 		END_INTERFACE_MAP()
 	};
 };

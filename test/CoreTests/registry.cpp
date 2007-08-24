@@ -492,11 +492,11 @@ bool registry_tests_3()
 	
 	try
 	{
-		Omega::Activation::RegisterObjectFactory(strXML,true,strSubsts);
+		Omega::Registry::AddXML(strXML,true,strSubsts);
 		TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 		TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
 		
-		Omega::Activation::RegisterObjectFactory(strXML,false,strSubsts);
+		Omega::Registry::AddXML(strXML,false,strSubsts);
 		TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 		TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
 
@@ -519,11 +519,11 @@ bool registry_tests_3()
 
 	strSubsts = L"  MODULE  =My Module;  TESTKEY=Current User\\" + strTestKey;
 
-	Omega::Activation::RegisterObjectFactory(strXML,true,strSubsts);
+	Omega::Registry::AddXML(strXML,true,strSubsts);
 	TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
 
-	Omega::Activation::RegisterObjectFactory(strXML,false,strSubsts);
+	Omega::Registry::AddXML(strXML,false,strSubsts);
 	TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
 	

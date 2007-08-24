@@ -36,23 +36,32 @@ static int do_install(bool bInstall, ACE_TCHAR* lib_path)
 	if (dll.open(lib_path,RTLD_NOW)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
 
-	Omega::Activation::RegisterLib_Function fn=(Omega::Activation::RegisterLib_Function)dll.symbol(ACE_TEXT("RegisterLib"));
-	if (fn==0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'RegisterLib' function.\n\n"),lib_path),-1);
+	typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::interface_info<Omega::bool_t>::safe_class bInstall, Omega::System::MetaInfo::interface_info<const Omega::string_t&>::safe_class strSubsts);
+
+	pfnRegisterLib pfn=(pfnRegisterLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
+	if (pfn == 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'Omega_RegisterLibrary_Safe' function.\n\n"),lib_path),-1);
 
 	try
 	{
-		(fn)(bInstall);
+		Omega::string_t strSubsts = L"LIB_PATH=" + Omega::string_t(lib_path);
+
+		Omega::System::MetaInfo::IException_Safe* pSE = pfn(
+			Omega::System::MetaInfo::interface_info<Omega::bool_t>::proxy_functor(bInstall),
+			Omega::System::MetaInfo::interface_info<const Omega::string_t&>::proxy_functor(strSubsts));
+
+		if (pSE)
+			Omega::System::MetaInfo::throw_correct_exception(pSE);
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("'RegisterLib' function failed: %ls\n\n"),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W\n\n"),pE->Description().c_str()));
 		pE->Release();
 		return -1;
 	}
 	catch (...)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("'RegisterLib' function failed with an unknown C++ exception\n\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Function failed with an unknown C++ exception\n\n")),-1);
 	}
 
 	if (bInstall)
@@ -105,7 +114,19 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// This gives a small leak, but allows ACE based DLL's a chance to unload correctly
 	ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_LAZY);
 
-	return do_install(bInstall,argv[argc-1]);
+	Omega::IException* pE = Omega::Initialize();
+	if (pE)
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W\n\n"),pE->Description().c_str()));
+		pE->Release();
+		return -1;
+	}
+
+	int res = do_install(bInstall,argv[argc-1]);
+
+	Omega::Uninitialize();
+
+	return res;
 }
 
 #if defined(ACE_WIN32) && defined(__MINGW32__)

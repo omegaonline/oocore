@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OORegister" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug_Win32">
+				<Option output="Debug\OORegister.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-DWIN32" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_WIN32_WINNT=0x0500" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\src\OOCore\debug\libOOCore.a" />
+					<Add library="shlwapi" />
+					<Add library="userenv" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+				</Linker>
+			</Target>
+			<Target title="Release_Win32">
+				<Option output="..\..\bin\OORegister.exe" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-march=i686" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-W" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-D_WIN32_WINNT=0x0500" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\src\OOCore\debug\libOOCore.a" />
+					<Add library="shlwapi" />
+					<Add library="userenv" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="OORegister.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

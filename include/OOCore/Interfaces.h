@@ -21,10 +21,7 @@ namespace Omega
 
 		inline IObjectFactory* GetObjectFactory(const guid_t& oid, Flags_t flags);
 		inline guid_t NameToOid(const string_t& strObjectName);
-		inline void RegisterObjectFactory(const string_t& strXML, bool_t bRegister = true, const string_t& strSubstitutions = L"");
-
-		typedef void (OMEGA_CALL *RegisterLib_Function)(bool_t bInstall);
-
+		
 		interface IOidNotFoundException : public IException
 		{
 			virtual guid_t GetMissingOid() = 0;
@@ -130,6 +127,8 @@ namespace Omega
 		{
 			virtual string_t GetKeyName() = 0;
 		};
+
+		inline void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = L"");
 	}
 
 	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
@@ -281,10 +280,10 @@ Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
 	return Activation_NameToOid(strObjectName);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Activation_RegisterObjectFactory,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bRegister,(in),const Omega::string_t&,strSubstitutions));
-void Omega::Activation::RegisterObjectFactory(const Omega::string_t& strXML, Omega::bool_t bRegister, const Omega::string_t& strSubstitutions)
+OOCORE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bAdd,(in),const Omega::string_t&,strSubstitutions));
+void Omega::Registry::AddXML(const Omega::string_t& strXML, Omega::bool_t bAdd, const Omega::string_t& strSubstitutions)
 {
-	Activation_RegisterObjectFactory(strXML,bRegister,strSubstitutions);
+	Registry_AddXML(strXML,bAdd,strSubstitutions);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags));

@@ -484,7 +484,7 @@ OTL::ObjectPtr<Omega::Remoting::IObjectManager> User::Manager::get_object_manage
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	return ptrOM;

@@ -33,7 +33,7 @@ void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(Omega::string_t(e.what(),false));
 	}
 }
 
@@ -54,7 +54,7 @@ OTL::ModuleBase::~ModuleBase()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(Omega::string_t(e.what(),false));
 	}
 }
 
@@ -71,6 +71,43 @@ Omega::Activation::IObjectFactory* OTL::LibraryModule::GetObjectFactory(const Om
 		}
 	}
 	return static_cast<Omega::Activation::IObjectFactory*>(pObject);
+}
+
+void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::string_t& strSubsts)
+{
+	Omega::string_t strXML;		
+
+	const CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0;g[i].pfnOid!=0;++i)
+	{
+		if (g[i].pfnOidName != 0)
+		{
+			Omega::string_t strName = (g[i].pfnOidName)();
+			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
+
+			strXML += 
+				L"<key name=\"Objects\">"
+					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
+						L"<value name=\"OID\">" + strOID + L"</value>"
+					L"</key>"
+					L"<key name=\"OIDs\">"
+						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
+							L"<value name=\"Library\">%LIB_PATH%</value>"
+						L"</key>"
+					L"</key>"
+				L"</key>";
+		}		
+	}
+
+	if (!strXML.IsEmpty())
+	{
+		strXML = L"<?xml version=\"1.0\"?>"
+				 L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+				 + strXML +
+				 L"</root>";
+
+		Omega::Registry::AddXML(strXML,bInstall,strSubsts);
+	}
 }
 
 #endif  // OTL_BASE_INL_INCLUDED_

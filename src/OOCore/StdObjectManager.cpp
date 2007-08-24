@@ -84,7 +84,7 @@ namespace OOCore
 			}
 			catch (std::exception& e)
 			{
-				OMEGA_THROW(e.what());
+				OMEGA_THROW(string_t(e.what(),false));
 			}
 
 			m_ptrManager = pManager;
@@ -184,7 +184,7 @@ IObject* OOCore::StdProxy::QI2(const guid_t& iid)
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	return 0;
@@ -362,7 +362,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		}
 		catch (std::exception& e)
 		{
-			OMEGA_THROW(e.what());
+			OMEGA_THROW(string_t(e.what(),false));
 		}
 
 		// Read the method id
@@ -445,7 +445,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	// Write out the data
@@ -506,7 +506,7 @@ void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 

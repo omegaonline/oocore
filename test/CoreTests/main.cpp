@@ -18,7 +18,7 @@ bool interface_tests();
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	wprintf(L"%ls\n\n",Omega::System::GetVersion().c_str());
+	wprintf(L"OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
 
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);

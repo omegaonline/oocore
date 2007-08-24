@@ -97,7 +97,7 @@ namespace Omega
 	public:
 		inline string_t();
 		inline string_t(const string_t& s);
-		inline string_t(const char* sz, bool_t bUTF8 = false);
+		inline string_t(const char* sz, bool_t bUTF8);
 		inline string_t(const wchar_t* wsz, size_t length = npos);
 		inline ~string_t();
 
@@ -180,7 +180,8 @@ namespace Omega
 		inline bool operator==(const string_t& str) const;
 		inline bool operator!=(const guid_t& rhs) const;
 		inline bool operator<(const guid_t& rhs) const;
-		inline operator string_t() const;
+		
+		inline string_t ToString() const;
 
 		inline static guid_t FromString(const string_t& str);
 		inline static guid_t Create();

@@ -880,7 +880,7 @@ OTL::ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	return ptrOM;

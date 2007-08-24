@@ -289,7 +289,7 @@ bool Omega::guid_t::operator==(const guid_t& rhs) const
 
 bool Omega::guid_t::operator==(const Omega::string_t& str) const
 {
-	return str.CompareNoCase(*this) == 0;
+	return str.CompareNoCase(ToString()) == 0;
 }
 
 bool Omega::guid_t::operator!=(const Omega::guid_t& rhs) const
@@ -303,7 +303,7 @@ bool Omega::guid_t::operator<(const guid_t& rhs) const
 	return guid_t_less(*this,rhs);
 }
 
-Omega::guid_t::operator Omega::string_t() const
+Omega::string_t Omega::guid_t::ToString() const
 {
 	return string_t::Format(L"{%8.8X-%4.4X-%4.4X-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
         Data1,

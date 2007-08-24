@@ -97,16 +97,17 @@
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj) \
-	{ obj::GetOid, Creator<obj::ObjectFactoryClass>::Create },
+	{ obj::GetOid, obj::GetOidName, Creator<obj::ObjectFactoryClass>::Create },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0,0 } }; return CreatorEntries; } }; } \
+		{ 0,0,0 } }; return CreatorEntries; } }; } \
 	OTL::ModuleBase* OTL::GetModule() { return LibraryModule__::instance(); } \
 	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() { return (OTL::LibraryModule__::instance()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Omega_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags)) \
 	{ return OTL::LibraryModule__::instance()->GetObjectFactory(oid,flags); } \
+	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,2,((in),Omega::bool_t,bInstall,(in),const Omega::string_t&,strSubsts)) \
+	{ OTL::LibraryModule__::instance()->RegisterLibrary(bInstall,strSubsts); } \
 	OTL_MODULE_INIT_BLOCK(LibraryModule__)
-
 
 // THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
 #define BEGIN_PROCESS_OBJECT_MAP(process_class) \
@@ -451,6 +452,7 @@ namespace OTL
 		struct CreatorEntry
 		{
 			const Omega::guid_t* (*pfnOid)();
+			const wchar_t* (*pfnOidName)();
 			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
 		};
 
@@ -799,6 +801,7 @@ namespace OTL
 		};
 
 		inline Omega::Activation::IObjectFactory* GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags);
+		inline void RegisterLibrary(Omega::bool_t bInstall, const Omega::string_t& strSubsts);
 
 	protected:
 		LibraryModule()
@@ -868,7 +871,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID>
+	template <class ROOT, const Omega::guid_t* pOID, const wchar_t* pOIDName = 0>
 	class AutoObjectFactory
 	{
 	public:
@@ -878,9 +881,14 @@ namespace OTL
 		{
 			return pOID;
 		}
+
+		static const wchar_t* GetOidName()
+		{
+			return pOIDName;
+		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID>
+	template <class ROOT, const Omega::guid_t* pOID, const wchar_t* pOIDName = 0>
 	class AutoObjectFactoryNoAggregation
 	{
 	public:
@@ -890,9 +898,14 @@ namespace OTL
 		{
 			return pOID;
 		}
+
+		static const wchar_t* GetOidName()
+		{
+			return pOIDName;
+		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID>
+	template <class ROOT, const Omega::guid_t* pOID, const wchar_t* pOIDName = 0>
 	class AutoObjectFactorySingleton
 	{
 	public:
@@ -901,6 +914,11 @@ namespace OTL
 		static const Omega::guid_t* GetOid()
 		{
 			return pOID;
+		}
+
+		static const wchar_t* GetOidName()
+		{
+			return pOIDName;
 		}
 	};
 

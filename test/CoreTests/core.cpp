@@ -34,7 +34,7 @@ bool core_tests()
 static bool complex_throw()
 {
 	const wchar_t szDesc[] = L"A test description";
-	const char szFile[] = __FILE__;
+	const wchar_t szFile[] = OMEGA_WIDEN_STRING(__FILE__);
 
 	// try a more complex throw
 	try
@@ -75,7 +75,7 @@ bool exception_tests()
 {
 	// Try a simple throw...
 	const wchar_t szDesc[] = L"A test description";
-	const char szFile[] = __FILE__;
+	const wchar_t szFile[] = OMEGA_WIDEN_STRING(__FILE__);
 	try
 	{
 		throw Omega::IException::Create(szDesc,szFile);

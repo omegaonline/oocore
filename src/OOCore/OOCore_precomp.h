@@ -78,11 +78,11 @@
 // End of Windows includes
 /////////////////////////////////////////////////
 
-#define OOCORE_THROW_LASTERROR() \
-	OMEGA_THROW(ACE_OS::strerror(ACE_OS::last_error()))
-
 #define OOCORE_THROW_ERRNO(error) \
-	OMEGA_THROW(ACE_OS::strerror(error))
+	OMEGA_THROW(Omega::string_t(ACE_OS::strerror(error),false))
+
+#define OOCORE_THROW_LASTERROR() \
+	OOCORE_THROW_ERRNO(ACE_OS::last_error())
 
 #define OOCORE_GUARD(MUTEX, OBJ, LOCK) \
 	ACE_Guard< MUTEX > OBJ (LOCK); \

@@ -264,7 +264,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 		}
 		catch (std::exception& e)
 		{
-			OMEGA_THROW(e.what());
+			OMEGA_THROW(string_t(e.what(),false));
 		}
 	}
 	catch (IException* pE)
@@ -349,7 +349,7 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	return 0;
@@ -406,7 +406,7 @@ Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(Omeg
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	IObject_Safe* pRet = 0;
@@ -451,7 +451,7 @@ Omega::IObject* Omega::System::MetaInfo::lookup_proxy(Omega::System::MetaInfo::I
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 
 	IObject* pRet = ptrSafeProxy->QueryInterface(iid);

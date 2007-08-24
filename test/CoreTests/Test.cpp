@@ -30,9 +30,6 @@ int test_summary()
 	if (fail_count || exception_count)
 	{
 		printf("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
-
-		printf("\nPress any key to close...");
-		_getch();
 		return -1;
 	}
 	else

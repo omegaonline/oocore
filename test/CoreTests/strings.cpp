@@ -73,7 +73,7 @@ bool string_tests_char()
 	const char sz1_1[] = "abcdef";
 	const char sz1_2[] = "ABCDEF";
 
-	Omega::string_t s1 = sz1;
+	Omega::string_t s1(sz1,false);
 	TEST(!s1.IsEmpty());
 	TEST(s1.Length() == 6);
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
@@ -81,7 +81,7 @@ bool string_tests_char()
 	TEST(s1.CompareNoCase(sz1_2) == 0);
 
 	const char sz2[] = "ghijk";
-	Omega::string_t s2(sz2);
+	Omega::string_t s2(sz2,true);
 	TEST(s2 == sz2);
 
 	Omega::string_t s3(s1);

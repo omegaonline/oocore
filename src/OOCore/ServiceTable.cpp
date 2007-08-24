@@ -81,7 +81,7 @@ void OOCore::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 
@@ -99,7 +99,7 @@ void OOCore::ServiceTable::Revoke(const guid_t& oid)
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }
 
@@ -117,6 +117,6 @@ void OOCore::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObje
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(e.what());
+		OMEGA_THROW(string_t(e.what(),false));
 	}
 }

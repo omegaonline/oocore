@@ -284,7 +284,7 @@ void TreeItemData::NewString(wxListCtrl* pList)
 			break;
 	}
 
-	m_ptrKey->SetStringValue(strName,"");
+	m_ptrKey->SetStringValue(strName,L"");
 	
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),4);
 	pList->SetItem(item,1,_("String"));

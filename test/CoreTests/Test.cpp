@@ -8,8 +8,7 @@ static unsigned long fail_count = 0;
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
-	add_failure();
-	printf("[Failed]\n\nAssertion '%s' failed at %s:%u\n",pszExpr,pszSrc,nLine);
+	add_failure(Omega::string_t::Format(L"Assertion '%s' failed at %s:%u\n",pszExpr,pszSrc,nLine).c_str());
 	return false;
 }
 
@@ -18,8 +17,9 @@ void add_success()
 	++pass_count;
 }
 
-void add_failure()
+void add_failure(const wchar_t* pszText)
 {
+	wprintf(L"[Failed]\n\n%ls",pszText);
 	++fail_count;
 }
 

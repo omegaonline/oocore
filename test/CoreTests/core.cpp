@@ -21,8 +21,7 @@ bool core_tests()
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		add_failure();
-		wprintf(L"[Failed]\n\tOmega::Initialize failed: %ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str());
+		add_failure(Omega::string_t::Format(L"Omega::Initialize failed: %ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str()).c_str());
 		pE->Release();
 		exit(test_summary());
 	}

@@ -4,7 +4,7 @@
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();
 void add_success();
-void add_failure();
+void add_failure(const wchar_t* pszText);
 
 typedef bool (*pfnTest)();
 void run_test(pfnTest t, const char* pszName);

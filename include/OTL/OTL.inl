@@ -80,9 +80,9 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
-		if (g[i].pfnOidName != 0)
+		if (g[i].pszName != 0)
 		{
-			Omega::string_t strName = (g[i].pfnOidName)();
+			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
 			strXML += 

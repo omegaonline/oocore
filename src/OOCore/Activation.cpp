@@ -73,7 +73,7 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 {
 	ObjectImpl<OOCore::LibraryNotFoundException>* pRE = ObjectImpl<OOCore::LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = string_t::Format(L"Dynamic library '%s' not found",strName.c_str());
+	pRE->m_strDesc = string_t::Format(L"Dynamic library '%ls' not found",strName.c_str());
 	pRE->m_dll_name = strName;
 	throw pRE;
 }

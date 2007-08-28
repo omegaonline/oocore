@@ -6,12 +6,6 @@ static int Help()
 	return 0;
 }
 
-static int Version()
-{
-	ACE_OS::printf("Platform: %s\nCompiler: %s\nACE %s\n",OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
-	return 0;
-}
-
 static int PrintException(Omega::IException* pE)
 {
 	ACE_OS::printf("%ls.\n",pE->Description().c_str());
@@ -70,9 +64,8 @@ static int Interactive()
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	// Check command line options
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":vh"));
-	if (cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
-		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":h"));
+	if (cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
 	{
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),-1);
 	}
@@ -82,9 +75,6 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	{
 		switch (option)
 		{
-		case ACE_TEXT('v'):
-			return Version();
-
 		case ACE_TEXT('h'):
 			return Help();
 

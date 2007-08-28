@@ -27,20 +27,31 @@ static void print_help()
 	ACE_OS::fprintf(stdout,ACE_TEXT("Usage: OORegister [-i] [-u] library_name\n"));
 	ACE_OS::fprintf(stdout,ACE_TEXT("-i\tInstall the library\n"));
 	ACE_OS::fprintf(stdout,ACE_TEXT("-u\tUninstall the library\n"));
+	ACE_OS::fprintf(stdout,ACE_TEXT("-s\tSilent, do not output anything\n"));
 	ACE_OS::fprintf(stdout,ACE_TEXT("\n"));
 }
 
-static int do_install(bool bInstall, ACE_TCHAR* lib_path)
+static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 {
 	ACE_DLL dll;
 	if (dll.open(lib_path,RTLD_NOW)!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
+	{
+		if (bSilent)
+			return -1;
+		else
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
+	}
 
 	typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::interface_info<Omega::bool_t>::safe_class bInstall, Omega::System::MetaInfo::interface_info<const Omega::string_t&>::safe_class strSubsts);
 
 	pfnRegisterLib pfn=(pfnRegisterLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
 	if (pfn == 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'Omega_RegisterLibrary_Safe' function.\n\n"),lib_path),-1);
+	{
+		if (bSilent)
+			return -1;
+		else
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'Omega_RegisterLibrary_Safe' function.\n\n"),lib_path),-1);
+	}
 
 	try
 	{
@@ -55,19 +66,27 @@ static int do_install(bool bInstall, ACE_TCHAR* lib_path)
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W\n\n"),pE->Description().c_str()));
+		if (!bSilent)
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W\n\n"),pE->Description().c_str()));
+
 		pE->Release();
 		return -1;
 	}
 	catch (...)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Function failed with an unknown C++ exception\n\n")),-1);
+		if (bSilent)
+			return -1;
+		else
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Function failed with an unknown C++ exception\n\n")),-1);
 	}
 
-	if (bInstall)
-		ACE_OS::fprintf(stdout,ACE_TEXT("Registration of '%s' successful.\n\n"),lib_path);
-	else
-		ACE_OS::fprintf(stdout,ACE_TEXT("Unregistration of '%s' successful.\n\n"),lib_path);
+	if (!bSilent)
+	{
+		if (bInstall)
+			ACE_OS::fprintf(stdout,ACE_TEXT("Registration of '%s' successful.\n\n"),lib_path);
+		else
+			ACE_OS::fprintf(stdout,ACE_TEXT("Unregistration of '%s' successful.\n\n"),lib_path);
+	}
 
 	return 0;
 }
@@ -75,9 +94,10 @@ static int do_install(bool bInstall, ACE_TCHAR* lib_path)
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	// Parse cmd line first
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iu"));
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":ius"));
 	int option;
 	bool bInstall = true;
+	bool bSilent = false;
 	while ((option = cmd_opts()) != EOF)
 	{
 		switch (option)
@@ -89,26 +109,50 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			bInstall = false;
 			break;
 
+		case ACE_TEXT('s'):
+			bSilent = true;
+			break;
+
 		case ACE_TEXT(':'):
-			print_help();
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n\n"),cmd_opts.opt_opt()),-1);
+			if (bSilent)
+				return -1;
+			else
+			{
+				print_help();
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n\n"),cmd_opts.opt_opt()),-1);
+			}
 
 		default:
-			print_help();
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument -%c.\n\n"),cmd_opts.opt_opt()),-1);
+			if (bSilent)
+				return -1;
+			else
+			{
+				print_help();
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument -%c.\n\n"),cmd_opts.opt_opt()),-1);
+			}
 		}
 	}
 
 	if (cmd_opts.opt_ind()==1)
 	{
-		print_help();
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument.\n\n")),-1);
+		if (bSilent)
+			return -1;
+		else
+		{
+			print_help();
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument.\n\n")),-1);
+		}
 	}
 
 	if (cmd_opts.opt_ind()!=(argc-1))
 	{
-		print_help();
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid number of parameters.\n\n")),-1);
+		if (bSilent)
+			return -1;
+		else
+		{
+			print_help();
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid number of parameters.\n\n")),-1);
+		}
 	}
 
 	// This gives a small leak, but allows ACE based DLL's a chance to unload correctly
@@ -117,12 +161,14 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W\n\n"),pE->Description().c_str()));
+		if (!bSilent)
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W\n\n"),pE->Description().c_str()));
+
 		pE->Release();
 		return -1;
 	}
 
-	int res = do_install(bInstall,argv[argc-1]);
+	int res = do_install(bInstall,bSilent,argv[argc-1]);
 
 	Omega::Uninitialize();
 

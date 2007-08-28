@@ -87,14 +87,16 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 		if (i != attribs.end() && i->second==L"Remove")
 			bRemove = true;
 
-		if (bRemove && ptrKey && ptrKey->IsSubKey(strName))
+		if (ptrKey && ptrKey->IsSubKey(strName))
 		{
-			ptrKey->DeleteKey(strName);
-			return 0;
+			if (bRemove)
+				ptrKey->DeleteKey(strName);
+			else
+				return ptrKey->OpenSubKey(strName,Registry::IRegistryKey::OpenExisting);
 		}
-		else
-			return ptrKey->OpenSubKey(strName,Registry::IRegistryKey::OpenExisting);
 	}
+
+	return 0;
 }
 
 void OOCore::ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts)

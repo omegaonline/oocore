@@ -50,9 +50,8 @@ static int Version();
 
 static int Help()
 {
-	void* TODO;
-
-	ACE_OS::printf("This is the help string... I'm sure something will go here at some point\n\n");
+	ACE_OS::fprintf(stdout,ACE_TEXT("OOServer - The OmegaOnline network deamon.\n\n"));
+	ACE_OS::fprintf(stdout,ACE_TEXT("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n"));
 	return 0;
 }
 
@@ -152,7 +151,7 @@ int main(int argc, char* /*argv*/[])
 #include <OOCore/Version.h>
 static int Version()
 {
-	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	ACE_OS::printf("Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE %hs\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 	return 0;
 }
 

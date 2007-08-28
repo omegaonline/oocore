@@ -96,8 +96,11 @@
 		friend class OTL::SingletonNoLock<OMEGA_CONCAT(dll_name,_LibraryModule__)>; \
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
-#define OBJECT_MAP_ENTRY(obj) \
-	{ obj::GetOid, obj::GetOidName, Creator<obj::ObjectFactoryClass>::Create },
+#define OBJECT_MAP_ENTRY(obj,name) \
+	{ obj::GetOid, name, Creator<obj::ObjectFactoryClass>::Create },
+
+#define OBJECT_MAP_ENTRY_UNNAMED(obj) \
+	{ obj::GetOid, 0, Creator<obj::ObjectFactoryClass>::Create },
 
 #define END_LIBRARY_OBJECT_MAP() \
 		{ 0,0,0 } }; return CreatorEntries; } }; } \
@@ -127,7 +130,7 @@
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0 } }; return CreatorEntries; } }; } \
+		{ 0,0,0 } }; return CreatorEntries; } }; } \
 	OTL::ModuleBase* OTL::GetModule() { return ProcessModule__::instance(); } \
 	OTL_MODULE_INIT_BLOCK(ProcessModule__)
 
@@ -452,7 +455,7 @@ namespace OTL
 		struct CreatorEntry
 		{
 			const Omega::guid_t* (*pfnOid)();
-			const wchar_t* (*pfnOidName)();
+			const wchar_t* pszName;
 			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
 		};
 
@@ -871,7 +874,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID, const wchar_t* pOIDName = 0>
+	template <class ROOT, const Omega::guid_t* pOID>
 	class AutoObjectFactory
 	{
 	public:
@@ -881,14 +884,9 @@ namespace OTL
 		{
 			return pOID;
 		}
-
-		static const wchar_t* GetOidName()
-		{
-			return pOIDName;
-		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID, const wchar_t* pOIDName = 0>
+	template <class ROOT, const Omega::guid_t* pOID>
 	class AutoObjectFactoryNoAggregation
 	{
 	public:
@@ -898,14 +896,9 @@ namespace OTL
 		{
 			return pOID;
 		}
-
-		static const wchar_t* GetOidName()
-		{
-			return pOIDName;
-		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID, const wchar_t* pOIDName = 0>
+	template <class ROOT, const Omega::guid_t* pOID>
 	class AutoObjectFactorySingleton
 	{
 	public:
@@ -914,11 +907,6 @@ namespace OTL
 		static const Omega::guid_t* GetOid()
 		{
 			return pOID;
-		}
-
-		static const wchar_t* GetOidName()
-		{
-			return pOIDName;
 		}
 	};
 

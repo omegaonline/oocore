@@ -9,7 +9,7 @@ using namespace OTL;
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP(OOCore)
-	OBJECT_MAP_ENTRY(OOCore::StdObjectManager)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
@@ -47,7 +47,7 @@ namespace OOCore
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 {
-	return string_t::Format(L"Version: %ls\nPlatform: %ls\nCompiler: %ls\nACE: %ls",OMEGA_WIDEN_STRING(OMEGA_VERSION),OMEGA_WIDEN_STRING(OMEGA_PLATFORM_STRING),OMEGA_WIDEN_STRING(OMEGA_COMPILER_STRING),OMEGA_WIDEN_STRING(ACE_VERSION));
+	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())

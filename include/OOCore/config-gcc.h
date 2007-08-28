@@ -8,7 +8,7 @@
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \
-		if (POINTER == 0) { OMEGA_THROW("Out of memory."); } \
+		if (POINTER == 0) { OMEGA_THROW(L"Out of memory."); } \
 	} while (0)
 
 #define OMEGA_HAS_INT16_T

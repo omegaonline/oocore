@@ -338,8 +338,14 @@ int OOCore::UserSession::run_read_loop()
 		if (nRead != s_initial_read)
 		{
 			int err = ACE_OS::last_error();
+#if defined(OMEGA_WIN32)
+			if (err == ERROR_BROKEN_PIPE)
+#else
 			if (err == ENOTSOCK)
+#endif
+			{
 				err = 0;
+			}
 			m_stream.close();
 			return err;
 		}

@@ -81,9 +81,9 @@ OMEGA_DEFINE_IID(Omega, IObject, "{076DADE7-2D08-40f9-9AFA-AC883EB8BA9B}");
 OMEGA_DEFINE_IID(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 
 #if !defined(OMEGA_FUNCNAME)
-	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%ls(%u)",OMEGA_WIDEN_STRING(__FILE__),__LINE__))
+	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u)",__FILE__,__LINE__))
 #else
-#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%ls(%u): %ls",OMEGA_WIDEN_STRING(__FILE__),__LINE__,Omega::string_t(OMEGA_FUNCNAME,false).c_str()))
+	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u): %ls",__FILE__,__LINE__,Omega::string_t(OMEGA_FUNCNAME,false).c_str()))
 #endif
 
 #define OMEGA_THROW(msg)     throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO)

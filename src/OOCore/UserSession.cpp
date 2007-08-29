@@ -242,14 +242,23 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 	ACE_UNIX_Addr addr(L"\var\ooserver");
 #endif
 
-	if (connector.connect(peer,addr) != 0)
+	ACE_Time_Value wait(10);
+	if (connector.connect(peer,addr,&wait) != 0)
 	{
 		// Launch the server
 		if (!launch_server())
 			return false;
+	
+		ACE_Countdown_Time countdown(&wait);
+		do
+		{
+			ACE_OS::sleep(1);
 
-		// Try again
-		if (connector.connect(peer,addr) != 0)
+			// Try again
+			countdown.update();
+		} while (connector.connect(peer,addr,&wait) != 0 && wait != ACE_Time_Value::zero);
+
+		if (wait == ACE_Time_Value::zero)
 			return false;
 	}
 	

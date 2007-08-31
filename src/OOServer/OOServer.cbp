@@ -126,7 +126,6 @@
 		<Unit filename="MessageConnection.h" />
 		<Unit filename="NTService.cpp" />
 		<Unit filename="NTService.h" />
-		<Unit filename="OOServer.cpp" />
 		<Unit filename="OOServer.h" />
 		<Unit filename="OOServer.rc">
 			<Option compilerVar="WINDRES" />

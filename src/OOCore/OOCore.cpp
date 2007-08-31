@@ -8,27 +8,19 @@ using namespace Omega;
 using namespace OTL;
 
 // Our library map
-BEGIN_LIBRARY_OBJECT_MAP(OOCore)
+BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason)
 {
+#if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-#if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
 		// If ACE is linked statically we need to do this...
 		ACE_OS::set_win32_resource_module(instance);
-#endif
-
-		ModuleInitialize();
 	}
-	else if (reason == DLL_PROCESS_DETACH)
-	{
-		ModuleUninitialize();
-	}
-#if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
 	else if (reason == DLL_THREAD_DETACH)
 	{
 		// If ACE is linked statically we need to do this...

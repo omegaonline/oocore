@@ -5,6 +5,13 @@
 #include "./UserServiceTable.h"
 #include "./UserRegistry.h"
 
+#ifdef OMEGA_HAVE_VLD
+#include <vld.h>
+#endif
+
+BEGIN_PROCESS_OBJECT_MAP()
+END_PROCESS_OBJECT_MAP()
+
 int UserMain(const ACE_WString& strPipe)
 {
 	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)

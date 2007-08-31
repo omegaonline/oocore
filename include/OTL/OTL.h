@@ -71,68 +71,50 @@
 // END_PROCESS_OBJECT_MAP()
 //
 
-#if defined(OTL_HAS_NONSTATICMODULE)
-#define OTL_MODULE_INIT_BLOCK(name) \
+#define BEGIN_LIBRARY_OBJECT_MAP() \
 	namespace OTL { \
-	void ModuleInitialize() { name::instance(); } \
-	void ModuleUninitialize() { name::fini(); } }
-#else
-#define OTL_MODULE_INIT_BLOCK(name) \
-	namespace OTL { \
-	void ModuleInitialize() {  } \
-	void ModuleUninitialize() {  } \
-	class ModuleStaticInitializer { \
-	public: \
-	ModuleStaticInitializer() { name::instance(); } \
-	~ModuleStaticInitializer() { name::fini(); } \
-	}; static ModuleStaticInitializer OMEGA_CONCAT(name,_static_instance__); }
-#endif
-
-#define BEGIN_LIBRARY_OBJECT_MAP(dll_name) \
-	namespace OTL { \
-	class OMEGA_CONCAT(dll_name,_LibraryModule__); \
-	typedef OTL::SingletonNoLock<OMEGA_CONCAT(dll_name,_LibraryModule__)> LibraryModule__; \
-	class OMEGA_CONCAT(dll_name,_LibraryModule__) : public OTL::LibraryModule { \
-		friend class OTL::SingletonNoLock<OMEGA_CONCAT(dll_name,_LibraryModule__)>; \
+	namespace { \
+	class LibraryModuleImpl : public LibraryModule \
+	{ \
+		friend class SingletonNoLock<LibraryModuleImpl>; \
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj,name) \
-	{ obj::GetOid, name, Creator<obj::ObjectFactoryClass>::Create },
+		{ obj::GetOid, name, Creator<obj::ObjectFactoryClass>::Create },
 
 #define OBJECT_MAP_ENTRY_UNNAMED(obj) \
-	{ obj::GetOid, 0, Creator<obj::ObjectFactoryClass>::Create },
+		{ obj::GetOid, 0, Creator<obj::ObjectFactoryClass>::Create },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0,0,0 } }; return CreatorEntries; } }; } \
-	OTL::ModuleBase* OTL::GetModule() { return LibraryModule__::instance(); } \
-	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() { return (OTL::LibraryModule__::instance()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
+		{ 0,0,0 } }; return CreatorEntries; } \
+	}; \
+	} \
+	LibraryModule* GetModule() { return SingletonNoLock<LibraryModuleImpl>::instance(); } \
+	ModuleBase* GetModuleBase() { return GetModule(); } \
+	} \
+	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() \
+	{ return (OTL::GetModuleBase()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Omega_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags)) \
-	{ return OTL::LibraryModule__::instance()->GetObjectFactory(oid,flags); } \
+	{ return OTL::GetModule()->GetObjectFactory(oid,flags); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,2,((in),Omega::bool_t,bInstall,(in),const Omega::string_t&,strSubsts)) \
-	{ OTL::LibraryModule__::instance()->RegisterLibrary(bInstall,strSubsts); } \
-	OTL_MODULE_INIT_BLOCK(LibraryModule__)
+	{ OTL::GetModule()->RegisterLibrary(bInstall,strSubsts); }
 
 // THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
-#define BEGIN_PROCESS_OBJECT_MAP(process_class) \
+#define BEGIN_PROCESS_OBJECT_MAP() \
 	namespace OTL { \
-	class OMEGA_CONCAT(process_class,_Module__); \
-	typedef OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)> ProcessModule__; \
-	class OMEGA_CONCAT(process_class,_Module__) : public OMEGA_CONCAT(process_class) { \
-		friend class OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)>; \
-		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
-
-#define BEGIN_PROCESS_OBJECT_MAP_EX(nspace,process_class) \
-	namespace OTL { \
-	class OMEGA_CONCAT(process_class,_Module__); \
-	typedef OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)> ProcessModule__; \
-	class OMEGA_CONCAT(process_class,_Module__) : public nspace::process_class { \
-		friend class OTL::SingletonNoLock<OMEGA_CONCAT(process_class,_Module__)>; \
+	namespace { \
+	class ProcessModuleImpl : public ProcessModule \
+	{ \
+		friend class SingletonNoLock<ProcessModuleImpl>; \
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0 } }; return CreatorEntries; } }; } \
-	OTL::ModuleBase* OTL::GetModule() { return ProcessModule__::instance(); } \
-	OTL_MODULE_INIT_BLOCK(ProcessModule__)
+		{ 0,0,0 } }; return CreatorEntries; } \
+	}; \
+	} \
+	ProcessModule* GetModule() { return SingletonNoLock<ProcessModuleImpl>::instance(); } \
+	ModuleBase* GetModuleBase() { return GetModule(); } \
+	}
 
 #include <OOCore/OOCore.h>
 
@@ -478,7 +460,7 @@ namespace OTL
 		void fini();
 	};
 
-	ModuleBase* GetModule();
+	ModuleBase* GetModuleBase();
 
 	template <class ROOT>
 	class ObjectImpl : public ROOT
@@ -503,14 +485,14 @@ namespace OTL
 
 		ObjectImpl() : ROOT()
 		{
-			GetModule()->IncLockCount();
+			GetModuleBase()->IncLockCount();
 			this->AddRef();
 		}
 
 	private:
 		virtual ~ObjectImpl()
 		{
-			GetModule()->DecLockCount();
+			GetModuleBase()->DecLockCount();
 		}
 
 		ObjectImpl(const ObjectImpl& rhs)
@@ -613,12 +595,12 @@ namespace OTL
 	{
 		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter), m_refcount(1)
 		{
-			GetModule()->IncLockCount();
+			GetModuleBase()->IncLockCount();
 		}
 
 		virtual ~AggregatedObjectImpl()
 		{
-			GetModule()->DecLockCount();
+			GetModuleBase()->DecLockCount();
 		}
 
 		// If the line below is flagged as the source of a compiler warning then
@@ -685,11 +667,11 @@ namespace OTL
 			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
 			if (!singleton)
 			{
-				Omega::System::Guard guard(GetModule()->GetLock());
+				Omega::System::Guard guard(GetModuleBase()->GetLock());
 				if (!singleton)
 				{
 					OMEGA_NEW(singleton,Singleton<TYPE>());
-					GetModule()->AddTermFunc(delete_this,singleton);
+					GetModuleBase()->AddTermFunc(delete_this,singleton);
 				}
 			}
 
@@ -753,8 +735,8 @@ namespace OTL
 
 	// IObject members
 	public:
-		virtual void AddRef() { GetModule()->IncLockCount(); }
-		virtual void Release() { GetModule()->DecLockCount(); }
+		virtual void AddRef() { GetModuleBase()->IncLockCount(); }
+		virtual void Release() { GetModuleBase()->DecLockCount(); }
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
@@ -813,6 +795,11 @@ namespace OTL
 
 	class ProcessModule : public ModuleBase
 	{
+	public:
+		inline void RegisterObjectFactories();
+		inline void UnregisterObjectFactories();
+		inline void PumpMessages(Omega::uint32_t timeout = (Omega::uint32_t)-1);
+
 	protected:
 		template <class T>
 		struct Creator

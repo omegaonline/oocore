@@ -46,6 +46,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreTests", "..\test\CoreTe
 		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A} = {43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestProcess", "..\test\CoreTests\TestProcess\TestProcess.vcproj", "{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -84,6 +89,10 @@ Global
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Debug.Build.0 = Debug|Win32
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Release.ActiveCfg = Release|Win32
 		{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}.Release.Build.0 = Release|Win32
+		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Debug.ActiveCfg = Debug|Win32
+		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Debug.Build.0 = Debug|Win32
+		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release.ActiveCfg = Release|Win32
+		{31F38DFF-FEB8-4917-9AEF-37229C9E85CE}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

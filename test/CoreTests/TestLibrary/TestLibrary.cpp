@@ -38,6 +38,6 @@ TestLibraryImpl::Hello()
 	return L"Hello!";
 }
 
-BEGIN_LIBRARY_OBJECT_MAP(TestLibrary)
+BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(TestLibraryImpl,TestLibraryName)
 END_LIBRARY_OBJECT_MAP()

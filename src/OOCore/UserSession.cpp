@@ -8,7 +8,7 @@ using namespace OTL;
 // Forward declares used internally
 namespace OOCore
 {
-	void SetServiceTable(Activation::IServiceTable* pNewTable);
+	void SetRunningObjectTable(Activation::IRunningObjectTable* pNewTable);
 	void SetRegistry(Registry::IRegistryKey* pRootKey);
 }
 
@@ -175,10 +175,10 @@ IException* OOCore::UserSession::bootstrap()
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
-		// Set the service table
-		ObjectPtr<Activation::IServiceTable> ptrSIP;
-		ptrSIP.Attach(ptrIPS->GetServiceTable());
-		SetServiceTable(ptrSIP);
+		// Set the running object table
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(ptrIPS->GetRunningObjectTable());
+		SetRunningObjectTable(ptrROT);
 
 		ObjectPtr<Registry::IRegistryKey> ptrRegistry;
 		ptrRegistry.Attach(ptrIPS->GetRegistry());

@@ -157,7 +157,7 @@
 				RelativePath=".\Registry.cpp">
 			</File>
 			<File
-				RelativePath=".\ServiceTable.cpp">
+				RelativePath=".\RunningObjectTable.cpp">
 			</File>
 			<File
 				RelativePath=".\StdObjectManager.cpp">

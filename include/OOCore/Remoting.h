@@ -46,7 +46,7 @@ namespace Omega
 		interface IInterProcessService : public IObject
 		{
 			virtual Registry::IRegistryKey* GetRegistry() = 0;
-			virtual Activation::IServiceTable* GetServiceTable() = 0;
+			virtual Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
 		};
 
 		// {63EB243E-6AE3-43bd-B073-764E096775F8}
@@ -91,7 +91,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Remoting, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
 
 	OMEGA_METHOD(Registry::IRegistryKey*,GetRegistry,0,())
-	OMEGA_METHOD(Activation::IServiceTable*,GetServiceTable,0,())
+	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
 )
 
 #endif // OOCORE_REMOTING_H_INCLUDED_

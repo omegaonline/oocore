@@ -253,7 +253,7 @@
 				RelativePath=".\UserRegistry.cpp">
 			</File>
 			<File
-				RelativePath=".\UserServiceTable.cpp">
+				RelativePath=".\UserROT.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -291,7 +291,7 @@
 				RelativePath=".\UserRegistry.h">
 			</File>
 			<File
-				RelativePath=".\UserServiceTable.h">
+				RelativePath=".\UserROT.h">
 			</File>
 			<File
 				RelativePath=".\Version.h">

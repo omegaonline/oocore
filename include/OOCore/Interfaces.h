@@ -39,7 +39,7 @@ namespace Omega
 			virtual string_t GetLibraryName() = 0;
 		};
 		
-		interface IServiceTable : public IObject
+		interface IRunningObjectTable : public IObject
 		{
 			enum Flags
 			{
@@ -52,7 +52,7 @@ namespace Omega
 			virtual void Revoke(const guid_t& oid) = 0;
 			virtual void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 
-			inline static IServiceTable* GetServiceTable();
+			inline static IRunningObjectTable* GetRunningObjectTable();
 		};
 	}
 
@@ -176,10 +176,10 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::Activation, IServiceTable, "{0A36F849-8DBC-49c6-9ECA-8AD71BF3C8D0}",
+	Omega::Activation, IRunningObjectTable, "{0A36F849-8DBC-49c6-9ECA-8AD71BF3C8D0}",
 
 	// Methods
-	OMEGA_METHOD_VOID(Register,3,((in),const Omega::guid_t&,oid,(in),Omega::Activation::IServiceTable::Flags_t,flags,(in),Omega::IObject*,pObject))
+	OMEGA_METHOD_VOID(Register,3,((in),const Omega::guid_t&,oid,(in),Omega::Activation::IRunningObjectTable::Flags_t,flags,(in),Omega::IObject*,pObject))
 	OMEGA_METHOD_VOID(Revoke,1,((in),const Omega::guid_t&,oid))
 	OMEGA_METHOD_VOID(GetObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 )
@@ -257,10 +257,10 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
 )
 
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IServiceTable*,Activation_GetServiceTable,0,());
-Omega::Activation::IServiceTable* Omega::Activation::IServiceTable::GetServiceTable()
+OOCORE_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,());
+Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
 {
-	return Activation_GetServiceTable();
+	return Activation_GetRunningObjectTable();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const Omega::guid_t&,oid));

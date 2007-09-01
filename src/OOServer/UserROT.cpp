@@ -14,17 +14,17 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
-		// Get the service table
-		m_ptrSIP.Attach(ptrIPS->GetRunningObjectTable());
+		// Get the running object table
+		m_ptrROT.Attach(ptrIPS->GetRunningObjectTable());
 	}
 }
 
 void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t flags, IObject* pObject)
 {
-	if (m_ptrSIP && (flags & Activation::IRunningObjectTable::AllowAnyUser))
+	if (m_ptrROT && (flags & Activation::IRunningObjectTable::AllowAnyUser))
 	{
 		// Route to sandbox!
-		m_ptrSIP->Register(oid,flags,pObject);
+		m_ptrROT->Register(oid,flags,pObject);
 	}
 	else
 	{
@@ -64,10 +64,10 @@ void User::RunningObjectTable::Revoke(const guid_t& oid)
 		OMEGA_THROW(string_t(e.what(),false));
 	}
 
-	if (!bFound && m_ptrSIP)
+	if (!bFound && m_ptrROT)
 	{
 		// Route to sandbox
-		m_ptrSIP->Revoke(oid);
+		m_ptrROT->Revoke(oid);
 	}
 }
 
@@ -91,9 +91,9 @@ void User::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, I
 		OMEGA_THROW(string_t(e.what(),false));
 	}
 
-	if (!bFound && m_ptrSIP)
+	if (!bFound && m_ptrROT)
 	{
 		// Route to sandbox
-		m_ptrSIP->GetObject(oid,iid,pObject);
+		m_ptrROT->GetObject(oid,iid,pObject);
 	}
 }

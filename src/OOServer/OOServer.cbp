@@ -148,15 +148,14 @@
 		</Unit>
 		<Unit filename="UserManager.cpp" />
 		<Unit filename="UserManager.h" />
+		<Unit filename="UserROT.cpp" />
+		<Unit filename="UserROT.h" />
 		<Unit filename="UserRegistry.cpp" />
 		<Unit filename="UserRegistry.h" />
-		<Unit filename="UserServiceTable.cpp" />
-		<Unit filename="UserServiceTable.h" />
 		<Unit filename="Version.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
-			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

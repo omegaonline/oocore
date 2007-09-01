@@ -166,7 +166,7 @@
 		</Unit>
 		<Unit filename="OOCore_precomp.h" />
 		<Unit filename="Registry.cpp" />
-		<Unit filename="ServiceTable.cpp" />
+		<Unit filename="RunningObjectTable.cpp" />
 		<Unit filename="StdObjectManager.cpp" />
 		<Unit filename="StdObjectManager.h" />
 		<Unit filename="Threading.cpp" />

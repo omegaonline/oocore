@@ -218,15 +218,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 				return pOF;
 		}
 
-		// Try ServiceTable if possible
+		// Try RunningObjectTable if possible
 		if (flags & Activation::OutOfProcess)
 		{
-			ObjectPtr<Activation::IServiceTable> ptrServiceTable;
-			ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 			// Change this to use monikers one day!
 			IObject* pObject = 0;
-			ptrServiceTable->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
+			ptrROT->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
 			if (pObject)
 				return static_cast<Activation::IObjectFactory*>(pObject);
 		}
@@ -247,9 +247,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 
 				if (flags & Activation::OutOfProcess)
 				{
-					// Get the service table
-					ObjectPtr<Activation::IServiceTable> ptrServiceTable;
-					ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
+					// Get the running object table
+					ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+					ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 					// Find the name of the executeable to run
 					ObjectPtr<Registry::IRegistryKey> ptrServer(L"Applications\\" + ptrOidKey->GetStringValue(L"Application") + L"\\Activation");
@@ -268,7 +268,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					{
 						// Change this to use monikers one day!
 						IObject* pObject = 0;
-						ptrServiceTable->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
+						ptrROT->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
 						if (pObject)
 							return static_cast<Activation::IObjectFactory*>(pObject);
 

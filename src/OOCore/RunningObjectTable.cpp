@@ -21,7 +21,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		RunningObjectTable(const RunningObjectTable&) : ObjectBase() {}
+		RunningObjectTable(const RunningObjectTable&) : ObjectBase(), Activation::IRunningObjectTable() {}
 		RunningObjectTable& operator = (const RunningObjectTable&) { return *this; }
 
 		ACE_RW_Thread_Mutex                   m_lock;

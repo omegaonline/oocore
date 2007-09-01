@@ -113,6 +113,17 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 void OTL::ProcessModule::RegisterObjectFactories()
 {
 	void* TODO;
+
+	/*Omega::IObject* pObject = 0;
+    const CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0;g[i].pfnOid!=0;++i)
+	{
+		if (*(g[i].pfnOid)() == oid)
+		{
+			pObject = g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),flags);
+			break;
+		}
+	}*/
 }
 
 void OTL::ProcessModule::UnregisterObjectFactories()

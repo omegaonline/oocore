@@ -2,7 +2,7 @@
 
 #include "./UserManager.h"
 #include "./Channel.h"
-#include "./UserServiceTable.h"
+#include "./UserROT.h"
 #include "./UserRegistry.h"
 
 #ifdef OMEGA_HAVE_VLD
@@ -43,14 +43,14 @@ namespace User
 	private:
 		ACE_Thread_Mutex                           m_lock;
 		ObjectPtr<Remoting::IObjectManager>        m_ptrOM;
-		ObjectPtr<ObjectImpl<ServiceTable> >       m_ptrST;
+		ObjectPtr<ObjectImpl<RunningObjectTable> > m_ptrROT;
 		ObjectPtr<ObjectImpl<Registry::BaseKey> >  m_ptrReg;
 		Manager*                                   m_pManager;
 
 	// Remoting::IInterProcessService members
 	public:
 		Omega::Registry::IRegistryKey* GetRegistry();
-		Activation::IServiceTable* GetServiceTable();
+		Activation::IRunningObjectTable* GetRunningObjectTable();
 	};
 
 	class InterProcessServiceFactory :
@@ -110,21 +110,21 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 	return m_ptrReg.AddRefReturn();
 }
 
-Activation::IServiceTable* User::InterProcessService::GetServiceTable()
+Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTable()
 {
-	if (!m_ptrST)
+	if (!m_ptrROT)
 	{
 		// Double lock for speed
 		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
-		if (!m_ptrST)
+		if (!m_ptrROT)
 		{
-			m_ptrST = ObjectImpl<User::ServiceTable>::CreateInstancePtr();
-			m_ptrST->Init(m_ptrOM);
+			m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
+			m_ptrROT->Init(m_ptrOM);
 		}
 	}
 
-	return m_ptrST.AddRefReturn();
+	return m_ptrROT.AddRefReturn();
 }
 
 // UserManager
@@ -247,9 +247,9 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();
 		ptrOF->Init(ptrOM,this);
 
-		ObjectPtr<Activation::IServiceTable> ptrServiceTable;
-		ptrServiceTable.Attach(Activation::IServiceTable::GetServiceTable());
-		ptrServiceTable->Register(Remoting::OID_InterProcess,Activation::IServiceTable::Default,ptrOF);
+		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+		ptrROT->Register(Remoting::OID_InterProcess,Activation::IRunningObjectTable::Default,ptrOF);
 	}
 	catch (IException* pE)
 	{

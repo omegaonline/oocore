@@ -5,70 +5,68 @@ using namespace OTL;
 
 namespace OOCore
 {
-	class ServiceTable :
+	class RunningObjectTable :
 		public ObjectBase,
-		public Activation::IServiceTable
+		public Activation::IRunningObjectTable
 	{
 	public:
-		ServiceTable() {}
+		RunningObjectTable() {}
 
-		void Register(const guid_t& oid, Activation::IServiceTable::Flags_t flags, IObject* pObject);
+		void Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t flags, IObject* pObject);
 		void Revoke(const guid_t& oid);
 		void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject);
 
-		BEGIN_INTERFACE_MAP(ServiceTable)
-			INTERFACE_ENTRY(Activation::IServiceTable)
+		BEGIN_INTERFACE_MAP(RunningObjectTable)
+			INTERFACE_ENTRY(Activation::IRunningObjectTable)
 		END_INTERFACE_MAP()
 
 	private:
-		ServiceTable(const ServiceTable&) :
-            ObjectBase(), Activation::IServiceTable()
-        {}
-		ServiceTable& operator = (const ServiceTable&) { return *this; }
+		RunningObjectTable(const RunningObjectTable&) : ObjectBase() {}
+		RunningObjectTable& operator = (const RunningObjectTable&) { return *this; }
 
 		ACE_RW_Thread_Mutex                   m_lock;
 		std::map<guid_t,ObjectPtr<IObject> >  m_mapServices;
 	};
 
-	// The instance wide ServiceTable instance
-	struct GlobalServiceTable
+	// The instance wide RunningObjectTable instance
+	struct GlobalRunningObjectTable
 	{
-		ObjectPtr<Activation::IServiceTable>  m_ptrSystemServiceTable;
-		ACE_Thread_Mutex                      m_lock;
+		ObjectPtr<Activation::IRunningObjectTable>  m_ptrSystemROT;
+		ACE_Thread_Mutex                            m_lock;
 	};
-	GlobalServiceTable	g_ServiceTable;
+	GlobalRunningObjectTable	g_ROT;
 
-	void SetServiceTable(Activation::IServiceTable* pNewTable);
+	void SetRunningObjectTable(Activation::IRunningObjectTable* pNewTable);
 }
 
-// ServiceTable
-void OOCore::SetServiceTable(Activation::IServiceTable* pNewTable)
+// RunningObjectTable
+void OOCore::SetRunningObjectTable(Activation::IRunningObjectTable* pNewTable)
 {
-	OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock);
+	OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ROT.m_lock);
 
-	OOCore::g_ServiceTable.m_ptrSystemServiceTable = pNewTable;
+	OOCore::g_ROT.m_ptrSystemROT = pNewTable;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IServiceTable*,Activation_GetServiceTable,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())
 {
-	// If we have no set ServiceTable, use a default
-	if (!OOCore::g_ServiceTable.m_ptrSystemServiceTable)
+	// If we have no set RunningObjectTable, use a default
+	if (!OOCore::g_ROT.m_ptrSystemROT)
 	{
 		// Do a double lock here...
-		OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ServiceTable.m_lock);
+		OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ROT.m_lock);
 
-		if (!OOCore::g_ServiceTable.m_ptrSystemServiceTable)
+		if (!OOCore::g_ROT.m_ptrSystemROT)
 		{
-			ObjectPtr<ObjectImpl<OOCore::ServiceTable> > ptrServiceTable = ObjectImpl<OOCore::ServiceTable>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<OOCore::RunningObjectTable> > ptrRunningObjectTable = ObjectImpl<OOCore::RunningObjectTable>::CreateInstancePtr();
 
-			OOCore::g_ServiceTable.m_ptrSystemServiceTable.Attach(ptrServiceTable.Detach());
+			OOCore::g_ROT.m_ptrSystemROT.Attach(ptrRunningObjectTable.Detach());
 		}
 	}
 
-	return OOCore::g_ServiceTable.m_ptrSystemServiceTable.AddRefReturn();
+	return OOCore::g_ROT.m_ptrSystemROT.AddRefReturn();
 }
 
-void OOCore::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Flags_t, IObject* pObject)
+void OOCore::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t, IObject* pObject)
 {
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -85,7 +83,7 @@ void OOCore::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable
 	}
 }
 
-void OOCore::ServiceTable::Revoke(const guid_t& oid)
+void OOCore::RunningObjectTable::Revoke(const guid_t& oid)
 {
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -103,7 +101,7 @@ void OOCore::ServiceTable::Revoke(const guid_t& oid)
 	}
 }
 
-void OOCore::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+void OOCore::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 

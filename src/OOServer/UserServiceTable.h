@@ -3,30 +3,28 @@
 
 namespace User
 {
-	class ServiceTable :
+	class RunningObjectTable :
 		public OTL::ObjectBase,
-		public Omega::Activation::IServiceTable
+		public Omega::Activation::IRunningObjectTable
 	{
 	public:
-		ServiceTable() {}
+		RunningObjectTable() {}
 
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM);
 
-		void Register(const Omega::guid_t& oid, Omega::Activation::IServiceTable::Flags_t flags, Omega::IObject* pObject);
+		void Register(const Omega::guid_t& oid, Omega::Activation::IRunningObjectTable::Flags_t flags, Omega::IObject* pObject);
 		void Revoke(const Omega::guid_t& oid);
 		void GetObject(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 
-		BEGIN_INTERFACE_MAP(ServiceTable)
-			INTERFACE_ENTRY(Omega::Activation::IServiceTable)
+		BEGIN_INTERFACE_MAP(RunningObjectTable)
+			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)
 		END_INTERFACE_MAP()
 
 	private:
-		ServiceTable(const ServiceTable&) :
-            OTL::ObjectBase(), Omega::Activation::IServiceTable()
-        {}
-		ServiceTable& operator = (const ServiceTable&) { return *this; }
+		RunningObjectTable(const RunningObjectTable&) : OTL::ObjectBase() {}
+		RunningObjectTable& operator = (const RunningObjectTable&) { return *this; }
 
-		OTL::ObjectPtr<Omega::Activation::IServiceTable>         m_ptrSIP;
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>   m_ptrROT;
 		ACE_RW_Thread_Mutex                                      m_lock;
 		std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapServices;
 	};

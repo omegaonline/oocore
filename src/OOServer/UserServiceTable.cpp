@@ -1,10 +1,10 @@
 #include "OOServer.h"
-#include "./UserServiceTable.h"
+#include "./UserROT.h"
 
 using namespace Omega;
 using namespace OTL;
 
-void User::ServiceTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
+void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 {
 	if (ptrOM)
 	{
@@ -15,13 +15,13 @@ void User::ServiceTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
 		// Get the service table
-		m_ptrSIP.Attach(ptrIPS->GetServiceTable());
+		m_ptrSIP.Attach(ptrIPS->GetRunningObjectTable());
 	}
 }
 
-void User::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::Flags_t flags, IObject* pObject)
+void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t flags, IObject* pObject)
 {
-	if (m_ptrSIP && (flags & Activation::IServiceTable::AllowAnyUser))
+	if (m_ptrSIP && (flags & Activation::IRunningObjectTable::AllowAnyUser))
 	{
 		// Route to sandbox!
 		m_ptrSIP->Register(oid,flags,pObject);
@@ -44,7 +44,7 @@ void User::ServiceTable::Register(const guid_t& oid, Activation::IServiceTable::
 	}
 }
 
-void User::ServiceTable::Revoke(const guid_t& oid)
+void User::RunningObjectTable::Revoke(const guid_t& oid)
 {
 	bool bFound = false;
 
@@ -71,7 +71,7 @@ void User::ServiceTable::Revoke(const guid_t& oid)
 	}
 }
 
-void User::ServiceTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+void User::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	bool bFound = false;
 

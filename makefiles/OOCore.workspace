@@ -5,7 +5,7 @@
 		<Project filename="..\src\OOServer\OOServer.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 		</Project>
-		<Project filename="..\test\CoreTests\CoreTests.cbp">
+		<Project filename="..\test\CoreTests\CoreTests.cbp" active="1">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OOServer\OOServer.cbp" />
 			<Depends filename="..\test\CoreTests\TestLibrary\TestLibrary.cbp" />
@@ -13,7 +13,7 @@
 		<Project filename="..\test\CoreTests\TestLibrary\TestLibrary.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 		</Project>
-		<Project filename="..\tools\OORegister\OORegister.cbp" active="1">
+		<Project filename="..\tools\OORegister\OORegister.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OOServer\OOServer.cbp" />
 		</Project>

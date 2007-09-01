@@ -132,6 +132,7 @@ namespace Omega
 	}
 
 	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	inline void HandleRequests(uint32_t timeout = (uint32_t)-1);
 }
 
 OMEGA_DEFINE_INTERFACE
@@ -298,6 +299,12 @@ Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activatio
 	IObject* pObj = 0;
 	Omega_CreateInstance(oid,flags,pOuter,iid,pObj);
 	return pObj;
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&,timeout));
+void Omega::HandleRequests(uint32_t timeout)
+{
+	Omega_HandleRequests(timeout);
 }
 
 #endif // OOCORE_IFACES_H_INCLUDED_

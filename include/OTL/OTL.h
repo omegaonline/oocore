@@ -798,8 +798,8 @@ namespace OTL
 	public:
 		inline void RegisterObjectFactories();
 		inline void UnregisterObjectFactories();
-		inline void PumpMessages(Omega::uint32_t timeout = (Omega::uint32_t)-1);
-
+		inline void Run();
+		
 	protected:
 		template <class T>
 		struct Creator

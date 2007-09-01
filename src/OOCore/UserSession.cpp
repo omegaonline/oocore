@@ -900,3 +900,20 @@ OTL::ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager
 
 	return ptrOM;
 }
+
+void OOCore::UserSession::handle_requests(uint32_t timeout)
+{
+	ACE_Time_Value wait(timeout/1000,(timeout % 1000) * 1000);
+	wait += ACE_OS::gettimeofday();
+
+	ACE_Time_Value* wait2 = &wait;
+	if (timeout == (uint32_t)-1)
+		wait2 = 0;
+
+	USER_SESSION::instance()->pump_requests(wait2);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&,timeout))
+{
+	OOCore::UserSession::handle_requests(timeout);
+}

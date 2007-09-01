@@ -10,7 +10,8 @@ namespace OOCore
 	public:
 		static Omega::IException* init();
 		static void term();
-
+		static void handle_requests(Omega::uint32_t timeout);
+		
 	private:
 		friend class Channel;
 		friend class ThreadContext;

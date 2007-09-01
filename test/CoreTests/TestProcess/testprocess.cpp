@@ -32,7 +32,7 @@ BEGIN_PROCESS_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(TestProcessImpl,TestProcessName)
 END_PROCESS_OBJECT_MAP()
 
-static int run()
+int main(int argc, char* argv[])
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
@@ -41,46 +41,18 @@ static int run()
 		return -1;
 	}
 
-	bool bOk = true;
+	int ret = 0;
 	try
 	{
-		OTL::GetModule()->RegisterObjectFactories();
+		OTL::GetModule()->Run();
 	}
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-		bOk = false;
-	}
-
-	if (bOk)
-	{
-		try
-		{
-			OTL::GetModule()->PumpMessages();
-		}
-		catch (Omega::IException* pE)
-		{
-			pE->Release();
-		}
-	}
-
-	try
-	{
-		OTL::GetModule()->UnregisterObjectFactories();
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
+		ret = -1;
 	}
 
 	Omega::Uninitialize();
 
-	return 0;
-}
-
-int main(int argc, char* argv[])
-{
-
-	return run();
-
+	return ret;
 }

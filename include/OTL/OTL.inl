@@ -110,11 +110,6 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 	}
 }
 
-void OTL::ProcessModule::PumpMessages(Omega::uint32_t /*timeout*/)
-{
-	void* TODO;
-}
-
 void OTL::ProcessModule::RegisterObjectFactories()
 {
 	void* TODO;
@@ -123,6 +118,26 @@ void OTL::ProcessModule::RegisterObjectFactories()
 void OTL::ProcessModule::UnregisterObjectFactories()
 {
 	void* TODO;
+}
+
+void OTL::ProcessModule::Run()
+{
+	RegisterObjectFactories();
+	
+	try
+	{
+		do
+		{
+			Omega::HandleRequests(60000);
+		} while (GetLockCount() > 0);
+	}
+	catch (Omega::IException* pE)
+	{
+		UnregisterObjectFactories();
+		throw pE;
+	}
+	
+	UnregisterObjectFactories();
 }
 
 #endif  // OTL_BASE_INL_INCLUDED_

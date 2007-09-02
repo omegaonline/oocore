@@ -8,7 +8,7 @@
 		<Build>
 			<Target title="Debug_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Debug\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug/OOCore.so" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -25,15 +25,15 @@
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DOOCORE_BUILD_DLL" />
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
 					<Add library="shlwapi" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
@@ -42,7 +42,7 @@
 			</Target>
 			<Target title="Release_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Release\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Release/OOCore.so" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -61,16 +61,16 @@
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DOOCORE_BUILD_DLL" />
-					<Add directory="..\..\include" />
-					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="../../include" />
+					<Add directory="../../extern/ACE_wrappers" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-mthreads" />
-					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
 					<Add library="shlwapi" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
@@ -79,7 +79,7 @@
 			</Target>
 			<Target title="Debug_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Debug\libOOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug/libOOCore.so" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -89,8 +89,9 @@
 					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
@@ -98,7 +99,7 @@
 			</Target>
 			<Target title="Release_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Release\libOOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Release/libOOCore.so" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -111,7 +112,7 @@
 					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-DNDEBUG" />
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -119,41 +120,41 @@
 				</Linker>
 			</Target>
 		</Build>
-		<Unit filename="..\..\include\OOCore\Base.h" />
-		<Unit filename="..\..\include\OOCore\Export.h" />
-		<Unit filename="..\..\include\OOCore\Interfaces.h" />
-		<Unit filename="..\..\include\OOCore\OOCore.h" />
-		<Unit filename="..\..\include\OOCore\Remoting.h" />
-		<Unit filename="..\..\include\OOCore\Rtti.h" />
-		<Unit filename="..\..\include\OOCore\Rtti.inl" />
-		<Unit filename="..\..\include\OOCore\Threading.h" />
-		<Unit filename="..\..\include\OOCore\Threading.inl" />
-		<Unit filename="..\..\include\OOCore\TypeSizes.h" />
-		<Unit filename="..\..\include\OOCore\Types.h" />
-		<Unit filename="..\..\include\OOCore\Types.inl" />
-		<Unit filename="..\..\include\OOCore\Version.h" />
-		<Unit filename="..\..\include\OOCore\Wire.h" />
-		<Unit filename="..\..\include\OOCore\config-gcc.h" />
-		<Unit filename="..\..\include\OOCore\config-guess.h" />
-		<Unit filename="..\..\include\OOCore\config-unix-gcc.h">
+		<Unit filename="../../include/OOCore/Base.h" />
+		<Unit filename="../../include/OOCore/Export.h" />
+		<Unit filename="../../include/OOCore/Interfaces.h" />
+		<Unit filename="../../include/OOCore/OOCore.h" />
+		<Unit filename="../../include/OOCore/Remoting.h" />
+		<Unit filename="../../include/OOCore/Rtti.h" />
+		<Unit filename="../../include/OOCore/Rtti.inl" />
+		<Unit filename="../../include/OOCore/Threading.h" />
+		<Unit filename="../../include/OOCore/Threading.inl" />
+		<Unit filename="../../include/OOCore/TypeSizes.h" />
+		<Unit filename="../../include/OOCore/Types.h" />
+		<Unit filename="../../include/OOCore/Types.inl" />
+		<Unit filename="../../include/OOCore/Version.h" />
+		<Unit filename="../../include/OOCore/Wire.h" />
+		<Unit filename="../../include/OOCore/config-gcc.h" />
+		<Unit filename="../../include/OOCore/config-guess.h" />
+		<Unit filename="../../include/OOCore/config-unix-gcc.h">
 			<Option target="Debug_Unix" />
 			<Option target="Release_Unix" />
 		</Unit>
-		<Unit filename="..\..\include\OOCore\config-unix.h">
+		<Unit filename="../../include/OOCore/config-unix.h">
 			<Option target="Debug_Unix" />
 			<Option target="Release_Unix" />
 		</Unit>
-		<Unit filename="..\..\include\OOCore\config-win32-gcc.h">
+		<Unit filename="../../include/OOCore/config-win32-gcc.h">
 			<Option target="Debug_Win32" />
 			<Option target="Release_Win32" />
 		</Unit>
-		<Unit filename="..\..\include\OOCore\config-win32.h">
+		<Unit filename="../../include/OOCore/config-win32.h">
 			<Option target="Debug_Win32" />
 			<Option target="Release_Win32" />
 		</Unit>
-		<Unit filename="..\..\include\OTL\OTL.h" />
-		<Unit filename="..\..\include\OTL\OTL.inl" />
-		<Unit filename="..\..\include\OTL\OTL_special.h" />
+		<Unit filename="../../include/OTL/OTL.h" />
+		<Unit filename="../../include/OTL/OTL.inl" />
+		<Unit filename="../../include/OTL/OTL_special.h" />
 		<Unit filename="Activation.cpp" />
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
@@ -177,7 +178,6 @@
 		<Unit filename="Xml.h" />
 		<Extensions>
 			<code_completion />
-			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

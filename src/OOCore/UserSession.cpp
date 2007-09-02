@@ -24,7 +24,7 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WStri
 
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Addr addr;
-		
+
 	ACE_SPIPE_Stream up;
 	addr.string_to_addr((strAddr + L"\\up").c_str());
 	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
@@ -36,7 +36,7 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WStri
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		return -1;
-		
+
 	pipe.m_hRead = down.get_handle();
 	pipe.m_hWrite = up.get_handle();
 
@@ -82,14 +82,14 @@ ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
-		
+
 	ACE_SOCK_Stream stream;
 	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
 
 	pipe.m_hSocket = stream.get_handle();
 	stream.set_handle(ACE_INVALID_HANDLE);
-	
+
 	return 0;
 }
 
@@ -97,7 +97,7 @@ void OOCore::UserSession::MessagePipe::close()
 {
 	ACE_HANDLE hSocket = m_hSocket;
 	m_hSocket = ACE_INVALID_HANDLE;
-	
+
 	if (hSocket != ACE_INVALID_HANDLE)
 		ACE_OS::close(hSocket);
 }
@@ -150,7 +150,7 @@ bool OOCore::UserSession::init_i()
 	ACE_Time_Value wait(5);
 	if (MessagePipe::connect(m_stream,strPipe,&wait) != 0)
 		return false;
-	
+
 	// Spawn off the proactor threads
 	m_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(1,io_worker_fn,this);
 	if (m_thrd_grp_id == -1)
@@ -199,7 +199,7 @@ bool OOCore::UserSession::launch_server()
 	ACE_Time_Value wait(30);
 	if (service.start_svc(&wait) != 0)
 		return false;
-	
+
 #else
 	// Find what the server is called
 	void* TODO;
@@ -214,7 +214,7 @@ bool OOCore::UserSession::launch_server()
 	options.handle_inheritence(0);
 	if (options.command_line(strExec.c_str()) == -1)
 		return false;
-	
+
 	// Set the creation flags
 	u_long flags = 0;
 	options.creation_flags(flags);
@@ -223,14 +223,14 @@ bool OOCore::UserSession::launch_server()
 	ACE_Process process;
 	if (process.spawn(options)==ACE_INVALID_PID)
 		return false;
-	
+
 #endif
 
 	return true;
 }
 
 bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
-{	
+{
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Stream peer;
@@ -239,7 +239,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 #else
 	ACE_SOCK_Connector connector;
 	ACE_SOCK_Stream peer;
-	ACE_UNIX_Addr addr(L"\var\ooserver");
+	ACE_UNIX_Addr addr(L"/var/ooserver");
 #endif
 
 	ACE_Time_Value wait(10);
@@ -248,7 +248,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 		// Launch the server
 		if (!launch_server())
 			return false;
-	
+
 		ACE_Countdown_Time countdown(&wait);
 		do
 		{
@@ -261,7 +261,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 		if (wait == ACE_Time_Value::zero)
 			return false;
 	}
-	
+
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	// Send nothing
 	HANDLE uid = 0;
@@ -271,12 +271,12 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 #endif
 	if (peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 		return false;
-	
+
 	// Read the string length
 	size_t uLen = 0;
 	if (peer.recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 		return false;
-	
+
 	// Read the string
 	wchar_t* buf;
 	ACE_NEW_RETURN(buf,wchar_t[uLen],false);
@@ -335,15 +335,15 @@ int OOCore::UserSession::run_read_loop()
 	{
 		// Read the header
 
-#if defined(OMEGA_WIN32)
+//#if defined(OMEGA_WIN32)
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read);
-#else
+/*#else
 		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
 		if (nRead == -1 && ACE_OS::last_error() == ETIMEDOUT)
 			continue;
-#endif
-		
+#endif*/
+
 		if (nRead != s_initial_read)
 		{
 			int err = ACE_OS::last_error();
@@ -655,7 +655,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 		ACE_OS::last_error(ETIMEDOUT);
 		return false;
 	}
-	
+
 	// Scope lock...
 	{
         ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
@@ -665,7 +665,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 
 		if (m_stream.send(header.begin(),&wait,&sent) == -1)
 			return false;
-		
+
 		if (sent != header.total_length())
 			return false;
 	}

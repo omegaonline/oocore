@@ -500,8 +500,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	if (!pStr)
 		OOCORE_THROW_LASTERROR();
 
-	char szBuf[64];
-	ACE_OS::sprintf(szBuf,"{%s}",pStr->c_str());
+	wchar_t szBuf[64];
+	ACE_OS::sprintf(szBuf,L"{%hs}",pStr->c_str());
 
 	return Omega::guid_t::FromString(szBuf);
 #endif

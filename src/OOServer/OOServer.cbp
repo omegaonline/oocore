@@ -86,6 +86,8 @@
 					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="..\..\include" />
 					<Add directory="..\..\extern\ACE_wrappers" />
@@ -108,6 +110,8 @@
 					<Add option="-O3" />
 					<Add option="-W" />
 					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-DNDEBUG" />
 					<Add directory="..\..\include" />
 					<Add directory="..\..\extern\ACE_wrappers" />
@@ -156,6 +160,7 @@
 		<Extensions>
 			<code_completion />
 			<envvars />
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

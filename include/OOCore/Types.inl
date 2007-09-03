@@ -243,13 +243,13 @@ Omega::string_t Omega::string_t::ToUpper() const
 	return string_t(static_cast<handle_t>(string_t_toupper(m_handle)));
 }
 
-OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list,a));
+OOCORE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list*,a));
 Omega::string_t Omega::string_t::Format(const wchar_t* pszFormat, ...)
 {
 	va_list list;
 	va_start(list,pszFormat);
 
-	handle_t h2 = static_cast<handle_t>(string_t_format(pszFormat,list));
+	handle_t h2 = static_cast<handle_t>(string_t_format(pszFormat,&list));
 
 	va_end(list);
 

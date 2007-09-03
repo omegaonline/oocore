@@ -395,14 +395,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),
 	return s2;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list,ap))
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list*,ap))
 {
 	for (int len=256;;len*=2)
 	{
 		wchar_t* buf = 0;
 		OMEGA_NEW(buf,wchar_t[len]);
 		
-		int len2 = ACE_OS::vsnprintf(buf,len,sz,ap);
+		int len2 = ACE_OS::vsnprintf(buf,len,sz,*ap);
         if (len2 <= len && len2 != -1)
 		{
             StringNode* s1;

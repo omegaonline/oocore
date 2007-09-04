@@ -9,7 +9,7 @@
 #include <vld.h>
 #endif
 
-BEGIN_PROCESS_OBJECT_MAP()
+BEGIN_PROCESS_OBJECT_MAP(L"")
 END_PROCESS_OBJECT_MAP()
 
 int UserMain(const ACE_WString& strPipe)

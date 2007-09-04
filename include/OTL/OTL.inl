@@ -110,25 +110,75 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 	}
 }
 
-void OTL::ProcessModule::RegisterObjectFactories()
+void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
 {
-	void* TODO;
+	Omega::string_t strXML =
+		L"<key name=\"Applications\">"
+			L"<key name=\"" + strAppName + L"\" uninstall=\"Remove\">"
+				L"<value name=\"Activation\">%MODULE_PATH%</value>"
+			L"</key>"
+		L"</key>";
 
-	/*Omega::IObject* pObject = 0;
-    const CreatorEntry* g=getCreatorEntries();
+	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
-		if (*(g[i].pfnOid)() == oid)
+		if (g[i].pszName != 0)
 		{
-			pObject = g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),flags);
-			break;
-		}
-	}*/
+			Omega::string_t strName = g[i].pszName;
+			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
+
+			strXML += 
+				L"<key name=\"Objects\">"
+					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
+						L"<value name=\"OID\">" + strOID + L"</value>"
+					L"</key>"
+					L"<key name=\"OIDs\">"
+						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
+							L"<value name=\"Application\">" + strAppName + L"</value>"
+						L"</key>"
+					L"</key>"
+				L"</key>";
+		}		
+	}
+
+	if (!strXML.IsEmpty())
+	{
+		strXML = L"<?xml version=\"1.0\"?>"
+				 L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+				 + strXML +
+				 L"</root>";
+
+		Omega::Registry::AddXML(strXML,bInstall,strSubsts);
+	}
+}
+
+void OTL::ProcessModule::RegisterObjectFactories()
+{
+	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Omega::Activation::IRunningObjectTable::GetRunningObjectTable());
+
+	const CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0;g[i].pfnOid!=0;++i)
+	{
+		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF;
+
+		void* TODO;	// flags need sorting
+
+		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),0)));
+		ptrROT->Register(*(g[i].pfnOid)(),Omega::Activation::IRunningObjectTable::Default,ptrOF);
+	}
 }
 
 void OTL::ProcessModule::UnregisterObjectFactories()
 {
-	void* TODO;
+	ObjectPtr<Omega::Activation::IRunningObjectTable> ptrROT;
+	ptrROT.Attach(Omega::Activation::IRunningObjectTable::GetRunningObjectTable());
+
+	const CreatorEntry* g=getCreatorEntries();
+	for (size_t i=0;g[i].pfnOid!=0;++i)
+	{
+		ptrROT->Revoke(*(g[i].pfnOid)());
+	}
 }
 
 void OTL::ProcessModule::Run()

@@ -252,11 +252,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 					// Find the name of the executeable to run
-					ObjectPtr<Registry::IRegistryKey> ptrServer(L"Applications\\" + ptrOidKey->GetStringValue(L"Application") + L"\\Activation");
+					ObjectPtr<Registry::IRegistryKey> ptrServer(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
 
 					// Launch the executeable
 					ACE_Process process;
-					OOCore::ExecProcess(process,ptrServer->GetStringValue(L"Exec"));
+					OOCore::ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
 
 					// TODO The timeout needs to be related to the request timeout...
 					void* TODO;

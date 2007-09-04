@@ -6,7 +6,8 @@ namespace OOCore
 	class StdObjectManager :
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager>,
-		public Omega::Remoting::IObjectManager
+		public Omega::Remoting::IObjectManager,
+		public Omega::System::MetaInfo::IWireManager
 	{
 	public:
 		StdObjectManager();

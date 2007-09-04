@@ -33,7 +33,13 @@ void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningO
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 			if (m_mapServices.find(oid) != m_mapServices.end())
+			{
+				// QI for IWireProxy and check its still there!
+
+				void* TODO;
+
 				OOSERVER_THROW_ERRNO(EALREADY);
+			}
 
 			m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
 		}

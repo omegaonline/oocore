@@ -1075,7 +1075,10 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, const A
 
 		std::map<ACE_CDR::UShort,ChannelInfo>::iterator i=m_mapChannelIds.find(dest_channel_id);
 		if (i == m_mapChannelIds.end())
+		{
+			ACE_OS::last_error(ENOENT);
 			return false;
+		}
 
 		dest_channel = i->second;
 	}

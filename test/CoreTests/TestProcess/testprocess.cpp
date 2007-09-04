@@ -3,7 +3,6 @@
 #include "../interfaces.h"
 #include "./TestProcess.h"
 
-const wchar_t TestProcessName[] = L"Test.Process";
 OMEGA_DEFINE_OID(Test, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
 
 class TestProcessImpl :
@@ -28,9 +27,38 @@ TestProcessImpl::Hello()
 	return L"Hello!";
 }
 
-BEGIN_PROCESS_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(TestProcessImpl,TestProcessName)
+BEGIN_PROCESS_OBJECT_MAP(L"TestProcess")
+	OBJECT_MAP_ENTRY(TestProcessImpl,L"Test.Process")
 END_PROCESS_OBJECT_MAP()
+
+static int install(int argc, char* argv[])
+{
+	Omega::string_t strSubsts;
+	if (argc == 3)
+		strSubsts = Omega::string_t(argv[2],false);
+	else
+		strSubsts = L"MODULE_PATH=" + Omega::string_t(argv[0],false);
+
+	if (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--install") == 0)
+	{
+#if !defined(OMEGA_WIN32)
+		if (argc != 3) return -1;
+#endif
+
+		OTL::GetModule()->RegisterObjects(true,strSubsts);
+		return 0;
+	}
+	else if (strcmp(argv[1],"-u") == 0 || strcmp(argv[1],"--uninstall") == 0)
+	{
+		OTL::GetModule()->RegisterObjects(false,strSubsts);
+		return 0;
+	}
+	else
+	{
+		// Invalid argument
+		return -1;
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -44,7 +72,14 @@ int main(int argc, char* argv[])
 	int ret = 0;
 	try
 	{
-		OTL::GetModule()->Run();
+		if (argc > 1)
+		{
+			ret = install(argc,argv);
+		}
+		else
+		{
+			OTL::GetModule()->Run();
+		}
 	}
 	catch (Omega::IException* pE)
 	{

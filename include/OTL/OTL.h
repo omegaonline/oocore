@@ -31,20 +31,20 @@
 #define INTERFACE_ENTRY_CHAIN(baseClass) \
 	{ &Omega::guid_t::Null(), &QIChain<baseClass,RootClass>, 0 },
 
-#define INTERFACE_ENTRY_AGGREGATE(iid,member_object) \
-	{ &iid, &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
+#define INTERFACE_ENTRY_AGGREGATE(iface,member_object) \
+	{ &OMEGA_UUIDOF(iface), &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
 	{ &Omega::guid_t::Null(), &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
-#define INTERFACE_ENTRY_FUNCTION(iid,pfn,param) \
-	{ &iid, &pfn, param },
+#define INTERFACE_ENTRY_FUNCTION(iface,pfn,param) \
+	{ &OMEGA_UUIDOF(iface), &pfn, param },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
 	{ &Omega::guid_t::Null(), &pfn, 0 },
 
-#define INTERFACE_ENTRY_NOINTERFACE(iid) \
-	{ &iid, &QIFail, param },
+#define INTERFACE_ENTRY_NOINTERFACE(iface) \
+	{ &OMEGA_UUIDOF(iface), &QIFail, 0 },
 
 #define END_INTERFACE_MAP() \
 	{ 0,0,0 } }; return QIEntries; }
@@ -60,13 +60,13 @@
 //
 // For dynamic link libraries:
 //
-// BEGIN_LIBRARY_OBJECT_MAP(dll_name)
+// BEGIN_LIBRARY_OBJECT_MAP()
 //    OBJECT_MAP_ENTRY(something derived from AutoObjectFactory)
 // END_LIBRARY_OBJECT_MAP()
 //
 // or, for Exe's
 //
-// BEGIN_PROCESS_OBJECT_MAP(dll_name)
+// BEGIN_PROCESS_OBJECT_MAP("app_name")
 //    OBJECT_MAP_ENTRY(something derived from AutoObjectFactory)
 // END_PROCESS_OBJECT_MAP()
 //
@@ -89,7 +89,7 @@
 		{ 0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
-	LibraryModule* GetModule() { return SingletonNoLock<LibraryModuleImpl>::instance(); } \
+	LibraryModuleImpl* GetModule() { return SingletonNoLock<LibraryModuleImpl>::instance(); } \
 	ModuleBase* GetModuleBase() { return GetModule(); } \
 	} \
 	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() \
@@ -100,11 +100,15 @@
 	{ OTL::GetModule()->RegisterLibrary(bInstall,strSubsts); }
 
 // THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
-#define BEGIN_PROCESS_OBJECT_MAP() \
+#define BEGIN_PROCESS_OBJECT_MAP(app_name) \
 	namespace OTL { \
 	namespace { \
 	class ProcessModuleImpl : public ProcessModule \
 	{ \
+	public: \
+		void RegisterObjects(Omega::bool_t bInstall, const Omega::string_t& strSubsts) \
+			{ RegisterObjectsImpl(bInstall,app_name,strSubsts); } \
+	private: \
 		friend class SingletonNoLock<ProcessModuleImpl>; \
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
 
@@ -112,7 +116,7 @@
 		{ 0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
-	ProcessModule* GetModule() { return SingletonNoLock<ProcessModuleImpl>::instance(); } \
+	ProcessModuleImpl* GetModule() { return SingletonNoLock<ProcessModuleImpl>::instance(); } \
 	ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
@@ -454,9 +458,6 @@ namespace OTL
 		};
 		std::list<Term> m_listTerminators;
 
-#if !defined(OTL_HAS_NONSTATICMODULE)
-		friend class ModuleStaticInitializer;
-#endif
 		void fini();
 	};
 
@@ -483,13 +484,13 @@ namespace OTL
 			return ptr;
 		}
 
+	private:
 		ObjectImpl() : ROOT()
 		{
 			GetModuleBase()->IncLockCount();
 			this->AddRef();
 		}
 
-	private:
 		virtual ~ObjectImpl()
 		{
 			GetModuleBase()->DecLockCount();
@@ -532,15 +533,10 @@ namespace OTL
 			return ptr;
 		}
 
-	/*protected:
-		virtual Omega::IObject* GetControllingObject()
-		{
-			return this;
-		}*/
-
 	private:
 		NoLockObjectImpl() : ROOT()
 		{
+			this->AddRef();
 		}
 
 	// IObject members
@@ -567,11 +563,6 @@ namespace OTL
 		{ }
 
 		ObjectPtr<Omega::IObject> m_ptrOuter;
-
-		/*virtual Omega::IObject* GetControllingObject()
-		{
-			return m_ptrOuter;
-		}*/
 
 	private:
 		ContainedObjectImpl(const ContainedObjectImpl& rhs)
@@ -720,12 +711,6 @@ namespace OTL
 			return ptr;
 		}
 
-	/*protected:
-		virtual Omega::IObject* GetControllingObject()
-		{
-			return this;
-		}	*/
-
 	protected:
 		SingletonObjectImpl() : ROOT()
 		{ }
@@ -754,12 +739,6 @@ namespace OTL
 		StackObjectImpl() : ROOT()
 		{ }
 
-	/*protected:
-		virtual Omega::IObject* GetControllingObject()
-		{
-			return this;
-		}*/
-
 	// IObject members
 	public:
 		virtual void AddRef() { }
@@ -778,7 +757,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
 			{
-				Omega::IObject* pObject = OTL::ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
+				Omega::IObject* pObject = ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
 					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 				return pObject;
@@ -796,8 +775,10 @@ namespace OTL
 	class ProcessModule : public ModuleBase
 	{
 	public:
+		// Register and unregister with the ROT
 		inline void RegisterObjectFactories();
 		inline void UnregisterObjectFactories();
+
 		inline void Run();
 		
 	protected:
@@ -806,7 +787,7 @@ namespace OTL
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
 			{
-				Omega::IObject* pObject = OTL::NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
+				Omega::IObject* pObject = NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
 				if (!pObject)
 					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 				return pObject;
@@ -815,6 +796,9 @@ namespace OTL
 
 		ProcessModule()
 		{}
+
+		// Register and unregister with the OORegistry
+		inline void RegisterObjectsImpl(Omega::bool_t bInstall, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
 	};
 
 	template <class T, const Omega::guid_t* pOID>

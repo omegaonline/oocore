@@ -552,7 +552,7 @@ namespace Omega
 			template <class I>
 			struct IObject_WireProxy : public I
 			{
-				IObject_WireProxy(IWireManager* pManager) : m_pManager(pManager)
+				IObject_WireProxy(IWireManager* pManager) : m_pManager(pManager), m_pProxy(0)
 				{
 					m_pManager->AddRef();
 				}
@@ -569,23 +569,25 @@ namespace Omega
 
 				void WriteKey(Serialize::IFormattedStream* pParams)
 				{
-					if (!m_ptrProxy)
+					if (!m_pProxy)
 					{
-						m_ptrProxy = static_cast<IWireProxy*>(this->QueryInterface(OMEGA_UUIDOF(IWireProxy)));
-						if (!m_ptrProxy)
+						IWireProxy* pProxy = static_cast<IWireProxy*>(this->QueryInterface(OMEGA_UUIDOF(IWireProxy)));
+						if (!pProxy)
 							throw INoInterfaceException::Create(OMEGA_UUIDOF(IWireProxy),OMEGA_SOURCE_INFO);
 
-						m_ptrProxy->Release();
+						// We don't need the extra ref here, cos its to us
+						pProxy->Release();
+						m_pProxy = pProxy;
 					}
 
-					m_ptrProxy->WriteKey(pParams);
+					m_pProxy->WriteKey(pParams);
 				}
 
 				static const uint32_t MethodCount = 3;
 
 			protected:
-				IWireManager*              m_pManager;
-				auto_iface_ptr<IWireProxy> m_ptrProxy;
+				IWireManager*  m_pManager;
+				IWireProxy*    m_pProxy;
 			};
 
 			template <class I, class Base>

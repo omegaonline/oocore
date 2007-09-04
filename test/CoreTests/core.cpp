@@ -1,7 +1,7 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
-bool core_tests()
+bool init_tests()
 {
 	static struct AutoUninit
 	{

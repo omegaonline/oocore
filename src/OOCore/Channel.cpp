@@ -63,7 +63,7 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	{
 		if (!m_pSession->send_request(m_channel_id,request,response,timeout,attribs))
 			OOCORE_THROW_LASTERROR();
-		
+				
 		if (response)
 		{
 			// Unpack and validate response...

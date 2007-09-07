@@ -558,6 +558,8 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 			ACE_Time_Value old_deadline = pContext->m_deadline;
 			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
 
+			void* TODO; // This is where extra stuff for the call context goes...
+
 			// Process the message...
 			process_request(ptrOM,msg,pContext->m_deadline);
 
@@ -595,7 +597,6 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 OOCore::UserSession::ThreadContext::ThreadContext() :
 	m_thread_id(0),
 	m_msg_queue(0),
-	m_bWaitingOnZero(false),
 	m_deadline(ACE_Time_Value::max_time)
 {
 }
@@ -642,7 +643,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 	std::map<ACE_CDR::UShort,ACE_CDR::UShort>::const_iterator i=pContext->m_mapChannelThreads.find(pContext->m_thread_id);
 	if (i != pContext->m_mapChannelThreads.end())
 		dest_thread_id = i->second;
-
+	
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(pContext,dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
@@ -792,9 +793,6 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
 		}
-
-		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
 
 		// Check timeout
 		ACE_Time_Value now = ACE_OS::gettimeofday();

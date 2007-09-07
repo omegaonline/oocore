@@ -18,7 +18,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	// Methods
 	OMEGA_METHOD(void*,GetMessageBlock,0,())
 )
-//const Omega::guid_t OOCore::IID_IOutputCDR = { 0x21118e84, 0x2ef8, 0x4f53, { 0xb4, 0xfd, 0xdb, 0xd4, 0xee, 0xc3, 0xaf, 0xc3 } };
 
 namespace OOCore
 {

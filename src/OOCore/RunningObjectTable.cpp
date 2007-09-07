@@ -14,7 +14,7 @@ namespace OOCore
 
 		void Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t flags, IObject* pObject);
 		void Revoke(const guid_t& oid);
-		void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject);
+		IObject* GetObject(const guid_t& oid);
 
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
 			INTERFACE_ENTRY(Activation::IRunningObjectTable)
@@ -101,7 +101,7 @@ void OOCore::RunningObjectTable::Revoke(const guid_t& oid)
 	}
 }
 
-void OOCore::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+IObject* OOCore::RunningObjectTable::GetObject(const guid_t& oid)
 {
 	OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -111,7 +111,7 @@ void OOCore::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid,
 		if (i == m_mapServices.end())
 			OOCORE_THROW_ERRNO(EINVAL);
 
-		pObject = i->second->QueryInterface(iid);
+		return i->second.AddRefReturn();
 	}
 	catch (std::exception& e)
 	{

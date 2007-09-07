@@ -50,7 +50,7 @@ namespace Omega
 
 			virtual void Register(const guid_t& oid, Flags_t flags, IObject* pObject) = 0;
 			virtual void Revoke(const guid_t& oid) = 0;
-			virtual void GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
+			virtual IObject* GetObject(const guid_t& oid) = 0;
 
 			inline static IRunningObjectTable* GetRunningObjectTable();
 		};
@@ -181,7 +181,7 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD_VOID(Register,3,((in),const Omega::guid_t&,oid,(in),Omega::Activation::IRunningObjectTable::Flags_t,flags,(in),Omega::IObject*,pObject))
 	OMEGA_METHOD_VOID(Revoke,1,((in),const Omega::guid_t&,oid))
-	OMEGA_METHOD_VOID(GetObject,3,((in),const Omega::guid_t&,oid,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+	OMEGA_METHOD(Omega::IObject*,GetObject,1,((in),const Omega::guid_t&,oid))
 )
 
 OMEGA_DEFINE_INTERFACE

@@ -237,8 +237,13 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			{
 				// New stub required
 				const qi_rtti* pRtti = get_qi_rtti_info(*piid);
-				if (pRtti && pRtti->pfnCreateSafeStub)
+				if (pRtti)
+				{
+					if (!pRtti->pfnCreateSafeStub)
+						throw INoInterfaceException::Create(*piid,OMEGA_SOURCE_INFO);
+
 					pObjS = pRtti->pfnCreateSafeStub(this,m_pObj);
+				}
 			}
 
 			System::WriteGuard guard(m_lock);

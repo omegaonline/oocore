@@ -65,7 +65,6 @@ namespace OOCore
 		{
 			ACE_CDR::UShort                             m_thread_id;
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
-			bool                                        m_bWaitingOnZero;
 			ACE_Time_Value                              m_deadline;
 			std::map<ACE_CDR::UShort,ACE_CDR::UShort>   m_mapChannelThreads;
 			

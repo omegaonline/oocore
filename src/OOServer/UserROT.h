@@ -14,7 +14,7 @@ namespace User
 
 		void Register(const Omega::guid_t& oid, Omega::Activation::IRunningObjectTable::Flags_t flags, Omega::IObject* pObject);
 		void Revoke(const Omega::guid_t& oid);
-		void GetObject(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		Omega::IObject* GetObject(const Omega::guid_t& oid);
 
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
 			INTERFACE_ENTRY(Omega::Activation::IRunningObjectTable)

@@ -226,11 +226,6 @@ namespace OTL
 			return m_ptr.value();
 		}
 
-		OBJECT* volatile * operator &()
-		{
-			return &m_ptr;
-		}
-
 		operator OBJECT* volatile &()
 		{
 			return m_ptr.value();
@@ -303,12 +298,12 @@ namespace OTL
 		virtual ~ObjectBase()
 		{}
 
-		void Internal_AddRef()
+		virtual void Internal_AddRef()
 		{
 			++m_refcount;
 		}
 
-		void Internal_Release()
+		virtual void Internal_Release()
 		{
 			if (--m_refcount==0)
 				delete this;
@@ -324,7 +319,7 @@ namespace OTL
 		#if defined(__BORLANDC__)
 		public:
 		#endif
-		Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
+		virtual Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
 		{
 			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
 			{

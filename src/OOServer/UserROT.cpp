@@ -77,10 +77,8 @@ void User::RunningObjectTable::Revoke(const guid_t& oid)
 	}
 }
 
-void User::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 {
-	bool bFound = false;
-
 	try
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -88,8 +86,7 @@ void User::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, I
 		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
 		if (i != m_mapServices.end())
 		{
-			pObject = i->second->QueryInterface(iid);
-			bFound = true;
+			return i->second.AddRefReturn();
 		}
 	}
 	catch (std::exception& e)
@@ -97,9 +94,11 @@ void User::RunningObjectTable::GetObject(const guid_t& oid, const guid_t& iid, I
 		OMEGA_THROW(string_t(e.what(),false));
 	}
 
-	if (!bFound && m_ptrROT)
+	if (m_ptrROT)
 	{
 		// Route to sandbox
-		m_ptrROT->GetObject(oid,iid,pObject);
+		return m_ptrROT->GetObject(oid);
 	}
+
+	return 0;
 }

@@ -47,9 +47,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 	bool bStart = false;
 	if (++OOCore::s_initcount==1)
 	{
-		// Call ACE::init() first
 		bStart = true;
 
+		// Call ACE::init() first
 		int ret = ACE::init();
 		if (ret == 1)
 			ret = 0;

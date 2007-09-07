@@ -465,8 +465,9 @@ namespace Omega
 			inline IObject_Safe* lookup_stub(IObject* pObj, const guid_t& iid);
 			inline IObject* lookup_proxy(IObject_Safe* pObjS, const guid_t& iid, bool bPartialAllowed);
 			inline void throw_correct_exception(IException_Safe* pE);
+			inline void throw_correct_exception(IException* pE);
 			inline IException_Safe* return_safe_exception(IException* pE);
-			inline const Omega::string_t& lookup_iid(const guid_t& iid);
+			inline const string_t& lookup_iid(const guid_t& iid);
 
 			template <class I, class Base> struct IObject_SafeStub;
 			template <class I> struct IObject_SafeProxy;
@@ -680,8 +681,8 @@ namespace Omega
 
 					IObject_Safe* m_pOuter;
 				};
-				Contained                  m_contained;
-				System::AtomicOp<uint32_t> m_refcount;
+				Contained          m_contained;
+				AtomicOp<uint32_t> m_refcount;
 
 				SafeStubImpl(IObject_Safe* pOuter, I* pI) : m_contained(pOuter,pI), m_refcount(1)
 				{}
@@ -756,8 +757,8 @@ namespace Omega
 					Contained(const Contained&) {};
 					Contained& operator = (const Contained&) {};
 				};
-				Contained                  m_contained;
-				System::AtomicOp<uint32_t> m_refcount;
+				Contained          m_contained;
+				AtomicOp<uint32_t> m_refcount;
 
 				SafeProxyImpl(const SafeProxyImpl&) {};
 				SafeProxyImpl& operator = (const SafeProxyImpl&) {};
@@ -815,16 +816,6 @@ namespace Omega
 			{
 				auto_iface_safe_ptr<IException_Safe> ptrSE(pSE);
 				I* pI = static_cast<I*>(static_cast<IException*>(interface_info<IException*>::stub_functor(pSE))->QueryInterface(OMEGA_UUIDOF(I)));
-				if (!pI)
-					throw INoInterfaceException::Create(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
-				throw pI;
-			}
-
-			template <class I>
-			void DynamicThrow(IException* pE)
-			{
-				auto_iface_ptr<IException> ptrE(pE);
-				I* pI = static_cast<I*>(pE->QueryInterface(OMEGA_UUIDOF(I)));
 				if (!pI)
 					throw INoInterfaceException::Create(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
 				throw pI;
@@ -929,9 +920,6 @@ namespace Omega
 				IObject_Safe* (*pfnCreateSafeStub)(IObject_Safe* pOuter, IObject* pObj);
 				IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 				void (*pfnSafeThrow)(IException_Safe* pSE);
-				void (*pfnThrow)(IException* pE);
-				IWireStub* (*pfnCreateWireStub)(IWireManager* pManager, IObject* pObject, uint32_t id);
-				IObject* (*pfnCreateWireProxy)(IObject* pOuter, IWireManager* pManager);
 				string_t strName;
 			};
 
@@ -943,26 +931,38 @@ namespace Omega
 					return i;
 				}
 
-				std::map<Omega::guid_t,const Omega::System::MetaInfo::qi_rtti*> map;
-			};			
+				std::map<guid_t,const qi_rtti*> map;
+			};		
 
-			inline void register_rtti_info(const Omega::guid_t& iid, const Omega::System::MetaInfo::qi_rtti* pRtti)
+			inline void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
 			{
-				qi_holder::instance().map.insert(std::map<Omega::guid_t,const Omega::System::MetaInfo::qi_rtti*>::value_type(iid,pRtti));
+				try
+				{
+					qi_holder::instance().map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
+				}
+				catch (...)
+				{}
 			}
 
-			inline const Omega::System::MetaInfo::qi_rtti* get_qi_rtti_info(const Omega::guid_t& iid)
+			inline const qi_rtti* get_qi_rtti_info(const guid_t& iid)
 			{
-				std::map<Omega::guid_t,const Omega::System::MetaInfo::qi_rtti*>::const_iterator i=qi_holder::instance().map.find(iid);
-				if (i == qi_holder::instance().map.end())
+				try
+				{
+					std::map<guid_t,const qi_rtti*>::const_iterator i=qi_holder::instance().map.find(iid);
+					if (i == qi_holder::instance().map.end())
+						return 0;
+					else
+						return i->second;
+				}
+				catch (...)
+				{
 					return 0;
-				else
-					return i->second;
+				}
 			}
-			
+
 			struct SafeProxyStubMap
 			{
-				System::ReaderWriterLock m_lock;
+				ReaderWriterLock m_lock;
 				std::map<void*,void*>    m_map;
 			};
 
@@ -992,7 +992,7 @@ namespace Omega
 					// Remove ourselves from the stub_map
 					SafeProxyStubMap& stub_map = get_stub_map();
 
-					System::WriteGuard guard(stub_map.m_lock);
+					WriteGuard guard(stub_map.m_lock);
 					stub_map.m_map.erase(m_pObj);
 				}
 
@@ -1010,8 +1010,8 @@ namespace Omega
 				inline virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid);
 
 			private:
-				System::AtomicOp<uint32_t>           m_refcount;
-				System::ReaderWriterLock             m_lock;
+				AtomicOp<uint32_t>           m_refcount;
+				ReaderWriterLock             m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				auto_iface_ptr<IObject>              m_pObj;
 			};
@@ -1039,7 +1039,7 @@ namespace Omega
 					// Remove ourselves from the proxy_map
 					SafeProxyStubMap& proxy_map = get_proxy_map();
 
-					System::WriteGuard guard(proxy_map.m_lock);
+					WriteGuard guard(proxy_map.m_lock);
 					proxy_map.m_map.erase(m_pS);
 				}
 
@@ -1062,11 +1062,14 @@ namespace Omega
 				}
 
 			private:
-				System::AtomicOp<uint32_t>        m_refcount;
-				System::ReaderWriterLock          m_lock;
+				AtomicOp<uint32_t>        m_refcount;
+				ReaderWriterLock          m_lock;
 				std::map<const guid_t,IObject*>   m_iid_map;
 				auto_iface_safe_ptr<IObject_Safe> m_pS;
 			};
+
+			OMEGA_QI_MAGIC(Omega,IObject)
+			OMEGA_QI_MAGIC(Omega,IException)
 		}
 	}
 }

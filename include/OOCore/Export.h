@@ -25,15 +25,33 @@
 					SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeThrow<n_space::iface>, \
-					DynamicThrow<n_space::iface>, \
-					CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>, \
-					WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
 					OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
 				}; \
-				Omega::System::MetaInfo::register_rtti_info(OMEGA_UUIDOF(n_space::iface),&s_rtti); \
+				register_rtti_info(OMEGA_UUIDOF(n_space::iface),&s_rtti); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit_i); \
+	}
+
+#define OMEGA_WIRE_MAGIC(n_space,iface) \
+	namespace \
+	{ \
+		struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit) \
+		{ \
+			OMEGA_DEFINE_EXPORTED_STATIC_FUNCTION(IWireStub*,create_wire_stub,3,((in),IWireManager*,pManager,(in),Omega::IObject*,pObject,(in),Omega::uint32_t,id)) \
+			{ \
+				return CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>(pManager,pObject,id); \
+			} \
+			OMEGA_DEFINE_EXPORTED_STATIC_FUNCTION(IObject*,create_wire_proxy,3,((in),IObject*,pOuter,(in),IWireManager*,pManager,(in),uint32_t,id)) \
+			{ \
+				return WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create(pOuter,pManager,id); \
+			} \
+			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit)() \
+			{ \
+				RegisterWireFactories(OMEGA_UUIDOF(n_space::iface),create_wire_proxy,create_wire_stub); \
+			} \
+		}; \
+		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit_i); \
 	}
 
 #define OMEGA_DECLARE_FORWARDS(n_space,name,d_space,derived) \
@@ -318,7 +336,7 @@
 			if (method_id < Base::MethodCount) \
 				Base::Invoke(method_id,pParamsIn,pParamsOut,timeout); \
 			else if (method_id < MethodCount) \
-				MethodTable[method_id - Base::MethodCount](this,this->m_pI,pParamsIn,pParamsOut); \
+				MethodTable[method_id - Base::MethodCount](this,this->m_ptrI,pParamsIn,pParamsOut); \
 			else \
 				OMEGA_THROW(L"Invalid index!"); \
 		} \
@@ -489,7 +507,7 @@
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy) : public Base \
 	{ \
-		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)(IWireManager* pManager) : Base(pManager) \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)(IWireManager* pManager, uint32_t id) : Base(pManager,id) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
 		{ \
@@ -506,7 +524,7 @@
 		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)& operator = (const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)&) {}; \
 	};
 
-#define OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,d_space,derived,guid,methods) \
+#define OMEGA_DEFINE_INTERFACE_DERIVED_NOWIRE(n_space,name,d_space,derived,guid,methods) \
 	OMEGA_DEFINE_IID(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	OMEGA_DECLARE_FORWARDS(n_space,name,d_space,derived) \
@@ -514,10 +532,11 @@
 	OMEGA_DECLARE_STUB(n_space,name,methods) \
 	OMEGA_DECLARE_PROXY(n_space,name,methods) \
 	OMEGA_QI_MAGIC(n_space,name) \
-	} } } \
+	} } } 
 
 #define OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
-	OMEGA_DEFINE_INTERFACE_DERIVED_I(n_space,name,d_space,derived,guid,methods)
+	OMEGA_DEFINE_INTERFACE_DERIVED_NOWIRE(n_space,name,d_space,derived,guid,methods) \
+	namespace Omega { namespace System { namespace MetaInfo { OMEGA_WIRE_MAGIC(n_space,name) } } }	
 
 #define OMEGA_DEFINE_INTERFACE(n_space,name,guid,methods) \
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
@@ -595,5 +614,20 @@
 		} \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))
+
+#define OMEGA_DEFINE_EXPORTED_STATIC_FUNCTION(ret_type,name,param_count,params) \
+	static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL name(Omega::System::MetaInfo::interface_info<ret_type>::safe_class* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
+	{ \
+		try \
+		{ \
+			static_cast<ret_type&>(Omega::System::MetaInfo::interface_info<ret_type&>::stub_functor(OMEGA_CONCAT(name,_RetVal))) = OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_SAFE_STUB(param_count,params)); \
+			return 0; \
+		} \
+		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
+		{ \
+			return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
+		} \
+	} \
+	static ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))
 
 #endif // OOCORE_MACROS_H_INCLUDED_

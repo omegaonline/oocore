@@ -28,7 +28,9 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::Remoting::IChannel>	m_ptrChannel;
 		Omega::uint32_t								m_uNextStubId;
 
-		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::MetaInfo::IWireStub> >	m_mapStubIds;
+		std::map<Omega::IObject*,Omega::uint32_t>                                      m_mapStubObjs;
+		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::MetaInfo::IWireStub> >  m_mapStubIds;
+		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::System::MetaInfo::IWireProxy> > m_mapProxyIds;
 
 	// IWireManager members
 	public:

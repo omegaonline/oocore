@@ -62,7 +62,13 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 	try
 	{
 		if (!m_pManager->send_request(m_channel_id,request,response,timeout,attribs))
+		{
+			if (ACE_OS::last_error() == ENOENT)
+			{
+				void* TODO;  // Throw a remoting error
+			}
 			OOSERVER_THROW_LASTERROR();
+		}
 		
 		if (response)
 		{

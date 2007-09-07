@@ -225,10 +225,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 			// Change this to use monikers one day!
-			IObject* pObject = 0;
-			ptrROT->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
-			if (pObject)
-				return static_cast<Activation::IObjectFactory*>(pObject);
+			ObjectPtr<IObject> ptrObject;
+			ptrObject.Attach(ptrROT->GetObject(oid));
+			if (ptrObject)
+				return static_cast<Activation::IObjectFactory*>(ptrObject->QueryInterface(OMEGA_UUIDOF(Activation::IObjectFactory)));
 		}
 
 		if (!(flags & Activation::DontLaunch))
@@ -267,10 +267,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					while (wait != ACE_Time_Value::zero)
 					{
 						// Change this to use monikers one day!
-						IObject* pObject = 0;
-						ptrROT->GetObject(oid,OMEGA_UUIDOF(Activation::IObjectFactory),pObject);
-						if (pObject)
-							return static_cast<Activation::IObjectFactory*>(pObject);
+						ObjectPtr<IObject> ptrObject;
+						ptrObject.Attach(ptrROT->GetObject(oid));
+						if (ptrObject)
+							return static_cast<Activation::IObjectFactory*>(ptrObject->QueryInterface(OMEGA_UUIDOF(Activation::IObjectFactory)));
 
 						// Check if the process is still running...
 						if (!process.running())

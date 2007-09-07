@@ -389,9 +389,6 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 			ptrResponse->WriteByte(0);
 		}
 
-		ObjectPtr<Remoting::ICallContext> ptrPrevCallContext;
-		void* TODO; // TODO Setup the CallContext... Use a self-destructing class!
-
 		// Check timeout
 		ACE_Time_Value now = ACE_OS::gettimeofday();
 		if (deadline <= now)
@@ -501,7 +498,13 @@ ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 {
 	ACE_InputCDR* response = 0;
 	if (!send_request(m_root_channel,request.begin(),response,15000,0))
+	{
+		if (ACE_OS::last_error() == ENOENT)
+		{
+			void* TODO;  // Throw a remoting error
+		}
 		OOSERVER_THROW_LASTERROR();
+	}
 
 	ACE_InputCDR ret = *response;
 	delete response;

@@ -19,9 +19,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		StdObjectManager(const StdObjectManager&) :
-            OTL::ObjectBase(),Omega::Remoting::IObjectManager()
-        {};
+		StdObjectManager(const StdObjectManager&) : OTL::ObjectBase(),Omega::Remoting::IObjectManager(),Omega::System::MetaInfo::IWireManager() {};
 		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
 
 		ACE_RW_Thread_Mutex							m_lock;

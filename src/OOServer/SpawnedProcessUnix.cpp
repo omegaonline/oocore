@@ -216,7 +216,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe)
 		}
 
 		// Now just run UserMain and exit
-		int err = UserMain(0);
+		int err = UserMain(strPipe);
 
 		ACE_OS::exit(err);
 	}

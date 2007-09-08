@@ -174,7 +174,7 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 				// Wait for all the request threads to finish
 				ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 			}
-		}	
+		}
 	}
 
 	return ret;
@@ -188,7 +188,7 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	ACE_Time_Value wait(5);
 	Root::MessagePipe pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %x\n",GetLastError()),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::connect() failed"),false);
 
 	// Talk to the root...
 	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
@@ -265,7 +265,7 @@ void User::Manager::end_event_loop()
 {
 	// Stop accepting new clients
 	stop_accepting();
-	
+
 	// Stop the reactor
 	ACE_Reactor::instance()->end_reactor_event_loop();
 

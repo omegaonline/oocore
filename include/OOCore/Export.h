@@ -48,7 +48,7 @@
 			} \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit)() \
 			{ \
-				RegisterWireFactories(OMEGA_UUIDOF(n_space::iface),create_wire_proxy,create_wire_stub); \
+				RegisterWireFactories(OMEGA_UUIDOF(n_space::iface),(void*)&create_wire_proxy,(void*)&create_wire_stub); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit_i); \
@@ -532,11 +532,11 @@
 	OMEGA_DECLARE_STUB(n_space,name,methods) \
 	OMEGA_DECLARE_PROXY(n_space,name,methods) \
 	OMEGA_QI_MAGIC(n_space,name) \
-	} } } 
+	} } }
 
 #define OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
 	OMEGA_DEFINE_INTERFACE_DERIVED_NOWIRE(n_space,name,d_space,derived,guid,methods) \
-	namespace Omega { namespace System { namespace MetaInfo { OMEGA_WIRE_MAGIC(n_space,name) } } }	
+	namespace Omega { namespace System { namespace MetaInfo { OMEGA_WIRE_MAGIC(n_space,name) } } }
 
 #define OMEGA_DEFINE_INTERFACE(n_space,name,guid,methods) \
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)

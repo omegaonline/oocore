@@ -16,10 +16,10 @@ namespace OOCore
 		static System::MetaInfo::IWireStub* CreateWireStub(const guid_t& iid, System::MetaInfo::IWireManager* pManager, IObject* pObject, uint32_t id);
 		static IObject* CreateWireProxy(const guid_t& iid, IObject* pOuter, System::MetaInfo::IWireManager* pManager, uint32_t id);
 
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireProxy)( 
-			System::MetaInfo::interface_info<IObject*>::safe_class* retval, 
-			System::MetaInfo::interface_info<IObject*>::safe_class pOuter, 
-			System::MetaInfo::interface_info<System::MetaInfo::IWireManager*>::safe_class pManager, 
+		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireProxy)(
+			System::MetaInfo::interface_info<IObject*>::safe_class* retval,
+			System::MetaInfo::interface_info<IObject*>::safe_class pOuter,
+			System::MetaInfo::interface_info<System::MetaInfo::IWireManager*>::safe_class pManager,
 			System::MetaInfo::interface_info<uint32_t>::safe_class id);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireStub)(
@@ -27,7 +27,7 @@ namespace OOCore
 			System::MetaInfo::interface_info<System::MetaInfo::IWireManager*>::safe_class pManager,
 			System::MetaInfo::interface_info<IObject*>::safe_class pObject,
 			System::MetaInfo::interface_info<uint32_t>::safe_class id);
-		 
+
 		struct pfns
 		{
 			wire_holder::pfnCreateWireProxy pfnProxy;
@@ -36,7 +36,7 @@ namespace OOCore
 
 		static wire_holder& instance()
 		{
-			static wire_holder i;					
+			static wire_holder i;
 			return i;
 		}
 
@@ -115,7 +115,7 @@ namespace OOCore
 
 		ACE_RW_Thread_Mutex                          m_lock;
 		std::map<const guid_t,ObjectPtr<IObject> >   m_iid_map;
-		
+
         static IObject* QI(const guid_t& iid, void* pThis, void*)
         {
 			return static_cast<RootClass*>(pThis)->QI2(iid);
@@ -446,7 +446,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 				return;
 			}
 		}
-	
+
 		// Generate a new key and stub pair
 		try
 		{
@@ -458,9 +458,9 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 				stub_id = m_uNextStubId++;
 			}
 
-			char szBuf[128];
-			sprintf(szBuf,"Stub %lu for %ls\n",stub_id,System::MetaInfo::lookup_iid(iid).c_str());
-			OutputDebugString(szBuf);
+			/*char szBuf[128];
+			sprintf(szBuf,"Stub %u for %ls\n",stub_id,System::MetaInfo::lookup_iid(iid).c_str());
+			OutputDebugString(szBuf);*/
 
 			// Create a stub
 			ObjectPtr<System::MetaInfo::IWireStub> ptrStub;
@@ -519,9 +519,9 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 
 		if (!ptrProxy)
 		{
-			char szBuf[128];
-			sprintf(szBuf,"Proxy %lu for %ls\n",proxy_id,System::MetaInfo::lookup_iid(wire_iid).c_str());
-			OutputDebugString(szBuf);
+			/*char szBuf[128];
+			sprintf(szBuf,"Proxy %u for %ls\n",proxy_id,System::MetaInfo::lookup_iid(wire_iid).c_str());
+			OutputDebugString(szBuf);*/
 
 			ObjectPtr<ObjectImpl<OOCore::StdProxy> > ptrStdProxy = ObjectImpl<OOCore::StdProxy>::CreateInstancePtr();
 			ptrStdProxy->init(this,wire_iid,proxy_id);
@@ -643,7 +643,7 @@ System::MetaInfo::IWireStub* OOCore::wire_holder::CreateWireStub(const guid_t& i
 	{
 		OMEGA_THROW(string_t(e.what(),false));
 	}
-	
+
 	System::MetaInfo::IWireStub* pRet = 0;
 	System::MetaInfo::IException_Safe* pSE = p.pfnStub(
 		System::MetaInfo::interface_info<System::MetaInfo::IWireStub*&>::proxy_functor(pRet),
@@ -651,9 +651,9 @@ System::MetaInfo::IWireStub* OOCore::wire_holder::CreateWireStub(const guid_t& i
 		System::MetaInfo::interface_info<IObject*>::proxy_functor(pObject),
 		System::MetaInfo::interface_info<uint32_t>::proxy_functor(id));
 
-	if (pSE) 
+	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
-	
+
 	return pRet;
 }
 
@@ -679,17 +679,17 @@ IObject* OOCore::wire_holder::CreateWireProxy(const guid_t& iid, IObject* pOuter
 		System::MetaInfo::interface_info<System::MetaInfo::IWireManager*>::proxy_functor(pManager),
 		System::MetaInfo::interface_info<uint32_t>::proxy_functor(id));
 
-	if (pSE) 
+	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
-	
+
 	return pRet;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
 	OOCore::wire_holder::pfns funcs;
-	funcs.pfnProxy = static_cast<OOCore::wire_holder::pfnCreateWireProxy>(pfnProxy);
-	funcs.pfnStub= static_cast<OOCore::wire_holder::pfnCreateWireStub>(pfnStub);
+	funcs.pfnProxy = (OOCore::wire_holder::pfnCreateWireProxy)(pfnProxy);
+	funcs.pfnStub= (OOCore::wire_holder::pfnCreateWireStub)(pfnStub);
 
 	try
 	{

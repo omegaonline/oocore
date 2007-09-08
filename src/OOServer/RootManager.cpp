@@ -231,11 +231,11 @@ int Root::Manager::ClientConnector::start(Manager* pManager, const ACE_WString& 
 	{
 		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 		m_sa.bInheritHandle = FALSE;
-		
+
 		if (!MessagePipeAcceptor::CreateSA(0,m_sa.lpSecurityDescriptor,m_pACL))
 			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
 	}
-	
+
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(strAddr.c_str());
 	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
@@ -258,7 +258,8 @@ void Root::Manager::ClientConnector::stop()
 	m_acceptor.close();
 
 #if !defined(ACE_HAS_WIN32_NAMED_PIPES)
-	ACE_OS::unlink(m_strAddr.c_str());
+void* TODO;
+//	ACE_OS::unlink(m_strAddr.c_str());
 #endif
 }
 

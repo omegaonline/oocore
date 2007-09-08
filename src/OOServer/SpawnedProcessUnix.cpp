@@ -216,7 +216,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe)
 		}
 
 		// Now just run UserMain and exit
-		int err = UserMain(uPort);
+		int err = UserMain(0);
 
 		ACE_OS::exit(err);
 	}
@@ -317,7 +317,7 @@ bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
 	Root::pw_info pw(token);
 	if (!pw)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"::getpwuid() failed!"),false);
-	
+
 	// Return the username
 	uid = pw->pw_name;
 	return true;
@@ -398,7 +398,7 @@ ACE_CString Root::SpawnedProcess::get_home_dir()
 
 bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 {
-	ACE_CString strShortName = ACE_Wide_To_Ascii(strFilename).char_rep();
+	ACE_CString strShortName = ACE_Wide_To_Ascii(strFilename.c_str()).char_rep();
 
 	// Make sure the file is owned by root (0)
 	if (::chown(strShortName.c_str(),0,(gid_t)-1) != 0)
@@ -406,7 +406,7 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 
 	void* TODO; // Check the group permissions...
 
-	if (::chmod(strShortName.c_str(),S_IRWXU | IRWXG | S_IROTH) != 0)
+	if (::chmod(strShortName.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"chmod failed"),false);
 
 	return true;

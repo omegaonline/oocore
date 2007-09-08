@@ -31,8 +31,10 @@
 #include <ace/Proactor.h>
 #include <ace/SOCK_Connector.h>
 
+#include <ace/SOCK_Acceptor.h>
 #include <ace/SPIPE_Acceptor.h>
 #include <ace/SPIPE_Connector.h>
+#include <ace/UNIX_Addr.h>
 
 // End of ACE includes
 /////////////////////////////////////////////////

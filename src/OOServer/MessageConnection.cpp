@@ -360,17 +360,17 @@ void Root::MessagePipe::close()
 
 ACE_HANDLE Root::MessagePipe::get_read_handle() const
 {
-	return hSocket;
+	return m_hSocket;
 }
 
 bool Root::MessagePipe::operator < (const MessagePipe& rhs) const
 {
-	return (hSocket < rhs.hSocket);
+	return (m_hSocket < rhs.m_hSocket);
 }
 
 ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
 {
-	return ACE_OS::send(m_hSocket,(const char*)buf,len,sent);
+	return ACE_OS::send(m_hSocket,(const char*)buf,len);
 }
 
 ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value* timeout, size_t* sent)
@@ -391,21 +391,17 @@ Root::MessagePipeAcceptor::~MessagePipeAcceptor()
 {
 }
 
-int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr)
+int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, uid_t uid)
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
-	if (m_acceptor.open(strAddr) != 0)
+	if (m_acceptor.open(addr) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout, uid_t uid)
+int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout)
 {
-	// If uid==0 - it means everyone!
-	if (uid == 0)
-		uid = -1;
-
 	ACE_SOCK_Stream stream;
 	if (m_acceptor.accept(stream,0,timeout) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
@@ -426,7 +422,8 @@ void Root::MessagePipeAcceptor::close()
 {
 	m_acceptor.close();
 
-	ACE_OS::unlink(m_acceptor.get_addr());
+	void* TODO;
+	//ACE_OS::unlink(m_acceptor.get_addr());
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -602,7 +599,8 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 	if (!bSuccess)
 	{
 		int err = ACE_OS::last_error();
-		if (err != 0 && err != ENOTSOCK && err != ERROR_BROKEN_PIPE)
+		void* TODO;
+		//if (err != 0 && err != ENOTSOCK && err != ERROR_BROKEN_PIPE)
 			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"handle_read_*() failed"));
 
 		m_pHandler->pipe_closed(m_pipe);
@@ -930,8 +928,10 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 
 int Root::MessageHandler::MessageConnector::handle_signal(int, siginfo_t*, ucontext_t*)
 {
+	void* TODO;
+
 	MessagePipe pipe;
-	if (m_acceptor.accept(pipe) != 0 && GetLastError() != ERROR_MORE_DATA)
+	if (m_acceptor.accept(pipe) != 0 /*&& GetLastError() != ERROR_MORE_DATA*/)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
 
 	Root::MessageConnection* pMC = 0;

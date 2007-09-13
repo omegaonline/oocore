@@ -175,6 +175,9 @@ IException* OOCore::UserSession::bootstrap()
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
+		Remoting::IInterProcessService* pIPS2 = static_cast<Remoting::IInterProcessService*>(pIPS);
+		pIPS2->GetRunningObjectTable();
+
 		// Set the running object table
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 		ptrROT.Attach(ptrIPS->GetRunningObjectTable());
@@ -202,11 +205,9 @@ bool OOCore::UserSession::launch_server()
 
 #else
 	// Find what the server is called
-	void* TODO;
-
 	ACE_WString strExec = ACE_Ascii_To_Wide(ACE_OS::getenv("OOSERVER")).wchar_rep();
-	if (strExec.length() == 0)
-		strExec = L"OOServer";
+	if (strExec.empty())
+		strExec = L"ooserver";
 
 	// Set the process options
 	ACE_Process_Options options;

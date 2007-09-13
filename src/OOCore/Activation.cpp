@@ -306,7 +306,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activ
 	return pNew;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid))(outer(pOuter)),IObject*&,pObject))
 {
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));

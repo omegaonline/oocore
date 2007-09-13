@@ -31,7 +31,7 @@ namespace Omega
 
 		interface IChannel : public IObject
 		{
-			virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;
+			virtual void CreateOutputStream(IObject* pOuter, Serialize::IFormattedStream*& pStream) = 0;
 			virtual Serialize::IFormattedStream* SendAndReceive(MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout) = 0;
 		};
 
@@ -72,7 +72,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IChannel, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
 
-	OMEGA_METHOD(Serialize::IFormattedStream*,CreateOutputStream,1,((in),IObject*,pOuter))
+	OMEGA_METHOD_VOID(CreateOutputStream,2,((in),IObject*,pOuter,(out),Serialize::IFormattedStream*&,pStream))
 	OMEGA_METHOD(Serialize::IFormattedStream*,SendAndReceive,3,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pStream,(in),uint16_t,timeout))
 )
 

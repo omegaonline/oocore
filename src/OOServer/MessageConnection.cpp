@@ -397,6 +397,8 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, uid_t uid)
 	if (m_acceptor.open(addr) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 
+	m_strAddr = strAddr;
+
 	return 0;
 }
 
@@ -422,8 +424,7 @@ void Root::MessagePipeAcceptor::close()
 {
 	m_acceptor.close();
 
-	void* TODO;
-	//ACE_OS::unlink(m_acceptor.get_addr());
+	ACE_OS::unlink(m_strAddr.c_str());
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -599,9 +600,14 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 	if (!bSuccess)
 	{
 		int err = ACE_OS::last_error();
-		void* TODO;
-		//if (err != 0 && err != ENOTSOCK && err != ERROR_BROKEN_PIPE)
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+		if (err != 0 && err != ERROR_BROKEN_PIPE)
+#else
+		if (err != 0 && err != ENOTSOCK)
+#endif
+		{
 			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"handle_read_*() failed"));
+		}
 
 		m_pHandler->pipe_closed(m_pipe);
 		delete this;
@@ -920,6 +926,7 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 	if (m_acceptor.open(strAddr,0) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 
+	void* TODO; // This will probably have to change under UNIX
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"register_handler() failed"),-1);
 
@@ -928,11 +935,16 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 
 int Root::MessageHandler::MessageConnector::handle_signal(int, siginfo_t*, ucontext_t*)
 {
-	void* TODO;
-
 	MessagePipe pipe;
-	if (m_acceptor.accept(pipe) != 0 /*&& GetLastError() != ERROR_MORE_DATA*/)
+
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	if (m_acceptor.accept(pipe) != 0 && GetLastError() != ERROR_MORE_DATA)
+#else
+	if (m_acceptor.accept(pipe) != 0)
+#endif
+	{
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
+	}
 
 	Root::MessageConnection* pMC = 0;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(m_pParent),-1);

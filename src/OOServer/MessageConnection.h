@@ -67,6 +67,7 @@ namespace Root
 		ACE_SPIPE_Acceptor  m_acceptor_down;
 #else
 		ACE_SOCK_Acceptor   m_acceptor;
+		ACE_WString         m_strAddr;
 #endif
 
 		MessagePipeAcceptor(const MessagePipeAcceptor&) {}

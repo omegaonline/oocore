@@ -38,13 +38,29 @@
 	{ \
 		struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit) \
 		{ \
-			OMEGA_DEFINE_EXPORTED_STATIC_FUNCTION(IWireStub*,create_wire_stub,3,((in),IWireManager*,pManager,(in),Omega::IObject*,pObject,(in),Omega::uint32_t,id)) \
+			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(Omega::System::MetaInfo::IWireStub_Safe** ppStub OMEGA_DECLARE_PARAMS_SAFE(3,((in),IWireManager*,pManager,(in),Omega::IObject*,pObject,(in),Omega::uint32_t,id))) \
 			{ \
-				return CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<n_space::iface>::type>(pManager,pObject,id); \
+				try \
+				{ \
+					*ppStub = CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<interface_info<n_space::iface>::safe_class>::type>(Omega::System::MetaInfo::interface_info<IWireManager*>::stub_functor(pManager),pObject,id); \
+					return 0; \
+				} \
+				catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
+				{ \
+					return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
+				} \
 			} \
-			OMEGA_DEFINE_EXPORTED_STATIC_FUNCTION(IObject*,create_wire_proxy,3,((in),IObject*,pOuter,(in),IWireManager*,pManager,(in),uint32_t,id)) \
+			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_proxy(OMEGA_DECLARE_PARAMS_SAFE_VOID(4,((in),IObject*,pOuter,(in),IWireManager*,pManager,(in),uint32_t,id,(out)(outer(pOuter)),IObject*&,pObject))) \
 			{ \
-				return WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<n_space::iface>::type,n_space::iface>::Create(pOuter,pManager,id); \
+				try \
+				{ \
+					WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<interface_info<n_space::iface>::safe_class>::type>::Create(pOuter,Omega::System::MetaInfo::interface_info<IWireManager*>::stub_functor(pManager),id,pObject); \
+					return 0; \
+				} \
+				catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
+				{ \
+					return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
+				} \
 			} \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit)() \
 			{ \
@@ -59,7 +75,7 @@
 	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeStub); \
 	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy); \
 	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub); \
-	template <class I, class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy); \
+	template <class Base> struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy); \
 	template <> \
 	struct interface_info<n_space::name> \
 	{ \
@@ -78,7 +94,7 @@
 		}; \
 		template <class I> struct wire_proxy_factory \
 		{ \
-			typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)<I,typename interface_info<d_space::derived>::wire_proxy_factory<I>::type> type; \
+			typedef OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)<typename interface_info<d_space::derived>::wire_proxy_factory<I>::type> type; \
 		}; \
 	}; \
 	template <> struct interface_info<n_space::name*> \
@@ -137,6 +153,8 @@
 #define OMEGA_PS_PARAM_iid_is_I(t,name)
 #define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_size_is_I
 #define OMEGA_PS_PARAM_size_is_I(t,name)
+#define OMEGA_PS_PARAM_outer(pOut)       ,pOut OMEGA_PS_PARAM_outer_I
+#define OMEGA_PS_PARAM_outer_I(t,name)
 
 #define OMEGA_PS_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_PS_PARAM_,meta) d
@@ -224,6 +242,8 @@
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is_I(t,name)
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_size_is_I
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_READ_STUB_PARAM_outer(pOuter)     OMEGA_WIRE_READ_STUB_PARAM_outer_I
+#define OMEGA_WIRE_READ_STUB_PARAM_outer_I(t,name)
 
 #define OMEGA_WIRE_READ_STUB_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_READ_STUB_PARAM_,meta) d
@@ -248,6 +268,8 @@
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is_I(t,name)
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_size_is_I
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_WRITE_STUB_PARAM_outer(pOuter)     OMEGA_WIRE_WRITE_STUB_PARAM_outer_I
+#define OMEGA_WIRE_WRITE_STUB_PARAM_outer_I(t,name)
 
 #define OMEGA_WIRE_WRITE_STUB_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_WRITE_STUB_PARAM_,meta) d
@@ -309,24 +331,26 @@
 	{ \
 		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeStub)(I* pI) : Base(pI) \
 		{ } \
-		virtual IException_Safe* Internal_QueryInterface_Safe(IObject_Safe** ppS, const guid_t& iid) \
+		virtual IException_Safe* Internal_QueryInterface_Safe(const guid_t& iid, IObject_Safe*& pObject) \
 		{ \
 			if (iid == OMEGA_UUIDOF(n_space::name)) \
 			{ \
-				*ppS = this; \
-				this->AddRef_Safe(); \
+				pObject = static_cast<interface_info<n_space::name>::safe_class*>(this); \
+				pObject->AddRef_Safe(); \
 				return 0; \
 			} \
-			return Base::Internal_QueryInterface_Safe(ppS,iid); \
+			return Base::Internal_QueryInterface_Safe(iid,pObject); \
 		} \
 		OMEGA_DECLARE_SAFE_STUB_METHODS(methods) \
-	}; \
+	};
+
+#define OMEGA_DECLARE_WIRE_STUB(n_space,name,methods) \
 	template <class I, class Base> \
 	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub) : public Base \
 	{ \
-		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)(IWireManager* pManager, IObject* pObj, uint32_t id) : Base(pManager,pObj,id) \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireStub)(IWireManager* pManager, IObject_Safe* pObj, uint32_t id) : Base(pManager,pObj,id) \
 		{} \
-		virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout) \
+		virtual IException_Safe* OMEGA_CALL Invoke_Safe(uint32_t method_id, interface_info<Serialize::IFormattedStream*>::safe_class pParamsIn, interface_info<Serialize::IFormattedStream*>::safe_class pParamsOut, uint32_t /*timeout*/) \
 		{ \
 			static const typename Base::MethodTableEntry MethodTable[] = \
 			{ \
@@ -395,6 +419,8 @@
 #define OMEGA_WIRE_READ_PROXY_PARAM_iid_is_I(t,name)
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_size_is_I
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_READ_PROXY_PARAM_outer(pOuter)     OMEGA_WIRE_READ_PROXY_PARAM_outer_I
+#define OMEGA_WIRE_READ_PROXY_PARAM_outer_I(t,name)
 
 #define OMEGA_WIRE_READ_PROXY_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_READ_PROXY_PARAM_,meta) d
@@ -419,6 +445,8 @@
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is_I(t,name)
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_size_is_I
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_outer(pOuter)     OMEGA_WIRE_WRITE_PROXY_PARAM_outer_I
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_outer_I(t,name)
 
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_WRITE_PROXY_PARAM_,meta) d
@@ -451,29 +479,50 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
-	void name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
+	IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)) \
 	{ \
-		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsOut(this->m_pManager->CreateOutputStream()); \
-		this->WriteKey(__wire__pParamsOut); \
-		wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		auto_iface_safe_ptr<interface_info<Serialize::IFormattedStream>::safe_class> __wire__pParamsOut; \
+		IException_Safe* OMEGA_CONCAT(name,_Exception_Safe) = CreateOutputStream(__wire__pParamsOut); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
+        OMEGA_CONCAT(name,_Exception_Safe) = WriteKey(__wire__pParamsOut); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
+		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(this->m_pManager->SendAndReceive(attribs,__wire__pParamsOut)); \
+		auto_iface_safe_ptr<interface_info<Serialize::IFormattedStream>::safe_class> __wire__pParamsIn; \
+		OMEGA_CONCAT(name,_Exception_Safe) = SendAndReceive(attribs,__wire__pParamsOut,__wire__pParamsIn); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
+		return 0; \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +
 
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
-	ret_type name(OMEGA_DECLARE_PARAMS(param_count,params) ) \
+	IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(interface_info<ret_type>::safe_class* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
 	{ \
-		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsOut(this->m_pManager->CreateOutputStream()); \
-		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::System::MetaInfo::default_value<ret_type>::value(); \
-		this->WriteKey(__wire__pParamsOut); \
-		wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		OMEGA_CONCAT(name,_RetVal) = 0; \
+		auto_iface_safe_ptr<interface_info<Serialize::IFormattedStream>::safe_class> __wire__pParamsOut; \
+		IException_Safe* OMEGA_CONCAT(name,_Exception_Safe) = CreateOutputStream(__wire__pParamsOut); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
+        OMEGA_CONCAT(name,_Exception_Safe) = WriteKey(__wire__pParamsOut); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
+		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-		auto_iface_ptr<Serialize::IFormattedStream> __wire__pParamsIn(this->m_pManager->SendAndReceive(attribs,__wire__pParamsOut)); \
+		auto_iface_safe_ptr<interface_info<Serialize::IFormattedStream>::safe_class> __wire__pParamsIn; \
+		OMEGA_CONCAT(name,_Exception_Safe) = SendAndReceive(attribs,__wire__pParamsOut,__wire__pParamsIn); \
+		if (OMEGA_CONCAT(name,_Exception_Safe)) \
+			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-		interface_info<ret_type>::wire_type::read(this->m_pManager,__wire__pParamsIn,OMEGA_CONCAT(name,_RetVal)); \
-		return OMEGA_CONCAT(name,_RetVal); \
+		OMEGA_CONCAT(name,_Exception_Safe) = interface_info<ret_type>::wire_type::read(this->m_pManager,__wire__pParamsIn,*OMEGA_CONCAT(name,_RetVal)); \
+		return OMEGA_CONCAT(name,_Exception_Safe); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +
 
@@ -495,7 +544,7 @@
 			if (iid == OMEGA_UUIDOF(n_space::name)) \
 			{ \
 				this->AddRef(); \
-				return this; \
+				return static_cast<n_space::name*>(this); \
 			} \
 			return Base::Internal_QueryInterface(iid); \
 		} \
@@ -503,20 +552,23 @@
 	private: \
 		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)(const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)&) {}; \
 		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)& operator = (const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_SafeProxy)&) {}; \
-	}; \
-	template <class I, class Base> \
+	};
+
+#define OMEGA_DECLARE_WIRE_PROXY(n_space,name,methods) \
+	template <class Base> \
 	struct OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy) : public Base \
 	{ \
 		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireProxy)(IWireManager* pManager, uint32_t id) : Base(pManager,id) \
 		{ } \
-		virtual IObject* Internal_QueryInterface(const guid_t& iid) \
+		virtual IException_Safe* Internal_QueryInterface_Safe(const guid_t& iid, IObject_Safe*& pObject) \
 		{ \
 			if (iid == OMEGA_UUIDOF(n_space::name)) \
 			{ \
-				this->AddRef(); \
-				return this; \
+				pObject = static_cast<interface_info<n_space::name*>::safe_class>(this); \
+				pObject->AddRef_Safe(); \
+				return 0; \
 			} \
-			return Base::Internal_QueryInterface(iid); \
+			return Base::Internal_QueryInterface(iid,pObject); \
 		} \
 		OMEGA_DECLARE_WIRE_PROXY_METHODS(methods) \
 	private: \
@@ -536,7 +588,11 @@
 
 #define OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
 	OMEGA_DEFINE_INTERFACE_DERIVED_NOWIRE(n_space,name,d_space,derived,guid,methods) \
-	namespace Omega { namespace System { namespace MetaInfo { OMEGA_WIRE_MAGIC(n_space,name) } } }
+	namespace Omega { namespace System { namespace MetaInfo { \
+	OMEGA_DECLARE_WIRE_STUB(n_space,name,methods) \
+	OMEGA_DECLARE_WIRE_PROXY(n_space,name,methods) \
+	OMEGA_WIRE_MAGIC(n_space,name) \
+	} } }
 
 #define OMEGA_DEFINE_INTERFACE(n_space,name,guid,methods) \
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
@@ -614,20 +670,5 @@
 		} \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))
-
-#define OMEGA_DEFINE_EXPORTED_STATIC_FUNCTION(ret_type,name,param_count,params) \
-	static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL name(Omega::System::MetaInfo::interface_info<ret_type>::safe_class* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
-	{ \
-		try \
-		{ \
-			static_cast<ret_type&>(Omega::System::MetaInfo::interface_info<ret_type&>::stub_functor(OMEGA_CONCAT(name,_RetVal))) = OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_SAFE_STUB(param_count,params)); \
-			return 0; \
-		} \
-		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
-		{ \
-			return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
-		} \
-	} \
-	static ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))
 
 #endif // OOCORE_MACROS_H_INCLUDED_

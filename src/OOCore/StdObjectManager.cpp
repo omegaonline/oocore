@@ -17,10 +17,10 @@ namespace OOCore
 		static IObject* CreateWireProxy(const guid_t& iid, IObject* pOuter, System::MetaInfo::IWireManager* pManager, uint32_t id);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireProxy)(
-			System::MetaInfo::interface_info<IObject*>::safe_class* retval,
 			System::MetaInfo::interface_info<IObject*>::safe_class pOuter,
 			System::MetaInfo::interface_info<System::MetaInfo::IWireManager*>::safe_class pManager,
-			System::MetaInfo::interface_info<uint32_t>::safe_class id);
+			System::MetaInfo::interface_info<uint32_t>::safe_class id,
+			System::MetaInfo::interface_info<IObject*>::safe_class* pObj);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireStub)(
 			System::MetaInfo::interface_info<System::MetaInfo::IWireStub*>::safe_class* retval,
@@ -50,11 +50,15 @@ namespace OOCore
 	public:
 		UnboundProxy() {}
 
+		virtual ~UnboundProxy()
+		{
+		}
+
 		void init(System::MetaInfo::IWireManager* pManager, const guid_t& oid, const guid_t& iid)
 		{
-			this->m_ptrProxy.Attach(wire_holder::CreateWireProxy(iid,this,pManager,0));
 			m_oid = oid;
 			m_iid = iid;
+			this->m_ptrProxy.Attach(wire_holder::CreateWireProxy(iid,this,pManager,0));
 		}
 
 	BEGIN_INTERFACE_MAP(UnboundProxy)
@@ -86,7 +90,7 @@ namespace OOCore
 
 	// IWireProxy members
 	public:
-		void WriteKey(Serialize::IFormattedStream* pStream)
+		virtual void WriteKey(Serialize::IFormattedStream* pStream)
 		{
 			System::MetaInfo::wire_write(0,pStream,m_oid);
 			System::MetaInfo::wire_write(0,pStream,m_iid);
@@ -125,7 +129,7 @@ namespace OOCore
 
 	// IWireProxy members
 	public:
-		void WriteKey(Serialize::IFormattedStream* /*pStream*/)
+		virtual void WriteKey(Serialize::IFormattedStream* /*pStream*/)
 		{
 			OOCORE_THROW_ERRNO(EINVAL);
 		}
@@ -584,12 +588,12 @@ void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
 	}
 }
 
-Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
+void OOCore::StdObjectManager::CreateOutputStream(IObject* pOuter, Omega::Serialize::IFormattedStream*& pStream)
 {
 	if (!m_ptrChannel)
 		OOCORE_THROW_ERRNO(EINVAL);
 
-	return m_ptrChannel->CreateOutputStream();
+	m_ptrChannel->CreateOutputStream(pOuter,pStream);
 }
 
 Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
@@ -674,10 +678,10 @@ IObject* OOCore::wire_holder::CreateWireProxy(const guid_t& iid, IObject* pOuter
 
 	IObject* pRet = 0;
 	System::MetaInfo::IException_Safe* pSE = p.pfnProxy(
-		System::MetaInfo::interface_info<IObject*&>::proxy_functor(pRet),
 		System::MetaInfo::interface_info<IObject*>::proxy_functor(pOuter),
 		System::MetaInfo::interface_info<System::MetaInfo::IWireManager*>::proxy_functor(pManager),
-		System::MetaInfo::interface_info<uint32_t>::proxy_functor(id));
+		System::MetaInfo::interface_info<uint32_t>::proxy_functor(id),
+		System::MetaInfo::interface_info<IObject*&>::proxy_functor(pRet,OMEGA_UUIDOF(IObject),pOuter));
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);

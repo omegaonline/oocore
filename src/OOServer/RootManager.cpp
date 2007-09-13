@@ -240,10 +240,13 @@ int Root::Manager::ClientConnector::start(Manager* pManager, const ACE_WString& 
 	addr.string_to_addr(strAddr.c_str());
 	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 #else
+	m_strAddr = strAddr;
 	ACE_UNIX_Addr addr(strAddr.c_str());
 	if (m_acceptor.open(addr) != 0)
 #endif
+	{
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::ClientConnector::start acceptor.open failed"),-1);
+	}
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::ClientConnector::start, register_handler failed"),-1);
@@ -258,8 +261,7 @@ void Root::Manager::ClientConnector::stop()
 	m_acceptor.close();
 
 #if !defined(ACE_HAS_WIN32_NAMED_PIPES)
-void* TODO;
-//	ACE_OS::unlink(m_strAddr.c_str());
+	ACE_OS::unlink(m_strAddr.c_str());
 #endif
 }
 

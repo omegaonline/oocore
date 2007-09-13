@@ -78,6 +78,7 @@ namespace Root
 			ACE_SPIPE_Acceptor  m_acceptor;
 #else
 			ACE_SOCK_Acceptor   m_acceptor;
+			ACE_WString         m_strAddr;
 #endif
 			int handle_signal(int, siginfo_t*, ucontext_t*);
 

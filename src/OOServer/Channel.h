@@ -154,7 +154,7 @@ namespace User
 
 	// IChannel members
 	public:
-		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
+		void CreateOutputStream(IObject* pOuter, Omega::Serialize::IFormattedStream*& pStream);
 		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream, Omega::uint16_t timeout);
 	};
 }

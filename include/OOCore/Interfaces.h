@@ -140,7 +140,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateInstance,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer(pOuter)),Omega::IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -293,7 +293,7 @@ Omega::Registry::IRegistryKey* Omega::Registry::IRegistryKey::OpenKey(const Omeg
 	return IRegistryKey_OpenKey(key,flags);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+OOCORE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer(pOuter)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid)
 {
 	IObject* pObj = 0;

@@ -7,7 +7,7 @@ void Omega::System::MetaInfo::iface_stub_functor<I>::init(typename interface_inf
 	if (pS)
 	{
 		IObject_Safe* pObjS = 0;
-		IException_Safe* pSE = pS->QueryInterface_Safe(&pObjS,&OMEGA_UUIDOF(IObject));
+		IException_Safe* pSE = pS->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
 		if (pSE)
 			throw_correct_exception(pSE);
 		if (!pObjS)
@@ -63,7 +63,7 @@ void Omega::System::MetaInfo::iface_proxy_functor<I>::detach(I* volatile & resul
 	if (m_pS)
 	{
 		IObject_Safe* pObjS = 0;
-		IException_Safe* pSE = m_pS->QueryInterface_Safe(&pObjS,&OMEGA_UUIDOF(IObject));
+		IException_Safe* pSE = m_pS->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
 		if (pSE)
 			throw_correct_exception(pSE);
 		if (!pObjS)
@@ -187,7 +187,7 @@ void Omega::System::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
 	}
 }
 
-Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid)
+Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 {
 	if (*piid==OMEGA_UUIDOF(IObject))
 	{
@@ -212,7 +212,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 				if (i != m_iid_map.end())
 				{
 					if (i->second)
-						return i->second->QueryInterface_Safe(retval,piid);
+						return i->second->QueryInterface_Safe(piid,retval);
 					else
 						return 0;
 				}
@@ -222,7 +222,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 				{
 					if (i->second)
 					{
-						IException_Safe* pSE = i->second->QueryInterface_Safe(&pQI,piid);
+						IException_Safe* pSE = i->second->QueryInterface_Safe(piid,&pQI);
 						if (pSE)
 							return pSE;
 					}
@@ -264,7 +264,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			}
 			
 			if (pObjS)
-				return pObjS->QueryInterface_Safe(retval,piid);
+				return pObjS->QueryInterface_Safe(piid,retval);
 		}
 		catch (std::exception& e)
 		{
@@ -414,7 +414,7 @@ Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(IObj
 	}
 
 	IObject_Safe* pRet = 0;
-	IException_Safe* pSE = ptrSafeStub->QueryInterface_Safe(&pRet,&iid);
+	IException_Safe* pSE = ptrSafeStub->QueryInterface_Safe(&iid,&pRet);
 	if (pSE)
 		throw_correct_exception(pSE);
 
@@ -483,7 +483,7 @@ Omega::System::MetaInfo::IException_Safe* Omega::System::MetaInfo::return_safe_e
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	auto_iface_ptr<IException> ptrE(pE);
 	IObject_Safe* pSE2 = 0;
-	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&pSE2,&iid);
+	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&iid,&pSE2);
 	if (pSE3)
 		return pSE3;
 	if (!pSE2)

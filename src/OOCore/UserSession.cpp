@@ -652,12 +652,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 
 	// Send to the handle
 	ACE_Time_Value now = ACE_OS::gettimeofday();
-	if (deadline <= now)
-	{
-		ACE_OS::last_error(ETIMEDOUT);
-		return false;
-	}
-
+	
 	// Scope lock...
 	{
         ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
@@ -800,16 +795,9 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 		if (deadline <= now)
 			return;
 
-		// Convert deadline time to #msecs
-		ACE_Time_Value wait = deadline - now;
-		ACE_UINT64 msecs = 0;
-		static_cast<const ACE_Time_Value>(wait).msec(static_cast<ACE_UINT64&>(msecs));
-		if (msecs > ACE_UINT32_MAX)
-			msecs = ACE_UINT32_MAX;
-
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<uint32_t>(msecs));
+			ptrOM->Invoke(ptrRequest,ptrResponse);
 		}
 		catch (IException* pInner)
 		{

@@ -192,12 +192,15 @@ namespace Omega
 				std_proxy_functor& operator = (const std_proxy_functor&) {}
 			};
 
-			interface IException_Safe;
+			interface IObject_Safe;
+			template <class Base> interface IException_Impl_Safe;
+			typedef IException_Impl_Safe<IObject_Safe> IException_Safe;
+
 			interface IObject_Safe
 			{
 				virtual void OMEGA_CALL AddRef_Safe() = 0;
 				virtual void OMEGA_CALL Release_Safe() = 0;
-				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid) = 0;
+				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS) = 0;
 			};
 
 			template <class I, class Base> struct IObject_SafeStub;
@@ -520,53 +523,7 @@ namespace Omega
 				typedef std_wire_type_array<IObject> wire_type;
 			};
 
-			template <class I, class Base> struct IException_SafeStub;
-			template <class I, class Base> struct IException_SafeProxy;
-			template <class I, class Base> struct IException_WireStub;
-			template <class Base> struct IException_WireProxy;
-
-			template <> struct interface_info<IException>
-			{
-				typedef IException_Safe safe_class;
-				template <class I> struct safe_stub_factory
-				{
-					typedef IException_SafeStub<I,typename interface_info<IObject>::safe_stub_factory<I>::type> type;
-				};
-				template <class I> struct safe_proxy_factory
-				{
-					typedef IException_SafeProxy<I,typename interface_info<IObject>::safe_proxy_factory<I>::type> type;
-				};
-				template <class I> struct wire_stub_factory
-				{
-					typedef IException_WireStub<I,typename interface_info<IObject>::wire_stub_factory<I>::type> type;
-				};
-				template <class I> struct wire_proxy_factory
-				{
-					typedef IException_WireProxy<typename interface_info<IObject>::wire_proxy_factory<I>::type> type;
-				};
-			};
-			template <> struct interface_info<IException*>
-			{
-				typedef interface_info<IException>::safe_class* safe_class;
-				typedef iface_stub_functor<IException> stub_functor;
-				typedef iface_proxy_functor<IException> proxy_functor;
-				typedef iface_wire_type<IException> wire_type;
-			};
-			template <> struct interface_info<IException**>
-			{
-				typedef interface_info<IException*>::safe_class* safe_class;
-				typedef iface_stub_functor_array<IException> stub_functor;
-				typedef iface_proxy_functor_array<IException> proxy_functor;
-				typedef std_wire_type_array<IException> wire_type;
-			};
-
-			interface IException_Safe : public IObject_Safe
-			{
-				OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,guid_t,ActualIID,0,());
-				OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,IException*,Cause,0,());
-				OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,string_t,Description,0,());
-				OMEGA_DECLARE_SAFE_DECLARED_METHOD(0,string_t,Source,0,());
-			};
+			OMEGA_DECLARE_FORWARDS(IException,Omega,IException,Omega,IObject)
 
 			template <class I> struct auto_iface_ptr
 			{
@@ -682,9 +639,9 @@ namespace Omega
 					{
 						m_pOuter->Release_Safe();
 					}
-					virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** ppS, const guid_t* piid)
+					virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 					{
-						return m_pOuter->QueryInterface_Safe(ppS,piid);
+						return m_pOuter->QueryInterface_Safe(piid,ppS);
 					}
 
 					IObject_Safe* m_pOuter;
@@ -724,7 +681,7 @@ namespace Omega
 						delete this;
 				}
 
-				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** ppS, const guid_t* piid)
+				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
 					if (*piid==OMEGA_UUIDOF(IObject))
 					{
@@ -781,7 +738,7 @@ namespace Omega
 				static IObject* Create(IObject* pOuter, IObject_Safe* pObjS)
 				{
 					IObject_Safe* pObjS2 = 0;
-					IException_Safe* pSE = pObjS->QueryInterface_Safe(&pObjS2,&OMEGA_UUIDOF(I));
+					IException_Safe* pSE = pObjS->QueryInterface_Safe(&OMEGA_UUIDOF(I),&pObjS2);
 					if (pSE)
 						throw_correct_exception(pSE);
 					if (!pObjS2)
@@ -871,52 +828,15 @@ namespace Omega
 				typename interface_info<I*>::safe_class m_pS;
 			};
 
-			template <class I, class Base>
-			struct IException_SafeStub : public Base
-			{
-				IException_SafeStub(I* pI) : Base(pI)
-				{ }
+			OMEGA_DEFINE_INTERNAL_INTERFACE
+			(
+				Omega,IException,
 
-				virtual IException_Safe* Internal_QueryInterface_Safe(const guid_t& iid, IObject_Safe*& pObject)
-				{
-					if (iid == OMEGA_UUIDOF(IException))
-					{
-						pObject = static_cast<IException_Safe*>(this);
-						pObject->AddRef_Safe();
-						return 0;
-					}
-
-					return Base::Internal_QueryInterface_Safe(iid,pObject);
-				}
-
-				OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,guid_t,ActualIID,0,());
-				OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,IException*,Cause,0,());
-				OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,string_t,Description,0,());
-				OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD(0,string_t,Source,0,());
-			};
-
-			template <class I, class Base>
-			struct IException_SafeProxy : public Base
-			{
-				IException_SafeProxy(typename interface_info<I*>::safe_class pS) : Base(pS)
-				{ }
-
-				virtual IObject* Internal_QueryInterface(const guid_t& iid)
-				{
-					if (iid == OMEGA_UUIDOF(IException))
-					{
-						this->AddRef();
-						return static_cast<IException*>(this);
-					}
-
-					return Base::Internal_QueryInterface(iid);
-				}
-
-				OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,guid_t,ActualIID,0,())
-				OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,IException*,Cause,0,())
-				OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,string_t,Description,0,())
-				OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(0,string_t,Source,0,())
-			};
+				OMEGA_METHOD(guid_t,ActualIID,0,())
+				OMEGA_METHOD(IException*,Cause,0,())
+				OMEGA_METHOD(string_t,Description,0,())
+				OMEGA_METHOD(string_t,Source,0,())
+			)
 
 			struct qi_rtti
 			{
@@ -991,7 +911,7 @@ namespace Omega
 						delete this;
 				}
 
-				inline virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(IObject_Safe** retval, const guid_t* piid);
+				inline virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval);
 
 			private:
 				AtomicOp<uint32_t>                   m_refcount;

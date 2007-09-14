@@ -394,16 +394,9 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 		if (deadline <= now)
 			return;
 
-		// Convert deadline time to #msecs
-		ACE_Time_Value wait = deadline - now;
-		ACE_UINT64 msecs = 0;
-		static_cast<const ACE_Time_Value>(wait).msec(static_cast<ACE_UINT64&>(msecs));
-		if (msecs > ACE_UINT32_MAX)
-			msecs = ACE_UINT32_MAX;
-
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse,static_cast<Omega::uint32_t>(msecs));
+			ptrOM->Invoke(ptrRequest,ptrResponse);
 		}
 		catch (IException* pInner)
 		{

@@ -41,7 +41,7 @@ namespace OOCore
 	// IObjectManager members
 	public:
 		void Connect(Omega::Remoting::IChannel* pChannel);
-		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint32_t timeout);
+		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut);
 		void Disconnect();
 		void CreateUnboundProxy(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};

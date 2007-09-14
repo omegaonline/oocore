@@ -245,16 +245,16 @@ namespace OOCore
 		}
 #endif
 
-		void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE);
-		int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE);
+		void DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE);
+		int DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE);
 	}
 }
 
-void OOCore::SEH::DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
+void OOCore::SEH::DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE)
 {
 	try
 	{
-		pStub->Invoke(method_id,pParamsIn,pParamsOut,timeout);
+		pStub->Invoke(method_id,pParamsIn,pParamsOut);
 	}
 	catch (IException* pE2)
 	{
@@ -262,7 +262,7 @@ void OOCore::SEH::DoInvoke2(uint32_t method_id, System::MetaInfo::IWireStub* pSt
 	}
 }
 
-int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout, IException*& pE)
+int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE)
 {
 	int err = 0;
 
@@ -271,7 +271,7 @@ int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub
 		LPEXCEPTION_POINTERS ex = 0;
 		ACE_SEH_TRY
 		{
-			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+			DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,pE);
 		}
 		ACE_SEH_EXCEPT((ex = GetExceptionInformation(),EXCEPTION_EXECUTE_HANDLER))
 		{
@@ -294,7 +294,7 @@ int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub
 		{
 			try
 			{
-				DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+				DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,pE);
 			}
 			catch (...)
 			{
@@ -310,18 +310,18 @@ int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub
 	#else
 
 		void* TODO; // You have no protection around Invoke for your compiler...
-		DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+		DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,pE);
 
 	#endif
 #else
 	void* TODO; // Some kind of signal handler here please?
-	DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,timeout,pE);
+	DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,pE);
 #endif
 
 	return err;
 }
 
-void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint32_t timeout)
+void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
 {
 	if (!pParamsIn)
 		OOCORE_THROW_ERRNO(EINVAL);
@@ -386,7 +386,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 	// Ask the stub to make the call
 	IException* pE = 0;
-	int err = SEH::DoInvoke(method_id,ptrStub,pParamsIn,pParamsOut,timeout,pE);
+	int err = SEH::DoInvoke(method_id,ptrStub,pParamsIn,pParamsOut,pE);
 	if (pE)
 		throw pE;
 	else if (err != 0)

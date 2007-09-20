@@ -12,7 +12,7 @@ namespace Omega
 			virtual void WriteByte(byte_t val) = 0;
 			virtual void WriteBytes(uint32_t cbBytes, const byte_t* val) = 0;
 		};
-		
+
 		interface IFormattedStream : public IStream
 		{
 			virtual bool_t ReadBoolean() = 0;
@@ -43,22 +43,59 @@ namespace Omega
 	{
 		namespace MetaInfo
 		{
+			interface IWireStub : public IObject
+			{
+				virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
+				virtual IObject* GetStubObject() = 0;
+			};
+
+			interface IWireProxy : public IObject
+			{
+				virtual void WriteKey(Serialize::IFormattedStream* pStream) = 0;
+			};
+
+			interface IWireManager : public IObject
+			{
+				virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
+				virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
+				virtual void ReleaseStub(uint32_t id) = 0;
+				virtual void CreateOutputStream(IObject* pOuter, Serialize::IFormattedStream*& pStream) = 0;
+				virtual Serialize::IFormattedStream* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pParams, uint16_t timeout = 15000) = 0;
+			};
+		}
+	}
+}
+
+OMEGA_DEFINE_IID(Omega::Serialize, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}")
+OMEGA_DEFINE_IID(Omega::Serialize, IFormattedStream, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
+OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireProxy, "{000B5251-8457-4ed5-93A2-DA1658CE1DCC}")
+OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
+OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
+
+namespace Omega
+{
+	namespace System
+	{
+		namespace MetaInfo
+		{
 			OMEGA_DECLARE_FORWARDS(IStream,Omega::Serialize,IStream,Omega,IObject)
 			OMEGA_DECLARE_FORWARDS(IFormattedStream,Omega::Serialize,IFormattedStream,Omega::Serialize,IStream)
+			OMEGA_DECLARE_FORWARDS(IWireStub,Omega::System::MetaInfo,IWireStub,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(IWireProxy,Omega::System::MetaInfo,IWireProxy,Omega,IObject)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::Serialize, IStream, 
+				Omega::Serialize, IStream,
 
 				OMEGA_METHOD(byte_t,ReadByte,0,())
 				OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
 				OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 				OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 			)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::Serialize, IFormattedStream, 
+				Omega::Serialize, IFormattedStream,
 
 				OMEGA_METHOD(bool_t,ReadBoolean,0,())
 				OMEGA_METHOD(uint16_t,ReadUInt16,0,())
@@ -73,24 +110,10 @@ namespace Omega
 				OMEGA_METHOD_VOID(WriteString,1,((in),const string_t&,val))
 			)
 			typedef IFormattedStream_Impl_Safe<interface_info<Serialize::IStream>::safe_class> IFormattedStream_Safe;
-			
-			interface IWireStub : public IObject
-			{
-				virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
-				virtual IObject* GetStubObject() = 0;
-			};
-
-			interface IWireProxy : public IObject
-			{
-				virtual void WriteKey(Serialize::IFormattedStream* pStream) = 0;
-			};
-
-			OMEGA_DECLARE_FORWARDS(IWireStub,Omega::System::MetaInfo,IWireStub,Omega,IObject)
-			OMEGA_DECLARE_FORWARDS(IWireProxy,Omega::System::MetaInfo,IWireProxy,Omega,IObject)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System::MetaInfo, IWireStub, 
+				Omega::System::MetaInfo, IWireStub,
 
 				OMEGA_METHOD_VOID(Invoke,3,((in),uint32_t,method_id,(in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
 				OMEGA_METHOD(IObject*,GetStubObject,0,())
@@ -99,13 +122,12 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System::MetaInfo, IWireProxy, 
+				Omega::System::MetaInfo, IWireProxy,
 
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Serialize::IFormattedStream*,pStream))
 			)
 			typedef IWireProxy_Impl_Safe<IObject_Safe> IWireProxy_Safe;
 
-			
 
 			//
 			//interface IWireStub_Safe : public IObject_Safe
@@ -116,15 +138,6 @@ namespace Omega
 			//{
 			//	virtual IException_Safe* WriteKey_Safe(IFormattedStream_Safe*) = 0;
 			//};
-
-			interface IWireManager : public IObject
-			{
-				virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
-				virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
-				virtual void ReleaseStub(uint32_t id) = 0;
-				virtual void CreateOutputStream(IObject* pOuter, Serialize::IFormattedStream*& pStream) = 0;
-				virtual Serialize::IFormattedStream* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pParams, uint16_t timeout = 15000) = 0;
-			};
 
 			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, byte_t& val)
 			{
@@ -218,7 +231,7 @@ namespace Omega
 			{
 				pManager->MarshalInterface(pStream,iid,val);
 			}
-		
+
 			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, byte_t& val)
 			{
 				return pStream->ReadByte_Safe(&val);
@@ -269,7 +282,7 @@ namespace Omega
 			{
 				IObject* pObject = 0;
 				pManager->UnmarshalInterface(interface_info<Serialize::IFormattedStream*>::stub_functor(pStream),piid ? *piid : guid_t::Null(),pObject);
-				val = interface_info<I*>::proxy_functor(static_cast<I*>(pObject));
+				val = typename interface_info<I*>::proxy_functor(static_cast<I*>(pObject));
 				return 0;
 			}
 
@@ -324,7 +337,7 @@ namespace Omega
 			{
 				try
 				{
-					pManager->MarshalInterface(interface_info<Serialize::IFormattedStream*>::stub_functor(pStream),piid ? *piid : OMEGA_UUIDOF(I),interface_info<I*>::stub_functor(val));
+					pManager->MarshalInterface(typename interface_info<Serialize::IFormattedStream*>::stub_functor(pStream),piid ? *piid : OMEGA_UUIDOF(I),typename interface_info<I*>::stub_functor(val));
 					return 0;
 				}
 				catch (IException* pE)
@@ -514,7 +527,7 @@ namespace Omega
 				{
 					if (*cbSize > val.m_alloc_size)
 						*cbSize = val.m_alloc_size;
-					
+
 					for (uint32_t i=0;i<*cbSize;++i)
 					{
 						IException_Safe* pSE = interface_info<T>::wire_type::write(pManager,pStream,val[i]);
@@ -623,7 +636,7 @@ namespace Omega
 				{
 					Contained(IObject_Safe* pOuter, IWireManager* pManager, uint32_t id) :
 						I_WireProxy(pManager,id), m_pOuter(pOuter)
-					{ 
+					{
 					}
 
 					virtual void OMEGA_CALL AddRef_Safe()
@@ -770,7 +783,7 @@ namespace Omega
 						if (--pThis->m_refcount==0)
 							pThis->m_pManager->ReleaseStub(pThis->m_id);
 						return 0;
-					} 
+					}
 					catch (IException* pE)
 					{
 						return return_safe_exception(pE);
@@ -797,7 +810,7 @@ namespace Omega
 			template <class I>
 			struct IObject_WireProxy : public I
 			{
-				IObject_WireProxy(IWireManager* pManager, uint32_t id) : 
+				IObject_WireProxy(IWireManager* pManager, uint32_t id) :
 					m_pManager(pManager), m_uId(id)
 				{
 					m_pManager->AddRef();
@@ -876,7 +889,7 @@ namespace Omega
 				{
 					try
 					{
-						auto_iface_ptr<Serialize::IFormattedStream> p = m_pManager->SendAndReceive(attribs,interface_info<Serialize::IFormattedStream*>::stub_functor(pParamsOut),timeout);
+						Serialize::IFormattedStream* p = m_pManager->SendAndReceive(attribs,interface_info<Serialize::IFormattedStream*>::stub_functor(pParamsOut),timeout);
 						pParamsIn = interface_info<Serialize::IFormattedStream*>::proxy_functor(p);
 						return 0;
 					}
@@ -890,26 +903,11 @@ namespace Omega
 
 			protected:
 				IWireManager*  m_pManager;
-				
+
 			private:
 				uint32_t       m_uId;
 			};
-		}
-	}
-}
 
-OMEGA_DEFINE_IID(Omega::Serialize, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}")
-OMEGA_DEFINE_IID(Omega::Serialize, IFormattedStream, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireProxy, "{000B5251-8457-4ed5-93A2-DA1658CE1DCC}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
-
-namespace Omega
-{
-	namespace System
-	{
-		namespace MetaInfo
-		{
 			OMEGA_WIRE_MAGIC(Omega,IObject)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2
@@ -924,14 +922,14 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2
 			(
-				Omega::Serialize, IStream, 
+				Omega::Serialize, IStream,
 
 				OMEGA_METHOD(byte_t,ReadByte,0,())
 				OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
 				OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 				OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 			)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2
 			(
 				Omega::Serialize, IFormattedStream,

@@ -494,10 +494,10 @@
 	IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)) \
 	{ \
 		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsOut; \
-		IException_Safe* OMEGA_CONCAT(name,_Exception_Safe) = CreateOutputStream(__wire__pParamsOut); \
+		IException_Safe* OMEGA_CONCAT(name,_Exception_Safe) = this->CreateOutputStream(__wire__pParamsOut); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
-        OMEGA_CONCAT(name,_Exception_Safe) = WriteKey(__wire__pParamsOut); \
+        OMEGA_CONCAT(name,_Exception_Safe) = this->WriteKey(__wire__pParamsOut); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
@@ -505,7 +505,7 @@
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsIn; \
-		OMEGA_CONCAT(name,_Exception_Safe) = SendAndReceive(attribs,__wire__pParamsOut,__wire__pParamsIn); \
+		OMEGA_CONCAT(name,_Exception_Safe) = this->SendAndReceive(attribs,__wire__pParamsOut,__wire__pParamsIn); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
@@ -518,10 +518,10 @@
 	{ \
 		OMEGA_CONCAT(name,_RetVal) = 0; \
 		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsOut; \
-		IException_Safe* OMEGA_CONCAT(name,_Exception_Safe) = CreateOutputStream(__wire__pParamsOut); \
+		IException_Safe* OMEGA_CONCAT(name,_Exception_Safe) = this->CreateOutputStream(__wire__pParamsOut); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
-        OMEGA_CONCAT(name,_Exception_Safe) = WriteKey(__wire__pParamsOut); \
+        OMEGA_CONCAT(name,_Exception_Safe) = this->WriteKey(__wire__pParamsOut); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
@@ -529,7 +529,7 @@
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
 		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsIn; \
-		OMEGA_CONCAT(name,_Exception_Safe) = SendAndReceive(attribs,__wire__pParamsOut,__wire__pParamsIn); \
+		OMEGA_CONCAT(name,_Exception_Safe) = this->SendAndReceive(attribs,__wire__pParamsOut,__wire__pParamsIn); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
@@ -591,7 +591,7 @@
 #define OMEGA_DEFINE_INTERNAL_INTERFACE(n_space,name,methods) \
 	OMEGA_DECLARE_SAFE(name,methods,name,d_space,derived) \
 	OMEGA_DECLARE_STUB(name,n_space,name,methods) \
-	OMEGA_DECLARE_PROXY(name,n_space,name,methods) 
+	OMEGA_DECLARE_PROXY(name,n_space,name,methods)
 
 #define OMEGA_DEFINE_INTERNAL_INTERFACE_PART2(n_space,name,methods) \
 	OMEGA_DECLARE_WIRE_STUB(name,n_space,name,methods) \

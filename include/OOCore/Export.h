@@ -500,7 +500,7 @@
         OMEGA_CONCAT(name,_Exception_Safe) = this->WriteKey(__wire__pParamsOut); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
-		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
@@ -524,7 +524,7 @@
         OMEGA_CONCAT(name,_Exception_Safe) = this->WriteKey(__wire__pParamsOut); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
-		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(this->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		OMEGA_CONCAT(name,_Exception_Safe) = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		if (OMEGA_CONCAT(name,_Exception_Safe)) \
 			return OMEGA_CONCAT(name,_Exception_Safe); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
@@ -580,7 +580,7 @@
 				pObject->AddRef_Safe(); \
 				return 0; \
 			} \
-			return Base::Internal_QueryInterface(iid,pObject); \
+			return Base::Internal_QueryInterface_Safe(iid,pObject); \
 		} \
 		OMEGA_DECLARE_WIRE_PROXY_METHODS(methods) \
 	private: \

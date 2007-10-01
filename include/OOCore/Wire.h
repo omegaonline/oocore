@@ -128,43 +128,7 @@ namespace Omega
 			)
 			typedef IWireProxy_Impl_Safe<IObject_Safe> IWireProxy_Safe;
 
-
-			//
-			//interface IWireStub_Safe : public IObject_Safe
-			//{
-			//};
-
-			//interface IWireProxy_Safe : public IObject_Safe
-			//{
-			//	virtual IException_Safe* WriteKey_Safe(IFormattedStream_Safe*) = 0;
-			//};
-
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, byte_t& val)
-			{
-				val = pStream->ReadByte();
-			}
-
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, bool_t& val)
-			{
-				val = pStream->ReadBoolean();
-			}
-
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t& val)
-			{
-				val = pStream->ReadUInt16();
-			}
-
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t& val)
-			{
-				val = pStream->ReadUInt32();
-			}
-
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, uint64_t& val)
-			{
-				val = pStream->ReadUInt64();
-			}
-
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, guid_t& val)
+			static void wire_read(Serialize::IFormattedStream* pStream, guid_t& val)
 			{
 				val.Data1 = pStream->ReadUInt32();
 				val.Data2 = pStream->ReadUInt16();
@@ -175,9 +139,12 @@ namespace Omega
 					OMEGA_THROW(L"Bad read!");
 			}
 
-			static void wire_read(IWireManager*, Serialize::IFormattedStream* pStream, string_t& val)
+			static void wire_write(Serialize::IFormattedStream* pStream, const guid_t& val)
 			{
-				val = pStream->ReadString();
+				pStream->WriteUInt32(val.Data1);
+				pStream->WriteUInt16(val.Data2);
+				pStream->WriteUInt16(val.Data3);
+				pStream->WriteBytes(8,val.Data4);
 			}
 
 			template <class I>
@@ -188,76 +155,38 @@ namespace Omega
 				val = static_cast<I*>(pObject);
 			}
 
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, byte_t val)
-			{
-				pStream->WriteByte(val);
-			}
-
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, bool_t val)
-			{
-				pStream->WriteBoolean(val);
-			}
-
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint16_t val)
-			{
-				pStream->WriteUInt16(val);
-			}
-
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, uint32_t val)
-			{
-				pStream->WriteUInt32(val);
-			}
-
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const uint64_t& val)
-			{
-				pStream->WriteUInt64(val);
-			}
-
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const guid_t& val)
-			{
-				pStream->WriteUInt32(val.Data1);
-				pStream->WriteUInt16(val.Data2);
-				pStream->WriteUInt16(val.Data3);
-				pStream->WriteBytes(8,val.Data4);
-			}
-
-			static void wire_write(IWireManager*, Serialize::IFormattedStream* pStream, const string_t& val)
-			{
-				pStream->WriteString(val);
-			}
-
 			template <class I>
 			static void wire_write(IWireManager* pManager, Serialize::IFormattedStream* pStream, I* val, const guid_t& iid = OMEGA_UUIDOF(I))
 			{
 				pManager->MarshalInterface(pStream,iid,val);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, byte_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, byte_t& val)
 			{
 				return pStream->ReadByte_Safe(&val);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, bool_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, bool_t& val)
 			{
 				return pStream->ReadBoolean_Safe(&val);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, uint16_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, uint16_t& val)
 			{
 				return pStream->ReadUInt16_Safe(&val);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, uint32_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, uint32_t& val)
 			{
 				return pStream->ReadUInt32_Safe(&val);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, uint64_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, uint64_t& val)
 			{
 				return pStream->ReadUInt64_Safe(&val);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, guid_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, guid_t& val)
 			{
 				IException_Safe* pSE = pStream->ReadUInt32_Safe(&val.Data1);
 				if (pSE)
@@ -272,7 +201,7 @@ namespace Omega
 				return pStream->ReadBytes_Safe(&bytes,val.Data4);
 			}
 
-			static IException_Safe* wire_read(IWireManager*, IFormattedStream_Safe* pStream, string_t& val)
+			static IException_Safe* wire_read(IFormattedStream_Safe* pStream, string_t& val)
 			{
 				return pStream->ReadString_Safe(&val);
 			}
@@ -286,32 +215,32 @@ namespace Omega
 				return 0;
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, byte_t val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, byte_t val)
 			{
 				return pStream->WriteByte_Safe(val);
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, bool_t val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, bool_t val)
 			{
 				return pStream->WriteBoolean_Safe(val);
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, uint16_t val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, uint16_t val)
 			{
 				return pStream->WriteUInt16_Safe(val);
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, uint32_t val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, uint32_t val)
 			{
 				return pStream->WriteUInt32_Safe(val);
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, const uint64_t& val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, const uint64_t& val)
 			{
 				return pStream->WriteUInt64_Safe(&val);
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, const guid_t& val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, const guid_t& val)
 			{
 				IException_Safe* pSE = pStream->WriteUInt32_Safe(val.Data1);
 				if (!pSE)
@@ -327,7 +256,7 @@ namespace Omega
 				return pSE;
 			}
 
-			static IException_Safe* wire_write(IWireManager*, IFormattedStream_Safe* pStream, const string_t& val)
+			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, const string_t& val)
 			{
 				return pStream->WriteString_Safe(&val);
 			}
@@ -357,14 +286,14 @@ namespace Omega
 					return 0;
 				}
 
-				static IException_Safe* read(IWireManager* pManager, IFormattedStream_Safe* pStream, type& val)
+				static IException_Safe* read(IWireManager*, IFormattedStream_Safe* pStream, type& val)
 				{
-					return wire_read(pManager,pStream,val);
+					return wire_read(pStream,val);
 				}
 
-				static IException_Safe* write(IWireManager* pManager, IFormattedStream_Safe* pStream, const type& val)
+				static IException_Safe* write(IWireManager*, IFormattedStream_Safe* pStream, const type& val)
 				{
-					return wire_write(pManager,pStream,val);
+					return wire_write(pStream,val);
 				}
 
 				static IException_Safe* no_op(bool)
@@ -703,7 +632,7 @@ namespace Omega
 						return 0;
 					}
 					else
-						return m_contained.Internal_QueryInterface(*piid,*retval);
+						return m_contained.Internal_QueryInterface_Safe(*piid,*retval);
 				}
 			};
 
@@ -793,7 +722,7 @@ namespace Omega
 				static IException_Safe* QueryInterface_Wire(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
 					guid_t iid;
-					IException_Safe* pSE = wire_read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);
+					IException_Safe* pSE = wire_read(pParamsIn,iid);
 					if (pSE)
 						return pSE;
 
@@ -821,7 +750,7 @@ namespace Omega
 					m_pManager->Release();
 				}
 
-                virtual IException_Safe* Internal_QueryInterface(const guid_t& iid, IObject_Safe*& pObject)
+                virtual IException_Safe* Internal_QueryInterface_Safe(const guid_t& iid, IObject_Safe*& pObject)
 				{
 					IException_Safe* pSE = 0;
 					if (m_uId == 0)
@@ -835,7 +764,7 @@ namespace Omega
 						pSE = WriteKey(pParamsOut);
 						if (pSE)
 							return pSE;
-						pSE = wire_write(this->m_pManager,pParamsOut,(uint32_t)2);
+						pSE = wire_write(pParamsOut,(uint32_t)2);
 						if (pSE)
 							return pSE;
 						pSE = interface_info<const guid_t&>::wire_type::write(this->m_pManager,pParamsOut,&iid);

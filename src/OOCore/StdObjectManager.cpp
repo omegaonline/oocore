@@ -92,8 +92,8 @@ namespace OOCore
 	public:
 		virtual void WriteKey(Serialize::IFormattedStream* pStream)
 		{
-			System::MetaInfo::wire_write(0,pStream,m_oid);
-			System::MetaInfo::wire_write(0,pStream,m_iid);
+			System::MetaInfo::wire_write(pStream,m_oid);
+			System::MetaInfo::wire_write(pStream,m_iid);
 		}
 	};
 
@@ -339,9 +339,9 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 		// Read the oid and iid
 		guid_t oid;
-		System::MetaInfo::wire_read(this,pParamsIn,oid);
+		System::MetaInfo::wire_read(pParamsIn,oid);
 		guid_t iid;
-		System::MetaInfo::wire_read(this,pParamsIn,iid);
+		System::MetaInfo::wire_read(pParamsIn,iid);
 
 		method_id = pParamsIn->ReadUInt32();
 
@@ -441,7 +441,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 			{
 				// Write the marshalling oid
 				pStream->WriteByte(2);
-				System::MetaInfo::wire_write(this,pStream,oid);
+				System::MetaInfo::wire_write(pStream,oid);
 
 				// Let the custom handle marshalling...
 				ptrMarshal->Marshal(pStream,iid,0);
@@ -487,7 +487,7 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 
 	// Write out the data
 	pStream->WriteByte(1);
-	System::MetaInfo::wire_write(this,pStream,iid);
+	System::MetaInfo::wire_write(pStream,iid);
 	pStream->WriteUInt32(stub_id);
 }
 
@@ -501,7 +501,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 	else if (flag == 1)
 	{
 		guid_t wire_iid;
-		System::MetaInfo::wire_read(this,pStream,wire_iid);
+		System::MetaInfo::wire_read(pStream,wire_iid);
 		uint32_t proxy_id = pStream->ReadUInt32();
 
 		// See if we have a proxy already...
@@ -553,7 +553,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 	else if (flag == 2)
 	{
      	guid_t oid;
-		System::MetaInfo::wire_read(this,pStream,oid);
+		System::MetaInfo::wire_read(pStream,oid);
 
 		// Create an instance of Oid
 		ObjectPtr<Remoting::IMarshal> ptrMarshal(oid,Activation::InProcess);

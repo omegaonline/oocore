@@ -329,6 +329,8 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxyBase::QueryInterface_Common(co
 				if (!pRtti->pfnCreateSafeProxy)
 					throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
+				// TODO This is all wrong!
+				void* FUCKED;
 				pObj = pRtti->pfnCreateSafeProxy(this,m_pS);
 			}
 		}

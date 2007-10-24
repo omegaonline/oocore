@@ -92,20 +92,20 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
         if (dll.open(dll_name.c_str()) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(System::MetaInfo::interface_info<Activation::IObjectFactory*&>::safe_class pOF, System::MetaInfo::interface_info<const guid_t&>::safe_class oid, System::MetaInfo::interface_info<Activation::Flags_t>::safe_class flags);
+		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(System::MetaInfo::marshal_info<Activation::IObjectFactory*&>::safe_type::type pOF, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags);
 		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(L"Omega_GetObjectFactory_Safe");
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 
-		ObjectPtr<Activation::IObjectFactory> ptrOF;
+		Activation::IObjectFactory* pOF = 0;
 		System::MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
-			System::MetaInfo::interface_info<Activation::IObjectFactory* volatile &>::proxy_functor(ptrOF),
-			System::MetaInfo::interface_info<const guid_t&>::proxy_functor(oid),
-			System::MetaInfo::interface_info<Activation::Flags_t>::proxy_functor(flags));
+			System::MetaInfo::marshal_info<Activation::IObjectFactory*&>::safe_type::coerce(pOF),
+			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
+			System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags));
 
 		if (GetObjectFactory_Exception)
 			System::MetaInfo::throw_correct_exception(GetObjectFactory_Exception);
-		return ptrOF.AddRefReturn();
+		return pOF;
 	}
 	else
 	{
@@ -306,7 +306,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activ
 	return pNew;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid))(outer(pOuter)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 {
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));

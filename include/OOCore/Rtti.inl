@@ -1,191 +1,148 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
-template <class I>
-void Omega::System::MetaInfo::iface_stub_functor<I>::init(typename interface_info<I*>::safe_class pS, const guid_t& iid, typename interface_info<IObject>::safe_class* pOuter)
-{
-	if (pS)
-	{
-		IObject_Safe* pObjS = 0;
-		IException_Safe* pSE = pS->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
-		if (pSE)
-			throw_correct_exception(pSE);
-		if (!pObjS)
-			throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
-
-		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
-		m_pI = static_cast<I*>(lookup_proxy(pObjS,iface_stub_functor<IObject>(pOuter),iid,false));
-		ptrObjS.detach();
-	}
-}
-
-template <class I>
-void Omega::System::MetaInfo::iface_stub_functor<I>::detach(typename interface_info<I*>::safe_class& result, const guid_t& iid)
-{
-	if (result)
-		result->Release_Safe();
-
-	result = 0;
-	if (m_pI)
-	{
-		auto_iface_ptr<IObject> ptrObj(m_pI->QueryInterface(OMEGA_UUIDOF(IObject)));
-		if (!ptrObj)
-			throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
-
-		result = static_cast<typename interface_info<I>::safe_class*>(lookup_stub(ptrObj,iid));
-		ptrObj.detach();
-	}
-}
-
-template <class I>
-void Omega::System::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid, IObject* pOuter)
-{
-	m_iid = iid;
-	m_pOuter = pOuter;
-
-	if (pI)
-	{
-		auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(OMEGA_UUIDOF(IObject)));
-		if (!ptrObj)
-			throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
-
-		m_pS = static_cast<typename interface_info<I*>::safe_class>(lookup_stub(ptrObj,m_iid));
-	}
-}
-
-template <class I>
-void Omega::System::MetaInfo::iface_proxy_functor<I>::detach(I* volatile & result)
-{
-	if (result)
-		result->Release();
-
-	result = 0;
-	if (m_pS)
-	{
-		IObject_Safe* pObjS = 0;
-		IException_Safe* pSE = m_pS->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
-		if (pSE)
-			throw_correct_exception(pSE);
-		if (!pObjS)
-			throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
-
-		auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
-		result = static_cast<I*>(lookup_proxy(pObjS,m_pOuter,m_iid,true));
-		ptrObjS.detach();
-	}
-}
-
-template <class I>
-Omega::System::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
-{
-	if (m_cbSize > m_alloc_size)
-	{
-		delete [] m_pFunctors;
-		delete [] m_pVals;
-
-		OMEGA_THROW(L"Array has been resized out of bounds");
-	}
-
-	if (m_piids)
-	{
-		for (uint32_t i=0;i<m_cbSize;++i)
-			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
-	}
-	else
-	{
-		for (uint32_t i=0;i<m_cbSize;++i)
-			m_pFunctors[i].detach(m_pResults[i],m_iid);
-	}
-
-	delete [] m_pFunctors;
-	delete [] m_pVals;
-}
-
-template <class I>
-void Omega::System::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<I*>::safe_class* pVals)
-{
-	try
-	{
-		if (m_cbSize>0)
-		{
-			OMEGA_NEW(m_pFunctors,typename interface_info<I>::stub_functor[m_cbSize]);
-			OMEGA_NEW(m_pVals,I[m_cbSize]);
-
-			if (m_piids)
-			{
-				for (uint32_t i=0;i<m_cbSize;++i)
-					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
-			}
-			else
-			{
-				for (uint32_t i=0;i<m_cbSize;++i)
-					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
-			}
-		}
-	}
-	catch (...)
-	{
-		delete [] m_pFunctors;
-		delete [] m_pVals;
-		throw;
-	}
-}
-
-template <class I>
-Omega::System::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array()
-{
-	if (m_cbSize > m_alloc_size)
-	{
-		delete [] m_pFunctors;
-		delete [] m_pVals;
-
-		OMEGA_THROW(L"Array has been resized out of bounds");
-	}
-
-	if (m_piids)
-	{
-		for (uint32_t i=0;i<m_cbSize;++i)
-			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
-	}
-	else
-	{
-		for (uint32_t i=0;i<m_cbSize;++i)
-			m_pFunctors[i].detach(m_pResults[i],m_iid);
-	}
-
-	delete [] m_pFunctors;
-	delete [] m_pVals;
-}
-
-template <class I>
-void Omega::System::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
-{
-	try
-	{
-		if (m_cbSize>0)
-		{
-			OMEGA_NEW(m_pFunctors,typename interface_info<I>::proxy_functor[m_cbSize]);
-			OMEGA_NEW(m_pVals,typename interface_info<I>::safe_class[m_cbSize]);
-
-			if (m_piids)
-			{
-				for (uint32_t i=0;i<m_cbSize;++i)
-					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
-			}
-			else
-			{
-				for (uint32_t i=0;i<m_cbSize;++i)
-					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
-			}
-		}
-	}
-	catch (...)
-	{
-		delete [] m_pFunctors;
-		delete [] m_pVals;
-		throw;
-	}
-}
+//template <class I>
+//void Omega::System::MetaInfo::iface_stub_functor<I>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
+//{
+//	m_pI = lookup_proxy<I>(pS,iid,false);
+//}
+//
+//template <class I>
+//void Omega::System::MetaInfo::iface_stub_functor<I>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
+//{
+//	if (result)
+//		result->Release_Safe();
+//
+//	result = lookup_stub<I>(m_pI,iid);
+//}
+//
+//template <class I>
+//void Omega::System::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid)
+//{
+//	m_iid = iid;
+//	m_pS = lookup_stub<I>(pI,m_iid);
+//}
+//
+//template <class I>
+//void Omega::System::MetaInfo::iface_proxy_functor<I>::detach(I* volatile & result)
+//{
+//	if (result)
+//		result->Release();
+//
+//	result = lookup_proxy<I>(m_pS,m_iid,true);
+//}
+//
+//template <class I>
+//Omega::System::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
+//{
+//	if (m_cbSize > m_alloc_size)
+//	{
+//		delete [] m_pFunctors;
+//		delete [] m_pVals;
+//
+//		OMEGA_THROW(L"Array has been resized out of bounds");
+//	}
+//
+//	if (m_piids)
+//	{
+//		for (uint32_t i=0;i<m_cbSize;++i)
+//			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
+//	}
+//	else
+//	{
+//		for (uint32_t i=0;i<m_cbSize;++i)
+//			m_pFunctors[i].detach(m_pResults[i],m_iid);
+//	}
+//
+//	delete [] m_pFunctors;
+//	delete [] m_pVals;
+//}
+//
+//template <class I>
+//void Omega::System::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<I>::safe_class** pVals)
+//{
+//	try
+//	{
+//		if (m_cbSize>0)
+//		{
+//			OMEGA_NEW(m_pFunctors,typename marshal_info<I>::stub_functor[m_cbSize]);
+//			OMEGA_NEW(m_pVals,I[m_cbSize]);
+//
+//			if (m_piids)
+//			{
+//				for (uint32_t i=0;i<m_cbSize;++i)
+//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
+//			}
+//			else
+//			{
+//				for (uint32_t i=0;i<m_cbSize;++i)
+//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
+//			}
+//		}
+//	}
+//	catch (...)
+//	{
+//		delete [] m_pFunctors;
+//		delete [] m_pVals;
+//		throw;
+//	}
+//}
+//
+//template <class I>
+//Omega::System::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array()
+//{
+//	if (m_cbSize > m_alloc_size)
+//	{
+//		delete [] m_pFunctors;
+//		delete [] m_pVals;
+//
+//		OMEGA_THROW(L"Array has been resized out of bounds");
+//	}
+//
+//	if (m_piids)
+//	{
+//		for (uint32_t i=0;i<m_cbSize;++i)
+//			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
+//	}
+//	else
+//	{
+//		for (uint32_t i=0;i<m_cbSize;++i)
+//			m_pFunctors[i].detach(m_pResults[i],m_iid);
+//	}
+//
+//	delete [] m_pFunctors;
+//	delete [] m_pVals;
+//}
+//
+//template <class I>
+//void Omega::System::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
+//{
+//	try
+//	{
+//		if (m_cbSize>0)
+//		{
+//			OMEGA_NEW(m_pFunctors,typename marshal_info<I>::proxy_functor[m_cbSize]);
+//			OMEGA_NEW(m_pVals,typename marshal_info<I>::safe_type[m_cbSize]);
+//
+//			if (m_piids)
+//			{
+//				for (uint32_t i=0;i<m_cbSize;++i)
+//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
+//			}
+//			else
+//			{
+//				for (uint32_t i=0;i<m_cbSize;++i)
+//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
+//			}
+//		}
+//	}
+//	catch (...)
+//	{
+//		delete [] m_pFunctors;
+//		delete [] m_pVals;
+//		throw;
+//	}
+//}
 
 Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 {
@@ -197,89 +154,95 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 	}
 
 	*retval = 0;
+	
 	try
 	{
-		try
+		auto_iface_safe_ptr<IObject_Safe> ptrQI;
+		auto_iface_safe_ptr<IObject_Safe> ptrStub;
+
+		// See if we have it already
 		{
-			IObject_Safe* pObjS = 0;
-			IObject_Safe* pQI = 0;
+			System::ReadGuard guard(m_lock);
 
-			// See if we have it already, or can QI for it...
+			std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(*piid);
+			if (i != m_iid_map.end())
 			{
-				System::ReadGuard guard(m_lock);
-
-				std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(*piid);
-				if (i != m_iid_map.end())
-				{
-					if (i->second)
-						return i->second->QueryInterface_Safe(piid,retval);
-					else
-						return 0;
-				}
-
-				// QI all entries
-				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
-				{
-					if (i->second)
-					{
-						IException_Safe* pSE = i->second->QueryInterface_Safe(piid,&pQI);
-						if (pSE)
-							return pSE;
-					}
-                    if (pQI)
-					{
-						pObjS = i->second;
-						break;
-					}
-				}
-			}
-
-			if (!pObjS)
-			{
-				// New stub required
-				const qi_rtti* pRtti = get_qi_rtti_info(*piid);
-				if (pRtti)
-				{
-					if (!pRtti->pfnCreateSafeStub)
-						throw INoInterfaceException::Create(*piid,OMEGA_SOURCE_INFO);
-
-					pObjS = pRtti->pfnCreateSafeStub(this,m_pObj);
-				}
-			}
-
-			System::WriteGuard guard(m_lock);
-
-			auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
-			std::pair<std::map<const guid_t,IObject_Safe*>::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(*piid,pObjS));
-			if (p.second)
-				ptrObjS.detach();
-			else
-				pObjS = p.first->second;
-
-			if (pQI)
-			{
-				*retval = pQI;
-				(*retval)->AddRef_Safe();
+				IException_Safe* pSE = i->second->QueryInterface_Safe(piid,retval);
+				if (pSE)
+					return pSE;
 				return 0;
 			}
 
-			if (pObjS)
-				return pObjS->QueryInterface_Safe(piid,retval);
+			// See if any known interface supports the new interface
+			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+			{
+				IObject_Safe* pQI = 0;
+				IException_Safe* pSE = i->second->QueryInterface_Safe(piid,&pQI);
+				if (pSE)
+					return pSE;
+				if (pQI)
+				{
+					ptrQI.attach(pQI);
+					ptrStub = i->second;
+					break;
+				}
+			}
 		}
-		catch (std::exception& e)
+
+		if (!ptrQI)
 		{
-			OMEGA_THROW(string_t(e.what(),false));
+			// Check whether underlying object supports interface
+			auto_iface_ptr<IObject> ptrI(m_pObj->QueryInterface(*piid));
+			if (!ptrI)
+				return 0;
+
+			// New stub required
+			const qi_rtti* pRtti = get_qi_rtti_info(*piid);
+			if (!pRtti || !pRtti->pfnCreateSafeStub)
+				throw INoInterfaceException::Create(*piid,OMEGA_SOURCE_INFO);
+
+			ptrStub = pRtti->pfnCreateSafeStub(this,ptrI);
 		}
+		
+		{
+			System::WriteGuard guard(m_lock);
+
+			std::pair<std::map<const guid_t,IObject_Safe*>::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(*piid,ptrStub));
+			if (!p.second)
+			{
+				ptrQI = 0;
+				ptrStub = p.first->second;
+			}
+			else
+			{
+				ptrStub->AddRef_Safe();
+			}
+		}
+
+		if (!ptrQI)
+		{
+			IObject_Safe* pQI = 0;
+			IException_Safe* pSE = ptrStub->QueryInterface_Safe(piid,&pQI);
+			if (pSE)
+				return pSE;
+			ptrQI.attach(pQI);
+		}
+
+		*retval = ptrQI;
+		ptrQI.detach();
+		return 0;
+	}
+	catch (std::exception& e)
+	{
+		return return_safe_exception(Omega::IException::Create(string_t(e.what(),false),OMEGA_SOURCE_INFO));
 	}
 	catch (IException* pE)
 	{
 		return return_safe_exception(pE);
 	}
-
-	return 0;
 }
 
-Omega::IObject* Omega::System::MetaInfo::SafeProxyBase::QueryInterface_Common(const guid_t& iid)
+Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
 {
 	if (iid==OMEGA_UUIDOF(IObject) ||
 		iid==OMEGA_UUIDOF(SafeProxy))
@@ -290,123 +253,125 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxyBase::QueryInterface_Common(co
 
 	try
 	{
-		IObject* pObj = 0;
-		IObject* pQI = 0;
+		auto_iface_ptr<IObject> ptrQI;
+		auto_iface_ptr<IObject> ptrProxy;
 
-		// See if we have it already or can QI for it...
+		// See if we have it already...
 		{
 			System::ReadGuard guard(m_lock);
 
 			std::map<const guid_t,IObject*>::iterator i=m_iid_map.find(iid);
 			if (i != m_iid_map.end())
-			{
-				if (i->second)
-					return i->second->QueryInterface(iid);
-				else
-					return 0;
-			}
-
-			// QI all entries
+				return i->second->QueryInterface(iid);
+			
+			// See if any known interface supports the new interface
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				if (i->second)
-					pQI = i->second->QueryInterface(iid);
-
-				if (pQI)
+				ptrQI.attach(i->second->QueryInterface(iid));
+				if (ptrQI)
 				{
-					pObj = i->second;
+					ptrProxy = i->second;
 					break;
 				}
 			}
 		}
 
-		if (!pObj)
+		if (!ptrProxy)
 		{
+			// Check whether underlying object supports interface
+			IObject_Safe* pS = 0;
+			IException_Safe* pSE = m_pS->QueryInterface_Safe(&iid,&pS);
+			if (pSE)
+				throw_correct_exception(pSE);
+			if (!pS)
+				return 0;
+
+			auto_iface_safe_ptr<IObject_Safe> ptrS(pS);
+			
 			// New interface required
 			const qi_rtti* pRtti = get_qi_rtti_info(iid);
-			if (pRtti)
-			{
-				if (!pRtti->pfnCreateSafeProxy)
-					throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+			if (!pRtti || !pRtti->pfnCreateSafeProxy)
+				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
-				// TODO This is all wrong!
-				void* FUCKED;
-				pObj = pRtti->pfnCreateSafeProxy(this,m_pS);
+			ptrProxy = pRtti->pfnCreateSafeProxy(this,ptrS);
+		}
+		
+		{
+			System::WriteGuard guard(m_lock);
+				
+			std::pair<std::map<const guid_t,IObject*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,ptrProxy));
+			if (!p.second)
+			{	
+				ptrQI = 0;
+				ptrProxy = p.first->second;
+			}
+			else
+			{
+				ptrProxy->AddRef();
 			}
 		}
 
-		System::WriteGuard guard(m_lock);
+		if (!ptrQI)
+			ptrQI.attach(ptrProxy->QueryInterface(iid));
 
-		auto_iface_ptr<IObject> ptrObj(pObj);
-		std::pair<std::map<const guid_t,IObject*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,pObj));
-		if (p.second)
-			ptrObj.detach();
-		else
-			pObj = p.first->second;
-
-		if (pQI)
-		{
-			pQI->AddRef();
-			return pQI;
-		}
-
-		if (pObj)
-			return pObj->QueryInterface(iid);
+		IObject* pRet = ptrQI;
+		ptrQI.detach();
+		return pRet;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(string_t(e.what(),false));
 	}
-
-	return 0;
 }
 
-Omega::System::MetaInfo::SafeProxyStubMap& Omega::System::MetaInfo::get_proxy_map()
+Omega::System::MetaInfo::SafeStubMap& Omega::System::MetaInfo::get_stub_map()
 {
-	static SafeProxyStubMap proxy_map;
-	return proxy_map;
-}
-
-Omega::System::MetaInfo::SafeProxyStubMap& Omega::System::MetaInfo::get_stub_map()
-{
-	static SafeProxyStubMap stub_map;
+	static SafeStubMap stub_map;
 	return stub_map;
 }
 
-Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(IObject* pObj, const guid_t& iid)
+template <class I>
+typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::MetaInfo::lookup_stub(I* pI, const guid_t& iid)
 {
-	SafeProxyStubMap& stub_map = get_stub_map();
+	if (!pI)
+		return 0;
 
-	auto_iface_safe_ptr<IObject_Safe> ptrSafeStub;
+	SafeStubMap& stub_map = get_stub_map();
+
+	auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(OMEGA_UUIDOF(IObject)));
+	if (!ptrObj)
+		throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
+
+	auto_iface_safe_ptr<IObject_Safe> ptrStub;
 	try
 	{
 		// Lookup first
 		{
 			System::ReadGuard guard(stub_map.m_lock);
 
-			std::map<void*,void*>::iterator i=stub_map.m_map.find(pObj);
+			std::map<IObject*,IObject_Safe*>::iterator i=stub_map.m_map.find(ptrObj);
 			if (i != stub_map.m_map.end())
 			{
-				ptrSafeStub = static_cast<IObject_Safe*>(i->second);
+				ptrStub = i->second;
 			}
 		}
 
-		if (!ptrSafeStub)
+		if (!ptrStub)
 		{
-			auto_iface_ptr<SafeProxy> ptrSafeProxy(static_cast<SafeProxy*>(pObj->QueryInterface(OMEGA_UUIDOF(SafeProxy))));
-			if (ptrSafeProxy)
+			auto_iface_ptr<SafeProxy> ptrProxy(static_cast<SafeProxy*>(ptrObj->QueryInterface(OMEGA_UUIDOF(SafeProxy))));
+			if (ptrProxy)
 			{
-				ptrSafeStub = ptrSafeProxy->GetSafeStub();
+				ptrStub = ptrProxy->GetSafeStub();
 			}
 			else
 			{
-                OMEGA_NEW(ptrSafeStub,SafeStub(pObj));
+                OMEGA_NEW(ptrStub,SafeStub(ptrObj));
 
 				System::WriteGuard guard(stub_map.m_lock);
 
-				std::pair<std::map<void*,void*>::iterator,bool> p = stub_map.m_map.insert(std::map<void*,void*>::value_type(pObj,static_cast<IObject_Safe*>(ptrSafeStub)));
+				std::pair<std::map<IObject*,IObject_Safe*>::iterator,bool> p = stub_map.m_map.insert(std::map<IObject*,IObject_Safe*>::value_type(ptrObj,ptrStub));
 				if (!p.second)
-					ptrSafeStub = static_cast<IObject_Safe*>(p.first->second);
+					ptrStub = p.first->second;
 			}
 		}
 	}
@@ -416,46 +381,61 @@ Omega::System::MetaInfo::IObject_Safe* Omega::System::MetaInfo::lookup_stub(IObj
 	}
 
 	IObject_Safe* pRet = 0;
-	IException_Safe* pSE = ptrSafeStub->QueryInterface_Safe(&iid,&pRet);
+	IException_Safe* pSE = ptrStub->QueryInterface_Safe(&iid,&pRet);
 	if (pSE)
 		throw_correct_exception(pSE);
 
 	if (!pRet)
 		throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
-	return pRet;
+	return static_cast<typename interface_info<I>::safe_class*>(pRet);
 }
 
-Omega::IObject* Omega::System::MetaInfo::lookup_proxy(IObject_Safe* pObjS, IObject* pOuter, const guid_t& iid, bool bPartialAllowed)
+Omega::System::MetaInfo::SafeProxyMap& Omega::System::MetaInfo::get_proxy_map()
 {
-	SafeProxyStubMap& proxy_map = get_proxy_map();
+	static SafeProxyMap proxy_map;
+	return proxy_map;
+}
 
-	auto_iface_ptr<IObject> ptrSafeProxy;
+template <class I>
+I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class* pS, const guid_t& iid, bool bPartialAllowed)
+{
+	if (!pS)
+		return 0;
+
+	SafeProxyMap& proxy_map = get_proxy_map();
+
+	IObject_Safe* pObjS = 0;
+	IException_Safe* pSE = pS->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
+	if (pSE)
+		throw_correct_exception(pSE);
+	if (!pObjS)
+		throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
+	auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
+
+	auto_iface_ptr<IObject> ptrProxy;
 	try
 	{
 		// Lookup first
 		{
 			System::ReadGuard guard(proxy_map.m_lock);
 
-			std::map<void*,void*>::iterator i=proxy_map.m_map.find(pObjS);
+			std::map<IObject_Safe*,IObject*>::iterator i=proxy_map.m_map.find(ptrObjS);
 			if (i != proxy_map.m_map.end())
 			{
-				ptrSafeProxy = static_cast<IObject*>(i->second);
+				ptrProxy = i->second;
 			}
 		}
 
-		if (!ptrSafeProxy)
+		if (!ptrProxy)
 		{
-			if (!pOuter)
-                OMEGA_NEW(ptrSafeProxy,SafeProxy(pObjS));
-			else
-				OMEGA_NEW(ptrSafeProxy,SafeProxyAgg(pObjS,pOuter));
-
+			OMEGA_NEW(ptrProxy,SafeProxy(pObjS));
+			
 			System::WriteGuard guard(proxy_map.m_lock);
 
-			std::pair<std::map<void*,void*>::iterator,bool> p = proxy_map.m_map.insert(std::map<void*,void*>::value_type(pObjS,static_cast<IObject*>(ptrSafeProxy)));
+			std::pair<std::map<IObject_Safe*,IObject*>::iterator,bool> p = proxy_map.m_map.insert(std::map<IObject_Safe*,IObject*>::value_type(pObjS,ptrProxy));
 			if (!p.second)
-				ptrSafeProxy = static_cast<IObject*>(p.first->second);
+				ptrProxy = p.first->second;
 		}
 	}
 	catch (std::exception& e)
@@ -463,18 +443,18 @@ Omega::IObject* Omega::System::MetaInfo::lookup_proxy(IObject_Safe* pObjS, IObje
 		OMEGA_THROW(string_t(e.what(),false));
 	}
 
-	IObject* pRet = ptrSafeProxy->QueryInterface(iid);
+	I* pRet = static_cast<I*>(ptrProxy->QueryInterface(iid));
 	if (!pRet)
 	{
 		if (bPartialAllowed)
 		{
-			pRet = ptrSafeProxy;
-			ptrSafeProxy.detach();
+			pRet = static_cast<I*>(static_cast<IObject*>(ptrProxy));
+			pRet->AddRef();
 		}
 		else
 			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 	}
-
+		
 	return pRet;
 }
 
@@ -485,7 +465,7 @@ Omega::System::MetaInfo::IException_Safe* Omega::System::MetaInfo::return_safe_e
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	auto_iface_ptr<IException> ptrE(pE);
 	IObject_Safe* pSE2 = 0;
-	IException_Safe* pSE3 = static_cast<IException_Safe*>(interface_info<IException*>::proxy_functor(pE))->QueryInterface_Safe(&iid,&pSE2);
+	IException_Safe* pSE3 = marshal_info<IException*>::safe_type::coerce(pE)->QueryInterface_Safe(&iid,&pSE2);
 	if (pSE3)
 		return pSE3;
 	if (!pSE2)

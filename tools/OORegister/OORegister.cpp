@@ -4,12 +4,6 @@
 #pragma warning(disable : 4267)
 #endif
 
-// Link to the static lib version of ACE...
-#define ACE_AS_STATIC_LIBS 1
-
-// We use the wchar_t version of ACE
-#define ACE_USES_WCHAR
-
 #include <ace/Get_Opt.h>
 #include <ace/OS_NS_stdio.h>
 #include <ace/DLL_Manager.h>
@@ -42,7 +36,7 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
 	}
 
-	typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::interface_info<Omega::bool_t>::safe_class bInstall, Omega::System::MetaInfo::interface_info<const Omega::string_t&>::safe_class strSubsts);
+	typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
 
 	pfnRegisterLib pfn=(pfnRegisterLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
 	if (pfn == 0)
@@ -58,8 +52,8 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 		Omega::string_t strSubsts = L"LIB_PATH=" + Omega::string_t(lib_path);
 
 		Omega::System::MetaInfo::IException_Safe* pSE = pfn(
-			Omega::System::MetaInfo::interface_info<Omega::bool_t>::proxy_functor(bInstall),
-			Omega::System::MetaInfo::interface_info<const Omega::string_t&>::proxy_functor(strSubsts));
+			Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
+			Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
 
 		if (pSE)
 			Omega::System::MetaInfo::throw_correct_exception(pSE);

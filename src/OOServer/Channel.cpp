@@ -39,11 +39,11 @@ void User::Channel::init(Manager* pManager, ACE_CDR::UShort channel_id)
 	m_channel_id = channel_id;
 }
 
-void User::Channel::CreateOutputStream(IObject* pOuter, Serialize::IFormattedStream*& pStream)
+Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
 {
 	// Create a fresh OutputCDR
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr(pOuter);
-	pStream = static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
+	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
 }
 
 Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
@@ -61,6 +61,9 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 	ACE_InputCDR* response = 0;
 	try
 	{
+		if (timeout == 0)
+			timeout = 15000;
+
 		if (!m_pManager->send_request(m_channel_id,request,response,timeout,attribs))
 		{
 			if (ACE_OS::last_error() == ENOENT)

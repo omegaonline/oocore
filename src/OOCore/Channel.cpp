@@ -39,11 +39,11 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort channel_id)
 	m_channel_id = channel_id;
 }
 
-void OOCore::Channel::CreateOutputStream(IObject* pOuter, Omega::Serialize::IFormattedStream*& pStream)
+Omega::Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream(IObject* pOuter)
 {
 	// Create a fresh OutputCDR
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr(pOuter);
-	pStream = static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
+	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
 }
 
 Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
@@ -61,6 +61,9 @@ Serialize::IFormattedStream* OOCore::Channel::SendAndReceive(Remoting::MethodAtt
 	ACE_InputCDR* response = 0;
 	try
 	{
+		if (timeout == 0)
+			timeout = 15000;
+
 		if (!m_pSession->send_request(m_channel_id,request,response,timeout,attribs))
 			OOCORE_THROW_LASTERROR();
 				

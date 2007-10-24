@@ -8,7 +8,7 @@ void add_failure(const wchar_t* pszText);
 int test_system(const wchar_t* pszCommand);
 
 typedef bool (*pfnTest)();
-void run_test(pfnTest t, const char* pszName);
+bool run_test(pfnTest t, const char* pszName);
 
 #define RUN_TEST(test)		run_test(test,#test)
 

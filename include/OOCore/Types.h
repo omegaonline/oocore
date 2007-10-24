@@ -200,7 +200,7 @@ namespace Omega
 			{
 				static T value()
 				{
-					static T v;
+					static T v = T();
 					return v;
 				}
 			};
@@ -225,6 +225,7 @@ namespace Omega
 			};
 			#endif
 
+			#if defined(__BORLANDC__)
 			template <class T> struct remove_const
 			{
 				typedef T type;
@@ -244,6 +245,7 @@ namespace Omega
 			{
 				typedef typename remove_const<T>::type* type;
 			};
+			#endif
 		}
 	}
 }

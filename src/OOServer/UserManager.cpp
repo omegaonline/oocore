@@ -414,7 +414,7 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 
 				// Write the exception onto the wire
 				ObjectPtr<System::MetaInfo::IWireManager> ptrWM(ptrOM);
-				System::MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
+				ptrWM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
 			}
 		}
 

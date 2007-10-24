@@ -10,7 +10,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
+		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 

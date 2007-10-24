@@ -16,10 +16,6 @@
 /////////////////////////////////////////////////
 // Include ACE components
 
-// Link to the static lib version of ACE...
-#define ACE_AS_STATIC_LIBS 1
-#define ACE_USES_WCHAR
-
 #include <ace/Asynch_Acceptor.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Configuration.h>
@@ -35,6 +31,10 @@
 #include <ace/SPIPE_Acceptor.h>
 #include <ace/SPIPE_Connector.h>
 #include <ace/UNIX_Addr.h>
+
+#if !defined(ACE_HAS_WCHAR)
+#error OmegaOnline requires wchar_t support!
+#endif
 
 // End of ACE includes
 /////////////////////////////////////////////////

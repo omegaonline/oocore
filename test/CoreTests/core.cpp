@@ -1,4 +1,5 @@
 #include <OOCore/OOCore.h>
+#include <ace/OS.h>
 #include "Test.h"
 
 bool init_tests()
@@ -23,7 +24,7 @@ bool init_tests()
 	{
 		add_failure(Omega::string_t::Format(L"Omega::Initialize failed: %ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str()).c_str());
 		pE->Release();
-		exit(test_summary());
+		return false;
 	}
 
 	auto_uninit.bInitCalled = true;

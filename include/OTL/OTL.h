@@ -37,11 +37,11 @@
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
 	{ &Omega::guid_t::Null(), &QIAggregate, reinterpret_cast<void*>(offsetof(RootClass,member_object)) },
 
-#define INTERFACE_ENTRY_FUNCTION(iface,pfn,param) \
-	{ &OMEGA_UUIDOF(iface), &pfn, param },
+#define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
+	{ &OMEGA_UUIDOF(iface), &QIFunction<RootClass>, &pfn },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::Null(), &pfn, 0 },
+	{ &Omega::guid_t::Null(), &QIFunction<RootClass>, &pfn },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
 	{ &OMEGA_UUIDOF(iface), &QIFail, 0 },
@@ -221,12 +221,7 @@ namespace OTL
 			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_UUIDOF(OBJECT)));
 		}
 
-		OBJECT* operator ->()
-		{
-			return m_ptr.value();
-		}
-
-		operator OBJECT* volatile &()
+		OBJECT* operator ->() const
 		{
 			return m_ptr.value();
 		}
@@ -363,10 +358,12 @@ namespace OTL
             return reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+reinterpret_cast<size_t>(param))->QueryInterface(iid);
         }
 
-        template <class Implementation, Omega::IObject* (Implementation::*Method)(const Omega::guid_t&)>
+        template <class Implementation>
         static Omega::IObject* QIFunction(const Omega::guid_t& iid, void* pThis, void* pfn)
         {
-            return (static_cast<Implementation*>(pThis)->*Method)(iid);
+			typedef Omega::IObject* (*QIFn)(Implementation*, const Omega::guid_t&);
+			
+			return static_cast<QIFn>(pfn)(static_cast<Implementation*>(pThis),iid);
         }
 
         static Omega::IObject* QIFail(const Omega::guid_t&, void*, void*)

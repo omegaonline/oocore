@@ -171,12 +171,9 @@ IException* OOCore::UserSession::bootstrap()
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->CreateUnboundProxy(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
+		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
-
-		Remoting::IInterProcessService* pIPS2 = static_cast<Remoting::IInterProcessService*>(pIPS);
-		pIPS2->GetRunningObjectTable();
 
 		// Set the running object table
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
@@ -185,6 +182,7 @@ IException* OOCore::UserSession::bootstrap()
 
 		ObjectPtr<Registry::IRegistryKey> ptrRegistry;
 		ptrRegistry.Attach(ptrIPS->GetRegistry());
+
 		SetRegistry(ptrRegistry);
 	}
 	catch (IException* pE)
@@ -304,6 +302,9 @@ void OOCore::UserSession::term()
 
 void OOCore::UserSession::term_i()
 {
+	SetRegistry(0);
+	SetRunningObjectTable(0);
+
 	// Shut down the socket...
 	m_stream.close();
 
@@ -312,8 +313,6 @@ void OOCore::UserSession::term_i()
 		ACE_Thread_Manager::instance()->wait_grp(m_thrd_grp_id);
 
 	// Stop the message queue
-
-	SetRegistry(0);
 }
 
 ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
@@ -815,7 +814,7 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 
 				// Write the exception onto the wire
 				ObjectPtr<System::MetaInfo::IWireManager> ptrWM(ptrOM);
-				System::MetaInfo::wire_write(ptrWM,ptrResponse,pInner,pInner->ActualIID());
+				ptrWM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
 			}
 		}
 

@@ -4,9 +4,6 @@
 #endif
 #endif
 
-#define ACE_AS_STATIC_LIBS 1
-#define ACE_USES_WCHAR
-
 #include <ace/ARGV.h>
 #include <ace/Get_Opt.h>
 #include <ace/OS.h>

@@ -4,9 +4,6 @@
 #pragma warning(disable : 4267)
 #endif
 
-// Link to the static lib version of ACE...
-#define ACE_AS_STATIC_LIBS 1
-
 #include <ace/OS_NS_stdio.h>
 #include <ace/OS_NS_stdlib.h>
 
@@ -39,15 +36,17 @@ int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
 {
 	ACE_OS::fprintf(stdout,L"OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
 
-	//RUN_TEST(string_tests);
-	//RUN_TEST(guid_tests);
-	RUN_TEST(init_tests);
-	//RUN_TEST(exception_tests);
-	//RUN_TEST(otl_tests);
-	//RUN_TEST(registry_tests);
-	//RUN_TEST(registry_tests_2);
-	//RUN_TEST(registry_tests_3);
-	RUN_TEST(interface_tests);
+	RUN_TEST(string_tests);
+	RUN_TEST(guid_tests);
+	if (RUN_TEST(init_tests))
+	{
+		RUN_TEST(exception_tests);
+		RUN_TEST(otl_tests);
+		RUN_TEST(registry_tests);
+		RUN_TEST(registry_tests_2);
+		RUN_TEST(registry_tests_3);
+		RUN_TEST(interface_tests);
+	}
 
 	return test_summary();
 }
@@ -102,14 +101,17 @@ int test_summary()
 	}
 }
 
-void run_test(pfnTest t, const char* pszName)
+bool run_test(pfnTest t, const char* pszName)
 {
 	ACE_OS::fprintf(stdout,"Running %-40s",pszName);
 
 	try
 	{
 		if ((*t)())
+		{
 			ACE_OS::fprintf(stdout,"[Ok]\n");
+			return true;
+		}
 	}
 	catch (Omega::IException* pE)
 	{
@@ -127,10 +129,15 @@ void run_test(pfnTest t, const char* pszName)
 		++exception_count;
 		ACE_OS::fprintf(stdout,"[Unhandled C++ exception!]\n");
 	}
+
+	return false;
 }
 
 // This is here so I don't have to include ACE everywhere...
 int test_system(const wchar_t* pszCommand)
 {
+	char szBuf[128];
+	getcwd(szBuf,128);
+
 	return ACE_OS::system(ACE_TEXT_WCHAR_TO_TCHAR(pszCommand));
 }

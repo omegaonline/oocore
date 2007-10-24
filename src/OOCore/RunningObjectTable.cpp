@@ -57,9 +57,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,Activation_GetRu
 
 		if (!OOCore::g_ROT.m_ptrSystemROT)
 		{
-			ObjectPtr<ObjectImpl<OOCore::RunningObjectTable> > ptrRunningObjectTable = ObjectImpl<OOCore::RunningObjectTable>::CreateInstancePtr();
-
-			OOCore::g_ROT.m_ptrSystemROT.Attach(ptrRunningObjectTable.Detach());
+			OOCore::g_ROT.m_ptrSystemROT.Attach(ObjectImpl<OOCore::RunningObjectTable>::CreateInstance());
 		}
 	}
 

@@ -33,35 +33,40 @@ namespace OOCore
 	{
 		ObjectPtr<Activation::IRunningObjectTable>  m_ptrSystemROT;
 		ACE_Thread_Mutex                            m_lock;
-	};
-	GlobalRunningObjectTable	g_ROT;
 
+		static GlobalRunningObjectTable& instance()
+		{
+			static GlobalRunningObjectTable i;
+			return i;
+		}
+	};
+	
 	void SetRunningObjectTable(Activation::IRunningObjectTable* pNewTable);
 }
 
 // RunningObjectTable
 void OOCore::SetRunningObjectTable(Activation::IRunningObjectTable* pNewTable)
 {
-	OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ROT.m_lock);
+	OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::GlobalRunningObjectTable::instance().m_lock);
 
-	OOCore::g_ROT.m_ptrSystemROT = pNewTable;
+	OOCore::GlobalRunningObjectTable::instance().m_ptrSystemROT = pNewTable;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())
 {
 	// If we have no set RunningObjectTable, use a default
-	if (!OOCore::g_ROT.m_ptrSystemROT)
+	if (!OOCore::GlobalRunningObjectTable::instance().m_ptrSystemROT)
 	{
 		// Do a double lock here...
-		OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::g_ROT.m_lock);
+		OOCORE_GUARD(ACE_Thread_Mutex,guard,OOCore::GlobalRunningObjectTable::instance().m_lock);
 
-		if (!OOCore::g_ROT.m_ptrSystemROT)
+		if (!OOCore::GlobalRunningObjectTable::instance().m_ptrSystemROT)
 		{
-			OOCore::g_ROT.m_ptrSystemROT.Attach(ObjectImpl<OOCore::RunningObjectTable>::CreateInstance());
+			OOCore::GlobalRunningObjectTable::instance().m_ptrSystemROT.Attach(ObjectImpl<OOCore::RunningObjectTable>::CreateInstance());
 		}
 	}
 
-	return OOCore::g_ROT.m_ptrSystemROT.AddRefReturn();
+	return OOCore::GlobalRunningObjectTable::instance().m_ptrSystemROT.AddRefReturn();
 }
 
 void OOCore::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t, IObject* pObject)

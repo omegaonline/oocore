@@ -76,7 +76,6 @@ namespace User
 	public:
 		void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject);
 	};
-
 }
 
 void User::InterProcessServiceFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)

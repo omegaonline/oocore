@@ -1,149 +1,6 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
-//template <class I>
-//void Omega::System::MetaInfo::iface_stub_functor<I>::init(typename interface_info<I>::safe_class* pS, const guid_t& iid)
-//{
-//	m_pI = lookup_proxy<I>(pS,iid,false);
-//}
-//
-//template <class I>
-//void Omega::System::MetaInfo::iface_stub_functor<I>::detach(typename interface_info<I>::safe_class*& result, const guid_t& iid)
-//{
-//	if (result)
-//		result->Release_Safe();
-//
-//	result = lookup_stub<I>(m_pI,iid);
-//}
-//
-//template <class I>
-//void Omega::System::MetaInfo::iface_proxy_functor<I>::init(I* pI, const guid_t& iid)
-//{
-//	m_iid = iid;
-//	m_pS = lookup_stub<I>(pI,m_iid);
-//}
-//
-//template <class I>
-//void Omega::System::MetaInfo::iface_proxy_functor<I>::detach(I* volatile & result)
-//{
-//	if (result)
-//		result->Release();
-//
-//	result = lookup_proxy<I>(m_pS,m_iid,true);
-//}
-//
-//template <class I>
-//Omega::System::MetaInfo::iface_stub_functor_array<I>::~iface_stub_functor_array()
-//{
-//	if (m_cbSize > m_alloc_size)
-//	{
-//		delete [] m_pFunctors;
-//		delete [] m_pVals;
-//
-//		OMEGA_THROW(L"Array has been resized out of bounds");
-//	}
-//
-//	if (m_piids)
-//	{
-//		for (uint32_t i=0;i<m_cbSize;++i)
-//			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
-//	}
-//	else
-//	{
-//		for (uint32_t i=0;i<m_cbSize;++i)
-//			m_pFunctors[i].detach(m_pResults[i],m_iid);
-//	}
-//
-//	delete [] m_pFunctors;
-//	delete [] m_pVals;
-//}
-//
-//template <class I>
-//void Omega::System::MetaInfo::iface_stub_functor_array<I>::init(typename interface_info<I>::safe_class** pVals)
-//{
-//	try
-//	{
-//		if (m_cbSize>0)
-//		{
-//			OMEGA_NEW(m_pFunctors,typename marshal_info<I>::stub_functor[m_cbSize]);
-//			OMEGA_NEW(m_pVals,I[m_cbSize]);
-//
-//			if (m_piids)
-//			{
-//				for (uint32_t i=0;i<m_cbSize;++i)
-//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
-//			}
-//			else
-//			{
-//				for (uint32_t i=0;i<m_cbSize;++i)
-//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
-//			}
-//		}
-//	}
-//	catch (...)
-//	{
-//		delete [] m_pFunctors;
-//		delete [] m_pVals;
-//		throw;
-//	}
-//}
-//
-//template <class I>
-//Omega::System::MetaInfo::iface_proxy_functor_array<I>::~iface_proxy_functor_array()
-//{
-//	if (m_cbSize > m_alloc_size)
-//	{
-//		delete [] m_pFunctors;
-//		delete [] m_pVals;
-//
-//		OMEGA_THROW(L"Array has been resized out of bounds");
-//	}
-//
-//	if (m_piids)
-//	{
-//		for (uint32_t i=0;i<m_cbSize;++i)
-//			m_pFunctors[i].detach(m_pResults[i],m_piids[i]);
-//	}
-//	else
-//	{
-//		for (uint32_t i=0;i<m_cbSize;++i)
-//			m_pFunctors[i].detach(m_pResults[i],m_iid);
-//	}
-//
-//	delete [] m_pFunctors;
-//	delete [] m_pVals;
-//}
-//
-//template <class I>
-//void Omega::System::MetaInfo::iface_proxy_functor_array<I>::init(I* pVals)
-//{
-//	try
-//	{
-//		if (m_cbSize>0)
-//		{
-//			OMEGA_NEW(m_pFunctors,typename marshal_info<I>::proxy_functor[m_cbSize]);
-//			OMEGA_NEW(m_pVals,typename marshal_info<I>::safe_type[m_cbSize]);
-//
-//			if (m_piids)
-//			{
-//				for (uint32_t i=0;i<m_cbSize;++i)
-//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_piids[i]);
-//			}
-//			else
-//			{
-//				for (uint32_t i=0;i<m_cbSize;++i)
-//					m_pFunctors[i].attach(m_pVals[i],pVals[i],m_iid);
-//			}
-//		}
-//	}
-//	catch (...)
-//	{
-//		delete [] m_pFunctors;
-//		delete [] m_pVals;
-//		throw;
-//	}
-//}
-
 Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 {
 	if (*piid==OMEGA_UUIDOF(IObject))
@@ -498,6 +355,20 @@ const Omega::string_t& Omega::System::MetaInfo::lookup_iid(const guid_t& iid)
 		return strUnk;
 
 	return pRtti->strName;
+}
+
+void Omega::PinObjectPointer(IObject* pObject)
+{
+	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::SafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::SafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::SafeProxy))));
+	if (ptrProxy)
+		ptrProxy->Pin();	
+}
+
+void Omega::UnpinObjectPointer(IObject* pObject)
+{
+	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::SafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::SafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::SafeProxy))));
+	if (ptrProxy)
+		ptrProxy->Unpin();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));

@@ -144,10 +144,9 @@
 #define OMEGA_PS_PARAM_in(p0,p1)
 #define OMEGA_PS_PARAM_in_out(p0,p1)
 #define OMEGA_PS_PARAM_out(t,name)
-#define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_iid_is_I
-#define OMEGA_PS_PARAM_iid_is_I(t,name)
-#define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_size_is_I
-#define OMEGA_PS_PARAM_size_is_I(t,name)
+#define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_II
+#define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_II
+#define OMEGA_PS_PARAM_II(t,name)
 
 #define OMEGA_PS_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_PS_PARAM_,meta) d
@@ -231,10 +230,9 @@
 #define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
 #define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
 #define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
-#define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_iid_is_I
-#define OMEGA_WIRE_READ_STUB_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_size_is_I
-#define OMEGA_WIRE_READ_STUB_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
+#define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
+#define OMEGA_WIRE_READ_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_READ_STUB_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_READ_STUB_PARAM_,meta) d
@@ -255,10 +253,9 @@
 #define OMEGA_WIRE_WRITE_STUB_PARAM_in(t,name)        no_op(false
 #define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
-#define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_iid_is_I
-#define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_size_is_I
-#define OMEGA_WIRE_WRITE_STUB_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
+#define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
+#define OMEGA_WIRE_WRITE_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_WRITE_STUB_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_WRITE_STUB_PARAM_,meta) d
@@ -421,10 +418,9 @@
 #define OMEGA_WIRE_READ_PROXY_PARAM_in(t,name)        no_op(false
 #define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(this->m_pManager,__wire__pParamsIn,name
 #define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(this->m_pManager,__wire__pParamsIn,name
-#define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_iid_is_I
-#define OMEGA_WIRE_READ_PROXY_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_size_is_I
-#define OMEGA_WIRE_READ_PROXY_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_II
+#define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_II
+#define OMEGA_WIRE_READ_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_READ_PROXY_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_READ_PROXY_PARAM_,meta) d
@@ -445,10 +441,9 @@
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(this->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(this->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is_I
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is_I(t,name)
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_size_is_I
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is_I(t,name)
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_II
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_II
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_I(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_WIRE_WRITE_PROXY_PARAM_,meta) d

@@ -128,16 +128,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Serialize::IFormattedStream*,pStream))
 			)
 			typedef IWireProxy_Impl_Safe<IObject_Safe> IWireProxy_Safe;
-			/*class IWireProxy_Safe : public IWireProxy_Impl_Safe<IObject_Safe>
-			{
-			public:
-				virtual void OMEGA_CALL AddRef_Safe();
-				virtual void OMEGA_CALL Release_Safe();
-
-				virtual void AddRef_Shallow();
-				virtual void Release_Shallow();
-			};*/			
-
+			
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
 				Omega::System::MetaInfo, IWireManager,
@@ -563,6 +554,7 @@ namespace Omega
 
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
+					// This must do a remote AddRef action
 					++m_refcount;
 				}
 
@@ -582,6 +574,18 @@ namespace Omega
 						*retval = this;
 					}
 					return 0;
+				}
+
+				virtual void OMEGA_CALL Pin()
+				{
+					// This must not do a remote AddRef action
+					++m_refcount;
+				}
+
+				virtual void OMEGA_CALL Unpin()
+				{
+					if (--m_refcount==0)
+						delete this;
 				}
 
 				virtual IException_Safe* OMEGA_CALL SupportsInterface_Safe(bool_t* pbSupports, const guid_t*)
@@ -678,7 +682,17 @@ namespace Omega
 					return m_contained.Internal_QueryInterface_Safe(false,piid,ppS);
 				}
 
-				static IObject_Safe* Create(IWireProxy_Impl_Safe<IObject_Safe>* pProxy, IWireManager_Safe* pManager)
+				virtual void OMEGA_CALL Pin()
+				{
+					m_contained.Pin();
+				}
+
+				virtual void OMEGA_CALL Unpin()
+				{
+					m_contained.Unpin();
+				}
+
+				static IObject_Safe* Create(IWireProxy_Safe* pProxy, IWireManager_Safe* pManager)
 				{
 					IObject_Safe* pRet = 0;
 					OMEGA_NEW(pRet,WireProxyImpl(pProxy,pManager));
@@ -706,12 +720,12 @@ namespace Omega
 				{
 					m_pManager->AddRef_Safe();
 
-					m_pProxy->AddRef_Safe();
+					m_pProxy->Pin();
 				}
 
 				virtual ~IObject_WireProxy()
 				{
-					//m_pProxy->Release_Shallow();
+					m_pProxy->Unpin();
 
 					m_pManager->Release_Safe();
 				}
@@ -729,6 +743,16 @@ namespace Omega
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
 					return Internal_QueryInterface_Safe(true,piid,ppS);					
+				}
+
+				virtual void OMEGA_CALL Pin()
+				{
+					m_pProxy->Pin();
+				}
+
+				virtual void OMEGA_CALL Unpin()
+				{
+					m_pProxy->Unpin();
 				}
 
 				virtual IException_Safe* Internal_QueryInterface_Safe(bool bRecurse, const guid_t* piid, IObject_Safe** ppS)

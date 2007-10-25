@@ -69,6 +69,8 @@ namespace Omega
 				typedef std_wire_type_array<T> wire_type;
 			};
 
+			interface IObject_Safe;
+
 			template <class T>
 			class std_safe_type<T&>
 			{
@@ -171,7 +173,6 @@ namespace Omega
 				}
 			};
 
-			interface IObject_Safe;
 			template <class Base> interface IException_Impl_Safe;
 			typedef IException_Impl_Safe<IObject_Safe> IException_Safe;
 
@@ -180,6 +181,9 @@ namespace Omega
 				virtual void OMEGA_CALL AddRef_Safe() = 0;
 				virtual void OMEGA_CALL Release_Safe() = 0;
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS) = 0;
+
+				virtual void OMEGA_CALL Pin() = 0;
+				virtual void OMEGA_CALL Unpin() = 0;
 			};
 
 			template <class I, class Base> class IObject_SafeStub;
@@ -541,6 +545,16 @@ namespace Omega
 					return m_contained.Internal_QueryInterface_Safe(false,piid,ppS);
 				}
 
+				virtual void OMEGA_CALL Pin()
+				{
+					m_contained.Pin();
+				}
+
+				virtual void OMEGA_CALL Unpin()
+				{
+					m_contained.Unpin();
+				}
+
 				static IObject_Safe* Create(SafeStub* pStub, IObject* pObj)
 				{
 					IObject_Safe* pRet = 0;
@@ -588,6 +602,16 @@ namespace Omega
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
 					return Internal_QueryInterface_Safe(true,piid,ppS);					
+				}
+
+				virtual void OMEGA_CALL Pin()
+				{
+					m_pStub->Pin();
+				}
+
+				virtual void OMEGA_CALL Unpin()
+				{
+					m_pStub->Unpin();
 				}
 
 				virtual IException_Safe* Internal_QueryInterface_Safe(bool bRecurse, const guid_t* piid, IObject_Safe** ppS)
@@ -762,7 +786,7 @@ namespace Omega
 			class SafeStub : public IObject_Safe
 			{
 			public:
-				SafeStub(IObject* pObj) : m_refcount(0), m_pObj(pObj)
+				SafeStub(IObject* pObj) : m_refcount(0), m_pincount(0), m_pObj(pObj)
 				{
 					m_pObj->AddRef();
 				}
@@ -775,13 +799,30 @@ namespace Omega
 				virtual void OMEGA_CALL Release_Safe()
 				{
 					if (--m_refcount==0)
-						delete this;
+					{
+						m_pObj->Release();
+
+						if (m_pincount == 0)
+							delete this;
+					}
 				}
 
 				inline virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval);
+
+				virtual void OMEGA_CALL Pin()
+				{
+					++m_pincount;
+				}
+
+				virtual void OMEGA_CALL Unpin()
+				{
+					if (--m_pincount==0 && m_refcount==0)
+						delete this;
+				}
 				
 			private:
 				AtomicOp<uint32_t>                   m_refcount;
+				AtomicOp<uint32_t>                   m_pincount;
 				ReaderWriterLock                     m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				IObject*                             m_pObj;
@@ -805,8 +846,6 @@ namespace Omega
 					SafeStubMap& stub_map = get_stub_map();
 					WriteGuard guard(stub_map.m_lock);
 					stub_map.m_map.erase(m_pObj);
-					
-					m_pObj->Release();
 				}
 			};
 
@@ -825,11 +864,6 @@ namespace Omega
 					m_pS->AddRef_Safe();
 				}
 
-				virtual IObject_Safe* GetSafeStub()
-				{
-					return m_pS;
-				}
-
 				virtual void AddRef()
 				{
 					++m_refcount;
@@ -839,6 +873,21 @@ namespace Omega
 				{
 					if (--m_refcount==0)
 						delete this;
+				}
+
+				IObject_Safe* GetSafeStub()
+				{
+					return m_pS;
+				}
+
+				void Pin()
+				{
+					m_pS->Pin();
+				}
+
+				void Unpin()
+				{
+					m_pS->Unpin();
 				}
 
 				inline virtual IObject* QueryInterface(const guid_t& iid);
@@ -881,6 +930,9 @@ namespace Omega
 			OMEGA_QI_MAGIC(Omega,IException)
 		}
 	}
+
+	inline void PinObjectPointer(IObject* pObject);
+	inline void UnpinObjectPointer(IObject* pObject);
 }
 
 // This IID is used to detect a SafeProxy - it has no other purpose

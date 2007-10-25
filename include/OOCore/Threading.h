@@ -106,14 +106,17 @@ namespace Omega
 			inline AtomicOp(const T& v);
 			inline AtomicOp(const AtomicOp& rhs);
 
+			inline AtomicOp& operator = (const AtomicOp& rhs);
+			inline AtomicOp& operator = (const T& rhs);
+
+			inline bool operator == (const AtomicOp& rhs);
+			inline bool operator == (const T& rhs);
+
 			inline T operator ++();
 			inline T operator ++(int);
 			inline T operator --();
 			inline T operator --(int);
 			inline volatile T* operator &();
-
-			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (const T& rhs);
 
 			inline T value() const;
 			inline volatile T& value();
@@ -135,6 +138,15 @@ namespace Omega
 
 			inline AtomicOp& operator = (const AtomicOp& rhs);
 			inline AtomicOp& operator = (const int32_t& rhs);
+
+			bool operator == (const AtomicOp& rhs)
+			{
+				return m_value == rhs.m_value;
+			}
+			bool operator == (const int32_t& rhs)
+			{
+				return m_value == rhs;
+			}
 
 			inline int32_t operator ++();
 			inline int32_t operator ++(int) { return ++*this - 1; }
@@ -159,6 +171,15 @@ namespace Omega
 
 			inline AtomicOp& operator = (const AtomicOp& rhs);
 			inline AtomicOp& operator = (const uint32_t& rhs);
+
+			bool operator == (const AtomicOp& rhs)
+			{
+				return m_value == rhs.m_value;
+			}
+			bool operator == (const uint32_t& rhs)
+			{
+				return m_value == rhs;
+			}
 
 			inline uint32_t operator ++();
 			inline uint32_t operator ++(int) { return ++*this - 1; }

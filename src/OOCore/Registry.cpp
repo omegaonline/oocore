@@ -13,7 +13,16 @@ using namespace OTL;
 
 namespace OOCore
 {
-	ObjectPtr<Omega::Registry::IRegistryKey>  g_ptrRegistryRoot;
+	struct RegistryRoot
+	{
+		ObjectPtr<Omega::Registry::IRegistryKey>  m_ptrRoot;
+
+		static RegistryRoot& instance()
+		{
+			static RegistryRoot i;
+			return i;
+		}
+	};
 	
 	void SetRegistry(Omega::Registry::IRegistryKey* pRootKey);
 
@@ -28,19 +37,19 @@ namespace OOCore
 
 void OOCore::SetRegistry(Omega::Registry::IRegistryKey* pRootKey)
 {
-	OOCore::g_ptrRegistryRoot = pRootKey;
+	OOCore::RegistryRoot::instance().m_ptrRoot = pRootKey;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 {
-	if (!OOCore::g_ptrRegistryRoot)
+	if (!OOCore::RegistryRoot::instance().m_ptrRoot)
 	{
 		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
 		pE->m_strDesc = L"Omega::Initialize not called.";
 		throw pE;
 	}
 
-	return OOCore::g_ptrRegistryRoot->OpenSubKey(key,flags);
+	return OOCore::RegistryRoot::instance().m_ptrRoot->OpenSubKey(key,flags);
 }
 
 string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts)

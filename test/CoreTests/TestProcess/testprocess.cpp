@@ -33,29 +33,39 @@ END_PROCESS_OBJECT_MAP()
 
 static int install(int argc, char* argv[])
 {
-	Omega::string_t strSubsts;
-	if (argc == 3)
-		strSubsts = Omega::string_t(argv[2],false);
-	else
-		strSubsts = L"MODULE_PATH=" + Omega::string_t(argv[0],false);
+	try
+	{
+		Omega::string_t strSubsts;
+		if (argc == 3)
+			strSubsts = Omega::string_t(argv[2],false);
+		else
+			strSubsts = L"MODULE_PATH=" + Omega::string_t(argv[0],false);
 
-	if (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--install") == 0)
-	{
-#if !defined(OMEGA_WIN32)
-		if (argc != 3) return -1;
-#endif
+		if (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--install") == 0)
+		{
+	#if !defined(OMEGA_WIN32)
+			if (argc != 3) return -1;
+	#endif
 
-		OTL::GetModule()->RegisterObjects(true,strSubsts);
-		return 0;
+			OTL::GetModule()->RegisterObjects(true,strSubsts);
+			return 0;
+		}
+		else if (strcmp(argv[1],"-u") == 0 || strcmp(argv[1],"--uninstall") == 0)
+		{
+			OTL::GetModule()->RegisterObjects(false,strSubsts);
+			return 0;
+		}
+		else
+		{
+			// Invalid argument
+			fprintf(stderr,"Invalid argument -%s\n",argv[1]);
+			return -1;
+		}
 	}
-	else if (strcmp(argv[1],"-u") == 0 || strcmp(argv[1],"--uninstall") == 0)
+	catch (Omega::IException* pE)
 	{
-		OTL::GetModule()->RegisterObjects(false,strSubsts);
-		return 0;
-	}
-	else
-	{
-		// Invalid argument
+		fprintf(stderr,"%ls\n",pE->Description().c_str());
+		pE->Release();
 		return -1;
 	}
 }

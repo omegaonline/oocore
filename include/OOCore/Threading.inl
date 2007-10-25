@@ -65,6 +65,20 @@ Omega::System::AtomicOp<T>& Omega::System::AtomicOp<T>::operator = (const T& rhs
 }
 
 template <class T>
+bool Omega::System::AtomicOp<T>::operator == (const AtomicOp& rhs)
+{
+	Guard guard(m_cs);
+	return m_value == rhs.value();
+}
+
+template <class T>
+bool Omega::System::AtomicOp<T>::operator == (const T& rhs)
+{
+	Guard guard(m_cs);
+	return m_value == rhs;
+}
+
+template <class T>
 T Omega::System::AtomicOp<T>::value() const
 {
 	Guard guard(m_cs);

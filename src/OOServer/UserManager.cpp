@@ -176,6 +176,8 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 		}
 	}
 
+	ACE_Reactor::close_singleton();
+
 	return ret;
 }
 

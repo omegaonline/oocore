@@ -128,6 +128,7 @@ namespace Root
 		MessagePipe get_channel_pipe(ACE_CDR::UShort channel);
 		void stop_accepting();
 		void stop();
+		virtual void pipe_closed(const MessagePipe& pipe);
 
 		virtual void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs) = 0;
 
@@ -221,7 +222,6 @@ namespace Root
 
 		MessageConnection* make_handler();
 		bool parse_message(Message* msg);
-		void pipe_closed(const MessagePipe& pipe);
 		bool build_header(ACE_OutputCDR& header, const Message& msg, const ACE_Message_Block* mb);
 		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
 	};

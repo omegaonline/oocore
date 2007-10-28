@@ -310,5 +310,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,o
 {
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
+	if (!ptrOF)
+		throw INoInterfaceException::Create(OMEGA_UUIDOF(Activation::IObjectFactory),L"Omega::CreateInstance");
+
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }

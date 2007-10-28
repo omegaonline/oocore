@@ -65,18 +65,6 @@ Root::SpawnedProcess::~SpawnedProcess()
 		CloseHandle(m_hToken);
 }
 
-bool Root::SpawnedProcess::IsRunning()
-{
-	if (!m_hProcess)
-		return false;
-
-	DWORD dwRes = 0;
-	if (!GetExitCodeProcess(m_hProcess,&dwRes))
-		return false;
-
-	return (dwRes == STILL_ACTIVE);
-}
-
 DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
 {
     int err = 0;
@@ -252,7 +240,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 
 	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
 
-	// Gett he primary token from the impersonation token
+	// Get the primary token from the impersonation token
 	HANDLE hPriToken = 0;
 	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
@@ -319,8 +307,7 @@ bool Root::SpawnedProcess::Spawn(Manager::user_id_type id, const ACE_WString& st
 	bool bSandbox = (id == static_cast<Manager::user_id_type>(0));
 	if (bSandbox)
 	{
-		int err = LogonSandboxUser(&hToken);
-		if (err != 0)
+		if (!LogonSandboxUser(&hToken))
 			return false;
 	}
 	else
@@ -347,7 +334,7 @@ bool Root::SpawnedProcess::Spawn(Manager::user_id_type id, const ACE_WString& st
 	return (dwRes == ERROR_SUCCESS);
 }
 
-DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
+bool Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 {
 	// Get the local machine registry
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
@@ -355,118 +342,22 @@ DWORD Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	// Get the server section
 	ACE_Configuration_Section_Key sandbox_key;
 	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key) != 0)
-		return (DWORD)-1;
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to open sandbox key in registry"),false);
 
 	// Get the user name and pwd...
 	ACE_WString strUName;
 	ACE_WString strPwd;
 	if (reg_root.get_string_value(sandbox_key,L"UserName",strUName) != 0)
-		return (DWORD)-1;
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Failed to read sandbox username from registry"),false);
 
 	reg_root.get_string_value(sandbox_key,L"Password",strPwd);
 
-	DWORD dwErr = ERROR_SUCCESS;
 	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
 	{
-		dwErr = GetLastError();
-		if (dwErr == ERROR_PRIVILEGE_NOT_HELD && unsafe_sandbox())
-		{
-			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,phToken))
-				dwErr = GetLastError();
-
-			if (dwErr == ERROR_SUCCESS)
-				ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
-		}
-	}
-
-	if (dwErr != ERROR_SUCCESS)
+		DWORD dwErr = GetLastError();
 		LOG_FAILURE(dwErr);
-
-	return dwErr;
-}
-
-bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
-{
-	HANDLE hToken;
-	int err = LogonSandboxUser(&hToken);
-	if (err != 0)
 		return false;
-
-	DWORD dwLen = 0;
-	GetTokenInformation(hToken,TokenUser,NULL,0,&dwLen);
-	if (dwLen == 0)
-	{
-		err = GetLastError();
-		CloseHandle(hToken);
-		return LOG_FAILURE(err);
 	}
-
-	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
-	if (!pBuffer)
-	{
-		CloseHandle(hToken);
-		return LOG_FAILURE(ERROR_OUTOFMEMORY);
-	}
-
-	if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
-	{
-		err = GetLastError();
-		ACE_OS::free(pBuffer);
-		CloseHandle(hToken);
-		return LOG_FAILURE(err);
-	}
-
-	LPSTR pszString;
-	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
-	{
-		err = GetLastError();
-		ACE_OS::free(pBuffer);
-		CloseHandle(hToken);
-		return LOG_FAILURE(err);
-	}
-
-	uid = pszString;
-	LocalFree(pszString);
-	ACE_OS::free(pBuffer);
-
-	// Done with hToken
-	CloseHandle(hToken);
-
-	// Append a extra to the uid
-	uid += "_SANDBOX";
-
-	return true;
-}
-
-bool Root::SpawnedProcess::ResolveTokenToUid(HANDLE token, ACE_CString& uid)
-{
-	DWORD dwLen = 0;
-	GetTokenInformation(token,TokenUser,NULL,0,&dwLen);
-	if (dwLen == 0)
-		return LOG_FAILURE(GetLastError());
-	
-	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
-	if (!pBuffer)
-		return LOG_FAILURE(ERROR_OUTOFMEMORY);
-	
-	if (!GetTokenInformation(token,TokenUser,pBuffer,dwLen,&dwLen))
-	{
-		DWORD err = GetLastError();
-		ACE_OS::free(pBuffer);
-		return LOG_FAILURE(err);
-	}
-
-	LPSTR pszString;
-	if (!ConvertSidToStringSidA(pBuffer->User.Sid,&pszString))
-	{
-		DWORD err = GetLastError();
-		ACE_OS::free(pBuffer);
-		return LOG_FAILURE(err);
-	}
-
-	uid = pszString;
-	LocalFree(pszString);
-	ACE_OS::free(pBuffer);
 
 	return true;
 }
@@ -510,12 +401,6 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 
 	MapGenericMask(&dwAccessDesired,&generic);
 
-	if (!ImpersonateLoggedOnUser(m_hToken))
-	{
-		ACE_OS::set_errno_to_last_error();
-		return LOG_FAILURE(GetLastError());
-	}
-
 	// Do the access check
 	PRIVILEGE_SET privilege_set;
 	DWORD dwPrivSetSize = sizeof(privilege_set);
@@ -524,12 +409,7 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 	BOOL bRes = ::AccessCheck(pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 	DWORD err = GetLastError();
 	ACE_OS::free(pSD);
-	if (!RevertToSelf())
-	{
-		// DIE!
-		exit(-1);
-	}
-
+	
 	if (!bRes && err!=ERROR_SUCCESS)
 	{
 		ACE_OS::last_error(err);
@@ -826,6 +706,97 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 	LocalFree(pACL);
 
 	return (ERROR_SUCCESS == dwRes);
+}
+
+void* Root::SpawnedProcess::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls)
+{
+	DWORD dwLen = 0;
+	GetTokenInformation(hToken,cls,NULL,0,&dwLen);
+	if (dwLen == 0)
+		return 0;
+		
+	void* pBuffer = malloc(dwLen);
+	if (!pBuffer)
+		return 0;
+
+	if (!GetTokenInformation(hToken,cls,pBuffer,dwLen,&dwLen))
+	{
+		free(pBuffer);
+		return 0;
+	}
+
+	return pBuffer;
+}
+
+bool Root::SpawnedProcess::MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2)
+{
+	for (ULONG i=0;i<count;++i)
+	{
+		bool bFound = false;
+		for (ULONG j=0;j<count;++j)
+		{
+			if (EqualSid(pSids1[i].Sid,pSids2[j].Sid) && 
+				pSids1[i].Attributes == pSids2[j].Attributes)
+			{
+				bFound = true;
+				break;
+			}			
+		}
+
+		if (!bFound)
+			return false;
+	}
+
+	return true;
+}
+
+bool Root::SpawnedProcess::MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2)
+{
+	for (ULONG i=0;i<count;++i)
+	{
+		bool bFound = false;
+		for (ULONG j=0;j<count;++j)
+		{
+			if (Privs1[i].Luid.LowPart == Privs2[j].Luid.LowPart && 
+				Privs1[i].Luid.HighPart == Privs2[j].Luid.HighPart && 
+				Privs1[i].Attributes == Privs2[j].Attributes)
+			{
+				bFound = true;
+				break;
+			}			
+		}
+
+		if (!bFound)
+			return false;
+	}
+
+	return true;
+}
+
+bool Root::SpawnedProcess::Compare(HANDLE hToken)
+{
+	TOKEN_GROUPS_AND_PRIVILEGES* pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(hToken,TokenGroupsAndPrivileges));
+	if (!pStats1)
+		return false;
+
+	TOKEN_GROUPS_AND_PRIVILEGES* pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
+	if (!pStats2)
+	{
+		free(pStats1);
+		return false;
+	}
+
+	bool bSame = (pStats1->SidCount==pStats2->SidCount && 
+		pStats1->RestrictedSidCount==pStats2->RestrictedSidCount && 
+		pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
+		MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
+		MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
+		MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
+
+	free(pStats1);
+	free(pStats2);
+
+	return bSame;
 }
 
 #endif // ACE_WIN32

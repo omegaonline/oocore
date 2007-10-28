@@ -743,17 +743,19 @@ Root::MessagePipe Root::MessageHandler::get_channel_pipe(ACE_CDR::UShort channel
 
 void Root::MessageHandler::pipe_closed(const MessagePipe& pipe)
 {
-	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
 	try
 	{
+		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 		std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(pipe);
 		if (j!=m_mapReverseChannelIds.end())
 		{
 			for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
 			{
+				void* TODO; /// Tell the derived handle that the channel has closed...
+
 				m_mapChannelIds.erase(k->second);
-			}
+			}	
 			m_mapReverseChannelIds.erase(j);
 		}
 	}

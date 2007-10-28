@@ -230,14 +230,6 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe)
 	return true;
 }
 
-bool Root::SpawnedProcess::IsRunning()
-{
-	if (m_pid == ACE_INVALID_PID)
-		return false;
-
-	return (ACE_OS::kill(m_pid,0) == 0 || errno != ESRCH);
-}
-
 bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
 	bAllowed = false;
@@ -311,42 +303,6 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 	return true;
 }
 
-bool Root::SpawnedProcess::ResolveTokenToUid(uid_t token, ACE_CString& uid)
-{
-	// Get the suppied user's group see if that is the same as the file's group
-	Root::pw_info pw(token);
-	if (!pw)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"::getpwuid() failed!"),false);
-
-	// Return the username
-	uid = pw->pw_name;
-	return true;
-}
-
-bool Root::SpawnedProcess::GetSandboxUid(ACE_CString& uid)
-{
-	ACE_Configuration_Heap& reg_root = Manager::get_registry();
-
-	// Open the server section
-	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key)!=0)
-		return false;
-
-	// Get the sandbox uid...
-	uid_t uid_sandbox;
-	if (reg_root.get_integer_value(sandbox_key,L"Uid",uid_sandbox) != 0)
-		return false;
-
-	// Resolve it...
-	if (!ResolveTokenToUid(uid_sandbox,uid))
-		return false;
-
-	// Append a extra to the uid
-	uid += "_SANDBOX";
-
-	return true;
-}
-
 bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 {
 	ACE_CString strUName = "omega_sandbox";
@@ -410,6 +366,11 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"chmod failed"),false);
 
 	return true;
+}
+
+bool Root::SpawnedProcess::Compare(uid_t uid)
+{
+	return m_uid == uid;
 }
 
 #endif // !ACE_WIN32

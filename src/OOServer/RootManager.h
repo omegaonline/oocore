@@ -57,9 +57,8 @@ namespace Root
 			ACE_WString     strPipe;
 			SpawnedProcess* pSpawn;
 		};
-		std::map<ACE_CString,UserProcess>  m_mapUserProcesses;
-		std::map<MessagePipe,ACE_CString>  m_mapUserIds;
-
+		std::map<MessagePipe,UserProcess>  m_mapUserProcesses;
+		
 		class ClientConnector : public ACE_Event_Handler
 		{
 		public:
@@ -94,10 +93,11 @@ namespace Root
 #endif
 		int process_client_connects();
 		bool spawn_sandbox();
-		bool spawn_user(user_id_type uid, const ACE_CString& key, ACE_WString& strPipe);
+		bool spawn_user(user_id_type uid, ACE_WString& strPipe);
 		ACE_WString bootstrap_user(MessagePipe& pipe, bool bSandbox);
 		bool connect_client(user_id_type uid, ACE_WString& strPipe);
 		void close_users();
+		virtual void pipe_closed(const MessagePipe& pipe);
 
 		void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool access_check(const MessagePipe& pipe, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);

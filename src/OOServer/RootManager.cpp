@@ -288,7 +288,11 @@ int Root::Manager::process_client_connects()
 #endif
 		return -1;
 
-	return ACE_Reactor::instance()->run_reactor_event_loop();
+	int ret = ACE_Reactor::instance()->run_reactor_event_loop();
+
+	ACE_Reactor::close_singleton();
+
+	return ret;
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -335,24 +339,18 @@ int Root::Manager::connect_client(ACE_SOCK_Stream& stream)
 
 bool Root::Manager::spawn_sandbox()
 {
-	ACE_CString strUserId;
-	if (SpawnedProcess::GetSandboxUid(strUserId))
+	// Spawn the sandbox
+	ACE_WString strPipe;
+	if (!spawn_user(static_cast<user_id_type>(0),strPipe))
 	{
-		// Spawn the sandbox
-		ACE_WString strPipe;
-		if (!spawn_user(static_cast<user_id_type>(0),strUserId,strPipe))
-		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::spawn_sandbox() failed"));
-			return false;
-		}
-	}
-	else
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::spawn_sandbox() failed"));
 		return false;
-
+	}
+	
 	return true;
 }
 
-bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, ACE_WString& strPipe)
+bool Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe)
 {
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn = 0;
@@ -393,9 +391,8 @@ bool Root::Manager::spawn_user(user_id_type uid, const ACE_CString& strUserId, A
 							ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
 							UserProcess process = {strPipe, pSpawn};
-							m_mapUserProcesses.insert(std::map<ACE_CString,UserProcess>::value_type(strUserId,process));
-							m_mapUserIds.insert(std::map<MessagePipe,ACE_CString>::value_type(pipe,strUserId));
-
+							m_mapUserProcesses.insert(std::map<MessagePipe,UserProcess>::value_type(pipe,process));
+							
 							bSuccess = true;
 						}
 						catch (...)
@@ -429,7 +426,7 @@ void Root::Manager::close_users()
 		try
 		{
 			// Iterate backwards
-			for (std::map<MessagePipe,ACE_CString>::reverse_iterator i=m_mapUserIds.rbegin();i!=m_mapUserIds.rend();++i)
+			for (std::map<MessagePipe,UserProcess>::reverse_iterator i=m_mapUserProcesses.rbegin();i!=m_mapUserProcesses.rend();++i)
 			{
                 ACE_CDR::UShort channel = get_pipe_channel(i->first,0);
 
@@ -445,7 +442,7 @@ void Root::Manager::close_users()
 	// Close all connections to user processes
 	try
 	{
-		for (std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
+		for (std::map<MessagePipe,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
 		{
 			delete i->second.pSpawn;
 		}
@@ -490,10 +487,6 @@ ACE_WString Root::Manager::bootstrap_user(MessagePipe& pipe, bool bSandbox)
 
 bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 {
-	ACE_CString strUserId;
-	if (!SpawnedProcess::ResolveTokenToUid(uid,strUserId))
-		return false;
-
 	try
 	{
 		// See if we have a process already
@@ -501,31 +494,24 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 		{
 			ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-			std::map<ACE_CString,UserProcess>::iterator i=m_mapUserProcesses.find(strUserId);
-			if (i!=m_mapUserProcesses.end())
+			for (std::map<MessagePipe,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
 			{
-				process = i->second;
+				if (i->second.pSpawn->Compare(uid))
+				{
+					process = i->second;
+					break;
+				}
 			}
 		}
 
 		// See if its still running...
 		if (process.pSpawn)
 		{
-			if (!process.pSpawn->IsRunning())
-			{
-				ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-				delete process.pSpawn;
-				m_mapUserProcesses.erase(strUserId);
-			}
-			else
-			{
-				strPipe = process.strPipe;
-				return true;
-			}
+			strPipe = process.strPipe;
+			return true;
 		}
 
-		return spawn_user(uid,strUserId,strPipe);
+		return spawn_user(uid,strPipe);
 	}
 	catch (std::exception&)
 	{
@@ -533,6 +519,25 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 	}
 
 	return false;
+}
+
+void Root::Manager::pipe_closed(const MessagePipe& pipe)
+{
+	try
+	{
+		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	
+		std::map<MessagePipe,UserProcess>::iterator i=m_mapUserProcesses.find(pipe);
+		if (i != m_mapUserProcesses.end())
+		{
+			delete i->second.pSpawn;
+			m_mapUserProcesses.erase(i);
+		}
+	}
+	catch (...)
+	{}
+
+	Root::MessageHandler::pipe_closed(pipe);
 }
 
 bool Root::Manager::access_check(const MessagePipe& pipe, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed)
@@ -543,23 +548,15 @@ bool Root::Manager::access_check(const MessagePipe& pipe, const wchar_t* pszObje
 		{
 			ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-			// Find the user id
-			std::map<MessagePipe,ACE_CString>::iterator i = m_mapUserIds.find(pipe);
-			if (i == m_mapUserIds.end())
+			// Find the process info
+			std::map<MessagePipe,UserProcess>::iterator i = m_mapUserProcesses.find(pipe);
+			if (i == m_mapUserProcesses.end())
 			{
 				ACE_OS::last_error(EINVAL);
 				return false;
 			}
 
-			// Find the process info associated with user id
-			std::map<ACE_CString,UserProcess>::iterator j = m_mapUserProcesses.find(i->second);
-			if (j == m_mapUserProcesses.end())
-			{
-				ACE_OS::last_error(EINVAL);
-				return false;
-			}
-
-			pSpawn = j->second.pSpawn;
+			pSpawn = i->second.pSpawn;
 		}
 
 		return pSpawn->CheckAccess(pszObject,mode,bAllowed);

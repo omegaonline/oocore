@@ -24,43 +24,42 @@ namespace Root
 		~SpawnedProcess();
 
 		bool Spawn(Manager::user_id_type id, const ACE_WString& strPipe);
-		bool IsRunning();
-
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-		static bool GetSandboxUid(ACE_CString& uid);
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
 		static bool SecureFile(const ACE_WString& strFilename);
-		static bool ResolveTokenToUid(Manager::user_id_type token, ACE_CString& uid);
-
+		
 #if defined(ACE_WIN32)
 
-	protected:
-		HANDLE	m_hToken;
-
-		static DWORD LogonSandboxUser(HANDLE* phToken);
-		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
+		bool Compare(HANDLE hToken);
 
 	private:
+		HANDLE	m_hToken;
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
 		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile);
+		void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
+		bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
+		bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);
+
+		static bool LogonSandboxUser(HANDLE* phToken);
+		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
 		static bool unsafe_sandbox();
 
 #else // !ACE_WIN32
 
-	protected:
-		uid_t	m_uid;
+		bool Compare(uid_t uid);
+		static ACE_CString get_home_dir();
 
 	private:
+		uid_t	m_uid;
 		pid_t	m_pid;
-		bool CleanEnvironment();
 
-	public:
-		static ACE_CString get_home_dir();
+		bool CleanEnvironment();
+		
 #endif // ACE_WIN32
 
 	};

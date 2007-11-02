@@ -1,6 +1,8 @@
 #include "stdafx.h"
 
+#ifdef OMEGA_HAVE_VLD
 #include <vld.h>
+#endif
 
 #include "./OORegEdit.h"
 #include "./MainFrame.h"

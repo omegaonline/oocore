@@ -824,7 +824,7 @@ namespace Omega
 					IException_Safe* pSE = m_pManager->CreateOutputStream_Safe(&p,0);
 					if (pSE)
 						return pSE;
-					pStream = p;
+					pStream.attach(p);
 					return 0;
 				}
 
@@ -834,7 +834,7 @@ namespace Omega
 					IException_Safe* pSE = m_pManager->SendAndReceive_Safe(&pRet,attribs,pParamsOut,&p,timeout);
 					if (pSE)
 						return pSE;
-					pParamsIn = p;
+					pParamsIn.attach(p);
 					return 0;
 				}
 

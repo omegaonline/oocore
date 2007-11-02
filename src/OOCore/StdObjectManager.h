@@ -16,6 +16,7 @@ namespace OOCore
 
 		void Init(Omega::IObject* pObject, Omega::uint32_t stub_id, Omega::System::MetaInfo::IWireManager* pManager);
 		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid);
+		void ReleaseMarshalData(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid);
 		Omega::System::MetaInfo::IWireStub* UnmarshalStub(Omega::Serialize::IFormattedStream* pStream);
 		Omega::IObject* GetStubObject();
 		
@@ -67,6 +68,7 @@ namespace OOCore
 			return pThis->QI2(iid);
 		}
 		Omega::IObject* QI2(const Omega::guid_t& iid);
+		bool CallRemoteQI(const Omega::guid_t& iid);
 	};
 
 	class StdObjectManager :
@@ -100,9 +102,10 @@ namespace OOCore
 	public:
 		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
 		void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		void ReleaseMarshalData(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
 		void ReleaseStub(Omega::uint32_t id);
 		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
-		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pParams, Omega::uint16_t timeout);
+		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
 
 	// IObjectManager members
 	public:

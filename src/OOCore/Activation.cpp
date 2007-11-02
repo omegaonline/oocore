@@ -258,7 +258,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ACE_Process process;
 					OOCore::ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
 
-					// TODO The timeout needs to be related to the request timeout...
+					// The timeout needs to be related to the request timeout...
 					void* TODO;
 
 					// Wait for startup

@@ -509,7 +509,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 
             ACE_CDR::UShort old_thread_id = 0;
 			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-			if (i != pContext->m_mapChannelThreads.end())
+			if (i == pContext->m_mapChannelThreads.end())
 				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
 
 			old_thread_id = i->second;

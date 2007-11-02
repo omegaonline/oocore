@@ -116,13 +116,13 @@ bool run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		ACE_OS::fprintf(stdout,L"[Unhandled Omega::IException]\n\n%ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str());
+		ACE_OS::fprintf(stdout,L"[Unhandled Omega::IException]\n\t%ls\n\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		ACE_OS::fprintf(stdout,"[Unhandled std::exception]\n\n%s\n",e.what());
+		ACE_OS::fprintf(stdout,"[Unhandled std::exception]\n\t%s\n",e.what());
 	}
 	catch (...)
 	{

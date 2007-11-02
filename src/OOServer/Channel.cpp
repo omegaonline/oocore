@@ -46,18 +46,17 @@ Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
 }
 
-Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
+IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout)
 {
 	// QI pStream for our private interface
 	ObjectPtr<IOutputCDR> ptrOutput;
-	ptrOutput.Attach(static_cast<IOutputCDR*>(pStream->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
+	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
 	if (!ptrOutput)
 		OOSERVER_THROW_ERRNO(EINVAL);
 
 	// Get the message block
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
-	Serialize::IFormattedStream* pResponse = 0;
 	ACE_InputCDR* response = 0;
 	try
 	{
@@ -72,7 +71,19 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 			}
 			OOSERVER_THROW_LASTERROR();
 		}
-		
+	}
+	catch (...)
+	{
+		delete response;
+		request->release();
+		throw;
+	}
+
+	// Done with request
+	request->release();
+
+	try
+	{
 		if (response)
 		{
 			// Unpack and validate response...
@@ -95,19 +106,22 @@ Serialize::IFormattedStream* User::Channel::SendAndReceive(Remoting::MethodAttri
 			}
 						
 			// Wrap the response
-			ObjectPtr<ObjectImpl<InputCDR> > ptrResponse = ObjectImpl<InputCDR>::CreateInstancePtr();
-			ptrResponse->init(*response);
+			ObjectPtr<ObjectImpl<InputCDR> > ptrRecv = ObjectImpl<InputCDR>::CreateInstancePtr();
+			ptrRecv->init(*response);
 			response = 0;
-			pResponse = ptrResponse.Detach();
+			pRecv = ptrRecv.Detach();
 		}
+	}
+	catch (IException* pE)
+	{
+		delete response;
+		return pE;
 	}
 	catch (...)
 	{
 		delete response;
-		request->release();
 		throw;
 	}
 
-	request->release();
-	return pResponse;
+	return 0;
 }

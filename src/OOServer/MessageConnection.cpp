@@ -644,6 +644,10 @@ ACE_CDR::UShort Root::MessageHandler::register_channel(MessagePipe& pipe)
 		}
 		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
 
+		char szBuf[256];
+		ACE_OS::sprintf(szBuf,"Added channel %lu on pipe %#lx\n",uChannelId,pipe.get_read_handle());
+		OutputDebugString(szBuf);
+
 		std::map<ACE_CDR::UShort,ACE_CDR::UShort> reverse_map;
 		reverse_map.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(0,uChannelId));
 
@@ -689,7 +693,13 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 		if (!p.second)
 			uChannelId = p.first->second;
 		else
+		{
 			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
+
+			char szBuf[256];
+			ACE_OS::sprintf(szBuf,"Added channel %lu on pipe %#lx\n",uChannelId,channel.pipe.get_read_handle());
+			OutputDebugString(szBuf);
+		}
 	}
 	catch (...)
 	{
@@ -819,7 +829,13 @@ bool Root::MessageHandler::parse_message(Message* msg)
 			if (!p.second)
 				reply_channel_id = p.first->second;
 			else
+			{
 				m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(reply_channel_id,channel));
+
+				char szBuf[256];
+				ACE_OS::sprintf(szBuf,"Added secondary channel %lu on pipe %#lx\n",reply_channel_id,channel.pipe.get_read_handle());
+				OutputDebugString(szBuf);
+			}
 		}
 
 		msg->m_src_channel_id = reply_channel_id;

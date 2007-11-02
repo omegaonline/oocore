@@ -523,6 +523,8 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 
 void Root::Manager::pipe_closed(const MessagePipe& pipe)
 {
+	Root::MessageHandler::pipe_closed(pipe);
+
 	try
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -536,8 +538,6 @@ void Root::Manager::pipe_closed(const MessagePipe& pipe)
 	}
 	catch (...)
 	{}
-
-	Root::MessageHandler::pipe_closed(pipe);
 }
 
 bool Root::Manager::access_check(const MessagePipe& pipe, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed)

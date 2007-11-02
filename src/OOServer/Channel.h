@@ -29,8 +29,14 @@ namespace User
 		public IOutputCDR
 	{
 	public:
-		OutputCDR()
+		OutputCDR() : m_pInput(0)
 		{ }
+
+		virtual ~OutputCDR()
+		{
+			if (m_pInput)
+				delete m_pInput;
+		}
 
 		void* GetMessageBlock()
 		{
@@ -43,12 +49,23 @@ namespace User
 			INTERFACE_ENTRY(IOutputCDR)
 		END_INTERFACE_MAP()
 
+	private:
+		ACE_InputCDR* m_pInput;
+
+		ACE_InputCDR& get_input()
+		{
+			if (!m_pInput)
+				OMEGA_NEW(m_pInput,ACE_InputCDR(*this));
+
+			return *m_pInput;
+		}
+
 	// IStream members
 	public:
 		Omega::byte_t ReadByte()
-			{ OOSERVER_THROW_ERRNO(EACCES); }
-		void ReadBytes(Omega::uint32_t&, Omega::byte_t*)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ Omega::byte_t val; if (!get_input().read_octet(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
+			{ if (!get_input().read_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
 		void WriteByte(Omega::byte_t val)
 			{ if (!write_octet(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
@@ -57,15 +74,15 @@ namespace User
 	// IFormattedStream members
 	public:
 		Omega::bool_t ReadBoolean()
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ Omega::bool_t val; if (!get_input().read_boolean(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint16_t ReadUInt16()
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ Omega::uint16_t val; if (!get_input().read_ushort(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint32_t ReadUInt32()
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ Omega::uint32_t val; if (!get_input().read_ulong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint64_t ReadUInt64()
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ Omega::uint64_t val; if (!get_input().read_ulonglong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ ACE_CString val; if (!get_input().read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteUInt16(Omega::uint16_t val)
@@ -155,7 +172,7 @@ namespace User
 	// IChannel members
 	public:
 		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter);
-		Omega::Serialize::IFormattedStream* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pStream, Omega::uint16_t timeout);
+		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
 	};
 }
 

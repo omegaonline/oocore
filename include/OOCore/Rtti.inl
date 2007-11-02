@@ -300,18 +300,27 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 		OMEGA_THROW(string_t(e.what(),false));
 	}
 
-	I* pRet = static_cast<I*>(ptrProxy->QueryInterface(iid));
-	if (!pRet)
+	I* pRet = 0;
+	try
 	{
-		if (bPartialAllowed)
+		pRet = static_cast<I*>(ptrProxy->QueryInterface(iid));
+	}
+	catch (INoInterfaceException* pE)
+	{
+		const qi_rtti* pRtti = get_qi_rtti_info(iid);
+		if ((!pRtti || !pRtti->pfnCreateSafeProxy) && bPartialAllowed)
 		{
+			pE->Release();
 			pRet = static_cast<I*>(static_cast<IObject*>(ptrProxy));
 			pRet->AddRef();
 		}
 		else
-			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+			throw pE;
 	}
-		
+
+	if (!pRet)
+		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+			
 	return pRet;
 }
 

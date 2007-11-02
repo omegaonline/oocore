@@ -141,49 +141,21 @@ void OOCore::WireStub::MarshalInterface(Serialize::IFormattedStream* pStream, co
 	write_guid(pStream,iid);
 }
 
+void OOCore::WireStub::ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t&)
+{
+	pStream->ReadUInt32();
+	read_guid(pStream);
+}
+
 System::MetaInfo::IWireStub* OOCore::WireStub::UnmarshalStub(Serialize::IFormattedStream* pStream)
 {
-	guid_t iid = read_guid(pStream);
-
-	ObjectPtr<System::MetaInfo::IWireStub> ptrStub = FindStub(iid);
-
-	return ptrStub.AddRefReturn();
+	return FindStub(read_guid(pStream)).AddRefReturn();
 }
 
 IObject* OOCore::WireStub::GetStubObject()
 {
 	return m_ptrObj;
 }
-
-// WireProxy QI....
-/*virtual IException_Safe* QueryInterface_Safe(const guid_t& iid, IObject_Safe*& pObject)
-				{
-					IException_Safe* pSE = 0;
-					if (m_uId == 0)
-						pObject = 0;
-					else
-					{
-						auto_iface_safe_ptr<IFormattedStream_Safe> pParamsOut;
-						pSE = CreateOutputStream(pParamsOut);
-						if (pSE)
-							return pSE;
-						pSE = WriteKey(pParamsOut);
-						if (pSE)
-							return pSE;
-						pSE = wire_write(pParamsOut,(uint32_t)2);
-						if (pSE)
-							return pSE;
-						pSE = marshal_info<const guid_t&>::wire_type::write(this->m_pManager,pParamsOut,&iid);
-						if (pSE)
-							return pSE;
-						auto_iface_safe_ptr<IFormattedStream_Safe> pParamsIn;
-						pSE = SendAndReceive(0,pParamsOut,pParamsIn);
-						if (pSE)
-							return pSE;
-						pSE = marshal_info<IObject*>::wire_type::read(this->m_pManager,pParamsIn,pObject,&iid);
-					}
-					return pSE;
-				}*/
 
 void OOCore::WireProxy::Init(uint32_t proxy_id, Omega::System::MetaInfo::IWireManager* pManager)
 {
@@ -193,9 +165,9 @@ void OOCore::WireProxy::Init(uint32_t proxy_id, Omega::System::MetaInfo::IWireMa
 
 IObject* OOCore::WireProxy::UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid)
 {
-	guid_t wire_iid = read_guid(pStream);
-
 	ObjectPtr<IObject> ptrProxy;
+
+	guid_t wire_iid = read_guid(pStream);
 		
 	try
 	{
@@ -250,12 +222,40 @@ IObject* OOCore::WireProxy::UnmarshalInterface(Serialize::IFormattedStream* pStr
 		OMEGA_THROW(string_t(e.what(),false));
 	}
 
+	if (iid == OMEGA_UUIDOF(IObject))
+	{
+		AddRef();
+		return this;
+	}
+
 	return ptrProxy->QueryInterface(iid);
 }
 
 void OOCore::WireProxy::WriteKey(Omega::Serialize::IFormattedStream* pStream)
 {
 	pStream->WriteUInt32(m_proxy_id);
+}
+
+bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
+{
+	ObjectPtr<Serialize::IFormattedStream> pParamsOut;
+	pParamsOut.Attach(m_ptrManager->CreateOutputStream());
+
+	pParamsOut->WriteUInt32(m_proxy_id);
+	write_guid(pParamsOut,OMEGA_UUIDOF(IObject));
+	pParamsOut->WriteUInt32(2);
+
+	write_guid(pParamsOut,iid);
+    
+	Serialize::IFormattedStream* pParamsIn = 0;
+	IException* pE = m_ptrManager->SendAndReceive(0,pParamsOut,pParamsIn);
+	if (pE)
+		throw pE;
+
+	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn;
+	ptrParamsIn.Attach(pParamsIn);
+
+	return ptrParamsIn->ReadBoolean();
 }
 
 IObject* OOCore::WireProxy::QI2(const Omega::guid_t& iid)
@@ -294,7 +294,8 @@ IObject* OOCore::WireProxy::QI2(const Omega::guid_t& iid)
 		if (!ptrProxy)
 		{
 			// Send a packet to the other end to see if the stub supports the interface
-			void* TODO;
+			if (!CallRemoteQI(iid))
+				return 0;
 
 			// Create a new proxy for this interface
 			ptrProxy.Attach(wire_holder::CreateWireProxy(iid,this,m_ptrManager));
@@ -422,10 +423,8 @@ int OOCore::SEH::DoInvoke(uint32_t method_id, System::MetaInfo::IWireStub* pStub
 		__asm__ __volatile__ ( "movl %0, %%fs:0" : : "r" (xc.prev));
 
 	#else
-
 		void* TODO; // You have no protection around Invoke for your compiler...
 		DoInvoke2(method_id,pStub,pParamsIn,pParamsOut,pE);
-
 	#endif
 #else
 	void* TODO; // Some kind of signal handler here please?
@@ -591,10 +590,6 @@ void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pSt
 	// Write out the data
 	pStream->WriteByte(1);
 	ptrStub->MarshalInterface(pStream,iid);
-
-	char szBuf[256];
-	ACE_OS::sprintf(szBuf,"%p (%ls) marshalled\n",(IObject*)ptrObject,System::MetaInfo::lookup_iid(iid).c_str());
-	OutputDebugString(szBuf);
 }
 
 void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject)
@@ -643,10 +638,6 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 		}
 
 		pObject = ptrProxy->UnmarshalInterface(pStream,iid);
-
-		char szBuf[256];
-		ACE_OS::sprintf(szBuf,"%lu (%ls) unmarshalled\n",proxy_id,System::MetaInfo::lookup_iid(iid).c_str());
-		OutputDebugString(szBuf);
 	}
 	//else if (flag == 2)
 	//{
@@ -662,6 +653,52 @@ void OOCore::StdObjectManager::UnmarshalInterface(Serialize::IFormattedStream* p
 	//}
 	else
 		OOCORE_THROW_ERRNO(EINVAL);
+}
+
+void OOCore::StdObjectManager::ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject)
+{
+	byte_t flag = pStream->ReadByte();
+
+	if (flag == 1)
+	{
+		ObjectPtr<IObject> ptrObject;
+		ptrObject.Attach(pObject->QueryInterface(OMEGA_UUIDOF(IObject)));
+
+		ObjectPtr<WireStub> ptrStub;
+		try
+		{
+			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			std::map<OTL::ObjectPtr<Omega::IObject>,OTL::ObjectPtr<WireStub> >::const_iterator i=m_mapStubObjs.find(ptrObject);
+			if (i != m_mapStubObjs.end())
+			{
+				ptrStub = i->second;
+			}
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(string_t(e.what(),false));
+		}
+
+		// If there is no stub... what are we unmarshalling?
+		if (!ptrStub)
+			OOCORE_THROW_ERRNO(EINVAL);
+		
+		// Read the data
+		ptrStub->ReleaseMarshalData(pStream,iid);
+	}
+	//else if (flag == 2)
+	//{
+	//	// Skip the guid...
+	//	read_guid(pStream);
+
+	//	// See if pObject does custom marshalling...
+	//	ObjectPtr<Remoting::IMarshal> ptrMarshal(ptrObject);
+	//	if (!ptrMarshal)
+	//		OOCORE_THROW_ERRNO(EINVAL);
+	//	
+	//	ptrMarshal->ReleaseMarhslData(pStream,iid,0);
+	//}
 }
 
 void OOCore::StdObjectManager::ReleaseStub(uint32_t uId)
@@ -694,27 +731,40 @@ Omega::Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream
 	return m_ptrChannel->CreateOutputStream(pOuter);
 }
 
-Serialize::IFormattedStream* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pStream, uint16_t timeout)
+IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout)
 {
-    ObjectPtr<Serialize::IFormattedStream> ptrResponse;
-	ptrResponse.Attach(m_ptrChannel->SendAndReceive(attribs,pStream,timeout));
+    IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
+	if (pE)
+		return pE;
+
+	ObjectPtr<Serialize::IFormattedStream> ptrRecv;
+	ptrRecv.Attach(pRecv);
+	pRecv = 0;
 
 	if (!(attribs & Remoting::asynchronous))
 	{
-		if (!ptrResponse)
-			OMEGA_THROW(L"No response received");
-
-		// Read exception status
-		if (!ptrResponse->ReadBoolean())
+		try
 		{
-			// Unmarshal the exception
-			IObject* pE;
-			UnmarshalInterface(ptrResponse,OMEGA_UUIDOF(IException),pE);
-			throw static_cast<IException*>(pE);
+			if (!ptrRecv)
+				OMEGA_THROW(L"No response received");
+
+			// Read exception status
+			if (!ptrRecv->ReadBoolean())
+			{
+				// Unmarshal the exception
+				IObject* pE;
+				UnmarshalInterface(ptrRecv,OMEGA_UUIDOF(IException),pE);
+				return static_cast<IException*>(pE);
+			}
+		}
+		catch (IException* pE)
+		{
+			return pE;
 		}
 	}
 
-	return ptrResponse.AddRefReturn();
+	pRecv = ptrRecv.Detach();
+	return 0;
 }
 
 void OOCore::StdObjectManager::CreateRemoteInstance(const guid_t& oid, const guid_t& iid, IObject* pOuter, IObject*& pObject)
@@ -730,9 +780,17 @@ void OOCore::StdObjectManager::CreateRemoteInstance(const guid_t& oid, const gui
 	write_guid(ptrParamsOut,iid);
 	MarshalInterface(ptrParamsOut,OMEGA_UUIDOF(IObject),pOuter);
 
-	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn; 
-	ptrParamsIn.Attach(SendAndReceive(0,ptrParamsOut,0));
-	
+	Serialize::IFormattedStream* pParamsIn = 0;
+	IException* pE = SendAndReceive(0,ptrParamsOut,pParamsIn,0);
+	if (pE)
+	{
+		ReleaseMarshalData(ptrParamsOut,OMEGA_UUIDOF(IObject),pOuter);
+		throw pE;
+	}
+
+	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn;
+	ptrParamsIn.Attach(pParamsIn);
+
 	UnmarshalInterface(ptrParamsIn,iid,pObject);
 }
 

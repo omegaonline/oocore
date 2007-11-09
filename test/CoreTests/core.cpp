@@ -21,12 +21,8 @@ bool init_tests()
 	// Call Omega::Initialze and remember we have...
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
-	{
-		add_failure(Omega::string_t::Format(L"Omega::Initialize failed: %ls\n%ls\n",pE->Description().c_str(),pE->Source().c_str()).c_str());
-		pE->Release();
-		return false;
-	}
-
+		throw pE;
+	
 	auto_uninit.bInitCalled = true;
 	return true;
 }

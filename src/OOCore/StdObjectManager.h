@@ -3,79 +3,53 @@
 
 namespace OOCore
 {
-	class WireStub : 
+	class WireStub;
+	class WireProxy;
+
+	// {69099DD8-A628-458a-861F-009E016DB81B}
+	OOCORE_DECLARE_OID(OID_WireProxyMarshalFactory);
+
+	class WireProxyMarshalFactory :
 		public OTL::ObjectBase,
-		public Omega::IObject
+		public OTL::AutoObjectFactoryNoAggregation<WireProxyMarshalFactory,&OID_WireProxyMarshalFactory>,
+		public Omega::Remoting::IMarshalFactory
 	{
 	public:
-		WireStub() : m_stub_id(0)
-		{}
-
-		virtual ~WireStub()
-		{}
-
-		void Init(Omega::IObject* pObject, Omega::uint32_t stub_id, Omega::System::MetaInfo::IWireManager* pManager);
-		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid);
-		void ReleaseMarshalData(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid);
-		Omega::System::MetaInfo::IWireStub* UnmarshalStub(Omega::Serialize::IFormattedStream* pStream);
-		Omega::IObject* GetStubObject();
-		
-		BEGIN_INTERFACE_MAP(WireStub)
-			INTERFACE_ENTRY(IObject)
+		BEGIN_INTERFACE_MAP(WireProxyMarshalFactory)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
 		END_INTERFACE_MAP()
 
-	private:
-		Omega::uint32_t                                       m_stub_id;
-		OTL::ObjectPtr<IObject>                               m_ptrObj;
-		ACE_RW_Thread_Mutex                                   m_lock;
-		OTL::ObjectPtr<Omega::System::MetaInfo::IWireManager> m_ptrManager;
+	// IMarshalFactory members
+	public:
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
+	};		
 
-		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::System::MetaInfo::IWireStub> > m_iid_map;
+	// {3AC2D04F-A8C5-4214-AFE4-A64DB8DC992C}
+	OOCORE_DECLARE_OID(OID_StdObjectManagerMarshalFactory);
 
-		OTL::ObjectPtr<Omega::System::MetaInfo::IWireStub> FindStub(const Omega::guid_t& iid);
-	};
-
-	class WireProxy : 
+	class StdObjectManagerMarshalFactory :
 		public OTL::ObjectBase,
-		public Omega::System::MetaInfo::IWireProxy
+		public OTL::AutoObjectFactoryNoAggregation<StdObjectManagerMarshalFactory,&OID_StdObjectManagerMarshalFactory>,
+		public Omega::Remoting::IMarshalFactory
 	{
 	public:
-		WireProxy() : m_proxy_id(0)
-		{}
-
-		virtual ~WireProxy()
-		{}
-
-		void Init(Omega::uint32_t proxy_id, Omega::System::MetaInfo::IWireManager* pManager);
-		IObject* UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid);
-		void WriteKey(Omega::Serialize::IFormattedStream* pStream);
-
-		BEGIN_INTERFACE_MAP(WireProxy)
-			INTERFACE_ENTRY(Omega::System::MetaInfo::IWireProxy)
-			INTERFACE_ENTRY_NOINTERFACE(Omega::System::MetaInfo::SafeProxy)
-			INTERFACE_ENTRY_FUNCTION_BLIND(QI)
+		BEGIN_INTERFACE_MAP(StdObjectManagerMarshalFactory)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
 		END_INTERFACE_MAP()
 
-	private:
-		Omega::uint32_t                                       m_proxy_id;
-		ACE_RW_Thread_Mutex                                   m_lock;
-		OTL::ObjectPtr<Omega::System::MetaInfo::IWireManager> m_ptrManager;
-
-		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::IObject> > m_iid_map;
-
-		static Omega::IObject* QI(WireProxy* pThis, const Omega::guid_t& iid)
-		{
-			return pThis->QI2(iid);
-		}
-		Omega::IObject* QI2(const Omega::guid_t& iid);
-		bool CallRemoteQI(const Omega::guid_t& iid);
+	// IMarshalFactory members
+	public:
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
 	};
 
 	class StdObjectManager :
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager>,
 		public Omega::Remoting::IObjectManager,
-		public Omega::System::MetaInfo::IWireManager
+		public Omega::System::MetaInfo::IWireManager,
+		public Omega::System::MetaInfo::IWireManager_Safe,
+		public Omega::Remoting::IMarshal,
+		public Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class
 	{
 	public:
 		StdObjectManager();
@@ -84,7 +58,10 @@ namespace OOCore
 		BEGIN_INTERFACE_MAP(StdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
 			INTERFACE_ENTRY(Omega::System::MetaInfo::IWireManager)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
+
+		void RemoveProxy(Omega::uint32_t proxy_id);
 
 	private:
 		StdObjectManager(const StdObjectManager&) : OTL::ObjectBase(),Omega::Remoting::IObjectManager(),Omega::System::MetaInfo::IWireManager() {};
@@ -94,18 +71,33 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
 		Omega::uint32_t                           m_uNextStubId;
 
-		std::map<OTL::ObjectPtr<Omega::IObject>,OTL::ObjectPtr<WireStub> > m_mapStubObjs;
-		std::map<Omega::uint32_t,OTL::ObjectPtr<WireStub> >                m_mapStubIds;
-		std::map<Omega::uint32_t,OTL::ObjectPtr<WireProxy> >               m_mapProxyIds;
+		std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>   m_mapStubObjs;
+		std::map<Omega::uint32_t,WireStub*>                          m_mapStubIds;
+		std::map<Omega::uint32_t,WireProxy*>                         m_mapProxyIds;
+
+	// IObject_Safe members
+	public:
+		void OMEGA_CALL AddRef_Safe();
+		void OMEGA_CALL Release_Safe();
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppS);
+		void OMEGA_CALL Pin() {}
+		void OMEGA_CALL Unpin() {}
 
 	// IWireManager members
 	public:
 		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
 		void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		void ReleaseMarshalData(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
-		void ReleaseStub(Omega::uint32_t id);
 		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
+
+	// IWireManager_Safe members
+	public:
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateOutputStream_Safe(Omega::System::MetaInfo::IFormattedStream_Safe** ppRet, Omega::System::MetaInfo::IObject_Safe* pOuter);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SendAndReceive_Safe(Omega::System::MetaInfo::IException_Safe** ppRet, Omega::Remoting::MethodAttributes_t attribs, Omega::System::MetaInfo::IFormattedStream_Safe* pSend, Omega::System::MetaInfo::IFormattedStream_Safe** ppRecv, Omega::uint16_t timeout);
 
 	// IObjectManager members
 	public:
@@ -113,6 +105,18 @@ namespace OOCore
 		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut);
 		void Disconnect();
 		void CreateRemoteInstance(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject* pOuter, Omega::IObject*& pObject);
+
+	// IMarshal members
+	public:
+		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+
+	// IMarshal_Safe members
+	public:
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::IMarshal::Flags_t);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::IMarshal::Flags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::IMarshal::Flags_t flags);
 	};
 }
 

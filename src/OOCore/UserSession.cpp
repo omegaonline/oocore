@@ -130,13 +130,15 @@ IException* OOCore::UserSession::init()
 		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
 		pE->m_strDesc = L"Failed to connect to server process, please check installation";
 		pE->m_strSource = L"Omega::Initialize";
+
+		//USER_SESSION::close();
         return pE;
 	}
 
 	IException* pE = USER_SESSION::instance()->bootstrap();
 	if (pE)
-		USER_SESSION::instance()->term_i();
-
+		term();
+	
 	return pE;
 }
 
@@ -172,6 +174,7 @@ IException* OOCore::UserSession::bootstrap()
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
 		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
@@ -296,8 +299,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 void OOCore::UserSession::term()
 {
 	USER_SESSION::instance()->term_i();
-
-	USER_SESSION::close();
+	//USER_SESSION::close();
 }
 
 void OOCore::UserSession::term_i()
@@ -813,8 +815,7 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 				ptrResponse->WriteBoolean(false);
 
 				// Write the exception onto the wire
-				ObjectPtr<System::MetaInfo::IWireManager> ptrWM(ptrOM);
-				ptrWM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
+				ptrOM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
 			}
 		}
 
@@ -863,7 +864,7 @@ OTL::ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager
 		{
 			// Create a new channel
 			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-			ptrChannel->init(this,src_channel_id);
+			ptrChannel->init(src_channel_id);
 
 			// Create a new OM
 			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);

@@ -25,17 +25,12 @@ ACE_CString OOCore::string_t_to_utf8(const Omega::string_t& val)
 	return str;
 }
 
-OOCore::Channel::Channel() :
-	m_pSession(0)
+OOCore::Channel::Channel()
 {
 }
 
-void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort channel_id)
+void OOCore::Channel::init(ACE_CDR::UShort channel_id)
 {
-	if (m_pSession)
-		OOCORE_THROW_ERRNO(EALREADY);
-
-	m_pSession = pSession;
 	m_channel_id = channel_id;
 }
 
@@ -60,10 +55,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	ACE_InputCDR* response = 0;
 	try
 	{
-		if (timeout == 0)
-			timeout = 15000;
-
-		if (!m_pSession->send_request(m_channel_id,request,response,timeout,attribs))
+		if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 			OOCORE_THROW_LASTERROR();
 	}
 	catch (...)
@@ -102,7 +94,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 			// Wrap the response
 			ObjectPtr<ObjectImpl<InputCDR> > ptrRecv = ObjectImpl<InputCDR>::CreateInstancePtr();
 			ptrRecv->init(*response);
-			response = 0;
+			delete response;
 			pRecv = ptrRecv.Detach();
 		}
 	}
@@ -118,4 +110,49 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	}
 
 	return 0;
+}
+
+Omega::guid_t OOCore::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+{
+	return OID_ChannelMarshalFactory;
+}
+
+void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+{
+	pStream->WriteUInt16(m_channel_id);
+}
+
+void OOCore::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+{
+	pStream->ReadUInt16();
+}
+
+OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
+
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject)
+{
+	try
+	{
+		// This must match OOServer::User::OID_ChannelMarshalFactory
+		static guid_t oid = guid_t::FromString(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+
+		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
+
+		// If we have a pointer by now then we are actually running in the OOServer.exe, 
+		// and can therefore do our specialized unmarshalling...
+		return ptrMarshalFactory->UnmarshalInterface(pObjectManager,pStream,iid,flags,pObject);
+	}
+	catch (Activation::IOidNotFoundException* pE)
+	{
+		// We can continue if this happens
+		pE->Release();
+	}
+	
+	// If we get here, then we are loaded into a different exe from OOServer,
+	// therefore we do simple unmarshalling
+
+	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
+
+	// Create a new object manager (and channel)
+	pObject = UserSession::USER_SESSION::instance()->get_object_manager(channel_id)->QueryInterface(iid);
 }

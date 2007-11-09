@@ -230,16 +230,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 		return dwRes;
 	}
 
-	// Init our startup info
-	STARTUPINFOW startup_info;
-	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
-	startup_info.cb = sizeof(STARTUPINFOW);
-	startup_info.lpDesktop = L"";
-
-	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
-
-	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
-
 	// Get the primary token from the impersonation token
 	HANDLE hPriToken = 0;
 	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
@@ -251,9 +241,39 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 		LOG_FAILURE(dwRes);
 		return dwRes;
 	}	
-	
+
+	// Init our startup info
+	STARTUPINFOW startup_info;
+	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
+	startup_info.cb = sizeof(STARTUPINFOW);
+	startup_info.lpDesktop = L"";
+
+	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
+
+	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
+
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
+
+#ifdef OMEGA_DEBUG
+	if (IsDebuggerPresent())
+	{
+		strCmdLine += L" --break";
+
+		if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+		{
+			dwRes = GetLastError();
+			CloseHandle(hPriToken);
+			DestroyEnvironmentBlock(lpEnv);
+			if (hProfile)
+				UnloadUserProfile(hToken,hProfile);
+			LOG_FAILURE(dwRes);
+			return dwRes;
+		}
+	}
+	else
+#endif
+	
 	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
@@ -295,7 +315,7 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 	// Get the user name and pwd...
 	u_int v = 0;
 	if (reg_root.get_integer_value(sandbox_key,L"Unsafe",v) != 0)
-		return false;
+		return IsDebuggerPresent() ? true : false;
 
 	return (v == 1);
 }

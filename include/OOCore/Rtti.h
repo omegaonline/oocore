@@ -3,6 +3,9 @@
 
 namespace Omega
 {
+	inline bool PinObjectPointer(IObject* pObject);
+	inline void UnpinObjectPointer(IObject* pObject);
+
 	namespace System
 	{
 		namespace MetaInfo
@@ -531,7 +534,12 @@ namespace Omega
 				virtual void OMEGA_CALL Release_Safe()
 				{
 					if (--m_refcount==0)
-						delete this;
+					{
+						m_contained.Release_Iface();
+
+						if (m_pincount == 0)
+							delete this;
+					}
 				}
 
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
@@ -547,12 +555,13 @@ namespace Omega
 
 				virtual void OMEGA_CALL Pin()
 				{
-					m_contained.Pin();
+					++m_pincount;
 				}
 
 				virtual void OMEGA_CALL Unpin()
 				{
-					m_contained.Unpin();
+					if (--m_pincount==0 && m_refcount==0)
+						delete this;
 				}
 
 				static IObject_Safe* Create(SafeStub* pStub, IObject* pObj)
@@ -564,10 +573,11 @@ namespace Omega
 
 			private:
 				AtomicOp<uint32_t> m_refcount;
+				AtomicOp<uint32_t> m_pincount;
 				I_SafeStub         m_contained;
 
 				SafeStubImpl(SafeStub* pStub, I* pI) : 
-					m_refcount(0), m_contained(pStub,pI)
+					m_refcount(0), m_pincount(0), m_contained(pStub,pI)
 				{ }
 
 				virtual ~SafeStubImpl()
@@ -582,11 +592,6 @@ namespace Omega
 					m_pI(pI), m_pStub(pStub)
 				{
 					m_pI->AddRef();
-				}
-
-				virtual ~IObject_SafeStub()
-				{
-					m_pI->Release();
 				}
 
 				virtual void OMEGA_CALL AddRef_Safe()
@@ -624,6 +629,11 @@ namespace Omega
 					return m_pStub->QueryInterface_Safe(piid,ppS);
 				}
 
+				virtual void Release_Iface()
+				{
+					m_pI->Release();
+				}
+
 			protected:
 				I* m_pI;
 
@@ -631,7 +641,12 @@ namespace Omega
 				SafeStub*          m_pStub;
 			};
 
-			struct SafeProxy;
+			interface ISafeProxy : public IObject
+			{
+				virtual IObject_Safe* GetSafeStub() = 0;
+				virtual void Pin() = 0;
+				virtual void Unpin() = 0;
+			};
 
 			template <class I_SafeProxy, class I>
 			class SafeProxyImpl : public IObject
@@ -658,18 +673,18 @@ namespace Omega
 					return m_contained.Internal_QueryInterface(false,iid);
 				}
 
-				static IObject* Create(SafeProxy* pProxy, IObject_Safe* pObjS)
+				static IObject* Create(IObject* pOuter, IObject_Safe* pObjS)
 				{
 					IObject* pRet = 0;
-					OMEGA_NEW(pRet,SafeProxyImpl(pProxy,static_cast<typename interface_info<I>::safe_class*>(pObjS)));
+					OMEGA_NEW(pRet,SafeProxyImpl(pOuter,static_cast<typename interface_info<I>::safe_class*>(pObjS)));
 					return pRet;
 				}
 			private:
 				AtomicOp<uint32_t> m_refcount;
 				I_SafeProxy        m_contained;
 
-				SafeProxyImpl(SafeProxy* pProxy, typename interface_info<I>::safe_class* pS) : 
-					m_refcount(0), m_contained(pProxy,pS)
+				SafeProxyImpl(IObject* pOuter, typename interface_info<I>::safe_class* pS) : 
+					m_refcount(0), m_contained(pOuter,pS)
 				{ }
 
 				virtual ~SafeProxyImpl()
@@ -680,8 +695,8 @@ namespace Omega
 			class IObject_SafeProxy : public I
 			{
 			public:
-				IObject_SafeProxy(SafeProxy* pProxy, typename interface_info<I>::safe_class* pS) :  
-					m_pS(pS), m_pProxy(pProxy)
+				IObject_SafeProxy(IObject* pOuter, typename interface_info<I>::safe_class* pS) :  
+					m_pS(pS), m_pOuter(pOuter)
 				{ 
 					m_pS->AddRef_Safe();
 				}
@@ -693,12 +708,12 @@ namespace Omega
 
 				virtual void AddRef()
 				{
-					m_pProxy->AddRef();
+					m_pOuter->AddRef();
 				}
 
 				virtual void Release()
 				{
-					m_pProxy->Release();
+					m_pOuter->Release();
 				}
 
 				virtual IObject* QueryInterface(const guid_t& iid)
@@ -711,14 +726,14 @@ namespace Omega
 					if (!bRecurse)
 						return 0;
 
-					return m_pProxy->QueryInterface(iid);
+					return m_pOuter->QueryInterface(iid);
 				}
 
 			protected:
 				typename interface_info<I>::safe_class* m_pS;
 
 			private:
-				SafeProxy*         m_pProxy;
+				IObject* m_pOuter;
 			};
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
@@ -734,7 +749,7 @@ namespace Omega
 			struct qi_rtti
 			{
 				IObject_Safe* (*pfnCreateSafeStub)(SafeStub* pStub, IObject* pObj);
-				IObject* (*pfnCreateSafeProxy)(SafeProxy* pProxy, IObject_Safe* pObjS);
+				IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 				void (*pfnSafeThrow)(IException_Safe* pSE);
 				string_t strName;
 			};
@@ -786,7 +801,8 @@ namespace Omega
 			class SafeStub : public IObject_Safe
 			{
 			public:
-				SafeStub(IObject* pObj) : m_refcount(0), m_pincount(0), m_pObj(pObj)
+				SafeStub(IObject* pObj) : 
+					m_refcount(0), m_pincount(0), m_bReleasedOnce(false), m_pObj(pObj)
 				{
 					m_pObj->AddRef();
 				}
@@ -800,7 +816,25 @@ namespace Omega
 				{
 					if (--m_refcount==0)
 					{
-						m_pObj->Release();
+						if (!m_bReleasedOnce)
+						{
+							try
+							{
+								// Release all interfaces
+								for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+								{
+									i->second->Release_Safe();
+								}
+							}
+							catch (std::exception& e)
+							{ 
+								OMEGA_THROW(string_t(e.what(),false));
+							}
+
+							m_pObj->Release();
+
+							m_bReleasedOnce = true;
+						}
 
 						if (m_pincount == 0)
 							delete this;
@@ -812,10 +846,36 @@ namespace Omega
 				virtual void OMEGA_CALL Pin()
 				{
 					++m_pincount;
+
+					try
+					{
+						// Pin all interfaces
+						for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+						{
+							i->second->Pin();
+						}
+					}
+					catch (std::exception& e)
+					{ 
+						OMEGA_THROW(string_t(e.what(),false));
+					}
 				}
 
 				virtual void OMEGA_CALL Unpin()
 				{
+					try
+					{
+						// Unpin all interfaces
+						for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+						{
+							i->second->Unpin();
+						}
+					}
+					catch (std::exception& e)
+					{ 
+						OMEGA_THROW(string_t(e.what(),false));
+					}
+
 					if (--m_pincount==0 && m_refcount==0)
 						delete this;
 				}
@@ -823,25 +883,13 @@ namespace Omega
 			private:
 				AtomicOp<uint32_t>                   m_refcount;
 				AtomicOp<uint32_t>                   m_pincount;
+				bool                                 m_bReleasedOnce;
 				ReaderWriterLock                     m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				IObject*                             m_pObj;
 
 				virtual ~SafeStub()
 				{
-					try
-					{
-						// Release all interfaces
-						for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
-						{
-							i->second->Release_Safe();
-						}
-					}
-					catch (std::exception&)
-					{ }
-
-					m_iid_map.clear();
-
 					// Remove ourselves from the stub_map
 					SafeStubMap& stub_map = get_stub_map();
 					WriteGuard guard(stub_map.m_lock);
@@ -851,15 +899,16 @@ namespace Omega
 
 			struct SafeProxyMap
 			{
-				ReaderWriterLock                 m_lock;
-				std::map<IObject_Safe*,IObject*> m_map;
+				ReaderWriterLock                    m_lock;
+				std::map<IObject_Safe*,ISafeProxy*> m_map;
 			};
 			inline SafeProxyMap& get_proxy_map();
 
-			struct SafeProxy : public IObject
+			struct SafeProxy : public ISafeProxy
 			{
 			public:
-				SafeProxy(IObject_Safe* pObjS) : m_refcount(0), m_pS(pObjS)
+				SafeProxy(IObject_Safe* pObjS) : 
+					m_refcount(0), m_pS(pObjS)
 				{
 					m_pS->AddRef_Safe();
 				}
@@ -924,18 +973,15 @@ namespace Omega
 
 				SafeProxy(const SafeProxy&) {}
 				SafeProxy& operator = (const SafeProxy&) { return *this; }
-			};			
+			};
 
 			OMEGA_QI_MAGIC(Omega,IObject)
 			OMEGA_QI_MAGIC(Omega,IException)
 		}
 	}
-
-	inline void PinObjectPointer(IObject* pObject);
-	inline void UnpinObjectPointer(IObject* pObject);
 }
 
 // This IID is used to detect a SafeProxy - it has no other purpose
-OMEGA_DEFINE_IID(Omega::System::MetaInfo,SafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}");
+OMEGA_DEFINE_IID(Omega::System::MetaInfo,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}");
 
 #endif // OOCORE_RTTI_H_INCLUDED_

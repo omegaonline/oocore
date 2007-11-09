@@ -1169,7 +1169,7 @@ int BaseKey::open_registry(bool bSandbox)
 
 #endif
 
-	return m_registry.open(strRegistry.c_str());
+	return m_registry.open(strRegistry.c_str(),(char*)0x40000000);
 }
 
 bool_t BaseKey::IsSubKey(const string_t& strSubKey)

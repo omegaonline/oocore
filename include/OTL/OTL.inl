@@ -189,11 +189,7 @@ void OTL::ProcessModule::Run()
 	{
 		do
 		{
-#ifdef OMEGA_DEBUG
-			Omega::HandleRequests();
-#else
 			Omega::HandleRequests(60000);
-#endif
 		} while (GetLockCount() > 0);
 	}
 	catch (Omega::IException* pE)

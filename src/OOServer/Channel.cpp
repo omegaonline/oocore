@@ -25,17 +25,12 @@ ACE_CString User::string_t_to_utf8(const Omega::string_t& val)
 	return str;
 }
 
-User::Channel::Channel() :
-	m_pManager(0)
+User::Channel::Channel()
 {
 }
 
-void User::Channel::init(Manager* pManager, ACE_CDR::UShort channel_id)
+void User::Channel::init(ACE_CDR::UShort channel_id)
 {
-	if (m_pManager)
-		OOSERVER_THROW_ERRNO(EALREADY);
-
-	m_pManager = pManager;
 	m_channel_id = channel_id;
 }
 
@@ -60,10 +55,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	ACE_InputCDR* response = 0;
 	try
 	{
-		if (timeout == 0)
-			timeout = 15000;
-
-		if (!m_pManager->send_request(m_channel_id,request,response,timeout,attribs))
+		if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 		{
 			if (ACE_OS::last_error() == ENOENT)
 			{
@@ -108,7 +100,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 			// Wrap the response
 			ObjectPtr<ObjectImpl<InputCDR> > ptrRecv = ObjectImpl<InputCDR>::CreateInstancePtr();
 			ptrRecv->init(*response);
-			response = 0;
+			delete response;
 			pRecv = ptrRecv.Detach();
 		}
 	}
@@ -124,4 +116,31 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	}
 
 	return 0;
+}
+
+Omega::guid_t User::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+{
+	// This must match OOCore::OID_ChannelMarshalFactory
+	static guid_t oid = guid_t::FromString(L"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
+
+	return oid;
+}
+
+void User::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+{
+	pStream->WriteUInt16(m_channel_id);
+}
+
+void User::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+{
+	pStream->ReadUInt16();
+}
+
+OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+
+void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t, Omega::IObject*& pObject)
+{
+	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
+	
+	void* TODO;
 }

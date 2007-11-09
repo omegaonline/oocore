@@ -12,10 +12,10 @@
 #define OMEGA_QI_MAGIC(n_space,iface) \
 	namespace \
 	{ \
-		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit) \
+		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) \
 		{ \
 		public: \
-			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit)() \
+			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 			{ \
 				static const qi_rtti s_rtti = \
 				{ \
@@ -27,13 +27,13 @@
 				register_rtti_info(OMEGA_UUIDOF(n_space::iface),&s_rtti); \
 			} \
 		}; \
-		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_RttiInit_i); \
+		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit_i); \
 	}
 
 #define OMEGA_WIRE_MAGIC(n_space,iface) \
 	namespace \
 	{ \
-		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit) \
+		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) \
 		{ \
 		public: \
 			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(Omega::System::MetaInfo::IWireStub_Safe** ppStub OMEGA_DECLARE_PARAMS_SAFE(2,((in),Omega::System::MetaInfo::IWireManager*,pManager,(in),Omega::IObject*,pObject))) \
@@ -43,9 +43,9 @@
 					*ppStub = CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<interface_info<n_space::iface>::safe_class>::type>(pManager,pObject); \
 					return 0; \
 				} \
-				catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
+				catch (Omega::IException* pE) \
 				{ \
-					return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
+					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
 			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_proxy(Omega::System::MetaInfo::IObject_Safe** ppRet OMEGA_DECLARE_PARAMS_SAFE(2,((in),Omega::System::MetaInfo::IWireProxy*,pProxy,(in),Omega::System::MetaInfo::IWireManager*,pManager))) \
@@ -55,17 +55,17 @@
 					*ppRet = WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<interface_info<n_space::iface>::safe_class>::type>::Create(pProxy,pManager); \
 					return 0; \
 				} \
-				catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
+				catch (Omega::IException* pE) \
 				{ \
-					return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
+					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
-			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit)() \
+			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 			{ \
 				RegisterWireFactories(OMEGA_UUIDOF(n_space::iface),(void*)&create_wire_proxy,(void*)&create_wire_stub); \
 			} \
 		}; \
-		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(name),_WireInit_i); \
+		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i); \
 	}
 
 #define OMEGA_DECLARE_FORWARDS(unique,n_space,name,d_space,derived) \
@@ -387,18 +387,16 @@
 			} \
 			return Base::SupportsInterface_Safe(pbSupports,piid); \
 		} \
-		virtual IException_Safe* OMEGA_CALL Invoke_Safe(uint32_t method_id, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut) \
+		virtual IException_Safe* Internal_Invoke_Safe(uint32_t method_id, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut) \
 		{ \
 			static const typename Base::MethodTableEntry MethodTable[] = \
 			{ \
 				OMEGA_DECLARE_WIRE_STUB_METHODS(methods) \
 			}; \
-			if (method_id < Base::MethodCount) \
-				return Base::Invoke_Safe(method_id,pParamsIn,pParamsOut); \
-			else if (method_id < MethodCount) \
+			if (method_id >= Base::MethodCount && method_id < MethodCount) \
 				return MethodTable[method_id - Base::MethodCount](this,this->m_pS,pParamsIn,pParamsOut); \
 			else \
-				return return_safe_exception(IException::Create(L"Invalid method index")); \
+				return Base::Internal_Invoke_Safe(method_id,pParamsIn,pParamsOut); \
 		} \
 		static const uint32_t MethodCount = Base::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 		OMEGA_DEFINE_WIRE_STUB_METHODS(methods) \
@@ -524,11 +522,9 @@
 		if (__wire__pException) \
 			return __wire__pException; \
         __wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
-		if (__wire__pException) \
-			return __wire__pException; \
+		if (__wire__pException) return __wire__pException; \
 		__wire__pException = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
-		if (__wire__pException) \
-			return __wire__pException; \
+		if (__wire__pException) return __wire__pException; \
 		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsIn; \
 		IException_Safe* __wire__pException2 = 0; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
@@ -556,11 +552,9 @@
 		if (__wire__pException) \
 			return __wire__pException; \
         __wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
-		if (__wire__pException) \
-			return __wire__pException; \
+		if (__wire__pException) return __wire__pException; \
 		__wire__pException = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
-		if (__wire__pException) \
-			return __wire__pException; \
+		if (__wire__pException) return __wire__pException; \
 		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsIn; \
 		IException_Safe* __wire__pException2 = 0; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
@@ -592,7 +586,7 @@
 	class OMEGA_CONCAT_R(unique,_SafeProxy) : public Base \
 	{ \
 	public: \
-		OMEGA_CONCAT_R(unique,_SafeProxy)(SafeProxy* pProxy, typename interface_info<I>::safe_class* pS) : Base(pProxy,pS) \
+		OMEGA_CONCAT_R(unique,_SafeProxy)(IObject* pOuter, typename interface_info<I>::safe_class* pS) : Base(pOuter,pS) \
 		{ } \
 		virtual IObject* Internal_QueryInterface(bool bRecurse, const guid_t& iid) \
 		{ \

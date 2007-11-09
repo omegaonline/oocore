@@ -13,13 +13,13 @@ using namespace OTL;
 
 namespace OOCore
 {
-	struct RegistryRoot
+	struct Reg
 	{
 		ObjectPtr<Omega::Registry::IRegistryKey>  m_ptrRoot;
 
-		static RegistryRoot& instance()
+		static Reg& instance()
 		{
-			static RegistryRoot i;
+			static Reg i;
 			return i;
 		}
 	};
@@ -37,19 +37,19 @@ namespace OOCore
 
 void OOCore::SetRegistry(Omega::Registry::IRegistryKey* pRootKey)
 {
-	OOCore::RegistryRoot::instance().m_ptrRoot = pRootKey;
+	Reg::instance().m_ptrRoot = pRootKey;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 {
-	if (!OOCore::RegistryRoot::instance().m_ptrRoot)
+	if (!OOCore::Reg::instance().m_ptrRoot)
 	{
 		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
 		pE->m_strDesc = L"Omega::Initialize not called.";
 		throw pE;
 	}
 
-	return OOCore::RegistryRoot::instance().m_ptrRoot->OpenSubKey(key,flags);
+	return OOCore::Reg::instance().m_ptrRoot->OpenSubKey(key,flags);
 }
 
 string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts)
@@ -88,7 +88,7 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 	string_t strName = SubstituteNames(i->second,mapSubsts);
 
 	if (bAdd)
-		return ptrKey->OpenSubKey(strName,Registry::IRegistryKey::Create);
+		return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::Create);
 	else
 	{
 		bool bRemove = false;
@@ -101,7 +101,7 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 			if (bRemove)
 				ptrKey->DeleteKey(strName);
 			else
-				return ptrKey->OpenSubKey(strName,Registry::IRegistryKey::OpenExisting);
+				return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::OpenExisting);
 		}
 	}
 

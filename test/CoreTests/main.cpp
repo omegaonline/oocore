@@ -36,10 +36,10 @@ int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
 {
 	ACE_OS::fprintf(stdout,L"OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
 
-	RUN_TEST(string_tests);
-	RUN_TEST(guid_tests);
 	if (RUN_TEST(init_tests))
 	{
+		RUN_TEST(string_tests);
+		RUN_TEST(guid_tests);
 		RUN_TEST(exception_tests);
 		RUN_TEST(otl_tests);
 		RUN_TEST(registry_tests);
@@ -101,6 +101,17 @@ int test_summary()
 	}
 }
 
+static void recurse_printf_exception(Omega::IException* pE)
+{
+	Omega::IException* pCause = pE->Cause();
+	if (pCause)
+	{
+		ACE_OS::fprintf(stdout,L"Cause:\t%ls\n\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
+		recurse_printf_exception(pCause);
+		pCause->Release();
+	}
+}
+
 bool run_test(pfnTest t, const char* pszName)
 {
 	ACE_OS::fprintf(stdout,"Running %-40s",pszName);
@@ -117,6 +128,7 @@ bool run_test(pfnTest t, const char* pszName)
 	{
 		++exception_count;
 		ACE_OS::fprintf(stdout,L"[Unhandled Omega::IException]\n\t%ls\n\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
+		recurse_printf_exception(pE);
 		pE->Release();
 	}
 	catch (std::exception& e)
@@ -136,8 +148,8 @@ bool run_test(pfnTest t, const char* pszName)
 // This is here so I don't have to include ACE everywhere...
 int test_system(const wchar_t* pszCommand)
 {
-	char szBuf[128];
-	getcwd(szBuf,128);
+	char szBuf[MAX_PATH];
+	getcwd(szBuf,MAX_PATH);
 
 	return ACE_OS::system(ACE_TEXT_WCHAR_TO_TCHAR(pszCommand));
 }

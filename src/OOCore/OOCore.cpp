@@ -1,8 +1,8 @@
 #include "OOCore_precomp.h"
 
 #include "./UserSession.h"
-
 #include "./StdObjectManager.h"
+#include "./Channel.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -13,6 +13,9 @@ using namespace OTL;
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::WireProxyMarshalFactory)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManagerMarshalFactory)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
 END_LIBRARY_OBJECT_MAP()
 

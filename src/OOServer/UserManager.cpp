@@ -10,6 +10,7 @@
 #endif
 
 BEGIN_PROCESS_OBJECT_MAP(L"")
+	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 END_PROCESS_OBJECT_MAP()
 
 int UserMain(const ACE_WString& strPipe)
@@ -100,9 +101,16 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 
 		if (!m_ptrReg)
 		{
-
 			m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateInstancePtr();
-			m_ptrReg->Init(m_pManager,!m_ptrOM);
+			try
+			{
+				m_ptrReg->Init(m_pManager,!m_ptrOM);
+			}
+			catch (...)
+			{
+				m_ptrReg.Release();
+				throw;
+			}
 		}
 	}
 
@@ -119,7 +127,15 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 		if (!m_ptrROT)
 		{
 			m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
-			m_ptrROT->Init(m_ptrOM);
+			try
+			{
+				m_ptrROT->Init(m_ptrOM);
+			}
+			catch (...)
+			{
+				m_ptrROT.Release();
+				throw;
+			}
 		}
 	}
 
@@ -251,6 +267,8 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 		ptrROT->Register(Remoting::OID_InterProcess,Activation::IRunningObjectTable::Default,ptrOF);
+
+		OTL::GetModule()->RegisterObjectFactories();
 	}
 	catch (IException* pE)
 	{
@@ -414,8 +432,7 @@ void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptr
 				ptrResponse->WriteBoolean(false);
 
 				// Write the exception onto the wire
-				ObjectPtr<System::MetaInfo::IWireManager> ptrWM(ptrOM);
-				ptrWM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
+				ptrOM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
 			}
 		}
 
@@ -464,7 +481,7 @@ OTL::ObjectPtr<Omega::Remoting::IObjectManager> User::Manager::get_object_manage
 		{
 			// Create a new channel
 			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-			ptrChannel->init(this,src_channel_id);
+			ptrChannel->init(src_channel_id);
 
 			// Create a new OM
 			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);

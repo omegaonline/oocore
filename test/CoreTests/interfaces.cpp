@@ -102,7 +102,7 @@ bool interface_tests()
 {
 #if defined(OMEGA_WIN32)
     do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc");
-//	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw");
+	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw");
 #else
 	do_library_test(L"TestLibrary",L"Test.Library");
 #endif

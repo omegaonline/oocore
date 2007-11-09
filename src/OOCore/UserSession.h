@@ -15,10 +15,10 @@ namespace OOCore
 	private:
 		friend class Channel;
 		friend class ThreadContext;
+		friend class ChannelMarshalFactory;
 		friend class ACE_Singleton<UserSession, ACE_Thread_Mutex>;
-		friend class ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex>;
-		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
-
+		typedef ACE_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
+		
 		class MessagePipe
 		{
 		public:
@@ -102,7 +102,7 @@ namespace OOCore
 		bool build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, bool bIsRequest, ACE_CDR::UShort attribs);
 		void send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
-
+		
 		static ACE_THR_FUNC_RETURN io_worker_fn(void* pParam);
 	};
 }

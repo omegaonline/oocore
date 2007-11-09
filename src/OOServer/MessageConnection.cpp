@@ -645,7 +645,7 @@ ACE_CDR::UShort Root::MessageHandler::register_channel(MessagePipe& pipe)
 		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
 
 		char szBuf[256];
-		ACE_OS::sprintf(szBuf,"Added channel %lu on pipe %#lx\n",uChannelId,pipe.get_read_handle());
+		ACE_OS::sprintf(szBuf,"%lu Added channel %lu on pipe %#lx\n",GetCurrentProcessId(),uChannelId,pipe.get_read_handle());
 		OutputDebugString(szBuf);
 
 		std::map<ACE_CDR::UShort,ACE_CDR::UShort> reverse_map;
@@ -697,7 +697,7 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
 
 			char szBuf[256];
-			ACE_OS::sprintf(szBuf,"Added channel %lu on pipe %#lx\n",uChannelId,channel.pipe.get_read_handle());
+			ACE_OS::sprintf(szBuf,"%lu Added channel %lu on pipe %#lx\n",GetCurrentProcessId(),uChannelId,channel.pipe.get_read_handle());
 			OutputDebugString(szBuf);
 		}
 	}
@@ -833,7 +833,7 @@ bool Root::MessageHandler::parse_message(Message* msg)
 				m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(reply_channel_id,channel));
 
 				char szBuf[256];
-				ACE_OS::sprintf(szBuf,"Added secondary channel %lu on pipe %#lx\n",reply_channel_id,channel.pipe.get_read_handle());
+				ACE_OS::sprintf(szBuf,"%lu Added secondary channel %lu on pipe %#lx\n",GetCurrentProcessId(),reply_channel_id,channel.pipe.get_read_handle());
 				OutputDebugString(szBuf);
 			}
 		}

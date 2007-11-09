@@ -181,7 +181,7 @@ int Root::Manager::init_registry()
 
 #endif
 
-	if (m_registry.open(m_strRegistry.c_str()) != 0)
+	if (m_registry.open(m_strRegistry.c_str(),(char*)0x40000000) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"registry open() failed"),-1);
 
 	return 0;
@@ -369,7 +369,11 @@ bool Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe)
 		if (pSpawn->Spawn(uid,strNewPipe))
 		{
 			// Accept
+#ifdef OMEGA_DEBUG
+			ACE_Time_Value wait(120);
+#else
 			ACE_Time_Value wait(30);
+#endif
 			MessagePipe pipe;
 			if (acceptor.accept(pipe,&wait) != 0)
 				ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"));

@@ -48,11 +48,7 @@
 
 #define END_INTERFACE_MAP() \
 	{ 0,0,0 } }; return QIEntries; }
-	/*protected: virtual Omega::IObject* GetControllingObject() { \
-	const QIEntry* g0 = RootClass::getQIEntries(); return g0->pfnQI(OMEGA_UUIDOF(Omega::IObject),this,g0->param); } \
-	Omega::IObject* GetControllingObjectPtr() { \
-	OTL::ObjectPtr<Omega::IObject> ptr; ptr.Attach(GetControllingObject()); return ptr; } */
-
+	
 ///////////////////////////////////////////////////////////////////
 // Object map macros
 //
@@ -76,7 +72,6 @@
 	namespace { \
 	class LibraryModuleImpl : public LibraryModule \
 	{ \
-		friend class SingletonNoLock<LibraryModuleImpl>; \
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj,name) \
@@ -89,7 +84,7 @@
 		{ 0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
-	LibraryModuleImpl* GetModule() { return SingletonNoLock<LibraryModuleImpl>::instance(); } \
+	LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
 	ModuleBase* GetModuleBase() { return GetModule(); } \
 	} \
 	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() \
@@ -109,14 +104,13 @@
 		void RegisterObjects(Omega::bool_t bInstall, const Omega::string_t& strSubsts) \
 			{ RegisterObjectsImpl(bInstall,app_name,strSubsts); } \
 	private: \
-		friend class SingletonNoLock<ProcessModuleImpl>; \
 		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
-	ProcessModuleImpl* GetModule() { return SingletonNoLock<ProcessModuleImpl>::instance(); } \
+	ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
 	ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
@@ -322,10 +316,7 @@ namespace OTL
 					*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
 					iid == OMEGA_UUIDOF(Omega::IObject))
 				{
-					Omega::IObject* pObj = pEntries[i].pfnQI(iid,this,pEntries[i].param);
-					if (pObj)
-						pObj->AddRef();
-					return pObj;
+					return pEntries[i].pfnQI(iid,this,pEntries[i].param);
 				}
 			}
 
@@ -338,13 +329,17 @@ namespace OTL
 		template <class Interface, class Implementation>
         static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, void*)
         {
-            return static_cast<Interface*>(static_cast<Implementation*>(pThis));
+			Interface* pI = static_cast<Interface*>(static_cast<Implementation*>(pThis));
+			pI->AddRef();
+            return pI;
         }
 
 		template <class Interface, class Interface2, class Implementation>
 		static Omega::IObject* QIDelegate2(const Omega::guid_t&, void* pThis, void*)
         {
-			return static_cast<Interface*>(static_cast<Interface2*>(static_cast<Implementation*>(pThis)));
+			Interface* pI = static_cast<Interface*>(static_cast<Interface2*>(static_cast<Implementation*>(pThis)));
+			pI->AddRef();
+            return pI;
 		}
 
         template <class Base, class Implementation>
@@ -371,9 +366,7 @@ namespace OTL
             return 0;
         }
 
-		//virtual Omega::IObject* GetControllingObject() = 0;
-
-	private:
+	protected:
 		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
 	};
 
@@ -873,42 +866,43 @@ namespace OTL
 		}
 	};
 
-	template <class TYPE>
-	class SingletonNoLock
-	{
-	public:
-		// Global access point to the Singleton.
-		static TYPE *instance(void)
-		{
-			SingletonNoLock<TYPE>*& singleton = SingletonNoLock<TYPE>::instance_i();
-			if (!singleton)
-			{
-				OMEGA_NEW(singleton,SingletonNoLock<TYPE>());
-				if (!singleton)
-					return 0;
-			}
+	// Fix this with a cut and paste job from Singleton
+	//template <class TYPE>
+	//class SingletonNoLock
+	//{
+	//public:
+	//	// Global access point to the Singleton.
+	//	static TYPE *instance(void)
+	//	{
+	//		SingletonNoLock<TYPE>*& singleton = SingletonNoLock<TYPE>::instance_i();
+	//		if (!singleton)
+	//		{
+	//			OMEGA_NEW(singleton,SingletonNoLock<TYPE>());
+	//			if (!singleton)
+	//				return 0;
+	//		}
 
-			return &singleton->m_instance;
-		}
+	//		return &singleton->m_instance;
+	//	}
 
-		static void fini()
-		{
-			SingletonNoLock<TYPE>*& singleton = SingletonNoLock<TYPE>::instance_i();
-			delete singleton;
-			singleton = 0;
-		}
+	//	static void fini()
+	//	{
+	//		SingletonNoLock<TYPE>*& singleton = SingletonNoLock<TYPE>::instance_i();
+	//		delete singleton;
+	//		singleton = 0;
+	//	}
 
-	protected:
-		TYPE m_instance;
+	//protected:
+	//	TYPE m_instance;
 
-		SingletonNoLock() {}
+	//	SingletonNoLock() {}
 
-		static SingletonNoLock<TYPE>*& instance_i()
-		{
-			static SingletonNoLock<TYPE>* singleton = 0;
-			return singleton;
-		}
-	};
+	//	static SingletonNoLock<TYPE>*& instance_i()
+	//	{
+	//		static SingletonNoLock<TYPE>* singleton = 0;
+	//		return singleton;
+	//	}
+	//};
 
 	template <class EnumIFace, class EnumType>
 	class EnumSTL :

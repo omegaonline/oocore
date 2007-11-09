@@ -3,8 +3,6 @@
 
 namespace OOCore
 {
-	class UserSession;
-
 	interface IOutputCDR : public Omega::Serialize::IFormattedStream
 	{
 		virtual void* GetMessageBlock() = 0;
@@ -151,19 +149,20 @@ namespace OOCore
 
 	class Channel :
 		public OTL::ObjectBase,
-		public Omega::Remoting::IChannel
+		public Omega::Remoting::IChannel,
+		public Omega::Remoting::IMarshal
 	{
 	public:
 		Channel();
 
-		void init(UserSession* pSession, ACE_CDR::UShort channel_id);
+		void init(ACE_CDR::UShort channel_id);
 		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
 
 	private:
-		UserSession*	m_pSession;
 		ACE_CDR::UShort	m_channel_id;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
@@ -173,6 +172,30 @@ namespace OOCore
 	public:
 		Omega::Serialize::IFormattedStream* CreateOutputStream(Omega::IObject* pOuter);
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
+
+	// IMarshal members
+	public:
+		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+	};
+
+	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}
+	OOCORE_DECLARE_OID(OID_ChannelMarshalFactory);
+
+	class ChannelMarshalFactory :
+		public OTL::ObjectBase,
+		public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory>,
+		public Omega::Remoting::IMarshalFactory
+	{
+	public:
+		BEGIN_INTERFACE_MAP(ChannelMarshalFactory)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
+		END_INTERFACE_MAP()
+
+	// IMarshalFactory members
+	public:
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
 	};
 }
 

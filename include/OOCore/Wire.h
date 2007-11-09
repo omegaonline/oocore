@@ -43,26 +43,25 @@ namespace Omega
 	{
 		namespace MetaInfo
 		{
+			interface IWireManager : public IObject
+			{
+				virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
+				virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
+				virtual void ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
+				virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;
+				virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout) = 0;
+			};
+
 			interface IWireStub : public IObject
 			{
-				virtual void Invoke(uint32_t method_id, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
+				virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
 				virtual bool_t SupportsInterface(const guid_t& iid) = 0;
 			};
 
 			interface IWireProxy : public IObject
 			{
 				virtual void WriteKey(Serialize::IFormattedStream* pStream) = 0;
-			};
-
-			interface IWireManager : public IObject
-			{
-				virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
-				virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
-				virtual void ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
-				virtual void ReleaseStub(uint32_t id) = 0;
-				virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;
-				virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout = 15000) = 0;
-			};
+			};			
 		}
 	}
 }
@@ -117,7 +116,7 @@ namespace Omega
 			(
 				Omega::System::MetaInfo, IWireStub,
 
-				OMEGA_METHOD_VOID(Invoke,3,((in),uint32_t,method_id,(in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
+				OMEGA_METHOD_VOID(Invoke,2,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
 				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
 			)
 			typedef IWireStub_Impl_Safe<IObject_Safe> IWireStub_Safe;
@@ -137,7 +136,6 @@ namespace Omega
 				OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 				OMEGA_METHOD_VOID(ReleaseMarshalData,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
-				OMEGA_METHOD_VOID(ReleaseStub,1,((in),Omega::uint32_t,id))
 				OMEGA_METHOD(Serialize::IFormattedStream*,CreateOutputStream,1,((in),IObject*,pOuter))
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pSend,(out),Serialize::IFormattedStream*&,pRecv,(in),uint16_t,timeout))
 			)
@@ -642,13 +640,24 @@ namespace Omega
 
 				typedef IException_Safe* (*MethodTableEntry)(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut);
 
-				virtual IException_Safe* OMEGA_CALL Invoke_Safe(uint32_t method_id, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
+				virtual IException_Safe* OMEGA_CALL Invoke_Safe(IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
+				{
+					// Read the method id
+					uint32_t method_id = 0;
+					IException_Safe* pSE = pParamsIn->ReadUInt32_Safe(&method_id);
+					if (pSE)
+						return pSE;
+
+					return Internal_Invoke_Safe(method_id,pParamsIn,pParamsOut);
+				}
+				
+				virtual IException_Safe* Internal_Invoke_Safe(uint32_t method_id, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
 					static const MethodTableEntry MethodTable[] =
 					{
-						AddRef_Wire,
 						Release_Wire,
-						QueryInterface_Wire
+						QueryInterface_Wire,
+						MarshalStub_Wire
 					};
 
 					if (method_id < MethodCount)
@@ -656,7 +665,7 @@ namespace Omega
 					else
 						return return_safe_exception(IException::Create(L"Invalid method index"));
 				}		
-				static const uint32_t MethodCount = 3;
+				static const uint32_t MethodCount = 3; // This must match IObject_WireProxy
 
 				IWireManager_Safe*  m_pManager;
 				I*                  m_pS;
@@ -673,22 +682,14 @@ namespace Omega
 				IObject_WireStub(const IObject_WireStub&) {};
 				IObject_WireStub& operator =(const IObject_WireStub&) {};
 
-				static IException_Safe* AddRef_Wire(void* pParam,I*,IFormattedStream_Safe*,IFormattedStream_Safe*)
+				static IException_Safe* Release_Wire(void*,I*,IFormattedStream_Safe*,IFormattedStream_Safe*)
 				{
-					static_cast<IObject_WireStub<I>*>(pParam)->AddRef_Safe();
-					return 0;
-				}
-
-				static IException_Safe* Release_Wire(void* pParam,I*,IFormattedStream_Safe*,IFormattedStream_Safe*)
-				{
-					static_cast<IObject_WireStub<I>*>(pParam)->Release_Safe();
 					return 0;
 				}
 
 				static IException_Safe* QueryInterface_Wire(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
 					marshal_info<guid_t>::wire_type::type iid;
-					
 					IException_Safe* pSE = marshal_info<guid_t>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);
 					if (pSE)
 						return pSE;
@@ -701,6 +702,27 @@ namespace Omega
 
 					marshal_info<bool_t&>::wire_type::type bQI = (p != 0);
 					return marshal_info<bool_t&>::wire_type::write(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,bQI);
+				}
+
+				static IException_Safe* MarshalStub_Wire(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
+				{
+					marshal_info<guid_t>::wire_type::type iid;
+					IException_Safe* pSE = marshal_info<guid_t>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);
+					if (pSE)
+						return pSE;
+
+					marshal_info<IObject*>::wire_type::type obj;
+					pSE = marshal_info<IObject*>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,obj,&OMEGA_UUIDOF(IWireManager));
+					if (pSE)
+						return pSE;
+
+					IObject_Safe* pMO = 0;
+					pSE = obj->QueryInterface_Safe(&OMEGA_UUIDOF(IWireManager),&pMO);
+					if (pSE)
+						return pSE;
+
+					auto_iface_safe_ptr<IWireManager_Safe> ptrManager(static_cast<IWireManager_Safe*>(pMO));
+					return ptrManager->MarshalInterface_Safe(pParamsOut,&iid,pI);
 				}
 			};
 
@@ -767,14 +789,10 @@ namespace Omega
 					m_pManager(pManager), m_pProxy(pProxy)
 				{
 					m_pManager->AddRef_Safe();
-
-					m_pProxy->Pin();
 				}
 
 				virtual ~IObject_WireProxy()
 				{
-					m_pProxy->Unpin();
-
 					m_pManager->Release_Safe();
 				}
 
@@ -813,7 +831,7 @@ namespace Omega
 					return m_pProxy->QueryInterface_Safe(piid,ppS);
 				}
 
-				static const uint32_t MethodCount = 3;
+				static const uint32_t MethodCount = 3;	// This must match IObject_WireStub
 
 			protected:
 				IWireManager_Safe*  m_pManager;
@@ -843,6 +861,7 @@ namespace Omega
 					IException_Safe* pSE = m_pProxy->WriteKey_Safe(pStream);
 					if (pSE)
 						return pSE;
+
 					return wire_write(pStream,iid);
 				}
 				

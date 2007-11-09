@@ -7,27 +7,6 @@ namespace Omega
 {
 	namespace Remoting
 	{
-		//interface IMarshal : public IObject
-		//{
-		//	enum Flags
-		//	{
-		//		apartment = 0,
-		//		process = 1,
-		//		machine = 2
-		//	};
-		//	typedef uint16_t Flags_t;
-
-		//	virtual guid_t GetUnmarshalOID(const guid_t& iid, Flags_t flags) = 0;
-		//	virtual void Marshal(Serialize::IFormattedStream* pOutput, const guid_t& iid, Flags_t flags) = 0;
-		//	virtual IObject* Unmarshal(Serialize::IFormattedStream* pInput, const guid_t& iid) = 0;
-		//	//virtual void ReleaseMarshalData(Serialize::IFormattedStream* pInput) = 0;
-		//	//virtual void DisconnectObject() = 0;
-		//};
-
-		interface ICallContext : public IObject
-		{
-		};
-
 		interface IChannel : public IObject
 		{
 			virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;
@@ -40,6 +19,34 @@ namespace Omega
 			virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
 			virtual void Disconnect() = 0;
 			virtual void CreateRemoteInstance(const guid_t& oid, const guid_t& iid, IObject* pOuter, IObject*& pObject) = 0;
+			virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
+			virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
+		};
+
+		interface IMarshal : public IObject
+		{
+			enum Flags
+			{
+				apartment = 0,       // Objects share address space, but not thread
+				inter_process = 1,   // Objects share machine, but not address space
+				another_machine = 2  // Objects on seperate machines
+			};
+			typedef uint16_t Flags_t;
+
+			virtual guid_t GetUnmarshalFactoryOID(const guid_t& iid, Flags_t flags) = 0;
+			virtual void MarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;
+			virtual void ReleaseMarshalData(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;			
+			//virtual void DisconnectObject() = 0;
+		};
+
+		interface IMarshalFactory : public IObject
+		{
+			virtual void UnmarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, IMarshal::Flags_t flags, IObject*& pObject) = 0;
+		};
+
+		interface ICallContext : public IObject
+		{
 		};
 
 		interface IInterProcessService : public IObject
@@ -56,18 +63,7 @@ namespace Omega
 	}
 }
 
-//OMEGA_DEFINE_INTERFACE
-//(
-//	Omega::Remoting, IMarshal, "{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}",
-//
-//	OMEGA_METHOD(guid_t,GetUnmarshalOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
-//    OMEGA_METHOD_VOID(Marshal,3,((in),Serialize::IFormattedStream*,pOutput,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
-//    OMEGA_METHOD(IObject*,Unmarshal,2,((in),Serialize::IFormattedStream*,pInput,(in),const guid_t&,iid))
-//    //OMEGA_METHOD_VOID(ReleaseMarshalData,1,((in),Serialize::IFormattedStream*,pInput))
-//    //OMEGA_METHOD_VOID(DisconnectObject,0,())
-//)
-
-OMEGA_DEFINE_INTERFACE
+OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IChannel, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
 
@@ -75,7 +71,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pSend,(out),Serialize::IFormattedStream*&,pRecv,(in),uint16_t,timeout))
 )
 
-OMEGA_DEFINE_INTERFACE
+OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IObjectManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
 
@@ -83,6 +79,26 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(Invoke,2,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
 	OMEGA_METHOD_VOID(Disconnect,0,())
 	OMEGA_METHOD_VOID(CreateRemoteInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),IObject*,pOuter,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+	OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(ReleaseMarshalData,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+)
+
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
+	Omega::Remoting, IMarshal, "{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}",
+
+	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
+	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
+	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
+	//OMEGA_METHOD_VOID(DisconnectObject,0,())
+)
+
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
+	Omega::Remoting, IMarshalFactory, "{68C779B3-72E7-4c09-92F0-118A01AF224D}",
+
+	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE

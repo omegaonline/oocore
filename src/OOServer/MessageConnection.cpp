@@ -644,9 +644,9 @@ ACE_CDR::UShort Root::MessageHandler::register_channel(MessagePipe& pipe)
 		}
 		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
 
-		char szBuf[256];
+		/*char szBuf[256];
 		ACE_OS::sprintf(szBuf,"%lu Added channel %lu on pipe %#lx\n",GetCurrentProcessId(),uChannelId,pipe.get_read_handle());
-		OutputDebugString(szBuf);
+		OutputDebugString(szBuf);*/
 
 		std::map<ACE_CDR::UShort,ACE_CDR::UShort> reverse_map;
 		reverse_map.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(0,uChannelId));
@@ -696,9 +696,9 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 		{
 			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
 
-			char szBuf[256];
+			/*char szBuf[256];
 			ACE_OS::sprintf(szBuf,"%lu Added channel %lu on pipe %#lx\n",GetCurrentProcessId(),uChannelId,channel.pipe.get_read_handle());
-			OutputDebugString(szBuf);
+			OutputDebugString(szBuf);*/
 		}
 	}
 	catch (...)
@@ -832,9 +832,9 @@ bool Root::MessageHandler::parse_message(Message* msg)
 			{
 				m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(reply_channel_id,channel));
 
-				char szBuf[256];
+				/*char szBuf[256];
 				ACE_OS::sprintf(szBuf,"%lu Added secondary channel %lu on pipe %#lx\n",GetCurrentProcessId(),reply_channel_id,channel.pipe.get_read_handle());
-				OutputDebugString(szBuf);
+				OutputDebugString(szBuf);*/
 			}
 		}
 
@@ -945,6 +945,7 @@ int Root::MessageHandler::MessageConnector::start(MessageHandler* pManager, cons
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 
 	void* TODO; // This will probably have to change under UNIX
+
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"register_handler() failed"),-1);
 

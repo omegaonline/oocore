@@ -261,7 +261,7 @@ namespace Omega
 			{
 			public:
 				iface_stub_functor_ref(typename interface_info<I>::safe_class* pS, const guid_t* piid = 0) : 
-				  iface_stub_functor(pS,piid ? *piid : OMEGA_UUIDOF(I)), m_piid(piid ? piid : &OMEGA_UUIDOF(I))
+				  iface_stub_functor<I>(pS,piid ? *piid : OMEGA_UUIDOF(I)), m_piid(piid ? piid : &OMEGA_UUIDOF(I))
 				{
 				}
 
@@ -326,7 +326,7 @@ namespace Omega
 			{
 			public:
 				iface_proxy_functor_ref(I* pI, const guid_t& iid = OMEGA_UUIDOF(I)) :
-					iface_proxy_functor(pI,iid), m_piid(&iid)
+					iface_proxy_functor<I>(pI,iid), m_piid(&iid)
 				{
 				}
 

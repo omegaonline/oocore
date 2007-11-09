@@ -144,6 +144,9 @@ namespace OOCore
 		void OMEGA_CALL Unpin() {}
 				
 	private:
+		WireStub(const WireStub&) {}
+		WireStub& operator = (const WireStub&) { return *this; }
+
 		ACE_Atomic_Op<ACE_Thread_Mutex,uint32_t>       m_refcount;
 		ACE_RW_Thread_Mutex                            m_lock;
 		uint32_t                                       m_stub_id;
@@ -215,6 +218,9 @@ namespace OOCore
 		System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::IMarshal::Flags_t flags);
 	
 	private:
+		WireProxy(const WireProxy&) {}
+		WireProxy& operator = (const WireProxy&) { return *this; }
+
 		ACE_Atomic_Op<ACE_Thread_Mutex,uint32_t>       m_refcount;
 		ACE_Atomic_Op<ACE_Thread_Mutex,uint32_t>       m_marshal_count;
 		ACE_RW_Thread_Mutex                            m_lock;

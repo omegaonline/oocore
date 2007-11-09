@@ -48,7 +48,7 @@ namespace Omega
 				virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
 				virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
 				virtual void ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
-				virtual Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0) = 0;
+				virtual Serialize::IFormattedStream* CreateOutputStream() = 0;
 				virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout) = 0;
 			};
 
@@ -136,7 +136,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 				OMEGA_METHOD_VOID(ReleaseMarshalData,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
-				OMEGA_METHOD(Serialize::IFormattedStream*,CreateOutputStream,1,((in),IObject*,pOuter))
+				OMEGA_METHOD(Serialize::IFormattedStream*,CreateOutputStream,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Serialize::IFormattedStream*,pSend,(out),Serialize::IFormattedStream*&,pRecv,(in),uint16_t,timeout))
 			)
 			typedef IWireManager_Impl_Safe<IObject_Safe> IWireManager_Safe;
@@ -839,7 +839,7 @@ namespace Omega
 				IException_Safe* CreateOutputStream(auto_iface_safe_ptr<IFormattedStream_Safe>& pStream)
 				{
 					IFormattedStream_Safe* p = 0;
-					IException_Safe* pSE = m_pManager->CreateOutputStream_Safe(&p,0);
+					IException_Safe* pSE = m_pManager->CreateOutputStream_Safe(&p);
 					if (pSE)
 						return pSE;
 					pStream.attach(p);

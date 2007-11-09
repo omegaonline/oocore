@@ -34,10 +34,10 @@ void User::Channel::init(ACE_CDR::UShort channel_id)
 	m_channel_id = channel_id;
 }
 
-Serialize::IFormattedStream* User::Channel::CreateOutputStream(IObject* pOuter)
+Serialize::IFormattedStream* User::Channel::CreateOutputStream()
 {
 	// Create a fresh OutputCDR
-	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr(pOuter);
+	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr();
 	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
 }
 

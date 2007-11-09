@@ -940,12 +940,12 @@ void OOCore::StdObjectManager::ReleaseMarshalData(Serialize::IFormattedStream* p
 		System::MetaInfo::throw_correct_exception(pSE);
 }
 
-Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream(IObject* pOuter)
+Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 {
 	if (!m_ptrChannel)
 		OOCORE_THROW_ERRNO(EINVAL);
 
-	return m_ptrChannel->CreateOutputStream(pOuter);
+	return m_ptrChannel->CreateOutputStream();
 }
 
 IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout)
@@ -1276,11 +1276,11 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::CreateOutputStream_Safe(System::MetaInfo::IFormattedStream_Safe** ppRet, System::MetaInfo::IObject_Safe* pOuter)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::CreateOutputStream_Safe(System::MetaInfo::IFormattedStream_Safe** ppRet)
 {
 	try
 	{
-		static_cast<Serialize::IFormattedStream*&>(System::MetaInfo::marshal_info<Serialize::IFormattedStream*&>::safe_type::coerce(ppRet)) = CreateOutputStream(System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pOuter));
+		static_cast<Serialize::IFormattedStream*&>(System::MetaInfo::marshal_info<Serialize::IFormattedStream*&>::safe_type::coerce(ppRet)) = CreateOutputStream();
 		return 0;
 	}
 	catch (IException* pE)

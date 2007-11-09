@@ -88,7 +88,7 @@ namespace OOCore
 		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
 		void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		void ReleaseMarshalData(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
-		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter = 0);
+		Omega::Serialize::IFormattedStream* CreateOutputStream();
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
 
 	// IWireManager_Safe members
@@ -96,7 +96,7 @@ namespace OOCore
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateOutputStream_Safe(Omega::System::MetaInfo::IFormattedStream_Safe** ppRet, Omega::System::MetaInfo::IObject_Safe* pOuter);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateOutputStream_Safe(Omega::System::MetaInfo::IFormattedStream_Safe** ppRet);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SendAndReceive_Safe(Omega::System::MetaInfo::IException_Safe** ppRet, Omega::Remoting::MethodAttributes_t attribs, Omega::System::MetaInfo::IFormattedStream_Safe* pSend, Omega::System::MetaInfo::IFormattedStream_Safe** ppRecv, Omega::uint16_t timeout);
 
 	// IObjectManager members

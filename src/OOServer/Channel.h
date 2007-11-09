@@ -172,7 +172,7 @@ namespace User
 
 	// IChannel members
 	public:
-		Omega::Serialize::IFormattedStream* CreateOutputStream(IObject* pOuter);
+		Omega::Serialize::IFormattedStream* CreateOutputStream();
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
 
 	// IMarshal members

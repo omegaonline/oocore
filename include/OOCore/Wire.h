@@ -58,6 +58,13 @@ namespace Omega
 				virtual bool_t SupportsInterface(const guid_t& iid) = 0;
 			};
 
+			interface IWireStubController : public IObject
+			{
+				virtual void RemoteRelease(uint32_t release_count) = 0;
+				virtual bool_t SupportsInterface(const guid_t& iid) = 0;
+				virtual void MarshalStub(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
+			};
+
 			interface IWireProxy : public IObject
 			{
 				virtual void WriteKey(Serialize::IFormattedStream* pStream) = 0;
@@ -69,6 +76,7 @@ namespace Omega
 OMEGA_DEFINE_IID(Omega::Serialize, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}")
 OMEGA_DEFINE_IID(Omega::Serialize, IFormattedStream, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
 OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
+OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
 OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
 OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
@@ -81,6 +89,7 @@ namespace Omega
 			OMEGA_DECLARE_FORWARDS(IStream,Omega::Serialize,IStream,Omega,IObject)
 			OMEGA_DECLARE_FORWARDS(IFormattedStream,Omega::Serialize,IFormattedStream,Omega::Serialize,IStream)
 			OMEGA_DECLARE_FORWARDS(IWireStub,Omega::System::MetaInfo,IWireStub,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(IWireStubController,Omega::System::MetaInfo,IWireStubController,Omega,IObject)
 			OMEGA_DECLARE_FORWARDS(IWireProxy,Omega::System::MetaInfo,IWireProxy,Omega,IObject)
 			OMEGA_DECLARE_FORWARDS(IWireManager,Omega::System::MetaInfo,IWireManager,Omega,IObject)
 
@@ -120,6 +129,16 @@ namespace Omega
 				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
 			)
 			typedef IWireStub_Impl_Safe<IObject_Safe> IWireStub_Safe;
+
+			OMEGA_DEFINE_INTERNAL_INTERFACE
+			(
+				Omega::System::MetaInfo, IWireStubController,
+
+				OMEGA_METHOD_VOID(RemoteRelease,1,((in),uint32_t,release_count))
+				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
+				OMEGA_METHOD_VOID(MarshalStub,2,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
+			)
+			typedef IWireStubController_Impl_Safe<IObject_Safe> IWireStubController_Safe;
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
@@ -578,10 +597,10 @@ namespace Omega
 			inline void RegisterWireFactories(const guid_t& iid, void* pfnProxy, void* pfnStub);
 
 			template <class S>
-			IWireStub_Safe* CreateWireStub(IWireManager_Safe* pManager, IObject_Safe* pObject)
+			IWireStub_Safe* CreateWireStub(IWireStubController_Safe* pController, IWireManager_Safe* pManager, IObject_Safe* pObject)
 			{
 				S* pS = 0;
-				OMEGA_NEW(pS,S(pManager,pObject));
+				OMEGA_NEW(pS,S(pController,pManager,pObject));
 				return pS;
 			}
 
@@ -589,8 +608,8 @@ namespace Omega
 			class IObject_WireStub : public IWireStub_Safe
 			{
 			public:
-				IObject_WireStub(IWireManager_Safe* pManager, IObject_Safe* pObj) :
-					m_pManager(pManager), m_refcount(1)
+				IObject_WireStub(IWireStubController_Safe* pController, IWireManager_Safe* pManager, IObject_Safe* pObj) :
+					m_pManager(pManager), m_refcount(1), m_pController(pController)
 				{
 					m_pS = static_cast<I*>(pObj);
 					m_pS->AddRef_Safe();
@@ -598,7 +617,6 @@ namespace Omega
 
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
-					// This must do a remote AddRef action
 					++m_refcount;
 				}
 
@@ -620,17 +638,9 @@ namespace Omega
 					return 0;
 				}
 
-				virtual void OMEGA_CALL Pin()
-				{
-					// This must not do a remote AddRef action
-					++m_refcount;
-				}
-
-				virtual void OMEGA_CALL Unpin()
-				{
-					if (--m_refcount==0)
-						delete this;
-				}
+				// These will never be called
+				virtual void OMEGA_CALL Pin() {}
+				virtual void OMEGA_CALL Unpin() {}
 
 				virtual IException_Safe* OMEGA_CALL SupportsInterface_Safe(bool_t* pbSupports, const guid_t*)
 				{
@@ -638,7 +648,7 @@ namespace Omega
 					return 0;
 				}
 
-				typedef IException_Safe* (*MethodTableEntry)(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut);
+				typedef IException_Safe* (*MethodTableEntry)(void* pParam, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut);
 
 				virtual IException_Safe* OMEGA_CALL Invoke_Safe(IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
@@ -655,13 +665,13 @@ namespace Omega
 				{
 					static const MethodTableEntry MethodTable[] =
 					{
-						Release_Wire,
+						RemoteRelease_Wire,
 						QueryInterface_Wire,
 						MarshalStub_Wire
 					};
 
 					if (method_id < MethodCount)
-						return MethodTable[method_id](this,m_pS,pParamsIn,pParamsOut);
+						return MethodTable[method_id](this,pParamsIn,pParamsOut);
 					else
 						return return_safe_exception(IException::Create(L"Invalid method index"));
 				}		
@@ -678,51 +688,39 @@ namespace Omega
 
 			private:
 				System::AtomicOp<uint32_t> m_refcount;
+				IWireStubController_Safe*  m_pController;
 				
 				IObject_WireStub(const IObject_WireStub&) {};
 				IObject_WireStub& operator =(const IObject_WireStub&) {};
 
-				static IException_Safe* Release_Wire(void*,I*,IFormattedStream_Safe*,IFormattedStream_Safe*)
+				static IException_Safe* RemoteRelease_Wire(void* pParam, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe*)
 				{
-					return 0;
+					uint32_t release_count = 0;
+					IException_Safe* pSE = pParamsIn->ReadUInt32_Safe(&release_count);
+					if (pSE)
+						return pSE;
+
+					return static_cast<IObject_WireStub<I>*>(pParam)->m_pController->RemoteRelease_Safe(release_count);
 				}
 
-				static IException_Safe* QueryInterface_Wire(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
+				static IException_Safe* QueryInterface_Wire(void* pParam, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
 					marshal_info<guid_t>::wire_type::type iid;
 					IException_Safe* pSE = marshal_info<guid_t>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);
 					if (pSE)
 						return pSE;
 
-					IObject_Safe* p;
-					pSE = pI->QueryInterface_Safe(&iid,&p);
+					marshal_info<bool_t&>::wire_type::type bQI = false;
+					pSE = static_cast<IObject_WireStub<I>*>(pParam)->m_pController->SupportsInterface_Safe(bQI,&iid);
 					if (pSE)
 						return pSE;
-					auto_iface_safe_ptr<IObject_Safe> ptr(p);
-
-					marshal_info<bool_t&>::wire_type::type bQI = (p != 0);
+					
 					return marshal_info<bool_t&>::wire_type::write(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,bQI);
 				}
 
-				static IException_Safe* MarshalStub_Wire(void* pParam, I* pI, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
+				static IException_Safe* MarshalStub_Wire(void* pParam, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
-					marshal_info<guid_t>::wire_type::type iid;
-					IException_Safe* pSE = marshal_info<guid_t>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,iid);
-					if (pSE)
-						return pSE;
-
-					marshal_info<IObject*>::wire_type::type obj;
-					pSE = marshal_info<IObject*>::wire_type::read(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsIn,obj,&OMEGA_UUIDOF(IWireManager));
-					if (pSE)
-						return pSE;
-
-					IObject_Safe* pMO = 0;
-					pSE = obj->QueryInterface_Safe(&OMEGA_UUIDOF(IWireManager),&pMO);
-					if (pSE)
-						return pSE;
-
-					auto_iface_safe_ptr<IWireManager_Safe> ptrManager(static_cast<IWireManager_Safe*>(pMO));
-					return ptrManager->MarshalInterface_Safe(pParamsOut,&iid,pI);
+					return static_cast<IObject_WireStub<I>*>(pParam)->m_pController->MarshalStub_Safe(pParamsIn,pParamsOut);
 				}
 			};
 
@@ -870,6 +868,7 @@ namespace Omega
 			};
 
 			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireStub)
+			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireStubController)
 			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireProxy)
 			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireManager)
 

@@ -34,11 +34,12 @@ namespace OOCore
 
 	struct wire_holder
 	{
-		static System::MetaInfo::IWireStub_Safe* CreateWireStub(const guid_t& iid, System::MetaInfo::IWireManager_Safe* pManager, System::MetaInfo::IObject_Safe* pObject);
+		static System::MetaInfo::IWireStub_Safe* CreateWireStub(const guid_t& iid, System::MetaInfo::IWireStubController_Safe* pController, System::MetaInfo::IWireManager_Safe* pManager, System::MetaInfo::IObject_Safe* pObject);
 		static System::MetaInfo::IObject_Safe* CreateWireProxy(const guid_t& iid, System::MetaInfo::IWireProxy_Safe* pProxy, System::MetaInfo::IWireManager_Safe* pManager);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireStub)(
 			System::MetaInfo::marshal_info<System::MetaInfo::IWireStub*&>::safe_type::type retval,
+			System::MetaInfo::marshal_info<System::MetaInfo::IWireStubController*>::safe_type::type pController, 
 			System::MetaInfo::marshal_info<System::MetaInfo::IWireManager*>::safe_type::type pManager,
 			System::MetaInfo::marshal_info<IObject*>::safe_type::type pObject);
 
@@ -62,11 +63,11 @@ namespace OOCore
 		std::map<guid_t,pfns> map;
 	};
 
-	class WireStub : public System::MetaInfo::IObject_Safe
+	class WireStub : public System::MetaInfo::IWireStubController_Safe
 	{
 	public:
 		WireStub(System::MetaInfo::IObject_Safe* pObjS, uint32_t stub_id, StdObjectManager* pManager) : 
-			m_refcount(0), m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
+			m_refcount(0), m_marshal_count(0), m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
 		{
 			m_pManager->AddRef_Safe();
 			m_pObjS->AddRef_Safe();
@@ -97,18 +98,37 @@ namespace OOCore
 			if (pSE)
 				return pSE;
 
-			return System::MetaInfo::wire_write(pStream,iid);
+			pSE = System::MetaInfo::wire_write(pStream,iid);
+			if (pSE)
+			{
+				uint32_t v;
+				System::MetaInfo::IException_Safe* pSE2 = pStream->ReadUInt32_Safe(&v);
+				if (pSE2)
+				{
+					pSE->Release_Safe();
+					return pSE2;
+				}
+			}
+
+			if (!pSE)
+				++m_marshal_count;
+
+			return pSE;
 		}
 
 		System::MetaInfo::IException_Safe* ReleaseMarshalData(System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t&)
 		{
 			uint32_t v;
 			System::MetaInfo::IException_Safe* pSE = pStream->ReadUInt32_Safe(&v);
-			if (pSE)
-				return pSE;
+			if (!pSE)
+			{
+				guid_t iid;
+				pSE = System::MetaInfo::wire_read(pStream,iid);
+			}
 
-			guid_t iid;
-			return System::MetaInfo::wire_read(pStream,iid);
+			--m_marshal_count;
+
+			return pSE;
 		}
 
 		System::MetaInfo::IWireStub_Safe* LookupStub(Serialize::IFormattedStream* pStream)
@@ -132,7 +152,8 @@ namespace OOCore
 		System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 		{
 			*ppS = 0;
-			if (*piid == OMEGA_UUIDOF(IObject))
+			if (*piid == OMEGA_UUIDOF(IObject) ||
+				*piid == OMEGA_UUIDOF(System::MetaInfo::IWireStubController))
 			{
 				*ppS = this;
 				(*ppS)->AddRef_Safe();
@@ -140,14 +161,56 @@ namespace OOCore
 			return 0;
 		}
 
+		// These will never be called
 		void OMEGA_CALL Pin() {}
 		void OMEGA_CALL Unpin() {}
+
+	// IWireStubController members
+	public:
+		System::MetaInfo::IException_Safe* OMEGA_CALL RemoteRelease_Safe(uint32_t release_count)
+		{
+			return 0;
+		}
+
+		System::MetaInfo::IException_Safe* OMEGA_CALL SupportsInterface_Safe(bool_t* pbSupports, const guid_t* piid)
+		{
+			System::MetaInfo::IObject_Safe* p;
+			System::MetaInfo::IException_Safe* pSE = m_pObjS->QueryInterface_Safe(piid,&p);
+			if (pSE)
+				return pSE;
+
+			System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IObject_Safe> ptr(p);
+			*pbSupports = (p != 0);
+			return 0;
+		}
+
+		System::MetaInfo::IException_Safe* OMEGA_CALL MarshalStub_Safe(System::MetaInfo::IFormattedStream_Safe* pParamsIn, System::MetaInfo::IFormattedStream_Safe* pParamsOut)
+		{
+			System::MetaInfo::marshal_info<guid_t>::wire_type::type iid;
+			System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<guid_t>::wire_type::read(m_pManager,pParamsIn,iid);
+			if (pSE)
+				return pSE;
+
+			System::MetaInfo::marshal_info<IObject*>::wire_type::type obj;
+			pSE = System::MetaInfo::marshal_info<IObject*>::wire_type::read(m_pManager,pParamsIn,obj,&OMEGA_UUIDOF(System::MetaInfo::IWireManager));
+			if (pSE)
+				return pSE;
+
+			System::MetaInfo::IObject_Safe* pMO = 0;
+			pSE = obj->QueryInterface_Safe(&OMEGA_UUIDOF(System::MetaInfo::IWireManager),&pMO);
+			if (pSE)
+				return pSE;
+
+			System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IWireManager_Safe> ptrManager(static_cast<System::MetaInfo::IWireManager_Safe*>(pMO));
+			return ptrManager->MarshalInterface_Safe(pParamsOut,&iid,m_pObjS);
+		}
 				
 	private:
 		WireStub(const WireStub&) {}
 		WireStub& operator = (const WireStub&) { return *this; }
 
 		ACE_Atomic_Op<ACE_Thread_Mutex,uint32_t>       m_refcount;
+		ACE_Atomic_Op<ACE_Thread_Mutex,uint32_t>       m_marshal_count;
 		ACE_RW_Thread_Mutex                            m_lock;
 		uint32_t                                       m_stub_id;
 		System::MetaInfo::IObject_Safe*                m_pObjS;
@@ -171,6 +234,8 @@ namespace OOCore
 
 		virtual ~WireProxy()
 		{
+			CallRemoteRelease();
+
 			for (std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
 				i->second->Release_Safe();
@@ -196,8 +261,15 @@ namespace OOCore
 
 		System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS);
 
-		void OMEGA_CALL Pin() {}
-		void OMEGA_CALL Unpin() {}
+		void OMEGA_CALL Pin() 
+		{
+			void* TODO;
+		}
+
+		void OMEGA_CALL Unpin() 
+		{
+			void* TODO;
+		}
 		
 	// IWireProxy_Safe members
 	public:
@@ -231,6 +303,7 @@ namespace OOCore
 
 		bool CallRemoteQI(const guid_t& iid);
 		uint32_t CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid);
+		void CallRemoteRelease();
 	};
 }
 
@@ -270,7 +343,7 @@ void OOCore::StdObjectManagerMarshalFactory::UnmarshalInterface(Omega::Remoting:
 	pObject = ptrOM->QueryInterface(iid);	
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::wire_holder::CreateWireStub(const guid_t& iid, System::MetaInfo::IWireManager_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
+System::MetaInfo::IWireStub_Safe* OOCore::wire_holder::CreateWireStub(const guid_t& iid, System::MetaInfo::IWireStubController_Safe* pController, System::MetaInfo::IWireManager_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
 {
 	wire_holder::pfns p;
 	try
@@ -286,7 +359,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::wire_holder::CreateWireStub(const guid
 	}
 
 	System::MetaInfo::IWireStub_Safe* pRet = 0;
-	System::MetaInfo::IException_Safe* pSE = p.pfnStub(&pRet,pManager,pObjS);
+	System::MetaInfo::IException_Safe* pSE = p.pfnStub(&pRet,pController,pManager,pObjS);
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
@@ -380,7 +453,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
 			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrQI(pQI);
 						
 			// Create a stub for this interface
-			ptrStub.attach(wire_holder::CreateWireStub(iid,m_pManager,ptrQI));
+			ptrStub.attach(wire_holder::CreateWireStub(iid,this,m_pManager,ptrQI));
 			if (!ptrStub)
 				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
@@ -411,6 +484,9 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 {
 	try
 	{
+		// Up our marshal count early, because we are definitely attached to something!
+		++m_marshal_count;
+
 		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IObject_Safe> ptrProxy;
 
 		guid_t wire_iid;
@@ -467,18 +543,20 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 				ptrProxy->AddRef_Safe();
 		}
 
-		++m_marshal_count;
-		
+		System::MetaInfo::IObject_Safe* pQI = 0;
 		if (iid == OMEGA_UUIDOF(IObject))
 		{
-			AddRef_Safe();
-			return static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
+			pQI = static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
+			pQI->AddRef_Safe();
 		}
-
-		System::MetaInfo::IObject_Safe* pQI = 0;
-		pSE = ptrProxy->QueryInterface_Safe(&iid,&pQI);
-		if (pSE)
-			System::MetaInfo::throw_correct_exception(pSE);
+		else
+		{
+			pSE = ptrProxy->QueryInterface_Safe(&iid,&pQI);
+			if (pSE)
+				System::MetaInfo::throw_correct_exception(pSE);
+			if (!pQI)
+				throw INoInterfaceException::Create(iid);
+		}
 		return pQI;
 	}
 	catch (std::exception& e)
@@ -613,15 +691,18 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 	{
 		pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
 	}
-	catch (...)
+	catch (IException* pE2)
 	{
+		ObjectPtr<IException> ptrE;
+		ptrE.Attach(pE2);
+
 		pParamsOut->ReadUInt32();
 		read_guid(pParamsOut);
 		pParamsOut->ReadUInt32();
 		read_guid(pParamsOut);
 		m_pManager->ReleaseMarshalData(pParamsOut,OMEGA_UUIDOF(Remoting::IObjectManager),pObjectManager);
 
-		throw;
+		throw ptrE.AddRefReturn();
 	}
 	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -633,6 +714,35 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 	uint32_t ret = ptrParamsIn->ReadUInt32();
 	read_guid(ptrParamsIn);
 	return ret;
+}
+
+void OOCore::WireProxy::CallRemoteRelease()
+{
+	if (m_marshal_count == 0)
+		return;
+
+	try
+	{
+		ObjectPtr<Serialize::IFormattedStream> pParamsOut;
+		pParamsOut.Attach(m_pManager->CreateOutputStream());
+
+		pParamsOut->WriteUInt32(m_proxy_id);
+		write_guid(pParamsOut,OMEGA_UUIDOF(IObject));
+		pParamsOut->WriteUInt32(0);
+
+		pParamsOut->WriteUInt32(m_marshal_count.value());
+		
+		Serialize::IFormattedStream* pParamsIn = 0;
+		IException* pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
+		if (pE)
+			pE->Release();
+		if (pParamsIn)
+			pParamsIn->Release();
+	}
+	catch (IException* pE)
+	{
+		pE->Release();
+	}
 }
 
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::IMarshal::Flags_t)
@@ -648,13 +758,15 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterfac
 		return System::MetaInfo::return_safe_exception(pE);
 	}
 
+	size_t undo_count = 0;
+
 	// Marshal our own manager out...
 	System::MetaInfo::IException_Safe* pSE = pObjectManager->MarshalInterface_Safe(pStream,&OMEGA_UUIDOF(System::MetaInfo::IWireManager),static_cast<System::MetaInfo::IWireManager_Safe*>(m_pManager));
 	if (pSE)
 		return pSE;
+	++undo_count;
 
 	// The following format is the same as StdObjectManager::UnmarshalInterface...
-	size_t undo_count = 0;
 	pSE = pStream->WriteByte_Safe(1);
 	if (pSE)
 		goto Cleanup;
@@ -666,43 +778,41 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterfac
 	++undo_count;
 
 	pSE = System::MetaInfo::wire_write(pStream,*piid);
-	if (pSE)
-		goto Cleanup;
-	++undo_count;
+	if (!pSE)
+		return 0;
 
-	return 0;
 Cleanup:
-
 	System::MetaInfo::IException_Safe* pSE2 = 0;
 	if (undo_count > 0)
 	{
-		byte_t v;
-		pSE2 = pStream->ReadByte_Safe(&v);
+		pSE2 = pObjectManager->ReleaseMarshalData_Safe(pStream,&OMEGA_UUIDOF(System::MetaInfo::IWireManager),static_cast<System::MetaInfo::IWireManager_Safe*>(m_pManager));
 		if (pSE2)
+		{
+			pSE->Release_Safe();
 			return pSE2;
+		}
 	}
 
 	if (undo_count > 1)
 	{
-		uint32_t v;
-		pSE2 = pStream->ReadUInt32_Safe(&v);
+		byte_t v;
+		pSE2 = pStream->ReadByte_Safe(&v);
 		if (pSE2)
+		{
+			pSE->Release_Safe();
 			return pSE2;
+		}
 	}
 
 	if (undo_count > 2)
 	{
-		guid_t v;
-		pSE2 = System::MetaInfo::wire_read(pStream,v);
+		uint32_t v;
+		pSE2 = pStream->ReadUInt32_Safe(&v);
 		if (pSE2)
+		{
+			pSE->Release_Safe();
 			return pSE2;
-	}
-
-	if (undo_count > 3)
-	{
-		pSE2 = pObjectManager->ReleaseMarshalData_Safe(pStream,&OMEGA_UUIDOF(System::MetaInfo::IWireManager),static_cast<System::MetaInfo::IWireManager_Safe*>(m_pManager));
-		if (pSE2)
-			return pSE2;
+		}
 	}
 
 	return pSE;
@@ -1072,17 +1182,49 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 
 				if (oid != guid_t::Null())
 				{
+					size_t undo_count = 0;
+
 					// Write the marshalling oid
 					pSE = pStream->WriteByte_Safe(2);
 					if (pSE)
-						return pSE;
+						goto Cleanup;
+					++undo_count;
 
 					pSE = System::MetaInfo::wire_write(pStream,oid);
 					if (pSE)
-						return pSE;
+						goto Cleanup;
+					++undo_count;
 
 					// Let the custom handle marshalling...
-					return ptrMarshal->MarshalInterface_Safe(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(this),pStream,piid,Remoting::IMarshal::inter_process);
+					pSE = ptrMarshal->MarshalInterface_Safe(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(this),pStream,piid,Remoting::IMarshal::inter_process);
+					if (!pSE)
+						return 0;
+
+				Cleanup:
+					System::MetaInfo::IException_Safe* pSE2 = 0;
+					if (undo_count > 0)
+					{
+						byte_t v;
+						pSE2 = pStream->ReadByte_Safe(&v);
+						if (pSE2)
+						{
+							pSE->Release_Safe();
+							return pSE2;
+						}
+					}
+
+					if (undo_count > 1)
+					{
+						guid_t v;
+						pSE2 = System::MetaInfo::wire_read(pStream,v);
+						if (pSE2)
+						{
+							pSE->Release_Safe();
+							return pSE2;
+						}
+					}
+
+					return pSE;
 				}
 			}
 
@@ -1113,7 +1255,18 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 		if (pSE)
 			return pSE;
 
-		return ptrStub->MarshalInterface(pStream,*piid);
+		pSE = ptrStub->MarshalInterface(pStream,*piid);
+		if (pSE)
+		{
+			byte_t v;
+			System::MetaInfo::IException_Safe* pSE2 = pStream->ReadByte_Safe(&v);
+			if (pSE2)
+			{
+				pSE->Release_Safe();
+				return pSE2;
+			}
+		}
+		return pSE;
 	}
 	catch (std::exception& e)
 	{

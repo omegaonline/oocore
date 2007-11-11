@@ -802,7 +802,7 @@ namespace Omega
 			{
 			public:
 				SafeStub(IObject* pObj) : 
-					m_refcount(0), m_pincount(0), m_bReleasedOnce(false), m_pObj(pObj)
+					m_refcount(0), m_pincount(0), m_pObj(pObj)
 				{
 					m_pObj->AddRef();
 				}
@@ -816,25 +816,20 @@ namespace Omega
 				{
 					if (--m_refcount==0)
 					{
-						if (!m_bReleasedOnce)
+						try
 						{
-							try
+							// Release all interfaces
+							for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 							{
-								// Release all interfaces
-								for (std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
-								{
-									i->second->Release_Safe();
-								}
+								i->second->Release_Safe();
 							}
-							catch (std::exception& e)
-							{ 
-								OMEGA_THROW(string_t(e.what(),false));
-							}
-
-							m_pObj->Release();
-
-							m_bReleasedOnce = true;
 						}
+						catch (std::exception& e)
+						{ 
+							OMEGA_THROW(string_t(e.what(),false));
+						}
+
+						m_pObj->Release();
 
 						if (m_pincount == 0)
 							delete this;
@@ -883,7 +878,6 @@ namespace Omega
 			private:
 				AtomicOp<uint32_t>                   m_refcount;
 				AtomicOp<uint32_t>                   m_pincount;
-				bool                                 m_bReleasedOnce;
 				ReaderWriterLock                     m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				IObject*                             m_pObj;

@@ -36,11 +36,11 @@
 		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) \
 		{ \
 		public: \
-			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(Omega::System::MetaInfo::IWireStub_Safe** ppStub OMEGA_DECLARE_PARAMS_SAFE(2,((in),Omega::System::MetaInfo::IWireManager*,pManager,(in),Omega::IObject*,pObject))) \
+			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(Omega::System::MetaInfo::IWireStub_Safe** ppStub OMEGA_DECLARE_PARAMS_SAFE(3,((in),Omega::System::MetaInfo::IWireStubController*,pController,(in),Omega::System::MetaInfo::IWireManager*,pManager,(in),Omega::IObject*,pObject))) \
 			{ \
 				try \
 				{ \
-					*ppStub = CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<interface_info<n_space::iface>::safe_class>::type>(pManager,pObject); \
+					*ppStub = CreateWireStub<interface_info<n_space::iface>::wire_stub_factory<interface_info<n_space::iface>::safe_class>::type>(pController,pManager,pObject); \
 					return 0; \
 				} \
 				catch (Omega::IException* pE) \
@@ -290,7 +290,7 @@
 	marshal_info<t>::wire_type:: OMEGA_WIRE_UNPACK_STUB_PARAM(meta,t,name) 
 
 #define OMEGA_UNPACK_PARAM_WIRE_STUB(index,param,d) \
-	if (__wire_unpack_count > index) { __wire__pException2 = OMEGA_UNPACK_PARAM_WIRE_STUB_I param ); if (__wire__pException2) return __wire__pException2; }
+	if (__wire_unpack_count > index) { __wire__pException2 = OMEGA_UNPACK_PARAM_WIRE_STUB_I param ); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } }
 
 #define OMEGA_UNPACK_PARAMS_WIRE_STUB(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_UNPACK_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
@@ -308,13 +308,13 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_STUB_METHOD,methods,0)
 
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,name,param_count,params) \
-	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, I* __wire__pI, IFormattedStream_Safe* __wire__pParamsIn, IFormattedStream_Safe* __wire__pParamsOut) \
+	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, IFormattedStream_Safe* __wire__pParamsIn, IFormattedStream_Safe* __wire__pParamsOut) \
 	{ \
 		OMEGA_UNUSED_ARG(__wire__pParam); OMEGA_UNUSED_ARG(__wire__pParamsIn); OMEGA_UNUSED_ARG(__wire__pParamsOut); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		IException_Safe* __wire__pException = 0; \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
-		__wire__pException = __wire__pI->OMEGA_CONCAT(name,_Safe)( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
+		__wire__pException = static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pS->OMEGA_CONCAT(name,_Safe)( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
 		if (__wire__pException) return __wire__pException; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
@@ -326,14 +326,14 @@
 	}
 
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,ret_type,name,param_count,params) \
-	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, I* __wire__pI, IFormattedStream_Safe* __wire__pParamsIn, IFormattedStream_Safe* __wire__pParamsOut) \
+	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, IFormattedStream_Safe* __wire__pParamsIn, IFormattedStream_Safe* __wire__pParamsOut) \
 	{ \
 		OMEGA_UNUSED_ARG(__wire__pParam); OMEGA_UNUSED_ARG(__wire__pParamsIn); OMEGA_UNUSED_ARG(__wire__pParamsOut); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		IException_Safe* __wire__pException = 0; \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		marshal_info<ret_type>::wire_type::type OMEGA_CONCAT(name,_RetVal) = default_value<marshal_info<ret_type>::wire_type::type>::value(); \
-		__wire__pException = __wire__pI->OMEGA_CONCAT(name,_Safe) ( &OMEGA_CONCAT(name,_RetVal) OMEGA_EMIT_PARAMS(param_count,params) ); \
+		__wire__pException = static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pS->OMEGA_CONCAT(name,_Safe) ( &OMEGA_CONCAT(name,_RetVal) OMEGA_EMIT_PARAMS(param_count,params) ); \
 		if (__wire__pException) return __wire__pException; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
@@ -376,7 +376,7 @@
 	class OMEGA_CONCAT_R(unique,_WireStub) : public Base \
 	{ \
 	public: \
-		OMEGA_CONCAT_R(unique,_WireStub)(IWireManager_Safe* pManager, IObject_Safe* pObj) : Base(pManager,pObj) \
+		OMEGA_CONCAT_R(unique,_WireStub)(IWireStubController_Safe* pController, IWireManager_Safe* pManager, IObject_Safe* pObj) : Base(pController,pManager,pObj) \
 		{} \
 		virtual IException_Safe* OMEGA_CALL SupportsInterface_Safe(bool_t* pbSupports, const guid_t* piid) \
 		{ \
@@ -394,7 +394,7 @@
 				OMEGA_DECLARE_WIRE_STUB_METHODS(methods) \
 			}; \
 			if (method_id >= Base::MethodCount && method_id < MethodCount) \
-				return MethodTable[method_id - Base::MethodCount](this,this->m_pS,pParamsIn,pParamsOut); \
+				return MethodTable[method_id - Base::MethodCount](this,pParamsIn,pParamsOut); \
 			else \
 				return Base::Internal_Invoke_Safe(method_id,pParamsIn,pParamsOut); \
 		} \
@@ -509,7 +509,7 @@
 	marshal_info<t>::wire_type:: OMEGA_WIRE_UNPACK_PROXY_PARAM(meta,t,name) 
 
 #define OMEGA_UNPACK_PARAM_WIRE_PROXY(index,param,d) \
-	if (__wire_unpack_count > index) { __wire__pException2 = OMEGA_UNPACK_PARAM_WIRE_PROXY_I param ); if (__wire__pException2) return __wire__pException2; }
+	if (__wire_unpack_count > index) { __wire__pException2 = OMEGA_UNPACK_PARAM_WIRE_PROXY_I param ); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } }
 
 #define OMEGA_UNPACK_PARAMS_WIRE_PROXY(count,params) \
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_UNPACK_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
@@ -536,9 +536,9 @@
 		return 0; \
 		__wire_Cleanup: \
 		uint32_t key1; guid_t key2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) return __wire__pException2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key2); if (__wire__pException2) return __wire__pException2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) return __wire__pException2; \
+		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
+		__wire__pException2 = wire_read(__wire__pParamsOut,key2); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
+		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
 		OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
 		return __wire__pException; \
 	} \

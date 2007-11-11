@@ -36,17 +36,12 @@ namespace Omega
 
 			virtual guid_t GetUnmarshalFactoryOID(const guid_t& iid, Flags_t flags) = 0;
 			virtual void MarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;
-			virtual void ReleaseMarshalData(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;			
-			//virtual void DisconnectObject() = 0;
+			virtual void ReleaseMarshalData(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;
 		};
 
 		interface IMarshalFactory : public IObject
 		{
 			virtual void UnmarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, IMarshal::Flags_t flags, IObject*& pObject) = 0;
-		};
-
-		interface ICallContext : public IObject
-		{
 		};
 
 		interface IInterProcessService : public IObject
@@ -91,7 +86,6 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
 	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
 	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
-	//OMEGA_METHOD_VOID(DisconnectObject,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL

@@ -1,3 +1,5 @@
+// Portions of this code come from ACE...
+
 #ifndef OOCORE_TYPE_SIZES_H_INCLUDED_
 #define OOCORE_TYPE_SIZES_H_INCLUDED_
 

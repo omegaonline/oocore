@@ -31,7 +31,7 @@ namespace User
 
 		int run_event_loop_i(const ACE_WString& strPipe);
 		bool init(const ACE_WString& strPipe);
-		bool bootstrap(ACE_CDR::UShort sandbox_channel);
+		bool bootstrap(Root::MessagePipe& pipe);
 		void close_channels();
 		void end_event_loop();
 

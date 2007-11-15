@@ -21,7 +21,8 @@
 #include <shlobj.h>
 #endif
 
-Root::Manager::Manager()
+Root::Manager::Manager() :
+	m_sandbox_channel(0)
 {
 }
 
@@ -127,8 +128,14 @@ ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void* pParam)
 
 bool Root::Manager::init()
 {
-	// Open the root registry and create a new sandbox...
-	if (init_registry() != 0 || !spawn_sandbox())
+	// Open the root registry
+	if (init_registry() != 0)
+		return false;
+
+	// Spawn the sandbox
+	ACE_WString strPipe;
+	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),0,strPipe);
+	if (!m_sandbox_channel)
 		return false;
 
 	return true;
@@ -337,87 +344,71 @@ int Root::Manager::connect_client(ACE_SOCK_Stream& stream)
 	return 0;
 }
 
-bool Root::Manager::spawn_sandbox()
+ACE_CDR::UShort Root::Manager::spawn_user(user_id_type uid, ACE_CDR::UShort nUserChannel, ACE_WString& strPipe)
 {
-	// Spawn the sandbox
-	ACE_WString strPipe;
-	if (!spawn_user(static_cast<user_id_type>(0),strPipe))
-	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::spawn_sandbox() failed"));
-		return false;
-	}
-	
-	return true;
-}
-
-bool Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe)
-{
-	// Alloc a new SpawnedProcess
-	SpawnedProcess* pSpawn = 0;
-	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
-
-	bool bSuccess = false;
-
 	ACE_WString strNewPipe = MessagePipe::unique_name(L"oo");
 
 	MessagePipeAcceptor acceptor;
 	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"));
-	else
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),0);
+	
+	// Alloc a new SpawnedProcess
+	SpawnedProcess* pSpawn = 0;
+	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
+
+	ACE_CDR::UShort nChannelId = 0;
+
+	// Spawn the user process
+	if (pSpawn->Spawn(uid,strNewPipe))
 	{
-		// Spawn the user process
-		if (pSpawn->Spawn(uid,strNewPipe))
-		{
-			// Accept
+		// Accept
 #ifdef OMEGA_DEBUG
-			ACE_Time_Value wait(120);
+		ACE_Time_Value wait(120);
 #else
-			ACE_Time_Value wait(30);
+		ACE_Time_Value wait(30);
 #endif
-			MessagePipe pipe;
-			if (acceptor.accept(pipe,&wait) != 0)
-				ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"));
-			else
+		MessagePipe pipe;
+		if (acceptor.accept(pipe,&wait) != 0)
+			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"));
+		else
+		{
+			strPipe = bootstrap_user(pipe,nUserChannel);
+			if (!strPipe.empty())
 			{
-				strPipe = bootstrap_user(pipe,uid == static_cast<user_id_type>(0));
-				if (!strPipe.empty())
+				// Create a new MessageConnection
+				MessageConnection* pMC = 0;
+				ACE_NEW_NORETURN(pMC,MessageConnection(this));
+				if (!pMC)
+					ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %m\n"));
+				else if ((nChannelId = pMC->open(pipe)) != 0)
 				{
-					// Create a new MessageConnection
-					MessageConnection* pMC = 0;
-					ACE_NEW_NORETURN(pMC,MessageConnection(this));
-					if (!pMC)
-						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %m\n"));
-					else if (pMC->open(pipe) != 0)
+					// Insert the data into various maps...
+					try
 					{
-						// Insert the data into various maps...
-						try
-						{
-							ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+						ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-							UserProcess process = {strPipe, pSpawn};
-							m_mapUserProcesses.insert(std::map<MessagePipe,UserProcess>::value_type(pipe,process));
-							
-							bSuccess = true;
-						}
-						catch (...)
-						{
-							ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled exception\n"));
-						}
+						UserProcess process = {strPipe, pSpawn};
+						m_mapUserProcesses.insert(std::map<MessagePipe,UserProcess>::value_type(pipe,process));
 					}
-
-					if (!bSuccess)
-						delete pMC;
+					catch (...)
+					{
+						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled exception\n"));
+						nChannelId = 0;
+					}
 				}
+
+				if (!nChannelId)
+					delete pMC;
 			}
 		}
-
-		acceptor.close();
 	}
 
-	if (!bSuccess)
+	acceptor.close();
+	
+	if (!nChannelId)
 		delete pSpawn;
 
-	return bSuccess;
+	return nChannelId;
 }
 
 void Root::Manager::close_users()
@@ -455,12 +446,15 @@ void Root::Manager::close_users()
 	{}
 }
 
-ACE_WString Root::Manager::bootstrap_user(MessagePipe& pipe, bool bSandbox)
+ACE_WString Root::Manager::bootstrap_user(MessagePipe& pipe, ACE_CDR::UShort nUserChannel)
 {
-	// This could be changed to a struct if we wanted...
-	ACE_CDR::UShort sandbox_channel = bSandbox ? 0 : 1;
+	if (pipe.send(&m_sandbox_channel,sizeof(m_sandbox_channel)) != sizeof(m_sandbox_channel))
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+		return L"";
+	}
 
-	if (pipe.send(&sandbox_channel,sizeof(sandbox_channel)) != sizeof(sandbox_channel))
+	if (pipe.send(&nUserChannel,sizeof(nUserChannel)) != sizeof(nUserChannel))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
 		return L"";
@@ -493,6 +487,8 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 {
 	try
 	{
+		ACE_CDR::UShort nUserChannel = 0;
+
 		// See if we have a process already
 		UserProcess process = {L"",0};
 		{
@@ -505,6 +501,10 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 					process = i->second;
 					break;
 				}
+				else if (i->second.pSpawn->IsSameUser(uid))
+				{
+					nUserChannel = get_pipe_channel(i->first,0);
+				}
 			}
 		}
 
@@ -515,7 +515,7 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 			return true;
 		}
 
-		return spawn_user(uid,strPipe);
+		return spawn_user(uid,nUserChannel,strPipe) != 0;
 	}
 	catch (std::exception&)
 	{
@@ -1164,3 +1164,4 @@ void Root::Manager::registry_delete_value(const MessagePipe& pipe, ACE_InputCDR&
 
 	response << err;
 }
+

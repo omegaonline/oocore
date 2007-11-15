@@ -368,9 +368,4 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 	return true;
 }
 
-bool Root::SpawnedProcess::Compare(uid_t uid)
-{
-	return m_uid == uid;
-}
-
 #endif // !ACE_WIN32

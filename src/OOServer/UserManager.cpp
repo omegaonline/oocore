@@ -31,9 +31,10 @@ namespace User
 		public Remoting::IInterProcessService
 	{
 	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, Manager* pManager)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOMSB, ObjectPtr<Remoting::IObjectManager> ptrOMUser, Manager* pManager)
 		{
-			m_ptrOM = ptrOM;
+			m_ptrOMSB = ptrOMSB;
+			m_ptrOMUser = ptrOMUser;
 			m_pManager = pManager;
 		}
 
@@ -43,9 +44,10 @@ namespace User
 
 	private:
 		ACE_Thread_Mutex                           m_lock;
-		ObjectPtr<Remoting::IObjectManager>        m_ptrOM;
+		ObjectPtr<Remoting::IObjectManager>        m_ptrOMSB;
+		ObjectPtr<Remoting::IObjectManager>        m_ptrOMUser;
 		ObjectPtr<ObjectImpl<RunningObjectTable> > m_ptrROT;
-		ObjectPtr<ObjectImpl<Registry::BaseKey> >  m_ptrReg;
+		ObjectPtr<Omega::Registry::IRegistryKey>   m_ptrReg;
 		Manager*                                   m_pManager;
 
 	// Remoting::IInterProcessService members
@@ -59,9 +61,10 @@ namespace User
 		public Activation::IObjectFactory
 	{
 	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOM, Manager* pManager)
+		void Init(ObjectPtr<Remoting::IObjectManager> ptrOMSB, ObjectPtr<Remoting::IObjectManager> ptrOMUser, Manager* pManager)
 		{
-			m_ptrOM = ptrOM;
+			m_ptrOMSB = ptrOMSB;
+			m_ptrOMUser = ptrOMUser;
 			m_pManager = pManager;
 		}
 
@@ -70,7 +73,8 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		ObjectPtr<Remoting::IObjectManager> m_ptrOM;
+		ObjectPtr<Remoting::IObjectManager> m_ptrOMSB;
+		ObjectPtr<Remoting::IObjectManager> m_ptrOMUser;
 		Manager*                            m_pManager;
 
 	// Activation::IObjectFactory members
@@ -85,7 +89,7 @@ void User::InterProcessServiceFactory::CreateInstance(IObject* pOuter, const gui
 		throw Activation::INoAggregationException::Create(Remoting::OID_InterProcess);
 
 	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
-	ptrIPS->Init(m_ptrOM,m_pManager);
+	ptrIPS->Init(m_ptrOMSB,m_ptrOMUser,m_pManager);
 
 	pObject = ptrIPS->QueryInterface(iid);
 	if (!pObject)
@@ -101,15 +105,23 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 
 		if (!m_ptrReg)
 		{
-			m_ptrReg = ObjectImpl<User::Registry::BaseKey>::CreateInstancePtr();
-			try
+			if (m_ptrOMUser)
 			{
-				m_ptrReg->Init(m_pManager,!m_ptrOM);
+				// Create a proxy to the server interface
+				IObject* pIPS = 0;
+				m_ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+				ObjectPtr<Remoting::IInterProcessService> ptrIPS;
+				ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
+
+				// Get the running object table
+				m_ptrReg.Attach(ptrIPS->GetRegistry());
 			}
-			catch (...)
+			else
 			{
-				m_ptrReg.Release();
-				throw;
+				ObjectPtr<ObjectImpl<Registry::BaseKey> > ptrKey = ObjectImpl<User::Registry::BaseKey>::CreateInstancePtr();
+				ptrKey->Init(m_pManager,!m_ptrOMSB);
+				
+				m_ptrReg.Attach(ptrKey);
 			}
 		}
 	}
@@ -129,7 +141,7 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 			m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
 			try
 			{
-				m_ptrROT->Init(m_ptrOM);
+				m_ptrROT->Init(m_ptrOMSB);
 			}
 			catch (...)
 			{
@@ -199,70 +211,87 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 
 bool User::Manager::init(const ACE_WString& strPipe)
 {
-	ACE_CDR::UShort sandbox_channel = 0;
-
 	// Connect to the root
 	ACE_Time_Value wait(5);
 	Root::MessagePipe pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::connect() failed"),false);
 
-	// Talk to the root...
-	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"ACE_OS::getsockname() failed"),false);
-
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
 
+	bool bSuccess = false;
+
+	// Open the connection
 	m_root_channel = pMC->open(pipe);
-	if (m_root_channel == 0)
+	if (m_root_channel != 0)
 	{
-		delete pMC;
-		return false;
+		// Now bootstrap
+		if (bootstrap(pipe))
+		{
+			// Invent a new pipe name..
+			ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oo");
+
+			// Now start accepting client connections
+			if (start(strNewPipe.c_str()) == 0)
+			{
+				size_t uLen = strNewPipe.length()+1;
+				if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
+					ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+				else
+				{
+					// Then send back our port number
+					if (pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+					else
+						bSuccess = true;
+				}
+			}
+		}
 	}
 
-	// Now bootstrap
-	if (!bootstrap(sandbox_channel))
-		return false;
+	if (!bSuccess)
+		delete pMC;
 
-	// Invent a new pipe name..
-	ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oo");
-
-	// Now start accepting client connections
-	if (start(strNewPipe.c_str()) != 0)
-		return false;
-
-	size_t uLen = strNewPipe.length()+1;
-	if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"),false);
-
-	// Then send back our port number
-	if (pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"),false);
-
-	return true;
+	return bSuccess;
 }
 
-bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel)
+bool User::Manager::bootstrap(Root::MessagePipe& pipe)
 {
-	bool bSandbox = (sandbox_channel == 0);
+	// Read the sandbox channel
+	ACE_CDR::UShort sandbox_channel = 0;
+	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
+
+	// Map it one of ours...
+	sandbox_channel = add_routing(m_root_channel,sandbox_channel);
+	if (!sandbox_channel)
+		return false;
+
+	// Read the user channel...
+	ACE_CDR::UShort user_channel = 0;
+	if (pipe.recv(&user_channel,sizeof(user_channel)) != static_cast<ssize_t>(sizeof(user_channel)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
+
+	// Map it one of ours...
+	user_channel = add_routing(m_root_channel,user_channel);
+	if (!user_channel)
+		return false;
 
 	// Register our service
 	try
 	{
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
-		if (!bSandbox)
-		{
-			sandbox_channel = add_routing(m_root_channel,sandbox_channel);
-			if (!sandbox_channel)
-				return false;
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSb;
+		if (sandbox_channel != 0)
+			ptrOMSb = get_object_manager(sandbox_channel);
 
-			ptrOM = get_object_manager(sandbox_channel);
-		}
-
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser;
+		if (user_channel != 0)
+			ptrOMUser = get_object_manager(user_channel);
+		
 		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();
-		ptrOF->Init(ptrOM,this);
+		ptrOF->Init(ptrOMSb,ptrOMUser,this);
 
 		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());

@@ -33,6 +33,7 @@ namespace Root
 #if defined(ACE_WIN32)
 
 		bool Compare(HANDLE hToken);
+		bool IsSameUser(HANDLE hToken);
 
 	private:
 		HANDLE	m_hToken;
@@ -51,7 +52,15 @@ namespace Root
 
 #else // !ACE_WIN32
 
-		bool Compare(uid_t uid);
+		bool Compare(uid_t uid)
+		{
+			return (m_uid == uid);
+		}
+		bool IsSameUser(uid_t uid)
+		{
+			return Compare(uid);
+		}
+
 		static ACE_CString get_home_dir();
 
 	private:
@@ -66,3 +75,4 @@ namespace Root
 }
 
 #endif // OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
+

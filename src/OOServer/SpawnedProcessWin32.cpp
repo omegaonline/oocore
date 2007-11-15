@@ -70,27 +70,10 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
     int err = 0;
 
 	// Find out all about the user associated with hToken
-	DWORD dwBufSize = 0;
-	GetTokenInformation(hToken,TokenUser,NULL,0,&dwBufSize);
-	if (dwBufSize == 0)
-	{
-		DWORD err = GetLastError();
-		LOG_FAILURE(err);
-		return err;
-	}
-
-	PTOKEN_USER pUserInfo = (PTOKEN_USER)ACE_OS::malloc(dwBufSize);
+	TOKEN_USER* pUserInfo = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
 	if (!pUserInfo)
 	{
-		LOG_FAILURE(ERROR_OUTOFMEMORY);
-		return ERROR_OUTOFMEMORY;
-	}
-
-	memset(pUserInfo,0,dwBufSize);
-	if (!GetTokenInformation(hToken,TokenUser,pUserInfo,dwBufSize,&dwBufSize))
-	{
-		int err = GetLastError();
-		ACE_OS::free(pUserInfo);
+		err = GetLastError();
 		LOG_FAILURE(err);
 		return err;
 	}
@@ -735,13 +718,13 @@ void* Root::SpawnedProcess::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS 
 	if (dwLen == 0)
 		return 0;
 		
-	void* pBuffer = malloc(dwLen);
+	void* pBuffer = ACE_OS::malloc(dwLen);
 	if (!pBuffer)
 		return 0;
 
 	if (!GetTokenInformation(hToken,cls,pBuffer,dwLen,&dwLen))
 	{
-		free(pBuffer);
+		ACE_OS::free(pBuffer);
 		return 0;
 	}
 
@@ -802,7 +785,7 @@ bool Root::SpawnedProcess::Compare(HANDLE hToken)
 	TOKEN_GROUPS_AND_PRIVILEGES* pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
 	if (!pStats2)
 	{
-		free(pStats1);
+		ACE_OS::free(pStats1);
 		return false;
 	}
 
@@ -813,8 +796,29 @@ bool Root::SpawnedProcess::Compare(HANDLE hToken)
 		MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
 		MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 
-	free(pStats1);
-	free(pStats2);
+	ACE_OS::free(pStats1);
+	ACE_OS::free(pStats2);
+
+	return bSame;
+}
+
+bool Root::SpawnedProcess::IsSameUser(HANDLE hToken)
+{
+	TOKEN_USER* pUserInfo1 = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
+	if (!pUserInfo1)
+		return false;
+
+	TOKEN_USER* pUserInfo2 = static_cast<TOKEN_USER*>(GetTokenInfo(m_hToken,TokenUser));
+	if (!pUserInfo2)
+	{
+		ACE_OS::free(pUserInfo1);
+		return false;
+	}
+
+	bool bSame = (EqualSid(pUserInfo1->User.Sid,pUserInfo2->User.Sid) == TRUE);
+
+	ACE_OS::free(pUserInfo1);
+	ACE_OS::free(pUserInfo2);
 
 	return bSame;
 }

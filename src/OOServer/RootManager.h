@@ -92,9 +92,8 @@ namespace Root
 		int connect_client(ACE_SOCK_Stream& stream);
 #endif
 		int process_client_connects();
-		bool spawn_sandbox();
-		bool spawn_user(user_id_type uid, ACE_WString& strPipe);
-		ACE_WString bootstrap_user(MessagePipe& pipe, bool bSandbox);
+		ACE_CDR::UShort spawn_user(user_id_type uid, ACE_CDR::UShort nUserChannel, ACE_WString& strPipe);
+		ACE_WString bootstrap_user(MessagePipe& pipe, ACE_CDR::UShort nUserChannel);
 		bool connect_client(user_id_type uid, ACE_WString& strPipe);
 		void close_users();
 		virtual void pipe_closed(const MessagePipe& pipe);
@@ -105,6 +104,7 @@ namespace Root
 		ACE_Configuration_Heap         m_registry;
 		ACE_WString                    m_strRegistry;
 		ACE_RW_Thread_Mutex            m_registry_lock;
+		ACE_CDR::UShort                m_sandbox_channel;
 
 		bool registry_open_section(const MessagePipe& pipe, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
 		bool registry_open_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_WString& strValue, bool bAccessCheck = false);
@@ -128,3 +128,4 @@ namespace Root
 }
 
 #endif // OOSERVER_ROOT_MANAGER_H_INCLUDED_
+

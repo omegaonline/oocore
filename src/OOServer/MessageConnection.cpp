@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 1999 Rick Taylor
+// Copyright (C) 2007 Rick Taylor
 //
 // This file is part of OOServer, the OmegaOnline Server application.
 //

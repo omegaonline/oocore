@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 1999 Rick Taylor
+// Copyright (C) 2007 Rick Taylor
 //
 // This file is part of OOCore, the OmegaOnline Core library.
 //
@@ -255,7 +255,7 @@ namespace OOCore
 
 		virtual ~WireProxy()
 		{
-			CallRemoteRelease();
+			//CallRemoteRelease();
 
 			for (std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{

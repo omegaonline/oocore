@@ -52,7 +52,7 @@ namespace User
 
 		int run_event_loop_i(const ACE_WString& strPipe);
 		bool init(const ACE_WString& strPipe);
-		bool bootstrap(Root::MessagePipe& pipe);
+		bool bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort user_channel);
 		void close_channels();
 		void end_event_loop();
 
@@ -67,3 +67,4 @@ namespace User
 }
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_
+

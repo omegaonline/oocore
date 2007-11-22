@@ -238,6 +238,16 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::connect() failed"),false);
 
+	// Read the sandbox channel
+	ACE_CDR::UShort sandbox_channel = 0;
+	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
+
+	// Read the user channel...
+	ACE_CDR::UShort user_channel = 0;
+	if (pipe.recv(&user_channel,sizeof(user_channel)) != static_cast<ssize_t>(sizeof(user_channel)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
+
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
@@ -249,7 +259,7 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	if (m_root_channel != 0)
 	{
 		// Now bootstrap
-		if (bootstrap(pipe))
+		if (bootstrap(sandbox_channel,user_channel))
 		{
 			// Invent a new pipe name..
 			ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oo");
@@ -278,22 +288,12 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	return bSuccess;
 }
 
-bool User::Manager::bootstrap(Root::MessagePipe& pipe)
+bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort user_channel)
 {
-	// Read the sandbox channel
-	ACE_CDR::UShort sandbox_channel = 0;
-	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
-
 	// Map it one of ours...
 	sandbox_channel = add_routing(m_root_channel,sandbox_channel);
 	if (!sandbox_channel)
 		return false;
-
-	// Read the user channel...
-	ACE_CDR::UShort user_channel = 0;
-	if (pipe.recv(&user_channel,sizeof(user_channel)) != static_cast<ssize_t>(sizeof(user_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
 
 	// Map it one of ours...
 	user_channel = add_routing(m_root_channel,user_channel);
@@ -571,3 +571,4 @@ ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 	delete response;
 	return ret;
 }
+

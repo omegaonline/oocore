@@ -142,7 +142,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 				ObjectPtr<ObjectImpl<Registry::BaseKey> > ptrKey = ObjectImpl<User::Registry::BaseKey>::CreateInstancePtr();
 				ptrKey->Init(m_pManager,!m_ptrOMSB);
 				
-				m_ptrReg.Attach(ptrKey);
+				m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
 			}
 		}
 	}
@@ -290,15 +290,21 @@ bool User::Manager::init(const ACE_WString& strPipe)
 
 bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort user_channel)
 {
-	// Map it one of ours...
-	sandbox_channel = add_routing(m_root_channel,sandbox_channel);
-	if (!sandbox_channel)
-		return false;
+	if (sandbox_channel != 0)
+	{
+		// Map it one of ours...
+		sandbox_channel = add_routing(m_root_channel,sandbox_channel);
+		if (!sandbox_channel)
+			return false;
+	}
 
-	// Map it one of ours...
-	user_channel = add_routing(m_root_channel,user_channel);
-	if (!user_channel)
-		return false;
+	if (user_channel != 0)
+	{
+		// Map it one of ours...
+		user_channel = add_routing(m_root_channel,user_channel);
+		if (!user_channel)
+			return false;
+	}
 
 	// Register our service
 	try

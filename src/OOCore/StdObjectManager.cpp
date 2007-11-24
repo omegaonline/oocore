@@ -982,7 +982,6 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 	// Read the stub id
 	uint32_t stub_id = pParamsIn->ReadUInt32();
-
 	if (stub_id == 0)
 	{
 		// It's a call from CreateRemoteInstance
@@ -1111,6 +1110,10 @@ IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_
 				// Unmarshal the exception
 				IObject* pE = 0;
 				UnmarshalInterface(ptrRecv,OMEGA_UUIDOF(IException),pE);
+
+				if (!pE)
+					OMEGA_THROW(L"Null exception returned");
+
 				return static_cast<IException*>(pE);
 			}
 		}

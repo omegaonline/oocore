@@ -66,7 +66,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const strin
 OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
-	pExcept->m_strDesc = L"Object does not support the requested interface";
+	pExcept->m_strDesc = L"Object does not support the requested interface: " + Omega::System::MetaInfo::lookup_iid(iid);
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;
 	return pExcept;

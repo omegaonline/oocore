@@ -78,11 +78,12 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	{
 		if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 		{
-			if (ACE_OS::last_error() == ENOENT)
+			int err = ACE_OS::last_error();
+			if (err == ENOENT)
 			{
 				void* TODO;  // Throw a remoting error
 			}
-			OOSERVER_THROW_LASTERROR();
+			OOSERVER_THROW_ERRNO(err);
 		}
 	}
 	catch (...)

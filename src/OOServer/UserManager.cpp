@@ -447,8 +447,6 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::UShort 
 
 void User::Manager::process_user_request(ObjectPtr<Remoting::IObjectManager> ptrOM, const ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs)
 {
-	//ACE_DEBUG((LM_DEBUG,L"User context: Process request %u from %u",trans_id,src_channel_id));
-
 	try
 	{
 		// Wrap up the request

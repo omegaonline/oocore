@@ -800,15 +800,15 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 	try
 	{
 		// Wrap up the request
-		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRequest;
-		ptrRequest = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
+		ptrRequest = ObjectImpl<InputCDR>::CreateInstancePtr();
 		ptrRequest->init(*pMsg->m_pPayload);
 
 		// Create a response if required
-		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse;
+		ObjectPtr<ObjectImpl<OutputCDR> > ptrResponse;
 		if (!(pMsg->m_attribs & Remoting::asynchronous))
 		{
-			ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+			ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
 		}
 
@@ -831,7 +831,7 @@ void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManage
 			if (!(pMsg->m_attribs & Remoting::asynchronous))
 			{
 				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+				ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 				ptrResponse->WriteByte(0);
 				ptrResponse->WriteBoolean(false);
 

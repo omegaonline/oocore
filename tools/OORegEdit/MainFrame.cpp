@@ -173,6 +173,7 @@ void MainFrame::CreateChildWindows(void)
 		delete pImage;
 	}
 
+	GetStatusBar()->Show(bShowBar);
 	m_pSplitter->SplitVertically(m_pTree, m_pList, split_width);
 
 	// Init the list
@@ -187,18 +188,24 @@ void MainFrame::CreateChildWindows(void)
 	m_pList->InsertColumn(2,itemCol);
 	m_pList->SetColumnWidth(2, col_width[2]); 
 		
-	// Open the registry root
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\");
+	try
+	{
+		// Open the registry root
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\");
 
-	// Init the tree
-	TreeItemData* pItem = new TreeItemData(ptrKey,5);
-	wxTreeItemId tree_id = m_pTree->AddRoot(_("Local Computer"),0,0,pItem);
-	pItem->Fill(m_pTree,tree_id);
-	m_pTree->Expand(tree_id);
+		// Init the tree
+		TreeItemData* pItem = new TreeItemData(ptrKey,5);
+		wxTreeItemId tree_id = m_pTree->AddRoot(_("Local Computer"),0,0,pItem);
+		pItem->Fill(m_pTree,tree_id);
+		m_pTree->Expand(tree_id);
 
-	GetStatusBar()->Show(bShowBar);
-
-	SelectItem(strSelection);	
+		SelectItem(strSelection);
+	}
+	catch (Omega::IException* pE)
+	{
+		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		pE->Release();
+	}
 }
 
 void MainFrame::SelectItem(Omega::string_t strSelection)
@@ -327,44 +334,51 @@ void MainFrame::OnQuit(wxCommandEvent& WXUNUSED(evt))
 void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 {
 	// Set some defaults...
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
-
-	wxPoint pt = GetPosition();
-	ptrKey->SetUIntValue(L"Top",pt.y);
-	ptrKey->SetUIntValue(L"Left",pt.x);
-
-	wxSize sz = GetSize();
-	ptrKey->SetUIntValue(L"Height",sz.y);
-	ptrKey->SetUIntValue(L"Width",sz.x);
-
-	ptrKey->SetUIntValue(L"SplitWidth",m_pSplitter->GetSashPosition());
-
-	ptrKey->SetUIntValue(L"ColWidth0",m_pList->GetColumnWidth(0));
-	ptrKey->SetUIntValue(L"ColWidth1",m_pList->GetColumnWidth(1));
-	ptrKey->SetUIntValue(L"ColWidth2",m_pList->GetColumnWidth(2));
-
-	ptrKey->SetUIntValue(L"Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
-
-    ptrKey->SetUIntValue(L"FindKeys",m_bKeys ? 1 : 0);
-	ptrKey->SetUIntValue(L"FindValues",m_bValues ? 1 : 0);
-	ptrKey->SetUIntValue(L"FindData",m_bData ? 1 : 0);
-	ptrKey->SetUIntValue(L"MatchAll",m_bMatchAll ? 1 : 0);
-	ptrKey->SetUIntValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
-
-	ptrKey->SetStringValue(L"Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
-
-	Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
-	ptrKey->SetUIntValue(L"Favourites",nFiles);
-
-	for (nFiles;nFiles>0;--nFiles)
+	try
 	{
-		wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
 
-		Omega::string_t strVal = m_mapMRU[strName] + "\\" + Omega::string_t(strName);
+		wxPoint pt = GetPosition();
+		ptrKey->SetUIntValue(L"Top",pt.y);
+		ptrKey->SetUIntValue(L"Left",pt.x);
 
-		ptrKey->SetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles-1),strVal);
+		wxSize sz = GetSize();
+		ptrKey->SetUIntValue(L"Height",sz.y);
+		ptrKey->SetUIntValue(L"Width",sz.x);
+
+		ptrKey->SetUIntValue(L"SplitWidth",m_pSplitter->GetSashPosition());
+
+		ptrKey->SetUIntValue(L"ColWidth0",m_pList->GetColumnWidth(0));
+		ptrKey->SetUIntValue(L"ColWidth1",m_pList->GetColumnWidth(1));
+		ptrKey->SetUIntValue(L"ColWidth2",m_pList->GetColumnWidth(2));
+
+		ptrKey->SetUIntValue(L"Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
+
+		ptrKey->SetUIntValue(L"FindKeys",m_bKeys ? 1 : 0);
+		ptrKey->SetUIntValue(L"FindValues",m_bValues ? 1 : 0);
+		ptrKey->SetUIntValue(L"FindData",m_bData ? 1 : 0);
+		ptrKey->SetUIntValue(L"MatchAll",m_bMatchAll ? 1 : 0);
+		ptrKey->SetUIntValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
+
+		ptrKey->SetStringValue(L"Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
+
+		Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
+		ptrKey->SetUIntValue(L"Favourites",nFiles);
+
+		for (nFiles;nFiles>0;--nFiles)
+		{
+			wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
+
+			Omega::string_t strVal = m_mapMRU[strName] + "\\" + Omega::string_t(strName);
+
+			ptrKey->SetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles-1),strVal);
+		}
 	}
-	
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+
 	Destroy();
 }
 

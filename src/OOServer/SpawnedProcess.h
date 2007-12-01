@@ -44,18 +44,17 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		bool Spawn(Manager::user_id_type id, const ACE_WString& strPipe);
+		bool Spawn(user_id_type id, const ACE_WString& strPipe);
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
 		static bool SecureFile(const ACE_WString& strFilename);
+
+		bool Compare(user_id_type hToken);
+		bool IsSameUser(user_id_type hToken);
 		
 #if defined(ACE_WIN32)
-
-		bool Compare(HANDLE hToken);
-		bool IsSameUser(HANDLE hToken);
-
 	private:
 		HANDLE	m_hToken;
 		HANDLE	m_hProfile;
@@ -72,16 +71,6 @@ namespace Root
 		static bool unsafe_sandbox();
 
 #else // !ACE_WIN32
-
-		bool Compare(uid_t uid)
-		{
-			return (m_uid == uid);
-		}
-		bool IsSameUser(uid_t uid)
-		{
-			return Compare(uid);
-		}
-
 		static ACE_CString get_home_dir();
 
 	private:

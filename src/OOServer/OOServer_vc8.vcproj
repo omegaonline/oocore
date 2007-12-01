@@ -242,6 +242,46 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\MessagePipeUnix.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\MessagePipeWin32.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\NTService.cpp"
 				>
 				<FileConfiguration
@@ -369,6 +409,14 @@
 			</File>
 			<File
 				RelativePath=".\MessageConnection.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MessagePipe.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MessagePipe.inl"
 				>
 			</File>
 			<File

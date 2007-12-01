@@ -250,6 +250,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\WireImpl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\WireProxy.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\WireStub.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Xml.cpp"
 				>
 			</File>
@@ -273,6 +285,18 @@
 			</File>
 			<File
 				RelativePath=".\UserSession.h"
+				>
+			</File>
+			<File
+				RelativePath=".\WireImpl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\WireProxy.h"
+				>
+			</File>
+			<File
+				RelativePath=".\WireStub.h"
 				>
 			</File>
 			<File

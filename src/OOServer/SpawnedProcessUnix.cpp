@@ -389,4 +389,15 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 	return true;
 }
 
+bool Root::SpawnedProcess::Compare(user_id_type uid)
+{
+	return (m_uid == uid);
+}
+
+bool Root::SpawnedProcess::IsSameUser(user_id_type uid)
+{
+	return Compare(uid);
+}
+
+
 #endif // !ACE_WIN32

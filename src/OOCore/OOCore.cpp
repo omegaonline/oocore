@@ -23,6 +23,7 @@
 
 #include "./UserSession.h"
 #include "./StdObjectManager.h"
+#include "./WireProxy.h"
 #include "./Channel.h"
 
 #ifdef OMEGA_HAVE_VLD
@@ -56,6 +57,8 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason)
 	}
 #endif
 
+	OMEGA_UNUSED_ARG(instance);
+	OMEGA_UNUSED_ARG(reason);
 	return TRUE;
 }
 #endif

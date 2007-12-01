@@ -130,7 +130,13 @@ ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, ACE_
 
 ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 {
-	return ACE_OS::recv(m_hSocket,(char*)buf,len);
+	for (;;)
+	{
+		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
+		ssize_t nRead = ACE_OS::recv(m_hSocket,(char*)buf,len,&wait);
+		if (nRead != -1 || ACE_OS::last_error() != ETIMEDOUT)
+			return nRead;
+	}
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -357,16 +363,7 @@ int OOCore::UserSession::run_read_loop()
 	for (;;)
 	{
 		// Read the header
-
-//#if defined(OMEGA_WIN32)
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read);
-/*#else
-		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
-		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read,&wait);
-		if (nRead == -1 && ACE_OS::last_error() == ETIMEDOUT)
-			continue;
-#endif*/
-
 		if (nRead != s_initial_read)
 		{
 			int err = ACE_OS::last_error();

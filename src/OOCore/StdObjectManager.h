@@ -27,24 +27,6 @@ namespace OOCore
 	class WireStub;
 	class WireProxy;
 
-	// {69099DD8-A628-458a-861F-009E016DB81B}
-	OOCORE_DECLARE_OID(OID_WireProxyMarshalFactory);
-
-	class WireProxyMarshalFactory :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<WireProxyMarshalFactory,&OID_WireProxyMarshalFactory>,
-		public Omega::Remoting::IMarshalFactory
-	{
-	public:
-		BEGIN_INTERFACE_MAP(WireProxyMarshalFactory)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
-		END_INTERFACE_MAP()
-
-	// IMarshalFactory members
-	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
-	};		
-
 	// {3AC2D04F-A8C5-4214-AFE4-A64DB8DC992C}
 	OOCORE_DECLARE_OID(OID_StdObjectManagerMarshalFactory);
 

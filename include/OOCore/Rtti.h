@@ -346,7 +346,7 @@ namespace Omega
 			class iface_proxy_functor_ref : public iface_proxy_functor<I>
 			{
 			public:
-				iface_proxy_functor_ref(I* pI, const guid_t& iid = OMEGA_UUIDOF(I)) :
+				iface_proxy_functor_ref(typename I* pI, const guid_t& iid = OMEGA_UUIDOF(I)) :
 					iface_proxy_functor<I>(pI,iid), m_piid(&iid)
 				{
 				}

@@ -34,6 +34,7 @@
 #ifndef OOSERVER_ROOT_MANAGER_H_INCLUDED_
 #define OOSERVER_ROOT_MANAGER_H_INCLUDED_
 
+#include "./OOServer_Root.h"
 #include "./MessageConnection.h"
 
 namespace Root
@@ -50,14 +51,8 @@ namespace Root
 		static bool install(int argc, wchar_t* argv[]);
 		static bool uninstall();
 
-#if defined(ACE_WIN32)
-		typedef HANDLE user_id_type;
-#else
-		typedef uid_t user_id_type;
-#endif
-
 	private:
-		friend class ClientConnector;
+		friend class MessagePipeSingleAsyncAcceptor<Manager>;
 		friend class ACE_Singleton<Manager,ACE_Thread_Mutex>;
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> ROOT_MANAGER;
 
@@ -78,39 +73,13 @@ namespace Root
 			ACE_WString     strPipe;
 			SpawnedProcess* pSpawn;
 		};
-		std::map<MessagePipe,UserProcess>  m_mapUserProcesses;
-		
-		class ClientConnector : public ACE_Event_Handler
-		{
-		public:
-			ClientConnector();
-			virtual ~ClientConnector();
-
-			int start(Manager* pManager, const ACE_WString& strAddr);
-			void stop();
-
-		private:
-			Manager*            m_pParent;
+		std::map<MessagePipe,UserProcess>       m_mapUserProcesses;
+		MessagePipeSingleAsyncAcceptor<Manager> m_client_connector;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-			SECURITY_ATTRIBUTES m_sa;
-			PACL                m_pACL;
-			ACE_SPIPE_Acceptor  m_acceptor;
+		virtual int on_accept(ACE_SPIPE_Stream& pipe, int key);
 #else
-			ACE_SOCK_Acceptor   m_acceptor;
-			ACE_WString         m_strAddr;
-#endif
-			int handle_signal(int, siginfo_t*, ucontext_t*);
-
-			ClientConnector(const ClientConnector&) : ACE_Event_Handler() {};
-			ClientConnector& operator = (const ClientConnector&) { return *this; };
-		};
-		ClientConnector m_client_connector;
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		int connect_client(ACE_SPIPE_Stream& stream);
-#else
-		int connect_client(ACE_SOCK_Stream& stream);
+		virtual int on_accept(MessagePipe& pipe, int key);
 #endif
 		int process_client_connects();
 		ACE_CDR::UShort spawn_user(user_id_type uid, ACE_CDR::UShort nUserChannel, ACE_WString& strPipe);

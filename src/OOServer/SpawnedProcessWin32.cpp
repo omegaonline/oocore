@@ -32,15 +32,10 @@
 /////////////////////////////////////////////////////////////
 
 #include "./OOServer_Root.h"
-#include "./SpawnedProcess.h"
 
 #if defined(ACE_WIN32)
 
-#if !defined(_WIN32_WINNT)
-#define _WIN32_WINNT 0x0500
-#elif _WIN32_WINNT < 0x0500
-#error OOServer requires _WIN32_WINNT >= 0x0500!
-#endif
+#include "./SpawnedProcess.h"
 
 #include <userenv.h>
 #include <lm.h>
@@ -324,11 +319,11 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 	return (v == 1);
 }
 
-bool Root::SpawnedProcess::Spawn(Manager::user_id_type id, const ACE_WString& strPipe)
+bool Root::SpawnedProcess::Spawn(user_id_type id, const ACE_WString& strPipe)
 {
 	HANDLE hToken = INVALID_HANDLE_VALUE;
 
-	bool bSandbox = (id == static_cast<Manager::user_id_type>(0));
+	bool bSandbox = (id == static_cast<user_id_type>(0));
 	if (bSandbox)
 	{
 		if (!LogonSandboxUser(&hToken))
@@ -797,7 +792,7 @@ bool Root::SpawnedProcess::MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Pri
 	return true;
 }
 
-bool Root::SpawnedProcess::Compare(HANDLE hToken)
+bool Root::SpawnedProcess::Compare(user_id_type hToken)
 {
 	TOKEN_GROUPS_AND_PRIVILEGES* pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	if (!pStats1)
@@ -823,7 +818,7 @@ bool Root::SpawnedProcess::Compare(HANDLE hToken)
 	return bSame;
 }
 
-bool Root::SpawnedProcess::IsSameUser(HANDLE hToken)
+bool Root::SpawnedProcess::IsSameUser(user_id_type hToken)
 {
 	TOKEN_USER* pUserInfo1 = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
 	if (!pUserInfo1)

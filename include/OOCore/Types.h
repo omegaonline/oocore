@@ -208,9 +208,16 @@ namespace Omega
 		inline static guid_t Create();
 		inline static const guid_t& Null()
 		{
-			static const Omega::guid_t Null = {0,0,0,{0,0,0,0,0,0,0,0}};
-			return Null;
+			static const guid_t sNull = {0,0,0,{0,0,0,0,0,0,0,0}};
+			return sNull;
 		}
+
+#ifdef OMEGA_HAS_UUIDOF
+		inline static const guid_t& FromUuidof(const _GUID& rhs)
+		{
+			return *reinterpret_cast<const Omega::guid_t*>(&rhs);
+		}
+#endif
 	};
 
 	namespace System

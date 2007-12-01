@@ -162,6 +162,8 @@ OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019
 
 void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t, Omega::IObject*& pObject)
 {
+	::DebugBreak();
+
 	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
 	
 	void* TODO;

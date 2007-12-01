@@ -121,10 +121,14 @@
 #endif
 
 #if defined(_MSC_VER)
-
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)
+#endif
 
+#if defined(ACE_WIN32)
+	typedef HANDLE user_id_type;
+#else
+	typedef uid_t user_id_type;
 #endif
 
 #endif // OOSERVER_ROOT_H_INCLUDED_

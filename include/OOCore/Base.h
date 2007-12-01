@@ -57,7 +57,7 @@ namespace Omega
 #define OMEGA_DEFINE_IID(n_space, type, guid) \
 	interface __declspec(uuid(guid)) n_space::type;
 
-#define OMEGA_UUIDOF(n) (*reinterpret_cast<const Omega::guid_t*>(&__uuidof(n)))
+#define OMEGA_UUIDOF(n) Omega::guid_t::FromUuidof(__uuidof(n))
 
 #else
 

@@ -34,67 +34,10 @@
 #ifndef OOSERVER_MSG_CONNECTION_H_INCLUDED_
 #define OOSERVER_MSG_CONNECTION_H_INCLUDED_
 
+#include "./MessagePipe.h"
+
 namespace Root
 {
-	class MessagePipe
-	{
-		friend class MessagePipeAcceptor;
-
-	public:
-		MessagePipe();
-
-		static ACE_WString unique_name(const ACE_WString& strPrefix);
-		static int connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait = 0);
-		void close();
-
-		inline ACE_HANDLE get_read_handle() const;
-		bool operator < (const MessagePipe& rhs) const;
-
-		ssize_t send(const void* buf, size_t len, size_t* sent = 0);
-		ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
-		ssize_t recv(void* buf, size_t len);
-
-	private:
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		ACE_HANDLE m_hRead;
-		ACE_HANDLE m_hWrite;
-#else
-		ACE_HANDLE m_hSocket;
-#endif
-	};
-
-	class MessagePipeAcceptor
-	{
-	public:
-		MessagePipeAcceptor();
-		~MessagePipeAcceptor();
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		int open(const ACE_WString& strAddr, HANDLE hToken);
-
-		static bool CreateSA(HANDLE hToken, void*& pSD, PACL& pACL);
-#else
-		int open(const ACE_WString& strAddr, uid_t uid);
-#endif
-
-		int accept(MessagePipe& pipe, ACE_Time_Value* timeout = 0);
-		ACE_HANDLE get_handle();
-		void close();
-	private:
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		SECURITY_ATTRIBUTES m_sa;
-		PACL                m_pACL;
-		ACE_SPIPE_Acceptor  m_acceptor_up;
-		ACE_SPIPE_Acceptor  m_acceptor_down;
-#else
-		ACE_SOCK_Acceptor   m_acceptor;
-		ACE_WString         m_strAddr;
-#endif
-
-		MessagePipeAcceptor(const MessagePipeAcceptor&) {}
-		MessagePipeAcceptor& operator = (const MessagePipeAcceptor&) { return *this; }
-	};
-
 	class MessageHandler;
 
 	class MessageConnection : public ACE_Service_Handler
@@ -155,31 +98,16 @@ namespace Root
 
 		ACE_CDR::UShort add_routing(ACE_CDR::UShort dest_channel, ACE_CDR::UShort dest_route);
 
+		virtual int on_accept(MessagePipe& pipe, int key);
+
 	private:
 		friend class MessageConnection;
+		friend class MessagePipeAsyncAcceptor<MessageHandler>;
 
 		MessageHandler(const MessageHandler&) {}
 		MessageHandler& operator = (const MessageHandler&) { return *this; }
 
-		class MessageConnector : public ACE_Event_Handler
-		{
-		public:
-			MessageConnector() : ACE_Event_Handler()
-			{}
-
-			int start(MessageHandler* pManager, const ACE_WString& strAddr);
-			void stop();
-
-		private:
-			MessageHandler*     m_pParent;
-			MessagePipeAcceptor m_acceptor;
-
-			int handle_signal(int, siginfo_t*, ucontext_t*);
-
-			MessageConnector(const MessageConnector&) : ACE_Event_Handler() {};
-			MessageConnector& operator = (const MessageConnector&) { return *this; };
-		};
-		MessageConnector     m_connector;
+		MessagePipeAsyncAcceptor<MessageHandler> m_connector;
 
 		ACE_RW_Thread_Mutex  m_lock;
 		ACE_CDR::UShort      m_uNextChannelId;

@@ -233,87 +233,15 @@ void Root::Manager::end_event_loop_i()
 	stop();
 }
 
-Root::Manager::ClientConnector::ClientConnector() : ACE_Event_Handler()
-{
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	m_sa.lpSecurityDescriptor = NULL;
-	m_sa.nLength = 0;
-	m_pACL = NULL;
-#endif
-}
-
-Root::Manager::ClientConnector::~ClientConnector()
-{
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	LocalFree(m_pACL);
-	LocalFree(m_sa.lpSecurityDescriptor);
-#endif
-}
-
-int Root::Manager::ClientConnector::start(Manager* pManager, const ACE_WString& strAddr)
-{
-	m_pParent = pManager;
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (m_sa.nLength == 0)
-	{
-		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-		m_sa.bInheritHandle = FALSE;
-
-		if (!MessagePipeAcceptor::CreateSA(0,m_sa.lpSecurityDescriptor,m_pACL))
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
-	}
-
-	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(strAddr.c_str());
-	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
-#else
-	m_strAddr = strAddr;
-	ACE_UNIX_Addr addr(strAddr.c_str());
-	if (m_acceptor.open(addr) != 0)
-#endif
-	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::ClientConnector::start acceptor.open failed"),-1);
-	}
-
-	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::Manager::ClientConnector::start, register_handler failed"),-1);
-
-	return 0;
-}
-
-void Root::Manager::ClientConnector::stop()
-{
-	ACE_Reactor::instance()->remove_handler(m_acceptor.get_handle(),ACE_Event_Handler::ALL_EVENTS_MASK);
-
-	m_acceptor.close();
-
-#if !defined(ACE_HAS_WIN32_NAMED_PIPES)
-	ACE_OS::unlink(m_strAddr.c_str());
-#endif
-}
-
-int Root::Manager::ClientConnector::handle_signal(int, siginfo_t*, ucontext_t*)
-{
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	ACE_SPIPE_Stream stream;
-#else
-	ACE_SOCK_Stream stream;
-#endif
-
-	if (m_acceptor.accept(stream) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"accept() failed"),-1);
-
-	return m_pParent->connect_client(stream);
-}
-
 int Root::Manager::process_client_connects()
 {
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (m_client_connector.start(this,L"ooserver") != 0)
+	const wchar_t* pipe_name = L"ooserver";
 #else
-	if (m_client_connector.start(this,L"/var/ooserver") != 0)
+	const wchar_t* pipe_name = L"/var/ooserver";
 #endif
+
+	if (m_client_connector.start(this,1,pipe_name) != 0)
 		return -1;
 
 	int ret = ACE_Reactor::instance()->run_reactor_event_loop();
@@ -324,19 +252,23 @@ int Root::Manager::process_client_connects()
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-int Root::Manager::connect_client(ACE_SPIPE_Stream& stream)
-#else
-int Root::Manager::connect_client(ACE_SOCK_Stream& stream)
-#endif
+int Root::Manager::on_accept(ACE_SPIPE_Stream& pipe, int)
 {
+#else
+int Root::Manager::on_accept(MessagePipe& pipe, int key)
+{
+	if (key == 0)
+		return MessageHandler::on_accept(pipe,key);
+#endif
+
 	user_id_type uid = 0;
 
 	// Read the uid - we must read even for Windows
-	if (stream.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
+	if (pipe.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"recv() failed"),-1);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (!ImpersonateNamedPipeClient(stream.get_handle()))
+	if (!ImpersonateNamedPipeClient(pipe.get_handle()))
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] ImpersonateNamedPipeClient failed: %x\n",GetLastError()),-1);
 
 	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
@@ -357,11 +289,11 @@ int Root::Manager::connect_client(ACE_SOCK_Stream& stream)
 	if (connect_client(uid,strPipe))
 	{
 		size_t uLen = strPipe.length()+1;
-		stream.send(&uLen,sizeof(uLen));
-		stream.send(strPipe.c_str(),uLen*sizeof(wchar_t));
+		pipe.send(&uLen,sizeof(uLen));
+		pipe.send(strPipe.c_str(),uLen*sizeof(wchar_t));
 	}
 
-	stream.close();
+	pipe.close();
 	return 0;
 }
 

@@ -456,6 +456,8 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 				}
 				else if (i->second.pSpawn->IsSameUser(uid))
 				{
+					// Store the channel id, and tell this channel to allow marshalling of the new channel for the registry
+					void* TODO; 
 					nUserChannel = get_pipe_channel(i->first,0);
 				}
 			}

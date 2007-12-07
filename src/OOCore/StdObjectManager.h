@@ -28,7 +28,7 @@ namespace OOCore
 	class WireProxy;
 
 	// {3AC2D04F-A8C5-4214-AFE4-A64DB8DC992C}
-	OOCORE_DECLARE_OID(OID_StdObjectManagerMarshalFactory);
+	OMEGA_DECLARE_OID(OID_StdObjectManagerMarshalFactory);
 
 	class StdObjectManagerMarshalFactory :
 		public OTL::ObjectBase,

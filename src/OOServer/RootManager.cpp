@@ -173,12 +173,12 @@ int Root::Manager::init_registry()
 	wchar_t szBuf[MAX_PATH] = {0};
 	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] SHGetFolderPathW failed: %x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] SHGetFolderPathW failed: %#x\n",GetLastError()),-1);
 	else
 	{
 		wchar_t szBuf2[MAX_PATH] = {0};
 		if (!PathCombineW(szBuf2,szBuf,L"Omega Online"))
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] PathCombine failed: %x\n",GetLastError()),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] PathCombine failed: %#x\n",GetLastError()),-1);
 		else
 		{
 			if (!PathFileExistsW(szBuf2))
@@ -189,7 +189,7 @@ int Root::Manager::init_registry()
 			}
 
 			if (!PathCombineW(szBuf,szBuf2,OMEGA_REGISTRY_FILE))
-				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] PathCombine failed: %x\n",GetLastError()),-1);
+				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] PathCombine failed: %#x\n",GetLastError()),-1);
 			else
 				m_strRegistry = szBuf;
 		}
@@ -269,12 +269,12 @@ int Root::Manager::on_accept(MessagePipe& pipe, int key)
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (!ImpersonateNamedPipeClient(pipe.get_handle()))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] ImpersonateNamedPipeClient failed: %x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] ImpersonateNamedPipeClient failed: %#x\n",GetLastError()),-1);
 
 	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
 	if (!RevertToSelf())
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] RevertToSelf failed: %x\n",GetLastError()));
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] RevertToSelf failed: %#x\n",GetLastError()));
 		CloseHandle(uid);
 		exit(-1);
 	}
@@ -293,70 +293,86 @@ int Root::Manager::on_accept(MessagePipe& pipe, int key)
 		pipe.send(strPipe.c_str(),uLen*sizeof(wchar_t));
 	}
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	CloseHandle(uid);
+#endif
+
 	pipe.close();
 	return 0;
 }
 
 ACE_CDR::UShort Root::Manager::spawn_user(user_id_type uid, ACE_CDR::UShort nUserChannel, ACE_WString& strPipe)
 {
+	// Stash the sandbox flag because we adjust uid...
+	bool bSandbox = (uid == static_cast<user_id_type>(0));
+
+	// Alloc a new SpawnedProcess
+	SpawnedProcess* pSpawn = 0;
+	ACE_NEW_RETURN(pSpawn,SpawnedProcess,0);
+
+	if (bSandbox && !SpawnedProcess::LogonSandboxUser(uid))
+	{
+		delete pSpawn;
+		return 0;
+	}
+
+	ACE_CDR::UShort nChannelId = 0;
+
 	ACE_WString strNewPipe = MessagePipe::unique_name(L"oo");
 
 	MessagePipeAcceptor acceptor;
 	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),0);
-	
-	// Alloc a new SpawnedProcess
-	SpawnedProcess* pSpawn = 0;
-	ACE_NEW_RETURN(pSpawn,SpawnedProcess,false);
-
-	ACE_CDR::UShort nChannelId = 0;
-
-	// Spawn the user process
-	if (pSpawn->Spawn(uid,strNewPipe))
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"));
+	else 
 	{
-		// Accept
-#ifdef OMEGA_DEBUG
-		ACE_Time_Value wait(120);
-#else
-		ACE_Time_Value wait(30);
-#endif
-		MessagePipe pipe;
-		if (acceptor.accept(pipe,&wait) != 0)
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"));
-		else
+		// Spawn process
+		if (pSpawn->Spawn(uid,strNewPipe,bSandbox))
 		{
-			strPipe = bootstrap_user(pipe,nUserChannel);
-			if (!strPipe.empty())
+			// Accept
+	#ifdef OMEGA_DEBUG
+			ACE_Time_Value wait(120);
+	#else
+			ACE_Time_Value wait(30);
+	#endif
+			MessagePipe pipe;
+			if (acceptor.accept(pipe,&wait) == 0)
 			{
-				// Create a new MessageConnection
-				MessageConnection* pMC = 0;
-				ACE_NEW_NORETURN(pMC,MessageConnection(this));
-				if (!pMC)
-					ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %m\n"));
-				else if ((nChannelId = pMC->open(pipe)) != 0)
+				strPipe = bootstrap_user(pipe,nUserChannel);
+				if (!strPipe.empty())
 				{
-					// Insert the data into various maps...
-					try
+					// Create a new MessageConnection
+					MessageConnection* pMC = 0;
+					ACE_NEW_NORETURN(pMC,MessageConnection(this));
+					if (!pMC)
+						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %m\n"));
+					else if ((nChannelId = pMC->open(pipe)) != 0)
 					{
-						ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+						// Insert the data into various maps...
+						try
+						{
+							ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-						UserProcess process = {strPipe, pSpawn};
-						m_mapUserProcesses.insert(std::map<MessagePipe,UserProcess>::value_type(pipe,process));
+							UserProcess process = {strPipe, pSpawn};
+							m_mapUserProcesses.insert(std::map<MessagePipe,UserProcess>::value_type(pipe,process));
+						}
+						catch (std::exception& e)
+						{
+							ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled std::exception %s\n",e.what()));
+							nChannelId = 0;
+						}
 					}
-					catch (...)
-					{
-						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled exception\n"));
-						nChannelId = 0;
-					}
+
+					if (!nChannelId)
+						delete pMC;
 				}
-
-				if (!nChannelId)
-					delete pMC;
 			}
 		}
+
+		acceptor.close();
 	}
 
-	acceptor.close();
+	if (bSandbox)
+		SpawnedProcess::CloseSandboxLogon(uid);
 	
 	if (!nChannelId)
 		delete pSpawn;
@@ -373,6 +389,8 @@ void Root::Manager::close_users()
 	{
 		try
 		{
+			ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 			// Iterate backwards
 			for (std::map<MessagePipe,UserProcess>::reverse_iterator i=m_mapUserProcesses.rbegin();i!=m_mapUserProcesses.rend();++i)
 			{
@@ -390,10 +408,13 @@ void Root::Manager::close_users()
 	// Close all connections to user processes
 	try
 	{
+		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 		for (std::map<MessagePipe,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
 		{
 			delete i->second.pSpawn;
 		}
+		m_mapUserProcesses.clear();
 	}
 	catch (...)
 	{}

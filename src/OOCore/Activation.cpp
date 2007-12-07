@@ -26,10 +26,6 @@ using namespace OTL;
 
 namespace OOCore
 {
-	Activation::IObjectFactory* LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags);
-	void ExecProcess(ACE_Process& process, const string_t& strExeName);
-	ACE_WString ShellParse(const wchar_t* pszFile);
-	    
 	class OidNotFoundException :
 		public ExceptionImpl<Activation::IOidNotFoundException>
 	{
@@ -54,7 +50,7 @@ namespace OOCore
 		public ExceptionImpl<Activation::INoAggregationException>
 	{
 	public:
-		guid_t					m_oid;
+		guid_t	m_oid;
 
 		BEGIN_INTERFACE_MAP(NoAggregationException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::INoAggregationException>)
@@ -88,6 +84,57 @@ namespace OOCore
 			return m_dll_name;
 		}
 	};
+
+	// The instance wide ServiceManager instance
+	class ServiceManager
+	{
+	public:
+		uint32_t RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags);
+		IObject* GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+		void RevokeObject(uint32_t cookie);
+
+	private:
+		friend class ACE_Singleton<ServiceManager, ACE_Thread_Mutex>;
+				
+		ServiceManager();
+		ServiceManager(const ServiceManager&) {}
+		ServiceManager& operator = (const ServiceManager&) { return *this; }
+
+		ACE_RW_Thread_Mutex m_lock;
+		uint32_t            m_nNextCookie;
+
+		struct Info
+		{
+			guid_t                      m_oid;
+			ObjectPtr<IObject>          m_ptrObject;
+			Activation::Flags_t         m_flags;
+			Activation::RegisterFlags_t m_reg_flags;
+		};
+		std::map<uint32_t,Info>                                 m_mapServicesByCookie;
+		std::multimap<guid_t,std::map<uint32_t,Info>::iterator> m_mapServicesByOid;
+	};
+	typedef ACE_Singleton<ServiceManager, ACE_Thread_Mutex> SERVICE_MANAGER;
+
+	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	void ExecProcess(ACE_Process& process, const string_t& strExeName);
+	ACE_WString ShellParse(const wchar_t* pszFile);
+}
+
+void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
+{
+	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
+	pNew->m_strDesc = L"The identified object could not be found.";
+	pNew->m_ptrCause = pE;
+	pNew->m_oid = oid;
+	throw pNew;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
+{
+	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
+	pNew->m_strDesc = L"Object does not support aggregation.";
+	pNew->m_oid = oid;
+	return pNew;
 }
 
 void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
@@ -99,11 +146,122 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 	throw pRE;
 }
 
-// External declaration of our version of this entry point
-Activation::IObjectFactory* Omega_GetObjectFactory_Impl(const guid_t& oid, Activation::Flags_t flags);
-
-Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags)
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
 {
+	return OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_RevokeObject,1,((in),Omega::uint32_t,cookie))
+{
+	OOCore::SERVICE_MANAGER::instance()->RevokeObject(cookie);
+}
+
+OOCore::ServiceManager::ServiceManager() : m_nNextCookie(0x843A9B81)
+{
+	// Obfuscate the cookie start value... this makes guessing cookie values harder (not impossible)
+	m_nNextCookie ^= (uint32_t)(ACE_OS::getpid());
+}
+
+uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags)
+{
+	try
+	{
+		// Remove any flags we don't store...
+		flags &= ~(Activation::DontLaunch);
+
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		// Check if we have someone registered already
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
+		{
+			if (!(i->second->second.m_reg_flags & Activation::MultipleUse))
+				OOCORE_THROW_ERRNO(EALREADY);
+
+			if (i->second->second.m_reg_flags == reg_flags)
+				OOCORE_THROW_ERRNO(EALREADY);
+		}
+
+		// Create a new cookie
+		uint32_t nCookie = m_nNextCookie++;
+		while (m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
+		{
+			nCookie = m_nNextCookie++;
+		}
+
+		Info info;
+		info.m_oid = oid;
+		info.m_flags = flags;
+		info.m_reg_flags = reg_flags;
+		info.m_ptrObject = pObject;
+
+		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
+		if (!p.second)
+			OOCORE_THROW_ERRNO(EALREADY);
+
+		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
+
+		return nCookie;
+	}
+	catch (std::exception& e)
+	{ 
+		OMEGA_THROW(string_t(e.what(),false));
+	}
+}
+
+IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+{
+	try
+	{
+		// Remove any flags we don't care about...
+		flags &= ~(Activation::DontLaunch);
+
+		OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
+		{
+			if (i->second->second.m_flags & flags)
+			{
+				return i->second->second.m_ptrObject->QueryInterface(iid);
+			}
+		}
+
+		// No, didn't find it
+		OOCore::OidNotFoundException::Throw(oid);
+	}
+	catch (std::exception& e)
+	{ 
+		OMEGA_THROW(string_t(e.what(),false));
+	}
+
+	return 0;
+}
+
+void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
+{
+	try
+	{
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
+		if (i == m_mapServicesByCookie.end())
+			OOCORE_THROW_ERRNO(EINVAL);
+
+		m_mapServicesByOid.erase(i->second.m_oid);
+		m_mapServicesByCookie.erase(i);		
+	}
+	catch (std::exception& e)
+	{ 
+		OMEGA_THROW(string_t(e.what(),false));
+	}
+}
+
+// External declaration of our version of this entry point
+void Omega_GetLibraryObject_Impl(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
+
+IObject* OOCore::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+{
+	IObject* pObj = 0;
+
 	ACE_DLL dll;
 	if (dll_name != L"OOCore")
 	{
@@ -113,26 +271,27 @@ Activation::IObjectFactory* OOCore::LoadObjectLibrary(const string_t& dll_name, 
         if (dll.open(dll_name.c_str()) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetObjectFactory)(System::MetaInfo::marshal_info<Activation::IObjectFactory*&>::safe_type::type pOF, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags);
-		pfnGetObjectFactory pfn = (pfnGetObjectFactory)dll.symbol(L"Omega_GetObjectFactory_Safe");
+		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
+		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll.symbol(L"Omega_GetLibraryObject_Safe");
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 
-		Activation::IObjectFactory* pOF = 0;
-		System::MetaInfo::IException_Safe* GetObjectFactory_Exception = pfn(
-			System::MetaInfo::marshal_info<Activation::IObjectFactory*&>::safe_type::coerce(pOF),
+		System::MetaInfo::IException_Safe* GetLibraryObject_Exception = pfn(
 			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
-			System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags));
+			System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags),
+			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
+			System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj));
 
-		if (GetObjectFactory_Exception)
-			System::MetaInfo::throw_correct_exception(GetObjectFactory_Exception);
-		return pOF;
+		if (GetLibraryObject_Exception)
+			System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
 	}
 	else
 	{
 		// Its us!
-		return Omega_GetObjectFactory_Impl(oid,flags);
+		Omega_GetLibraryObject_Impl(oid,flags,iid,pObj);
 	}
+
+	return pObj;
 }
 
 ACE_WString OOCore::ShellParse(const wchar_t* pszFile)
@@ -201,14 +360,6 @@ void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
 		OOCORE_THROW_LASTERROR();
 }
 
-void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
-{
-	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found.";
-	pNew->m_ptrCause = pE;
-	pNew->m_oid = oid;
-	throw pNew;
-}
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
 {
@@ -227,29 +378,48 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const guid_t&,oid,(in),Activation::Flags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
+	pObject = 0;
 	try
 	{
-		// Try ourselves first...
+		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
-			Activation::IObjectFactory* pOF = Omega_GetObjectFactory_Impl(oid,flags);
-			if (pOF)
-				return pOF;
+			Omega_GetLibraryObject_Impl(oid,flags,iid,pObject);
+			if (pObject)
+				return;
+		}
+
+		// Try the Service Manager
+		try
+		{
+			pObject = OOCore::SERVICE_MANAGER::instance()->GetObject(oid,flags,iid);
+			if (pObject)
+				return;
+		}
+		catch (Activation::IOidNotFoundException* pE)
+		{
+			pE->Release();
 		}
 
 		// Try RunningObjectTable if possible
 		if (flags & Activation::OutOfProcess)
 		{
+			void* TODO; // Change this to use monikers
+
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
-			// Change this to use monikers one day!
 			ObjectPtr<IObject> ptrObject;
 			ptrObject.Attach(ptrROT->GetObject(oid));
 			if (ptrObject)
-				return static_cast<Activation::IObjectFactory*>(ptrObject->QueryInterface(OMEGA_UUIDOF(Activation::IObjectFactory)));
+			{
+				pObject = ptrObject->QueryInterface(iid);
+				if (!pObject)
+					throw INoInterfaceException::Create(iid);
+				return;
+			}
 		}
 
 		if (!(flags & Activation::DontLaunch))
@@ -263,7 +433,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 				if (flags & Activation::InProcess)
 				{
 					if (ptrOidKey->IsValue(L"Library"))
-						return OOCore::LoadObjectLibrary(ptrOidKey->GetStringValue(L"Library"),oid,flags);
+					{
+						pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
+						if (pObject)
+							return;
+					}
 				}
 
 				if (flags & Activation::OutOfProcess)
@@ -287,11 +461,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 					ACE_Countdown_Time timeout(&wait);
 					while (wait != ACE_Time_Value::zero)
 					{
-						// Change this to use monikers one day!
+						void* TODO; // Change this to use monikers
+
 						ObjectPtr<IObject> ptrObject;
 						ptrObject.Attach(ptrROT->GetObject(oid));
 						if (ptrObject)
-							return static_cast<Activation::IObjectFactory*>(ptrObject->QueryInterface(OMEGA_UUIDOF(Activation::IObjectFactory)));
+						{
+							pObject = ptrObject->QueryInterface(iid);
+							if (!pObject)
+								throw INoInterfaceException::Create(iid);
+							return;
+						}
 
 						// Check if the process is still running...
 						if (!process.running())
@@ -316,23 +496,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IObjectFactory*,Activation_GetObjectF
 	}
 
 	OOCore::OidNotFoundException::Throw(oid);
-	return 0;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
-{
-	ObjectImpl<OOCore::NoAggregationException>* pNew = ObjectImpl<OOCore::NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = L"Object does not supported aggregation.";
-	pNew->m_oid = oid;
-	return pNew;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 {
+	IObject* pOF = 0;
+	Activation_GetRegisteredObject_Impl(oid,flags,OMEGA_UUIDOF(Activation::IObjectFactory),pOF);
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(Activation_GetObjectFactory_Impl(oid,flags));
-	if (!ptrOF)
-		throw INoInterfaceException::Create(OMEGA_UUIDOF(Activation::IObjectFactory),L"Omega::CreateInstance");
-
+	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }

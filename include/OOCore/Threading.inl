@@ -199,56 +199,56 @@ Omega::uint32_t Omega::System::AtomicOp<Omega::uint32_t>::exchange(const uint32_
 
 #endif // OMEGA_HAS_ATOMIC_OP
 
-OOCORE_EXPORTED_FUNCTION(void*,cs__ctor,0,());
+OMEGA_EXPORTED_FUNCTION(void*,cs__ctor,0,());
 Omega::System::CriticalSection::CriticalSection() :
 	m_handle(static_cast<handle_t>(cs__ctor()))
 {
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));
 Omega::System::CriticalSection::~CriticalSection()
 {
 	cs__dctor(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,h));
 void Omega::System::CriticalSection::Lock()
 {
 	cs_lock(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,h));
 void Omega::System::CriticalSection::Unlock()
 {
 	cs_unlock(m_handle);
 }
 
 
-OOCORE_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,());
+OMEGA_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,());
 Omega::System::ReaderWriterLock::ReaderWriterLock() :
 	m_handle(static_cast<handle_t>(rw_lock__ctor()))
 {	
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,h));
 Omega::System::ReaderWriterLock::~ReaderWriterLock()
 {
 	rw_lock__dctor(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(rw_lock_lockread,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_lockread,1,((in),void*,h));
 void Omega::System::ReaderWriterLock::LockRead()
 {
 	rw_lock_lockread(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(rw_lock_lockwrite,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_lockwrite,1,((in),void*,h));
 void Omega::System::ReaderWriterLock::LockWrite()
 {
 	rw_lock_lockwrite(m_handle);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(rw_lock_unlock,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_unlock,1,((in),void*,h));
 void Omega::System::ReaderWriterLock::Unlock()
 {
 	rw_lock_unlock(m_handle);

@@ -93,16 +93,16 @@
 	namespace { \
 	class LibraryModuleImpl : public LibraryModule \
 	{ \
-		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const CreatorEntry CreatorEntries[] = {
+		ModuleBase::CreatorEntry* getCreatorEntries() { static CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj,name) \
-		{ obj::GetOid, name, Creator<obj::ObjectFactoryClass>::Create },
+		{ obj::GetOid, name, Creator<obj::ObjectFactoryClass>::Create,0 },
 
 #define OBJECT_MAP_ENTRY_UNNAMED(obj) \
-		{ obj::GetOid, 0, Creator<obj::ObjectFactoryClass>::Create },
+		{ obj::GetOid, 0, Creator<obj::ObjectFactoryClass>::Create,0 },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
@@ -110,8 +110,8 @@
 	} \
 	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() \
 	{ return (OTL::GetModuleBase()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
-	OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Omega_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags)) \
-	{ return OTL::GetModule()->GetObjectFactory(oid,flags); } \
+	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
+	{ pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,2,((in),Omega::bool_t,bInstall,(in),const Omega::string_t&,strSubsts)) \
 	{ OTL::GetModule()->RegisterLibrary(bInstall,strSubsts); }
 
@@ -125,10 +125,10 @@
 		void RegisterObjects(Omega::bool_t bInstall, const Omega::string_t& strSubsts) \
 			{ RegisterObjectsImpl(bInstall,app_name,strSubsts); } \
 	private: \
-		const ModuleBase::CreatorEntry* getCreatorEntries() const { static const ModuleBase::CreatorEntry CreatorEntries[] = {
+		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
@@ -449,9 +449,10 @@ namespace OTL
 			const Omega::guid_t* (*pfnOid)();
 			const wchar_t* pszName;
 			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
+			Omega::uint32_t cookie;
 		};
 
-		virtual const CreatorEntry* getCreatorEntries() const = 0;
+		virtual CreatorEntry* getCreatorEntries() = 0;
 
 	private:
 		Omega::System::CriticalSection           m_csMain;
@@ -770,7 +771,7 @@ namespace OTL
 			}
 		};
 
-		inline Omega::Activation::IObjectFactory* GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags);
+		inline Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 		inline void RegisterLibrary(Omega::bool_t bInstall, const Omega::string_t& strSubsts);
 
 	protected:

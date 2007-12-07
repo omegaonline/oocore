@@ -694,7 +694,7 @@
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
 	(DECLARED_METHOD(0,ret_type,name,param_count,params))
 
-#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+#define OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params) \
 	extern "C" OMEGA_IMPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \
 	inline void name(OMEGA_DECLARE_PARAMS(param_count,params)) \
 	{ \
@@ -702,7 +702,7 @@
 		if (OMEGA_CONCAT(name,_Exception)) Omega::System::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 	}
 
-#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+#define OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params) \
 	extern "C" OMEGA_IMPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)( \
 		Omega::System::MetaInfo::marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) \
 		OMEGA_DECLARE_PARAMS_SAFE(param_count,params)); \

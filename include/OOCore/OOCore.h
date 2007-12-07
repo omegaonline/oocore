@@ -27,26 +27,14 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#if defined(OOCORE_BUILD_LIBRARY)
+#if !defined(OMEGA_EXPORTED_FUNCTION_VOID)
+#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
 
-#define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
-	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)
+#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+	OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
 
-#define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
-
-#define OOCORE_DECLARE_OID(n) \
-	OMEGA_EXPORT_OID(n)
-
-#else
-
-#define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
-	OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params)
-
-#define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-	OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params)
-
-#define OOCORE_DECLARE_OID(n) \
+#define OMEGA_DECLARE_OID(n) \
 	OMEGA_IMPORT_OID(n)
 
 #endif
@@ -81,19 +69,19 @@ namespace Omega
 	}
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,());
 Omega::string_t Omega::System::GetVersion()
 {
 	return Omega_GetVersion();
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());
 Omega::IException* Omega::Initialize()
 {
 	return Omega_Initialize();
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,());
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,());
 void Omega::Uninitialize()
 {
 	Omega_Uninitialize();

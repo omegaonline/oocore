@@ -199,10 +199,10 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		ObjectPtr<IObject> ptrOuter;
 		ptrOuter.Attach(pOuter);
 
-		// Create the required object
+		// Get the required object
 		ObjectPtr<IObject> ptrObject;
-		ptrObject.Attach(CreateInstance(oid,Activation::Any | Activation::RemoteInvocation,ptrOuter,iid));
-
+		ptrObject.Attach(Activation::GetRegisteredObject(oid,Activation::InProcess,iid));
+			
 		// Write it out and return
 		MarshalInterface(pParamsOut,iid,ptrObject);
 		return;
@@ -773,4 +773,4 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 OMEGA_DEFINE_OID(OOCore,OID_WireProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");
 OMEGA_DEFINE_OID(OOCore,OID_StdObjectManagerMarshalFactory,"{3AC2D04F-A8C5-4214-AFE4-A64DB8DC992C}");
 OMEGA_DEFINE_OID(Remoting,OID_StdObjectManager,"{63EB243E-6AE3-43bd-B073-764E096775F8}");
-OMEGA_DEFINE_OID(Remoting,OID_InterProcess,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");
+OMEGA_DEFINE_OID(Remoting,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");

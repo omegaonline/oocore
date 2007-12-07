@@ -33,9 +33,27 @@
 
 #include "./OOServer_Root.h"
 
-#if defined(ACE_WIN32)
-
 #include "./SpawnedProcess.h"
+
+bool Root::SpawnedProcess::unsafe_sandbox()
+{
+	// Get the local machine registry
+	ACE_Configuration_Heap& reg_root = Manager::get_registry();
+
+	// Get the server section
+	ACE_Configuration_Section_Key sandbox_key;
+	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key) != 0)
+		return false;
+
+	// Get the user name and pwd...
+	u_int v = 0;
+	if (reg_root.get_integer_value(sandbox_key,L"Unsafe",v) != 0)
+		return IsDebuggerPresent() ? true : false;
+
+	return (v == 1);
+}
+
+#if defined(ACE_WIN32)
 
 #include <userenv.h>
 #include <lm.h>
@@ -81,9 +99,9 @@ Root::SpawnedProcess::~SpawnedProcess()
 		CloseHandle(m_hToken);
 }
 
-DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
+DWORD Root::SpawnedProcess::GetNameFromToken(HANDLE hToken, ACE_WString& strUserName, ACE_WString& strDomainName)
 {
-    int err = 0;
+	DWORD err = 0;
 
 	// Find out all about the user associated with hToken
 	TOKEN_USER* pUserInfo = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
@@ -93,10 +111,6 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 		LOG_FAILURE(err);
 		return err;
 	}
-
-	// Get the names associated with the user SID
-	ACE_WString strUserName;
-	ACE_WString strDomainName;
 
 	SID_NAME_USE name_use;
 	DWORD dwUNameSize = 0;
@@ -150,8 +164,18 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	// Done with user info
 	ACE_OS::free(pUserInfo);
 
-    if (err != 0)
-        return err;
+    return err;
+}
+
+DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
+{
+	// Get the names associated with the user SID
+	ACE_WString strUserName;
+	ACE_WString strDomainName;
+
+	DWORD err = GetNameFromToken(hToken,strUserName,strDomainName);
+	if (err != ERROR_SUCCESS)
+		return err;    
 
 	// Lookup a DC for pszDomain
     ACE_WString strDCName;
@@ -197,7 +221,59 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	return ERROR_SUCCESS;
 }
 
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile)
+DWORD Root::SpawnedProcess::GetWindowStationName(HANDLE hToken, ACE_WString& strDesktop)
+{
+	strDesktop.clear();
+
+	// Get the logon SID of the Token
+	TOKEN_GROUPS* pGroups = static_cast<TOKEN_GROUPS*>(GetTokenInfo(hToken,TokenGroups));
+	if (!pGroups)
+		return GetLastError();
+
+	// Loop through the groups to find the logon SID
+	for (DWORD dwIndex = 0; dwIndex < pGroups->GroupCount; dwIndex++)
+	{
+		if ((pGroups->Groups[dwIndex].Attributes & SE_GROUP_LOGON_ID) ==  SE_GROUP_LOGON_ID) 
+		{
+			// Found the logon SID...
+			PSID sid = pGroups->Groups[dwIndex].Sid;
+
+			LPWSTR pszSid = 0;
+			ConvertSidToStringSidW(sid,&pszSid);
+			strDesktop = pszSid;
+			LocalFree(pszSid);
+
+			// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
+			if (ACE_OS::strncmp(strDesktop.c_str(),L"S-1-5-5-",8) != 0)
+				return ERROR_INVALID_SID;
+
+			// Crack out the last two parts - there is probably an easier way... but this works
+			strDesktop = strDesktop.substr(8);
+			const wchar_t* p = strDesktop.c_str();
+			wchar_t* pEnd = 0;
+			DWORD dwParts[2];
+			dwParts[0] = ACE_OS::strtoul(p,&pEnd,10);
+			if (*pEnd != L'-')
+				return ERROR_INVALID_SID;
+			dwParts[1] = ACE_OS::strtoul(pEnd+1,&pEnd,10);
+			if (*pEnd != L'\0')
+				return ERROR_INVALID_SID;
+						
+			// Service window stations are created with the name "Service-0xZ1-Z2$",
+			// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
+			// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
+			wchar_t szBuf[256];
+			ACE_OS::sprintf(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
+			strDesktop = szBuf;
+			break;
+		}
+	}
+	ACE_OS::free(pGroups);
+
+	return (strDesktop.empty() ? ERROR_INVALID_SID : ERROR_SUCCESS);
+}
+
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox)
 {
 	// Get our module name
 	WCHAR szPath[MAX_PATH];
@@ -208,10 +284,19 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 		return dwErr;
 	}
 
+	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
+
+#ifdef OMEGA_DEBUG
+	if (IsDebuggerPresent())
+		strCmdLine += L" --break";
+#endif
+
+	ACE_WString strWindowStation;
+
 	// Load up the users profile
 	HANDLE hProfile = NULL;
 	DWORD dwRes = 0;
-	if (bLoadProfile)
+	if (!bSandbox)
 	{
 		dwRes = LoadUserProfileFromToken(hToken,hProfile);
 		if (dwRes != ERROR_SUCCESS)
@@ -223,137 +308,176 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
 		dwRes = GetLastError();
-		if (hProfile)
-			UnloadUserProfile(hToken,hProfile);
-		LOG_FAILURE(dwRes);
-		return dwRes;
+		goto CleanupProfile;
 	}
+
+	// Open or Create the service window station/desktop
+	dwRes = GetWindowStationName(hToken,strWindowStation);
+	if (dwRes != ERROR_SUCCESS)
+		goto CleanupEnv;
+
+	// Open or create the new window station and desktop
+	// Now confirm the Window Station exists...
+	HWINSTA hWinsta = OpenWindowStationW(strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
+	if (!hWinsta)
+	{
+		// See if just doesn't exist yet...
+		dwRes = GetLastError();
+		if (dwRes != ERROR_FILE_NOT_FOUND)
+			goto CleanupEnv;
+
+		void* TODO; // Add proper SD
+		hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,NULL);
+		if (!hWinsta)
+		{
+			dwRes = GetLastError();
+			goto CleanupEnv;
+		}
+	}	
+
+	// Stash our old
+	HWINSTA hOldWinsta = GetProcessWindowStation();
+	if (!hOldWinsta)
+	{
+		dwRes = GetLastError();
+		goto CleanupWinSta;
+	}
+
+	// Swap our Window Station
+	if (!SetProcessWindowStation(hWinsta))
+	{
+		dwRes = GetLastError();
+		goto CleanupWinSta;
+	}
+		
+	// Try for the desktop
+	HDESK hDesktop = OpenDesktopW(L"default",0,FALSE,READ_CONTROL);
+	if (!hDesktop)
+	{
+		// See if just doesn't exist yet...
+		dwRes = GetLastError();
+		if (dwRes != ERROR_FILE_NOT_FOUND)
+		{
+			SetProcessWindowStation(hOldWinsta);
+			goto CleanupWinSta;
+		}
+
+		void* TODO; // Use proper DS
+		hDesktop = CreateDesktopW(L"default",0,0,0,DESKTOP_CREATEWINDOW,NULL);
+		if (!hDesktop)
+		{
+			dwRes = GetLastError();
+			SetProcessWindowStation(hOldWinsta);
+			goto CleanupWinSta;
+		}
+	}
+
+	strWindowStation += L"\\default";
+
+	// Revert our Window Station
+	SetProcessWindowStation(hOldWinsta);
 
 	// Get the primary token from the impersonation token
 	HANDLE hPriToken = 0;
 	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
 		dwRes = GetLastError();
-		DestroyEnvironmentBlock(lpEnv);
-		if (hProfile)
-			UnloadUserProfile(hToken,hProfile);
-		LOG_FAILURE(dwRes);
-		return dwRes;
-	}	
+		goto CleanupDesktop;
+	}
 
 	// Init our startup info
 	STARTUPINFOW startup_info;
 	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
-	startup_info.lpDesktop = L"";
+	startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 
 	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
 
-	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
-
 	// Actually create the process!
-	PROCESS_INFORMATION process_info;
-
-#ifdef OMEGA_DEBUG
-	if (IsDebuggerPresent())
-	{
-		strCmdLine += L" --break";
-
-		if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
-		{
-			dwRes = GetLastError();
-			CloseHandle(hPriToken);
-			DestroyEnvironmentBlock(lpEnv);
-			if (hProfile)
-				UnloadUserProfile(hToken,hProfile);
-			LOG_FAILURE(dwRes);
-			return dwRes;
-		}
-	}
-	else
-#endif
-	
-	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	PROCESS_INFORMATION process_info;	
+	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info) || GetLastError() != ERROR_SUCCESS)
 	{
 		dwRes = GetLastError();
 		CloseHandle(hPriToken);
-		DestroyEnvironmentBlock(lpEnv);
-		if (hProfile)
-			UnloadUserProfile(hToken,hProfile);
-		LOG_FAILURE(dwRes);
-		return dwRes;
+		goto CleanupDesktop;
 	}
 
-	// Done with primary token
-	CloseHandle(hPriToken);
-
-	// Done with environment block...
-	DestroyEnvironmentBlock(lpEnv);
+	dwRes = ERROR_SUCCESS;
 
 	// Stash handles to close on end...
 	m_hProfile = hProfile;
 	m_hProcess = process_info.hProcess;
-	m_hToken = hToken;
+	m_hToken = hPriToken;
 
 	// And close any others
 	CloseHandle(process_info.hThread);
 
-	return ERROR_SUCCESS;
+	// Don't want to close this one...
+	hProfile = NULL;		
+
+CleanupDesktop:
+	// Done with Desktop
+	CloseDesktop(hDesktop);
+
+CleanupWinSta:
+	// Done with Window Station
+	CloseWindowStation(hWinsta);
+
+CleanupEnv:
+	// Done with environment block...
+	DestroyEnvironmentBlock(lpEnv);
+
+CleanupProfile:
+	if (hProfile)
+		UnloadUserProfile(hToken,hProfile);
+
+	if (dwRes != ERROR_SUCCESS)
+		LOG_FAILURE(dwRes);
+
+	return dwRes;
 }
 
-bool Root::SpawnedProcess::unsafe_sandbox()
+bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe, bool bSandbox)
 {
-	// Get the local machine registry
-	ACE_Configuration_Heap& reg_root = Manager::get_registry();
-
-	// Get the server section
-	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key) != 0)
-		return false;
-
-	// Get the user name and pwd...
-	u_int v = 0;
-	if (reg_root.get_integer_value(sandbox_key,L"Unsafe",v) != 0)
-		return IsDebuggerPresent() ? true : false;
-
-	return (v == 1);
-}
-
-bool Root::SpawnedProcess::Spawn(user_id_type id, const ACE_WString& strPipe)
-{
-	HANDLE hToken = INVALID_HANDLE_VALUE;
-
-	bool bSandbox = (id == static_cast<user_id_type>(0));
-	if (bSandbox)
-	{
-		if (!LogonSandboxUser(&hToken))
-			return false;
-	}
-	else
-		hToken = id;
-	
-	DWORD dwRes = SpawnFromToken(hToken,strPipe,!bSandbox);
+	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && bSandbox && unsafe_sandbox())
 		{
-			CloseHandle(hToken);
-			if (OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken))
+			HANDLE hToken2;
+			if (OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
 			{
-				dwRes = SpawnFromToken(hToken,strPipe,!bSandbox);
-				if (dwRes == ERROR_SUCCESS)
-					ACE_OS::printf("RUNNING WITH SANDBOX LOGGED IN AS ROOT!\n");
+				// Get the names associated with the user SID
+				ACE_WString strUserName;
+				ACE_WString strDomainName;
+
+				if (GetNameFromToken(hToken2,strUserName,strDomainName) == ERROR_SUCCESS)
+				{
+					const char msg[] =
+						"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
+						"Because 'Unsafe' key is set in the registry, or you have attached a debugger to OOServer, the sandbox process will be started "
+						"under the user account '%ls\\%ls'\n\n"
+						"This is a security risk, and should only be allowed for debugging purposes, and only then if you "
+						"really know what you are doing.\n\n"
+						"Do you want to allow this?";
+
+					char szBuf[1024];
+					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
+					if (MessageBox(NULL,szBuf,"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFBUTTON2) == IDYES)
+					{
+						dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
+					}
+				}
+
+				CloseHandle(hToken2);
 			}
 		}
 	}
-
-	if (bSandbox)
-		CloseHandle(hToken);
 	
 	return (dwRes == ERROR_SUCCESS);
 }
 
-bool Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
+bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
 {
 	// Get the local machine registry
 	ACE_Configuration_Heap& reg_root = Manager::get_registry();
@@ -371,7 +495,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 
 	reg_root.get_string_value(sandbox_key,L"Password",strPwd);
 
-	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,phToken))
+	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 	{
 		DWORD dwErr = GetLastError();
 		LOG_FAILURE(dwErr);
@@ -379,6 +503,11 @@ bool Root::SpawnedProcess::LogonSandboxUser(HANDLE* phToken)
 	}
 
 	return true;
+}
+
+void Root::SpawnedProcess::CloseSandboxLogon(user_id_type hToken)
+{
+	CloseHandle(hToken);
 }
 
 bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed)
@@ -656,7 +785,8 @@ bool Root::SpawnedProcess::UninstallSandbox()
 bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 {
 	// Specify the DACL to use.
-	// Create a SID for the Users group.
+
+	// Create a SID for the BUILTIN\Users group.
 	PSID pSIDUsers = NULL;
 	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
 	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
@@ -736,7 +866,10 @@ void* Root::SpawnedProcess::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS 
 		
 	void* pBuffer = ACE_OS::malloc(dwLen);
 	if (!pBuffer)
+	{
+		SetLastError(ERROR_OUTOFMEMORY);
 		return 0;
+	}
 
 	if (!GetTokenInformation(hToken,cls,pBuffer,dwLen,&dwLen))
 	{

@@ -97,7 +97,7 @@ int Root::NTService::insert(const wchar_t *cmd_line,
 	wchar_t this_exe[PATH_MAX + 2];
 
 	if (GetModuleFileNameW(0,this_exe+1,PATH_MAX) == 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] GetModuleFilename failed: %x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] GetModuleFilename failed: %#x\n",GetLastError()),-1);
 		
 	// Make sure that this_exe is quoted
 	this_exe[0] = L'\"';

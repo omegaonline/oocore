@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
-#define OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
+#ifndef OOSERVER_RUNNING_OBJECT_TABLE_H_INCLUDED_
+#define OOSERVER_RUNNING_OBJECT_TABLE_H_INCLUDED_
 
 namespace User
 {
@@ -47,8 +47,8 @@ namespace User
 
 		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>   m_ptrROT;
 		ACE_RW_Thread_Mutex                                      m_lock;
-		std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapServices;
+		std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapObjects;
 	};
 }
 
-#endif // OOSERVER_USER_SERVICE_TABLE_H_INCLUDED_
+#endif // OOSERVER_RUNNING_OBJECT_TABLE_H_INCLUDED_

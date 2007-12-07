@@ -73,6 +73,17 @@
 #pragma warning(pop)
 #endif
 
+//////////////////////////////////////////////
+// Set up the export macros for OOCORE
+#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)
+
+#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
+
+#define OMEGA_DECLARE_OID(n) \
+	OMEGA_EXPORT_OID(n)
+
 /////////////////////////////////////////////////
 // Include OOCore/OTL components
 

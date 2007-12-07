@@ -72,10 +72,10 @@ namespace Omega
 		};
 
 		// {63EB243E-6AE3-43bd-B073-764E096775F8}
-		OOCORE_DECLARE_OID(OID_StdObjectManager);
+		OMEGA_DECLARE_OID(OID_StdObjectManager);
 
 		// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
-		OOCORE_DECLARE_OID(OID_InterProcess);
+		OMEGA_DECLARE_OID(OID_InterProcessService);
 	}
 }
 

@@ -93,6 +93,7 @@ namespace Root
 		void stop_accepting();
 		void stop();
 		virtual void pipe_closed(const MessagePipe& pipe);
+		virtual void channel_closed(ACE_CDR::UShort channel);
 
 		virtual void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs) = 0;
 

@@ -67,6 +67,7 @@ namespace OOCore
 		int                 m_thrd_grp_id;
 		MessagePipe         m_stream;
 		ACE_Thread_Mutex    m_send_lock;
+		Omega::uint32_t     m_nIPSCookie;
 
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 

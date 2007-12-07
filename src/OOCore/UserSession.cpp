@@ -26,13 +26,6 @@
 using namespace Omega;
 using namespace OTL;
 
-// Forward declares used internally
-namespace OOCore
-{
-	void SetRunningObjectTable(Activation::IRunningObjectTable* pNewTable);
-	void SetRegistry(Registry::IRegistryKey* pRootKey);
-}
-
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 
 int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
@@ -142,7 +135,7 @@ ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
 
 OOCore::UserSession::UserSession() :
-	m_thrd_grp_id(-1)
+	m_thrd_grp_id(-1), m_nIPSCookie(0)
 {
 }
 
@@ -200,20 +193,13 @@ IException* OOCore::UserSession::bootstrap()
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
 
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
-		// Set the running object table
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(ptrIPS->GetRunningObjectTable());
-		SetRunningObjectTable(ptrROT);
-
-		ObjectPtr<Registry::IRegistryKey> ptrRegistry;
-		ptrRegistry.Attach(ptrIPS->GetRegistry());
-
-		SetRegistry(ptrRegistry);
+		// Register locally...
+		m_nIPSCookie = Activation::RegisterObject(Remoting::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 	}
 	catch (IException* pE)
 	{
@@ -331,8 +317,12 @@ void OOCore::UserSession::term()
 
 void OOCore::UserSession::term_i()
 {
-	SetRegistry(0);
-	SetRunningObjectTable(0);
+	// Unregister InterProcessService
+	if (m_nIPSCookie)
+	{
+		Activation::RevokeObject(m_nIPSCookie);
+		m_nIPSCookie = 0;
+	}
 
 	// Shut down the socket...
 	m_stream.close();

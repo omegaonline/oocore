@@ -34,18 +34,8 @@ using namespace OTL;
 
 namespace OOCore
 {
-	struct Reg
-	{
-		ObjectPtr<Omega::Registry::IRegistryKey>  m_ptrRoot;
-
-		static Reg& instance()
-		{
-			static Reg i;
-			return i;
-		}
-	};
-	
-	void SetRegistry(Omega::Registry::IRegistryKey* pRootKey);
+	ObjectPtr<Remoting::IInterProcessService> GetInterProcessService();
+	ObjectPtr<Registry::IRegistryKey> GetRootKey();
 
 	void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
 	void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
@@ -56,21 +46,19 @@ namespace OOCore
 	const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
 }
 
-void OOCore::SetRegistry(Omega::Registry::IRegistryKey* pRootKey)
+ObjectPtr<Registry::IRegistryKey> OOCore::GetRootKey()
 {
-	Reg::instance().m_ptrRoot = pRootKey;
+	ObjectPtr<Registry::IRegistryKey> ptrKey;
+	ObjectPtr<Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	ptrKey.Attach(static_cast<Registry::IRegistryKey*>(ptrIPS->GetRegistry()));
+	return ptrKey;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 {
-	if (!OOCore::Reg::instance().m_ptrRoot)
-	{
-		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
-		pE->m_strDesc = L"Omega::Initialize not called.";
-		throw pE;
-	}
-
-	return OOCore::Reg::instance().m_ptrRoot->OpenSubKey(key,flags);
+	ObjectPtr<Registry::IRegistryKey> ptrKey;
+	ptrKey.Attach(static_cast<Registry::IRegistryKey*>(OOCore::GetInterProcessService()->GetRegistry()));
+	return ptrKey->OpenSubKey(key,flags);
 }
 
 string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts)

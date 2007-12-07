@@ -36,12 +36,23 @@ namespace Omega
 			InProcess = 1,
 			OutOfProcess = 2,
 			Any = 3,
-			DontLaunch = 0x10,
-			RemoteInvocation = 0x20
+			DontLaunch = 0x10
 		};
 		typedef uint16_t Flags_t;
 
-		inline IObjectFactory* GetObjectFactory(const guid_t& oid, Flags_t flags);
+		enum RegisterFlags
+		{
+			SingleUse = 0,
+			MultipleUse = 1,
+			MultipleRegistration = 2,
+			Suspended = 4
+		};
+		typedef uint16_t RegisterFlags_t;
+
+		inline uint32_t RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags);
+		inline IObject* GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+		inline void RevokeObject(uint32_t cookie);
+
 		inline guid_t NameToOid(const string_t& strObjectName);
 		
 		interface IOidNotFoundException : public IException
@@ -279,43 +290,57 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
 )
 
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,());
 Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
 {
 	return Activation_GetRunningObjectTable();
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const Omega::guid_t&,oid));
+OMEGA_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const Omega::guid_t&,oid));
 Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::guid_t& oid)
 {
 	return Activation_INoAggregationException_Create(oid);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,Activation_GetObjectFactory,2,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags));
-Omega::Activation::IObjectFactory* Omega::Activation::GetObjectFactory(const Omega::guid_t& oid, Omega::Activation::Flags_t flags)
+OMEGA_EXPORTED_FUNCTION(Omega::uint32_t,Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags));
+Omega::uint32_t Omega::Activation::RegisterObject(const Omega::guid_t& oid, Omega::IObject* pObject, Omega::Activation::Flags_t flags, Omega::Activation::RegisterFlags_t reg_flags)
 {
-	return Activation_GetObjectFactory(oid,flags);
+	return Activation_RegisterObject(oid,pObject,flags,reg_flags);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::guid_t,Activation_NameToOid,1,((in),const Omega::string_t&,strObjectName));
+OMEGA_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+Omega::IObject* Omega::Activation::GetRegisteredObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
+{
+	Omega::IObject* pObject = 0;
+	Activation_GetRegisteredObject(oid,flags,iid,pObject);
+	return pObject;
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(Activation_RevokeObject,1,((in),Omega::uint32_t,cookie));
+void Omega::Activation::RevokeObject(Omega::uint32_t cookie)
+{
+	Activation_RevokeObject(cookie);
+}
+
+OMEGA_EXPORTED_FUNCTION(Omega::guid_t,Activation_NameToOid,1,((in),const Omega::string_t&,strObjectName));
 Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
 {
 	return Activation_NameToOid(strObjectName);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bAdd,(in),const Omega::string_t&,strSubstitutions));
+OMEGA_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bAdd,(in),const Omega::string_t&,strSubstitutions));
 void Omega::Registry::AddXML(const Omega::string_t& strXML, Omega::bool_t bAdd, const Omega::string_t& strSubstitutions)
 {
 	Registry_AddXML(strXML,bAdd,strSubstitutions);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags));
+OMEGA_EXPORTED_FUNCTION(Omega::Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags));
 Omega::Registry::IRegistryKey* Omega::Registry::IRegistryKey::OpenKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags)
 {
 	return IRegistryKey_OpenKey(key,flags);
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid)
 {
 	IObject* pObj = 0;
@@ -323,7 +348,7 @@ Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activatio
 	return pObj;
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&,timeout));
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&,timeout));
 void Omega::HandleRequests(uint32_t timeout)
 {
 	Omega_HandleRequests(timeout);

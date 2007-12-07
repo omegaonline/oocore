@@ -105,7 +105,7 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, int key, const A
 		m_sa.bInheritHandle = FALSE;
 
 		if (!MessagePipeAcceptor::CreateSA(0,m_sa.lpSecurityDescriptor,m_pACL))
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %x\n",GetLastError()),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %#x\n",GetLastError()),-1);
 	}
 
 	ACE_SPIPE_Addr addr;

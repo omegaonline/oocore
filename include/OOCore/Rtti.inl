@@ -409,13 +409,13 @@ void Omega::UnpinObjectPointer(IObject* pObject)
 		ptrProxy->Unpin();
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
 Omega::IException* Omega::IException::Create(const Omega::string_t& desc, const Omega::string_t& source, Omega::IException* pCause)
 {
 	return IException_Create(desc,source,pCause);
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source));
+OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source));
 Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const Omega::guid_t& iid, const string_t& source)
 {
 	return INoInterfaceException_Create(iid,source);

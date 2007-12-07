@@ -87,9 +87,9 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #if defined(OMEGA_DEBUG)
 		if (argc==4 && ACE_OS::strcmp(argv[3],L"--break")==0)
 		{
-			char szBuf[256];
-			ACE_OS::sprintf(szBuf,"Do you wish to debug this process?\n\nAttach the debugger to process id %ld now if you do",GetCurrentProcessId());
-			if (MessageBox(NULL,szBuf,"Break",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION) == IDYES)
+			wchar_t szBuf[256];
+			ACE_OS::sprintf(szBuf,L"Do you wish to debug this process?\n\nAttach the debugger to process id %ld now if you do",GetCurrentProcessId());
+			if (MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION) == IDYES)
 				DebugBreak();
 		}
 #endif
@@ -141,8 +141,14 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	}
 
 #if defined(ACE_WIN32)
+#if defined OMEGA_DEBUG
+	if ((argc<2 || ACE_OS::strcmp(argv[1],L"--service")!=0) && !IsDebuggerPresent())
+#else
 	if (argc<2 || ACE_OS::strcmp(argv[1],L"--service")!=0)
+#endif
+	{
 		ACE_ERROR_RETURN((LM_ERROR,L"OOServer must be started as a Win32 service.\n"),-1);
+	}
 
 	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);

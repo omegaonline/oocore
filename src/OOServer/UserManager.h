@@ -47,6 +47,7 @@ namespace User
 
 		ACE_RW_Thread_Mutex			m_lock;
 		ACE_CDR::UShort             m_root_channel;
+		Omega::uint32_t             m_nIPSCookie;
 		
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
 
@@ -55,6 +56,8 @@ namespace User
 		bool bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort user_channel);
 		void close_channels();
 		void end_event_loop();
+
+		virtual void channel_closed(ACE_CDR::UShort channel);
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 		void process_request(const Root::MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);

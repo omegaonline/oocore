@@ -31,7 +31,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
@@ -53,7 +53,7 @@ void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningO
 		{
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			if (m_mapServices.find(oid) != m_mapServices.end())
+			if (m_mapObjects.find(oid) != m_mapObjects.end())
 			{
 				// QI for IWireProxy and check its still there!
 
@@ -62,7 +62,7 @@ void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningO
 				OOSERVER_THROW_ERRNO(EALREADY);
 			}
 
-			m_mapServices.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
+			m_mapObjects.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
 		}
 		catch (std::exception& e)
 		{
@@ -79,10 +79,10 @@ void User::RunningObjectTable::Revoke(const guid_t& oid)
 	{
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
-		if (i != m_mapServices.end())
+		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
+		if (i != m_mapObjects.end())
 		{
-			m_mapServices.erase(i);
+			m_mapObjects.erase(i);
 			bFound = true;
 		}
 	}
@@ -104,8 +104,8 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapServices.find(oid);
-		if (i != m_mapServices.end())
+		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
+		if (i != m_mapObjects.end())
 		{
 			return i->second.AddRefReturn();
 		}

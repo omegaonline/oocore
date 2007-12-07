@@ -180,7 +180,32 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	return true;
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe)
+bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
+{
+	void* TODO; // Look at using PAM for this...
+
+	// Get the correct uid from the registry
+	ACE_Configuration_Heap& reg_root = Manager::get_registry();
+
+	// Open the server section
+	ACE_Configuration_Section_Key sandbox_key;
+	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key)!=0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to open Server\\Sandbox key in registry"),false);
+
+	// Get the uid...
+	u_int sb_uid = -1;
+	if (reg_root.get_integer_value(sandbox_key,L"Uid",sb_uid) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to get sandbox uid from registry"),false);
+
+	uid = static_cast<uid_t>(sb_uid);
+	return true;
+}
+
+void Root::SpawnedProcess::CloseSandboxLogon(user_id_type /*uid*/)
+{
+}
+
+bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe, bool /*bSandbox*/)
 {
 	pid_t child_id = ACE_OS::fork();
 	if (child_id == -1)
@@ -192,8 +217,6 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe)
 	{
 		// We are the child...
 
-		// TODO:  We might want to check for uid == 0 || uid < UID_MIN
-
 		// get our pw_info
 		Root::pw_info pw(uid);
 		if (!pw)
@@ -201,8 +224,6 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe)
 			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"::getpwuid() failed!"));
 			ACE_OS::exit(errno);
 		}
-
-		// TODO:  We might want to check for pw->pw_gid == 0 || pw->pw_gid < UID_MIN
 
 		// Set our gid...
 		if (ACE_OS::setgid(pw->pw_gid) != 0)
@@ -343,7 +364,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",1,sandbox_key)!=0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to create Server\\Sandbox key in registry"),false);
 
-	// Set the user name and pwd...
+	// Set the sandbox uid
 	if (reg_root.set_integer_value(sandbox_key,L"Uid",pw->pw_uid) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to set sandbox uid in registry"),false);
 

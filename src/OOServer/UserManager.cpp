@@ -76,45 +76,6 @@ namespace User
 		Omega::Registry::IRegistryKey* GetRegistry();
 		Activation::IRunningObjectTable* GetRunningObjectTable();
 	};
-
-	class InterProcessServiceFactory :
-		public ObjectBase,
-		public Activation::IObjectFactory
-	{
-	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOMSB, ObjectPtr<Remoting::IObjectManager> ptrOMUser, Manager* pManager)
-		{
-			m_ptrOMSB = ptrOMSB;
-			m_ptrOMUser = ptrOMUser;
-			m_pManager = pManager;
-		}
-
-		BEGIN_INTERFACE_MAP(InterProcessServiceFactory)
-			INTERFACE_ENTRY(Activation::IObjectFactory)
-		END_INTERFACE_MAP()
-
-	private:
-		ObjectPtr<Remoting::IObjectManager> m_ptrOMSB;
-		ObjectPtr<Remoting::IObjectManager> m_ptrOMUser;
-		Manager*                            m_pManager;
-
-	// Activation::IObjectFactory members
-	public:
-		void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject);
-	};
-}
-
-void User::InterProcessServiceFactory::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
-{
-	if (pOuter)
-		throw Activation::INoAggregationException::Create(Remoting::OID_InterProcess);
-
-	ObjectPtr<SingletonObjectImpl<InterProcessService> > ptrIPS = SingletonObjectImpl<InterProcessService>::CreateInstancePtr();
-	ptrIPS->Init(m_ptrOMSB,m_ptrOMUser,m_pManager);
-
-	pObject = ptrIPS->QueryInterface(iid);
-	if (!pObject)
-		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 }
 
 Registry::IRegistryKey* User::InterProcessService::GetRegistry()
@@ -130,7 +91,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 			{
 				// Create a proxy to the server interface
 				IObject* pIPS = 0;
-				m_ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcess,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+				m_ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
 				ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 				ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
@@ -177,7 +138,7 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 
 // UserManager
 User::Manager::Manager() :
-	m_root_channel(0)
+	m_root_channel(0),  m_nIPSCookie(0)
 {
 }
 
@@ -317,12 +278,11 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort u
 		if (user_channel != 0)
 			ptrOMUser = get_object_manager(user_channel);
 		
-		ObjectPtr<ObjectImpl<InterProcessServiceFactory> > ptrOF = ObjectImpl<InterProcessServiceFactory>::CreateInstancePtr();
-		ptrOF->Init(ptrOMSb,ptrOMUser,this);
+		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
+		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
-		ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-		ptrROT->Register(Remoting::OID_InterProcess,Activation::IRunningObjectTable::Default,ptrOF);
+		// Register ourselves locally
+		m_nIPSCookie = Activation::RegisterObject(Remoting::OID_InterProcessService,ptrIPS,Activation::InProcess | Activation::OutOfProcess,Activation::MultipleUse);
 
 		OTL::GetModule()->RegisterObjectFactories();
 	}
@@ -352,6 +312,16 @@ void User::Manager::end_event_loop()
 
 	// Stop the MessageHandler
 	stop();
+
+	// Unregister our object factories
+	OTL::GetModule()->UnregisterObjectFactories();
+
+	// Unregister InterProcessService
+	if (m_nIPSCookie)
+	{
+		Activation::RevokeObject(m_nIPSCookie);
+		m_nIPSCookie = 0;
+	}
 }
 
 void User::Manager::close_channels()
@@ -389,6 +359,15 @@ void User::Manager::close_channels()
 	}
 	catch (...)
 	{
+	}
+}
+
+void User::Manager::channel_closed(ACE_CDR::UShort channel)
+{
+	if (channel == m_root_channel)
+	{
+		// We should end!
+		end_event_loop();
 	}
 }
 

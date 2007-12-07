@@ -387,22 +387,34 @@ void Root::MessageHandler::pipe_closed(const MessagePipe& pipe)
 {
 	try
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(pipe);
-		if (j!=m_mapReverseChannelIds.end())
+		std::list<ACE_CDR::UShort> listClosed;
 		{
-			for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
-			{
-				void* TODO; /// Tell the derived handle that the channel has closed...
+			ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-				m_mapChannelIds.erase(k->second);
-			}	
-			m_mapReverseChannelIds.erase(j);
+			std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(pipe);
+			if (j != m_mapReverseChannelIds.end())
+			{
+				for (std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator k=j->second.begin();k!=j->second.end();++k)
+				{
+					listClosed.push_back(k->second);
+
+					m_mapChannelIds.erase(k->second);
+				}	
+				m_mapReverseChannelIds.erase(j);
+			}
+		}
+
+		for (std::list<ACE_CDR::UShort>::iterator i=listClosed.begin();i!=listClosed.end();++i)
+		{
+			channel_closed(*i);
 		}
 	}
 	catch (...)
 	{}
+}
+
+void Root::MessageHandler::channel_closed(ACE_CDR::UShort channel)
+{
 }
 
 bool Root::MessageHandler::parse_message(Message* msg)

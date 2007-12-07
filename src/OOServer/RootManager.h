@@ -86,8 +86,9 @@ namespace Root
 		ACE_WString bootstrap_user(MessagePipe& pipe, ACE_CDR::UShort nUserChannel);
 		bool connect_client(user_id_type uid, ACE_WString& strPipe);
 		void close_users();
-		virtual void pipe_closed(const MessagePipe& pipe);
 
+		virtual void pipe_closed(const MessagePipe& pipe);
+		
 		void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
 		bool access_check(const MessagePipe& pipe, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);
 

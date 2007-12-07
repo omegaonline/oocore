@@ -44,32 +44,35 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		bool Spawn(user_id_type id, const ACE_WString& strPipe);
+		bool Spawn(user_id_type id, const ACE_WString& strPipe, bool bSandbox);
 		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
 		static bool SecureFile(const ACE_WString& strFilename);
 
-		bool Compare(user_id_type hToken);
-		bool IsSameUser(user_id_type hToken);
+		bool Compare(user_id_type uid);
+		bool IsSameUser(user_id_type uid);
 		
+		static bool LogonSandboxUser(user_id_type& uid);
+		static void CloseSandboxLogon(user_id_type uid);
+
 #if defined(ACE_WIN32)
 	private:
 		HANDLE	m_hToken;
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 
+		DWORD GetWindowStationName(HANDLE hToken, ACE_WString& strDesktop);
 		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bLoadProfile);
+		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox);
 		void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
 		bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
 		bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);
+		DWORD GetNameFromToken(HANDLE hToken, ACE_WString& strUserName, ACE_WString& strDomainName);
 
-		static bool LogonSandboxUser(HANDLE* phToken);
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
-		static bool unsafe_sandbox();
-
+		
 #else // !ACE_WIN32
 		static ACE_CString get_home_dir();
 
@@ -81,6 +84,8 @@ namespace Root
 		
 #endif // ACE_WIN32
 
+	private:
+		static bool unsafe_sandbox();
 	};
 }
 

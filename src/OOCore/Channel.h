@@ -202,7 +202,7 @@ namespace OOCore
 	};
 
 	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}
-	OOCORE_DECLARE_OID(OID_ChannelMarshalFactory);
+	OMEGA_DECLARE_OID(OID_ChannelMarshalFactory);
 
 	class ChannelMarshalFactory :
 		public OTL::ObjectBase,

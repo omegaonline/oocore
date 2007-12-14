@@ -88,9 +88,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		if (argc==4 && ACE_OS::strcmp(argv[3],L"--break")==0)
 		{
 			wchar_t szBuf[256];
-			ACE_OS::sprintf(szBuf,L"Do you wish to debug this process?\n\nAttach the debugger to process id %ld now if you do",GetCurrentProcessId());
-			if (MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION) == IDYES)
-				DebugBreak();
+			ACE_OS::sprintf(szBuf,L"Attach the debugger to process id %ld now if you want!",GetCurrentProcessId());
+			MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 		}
 #endif
 		
@@ -169,7 +168,13 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// TODO - Install signal handlers...
 #endif
 
-	return Root::Manager::run(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
+	int ret = Root::Manager::run(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
+
+#if defined(ACE_WIN32)
+	Root::NTService::stop();
+#endif
+
+	return ret;
 }
 
 #if defined(ACE_WIN32) && defined(__MINGW32__)

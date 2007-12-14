@@ -42,7 +42,7 @@ namespace Root
 
 	public:
 		MessagePipe();
-
+		
 		static ACE_WString unique_name(const ACE_WString& strPrefix);
 		static int connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait = 0);
 		void close();

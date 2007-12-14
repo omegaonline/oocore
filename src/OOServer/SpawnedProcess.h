@@ -63,13 +63,18 @@ namespace Root
 		HANDLE	m_hProfile;
 		HANDLE	m_hProcess;
 
-		DWORD GetWindowStationName(HANDLE hToken, ACE_WString& strDesktop);
-		DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
+		static DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
 		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox);
-		void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
-		bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
-		bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);
-		DWORD GetNameFromToken(HANDLE hToken, ACE_WString& strUserName, ACE_WString& strDomainName);
+		static void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
+		static bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
+		static bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);
+		static DWORD GetNameFromToken(HANDLE hToken, ACE_WString& strUserName, ACE_WString& strDomainName);
+		static DWORD GetLogonSID(HANDLE hToken, PSID& pSIDLogon);
+		static DWORD OpenCorrectWindowStation(HANDLE hToken, ACE_WString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop);
+		static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD);
+		static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD);
+		static DWORD CreateSD(PACL pACL, void*& pSD);
+		static DWORD SetTokenDefaultDACL(HANDLE hToken);
 
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
 		

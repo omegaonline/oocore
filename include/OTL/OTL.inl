@@ -81,6 +81,10 @@ OTL::ModuleBase::~ModuleBase()
 
 Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
 {
+	// We ignore any registered flags, and only enforce InProcess creation, because we are a library!
+	if (!(flags & Omega::Activation::InProcess))
+		return 0;
+
     const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
@@ -177,11 +181,9 @@ void OTL::ProcessModule::RegisterObjectFactories()
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
 		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF;
+		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),Omega::Activation::InProcess)));
 
-		void* TODO;	// flags need sorting
-
-		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),0)));
-		g[i].cookie = Omega::Activation::RegisterObject(*(g[i].pfnOid)(),ptrOF,Omega::Activation::OutOfProcess,Omega::Activation::MultipleUse);
+		g[i].cookie = Omega::Activation::RegisterObject(*(g[i].pfnOid)(),ptrOF,(g[i].pfnActivationFlags)(),(g[i].pfnRegistrationFlags)());
 	}
 }
 

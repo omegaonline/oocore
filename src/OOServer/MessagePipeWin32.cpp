@@ -153,36 +153,20 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, void*& pSD, PACL& pACL)
 		return false;
 	}
 
-	TOKEN_USER* pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
-	if (!pBuffer)
+	TOKEN_USER* pSIDProcess = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
+	if (!pSIDProcess)
 	{
 		CloseHandle(hProcessToken);
 		return false;
 	}
 
-	if (!GetTokenInformation(hProcessToken,TokenUser,pBuffer,dwLen,&dwLen))
+	if (!GetTokenInformation(hProcessToken,TokenUser,pSIDProcess,dwLen,&dwLen))
 	{
 		CloseHandle(hProcessToken);
-		ACE_OS::free(pBuffer);
+		ACE_OS::free(pSIDProcess);
 		return false;
 	}
 	CloseHandle(hProcessToken);
-
-	dwLen = GetLengthSid(pBuffer->User.Sid);
-	PSID pSIDProcess = static_cast<PSID>(ACE_OS::malloc(dwLen));
-	if (!pSIDProcess)
-	{
-		ACE_OS::free(pBuffer);
-		return false;
-	}
-
-	if (!CopySid(dwLen,pSIDProcess,pBuffer->User.Sid))
-	{
-		ACE_OS::free(pSIDProcess);
-		ACE_OS::free(pBuffer);
-		return false;
-	}
-	ACE_OS::free(pBuffer);
 
 	// Set full control for the calling process SID
 	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
@@ -190,10 +174,10 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, void*& pSD, PACL& pACL)
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)pSIDProcess;
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDProcess->User.Sid;
 	
 	PSID pSIDUsers = NULL;
-	PSID pSIDToken = NULL;
+	TOKEN_USER* pSIDToken = NULL;
 	if (!hToken)
 	{
 		// Create a SID for the BUILTIN\Users group.
@@ -227,38 +211,19 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, void*& pSD, PACL& pACL)
 			return false;
 		}
 
-		pBuffer = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
-		if (!pBuffer)
-		{
-			ACE_OS::free(pSIDProcess);
-			return false;
-		}
-
-		if (!GetTokenInformation(hToken,TokenUser,pBuffer,dwLen,&dwLen))
-		{
-			ACE_OS::free(pSIDProcess);
-			ACE_OS::free(pBuffer);
-			return false;
-		}
-
-		dwLen = GetLengthSid(pBuffer->User.Sid);
-		pSIDToken = static_cast<PSID>(ACE_OS::malloc(dwLen));
+		pSIDToken = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
 		if (!pSIDToken)
 		{
 			ACE_OS::free(pSIDProcess);
-			ACE_OS::free(pBuffer);
 			return false;
 		}
 
-		if (!CopySid(dwLen,pSIDToken,pBuffer->User.Sid))
+		if (!GetTokenInformation(hToken,TokenUser,pSIDToken,dwLen,&dwLen))
 		{
 			ACE_OS::free(pSIDProcess);
 			ACE_OS::free(pSIDToken);
-			ACE_OS::free(pBuffer);
 			return false;
 		}
-
-		ACE_OS::free(pBuffer);
 
 		// Set read access for Specific user.
 		ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
@@ -266,7 +231,7 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, void*& pSD, PACL& pACL)
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
-		ea[1].Trustee.ptstrName = (LPWSTR)pSIDToken;
+		ea[1].Trustee.ptstrName = (LPWSTR)pSIDToken->User.Sid;
 	}
 
 	if (ERROR_SUCCESS != SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL))

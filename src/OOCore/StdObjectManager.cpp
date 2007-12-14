@@ -201,7 +201,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 
 		// Get the required object
 		ObjectPtr<IObject> ptrObject;
-		ptrObject.Attach(Activation::GetRegisteredObject(oid,Activation::InProcess,iid));
+		ptrObject.Attach(Activation::GetRegisteredObject(oid,Activation::InProcess | Activation::DontLaunch,iid));
 			
 		// Write it out and return
 		MarshalInterface(pParamsOut,iid,ptrObject);

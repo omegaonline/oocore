@@ -203,7 +203,7 @@ IException* OOCore::UserSession::bootstrap()
 	}
 	catch (IException* pE)
 	{
-		return pE;
+		return pE;	
 	}
 
 	return 0;
@@ -312,7 +312,6 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 void OOCore::UserSession::term()
 {
 	USER_SESSION::instance()->term_i();
-	//USER_SESSION::close();
 }
 
 void OOCore::UserSession::term_i()
@@ -330,8 +329,6 @@ void OOCore::UserSession::term_i()
 	// Wait for all the proactor threads to finish
 	if (m_thrd_grp_id != -1)
 		ACE_Thread_Manager::instance()->wait_grp(m_thrd_grp_id);
-
-	// Stop the message queue
 }
 
 ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
@@ -341,7 +338,7 @@ ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
 
 int OOCore::UserSession::run_read_loop()
 {
-	static const ssize_t	s_initial_read = 8;
+	static const ssize_t s_initial_read = 8;
 	char szBuffer[20];
 
 #if !defined (ACE_CDR_IGNORE_ALIGNMENT)
@@ -514,26 +511,20 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 
 		if (msg->m_bIsRequest)
 		{
-			// Find and/or create the object manager associated with src_channel_id
-			OTL::ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(msg->m_src_channel_id);
-
-            ACE_CDR::UShort old_thread_id = 0;
-			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-			if (i == pContext->m_mapChannelThreads.end())
-				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
-
-			old_thread_id = i->second;
-			i->second = msg->m_src_thread_id;
-
+			// Set per channel thread id
+			pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
+			
 			ACE_Time_Value old_deadline = pContext->m_deadline;
 			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
 
 			// Process the message...
-			process_request(ptrOM,msg,pContext->m_deadline);
+			process_request(msg,pContext->m_deadline);
 
 			// Restore old context
 			pContext->m_deadline = old_deadline;
-			i->second = old_thread_id;
+			
+			// Clear the thread map
+			pContext->m_mapChannelThreads.clear();
 		}
 
 		delete msg->m_pPayload;
@@ -554,10 +545,8 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 
 		if (msg->m_bIsRequest)
 		{
-			// Find and/or create the object manager associated with src_channel_id
-			OTL::ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(msg->m_src_channel_id);
-
-            ACE_CDR::UShort old_thread_id = 0;
+			// Set per channel thread id
+			ACE_CDR::UShort old_thread_id = 0;
 			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
 			if (i != pContext->m_mapChannelThreads.end())
 				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
@@ -571,7 +560,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 			void* TODO; // This is where extra stuff for the call context goes...
 
 			// Process the message...
-			process_request(ptrOM,msg,pContext->m_deadline);
+			process_request(msg,pContext->m_deadline);
 
 			// Restore old context
 			pContext->m_deadline = old_deadline;
@@ -782,10 +771,13 @@ bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::U
 	return true;
 }
 
-void OOCore::UserSession::process_request(OTL::ObjectPtr<Remoting::IObjectManager> ptrOM, const UserSession::Message* pMsg, const ACE_Time_Value& deadline)
+void OOCore::UserSession::process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline)
 {
 	try
 	{
+		// Find and/or create the object manager associated with src_channel_id
+		OTL::ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(pMsg->m_src_channel_id);
+
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
 		ptrRequest = ObjectImpl<InputCDR>::CreateInstancePtr();

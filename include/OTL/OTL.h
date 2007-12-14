@@ -96,13 +96,13 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj,name) \
-		{ obj::GetOid, name, Creator<obj::ObjectFactoryClass>::Create,0 },
+		{ obj::GetOid, obj::GetActivationFlags, obj::GetRegistrationFlags, name, Creator<obj::ObjectFactoryClass>::Create,0 },
 
 #define OBJECT_MAP_ENTRY_UNNAMED(obj) \
-		{ obj::GetOid, 0, Creator<obj::ObjectFactoryClass>::Create,0 },
+		{ obj::GetOid, obj::GetActivationFlags, obj::GetRegistrationFlags, 0, Creator<obj::ObjectFactoryClass>::Create,0 },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
@@ -447,6 +447,8 @@ namespace OTL
 		struct CreatorEntry
 		{
 			const Omega::guid_t* (*pfnOid)();
+			const Omega::Activation::Flags_t (*pfnActivationFlags)();
+			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
 			const wchar_t* pszName;
 			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
 			Omega::uint32_t cookie;
@@ -852,7 +854,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID>
+	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::OutOfProcess, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactory
 	{
 	public:
@@ -862,33 +864,33 @@ namespace OTL
 		{
 			return pOID;
 		}
+
+		static const Omega::Activation::Flags_t GetActivationFlags()
+		{
+			return flags;
+		}
+
+		static const Omega::Activation::RegisterFlags_t GetRegistrationFlags()
+		{
+			return reg_flags;
+		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID>
-	class AutoObjectFactoryNoAggregation
+	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::OutOfProcess, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
         typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
-
-		static const Omega::guid_t* GetOid()
-		{
-			return pOID;
-		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID>
-	class AutoObjectFactorySingleton
+	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::OutOfProcess, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
         typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
-
-		static const Omega::guid_t* GetOid()
-		{
-			return pOID;
-		}
 	};
 
-	// Fix this with a cut and paste job from Singleton
+	// Fix this with a cut and paste job from Singleton - if needed!
 	//template <class TYPE>
 	//class SingletonNoLock
 	//{

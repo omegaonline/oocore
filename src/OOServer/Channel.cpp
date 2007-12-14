@@ -50,9 +50,10 @@ User::Channel::Channel()
 {
 }
 
-void User::Channel::init(ACE_CDR::UShort channel_id)
+void User::Channel::init(ACE_CDR::UShort channel_id, bool bLocal)
 {
 	m_channel_id = channel_id;
+	m_bLocal = bLocal;
 }
 
 Serialize::IFormattedStream* User::Channel::CreateOutputStream()
@@ -140,31 +141,41 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	return 0;
 }
 
+OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+
 Omega::guid_t User::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
 {
 	// This must match OOCore::OID_ChannelMarshalFactory
 	static guid_t oid = guid_t::FromString(L"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
-
 	return oid;
 }
 
 void User::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
 {
+	pStream->WriteUInt16(1);
 	pStream->WriteUInt16(m_channel_id);
 }
 
 void User::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
 {
 	pStream->ReadUInt16();
+	pStream->ReadUInt16();
 }
 
-OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
-
-void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t, Omega::IObject*& pObject)
+void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* /*pObjectManager*/, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t, Omega::IObject*& pObject)
 {
-	::DebugBreak();
-
+	// Read the type
+	bool bServer = (pStream->ReadUInt16()==1);
 	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
-	
-	void* TODO;
+
+	if (!bServer)
+	{
+		const Root::MessageHandler::CallContext& c = User::Manager::USER_MANAGER::instance()->get_call_context();
+		ACE_CDR::UShort new_ch = User::Manager::USER_MANAGER::instance()->add_routing(c.m_src_channel,channel_id);
+
+		channel_id = new_ch;
+	}
+
+	// Create a new object manager (and channel)
+	pObject = User::Manager::USER_MANAGER::instance()->get_object_manager(channel_id,false)->QueryInterface(iid);
 }

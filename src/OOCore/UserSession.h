@@ -119,7 +119,7 @@ namespace OOCore
 
 		int run_read_loop();
 		void pump_requests(const ACE_Time_Value* deadline = 0);
-		void process_request(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM, const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
+		void process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
 		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
 		bool build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, bool bIsRequest, ACE_CDR::UShort attribs);
 		void send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);

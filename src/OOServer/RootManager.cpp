@@ -110,27 +110,33 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 	// Spawn off the request threads
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"),-1);
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"));
 	else
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"),-1);
+			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"));
 		else
 		{
 			if (init())
 			{
 				// Now just process client requests
 				ret = process_client_connects();
-
-				// Wait for all the proactor threads to finish
-				ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
-
-				// Wait for all the request threads to finish
-				ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 			}
+			
+			// Stop the proactor
+			ACE_Proactor::instance()->proactor_end_event_loop();
+
+			// Wait for all the proactor threads to finish
+			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
+
+		// Stop the MessageHandler
+		stop();
+
+		// Wait for all the request threads to finish
+		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
 	return ret;
@@ -138,7 +144,8 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 
 ACE_THR_FUNC_RETURN Root::Manager::proactor_worker_fn(void*)
 {
-	return (ACE_THR_FUNC_RETURN)ACE_Proactor::instance()->proactor_run_event_loop();
+	ACE_Proactor::instance()->proactor_run_event_loop();
+	return 0;
 }
 
 ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void* pParam)
@@ -227,7 +234,7 @@ void Root::Manager::end_event_loop_i()
 	close_users();
 
 	// Stop the proactor
-	ACE_Proactor::instance()->end_event_loop();
+	ACE_Proactor::instance()->proactor_end_event_loop();
 
 	// Stop the MessageHandler
 	stop();
@@ -244,11 +251,7 @@ int Root::Manager::process_client_connects()
 	if (m_client_connector.start(this,1,pipe_name) != 0)
 		return -1;
 
-	int ret = ACE_Reactor::instance()->run_reactor_event_loop();
-
-	ACE_Reactor::close_singleton();
-
-	return ret;
+	return ACE_Reactor::instance()->run_reactor_event_loop();
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -317,10 +320,9 @@ ACE_CDR::UShort Root::Manager::spawn_user(user_id_type uid, ACE_CDR::UShort nUse
 	}
 
 	ACE_CDR::UShort nChannelId = 0;
-
-	ACE_WString strNewPipe = MessagePipe::unique_name(L"oo");
-
+	
 	MessagePipeAcceptor acceptor;
+	ACE_WString strNewPipe = MessagePipe::unique_name(L"oor");
 	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"));
 	else 
@@ -352,7 +354,7 @@ ACE_CDR::UShort Root::Manager::spawn_user(user_id_type uid, ACE_CDR::UShort nUse
 						{
 							ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-							UserProcess process = {strPipe, pSpawn};
+							UserProcess process = {strPipe, pSpawn, (nUserChannel==0 && !bSandbox) };
 							m_mapUserProcesses.insert(std::map<MessagePipe,UserProcess>::value_type(pipe,process));
 						}
 						catch (std::exception& e)
@@ -365,6 +367,9 @@ ACE_CDR::UShort Root::Manager::spawn_user(user_id_type uid, ACE_CDR::UShort nUse
 					if (!nChannelId)
 						delete pMC;
 				}
+
+				if (!nChannelId)
+					pipe.close();
 			}
 		}
 
@@ -475,10 +480,11 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 					process = i->second;
 					break;
 				}
-				else if (i->second.pSpawn->IsSameUser(uid))
+				else if (i->second.pSpawn->IsSameUser(uid) && i->second.bPrimary)
 				{
 					// Store the channel id, and tell this channel to allow marshalling of the new channel for the registry
 					void* TODO; 
+
 					nUserChannel = get_pipe_channel(i->first,0);
 				}
 			}
@@ -548,12 +554,10 @@ bool Root::Manager::access_check(const MessagePipe& pipe, const wchar_t* pszObje
 	}
 }
 
-void Root::Manager::process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort /*attribs*/)
+void Root::Manager::process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const MessageHandler::CallContext& context)
 {
 	RootOpCode_t op_code;
 	request >> op_code;
-
-	//ACE_DEBUG((LM_DEBUG,L"Root context: Root request %u from %u(%u)",op_code,reply_channel_id,src_channel_id));
 
 	if (!request.good_bit())
 	{
@@ -562,7 +566,6 @@ void Root::Manager::process_request(const MessagePipe& pipe, ACE_InputCDR& reque
 	}
 
 	ACE_OutputCDR response;
-
 	switch (op_code)
 	{
 	case KeyExists:
@@ -623,8 +626,8 @@ void Root::Manager::process_request(const MessagePipe& pipe, ACE_InputCDR& reque
 		break;
 	}
 
-	if (response.good_bit())
-		send_response(src_channel_id,src_thread_id,response.begin(),deadline,0);
+	if (response.good_bit() && !(context.m_attribs & 1))
+		send_response(context.m_src_channel,src_thread_id,response.begin(),context.m_deadline,context.m_attribs);
 }
 
 // Annoyingly this is missing from ACE...  A direct lift and translate of the ACE_CString version
@@ -1140,4 +1143,3 @@ void Root::Manager::registry_delete_value(const MessagePipe& pipe, ACE_InputCDR&
 
 	response << err;
 }
-

@@ -178,7 +178,7 @@ namespace User
 	public:
 		Channel();
 
-		void init(ACE_CDR::UShort channel_id);
+		void init(ACE_CDR::UShort channel_id, bool bLocal);
 		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -187,6 +187,7 @@ namespace User
 
 	private:
 		ACE_CDR::UShort  m_channel_id;
+		bool             m_bLocal;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
 		Channel& operator = (const Channel&) { return *this; }
@@ -208,7 +209,7 @@ namespace User
 
 	class ChannelMarshalFactory :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory>,
+		public OTL::AutoObjectFactoryNoAggregation<ChannelMarshalFactory,&OID_ChannelMarshalFactory,Omega::Activation::InProcess>,
 		public Omega::Remoting::IMarshalFactory
 	{
 	public:

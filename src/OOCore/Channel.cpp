@@ -140,11 +140,13 @@ Omega::guid_t OOCore::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omeg
 
 void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
 {
+	pStream->WriteUInt16(0);
 	pStream->WriteUInt16(m_channel_id);
 }
 
 void OOCore::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
 {
+	pStream->ReadUInt16();
 	pStream->ReadUInt16();
 }
 
@@ -156,8 +158,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectM
 	{
 		// This must match OOServer::User::OID_ChannelMarshalFactory
 		static guid_t oid = guid_t::FromString(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
-
-		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
+		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess | Activation::DontLaunch);
 
 		// If we have a pointer by now then we are actually running in the OOServer.exe, 
 		// and can therefore do our specialized unmarshalling...
@@ -168,9 +169,12 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectM
 		// We can continue if this happens
 		pE->Release();
 	}
-	
+		
 	// If we get here, then we are loaded into a different exe from OOServer,
 	// therefore we do simple unmarshalling
+
+	// Don't care about the type...
+	pStream->ReadUInt16();
 
 	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
 

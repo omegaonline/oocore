@@ -47,8 +47,7 @@ namespace Root
 			m_pHandler(pHandler)
 		{ }
 
-		virtual ~MessageConnection()
-		{ }
+		virtual ~MessageConnection();
 
 		ACE_CDR::UShort open(MessagePipe& pipe);
 
@@ -87,7 +86,6 @@ namespace Root
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 
 		int start(const ACE_WString& strName);
-		ACE_CDR::UShort get_channel_thread_id(ACE_CDR::UShort channel);
 		ACE_CDR::UShort get_pipe_channel(const MessagePipe& pipe, ACE_CDR::UShort channel);
 		MessagePipe get_channel_pipe(ACE_CDR::UShort channel);
 		void stop_accepting();
@@ -95,11 +93,18 @@ namespace Root
 		virtual void pipe_closed(const MessagePipe& pipe);
 		virtual void channel_closed(ACE_CDR::UShort channel);
 
-		virtual void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs) = 0;
-
 		ACE_CDR::UShort add_routing(ACE_CDR::UShort dest_channel, ACE_CDR::UShort dest_route);
 
 		virtual int on_accept(MessagePipe& pipe, int key);
+
+		struct CallContext
+		{
+			ACE_CDR::UShort  m_src_channel;
+			ACE_Time_Value   m_deadline;
+			ACE_CDR::UShort  m_attribs;
+		};
+		virtual void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const CallContext& context) = 0;
+		const CallContext& get_call_context();
 
 	private:
 		friend class MessageConnection;
@@ -146,9 +151,11 @@ namespace Root
 		{
 			ACE_CDR::UShort                             m_thread_id;
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
-			ACE_Time_Value                              m_deadline;
 			MessageHandler*                             m_pHandler;
+
+			// Transient data
 			std::map<ACE_CDR::UShort,ACE_CDR::UShort>   m_mapChannelThreads;
+			CallContext                                 m_context;
 
 			static ThreadContext* instance(Root::MessageHandler* pHandler);
 

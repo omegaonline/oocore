@@ -49,6 +49,7 @@ namespace Root
 		virtual ~NTService();
 
 		static bool open();
+		static void stop();
 		static bool install();
 		static bool uninstall();
 		
@@ -74,6 +75,7 @@ namespace Root
 		void continue_requested(DWORD control_code);
 		
 		ACE_Event m_finished;
+		int       m_svc_thread;
 	};
 }
 

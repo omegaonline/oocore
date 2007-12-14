@@ -42,9 +42,9 @@ namespace Omega
 
 		enum RegisterFlags
 		{
-			SingleUse = 0,
-			MultipleUse = 1,
-			MultipleRegistration = 2,
+			MultipleUse = 0,    
+			SingleUse = 1,              // AutoRevoke after 1st GetObject
+			MultipleRegistration = 2,   // Allow multiple calls to Register with different flags
 			Suspended = 4
 		};
 		typedef uint16_t RegisterFlags_t;

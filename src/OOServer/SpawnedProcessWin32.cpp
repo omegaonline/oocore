@@ -221,14 +221,14 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 	return ERROR_SUCCESS;
 }
 
-DWORD Root::SpawnedProcess::GetWindowStationName(HANDLE hToken, ACE_WString& strDesktop)
+DWORD Root::SpawnedProcess::GetLogonSID(HANDLE hToken, PSID& pSIDLogon)
 {
-	strDesktop.clear();
-
 	// Get the logon SID of the Token
 	TOKEN_GROUPS* pGroups = static_cast<TOKEN_GROUPS*>(GetTokenInfo(hToken,TokenGroups));
 	if (!pGroups)
 		return GetLastError();
+
+	DWORD dwRes = ERROR_INVALID_SID;
 
 	// Loop through the groups to find the logon SID
 	for (DWORD dwIndex = 0; dwIndex < pGroups->GroupCount; dwIndex++)
@@ -236,42 +236,417 @@ DWORD Root::SpawnedProcess::GetWindowStationName(HANDLE hToken, ACE_WString& str
 		if ((pGroups->Groups[dwIndex].Attributes & SE_GROUP_LOGON_ID) ==  SE_GROUP_LOGON_ID) 
 		{
 			// Found the logon SID...
-			PSID sid = pGroups->Groups[dwIndex].Sid;
-
-			LPWSTR pszSid = 0;
-			ConvertSidToStringSidW(sid,&pszSid);
-			strDesktop = pszSid;
-			LocalFree(pszSid);
-
-			// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
-			if (ACE_OS::strncmp(strDesktop.c_str(),L"S-1-5-5-",8) != 0)
-				return ERROR_INVALID_SID;
-
-			// Crack out the last two parts - there is probably an easier way... but this works
-			strDesktop = strDesktop.substr(8);
-			const wchar_t* p = strDesktop.c_str();
-			wchar_t* pEnd = 0;
-			DWORD dwParts[2];
-			dwParts[0] = ACE_OS::strtoul(p,&pEnd,10);
-			if (*pEnd != L'-')
-				return ERROR_INVALID_SID;
-			dwParts[1] = ACE_OS::strtoul(pEnd+1,&pEnd,10);
-			if (*pEnd != L'\0')
-				return ERROR_INVALID_SID;
-						
-			// Service window stations are created with the name "Service-0xZ1-Z2$",
-			// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
-			// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
-			wchar_t szBuf[256];
-			ACE_OS::sprintf(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
-			strDesktop = szBuf;
+			DWORD dwLen = GetLengthSid(pGroups->Groups[dwIndex].Sid);
+			pSIDLogon = static_cast<PSID>(ACE_OS::malloc(dwLen));
+			if (!pSIDLogon)
+				dwRes = ERROR_OUTOFMEMORY;
+			else 
+			{
+				if (!CopySid(dwLen,pSIDLogon,pGroups->Groups[dwIndex].Sid))
+					dwRes = GetLastError();
+				else
+					dwRes = ERROR_SUCCESS;
+			}
 			break;
 		}
 	}
+
 	ACE_OS::free(pGroups);
 
-	return (strDesktop.empty() ? ERROR_INVALID_SID : ERROR_SUCCESS);
+	return dwRes;
 }
+
+DWORD Root::SpawnedProcess::CreateSD(PACL pACL, void*& pSD)
+{
+	// Create a new security descriptor
+	pSD = LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
+	if (pSD == NULL)
+		return GetLastError();
+
+	DWORD dwRes = ERROR_SUCCESS;
+	
+	// Initialize a security descriptor.
+	if (!InitializeSecurityDescriptor(static_cast<PSECURITY_DESCRIPTOR>(pSD),SECURITY_DESCRIPTOR_REVISION))
+	{
+		dwRes = GetLastError();
+		LocalFree(pSD);
+		return dwRes;
+	}
+
+	// Add the ACL to the SD
+	if (!SetSecurityDescriptorDacl(static_cast<PSECURITY_DESCRIPTOR>(pSD),TRUE,pACL,FALSE))
+	{
+		dwRes = GetLastError();
+		LocalFree(pSD);
+		return dwRes;
+	}
+
+	return ERROR_SUCCESS;
+}
+
+DWORD Root::SpawnedProcess::CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD)
+{
+	const int NUM_ACES = 3;
+	EXPLICIT_ACCESSW ea[NUM_ACES];
+	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+
+	// Set minimum access for the calling process SID
+	ea[0].grfAccessPermissions = WINSTA_CREATEDESKTOP;
+	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfInheritance = NO_INHERITANCE;
+	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
+
+	// Set default access for Specific logon.
+	ea[1].grfAccessPermissions = 
+		WINSTA_ACCESSCLIPBOARD |
+		WINSTA_ACCESSGLOBALATOMS |
+		WINSTA_CREATEDESKTOP |
+		WINSTA_EXITWINDOWS |
+		WINSTA_READATTRIBUTES |
+		STANDARD_RIGHTS_REQUIRED;
+
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+	// Set generic all access for Specific logon for everything below...
+	ea[2].grfAccessPermissions = STANDARD_RIGHTS_REQUIRED | GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL;
+	ea[2].grfAccessMode = SET_ACCESS;
+	ea[2].grfInheritance = CONTAINER_INHERIT_ACE | INHERIT_ONLY_ACE | OBJECT_INHERIT_ACE;
+	ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[2].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[2].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+	DWORD dwRes = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
+	if (dwRes != ERROR_SUCCESS)
+		return dwRes;
+
+	dwRes = CreateSD(pACL,pSD);
+	if (dwRes != ERROR_SUCCESS)
+		LocalFree(pACL);
+
+	return dwRes;
+}
+
+DWORD Root::SpawnedProcess::CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD)
+{
+	const int NUM_ACES = 2;
+	EXPLICIT_ACCESSW ea[NUM_ACES];
+	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+
+	// Set minimum access for the calling process SID
+	ea[0].grfAccessPermissions = DESKTOP_CREATEWINDOW;
+	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfInheritance = NO_INHERITANCE;
+	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
+
+	// Set full access for Specific logon.
+	ea[1].grfAccessPermissions = 
+		DESKTOP_CREATEMENU |
+		DESKTOP_CREATEWINDOW |
+		DESKTOP_ENUMERATE |
+		DESKTOP_HOOKCONTROL |
+		DESKTOP_READOBJECTS |
+		DESKTOP_WRITEOBJECTS |
+		STANDARD_RIGHTS_REQUIRED;
+
+	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfInheritance = NO_INHERITANCE;
+	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+	DWORD dwRes = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
+	if (dwRes != ERROR_SUCCESS)
+		return dwRes;
+
+	dwRes = CreateSD(pACL,pSD);
+	if (dwRes != ERROR_SUCCESS)
+		LocalFree(pACL);
+
+	return dwRes;
+}
+
+DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+{
+	// Service window stations are created with the name "Service-0xZ1-Z2$",
+	// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
+	// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
+
+	// Get the logon SID of the Token
+	PSID pSIDLogon = 0;
+	DWORD dwRes = GetLogonSID(hToken,pSIDLogon);
+	if (dwRes != ERROR_SUCCESS)
+		return dwRes;
+
+	LPWSTR pszSid = 0;
+	if (!ConvertSidToStringSidW(pSIDLogon,&pszSid))
+	{
+		dwRes = GetLastError();
+		ACE_OS::free(pSIDLogon);
+		return dwRes;
+	}
+	strWindowStation = pszSid;
+	LocalFree(pszSid);
+
+	// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
+	if (ACE_OS::strncmp(strWindowStation.c_str(),L"S-1-5-5-",8) != 0)
+	{
+		ACE_OS::free(pSIDLogon);
+		return ERROR_INVALID_SID;
+	}
+
+	// Crack out the last two parts - there is probably an easier way... but this works
+	strWindowStation = strWindowStation.substr(8);
+	const wchar_t* p = strWindowStation.c_str();
+	wchar_t* pEnd = 0;
+	DWORD dwParts[2];
+	dwParts[0] = ACE_OS::strtoul(p,&pEnd,10);
+	if (*pEnd != L'-')
+	{
+		ACE_OS::free(pSIDLogon);
+		return ERROR_INVALID_SID;
+	}
+	dwParts[1] = ACE_OS::strtoul(pEnd+1,&pEnd,10);
+	if (*pEnd != L'\0')
+	{
+		ACE_OS::free(pSIDLogon);
+		return ERROR_INVALID_SID;
+	}
+				
+	wchar_t szBuf[256];
+	ACE_OS::sprintf(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
+	strWindowStation = szBuf;
+
+	// Get the current processes user SID
+	HANDLE hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+	{
+		dwRes = GetLastError();
+		ACE_OS::free(pSIDLogon);
+		return dwRes;
+	}
+
+	TOKEN_USER* pProcessUser = static_cast<TOKEN_USER*>(GetTokenInfo(hProcessToken,TokenUser));
+	if (!pProcessUser)
+	{
+		dwRes = GetLastError();
+		ACE_OS::free(pSIDLogon);
+		CloseHandle(hProcessToken);
+		return dwRes;
+	}
+
+	CloseHandle(hProcessToken);
+
+	// Open or create the new window station and desktop
+	// Now confirm the Window Station exists...
+	hWinsta = OpenWindowStationW(strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
+	if (!hWinsta)
+	{
+		// See if just doesn't exist yet...
+		dwRes = GetLastError();
+		if (dwRes != ERROR_FILE_NOT_FOUND)
+		{
+			ACE_OS::free(pSIDLogon);
+			ACE_OS::free(pProcessUser);
+			return dwRes;
+		}
+
+		SECURITY_ATTRIBUTES sa;
+		sa.nLength = sizeof(sa);
+		sa.bInheritHandle = FALSE;
+		sa.lpSecurityDescriptor = 0;
+		PACL pACL = 0;
+
+		dwRes = CreateWindowStationSD(pProcessUser,pSIDLogon,pACL,sa.lpSecurityDescriptor);
+		if (dwRes != ERROR_SUCCESS)
+		{
+			ACE_OS::free(pSIDLogon);
+			ACE_OS::free(pProcessUser);
+			return dwRes;
+		}
+
+		hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,&sa);
+		if (!hWinsta)
+			dwRes = GetLastError();
+
+		LocalFree(pACL);
+		LocalFree(sa.lpSecurityDescriptor);
+
+		if (!hWinsta)
+		{
+			ACE_OS::free(pSIDLogon);
+			ACE_OS::free(pProcessUser);
+			return GetLastError();
+		}
+	}	
+
+	// Stash our old
+	HWINSTA hOldWinsta = GetProcessWindowStation();
+	if (!hOldWinsta)
+	{
+		dwRes = GetLastError();
+		ACE_OS::free(pSIDLogon);
+		ACE_OS::free(pProcessUser);
+		CloseHandle(hWinsta);
+		return dwRes;
+	}
+
+	// Swap our Window Station
+	if (!SetProcessWindowStation(hWinsta))
+	{
+		dwRes = GetLastError();
+		ACE_OS::free(pSIDLogon);
+		ACE_OS::free(pProcessUser);
+		CloseHandle(hWinsta);
+		return dwRes;
+	}
+		
+	// Try for the desktop
+	hDesktop = OpenDesktopW(L"default",0,FALSE,DESKTOP_CREATEWINDOW);
+	if (!hDesktop)
+	{
+		// See if just doesn't exist yet...
+		dwRes = GetLastError();
+		if (dwRes != ERROR_FILE_NOT_FOUND)
+		{
+			ACE_OS::free(pSIDLogon);
+			ACE_OS::free(pProcessUser);
+			SetProcessWindowStation(hOldWinsta);
+			CloseHandle(hWinsta);
+			return dwRes;
+		}
+
+		SECURITY_ATTRIBUTES sa;
+		sa.nLength = sizeof(sa);
+		sa.bInheritHandle = FALSE;
+		sa.lpSecurityDescriptor = 0;
+		PACL pACL = 0;
+
+		dwRes = CreateDesktopSD(pProcessUser,pSIDLogon,pACL,sa.lpSecurityDescriptor);
+		if (dwRes != ERROR_SUCCESS)
+		{
+			ACE_OS::free(pSIDLogon);
+			ACE_OS::free(pProcessUser);
+			return dwRes;
+		}
+
+		hDesktop = CreateDesktopW(L"default",0,0,0,DESKTOP_CREATEWINDOW,&sa);
+		if (!hDesktop)
+			dwRes = GetLastError();
+
+		LocalFree(pACL);
+		LocalFree(sa.lpSecurityDescriptor);
+
+		if (!hDesktop)
+		{
+			ACE_OS::free(pSIDLogon);
+			ACE_OS::free(pProcessUser);
+			SetProcessWindowStation(hOldWinsta);
+			CloseHandle(hWinsta);
+			return dwRes;
+		}
+	}
+
+	// Revert our Window Station
+	SetProcessWindowStation(hOldWinsta);
+
+	ACE_OS::free(pSIDLogon);
+	ACE_OS::free(pProcessUser);
+
+	strWindowStation += L"\\default";
+
+	return dwRes;
+}
+
+DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
+{
+	// Get the current Default DACL
+	TOKEN_DEFAULT_DACL* pDef_dacl = static_cast<TOKEN_DEFAULT_DACL*>(GetTokenInfo(hToken,TokenDefaultDacl));
+	if (!pDef_dacl)
+		return ERROR_OUTOFMEMORY;
+
+	// Get the logon SID of the Token
+	PSID pSIDLogon = 0;
+	DWORD dwRes = GetLogonSID(hToken,pSIDLogon);
+	if (dwRes != ERROR_SUCCESS)
+	{
+		ACE_OS::free(pDef_dacl);
+		return dwRes;
+	}
+
+	const int NUM_ACES = 1;
+	EXPLICIT_ACCESSW ea[NUM_ACES];
+	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+
+	// Set maximum access for the logon SID
+	ea[0].grfAccessPermissions = GENERIC_ALL;
+	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[0].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+	TOKEN_DEFAULT_DACL def_dacl = {0};
+	dwRes = SetEntriesInAclW(NUM_ACES,ea,pDef_dacl->DefaultDacl,&def_dacl.DefaultDacl);
+
+	ACE_OS::free(pSIDLogon);
+	ACE_OS::free(pDef_dacl);
+
+	if (dwRes != ERROR_SUCCESS)
+		return dwRes;
+
+	// Now set the token default DACL
+	if (!SetTokenInformation(hToken,TokenDefaultDacl,&def_dacl,sizeof(def_dacl)))
+	{
+		dwRes = GetLastError();
+		LocalFree(def_dacl.DefaultDacl);
+	}
+
+	return dwRes;
+}
+
+//// This will add ALL access to the sandbox user
+//#include <shlwapi.h>
+//static void EnableSandboxAccessToOOServer(LPWSTR pszPath, TOKEN_USER* pUser)
+//{
+//	PathRemoveFileSpecW(pszPath);
+//	
+//	PACL pACL = 0;
+//	PSECURITY_DESCRIPTOR pSD = 0;
+//	DWORD dwRes = GetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,&pACL,NULL,&pSD);
+//	if (dwRes != ERROR_SUCCESS)
+//		return;
+//
+//	const int NUM_ACES = 1;
+//	EXPLICIT_ACCESSW ea[NUM_ACES];
+//	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+//
+//	// Set maximum access for the logon SID
+//	ea[0].grfAccessPermissions = GENERIC_ALL;
+//	ea[0].grfAccessMode = SET_ACCESS;
+//	ea[0].grfInheritance = OBJECT_INHERIT_ACE;
+//	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+//	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+//	ea[0].Trustee.ptstrName = (LPWSTR)pUser->User.Sid;
+//
+//	PACL pACLNew = {0};
+//	dwRes = SetEntriesInAclW(NUM_ACES,ea,pACL,&pACLNew);
+//
+//	LocalFree(pSD);
+//	ACE_OS::free(pUser);
+//
+//	if (dwRes != ERROR_SUCCESS)
+//		return;
+//
+//	dwRes = SetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,NULL,NULL,pACLNew,NULL);
+//}
 
 DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox)
 {
@@ -291,7 +666,10 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 		strCmdLine += L" --break";
 #endif
 
+	// WIndow station vars
 	ACE_WString strWindowStation;
+	HWINSTA hWinsta = 0;
+	HDESK hDesktop = 0;
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -311,79 +689,28 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 		goto CleanupProfile;
 	}
 
-	// Open or Create the service window station/desktop
-	dwRes = GetWindowStationName(hToken,strWindowStation);
+	dwRes = OpenCorrectWindowStation(hToken,strWindowStation,hWinsta,hDesktop);
 	if (dwRes != ERROR_SUCCESS)
-		goto CleanupEnv;
-
-	// Open or create the new window station and desktop
-	// Now confirm the Window Station exists...
-	HWINSTA hWinsta = OpenWindowStationW(strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
-	if (!hWinsta)
 	{
-		// See if just doesn't exist yet...
-		dwRes = GetLastError();
-		if (dwRes != ERROR_FILE_NOT_FOUND)
-			goto CleanupEnv;
-
-		void* TODO; // Add proper SD
-		hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,NULL);
-		if (!hWinsta)
-		{
-			dwRes = GetLastError();
-			goto CleanupEnv;
-		}
-	}	
-
-	// Stash our old
-	HWINSTA hOldWinsta = GetProcessWindowStation();
-	if (!hOldWinsta)
-	{
-		dwRes = GetLastError();
-		goto CleanupWinSta;
+		DestroyEnvironmentBlock(lpEnv);
+		goto CleanupProfile;
 	}
-
-	// Swap our Window Station
-	if (!SetProcessWindowStation(hWinsta))
-	{
-		dwRes = GetLastError();
-		goto CleanupWinSta;
-	}
-		
-	// Try for the desktop
-	HDESK hDesktop = OpenDesktopW(L"default",0,FALSE,READ_CONTROL);
-	if (!hDesktop)
-	{
-		// See if just doesn't exist yet...
-		dwRes = GetLastError();
-		if (dwRes != ERROR_FILE_NOT_FOUND)
-		{
-			SetProcessWindowStation(hOldWinsta);
-			goto CleanupWinSta;
-		}
-
-		void* TODO; // Use proper DS
-		hDesktop = CreateDesktopW(L"default",0,0,0,DESKTOP_CREATEWINDOW,NULL);
-		if (!hDesktop)
-		{
-			dwRes = GetLastError();
-			SetProcessWindowStation(hOldWinsta);
-			goto CleanupWinSta;
-		}
-	}
-
-	strWindowStation += L"\\default";
-
-	// Revert our Window Station
-	SetProcessWindowStation(hOldWinsta);
 
 	// Get the primary token from the impersonation token
 	HANDLE hPriToken = 0;
-	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
+	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT ,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
 		dwRes = GetLastError();
 		goto CleanupDesktop;
 	}
+
+	// This might be needed for retricted tokens...
+	/*dwRes = SetTokenDefaultDACL(hPriToken);
+	if (dwRes != ERROR_SUCCESS)
+	{
+		CloseHandle(hPriToken);
+		goto CleanupDesktop;
+	}*/
 
 	// Init our startup info
 	STARTUPINFOW startup_info;
@@ -391,39 +718,53 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 
-	DWORD dwFlags = CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT;
+	DWORD dwFlags = DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT | CREATE_NEW_PROCESS_GROUP | CREATE_DEFAULT_ERROR_MODE;
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;	
-	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info) || GetLastError() != ERROR_SUCCESS)
+	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,L"D:\\OO\\bin\\Debug",&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		CloseHandle(hPriToken);
 		goto CleanupDesktop;
 	}
 
-	dwRes = ERROR_SUCCESS;
+	// See if process has immediately terminated...
+	DWORD dwWait = WaitForSingleObject(process_info.hProcess,100);
+	if (dwWait != WAIT_TIMEOUT)
+	{
+		// Process aborted very quickly... this can happen if we have security issues
+		GetExitCodeProcess(process_info.hProcess,&dwRes);
+		if (dwRes == ERROR_SUCCESS)
+			dwRes = ERROR_INTERNAL_ERROR;
+
+		CloseHandle(process_info.hProcess);
+		CloseHandle(process_info.hThread);
+		CloseHandle(hPriToken);
+
+		goto CleanupDesktop;
+	}
 
 	// Stash handles to close on end...
 	m_hProfile = hProfile;
 	m_hProcess = process_info.hProcess;
-	m_hToken = hPriToken;
-
+	
+	// Duplicate the impersonated token...
+	DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
+	
 	// And close any others
 	CloseHandle(process_info.hThread);
 
 	// Don't want to close this one...
-	hProfile = NULL;		
+	hProfile = NULL;
 
 CleanupDesktop:
 	// Done with Desktop
 	CloseDesktop(hDesktop);
 
-CleanupWinSta:
 	// Done with Window Station
 	CloseWindowStation(hWinsta);
 
-CleanupEnv:
 	// Done with environment block...
 	DestroyEnvironmentBlock(lpEnv);
 
@@ -463,7 +804,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 
 					char szBuf[1024];
 					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
-					if (MessageBox(NULL,szBuf,"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFBUTTON2) == IDYES)
+					if (MessageBoxA(NULL,szBuf,"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
 						dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 					}
@@ -844,13 +1185,13 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 
 	// Try to modify the object's DACL.
 	DWORD dwRes = SetNamedSecurityInfoW(
-		const_cast<LPWSTR>(strFilename.c_str()),         // name of the object
-		SE_FILE_OBJECT,              // type of object
-		DACL_SECURITY_INFORMATION |  // change only the object's DACL
-		PROTECTED_DACL_SECURITY_INFORMATION, // And don't inherit!
-		NULL, NULL,                  // don't change owner or group
-		pACL,                        // DACL specified
-		NULL);                       // don't change SACL
+		const_cast<LPWSTR>(strFilename.c_str()), // name of the object
+		SE_FILE_OBJECT,                          // type of object
+		DACL_SECURITY_INFORMATION |              // change only the object's DACL
+		PROTECTED_DACL_SECURITY_INFORMATION,     // And don't inherit!
+		NULL, NULL,                              // don't change owner or group
+		pACL,                                    // DACL specified
+		NULL);                                   // don't change SACL
 
 	LocalFree(pACL);
 

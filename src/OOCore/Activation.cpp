@@ -159,11 +159,22 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_RevokeObject,1,((in),Omega::uint3
 OOCore::ServiceManager::ServiceManager() : m_nNextCookie(0x843A9B81)
 {
 	// Obfuscate the cookie start value... this makes guessing cookie values harder (not impossible)
-	m_nNextCookie ^= (uint32_t)(ACE_OS::getpid());
+	m_nNextCookie ^= uint32_t(ACE_OS::getpid());
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags)
 {
+	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	if (flags & Activation::OutOfProcess)
+	{
+		// Register in ROT
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());			
+
+		void* TODO; // Change this to use Monikers
+
+		ptrROT->Register(oid,Activation::IRunningObjectTable::Default,pObject);
+	}
+
 	try
 	{
 		// Remove any flags we don't store...
@@ -174,7 +185,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		// Check if we have someone registered already
 		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
 		{
-			if (!(i->second->second.m_reg_flags & Activation::MultipleUse))
+			if (!(i->second->second.m_reg_flags & Activation::MultipleRegistration))
 				OOCORE_THROW_ERRNO(EALREADY);
 
 			if (i->second->second.m_reg_flags == reg_flags)
@@ -183,7 +194,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 
 		// Create a new cookie
 		uint32_t nCookie = m_nNextCookie++;
-		while (m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
+		while (nCookie==0 && m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
 		{
 			nCookie = m_nNextCookie++;
 		}
@@ -198,13 +209,23 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		if (!p.second)
 			OOCORE_THROW_ERRNO(EALREADY);
 
-		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
+		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));	
 
 		return nCookie;
 	}
 	catch (std::exception& e)
 	{ 
+		if (flags & Activation::OutOfProcess)
+			ptrROT->Revoke(oid);
+
 		OMEGA_THROW(string_t(e.what(),false));
+	}
+	catch (...)
+	{
+		if (flags & Activation::OutOfProcess)
+			ptrROT->Revoke(oid);
+
+		throw;
 	}
 }
 
@@ -240,14 +261,32 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 {
 	try
 	{
-		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		bool bUnROT = false;
+		guid_t oid;
+		
+		{
+			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
-		if (i == m_mapServicesByCookie.end())
-			OOCORE_THROW_ERRNO(EINVAL);
+			std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
+			if (i == m_mapServicesByCookie.end())
+				OOCORE_THROW_ERRNO(EINVAL);
 
-		m_mapServicesByOid.erase(i->second.m_oid);
-		m_mapServicesByCookie.erase(i);		
+			bUnROT = ((i->second.m_flags & Activation::OutOfProcess) == Activation::OutOfProcess);
+			oid = i->second.m_oid;
+
+			m_mapServicesByOid.erase(i->second.m_oid);
+			m_mapServicesByCookie.erase(i);		
+		}
+
+		if (bUnROT)
+		{
+			// Revoke from ROT
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+			// Change to use monikers...
+			ptrROT->Revoke(oid);
+		}
 	}
 	catch (std::exception& e)
 	{ 
@@ -280,7 +319,7 @@ IObject* OOCore::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, 
 			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
 			System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags),
 			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
-			System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj));
+			System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
 
 		if (GetLibraryObject_Exception)
 			System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
@@ -403,7 +442,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 			pE->Release();
 		}
 
-		// Try RunningObjectTable if possible
+		// Try RunningObjectTable if OutOfProcess
 		if (flags & Activation::OutOfProcess)
 		{
 			void* TODO; // Change this to use monikers
@@ -442,16 +481,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 
 				if (flags & Activation::OutOfProcess)
 				{
-					// Get the running object table
-					ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-					ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
 					// Find the name of the executeable to run
 					ObjectPtr<Registry::IRegistryKey> ptrServer(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
 
 					// Launch the executeable
 					ACE_Process process;
 					OOCore::ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
+
+					// Get the running object table
+					ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+					ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 					// The timeout needs to be related to the request timeout...
 					void* TODO;
@@ -500,9 +539,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 {
-	IObject* pOF = 0;
-	Activation_GetRegisteredObject_Impl(oid,flags,OMEGA_UUIDOF(Activation::IObjectFactory),pOF);
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
+	IObject* pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_UUIDOF(Activation::IObjectFactory));
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }

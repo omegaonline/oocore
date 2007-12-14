@@ -40,7 +40,9 @@
 
 ACE_NT_SERVICE_DEFINE(OOServer,Root::NTService,NTSERVICE_DESC);
 
-Root::NTService::NTService() : ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC)
+Root::NTService::NTService() : 
+	ACE_NT_Service(NTSERVICE_NAME,NTSERVICE_DESC),
+	m_svc_thread(-1)
 {
 }
 
@@ -51,10 +53,20 @@ Root::NTService::~NTService()
 bool Root::NTService::open()
 {	
     // Do the ServiceMain in a separate thread
-	if (ACE_Thread_Manager::instance()->spawn(NTService::start_service) == -1)
+	NTSERVICE::instance()->m_svc_thread = ACE_Thread_Manager::instance()->spawn(NTService::start_service);
+	if (NTSERVICE::instance()->m_svc_thread == -1)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning service thread"),false);
 	
 	return true;
+}
+
+void Root::NTService::stop()
+{
+	if (NTSERVICE::instance()->m_svc_thread != -1)
+	{
+		// Wait for any other threads that have been created...
+		ACE_Thread_Manager::instance()->wait_grp(NTSERVICE::instance()->m_svc_thread);
+	}
 }
 
 bool Root::NTService::install()

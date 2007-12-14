@@ -72,6 +72,7 @@ namespace Root
 		{
 			ACE_WString     strPipe;
 			SpawnedProcess* pSpawn;
+			bool            bPrimary;	// This is the instance that holds the user registry
 		};
 		std::map<MessagePipe,UserProcess>       m_mapUserProcesses;
 		MessagePipeSingleAsyncAcceptor<Manager> m_client_connector;
@@ -89,7 +90,7 @@ namespace Root
 
 		virtual void pipe_closed(const MessagePipe& pipe);
 		
-		void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::UShort attribs);
+		void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const MessageHandler::CallContext& context);
 		bool access_check(const MessagePipe& pipe, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);
 
 		ACE_Configuration_Heap         m_registry;

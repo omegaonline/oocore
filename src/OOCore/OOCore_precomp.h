@@ -63,7 +63,11 @@
 #include <ace/UNIX_Addr.h>
 
 #if !defined(ACE_HAS_WCHAR)
-#error OmegaOnline requires wchar_t support!
+#error OmegaOnline requires has wchar_t support!
+#endif
+
+#if !defined(ACE_USES_WCHAR) || (ACE_USES_WCHAR == 0)
+#error OmegaOnline requires uses wchar_t support!
 #endif
 
 // End of ACE includes

@@ -237,6 +237,12 @@ namespace Omega
 					typedef IObject_WireProxy<I> type;
 				};
 			};
+		
+			template <class I>
+			inline I* lookup_proxy(typename interface_info<I>::safe_class* pObjS, const guid_t& iid, bool bPartialAllowed);
+			
+			template <class I>
+			inline typename interface_info<I>::safe_class* lookup_stub(I* pObj, const guid_t& iid);
 
 			template <class I> 
 			class iface_stub_functor
@@ -291,12 +297,12 @@ namespace Omega
 					if (pS)
 						pS->Release_Safe();
 
-					pS = lookup_stub<I>(m_pI,*m_piid);
+					pS = lookup_stub<I>(this->m_pI,*m_piid);
 				}
 
 				operator I*& ()
 				{
-					return m_pI;
+					return this->m_pI;
 				}
 
 			private:
@@ -346,7 +352,7 @@ namespace Omega
 			class iface_proxy_functor_ref : public iface_proxy_functor<I>
 			{
 			public:
-				iface_proxy_functor_ref(typename I* pI, const guid_t& iid = OMEGA_UUIDOF(I)) :
+				iface_proxy_functor_ref(I* pI, const guid_t& iid = OMEGA_UUIDOF(I)) :
 					iface_proxy_functor<I>(pI,iid), m_piid(&iid)
 				{
 				}
@@ -356,12 +362,12 @@ namespace Omega
 					if (pI)
 						pI->Release();
 
-					pI = lookup_proxy<I>(m_pS,*m_piid,true);
+					pI = lookup_proxy<I>(this->m_pS,*m_piid,true);
 				}
 
 				typename interface_info<I>::safe_class** operator & ()
 				{
-					return &m_pS;
+					return &this->m_pS;
 				}
 
 			private:
@@ -396,11 +402,7 @@ namespace Omega
 				typedef iface_wire_type<IObject> wire_type;
 			};
 
-			template <class I>
-			inline typename interface_info<I>::safe_class* lookup_stub(I* pObj, const guid_t& iid);
 
-			template <class I>
-			inline I* lookup_proxy(typename interface_info<I>::safe_class* pObjS, const guid_t& iid, bool bPartialAllowed);
 
 			inline void throw_correct_exception(IException_Safe* pE);
 			inline IException_Safe* return_safe_exception(IException* pE);
@@ -612,17 +614,17 @@ namespace Omega
 				IObject_SafeStub(SafeStub* pStub, I* pI) : 
 					m_pI(pI), m_pStub(pStub)
 				{
-					m_pI->AddRef();
+					this->m_pI->AddRef();
 				}
 
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
-					m_pStub->AddRef_Safe();
+					this->m_pStub->AddRef_Safe();
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					m_pStub->Release_Safe();
+					this->m_pStub->Release_Safe();
 				}
 
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
@@ -632,12 +634,12 @@ namespace Omega
 
 				virtual void OMEGA_CALL Pin()
 				{
-					m_pStub->Pin();
+					this->m_pStub->Pin();
 				}
 
 				virtual void OMEGA_CALL Unpin()
 				{
-					m_pStub->Unpin();
+					this->m_pStub->Unpin();
 				}
 
 				virtual IException_Safe* Internal_QueryInterface_Safe(bool bRecurse, const guid_t* piid, IObject_Safe** ppS)
@@ -647,12 +649,12 @@ namespace Omega
 						*ppS = 0;
 						return 0;
 					}
-					return m_pStub->QueryInterface_Safe(piid,ppS);
+					return this->m_pStub->QueryInterface_Safe(piid,ppS);
 				}
 
 				virtual void Release_Iface()
 				{
-					m_pI->Release();
+					this->m_pI->Release();
 				}
 
 			protected:
@@ -986,7 +988,7 @@ namespace Omega
 					m_pS->Release_Safe();
 				}
 
-				SafeProxy(const SafeProxy&) {}
+				SafeProxy(const SafeProxy& rhs) : ISafeProxy(rhs) {}
 				SafeProxy& operator = (const SafeProxy&) { return *this; }
 			};
 

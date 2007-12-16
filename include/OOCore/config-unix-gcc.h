@@ -27,7 +27,7 @@
 #undef interface
 #define interface struct
 
-#define OMEGA_CALL __attribute__((cdecl))
+#define OMEGA_CALL
 
 #include <stdarg.h>
 

@@ -69,17 +69,28 @@ namespace OOCore
 		ACE_Thread_Mutex    m_send_lock;
 		Omega::uint32_t     m_nIPSCookie;
 
-		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
-
+		struct OMInfo
+		{
+			Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
+			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
+		};
+		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
+		
 		struct Message
 		{
+			enum Flags
+			{
+				Request = 1,
+				Forwarded = 2
+			};
+
 			ACE_CDR::UShort  m_dest_channel_id;
 			ACE_CDR::UShort  m_dest_thread_id;
 			ACE_CDR::UShort  m_src_channel_id;
 			ACE_CDR::UShort  m_src_thread_id;
 			ACE_Time_Value   m_deadline;
 			ACE_CDR::UShort  m_attribs;
-			ACE_CDR::Boolean m_bIsRequest;
+			ACE_CDR::UShort  m_flags;
 			ACE_InputCDR*    m_pPayload;
 		};
 
@@ -121,8 +132,9 @@ namespace OOCore
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 		void process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
 		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
-		bool build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, bool bIsRequest, ACE_CDR::UShort attribs);
+		bool build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::UShort attribs);
 		void send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::UShort src_channel_id, Omega::Remoting::MarshalFlags_t marshal_flags);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 		
 		static ACE_THR_FUNC_RETURN io_worker_fn(void* pParam);

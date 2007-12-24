@@ -311,7 +311,7 @@ void OOCore::WireProxy::CallRemoteRelease()
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::IMarshal::Flags_t)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::MarshalFlags_t)
 {
 	// Tell the stub to expect incoming requests from a different channel...
 	uint32_t new_key = 0;
@@ -384,7 +384,7 @@ Cleanup:
 	return pSE;
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t*, Remoting::IMarshal::Flags_t)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t*, Remoting::MarshalFlags_t)
 {
 	// Marshal our own manager out...
 	System::MetaInfo::IException_Safe* pSE = pObjectManager->ReleaseMarshalData_Safe(pStream,&OMEGA_UUIDOF(System::MetaInfo::IWireManager),static_cast<System::MetaInfo::IWireManager_Safe*>(m_pManager));
@@ -400,7 +400,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::ReleaseMarshalD
 	return pStream->ReadUInt32_Safe(&key);
 }
 
-void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Remoting::IMarshal::Flags_t, IObject*& pObject)
+void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	IObject* pOM = 0;
 	pObjectManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(Remoting::IObjectManager),pOM);

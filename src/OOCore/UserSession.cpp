@@ -189,7 +189,7 @@ IException* OOCore::UserSession::bootstrap()
 	try
 	{
 		// Create a new object manager for the 0 channel
-		OTL::ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(0);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(0,Remoting::inter_process);
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
@@ -453,7 +453,7 @@ int OOCore::UserSession::run_read_loop()
 		(*input) >> req_dline_usecs;
 		msg->m_deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
 		(*input) >> msg->m_attribs;
-		input->read_boolean(msg->m_bIsRequest);
+		(*input) >> msg->m_flags;
 		msg->m_pPayload = input;
 
 		if (!input->good_bit())
@@ -509,7 +509,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 		if (ret == -1)
 			return;
 
-		if (msg->m_bIsRequest)
+		if (msg->m_flags & Message::Request)
 		{
 			// Set per channel thread id
 			pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
@@ -543,7 +543,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 		if (ret == -1)
 			return false;
 
-		if (msg->m_bIsRequest)
+		if (msg->m_flags & Message::Request)
 		{
 			// Set per channel thread id
 			ACE_CDR::UShort old_thread_id = 0;
@@ -718,7 +718,7 @@ bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 #endif
 }
 
-bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, bool bIsRequest, ACE_CDR::UShort attribs)
+bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::UShort attribs)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -748,8 +748,7 @@ bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::U
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 
 	header.write_ushort(attribs);
-
-	header.write_boolean(bIsRequest);
+	header.write_ushort(flags);
 
 	if (!header.good_bit())
 		return false;
@@ -776,7 +775,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		OTL::ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(pMsg->m_src_channel_id);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id,Remoting::inter_process);
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -846,46 +845,73 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 	}
 }
 
-OTL::ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_CDR::UShort src_channel_id)
+ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(ACE_CDR::UShort src_channel_id, Remoting::MarshalFlags_t marshal_flags)
 {
-	OTL::ObjectPtr<Remoting::IObjectManager> ptrOM;
 	try
 	{
 		// Lookup existing..
 		{
 			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::UShort,OTL::ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
+            std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
-				ptrOM = i->second;
+			{
+				if (i->second.m_marshal_flags == marshal_flags)
+					return i->second.m_ptrOM;
+
+				OOCORE_THROW_ERRNO(EINVAL);
+			}
 		}
 
-		if (!ptrOM)
+		// Create a new channel
+		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+		ptrChannel->init(src_channel_id);
+
+		// Create a new OM
+		OMInfo info;
+		info.m_marshal_flags = marshal_flags;
+		info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+
+		// Associate it with the channel
+		info.m_ptrOM->Connect(ptrChannel,marshal_flags);
+
+		// And add to the map
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::pair<std::map<ACE_CDR::UShort,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OMInfo>::value_type(src_channel_id,info));
+		if (!p.second)
 		{
-			// Create a new channel
-			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-			ptrChannel->init(src_channel_id);
+			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
+				OOCORE_THROW_ERRNO(EINVAL);		
 
-			// Create a new OM
-			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
-
-			// Associate it with the channel
-			ptrOM->Connect(ptrChannel);
-
-			// And add to the map
-			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			std::pair<std::map<ACE_CDR::UShort,OTL::ObjectPtr<Remoting::IObjectManager> >::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OTL::ObjectPtr<Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
-			if (!p.second)
-				ptrOM = p.first->second;
+			info.m_ptrOM = p.first->second.m_ptrOM;
 		}
+
+		return info.m_ptrOM;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(string_t(e.what(),false));
 	}
+}
 
-	return ptrOM;
+ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_CDR::UShort src_channel_id)
+{
+	try
+	{
+		// Lookup existing..
+		OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+		if (i == m_mapOMs.end())
+			OOCORE_THROW_ERRNO(EACCES);
+
+		return i->second.m_ptrOM;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(string_t(e.what(),false));
+	}
 }
 
 void OOCore::UserSession::handle_requests(uint32_t timeout)
@@ -900,7 +926,7 @@ void OOCore::UserSession::handle_requests(uint32_t timeout)
 	USER_SESSION::instance()->pump_requests(wait2);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&,timeout))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const uint32_t&,timeout))
 {
 	OOCore::UserSession::handle_requests(timeout);
 }

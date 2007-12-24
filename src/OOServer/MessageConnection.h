@@ -90,12 +90,12 @@ namespace Root
 		MessagePipe get_channel_pipe(ACE_CDR::UShort channel);
 		void stop_accepting();
 		void stop();
+		virtual int on_accept(MessagePipe& pipe, int key);
+		virtual bool channel_open(ACE_CDR::UShort channel, bool bForwarded);
 		virtual void pipe_closed(const MessagePipe& pipe);
 		virtual void channel_closed(ACE_CDR::UShort channel);
 
 		ACE_CDR::UShort add_routing(ACE_CDR::UShort dest_channel, ACE_CDR::UShort dest_route);
-
-		virtual int on_accept(MessagePipe& pipe, int key);
 
 		struct CallContext
 		{
@@ -136,6 +136,12 @@ namespace Root
 
 		struct Message
 		{
+			enum Flags
+			{
+				Request = 1,
+				Forwarded = 2
+			};
+
 			MessagePipe      m_pipe;
 			ACE_CDR::UShort  m_dest_channel_id;
 			ACE_CDR::UShort  m_dest_thread_id;
@@ -143,7 +149,7 @@ namespace Root
 			ACE_CDR::UShort  m_src_thread_id;
 			ACE_Time_Value   m_deadline;
 			ACE_CDR::UShort  m_attribs;
-			ACE_CDR::Boolean m_bIsRequest;
+			ACE_CDR::UShort  m_flags;
 			ACE_InputCDR*    m_pPayload;
 		};
 

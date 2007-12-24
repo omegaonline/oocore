@@ -178,7 +178,7 @@ namespace User
 	public:
 		Channel();
 
-		void init(ACE_CDR::UShort channel_id, bool bLocal);
+		void init(ACE_CDR::UShort channel_id);
 		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -187,8 +187,7 @@ namespace User
 
 	private:
 		ACE_CDR::UShort  m_channel_id;
-		bool             m_bLocal;
-
+		
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
 		Channel& operator = (const Channel&) { return *this; }
 
@@ -199,9 +198,9 @@ namespace User
 
 	// IMarshal members
 	public:
-		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
 	// {1A7672C5-8478-4e5a-9D8B-D5D019E25D15}
@@ -219,7 +218,7 @@ namespace User
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 }
 

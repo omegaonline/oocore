@@ -41,7 +41,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class WireProxy : 
@@ -88,14 +88,14 @@ namespace OOCore
 
 	// IMarshal_Safe members
 	public:
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::IMarshal::Flags_t)
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::MarshalFlags_t)
 		{
 			*pRet = OID_WireProxyMarshalFactory;
 			return 0;
 		}
 
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::IMarshal::Flags_t flags);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::IMarshal::Flags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
 	
 	private:
 		WireProxy(const WireProxy&) {}

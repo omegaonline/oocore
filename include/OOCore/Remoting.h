@@ -34,35 +34,38 @@ namespace Omega
 			virtual IException* SendAndReceive(MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout) = 0;
 		};
 
+		enum MarshalFlags
+		{
+			same = 0,               // Objects are in the same context
+			apartment = 1,          // Objects share address space, but not thread
+			inter_process = 2,      // Objects share user id and priviledge, but not address space
+			inter_priviledge = 3,   // Objects share user id, but not priviledge or address space
+			inter_user = 4,         // Objects share machine, but not user id, priviledge or address space
+			another_machine = 5     // Objects on separate machines and share nothing
+		};
+		typedef uint16_t MarshalFlags_t;
+
 		interface IObjectManager : public IObject
 		{
-			virtual void Connect(IChannel* pChannel) = 0;
+			virtual void Connect(IChannel* pChannel, MarshalFlags_t marshal_flags) = 0;
 			virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
 			virtual void Disconnect() = 0;
 			virtual void CreateRemoteInstance(const guid_t& oid, const guid_t& iid, IObject* pOuter, IObject*& pObject) = 0;
 			virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
-			virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
 			virtual void ReleaseMarshalData(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
+			virtual void UnmarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject*& pObject) = 0;
 		};
 
 		interface IMarshal : public IObject
 		{
-			enum Flags
-			{
-				apartment = 0,       // Objects share address space, but not thread
-				inter_process = 1,   // Objects share machine, but not address space
-				another_machine = 2  // Objects on seperate machines
-			};
-			typedef uint16_t Flags_t;
-
-			virtual guid_t GetUnmarshalFactoryOID(const guid_t& iid, Flags_t flags) = 0;
-			virtual void MarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;
-			virtual void ReleaseMarshalData(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Flags_t flags) = 0;
+			virtual guid_t GetUnmarshalFactoryOID(const guid_t& iid, MarshalFlags_t flags) = 0;
+			virtual void MarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, MarshalFlags_t flags) = 0;
+			virtual void ReleaseMarshalData(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, MarshalFlags_t flags) = 0;
 		};
 
 		interface IMarshalFactory : public IObject
 		{
-			virtual void UnmarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, IMarshal::Flags_t flags, IObject*& pObject) = 0;
+			virtual void UnmarshalInterface(IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, MarshalFlags_t flags, IObject*& pObject) = 0;
 		};
 
 		interface IInterProcessService : public IObject
@@ -91,29 +94,29 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IObjectManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
 
-	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannel*,pChannel))
+	OMEGA_METHOD_VOID(Connect,2,((in),Remoting::IChannel*,pChannel,(in),Omega::Remoting::MarshalFlags_t,flags))
 	OMEGA_METHOD_VOID(Invoke,2,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
 	OMEGA_METHOD_VOID(Disconnect,0,())
 	OMEGA_METHOD_VOID(CreateRemoteInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),IObject*,pOuter,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
-	OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD_VOID(ReleaseMarshalData,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+	OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IMarshal, "{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}",
 
-	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
-	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
-	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags))
+	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags))
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IMarshalFactory, "{68C779B3-72E7-4c09-92F0-118A01AF224D}",
 
-	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::IMarshal::Flags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IObjectManager*,pObjectManager,(in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE

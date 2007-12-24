@@ -133,26 +133,24 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	return 0;
 }
 
-Omega::guid_t OOCore::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+Omega::guid_t OOCore::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
 	return OID_ChannelMarshalFactory;
 }
 
-void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
-	pStream->WriteUInt16(0);
 	pStream->WriteUInt16(m_channel_id);
 }
 
-void OOCore::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+void OOCore::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
-	pStream->ReadUInt16();
 	pStream->ReadUInt16();
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
-void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject)
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 {
 	try
 	{
@@ -172,12 +170,8 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectM
 		
 	// If we get here, then we are loaded into a different exe from OOServer,
 	// therefore we do simple unmarshalling
-
-	// Don't care about the type...
-	pStream->ReadUInt16();
-
 	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
 
 	// Create a new object manager (and channel)
-	pObject = UserSession::USER_SESSION::instance()->get_object_manager(channel_id)->QueryInterface(iid);
+	pObject = UserSession::USER_SESSION::instance()->create_object_manager(channel_id,Remoting::inter_process)->QueryInterface(iid);
 }

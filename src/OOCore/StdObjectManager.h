@@ -42,7 +42,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class StdObjectManager :
@@ -73,6 +73,7 @@ namespace OOCore
 		ACE_RW_Thread_Mutex                       m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
 		Omega::uint32_t                           m_uNextStubId;
+		Omega::Remoting::MarshalFlags_t           m_marshal_flags;
 
 		std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>   m_mapStubObjs;
 		std::map<Omega::uint32_t,WireStub*>                          m_mapStubIds;
@@ -89,37 +90,37 @@ namespace OOCore
 	// IWireManager members
 	public:
 		void MarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
-		void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		void ReleaseMarshalData(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
+		void UnmarshalInterface(Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::Serialize::IFormattedStream* CreateOutputStream();
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
 
 	// IWireManager_Safe members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateOutputStream_Safe(Omega::System::MetaInfo::IFormattedStream_Safe** ppRet);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SendAndReceive_Safe(Omega::System::MetaInfo::IException_Safe** ppRet, Omega::Remoting::MethodAttributes_t attribs, Omega::System::MetaInfo::IFormattedStream_Safe* pSend, Omega::System::MetaInfo::IFormattedStream_Safe** ppRecv, Omega::uint16_t timeout);
 
 	// IObjectManager members
 	public:
-		void Connect(Omega::Remoting::IChannel* pChannel);
+		void Connect(Omega::Remoting::IChannel* pChannel, Omega::Remoting::MarshalFlags_t marshal_flags);
 		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut);
 		void Disconnect();
 		void CreateRemoteInstance(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject* pOuter, Omega::IObject*& pObject);
 
 	// IMarshal members
 	public:
-		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t flags);
+		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
 	// IMarshal_Safe members
 	public:
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::IMarshal::Flags_t);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::IMarshal::Flags_t flags);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::IMarshal::Flags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::MarshalFlags_t);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
 	};
 }
 

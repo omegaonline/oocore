@@ -926,7 +926,7 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigne
 			(LPWSTR)&lpMsgBuf,
 			0,	NULL);
 
-		ACE_ERROR((LM_ERROR,L"%W:%d [%P:%t] %W\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
+		ACE_ERROR((LM_ERROR,L"%W:%d [%P:%t] %ls\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
 
 		// Free the buffer.
 		if (lpMsgBuf != (LPVOID)szDefault)

@@ -66,7 +66,7 @@
 #error OmegaOnline requires has wchar_t support!
 #endif
 
-#if !defined(ACE_USES_WCHAR) || (ACE_USES_WCHAR == 0)
+#if !defined(ACE_USES_WCHAR)
 #error OmegaOnline requires uses wchar_t support!
 #endif
 

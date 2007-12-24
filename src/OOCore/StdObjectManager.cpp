@@ -133,7 +133,7 @@ int OOCore::SEH::DoInvoke(System::MetaInfo::IWireStub_Safe* pStub, Serialize::IF
 	return err;
 }
 
-void OOCore::StdObjectManagerMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::IMarshal::Flags_t, Omega::IObject*& pObject)
+void OOCore::StdObjectManagerMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 {
 	IObject* pObj = 0;
 	pObjectManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(IObject),pObj);
@@ -148,7 +148,7 @@ void OOCore::StdObjectManagerMarshalFactory::UnmarshalInterface(Omega::Remoting:
 		if (ptrChannel)
 		{
 			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
-			ptrOM->Connect(ptrChannel);
+			ptrOM->Connect(ptrChannel,flags);
 		}
 	}
 
@@ -167,12 +167,13 @@ OOCore::StdObjectManager::~StdObjectManager()
 {
 }
 
-void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
+void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel, Remoting::MarshalFlags_t marshal_flags)
 {
 	if (m_ptrChannel)
 		OOCORE_THROW_ERRNO(EALREADY);
 
 	m_ptrChannel = pChannel;
+	m_marshal_flags = marshal_flags;
 }
 
 void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
@@ -423,7 +424,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 					++undo_count;
 
 					// Let the custom handle marshalling...
-					pSE = ptrMarshal->MarshalInterface_Safe(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(this),pStream,piid,Remoting::IMarshal::inter_process);
+					pSE = ptrMarshal->MarshalInterface_Safe(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(this),pStream,piid,m_marshal_flags);
 					if (!pSE)
 						return 0;
 
@@ -564,7 +565,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 			ptrMarshalFactory->UnmarshalInterface(
 				this,
 				System::MetaInfo::marshal_info<Serialize::IFormattedStream*>::safe_type::coerce(pStream),
-				*piid,Remoting::IMarshal::inter_process,
+				*piid,m_marshal_flags,
 				System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(ppObjS));
 		}
 		else
@@ -645,7 +646,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 			if (pSE)
 				return pSE;
 		
-			return ptrMarshal->ReleaseMarshalData_Safe(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(this),pStream,piid,Remoting::IMarshal::inter_process);
+			return ptrMarshal->ReleaseMarshalData_Safe(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(this),pStream,piid,m_marshal_flags);
 		}
 		else
 		{
@@ -723,28 +724,28 @@ void OOCore::StdObjectManager::CreateRemoteInstance(const guid_t& oid, const gui
 	UnmarshalInterface(ptrParamsIn,iid,pObject);
 }
 
-Omega::guid_t OOCore::StdObjectManager::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+Omega::guid_t OOCore::StdObjectManager::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
 	return OID_StdObjectManagerMarshalFactory;
 }
 
-void OOCore::StdObjectManager::MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+void OOCore::StdObjectManager::MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
 	pObjectManager->MarshalInterface(pStream,OMEGA_UUIDOF(Remoting::IChannel),m_ptrChannel);
 }
 
-void OOCore::StdObjectManager::ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::IMarshal::Flags_t)
+void OOCore::StdObjectManager::ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
 	pObjectManager->ReleaseMarshalData(pStream,OMEGA_UUIDOF(Remoting::IChannel),m_ptrChannel);
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::GetUnmarshalFactoryOID_Safe(guid_t* pRet, const guid_t*, Remoting::IMarshal::Flags_t)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::GetUnmarshalFactoryOID_Safe(guid_t* pRet, const guid_t*, Remoting::MarshalFlags_t)
 {
 	*pRet = OID_StdObjectManagerMarshalFactory;
 	return 0;
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::IMarshal::Flags_t flags)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::MarshalFlags_t flags)
 {
 	try
 	{
@@ -757,7 +758,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::IMarshal::Flags_t flags)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t* piid, Remoting::MarshalFlags_t flags)
 {
 	try
 	{

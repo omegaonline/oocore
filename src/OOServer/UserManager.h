@@ -50,7 +50,14 @@ namespace User
 		ACE_CDR::UShort             m_root_channel;
 		Omega::uint32_t             m_nIPSCookie;
 		
-		std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
+		struct OMInfo
+		{
+			Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
+			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
+		};
+		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
+
+		virtual bool channel_open(ACE_CDR::UShort channel, bool bForwarded);
 
 		int run_event_loop_i(const ACE_WString& strPipe);
 		bool init(const ACE_WString& strPipe);
@@ -60,7 +67,8 @@ namespace User
 
 		virtual void channel_closed(ACE_CDR::UShort channel);
 		
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id, bool bLocal);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::UShort src_channel_id, Omega::Remoting::MarshalFlags_t flags);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
 		void process_request(const Root::MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const Root::MessageHandler::CallContext& context);
 		void process_user_request(const ACE_InputCDR& input, ACE_CDR::UShort src_thread_id, const Root::MessageHandler::CallContext& context);
 		void process_root_request(ACE_InputCDR& input, const Root::MessageHandler::CallContext& context);

@@ -195,6 +195,31 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 	return ret;
 }
 
+bool User::Manager::channel_open(ACE_CDR::UShort channel, bool bForwarded)
+{
+	try
+	{
+		if (!bForwarded)
+		{
+			create_object_manager(channel,Remoting::inter_process);
+			return true;
+		}
+
+		// Check to see whether we can accept this connection...
+		void* TODO;
+
+		create_object_manager(channel,Remoting::inter_user);			
+
+		return true;
+	}
+	catch (IException* pE)
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+		pE->Release();
+		return false;
+	}
+}
+
 bool User::Manager::init(const ACE_WString& strPipe)
 {
 	// Connect to the root
@@ -284,13 +309,13 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort u
 	// Register our service
 	try
 	{
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSb;
+		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
-			ptrOMSb = get_object_manager(sandbox_channel,false);
+			ptrOMSb = create_object_manager(sandbox_channel,Remoting::inter_user);
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser;
+		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
 		if (user_channel != 0)
-			ptrOMUser = get_object_manager(user_channel,false);
+			ptrOMUser = create_object_manager(user_channel,Remoting::inter_priviledge);
 		
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
@@ -299,11 +324,11 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort u
 		m_nIPSCookie = Activation::RegisterObject(Remoting::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 
 		// Now we have a ROT, register everything else
-		OTL::GetModule()->RegisterObjectFactories();
+		GetModule()->RegisterObjectFactories();
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %W - %W\n",pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -329,7 +354,7 @@ void User::Manager::end_event_loop()
 	stop();
 
 	// Unregister our object factories
-	OTL::GetModule()->UnregisterObjectFactories();
+	GetModule()->UnregisterObjectFactories();
 
 	// Unregister InterProcessService
 	if (m_nIPSCookie)
@@ -345,11 +370,11 @@ void User::Manager::close_channels()
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		for (std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
+		for (std::map<ACE_CDR::UShort,OMInfo>::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
 		{
 			try
 			{
-				i->second->Disconnect();
+				i->second.m_ptrOM->Disconnect();
 			}
 			catch (IException* pE)
 			{
@@ -411,8 +436,6 @@ void User::Manager::process_root_request(ACE_InputCDR& request, const Root::Mess
 	Root::RootOpCode_t op_code;
 	request >> op_code;
 
-	//ACE_DEBUG((LM_DEBUG,L"User context: Process root request %u",op_code));
-
 	if (!request.good_bit())
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Bad request"));
@@ -437,7 +460,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM = get_object_manager(context.m_src_channel,true);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(context.m_src_channel);
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -507,46 +530,73 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 	}
 }
 
-OTL::ObjectPtr<Omega::Remoting::IObjectManager> User::Manager::get_object_manager(ACE_CDR::UShort src_channel_id, bool bLocal)
+ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::UShort src_channel_id, Remoting::MarshalFlags_t marshal_flags)
 {
-	OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
 	try
 	{
 		// Lookup existing..
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::iterator i=m_mapOMs.find(src_channel_id);
+            std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
-				ptrOM = i->second;
+			{
+				if (i->second.m_marshal_flags == marshal_flags)
+					return i->second.m_ptrOM;
+
+				OOSERVER_THROW_ERRNO(EINVAL);
+			}
 		}
 
-		if (!ptrOM)
+		// Create a new channel
+		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+		ptrChannel->init(src_channel_id);
+
+		// Create a new OM
+		OMInfo info;
+		info.m_marshal_flags = marshal_flags;
+		info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+
+		// Associate it with the channel
+		info.m_ptrOM->Connect(ptrChannel,marshal_flags);
+
+		// And add to the map
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::pair<std::map<ACE_CDR::UShort,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OMInfo>::value_type(src_channel_id,info));
+		if (!p.second)
 		{
-			// Create a new channel
-			ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-			ptrChannel->init(src_channel_id,bLocal);
+			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
+				OOSERVER_THROW_ERRNO(EINVAL);		
 
-			// Create a new OM
-			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
-
-			// Associate it with the channel
-			ptrOM->Connect(ptrChannel);
-
-			// And add to the map
-			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			std::pair<std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OTL::ObjectPtr<Omega::Remoting::IObjectManager> >::value_type(src_channel_id,ptrOM));
-			if (!p.second)
-				ptrOM = p.first->second;
+			info.m_ptrOM = p.first->second.m_ptrOM;
 		}
+
+		return info.m_ptrOM;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(string_t(e.what(),false));
 	}
+}
 
-	return ptrOM;
+ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_CDR::UShort src_channel_id)
+{
+	try
+	{
+		// Lookup existing..
+		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+		if (i == m_mapOMs.end())
+			OOSERVER_THROW_ERRNO(EINVAL);
+
+		return i->second.m_ptrOM;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(string_t(e.what(),false));
+	}
 }
 
 ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)

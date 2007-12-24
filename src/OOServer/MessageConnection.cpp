@@ -177,12 +177,12 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 						(*input) >> msg->m_src_thread_id;
 
 						ACE_CDR::ULong req_dline_secs;
-						ACE_CDR::ULong req_dline_usecs;
 						(*input) >> req_dline_secs;
+						ACE_CDR::ULong req_dline_usecs;
 						(*input) >> req_dline_usecs;
 						msg->m_deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
 						(*input) >> msg->m_attribs;
-						input->read_boolean(msg->m_bIsRequest);
+						(*input) >> msg->m_flags;
 						msg->m_pPayload = input;
 
 						#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
@@ -265,26 +265,38 @@ int Root::MessageHandler::on_accept(MessagePipe& pipe, int key)
 
 ACE_CDR::UShort Root::MessageHandler::register_channel(MessagePipe& pipe)
 {
-	ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
-
 	ACE_CDR::UShort uChannelId = 0;
+	
 	try
 	{
-		ACE_Thread_Mutex* pLock = 0;
-		ACE_NEW_RETURN(pLock,ACE_Thread_Mutex,0);
-		ChannelInfo channel(pipe,0,pLock);
-
-		uChannelId = ++m_uNextChannelId;
-		while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
 		{
+			ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+
+			ACE_Thread_Mutex* pLock = 0;
+			ACE_NEW_RETURN(pLock,ACE_Thread_Mutex,0);
+			ChannelInfo channel(pipe,0,pLock);
+
 			uChannelId = ++m_uNextChannelId;
+			while (uChannelId==0 || m_mapChannelIds.find(uChannelId)!=m_mapChannelIds.end())
+			{
+				uChannelId = ++m_uNextChannelId;
+			}
+			m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
+
+			std::map<ACE_CDR::UShort,ACE_CDR::UShort> reverse_map;
+			reverse_map.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(0,uChannelId));
+
+			m_mapReverseChannelIds.insert(std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(pipe,reverse_map));
 		}
-		m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(uChannelId,channel));
 
-		std::map<ACE_CDR::UShort,ACE_CDR::UShort> reverse_map;
-		reverse_map.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(0,uChannelId));
+		if (!channel_open(uChannelId,false))
+		{
+			ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
 
-		m_mapReverseChannelIds.insert(std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::value_type(pipe,reverse_map));
+			m_mapChannelIds.erase(uChannelId);
+			m_mapReverseChannelIds.erase(pipe);
+			return 0;
+		}
 	}
 	catch (...)
 	{
@@ -322,7 +334,7 @@ ACE_CDR::UShort Root::MessageHandler::add_routing(ACE_CDR::UShort dest_channel, 
 			uChannelId = ++m_uNextChannelId;
 		}
 
-		std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(dest_channel,uChannelId));
+		std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(dest_route,uChannelId));
 		if (!p.second)
 			uChannelId = p.first->second;
 		else
@@ -408,6 +420,12 @@ void Root::MessageHandler::pipe_closed(const MessagePipe& pipe)
 	{}
 }
 
+bool Root::MessageHandler::channel_open(ACE_CDR::UShort, bool)
+{
+	// Do nothing, used in derived classes
+	return true;
+}
+
 void Root::MessageHandler::channel_closed(ACE_CDR::UShort channel)
 {
 	void* TODO; // Propogate the channel close
@@ -467,11 +485,29 @@ bool Root::MessageHandler::parse_message(Message* msg)
 
 			std::pair<std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator,bool> p = j->second.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,reply_channel_id));
 			if (!p.second)
+			{
+				bFound = true;
 				reply_channel_id = p.first->second;
+			}
 			else
 				m_mapChannelIds.insert(std::map<ACE_CDR::UShort,ChannelInfo>::value_type(reply_channel_id,channel));
 		}
 
+		if (!bFound)
+		{
+			if (!channel_open(reply_channel_id,(msg->m_flags & Message::Forwarded) == Message::Forwarded))
+			{
+				ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+
+				std::map<MessagePipe,std::map<ACE_CDR::UShort,ACE_CDR::UShort> >::iterator j=m_mapReverseChannelIds.find(msg->m_pipe);
+				j->second.erase(msg->m_src_channel_id);
+
+				m_mapChannelIds.erase(reply_channel_id);
+
+				return false;
+			}
+		}
+		
 		msg->m_src_channel_id = reply_channel_id;
 	}
 	catch (...)
@@ -502,6 +538,7 @@ bool Root::MessageHandler::parse_message(Message* msg)
 	{
 		// Forward it...
 		msg->m_dest_channel_id = dest_channel.channel_id;
+		msg->m_flags |= Message::Forwarded;
 
 		ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 		if (build_header(header,*msg,msg->m_pPayload->start()))
@@ -609,7 +646,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 		if (ret == -1)
 			return false;
 
-		if (msg->m_bIsRequest)
+		if (msg->m_flags & Message::Request)
 		{
 			// Update context
 			CallContext old_context = pContext->m_context;
@@ -659,7 +696,7 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 		if (ret == -1)
 			break;
 
-		if (msg->m_bIsRequest)
+		if (msg->m_flags & Message::Request)
 		{
 			// Set context
 			pContext->m_context.m_src_channel = msg->m_src_channel_id;
@@ -698,7 +735,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::UShort dest_channel_id, const A
 	msg.m_src_channel_id = 0;
 	msg.m_src_thread_id = pContext->m_thread_id;
 	msg.m_attribs = attribs;
-	msg.m_bIsRequest = true;
+	msg.m_flags = Message::Request;
 	msg.m_deadline = pContext->m_context.m_deadline;
 	ACE_Time_Value deadline = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000);
 	if (deadline < msg.m_deadline)
@@ -770,7 +807,7 @@ void Root::MessageHandler::send_response(ACE_CDR::UShort dest_channel_id, ACE_CD
 	msg.m_src_channel_id = 0;
 	msg.m_src_thread_id = pContext->m_thread_id;
 	msg.m_attribs = attribs;
-	msg.m_bIsRequest = false;
+	msg.m_flags = 0;
 	msg.m_deadline = pContext->m_context.m_deadline;
 	if (deadline < msg.m_deadline)
 		msg.m_deadline = deadline;
@@ -839,11 +876,11 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, const Message& ms
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Message too big!\n"),false);
 
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
-	header.write_octet(1);	// version
+	header.write_octet(1);	 // version
+	header.write_ushort(0);  // blank space
+
 	if (!header.good_bit())
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"CDR write() failed"),false);
-
-	// We have room for 2 bytes here!
 
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
@@ -859,8 +896,7 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, const Message& ms
 	header.write_ulong(static_cast<const timeval*>(msg.m_deadline)->tv_usec);
 
 	header.write_ushort(msg.m_attribs);
-
-	header.write_boolean(msg.m_bIsRequest);
+	header.write_ushort(msg.m_flags);
 
 	if (!header.good_bit())
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"CDR write() failed"),false);

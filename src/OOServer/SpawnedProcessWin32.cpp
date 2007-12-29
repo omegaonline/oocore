@@ -722,7 +722,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;	
-	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,L"D:\\OO\\bin\\Debug",&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		CloseHandle(hPriToken);
@@ -783,7 +783,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && bSandbox && unsafe_sandbox())
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && unsafe_sandbox())
 		{
 			HANDLE hToken2;
 			if (OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -796,7 +796,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 				{
 					const char msg[] =
 						"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						"Because 'Unsafe' key is set in the registry, or you have attached a debugger to OOServer, the sandbox process will be started "
+						"Because 'Unsafe' key is set in the registry, or you have attached a debugger to OOServer, the new user process will be started "
 						"under the user account '%ls\\%ls'\n\n"
 						"This is a security risk, and should only be allowed for debugging purposes, and only then if you "
 						"really know what you are doing.\n\n"
@@ -807,6 +807,11 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 					if (MessageBoxA(NULL,szBuf,"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
 						dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
+						if (dwRes == ERROR_SUCCESS)
+						{
+							CloseHandle(m_hToken);
+							DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
+						}
 					}
 				}
 

@@ -151,25 +151,22 @@ Omega::guid_t User::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega:
 
 void User::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t flags)
 {
-	ACE_CDR::UShort channel_id = m_channel_id;
-
-	if (flags >= Remoting::inter_process)
-	{
-		// This is were we need to add a routing...
-		::DebugBreak();
-	}
-
-	pStream->WriteUInt16(channel_id);
+	pStream->WriteUInt16(flags);
+	pStream->WriteUInt16(m_channel_id);
 }
 
 void User::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
+	pStream->ReadUInt16();
 	pStream->ReadUInt16();
 }
 
 void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* /*pObjectManager*/, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 {
 	// We are unmarshalling a channel from another process...
+
+
+	Omega::Remoting::MarshalFlags_t flags2 = pStream->ReadUInt16();
 	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
 
 	// Create a routing from the other channel to the caller

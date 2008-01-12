@@ -38,10 +38,9 @@ namespace Omega
 		{
 			same = 0,               // Objects are in the same context
 			apartment = 1,          // Objects share address space, but not thread
-			inter_process = 2,      // Objects share user id and priviledge, but not address space
-			inter_priviledge = 3,   // Objects share user id, but not priviledge or address space
-			inter_user = 4,         // Objects share machine, but not user id, priviledge or address space
-			another_machine = 5     // Objects on separate machines and share nothing
+			inter_process = 2,      // Objects share user id, but not address space
+			inter_user = 3,         // Objects share machine, but not user id or address space
+			another_machine = 4     // Objects on separate machines and share nothing
 		};
 		typedef uint16_t MarshalFlags_t;
 

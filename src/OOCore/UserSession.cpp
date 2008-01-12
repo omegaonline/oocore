@@ -135,7 +135,7 @@ ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
 
 OOCore::UserSession::UserSession() :
-	m_thrd_grp_id(-1), m_nIPSCookie(0)
+	m_thrd_grp_id(-1), m_channel_id(0), m_nIPSCookie(0)
 {
 }
 
@@ -173,6 +173,13 @@ bool OOCore::UserSession::init_i()
 	if (MessagePipe::connect(m_stream,strPipe,&wait) != 0)
 		return false;
 
+	// Read our channel id
+	if (m_stream.recv(&m_channel_id,sizeof(m_channel_id)) != static_cast<ssize_t>(sizeof(m_channel_id)))
+	{
+		m_stream.close();
+		return false;
+	}
+
 	// Spawn off the proactor threads
 	m_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(1,io_worker_fn,this);
 	if (m_thrd_grp_id == -1)
@@ -188,8 +195,8 @@ IException* OOCore::UserSession::bootstrap()
 {
 	try
 	{
-		// Create a new object manager for the 0 channel
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(0,Remoting::inter_process);
+		// Create a new object manager for the user channel
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(m_channel_id & 0xFF000000,Remoting::inter_process);
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
@@ -292,6 +299,10 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 	if (peer.recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 		return false;
 
+	// Check for the integer overflow...
+	if (uLen > (size_t)-1 / sizeof(wchar_t))
+		return false;
+
 	// Read the string
 	wchar_t* buf;
 	ACE_NEW_RETURN(buf,wchar_t[uLen],false);
@@ -338,14 +349,9 @@ ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
 
 int OOCore::UserSession::run_read_loop()
 {
-	static const ssize_t s_initial_read = 8;
-	char szBuffer[20];
-
-#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
+	static const ssize_t s_initial_read = ACE_CDR::LONG_SIZE;
+	char szBuffer[ACE_CDR::LONG_SIZE + ACE_CDR::MAX_ALIGNMENT];
 	char* pBuffer = ACE_ptr_align_binary(szBuffer,ACE_CDR::MAX_ALIGNMENT);
-#else
-	char* pBuffer = szBuffer;
-#endif
 
 	for (;;)
 	{
@@ -369,17 +375,6 @@ int OOCore::UserSession::run_read_loop()
 		// Create a temp input CDR
 		ACE_InputCDR header(pBuffer,nRead);
 
-		// Read and set the byte order
-		ACE_CDR::Octet byte_order;
-		ACE_CDR::Octet version;
-		if (!header.read_octet(byte_order) || !header.read_octet(version))
-		{
-			int err = ACE_OS::last_error();
-			m_stream.close();
-			return err;
-		}
-		header.reset_byte_order(byte_order);
-
 		// Read the length
 		ACE_CDR::ULong nReadLen = 0;
 		if (!header.read_ulong(nReadLen))
@@ -388,9 +383,6 @@ int OOCore::UserSession::run_read_loop()
 			m_stream.close();
 			return err;
 		}
-
-		// Subtract what we have already read
-		nReadLen -= nRead;
 
 		// Create a new message block
 		ACE_Message_Block* mb = 0;
@@ -401,9 +393,15 @@ int OOCore::UserSession::run_read_loop()
 			m_stream.close();
 			return err;
 		}
-#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
+
 		ACE_CDR::mb_align(mb);
-#endif
+
+		// Skip forwards over what we have already read
+		mb->rd_ptr(s_initial_read);
+		mb->wr_ptr(s_initial_read);
+
+		// Subtract what we have already read
+		nReadLen -= nRead;
 
 		// Issue another read for the rest of the data
 		nRead = m_stream.recv(mb->wr_ptr(),nReadLen);
@@ -415,25 +413,33 @@ int OOCore::UserSession::run_read_loop()
 			return err;
 		}
 		mb->wr_ptr(nRead);
-
+		
 		// Create a new input CDR wrapping mb
 		ACE_InputCDR* input = 0;
-		ACE_NEW_NORETURN(input,ACE_InputCDR(mb,byte_order));
+		ACE_NEW_NORETURN(input,ACE_InputCDR(mb));
 
 		// Done with our copy of mb
 		mb->release();
 
 		if (!input)
 		{
-			int err = ACE_OS::last_error();
 			m_stream.close();
-			return err;
+			return ENOMEM;
 		}
 
-		// Read in the message info
-		Message* msg = 0;
-		ACE_NEW_NORETURN(msg,Message);
-		if (!msg)
+		// Read the destination
+		ACE_CDR::ULong dest_channel_id;
+		(*input) >> dest_channel_id;
+
+		// Read the deadline
+		ACE_CDR::ULong req_dline_secs;
+		(*input) >> req_dline_secs;
+		ACE_CDR::ULong req_dline_usecs;
+		(*input) >> req_dline_usecs;
+		ACE_Time_Value deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
+
+		// Did everything make sense?
+		if (!input->good_bit() || (dest_channel_id & 0xFFFFF000) != m_channel_id)
 		{
 			int err = ACE_OS::last_error();
 			delete input;
@@ -441,21 +447,25 @@ int OOCore::UserSession::run_read_loop()
 			return err;
 		}
 
-		// Read the message
-		(*input) >> msg->m_dest_channel_id;
-		(*input) >> msg->m_dest_thread_id;
+		// Create a new Message struct
+		Message* msg = 0;
+		ACE_NEW_NORETURN(msg,Message);
+		if (!msg)
+		{
+			delete input;
+			m_stream.close();
+			return ENOMEM;
+		}
+
+		msg->m_deadline = deadline;
+
+		// Read the rest of the message
 		(*input) >> msg->m_src_channel_id;
+		(*input) >> msg->m_dest_thread_id;
 		(*input) >> msg->m_src_thread_id;
-
-		ACE_CDR::ULong req_dline_secs;
-		ACE_CDR::ULong req_dline_usecs;
-		(*input) >> req_dline_secs;
-		(*input) >> req_dline_usecs;
-		msg->m_deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
 		(*input) >> msg->m_attribs;
-		(*input) >> msg->m_flags;
-		msg->m_pPayload = input;
 
+		// Did everything make sense?
 		if (!input->good_bit())
 		{
 			int err = ACE_OS::last_error();
@@ -465,9 +475,49 @@ int OOCore::UserSession::run_read_loop()
 			return err;
 		}
 
-#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
+		// Now validate the apartment...
+		ACE_CDR::UShort dest_apartment_id = static_cast<ACE_CDR::UShort>(dest_channel_id & ~0xFFFFF000);
+		if (dest_apartment_id)
+		{
+			if (msg->m_dest_thread_id != 0 && msg->m_dest_thread_id != dest_apartment_id)
+			{
+				// Destination thread is not the destination apartment!
+				delete msg;
+				delete input;
+				m_stream.close();
+				return EACCES;
+			}
+
+			// Route to the correct thread
+			msg->m_dest_thread_id = dest_apartment_id;
+		}
+
+		// Align
 		input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-#endif
+
+		// Read the payload specific data
+		ACE_CDR::Octet byte_order;
+		input->read_octet(byte_order);
+		ACE_CDR::Octet version;
+		input->read_octet(version);
+
+		input->reset_byte_order(byte_order);
+	
+		(*input) >> msg->m_flags;
+
+		// Did everything make sense?
+		if (!input->good_bit() || version != 1)
+		{
+			int err = ACE_OS::last_error();
+			delete msg;
+			delete input;
+			m_stream.close();
+			return err;
+		}
+
+		// Align
+		input->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
+		msg->m_pPayload = input;
 
 		// Find the right queue to send it to...
 		if (msg->m_dest_thread_id != 0)
@@ -482,18 +532,41 @@ int OOCore::UserSession::run_read_loop()
 				return err;
 			}
 
-			std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
-			if (i == m_mapThreadContexts.end() ||
-				i->second->m_msg_queue->enqueue_tail(msg,&msg->m_deadline) == -1)
+			try
+			{
+				std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+				if (i == m_mapThreadContexts.end())
+				{
+					delete msg;
+					delete input;
+					m_stream.close();
+					return EACCES;
+				}				
+					
+				if (i->second->m_msg_queue->enqueue_tail(msg,&msg->m_deadline) == -1)
+				{
+					int err = ACE_OS::last_error();
+					delete msg;
+					delete input;
+					m_stream.close();
+					return err;
+				}
+			}
+			catch (std::exception&)
 			{
 				delete msg;
 				delete input;
+				m_stream.close();
+				return EINVAL;
 			}
 		}
 		else if (m_default_msg_queue.enqueue_tail(msg,&msg->m_deadline) == -1)
 		{
+			int err = ACE_OS::last_error();
 			delete msg;
 			delete input;
+			m_stream.close();
+			return err;
 		}
 	}
 }
@@ -511,18 +584,27 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline)
 
 		if (msg->m_flags & Message::Request)
 		{
-			// Set per channel thread id
-			pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
-			
-			ACE_Time_Value old_deadline = pContext->m_deadline;
-			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
+			// Set deadline
+			pContext->m_deadline = msg->m_deadline;
+			if (deadline && *deadline < pContext->m_deadline)
+				pContext->m_deadline = *deadline;
 
+			try
+			{
+				// Set per channel thread id
+				pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
+			}
+			catch (std::exception&)
+			{
+				// This shouldn't ever occur, but that means it will ;)
+				delete msg->m_pPayload;
+				delete msg;
+				continue;
+			}
+			
 			// Process the message...
 			process_request(msg,pContext->m_deadline);
 
-			// Restore old context
-			pContext->m_deadline = old_deadline;
-			
 			// Clear the thread map
 			pContext->m_mapChannelThreads.clear();
 		}
@@ -545,19 +627,29 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 
 		if (msg->m_flags & Message::Request)
 		{
-			// Set per channel thread id
-			ACE_CDR::UShort old_thread_id = 0;
-			std::map<ACE_CDR::UShort,ACE_CDR::UShort>::iterator i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-			if (i != pContext->m_mapChannelThreads.end())
-				i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::UShort,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
-
-			old_thread_id = i->second;
-			i->second = msg->m_src_thread_id;
-
+			// Update deadline
 			ACE_Time_Value old_deadline = pContext->m_deadline;
-			pContext->m_deadline = (msg->m_deadline < pContext->m_deadline ? msg->m_deadline : pContext->m_deadline);
+			pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
 
-			void* TODO; // This is where extra stuff for the call context goes...
+			// Set per channel thread id
+			std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
+			try
+			{
+				i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+				if (i != pContext->m_mapChannelThreads.end())
+					i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
+			}
+			catch (std::exception&)
+			{
+				// This shouldn't ever occur, but that means it will ;)
+				pContext->m_deadline = old_deadline;
+				delete msg->m_pPayload;
+				delete msg;
+				continue;
+			}
+
+			ACE_CDR::UShort old_thread_id = i->second;
+			i->second = msg->m_src_thread_id;
 
 			// Process the message...
 			process_request(msg,pContext->m_deadline);
@@ -611,13 +703,20 @@ ACE_CDR::UShort OOCore::UserSession::insert_thread_context(const OOCore::UserSes
 {
 	ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
 
-	for (ACE_CDR::UShort i=1;;++i)
+	try
 	{
-		if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
+		for (ACE_CDR::UShort i=1;;++i)
 		{
-			m_mapThreadContexts.insert(std::map<ACE_CDR::UShort,const ThreadContext*>::value_type(i,pContext));
-			return i;
+			if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
+			{
+				m_mapThreadContexts.insert(std::map<ACE_CDR::UShort,const ThreadContext*>::value_type(i,pContext));
+				return i;
+			}
 		}
+	}
+	catch (std::exception&)
+	{
+		return 0;
 	}
 }
 
@@ -628,7 +727,7 @@ void OOCore::UserSession::remove_thread_context(const OOCore::UserSession::Threa
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
-bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs)
+bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance();
 
@@ -639,9 +738,16 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 
 	// Determine dest_thread_id
 	ACE_CDR::UShort dest_thread_id = 0;
-	std::map<ACE_CDR::UShort,ACE_CDR::UShort>::const_iterator i=pContext->m_mapChannelThreads.find(pContext->m_thread_id);
-	if (i != pContext->m_mapChannelThreads.end())
-		dest_thread_id = i->second;
+	try
+	{
+		std::map<ACE_CDR::ULong,ACE_CDR::UShort>::const_iterator i=pContext->m_mapChannelThreads.find(pContext->m_thread_id);
+		if (i != pContext->m_mapChannelThreads.end())
+			dest_thread_id = i->second;
+	}
+	catch (std::exception&)
+	{
+		return false;
+	}
 	
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
@@ -672,7 +778,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort dest_channel_id, const AC
 		return wait_for_response(response,&deadline);
 }
 
-void OOCore::UserSession::send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb)
+void OOCore::UserSession::send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb)
 {
 	const ThreadContext* pContext = ThreadContext::instance();
 	ACE_Time_Value deadline = pContext->m_deadline;
@@ -718,7 +824,7 @@ bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 #endif
 }
 
-bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::UShort attribs)
+bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -727,36 +833,33 @@ bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::U
 		return false;
 	}
 
-	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
-	header.write_octet(1);	// version
-	if (!header.good_bit())
-		return false;
-
-	// We have room for 2 bytes here!
-
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
 	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
 
-	// Write the message
-	header.write_ushort(dest_channel_id);
-	header.write_ushort(dest_thread_id);
-	header.write_ushort(0);	// src_channel_id
-	header.write_ushort(pContext->m_thread_id);
-
+	header << dest_channel_id;
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 
-	header.write_ushort(attribs);
-	header.write_ushort(flags);
+	void* TODO;	// Apartment stuff goes here
+
+	header << m_channel_id;
+	header << dest_thread_id;
+	header << pContext->m_thread_id;
+	header << attribs;
+
+	// Align the buffer
+	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
+
+	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
+	header.write_octet(1);	 // version
+	header << flags;
 
 	if (!header.good_bit())
 		return false;
-
-#if !defined (ACE_CDR_IGNORE_ALIGNMENT)
+	
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-#endif
 
 	// Write the request stream
 	header.write_octet_array_mb(mb);
@@ -775,7 +878,15 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id,Remoting::inter_process);
+		Remoting::MarshalFlags_t mflags = Remoting::same;
+		if ((pMsg->m_src_channel_id & 0xFF000000) == (m_channel_id & 0xFF000000))
+			mflags = Remoting::inter_process;
+		else if ((pMsg->m_src_channel_id & 0x80000000) == (m_channel_id & 0x80000000))
+			mflags = Remoting::inter_user;
+		else 
+			mflags = Remoting::another_machine;
+
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id,mflags);
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -845,7 +956,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(ACE_CDR::UShort src_channel_id, Remoting::MarshalFlags_t marshal_flags)
+ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(ACE_CDR::ULong src_channel_id, Remoting::MarshalFlags_t marshal_flags)
 {
 	try
 	{
@@ -853,7 +964,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		{
 			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+            std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
 			{
 				if (i->second.m_marshal_flags == marshal_flags)
@@ -878,7 +989,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		// And add to the map
 		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::pair<std::map<ACE_CDR::UShort,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OMInfo>::value_type(src_channel_id,info));
+		std::pair<std::map<ACE_CDR::ULong,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::ULong,OMInfo>::value_type(src_channel_id,info));
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
@@ -888,25 +999,6 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		}
 
 		return info.m_ptrOM;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(string_t(e.what(),false));
-	}
-}
-
-ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_object_manager(ACE_CDR::UShort src_channel_id)
-{
-	try
-	{
-		// Lookup existing..
-		OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
-		if (i == m_mapOMs.end())
-			OOCORE_THROW_ERRNO(EACCES);
-
-		return i->second.m_ptrOM;
 	}
 	catch (std::exception& e)
 	{

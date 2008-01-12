@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_DEBUG"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_DEBUG;OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -198,6 +198,28 @@
 			<File
 				RelativePath=".\Channel.cpp"
 				>
+			</File>
+			<File
+				RelativePath=".\DebuggerWin32.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\EntryPoint.cpp"

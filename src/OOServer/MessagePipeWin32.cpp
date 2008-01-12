@@ -97,11 +97,6 @@ ACE_HANDLE Root::MessagePipe::get_read_handle() const
 	return m_hRead;
 }
 
-bool Root::MessagePipe::operator < (const MessagePipe& rhs) const
-{
-	return (m_hRead < rhs.m_hRead || !(rhs.m_hRead < m_hRead) && m_hWrite < rhs.m_hWrite);
-}
-
 ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
 {
 	return ACE_OS::write_n(m_hWrite,buf,len,sent);

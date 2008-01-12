@@ -195,21 +195,11 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 	return ret;
 }
 
-bool User::Manager::channel_open(ACE_CDR::UShort channel, bool bForwarded)
+bool User::Manager::channel_open(ACE_CDR::ULong channel)
 {
 	try
 	{
-		if (!bForwarded)
-		{
-			create_object_manager(channel,Remoting::inter_process);
-			return true;
-		}
-
-		// Check to see whether we can accept this connection...
-		void* TODO;
-
-		create_object_manager(channel,Remoting::inter_user);			
-
+		create_object_manager(channel,Remoting::inter_process);
 		return true;
 	}
 	catch (IException* pE)
@@ -229,7 +219,7 @@ bool User::Manager::init(const ACE_WString& strPipe)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::connect() failed"),false);
 
 	// Read the sandbox channel
-	ACE_CDR::UShort sandbox_channel = 0;
+	ACE_CDR::ULong sandbox_channel = 0;
 	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
@@ -238,7 +228,7 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	}
 
 	// Read the user channel...
-	ACE_CDR::UShort user_channel = 0;
+	ACE_CDR::ULong user_channel = 0;
 	if (pipe.recv(&user_channel,sizeof(user_channel)) != static_cast<ssize_t>(sizeof(user_channel)))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
@@ -246,66 +236,73 @@ bool User::Manager::init(const ACE_WString& strPipe)
 		return false;
 	}
 
-	// Create a new MessageConnection
-	Root::MessageConnection* pMC;
-	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
+	// Invent a new pipe name..
+	ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oou");
 
-	bool bSuccess = false;
-
-	// Open the connection
-	m_root_channel = pMC->open(pipe);
-	if (m_root_channel == 0)
-		pipe.close();
-	else
+	// Now start accepting client connections
+	if (m_process_acceptor.start(this,strNewPipe) != 0)
 	{
-		// Now bootstrap
-		if (bootstrap(sandbox_channel,user_channel))
-		{
-			// Invent a new pipe name..
-			ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oou");
-
-			// Now start accepting client connections
-			if (start(strNewPipe.c_str()) == 0)
-			{
-				size_t uLen = strNewPipe.length()+1;
-				if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
-					ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
-				else
-				{
-					// Then send back our port number
-					if (pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
-						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
-					else
-						bSuccess = true;
-				}
-			}
-		}
+		pipe.close();
+		return false;
+	}
+	
+	// Then send back our port name
+	size_t uLen = strNewPipe.length()+1;
+	if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
+		pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+		m_process_acceptor.stop();
+		pipe.close();
+		return false;
 	}
 
-	if (!bSuccess)
-		delete pMC;
+	// Read our channel id
+	ACE_CDR::ULong our_channel = 0;
+	if (pipe.recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
+		m_process_acceptor.stop();
+		pipe.close();
+		return false;
+	}
 
-	return bSuccess;
+	// Create a new MessageConnection
+	Root::MessageConnection* pMC = 0;
+	ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
+	if (!pMC)
+	{
+		m_process_acceptor.stop();
+		pipe.close();
+		return false;
+	}
+	
+	// Open the connection
+	m_root_channel = pMC->open(pipe,0x80000000);
+	if (m_root_channel == 0)
+	{
+		delete pMC;
+		m_process_acceptor.stop();
+		pipe.close();
+		return false;
+	}
+		
+	// Init the handler
+	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
+
+	// Now bootstrap
+	if (!bootstrap(sandbox_channel,user_channel))
+	{
+		m_process_acceptor.stop();
+		pipe.close();
+		return false;
+	}
+
+	return true;
 }
 
-bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort user_channel)
+bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel, ACE_CDR::ULong user_channel)
 {
-	if (sandbox_channel != 0)
-	{
-		// Map it one of ours...
-		sandbox_channel = add_routing(m_root_channel,sandbox_channel);
-		if (!sandbox_channel)
-			return false;
-	}
-
-	if (user_channel != 0)
-	{
-		// Map it one of ours...
-		user_channel = add_routing(m_root_channel,user_channel);
-		if (!user_channel)
-			return false;
-	}
-
 	// Register our service
 	try
 	{
@@ -315,7 +312,7 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort u
 
 		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
 		if (user_channel != 0)
-			ptrOMUser = create_object_manager(user_channel,Remoting::inter_priviledge);
+			ptrOMUser = create_object_manager(user_channel,Remoting::inter_user);
 		
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
@@ -339,7 +336,7 @@ bool User::Manager::bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort u
 void User::Manager::end_event_loop()
 {
 	// Stop accepting new clients
-	stop_accepting();
+	m_process_acceptor.stop();
 
 	// Stop the reactor
 	ACE_Reactor::instance()->end_reactor_event_loop();
@@ -370,7 +367,7 @@ void User::Manager::close_channels()
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		for (std::map<ACE_CDR::UShort,OMInfo>::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
+		for (std::map<ACE_CDR::ULong,OMInfo>::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
 		{
 			try
 			{
@@ -402,7 +399,28 @@ void User::Manager::close_channels()
 	}
 }
 
-void User::Manager::channel_closed(ACE_CDR::UShort channel)
+int User::Manager::on_accept(Root::MessagePipe& pipe)
+{
+	Root::MessageConnection* pMC = 0;
+	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),-1);
+
+	ACE_CDR::ULong channel_id = pMC->open(pipe);
+	if (channel_id == 0)
+	{
+		delete pMC;
+		return -1;
+	}
+
+	if (pipe.send(&channel_id,sizeof(channel_id)) != sizeof(channel_id))
+	{
+		delete pMC;
+		return -1;
+	}
+
+	return 0;
+}
+
+void User::Manager::channel_closed(ACE_CDR::ULong channel)
 {
 	if (channel == m_root_channel)
 	{
@@ -423,15 +441,15 @@ ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void* pParam)
 	return 0;
 }
 
-void User::Manager::process_request(const Root::MessagePipe& /*handle*/, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const Root::MessageHandler::CallContext& context)
+void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
-	if (context.m_src_channel == m_root_channel)
-		process_root_request(request,context);
+	if (src_channel_id == m_root_channel)
+		process_root_request(request,deadline,attribs);
 	else
-		process_user_request(request,src_thread_id,context);
+		process_user_request(request,src_channel_id,src_thread_id,deadline,attribs);
 }
 
-void User::Manager::process_root_request(ACE_InputCDR& request, const Root::MessageHandler::CallContext& /*context*/)
+void User::Manager::process_root_request(ACE_InputCDR& request, const ACE_Time_Value& /*deadline*/, ACE_CDR::ULong /*attribs*/)
 {
 	Root::RootOpCode_t op_code;
 	request >> op_code;
@@ -455,12 +473,12 @@ void User::Manager::process_root_request(ACE_InputCDR& request, const Root::Mess
 	}
 }
 
-void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const Root::MessageHandler::CallContext& context)
+void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = get_object_manager(context.m_src_channel);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id,classify_channel(src_channel_id));
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -469,7 +487,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		// Create a response if required
 		ObjectPtr<ObjectImpl<OutputCDR> > ptrResponse;
-		if (!(context.m_attribs & Remoting::asynchronous))
+		if (!(attribs & Remoting::asynchronous))
 		{
 			ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
 			ptrResponse->WriteByte(0);
@@ -477,7 +495,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		// Check timeout
 		ACE_Time_Value now = ACE_OS::gettimeofday();
-		if (context.m_deadline <= now)
+		if (deadline <= now)
 			return;
 
 		try
@@ -491,7 +509,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 			ptrInner.Attach(pInner);
 
 			// Reply with an exception if we can send replies...
-			if (!(context.m_attribs & Remoting::asynchronous))
+			if (!(attribs & Remoting::asynchronous))
 			{
 				// Dump the previous output and create a fresh output
 				ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
@@ -503,10 +521,10 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 			}
 		}
 
-		if (!(context.m_attribs & Remoting::asynchronous))
+		if (!(attribs & Remoting::asynchronous))
 		{
 		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			send_response(context.m_src_channel,src_thread_id,mb,context.m_deadline,context.m_attribs);
+			send_response(src_channel_id,src_thread_id,mb,deadline,attribs);
             mb->release();
 		}
 	}
@@ -516,7 +534,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 		ObjectPtr<IException> ptrOuter;
 		ptrOuter.Attach(pOuter);
 
-		if (!(context.m_attribs & Remoting::asynchronous))
+		if (!(attribs & Remoting::asynchronous))
 		{
 			ACE_OutputCDR error;
 
@@ -525,12 +543,12 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 			error.write_string(string_t_to_utf8(pOuter->Description()));
 			error.write_string(string_t_to_utf8(pOuter->Source()));
 
-			send_response(context.m_src_channel,src_thread_id,error.begin(),context.m_deadline,context.m_attribs);
+			send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs);
 		}
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::UShort src_channel_id, Remoting::MarshalFlags_t marshal_flags)
+ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id, Remoting::MarshalFlags_t marshal_flags)
 {
 	try
 	{
@@ -538,7 +556,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+            std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
 			{
 				if (i->second.m_marshal_flags == marshal_flags)
@@ -563,7 +581,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		// And add to the map
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::pair<std::map<ACE_CDR::UShort,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::UShort,OMInfo>::value_type(src_channel_id,info));
+		std::pair<std::map<ACE_CDR::ULong,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::ULong,OMInfo>::value_type(src_channel_id,info));
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
@@ -573,25 +591,6 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		}
 
 		return info.m_ptrOM;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(string_t(e.what(),false));
-	}
-}
-
-ObjectPtr<Remoting::IObjectManager> User::Manager::get_object_manager(ACE_CDR::UShort src_channel_id)
-{
-	try
-	{
-		// Lookup existing..
-		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::map<ACE_CDR::UShort,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
-		if (i == m_mapOMs.end())
-			OOSERVER_THROW_ERRNO(EINVAL);
-
-		return i->second.m_ptrOM;
 	}
 	catch (std::exception& e)
 	{

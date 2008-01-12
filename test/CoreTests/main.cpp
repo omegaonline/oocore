@@ -149,7 +149,7 @@ bool run_test(pfnTest t, const char* pszName)
 int test_system(const wchar_t* pszCommand)
 {
 	char szBuf[MAX_PATH];
-	getcwd(szBuf,MAX_PATH);
+	::getcwd(szBuf,MAX_PATH);
 
 	return ACE_OS::system(ACE_TEXT_WCHAR_TO_TCHAR(pszCommand));
 }

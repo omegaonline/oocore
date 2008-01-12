@@ -271,10 +271,13 @@ Omega::string_t Omega::string_t::Format(const wchar_t* pszFormat, ...)
 	va_start(list,pszFormat);
 
 	handle_t h2 = static_cast<handle_t>(string_t_format(pszFormat,&list));
-
+	
 	va_end(list);
 
-	return string_t(h2);
+	if (h2)
+		return string_t(h2);
+	else
+		return string_t();
 }
 
 inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)

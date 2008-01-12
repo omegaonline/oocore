@@ -48,8 +48,7 @@ namespace Root
 		void close();
 
 		ACE_HANDLE get_read_handle() const;
-		bool operator < (const MessagePipe& rhs) const;
-
+		
 		ssize_t send(const void* buf, size_t len, size_t* sent = 0);
 		ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
 		ssize_t recv(void* buf, size_t len);
@@ -104,12 +103,11 @@ namespace Root
 		MessagePipeAsyncAcceptor() : ACE_Event_Handler()
 		{}
 
-		int start(T* pHandler, int key, const ACE_WString& strAddr);
+		int start(T* pHandler, const ACE_WString& strAddr);
 		void stop();
 
 	private:
 		T*                  m_pHandler;
-		int                 m_key;
 		MessagePipeAcceptor m_acceptor;
 
 		int handle_signal(int, siginfo_t*, ucontext_t*);
@@ -126,12 +124,11 @@ namespace Root
 		MessagePipeSingleAsyncAcceptor();
 		virtual ~MessagePipeSingleAsyncAcceptor();
 
-		int start(T* pHandler, int key, const ACE_WString& strAddr);
+		int start(T* pHandler, const ACE_WString& strAddr);
 		void stop();
 
 	private:
 		T*                  m_pHandler;
-		int                 m_key;
 		SECURITY_ATTRIBUTES m_sa;
 		PACL                m_pACL;
 		ACE_SPIPE_Acceptor  m_acceptor;

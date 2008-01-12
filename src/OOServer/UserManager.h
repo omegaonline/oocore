@@ -39,6 +39,7 @@ namespace User
 		friend class Channel;
 		friend class ChannelMarshalFactory;
 		friend class ACE_Singleton<Manager, ACE_Thread_Mutex>;
+		friend class Root::MessagePipeAsyncAcceptor<Manager>;
 		typedef ACE_Singleton<Manager, ACE_Thread_Mutex> USER_MANAGER;
 
 		Manager();
@@ -47,31 +48,34 @@ namespace User
 		Manager& operator = (const Manager&) { return *this; }
 
 		ACE_RW_Thread_Mutex			m_lock;
-		ACE_CDR::UShort             m_root_channel;
+		ACE_CDR::ULong              m_root_channel;
 		Omega::uint32_t             m_nIPSCookie;
+
+		Root::MessagePipeAsyncAcceptor<Manager> m_process_acceptor;
+
+		int on_accept(Root::MessagePipe& pipe);
 		
 		struct OMInfo
 		{
 			Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
 			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
 		};
-		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
+		std::map<ACE_CDR::ULong,OMInfo> m_mapOMs;
 
-		virtual bool channel_open(ACE_CDR::UShort channel, bool bForwarded);
+		virtual bool channel_open(ACE_CDR::ULong channel);
 
 		int run_event_loop_i(const ACE_WString& strPipe);
 		bool init(const ACE_WString& strPipe);
-		bool bootstrap(ACE_CDR::UShort sandbox_channel, ACE_CDR::UShort user_channel);
+		bool bootstrap(ACE_CDR::ULong sandbox_channel, ACE_CDR::ULong user_channel);
 		void close_channels();
 		void end_event_loop();
 
-		virtual void channel_closed(ACE_CDR::UShort channel);
+		virtual void channel_closed(ACE_CDR::ULong channel);
 		
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::UShort src_channel_id, Omega::Remoting::MarshalFlags_t flags);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
-		void process_request(const Root::MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const Root::MessageHandler::CallContext& context);
-		void process_user_request(const ACE_InputCDR& input, ACE_CDR::UShort src_thread_id, const Root::MessageHandler::CallContext& context);
-		void process_root_request(ACE_InputCDR& input, const Root::MessageHandler::CallContext& context);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong src_channel_id, Omega::Remoting::MarshalFlags_t flags);
+		void process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		void process_user_request(const ACE_InputCDR& input, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		void process_root_request(ACE_InputCDR& input, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);

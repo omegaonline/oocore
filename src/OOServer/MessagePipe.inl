@@ -35,11 +35,10 @@
 #define OOSERVER_MSG_PIPE_INL_INCLUDED_
 
 template <class T>
-int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, int key, const ACE_WString& strAddr)
+int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_WString& strAddr)
 {
 	m_pHandler = pHandler;
-	m_key = key;
-
+	
 	if (m_acceptor.open(strAddr,0) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
 
@@ -65,7 +64,7 @@ int Root::MessagePipeAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucontext_t
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
 	}
 
-	return m_pHandler->on_accept(pipe,m_key);
+	return m_pHandler->on_accept(pipe);
 }
 
 template <class T>
@@ -94,11 +93,10 @@ Root::MessagePipeSingleAsyncAcceptor<T>::~MessagePipeSingleAsyncAcceptor()
 }
 
 template <class T>
-int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, int key, const ACE_WString& strAddr)
+int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_WString& strAddr)
 {
 	m_pHandler = pHandler;
-	m_key = key;
-
+	
 	if (m_sa.nLength == 0)
 	{
 		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -137,7 +135,7 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucon
 	if (m_acceptor.accept(stream) != 0 && GetLastError() != ERROR_MORE_DATA)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
 
-	return m_pHandler->on_accept(stream,m_key);
+	return m_pHandler->on_accept(stream);
 }
 #endif
 

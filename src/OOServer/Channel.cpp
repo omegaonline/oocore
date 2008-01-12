@@ -50,7 +50,7 @@ User::Channel::Channel()
 {
 }
 
-void User::Channel::init(ACE_CDR::UShort channel_id)
+void User::Channel::init(ACE_CDR::ULong channel_id)
 {
 	m_channel_id = channel_id;
 }
@@ -79,10 +79,6 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 		if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 		{
 			int err = ACE_OS::last_error();
-			if (err == ENOENT)
-			{
-				void* TODO;  // Throw a remoting error
-			}
 			OOSERVER_THROW_ERRNO(err);
 		}
 	}
@@ -149,29 +145,20 @@ Omega::guid_t User::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega:
 	return oid;
 }
 
-void User::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t flags)
+void User::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
-	pStream->WriteUInt16(flags);
-	pStream->WriteUInt16(m_channel_id);
+	pStream->WriteUInt32(m_channel_id);
 }
 
 void User::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
-	pStream->ReadUInt16();
-	pStream->ReadUInt16();
+	pStream->ReadUInt32();
 }
 
-void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* /*pObjectManager*/, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 {
 	// We are unmarshalling a channel from another process...
-
-
-	Omega::Remoting::MarshalFlags_t flags2 = pStream->ReadUInt16();
-	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
-
-	// Create a routing from the other channel to the caller
-	const Root::MessageHandler::CallContext& c = User::Manager::USER_MANAGER::instance()->get_call_context();
-	channel_id = User::Manager::USER_MANAGER::instance()->add_routing(c.m_src_channel,channel_id);
+	ACE_CDR::ULong channel_id = pStream->ReadUInt32();
 
 	// Create a new object manager (and channel)
 	pObject = User::Manager::USER_MANAGER::instance()->create_object_manager(channel_id,flags)->QueryInterface(iid);

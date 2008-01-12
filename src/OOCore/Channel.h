@@ -176,7 +176,7 @@ namespace OOCore
 	public:
 		Channel();
 
-		void init(ACE_CDR::UShort channel_id);
+		void init(ACE_CDR::ULong channel_id);
 		
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -184,7 +184,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_CDR::UShort	m_channel_id;
+		ACE_CDR::ULong	m_channel_id;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
 		Channel& operator = (const Channel&) { return *this; }

@@ -74,45 +74,43 @@ namespace Root
 			SpawnedProcess* pSpawn;
 			bool            bPrimary;	// This is the instance that holds the user registry
 		};
-		std::map<MessagePipe,UserProcess>       m_mapUserProcesses;
-		MessagePipeSingleAsyncAcceptor<Manager> m_client_connector;
+		std::map<ACE_CDR::ULong,UserProcess>    m_mapUserProcesses;
+		MessagePipeSingleAsyncAcceptor<Manager> m_client_acceptor;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		virtual int on_accept(ACE_SPIPE_Stream& pipe, int key);
+		int on_accept(ACE_SPIPE_Stream& pipe);
 #else
-		virtual int on_accept(MessagePipe& pipe, int key);
+		int on_accept(MessagePipe& pipe);
 #endif
 		int process_client_connects();
-		ACE_CDR::UShort spawn_user(user_id_type uid, ACE_CDR::UShort nUserChannel, ACE_WString& strPipe);
-		ACE_WString bootstrap_user(MessagePipe& pipe, ACE_CDR::UShort nUserChannel);
+		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_CDR::ULong nUserChannel, ACE_WString& strPipe);
+		ACE_WString bootstrap_user(MessagePipe& pipe, ACE_CDR::ULong nUserChannel);
 		bool connect_client(user_id_type uid, ACE_WString& strPipe);
 		void close_users();
 
-		virtual void pipe_closed(const MessagePipe& pipe);
-		
-		void process_request(const MessagePipe& pipe, ACE_InputCDR& request, ACE_CDR::UShort src_thread_id, const MessageHandler::CallContext& context);
-		bool access_check(const MessagePipe& pipe, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);
+		void process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		bool access_check(ACE_CDR::ULong channel, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);
 
 		ACE_Configuration_Heap         m_registry;
 		ACE_WString                    m_strRegistry;
 		ACE_RW_Thread_Mutex            m_registry_lock;
-		ACE_CDR::UShort                m_sandbox_channel;
+		ACE_CDR::ULong                 m_sandbox_channel;
 
-		bool registry_open_section(const MessagePipe& pipe, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
-		bool registry_open_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_WString& strValue, bool bAccessCheck = false);
-		void registry_key_exists(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_create_key(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_delete_key(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_enum_subkeys(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_value_type(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_string_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_uint_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_binary_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_string_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_uint_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_binary_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_enum_values(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_delete_value(const MessagePipe& pipe, ACE_InputCDR& request, ACE_OutputCDR& response);
+		bool registry_open_section(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
+		bool registry_open_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_WString& strValue, bool bAccessCheck = false);
+		void registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_enum_subkeys(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_value_type(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_uint_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_uint_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_delete_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);

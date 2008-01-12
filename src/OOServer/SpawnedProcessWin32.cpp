@@ -716,7 +716,9 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	STARTUPINFOW startup_info;
 	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
-	startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
+
+	if (!IsDebuggerPresent())
+		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 
 	DWORD dwFlags = DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT | CREATE_NEW_PROCESS_GROUP | CREATE_DEFAULT_ERROR_MODE;
 

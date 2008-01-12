@@ -66,6 +66,7 @@ namespace OOCore
 		ACE_RW_Thread_Mutex m_lock;
 		int                 m_thrd_grp_id;
 		MessagePipe         m_stream;
+		ACE_CDR::ULong      m_channel_id;
 		ACE_Thread_Mutex    m_send_lock;
 		Omega::uint32_t     m_nIPSCookie;
 
@@ -74,22 +75,21 @@ namespace OOCore
 			Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
 			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
 		};
-		std::map<ACE_CDR::UShort,OMInfo> m_mapOMs;
+		std::map<ACE_CDR::ULong,OMInfo> m_mapOMs;
 		
 		struct Message
 		{
 			enum Flags
 			{
-				Request = 1,
-				Forwarded = 2
+				Response = 0,
+				Request = 1
 			};
 
-			ACE_CDR::UShort  m_dest_channel_id;
 			ACE_CDR::UShort  m_dest_thread_id;
-			ACE_CDR::UShort  m_src_channel_id;
+			ACE_CDR::ULong   m_src_channel_id;
 			ACE_CDR::UShort  m_src_thread_id;
 			ACE_Time_Value   m_deadline;
-			ACE_CDR::UShort  m_attribs;
+			ACE_CDR::ULong   m_attribs;
 			ACE_CDR::UShort  m_flags;
 			ACE_InputCDR*    m_pPayload;
 		};
@@ -98,8 +98,10 @@ namespace OOCore
 		{
 			ACE_CDR::UShort                             m_thread_id;
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
+			
+			// Transient data
+			std::map<ACE_CDR::ULong,ACE_CDR::UShort>    m_mapChannelThreads;
 			ACE_Time_Value                              m_deadline;
-			std::map<ACE_CDR::UShort,ACE_CDR::UShort>   m_mapChannelThreads;
 			
 			static ThreadContext* instance();
 
@@ -119,7 +121,7 @@ namespace OOCore
 		void remove_thread_context(const ThreadContext* pContext);
 
 		// Accessors for Channel
-		bool send_request(ACE_CDR::UShort dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::UShort attribs);
+		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs);
 		
 		// Proper private members
 		bool init_i();
@@ -132,11 +134,10 @@ namespace OOCore
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 		void process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
 		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
-		bool build_header(const ThreadContext* pContext, ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::UShort attribs);
-		void send_response(ACE_CDR::UShort dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::UShort src_channel_id, Omega::Remoting::MarshalFlags_t marshal_flags);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_object_manager(ACE_CDR::UShort src_channel_id);
-		
+		bool build_header(const ThreadContext* pContext, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
+		void send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong src_channel_id, Omega::Remoting::MarshalFlags_t marshal_flags);
+				
 		static ACE_THR_FUNC_RETURN io_worker_fn(void* pParam);
 	};
 }

@@ -36,6 +36,10 @@
 #include "./RootManager.h"
 #include "./Version.h"
 
+#if defined(ACE_WIN32) && defined(OMEGA_DEBUG)
+void AttachDebugger();
+#endif
+
 // Forward declare UserMain
 int UserMain(const ACE_WString& strPipe);
 
@@ -86,11 +90,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	{
 #if defined(OMEGA_DEBUG)
 		if (argc==4 && ACE_OS::strcmp(argv[3],L"--break")==0)
-		{
-			wchar_t szBuf[256];
-			ACE_OS::sprintf(szBuf,L"Attach the debugger to process id %ld now if you want!",GetCurrentProcessId());
-			MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
-		}
+			AttachDebugger();			
 #endif
 		
 		return UserMain(argv[2]);

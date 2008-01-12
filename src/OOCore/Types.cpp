@@ -90,7 +90,7 @@ ACE_WString OOCore::UTF_Converter::from_utf8(const char* sz)
 	if (!m_conv)
 		OMEGA_THROW(L"Failed to construct utf converter!");
 
-	for (int len=128;;len*=2)
+	for (size_t len=128;len<=(size_t)-1 / sizeof(wchar_t);len*=2)
 	{
 		wchar_t* pszBuf;
 		OMEGA_NEW(pszBuf,wchar_t[len]);
@@ -107,8 +107,10 @@ ACE_WString OOCore::UTF_Converter::from_utf8(const char* sz)
 		delete [] pszBuf;
 
 		if (res != ACE_Encoding_Converter::TARGET_EXHAUSTED)
-			OMEGA_THROW(L"utf8 decoding failed!");
+			break;
 	}
+
+	OMEGA_THROW(L"utf8 decoding failed!");
 }
 
 ACE_CString OOCore::UTF_Converter::to_utf8(const wchar_t* wsz)
@@ -116,7 +118,7 @@ ACE_CString OOCore::UTF_Converter::to_utf8(const wchar_t* wsz)
 	if (!m_conv)
 		OMEGA_THROW(L"Failed to construct utf converter!");
 
-	for (int len=256;;len*=2)
+	for (size_t len=256;;len*=2)
 	{
 		char* pszBuf;
 		OMEGA_NEW(pszBuf,char[len]);
@@ -133,8 +135,10 @@ ACE_CString OOCore::UTF_Converter::to_utf8(const wchar_t* wsz)
 		delete [] pszBuf;
 
 		if (res != ACE_Encoding_Converter::TARGET_EXHAUSTED)
-			OMEGA_THROW(L"utf8 encoding failed!");
+			break;
 	}
+
+	OMEGA_THROW(L"utf8 encoding failed!");
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,())
@@ -418,13 +422,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list*,ap))
 {
-	for (int len=256;;len*=2)
+	for (size_t len=256;len<=(size_t)-1 / sizeof(wchar_t);len*=2)
 	{
 		wchar_t* buf = 0;
 		OMEGA_NEW(buf,wchar_t[len]);
 		
 		int len2 = ACE_OS::vsnprintf(buf,len,sz,*ap);
-        if (len2 <= len && len2 != -1)
+        if (len2 >= 0 && static_cast<size_t>(len2) <= len)
 		{
             StringNode* s1;
 			OMEGA_NEW(s1,StringNode(ACE_WString(buf,len2)));
@@ -435,6 +439,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(
 
 		delete [] buf;
 	}
+
+	return 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(string_t_clear,1,((in),void*,s1))

@@ -50,7 +50,7 @@ OOCore::Channel::Channel()
 {
 }
 
-void OOCore::Channel::init(ACE_CDR::UShort channel_id)
+void OOCore::Channel::init(ACE_CDR::ULong channel_id)
 {
 	m_channel_id = channel_id;
 }
@@ -138,16 +138,14 @@ Omega::guid_t OOCore::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omeg
 	return OID_ChannelMarshalFactory;
 }
 
-void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t flags)
+void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
-	pStream->WriteUInt16(flags);
-	pStream->WriteUInt16(m_channel_id);
+	pStream->WriteUInt32(m_channel_id);
 }
 
 void OOCore::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
-	pStream->ReadUInt16();
-	pStream->ReadUInt16();
+	pStream->ReadUInt32();
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
@@ -172,8 +170,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectM
 		
 	// If we get here, then we are loaded into a different exe from OOServer,
 	// therefore we do simple unmarshalling
-	Omega::Remoting::MarshalFlags_t flags2 = pStream->ReadUInt16();
-	ACE_CDR::UShort channel_id = pStream->ReadUInt16();
+	ACE_CDR::ULong channel_id = pStream->ReadUInt32();
 
 	// Create a new object manager (and channel)
 	pObject = UserSession::USER_SESSION::instance()->create_object_manager(channel_id,flags)->QueryInterface(iid);

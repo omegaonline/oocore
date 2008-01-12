@@ -433,8 +433,11 @@ namespace Omega
 					{
 						try
 						{
+							if (cbSize > (size_t)-1 / sizeof(typename marshal_info<T>::wire_type::type))
+								OMEGA_THROW(L"Overflow!");
+
 							m_alloc_size = cbSize;
-							OMEGA_NEW(m_pVals,typename marshal_info<T>::wire_type::type[m_alloc_size]);
+							OMEGA_NEW(m_pVals,typename marshal_info<T>::wire_type::type[m_alloc_size]);								
 						}
 						catch (IException* pE)
 						{

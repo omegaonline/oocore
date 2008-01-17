@@ -157,17 +157,17 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
-	if (threads < 2)
-		threads = 2;
+	if (threads < 1)
+		threads = 1;
 
 	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
+	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning threads"));
 	else
 	{
 		// Spawn off the proactor threads
-		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
+		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
 			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning threads"));
 		else
@@ -239,20 +239,12 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	// Invent a new pipe name..
 	ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oou");
 
-	// Now start accepting client connections
-	if (m_process_acceptor.start(this,strNewPipe) != 0)
-	{
-		pipe.close();
-		return false;
-	}
-	
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
 	if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
 		pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
-		m_process_acceptor.stop();
 		pipe.close();
 		return false;
 	}
@@ -262,7 +254,6 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	if (pipe.recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
-		m_process_acceptor.stop();
 		pipe.close();
 		return false;
 	}
@@ -272,7 +263,6 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
 	if (!pMC)
 	{
-		m_process_acceptor.stop();
 		pipe.close();
 		return false;
 	}
@@ -282,7 +272,6 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	if (m_root_channel == 0)
 	{
 		delete pMC;
-		m_process_acceptor.stop();
 		pipe.close();
 		return false;
 	}
@@ -293,7 +282,13 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	// Now bootstrap
 	if (!bootstrap(sandbox_channel,user_channel))
 	{
-		m_process_acceptor.stop();
+		pipe.close();
+		return false;
+	}
+
+	// Now start accepting client connections
+	if (m_process_acceptor.start(this,strNewPipe) != 0)
+	{
 		pipe.close();
 		return false;
 	}

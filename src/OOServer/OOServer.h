@@ -21,6 +21,9 @@
 
 #include <OOCore/OOCore.h>
 
+/////////////////////////////////////////////////
+// Include ACE components
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4244)
@@ -31,10 +34,12 @@
 #pragma warning(disable : 4702)
 #endif
 
+#if _MSC_VER >= 1400
+#pragma warning(disable : 4996)
+#define _CRT_SECURE_NO_WARNINGS
 #endif
 
-/////////////////////////////////////////////////
-// Include ACE components
+#endif
 
 #include <ace/Asynch_Acceptor.h>
 #include <ace/CDR_Stream.h>
@@ -53,7 +58,20 @@
 #include <ace/UNIX_Addr.h>
 
 #if !defined(ACE_HAS_WCHAR)
-#error OmegaOnline requires wchar_t support!
+#error OmegaOnline requires has wchar_t support!
+#endif
+
+#if !defined(ACE_USES_WCHAR)
+#error OmegaOnline requires uses wchar_t support!
+#endif
+
+#if defined(_MSC_VER)
+
+#if _MSC_VER >= 1400
+#undef _CRT_SECURE_NO_WARNINGS
+#endif
+
+#pragma warning(pop)
 #endif
 
 // End of ACE includes
@@ -65,11 +83,7 @@
 #include <set>
 
 // End of STL includes
-///////////////////////////undefined///////////////////
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
+//////////////////////////////////////////////
 
 /////////////////////////////////////////////////
 // Include OOCore/OTL components

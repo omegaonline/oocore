@@ -131,7 +131,6 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
 				StringPooling="true"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="false"
 				TreatWChar_tAsBuiltInType="true"
 				ForceConformanceInForLoopScope="true"
 				UsePrecompiledHeader="2"

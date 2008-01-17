@@ -46,7 +46,8 @@ namespace Root
 		MessageConnection(MessageHandler* pHandler);
 		virtual ~MessageConnection();
 
-		ACE_CDR::ULong open(MessagePipe& pipe, ACE_CDR::ULong chanel_id = 0);
+		ACE_CDR::ULong open(MessagePipe& pipe, ACE_CDR::ULong chanel_id = 0, bool bStart = true);
+		bool read();
 
 	private:
 		MessageConnection() : ACE_Service_Handler() {}
@@ -59,8 +60,6 @@ namespace Root
 		MessagePipe                 m_pipe;
 		size_t                      m_read_len;
 		ACE_CDR::ULong              m_channel_id;
-
-		bool read();
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		ACE_Asynch_Read_File        m_reader;

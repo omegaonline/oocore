@@ -168,10 +168,23 @@ bool OOCore::UserSession::init_i()
 	if (!discover_server_port(strPipe))
 		return false;
 
-    // Connect to the root
-	ACE_Time_Value wait(5);
+    // Connect to the root - we should loop here, it might take a while 
+	// for the accept socket to be created...
+	ACE_Time_Value wait(10);
 	if (MessagePipe::connect(m_stream,strPipe,&wait) != 0)
-		return false;
+	{
+		ACE_Countdown_Time countdown(&wait);
+		do
+		{
+			ACE_OS::sleep(ACE_Time_Value(0,100));
+
+			// Try again
+			countdown.update();
+		} while (MessagePipe::connect(m_stream,strPipe,&wait) != 0 && wait != ACE_Time_Value::zero);
+
+		if (wait == ACE_Time_Value::zero)
+			return false;
+	}
 
 	// Read our channel id
 	if (m_stream.recv(&m_channel_id,sizeof(m_channel_id)) != static_cast<ssize_t>(sizeof(m_channel_id)))
@@ -274,7 +287,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 		ACE_Countdown_Time countdown(&wait);
 		do
 		{
-			ACE_OS::sleep(1);
+			ACE_OS::sleep(ACE_Time_Value(0,100));
 
 			// Try again
 			countdown.update();
@@ -285,7 +298,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 	}
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	// Send nothing
+	// Send nothing, but we must send...
 	HANDLE uid = 0;
 #else
 	// Send our uid

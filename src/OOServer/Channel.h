@@ -96,20 +96,32 @@ namespace User
 	public:
 		Omega::bool_t ReadBoolean()
 			{ Omega::bool_t val; if (!get_input().read_boolean(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		Omega::int16_t ReadInt16()
+			{ Omega::int16_t val; if (!get_input().read_short(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint16_t ReadUInt16()
 			{ Omega::uint16_t val; if (!get_input().read_ushort(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		Omega::int32_t ReadInt32()
+			{ Omega::int32_t val; if (!get_input().read_long(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint32_t ReadUInt32()
 			{ Omega::uint32_t val; if (!get_input().read_ulong(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		Omega::int64_t ReadInt64()
+			{ Omega::int64_t val; if (!get_input().read_longlong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint64_t ReadUInt64()
 			{ Omega::uint64_t val; if (!get_input().read_ulonglong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
 			{ ACE_CString val; if (!get_input().read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) OOSERVER_THROW_LASTERROR(); }
+		void WriteInt16(Omega::int16_t val)
+			{ if (!write_short(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteUInt16(Omega::uint16_t val)
 			{ if (!write_ushort(val)) OOSERVER_THROW_LASTERROR(); }
+		void WriteInt32(Omega::int32_t val)
+			{ if (!write_long(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteUInt32(Omega::uint32_t val)
 			{ if (!write_ulong(val)) OOSERVER_THROW_LASTERROR(); }
+		void WriteInt64(const Omega::int64_t& val)
+			{ if (!write_longlong(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) OOSERVER_THROW_LASTERROR(); }
 		void WriteString(const Omega::string_t& val)
@@ -150,19 +162,31 @@ namespace User
 	public:
 		Omega::bool_t ReadBoolean()
 			{ Omega::bool_t val; if (!read_boolean(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		Omega::int16_t ReadInt16()
+			{ Omega::int16_t val; if (!read_short(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint16_t ReadUInt16()
 			{ Omega::uint16_t val; if (!read_ushort(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		Omega::int32_t ReadInt32()
+			{ Omega::int32_t val; if (!read_long(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint32_t ReadUInt32()
 			{ Omega::uint32_t val; if (!read_ulong(val)) OOSERVER_THROW_LASTERROR(); return val; }
+		Omega::int64_t ReadInt64()
+			{ Omega::int64_t val; if (!read_longlong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::uint64_t ReadUInt64()
 			{ Omega::uint64_t val; if (!read_ulonglong(val)) OOSERVER_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
 			{ ACE_CString val; if (!read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
 		void WriteBoolean(Omega::bool_t)
 			{ OOSERVER_THROW_ERRNO(EACCES); }
+		void WriteInt16(Omega::int16_t)
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void WriteUInt16(Omega::uint16_t)
 			{ OOSERVER_THROW_ERRNO(EACCES); }
+		void WriteInt32(Omega::int32_t)
+			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void WriteUInt32(Omega::uint32_t)
+			{ OOSERVER_THROW_ERRNO(EACCES); }
+		void WriteInt64(const Omega::int64_t&)
 			{ OOSERVER_THROW_ERRNO(EACCES); }
 		void WriteUInt64(const Omega::uint64_t&)
 			{ OOSERVER_THROW_ERRNO(EACCES); }

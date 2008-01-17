@@ -104,17 +104,17 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
-	if (threads < 2)
-		threads = 2;
+	if (threads < 1)
+		threads = 1;
 
 	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,request_worker_fn,this);
+	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"));
 	else
 	{
 		// Spawn off the proactor threads
-		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads,proactor_worker_fn);
+		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
 			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"));
 		else
@@ -350,27 +350,46 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CDR::ULong nUserC
 					ACE_NEW_NORETURN(pMC,MessageConnection(this));
 					if (!pMC)
 						ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %m\n"));
-					else if ((nChannelId = pMC->open(pipe)) != 0)
+					else if ((nChannelId = pMC->open(pipe,0,false)) != 0)
 					{
-						if (pipe.send(&nChannelId,sizeof(nChannelId)) != sizeof(nChannelId))
+						// Insert the data into various maps...
+						try
 						{
-							ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+							ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+
+							UserProcess process = {strPipe, pSpawn, (nUserChannel==0 && !bSandbox) };
+							m_mapUserProcesses.insert(std::map<ACE_CDR::ULong,UserProcess>::value_type(nChannelId,process));
+						}
+						catch (std::exception& e)
+						{
+							ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled std::exception %s\n",e.what()));
 							nChannelId = 0;
 						}
-						else
+						
+						if (nChannelId)
 						{
-							// Insert the data into various maps...
-							try
+							if (!pMC->read())
 							{
-								ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-								UserProcess process = {strPipe, pSpawn, (nUserChannel==0 && !bSandbox) };
-								m_mapUserProcesses.insert(std::map<ACE_CDR::ULong,UserProcess>::value_type(nChannelId,process));
-							}
-							catch (std::exception& e)
-							{
-								ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled std::exception %s\n",e.what()));
 								nChannelId = 0;
+							}
+							else if (pipe.send(&nChannelId,sizeof(nChannelId)) != sizeof(nChannelId))
+							{
+								ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+								nChannelId = 0;
+							}
+							
+							if (!nChannelId)
+							{
+								try
+								{
+									ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+
+									UserProcess process = {strPipe, pSpawn, (nUserChannel==0 && !bSandbox) };
+									m_mapUserProcesses.insert(std::map<ACE_CDR::ULong,UserProcess>::value_type(nChannelId,process));
+								}
+								catch (...)
+								{	
+								}
 							}
 						}
 					}

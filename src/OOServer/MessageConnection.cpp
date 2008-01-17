@@ -55,7 +55,7 @@ Root::MessageConnection::~MessageConnection()
 	m_pipe.close();
 }
 
-ACE_CDR::ULong Root::MessageConnection::open(MessagePipe& pipe, ACE_CDR::ULong channel_id)
+ACE_CDR::ULong Root::MessageConnection::open(MessagePipe& pipe, ACE_CDR::ULong channel_id, bool bStart)
 {
 	if (m_channel_id)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"already open!"),0);
@@ -73,7 +73,7 @@ ACE_CDR::ULong Root::MessageConnection::open(MessagePipe& pipe, ACE_CDR::ULong c
 	if (m_channel_id == 0)
 		return 0;
 
-	if (!read())
+	if (bStart && !read())
 		return 0;
 
 	m_pipe = pipe;

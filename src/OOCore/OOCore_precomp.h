@@ -29,15 +29,20 @@
 // Pre-include config...
 #include <OOCore/config-guess.h>
 
+/////////////////////////////////////////////////
+// Include ACE components
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4267)
 #pragma warning(disable : 4355)
-#endif
 
-/////////////////////////////////////////////////
-// Include ACE components
+#if _MSC_VER >= 1400
+#pragma warning(disable : 4996)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+#endif
 
 #include <ace/CDR_Stream.h>
 #include <ace/Codecs.h>
@@ -70,12 +75,15 @@
 #error OmegaOnline requires uses wchar_t support!
 #endif
 
-// End of ACE includes
-/////////////////////////////////////////////////
-
 #if defined(_MSC_VER)
+#if _MSC_VER >= 1400
+#undef _CRT_SECURE_NO_WARNINGS
+#endif
 #pragma warning(pop)
 #endif
+
+// End of ACE includes
+/////////////////////////////////////////////////
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE

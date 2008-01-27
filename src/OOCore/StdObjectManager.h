@@ -65,6 +65,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 		void RemoveProxy(Omega::uint32_t proxy_id);
+		void RemoveStub(Omega::uint32_t stub_id);
 
 	private:
 		StdObjectManager(const StdObjectManager&) : OTL::ObjectBase(),Omega::Remoting::IObjectManager(),Omega::System::MetaInfo::IWireManager() {};
@@ -75,9 +76,9 @@ namespace OOCore
 		Omega::uint32_t                           m_uNextStubId;
 		Omega::Remoting::MarshalFlags_t           m_marshal_flags;
 
-		std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>   m_mapStubObjs;
-		std::map<Omega::uint32_t,WireStub*>                          m_mapStubIds;
-		std::map<Omega::uint32_t,WireProxy*>                         m_mapProxyIds;
+		std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>                                     m_mapStubObjs;
+		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>::iterator> m_mapStubIds;
+		std::map<Omega::uint32_t,WireProxy*>                                                           m_mapProxyIds;
 
 	// IObject_Safe members
 	public:

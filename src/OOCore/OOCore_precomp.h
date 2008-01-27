@@ -118,11 +118,8 @@
 // End of Windows includes
 /////////////////////////////////////////////////
 
-#define OOCORE_THROW_ERRNO(error) \
-	OMEGA_THROW(Omega::string_t(ACE_OS::strerror(error),false))
-
 #define OOCORE_THROW_LASTERROR() \
-	OOCORE_THROW_ERRNO(ACE_OS::last_error())
+	OMEGA_THROW_ERRNO(ACE_OS::last_error())
 
 #define OOCORE_GUARD(MUTEX, OBJ, LOCK) \
 	ACE_Guard< MUTEX > OBJ (LOCK); \
@@ -137,4 +134,5 @@
 	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
 
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_
+
 

@@ -54,6 +54,66 @@ namespace OOCore
 	};
 }
 
+#if defined(OMEGA_WIN32)
+static string_t Win32Msg(DWORD dwErr)
+{
+	string_t strRet;
+
+	LPVOID lpMsgBuf = 0;
+	if (FormatMessageW(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dwErr,
+		0,
+		(LPWSTR)&lpMsgBuf,
+		0,	NULL))
+	{
+		strRet = (LPCWSTR)lpMsgBuf;
+
+		// Free the buffer.
+		LocalFree(lpMsgBuf);
+	}
+	else
+	{
+		strRet = string_t::Format(L"Unknown system err %#x\n",dwErr);
+	}
+
+	return strRet;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create_GLE,3,((in),DWORD,GLE,(in),const string_t&,source,(in),IException*,pCause))
+{
+    ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
+	pExcept->m_ptrCause = pCause;
+	pExcept->m_strSource = source;
+	pExcept->m_strDesc = Win32Msg(GLE);
+	return pExcept;
+}
+#endif
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create_errno,3,((in),int,e,(in),const string_t&,source,(in),IException*,pCause))
+{
+    ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
+	pExcept->m_ptrCause = pCause;
+	pExcept->m_strSource = source;
+	pExcept->m_strDesc = string_t(ACE_OS::strerror(e),false);
+
+#if defined(OMEGA_WIN32)
+
+	// Try to create a relevant message...
+	if (pExcept->m_strDesc.IsEmpty())
+	{
+		DebugBreak();
+		pExcept->m_strDesc = Win32Msg(static_cast<DWORD>(e));
+	}
+	
+#endif	
+
+	return pExcept;
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const string_t&,desc,(in),const string_t&,source,(in),IException*,pCause))
 {
     ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();

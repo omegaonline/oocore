@@ -186,10 +186,10 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
 		{
 			if (!(i->second->second.m_reg_flags & Activation::MultipleRegistration))
-				OOCORE_THROW_ERRNO(EALREADY);
+				OMEGA_THROW_ERRNO(EALREADY);
 
 			if (i->second->second.m_reg_flags == reg_flags)
-				OOCORE_THROW_ERRNO(EALREADY);
+				OMEGA_THROW_ERRNO(EALREADY);
 		}
 
 		// Create a new cookie
@@ -207,7 +207,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 		if (!p.second)
-			OOCORE_THROW_ERRNO(EALREADY);
+			OMEGA_THROW_ERRNO(EALREADY);
 
 		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));	
 
@@ -247,7 +247,7 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 		}
 
 		// No, didn't find it
-		OOCore::OidNotFoundException::Throw(oid);
+		return 0;
 	}
 	catch (std::exception& e)
 	{ 
@@ -269,7 +269,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 
 			std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
 			if (i == m_mapServicesByCookie.end())
-				OOCORE_THROW_ERRNO(EINVAL);
+				OMEGA_THROW_ERRNO(EINVAL);
 
 			bUnROT = ((i->second.m_flags & Activation::OutOfProcess) == Activation::OutOfProcess);
 			oid = i->second.m_oid;
@@ -385,7 +385,7 @@ void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	ACE_WString strActualName = ShellParse(strExeName.c_str());
 
 	if (options.command_line(strActualName.c_str()) == -1)
-		OOCORE_THROW_ERRNO(ACE_OS::last_error() ? ACE_OS::last_error() : EINVAL);
+		OOCORE_THROW_LASTERROR();
 
 	// Set the creation flags
 	u_long flags = 0;
@@ -405,7 +405,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"Objects\\" + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"\\Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue(L"CurrentVersion"))
 		{
@@ -431,17 +431,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		}
 
 		// Try the Service Manager
-		try
-		{
-			pObject = OOCore::SERVICE_MANAGER::instance()->GetObject(oid,flags,iid);
-			if (pObject)
-				return;
-		}
-		catch (Activation::IOidNotFoundException* pE)
-		{
-			pE->Release();
-		}
-
+		pObject = OOCore::SERVICE_MANAGER::instance()->GetObject(oid,flags,iid);
+		if (pObject)
+			return;
+		
 		// Try RunningObjectTable if OutOfProcess
 		if (flags & Activation::OutOfProcess)
 		{
@@ -464,7 +457,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		if (!(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(L"Objects\\OIDs");
+			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(L"\\Objects\\OIDs");
 			if (ptrOidsKey->IsSubKey(oid.ToString()))
 			{
 				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
@@ -482,7 +475,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 				if (flags & Activation::OutOfProcess)
 				{
 					// Find the name of the executeable to run
-					ObjectPtr<Registry::IRegistryKey> ptrServer(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
+					ObjectPtr<Registry::IRegistryKey> ptrServer(L"\\Applications\\" + ptrOidKey->GetStringValue(L"Application"));
 
 					// Launch the executeable
 					ACE_Process process;

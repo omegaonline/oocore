@@ -46,7 +46,7 @@ namespace Root
 		MessageConnection(MessageHandler* pHandler);
 		virtual ~MessageConnection();
 
-		ACE_CDR::ULong open(MessagePipe& pipe, ACE_CDR::ULong chanel_id = 0, bool bStart = true);
+		ACE_CDR::ULong open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id = 0, bool bStart = true);
 		bool read();
 
 	private:
@@ -56,10 +56,10 @@ namespace Root
 
         static const size_t         s_initial_read = ACE_CDR::LONG_SIZE;
 
-        MessageHandler*             m_pHandler;
-		MessagePipe                 m_pipe;
-		size_t                      m_read_len;
-		ACE_CDR::ULong              m_channel_id;
+        MessageHandler*                                     m_pHandler;
+		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> m_pipe;
+		size_t                                              m_read_len;
+		ACE_CDR::ULong                                      m_channel_id;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		ACE_Asynch_Read_File        m_reader;
@@ -80,10 +80,11 @@ namespace Root
 		void send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 
+		void close();
 		void stop();
-
+		
 		virtual bool channel_open(ACE_CDR::ULong channel);
-		virtual void channel_closed(ACE_CDR::ULong channel);
+		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
 
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
@@ -112,11 +113,11 @@ namespace Root
 				lock(0)
 			{}
 
-			ChannelInfo(const MessagePipe& p, ACE_Thread_Mutex* l = 0) :
+			ChannelInfo(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& p, ACE_Thread_Mutex* l = 0) :
 				pipe(p), lock(l)
 			{}
 
-			MessagePipe         pipe;
+			ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>      pipe;
 			ACE_Refcounted_Auto_Ptr<ACE_Thread_Mutex,ACE_Null_Mutex> lock;
 		};
 		std::map<ACE_CDR::ULong,ChannelInfo> m_mapChannelIds;
@@ -157,6 +158,7 @@ namespace Root
 			~ThreadContext();
 		};
 
+		ACE_Atomic_Op<ACE_Thread_Mutex,long>            m_consumers;
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
 		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>      m_default_msg_queue;
 
@@ -165,7 +167,7 @@ namespace Root
 		void remove_thread_context(const ThreadContext* pContext);
 
 		// Accessors for MessageConnection
-		ACE_CDR::ULong register_channel(MessagePipe& pipe, ACE_CDR::ULong channel_id);
+		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id);
 		void pipe_closed(ACE_CDR::ULong channel_id);
 
 		bool parse_message(const ACE_Message_Block* mb);

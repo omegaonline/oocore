@@ -43,8 +43,10 @@ Root::MessagePipe::MessagePipe() :
 {
 }
 
-int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
 {
+	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+
 	ACE_Time_Value val(30);
 	if (!wait)
 		wait = &val;
@@ -54,20 +56,23 @@ int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, AC
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Addr addr;
 
-	ACE_SPIPE_Stream up;
-	addr.string_to_addr((strAddr + L"\\up").c_str());
-	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
-
-	countdown.update();
-
 	ACE_SPIPE_Stream down;
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
 
-	pipe.m_hRead = down.get_handle();
-	pipe.m_hWrite = up.get_handle();
+	countdown.update();
+
+	ACE_SPIPE_Stream up;
+	addr.string_to_addr((strAddr + L"\\up").c_str());
+	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
+	{
+		down.close();
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
+	}
+
+	pipe->m_hRead = down.get_handle();
+	pipe->m_hWrite = up.get_handle();
 
 	up.set_handle(ACE_INVALID_HANDLE);
 	down.set_handle(ACE_INVALID_HANDLE);
@@ -110,7 +115,7 @@ ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value*, si
 ssize_t Root::MessagePipe::recv(void* buf, size_t len)
 {
 	ssize_t nRead = ACE_OS::read_n(m_hRead,buf,len);
-	if (nRead == -1 && ACE_OS::last_error() == ERROR_MORE_DATA)
+	if (nRead == -1 && GetLastError() == ERROR_MORE_DATA)
 		nRead = static_cast<ssize_t>(len);
 
 	return nRead;
@@ -293,31 +298,39 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
 
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
+	{
+		m_acceptor_up.close();
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
+	}
 
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout)
+int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout)
 {
+	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+
 	ACE_Time_Value val(30);
 	if (!timeout)
 		timeout = &val;
 
 	ACE_Countdown_Time countdown(timeout);
-
-	ACE_SPIPE_Stream up;
-	if (m_acceptor_up.accept(up,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)
+	ACE_SPIPE_Stream down;
+	if (m_acceptor_down.accept(down,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)	
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] acceptor.accept() failed: %#x\n",GetLastError()),-1);
 
 	countdown.update();
 
-	ACE_SPIPE_Stream down;
-	if (m_acceptor_down.accept(down,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] acceptor.accept() failed: %#x\n",GetLastError()),-1);
+	ACE_SPIPE_Stream up;
+	if (m_acceptor_up.accept(up,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)
+	{
+		DWORD dwErr = GetLastError();
+		down.close();
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] acceptor.accept() failed: %#x\n",dwErr),-1);
+	}
 
-	pipe.m_hRead = up.get_handle();
-	pipe.m_hWrite = down.get_handle();
+	pipe->m_hRead = up.get_handle();
+	pipe->m_hWrite = down.get_handle();
 
 	up.set_handle(ACE_INVALID_HANDLE);
 	down.set_handle(ACE_INVALID_HANDLE);

@@ -344,6 +344,11 @@ Omega::string_t Omega::guid_t::ToString() const
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wchar_t*,sz));
+Omega::guid_t Omega::guid_t::FromString(const wchar_t* sz)
+{
+	return guid_t_from_string(sz);
+}
+
 Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
 	return guid_t_from_string(str.c_str());

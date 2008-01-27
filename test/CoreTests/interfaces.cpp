@@ -25,7 +25,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 	Omega::string_t strXML =
 		L"<?xml version=\"1.0\" ?>"
 		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-			L"<key name=\"Objects\">"
+			L"<key name=\"\\Objects\">"
 				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
 					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
 				L"</key>"
@@ -68,7 +68,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 		Omega::string_t strXML =
 			L"<?xml version=\"1.0\" ?>"
 			L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-				L"<key name=\"Objects\">"
+				L"<key name=\"\\Objects\">"
 					L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
 						L"<value name=\"CurrentVersion\">%OBJECT%</value>"
 					L"</key>"

@@ -59,7 +59,7 @@ void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningO
 
 				void* TODO;
 
-				OOSERVER_THROW_ERRNO(EALREADY);
+				OMEGA_THROW_ERRNO(EALREADY);
 			}
 
 			m_mapObjects.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));

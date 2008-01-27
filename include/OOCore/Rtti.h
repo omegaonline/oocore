@@ -406,7 +406,7 @@ namespace Omega
 
 			inline void throw_correct_exception(IException_Safe* pE);
 			inline IException_Safe* return_safe_exception(IException* pE);
-			inline const string_t& lookup_iid(const guid_t& iid);
+			inline string_t lookup_iid(const guid_t& iid);
 
 			/*template <> struct marshal_info<IObject**>
 			{
@@ -774,7 +774,7 @@ namespace Omega
 				IObject_Safe* (*pfnCreateSafeStub)(SafeStub* pStub, IObject* pObj);
 				IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 				void (*pfnSafeThrow)(IException_Safe* pSE);
-				string_t strName;
+				const wchar_t* strName;
 			};
 
 			struct qi_holder
@@ -980,10 +980,12 @@ namespace Omega
 					m_iid_map.clear();
 
 					// Remove ourselves from the proxy_map
-					SafeProxyMap& proxy_map = get_proxy_map();
+					{
+						SafeProxyMap& proxy_map = get_proxy_map();
 
-					WriteGuard guard(proxy_map.m_lock);
-					proxy_map.m_map.erase(m_pS);
+						WriteGuard guard(proxy_map.m_lock);
+						proxy_map.m_map.erase(m_pS);
+					}
 
 					m_pS->Release_Safe();
 				}

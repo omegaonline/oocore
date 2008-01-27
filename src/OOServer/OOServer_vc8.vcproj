@@ -325,6 +325,19 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\RegistryHive.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\RootManager.cpp"
 				>
 				<FileConfiguration
@@ -454,6 +467,10 @@
 			</File>
 			<File
 				RelativePath=".\Protocol.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RegistryHive.h"
 				>
 			</File>
 			<File

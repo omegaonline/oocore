@@ -104,7 +104,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"Current User\\Applications\\OORegEdit\\Layout");
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
 		
 		wxPoint ptPos;
 		ptPos.x = ptrKey->GetUIntValue(L"Left");
@@ -336,7 +336,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	// Set some defaults...
 	try
 	{
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"Current User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
 
 		wxPoint pt = GetPosition();
 		ptrKey->SetUIntValue(L"Top",pt.y);

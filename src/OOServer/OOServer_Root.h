@@ -134,6 +134,12 @@
 // End of STL includes
 //////////////////////////////////////////////
 
+#if defined(ACE_WIN32)
+// For the Windows path functions
+#include <shlwapi.h>
+#include <shlobj.h>
+#endif
+
 #if defined(_MSC_VER)
 // Warning 4127 is rubbish!
 #pragma warning(disable : 4127)

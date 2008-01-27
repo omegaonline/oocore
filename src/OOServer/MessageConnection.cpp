@@ -52,18 +52,18 @@ Root::MessageConnection::MessageConnection(MessageHandler* pHandler)  :
 
 Root::MessageConnection::~MessageConnection()
 {
-	m_pipe.close();
+	m_pipe->close();
 }
 
-ACE_CDR::ULong Root::MessageConnection::open(MessagePipe& pipe, ACE_CDR::ULong channel_id, bool bStart)
+ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id, bool bStart)
 {
 	if (m_channel_id)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"already open!"),0);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (m_reader.open(*this,pipe.get_read_handle()) != 0 && GetLastError() != ERROR_MORE_DATA)
+	if (m_reader.open(*this,pipe->get_read_handle()) != 0 && GetLastError() != ERROR_MORE_DATA)
 #else
-	if (m_reader.open(*this,pipe.get_read_handle()) != 0)
+	if (m_reader.open(*this,pipe->get_read_handle()) != 0)
 #endif
 	{
 	    ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"reader.open() failed"),0);
@@ -95,7 +95,7 @@ bool Root::MessageConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"read() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] read failed, code: %#x\n",errno));
 		mb->release();
 		return false;
 	}
@@ -194,6 +194,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 		}
 
 		m_pHandler->pipe_closed(m_channel_id);
+		m_pipe->close();
 		delete this;
 	}
 }
@@ -205,7 +206,8 @@ Root::MessageHandler::MessageHandler() :
 	m_uUpstreamChannel(0),
 	m_uNextChannelId(0),
 	m_uNextChannelMask(0),
-	m_uNextChannelShift(0)
+	m_uNextChannelShift(0),
+	m_consumers(0)
 {
 }
 
@@ -227,7 +229,7 @@ void Root::MessageHandler::set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong
 	}
 }
 
-ACE_CDR::ULong Root::MessageHandler::register_channel(MessagePipe& pipe, ACE_CDR::ULong channel_id)
+ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id)
 {
 	try
 	{
@@ -268,7 +270,7 @@ ACE_CDR::ULong Root::MessageHandler::register_channel(MessagePipe& pipe, ACE_CDR
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %s\n",e.what()),0);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()),0);
 	}
 	catch (...)
 	{
@@ -284,14 +286,20 @@ bool Root::MessageHandler::channel_open(ACE_CDR::ULong)
 	return true;
 }
 
-void Root::MessageHandler::channel_closed(ACE_CDR::ULong)
-{
-	// Do nothing, used in derived classes
-}
-
 void Root::MessageHandler::pipe_closed(ACE_CDR::ULong channel_id)
 {
-	void* TODO; // Propogate the channel close
+	// Inform derived classes that the pipe has gone...
+	channel_closed(channel_id);	
+
+	// Remove the pipe
+	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	try
+	{
+		m_mapChannelIds.erase(channel_id);
+	}
+	catch (std::exception&)
+	{}
 }
 
 ACE_CDR::UShort Root::MessageHandler::classify_channel(ACE_CDR::ULong channel_id)
@@ -441,7 +449,10 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 		}
 		else
 		{
-			void* TODO; // Spawn off more threads if we go over a limit??
+			if (m_consumers == 0)
+			{
+				void* TODO; // Spawn off more threads if we go over a limit??
+			}
 
 			if (m_default_msg_queue.enqueue_tail(msg,&msg->m_deadline) == -1)
 			{
@@ -467,7 +478,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %s\n",e.what()),0);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()),0);
 	}
 	catch (...)
 	{
@@ -478,7 +489,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
 
 	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
-	return (dest_channel.pipe.send(mb,&wait) == static_cast<ssize_t>(mb->total_length()));
+	return (dest_channel.pipe->send(mb,&wait) == static_cast<ssize_t>(mb->total_length()));
 }
 
 Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instance(Root::MessageHandler* pHandler)
@@ -530,7 +541,7 @@ ACE_CDR::UShort Root::MessageHandler::insert_thread_context(const Root::MessageH
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %s\n",e.what()),0);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()),0);
 	}
 }
 
@@ -539,6 +550,21 @@ void Root::MessageHandler::remove_thread_context(const Root::MessageHandler::Thr
 	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	m_mapThreadContexts.erase(pContext->m_thread_id);
+}
+
+void Root::MessageHandler::close()
+{
+	ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	try
+	{
+		for (std::map<ACE_CDR::ULong,ChannelInfo>::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+		{
+			i->second.pipe->close();
+		}
+	}
+	catch (std::exception&)
+	{}
 }
 
 void Root::MessageHandler::stop()
@@ -560,6 +586,10 @@ void Root::MessageHandler::stop()
 
 bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline)
 {
+	// Decrement the consumer count, becuase the thread isn't waiting on m_default_msg_queue
+	--m_consumers;
+
+	bool bRet = false;
 	ThreadContext* pContext = ThreadContext::instance(this);
 	for (;;)
 	{
@@ -567,7 +597,10 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 		Message* msg;
 		int ret = pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline));
 		if (ret == -1)
-			return false;
+		{
+			bRet = false;
+			break;
+		}
 
 		// Read the payload specific data
 		ACE_CDR::Octet byte_order;
@@ -623,17 +656,26 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 				response = msg->m_pPayload;
 				msg->m_pPayload = 0;
 				delete msg;
-				return true;
+				bRet = true;
+				break;
 			}
 		}
 
 		delete msg->m_pPayload;
 		delete msg;
 	}
+
+	// Increment the consumer count, becuase the thread is back to waiting on m_default_msg_queue
+	++m_consumers;
+
+	return bRet;
 }
 
 void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 {
+	// Increment the consumer count
+	++m_consumers;
+
 	ThreadContext* pContext = ThreadContext::instance(this);
 	for (;;)
 	{
@@ -689,6 +731,9 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 		delete msg->m_pPayload;
 		delete msg;
 	}
+
+	// Decrement the consumer count
+	--m_consumers;
 }
 
 bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs)
@@ -706,7 +751,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %s\n",e.what()),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()),false);
 	}
 
 	msg.m_src_channel_id = m_uChannelId;
@@ -741,7 +786,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %s\n",e.what()),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()),false);
 	}
 
 	// Write the header info
@@ -763,7 +808,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 
 		size_t sent = 0;
 		ACE_Time_Value wait = msg.m_deadline - now;
-		if (dest_channel.pipe.send(header.begin(),&wait,&sent) == -1)
+		if (dest_channel.pipe->send(header.begin(),&wait,&sent) == -1)
 			return false;
 
 		if (sent != header.total_length())
@@ -812,7 +857,7 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %s\n",e.what()));
+		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()));
 		return;
 	}
 
@@ -829,7 +874,7 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR
 	ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
 
 	ACE_Time_Value wait = msg.m_deadline - now;
-	dest_channel.pipe.send(header.begin(),&wait);
+	dest_channel.pipe->send(header.begin(),&wait);
 }
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)

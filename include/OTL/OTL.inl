@@ -109,7 +109,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
 			strXML += 
-				L"<key name=\"Objects\">"
+				L"<key name=\"\\Objects\">"
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
 					L"</key>"
@@ -136,7 +136,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
 {
 	Omega::string_t strXML =
-		L"<key name=\"Applications\">"
+		L"<key name=\"\\Applications\">"
 			L"<key name=\"" + strAppName + L"\" uninstall=\"Remove\">"
 				L"<value name=\"Activation\">%MODULE_PATH%</value>"
 			L"</key>"
@@ -151,7 +151,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
 			strXML += 
-				L"<key name=\"Objects\">"
+				L"<key name=\"\\Objects\">"
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
 					L"</key>"

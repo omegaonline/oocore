@@ -42,9 +42,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 							"For a complete list of pages, see TitleIndex. "
 							"Download in other formats:"
 							"Plain Text"
-							"--------------------------------------------------------------------------------"
-							" Powered by Trac 0.10.3"
-							"By Edgewall Software. ";
+							"--------------------------------------------------------------------------------";
 
 	const Omega::uint32_t orig_size = sizeof(szBuf);
 	TEST_VOID(pKey->SetBinaryValue(strTestValue,orig_size,szBuf));
@@ -69,10 +67,6 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 
-	Omega::string_t strFQKeyName = strKey + "\\" + strTestValue;
-	if (strFQKeyName.Left(1) == "\\")
-		strFQKeyName = strFQKeyName.Mid(1);
-
 	try
 	{
 		pKey->GetStringValue(strTestValue);
@@ -80,7 +74,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetName() == strFQKeyName);
+		TEST(pE->GetName() == strTestValue);
 		pE->Release();
 	}
 
@@ -92,7 +86,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	catch (Omega::Registry::IWrongValueTypeException* pE)
 	{
-		TEST(pE->GetValueName() == strFQKeyName);
+		TEST(pE->GetValueName() == strTestValue);
 		TEST(pE->GetValueType() == Omega::Registry::UInt32);
 
 		pE->Release();
@@ -106,7 +100,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetName() == strFQKeyName);
+		TEST(pE->GetName() == strTestValue);
 		pE->Release();
 	}
 
@@ -209,15 +203,11 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 		strTestKey = "_" + strTestKey;
 	}
 
-	Omega::string_t strFQKeyName = strKey + "\\" + strTestKey;
-	if (strFQKeyName.Left(1) == "\\")
-		strFQKeyName = strFQKeyName.Mid(1);
-
 	Omega::Registry::IRegistryKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create);
 	TEST(pSubKey);
 	TEST(pKey->IsSubKey(strTestKey));
 
-	if (!test_values(pSubKey,strFQKeyName))
+	if (!test_values(pSubKey,strKey + "\\" + strTestKey))
 		return false;
 
 	pSubKey->Release();
@@ -299,7 +289,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
-		TEST(pE->GetKeyName() == strFQKeyName);
+		TEST(pE->GetKeyName() == strKey + "\\" + strTestKey);
 		pE->Release();
 	}
 
@@ -313,7 +303,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetName() == strFQKeyName);
+		TEST(pE->GetName() == strKey + "\\" + strTestKey);
 		pE->Release();
 	}
 
@@ -370,7 +360,7 @@ static bool test_privates(Omega::Registry::IRegistryKey* pKey, const Omega::stri
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
-		TEST(pE->GetKeyName() == strSubKey);
+		TEST(pE->GetKeyName() == L"\\" + strSubKey);
 		pE->Release();
 	}
 
@@ -382,7 +372,7 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 	TEST(pKey->IsSubKey(L"All Users"));
 	TEST(pKey->IsSubKey(L"Server"));
 	TEST(pKey->IsSubKey(L"Server\\Sandbox"));
-	TEST(pKey->IsSubKey(L"Current User"));
+	TEST(pKey->IsSubKey(L"Local User"));
 
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
 	while (pKey->IsValue(strTestValue))
@@ -439,10 +429,10 @@ bool registry_tests()
 	if (!bTest)
 		return false;
 
-	if (!test_key(L"All Users"))
+	if (!test_key(L"\\All Users"))
 		return false;
 
-	if (!test_key(L"Current User"))
+	if (!test_key(L"\\Local User"))
 		return false;
 
 	return true;
@@ -488,7 +478,7 @@ bool registry_tests_3()
 			L"</oo:key>\r\n"
 		L"</oo:root>\r\n";
 
-	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=" + strTestKey;
+	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=\\" + strTestKey;
 	
 	try
 	{
@@ -509,7 +499,7 @@ bool registry_tests_3()
 		pE->Release();
 	}
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"Current User");
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"\\Local User");
 	// Generate a unique value name
 	strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
 	while (ptrKey->IsSubKey(strTestKey))
@@ -517,7 +507,7 @@ bool registry_tests_3()
 		strTestKey = "_" + strTestKey;
 	}
 
-	strSubsts = L"  MODULE  =My Module;  TESTKEY=Current User\\" + strTestKey;
+	strSubsts = L"  MODULE  =My Module;  TESTKEY=\\Local User\\" + strTestKey;
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 	TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));

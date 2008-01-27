@@ -108,11 +108,8 @@
 // End of Windows includes
 /////////////////////////////////////////////////
 
-#define OOSERVER_THROW_ERRNO(error) \
-	OMEGA_THROW(Omega::string_t(ACE_OS::strerror(error),false))
-
 #define OOSERVER_THROW_LASTERROR() \
-	OOSERVER_THROW_ERRNO(ACE_OS::last_error())
+	OMEGA_THROW_ERRNO(ACE_OS::last_error())
 
 #define OOSERVER_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Guard< MUTEX > OBJ (LOCK); \

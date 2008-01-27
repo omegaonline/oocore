@@ -36,6 +36,7 @@
 
 #include "./OOServer_Root.h"
 #include "./MessageConnection.h"
+#include "./RegistryHive.h"
 
 namespace Root
 {
@@ -47,7 +48,7 @@ namespace Root
 	public:
 		static int run(int argc, wchar_t* argv[]);
 		static void end();
-		static ACE_Configuration_Heap& get_registry();
+		static ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> get_registry();
 		static bool install(int argc, wchar_t* argv[]);
 		static bool uninstall();
 
@@ -70,9 +71,9 @@ namespace Root
 
 		struct UserProcess
 		{
-			ACE_WString     strPipe;
-			SpawnedProcess* pSpawn;
-			bool            bPrimary;	// This is the instance that holds the user registry
+			ACE_WString                                          strPipe;
+			SpawnedProcess*                                      pSpawn;
+			ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry;
 		};
 		std::map<ACE_CDR::ULong,UserProcess>    m_mapUserProcesses;
 		MessagePipeSingleAsyncAcceptor<Manager> m_client_acceptor;
@@ -80,24 +81,22 @@ namespace Root
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		int on_accept(ACE_SPIPE_Stream& pipe);
 #else
-		int on_accept(MessagePipe& pipe);
+		int on_accept(ACE_SOCK_Stream& pipe);
 #endif
+		virtual void channel_closed(ACE_CDR::ULong channel);
 		int process_client_connects();
-		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_CDR::ULong nUserChannel, ACE_WString& strPipe);
-		ACE_WString bootstrap_user(MessagePipe& pipe, ACE_CDR::ULong nUserChannel);
+		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_WString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry);
+		ACE_WString bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe);
 		bool connect_client(user_id_type uid, ACE_WString& strPipe);
 		void close_users();
 
 		void process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-		bool access_check(ACE_CDR::ULong channel, const wchar_t* pszObject, ACE_UINT32 mode, bool& bAllowed);
+		
+		ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> m_registry;
+		ACE_WString                                          m_strRegistry;
+		ACE_CDR::ULong                                       m_sandbox_channel;
 
-		ACE_Configuration_Heap         m_registry;
-		ACE_WString                    m_strRegistry;
-		ACE_RW_Thread_Mutex            m_registry_lock;
-		ACE_CDR::ULong                 m_sandbox_channel;
-
-		bool registry_open_section(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, bool bAccessCheck = false);
-		bool registry_open_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Configuration_Section_Key& key, ACE_WString& strValue, bool bAccessCheck = false);
+		int registry_open_hive(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_WString& strKey, bool bForWrite);
 		void registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);

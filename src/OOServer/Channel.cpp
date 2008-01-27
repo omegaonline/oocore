@@ -68,7 +68,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	ObjectPtr<IOutputCDR> ptrOutput;
 	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
 	if (!ptrOutput)
-		OOSERVER_THROW_ERRNO(EINVAL);
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	// Get the message block
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
@@ -77,10 +77,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	try
 	{
 		if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
-		{
-			int err = ACE_OS::last_error();
-			OOSERVER_THROW_ERRNO(err);
-		}
+			OOSERVER_THROW_LASTERROR();
 	}
 	catch (...)
 	{

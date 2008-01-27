@@ -27,7 +27,7 @@ namespace Root
 	enum RootOpCode
 	{
 		// Root -> User
-		End,
+		
 
 		// User -> Root
 		KeyExists,

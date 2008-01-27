@@ -185,17 +185,13 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	void* TODO; // Look at using PAM for this...
 
 	// Get the correct uid from the registry
-	ACE_Configuration_Heap& reg_root = Manager::get_registry();
-
-	// Open the server section
-	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key)!=0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to open Server\\Sandbox key in registry"),false);
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	// Get the uid...
-	u_int sb_uid = -1;
-	if (reg_root.get_integer_value(sandbox_key,L"Uid",sb_uid) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to get sandbox uid from registry"),false);
+	ACE_CDR::ULong sb_uid = (ACE_CDR::ULong)-1;
+	int err = reg_root->get_integer_value(L"Server\\Sandbox",L"Uid",sb_uid);
+	if (err != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to get sandbox uid from registry: %s\n",ACE_OS::strerror(err)),false);
 
 	uid = static_cast<uid_t>(sb_uid);
 	return true;
@@ -357,32 +353,19 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"getpwnam() failed!"),false);
 	ACE_OS::endpwent();
 
-	ACE_Configuration_Heap& reg_root = Manager::get_registry();
-
-	// Create the server section
-	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",1,sandbox_key)!=0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to create Server\\Sandbox key in registry"),false);
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	// Set the sandbox uid
-	if (reg_root.set_integer_value(sandbox_key,L"Uid",pw->pw_uid) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Failed to set sandbox uid in registry"),false);
+	int err = reg_root->set_integer_value(L"Server\\Sandbox",L"Uid",pw->pw_uid);
+	if (err != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to set sandbox uid in registry: %s\n",ACE_OS::strerror(err)),false);
 
 	return true;
 }
 
 bool Root::SpawnedProcess::UninstallSandbox()
 {
-    ACE_Configuration_Heap& reg_root = Manager::get_registry();
-
-	// Open the server section
-	ACE_Configuration_Section_Key sandbox_key;
-	if (reg_root.open_section(reg_root.root_section(),L"Server\\Sandbox",0,sandbox_key)==0)
-	{
-		reg_root.remove_value(sandbox_key,L"Uid");
-	}
-
-	return true;
+    return (Manager::get_registry().delete_value(L"Server\\Sandbox",L"Uid") == 0);
 }
 
 ACE_CString Root::SpawnedProcess::get_home_dir()
@@ -420,5 +403,22 @@ bool Root::SpawnedProcess::IsSameUser(user_id_type uid)
 	return Compare(uid);
 }
 
+ACE_WString Root::SpawnedProcess::GetRegistryHive()
+{
+	ACE_WString strDir;
+	if (bSandbox)
+		strDir = L"/var/lib/omegaonline";
+	else
+		strDir = ACE_Ascii_To_Wide((Root::SpawnedProcess::get_home_dir() + "/.omegaonline").c_str()).wchar_rep();
+
+	if (ACE_OS::mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	{
+		int err = ACE_OS::last_error();
+		if (err != EEXIST)
+			return -1;
+	}
+
+	ACE_WString strRegistry = strDir + L"/user.regdb";
+}
 
 #endif // !ACE_WIN32

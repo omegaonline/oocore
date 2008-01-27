@@ -37,6 +37,32 @@ namespace OOCore
 	ObjectPtr<Remoting::IInterProcessService> GetInterProcessService();
 	ObjectPtr<Registry::IRegistryKey> GetRootKey();
 
+	class BadNameException :
+		public ExceptionImpl<Registry::IBadNameException>
+	{
+	public:
+		BEGIN_INTERFACE_MAP(BadNameException)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<IBadNameException>)
+		END_INTERFACE_MAP()
+
+		string_t m_strName;
+
+	public:
+		string_t GetName()
+		{
+			return m_strName;
+		}
+
+		static void Throw(const string_t& name, const string_t& strSource)
+		{
+			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
+			pRE->m_strName = name;
+			pRE->m_strSource = strSource;
+			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",name.c_str());
+			throw pRE;
+		}
+	};
+
 	void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
 	void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
 	ObjectPtr<Registry::IRegistryKey> ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
@@ -56,9 +82,13 @@ ObjectPtr<Registry::IRegistryKey> OOCore::GetRootKey()
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 {
-	ObjectPtr<Registry::IRegistryKey> ptrKey;
-	ptrKey.Attach(static_cast<Registry::IRegistryKey*>(OOCore::GetInterProcessService()->GetRegistry()));
-	return ptrKey->OpenSubKey(key,flags);
+	if (key.Left(1) != L"\\")
+		OOCore::BadNameException::Throw(key,L"Omega::Registry::OpenKey");
+
+	if (key == L"\\")
+		return OOCore::GetRootKey().AddRefReturn();
+	else
+		return OOCore::GetRootKey()->OpenSubKey(key.Mid(1),flags);
 }
 
 string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts)
@@ -97,7 +127,12 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 	string_t strName = SubstituteNames(i->second,mapSubsts);
 
 	if (bAdd)
-		return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::Create);
+	{
+		if (ptrKey)
+			return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::Create);
+		else
+			return ObjectPtr<Registry::IRegistryKey>(strName,Registry::IRegistryKey::Create);
+	}
 	else
 	{
 		bool bRemove = false;
@@ -105,13 +140,19 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 		if (i != attribs.end() && i->second==L"Remove")
 			bRemove = true;
 
+		if (!ptrKey && strName.Left(1) == L"\\")
+		{
+			ptrKey = ObjectPtr<Registry::IRegistryKey>(L"\\");
+			strName = strName.Mid(1);
+		}
+
 		if (ptrKey && ptrKey->IsSubKey(strName))
 		{
 			if (bRemove)
 				ptrKey->DeleteKey(strName);
 			else
 				return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::OpenExisting);
-		}
+		}			
 	}
 
 	return 0;
@@ -349,12 +390,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strX
 	if (ACE_OS::strncmp(rd_ptr,L"</",2) == 0)
 		OMEGA_THROW(L"Unexpected empty root element");
 
-	ObjectPtr<Registry::IRegistryKey> ptrKey(L"\\");
-
 	// Read keys...
 	do
 	{
-		OOCore::ReadXmlKey(rd_ptr,ptrKey,namespaces,bAdd,mapSubsts);
+		OOCore::ReadXmlKey(rd_ptr,0,namespaces,bAdd,mapSubsts);
 
 		// Skip any guff...
 		OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);

@@ -100,8 +100,8 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 			}
 			else
 			{
-				ObjectPtr<ObjectImpl<Registry::BaseKey> > ptrKey = ObjectImpl<User::Registry::BaseKey>::CreateInstancePtr();
-				ptrKey->Init(m_pManager,!m_ptrOMSB);
+				ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
+				ptrKey->Init(m_pManager,L"");
 				
 				m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
 			}
@@ -176,6 +176,19 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 			{
 				// Wait for stop
 				ret = ACE_Reactor::instance()->run_reactor_event_loop();
+
+				// Close the user pipes
+				close();
+
+				// Unregister our object factories
+				GetModule()->UnregisterObjectFactories();
+
+				// Unregister InterProcessService
+				if (m_nIPSCookie)
+				{
+					Activation::RevokeObject(m_nIPSCookie);
+					m_nIPSCookie = 0;
+				}
 			}
 
 			// Stop the proactor
@@ -214,25 +227,16 @@ bool User::Manager::init(const ACE_WString& strPipe)
 {
 	// Connect to the root
 	ACE_Time_Value wait(5);
-	Root::MessagePipe pipe;
+	ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex> pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::connect() failed"),false);
 
 	// Read the sandbox channel
 	ACE_CDR::ULong sandbox_channel = 0;
-	if (pipe.recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
+	if (pipe->recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
-		pipe.close();
-		return false;
-	}
-
-	// Read the user channel...
-	ACE_CDR::ULong user_channel = 0;
-	if (pipe.recv(&user_channel,sizeof(user_channel)) != static_cast<ssize_t>(sizeof(user_channel)))
-	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
-		pipe.close();
+		pipe->close();
 		return false;
 	}
 
@@ -241,38 +245,27 @@ bool User::Manager::init(const ACE_WString& strPipe)
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
-	if (pipe.send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
-		pipe.send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	if (pipe->send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
+		pipe->send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
-		pipe.close();
-		return false;
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"),false);
 	}
 
 	// Read our channel id
 	ACE_CDR::ULong our_channel = 0;
-	if (pipe.recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
-	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
-		pipe.close();
-		return false;
-	}
-
+	if (pipe->recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
+		
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC = 0;
-	ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
-	if (!pMC)
-	{
-		pipe.close();
-		return false;
-	}
-	
+	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
+		
 	// Open the connection
 	m_root_channel = pMC->open(pipe,0x80000000);
 	if (m_root_channel == 0)
 	{
 		delete pMC;
-		pipe.close();
+		pipe->close();
 		return false;
 	}
 		
@@ -280,23 +273,23 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
 
 	// Now bootstrap
-	if (!bootstrap(sandbox_channel,user_channel))
+	if (!bootstrap(sandbox_channel))
 	{
-		pipe.close();
+		pipe->close();
 		return false;
 	}
 
 	// Now start accepting client connections
 	if (m_process_acceptor.start(this,strNewPipe) != 0)
 	{
-		pipe.close();
+		pipe->close();
 		return false;
 	}
 
 	return true;
 }
 
-bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel, ACE_CDR::ULong user_channel)
+bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 {
 	// Register our service
 	try
@@ -306,9 +299,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel, ACE_CDR::ULong use
 			ptrOMSb = create_object_manager(sandbox_channel,Remoting::inter_user);
 
 		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
-		if (user_channel != 0)
-			ptrOMUser = create_object_manager(user_channel,Remoting::inter_user);
-		
+				
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
@@ -335,78 +326,27 @@ void User::Manager::end_event_loop()
 
 	// Stop the reactor
 	ACE_Reactor::instance()->end_reactor_event_loop();
-
-	// Close the user processes
-	close_channels();
-
-	// Stop the proactor
-	ACE_Proactor::instance()->proactor_end_event_loop();
-
-	// Stop the MessageHandler
-	stop();
-
-	// Unregister our object factories
-	GetModule()->UnregisterObjectFactories();
-
-	// Unregister InterProcessService
-	if (m_nIPSCookie)
-	{
-		Activation::RevokeObject(m_nIPSCookie);
-		m_nIPSCookie = 0;
-	}
 }
 
-void User::Manager::close_channels()
-{
-	try
-	{
-		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		for (std::map<ACE_CDR::ULong,OMInfo>::reverse_iterator i=m_mapOMs.rbegin();i!=m_mapOMs.rend();++i)
-		{
-			try
-			{
-				i->second.m_ptrOM->Disconnect();
-			}
-			catch (IException* pE)
-			{
-				pE->Release();
-			}
-			catch (...)
-			{
-			}
-
-			//get_channel_pipe(i->first).close();
-		}
-	}
-	catch (...)
-	{
-	}
-
-	try
-	{
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		m_mapOMs.clear();
-	}
-	catch (...)
-	{
-	}
-}
-
-int User::Manager::on_accept(Root::MessagePipe& pipe)
+int User::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex>& pipe)
 {
 	Root::MessageConnection* pMC = 0;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),-1);
 
-	ACE_CDR::ULong channel_id = pMC->open(pipe);
+	ACE_CDR::ULong channel_id = pMC->open(pipe,0,false);
 	if (channel_id == 0)
 	{
 		delete pMC;
 		return -1;
 	}
 
-	if (pipe.send(&channel_id,sizeof(channel_id)) != sizeof(channel_id))
+	if (pipe->send(&channel_id,sizeof(channel_id)) != sizeof(channel_id))
+	{
+		delete pMC;
+		return -1;
+	}
+
+	if (!pMC->read())
 	{
 		delete pMC;
 		return -1;
@@ -417,11 +357,21 @@ int User::Manager::on_accept(Root::MessagePipe& pipe)
 
 void User::Manager::channel_closed(ACE_CDR::ULong channel)
 {
+	// Propogate the channel close events to our children
+	void* TODO;
+
+	// If the root closes, we should end!
 	if (channel == m_root_channel)
-	{
-		// We should end!
 		end_event_loop();
+	
+	// Close the corresponding Object Manager
+	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	try
+	{
+		m_mapOMs.erase(channel);
 	}
+	catch (...)
+	{}
 }
 
 ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
@@ -457,11 +407,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, const ACE_Time_V
 
 	switch (op_code)
 	{
-	case Root::End:
-		// We have been told to end!
-		end_event_loop();
-		return;
-
+	case 0:
 	default:
 		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Bad request op_code\n"));
 		return;
@@ -557,7 +503,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 				if (i->second.m_marshal_flags == marshal_flags)
 					return i->second.m_ptrOM;
 
-				OOSERVER_THROW_ERRNO(EINVAL);
+				OMEGA_THROW_ERRNO(EINVAL);
 			}
 		}
 
@@ -580,7 +526,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
-				OOSERVER_THROW_ERRNO(EINVAL);		
+				OMEGA_THROW_ERRNO(EINVAL);		
 
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}

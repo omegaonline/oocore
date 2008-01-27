@@ -481,7 +481,7 @@ namespace Omega
 						try
 						{
 							if (cbSize > (size_t)-1 / sizeof(typename marshal_info<T>::wire_type::type))
-								OMEGA_THROW(L"Too many items in array");
+								OMEGA_THROW_ERRNO(E2BIG);
 
 							m_alloc_size = cbSize;
 							OMEGA_NEW(m_pVals,typename marshal_info<T>::wire_type::type[m_alloc_size]);								
@@ -630,7 +630,7 @@ namespace Omega
 						try
 						{
 							if (cbSize > (size_t)-1)
-								OMEGA_THROW(L"Overflow!");
+								OMEGA_THROW_ERRNO(E2BIG);
 
 							m_alloc_size = cbSize;
 							OMEGA_NEW(m_pVals,byte_t[m_alloc_size]);								

@@ -946,6 +946,16 @@ namespace OTL
 			return ptrThis.AddRefReturn();
 		}
 
+		void Init()
+		{
+			m_pos = m_listItems.begin();
+		}
+
+		void Append(const EnumType& v)
+		{
+			m_listItems.push_back(v);
+		}
+
 	private:
 		BEGIN_INTERFACE_MAP(MyType)
 			INTERFACE_ENTRY(EnumIFace)

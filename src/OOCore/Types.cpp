@@ -233,9 +233,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	if (!pNode)
-		OOCORE_THROW_ERRNO(ENOMEM);
-
+	
 	pOld->Release();
 
 	pNode->m_str += static_cast<const StringNode*>(s2)->m_str;
@@ -248,9 +246,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const c
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	if (!pNode)
-		OOCORE_THROW_ERRNO(ENOMEM);
-
+	
 	pOld->Release();
 
 	pNode->m_str += ACE_Ascii_To_Wide(sz).wchar_rep();
@@ -263,9 +259,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add3,2,((in),void*,s1,(in),const w
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	if (!pNode)
-		OOCORE_THROW_ERRNO(ENOMEM);
-
+	
 	pOld->Release();
 
 	pNode->m_str += wsz;
@@ -319,13 +313,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 	}
 
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(pszNew));
+	try
+	{
+		OMEGA_NEW(s2,StringNode(pszNew));
+	}
+	catch (...)
+	{
+		ACE_OS::free(pszNew);
+		throw;
+	}
 
 	ACE_OS::free(pszNew);
-
-	if (!s2)
-		OOCORE_THROW_ERRNO(ENOMEM);
-
 	return s2;
 }
 
@@ -341,13 +339,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 	}
 
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(pszNew));
+	try
+	{
+		OMEGA_NEW(s2,StringNode(pszNew));
+	}
+	catch (...)
+	{
+		ACE_OS::free(pszNew);
+		throw;
+	}
 
 	ACE_OS::free(pszNew);
-
-	if (!s2)
-		OOCORE_THROW_ERRNO(ENOMEM);
-
 	return s2;
 }
 

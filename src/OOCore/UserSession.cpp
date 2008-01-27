@@ -39,17 +39,20 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WStri
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Addr addr;
 
-	ACE_SPIPE_Stream up;
-	addr.string_to_addr((strAddr + L"\\up").c_str());
-	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
-		return -1;
-
-	countdown.update();
-
 	ACE_SPIPE_Stream down;
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		return -1;
+
+	countdown.update();
+
+	ACE_SPIPE_Stream up;
+	addr.string_to_addr((strAddr + L"\\up").c_str());
+	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
+	{
+		down.close();
+		return -1;
+	}
 
 	pipe.m_hRead = down.get_handle();
 	pipe.m_hWrite = up.get_handle();
@@ -85,7 +88,7 @@ ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, ACE_
 ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 {
 	ssize_t nRead = ACE_OS::read_n(m_hRead,buf,len);
-	if (nRead == -1 && ACE_OS::last_error() == ERROR_MORE_DATA)
+	if (nRead == -1 && ::GetLastError() == ERROR_MORE_DATA)
 		nRead = static_cast<ssize_t>(len);
 
 	return nRead;
@@ -147,12 +150,8 @@ IException* OOCore::UserSession::init()
 {
 	if (!USER_SESSION::instance()->init_i())
 	{
-		ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
-		pE->m_strDesc = L"Failed to connect to server process, please check installation";
-		pE->m_strSource = L"Omega::Initialize";
-
 		//USER_SESSION::close();
-        return pE;
+        return IException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
 	}
 
 	IException* pE = USER_SESSION::instance()->bootstrap();
@@ -168,7 +167,7 @@ bool OOCore::UserSession::init_i()
 	if (!discover_server_port(strPipe))
 		return false;
 
-    // Connect to the root - we should loop here, it might take a while 
+	// Connect to the root - we should loop here, it might take a while 
 	// for the accept socket to be created...
 	ACE_Time_Value wait(10);
 	if (MessagePipe::connect(m_stream,strPipe,&wait) != 0)
@@ -177,7 +176,7 @@ bool OOCore::UserSession::init_i()
 		do
 		{
 			ACE_OS::sleep(ACE_Time_Value(0,100));
-
+ 
 			// Try again
 			countdown.update();
 		} while (MessagePipe::connect(m_stream,strPipe,&wait) != 0 && wait != ACE_Time_Value::zero);
@@ -187,7 +186,7 @@ bool OOCore::UserSession::init_i()
 	}
 
 	// Read our channel id
-	if (m_stream.recv(&m_channel_id,sizeof(m_channel_id)) != static_cast<ssize_t>(sizeof(m_channel_id)))
+	if (m_stream.recv(&m_channel_id,sizeof(m_channel_id)) != sizeof(m_channel_id))
 	{
 		m_stream.close();
 		return false;
@@ -983,7 +982,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 				if (i->second.m_marshal_flags == marshal_flags)
 					return i->second.m_ptrOM;
 
-				OOCORE_THROW_ERRNO(EINVAL);
+				OMEGA_THROW_ERRNO(EINVAL);
 			}
 		}
 
@@ -1006,7 +1005,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
-				OOCORE_THROW_ERRNO(EINVAL);		
+				OMEGA_THROW_ERRNO(EINVAL);		
 
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}

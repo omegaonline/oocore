@@ -53,7 +53,7 @@ namespace User
 
 		Root::MessagePipeAsyncAcceptor<Manager> m_process_acceptor;
 
-		int on_accept(Root::MessagePipe& pipe);
+		int on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex>& pipe);
 		
 		struct OMInfo
 		{
@@ -66,8 +66,7 @@ namespace User
 
 		int run_event_loop_i(const ACE_WString& strPipe);
 		bool init(const ACE_WString& strPipe);
-		bool bootstrap(ACE_CDR::ULong sandbox_channel, ACE_CDR::ULong user_channel);
-		void close_channels();
+		bool bootstrap(ACE_CDR::ULong sandbox_channel);
 		void end_event_loop();
 
 		virtual void channel_closed(ACE_CDR::ULong channel);

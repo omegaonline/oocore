@@ -44,6 +44,8 @@
 // Prevent inclusion of old winsock
 #define _WINSOCKAPI_
 
+#include <errno.h>
+
 #if defined (_MSC_VER)
 #include <OOCore/config-win32-msvc.h>
 #elif defined (__GNUC__)

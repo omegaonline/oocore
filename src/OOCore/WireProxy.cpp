@@ -36,7 +36,7 @@ OOCore::WireProxy::WireProxy(uint32_t proxy_id, StdObjectManager* pManager) :
 
 OOCore::WireProxy::~WireProxy()
 {
-	//CallRemoteRelease();
+	CallRemoteRelease();
 
 	for (std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 	{

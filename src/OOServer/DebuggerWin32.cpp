@@ -34,7 +34,7 @@
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte.olb" raw_interfaces_only named_guids
 using namespace EnvDTE;
 #elif _MSC_VER >= 1400
-#import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80a.olb" raw_interfaces_only named_guids
+#import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80a.olb" raw_interfaces_only named_guids rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath")
 using namespace EnvDTE;
 #endif
 #if _MSC_VER >= 1400
@@ -65,33 +65,26 @@ static bool AttachVS8Debugger()
 			DebuggerPtr pDebugger;
 			if (SUCCEEDED(pDTE->get_Debugger(&pDebugger)) && pDebugger != NULL)
 			{
-				dbgDebugMode mode;
-				if (SUCCEEDED(pDebugger->get_CurrentMode(&mode))) 
+				ProcessesPtr pProcesses;
+				if (SUCCEEDED(pDebugger->get_LocalProcesses(&pProcesses)) && pProcesses != NULL)
 				{
-					if (mode != dbgDesignMode) 
+					long our_pid = GetCurrentProcessId();
+					long lCount = 0;
+					pProcesses->get_Count(&lCount);
+					for (long i=1;i<=lCount;++i)
 					{
-						ProcessesPtr pProcesses;
-						if (SUCCEEDED(pDebugger->get_LocalProcesses(&pProcesses)) && pProcesses != NULL)
+						ProcessPtr pProcess;
+						if (SUCCEEDED(pProcesses->Item(variant_t(i),&pProcess)) && pProcess != NULL)
 						{
-							long our_pid = GetCurrentProcessId();
-							long lCount = 0;
-							pProcesses->get_Count(&lCount);
-							for (long i=1;i<=lCount;++i)
+							long pid = 0;
+							if (SUCCEEDED(pProcess->get_ProcessID(&pid)))
 							{
-								ProcessPtr pProcess;
-								if (SUCCEEDED(pProcesses->Item(variant_t(i),&pProcess)) && pProcess != NULL)
+								if (pid == our_pid)
 								{
-									long pid = 0;
-									if (SUCCEEDED(pProcess->get_ProcessID(&pid)))
-									{
-										if (pid == our_pid)
-										{
-											if (SUCCEEDED(pProcess->Attach()))
-												bRet = true;
+									if (SUCCEEDED(pProcess->Attach()))
+										bRet = true;
 
-											break;
-										}
-									}
+									break;
 								}
 							}
 						}

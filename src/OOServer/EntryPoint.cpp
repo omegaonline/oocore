@@ -194,4 +194,3 @@ static int Version()
 	ACE_OS::printf("Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE %hs\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 	return 0;
 }
-

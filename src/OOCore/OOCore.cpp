@@ -45,6 +45,8 @@ END_LIBRARY_OBJECT_MAP()
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason)
 {
 #if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
+	static DWORD main_thread = GetCurrentThreadId();
+
 	if (reason == DLL_PROCESS_ATTACH)
 	{
 		// If ACE is linked statically we need to do this...
@@ -53,12 +55,13 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason)
 	else if (reason == DLL_THREAD_DETACH)
 	{
 		// If ACE is linked statically we need to do this...
-		ACE_OS::cleanup_tss(0);
+		ACE_OS::cleanup_tss(GetCurrentThreadId() == main_thread ? 1 : 0);
 	}
-#endif
-
+#else
 	OMEGA_UNUSED_ARG(instance);
 	OMEGA_UNUSED_ARG(reason);
+#endif
+
 	return TRUE;
 }
 #endif
@@ -88,10 +91,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 		if (ret != 0)
 		{
 			--OOCore::s_initcount;
-			ObjectImpl<ExceptionImpl<IException> >* pE = ObjectImpl<ExceptionImpl<IException> >::CreateInstance();
-			pE->m_strDesc = ACE_OS::strerror(ACE_OS::last_error());
-			pE->m_strSource = OMEGA_SOURCE_INFO;
-			return pE;
+			return IException::Create(ACE_OS::last_error(),L"ACE::init");
 		}
 	}
 
@@ -99,9 +99,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 	{
 		IException* pE = OOCore::UserSession::init();
 		if (pE)
-		{
 			return pE;
-		}
 	}
 
 	return 0;

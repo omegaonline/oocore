@@ -53,15 +53,17 @@ namespace Root
 
 		bool Compare(user_id_type uid);
 		bool IsSameUser(user_id_type uid);
+		ACE_WString GetRegistryHive();
 		
 		static bool LogonSandboxUser(user_id_type& uid);
 		static void CloseSandboxLogon(user_id_type uid);
 
 #if defined(ACE_WIN32)
 	private:
-		HANDLE	m_hToken;
-		HANDLE	m_hProfile;
-		HANDLE	m_hProcess;
+		HANDLE m_hToken;
+		HANDLE m_hProfile;
+		HANDLE m_hProcess;
+		bool   m_bSandbox;
 
 		static DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
 		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox);

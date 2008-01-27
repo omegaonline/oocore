@@ -68,7 +68,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	ObjectPtr<IOutputCDR> ptrOutput;
 	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
 	if (!ptrOutput)
-		OOCORE_THROW_ERRNO(EINVAL);
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	// Get the message block
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());

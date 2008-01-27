@@ -377,7 +377,7 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	}
 }
 
-const Omega::string_t& Omega::System::MetaInfo::lookup_iid(const guid_t& iid)
+Omega::string_t Omega::System::MetaInfo::lookup_iid(const guid_t& iid)
 {
 	static const string_t strUnk = L"Unknown";
 	const qi_rtti* pRtti = get_qi_rtti_info(iid);
@@ -407,6 +407,20 @@ void Omega::UnpinObjectPointer(IObject* pObject)
 	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::ISafeProxy))));
 	if (ptrProxy)
 		ptrProxy->Unpin();
+}
+
+#if defined(OMEGA_WIN32)
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create_GLE,3,((in),DWORD,GLE,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
+Omega::IException* Omega::IException::Create(DWORD GetLastError_val, const Omega::string_t& source, Omega::IException* pCause)
+{
+	return IException_Create_GLE(GetLastError_val,source,pCause);
+}
+#endif
+
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create_errno,3,((in),int,e,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
+Omega::IException* Omega::IException::Create(int errno_val, const Omega::string_t& source, Omega::IException* pCause)
+{
+	return IException_Create_errno(errno_val,source,pCause);
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));

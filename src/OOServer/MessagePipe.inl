@@ -53,7 +53,7 @@ int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_WString& str
 template <class T>
 int Root::MessagePipeAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucontext_t*)
 {
-	MessagePipe pipe;
+	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> pipe;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (m_acceptor.accept(pipe) != 0 && GetLastError() != ERROR_MORE_DATA)
@@ -109,10 +109,8 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_WStrin
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(strAddr.c_str());
 	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
-	{
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open failed"),-1);
-	}
-
+	
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"register_handler failed"),-1);
 

@@ -170,7 +170,7 @@ OOCore::StdObjectManager::~StdObjectManager()
 void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel, Remoting::MarshalFlags_t marshal_flags)
 {
 	if (m_ptrChannel)
-		OOCORE_THROW_ERRNO(EALREADY);
+		OMEGA_THROW_ERRNO(EALREADY);
 
 	m_ptrChannel = pChannel;
 	m_marshal_flags = marshal_flags;
@@ -179,7 +179,7 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel, Remoting::M
 void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
 {
 	if (!pParamsIn)
-		OOCORE_THROW_ERRNO(EINVAL);
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	// Assume we succeed...
 	pParamsOut->WriteBoolean(true);
@@ -217,11 +217,11 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	{
 		OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<uint32_t,WireStub*>::iterator i=m_mapStubIds.find(stub_id);
+		std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
 		if (i==m_mapStubIds.end())
 			OMEGA_THROW(L"Bad stub id");
 
-		ptrStub.attach(i->second->LookupStub(pParamsIn));
+		ptrStub.attach(i->second->second->LookupStub(pParamsIn));
 	}
 	catch (std::exception& e)
 	{
@@ -234,7 +234,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	if (pE)
 		throw pE;
 	else if (err != 0)
-		OOCORE_THROW_ERRNO(err);
+		OMEGA_THROW_ERRNO(err);
 }
 
 void OOCore::StdObjectManager::Disconnect()
@@ -283,7 +283,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(Serialize::IFormattedStream* p
 Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 {
 	if (!m_ptrChannel)
-		OOCORE_THROW_ERRNO(EINVAL);
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	return m_ptrChannel->CreateOutputStream();
 }
@@ -336,6 +336,20 @@ void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	m_mapProxyIds.erase(proxy_id);
+}
+
+void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
+{
+	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
+	if (i==m_mapStubIds.end())
+		OMEGA_THROW(L"Bad stub id");
+
+	i->second->second->Release_Safe();
+
+	m_mapStubObjs.erase(i->second);
+	m_mapStubIds.erase(i);
 }
 
 void OMEGA_CALL OOCore::StdObjectManager::AddRef_Safe()
@@ -473,7 +487,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 				ptrStub = p.first->second;
 			else
 			{
-				m_mapStubIds.insert(std::map<uint32_t,WireStub*>::value_type(stub_id,ptrStub));
+				m_mapStubIds.insert(std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::value_type(stub_id,p.first));
 				ptrStub->AddRef_Safe();
 			}
 		}	
@@ -569,7 +583,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 				System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(ppObjS));
 		}
 		else
-			OOCORE_THROW_ERRNO(EINVAL);
+			OMEGA_THROW_ERRNO(EINVAL);
 
 		return 0;
 	}
@@ -622,7 +636,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 
 			// If there is no stub... what are we unmarshalling?
 			if (ptrStub)
-				OOCORE_THROW_ERRNO(EINVAL);
+				OMEGA_THROW_ERRNO(EINVAL);
 			
 			// Read the data
 			return ptrStub->ReleaseMarshalData(pStream,*piid);
@@ -636,7 +650,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 				return pSE;
 			
 			if (!pMarshal)
-				OOCORE_THROW_ERRNO(EINVAL);
+				OMEGA_THROW_ERRNO(EINVAL);
 
 			System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class> ptrMarshal(static_cast<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class*>(pMarshal));
 
@@ -650,7 +664,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 		}
 		else
 		{
-			OOCORE_THROW_ERRNO(EINVAL);
+			OMEGA_THROW_ERRNO(EINVAL);
 		}
 	}
 	catch (IException* pE)

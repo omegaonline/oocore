@@ -88,7 +88,8 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::
 		pSE = System::MetaInfo::wire_read(pStream,iid);
 	}
 
-	--m_marshal_count;
+	// Deref safely
+	RemoteRelease_Safe(1);
 
 	return pSE;
 }
@@ -175,6 +176,19 @@ System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
 
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::RemoteRelease_Safe(uint32_t release_count)
 {
+	m_marshal_count -= release_count;
+	if (m_marshal_count == 0)
+	{
+		try
+		{
+			m_pManager->RemoveStub(m_stub_id);
+		}
+		catch (IException* pE)
+		{
+			return System::MetaInfo::return_safe_exception(pE);
+		}
+	}
+
 	return 0;
 }
 

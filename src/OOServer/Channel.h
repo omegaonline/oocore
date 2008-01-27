@@ -154,9 +154,9 @@ namespace User
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
 		void WriteByte(Omega::byte_t)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteBytes(Omega::uint32_t, const Omega::byte_t*)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 
 	// IFormattedStream members
 	public:
@@ -177,21 +177,21 @@ namespace User
 		Omega::string_t ReadString()
 			{ ACE_CString val; if (!read_string(val)) OOSERVER_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
 		void WriteBoolean(Omega::bool_t)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteInt16(Omega::int16_t)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteUInt16(Omega::uint16_t)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteInt32(Omega::int32_t)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteUInt32(Omega::uint32_t)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteInt64(const Omega::int64_t&)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteUInt64(const Omega::uint64_t&)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 		void WriteString(const Omega::string_t&)
-			{ OOSERVER_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW_ERRNO(EACCES); }
 	};
 
 	class Channel :

@@ -44,7 +44,7 @@ namespace Root
 		MessagePipe();
 		
 		static ACE_WString unique_name(const ACE_WString& strPrefix);
-		static int connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait = 0);
+		static int connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait = 0);
 		void close();
 
 		ACE_HANDLE get_read_handle() const;
@@ -74,7 +74,7 @@ namespace Root
 		int open(const ACE_WString& strAddr, uid_t uid);
 #endif
 
-		int accept(MessagePipe& pipe, ACE_Time_Value* timeout = 0);
+		int accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout = 0);
 		ACE_HANDLE get_handle();
 		void close();
 	

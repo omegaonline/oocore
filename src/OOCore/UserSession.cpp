@@ -102,7 +102,7 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WStri
 
 	ACE_SOCK_Stream stream;
 	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
+		return -1;
 
 	pipe.m_hSocket = stream.get_handle();
 	stream.set_handle(ACE_INVALID_HANDLE);
@@ -149,11 +149,8 @@ OOCore::UserSession::~UserSession()
 IException* OOCore::UserSession::init()
 {
 	if (!USER_SESSION::instance()->init_i())
-	{
-		//USER_SESSION::close();
-        return IException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
-	}
-
+		return IException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
+	
 	IException* pE = USER_SESSION::instance()->bootstrap();
 	if (pE)
 		term();
@@ -443,6 +440,10 @@ int OOCore::UserSession::run_read_loop()
 		ACE_CDR::ULong dest_channel_id;
 		(*input) >> dest_channel_id;
 
+		// Read the source
+		ACE_CDR::ULong src_channel_id;
+		(*input) >> src_channel_id;
+
 		// Read the deadline
 		ACE_CDR::ULong req_dline_secs;
 		(*input) >> req_dline_secs;
@@ -470,9 +471,9 @@ int OOCore::UserSession::run_read_loop()
 		}
 
 		msg->m_deadline = deadline;
+		msg->m_src_channel_id = src_channel_id;
 
 		// Read the rest of the message
-		(*input) >> msg->m_src_channel_id;
 		(*input) >> msg->m_dest_thread_id;
 		(*input) >> msg->m_src_thread_id;
 		(*input) >> msg->m_attribs;
@@ -555,7 +556,7 @@ int OOCore::UserSession::run_read_loop()
 					return EACCES;
 				}				
 					
-				if (i->second->m_msg_queue->enqueue_tail(msg,&msg->m_deadline) == -1)
+				if (i->second->m_msg_queue->enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
 				{
 					int err = ACE_OS::last_error();
 					delete msg;
@@ -572,7 +573,7 @@ int OOCore::UserSession::run_read_loop()
 				return EINVAL;
 			}
 		}
-		else if (m_default_msg_queue.enqueue_tail(msg,&msg->m_deadline) == -1)
+		else if (m_default_msg_queue.enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
 		{
 			int err = ACE_OS::last_error();
 			delete msg;
@@ -744,9 +745,12 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 	const ThreadContext* pContext = ThreadContext::instance();
 
 	ACE_Time_Value deadline = pContext->m_deadline;
-	ACE_Time_Value deadline2 = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000);
-	if (deadline2 < deadline)
-		deadline = deadline2;
+	if (timeout > 0)
+	{
+		ACE_Time_Value deadline2 = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000);
+		if (deadline2 < deadline)
+			deadline = deadline2;
+	}
 
 	// Determine dest_thread_id
 	ACE_CDR::UShort dest_thread_id = 0;
@@ -776,7 +780,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		size_t sent = 0;
 		ACE_Time_Value wait = deadline - now;
 
-		if (m_stream.send(header.begin(),&wait,&sent) == -1)
+		if (m_stream.send(header.begin(),deadline==ACE_Time_Value::max_time ? 0 : &wait,&sent) == -1)
 			return false;
 
 		if (sent != header.total_length())
@@ -801,13 +805,13 @@ void OOCore::UserSession::send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR:
 		return;
 
 	ACE_Time_Value now = ACE_OS::gettimeofday();
-	if (deadline <= now)
+	if (deadline != ACE_Time_Value::max_time && deadline <= now)
 		return;
 
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
 
 	ACE_Time_Value wait = deadline - now;
-	m_stream.send(header.begin(),&wait);
+	m_stream.send(header.begin(),deadline==ACE_Time_Value::max_time ? 0 : &wait);
 }
 
 namespace OOCore
@@ -850,12 +854,13 @@ bool OOCore::UserSession::build_header(const ThreadContext* pContext, ACE_CDR::U
 	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
 
 	header << dest_channel_id;
+	header << m_channel_id;
+
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
 	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
 
 	void* TODO;	// Apartment stuff goes here
 
-	header << m_channel_id;
 	header << dest_thread_id;
 	header << pContext->m_thread_id;
 	header << attribs;
@@ -915,7 +920,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 
 		// Check timeout
 		ACE_Time_Value now = ACE_OS::gettimeofday();
-		if (deadline <= now)
+		if (deadline != ACE_Time_Value::max_time && deadline <= now)
 			return;
 
 		try

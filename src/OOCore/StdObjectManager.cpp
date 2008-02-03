@@ -245,6 +245,9 @@ void OOCore::StdObjectManager::Disconnect()
 	m_mapStubIds.clear();
 	m_mapStubObjs.clear();
 	m_mapProxyIds.clear();
+
+	// Disconnect
+	m_ptrChannel.Release();
 }
 
 void OOCore::StdObjectManager::MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject)
@@ -290,10 +293,7 @@ Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 
 IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout)
 {
-	if (timeout == 0)
-		timeout = 15000;
-
-    IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
+	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 	if (pE)
 		return pE;
 

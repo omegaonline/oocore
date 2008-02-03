@@ -79,12 +79,14 @@ namespace Root
 		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs);
 		void send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		void pump_requests(const ACE_Time_Value* deadline = 0);
-
+		
 		void close();
 		void stop();
 		
+		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual bool channel_open(ACE_CDR::ULong channel);
 		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
+		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id, ACE_CDR::ULong closed_channel_mask);
 
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
@@ -130,6 +132,24 @@ namespace Root
 				Request = 1
 			};
 
+			enum Attributes
+			{	
+				// Low 16 bits must match Remoting::MethodAttributes
+				synchronous = 0,
+				asynchronous = 1,
+				unreliable = 2,
+				encrypted = 4,
+
+				// Upper 16 bits can be used for system messages
+				all_threads = 0x10000,
+				system_message = 0x20000
+			};
+
+			enum SystemMessages
+			{
+				channel_close = 0
+			};
+
 			ACE_CDR::UShort  m_dest_thread_id;
 			ACE_CDR::ULong   m_src_channel_id;
 			ACE_CDR::UShort  m_src_thread_id;
@@ -172,7 +192,9 @@ namespace Root
 
 		bool parse_message(const ACE_Message_Block* mb);
 		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
+		bool send_system_message(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_CDR::ULong attribs, const ACE_Time_Value* deadline = 0);
 		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
+		bool process_all_threads_message(Message* pMsg);
 	};
 }
 

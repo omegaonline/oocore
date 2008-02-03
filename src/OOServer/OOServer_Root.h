@@ -35,10 +35,6 @@
 //////////////////////////////////////////////
 // Version defines
 
-#if defined(ACE_NLOGGING)
-#error You must not define ACE_NLOGGING, cos we use it!
-#endif
-
 #if defined(WIN32)
 	#if !defined(_WIN32_WINNT)
 	#define _WIN32_WINNT 0x0500
@@ -103,6 +99,10 @@
 #include <ace/SPIPE_Acceptor.h>
 #include <ace/SPIPE_Connector.h>
 #include <ace/UNIX_Addr.h>
+
+#if defined(ACE_NLOGGING)
+#error You must not define ACE_NLOGGING, we use it!
+#endif
 
 #if !defined(ACE_HAS_WCHAR)
 #error OmegaOnline requires has wchar_t support!

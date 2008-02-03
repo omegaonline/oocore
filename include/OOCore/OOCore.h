@@ -91,8 +91,4 @@ void Omega::Uninitialize()
 #include <OOCore/Threading.inl>
 #include <OOCore/Rtti.inl>
 
-#if defined(ACE_NLOGGING)
-#error You must not define ACE_NLOGGING, cos we use it!
-#endif
-
 #endif // OOCORE_H_INCLUDED_

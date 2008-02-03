@@ -51,7 +51,6 @@
 #include <ace/DLL_Manager.h>
 #include <ace/Encoding_Converter.h>
 #include <ace/Encoding_Converter_Factory.h>
-#include <ace/SOCK_Connector.h>
 #include <ace/Message_Queue.h>
 #include <ace/NT_Service.h>
 #include <ace/OS.h>
@@ -60,6 +59,7 @@
 #include <ace/Recursive_Thread_Mutex.h>
 #include <ace/RW_Thread_Mutex.h>
 #include <ace/Singleton.h>
+#include <ace/SOCK_Connector.h>
 #include <ace/SString.h>
 #include <ace/TSS_T.h>
 #include <ace/UUID.h>
@@ -134,5 +134,3 @@
 	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
 
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_
-
-

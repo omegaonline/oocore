@@ -101,14 +101,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create_errno,3,((in),int,e
 	pExcept->m_strDesc = string_t(ACE_OS::strerror(e),false);
 
 #if defined(OMEGA_WIN32)
-
-	// Try to create a relevant message...
-	if (pExcept->m_strDesc.IsEmpty())
-	{
-		DebugBreak();
+	// If errno is not set, then it isn't a std error
+	if (errno == 0 || e<0 || e>42)
 		pExcept->m_strDesc = Win32Msg(static_cast<DWORD>(e));
-	}
-	
 #endif	
 
 	return pExcept;

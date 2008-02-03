@@ -542,7 +542,7 @@
 		IException_Safe* __wire__pException = this->CreateOutputStream(__wire__pParamsOut); \
 		if (__wire__pException) \
 			return __wire__pException; \
-        __wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
+		__wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
 		if (__wire__pException) return __wire__pException; \
 		__wire__pException = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		if (__wire__pException) return __wire__pException; \
@@ -572,7 +572,7 @@
 		IException_Safe* __wire__pException = this->CreateOutputStream(__wire__pParamsOut); \
 		if (__wire__pException) \
 			return __wire__pException; \
-        __wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
+		__wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
 		if (__wire__pException) return __wire__pException; \
 		__wire__pException = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		if (__wire__pException) return __wire__pException; \

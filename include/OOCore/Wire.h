@@ -60,8 +60,10 @@ namespace Omega
 	{
 		enum MethodAttributes
 		{
+			synchronous = 0,
 			asynchronous = 1,
-			encrypted = 2
+			unreliable = 2,
+			encrypted = 4
 		};
 		typedef uint16_t MethodAttributes_t;
 	}

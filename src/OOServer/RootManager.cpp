@@ -165,7 +165,7 @@ bool Root::Manager::init()
 		return false;
 
 	// Setup the handler
-	set_channel(0x80000000,0x80000000,0x7F000000,0x40000000);	
+	set_channel(0x80000000,0x80000000,0x7F000000,0x7FFFFFFF);	
 
 	// Spawn the sandbox
 	ACE_WString strPipe;
@@ -173,7 +173,7 @@ bool Root::Manager::init()
 	if (!m_sandbox_channel)
 		return false;
 
-	void* TODO; // Accept the network channel here, and assign it to id 0x40000000
+	void* TODO; // Accept the network uplink channel here, and assign it to id 0x7FFFFFFF
 
 	return true;
 }
@@ -238,13 +238,51 @@ void Root::Manager::end_event_loop_i()
 	ACE_Reactor::instance()->end_reactor_event_loop();
 }
 
+bool Root::Manager::can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel)
+{
+	// Only route to or from the sandbox
+	return (src_channel == m_sandbox_channel || dest_channel == m_sandbox_channel);
+}
+
 void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 {
-	if (channel == m_sandbox_channel || classify_channel(channel)==4)
+	ACE_CDR::ULong mask = 0;
+	if (channel == m_sandbox_channel)
+		mask = 0x7F000000;
+	else if (classify_channel(channel)==4)
+		mask = 0x80000000;
+
+	if (mask)
 	{
 		// Propogate the message... 
-		void* TODO;
+		try
+		{
+			ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			for (std::map<ACE_CDR::ULong,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
+			{
+				if (i->first != channel)
+					send_channel_close(i->first,channel,mask);
+			}
+		}
+		catch (...)
+		{}
 	}
+
+	// Close the channel
+	try
+	{
+		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::map<ACE_CDR::ULong,UserProcess>::iterator i=m_mapUserProcesses.find(channel);
+		if (i != m_mapUserProcesses.end())
+		{
+			delete i->second.pSpawn;
+			m_mapUserProcesses.erase(i);
+		}
+	}
+	catch (...)
+	{}
 }
 
 int Root::Manager::process_client_connects()

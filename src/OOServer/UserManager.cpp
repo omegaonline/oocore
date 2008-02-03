@@ -138,7 +138,7 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 
 // UserManager
 User::Manager::Manager() :
-	m_root_channel(0),  m_nIPSCookie(0)
+	m_root_channel(0x80000000),  m_nIPSCookie(0)
 {
 }
 
@@ -210,17 +210,20 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 
 bool User::Manager::channel_open(ACE_CDR::ULong channel)
 {
-	try
+	if (channel != m_root_channel)
 	{
-		create_object_manager(channel,Remoting::inter_process);
-		return true;
+		try
+		{
+			create_object_manager(channel,Remoting::inter_process);
+		}
+		catch (IException* pE)
+		{
+			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+			pE->Release();
+			return false;
+		}
 	}
-	catch (IException* pE)
-	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
-		pE->Release();
-		return false;
-	}
+	return true;
 }
 
 bool User::Manager::init(const ACE_WString& strPipe)
@@ -260,9 +263,8 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	Root::MessageConnection* pMC = 0;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
 		
-	// Open the connection
-	m_root_channel = pMC->open(pipe,0x80000000);
-	if (m_root_channel == 0)
+	// Open the root connection
+	if (pMC->open(pipe,m_root_channel) == 0)
 	{
 		delete pMC;
 		pipe->close();
@@ -360,18 +362,41 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 	// Propogate the channel close events to our children
 	void* TODO;
 
+	// Close the corresponding Object Manager
+	{
+		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		try
+		{
+			for (std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.begin();i!=m_mapOMs.end();)
+			{
+				bool bErase = false;
+				if ((i->first & 0xFFFFF000) == channel)
+				{
+					// Close all subchannels 
+					bErase = true;
+				}
+				else if (channel == m_root_channel && classify_channel(i->first) > 2)
+				{
+					// If the root channel closes, close all upstream OMs
+					bErase = true;	
+				}
+
+				if (bErase)
+				{
+					i->second.m_ptrOM->Disconnect();
+					m_mapOMs.erase(i++);
+				}
+				else
+					++i;
+			}
+		}
+		catch (...)
+		{}
+	}
+
 	// If the root closes, we should end!
 	if (channel == m_root_channel)
 		end_event_loop();
-	
-	// Close the corresponding Object Manager
-	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-	try
-	{
-		m_mapOMs.erase(channel);
-	}
-	catch (...)
-	{}
 }
 
 ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
@@ -542,7 +567,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 {
 	ACE_InputCDR* response = 0;
-	if (!send_request(m_root_channel,request.begin(),response,15000,0))
+	if (!send_request(m_root_channel,request.begin(),response,0,Remoting::synchronous))
 	{
 		if (ACE_OS::last_error() == ENOENT)
 		{

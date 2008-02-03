@@ -253,8 +253,6 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 	{ 
 		OMEGA_THROW(string_t(e.what(),false));
 	}
-
-	return 0;
 }
 
 void OOCore::ServiceManager::RevokeObject(uint32_t cookie)

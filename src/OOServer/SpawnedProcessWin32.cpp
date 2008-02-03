@@ -1101,19 +1101,19 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 	err = reg_root->set_string_value(L"Server\\Sandbox",L"UserName",info.usri2_name);
 	if (err != 0)
 	{
-		if (errno != 0)
+		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: error %#lx",GetLastError()),false);
+			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: error %#lx",ACE_OS::last_error()),false);
 	}
 
 	err = reg_root->set_string_value(L"Server\\Sandbox",L"Password",info.usri2_password);
 	if (err != 0)
 	{
-		if (errno != 0)
+		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: error %#lx",GetLastError()),false);
+			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: error %#lx",ACE_OS::last_error()),false);
 	}
 
 	if (bAddedUser)

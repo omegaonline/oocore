@@ -93,6 +93,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 			--OOCore::s_initcount;
 			return IException::Create(ACE_OS::last_error(),L"ACE::init");
 		}
+
+		// Turn off all ACE logging
+		ACE_Log_Msg::instance()->priority_mask(0,ACE_Log_Msg::PROCESS);
 	}
 
 	if (bStart)

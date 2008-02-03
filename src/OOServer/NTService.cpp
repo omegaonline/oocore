@@ -79,10 +79,10 @@ bool Root::NTService::install()
 
 	if (NTSERVICE::instance()->insert(L"--service") != 0)
 	{
-		if (errno != 0)
+		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Service install failed: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Service install failed: error %#lx",GetLastError()),false);
+			ACE_ERROR_RETURN((LM_ERROR,L"Service install failed: error %#lx",ACE_OS::last_error()),false);
 	}
 
 	NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
@@ -98,10 +98,10 @@ bool Root::NTService::uninstall()
 	// Uninstall the service
 	if (NTSERVICE::instance()->remove() != 0)
 	{
-		if (errno != 0)
+		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Service uninstall failed: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Service uninstall failed: error %#lx",GetLastError()),false);
+			ACE_ERROR_RETURN((LM_ERROR,L"Service uninstall failed: error %#lx",ACE_OS::last_error()),false);
 	}
 
 	return true;

@@ -182,13 +182,18 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 		OMEGA_THROW_ERRNO(EINVAL);
 
 	// Assume we succeed...
-	pParamsOut->WriteBoolean(true);
+	if (pParamsOut)
+		pParamsOut->WriteBoolean(true);
 
 	// Read the stub id
 	uint32_t stub_id = pParamsIn->ReadUInt32();
 	if (stub_id == 0)
 	{
 		// It's a call from CreateRemoteInstance
+
+		// Check we have a response!
+		if (!pParamsOut)
+			OMEGA_THROW(L"Async CreateRemoteInstance!");
 				
 		// Read the oid and iid
 		guid_t oid = read_guid(pParamsIn);
@@ -242,9 +247,18 @@ void OOCore::StdObjectManager::Disconnect()
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 	// clear the stub map
+	for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
+	{
+		i->second->second->Release_Safe();
+	}
 	m_mapStubIds.clear();
 	m_mapStubObjs.clear();
-	m_mapProxyIds.clear();
+
+	// shutdown the proxys
+	for (std::map<uint32_t,WireProxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
+	{
+		j->second->Disconnect();
+	}
 
 	// Disconnect
 	m_ptrChannel.Release();

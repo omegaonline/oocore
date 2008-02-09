@@ -26,16 +26,21 @@ public:
 	{ }
 
 	Omega::string_t Hello();
+	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestLibraryImpl)
 		INTERFACE_ENTRY(Test::Iface)
 	END_INTERFACE_MAP()
 };
 
-Omega::string_t
-TestLibraryImpl::Hello()
+Omega::string_t TestLibraryImpl::Hello()
 {
 	return L"Hello!";
+}
+
+void TestLibraryImpl::Abort()
+{
+	// Do nothing
 }
 
 BEGIN_LIBRARY_OBJECT_MAP()

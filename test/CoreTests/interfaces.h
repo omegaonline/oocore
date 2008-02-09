@@ -6,6 +6,7 @@ namespace Test
 	interface Iface : public Omega::IObject
 	{
 		virtual Omega::string_t Hello() = 0;
+		virtual void Abort() = 0;
 	};
 }
 
@@ -15,6 +16,7 @@ OMEGA_DEFINE_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(Omega::string_t,Hello,0,())
+	OMEGA_METHOD_VOID(Abort,0,())
 )
 
 #endif // TEST_INTERFACES_INCLUDED

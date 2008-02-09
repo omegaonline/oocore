@@ -74,18 +74,12 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
 	ACE_InputCDR* response = 0;
-	try
+	if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 	{
-		if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,request,response,timeout,attribs))
-			OOCORE_THROW_LASTERROR();
-	}
-	catch (...)
-	{
-		delete response;
 		request->release();
-		throw;
+		OOCORE_THROW_LASTERROR();
 	}
-
+	
 	// Done with request
 	request->release();
 

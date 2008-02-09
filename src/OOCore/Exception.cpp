@@ -30,7 +30,7 @@ namespace OOCore
 		public ExceptionImpl<IException>
 	{
 	public:
-		BEGIN_INTERFACE_MAP(Exception )
+		BEGIN_INTERFACE_MAP(Exception)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<IException>)
 		END_INTERFACE_MAP()
 	};

@@ -40,12 +40,12 @@ int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_WString& str
 	m_pHandler = pHandler;
 	
 	if (m_acceptor.open(strAddr,0) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
 
 	// This will probably have to change under UNIX
 
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"register_handler() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"register_handler() failed"),-1);
 
 	return 0;
 }
@@ -61,7 +61,7 @@ int Root::MessagePipeAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucontext_t
 	if (m_acceptor.accept(pipe) != 0)
 #endif
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.accept() failed"),-1);
 	}
 
 	return m_pHandler->on_accept(pipe);
@@ -103,16 +103,16 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_WStrin
 		m_sa.bInheritHandle = FALSE;
 
 		if (!MessagePipeAcceptor::CreateSA(0,m_sa.lpSecurityDescriptor,m_pACL))
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %#x\n",GetLastError()),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to create security descriptor: %#x\n",GetLastError()),-1);
 	}
 
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr(strAddr.c_str());
 	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open failed"),-1);
 	
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"register_handler failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"register_handler failed"),-1);
 
 	return 0;
 }
@@ -131,7 +131,7 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucon
 	ACE_SPIPE_Stream stream;
 
 	if (m_acceptor.accept(stream) != 0 && GetLastError() != ERROR_MORE_DATA)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.accept() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.accept() failed"),-1);
 
 	return m_pHandler->on_accept(stream);
 }

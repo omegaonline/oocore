@@ -33,7 +33,7 @@ namespace User
 	public:
         static int run(const ACE_WString& strPipe);
 		
-		ACE_InputCDR sendrecv_root(const ACE_OutputCDR& request);
+		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request);
 
 	private:
 		friend class Channel;

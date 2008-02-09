@@ -59,7 +59,7 @@ namespace OOCore
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",name.c_str());
-			throw pRE;
+			throw static_cast<Registry::IBadNameException*>(pRE);
 		}
 	};
 

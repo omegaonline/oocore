@@ -36,12 +36,8 @@
 #include "./RootManager.h"
 #include "./Version.h"
 
-#if defined(ACE_WIN32) && defined(OMEGA_DEBUG)
-void AttachDebugger();
-#endif
-
 // Forward declare UserMain
-int UserMain(const ACE_WString& strPipe);
+int UserMain(const ACE_WString& strPipe, bool bDebug);
 
 static int Install(int argc, wchar_t* argv[])
 {
@@ -88,12 +84,14 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// Check to see if we have been spawned
 	if (argc>2 && ACE_OS::strcmp(argv[1],L"--spawned")==0)
 	{
+		bool bDebug = false;
+
 #if defined(OMEGA_DEBUG)
 		if (argc==4 && ACE_OS::strcmp(argv[3],L"--break")==0)
-			AttachDebugger();			
+			bDebug = true;			
 #endif
-		
-		return UserMain(argv[2]);
+
+		return UserMain(argv[2],bDebug);
 	}
 
 	if (argc>=2 && ACE_OS::strcmp(argv[1],L"--service")==0)
@@ -141,10 +139,11 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #if defined(ACE_WIN32)
 	if (argc<2 || ACE_OS::strcmp(argv[1],L"--service") != 0)
-	{
 		ACE_ERROR_RETURN((LM_ERROR,L"OOServer must be started as a Win32 service.\n"),-1);
-	}
-
+	
+#if defined(OMEGA_DEBUG)
+	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::STDERR,L"OOServer") != 0)
+#endif
 	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
 

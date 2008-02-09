@@ -59,7 +59,7 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 	ACE_SPIPE_Stream down;
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"connector.connect() failed"),-1);
 
 	countdown.update();
 
@@ -68,7 +68,7 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
 	{
 		down.close();
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"connector.connect() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"connector.connect() failed"),-1);
 	}
 
 	pipe->m_hRead = down.get_handle();
@@ -288,19 +288,19 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
 		m_sa.bInheritHandle = FALSE;
 
 		if (!CreateSA(hToken,m_sa.lpSecurityDescriptor,m_pACL))
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to create security descriptor: %#x\n",GetLastError()),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to create security descriptor: %#x\n",GetLastError()),-1);
 	}
 
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr((strAddr + L"\\up").c_str());
 	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
 
 	addr.string_to_addr((strAddr + L"\\down").c_str());
 	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 	{
 		m_acceptor_up.close();
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
 	}
 
 	return 0;
@@ -317,7 +317,7 @@ int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Nu
 	ACE_Countdown_Time countdown(timeout);
 	ACE_SPIPE_Stream down;
 	if (m_acceptor_down.accept(down,0,timeout) != 0 && GetLastError() != ERROR_MORE_DATA)	
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] acceptor.accept() failed: %#x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: acceptor.accept() failed: %#x\n",GetLastError()),-1);
 
 	countdown.update();
 
@@ -326,7 +326,7 @@ int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Nu
 	{
 		DWORD dwErr = GetLastError();
 		down.close();
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] acceptor.accept() failed: %#x\n",dwErr),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: acceptor.accept() failed: %#x\n",dwErr),-1);
 	}
 
 	pipe->m_hRead = up.get_handle();

@@ -148,6 +148,26 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
 {
+#if defined(ACE_WIN32)
+	// This is because when the OOServer starts it does not call Omega::Initialize,
+	// and this ensures that ACE is initialized in this DLL correctly...
+	static struct AutoUninit
+	{
+		AutoUninit() : bInitCalled(false)
+		{
+			bInitCalled = (ACE::init() != -1);
+		}
+
+		~AutoUninit()
+		{
+			if (bInitCalled)
+				ACE::fini();
+		}
+
+		bool bInitCalled;
+	} auto_uninit;
+#endif
+
 	return OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
 }
 
@@ -158,6 +178,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_RevokeObject,1,((in),Omega::uint3
 
 OOCore::ServiceManager::ServiceManager() : m_nNextCookie(0x843A9B81)
 {
+	void* SHITE;
+
 	// Obfuscate the cookie start value... this makes guessing cookie values harder (not impossible)
 	m_nNextCookie ^= uint32_t(ACE_OS::getpid());
 }

@@ -108,13 +108,13 @@ int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
 	// Spawn off the request threads
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"spawn() failed"));
 	else
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"spawn() failed"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"spawn() failed"));
 		else
 		{
 			if (init())
@@ -165,7 +165,7 @@ bool Root::Manager::init()
 		return false;
 
 	// Setup the handler
-	set_channel(0x80000000,0x80000000,0x7F000000,0x7FFFFFFF);	
+	set_channel(0x80000000,0x80000000,0x7F000000,0x40000000);	
 
 	// Spawn the sandbox
 	ACE_WString strPipe;
@@ -173,7 +173,7 @@ bool Root::Manager::init()
 	if (!m_sandbox_channel)
 		return false;
 
-	void* TODO; // Accept the network uplink channel here, and assign it to id 0x7FFFFFFF
+	void* TODO; // Accept the network channel here, and assign it to id 0x40000000
 
 	return true;
 }
@@ -187,23 +187,23 @@ int Root::Manager::init_registry()
 	wchar_t szBuf[MAX_PATH] = {0};
 	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] SHGetFolderPath failed: %#x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: SHGetFolderPath failed: %#x\n",GetLastError()),-1);
 	else
 	{
 		wchar_t szBuf2[MAX_PATH] = {0};
 		if (!PathCombineW(szBuf2,szBuf,L"Omega Online"))
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] PathCombine failed: %#x\n",GetLastError()),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: PathCombine failed: %#x\n",GetLastError()),-1);
 		else
 		{
 			if (!PathFileExistsW(szBuf2))
 			{
 				int ret = ACE_OS::mkdir(szBuf2);
 				if (ret != 0)
-					ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"mkdir failed"),-1);
+					ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"mkdir failed"),-1);
 			}
 
 			if (!PathCombineW(szBuf,szBuf2,L"system.regdb"))
-				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] PathCombine failed: %#x\n",GetLastError()),-1);
+				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: PathCombine failed: %#x\n",GetLastError()),-1);
 			else
 				m_strRegistry = szBuf;
 		}
@@ -217,14 +217,14 @@ int Root::Manager::init_registry()
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"mkdir failed"),-1);
+			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"mkdir failed"),-1);
 	}
 	m_strRegistry = OMEGA_REGISTRY_DIR L"/system.regdb";
 
 #endif
 
 	if (m_registry->open(m_strRegistry.c_str()) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"registry open() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"registry open() failed"),-1);
 
 	return 0;
 }
@@ -246,29 +246,6 @@ bool Root::Manager::can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_ch
 
 void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 {
-	ACE_CDR::ULong mask = 0;
-	if (channel == m_sandbox_channel)
-		mask = 0x7F000000;
-	else if (classify_channel(channel)==4)
-		mask = 0x80000000;
-
-	if (mask)
-	{
-		// Propogate the message... 
-		try
-		{
-			ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			for (std::map<ACE_CDR::ULong,UserProcess>::iterator i=m_mapUserProcesses.begin();i!=m_mapUserProcesses.end();++i)
-			{
-				if (i->first != channel)
-					send_channel_close(i->first,channel,mask);
-			}
-		}
-		catch (...)
-		{}
-	}
-
 	// Close the channel
 	try
 	{
@@ -281,8 +258,10 @@ void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 			m_mapUserProcesses.erase(i);
 		}
 	}
-	catch (...)
-	{}
+	catch (std::exception& e)
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+	}
 }
 
 int Root::Manager::process_client_connects()
@@ -311,16 +290,16 @@ int Root::Manager::on_accept(MessagePipe& pipe)
 
 	// Read the uid - we must read even for Windows
 	if (pipe.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"recv() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"recv() failed"),-1);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (!ImpersonateNamedPipeClient(pipe.get_handle()))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] ImpersonateNamedPipeClient failed: %#x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: ImpersonateNamedPipeClient failed: %#x\n",GetLastError()),-1);
 
 	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
 	if (!RevertToSelf())
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] RevertToSelf failed: %#x\n",GetLastError()));
+		ACE_ERROR((LM_ERROR,L"%N:%l: RevertToSelf failed: %#x\n",GetLastError()));
 		CloseHandle(uid);
 		ACE_OS::exit(-1);
 	}
@@ -367,7 +346,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 	MessagePipeAcceptor acceptor;
 	ACE_WString strNewPipe = MessagePipe::unique_name(L"oor");
 	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"acceptor.open() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"));
 	else 
 	{
 		// Spawn process
@@ -399,7 +378,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 						MessageConnection* pMC = 0;
 						ACE_NEW_NORETURN(pMC,MessageConnection(this));
 						if (!pMC)
-							ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %m\n"));
+							ACE_ERROR((LM_ERROR,L"%N:%l: %m\n"));
 						else if ((nChannelId = pMC->open(pipe,0,false)) != 0)
 						{
 							// Insert the data into various maps...
@@ -412,7 +391,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 							}
 							catch (std::exception& e)
 							{
-								ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] std::exception thrown %C\n",e.what()));
+								ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
 								nChannelId = 0;
 							}
 							
@@ -424,7 +403,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 								}
 								else if (pipe->send(&nChannelId,sizeof(nChannelId)) != sizeof(nChannelId))
 								{
-									ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+									ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"));
 									bOk = false;
 								}
 								
@@ -436,8 +415,9 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 
 										m_mapUserProcesses.erase(nChannelId);
 									}
-									catch (...)
-									{	
+									catch (std::exception& e)
+									{
+										ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
 									}
 								}
 							}
@@ -478,29 +458,31 @@ void Root::Manager::close_users()
 		}
 		m_mapUserProcesses.clear();
 	}
-	catch (...)
-	{}
+	catch (std::exception& e)
+	{
+		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+	}
 }
 
 ACE_WString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe)
 {
 	if (pipe->send(&m_sandbox_channel,sizeof(m_sandbox_channel)) != sizeof(m_sandbox_channel))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"));
 		return L"";
 	}
 
 	size_t uLen = 0;
 	if (pipe->recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.recv() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.recv() failed"));
 		return L"";
 	}
 
 	// Check for the integer overflow...
 	if (uLen > (size_t)-1 / sizeof(wchar_t))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Overflow on buffer size"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Overflow on buffer size"));
 		return L"";
 	}
 
@@ -509,7 +491,7 @@ ACE_WString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessageP
 
 	if (pipe->recv(buf,uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.recv() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.recv() failed"));
 		delete [] buf;
 		return L"";
 	}
@@ -548,7 +530,7 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 	}
 	catch (std::exception&)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Unhandled exception\n"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: Unhandled exception\n"));
 	}
 
 	return false;
@@ -561,7 +543,7 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 
 	if (!request.good_bit())
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Bad request"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Bad request"));
 		return;
 	}
 
@@ -622,7 +604,7 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 
 	default:
 		response.write_long(EINVAL);
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Bad request op_code\n"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: Bad request op_code\n"));
 		break;
 	}
 

@@ -146,7 +146,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	static const int env_max = 256;
 	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*)));
 	if (!cleanenv)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"ACE_OS::calloc() failed!"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"ACE_OS::calloc() failed!"),false);
 
 	char pathbuf[PATH_MAX + 6];
 	sprintf(pathbuf,"PATH=%s",SAFE_PATH);
@@ -191,7 +191,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	ACE_CDR::ULong sb_uid = (ACE_CDR::ULong)-1;
 	int err = reg_root->get_integer_value(L"Server\\Sandbox",L"Uid",sb_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to get sandbox uid from registry: %s\n",ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to get sandbox uid from registry: %s\n",ACE_OS::strerror(err)),false);
 
 	uid = static_cast<uid_t>(sb_uid);
 	return true;
@@ -207,7 +207,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe, bool /*b
 	if (child_id == -1)
 	{
 		// Error
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"ACE_OS::fork() failed!"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"ACE_OS::fork() failed!"),false);
 	}
 	else if (child_id == 0)
 	{
@@ -217,28 +217,28 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe, bool /*b
 		Root::pw_info pw(uid);
 		if (!pw)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"::getpwuid() failed!"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"::getpwuid() failed!"));
 			ACE_OS::exit(errno);
 		}
 
 		// Set our gid...
 		if (ACE_OS::setgid(pw->pw_gid) != 0)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"setgid() failed!"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"setgid() failed!"));
 			ACE_OS::exit(errno);
 		}
 
 		// Init our groups...
 		if (::initgroups(pw->pw_name,pw->pw_gid) != 0)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"::initgroups() failed!"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"::initgroups() failed!"));
 			ACE_OS::exit(errno);
 		}
 
 		// Stop being priviledged!
 		if (!ACE_OS::setuid(uid) != 0)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"setuid() failed!"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"setuid() failed!"));
 			ACE_OS::exit(errno);
 		}
 
@@ -249,7 +249,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_WString& strPipe, bool /*b
 		// Set cwd
 		if (ACE_OS::chdir(pw->pw_dir) != 0)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"chdir() failed!"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"chdir() failed!"));
 			ACE_OS::exit(errno);
 		}
 
@@ -316,7 +316,7 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 	// Get the suppied user's group see if that is the same as the file's group
 	Root::pw_info pw(m_uid);
 	if (!pw)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"::getpwuid() failed!"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"::getpwuid() failed!"),false);
 
 	// Is the file's gid the same as the specified user's
 	if (pw->pw_gid == sb.st_gid)
@@ -350,7 +350,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 	ACE_OS::setpwent();
 	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
 	if (!pw)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"getpwnam() failed!"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"getpwnam() failed!"),false);
 	ACE_OS::endpwent();
 
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
@@ -358,7 +358,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 	// Set the sandbox uid
 	int err = reg_root->set_integer_value(L"Server\\Sandbox",L"Uid",pw->pw_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] Failed to set sandbox uid in registry: %s\n",ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to set sandbox uid in registry: %s\n",ACE_OS::strerror(err)),false);
 
 	return true;
 }

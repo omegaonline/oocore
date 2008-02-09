@@ -35,12 +35,18 @@
 
 #include "./SpawnedProcess.h"
 
+#ifdef OMEGA_DEBUG
+#define WIN32_DEBUGGING() (IsDebuggerPresent() ? true : false)
+#else
+#define WIN32_DEBUGGING() false
+#endif
+
 bool Root::SpawnedProcess::unsafe_sandbox()
 {
 	// Get the user name and pwd...
 	ACE_CDR::ULong v = 0;
 	if (Manager::get_registry()->get_integer_value(L"Server\\Sandbox",L"Unsafe",v) != 0)
-		return IsDebuggerPresent() ? true : false;
+		return WIN32_DEBUGGING();
 
 	return (v == 1);
 }
@@ -656,12 +662,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	}
 
 	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
-
-#ifdef OMEGA_DEBUG
-	if (IsDebuggerPresent())
-		strCmdLine += L" --break";
-#endif
-
+	
 	// WIndow station vars
 	ACE_WString strWindowStation;
 	HWINSTA hWinsta = 0;
@@ -713,11 +714,20 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
 
-	if (!IsDebuggerPresent())
+	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
+	
+	if (WIN32_DEBUGGING())
+	{
+		dwFlags |= CREATE_NEW_CONSOLE;
+		strCmdLine += L" --break";
+		startup_info.lpTitle = L"OOServer - spawned user process";
+	}
+	else
+	{
+		dwFlags |= DETACHED_PROCESS;
 		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
-
-	DWORD dwFlags = DETACHED_PROCESS | CREATE_UNICODE_ENVIRONMENT | CREATE_NEW_PROCESS_GROUP | CREATE_DEFAULT_ERROR_MODE;
-
+	}
+	
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;	
 	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
@@ -794,21 +804,25 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 
 				if (GetNameFromToken(hToken2,strUserName,strDomainName) == ERROR_SUCCESS)
 				{
-					const char msg[] =
-						"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						"Because 'Unsafe' key is set in the registry, or you have attached a debugger to OOServer, the new user process will be started "
-						"under the user account '%ls\\%ls'\n\n"
-						"This is a security risk, and should only be allowed for debugging purposes, and only then if you "
-						"really know what you are doing.\n\n"
-						"Do you want to allow this?";
-
-					char szBuf[1024];
+					const wchar_t msg[] =
+						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
+						L"Because 'Unsafe' key is set in the registry, or you have attached a debugger to OOServer, the new user process will be started "
+						L"under the user account '%ls\\%ls'\n\n"
+						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you "
+						L"really know what you are doing.\n";
+						
+					wchar_t szBuf[1024];
 					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
-					if (MessageBoxA(NULL,szBuf,"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
+					wchar_t szBuf2[1024];
+					ACE_OS::sprintf(szBuf2,L"%ls\nDo you want to allow this?",szBuf);
+
+					if (MessageBoxW(NULL,szBuf2,L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
 						dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 						if (dwRes == ERROR_SUCCESS)
 						{
+							ACE_ERROR((LM_WARNING,L"%s",szBuf));
+
 							CloseHandle(m_hToken);
 							DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
 						}
@@ -935,14 +949,14 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigne
 			(LPWSTR)&lpMsgBuf,
 			0,	NULL))
 		{
-			ACE_ERROR((LM_ERROR,L"%W:%u [%P:%t] %W\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
+			ACE_ERROR((LM_ERROR,L"%W:%u: %W\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
 
 			// Free the buffer.
 			LocalFree(lpMsgBuf);
 		}
 		else
 		{
-			ACE_ERROR((LM_ERROR,L"%W:%u [%P:%t] Unknown system err %#x\n",pszFile,nLine,err));
+			ACE_ERROR((LM_ERROR,L"%W:%u: Unknown system err %#x\n",pszFile,nLine,err));
 		}		
 	}
 

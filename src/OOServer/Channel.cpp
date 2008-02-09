@@ -74,16 +74,10 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
 	ACE_InputCDR* response = 0;
-	try
+	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 	{
-		if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
-			OOSERVER_THROW_LASTERROR();
-	}
-	catch (...)
-	{
-		delete response;
 		request->release();
-		throw;
+		OOSERVER_THROW_LASTERROR();
 	}
 
 	// Done with request
@@ -118,11 +112,6 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 			delete response;
 			pRecv = ptrRecv.Detach();
 		}
-	}
-	catch (IException* pE)
-	{
-		delete response;
-		return pE;
 	}
 	catch (...)
 	{

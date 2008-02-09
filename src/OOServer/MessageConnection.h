@@ -86,8 +86,7 @@ namespace Root
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual bool channel_open(ACE_CDR::ULong channel);
 		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
-		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id, ACE_CDR::ULong closed_channel_mask);
-
+		
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
 
@@ -141,21 +140,16 @@ namespace Root
 				encrypted = 4,
 
 				// Upper 16 bits can be used for system messages
-				all_threads = 0x10000,
-				system_message = 0x20000
+				system_message = 0x10000,
+				channel_close = 0x20000 | system_message
 			};
 
-			enum SystemMessages
-			{
-				channel_close = 0
-			};
-
-			ACE_CDR::UShort  m_dest_thread_id;
-			ACE_CDR::ULong   m_src_channel_id;
-			ACE_CDR::UShort  m_src_thread_id;
-			ACE_Time_Value   m_deadline;
-			ACE_CDR::ULong   m_attribs;
-			ACE_InputCDR*    m_pPayload;
+			ACE_CDR::UShort                                      m_dest_thread_id;
+			ACE_CDR::ULong                                       m_src_channel_id;
+			ACE_CDR::UShort                                      m_src_thread_id;
+			ACE_Time_Value                                       m_deadline;
+			ACE_CDR::ULong                                       m_attribs;
+			ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> m_ptrPayload;
 		};
 
 		struct ThreadContext
@@ -165,6 +159,7 @@ namespace Root
 			MessageHandler*                             m_pHandler;
 
 			// Transient data
+			size_t                                      m_usage_count;
 			std::map<ACE_CDR::ULong,ACE_CDR::UShort>    m_mapChannelThreads;
 			ACE_Time_Value                              m_deadline;
 
@@ -178,7 +173,6 @@ namespace Root
 			~ThreadContext();
 		};
 
-		ACE_Atomic_Op<ACE_Thread_Mutex,long>            m_consumers;
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
 		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>      m_default_msg_queue;
 
@@ -188,13 +182,14 @@ namespace Root
 
 		// Accessors for MessageConnection
 		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id);
-		void pipe_closed(ACE_CDR::ULong channel_id);
+		void pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
+		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
 
 		bool parse_message(const ACE_Message_Block* mb);
 		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
-		bool send_system_message(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_CDR::ULong attribs, const ACE_Time_Value* deadline = 0);
-		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline);
-		bool process_all_threads_message(Message* pMsg);
+		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
+
+		void process_channel_close(Message* msg);
 	};
 }
 

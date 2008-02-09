@@ -15,16 +15,21 @@ public:
 	{ }
 
 	Omega::string_t Hello();
+	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestProcessImpl)
 		INTERFACE_ENTRY(Test::Iface)
 	END_INTERFACE_MAP()
 };
 
-Omega::string_t
-TestProcessImpl::Hello()
+Omega::string_t TestProcessImpl::Hello()
 {
 	return L"Hello!";
+}
+
+void TestProcessImpl::Abort()
+{
+	exit(-1);
 }
 
 BEGIN_PROCESS_OBJECT_MAP(L"TestProcess")

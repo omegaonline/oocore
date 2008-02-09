@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="OORegEdit"
 	ProjectGUID="{F58C0775-A7D3-4B50-8370-EFFCD4727AFA}"
+	RootNamespace="OORegEdit"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -16,8 +17,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\bin\Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="..\..\bin\$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -40,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.3\include&quot;;&quot;..\..\extern\wxWidgets-2.8.3\include\msvc&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.7\include&quot;;&quot;..\..\extern\wxWidgets-2.8.7\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -66,7 +67,7 @@
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.3\lib\vc_lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.7\lib\vc_lib&quot;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OORegEdit.pdb"
 				SubSystem="2"
@@ -100,7 +101,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="Release"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -125,7 +126,7 @@
 				Optimization="3"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.3\include&quot;;&quot;..\..\extern\wxWidgets-2.8.3\include\msvc&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.7\include&quot;;&quot;..\..\extern\wxWidgets-2.8.7\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -149,7 +150,7 @@
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.3\lib\vc_lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.7\lib\vc_lib&quot;"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

@@ -46,6 +46,12 @@ OOCore::WireProxy::~WireProxy()
 	m_pManager->Release_Safe();
 }
 
+void OOCore::WireProxy::Disconnect()
+{
+	// Force our marshal count to 0, cos the other end has gone
+	m_marshal_count = 0;
+}
+
 System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t& iid)
 {
 	try

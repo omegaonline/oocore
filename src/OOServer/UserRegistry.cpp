@@ -74,7 +74,7 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",name.c_str());
-			throw pRE;
+			throw static_cast<IBadNameException*>(pRE);
 		}
 	};
 
@@ -117,7 +117,7 @@ namespace Registry
 
 			pRE->m_strDesc = string_t::Format(L"Incorrect registry value type, actual value type is %ls.",tp.c_str());
 
-			throw pRE;
+			throw static_cast<IWrongValueTypeException*>(pRE);
 		}
 	};
 
@@ -144,7 +144,7 @@ namespace Registry
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
 			pRE->m_strDesc = string_t::Format(L"'%ls' not found.",name.c_str());
-			throw pRE;
+			throw static_cast<INotFoundException*>(pRE);
 		}
 	};
 
@@ -170,7 +170,7 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_strDesc = string_t::Format(L"Key '%ls' already exists.",name.c_str());
-			throw pRE;
+			throw static_cast<IAlreadyExistsException*>(pRE);
 		}
 	};
 
@@ -196,7 +196,7 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_strDesc = string_t::Format(L"Write attempt illegal for '%ls'.",name.c_str());
-			throw pRE;
+			throw static_cast<IAccessDeniedException*>(pRE);
 		}
 	};
 }
@@ -221,11 +221,13 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err==EINVAL || err==ENAMETOOLONG)
@@ -234,7 +236,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 		OMEGA_THROW_ERRNO(err);
 
 	ACE_CDR::Boolean bRes = false;
-	if (!response.read_boolean(bRes))
+	if (!response->read_boolean(bRes))
 		OOSERVER_THROW_LASTERROR();
 
 	return bRes;
@@ -251,15 +253,17 @@ bool_t Key::IsValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_CDR::Octet value_type;
-	if (err==0 && !response.read_octet(value_type))
+	if (err==0 && !response->read_octet(value_type))
 		err = ACE_OS::last_error();
 
 	if (err != ENOENT)
@@ -284,11 +288,13 @@ ValueType_t Key::GetValueType(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -304,7 +310,7 @@ ValueType_t Key::GetValueType(const string_t& strName)
 		OMEGA_THROW_ERRNO(err);
 
 	ACE_CDR::Octet value_type = 0;
-	if (!response.read_octet(value_type))
+	if (!response->read_octet(value_type))
 		OOSERVER_THROW_LASTERROR();
 
 	switch (value_type)
@@ -349,11 +355,13 @@ string_t Key::GetStringValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -369,7 +377,7 @@ string_t Key::GetStringValue(const string_t& strName)
 		OMEGA_THROW_ERRNO(err);
 
 	ACE_WString strValue;
-	if (!read_wstring(response,strValue))
+	if (!read_wstring(*response,strValue))
 		OOSERVER_THROW_LASTERROR();
 
 	return strValue.c_str();
@@ -386,11 +394,13 @@ uint32_t Key::GetUIntValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -406,7 +416,7 @@ uint32_t Key::GetUIntValue(const string_t& strName)
 		OMEGA_THROW_ERRNO(err);
 
 	ACE_CDR::ULong uValue = 0;
-	if (!response.read_ulong(uValue))
+	if (!response->read_ulong(uValue))
 		OOSERVER_THROW_LASTERROR();
 
 	return uValue;
@@ -425,11 +435,13 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -444,10 +456,10 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	else if (err != 0)
 		OMEGA_THROW_ERRNO(err);
 
-	if (!response.read_ulong(cbLen))
+	if (!response->read_ulong(cbLen))
 		OOSERVER_THROW_LASTERROR();
 
-	if (!bNoDataBack && !response.read_octet_array(pBuffer,cbLen))
+	if (!bNoDataBack && !response->read_octet_array(pBuffer,cbLen))
 		OOSERVER_THROW_LASTERROR();
 }
 
@@ -463,11 +475,13 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -497,11 +511,13 @@ void Key::SetUIntValue(const string_t& strName, uint32_t uValue)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -531,11 +547,13 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -574,11 +592,13 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-    response >> err;
-	if (!response.good_bit())
+    *response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
@@ -592,7 +612,7 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 	if (!(flags & IRegistryKey::Create))
 	{
 		ACE_CDR::Boolean bRes;
-		if (!response.read_boolean(bRes))
+		if (!response->read_boolean(bRes))
 			OOSERVER_THROW_LASTERROR();
 
 		if (!bRes)
@@ -615,11 +635,13 @@ Omega::IEnumString* Key::EnumSubKeys()
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 	else if (err != 0)
 		OMEGA_THROW_ERRNO(err);
@@ -631,7 +653,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 		for (;;)
 		{
 			ACE_WString strName;
-			if (!read_wstring(response,strName))
+			if (!read_wstring(*response,strName))
 				OOSERVER_THROW_LASTERROR();
 
 			if (strName.empty())
@@ -657,11 +679,13 @@ Omega::IEnumString* Key::EnumValues()
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 	else if (err != 0)
 		OMEGA_THROW_ERRNO(err);
@@ -673,7 +697,7 @@ Omega::IEnumString* Key::EnumValues()
 		for (;;)
 		{
 			ACE_WString strName;
-			if (!read_wstring(response,strName))
+			if (!read_wstring(*response,strName))
 				OOSERVER_THROW_LASTERROR();
 
 			if (strName.empty())
@@ -702,11 +726,13 @@ void Key::DeleteKey(const string_t& strSubKey)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
@@ -730,11 +756,13 @@ void Key::DeleteValue(const string_t& strName)
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	ACE_InputCDR response = m_pManager->sendrecv_root(request);
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW_ERRNO(EINVAL);
 
 	int err = 0;
-	response >> err;
-	if (!response.good_bit())
+	*response >> err;
+	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)

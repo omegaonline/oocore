@@ -30,14 +30,28 @@
 #include <vld.h>
 #endif
 
+#if defined(ACE_WIN32) && defined(OMEGA_DEBUG)
+void AttachDebugger();
+#endif
+
 BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 END_PROCESS_OBJECT_MAP()
 
-int UserMain(const ACE_WString& strPipe)
+int UserMain(const ACE_WString& strPipe, bool bDebug)
 {
-	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error opening logger"),-1);
+	u_long options = ACE_Log_Msg::SYSLOG;
+
+#if defined(OMEGA_DEBUG)
+	if (bDebug)
+	{
+		AttachDebugger();
+		options = ACE_Log_Msg::STDERR;
+	}
+#endif
+
+	if (ACE_LOG_MSG->open(L"OOServer",options,L"OOServer") != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Error opening logger"),-1);
 
 	return User::Manager::run(strPipe);
 }
@@ -163,13 +177,13 @@ int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
 	// Spawn off the request threads
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning threads"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Error spawning threads"));
 	else
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Error spawning threads"));
+			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Error spawning threads"));
 		else
 		{
 			if (init(strPipe))
@@ -218,7 +232,7 @@ bool User::Manager::channel_open(ACE_CDR::ULong channel)
 		}
 		catch (IException* pE)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+			ACE_ERROR((LM_ERROR,L"%N:%l: Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
 			pE->Release();
 			return false;
 		}
@@ -232,13 +246,13 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	ACE_Time_Value wait(5);
 	ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex> pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::connect() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::connect() failed"),false);
 
 	// Read the sandbox channel
 	ACE_CDR::ULong sandbox_channel = 0;
 	if (pipe->recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::recv() failed"));
 		pipe->close();
 		return false;
 	}
@@ -251,13 +265,13 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	if (pipe->send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
 		pipe->send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"pipe.send() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"),false);
 	}
 
 	// Read our channel id
 	ACE_CDR::ULong our_channel = 0;
 	if (pipe->recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Root::MessagePipe::recv() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::recv() failed"),false);
 		
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC = 0;
@@ -313,7 +327,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,L"%N:%l: Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -359,9 +373,6 @@ int User::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE
 
 void User::Manager::channel_closed(ACE_CDR::ULong channel)
 {
-	// Propogate the channel close events to our children
-	void* TODO;
-
 	// Close the corresponding Object Manager
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -426,7 +437,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, const ACE_Time_V
 
 	if (!request.good_bit())
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] %p\n",L"Bad request"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Bad request"));
 		return;
 	}
 
@@ -434,7 +445,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, const ACE_Time_V
 	{
 	case 0:
 	default:
-		ACE_ERROR((LM_ERROR,L"%N:%l [%P:%t] Bad request op_code\n"));
+		ACE_ERROR((LM_ERROR,L"%N:%l: Bad request op_code\n"));
 		return;
 	}
 }
@@ -564,7 +575,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 	}
 }
 
-ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
+ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 {
 	ACE_InputCDR* response = 0;
 	if (!send_request(m_root_channel,request.begin(),response,0,Remoting::synchronous))
@@ -576,7 +587,5 @@ ACE_InputCDR User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 		OOSERVER_THROW_LASTERROR();
 	}
 
-	ACE_InputCDR ret = *response;
-	delete response;
-	return ret;
+	return response;
 }

@@ -59,7 +59,7 @@
 	{ &Omega::guid_t::Null(), &QIAggregate, offsetof(RootClass,member_object), 0 },
 
 #define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
-	{ &OMEGA_UUIDOF(iface), &QIFunction<RootClass>, 0, &pfn },
+	{ &OMEGA_UUIDOF(iface), &QIFunction<RootClass>, 0, static_cast<ObjectBase::PFNMEMQI>(&pfn) },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
 	{ &Omega::guid_t::Null(), &QIFunction<RootClass>, 0, &pfn },
@@ -135,7 +135,7 @@
 	ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
-#include <OOCore/OOCore.h>
+#include <OOCore/Remoting.h>
 
 namespace OTL
 {
@@ -380,7 +380,7 @@ namespace OTL
         template <class Implementation>
         static Omega::IObject* QIFunction(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI pfnMemQI)
         {
-			return static_cast<Implementation*>(pThis)->*(pfnMemQI)(iid);
+			return (static_cast<Implementation*>(pThis)->*pfnMemQI)(iid);
         }
 
         static Omega::IObject* QIFail(const Omega::guid_t&, void*, size_t, ObjectBase::PFNMEMQI)
@@ -393,8 +393,29 @@ namespace OTL
 	};
 
 	template <class E>
+	class ExceptionMarshalFactoryImpl : 
+		public ObjectBase,
+		public Omega::Remoting::IMarshalFactory
+	{
+	public:
+		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
+			INTERFACE_ENTRY(Omega::IMarshalFactory)
+		END_INTERFACE_MAP()
+
+	// IMarshalFactory members
+	public:
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		{
+			ObjectImpl<E>* pE = ObjectImpl<E>::CreateInstance();
+			pE->Unmarshal(pObjectManager,pStream,iid,flags,pObject);
+			pObject = pE;
+		}
+	};
+
+	template <class E, const Omega::guid_t* pOID = 0>
 	class ExceptionImpl :
 		public ObjectBase,
+		public Omega::Remoting::IMarshal,
 		public E
 	{
 	public:
@@ -404,8 +425,18 @@ namespace OTL
 
 		BEGIN_INTERFACE_MAP(ExceptionImpl)
 			INTERFACE_ENTRY(Omega::IException)
+			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,ExceptionImpl::QIMarshal)
 			INTERFACE_ENTRY(E)
 		END_INTERFACE_MAP()
+
+	private:
+		Omega::IObject* QIMarshal(const Omega::guid_t&)
+		{
+			if (pOID == 0)
+				return 0;
+			else
+				return static_cast<Omega::Remoting::IMarshal*>(this);
+		}
 
 	// IException members
 	public:
@@ -424,6 +455,26 @@ namespace OTL
 		virtual Omega::string_t Source()
 		{
 			return m_strSource;
+		}
+
+	// IMarshal members
+	public:
+		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			if (pOID)
+				return *pOID;
+			else
+				return Omega::guid_t::Null();
+		}
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream*, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			// This must be overriden in the derived class if pOID is not NULL
+			OMEGA_THROW_ERRNO(EINVAL);
+		}
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream*, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			// This must be overriden in the derived class if pOID is not NULL
+			OMEGA_THROW_ERRNO(EINVAL);
 		}
 	};
 

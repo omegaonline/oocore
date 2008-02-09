@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="CoreTests"
 	ProjectGUID="{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}"
+	RootNamespace="CoreTests"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -16,8 +17,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\bin\Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="..\..\bin\$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -41,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;..\..\extern\ACE_wrappers&quot;;..\..\include"
-				PreprocessorDefinitions="_WIN32_WINNT=0x0500;WIN32;_DEBUG;_CONSOLE;OMEGA_HAVE_VLD"
+				PreprocessorDefinitions="_WIN32_WINNT=0x0500;WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -98,7 +99,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="Release"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"

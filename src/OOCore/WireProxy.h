@@ -52,6 +52,8 @@ namespace OOCore
 		WireProxy(Omega::uint32_t proxy_id, StdObjectManager* pManager);
 		virtual ~WireProxy();
 
+		void Disconnect();
+
 		Omega::System::MetaInfo::IObject_Safe* UnmarshalInterface(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t& iid);
 		
 	// IObject_Safe methods

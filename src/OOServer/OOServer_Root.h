@@ -82,7 +82,6 @@
 #include <ace/Asynch_Acceptor.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Condition_Thread_Mutex.h>
-#include <ace/Configuration.h>
 #include <ace/Countdown_Time.h>
 #include <ace/Event.h>
 #include <ace/Get_Opt.h>

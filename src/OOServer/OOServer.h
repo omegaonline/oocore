@@ -43,7 +43,6 @@
 
 #include <ace/Asynch_Acceptor.h>
 #include <ace/CDR_Stream.h>
-#include <ace/Configuration.h>
 #include <ace/Connector.h>
 #include <ace/Countdown_Time.h>
 #include <ace/Event.h>

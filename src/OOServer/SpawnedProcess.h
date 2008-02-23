@@ -45,15 +45,15 @@ namespace Root
 		~SpawnedProcess();
 
 		bool Spawn(user_id_type id, const ACE_WString& strPipe, bool bSandbox);
-		bool CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed);
+		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
 		static bool InstallSandbox(int argc, wchar_t* argv[]);
 		static bool UninstallSandbox();
-		static bool SecureFile(const ACE_WString& strFilename);
+		static bool SecureFile(const ACE_CString& strFilename);
 
 		bool Compare(user_id_type uid);
 		bool IsSameUser(user_id_type uid);
-		ACE_WString GetRegistryHive();
+		ACE_CString GetRegistryHive();
 		
 		static bool LogonSandboxUser(user_id_type& uid);
 		static void CloseSandboxLogon(user_id_type uid);

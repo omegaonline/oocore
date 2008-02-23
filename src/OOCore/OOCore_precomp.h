@@ -55,7 +55,6 @@
 #include <ace/NT_Service.h>
 #include <ace/OS.h>
 #include <ace/Proactor.h>
-#include <ace/Process.h>
 #include <ace/Recursive_Thread_Mutex.h>
 #include <ace/RW_Thread_Mutex.h>
 #include <ace/Singleton.h>
@@ -119,7 +118,7 @@
 /////////////////////////////////////////////////
 
 #define OOCORE_THROW_LASTERROR() \
-	OMEGA_THROW_ERRNO(ACE_OS::last_error())
+	OMEGA_THROW(ACE_OS::last_error())
 
 #define OOCORE_GUARD(MUTEX, OBJ, LOCK) \
 	ACE_Guard< MUTEX > OBJ (LOCK); \

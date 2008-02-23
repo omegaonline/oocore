@@ -26,6 +26,7 @@ public:
 	{ }
 
 	Omega::string_t Hello();
+	void Throw(Omega::uint32_t err);
 	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestLibraryImpl)
@@ -36,6 +37,11 @@ public:
 Omega::string_t TestLibraryImpl::Hello()
 {
 	return L"Hello!";
+}
+
+void TestLibraryImpl::Throw(Omega::uint32_t err)
+{
+	throw Omega::ISystemException::Create(err,L"TestLibraryImpl");
 }
 
 void TestLibraryImpl::Abort()

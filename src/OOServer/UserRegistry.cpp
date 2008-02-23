@@ -110,8 +110,8 @@ namespace Registry
 			string_t tp = L"Corrupt!";
 			if (actual_type==String)
 				tp = "String";
-			else if (actual_type==UInt32)
-				tp = "UInt32";
+			else if (actual_type==Integer)
+				tp = "Integer";
 			else if (actual_type==Binary)
 				tp = "Binary";
 
@@ -205,10 +205,11 @@ namespace Registry
 using namespace User;
 using namespace User::Registry;
 
-void Key::Init(Manager* pManager, const string_t& strKey)
+void Key::Init(Manager* pManager, const Omega::string_t& strKey, const ACE_INT64& key)
 {
 	m_pManager = pManager;
 	m_strKey = strKey;
+	m_key = key;
 }
 
 bool_t Key::IsSubKey(const string_t& strSubKey)
@@ -217,13 +218,14 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-	request.write_wstring((m_strKey + L"\\" + strSubKey).c_str());
+	request.write_longlong(m_key);
+	request.write_string(strSubKey.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -232,14 +234,14 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 
 	if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strSubKey,L"Omega::Registry::IRegistry::IsSubKey");
+	else if (err == ENOENT)
+		return false;
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsSubKey");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
-	ACE_CDR::Boolean bRes = false;
-	if (!response->read_boolean(bRes))
-		OOSERVER_THROW_LASTERROR();
-
-	return bRes;
+	return true;
 }
 
 bool_t Key::IsValue(const string_t& strName)
@@ -248,14 +250,14 @@ bool_t Key::IsValue(const string_t& strName)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -270,8 +272,10 @@ bool_t Key::IsValue(const string_t& strName)
 	{
 		if (err==EINVAL || err==ENAMETOOLONG)
 			BadNameException::Throw(strName,L"Omega::Registry::IRegistry::IsValue");
+		else if (err==EACCES)
+			AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsValue");
 		else if (err != 0)
-			OMEGA_THROW_ERRNO(err);
+			OMEGA_THROW(err);
 	}
 
 	return (err==0);
@@ -283,14 +287,14 @@ ValueType_t Key::GetValueType(const string_t& strName)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -306,8 +310,10 @@ ValueType_t Key::GetValueType(const string_t& strName)
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetValueType");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueType");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
 	ACE_CDR::Octet value_type = 0;
 	if (!response->read_octet(value_type))
@@ -315,33 +321,18 @@ ValueType_t Key::GetValueType(const string_t& strName)
 
 	switch (value_type)
 	{
-	case ACE_Configuration_Heap::STRING:
+	case 0:
 		return String;
 
-	case ACE_Configuration_Heap::INTEGER:
-		return UInt32;
+	case 1:
+		return Integer;
 
-	case ACE_Configuration_Heap::BINARY:
+	case 2:
 		return Binary;
 
 	default:
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 	}
-}
-
-// Annoyingly this is missing from ACE...  A direct lift and translate of the ACE_CString version
-static ACE_CDR::Boolean read_wstring(ACE_InputCDR& stream, ACE_WString& x)
-{
-	ACE_CDR::WChar *data = 0;
-	if (stream.read_wstring(data))
-	{
-		x = data;
-		delete [] data;
-		return true;
-	}
-
-	x = L"";
-	return stream.good_bit();
 }
 
 string_t Key::GetStringValue(const string_t& strName)
@@ -350,14 +341,14 @@ string_t Key::GetStringValue(const string_t& strName)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::GetStringValue);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -373,30 +364,32 @@ string_t Key::GetStringValue(const string_t& strName)
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
-	ACE_WString strValue;
-	if (!read_wstring(*response,strValue))
+	ACE_CString strValue;
+	if (!response->read_string(strValue))
 		OOSERVER_THROW_LASTERROR();
 
-	return strValue.c_str();
+	return string_t(strValue.c_str(),true);
 }
 
-uint32_t Key::GetUIntValue(const string_t& strName)
+int64_t Key::GetIntegerValue(const string_t& strName)
 {
-	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetUIntValue");
+	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
 
 	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::GetUInt32Value);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request << static_cast<Root::RootOpCode_t>(Root::GetIntegerValue);
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -406,17 +399,19 @@ uint32_t Key::GetUIntValue(const string_t& strName)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::GetUIntValue");
+			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::GetIntegerValue");
 		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetUIntValue");
+			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetUIntValue");
+		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
-	ACE_CDR::ULong uValue = 0;
-	if (!response->read_ulong(uValue))
+	ACE_CDR::LongLong uValue = 0;
+	if (!response->read_longlong(uValue))
 		OOSERVER_THROW_LASTERROR();
 
 	return uValue;
@@ -428,8 +423,8 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::GetBinaryValue);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	request.write_ulong(cbLen);
 	bool bNoDataBack = (cbLen == 0);
 	if (!request.good_bit())
@@ -437,7 +432,7 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -453,8 +448,10 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	}
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
 	if (!response->read_ulong(cbLen))
 		OOSERVER_THROW_LASTERROR();
@@ -469,15 +466,15 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetStringValue);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
-	request.write_wstring(strValue.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
+	request.write_string(strValue.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -496,24 +493,24 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetStringValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 }
 
-void Key::SetUIntValue(const string_t& strName, uint32_t uValue)
+void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 {
-	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetUIntValue");
+	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
 
 	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::SetUInt32Value);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
-	request.write_ulong(uValue);
+	request << static_cast<Root::RootOpCode_t>(Root::SetIntegerValue);
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
+	request.write_longlong(value);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -523,16 +520,16 @@ void Key::SetUIntValue(const string_t& strName, uint32_t uValue)
 	if (err == ENOENT)
 	{
 		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::SetUIntValue");
+			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::SetIntegerValue");
 		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetUIntValue");
+			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
 	}
 	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetUIntValue");
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetIntegerValue");
 	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetUIntValue");
+		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 }
 
 void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val)
@@ -541,15 +538,15 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::SetBinaryValue);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	request.write_octet_array(val,cbLen);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -568,7 +565,7 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 }
 
 IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
@@ -576,53 +573,43 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 
 	ACE_OutputCDR request;
-	if (!(flags & IRegistryKey::Create))
-	{
-		request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-		request.write_wstring((m_strKey + L"\\" + strSubKey).c_str());
-	}
-	else
-	{
-		request << static_cast<Root::RootOpCode_t>(Root::CreateKey);
-		request.write_wstring((m_strKey + L"\\" + strSubKey).c_str());
-
-		request.write_boolean((flags & IRegistryKey::FailIfThere) ? true : false);
-	}
-	
+	request << static_cast<Root::RootOpCode_t>(Root::CreateKey);
+	request.write_longlong(m_key);
+	request.write_string(strSubKey.ToUTF8().c_str());
+	request.write_boolean((flags & IRegistryKey::Create) ? true : false);
+	request.write_boolean((flags & IRegistryKey::FailIfThere) ? true : false);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
     *response >> err;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
+	
+	if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err==EALREADY)
 		AlreadyExistsException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
+	else if (err==ENOENT)
+		NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
-	if (!(flags & IRegistryKey::Create))
-	{
-		ACE_CDR::Boolean bRes;
-		if (!response->read_boolean(bRes))
-			OOSERVER_THROW_LASTERROR();
-
-		if (!bRes)
-			NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
-	}
+	ACE_INT64 key = 0;
+    *response >> key;
+	if (!response->good_bit())
+		OOSERVER_THROW_LASTERROR();	
 	
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
 
-	ptrNew->Init(m_pManager,m_strKey + L"\\" + strSubKey);
+	ptrNew->Init(m_pManager,m_strKey + L"\\" + strSubKey,key);
 
 	return ptrNew.AddRefReturn();
 }
@@ -631,20 +618,24 @@ Omega::IEnumString* Key::EnumSubKeys()
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::EnumSubKeys);
-	request.write_wstring(m_strKey.c_str());
+	request.write_longlong(m_key);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
+	else if (err==ENOENT)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
 	ObjectPtr<ObjectImpl<EnumSTL<Omega::IEnumString,string_t> > > ptrEnum = ObjectImpl<EnumSTL<Omega::IEnumString,string_t> >::CreateInstancePtr();
 		
@@ -652,14 +643,14 @@ Omega::IEnumString* Key::EnumSubKeys()
 	{
 		for (;;)
 		{
-			ACE_WString strName;
-			if (!read_wstring(*response,strName))
+			ACE_CString strName;
+			if (!response->read_string(strName))
 				OOSERVER_THROW_LASTERROR();
 
 			if (strName.empty())
 				break;
 
-			ptrEnum->Append(strName.c_str());
+			ptrEnum->Append(string_t(strName.c_str(),true));
 		}		
 	}
 	catch (std::exception& e)
@@ -675,20 +666,24 @@ Omega::IEnumString* Key::EnumValues()
 {
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::EnumValues);
-	request.write_wstring(m_strKey.c_str());
+	request.write_longlong(m_key);
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
+	else if (err==ENOENT)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 
 	ObjectPtr<ObjectImpl<EnumSTL<Omega::IEnumString,string_t> > > ptrEnum = ObjectImpl<EnumSTL<Omega::IEnumString,string_t> >::CreateInstancePtr();
 		
@@ -696,14 +691,14 @@ Omega::IEnumString* Key::EnumValues()
 	{
 		for (;;)
 		{
-			ACE_WString strName;
-			if (!read_wstring(*response,strName))
+			ACE_CString strName;
+			if (!response->read_string(strName))
 				OOSERVER_THROW_LASTERROR();
 
 			if (strName.empty())
 				break;
 
-			ptrEnum->Append(strName.c_str());
+			ptrEnum->Append(string_t(strName.c_str(),true));
 		}		
 	}
 	catch (std::exception& e)
@@ -721,14 +716,14 @@ void Key::DeleteKey(const string_t& strSubKey)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::DeleteKey);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strSubKey.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strSubKey.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -742,7 +737,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 }
 
 void Key::DeleteValue(const string_t& strName)
@@ -751,14 +746,14 @@ void Key::DeleteValue(const string_t& strName)
 
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::DeleteValue);
-	request.write_wstring(m_strKey.c_str());
-	request.write_wstring(strName.c_str());
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
 		OOSERVER_THROW_LASTERROR();
 
 	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
 	if (response.null())
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
@@ -772,5 +767,5 @@ void Key::DeleteValue(const string_t& strName)
 	else if (err==EINVAL || err==ENAMETOOLONG)
 		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::DeleteValue");
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 }

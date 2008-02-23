@@ -6,6 +6,8 @@ namespace Test
 	interface Iface : public Omega::IObject
 	{
 		virtual Omega::string_t Hello() = 0;
+
+		virtual void Throw(Omega::uint32_t err) = 0;
 		virtual void Abort() = 0;
 	};
 }
@@ -16,6 +18,8 @@ OMEGA_DEFINE_INTERFACE
 
 	// Methods
 	OMEGA_METHOD(Omega::string_t,Hello,0,())
+
+	OMEGA_METHOD_VOID(Throw,1,((in),Omega::uint32_t,err))
 	OMEGA_METHOD_VOID(Abort,0,())
 )
 

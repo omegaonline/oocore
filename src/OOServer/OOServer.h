@@ -50,6 +50,7 @@
 #include <ace/Message_Queue.h>
 #include <ace/OS.h>
 #include <ace/Proactor.h>
+#include <ace/Process.h>
 #include <ace/SOCK_Connector.h>
 
 #include <ace/SOCK_Acceptor.h>
@@ -58,11 +59,11 @@
 #include <ace/UNIX_Addr.h>
 
 #if !defined(ACE_HAS_WCHAR)
-#error OmegaOnline requires has wchar_t support!
+#error OmegaOnline requires ACE_HAS_WCHAR support!
 #endif
 
 #if !defined(ACE_USES_WCHAR)
-#error OmegaOnline requires uses wchar_t support!
+#error OmegaOnline requires ACE_USES_WCHAR support!
 #endif
 
 #if defined(_MSC_VER)
@@ -109,7 +110,7 @@
 /////////////////////////////////////////////////
 
 #define OOSERVER_THROW_LASTERROR() \
-	OMEGA_THROW_ERRNO(ACE_OS::last_error())
+	OMEGA_THROW(ACE_OS::last_error())
 
 #define OOSERVER_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Guard< MUTEX > OBJ (LOCK); \

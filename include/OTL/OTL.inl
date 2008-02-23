@@ -54,7 +54,7 @@ void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(Omega::string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 
@@ -75,7 +75,7 @@ OTL::ModuleBase::~ModuleBase()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(Omega::string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 

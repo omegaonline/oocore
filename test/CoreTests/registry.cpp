@@ -18,12 +18,12 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	TEST(pKey->GetStringValue(strTestValue) ==  L"No");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
-	TEST_VOID(pKey->SetUIntValue(strTestValue,100));
+	TEST_VOID(pKey->SetIntegerValue(strTestValue,100));
 	TEST(pKey->IsValue(strTestValue));
-	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::UInt32);
-	TEST(pKey->GetUIntValue(strTestValue) == 100);
-	TEST_VOID(pKey->SetUIntValue(strTestValue,200));
-	TEST(pKey->GetUIntValue(strTestValue) == 200);
+	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::Integer);
+	TEST(pKey->GetIntegerValue(strTestValue) == 100);
+	TEST_VOID(pKey->SetIntegerValue(strTestValue,200));
+	TEST(pKey->GetIntegerValue(strTestValue) == 200);
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
 
@@ -78,7 +78,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 		pE->Release();
 	}
 
-	TEST_VOID(pKey->SetUIntValue(strTestValue,100));
+	TEST_VOID(pKey->SetIntegerValue(strTestValue,100));
 	try
 	{
 		pKey->GetStringValue(strTestValue);
@@ -87,23 +87,13 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	catch (Omega::Registry::IWrongValueTypeException* pE)
 	{
 		TEST(pE->GetValueName() == strTestValue);
-		TEST(pE->GetValueType() == Omega::Registry::UInt32);
+		TEST(pE->GetValueType() == Omega::Registry::Integer);
 
 		pE->Release();
 	}
 
 	TEST_VOID(pKey->DeleteValue(strTestValue));
-	try
-	{
-		pKey->DeleteValue(strTestValue);
-		TEST(!"No exception thrown!");
-	}
-	catch (Omega::Registry::INotFoundException* pE)
-	{
-		TEST(pE->GetName() == strTestValue);
-		pE->Release();
-	}
-
+	
 	try
 	{
 		pKey->SetStringValue(L"",L"Invalid name");
@@ -116,7 +106,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 	try
 	{
-		pKey->SetUIntValue(L"\\",0);
+		pKey->SetIntegerValue(L"\\",0);
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
@@ -124,27 +114,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 		TEST(pE->GetName() == "\\");
 		pE->Release();
 	}
-	try
-	{
-		pKey->SetBinaryValue(L"[",orig_size,szBuf);
-		TEST(!"No exception thrown!");
-	}
-	catch (Omega::Registry::IBadNameException* pE)
-	{
-		TEST(pE->GetName() == "[");
-		pE->Release();
-	}
-	try
-	{
-		pKey->SetStringValue(L"]",L"Invalid name");
-		TEST(!"No exception thrown!");
-	}
-	catch (Omega::Registry::IBadNameException* pE)
-	{
-		TEST(pE->GetName() == "]");
-		pE->Release();
-	}
-
+	
 	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 
 	Omega::IEnumString* pValues = pKey->EnumValues();
@@ -238,29 +208,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 		TEST(pE->GetName() == "\\");
 		pE->Release();
 	}
-	try
-	{
-		pSubKey = pKey->OpenSubKey(L"[",Omega::Registry::IRegistryKey::Create);
-		pSubKey->Release();
-		TEST(!"No exception thrown!");
-	}
-	catch (Omega::Registry::IBadNameException* pE)
-	{
-		TEST(pE->GetName() == "[");
-		pE->Release();
-	}
-	try
-	{
-		pSubKey = pKey->OpenSubKey(L"]",Omega::Registry::IRegistryKey::Create);
-		pSubKey->Release();
-		TEST(!"No exception thrown!");
-	}
-	catch (Omega::Registry::IBadNameException* pE)
-	{
-		TEST(pE->GetName() == "]");
-		pE->Release();
-	}
-
+	
 	Omega::IEnumString* pKeys = pKey->EnumSubKeys();
 	TEST(pKeys);
 
@@ -472,8 +420,9 @@ bool registry_tests_3()
 				L"<oo:key name=\"%MODULE%\">\r\n"
 					L"<oo:value name=\"TestVal1\">Testing testing 1,2,3</oo:value>\r\n"
 					L"<oo:value name=\"TestVal2\">%MODULE%</oo:value>\r\n"
-					L"<oo:value name=\"TestVal3\" type=\"UInt32\">  0x12345  </oo:value>\r\n"
-					L"<oo:value name=\"TestVal4\" type=\"UInt32\" uninstall=\"Keep\">12345</oo:value>\r\n"
+					L"<oo:value name=\"TestVal3\" type=\"Integer\">  0x12345  </oo:value>\r\n"
+					L"<oo:value name=\"TestVal4\" type=\"Integer\">  -12345  </oo:value>\r\n"
+					L"<oo:value name=\"TestVal5\" type=\"Integer\" uninstall=\"Keep\">12345</oo:value>\r\n"
 				L"</oo:key>\r\n"
 			L"</oo:key>\r\n"
 		L"</oo:root>\r\n";

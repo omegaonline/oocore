@@ -601,7 +601,7 @@ void Root::MessageHandler::close()
 
 	// Now spin, waiting for all the channels to close...
 	ACE_Time_Value wait(0,100);
-	for (size_t i=0;i<50;++i)
+	for (size_t i=0;i<300;++i)
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -620,7 +620,8 @@ void Root::MessageHandler::stop()
 	{
 		for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
-			i->second->m_msg_queue->close();
+			if (i->second->m_usage_count)
+				i->second->m_msg_queue->pulse();
 		}
 	}
 	catch (std::exception& e)
@@ -642,14 +643,8 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 
 	for (;;)
 	{
-		// Get the next message
-		Message* msg;
-		if (pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline)) == -1)
+		// Check if the channel we are waiting on is still valid...
 		{
-			if (pContext->m_msg_queue->state() != ACE_Message_Queue_Base::PULSED)
-				break;
-
-			// Check if the channel we are waiting on is still valid...
 			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 			if (guard.locked() == 0)
 				break;
@@ -661,69 +656,77 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, const ACE_
 				ACE_OS::last_error(ECONNRESET);
 				break;
 			}
-
-			continue;
 		}
-		
-		// Read the payload specific data
-		ACE_CDR::Octet byte_order;
-		msg->m_ptrPayload->read_octet(byte_order);
-		ACE_CDR::Octet version = 0;
-		msg->m_ptrPayload->read_octet(version);
 
-		msg->m_ptrPayload->reset_byte_order(byte_order);
-	
-		ACE_CDR::UShort flags = 0;
-		(*msg->m_ptrPayload) >> flags;
-
-		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-		
-		if (msg->m_ptrPayload->good_bit() && version == 1)
+		// Get the next message
+		Message* msg = 0;
+		if (pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline)) == -1)
 		{
-			if (flags & Message::Request)
-			{
-				// Update deadline
-				ACE_Time_Value old_deadline = pContext->m_deadline;
-				pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
-				
-				// Set per channel thread id
-				std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
-				try
-				{
-					i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-					if (i == pContext->m_mapChannelThreads.end())
-						i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
-				}
-				catch (std::exception& e)
-				{
-					// This shouldn't ever occur, but that means it will ;)
-					ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
-					pContext->m_deadline = old_deadline;
-					delete msg;
-					continue;
-				}
-								
-				ACE_CDR::UShort old_thread_id = i->second;
-				i->second = msg->m_src_thread_id;
-
-				// Process the message...
-				process_request(*msg->m_ptrPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-				
-				// Restore old per channel thread id
-				i->second = old_thread_id;
-								
-				pContext->m_deadline = old_deadline;
-			}
-			else
-			{
-				ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
-				delete msg;
-				bRet = true;
+			if (pContext->m_msg_queue->state() != ACE_Message_Queue_Base::PULSED)
 				break;
-			}
 		}
+		else
+		{
+			// Read the payload specific data
+			ACE_CDR::Octet byte_order;
+			msg->m_ptrPayload->read_octet(byte_order);
+			ACE_CDR::Octet version = 0;
+			msg->m_ptrPayload->read_octet(version);
 
-		delete msg;
+			msg->m_ptrPayload->reset_byte_order(byte_order);
+		
+			ACE_CDR::UShort flags = 0;
+			(*msg->m_ptrPayload) >> flags;
+
+			msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
+			
+			if (msg->m_ptrPayload->good_bit() && version == 1)
+			{
+				if (flags & Message::Request)
+				{
+					// Update deadline
+					ACE_Time_Value old_deadline = pContext->m_deadline;
+					pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
+					
+					// Set per channel thread id
+					std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
+					try
+					{
+						i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+						if (i == pContext->m_mapChannelThreads.end())
+							i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
+					}
+					catch (std::exception& e)
+					{
+						// This shouldn't ever occur, but that means it will ;)
+						ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+						pContext->m_deadline = old_deadline;
+						delete msg;
+						continue;
+					}
+									
+					ACE_CDR::UShort old_thread_id = i->second;
+					i->second = msg->m_src_thread_id;
+
+					// Process the message...
+					process_request(*msg->m_ptrPayload,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					
+					// Restore old per channel thread id
+					i->second = old_thread_id;
+									
+					pContext->m_deadline = old_deadline;
+				}
+				else
+				{
+					ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
+					delete msg;
+					bRet = true;
+					break;
+				}
+			}
+
+			delete msg;
+		}
 	}
 
 	// Dec the usage count on the context
@@ -824,7 +827,8 @@ void Root::MessageHandler::process_channel_close(Message* msg)
 
 		for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
-			i->second->m_msg_queue->pulse();
+			if (i->second->m_usage_count)
+				i->second->m_msg_queue->pulse();
 		}
 	}
 	catch (std::exception& e)
@@ -943,7 +947,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		return true;
 	else
 		// Wait for response...
-		return wait_for_response(response,&msg.m_deadline,dest_channel_id);
+		return wait_for_response(response,&msg.m_deadline,actual_dest_channel_id);
 }
 
 void Root::MessageHandler::send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)

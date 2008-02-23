@@ -57,27 +57,6 @@ namespace OOCore
 	};
 }
 
-guid_t OOCore::read_guid(Serialize::IFormattedStream* pStream)
-{
-	guid_t val;
-	val.Data1 = pStream->ReadUInt32();
-	val.Data2 = pStream->ReadUInt16();
-	val.Data3 = pStream->ReadUInt16();
-	uint32_t bytes = 8;
-	pStream->ReadBytes(bytes,val.Data4);
-	if (bytes != 8)
-		OOCORE_THROW_LASTERROR();
-	return val;
-}
-
-void OOCore::write_guid(Serialize::IFormattedStream* pStream, const guid_t& val)
-{
-	pStream->WriteUInt32(val.Data1);
-	pStream->WriteUInt16(val.Data2);
-	pStream->WriteUInt16(val.Data3);
-	pStream->WriteBytes(8,val.Data4);
-}
-
 System::MetaInfo::IWireStub_Safe* OOCore::CreateWireStub(const guid_t& iid, System::MetaInfo::IWireStubController_Safe* pController, System::MetaInfo::IWireManager_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
 {
 	wire_holder::pfns p;

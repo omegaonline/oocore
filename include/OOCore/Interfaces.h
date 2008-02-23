@@ -102,7 +102,7 @@ namespace Omega
 		enum ValueType
 		{
 			String = 0,
-			UInt32 = 1,
+			Integer = 1,
 			Binary = 2
 		};
 		typedef byte_t ValueType_t;
@@ -120,10 +120,10 @@ namespace Omega
 			virtual bool_t IsSubKey(const string_t& key) = 0;
 			virtual bool_t IsValue(const string_t& name) = 0;
 			virtual string_t GetStringValue(const string_t& name) = 0;
-			virtual uint32_t GetUIntValue(const string_t& name) = 0;
+			virtual int64_t GetIntegerValue(const string_t& name) = 0;
 			virtual void GetBinaryValue(const string_t& name, uint32_t& cbLen, byte_t* pBuffer) = 0;
 			virtual void SetStringValue(const string_t& name, const string_t& val) = 0;
-			virtual void SetUIntValue(const string_t& name, uint32_t val) = 0;
+			virtual void SetIntegerValue(const string_t& name, const int64_t& val) = 0;
 			virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
 			virtual ValueType_t GetValueType(const string_t& name) = 0;
 			virtual IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
@@ -174,6 +174,13 @@ OMEGA_DEFINE_INTERFACE
 
 	// Methods
 	OMEGA_METHOD_VOID(CreateInstance,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+)
+
+OMEGA_DEFINE_INTERFACE_DERIVED
+(
+	Omega, ISystemException, Omega, IException, "{A0E1EEDB-BA00-4078-B67B-D990D43D5E7C}",
+
+	OMEGA_METHOD(Omega::uint32_t,ErrorCode,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -236,10 +243,10 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Omega::bool_t,IsSubKey,1,((in),const Omega::string_t&,key))
 	OMEGA_METHOD(Omega::bool_t,IsValue,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::string_t,GetStringValue,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD(uint32_t,GetUIntValue,1,((in),const Omega::string_t&,name))
+	OMEGA_METHOD(int64_t,GetIntegerValue,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const Omega::string_t&,name,(in_out),Omega::uint32_t&,cbLen,(out)(size_is(cbLen)),Omega::byte_t*,pBuffer))
 	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
-	OMEGA_METHOD_VOID(SetUIntValue,2,((in),const Omega::string_t&,name,(in),Omega::uint32_t,val))
+	OMEGA_METHOD_VOID(SetIntegerValue,2,((in),const Omega::string_t&,name,(in),const Omega::int64_t&,val))
 	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
 	OMEGA_METHOD(Omega::Registry::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))

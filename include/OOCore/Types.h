@@ -131,6 +131,7 @@ namespace Omega
 		{ return c_str()[i]; }
 
 		inline size_t ToUTF8(char* sz, size_t size) const;
+		inline std::string ToUTF8() const;
 
 		template <class T>
 		bool operator == (T t) const

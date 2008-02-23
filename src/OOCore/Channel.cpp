@@ -27,25 +27,6 @@
 using namespace Omega;
 using namespace OTL;
 
-ACE_CString OOCore::string_t_to_utf8(const Omega::string_t& val)
-{
-	ACE_CString str;
-	char szBuf[256];
-	size_t len = val.ToUTF8(szBuf,256);
-	if (len > 256)
-	{
-		char* pszBuf;
-		OMEGA_NEW(pszBuf,char[len]);
-		val.ToUTF8(pszBuf,len);
-		str = pszBuf;
-		delete [] pszBuf;
-	}
-	else
-		str = szBuf;
-
-	return str;
-}
-
 OOCore::Channel::Channel()
 {
 }
@@ -68,7 +49,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	ObjectPtr<IOutputCDR> ptrOutput;
 	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
 	if (!ptrOutput)
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	// Get the message block
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
@@ -103,7 +84,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 				if (!response->read_string(strSrc))
 					OOCORE_THROW_LASTERROR();
 
-				throw IException::Create(string_t(strDesc.c_str(),true),string_t(strSrc.c_str(),true));
+				throw ISystemException::Create(string_t(strDesc.c_str(),true),string_t(strSrc.c_str(),true));
 			}
 			
 			// Wrap the response

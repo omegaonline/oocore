@@ -8,15 +8,25 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 {
 	TEST(ptrTestLib->Hello() == L"Hello!");
 
+	/*try
+	{
+		ptrTestLib->Throw(EACCES);
+	}
+	catch (Omega::ISystemException* pE)
+	{
+		TEST(pE->ErrorCode() == EACCES);
+		pE->Release();
+	}*/
+
 	// This is a test for channel closing
-	try
+	/*try
 	{
 		ptrTestLib->Abort();
 	} 
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}
+	}*/
 
 	return true;
 }

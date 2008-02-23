@@ -96,7 +96,7 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::
 
 System::MetaInfo::IWireStub_Safe* OOCore::WireStub::LookupStub(Serialize::IFormattedStream* pStream)
 {
-	return FindStub(read_guid(pStream));
+	return FindStub(pStream->ReadGuid());
 }
 
 System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)

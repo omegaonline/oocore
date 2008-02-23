@@ -40,8 +40,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 namespace OOCore
 {
-	ACE_CString string_t_to_utf8(const Omega::string_t& val);
-
 	class OutputCDR :
 		public OTL::ObjectBase,
 		public ACE_OutputCDR,
@@ -108,6 +106,19 @@ namespace OOCore
 			{ Omega::uint64_t val; if (!get_input().read_ulonglong(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
 			{ ACE_CString val; if (!get_input().read_string(val)) OOCORE_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
+		Omega::guid_t ReadGuid()
+		{
+			Omega::guid_t g;
+			g.Data1 = ReadUInt32();
+			g.Data2 = ReadUInt16();
+			g.Data3 = ReadUInt16();
+			Omega::uint32_t bytes = 8;
+			ReadBytes(bytes,g.Data4);
+			if (bytes != 8)
+				throw Omega::ISystemException::Create(EIO);
+			return g;
+		}
+
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) OOCORE_THROW_LASTERROR(); }
 		void WriteInt16(Omega::int16_t val)
@@ -123,7 +134,14 @@ namespace OOCore
 		void WriteUInt64(const Omega::uint64_t& val)
 			{ if (!write_ulonglong(val)) OOCORE_THROW_LASTERROR(); }
 		void WriteString(const Omega::string_t& val)
-			{ if (!write_string(string_t_to_utf8(val))) OOCORE_THROW_LASTERROR(); }
+			{ if (!write_string(val.ToUTF8().c_str())) OOCORE_THROW_LASTERROR(); }
+		void WriteGuid(const Omega::guid_t& val)
+		{
+			WriteUInt32(val.Data1);
+			WriteUInt16(val.Data2);
+			WriteUInt16(val.Data3);
+			WriteBytes(8,val.Data4);
+		}
 	};
 
 	class InputCDR :
@@ -152,9 +170,9 @@ namespace OOCore
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
 		void WriteByte(Omega::byte_t)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteBytes(Omega::uint32_t, const Omega::byte_t*)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 
 	// IFormattedStream members
 	public:
@@ -174,22 +192,36 @@ namespace OOCore
 			{ Omega::uint64_t val; if (!read_ulonglong(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::string_t ReadString()
 			{ ACE_CString val; if (!read_string(val)) OOCORE_THROW_LASTERROR(); return Omega::string_t(val.c_str(),true); }
+		Omega::guid_t ReadGuid()
+		{
+			Omega::guid_t g;
+			g.Data1 = ReadUInt32();
+			g.Data2 = ReadUInt16();
+			g.Data3 = ReadUInt16();
+			Omega::uint32_t bytes = 8;
+			ReadBytes(bytes,g.Data4);
+			if (bytes != 8)
+				throw Omega::ISystemException::Create(EIO);
+			return g;
+		}
 		void WriteBoolean(Omega::bool_t)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteInt16(Omega::int16_t)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteUInt16(Omega::uint16_t)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteInt32(Omega::int32_t)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteUInt32(Omega::uint32_t)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteInt64(const Omega::int64_t&)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteUInt64(const Omega::uint64_t&)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
 		void WriteString(const Omega::string_t&)
-			{ OMEGA_THROW_ERRNO(EACCES); }
+			{ OMEGA_THROW(EACCES); }
+		void WriteGuid(const Omega::guid_t&)
+			{ OMEGA_THROW(EACCES); }
 	};
 
 	class Channel :

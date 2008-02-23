@@ -71,6 +71,7 @@ namespace Omega
 		{
 			virtual Registry::IRegistryKey* GetRegistry() = 0;
 			virtual Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
+			virtual void GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
 		};
 
 		// {63EB243E-6AE3-43bd-B073-764E096775F8}
@@ -124,6 +125,7 @@ OMEGA_DEFINE_INTERFACE
 
 	OMEGA_METHOD(Registry::IRegistryKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
+	OMEGA_METHOD_VOID(GetRegisteredObject,4,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 #endif // OOCORE_REMOTING_H_INCLUDED_

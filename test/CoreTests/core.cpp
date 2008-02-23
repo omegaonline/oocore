@@ -33,7 +33,7 @@ static bool complex_throw()
 	const wchar_t szFile[] = OMEGA_WIDEN_STRING(__FILE__);
 
 	// try a more complex throw
-	try
+	/*try
 	{
 		try
 		{
@@ -62,7 +62,7 @@ static bool complex_throw()
 
 		pE2->Release();
 		pE->Release();
-	}
+	}*/
 
 	return true;
 }
@@ -74,7 +74,7 @@ bool exception_tests()
 	const wchar_t szFile[] = OMEGA_WIDEN_STRING(__FILE__);
 	try
 	{
-		throw Omega::IException::Create(szDesc,szFile);
+		throw Omega::ISystemException::Create(szDesc,szFile);
 	}
 	catch (Omega::IException* pE)
 	{

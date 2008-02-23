@@ -187,15 +187,55 @@ void OOCore::ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectP
 
 		if (strType == L"String")
 			ptrKey->SetStringValue(strName,strData2);
-		else if (strType == L"UInt32")
+		else if (strType == L"Integer")
 		{
 			// Skip the starting whitespace
 			const wchar_t* p = strData2.c_str();
 			p += ACE_OS::strspn(p,L" ");
-			if (p[0]==L'0' && p[1]==L'x')
-				ptrKey->SetUIntValue(strName,ACE_OS::strtoul(p+2,0,16));
-			else
-				ptrKey->SetUIntValue(strName,ACE_OS::strtoul(p,0,10));
+
+			bool bNeg = false;
+			int base = 10;
+			if (*p==L'-')
+			{
+				bNeg = true;
+				++p;
+			}
+			else if (*p==L'+')
+			{
+				++p;
+			}
+			else if (p[0]==L'0' && p[1]==L'x')
+			{
+				p += 2;
+				base = 16;
+			}
+			
+			int64_t val = 0;
+			for (;;++p)
+			{
+				int v = 0;
+				if (*p >= L'0' && *p <= L'9')
+					v = (*p - L'0');
+				else if (base == 16)
+				{
+					if (*p >= L'A' && *p <= L'F')
+						v = (*p - L'A' + 0xA);
+					else if (*p >= L'a' && *p <= L'f')
+						v = (*p - L'a' + 0xA);
+					else
+						break;
+				}
+				else
+					break;
+
+				val *= base;
+				val += v;
+			}
+
+			if (bNeg)
+				val = -val;
+
+			ptrKey->SetIntegerValue(strName,val);
 		}
 		else if (strType == L"Binary")
 		{

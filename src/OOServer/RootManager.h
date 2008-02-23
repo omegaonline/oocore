@@ -51,6 +51,7 @@ namespace Root
 		static ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> get_registry();
 		static bool install(int argc, wchar_t* argv[]);
 		static bool uninstall();
+		static int registry_access_check(ACE_CDR::ULong channel_id);
 
 	private:
 		friend class MessagePipeSingleAsyncAcceptor<Manager>;
@@ -66,7 +67,7 @@ namespace Root
 
 		int run_event_loop_i(int argc, wchar_t* argv[]);
 		bool init();
-		int init_registry();
+		int init_database();
 		void end_event_loop_i();
 
 		struct UserProcess
@@ -94,21 +95,24 @@ namespace Root
 
 		void process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		
+		ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> m_db;
 		ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> m_registry;
-		ACE_WString                                          m_strRegistry;
+		ACE_CString                                          m_strRegistry;
 		ACE_CDR::ULong                                       m_sandbox_channel;
 
-		int registry_open_hive(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_WString& strKey, bool bForWrite);
+		int registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& channel_id, const ACE_CString& strSubKey, bool& bCurrent, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive);
+		int registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_INT64& uKey);
+		int registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_INT64& uKey, bool& bCurrent);
 		void registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_enum_subkeys(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_value_type(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_get_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_uint_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_get_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_set_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_uint_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
+		void registry_set_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_delete_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);

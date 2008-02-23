@@ -39,7 +39,7 @@ ObjectPtr<Remoting::IInterProcessService> OOCore::GetInterProcessService()
 	}
 	catch (IException* pE2)
 	{
-		IException* pE = IException::Create(L"Omega::Initialize not called",L"",pE2);
+		IException* pE = ISystemException::Create(L"Omega::Initialize not called",L"");
 		pE2->Release();
 		throw pE;
 	}

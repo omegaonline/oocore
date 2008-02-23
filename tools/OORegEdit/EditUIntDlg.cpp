@@ -12,8 +12,8 @@ EditUIntDlg::EditUIntDlg(wxWindow* parent, int id, const wxString& title, const 
     m_lblValue = new wxStaticText(this, -1, _("&Value data:"));
     m_txtValue = new wxTextCtrl(this, -1, _("500"));
     const wxString m_rbxBase_choices[] = {
-        _("&Hexadecimal"),
-        _("&Decimal")
+       _("&Decimal"),
+	   _("&Hexadecimal")
     };
     m_rbxBase = new wxRadioBox(this, ID_BASE, _("Base"), wxDefaultPosition, wxDefaultSize, 2, m_rbxBase_choices, 2, wxRA_SPECIFY_ROWS);
     m_buttons = new wxStdButtons(this, -1, wxOK|wxCANCEL);
@@ -37,17 +37,17 @@ END_EVENT_TABLE();
 
 void EditUIntDlg::OnBaseChanged(wxCommandEvent &event)
 {
-	if (m_rbxBase->GetSelection()==0)
+	if (m_rbxBase->GetSelection()==1)
 	{
-		unsigned long lVal;
-		m_txtValue->GetValue().ToULong(&lVal,10);
-		m_txtValue->SetValue(wxString::Format(wxT("%x"),lVal));
+		wxLongLong_t lVal;
+		m_txtValue->GetValue().ToLongLong(&lVal,10);
+		m_txtValue->SetValue(wxString::Format(wxT("%llx"),lVal));
 	}
 	else
 	{
-		unsigned long lVal;
-		m_txtValue->GetValue().ToULong(&lVal,16);
-		m_txtValue->SetValue(wxString::Format(wxT("%lu"),lVal));
+		wxULongLong_t lVal;
+		m_txtValue->GetValue().ToULongLong(&lVal,16);
+		m_txtValue->SetValue(wxString::Format(wxT("%lld"),lVal));
 	}
 }
 
@@ -58,7 +58,7 @@ void EditUIntDlg::OnBaseChanged(wxCommandEvent &event)
 void EditUIntDlg::set_properties()
 {
     // begin wxGlade: EditUIntDlg::set_properties
-    SetTitle(_("Edit UInt32 Value"));
+    SetTitle(_("Edit Integer Value"));
     m_rbxBase->SetSelection(0);
     // end wxGlade
 }

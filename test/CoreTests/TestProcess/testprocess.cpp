@@ -15,6 +15,7 @@ public:
 	{ }
 
 	Omega::string_t Hello();
+	void Throw(Omega::uint32_t err);
 	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestProcessImpl)
@@ -25,6 +26,11 @@ public:
 Omega::string_t TestProcessImpl::Hello()
 {
 	return L"Hello!";
+}
+
+void TestProcessImpl::Throw(Omega::uint32_t err)
+{
+	throw Omega::ISystemException::Create((int)err,L"TestProcessImpl");
 }
 
 void TestProcessImpl::Abort()

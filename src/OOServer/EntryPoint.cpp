@@ -37,7 +37,7 @@
 #include "./Version.h"
 
 // Forward declare UserMain
-int UserMain(const ACE_WString& strPipe, bool bDebug);
+int UserMain(const ACE_WString& strPipe);
 
 static int Install(int argc, wchar_t* argv[])
 {
@@ -83,17 +83,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #if defined(ACE_WIN32)
 	// Check to see if we have been spawned
 	if (argc>2 && ACE_OS::strcmp(argv[1],L"--spawned")==0)
-	{
-		bool bDebug = false;
-
-#if defined(OMEGA_DEBUG)
-		if (argc==4 && ACE_OS::strcmp(argv[3],L"--break")==0)
-			bDebug = true;			
-#endif
-
-		return UserMain(argv[2],bDebug);
-	}
-
+		return UserMain(argv[2]);
+	
 	if (argc>=2 && ACE_OS::strcmp(argv[1],L"--service")==0)
 		skip_args = 2;
 #endif

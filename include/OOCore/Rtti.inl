@@ -112,7 +112,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 	}
 	catch (std::exception& e)
 	{
-		return return_safe_exception(Omega::IException::Create(string_t(e.what(),false),OMEGA_SOURCE_INFO));
+		return return_safe_exception(Omega::ISystemException::Create(e,OMEGA_SOURCE_INFO));
 	}
 	catch (IException* pE)
 	{
@@ -198,7 +198,7 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 
@@ -255,7 +255,7 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
 	IObject_Safe* pRet = 0;
@@ -318,7 +318,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
 	I* pRet = 0;
@@ -409,24 +409,21 @@ void Omega::UnpinObjectPointer(IObject* pObject)
 		ptrProxy->Unpin();
 }
 
-#if defined(OMEGA_WIN32)
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create_GLE,3,((in),DWORD,GLE,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
-Omega::IException* Omega::IException::Create(DWORD GetLastError_val, const Omega::string_t& source, Omega::IException* pCause)
+OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source));
+Omega::ISystemException* Omega::ISystemException::Create(Omega::uint32_t errno_val, const Omega::string_t& source)
 {
-	return IException_Create_GLE(GetLastError_val,source,pCause);
-}
-#endif
-
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create_errno,3,((in),int,e,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
-Omega::IException* Omega::IException::Create(int errno_val, const Omega::string_t& source, Omega::IException* pCause)
-{
-	return IException_Create_errno(errno_val,source,pCause);
+	return ISystemException_Create_errno(errno_val,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,IException_Create,3,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause));
-Omega::IException* Omega::IException::Create(const Omega::string_t& desc, const Omega::string_t& source, Omega::IException* pCause)
+OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source));
+Omega::ISystemException* Omega::ISystemException::Create(const std::exception& e, const Omega::string_t& source)
 {
-	return IException_Create(desc,source,pCause);
+	return ISystemException_Create(string_t(e.what(),false),source);
+}
+
+Omega::ISystemException* Omega::ISystemException::Create(const string_t& desc, const Omega::string_t& source)
+{
+	return ISystemException_Create(desc,source);
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source));

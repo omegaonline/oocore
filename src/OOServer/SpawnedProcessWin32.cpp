@@ -37,6 +37,7 @@
 
 #ifdef OMEGA_DEBUG
 #define WIN32_DEBUGGING() (IsDebuggerPresent() ? true : false)
+void AttachDebugger(DWORD pid);
 #else
 #define WIN32_DEBUGGING() false
 #endif
@@ -44,8 +45,12 @@
 bool Root::SpawnedProcess::unsafe_sandbox()
 {
 	// Get the user name and pwd...
-	ACE_CDR::ULong v = 0;
-	if (Manager::get_registry()->get_integer_value(L"Server\\Sandbox",L"Unsafe",v) != 0)
+	ACE_INT64 key = 0;
+	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+		return false;
+
+	ACE_CDR::LongLong v = 0;
+	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
 		return WIN32_DEBUGGING();
 
 	return (v == 1);
@@ -716,10 +721,14 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	
+	HANDLE hDebugEvent = NULL;
 	if (WIN32_DEBUGGING())
 	{
+		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
+			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+
 		dwFlags |= CREATE_NEW_CONSOLE;
-		strCmdLine += L" --break";
 		startup_info.lpTitle = L"OOServer - spawned user process";
 	}
 	else
@@ -734,9 +743,24 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& str
 	{
 		dwRes = GetLastError();
 		CloseHandle(hPriToken);
+
+		if (WIN32_DEBUGGING() && hDebugEvent)
+			CloseHandle(hDebugEvent);
+
 		goto CleanupDesktop;
 	}
 
+	// Attach a debugger if we are debugging
+	if (WIN32_DEBUGGING())
+	{
+		AttachDebugger(process_info.dwProcessId);
+		if (hDebugEvent)
+		{
+			SetEvent(hDebugEvent);
+			CloseHandle(hDebugEvent);
+		}
+	}
+	
 	// See if process has immediately terminated...
 	DWORD dwWait = WaitForSingleObject(process_info.hProcess,100);
 	if (dwWait != WAIT_TIMEOUT)
@@ -843,15 +867,19 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	// Get the user name and pwd...
+	ACE_INT64 key = 0;
+	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+		return false;
+
 	ACE_WString strUName;
 	ACE_WString strPwd;
-	int err = reg_root->get_string_value(L"Server\\Sandbox",L"UserName",strUName);
+	int err = reg_root->get_string_value(key,L"UserName",strUName);
 	if (err != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"Failed to read sandbox username from registry: %d\n",err),false);
 
-	reg_root->get_string_value(L"Server\\Sandbox",L"Password",strPwd);
+	reg_root->get_string_value(key,L"Password",strPwd);
 
-	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
+	if (!LogonUserW(strUName.c_str(),NULL,strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 	{
 		LOG_FAILURE(GetLastError());
 		return false;
@@ -865,11 +893,11 @@ void Root::SpawnedProcess::CloseSandboxLogon(user_id_type hToken)
 	CloseHandle(hToken);
 }
 
-bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
     PSECURITY_DESCRIPTOR pSD = NULL;
 	DWORD cbNeeded = 0;
-	if (!GetFileSecurityW(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
+	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
 	{
 		DWORD err = GetLastError();
 		ACE_OS::last_error(err);
@@ -886,7 +914,7 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 		return LOG_FAILURE(err);
 	}
 
-	if (!GetFileSecurityW(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
+	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
 	{
 		DWORD err = GetLastError();
 		ACE_OS::last_error(err);
@@ -1112,26 +1140,30 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 	// Set the user name and pwd...
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
-	err = reg_root->set_string_value(L"Server\\Sandbox",L"UserName",info.usri2_name);
+	ACE_INT64 key = 0;
+	if (Manager::get_registry()->create_key(key,"Server\\Sandbox",false,0,0) != 0)
+		return false;
+
+	err = reg_root->set_string_value(key,L"UserName",info.usri2_name);
 	if (err != 0)
 	{
 		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: error %#lx",ACE_OS::last_error()),false);
+			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: error %#x",ACE_OS::last_error()),false);
 	}
 
-	err = reg_root->set_string_value(L"Server\\Sandbox",L"Password",info.usri2_password);
+	err = reg_root->set_string_value(key,L"Password",info.usri2_password);
 	if (err != 0)
 	{
 		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: error %#lx",ACE_OS::last_error()),false);
+			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: error %#x",ACE_OS::last_error()),false);
 	}
 
 	if (bAddedUser)
-		reg_root->set_integer_value(L"Server\\Sandbox",L"AutoAdded",1);
+		reg_root->set_integer_value(key,"AutoAdded",0,1);
 
 	return true;
 }
@@ -1141,11 +1173,15 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	// Get the user name and pwd...
+	ACE_INT64 key = 0;
+	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
+		return true;
+
 	ACE_WString strUName;
-	if (reg_root->get_string_value(L"Server\\Sandbox",L"UserName",strUName) == 0)
+	if (reg_root->get_string_value(key,L"UserName",strUName) == 0)
 	{
-		ACE_CDR::ULong bUserAdded = 0;
-		reg_root->get_integer_value(L"Server\\Sandbox",L"AutoAdded",bUserAdded);
+		ACE_CDR::LongLong bUserAdded = 0;
+		reg_root->get_integer_value(key,"AutoAdded",0,bUserAdded);
 		if (bUserAdded == 1)
 			NetUserDel(NULL,strUName.c_str());
 	}
@@ -1153,7 +1189,7 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	return true;
 }
 
-bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
+bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
 {
 	// Specify the DACL to use.
 
@@ -1214,8 +1250,8 @@ bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 	FreeSid(pSIDUsers);
 
 	// Try to modify the object's DACL.
-	DWORD dwRes = SetNamedSecurityInfoW(
-		const_cast<LPWSTR>(strFilename.c_str()), // name of the object
+	DWORD dwRes = SetNamedSecurityInfoA(
+		const_cast<LPSTR>(strFilename.c_str()), // name of the object
 		SE_FILE_OBJECT,                          // type of object
 		DACL_SECURITY_INFORMATION |              // change only the object's DACL
 		PROTECTED_DACL_SECURITY_INFORMATION,     // And don't inherit!
@@ -1343,24 +1379,24 @@ bool Root::SpawnedProcess::IsSameUser(user_id_type hToken)
 	return bSame;
 }
 
-ACE_WString Root::SpawnedProcess::GetRegistryHive()
+ACE_CString Root::SpawnedProcess::GetRegistryHive()
 {
-	ACE_WString strRegistry;
+	ACE_CString strRegistry;
 
-	wchar_t szBuf[MAX_PATH] = {0};
+	char szBuf[MAX_PATH] = {0};
 	HRESULT hr;
 	if (m_bSandbox)
-		hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+		hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	else
-		hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
+		hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
 	if SUCCEEDED(hr)
 	{
-		wchar_t szBuf2[MAX_PATH] = {0};
-		if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
+		char szBuf2[MAX_PATH] = {0};
+		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
 		{
-			if (PathFileExistsW(szBuf2) || ACE_OS::mkdir(szBuf2) == 0)
+			if (PathFileExistsA(szBuf2) || ACE_OS::mkdir(szBuf2) == 0)
 			{
-				if (PathCombineW(szBuf,szBuf2,L"user.regdb"))
+				if (PathCombineA(szBuf,szBuf2,"user.regdb"))
 					strRegistry = szBuf;
 			}
 		}

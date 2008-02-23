@@ -392,26 +392,6 @@ namespace OTL
 		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
 	};
 
-	template <class E>
-	class ExceptionMarshalFactoryImpl : 
-		public ObjectBase,
-		public Omega::Remoting::IMarshalFactory
-	{
-	public:
-		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
-			INTERFACE_ENTRY(Omega::IMarshalFactory)
-		END_INTERFACE_MAP()
-
-	// IMarshalFactory members
-	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
-		{
-			ObjectImpl<E>* pE = ObjectImpl<E>::CreateInstance();
-			pE->Unmarshal(pObjectManager,pStream,iid,flags,pObject);
-			pObject = pE;
-		}
-	};
-
 	template <class E, const Omega::guid_t* pOID = 0>
 	class ExceptionImpl :
 		public ObjectBase,
@@ -429,13 +409,26 @@ namespace OTL
 			INTERFACE_ENTRY(E)
 		END_INTERFACE_MAP()
 
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t)
+		{
+			m_strDesc = pStream->ReadString();
+			m_strSource = pStream->ReadString();
+			Omega::IObject* pE = 0;
+			pManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),pE);
+			m_ptrCause.Attach(static_cast<Omega::IException*>(pE));
+		}
+
 	private:
 		Omega::IObject* QIMarshal(const Omega::guid_t&)
 		{
 			if (pOID == 0)
 				return 0;
 			else
-				return static_cast<Omega::Remoting::IMarshal*>(this);
+			{
+				Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
+				pRet->AddRef();
+				return pRet;
+			}
 		}
 
 	// IException members
@@ -466,15 +459,39 @@ namespace OTL
 			else
 				return Omega::guid_t::Null();
 		}
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream*, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			// This must be overriden in the derived class if pOID is not NULL
-			OMEGA_THROW_ERRNO(EINVAL);
+			pStream->WriteString(m_strDesc);
+			pStream->WriteString(m_strSource);
+			pManager->MarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),m_ptrCause);
 		}
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream*, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			// This must be overriden in the derived class if pOID is not NULL
-			OMEGA_THROW_ERRNO(EINVAL);
+			pStream->ReadString();
+			pStream->ReadString();
+			pManager->ReleaseMarshalData(pStream,OMEGA_UUIDOF(Omega::IException),m_ptrCause);
+		}
+	};
+
+	template <class E>
+	class ExceptionMarshalFactoryImpl : 
+		public ObjectBase,
+		public Omega::Remoting::IMarshalFactory
+	{
+	public:
+		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
+		END_INTERFACE_MAP()
+
+	// IMarshalFactory members
+	public:
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		{
+			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
+			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
+			pObject = ptrE->QueryInterface(iid);
 		}
 	};
 
@@ -665,7 +682,7 @@ namespace OTL
 		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
 		{
 			if (!pOuter)
-				throw Omega::IException::Create(L"AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
+				throw Omega::ISystemException::Create(L"AggregatedObjectImpl must be aggregated",OMEGA_SOURCE_INFO);
 
 			AggregatedObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,AggregatedObjectImpl<ROOT>(pOuter));

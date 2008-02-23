@@ -43,75 +43,80 @@ using namespace EnvDTE80;
 #endif
 #endif
 
-static bool AttachVS8Debugger()
+static bool AttachVS8Debugger(DWORD our_pid)
 {
 #if !defined(_MSC_VER) || _MSC_VER < 1300
 	return false;
 #else
 
 	bool bRet = false;
-	CoInitialize(NULL);
-    IUnknownPtr pUnk;
-#if _MSC_VER >= 1400
-	pUnk.GetActiveObject("VisualStudio.DTE.8.0");
-#elif _MSC_VER == 1300
-	pUnk.GetActiveObject("VisualStudio.DTE.7.1");
-#endif
-    if (pUnk != NULL) 
+	HRESULT hr = CoInitialize(NULL);
+	if SUCCEEDED(hr)
 	{
-		_DTEPtr pDTE = pUnk;
-		if (pDTE) 
+		IUnknownPtr pUnk;
+	#if _MSC_VER >= 1400
+		pUnk.GetActiveObject("VisualStudio.DTE.8.0");
+	#elif _MSC_VER == 1300
+		pUnk.GetActiveObject("VisualStudio.DTE.7.1");
+	#endif
+		if (pUnk != NULL) 
 		{
-			DebuggerPtr pDebugger;
-			if (SUCCEEDED(pDTE->get_Debugger(&pDebugger)) && pDebugger != NULL)
+			_DTEPtr pDTE = pUnk;
+			if (pDTE) 
 			{
-				ProcessesPtr pProcesses;
-				if (SUCCEEDED(pDebugger->get_LocalProcesses(&pProcesses)) && pProcesses != NULL)
+				DebuggerPtr pDebugger;
+				if (SUCCEEDED(pDTE->get_Debugger(&pDebugger)) && pDebugger != NULL)
 				{
-					long our_pid = GetCurrentProcessId();
-					long lCount = 0;
-					pProcesses->get_Count(&lCount);
-					for (long i=1;i<=lCount;++i)
+					ProcessesPtr pProcesses;
+					if (SUCCEEDED(pDebugger->get_LocalProcesses(&pProcesses)) && pProcesses != NULL)
 					{
-						ProcessPtr pProcess;
-						if (SUCCEEDED(pProcesses->Item(variant_t(i),&pProcess)) && pProcess != NULL)
+						long lCount = 0;
+						pProcesses->get_Count(&lCount);
+						for (long i=1;i<=lCount;++i)
 						{
-							long pid = 0;
-							if (SUCCEEDED(pProcess->get_ProcessID(&pid)))
+							ProcessPtr pProcess;
+							if (SUCCEEDED(pProcesses->Item(variant_t(i),&pProcess)) && pProcess != NULL)
 							{
-								if (pid == our_pid)
+								long pid = 0;
+								if (SUCCEEDED(pProcess->get_ProcessID(&pid)))
 								{
-									if (SUCCEEDED(pProcess->Attach()))
-										bRet = true;
+									if (static_cast<DWORD>(pid) == our_pid)
+									{
+										if SUCCEEDED(pProcess->Attach())
+											bRet = true;
 
-									break;
+										break;
+									}
 								}
 							}
 						}
 					}
 				}
 			}
+
+			pUnk.Release();
 		}
-    }
-    CoUninitialize();
+		CoUninitialize();
+	}
+
     return bRet;	
 
 #endif
 }
 
-static void PromptForDebugger()
+static void PromptForDebugger(DWORD pid)
 {
 	wchar_t szBuf[256];
-	ACE_OS::snprintf(szBuf,256,L"Attach the debugger to process id %ld now if you want!",GetCurrentProcessId());
+	ACE_OS::snprintf(szBuf,256,L"Attach the debugger to process id %lu now if you want!",pid);
 	MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
-void AttachDebugger()
+void AttachDebugger(DWORD pid)
 {
-	if (AttachVS8Debugger())
+	if (AttachVS8Debugger(pid))
 		return;
 
-	PromptForDebugger();
+	PromptForDebugger(pid);
 }
 
 #endif // OMEGA_DEBUG

@@ -30,16 +30,16 @@ namespace Root
 		
 
 		// User -> Root
-		KeyExists,
+		KeyExists = 0x80,
 		CreateKey,
 		DeleteKey,
 		EnumSubKeys,
 		ValueType,
 		GetStringValue,
-		GetUInt32Value,
+		GetIntegerValue,
 		GetBinaryValue,
 		SetStringValue,
-		SetUInt32Value,
+		SetIntegerValue,
 		SetBinaryValue,
 		EnumValues,
 		DeleteValue,

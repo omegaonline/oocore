@@ -143,9 +143,9 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 	pParamsOut.Attach(m_pManager->CreateOutputStream());
 
 	pParamsOut->WriteUInt32(m_proxy_id);
-	write_guid(pParamsOut,OMEGA_UUIDOF(IObject));
+	pParamsOut->WriteGuid(OMEGA_UUIDOF(IObject));
 	pParamsOut->WriteUInt32(1);
-	write_guid(pParamsOut,iid);
+	pParamsOut->WriteGuid(iid);
     
 	Serialize::IFormattedStream* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
@@ -235,7 +235,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_
 	}
 	catch (std::exception& e)
 	{
-		return System::MetaInfo::return_safe_exception(IException::Create(string_t(e.what(),false),OMEGA_SOURCE_INFO));
+		return System::MetaInfo::return_safe_exception(ISystemException::Create(e,OMEGA_SOURCE_INFO));
 	}
 	catch (IException* pE)
 	{
@@ -251,10 +251,10 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 	pParamsOut.Attach(m_pManager->CreateOutputStream());
 
 	pParamsOut->WriteUInt32(m_proxy_id);
-	write_guid(pParamsOut,OMEGA_UUIDOF(IObject));
+	pParamsOut->WriteGuid(OMEGA_UUIDOF(IObject));
 	pParamsOut->WriteUInt32(2);
 
-	write_guid(pParamsOut,iid);
+	pParamsOut->WriteGuid(iid);
 	m_pManager->MarshalInterface(pParamsOut,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pObjectManager);
     
 	Serialize::IFormattedStream* pParamsIn = 0;
@@ -269,9 +269,9 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 		ptrE.Attach(pE2);
 
 		pParamsOut->ReadUInt32();
-		read_guid(pParamsOut);
+		pParamsOut->ReadGuid();
 		pParamsOut->ReadUInt32();
-		read_guid(pParamsOut);
+		pParamsOut->ReadGuid();
 		m_pManager->ReleaseMarshalData(pParamsOut,OMEGA_UUIDOF(Remoting::IObjectManager),pObjectManager);
 
 		throw ptrE.AddRefReturn();
@@ -284,7 +284,7 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 
 	// Read the new stub's key
 	uint32_t ret = ptrParamsIn->ReadUInt32();
-	read_guid(ptrParamsIn);
+	ptrParamsIn->ReadGuid();
 	return ret;
 }
 
@@ -299,7 +299,7 @@ void OOCore::WireProxy::CallRemoteRelease()
 		pParamsOut.Attach(m_pManager->CreateOutputStream());
 
 		pParamsOut->WriteUInt32(m_proxy_id);
-		write_guid(pParamsOut,OMEGA_UUIDOF(IObject));
+		pParamsOut->WriteGuid(OMEGA_UUIDOF(IObject));
 		pParamsOut->WriteUInt32(0);
 
 		pParamsOut->WriteUInt32(m_marshal_count.value());

@@ -417,7 +417,7 @@ namespace Omega
 			};*/
 
 			OMEGA_DECLARE_FORWARDS(IException,Omega,IException,Omega,IObject)
-
+			
 			template <class I> class auto_iface_ptr
 			{
 			public:
@@ -849,9 +849,11 @@ namespace Omega
 						}
 						catch (std::exception& e)
 						{ 
-							OMEGA_THROW(string_t(e.what(),false));
+							OMEGA_THROW(e);
 						}
 
+						// If this blows up then you have failed to AddRef() an out parameter 
+						// or a return value.  It gets me all the time!
 						m_pObj->Release();
 
 						if (m_pincount == 0)
@@ -875,7 +877,7 @@ namespace Omega
 					}
 					catch (std::exception& e)
 					{ 
-						OMEGA_THROW(string_t(e.what(),false));
+						OMEGA_THROW(e);
 					}
 				}
 
@@ -891,7 +893,7 @@ namespace Omega
 					}
 					catch (std::exception& e)
 					{ 
-						OMEGA_THROW(string_t(e.what(),false));
+						OMEGA_THROW(e);
 					}
 
 					if (--m_pincount==0 && m_refcount==0)

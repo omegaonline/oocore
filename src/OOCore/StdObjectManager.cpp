@@ -170,7 +170,7 @@ OOCore::StdObjectManager::~StdObjectManager()
 void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel, Remoting::MarshalFlags_t marshal_flags)
 {
 	if (m_ptrChannel)
-		OMEGA_THROW_ERRNO(EALREADY);
+		OMEGA_THROW(EALREADY);
 
 	m_ptrChannel = pChannel;
 	m_marshal_flags = marshal_flags;
@@ -179,7 +179,7 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel, Remoting::M
 void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
 {
 	if (!pParamsIn)
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	// Assume we succeed...
 	if (pParamsOut)
@@ -196,8 +196,8 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 			OMEGA_THROW(L"Async CreateRemoteInstance!");
 				
 		// Read the oid and iid
-		guid_t oid = read_guid(pParamsIn);
-		guid_t iid = read_guid(pParamsIn);
+		guid_t oid = pParamsIn->ReadGuid();
+		guid_t iid = pParamsIn->ReadGuid();
 
 		// Read the outer object
 		IObject* pOuter = 0;
@@ -239,7 +239,7 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	if (pE)
 		throw pE;
 	else if (err != 0)
-		OMEGA_THROW_ERRNO(err);
+		OMEGA_THROW(err);
 }
 
 void OOCore::StdObjectManager::Disconnect()
@@ -300,7 +300,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(Serialize::IFormattedStream* p
 Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 {
 	if (!m_ptrChannel)
-		OMEGA_THROW_ERRNO(EINVAL);
+		OMEGA_THROW(EINVAL);
 
 	return m_ptrChannel->CreateOutputStream();
 }
@@ -526,7 +526,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 	}
 	catch (std::exception& e)
 	{
-		return System::MetaInfo::return_safe_exception(IException::Create(string_t(e.what(),false),OMEGA_SOURCE_INFO));
+		return System::MetaInfo::return_safe_exception(ISystemException::Create(e,OMEGA_SOURCE_INFO));
 	}
 	catch (IException* pE)
 	{
@@ -597,13 +597,13 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 				System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(ppObjS));
 		}
 		else
-			OMEGA_THROW_ERRNO(EINVAL);
+			OMEGA_THROW(EINVAL);
 
 		return 0;
 	}
 	catch (std::exception& e)
 	{
-		return System::MetaInfo::return_safe_exception(IException::Create(string_t(e.what(),false),OMEGA_SOURCE_INFO));
+		return System::MetaInfo::return_safe_exception(ISystemException::Create(e,OMEGA_SOURCE_INFO));
 	}
 	catch (IException* pE)
 	{
@@ -650,7 +650,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 
 			// If there is no stub... what are we unmarshalling?
 			if (ptrStub)
-				OMEGA_THROW_ERRNO(EINVAL);
+				OMEGA_THROW(EINVAL);
 			
 			// Read the data
 			return ptrStub->ReleaseMarshalData(pStream,*piid);
@@ -664,7 +664,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 				return pSE;
 			
 			if (!pMarshal)
-				OMEGA_THROW_ERRNO(EINVAL);
+				OMEGA_THROW(EINVAL);
 
 			System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class> ptrMarshal(static_cast<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class*>(pMarshal));
 
@@ -678,7 +678,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 		}
 		else
 		{
-			OMEGA_THROW_ERRNO(EINVAL);
+			OMEGA_THROW(EINVAL);
 		}
 	}
 	catch (IException* pE)
@@ -687,7 +687,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 	}
 	catch (std::exception& e)
 	{
-		return System::MetaInfo::return_safe_exception(IException::Create(string_t(e.what(),false),OMEGA_SOURCE_INFO));
+		return System::MetaInfo::return_safe_exception(ISystemException::Create(e,OMEGA_SOURCE_INFO));
 	}
 }
 
@@ -726,8 +726,8 @@ void OOCore::StdObjectManager::CreateRemoteInstance(const guid_t& oid, const gui
 	ptrParamsOut.Attach(CreateOutputStream());
 
 	ptrParamsOut->WriteUInt32(0);
-	write_guid(ptrParamsOut,oid);
-	write_guid(ptrParamsOut,iid);
+	ptrParamsOut->WriteGuid(oid);
+	ptrParamsOut->WriteGuid(iid);
 	MarshalInterface(ptrParamsOut,OMEGA_UUIDOF(IObject),pOuter);
 
 	Serialize::IFormattedStream* pParamsIn = 0;

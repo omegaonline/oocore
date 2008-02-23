@@ -35,40 +35,53 @@
 #define OOSERVER_REGISTRY_HIVE_H_INCLUDED_
 
 #include "./OOServer_Root.h"
+#include "./Database.h"
 
 namespace Root
 {
 
-class RegistryHive : private ACE_Configuration_Heap
+class RegistryHive
 {
 public:
-	RegistryHive();
+	RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex>& db);
+	
+	int open();
+	
+	int open_key(ACE_INT64& uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id);
+	int create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool bFailIfThere, int access, ACE_CDR::ULong channel_id);
+	int delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id);
+	int enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, std::list<ACE_CString>& listSubKeys);
+	void enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
+	int enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, std::list<ACE_CString>& listValues);
+	void enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
+	int delete_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id);
 
-	int open(const ACE_WString& strHive);
+	int get_value_type(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::Octet& type);
+	int get_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CString& val);
+	int get_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::LongLong& val);
+	void get_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong cbLen, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
+	
+	int set_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const char* val);
+	int set_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CDR::LongLong& val);
+	int set_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_InputCDR& request);
 
-	int create_key(const ACE_WString& strKey, bool bFailIfThere);
-	int delete_key(const ACE_WString& strKey, const ACE_WString& strSubKey);
-	int key_exists(const ACE_WString& strKey);
-	int enum_subkeys(const ACE_WString& strKey, std::list<ACE_WString>& listSubKeys);
-	void enum_subkeys(const ACE_WString& strKey, ACE_OutputCDR& response);
-	int enum_values(const ACE_WString& strKey, std::list<ACE_WString>& listValues);
-	void enum_values(const ACE_WString& strKey, ACE_OutputCDR& response);
-	int delete_value(const ACE_WString& strKey, const ACE_WString& strValue);
-
-	int get_value_type(const ACE_WString& strKey, const ACE_WString& strValue, ACE_CDR::Octet& type);
-	int get_string_value(const ACE_WString& strKey, const ACE_WString& strValue, ACE_WString& val);
-	int get_integer_value(const ACE_WString& strKey, const ACE_WString& strValue, ACE_CDR::ULong& val);
-	void get_binary_value(const ACE_WString& strKey, const ACE_WString& strValue, ACE_CDR::ULong cbLen, ACE_OutputCDR& response);
-
-	int set_string_value(const ACE_WString& strKey, const ACE_WString& strValue, const wchar_t* val);
-	int set_integer_value(const ACE_WString& strKey, const ACE_WString& strValue, ACE_CDR::ULong val);
-	int set_binary_value(const ACE_WString& strKey, const ACE_WString& strValue, const ACE_InputCDR& request);
+#ifdef ACE_WIN32
+	int get_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, ACE_WString& val);
+	int set_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, const ACE_WString& val);
+#endif
 
 private:
 	ACE_Thread_Mutex m_lock;
+	ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> m_db;
 
 	RegistryHive(const RegistryHive&) {}
 	RegistryHive& operator = (const RegistryHive&) { return *this; }
+
+	int find_key(ACE_INT64 uParent, const ACE_CString& strSubKey, ACE_INT64& uKey, int& access_mask);
+	int find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& access_mask, ACE_CDR::ULong channel_id);
+	int insert_key(ACE_INT64& uKey, ACE_CString strSubKey, int access_mask);
+	int check_key_exists(const ACE_INT64& uKey, int& access_mask);
+	int delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong channel_id);
 };
 
 }

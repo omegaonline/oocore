@@ -44,7 +44,7 @@
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \
-		if (POINTER == 0) { OMEGA_THROW_ERRNO(ENOMEM); } \
+		if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
 	} while (0)
 
 #define OMEGA_IMPORT __declspec(dllimport)

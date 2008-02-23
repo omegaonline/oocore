@@ -109,6 +109,25 @@ size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
 	return string_t_toutf8(m_handle,sz,size);
 }
 
+inline std::string Omega::string_t::ToUTF8() const
+{
+	std::string str;
+	char szBuf[256];
+	size_t len = ToUTF8(szBuf,256);
+	if (len > 256)
+	{
+		char* pszBuf;
+		OMEGA_NEW(pszBuf,char[len]);
+		ToUTF8(pszBuf,len);
+		str = pszBuf;
+		delete [] pszBuf;
+	}
+	else
+		str = szBuf;
+
+	return str;
+}
+
 OMEGA_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,h,(in),const void*,h2));
 Omega::string_t& Omega::string_t::operator += (const string_t& s)
 {

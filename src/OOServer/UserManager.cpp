@@ -30,23 +30,28 @@
 #include <vld.h>
 #endif
 
-#if defined(ACE_WIN32) && defined(OMEGA_DEBUG)
-void AttachDebugger();
-#endif
-
 BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 END_PROCESS_OBJECT_MAP()
 
-int UserMain(const ACE_WString& strPipe, bool bDebug)
+#ifdef OMEGA_DEBUG
+void AttachDebugger(DWORD pid);
+#endif
+
+int UserMain(const ACE_WString& strPipe)
 {
 	u_long options = ACE_Log_Msg::SYSLOG;
 
 #if defined(OMEGA_DEBUG)
-	if (bDebug)
+	// If this event exists, then we are being debugged
+	HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+	if (hDebugEvent)
 	{
-		AttachDebugger();
 		options = ACE_Log_Msg::STDERR;
+
+		// Wait for a bit, letting the caller attach a debugger
+		WaitForSingleObject(hDebugEvent,60000);
+		CloseHandle(hDebugEvent);
 	}
 #endif
 
@@ -61,6 +66,9 @@ using namespace OTL;
 
 namespace User
 {
+	void ExecProcess(ACE_Process& process, const string_t& strExeName);
+	ACE_WString ShellParse(const wchar_t* pszFile);
+
 	class InterProcessService :
 		public ObjectBase,
 		public Remoting::IInterProcessService
@@ -89,7 +97,97 @@ namespace User
 	public:
 		Omega::Registry::IRegistryKey* GetRegistry();
 		Activation::IRunningObjectTable* GetRunningObjectTable();
+		void GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 	};
+}
+
+ACE_WString User::ShellParse(const wchar_t* pszFile)
+{
+	ACE_WString strRet = pszFile;
+
+#if defined(OMEGA_WIN32)
+		
+	const wchar_t* pszExt = PathFindExtensionW(pszFile);
+	if (pszExt)
+	{
+		DWORD dwLen = 1024;
+		wchar_t szBuf[1024];	
+		HRESULT hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
+		if (hRes == S_OK)
+			strRet = szBuf;
+		else if (hRes == E_POINTER)
+		{
+			wchar_t* pszBuf = new wchar_t[dwLen+1];
+			hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
+			if (hRes==S_OK)
+				strRet = pszBuf;
+
+			delete [] pszBuf;
+		}
+
+		if (hRes == S_OK)
+		{
+			LPVOID lpBuffer = 0;
+			if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+				strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
+			{
+				strRet = (LPWSTR)lpBuffer;
+				LocalFree(lpBuffer);
+			}
+		}
+	}
+
+#endif
+
+	return strRet;
+}
+
+void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
+{
+	// Set the process options 
+	ACE_Process_Options options(0);
+	options.avoid_zombies(0);
+	options.handle_inheritence(0);
+
+	// Do a ShellExecute style lookup for the actual thing to call..
+	ACE_WString strActualName = ShellParse(strExeName.c_str());
+
+	if (options.command_line(strActualName.c_str()) == -1)
+		OOSERVER_THROW_LASTERROR();
+
+	// Set the creation flags
+	u_long flags = 0;
+#if defined(OMEGA_WIN32)
+	flags |= CREATE_NEW_CONSOLE;
+
+#if defined(OMEGA_DEBUG)
+	HANDLE hDebugEvent = NULL;
+	if (IsDebuggerPresent())
+	{
+		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
+			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+	}
+#endif
+#endif
+
+	options.creation_flags(flags);
+
+	// Spawn the process
+	if (process.spawn(options)==ACE_INVALID_PID)
+		OOSERVER_THROW_LASTERROR();
+
+#if defined(OMEGA_WIN32) && defined(OMEGA_DEBUG)
+	if (IsDebuggerPresent())
+	{
+		AttachDebugger(process.getpid());
+		if (hDebugEvent)
+		{
+			SetEvent(hDebugEvent);
+			CloseHandle(hDebugEvent);
+		}
+	}
+#endif
 }
 
 Registry::IRegistryKey* User::InterProcessService::GetRegistry()
@@ -115,7 +213,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 			else
 			{
 				ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
-				ptrKey->Init(m_pManager,L"");
+				ptrKey->Init(m_pManager,L"",0);
 				
 				m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
 			}
@@ -148,6 +246,76 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	}
 
 	return m_ptrROT.AddRefReturn();
+}
+
+void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+{
+	// Make sure we have a registry pointer...
+	if (!m_ptrReg)
+		GetRegistry()->Release();
+
+	// And a ROT
+	if (!m_ptrROT)
+		GetRunningObjectTable()->Release();
+
+	// Change this to use monikers,
+	// Make the monikers record whether a process is single instance or whatever
+	// Also include in the entry whether an entry is currently being started
+	void* TODO; 
+
+	// Try RunningObjectTable first
+	ObjectPtr<IObject> ptrObject;
+	ptrObject.Attach(m_ptrROT->GetObject(oid));
+	if (ptrObject)
+	{
+		pObject = ptrObject->QueryInterface(iid);
+		if (!pObject)
+			throw INoInterfaceException::Create(iid);
+		return;
+	}
+	
+	if (!(flags & Activation::DontLaunch))
+	{
+		// Lookup OID
+		ObjectPtr<Omega::Registry::IRegistryKey> ptrOidsKey = m_ptrReg.OpenSubKey(L"Objects\\OIDs");
+		if (ptrOidsKey->IsSubKey(oid.ToString()))
+		{
+			ObjectPtr<Omega::Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
+			
+			// Find the name of the executeable to run
+			ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = m_ptrReg.OpenSubKey(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
+
+			// Launch the executeable
+			ACE_Process process;
+			ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
+
+			// The timeout needs to be related to the request timeout...
+			void* TODO;
+
+			// Wait for startup
+			ACE_Time_Value wait(15);
+			ACE_Countdown_Time timeout(&wait);
+			while (wait != ACE_Time_Value::zero)
+			{
+				ObjectPtr<IObject> ptrObject;
+				ptrObject.Attach(m_ptrROT->GetObject(oid));
+				if (ptrObject)
+				{
+					pObject = ptrObject->QueryInterface(iid);
+					if (!pObject)
+						throw INoInterfaceException::Create(iid);
+					return;
+				}
+
+				// Check if the process is still running...
+				if (!process.running())
+					break;
+
+				// Update our countdown
+				timeout.update();
+			}
+		}
+	}
 }
 
 // UserManager
@@ -517,8 +685,8 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 			// Error code 1 - Exception raw
 			error.write_octet(1);
-			error.write_string(string_t_to_utf8(pOuter->Description()));
-			error.write_string(string_t_to_utf8(pOuter->Source()));
+			error.write_string(pOuter->Description().ToUTF8().c_str());
+			error.write_string(pOuter->Source().ToUTF8().c_str());
 
 			send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs);
 		}
@@ -539,7 +707,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 				if (i->second.m_marshal_flags == marshal_flags)
 					return i->second.m_ptrOM;
 
-				OMEGA_THROW_ERRNO(EINVAL);
+				OMEGA_THROW(EINVAL);
 			}
 		}
 
@@ -562,7 +730,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
-				OMEGA_THROW_ERRNO(EINVAL);		
+				OMEGA_THROW(EINVAL);		
 
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}
@@ -571,7 +739,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 

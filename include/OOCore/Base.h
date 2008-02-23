@@ -40,12 +40,15 @@ namespace Omega
 		virtual IException* Cause() = 0;
 		virtual string_t Description() = 0;
 		virtual string_t Source() = 0;
+	};
 
-#if defined(OMEGA_WIN32)
-		inline static IException* Create(DWORD GetLastError_val, const string_t& source = L"", IException* pCause = 0);
-#endif
-		inline static IException* Create(int errno_val, const string_t& source = L"", IException* pCause = 0);
-		inline static IException* Create(const string_t& desc, const string_t& source = L"", IException* pCause = 0);
+	interface ISystemException : public IException
+	{
+		virtual uint32_t ErrorCode() = 0;
+
+		inline static ISystemException* Create(Omega::uint32_t errno_val, const string_t& source = L"");
+		inline static ISystemException* Create(const std::exception& e, const string_t& source = L"");
+		inline static ISystemException* Create(const string_t& desc, const string_t& source = L"");
 	};
 
 	interface INoInterfaceException : public IException
@@ -111,7 +114,6 @@ OMEGA_DEFINE_IID(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u): %ls",__FILE__,__LINE__,Omega::string_t(OMEGA_FUNCNAME,false).c_str()))
 #endif
 
-#define OMEGA_THROW(msg)         throw Omega::IException::Create(msg,OMEGA_SOURCE_INFO)
-#define OMEGA_THROW_ERRNO(e)     throw Omega::IException::Create(e,OMEGA_SOURCE_INFO)
+#define OMEGA_THROW(e)           throw Omega::ISystemException::Create(e,OMEGA_SOURCE_INFO)
 
 #endif // OOCORE_BASE_H_INCLUDED_

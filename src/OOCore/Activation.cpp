@@ -26,6 +26,8 @@ using namespace OTL;
 
 namespace OOCore
 {
+	ObjectPtr<Remoting::IInterProcessService> GetInterProcessService();
+
 	class OidNotFoundException :
 		public ExceptionImpl<Activation::IOidNotFoundException>
 	{
@@ -116,8 +118,6 @@ namespace OOCore
 	typedef ACE_Singleton<ServiceManager, ACE_Thread_Mutex> SERVICE_MANAGER;
 
 	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
-	void ExecProcess(ACE_Process& process, const string_t& strExeName);
-	ACE_WString ShellParse(const wchar_t* pszFile);
 }
 
 void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
@@ -126,7 +126,7 @@ void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 	pNew->m_strDesc = L"The identified object could not be found.";
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
-	throw pNew;
+	throw static_cast<IOidNotFoundException*>(pNew);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
@@ -143,7 +143,7 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 	pRE->m_ptrCause = pE;
 	pRE->m_strDesc = string_t::Format(L"Dynamic library '%ls' not found",strName.c_str());
 	pRE->m_dll_name = strName;
-	throw pRE;
+	throw static_cast<ILibraryNotFoundException*>(pRE);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
@@ -208,10 +208,10 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
 		{
 			if (!(i->second->second.m_reg_flags & Activation::MultipleRegistration))
-				OMEGA_THROW_ERRNO(EALREADY);
+				OMEGA_THROW(EALREADY);
 
 			if (i->second->second.m_reg_flags == reg_flags)
-				OMEGA_THROW_ERRNO(EALREADY);
+				OMEGA_THROW(EALREADY);
 		}
 
 		// Create a new cookie
@@ -229,7 +229,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 		if (!p.second)
-			OMEGA_THROW_ERRNO(EALREADY);
+			OMEGA_THROW(EALREADY);
 
 		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));	
 
@@ -240,7 +240,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		if (flags & Activation::OutOfProcess)
 			ptrROT->Revoke(oid);
 
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 	catch (...)
 	{
@@ -273,7 +273,7 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 	}
 	catch (std::exception& e)
 	{ 
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 
@@ -289,7 +289,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 
 			std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
 			if (i == m_mapServicesByCookie.end())
-				OMEGA_THROW_ERRNO(EINVAL);
+				OMEGA_THROW(EINVAL);
 
 			bUnROT = ((i->second.m_flags & Activation::OutOfProcess) == Activation::OutOfProcess);
 			oid = i->second.m_oid;
@@ -310,7 +310,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 	}
 	catch (std::exception& e)
 	{ 
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 
@@ -353,73 +353,6 @@ IObject* OOCore::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, 
 	return pObj;
 }
 
-ACE_WString OOCore::ShellParse(const wchar_t* pszFile)
-{
-	ACE_WString strRet = pszFile;
-
-#if defined(OMEGA_WIN32)
-		
-	const wchar_t* pszExt = PathFindExtensionW(pszFile);
-	if (pszExt)
-	{
-		DWORD dwLen = 1024;
-		wchar_t szBuf[1024];	
-		HRESULT hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
-		if (hRes == S_OK)
-			strRet = szBuf;
-		else if (hRes == E_POINTER)
-		{
-			wchar_t* pszBuf = new wchar_t[dwLen+1];
-			hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
-			if (hRes==S_OK)
-				strRet = pszBuf;
-
-			delete [] pszBuf;
-		}
-
-		if (hRes == S_OK)
-		{
-			LPVOID lpBuffer = 0;
-			if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-				strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
-			{
-				strRet = (LPWSTR)lpBuffer;
-				LocalFree(lpBuffer);
-			}
-		}
-	}
-
-#endif
-
-	return strRet;
-}
-
-void OOCore::ExecProcess(ACE_Process& process, const string_t& strExeName)
-{
-	// Set the process options 
-	ACE_Process_Options options(0);
-	options.avoid_zombies(0);
-	options.handle_inheritence(0);
-
-	// Do a ShellExecute style lookup for the actual thing to call..
-	ACE_WString strActualName = ShellParse(strExeName.c_str());
-
-	if (options.command_line(strActualName.c_str()) == -1)
-		OOCORE_THROW_LASTERROR();
-
-	// Set the creation flags
-	u_long flags = 0;
-#if defined(OMEGA_WIN32)
-	flags |= CREATE_NEW_CONSOLE;
-#endif
-	options.creation_flags(flags);
-
-	// Spawn the process
-	if (process.spawn(options)==ACE_INVALID_PID)
-		OOCORE_THROW_LASTERROR();
-}
-
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_t&,strObjectName))
 {
 	string_t strCurName = strObjectName;
@@ -455,88 +388,28 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		if (pObject)
 			return;
 		
-		// Try RunningObjectTable if OutOfProcess
-		if (flags & Activation::OutOfProcess)
-		{
-			void* TODO; // Change this to use monikers
-
-			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-			ObjectPtr<IObject> ptrObject;
-			ptrObject.Attach(ptrROT->GetObject(oid));
-			if (ptrObject)
-			{
-				pObject = ptrObject->QueryInterface(iid);
-				if (!pObject)
-					throw INoInterfaceException::Create(iid);
-				return;
-			}
-		}
-
-		if (!(flags & Activation::DontLaunch))
+		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{
 			// Use the registry
 			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(L"\\Objects\\OIDs");
 			if (ptrOidsKey->IsSubKey(oid.ToString()))
 			{
 				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
-
-				if (flags & Activation::InProcess)
+				if (ptrOidKey->IsValue(L"Library"))
 				{
-					if (ptrOidKey->IsValue(L"Library"))
-					{
-						pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
-						if (pObject)
-							return;
-					}
-				}
-
-				if (flags & Activation::OutOfProcess)
-				{
-					// Find the name of the executeable to run
-					ObjectPtr<Registry::IRegistryKey> ptrServer(L"\\Applications\\" + ptrOidKey->GetStringValue(L"Application"));
-
-					// Launch the executeable
-					ACE_Process process;
-					OOCore::ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
-
-					// Get the running object table
-					ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-					ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-					// The timeout needs to be related to the request timeout...
-					void* TODO;
-
-					// Wait for startup
-					ACE_Time_Value wait(15);
-					ACE_Countdown_Time timeout(&wait);
-					while (wait != ACE_Time_Value::zero)
-					{
-						void* TODO; // Change this to use monikers
-
-						ObjectPtr<IObject> ptrObject;
-						ptrObject.Attach(ptrROT->GetObject(oid));
-						if (ptrObject)
-						{
-							pObject = ptrObject->QueryInterface(iid);
-							if (!pObject)
-								throw INoInterfaceException::Create(iid);
-							return;
-						}
-
-						// Check if the process is still running...
-						if (!process.running())
-							break;
-
-						// Update our countdown
-						timeout.update();
-					}
-
-					// Kill the process - TODO - Do we *really* want to do this?
-					process.kill();
+					pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
+					if (pObject)
+						return;
 				}
 			}
+		}
+
+		if (flags & Activation::OutOfProcess)
+		{
+			ObjectPtr<Remoting::IInterProcessService> ptrIPC = OOCore::GetInterProcessService();
+			ptrIPC->GetRegisteredObject(oid,flags,iid,pObject);
+			if (pObject)
+				return;
 		}
 	}
 	catch (IException* pE)

@@ -152,7 +152,7 @@ OOCore::UserSession::~UserSession()
 IException* OOCore::UserSession::init()
 {
 	if (!USER_SESSION::instance()->init_i())
-		return IException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
+		return ISystemException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
 	
 	IException* pE = USER_SESSION::instance()->bootstrap();
 	if (pE)
@@ -718,7 +718,8 @@ void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id
 
 		for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
-			i->second->m_msg_queue->pulse();
+			if (i->second->m_usage > 0)
+				i->second->m_msg_queue->pulse();
 		}
 	}
 	catch (std::exception&)
@@ -731,19 +732,13 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 
 	ThreadContext* pContext = ThreadContext::instance();
 
-	// Incrmement the usage count
+	// Increment the usage count
 	++pContext->m_usage;
 
 	for (;;)
 	{
-		// Get the next message
-		Message* msg;
-		if (pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline)) == -1)
+		// Check if the channel we are waiting on is still valid...
 		{
-			if (pContext->m_msg_queue->state() != ACE_Message_Queue_Base::PULSED)
-				break;
-
-			// Check if the channel we are waiting on is still valid...
 			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 			if (guard.locked() == 0)
 				break;
@@ -755,51 +750,59 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 				ACE_OS::last_error(ECONNRESET);
 				break;
 			}
-
-			continue;
 		}
 
-		if (msg->m_flags & Message::Request)
+		// Get the next message
+		Message* msg = 0;
+		if (pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline)) == -1)
 		{
-			// Update deadline
-			ACE_Time_Value old_deadline = pContext->m_deadline;
-			pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
-
-			// Set per channel thread id
-			std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
-			try
-			{
-				i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-				if (i == pContext->m_mapChannelThreads.end())
-					i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
-			}
-			catch (std::exception&)
-			{
-				// This shouldn't ever occur, but that means it will ;)
-				pContext->m_deadline = old_deadline;
-				delete msg;
-				continue;
-			}
-
-			ACE_CDR::UShort old_thread_id = i->second;
-			i->second = msg->m_src_thread_id;
-
-			// Process the message...
-			process_request(msg,pContext->m_deadline);
-
-			// Restore old context
-			pContext->m_deadline = old_deadline;
-			i->second = old_thread_id;
+			if (pContext->m_msg_queue->state() != ACE_Message_Queue_Base::PULSED)
+				break;
 		}
 		else
 		{
-			ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
-			delete msg;
-			bRet = true;
-			break;
-		}
+			if (msg->m_flags & Message::Request)
+			{
+				// Update deadline
+				ACE_Time_Value old_deadline = pContext->m_deadline;
+				pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
 
-		delete msg;
+				// Set per channel thread id
+				std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
+				try
+				{
+					i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+					if (i == pContext->m_mapChannelThreads.end())
+						i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
+				}
+				catch (std::exception&)
+				{
+					// This shouldn't ever occur, but that means it will ;)
+					pContext->m_deadline = old_deadline;
+					delete msg;
+					continue;
+				}
+
+				ACE_CDR::UShort old_thread_id = i->second;
+				i->second = msg->m_src_thread_id;
+
+				// Process the message...
+				process_request(msg,pContext->m_deadline);
+
+				// Restore old context
+				pContext->m_deadline = old_deadline;
+				i->second = old_thread_id;
+			}
+			else
+			{
+				ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
+				delete msg;
+				bRet = true;
+				break;
+			}
+
+			delete msg;
+		}
 	}
 
 	// Decrmement the usage count
@@ -1110,8 +1113,8 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 
 			// Error code 1 - Exception raw
 			error.write_octet(1);
-			error.write_string(string_t_to_utf8(pOuter->Description()));
-			error.write_string(string_t_to_utf8(pOuter->Source()));
+			error.write_string(pOuter->Description().ToUTF8().c_str());
+			error.write_string(pOuter->Source().ToUTF8().c_str());
 
 			send_response(pMsg->m_src_channel_id,pMsg->m_src_thread_id,error.begin());
 		}
@@ -1132,7 +1135,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 				if (i->second.m_marshal_flags == marshal_flags)
 					return i->second.m_ptrOM;
 
-				OMEGA_THROW_ERRNO(EINVAL);
+				OMEGA_THROW(EINVAL);
 			}
 		}
 
@@ -1155,7 +1158,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
-				OMEGA_THROW_ERRNO(EINVAL);		
+				OMEGA_THROW(EINVAL);		
 
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}

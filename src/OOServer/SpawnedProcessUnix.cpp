@@ -134,7 +134,7 @@ extern char **environ;
 
 bool Root::SpawnedProcess::CleanEnvironment()
 {
-	// Add other safe ebvironment variable names here
+	// Add other safe environment variable names here
 	// NOTE: PATH is set by hand!
 	static const char* safe_env_lst[] =
 	{
@@ -143,7 +143,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 		NULL
 	};
 
-	static const int env_max = 256;
+	static const size_t env_max = 256;
 	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*)));
 	if (!cleanenv)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"ACE_OS::calloc() failed!"),false);
@@ -152,7 +152,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	sprintf(pathbuf,"PATH=%s",SAFE_PATH);
 	cleanenv[0] = strdup(pathbuf);
 
-	int cidx = 1;
+	size_t cidx = 1;
 	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
 	{
 		if (!ACE_OS::strncmp(*ep,"OMEGA_",6)==0)
@@ -162,9 +162,9 @@ bool Root::SpawnedProcess::CleanEnvironment()
 		}
 		else
 		{
-			for (int idx = 0; safe_env_lst[idx]; idx++)
+			for (size_t idx = 0; safe_env_lst[idx]; idx++)
 			{
-				if (ACE_OS::strncmp(*ep,safe_env_lst[idx],strlen(safe_env_lst[idx]))==0)
+				if (ACE_OS::strncmp(*ep,safe_env_lst[idx],ACE_OS::strlen(safe_env_lst[idx]))==0)
 				{
 					cleanenv[cidx] = *ep;
 					cidx++;

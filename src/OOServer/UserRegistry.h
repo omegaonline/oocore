@@ -33,7 +33,7 @@ namespace User
 			public Omega::Registry::IRegistryKey
 		{
 		public:
-			void Init(Manager* pManager, const Omega::string_t& strKey);
+			void Init(Manager* pManager, const Omega::string_t& strKey, const ACE_INT64& key);
 			
 			BEGIN_INTERFACE_MAP(Key)
 				INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
@@ -42,16 +42,17 @@ namespace User
 		private:
 			Manager*        m_pManager;
 			Omega::string_t m_strKey;
+			ACE_INT64       m_key;
 
 		// IRegistry members
 		public:
 			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);
 			Omega::bool_t IsValue(const Omega::string_t& strName);
 			Omega::string_t GetStringValue(const Omega::string_t& strName);
-			Omega::uint32_t GetUIntValue(const Omega::string_t& strName);
+			Omega::int64_t GetIntegerValue(const Omega::string_t& strName);
 			void GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen, Omega::byte_t* pBuffer);
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
-			void SetUIntValue(const Omega::string_t& strName, Omega::uint32_t uValue);
+			void SetIntegerValue(const Omega::string_t& strName, const Omega::int64_t& uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
 			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);

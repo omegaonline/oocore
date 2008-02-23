@@ -35,7 +35,7 @@ namespace OOCore
 		UTF_Converter() :
 			m_conv(0)
 		{
-			wchar_t szBuf[] = L"This is my exciting text string, that should hopefully be picked up as the correct native wchar_t encoding";
+			static const wchar_t szBuf[] = L"This is my exciting text string, that should hopefully be picked up as the correct native wchar_t encoding";
 			m_conv = ACE_Encoding_Converter_Factory::create(reinterpret_cast<const ACE_Byte*>(szBuf),sizeof(szBuf));
 		}
 

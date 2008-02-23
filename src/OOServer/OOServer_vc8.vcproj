@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
+				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_DEBUG;OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -129,7 +129,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
+				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -198,6 +198,28 @@
 			<File
 				RelativePath=".\Channel.cpp"
 				>
+			</File>
+			<File
+				RelativePath=".\Database.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\DebuggerWin32.cpp"
@@ -449,6 +471,10 @@
 			>
 			<File
 				RelativePath=".\Channel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Database.h"
 				>
 			</File>
 			<File

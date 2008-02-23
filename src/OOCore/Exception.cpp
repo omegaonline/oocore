@@ -20,39 +20,16 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOCore_precomp.h"
+#include "./Exception.h"
 
 using namespace Omega;
 using namespace OTL;
 
-namespace OOCore
-{
-	class Exception :
-		public ExceptionImpl<IException>
-	{
-	public:
-		BEGIN_INTERFACE_MAP(Exception)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<IException>)
-		END_INTERFACE_MAP()
-	};
+// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
+OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
 
-	class NoInterfaceException :
-		public ExceptionImpl<INoInterfaceException>
-	{
-	public:
-		guid_t m_iid;
-
-		BEGIN_INTERFACE_MAP(NoInterfaceException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<INoInterfaceException>)
-		END_INTERFACE_MAP()
-
-	// INoInterfaceException members
-	public:
-		inline guid_t GetUnsupportedIID()
-		{
-			return m_iid;
-		}
-	};
-}
+// {1E127359-1542-4329-8E30-FED8FF810960}
+OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
 
 #if defined(OMEGA_WIN32)
 static string_t Win32Msg(DWORD dwErr)
@@ -82,23 +59,14 @@ static string_t Win32Msg(DWORD dwErr)
 
 	return strRet;
 }
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create_GLE,3,((in),DWORD,GLE,(in),const string_t&,source,(in),IException*,pCause))
-{
-    ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
-	pExcept->m_ptrCause = pCause;
-	pExcept->m_strSource = source;
-	pExcept->m_strDesc = Win32Msg(GLE);
-	return pExcept;
-}
 #endif
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create_errno,3,((in),int,e,(in),const string_t&,source,(in),IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
 {
-    ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
-	pExcept->m_ptrCause = pCause;
+    ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strSource = source;
 	pExcept->m_strDesc = string_t(ACE_OS::strerror(e),false);
+	pExcept->m_errno = e;
 
 #if defined(OMEGA_WIN32)
 	// If errno is not set, then it isn't a std error
@@ -109,12 +77,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create_errno,3,((in),int,e
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,IException_Create,3,((in),const string_t&,desc,(in),const string_t&,source,(in),IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create,2,((in),const string_t&,desc,(in),const string_t&,source))
 {
-    ObjectImpl<OOCore::Exception>* pExcept = ObjectImpl<OOCore::Exception>::CreateInstance();
-	pExcept->m_ptrCause = pCause;
+    ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strDesc = desc;
 	pExcept->m_strSource = source;
+	pExcept->m_errno = EINVAL;
 	return pExcept;
 }
 

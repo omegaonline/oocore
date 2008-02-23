@@ -67,11 +67,11 @@ void TreeItemData::InitList(wxListCtrl* pList)
 			pList->SetItem(item,1,_("String"));
 			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(strName).c_str()));
 		}
-		else if (type==Omega::Registry::UInt32)
+		else if (type==Omega::Registry::Integer)
 		{
-			Omega::uint32_t val = m_ptrKey->GetUIntValue(strName);
-			pList->SetItem(item,1,_("UInt32"));
-			pList->SetItem(item,2,wxString::Format(wxT("0x%08x (%lu)"),val,val));
+			Omega::int64_t val = m_ptrKey->GetIntegerValue(strName);
+			pList->SetItem(item,1,_("Integer"));
+			pList->SetItem(item,2,wxString::Format(wxT("%lld"),val));
 		}
 		else
 		{
@@ -83,7 +83,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 			if (cbLen==0)
 				val = _("(Zero length binary value)");
 
-			for (size_t j=0;j<cbLen;++j)
+			for (size_t j=0;j<cbLen && j<=128;++j)
 			{
 				val += wxString::Format(wxT("%x "),(int)szBuf[j]);
 			}
@@ -130,10 +130,10 @@ bool TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::stri
 		m_ptrKey->SetStringValue(strTo,val);
 		m_ptrKey->DeleteValue(strFrom);
 	}
-	else if (type==Omega::Registry::UInt32)
+	else if (type==Omega::Registry::Integer)
 	{
-		Omega::uint32_t val = m_ptrKey->GetUIntValue(strFrom);
-		m_ptrKey->SetUIntValue(strTo,val);
+		Omega::uint64_t val = m_ptrKey->GetIntegerValue(strFrom);
+		m_ptrKey->SetIntegerValue(strTo,val);
 		m_ptrKey->DeleteValue(strFrom);
 	}
 	else
@@ -189,10 +189,10 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 			Omega::string_t val = ptrOldKey->GetStringValue(strName);
 			ptrNewKey->SetStringValue(strName,val);
 		}
-		else if (type==Omega::Registry::UInt32)
+		else if (type==Omega::Registry::Integer)
 		{
-			Omega::uint32_t val = ptrOldKey->GetUIntValue(strName);
-			ptrNewKey->SetUIntValue(strName,val);
+			Omega::uint64_t val = ptrOldKey->GetIntegerValue(strName);
+			ptrNewKey->SetIntegerValue(strName,val);
 		}
 		else
 		{
@@ -247,7 +247,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	}
 	if (c >= 100)
 	{
-		wxMessageBox(_("Too many new keys!"),_("new Key"),wxOK|wxICON_INFORMATION,NULL);
+		wxMessageBox(_("Too many new keys!"),_("New Key"),wxOK|wxICON_INFORMATION,NULL);
 		return;
 	}
 
@@ -306,11 +306,11 @@ void TreeItemData::NewUInt(wxListCtrl* pList)
 			break;
 	}
 
-	m_ptrKey->SetUIntValue(strName,0);
+	m_ptrKey->SetIntegerValue(strName,0);
 
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),5);
-	pList->SetItem(item,1,_("UInt32"));
-	pList->SetItem(item,2,wxT("0x00000000 (0)"));
+	pList->SetItem(item,1,_("Integer"));
+	pList->SetItem(item,2,wxT("0x0000000000000000 (0)"));
 
 	pList->EnsureVisible(item);
 	pList->SetFocus();
@@ -359,21 +359,21 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 			pList->SetItem(item_id,2,dialog.m_strValue);
 		}
 	}
-	else if (type == Omega::Registry::UInt32)
+	else if (type == Omega::Registry::Integer)
 	{
 		EditUIntDlg dialog(NULL,-1,wxT(""));
 
 		dialog.m_nBase = 0;
 		dialog.m_strName = wxString(strName.c_str());
-		dialog.m_strValue = wxString::Format(wxT("%x"),m_ptrKey->GetUIntValue(strName));
+		dialog.m_strValue = wxString::Format(wxT("%lld"),m_ptrKey->GetIntegerValue(strName));
 	
 		if (dialog.ShowModal() == wxID_OK)
 		{
-			unsigned long lVal;
-			dialog.m_strValue.ToULong(&lVal,dialog.m_nBase==0 ? 16 : 10);
-			m_ptrKey->SetUIntValue(strName,lVal);
+			wxLongLong_t lVal;
+			dialog.m_strValue.ToLongLong(&lVal,dialog.m_nBase==0 ? 16 : 10);
+			m_ptrKey->SetIntegerValue(strName,lVal);
 
-			pList->SetItem(item_id,2,wxString::Format(wxT("0x%08x (%lu)"),lVal,lVal));
+			pList->SetItem(item_id,2,wxString::Format(wxT("%lld"),lVal));
 		}
 	}
 }

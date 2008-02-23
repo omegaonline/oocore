@@ -47,17 +47,23 @@ Root::Manager::~Manager()
 
 bool Root::Manager::install(int argc, wchar_t* argv[])
 {
-	if (ROOT_MANAGER::instance()->init_registry() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening registry"),false);
+	if (ROOT_MANAGER::instance()->init_database() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening database"),false);
 
 	// Add the default keys
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive = ROOT_MANAGER::instance()->get_registry();
-	ptrHive->create_key(L"All Users",false);
-	ptrHive->create_key(L"Local User",false);
-	ptrHive->create_key(L"Objects",false);
-	ptrHive->create_key(L"Objects\\OIDs",false);
-	ptrHive->create_key(L"Server",false);
-	ptrHive->create_key(L"Server\\Sandbox",false);
+	ACE_INT64 key = 0;
+	ptrHive->create_key(key,"All Users",false,7,0);
+	key = 0;
+	ptrHive->create_key(key,"Local User",false,7,0);
+	key = 0;
+	ptrHive->create_key(key,"Applications",false,5,0);
+	key = 0;
+	ptrHive->create_key(key,"Objects",false,5,0);
+	ptrHive->create_key(key,"OIDs",false,5,0);
+	key = 0;
+	ptrHive->create_key(key,"Server",false,4,0);
+	ptrHive->create_key(key,"Sandbox",false,4,0);
 
 	// Set up the sandbox user
 	if (!SpawnedProcess::InstallSandbox(argc,argv))
@@ -72,8 +78,8 @@ bool Root::Manager::install(int argc, wchar_t* argv[])
 
 bool Root::Manager::uninstall()
 {
-	if (ROOT_MANAGER::instance()->init_registry() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening registry"),false);
+	if (ROOT_MANAGER::instance()->init_database() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening database"),false);
 
 	if (!SpawnedProcess::UninstallSandbox())
 		return false;
@@ -161,7 +167,7 @@ ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void* pParam)
 bool Root::Manager::init()
 {
 	// Open the root registry
-	if (init_registry() != 0)
+	if (init_database() != 0)
 		return false;
 
 	// Setup the handler
@@ -178,31 +184,29 @@ bool Root::Manager::init()
 	return true;
 }
 
-int Root::Manager::init_registry()
+int Root::Manager::init_database()
 {
-	ACE_NEW_RETURN(m_registry,RegistryHive(),-1);
-
 #if defined(ACE_WIN32)
 
-	wchar_t szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+	char szBuf[MAX_PATH] = {0};
+	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: SHGetFolderPath failed: %#x\n",GetLastError()),-1);
 	else
 	{
-		wchar_t szBuf2[MAX_PATH] = {0};
-		if (!PathCombineW(szBuf2,szBuf,L"Omega Online"))
+		char szBuf2[MAX_PATH] = {0};
+		if (!PathCombineA(szBuf2,szBuf,"Omega Online"))
 			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: PathCombine failed: %#x\n",GetLastError()),-1);
 		else
 		{
-			if (!PathFileExistsW(szBuf2))
+			if (!PathFileExistsA(szBuf2))
 			{
 				int ret = ACE_OS::mkdir(szBuf2);
 				if (ret != 0)
 					ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"mkdir failed"),-1);
 			}
 
-			if (!PathCombineW(szBuf,szBuf2,L"system.regdb"))
+			if (!PathCombineA(szBuf,szBuf2,"system.regdb"))
 				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: PathCombine failed: %#x\n",GetLastError()),-1);
 			else
 				m_strRegistry = szBuf;
@@ -211,7 +215,7 @@ int Root::Manager::init_registry()
 
 #else
 
-	#define OMEGA_REGISTRY_DIR L"/var/lib/omegaonline"
+	#define OMEGA_REGISTRY_DIR "/var/lib/omegaonline"
 
 	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
@@ -219,13 +223,21 @@ int Root::Manager::init_registry()
 		if (err != EEXIST)
 			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"mkdir failed"),-1);
 	}
-	m_strRegistry = OMEGA_REGISTRY_DIR L"/system.regdb";
+	m_strRegistry = OMEGA_REGISTRY_DIR "/system.regdb";
 
 #endif
 
-	if (m_registry->open(m_strRegistry.c_str()) != 0)
+	// Create a new database
+	ACE_NEW_RETURN(m_db,Db::Database(),-1);
+
+	if (m_db->open(m_strRegistry) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"registry open() failed"),-1);
 
+	ACE_NEW_RETURN(m_registry,RegistryHive(m_db),-1);
+
+	if (m_registry->open() != 0)
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"registry open() failed"),-1);
+	
 	return 0;
 }
 
@@ -356,8 +368,16 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 			bool bOk = true;
 			if (ptrRegistry.null())
 			{
-				ACE_NEW_NORETURN(ptrRegistry,RegistryHive);
-				bOk = (!ptrRegistry.null() && ptrRegistry->open(pSpawn->GetRegistryHive())==0);
+				bOk = false;
+
+				// Create a new database
+				ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> db;
+				ACE_NEW_NORETURN(db,Db::Database());
+				if (!db.null() && db->open(pSpawn->GetRegistryHive()) == 0)
+				{
+					ACE_NEW_NORETURN(ptrRegistry,RegistryHive(db));
+					bOk = (!ptrRegistry.null() && ptrRegistry->open()==0);
+				}
 			}
 
 			if (bOk)
@@ -574,8 +594,8 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 		registry_get_string_value(src_channel_id,request,response);
 		break;
 
-	case GetUInt32Value:
-		registry_get_uint_value(src_channel_id,request,response);
+	case GetIntegerValue:
+		registry_get_int_value(src_channel_id,request,response);
 		break;
 
 	case GetBinaryValue:
@@ -586,8 +606,8 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 		registry_set_string_value(src_channel_id,request,response);
 		break;
 
-	case SetUInt32Value:
-		registry_set_uint_value(src_channel_id,request,response);
+	case SetIntegerValue:
+		registry_set_int_value(src_channel_id,request,response);
 		break;
 
 	case SetBinaryValue:
@@ -612,60 +632,81 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 		send_response(src_channel_id,src_thread_id,response.begin(),deadline,attribs);
 }
 
-// Annoyingly this is missing from ACE...  A direct lift and translate of the ACE_CString version
-static ACE_CDR::Boolean read_wstring(ACE_InputCDR& stream, ACE_WString& x)
+int Root::Manager::registry_access_check(ACE_CDR::ULong channel_id)
 {
-	ACE_CDR::WChar *data = 0;
-	if (stream.read_wstring(data))
-	{
-		x = data;
-		delete [] data;
-		return true;
-	}
+	Root::Manager* pThis = ROOT_MANAGER::instance();
 
-	x = L"";
-	return stream.good_bit();
+	ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,pThis->m_lock,ACE_OS::last_error());
+
+	// Find the process info
+	std::map<ACE_CDR::ULong,UserProcess>::iterator i = pThis->m_mapUserProcesses.find(channel_id);
+	if (i == pThis->m_mapUserProcesses.end())
+		return EINVAL;
+
+	// Check access
+	bool bAllowed = false;
+	if (!i->second.pSpawn->CheckAccess(pThis->m_strRegistry.c_str(),O_RDWR,bAllowed))
+		return ACE_OS::last_error();
+	else if (!bAllowed)
+		return EACCES;
+	else
+		return 0;
 }
 
-int Root::Manager::registry_open_hive(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_WString& strKey, bool bForWrite)
+int Root::Manager::registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& channel_id, const ACE_CString& strSubKey, bool& bCurrent, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive)
 {
-	// Read strKey
-	if (!read_wstring(request,strKey))
+	int err = 0;
+	if (uKey == 0)
+	{
+		// Parse strKey
+		if (strSubKey.substr(0,11) == "Local User\\")
+		{
+			//strSubKey = strSubKey.substr(11);
+			bCurrent = true;
+		}
+		else if (strSubKey == "Local User")
+		{
+			//strSubKey.clear();
+			bCurrent = true;
+		}
+		
+		if (bCurrent)
+		{
+			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+			if (guard.locked() == 0)
+				err = ACE_OS::last_error();
+			else
+			{
+				// Find the process info
+				std::map<ACE_CDR::ULong,UserProcess>::iterator i = m_mapUserProcesses.find(channel_id);
+				if (i == m_mapUserProcesses.end())
+					err = EINVAL;
+				else
+				{
+					// Get the registry hive
+					ptrHive = i->second.ptrRegistry;
+
+					// Clear channel id -  not used for user content
+					channel_id = 0;
+				}
+			}
+		}
+	}
+
+	return err;
+}
+
+int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_INT64& uKey, bool& bCurrent)
+{
+	// Read uKey
+	if (!request.read_longlong(uKey))
 		return ACE_OS::last_error();
 
-	bool bCurrent = false;
-	if (!strKey.empty())
+	if (uKey < 0)
 	{
-		if (strKey[0] != L'\\')
-			return EINVAL;
+		bCurrent = true;
+		uKey = -uKey;
 
-		// Parse strKey
-		if (strKey.substr(0,12) == L"\\Local User\\")
-		{
-			strKey = strKey.substr(12);
-			bCurrent = true;
-		}
-		else if (strKey == L"\\Local User")
-		{
-			strKey.clear();
-			bCurrent = true;
-		}
-		else
-		{
-			// Drop leading '\'
-			strKey = strKey.substr(1);
-		}
-	}
-	
-	bool bAccessCheck = (!bCurrent && bForWrite);
-	if (bAccessCheck)
-	{
-		if (strKey.substr(0,10) == L"\\All Users\\" || strKey == L"\\All Users")
-			bAccessCheck = false;
-	}
-	
-	if (bAccessCheck || bCurrent)
-	{
 		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
 
 		// Find the process info
@@ -673,108 +714,116 @@ int Root::Manager::registry_open_hive(ACE_CDR::ULong channel_id, ACE_InputCDR& r
 		if (i == m_mapUserProcesses.end())
 			return EINVAL;
 
-		if (bAccessCheck)
-		{
-			// Check access
-			bool bAllowed = false;
-			if (!i->second.pSpawn->CheckAccess(m_strRegistry.c_str(),O_RDWR,bAllowed))
-				return ACE_OS::last_error();
-			else if (!bAllowed)
-				return EACCES;
-		}
-		else
-		{
-			// Get the registry hive
-			ptrHive = i->second.ptrRegistry;
-		}
-	}
+		// Get the registry hive
+		ptrHive = i->second.ptrRegistry;
 
-	if (!bCurrent)
+		// Clear channel id -  not used for user content
+		channel_id = 0;
+	}
+	else
 	{
 		// Return the system hive
+		bCurrent = false;
 		ptrHive = m_registry;
 	}
-
+	
 	return 0;
+}
+
+int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_INT64& uKey)
+{
+	bool bCurrent;
+	return registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
 }
 
 void Root::Manager::registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::Boolean bRes = false;
-
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,false);
+	ACE_INT64 uKey;
+	bool bCurrent = false;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
 	if (err == 0)
 	{
-		err = ptrHive->key_exists(strKey);
-		if (err == 0)
-			bRes = true;
-		else if (err == ENOENT)
-			err = 0;
+		ACE_CString strSubKey;
+		if (!request.read_string(strSubKey))
+			err = ACE_OS::last_error();
+		else
+		{
+			err = registry_parse_subkey(uKey,channel_id,strSubKey,bCurrent,ptrHive);
+			if (err == 0)
+				err = ptrHive->open_key(uKey,strSubKey,channel_id);
+		}
 	}
 
 	response << err;
-	if (err == 0 && response.good_bit())
-		response.write_boolean(bRes);
 }
 
 void Root::Manager::registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey = 0;
+	bool bCurrent = false;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
 	if (err == 0)
 	{
-		ACE_CDR::Boolean bFailIfThere = 0;
-		if (!request.read_boolean(bFailIfThere))
+		ACE_CString strSubKey;
+		if (!request.read_string(strSubKey))
 			err = ACE_OS::last_error();
 		else
-			err = ptrHive->create_key(strKey,bFailIfThere);
+		{
+			err = registry_parse_subkey(uKey,channel_id,strSubKey,bCurrent,ptrHive);
+			if (err == 0)
+			{
+				ACE_CDR::Boolean bCreate = 0;
+				if (!request.read_boolean(bCreate))
+					err = ACE_OS::last_error();
+				else
+				{
+					if (bCurrent && strSubKey == "Local User")
+					{
+						// Always create the Local User key...
+						bCreate = 1;
+					}
+
+					ACE_CDR::Boolean bFailIfThere = 0;
+					if (!request.read_boolean(bFailIfThere))
+						err = ACE_OS::last_error();
+					else
+					{
+						if (bCreate)
+							err = ptrHive->create_key(uKey,strSubKey,bFailIfThere,8,channel_id);
+						else
+							err = ptrHive->open_key(uKey,strSubKey,channel_id);
+
+						if (err == 0 && bCurrent)
+							uKey = -uKey;
+					}
+				}
+			}
+		}
 	}
 
 	response << err;
+	if (err == 0 && response.good_bit())
+		response.write_longlong(uKey);
 }
 
 void Root::Manager::registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
     ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	bool bCurrent = false;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
 	if (err == 0)
 	{
-		ACE_WString strSubKey;
-		if (!read_wstring(request,strSubKey))
+		ACE_CString strSubKey;
+		if (!request.read_string(strSubKey))
 			err = ACE_OS::last_error();
 		else
 		{
-			// Check for reserved keys under the system hive
-			if (ptrHive == m_registry)
-			{
-				static const wchar_t* reserved[] =
-				{
-					L"\\",
-					L"\\All Users",
-					L"\\Objects",
-					L"\\Objects\\OIDs",
-					L"\\Server",
-					L"\\Server\\Sandbox",
-					0
-				};
-
-				ACE_WString strCheck = strKey + L"\\" + strSubKey;
-				for (size_t i=0;reserved[i] != 0;++i)
-				{
-					if (strCheck == reserved[i])
-					{
-						err = EACCES;
-						break;
-					}
-				}
-			}
-
+			err = registry_parse_subkey(uKey,channel_id,strSubKey,bCurrent,ptrHive);
 			if (err == 0)
-				err = ptrHive->delete_key(strKey,strSubKey);
+				err = ptrHive->delete_key(uKey,strSubKey,channel_id);
 		}
 	}
 	
@@ -784,10 +833,10 @@ void Root::Manager::registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 void Root::Manager::registry_enum_subkeys(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
-		ptrHive->enum_subkeys(strKey,response);
+		ptrHive->enum_subkeys(uKey,channel_id,response);
 	
 	if (err != 0)
 		response << err;
@@ -798,15 +847,15 @@ void Root::Manager::registry_value_type(ACE_CDR::ULong channel_id, ACE_InputCDR&
 	ACE_CDR::Octet type = 0;
 
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,false);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
-			err = ptrHive->get_value_type(strKey,strValue,type);
+			err = ptrHive->get_value_type(uKey,strValue,channel_id,type);
 	}
 
 	response << err;
@@ -816,55 +865,55 @@ void Root::Manager::registry_value_type(ACE_CDR::ULong channel_id, ACE_InputCDR&
 
 void Root::Manager::registry_get_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_WString val;
+	ACE_CString val;
 
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,false);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
-			err = ptrHive->get_string_value(strKey,strValue,val);
+			err = ptrHive->get_string_value(uKey,strValue,channel_id,val);
 	}
 
 	response << err;
 	if (err == 0)
-		response.write_wstring(val.c_str());		
+		response.write_string(val);		
 }
 
-void Root::Manager::registry_get_uint_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
+void Root::Manager::registry_get_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_CDR::ULong val = 0;
+	ACE_CDR::LongLong val = 0;
 
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,false);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
-			err = ptrHive->get_integer_value(strKey,strValue,val);
+			err = ptrHive->get_integer_value(uKey,strValue,channel_id,val);
 	}
 
 	response << err;
 	if (err == 0 && response.good_bit())
-		response.write_ulong(val);
+		response.write_longlong(val);
 }
 
 void Root::Manager::registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,false);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
 		{
@@ -872,7 +921,7 @@ void Root::Manager::registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_Inp
 			if (!request.read_ulong(cbLen))
 				err = ACE_OS::last_error();
 			else
-				ptrHive->get_binary_value(strKey,strValue,cbLen,response);
+				ptrHive->get_binary_value(uKey,strValue,cbLen,channel_id,response);
 		}
 	}
 
@@ -883,43 +932,43 @@ void Root::Manager::registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_Inp
 void Root::Manager::registry_set_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_WString val;
-			if (!read_wstring(request,val))
+			ACE_CString val;
+			if (!request.read_string(val))
 				err = ACE_OS::last_error();
 			else
-				err = ptrHive->set_string_value(strKey,strValue,val.c_str());
+				err = ptrHive->set_string_value(uKey,strValue,channel_id,val.c_str());
 		}
 	}
 
 	response << err;
 }
 
-void Root::Manager::registry_set_uint_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
+void Root::Manager::registry_set_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
 		{
-			ACE_CDR::ULong val;
-			if (!request.read_ulong(val))
+			ACE_CDR::LongLong val;
+			if (!request.read_longlong(val))
 				err = ACE_OS::last_error();
 			else
-				err = ptrHive->set_integer_value(strKey,strValue,val);
+				err = ptrHive->set_integer_value(uKey,strValue,channel_id,val);
 		}
 	}
 
@@ -929,15 +978,15 @@ void Root::Manager::registry_set_uint_value(ACE_CDR::ULong channel_id, ACE_Input
 void Root::Manager::registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
-			err = ptrHive->set_binary_value(strKey,strValue,request);
+			err = ptrHive->set_binary_value(uKey,strValue,channel_id,request);
 	}
 
 	response << err;
@@ -946,10 +995,10 @@ void Root::Manager::registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_Inp
 void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
-		ptrHive->enum_values(strKey,response);
+		ptrHive->enum_values(uKey,channel_id,response);
 	
 	if (err != 0)
 		response << err;
@@ -958,15 +1007,15 @@ void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR
 void Root::Manager::registry_delete_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
-	ACE_WString strKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,strKey,true);
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 	{
-		ACE_WString strValue;
-		if (!read_wstring(request,strValue))
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
 			err = ACE_OS::last_error();
 		else
-			err = ptrHive->delete_value(strKey,strValue);
+			err = ptrHive->delete_value(uKey,strValue,channel_id);
 	}
 
 	response << err;

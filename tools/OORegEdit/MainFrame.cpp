@@ -107,32 +107,32 @@ void MainFrame::CreateChildWindows(void)
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
 		
 		wxPoint ptPos;
-		ptPos.x = ptrKey->GetUIntValue(L"Left");
-		ptPos.y = ptrKey->GetUIntValue(L"Top");
+		ptPos.x = ptrKey->GetIntegerValue(L"Left");
+		ptPos.y = ptrKey->GetIntegerValue(L"Top");
 		SetPosition(ptPos);
 	
 		wxSize sz;
-		sz.x = ptrKey->GetUIntValue(L"Width");
-		sz.y = ptrKey->GetUIntValue(L"Height");
+		sz.x = ptrKey->GetIntegerValue(L"Width");
+		sz.y = ptrKey->GetIntegerValue(L"Height");
 		SetSize(sz);
 
-        split_width = ptrKey->GetUIntValue(L"SplitWidth");
+        split_width = ptrKey->GetIntegerValue(L"SplitWidth");
 
-		col_width[0] = ptrKey->GetUIntValue(L"ColWidth0");
-		col_width[1] = ptrKey->GetUIntValue(L"ColWidth1");
-		col_width[2] = ptrKey->GetUIntValue(L"ColWidth2");
+		col_width[0] = ptrKey->GetIntegerValue(L"ColWidth0");
+		col_width[1] = ptrKey->GetIntegerValue(L"ColWidth1");
+		col_width[2] = ptrKey->GetIntegerValue(L"ColWidth2");
 
-		bShowBar = ptrKey->GetUIntValue(L"Statusbar")!=0;
+		bShowBar = ptrKey->GetIntegerValue(L"Statusbar")!=0;
 
 		strSelection = ptrKey->GetStringValue(L"Selection");
 
-		m_bKeys = ptrKey->GetUIntValue(L"FindKeys")!=0;
-		m_bValues = ptrKey->GetUIntValue(L"FindValues")!=0;
-		m_bData = ptrKey->GetUIntValue(L"FindData")!=0;
-		m_bMatchAll = ptrKey->GetUIntValue(L"MatchAll")!=0;
-		m_bIgnoreCase = ptrKey->GetUIntValue(L"IgnoreCase")!=0;
+		m_bKeys = ptrKey->GetIntegerValue(L"FindKeys")!=0;
+		m_bValues = ptrKey->GetIntegerValue(L"FindValues")!=0;
+		m_bData = ptrKey->GetIntegerValue(L"FindData")!=0;
+		m_bMatchAll = ptrKey->GetIntegerValue(L"MatchAll")!=0;
+		m_bIgnoreCase = ptrKey->GetIntegerValue(L"IgnoreCase")!=0;
 
-		for (int nFiles = (int)ptrKey->GetUIntValue(L"Favourites")-1;nFiles>=0;--nFiles)
+		for (int nFiles = (int)ptrKey->GetIntegerValue(L"Favourites")-1;nFiles>=0;--nFiles)
 		{
 			Omega::string_t val = ptrKey->GetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles));
 
@@ -288,7 +288,7 @@ void MainFrame::CreateMenus(void)
 	pNewMenu->AppendSeparator();
 	pNewMenu->Append(ID_NEW_STRING_VALUE, _("&String Value"), _("Adds a new string value."));
 	pNewMenu->Append(ID_NEW_BINARY_VALUE, _("&Binary Value"), _("Adds a new binary value."));
-	pNewMenu->Append(ID_NEW_UINT32_VALUE, _("&UInt32 Value"), _("Adds a new UInt32 value."));
+	pNewMenu->Append(ID_NEW_UINT32_VALUE, _("&Integer Value"), _("Adds a new integer value."));
 
 	pEditMenu->Append(ID_NEW, _("&New"), pNewMenu, _("Contains commands for creating new keys or values."));
 	pEditMenu->AppendSeparator();
@@ -339,31 +339,31 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
 
 		wxPoint pt = GetPosition();
-		ptrKey->SetUIntValue(L"Top",pt.y);
-		ptrKey->SetUIntValue(L"Left",pt.x);
+		ptrKey->SetIntegerValue(L"Top",pt.y);
+		ptrKey->SetIntegerValue(L"Left",pt.x);
 
 		wxSize sz = GetSize();
-		ptrKey->SetUIntValue(L"Height",sz.y);
-		ptrKey->SetUIntValue(L"Width",sz.x);
+		ptrKey->SetIntegerValue(L"Height",sz.y);
+		ptrKey->SetIntegerValue(L"Width",sz.x);
 
-		ptrKey->SetUIntValue(L"SplitWidth",m_pSplitter->GetSashPosition());
+		ptrKey->SetIntegerValue(L"SplitWidth",m_pSplitter->GetSashPosition());
 
-		ptrKey->SetUIntValue(L"ColWidth0",m_pList->GetColumnWidth(0));
-		ptrKey->SetUIntValue(L"ColWidth1",m_pList->GetColumnWidth(1));
-		ptrKey->SetUIntValue(L"ColWidth2",m_pList->GetColumnWidth(2));
+		ptrKey->SetIntegerValue(L"ColWidth0",m_pList->GetColumnWidth(0));
+		ptrKey->SetIntegerValue(L"ColWidth1",m_pList->GetColumnWidth(1));
+		ptrKey->SetIntegerValue(L"ColWidth2",m_pList->GetColumnWidth(2));
 
-		ptrKey->SetUIntValue(L"Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
+		ptrKey->SetIntegerValue(L"Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
 
-		ptrKey->SetUIntValue(L"FindKeys",m_bKeys ? 1 : 0);
-		ptrKey->SetUIntValue(L"FindValues",m_bValues ? 1 : 0);
-		ptrKey->SetUIntValue(L"FindData",m_bData ? 1 : 0);
-		ptrKey->SetUIntValue(L"MatchAll",m_bMatchAll ? 1 : 0);
-		ptrKey->SetUIntValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
+		ptrKey->SetIntegerValue(L"FindKeys",m_bKeys ? 1 : 0);
+		ptrKey->SetIntegerValue(L"FindValues",m_bValues ? 1 : 0);
+		ptrKey->SetIntegerValue(L"FindData",m_bData ? 1 : 0);
+		ptrKey->SetIntegerValue(L"MatchAll",m_bMatchAll ? 1 : 0);
+		ptrKey->SetIntegerValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
 
 		ptrKey->SetStringValue(L"Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
 
 		Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
-		ptrKey->SetUIntValue(L"Favourites",nFiles);
+		ptrKey->SetIntegerValue(L"Favourites",nFiles);
 
 		for (nFiles;nFiles>0;--nFiles)
 		{
@@ -429,7 +429,7 @@ void MainFrame::OnContextMenu(wxContextMenuEvent& evt)
 			pNewMenu->AppendSeparator();
 			pNewMenu->Append(ID_NEW_STRING_VALUE, _("&String Value"), _("Adds a new string value."));
 			pNewMenu->Append(ID_NEW_BINARY_VALUE, _("&Binary Value"), _("Adds a new binary value."));
-			pNewMenu->Append(ID_NEW_UINT32_VALUE, _("&UInt32 Value"), _("Adds a new UInt32 value."));
+			pNewMenu->Append(ID_NEW_UINT32_VALUE, _("&Integer Value"), _("Adds a new integer value."));
 			menu.Append(ID_NEW, _("&New"), pNewMenu, _("Contains commands for creating new keys or values."));
 		}
 
@@ -468,7 +468,7 @@ void MainFrame::OnContextMenu(wxContextMenuEvent& evt)
 		pNewMenu->AppendSeparator();
 		pNewMenu->Append(ID_NEW_STRING_VALUE, _("&String Value"), _("Adds a new string value."));
 		pNewMenu->Append(ID_NEW_BINARY_VALUE, _("&Binary Value"), _("Adds a new binary value."));
-		pNewMenu->Append(ID_NEW_UINT32_VALUE, _("&UInt32 Value"), _("Adds a new UInt32 value."));
+		pNewMenu->Append(ID_NEW_UINT32_VALUE, _("&Integer Value"), _("Adds a new integer value."));
 
 		wxMenu menu;
 		menu.Append(ID_NEW, _("&New"), pNewMenu, _("Contains commands for creating new keys or values."));
@@ -1003,10 +1003,13 @@ void MainFrame::OnTreeSelChanged(wxTreeEvent& evt)
 	while (item_id)
 	{
 		if (item_id != m_pTree->GetRootItem())
-			strText = m_pTree->GetItemText(item_id) + (strText.IsEmpty() ? wxT("") : wxT("\\")) + strText;
+			strText = wxT("\\") + m_pTree->GetItemText(item_id) + strText;
 	
 		item_id = m_pTree->GetItemParent(item_id);
 	}
+	if (strText.IsEmpty())
+		strText = wxT("\\");
+
 	GetStatusBar()->SetStatusText(strText);
 
 	if (evt.GetItem())

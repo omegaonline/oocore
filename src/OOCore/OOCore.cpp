@@ -25,6 +25,7 @@
 #include "./StdObjectManager.h"
 #include "./WireProxy.h"
 #include "./Channel.h"
+#include "./Exception.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -35,10 +36,12 @@ using namespace OTL;
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::WireProxyMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManagerMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ChannelMarshalFactory)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::SystemExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
@@ -83,6 +86,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 	{
 		bStart = true;
 
+#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
+		// If this event exists, then we are being debugged
+		HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		if (hDebugEvent)
+		{
+			// Wait for a bit, letting the caller attach a debugger
+			WaitForSingleObject(hDebugEvent,60000);
+			CloseHandle(hDebugEvent);
+		}
+#endif
+
 		// Call ACE::init() first
 		int ret = ACE::init();
 		if (ret == 1)
@@ -91,7 +105,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 		if (ret != 0)
 		{
 			--OOCore::s_initcount;
-			return IException::Create(ACE_OS::last_error(),L"ACE::init");
+			return ISystemException::Create(ACE_OS::last_error(),L"ACE::init");
 		}
 
 		// Turn off all ACE logging

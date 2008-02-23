@@ -277,6 +277,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Exception.h"
+				>
+			</File>
+			<File
 				RelativePath=".\OOCore_precomp.h"
 				>
 			</File>

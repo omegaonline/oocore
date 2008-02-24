@@ -205,7 +205,7 @@ void OTL::ProcessModule::Run()
 	{
 		do
 		{
-			Omega::HandleRequests(60000);
+			Omega::HandleRequests(30000);
 		} while (GetLockCount() > 0);
 	}
 	catch (Omega::IException* pE)

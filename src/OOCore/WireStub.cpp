@@ -31,7 +31,6 @@ using namespace OTL;
 OOCore::WireStub::WireStub(System::MetaInfo::IObject_Safe* pObjS, uint32_t stub_id, StdObjectManager* pManager) : 
 	m_refcount(0), m_marshal_count(0), m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
 {
-	m_pManager->AddRef_Safe();
 	m_pObjS->AddRef_Safe();
 }
 
@@ -42,7 +41,6 @@ OOCore::WireStub::~WireStub()
 		i->second->Release_Safe();
 	}
 	m_pObjS->Release_Safe();
-	m_pManager->AddRef_Safe();
 }
 
 System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t& iid)

@@ -304,6 +304,7 @@ namespace Omega
 			{
 			public:
 				typedef typename marshal_info<T>::safe_type::type type;
+				typedef typename marshal_info<T>::safe_type::type real_type;
 
 				static IException_Safe* init(type& val)
 				{
@@ -339,6 +340,7 @@ namespace Omega
 			{
 			public:
 				typedef const typename marshal_info<T>::wire_type::type type;
+				typedef const typename marshal_info<T>::wire_type::type real_type;
 
 				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, type& val)
 				{
@@ -381,7 +383,7 @@ namespace Omega
 						return *this;
 					}
 
-					operator typename marshal_info<T>::wire_type::type*()
+					operator typename marshal_info<T>::wire_type::real_type*()
 					{
 						return &m_val;
 					}
@@ -750,30 +752,81 @@ namespace Omega
 			class iface_wire_type
 			{
 			public:
-				typedef typename interface_info<I>::safe_class* type;
+				typedef typename interface_info<I>::safe_class* real_type;
 
-				static IException_Safe* init(type& val, const guid_t* = 0)
+				class if_holder
 				{
-					val = 0;
+				public:
+					if_holder() : m_val(0)
+					{ }
+
+					if_holder(const if_holder& rhs) : m_val(rhs.m_val)
+					{
+						if (m_val)
+							m_val->AddRef_Safe();
+					}
+
+					if_holder& operator = (const if_holder& rhs)
+					{
+						if (&rhs != this)
+						{
+							if (m_val)
+								m_val->Release_Safe();
+
+							m_val = rhs.m_val;
+							if (m_val)
+								m_val->AddRef_Safe();
+						}
+						return *this;
+					}
+
+					~if_holder()
+					{
+						if (m_val)
+							m_val->Release_Safe();
+					}
+
+					operator real_type&()
+					{
+						return m_val;
+					}
+
+					real_type* operator &()
+					{
+						return &m_val;
+					}
+
+					real_type operator ->()
+					{
+						return m_val;
+					}
+
+				private:
+					real_type m_val;
+				};
+				typedef if_holder type;
+
+				static IException_Safe* init(type&, const guid_t* = 0)
+				{
 					return 0;
 				}
 
-				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, type& pI, const guid_t* piid = 0)
+				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, real_type& pI, const guid_t* piid = 0)
 				{
 					IObject_Safe* p = 0;
 					IException_Safe* pSE = pManager->UnmarshalInterface_Safe(pStream,piid ? piid : &OMEGA_UUIDOF(I),&p);
 					if (pSE)
 						return pSE;
-					pI = static_cast<typename interface_info<I>::safe_class*>(p);
+					pI = static_cast<real_type>(p);
 					return 0;
 				}
 
-				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, type pI, const guid_t* piid = 0)
+				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, real_type pI, const guid_t* piid = 0)
 				{
 					return pManager->MarshalInterface_Safe(pStream,piid ? piid : &OMEGA_UUIDOF(I),pI);
 				}
 
-				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, type pI, const guid_t* piid = 0)
+				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, real_type pI, const guid_t* piid = 0)
 				{
 					return pManager->ReleaseMarshalData_Safe(pStream,piid ? piid : &OMEGA_UUIDOF(I),pI);
 				}

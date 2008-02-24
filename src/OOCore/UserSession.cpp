@@ -648,6 +648,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOn
 			break;
 		
 		// Set deadline
+		ACE_Time_Value old_deadline = pContext->m_deadline;
 		pContext->m_deadline = msg->m_deadline;
 		if (deadline && *deadline < pContext->m_deadline)
 			pContext->m_deadline = *deadline;
@@ -660,6 +661,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOn
 		catch (std::exception&)
 		{
 			// This shouldn't ever occur, but that means it will ;)
+			pContext->m_deadline = old_deadline;
 			delete msg;
 			continue;
 		}
@@ -669,6 +671,9 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOn
 
 		// Clear the thread map
 		pContext->m_mapChannelThreads.clear();
+
+		// Reset the deadline
+		pContext->m_deadline = old_deadline;
 				
 		delete msg;
 

@@ -773,6 +773,7 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 			else
 			{
 				// Set deadline
+				ACE_Time_Value old_deadline = pContext->m_deadline;
 				pContext->m_deadline = msg->m_deadline;
 				if (deadline && *deadline < pContext->m_deadline)
 					pContext->m_deadline = *deadline;
@@ -786,6 +787,7 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 				{
 					// This shouldn't ever occur, but that means it will ;)
 					ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+					pContext->m_deadline = old_deadline;
 					delete msg;
 					continue;
 				}
@@ -795,6 +797,9 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 
 				// Clear the channel/threads map
 				pContext->m_mapChannelThreads.clear();
+
+				// Reset deadline
+				pContext->m_deadline = old_deadline;
 			}
 		}
 		else

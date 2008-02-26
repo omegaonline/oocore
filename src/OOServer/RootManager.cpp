@@ -54,8 +54,10 @@ bool Root::Manager::install(int argc, wchar_t* argv[])
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive = ROOT_MANAGER::instance()->get_registry();
 	ACE_INT64 key = 0;
 	ptrHive->create_key(key,"All Users",false,7,0);
+	ptrHive->set_description(key,0,"A common key for all users");
 	key = 0;
 	ptrHive->create_key(key,"Local User",false,7,0);
+	ptrHive->set_description(key,0,"This is a unique key for each user of the local computer");
 	key = 0;
 	ptrHive->create_key(key,"Applications",false,5,0);
 	key = 0;
@@ -614,6 +616,22 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 		registry_set_binary_value(src_channel_id,request,response);
 		break;
 
+	case GetDescription:
+		registry_get_description(src_channel_id,request,response);
+		break;
+
+	case GetValueDescription:
+		registry_get_value_description(src_channel_id,request,response);
+		break;
+
+	case SetDescription:
+		registry_set_description(src_channel_id,request,response);
+		break;
+
+	case SetValueDescription:
+		registry_set_value_description(src_channel_id,request,response);
+		break;
+
 	case EnumValues:
 		registry_enum_values(src_channel_id,request,response);
 		break;
@@ -990,6 +1008,82 @@ void Root::Manager::registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_Inp
 	}
 
 	response << err;
+}
+
+void Root::Manager::registry_set_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
+{
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	if (err == 0)
+	{
+		ACE_CString strDesc;
+		if (!request.read_string(strDesc))
+			err = ACE_OS::last_error();
+		else
+			err = ptrHive->set_description(uKey,channel_id,strDesc);
+	}
+
+	response << err;
+}
+
+void Root::Manager::registry_set_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
+{
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	if (err == 0)
+	{
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
+			err = ACE_OS::last_error();
+		else
+		{
+			ACE_CString strDesc;
+			if (!request.read_string(strDesc))
+				err = ACE_OS::last_error();
+			else
+				err = ptrHive->set_value_description(uKey,strValue,channel_id,strDesc);
+		}
+	}
+
+	response << err;
+}
+
+void Root::Manager::registry_get_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
+{
+	ACE_CString val;
+
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	if (err == 0)
+		err = ptrHive->get_description(uKey,channel_id,val);
+	
+	response << err;
+	if (err == 0)
+		response.write_string(val);	
+}
+
+void Root::Manager::registry_get_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
+{
+	ACE_CString val;
+
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_INT64 uKey;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
+	if (err == 0)
+	{
+		ACE_CString strValue;
+		if (!request.read_string(strValue))
+			err = ACE_OS::last_error();
+		else
+			err = ptrHive->get_value_description(uKey,strValue,channel_id,val);
+	}
+
+	response << err;
+	if (err == 0)
+		response.write_string(val);	
 }
 
 void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)

@@ -125,6 +125,10 @@ namespace Omega
 			virtual void SetStringValue(const string_t& name, const string_t& val) = 0;
 			virtual void SetIntegerValue(const string_t& name, const int64_t& val) = 0;
 			virtual void SetBinaryValue(const string_t& name, uint32_t cbLen, const byte_t* val) = 0;
+			virtual string_t GetDescription() = 0;
+			virtual string_t GetValueDescription(const string_t& name) = 0;
+			virtual void SetDescription(const string_t& desc) = 0;
+			virtual void SetValueDescription(const string_t& name, const string_t& desc) = 0;
 			virtual ValueType_t GetValueType(const string_t& name) = 0;
 			virtual IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 			virtual IEnumString* EnumSubKeys() = 0;
@@ -248,6 +252,10 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
 	OMEGA_METHOD_VOID(SetIntegerValue,2,((in),const Omega::string_t&,name,(in),const Omega::int64_t&,val))
 	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
+	OMEGA_METHOD(Omega::string_t,GetDescription,0,())
+	OMEGA_METHOD(Omega::string_t,GetValueDescription,1,((in),const Omega::string_t&,name))
+	OMEGA_METHOD_VOID(SetDescription,1,((in),const Omega::string_t&,desc))
+	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,desc))
 	OMEGA_METHOD(Omega::Registry::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
 	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))
 	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())

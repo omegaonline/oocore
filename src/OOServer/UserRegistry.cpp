@@ -232,10 +232,10 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strSubKey,L"Omega::Registry::IRegistry::IsSubKey");
-	else if (err == ENOENT)
+	if (err == ENOENT)
 		return false;
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsSubKey");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsSubKey");
 	else if (err != 0)
@@ -268,23 +268,20 @@ bool_t Key::IsValue(const string_t& strName)
 	if (err==0 && !response->read_octet(value_type))
 		err = ACE_OS::last_error();
 
-	if (err != ENOENT)
-	{
-		if (err==EINVAL || err==ENAMETOOLONG)
-			BadNameException::Throw(strName,L"Omega::Registry::IRegistry::IsValue");
-		else if (err==EACCES)
-			AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsValue");
-		else if (err != 0)
-			OMEGA_THROW(err);
-	}
+	if (err==ENOENT)
+		return false;
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsValue");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsValue");
+	else if (err != 0)
+		OMEGA_THROW(err);
 
-	return (err==0);
+	return true;
 }
 
-ValueType_t Key::GetValueType(const string_t& strName)
+int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 {
-	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetValueType");
-
 	ACE_OutputCDR request;
 	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
 	request.write_longlong(m_key);
@@ -301,19 +298,8 @@ ValueType_t Key::GetValueType(const string_t& strName)
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 
-	if (err == ENOENT)
-	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::GetValueType");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueType");
-	}
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetValueType");
-	else if (err==EACCES)
-		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueType");
-	else if (err != 0)
-		OMEGA_THROW(err);
+	if (err != 0)
+		return err;
 
 	ACE_CDR::Octet value_type = 0;
 	if (!response->read_octet(value_type))
@@ -322,17 +308,40 @@ ValueType_t Key::GetValueType(const string_t& strName)
 	switch (value_type)
 	{
 	case 0:
-		return String;
+		vtype = String;
+		break;
 
 	case 1:
-		return Integer;
+		vtype = Integer;
+		break;
 
 	case 2:
-		return Binary;
+		vtype = Binary;
+		break;
 
 	default:
 		OMEGA_THROW(EINVAL);
 	}
+
+	return 0;
+}
+
+ValueType_t Key::GetValueType(const string_t& strName)
+{
+	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetValueType");
+
+	ValueType_t vtype;
+	int err = GetValueType_i(strName,vtype);
+	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueType");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueType");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueType");
+	else if (err != 0)
+		OMEGA_THROW(err);
+
+	return vtype;
 }
 
 string_t Key::GetStringValue(const string_t& strName)
@@ -357,13 +366,16 @@ string_t Key::GetStringValue(const string_t& strName)
 
 	if (err == ENOENT)
 	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::GetStringValue");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
+		ValueType_t vtype;
+		err = GetValueType_i(strName,vtype);
+		if (err == 0)
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
+	
+	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err != 0)
@@ -398,13 +410,16 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 
 	if (err == ENOENT)
 	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::GetIntegerValue");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
+		ValueType_t vtype;
+		err = GetValueType_i(strName,vtype);
+		if (err == 0)
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetIntegerValue");
 	}
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
+
+	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err != 0)
@@ -441,13 +456,16 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 
 	if (err == ENOENT)
 	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::GetBinaryValue");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
+		ValueType_t vtype;
+		err = GetValueType_i(strName,vtype);
+		if (err == 0)
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetBinaryValue");
 	}
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
+
+	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err != 0)
@@ -482,16 +500,11 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
-	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::SetStringValue");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetStringValue");
-	}
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetStringValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetStringValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetStringValue");
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetStringValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -518,16 +531,11 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
-	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::SetIntegerValue");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
-	}
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetIntegerValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetIntegerValue");
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -554,16 +562,133 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
-	{
-		if (IsValue(strName))
-			WrongValueTypeException::Throw(strName,GetValueType(strName),L"Omega::Registry::IRegistry::SetBinaryValue");
-		else
-			NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
-	}
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetBinaryValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetBinaryValue");
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
+	else if (err != 0)
+		OMEGA_THROW(err);
+}
+
+string_t Key::GetDescription()
+{
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::GetDescription);
+	request.write_longlong(m_key);
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW(EINVAL);
+
+	int err = 0;
+	*response >> err;
+	if (!response->good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetDescription");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetDescription");
+	else if (err != 0)
+		OMEGA_THROW(err);
+
+	ACE_CString strValue;
+	if (!response->read_string(strValue))
+		OOSERVER_THROW_LASTERROR();
+
+	return string_t(strValue.c_str(),true);
+}
+
+string_t Key::GetValueDescription(const Omega::string_t& strName)
+{
+	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetValueDescription");
+
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::GetValueDescription);
+	request.write_longlong(m_key);
+	request.write_string(strName.ToUTF8().c_str());
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW(EINVAL);
+
+	int err = 0;
+	*response >> err;
+	if (!response->good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueDescription");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueDescription");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueDescription");
+	else if (err != 0)
+		OMEGA_THROW(err);
+
+	ACE_CString strValue;
+	if (!response->read_string(strValue))
+		OOSERVER_THROW_LASTERROR();
+
+	return string_t(strValue.c_str(),true);
+}
+
+void Key::SetDescription(const Omega::string_t& strDesc)
+{
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::SetDescription);
+	request.write_longlong(m_key);
+	request.write_string(strDesc.ToUTF8().c_str());
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW(EINVAL);
+
+	int err = 0;
+	*response >> err;
+	if (!response->good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	if (err == EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
+	else if (err != 0)
+		OMEGA_THROW(err);
+}
+
+void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::string_t& strDesc)
+{
+	ACE_OutputCDR request;
+	request << static_cast<Root::RootOpCode_t>(Root::SetValueDescription);
+	request.write_longlong(m_key);
+	request.write_string(strValue.ToUTF8().c_str());
+	request.write_string(strDesc.ToUTF8().c_str());
+	if (!request.good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	if (response.null())
+		OMEGA_THROW(EINVAL);
+
+	int err = 0;
+	*response >> err;
+	if (!response->good_bit())
+		OOSERVER_THROW_LASTERROR();
+
+	if (err == ENOENT)
+		NotFoundException::Throw(strValue,L"Omega::Registry::IRegistry::SetValueDescription");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetValueDescription");
+	else if (err==EACCES)
+		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetValueDescription");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -592,10 +717,10 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 	
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::OpenSubKey");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err==EALREADY)
 		AlreadyExistsException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err==ENOENT)
 		NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err != 0)
@@ -630,9 +755,10 @@ Omega::IEnumString* Key::EnumSubKeys()
 	*response >> err;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
-	else if (err==EACCES)
+	
+	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
-	else if (err==ENOENT)
+	else if (err==EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
 	else if (err != 0)
 		OMEGA_THROW(err);
@@ -678,9 +804,10 @@ Omega::IEnumString* Key::EnumValues()
 	*response >> err;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
-	else if (err==EACCES)
+
+	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
-	else if (err==ENOENT)
+	else if (err==EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
 	else if (err != 0)
 		OMEGA_THROW(err);
@@ -732,10 +859,10 @@ void Key::DeleteKey(const string_t& strSubKey)
 
 	if (err == ENOENT)
 		NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteKey");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -762,10 +889,10 @@ void Key::DeleteValue(const string_t& strName)
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::DeleteValue");
+	else if (err==EEXIST)
+		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteValue");
-	else if (err==EINVAL || err==ENAMETOOLONG)
-		BadNameException::Throw(strName,L"Omega::Registry::IRegistry::DeleteValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
 }

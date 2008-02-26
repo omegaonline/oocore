@@ -41,6 +41,10 @@ namespace Root
 		SetStringValue,
 		SetIntegerValue,
 		SetBinaryValue,
+		GetDescription,
+		GetValueDescription,
+		SetDescription,
+		SetValueDescription,
 		EnumValues,
 		DeleteValue,
 	};

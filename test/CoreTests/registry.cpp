@@ -24,9 +24,11 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	TEST(pKey->GetIntegerValue(strTestValue) == 100);
 	TEST_VOID(pKey->SetIntegerValue(strTestValue,200));
 	TEST(pKey->GetIntegerValue(strTestValue) == 200);
+	TEST_VOID(pKey->SetValueDescription(strTestValue,L"A test description"));
+	TEST(pKey->GetValueDescription(strTestValue) == L"A test description");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
-
+	
 	const Omega::byte_t szBuf[] = "Welcome to the project site for Omega Online ¶"
 							"Omega Online is a massively-multiplayer online roleplaying game, based on the successful live-roleplaying system from Omega LRP. "
 							"The goals of the project are to produce a game that is: "
@@ -179,6 +181,9 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 
 	if (!test_values(pSubKey,strKey + "\\" + strTestKey))
 		return false;
+
+	TEST_VOID(pSubKey->SetDescription(L"A test description"));
+	TEST(pSubKey->GetDescription() == L"A test description");
 
 	pSubKey->Release();
 

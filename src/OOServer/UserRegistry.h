@@ -44,6 +44,8 @@ namespace User
 			Omega::string_t m_strKey;
 			ACE_INT64       m_key;
 
+			int GetValueType_i(const Omega::string_t& strName, Omega::Registry::ValueType_t& vtype);
+
 		// IRegistry members
 		public:
 			Omega::bool_t IsSubKey(const Omega::string_t& strSubKey);
@@ -54,12 +56,16 @@ namespace User
 			void SetStringValue(const Omega::string_t& strName, const Omega::string_t& strValue);
 			void SetIntegerValue(const Omega::string_t& strName, const Omega::int64_t& uValue);
 			void SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, const Omega::byte_t* val);
+			Omega::string_t GetDescription();
+			Omega::string_t GetValueDescription(const Omega::string_t& strName);
+			void SetDescription(const Omega::string_t& strValue);
+			void SetValueDescription(const Omega::string_t& strName, const Omega::string_t& strValue);
 			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
 			Omega::IEnumString* EnumSubKeys();
 			Omega::IEnumString* EnumValues();
 			void DeleteKey(const Omega::string_t& strSubKey);
-			void DeleteValue(const Omega::string_t& strName);
+			void DeleteValue(const Omega::string_t& strName);	
 		};
 	}
 }

@@ -8,7 +8,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 {
 	TEST(ptrTestLib->Hello() == L"Hello!");
 
-	/*try
+	try
 	{
 		ptrTestLib->Throw(EACCES);
 	}
@@ -16,7 +16,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 	{
 		TEST(pE->ErrorCode() == EACCES);
 		pE->Release();
-	}*/
+	}
 
 	// This is a test for channel closing
 	/*try

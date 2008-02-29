@@ -508,6 +508,7 @@ int OOCore::UserSession::run_read_loop()
 		msg->m_ptrPayload->reset_byte_order(byte_order);
 	
 		(*msg->m_ptrPayload) >> msg->m_flags;
+		(*msg->m_ptrPayload) >> msg->m_seq_no;
 
 		// Did everything make sense?
 		if (!msg->m_ptrPayload->good_bit() || version != 1)
@@ -731,7 +732,7 @@ void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id
 	{}
 }
 
-bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id)
+bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id)
 {
 	bool bRet = false;
 
@@ -798,12 +799,18 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, const ACE_T
 				pContext->m_deadline = old_deadline;
 				i->second = old_thread_id;
 			}
-			else
+			else if (msg->m_seq_no == seq_no)
 			{
 				ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
+				if (response)
+					bRet = true;
+
 				delete msg;
-				bRet = true;
 				break;
+			}
+			else
+			{
+				ACE_ERROR((LM_ERROR,L"%N:%l: Duff message\n"));
 			}
 
 			delete msg;
@@ -835,7 +842,8 @@ OOCore::UserSession::ThreadContext::ThreadContext() :
 	m_thread_id(0),
 	m_msg_queue(0),
 	m_usage(0),
-	m_deadline(ACE_Time_Value::max_time)
+	m_deadline(ACE_Time_Value::max_time),
+	m_seq_no(0)
 {
 }
 
@@ -892,13 +900,12 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 	ACE_CDR::UShort dest_thread_id = 0;
 	ACE_Time_Value deadline = ACE_Time_Value::max_time;
 
+	ACE_CDR::ULong seq_no = 0;
+
 	// Only use thread context if we are not a system message (they can come from odd threads)
 	if (!(attribs & Message::system_message))
 	{
-		const ThreadContext* pContext = ThreadContext::instance();
-
-		deadline = pContext->m_deadline;
-		src_thread_id = pContext->m_thread_id;
+		ThreadContext* pContext = ThreadContext::instance();
 
 		// Determine dest_thread_id
 		try
@@ -911,6 +918,17 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		{
 			return false;
 		}
+
+		src_thread_id = pContext->m_thread_id;
+		deadline = pContext->m_deadline;
+		
+		if (!(attribs & Message::asynchronous))
+		{
+			while (!seq_no)
+			{
+				seq_no = ++pContext->m_seq_no;
+			}
+		}
 	}
 
 	if (timeout > 0)
@@ -922,7 +940,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 	
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(src_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
+	if (!build_header(seq_no,src_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
 		return false;
 
 	// Send to the handle
@@ -946,17 +964,17 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		return true;
 	else
 		// Wait for response...
-		return wait_for_response(response,&deadline,dest_channel_id);
+		return wait_for_response(response,seq_no,&deadline,dest_channel_id);
 }
 
-void OOCore::UserSession::send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb)
+void OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb)
 {
 	const ThreadContext* pContext = ThreadContext::instance();
 	ACE_Time_Value deadline = pContext->m_deadline;
 
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(pContext->m_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,false,0))
+	if (!build_header(seq_no,pContext->m_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,false,0))
 		return;
 
 	ACE_Time_Value now = ACE_OS::gettimeofday();
@@ -995,7 +1013,7 @@ bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 #endif
 }
 
-bool OOCore::UserSession::build_header(ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs)
+bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs)
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
@@ -1024,6 +1042,7 @@ bool OOCore::UserSession::build_header(ACE_CDR::UShort src_thread_id, ACE_CDR::U
 	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
 	header.write_octet(1);	 // version
 	header << flags;
+	header << seq_no;
 
 	if (!header.good_bit())
 		return false;
@@ -1102,7 +1121,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 		if (!(pMsg->m_attribs & Remoting::asynchronous))
 		{
 		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			send_response(pMsg->m_src_channel_id,pMsg->m_src_thread_id,mb);
+			send_response(pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,mb);
             mb->release();
 		}
 	}
@@ -1121,7 +1140,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 			error.write_string(pOuter->Description().ToUTF8().c_str());
 			error.write_string(pOuter->Source().ToUTF8().c_str());
 
-			send_response(pMsg->m_src_channel_id,pMsg->m_src_thread_id,error.begin());
+			send_response(pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,error.begin());
 		}
 	}
 }

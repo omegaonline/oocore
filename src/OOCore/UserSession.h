@@ -104,6 +104,7 @@ namespace OOCore
 			ACE_Time_Value                                       m_deadline;
 			ACE_CDR::ULong                                       m_attribs;
 			ACE_CDR::UShort                                      m_flags;
+			ACE_CDR::ULong                                       m_seq_no;
 			ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> m_ptrPayload;
 		};
 
@@ -116,6 +117,7 @@ namespace OOCore
 			size_t										m_usage;
 			std::map<ACE_CDR::ULong,ACE_CDR::UShort>    m_mapChannelThreads;
 			ACE_Time_Value                              m_deadline;
+			ACE_CDR::ULong                              m_seq_no;
 			
 			static ThreadContext* instance();
 
@@ -148,9 +150,9 @@ namespace OOCore
 		int run_read_loop();
 		void pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
 		void process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
-		bool wait_for_response(ACE_InputCDR*& response, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
-		bool build_header(ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
-		void send_response(ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
+		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
+		bool build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
+		void send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong src_channel_id, Omega::Remoting::MarshalFlags_t marshal_flags);
 		bool send_channel_close(ACE_CDR::ULong closed_channel_id);
 		void process_channel_close(ACE_CDR::ULong closed_channel_id);

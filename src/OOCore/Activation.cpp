@@ -289,7 +289,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 
 			std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
 			if (i == m_mapServicesByCookie.end())
-				OMEGA_THROW(EINVAL);
+				OMEGA_THROW(ENOENT);
 
 			bUnROT = ((i->second.m_flags & Activation::OutOfProcess) == Activation::OutOfProcess);
 			oid = i->second.m_oid;

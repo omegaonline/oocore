@@ -590,15 +590,15 @@ ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void* pParam)
 	return 0;
 }
 
-void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	if (src_channel_id == m_root_channel)
-		process_root_request(request,deadline,attribs);
+		process_root_request(request,seq_no,deadline,attribs);
 	else
-		process_user_request(request,src_channel_id,src_thread_id,deadline,attribs);
+		process_user_request(request,seq_no,src_channel_id,src_thread_id,deadline,attribs);
 }
 
-void User::Manager::process_root_request(ACE_InputCDR& request, const ACE_Time_Value& /*deadline*/, ACE_CDR::ULong /*attribs*/)
+void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong /*seq_no*/, const ACE_Time_Value& /*deadline*/, ACE_CDR::ULong /*attribs*/)
 {
 	Root::RootOpCode_t op_code;
 	request >> op_code;
@@ -618,7 +618,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, const ACE_Time_V
 	}
 }
 
-void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	try
 	{
@@ -669,7 +669,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 		if (!(attribs & Remoting::asynchronous))
 		{
 		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			send_response(src_channel_id,src_thread_id,mb,deadline,attribs);
+			send_response(seq_no,src_channel_id,src_thread_id,mb,deadline,attribs);
             mb->release();
 		}
 	}
@@ -688,7 +688,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 			error.write_string(pOuter->Description().ToUTF8().c_str());
 			error.write_string(pOuter->Source().ToUTF8().c_str());
 
-			send_response(src_channel_id,src_thread_id,error.begin(),deadline,attribs);
+			send_response(seq_no,src_channel_id,src_thread_id,error.begin(),deadline,attribs);
 		}
 	}
 }

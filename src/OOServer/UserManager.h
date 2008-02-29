@@ -72,9 +72,9 @@ namespace User
 		virtual void channel_closed(ACE_CDR::ULong channel);
 		
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong src_channel_id, Omega::Remoting::MarshalFlags_t flags);
-		void process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-		void process_user_request(const ACE_InputCDR& input, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-		void process_root_request(ACE_InputCDR& input, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		void process_user_request(const ACE_InputCDR& input, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		void process_root_request(ACE_InputCDR& input, ACE_CDR::ULong seq_no, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);

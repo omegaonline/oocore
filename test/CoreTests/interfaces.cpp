@@ -19,14 +19,14 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 	}
 
 	// This is a test for channel closing
-	/*try
+	try
 	{
 		ptrTestLib->Abort();
 	} 
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}*/
+	}
 
 	return true;
 }

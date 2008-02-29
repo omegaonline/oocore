@@ -558,7 +558,7 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
 	return false;
 }
 
-void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	RootOpCode_t op_code;
 	request >> op_code;
@@ -647,7 +647,7 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong src_ch
 	}
 
 	if (response.good_bit() && !(attribs & 1))
-		send_response(src_channel_id,src_thread_id,response.begin(),deadline,attribs);
+		send_response(seq_no,src_channel_id,src_thread_id,response.begin(),deadline,attribs);
 }
 
 int Root::Manager::registry_access_check(ACE_CDR::ULong channel_id)

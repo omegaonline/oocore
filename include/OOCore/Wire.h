@@ -99,6 +99,7 @@ namespace Omega
 			interface IWireProxy : public IObject
 			{
 				virtual void WriteKey(Serialize::IFormattedStream* pStream) = 0;
+				virtual bool_t IsAlive() = 0;
 			};			
 		}
 	}
@@ -184,6 +185,7 @@ namespace Omega
 				Omega::System::MetaInfo, IWireProxy,
 
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Serialize::IFormattedStream*,pStream))
+				OMEGA_METHOD(bool_t,IsAlive,0,())
 			)
 			typedef IWireProxy_Impl_Safe<IObject_Safe> IWireProxy_Safe;
 			

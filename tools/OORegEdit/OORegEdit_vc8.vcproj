@@ -199,11 +199,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EditKeyDescDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\EditStringDlg.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\EditUIntDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\EditValueDescDlg.cpp"
 				>
 			</File>
 			<File
@@ -261,11 +269,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EditKeyDescDlg.h"
+				>
+			</File>
+			<File
 				RelativePath=".\EditStringDlg.h"
 				>
 			</File>
 			<File
 				RelativePath=".\EditUIntDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\EditValueDescDlg.h"
 				>
 			</File>
 			<File

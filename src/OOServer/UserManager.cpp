@@ -220,7 +220,7 @@ Registry::IRegistryKey* User::InterProcessService::GetRegistry()
 		}
 	}
 
-	return m_ptrReg.AddRefReturn();
+	return m_ptrReg.AddRef();
 }
 
 Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTable()
@@ -245,7 +245,7 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 		}
 	}
 
-	return m_ptrROT.AddRefReturn();
+	return m_ptrROT.AddRef();
 }
 
 void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
@@ -266,7 +266,7 @@ void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activatio
 	// Try RunningObjectTable first
 	ObjectPtr<IObject> ptrObject;
 	ptrObject.Attach(m_ptrROT->GetObject(oid));
-	if (ptrObject)
+	if (!!ptrObject)
 	{
 		pObject = ptrObject->QueryInterface(iid);
 		if (!pObject)

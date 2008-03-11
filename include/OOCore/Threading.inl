@@ -107,12 +107,6 @@ T Omega::System::AtomicOp<T>::value() const
 }
 
 template <class T>
-volatile T& Omega::System::AtomicOp<T>::value()
-{
-	return m_value;
-}
-
-template <class T>
 T Omega::System::AtomicOp<T>::exchange(const T& v)
 {
 	Guard guard(m_cs);
@@ -121,9 +115,9 @@ T Omega::System::AtomicOp<T>::exchange(const T& v)
 	return ret;
 }
 
-#ifdef OMEGA_HAS_ATOMIC_OP
+#ifdef OMEGA_HAS_ATOMIC_OP_32
 
-Omega::System::AtomicOp<Omega::int32_t>::AtomicOp(const int32_t& v) :
+Omega::System::AtomicOp<Omega::int32_t>::AtomicOp(int32_t v) :
 	m_value(v)
 {
 }
@@ -135,32 +129,32 @@ Omega::System::AtomicOp<Omega::int32_t>::AtomicOp(const AtomicOp& rhs) :
 
 Omega::System::AtomicOp<Omega::int32_t>& Omega::System::AtomicOp<Omega::int32_t>::operator = (const AtomicOp& rhs)
 {
-	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs.m_value);
+	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs.m_value);
 	return *this;
 }
 
-Omega::System::AtomicOp<Omega::int32_t>& Omega::System::AtomicOp<Omega::int32_t>::operator = (const int32_t& rhs)
+Omega::System::AtomicOp<Omega::int32_t>& Omega::System::AtomicOp<Omega::int32_t>::operator = (int32_t rhs)
 {
-	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs);
+	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs);
 	return *this;
 }
 
 Omega::int32_t Omega::System::AtomicOp<Omega::int32_t>::operator ++()
 {
-	return OMEGA_ATOMIC_OP_INCREMENT(&m_value);
+	return OMEGA_ATOMIC_OP_INCREMENT_32(&m_value);
 }
 
 Omega::int32_t Omega::System::AtomicOp<Omega::int32_t>::operator --()
 {
-	return OMEGA_ATOMIC_OP_DECREMENT(&m_value);
+	return OMEGA_ATOMIC_OP_DECREMENT_32(&m_value);
 }
 
-Omega::int32_t Omega::System::AtomicOp<Omega::int32_t>::exchange(const int32_t& v)
+Omega::int32_t Omega::System::AtomicOp<Omega::int32_t>::exchange(int32_t v)
 {
-	return OMEGA_ATOMIC_OP_EXCHANGE(&m_value,v);
+	return static_cast<int32_t>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
 }
 
-Omega::System::AtomicOp<Omega::uint32_t>::AtomicOp(const uint32_t& v) :
+Omega::System::AtomicOp<Omega::uint32_t>::AtomicOp(uint32_t v) :
 	m_value(v)
 {
 }
@@ -172,32 +166,64 @@ Omega::System::AtomicOp<Omega::uint32_t>::AtomicOp(const AtomicOp& rhs) :
 
 Omega::System::AtomicOp<Omega::uint32_t>& Omega::System::AtomicOp<Omega::uint32_t>::operator = (const AtomicOp& rhs)
 {
-	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs.m_value);
+	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs.m_value);
 	return *this;
 }
 
-Omega::System::AtomicOp<Omega::uint32_t>& Omega::System::AtomicOp<Omega::uint32_t>::operator = (const uint32_t& rhs)
+Omega::System::AtomicOp<Omega::uint32_t>& Omega::System::AtomicOp<Omega::uint32_t>::operator = (uint32_t rhs)
 {
-	OMEGA_ATOMIC_OP_EXCHANGE(&m_value,rhs);
+	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs);
 	return *this;
 }
 
 Omega::uint32_t Omega::System::AtomicOp<Omega::uint32_t>::operator ++()
 {
-	return OMEGA_ATOMIC_OP_INCREMENT(&m_value);
+	return OMEGA_ATOMIC_OP_INCREMENT_32(&m_value);
 }
 
 Omega::uint32_t Omega::System::AtomicOp<Omega::uint32_t>::operator --()
 {
-	return OMEGA_ATOMIC_OP_DECREMENT(&m_value);
+	return OMEGA_ATOMIC_OP_DECREMENT_32(&m_value);
 }
 
-Omega::uint32_t Omega::System::AtomicOp<Omega::uint32_t>::exchange(const uint32_t& v)
+Omega::uint32_t Omega::System::AtomicOp<Omega::uint32_t>::exchange(uint32_t v)
 {
-	return OMEGA_ATOMIC_OP_EXCHANGE(&m_value,v);
+	return static_cast<uint32_t>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
 }
 
-#endif // OMEGA_HAS_ATOMIC_OP
+template <class T>
+Omega::System::AtomicOp<T*>::AtomicOp(T* v) :
+	m_value(v)
+{
+}
+
+template <class T>
+Omega::System::AtomicOp<T*>::AtomicOp(const AtomicOp& rhs) :
+	m_value(rhs.m_value)
+{
+}
+
+template <class T>
+Omega::System::AtomicOp<T*>& Omega::System::AtomicOp<T*>::operator = (const AtomicOp& rhs)
+{
+	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs.m_value);
+	return *this;
+}
+
+template <class T>
+Omega::System::AtomicOp<T*>& Omega::System::AtomicOp<T*>::operator = (T* rhs)
+{
+	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs);
+	return *this;
+}
+
+template <class T>
+T* Omega::System::AtomicOp<T*>::exchange(T* v)
+{
+	return reinterpret_cast<T*>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
+}
+
+#endif // OMEGA_HAS_ATOMIC_OP_32
 
 OMEGA_EXPORTED_FUNCTION(void*,cs__ctor,0,());
 Omega::System::CriticalSection::CriticalSection() :

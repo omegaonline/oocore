@@ -245,6 +245,20 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_
 	return ptrProxy->QueryInterface_Safe(piid,ppS);
 }
 
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::IsAlive_Safe(bool_t* pRet)
+{
+	*pRet = false;
+	try
+	{
+		*pRet = m_pManager->IsAlive();
+	}
+	catch (IException* pE)
+	{
+		return System::MetaInfo::return_safe_exception(pE);
+	}
+	return 0;
+}
+
 uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)
 {
 	ObjectPtr<Serialize::IFormattedStream> pParamsOut;
@@ -274,7 +288,7 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 		pParamsOut->ReadGuid();
 		m_pManager->ReleaseMarshalData(pParamsOut,OMEGA_UUIDOF(Remoting::IObjectManager),pObjectManager);
 
-		throw ptrE.AddRefReturn();
+		throw ptrE.AddRef();
 	}
 	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);

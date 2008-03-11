@@ -830,15 +830,13 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 				{
 					const wchar_t msg[] =
 						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						L"Because 'Unsafe' key is set in the registry, or you have attached a debugger to OOServer, the new user process will be started "
-						L"under the user account '%ls\\%ls'\n\n"
-						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you "
-						L"really know what you are doing.\n";
+						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '%ls\\%ls'\n\n"
+						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 						
 					wchar_t szBuf[1024];
 					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
 					wchar_t szBuf2[1024];
-					ACE_OS::sprintf(szBuf2,L"%ls\nDo you want to allow this?",szBuf);
+					ACE_OS::sprintf(szBuf2,L"%ls\n\nDo you want to allow this?",szBuf);
 
 					if (MessageBoxW(NULL,szBuf2,L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
@@ -846,6 +844,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe
 						if (dwRes == ERROR_SUCCESS)
 						{
 							ACE_ERROR((LM_WARNING,L"%s",szBuf));
+							ACE_OS::printf("\n\nYou chose to continue... on your head be it!\n\n");
 
 							CloseHandle(m_hToken);
 							DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
@@ -1267,8 +1266,7 @@ bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
 void* Root::SpawnedProcess::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls)
 {
 	DWORD dwLen = 0;
-	GetTokenInformation(hToken,cls,NULL,0,&dwLen);
-	if (dwLen == 0)
+	if (!GetTokenInformation(hToken,cls,NULL,0,&dwLen) && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
 		return 0;
 		
 	void* pBuffer = ACE_OS::malloc(dwLen);
@@ -1334,6 +1332,7 @@ bool Root::SpawnedProcess::MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Pri
 
 bool Root::SpawnedProcess::Compare(user_id_type hToken)
 {
+	// Check the SIDs and priviledges are the same...
 	TOKEN_GROUPS_AND_PRIVILEGES* pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	if (!pStats1)
 		return false;

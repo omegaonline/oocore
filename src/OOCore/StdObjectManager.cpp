@@ -297,10 +297,15 @@ void OOCore::StdObjectManager::ReleaseMarshalData(Serialize::IFormattedStream* p
 		System::MetaInfo::throw_correct_exception(pSE);
 }
 
+bool OOCore::StdObjectManager::IsAlive()
+{
+	return (m_ptrChannel ? true : false);
+}
+
 Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 {
 	if (!m_ptrChannel)
-		OMEGA_THROW(EINVAL);
+		OMEGA_THROW(ECONNRESET);
 
 	return m_ptrChannel->CreateOutputStream();
 }

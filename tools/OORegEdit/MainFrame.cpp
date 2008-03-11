@@ -6,6 +6,8 @@
 #include "./FindDlg.h"
 #include "./AddFavDlg.h"
 #include "./RemoveFavDlg.h"
+#include "./EditKeyDescDlg.h"
+#include "./EditValueDescDlg.h"
 
 MainFrame::MainFrame(void) : wxFrame(NULL, wxID_ANY, _("Omega Online Registry Editor")),
 	m_fileHistory(8)
@@ -39,7 +41,6 @@ MainFrame::MainFrame(void) : wxFrame(NULL, wxID_ANY, _("Omega Online Registry Ed
 	m_bMatchAll = false;
 	m_bIgnoreCase = false;
 	
-	CreateStatusBar(1);
 	CreateChildWindows();
 	CreateMenus();
 }
@@ -72,12 +73,10 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 	EVT_UPDATE_UI(ID_NEW_UINT32_VALUE, MainFrame::MustHaveTreeSelection)
 	EVT_MENU(ID_NEW_BINARY_VALUE, MainFrame::OnNewBinary)
 	EVT_UPDATE_UI(ID_NEW_BINARY_VALUE, MainFrame::MustHaveTreeSelection)
-	EVT_MENU(ID_VIEW_STATUSBAR, MainFrame::OnViewStatusBar)
 	EVT_MENU(ID_COPY_NAME, MainFrame::OnCopyName)
 	EVT_MENU(ID_FAVOURITES_ADD, MainFrame::OnAddFav)
 	EVT_MENU(ID_FAVOURITES_REMOVE, MainFrame::OnRemoveFav)
 	EVT_UPDATE_UI(ID_COPY_NAME, MainFrame::MustHaveTreeSelection)
-	EVT_UPDATE_UI(ID_VIEW_STATUSBAR, MainFrame::OnUpdateToggleStatusbar)
 	EVT_UPDATE_UI(ID_MODIFY, MainFrame::OnUpdateModify)
 	EVT_UPDATE_UI(ID_FIND_NEXT, MainFrame::OnUpdateFindNext)
 	EVT_UPDATE_UI(ID_FAVOURITES_ADD, MainFrame::OnUpdateFavouritesAdd)
@@ -92,13 +91,17 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 	// List events
 	EVT_LIST_END_LABEL_EDIT(ID_LIST,MainFrame::OnListEndLabel)
 	EVT_LIST_ITEM_ACTIVATED(ID_LIST,MainFrame::OnListDblClk)
+	EVT_LIST_ITEM_SELECTED(ID_LIST,MainFrame::OnListSel)
+
+	// HTML events
+	EVT_HTML_LINK_CLICKED(ID_DESC,MainFrame::OnDescEdit)
 END_EVENT_TABLE()
 
 void MainFrame::CreateChildWindows(void)
 {
 	Omega::uint32_t split_width = 100;
+	Omega::uint32_t split_width2 = 100;
 	Omega::uint32_t col_width[3] = { 100, 100, 100 };
-	bool bShowBar = true;
 	Omega::string_t strSelection;
 		
 	try
@@ -117,12 +120,11 @@ void MainFrame::CreateChildWindows(void)
 		SetSize(sz);
 
         split_width = ptrKey->GetIntegerValue(L"SplitWidth");
+		split_width2 = ptrKey->GetIntegerValue(L"SplitWidth2");
 
 		col_width[0] = ptrKey->GetIntegerValue(L"ColWidth0");
 		col_width[1] = ptrKey->GetIntegerValue(L"ColWidth1");
 		col_width[2] = ptrKey->GetIntegerValue(L"ColWidth2");
-
-		bShowBar = ptrKey->GetIntegerValue(L"Statusbar")!=0;
 
 		strSelection = ptrKey->GetStringValue(L"Selection");
 
@@ -150,15 +152,20 @@ void MainFrame::CreateChildWindows(void)
 	{
 		e->Release();
 	}
-	
+
 	// Create the splitter
-	m_pSplitter = new wxSplitterWindow(this);
+	m_pSplitter2 = new wxSplitterWindow(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxNO_BORDER | wxSP_LIVE_UPDATE);
+    m_pSplitter2->SetSashGravity(0.90);
+	m_pSplitter2->SetMinimumPaneSize(50);
+	
+	// Create the second splitter
+	m_pSplitter = new wxSplitterWindow(m_pSplitter2,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxNO_BORDER | wxSP_LIVE_UPDATE);
     m_pSplitter->SetSashGravity(0.25);
 	m_pSplitter->SetMinimumPaneSize(150);
 
 	// Create the list and tree
-	m_pList = new wxListCtrl(m_pSplitter,ID_LIST,wxPoint(0,0),wxSize(0,0),wxNO_BORDER | wxLC_SORT_ASCENDING | wxLC_REPORT | wxLC_NO_SORT_HEADER | wxLC_EDIT_LABELS);
-	m_pTree = new wxTreeCtrl(m_pSplitter,ID_TREE,wxPoint(0,0),wxSize(0,0),wxNO_BORDER | wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_EDIT_LABELS); 
+	m_pList = new wxListCtrl(m_pSplitter,ID_LIST,wxPoint(0,0),wxSize(0,0),wxLC_SORT_ASCENDING | wxLC_REPORT | wxLC_NO_SORT_HEADER | wxLC_EDIT_LABELS);
+	m_pTree = new wxTreeCtrl(m_pSplitter,ID_TREE,wxPoint(0,0),wxSize(0,0),wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_EDIT_LABELS); 
 
 	// Load the imagelist
 	wxImage* pImage = wxGetApp().LoadImage(wxT("imagelist.bmp"));
@@ -173,8 +180,14 @@ void MainFrame::CreateChildWindows(void)
 		delete pImage;
 	}
 
-	GetStatusBar()->Show(bShowBar);
+	// Create the description text field
+	m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_SUNKEN | wxHW_SCROLLBAR_NEVER);
+	wxFont ft = m_pTree->GetFont();
+	m_pDescription->SetFonts(ft.GetFaceName(),wxT(""));
+	m_pDescription->SetBorders(1);
+		
 	m_pSplitter->SplitVertically(m_pTree, m_pList, split_width);
+	m_pSplitter2->SplitHorizontally(m_pSplitter, m_pDescription, split_width2);
 
 	// Init the list
 	wxListItem itemCol; 
@@ -211,6 +224,9 @@ void MainFrame::CreateChildWindows(void)
 void MainFrame::SelectItem(Omega::string_t strSelection)
 {
 	SetCursor(*wxHOURGLASS_CURSOR);
+
+	if (strSelection.Left(1) == L"\\")
+		strSelection = strSelection.Mid(1);
 
 	// Expand the tree to strSelection
 	wxTreeItemId tree_id = m_pTree->GetRootItem();
@@ -301,8 +317,6 @@ void MainFrame::CreateMenus(void)
 	pEditMenu->Append(ID_FIND_NEXT, _("Find Ne&xt\tF3"), _("Finds the next occurrence of text specified in a previous search."));
 	
 	wxMenu* pViewMenu = new wxMenu;
-	pViewMenu->AppendCheckItem(ID_VIEW_STATUSBAR, _("Status &Bar"), _("Shows or hides the status bar."));
-	pViewMenu->AppendSeparator();
 	pViewMenu->Append(ID_REFRESH, _("&Refresh\tF5"), _("Refreshes the window."));
 
 	wxMenu* pFavMenu = new wxMenu;
@@ -347,12 +361,11 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		ptrKey->SetIntegerValue(L"Width",sz.x);
 
 		ptrKey->SetIntegerValue(L"SplitWidth",m_pSplitter->GetSashPosition());
+		ptrKey->SetIntegerValue(L"SplitWidth2",m_pSplitter2->GetSashPosition());
 
 		ptrKey->SetIntegerValue(L"ColWidth0",m_pList->GetColumnWidth(0));
 		ptrKey->SetIntegerValue(L"ColWidth1",m_pList->GetColumnWidth(1));
 		ptrKey->SetIntegerValue(L"ColWidth2",m_pList->GetColumnWidth(2));
-
-		ptrKey->SetIntegerValue(L"Statusbar",GetStatusBar()->IsShown() ? 1 : 0);
 
 		ptrKey->SetIntegerValue(L"FindKeys",m_bKeys ? 1 : 0);
 		ptrKey->SetIntegerValue(L"FindValues",m_bValues ? 1 : 0);
@@ -360,7 +373,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		ptrKey->SetIntegerValue(L"MatchAll",m_bMatchAll ? 1 : 0);
 		ptrKey->SetIntegerValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
 
-		ptrKey->SetStringValue(L"Selection",Omega::string_t(GetStatusBar()->GetStatusText()));
+		ptrKey->SetStringValue(L"Selection",Omega::string_t(m_strSelection));
 
 		Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
 		ptrKey->SetIntegerValue(L"Favourites",nFiles);
@@ -728,7 +741,7 @@ void MainFrame::OnCopyName(wxCommandEvent& WXUNUSED(evt))
 	{
 		// Data objects are held by the clipboard,
 		// so do not delete them in the app.
-		wxTheClipboard->SetData(new wxTextDataObject(GetStatusBar()->GetStatusText()));
+		wxTheClipboard->SetData(new wxTextDataObject(m_strSelection));
 		wxTheClipboard->Close();
 	}
 }
@@ -913,19 +926,6 @@ void MainFrame::OnModify(wxCommandEvent& WXUNUSED(evt))
 	}
 }
 
-void MainFrame::OnViewStatusBar(wxCommandEvent& WXUNUSED(evt))
-{
-	wxStatusBar* pBar = GetStatusBar();
-	pBar->Show(!pBar->IsShown());
-
-	SendSizeEvent();
-}
-
-void MainFrame::OnUpdateToggleStatusbar(wxUpdateUIEvent& evt)
-{
-	evt.Check(GetStatusBar()->IsShown());
-}
-
 void MainFrame::OnFind(wxCommandEvent& evt)
 {
 	FindDlg dialog(this,-1,wxT(""));
@@ -1010,12 +1010,71 @@ void MainFrame::OnTreeSelChanged(wxTreeEvent& evt)
 	if (strText.IsEmpty())
 		strText = wxT("\\");
 
-	GetStatusBar()->SetStatusText(strText);
+	m_strSelection = strText;
 
-	if (evt.GetItem())
-		static_cast<TreeItemData*>(m_pTree->GetItemData(evt.GetItem()))->InitList(m_pList);	
+	SetKeyDescription(evt.GetItem());
 
 	SetCursor(*wxSTANDARD_CURSOR);
+}
+
+void MainFrame::SetKeyDescription(const wxTreeItemId& id)
+{
+	wxString strHTML = wxT("<html><body><table><tr><td align=\"right\"><b>Key:</b></td><td>");
+	strHTML += m_strSelection;
+	strHTML += wxT("</td></tr><tr><td align=\"right\"><b>Description:</b></td><td>");
+		
+	if (id.IsOk())
+	{
+		TreeItemData* pItem = static_cast<TreeItemData*>(m_pTree->GetItemData(id));
+		pItem->InitList(m_pList);
+		wxString strDesc = pItem->GetDesc();
+		if (!strDesc.IsEmpty())
+			strHTML += strDesc + wxT(" <i><a href=\"edit_key\">edit...</a></i>");
+		else if (m_strSelection != wxT("\\"))
+			strHTML += wxT("<i><a href=\"edit_key\">Add...</a></i>");
+	}
+
+	strHTML += wxT("</td></tr></table></body></html>");
+	m_pDescription->SetPage(strHTML);
+}
+
+void MainFrame::OnListSel(wxListEvent& evt)
+{
+	wxTreeItemId tree_id = m_pTree->GetSelection();
+	if (!tree_id)
+		return;
+
+	TreeItemData* pItem = (TreeItemData*)m_pTree->GetItemData(tree_id);
+	if (!pItem)
+		return;
+
+	wxString strSel = evt.GetText();
+	SetValueDescription(strSel,pItem->GetValueDesc(strSel));
+}
+
+void MainFrame::SetValueDescription(const wxString& strSel, const wxString& strDesc)
+{
+	wxString strHTML = wxT("<html><body><table><tr><td align=\"right\"><b>Key:</b></td><td>");
+	strHTML += m_strSelection;
+	strHTML += wxT("</td><td align=\"right\"><b>Value:</b></td><td>");
+	strHTML += strSel;
+	strHTML += wxT("</td></tr><tr><td align=\"right\"><b>Description:</b></td><td colspan=\"3\">");
+	
+	if (!strDesc.IsEmpty())
+	{
+		strHTML += strDesc + wxT(" <i><a href=\"edit_value\" target=\"");
+		strHTML += strSel;
+		strHTML += wxT("\">edit...</a></i>");
+	}
+	else
+	{
+		strHTML += wxT("<i><a href=\"edit_value\" target=\"");
+		strHTML += strSel;
+		strHTML += wxT("\">Add...</a></i>");
+	}
+	
+	strHTML += wxT("</td></tr></table></body></html>");
+	m_pDescription->SetPage(strHTML);
 }
 
 void MainFrame::OnListDblClk(wxListEvent& evt)
@@ -1078,7 +1137,7 @@ void MainFrame::OnAddFav(wxCommandEvent& evt)
 
 	if (dialog.ShowModal() == wxID_OK)
 	{
-		m_mapMRU.insert(std::map<wxString,Omega::string_t>::value_type(dialog.m_strName,Omega::string_t(GetStatusBar()->GetStatusText())));
+		m_mapMRU.insert(std::map<wxString,Omega::string_t>::value_type(dialog.m_strName,Omega::string_t(m_strSelection)));
 		m_fileHistory.AddFileToHistory(dialog.m_strName);
 	}
 }
@@ -1107,4 +1166,39 @@ void MainFrame::OnUpdateFavouritesAdd(wxUpdateUIEvent& evt)
 void MainFrame::OnUpdateFavouritesRemove(wxUpdateUIEvent& evt)
 {
 	evt.Enable(m_fileHistory.GetCount() > 0);
+}
+
+void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
+{
+	if (evt.GetLinkInfo().GetHref() == wxT("edit_key"))
+	{
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(m_strSelection.c_str());
+
+		EditKeyDescDlg dialog(this,-1,wxT(""));
+		dialog.m_strName = m_strSelection;
+		dialog.m_strDesc = ptrKey->GetDescription().c_str();
+
+		if (dialog.ShowModal() == wxID_OK)
+		{
+			ptrKey->SetDescription(dialog.m_strDesc.c_str());
+		
+			SetKeyDescription(m_pTree->GetSelection());
+		}
+	}
+	else if (evt.GetLinkInfo().GetHref() == wxT("edit_value"))
+	{
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(m_strSelection.c_str());
+
+		EditValueDescDlg dialog(this,-1,wxT(""));
+		dialog.m_strName = m_strSelection;
+		dialog.m_strValue = evt.GetLinkInfo().GetTarget();
+		dialog.m_strDesc = ptrKey->GetValueDescription(dialog.m_strValue.c_str()).c_str();
+
+		if (dialog.ShowModal() == wxID_OK)
+		{
+			ptrKey->SetValueDescription(dialog.m_strValue.c_str(),dialog.m_strDesc.c_str());
+		
+			SetValueDescription(dialog.m_strValue,dialog.m_strDesc);
+		}
+	}
 }

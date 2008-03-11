@@ -196,19 +196,6 @@ namespace OTL
 			return *this;
 		}
 
-		bool operator ! () const
-		{
-			return (m_ptr.value() == 0);
-		}
-
-		OBJECT* AddRefReturn()
-		{
-			if (m_ptr.value())
-				m_ptr.value()->AddRef();
-
-			return m_ptr.value();
-		}
-
 		void Attach(OBJECT* obj)
 		{
 			OBJECT* old = m_ptr.exchange(obj);
@@ -219,6 +206,14 @@ namespace OTL
 		OBJECT* Detach()
 		{
 			return m_ptr.exchange(0);
+		}
+
+		OBJECT* AddRef()
+		{
+			if (m_ptr.value())
+				m_ptr.value()->AddRef();
+
+			return m_ptr.value();
 		}
 
 		void Release()
@@ -236,12 +231,12 @@ namespace OTL
 			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_UUIDOF(OBJECT)));
 		}
 
-		OBJECT* operator ->() const
+		OBJECT* const operator ->() const
 		{
 			return m_ptr.value();
 		}
 
-		operator OBJECT*() const
+		operator OBJECT* const () const
 		{
 			return m_ptr.value();
 		}
@@ -439,7 +434,7 @@ namespace OTL
 		}
 		virtual Omega::IException* Cause()
 		{
-			return m_ptrCause.AddRefReturn();
+			return m_ptrCause.AddRef();
 		}
 		virtual Omega::string_t Description()
 		{
@@ -1011,7 +1006,7 @@ namespace OTL
 			ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateInstancePtr();
 			ptrThis->m_listItems.assign(first,last);
 			ptrThis->m_pos = ptrThis->m_listItems.begin();
-			return ptrThis.AddRefReturn();
+			return ptrThis.AddRef();
 		}
 
 		void Init()
@@ -1079,7 +1074,7 @@ namespace OTL
 			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateInstancePtr();
 			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());
 			ptrNew->m_pos = ptrNew->m_listItems.begin();
-			return ptrNew.AddRefReturn();
+			return ptrNew.AddRef();
 		}
 	};
 

@@ -53,13 +53,21 @@ void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningO
 		{
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			if (m_mapObjects.find(oid) != m_mapObjects.end())
+			std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
+			if (i != m_mapObjects.end())
 			{
+				bool bOk = true;
+			
 				// QI for IWireProxy and check its still there!
+				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = i->second;
+				if (ptrProxy)
+				{
+					if (!ptrProxy->IsAlive())
+						bOk = false;
+				}
 
-				void* TODO;
-
-				OMEGA_THROW(EALREADY);
+				if (bOk)
+					OMEGA_THROW(EALREADY);
 			}
 
 			m_mapObjects.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
@@ -102,12 +110,31 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 {
 	try
 	{
-		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
-		if (i != m_mapObjects.end())
+		bool bOk = true;
 		{
-			return i->second.AddRefReturn();
+			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
+			if (i != m_mapObjects.end())
+			{
+				// QI for IWireProxy and check its still there!
+				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = i->second;
+				if (ptrProxy)
+				{
+					if (!ptrProxy->IsAlive())
+						bOk = false;
+				}
+
+				if (bOk)
+					return i->second.AddRef();
+			}
+		}
+
+		if (!bOk)
+		{
+			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			m_mapObjects.erase(oid);
 		}
 	}
 	catch (std::exception& e)

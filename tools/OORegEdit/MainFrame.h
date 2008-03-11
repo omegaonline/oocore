@@ -7,6 +7,7 @@ class MainFrame : public wxFrame
 	{
 		ID_LIST = 1,
 		ID_TREE,
+		ID_DESC,
 		ID_EXPORT,
 		ID_CONNECT,
 		ID_DISCONNECT,
@@ -35,10 +36,13 @@ public:
 
 private:
 	wxFileHistory		m_fileHistory;
+	wxHtmlWindow*       m_pDescription;
+	wxSplitterWindow*	m_pSplitter2;
 	wxSplitterWindow*	m_pSplitter;
 	wxTreeCtrl* 		m_pTree;
 	wxListCtrl* 		m_pList;
 	wxString			m_strFind;
+	wxString			m_strSelection;
 	bool				m_bKeys;
 	bool				m_bValues;
 	bool				m_bData;
@@ -77,10 +81,14 @@ private:
 	void MustHaveTreeSelection(wxUpdateUIEvent& evt);
 	void OnAddFav(wxCommandEvent& evt);
 	void OnRemoveFav(wxCommandEvent& evt);
+	void OnDescEdit(wxHtmlLinkEvent& evt);
+	void OnListSel(wxListEvent& evt);
 
 	void CreateMenus(void);
 	void CreateChildWindows(void);
 	void SelectItem(Omega::string_t strSelection);
+	void SetKeyDescription(const wxTreeItemId& id);
+	void SetValueDescription(const wxString& strSel, const wxString& strDesc);
 };
 
 #endif // OOREGEDIT_MAINFRAME_H_INCLUDED_

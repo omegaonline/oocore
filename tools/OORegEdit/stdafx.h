@@ -29,3 +29,4 @@
 #include <wx/clipbrd.h>
 #include <wx/valgen.h>
 #include <wx/docview.h>
+#include <wx/html/htmlwin.h>

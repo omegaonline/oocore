@@ -86,7 +86,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((
 		OOCore::BadNameException::Throw(key,L"Omega::Registry::OpenKey");
 
 	if (key == L"\\")
-		return OOCore::GetRootKey().AddRefReturn();
+		return OOCore::GetRootKey().AddRef();
 	else
 		return OOCore::GetRootKey()->OpenSubKey(key.Mid(1),flags);
 }

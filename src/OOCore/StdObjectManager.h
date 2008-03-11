@@ -66,6 +66,7 @@ namespace OOCore
 
 		void RemoveProxy(Omega::uint32_t proxy_id);
 		void RemoveStub(Omega::uint32_t stub_id);
+		bool IsAlive();
 
 	private:
 		StdObjectManager(const StdObjectManager&) : OTL::ObjectBase(),Omega::Remoting::IObjectManager(),Omega::System::MetaInfo::IWireManager() {};

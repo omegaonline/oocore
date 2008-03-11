@@ -365,15 +365,14 @@ string_t Key::GetStringValue(const string_t& strName)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
+	else if (err == EINVAL)
 	{
 		ValueType_t vtype;
 		err = GetValueType_i(strName,vtype);
 		if (err == 0)
 			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-	
-	if (err == ENOENT)
-		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err==EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err==EACCES)
@@ -409,15 +408,14 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
+	else if (err == EINVAL)
 	{
 		ValueType_t vtype;
 		err = GetValueType_i(strName,vtype);
 		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetIntegerValue");
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-
-	if (err == ENOENT)
-		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err==EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err==EACCES)
@@ -455,15 +453,14 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 		OOSERVER_THROW_LASTERROR();
 
 	if (err == ENOENT)
+		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
+	else if (err == EINVAL)
 	{
 		ValueType_t vtype;
 		err = GetValueType_i(strName,vtype);
 		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetBinaryValue");
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-
-	if (err == ENOENT)
-		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err==EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err==EACCES)
@@ -736,7 +733,7 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 
 	ptrNew->Init(m_pManager,m_strKey + L"\\" + strSubKey,key);
 
-	return ptrNew.AddRefReturn();
+	return ptrNew.AddRef();
 }
 
 Omega::IEnumString* Key::EnumSubKeys()
@@ -785,7 +782,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 	}
 
 	ptrEnum->Init();
-	return ptrEnum.AddRefReturn();
+	return ptrEnum.AddRef();
 }
 
 Omega::IEnumString* Key::EnumValues()
@@ -834,7 +831,7 @@ Omega::IEnumString* Key::EnumValues()
 	}
 
 	ptrEnum->Init();
-	return ptrEnum.AddRefReturn();
+	return ptrEnum.AddRef();
 }
 
 void Key::DeleteKey(const string_t& strSubKey)

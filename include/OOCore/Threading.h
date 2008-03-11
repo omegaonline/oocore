@@ -140,7 +140,6 @@ namespace Omega
 			inline volatile T* operator &();
 
 			inline T value() const;
-			inline volatile T& value();
 			inline T exchange(const T& v);
 
 		private:
@@ -148,23 +147,23 @@ namespace Omega
 			T                       m_value;
 		};
 
-#ifdef OMEGA_HAS_ATOMIC_OP
+#ifdef OMEGA_HAS_ATOMIC_OP_32
 
 		template <> class AtomicOp<int32_t>
 		{
 		public:
 			AtomicOp() {}
-			inline AtomicOp(const int32_t& v);
+			inline AtomicOp(int32_t v);
 			inline AtomicOp(const AtomicOp& rhs);
 
 			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (const int32_t& rhs);
+			inline AtomicOp& operator = (int32_t rhs);
 
 			bool operator == (const AtomicOp& rhs)
 			{
 				return m_value == rhs.m_value;
 			}
-			bool operator == (const int32_t& rhs)
+			bool operator == (int32_t rhs)
 			{
 				return m_value == rhs;
 			}
@@ -176,8 +175,7 @@ namespace Omega
 			inline volatile int32_t* operator &() { return &m_value; }
 
 			inline int32_t value() const { return m_value; }
-			inline volatile int32_t& value()  { return m_value; }
-			inline int32_t exchange(const int32_t& v);
+			inline int32_t exchange(int32_t v);
 
 		private:
 			int32_t m_value;
@@ -187,17 +185,17 @@ namespace Omega
 		{
 		public:
 			AtomicOp() {};
-			inline AtomicOp(const uint32_t& v);
+			inline AtomicOp(uint32_t v);
 			inline AtomicOp(const AtomicOp& rhs);
 
 			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (const uint32_t& rhs);
+			inline AtomicOp& operator = (uint32_t rhs);
 
 			bool operator == (const AtomicOp& rhs)
 			{
 				return m_value == rhs.m_value;
 			}
-			bool operator == (const uint32_t& rhs)
+			bool operator == (uint32_t rhs)
 			{
 				return m_value == rhs;
 			}
@@ -209,14 +207,39 @@ namespace Omega
 			inline volatile uint32_t* operator &()  { return &m_value; }
 
 			inline uint32_t value() const  { return m_value; }
-			inline volatile uint32_t& value()  { return m_value; }
-			inline uint32_t exchange(const uint32_t& v);
+			inline uint32_t exchange(uint32_t v);
 
 		private:
 			uint32_t	m_value;
 		};
 
-#endif // OMEGA_HAS_ATOMIC_OP
+		template <class T> class AtomicOp<T*>
+		{
+		public:
+			AtomicOp() {};
+			inline AtomicOp(T* v);
+			inline AtomicOp(const AtomicOp& rhs);
+
+			inline AtomicOp& operator = (const AtomicOp& rhs);
+			inline AtomicOp& operator = (T* rhs);
+
+			bool operator == (const AtomicOp& rhs)
+			{
+				return m_value == rhs.m_value;
+			}
+			bool operator == (T* rhs)
+			{
+				return m_value == rhs;
+			}
+
+			inline T* value() const  { return m_value; }
+			inline T* exchange(T* v);
+
+		private:
+			T*	m_value;
+		};
+
+#endif // OMEGA_HAS_ATOMIC_OP_32
 	}
 }
 

@@ -37,7 +37,7 @@ void EditStringDlg::do_layout()
     wxBoxSizer* m_sizer_1 = new wxBoxSizer(wxVERTICAL);
     m_sizer_1->Add(m_lblName, 0, wxLEFT|wxRIGHT|wxTOP, 7);
     m_sizer_1->Add(m_txtName, 0, wxALL|wxEXPAND, 7);
-    m_sizer_1->Add(350, 2, 0, wxADJUST_MINSIZE, 0);
+    m_sizer_1->Add(350, 0, 0, wxADJUST_MINSIZE, 0);
     m_sizer_1->Add(m_lblValue, 0, wxLEFT|wxRIGHT|wxTOP, 7);
     m_sizer_1->Add(m_txtValue, 0, wxALL|wxEXPAND, 7);
     m_sizer_1->Add(m_buttons, 0, wxALL|wxEXPAND, 7);

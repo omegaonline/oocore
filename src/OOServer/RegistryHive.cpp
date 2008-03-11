@@ -654,12 +654,16 @@ int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_CStrin
 	}
 
 	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld AND Type=0;",strValue.c_str(),uKey);
+		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
-		val = ptrStmt->column_text(0);
+		int type = ptrStmt->column_int(0);
+		if (type != 0)
+			return EINVAL;
+
+		val = ptrStmt->column_text(1);
 		return 0;
 	}
 	else if (err == SQLITE_DONE)
@@ -689,12 +693,16 @@ int Root::RegistryHive::get_integer_value(const ACE_INT64& uKey, const ACE_CStri
 	}
 
 	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld AND Type=1;",strValue.c_str(),uKey);
+		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
-		val = ptrStmt->column_int64(0);
+		int type = ptrStmt->column_int(0);
+		if (type != 1)
+			return EINVAL;
+
+		val = ptrStmt->column_int64(1);
 		return 0;
 	}
 	else if (err == SQLITE_DONE)
@@ -743,28 +751,37 @@ void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CStri
 		return;
 
 	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld AND Type=2;",strValue.c_str(),uKey);
+		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
-		const void* pData = ptrStmt->column_blob(0);
-		int len = ptrStmt->column_bytes(0);
-
-		bool bData = false;
-		if (cbLen)
-		{
-			bData = true;
-			cbLen = std::min(static_cast<ACE_CDR::ULong>(len),cbLen);
-		}
-		else
-			cbLen = static_cast<ACE_CDR::ULong>(len);
-
-		if (!response.write_ulong(cbLen) || 
-			(bData && !response.write_octet_array(static_cast<const ACE_CDR::Octet*>(pData),cbLen)))
+		int type = ptrStmt->column_int(0);
+		if (type != 2)
 		{
 			response.reset();
-			response << ACE_OS::last_error();
+			response << EINVAL;
+		}
+		else
+		{
+			const void* pData = ptrStmt->column_blob(1);
+			int len = ptrStmt->column_bytes(1);
+
+			bool bData = false;
+			if (cbLen)
+			{
+				bData = true;
+				cbLen = std::min(static_cast<ACE_CDR::ULong>(len),cbLen);
+			}
+			else
+				cbLen = static_cast<ACE_CDR::ULong>(len);
+
+			if (!response.write_ulong(cbLen) || 
+				(bData && !response.write_octet_array(static_cast<const ACE_CDR::Octet*>(pData),cbLen)))
+			{
+				response.reset();
+				response << ACE_OS::last_error();
+			}
 		}
 
 		return;
@@ -799,11 +816,31 @@ int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_CStrin
 			return acc;
 	}
 
-	// Insert the new value
+	// See if we have a value already
 	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
-		m_db->prepare_statement("INSERT OR REPLACE INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
+		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
+	if (err == SQLITE_ROW)
+	{
+		int type = ptrStmt->column_int(0);
+		if (type != 0)
+			return EINVAL;
+
+		// We have an entry already
+		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = %Q WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
+	
+		err = ptrStmt->step();
+	}
+	else if (err == SQLITE_DONE)
+	{
+		// Insert the new value
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
+		
+		err = ptrStmt->step();
+	}
+
 	if (err != SQLITE_DONE)
 		return EIO;
 	
@@ -830,11 +867,31 @@ int Root::RegistryHive::set_integer_value(const ACE_INT64& uKey, const ACE_CStri
 			return acc;
 	}
 
-	// Insert the new value
+	// See if we have a value already
 	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
-		m_db->prepare_statement("INSERT OR REPLACE INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
+		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
+	if (err == SQLITE_ROW)
+	{
+		int type = ptrStmt->column_int(0);
+		if (type != 1)
+			return EINVAL;
+
+		// We have an entry already
+		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = %lld WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
+	
+		err = ptrStmt->step();
+	}
+	else if (err == SQLITE_DONE)
+	{
+		// Insert the new value
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
+		
+		err = ptrStmt->step();
+	}
+
 	if (err != SQLITE_DONE)
 		return EIO;
 	
@@ -861,17 +918,43 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 			return acc;
 	}
 
-	// Insert the new value
+	// See if we have a value already
 	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
-		m_db->prepare_statement("INSERT OR REPLACE INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
-		
-	err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
-	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,L"%N:%l: sqlite3_bind_blob failed: %C\n",sqlite3_errmsg(m_db->database())));
-	else
-		err = ptrStmt->step();
+		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
-	return (err == SQLITE_DONE) ? 0 : EIO;
+	err = ptrStmt->step();
+	if (err == SQLITE_ROW)
+	{
+		int type = ptrStmt->column_int(0);
+		if (type != 2)
+			return EINVAL;
+
+		// We have an entry already
+		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	
+		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
+		if (err != SQLITE_OK)
+			ACE_ERROR((LM_ERROR,L"%N:%l: sqlite3_bind_blob failed: %C\n",sqlite3_errmsg(m_db->database())));
+		else
+			err = ptrStmt->step();
+	}
+	else if (err == SQLITE_DONE)
+	{
+		// Insert the new value
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
+			
+		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
+		if (err != SQLITE_OK)
+			ACE_ERROR((LM_ERROR,L"%N:%l: sqlite3_bind_blob failed: %C\n",sqlite3_errmsg(m_db->database())));
+		else
+			err = ptrStmt->step();
+	}
+	
+	if (err != SQLITE_DONE)
+		return EIO;
+	
+	return 0;
 }
 
 int Root::RegistryHive::get_description(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_CString& val)

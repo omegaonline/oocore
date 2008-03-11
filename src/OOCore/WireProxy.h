@@ -88,6 +88,8 @@ namespace OOCore
 			return pStream->WriteUInt32_Safe(m_proxy_id);
 		}
 
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL IsAlive_Safe(Omega::bool_t* pRet);
+
 	// IMarshal_Safe members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::MarshalFlags_t)

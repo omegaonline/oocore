@@ -599,3 +599,13 @@ bool TreeItemData::MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Ome
 
 	return false;
 }
+
+wxString TreeItemData::GetDesc()
+{
+	return m_ptrKey->GetDescription().c_str();
+}
+
+wxString TreeItemData::GetValueDesc(const wxString& strVal)
+{
+	return m_ptrKey->GetValueDescription(strVal.c_str()).c_str();
+}

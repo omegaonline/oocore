@@ -20,6 +20,8 @@ public:
 	void NewBinary(wxListCtrl* pList);
 	void Modify(wxListCtrl* pList, long item_id);
 	void Find(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pList, long list_id, const Omega::string_t& strFind, bool bKeys, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase);
+	wxString GetDesc();
+	wxString GetValueDesc(const wxString& strVal);
 
 private:
 	OTL::ObjectPtr<Omega::Registry::IRegistryKey> m_ptrKey;

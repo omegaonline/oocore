@@ -99,7 +99,7 @@ static bool AttachVS8Debugger(DWORD our_pid)
 		CoUninitialize();
 	}
 
-    return bRet;	
+	return bRet;	
 
 #endif
 }
@@ -111,7 +111,7 @@ static void PromptForDebugger(DWORD pid)
 	MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
-void AttachDebugger(DWORD pid)
+void AttachDebugger(pid_t pid)
 {
 	if (AttachVS8Debugger(pid))
 		return;

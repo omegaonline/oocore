@@ -298,7 +298,6 @@
 #define OMEGA_REPEAT_256(m,d)  OMEGA_REPEAT_255(m,d) m(255,d)
 #endif
 
-
 // That's probably enough!
 #define OMEGA_REPEAT(n,m,d)	OMEGA_CONCAT(OMEGA_REPEAT_,n)(m,d)
 #endif

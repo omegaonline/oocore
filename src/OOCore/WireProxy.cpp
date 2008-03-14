@@ -133,7 +133,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 
@@ -146,7 +146,7 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 	pParamsOut->WriteGuid(OMEGA_UUIDOF(IObject));
 	pParamsOut->WriteUInt32(1);
 	pParamsOut->WriteGuid(iid);
-    
+
 	Serialize::IFormattedStream* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
 	if (pE)
@@ -270,7 +270,7 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 
 	pParamsOut->WriteGuid(iid);
 	m_pManager->MarshalInterface(pParamsOut,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pObjectManager);
-    
+
 	Serialize::IFormattedStream* pParamsIn = 0;
 	IException* pE = 0;
 	try

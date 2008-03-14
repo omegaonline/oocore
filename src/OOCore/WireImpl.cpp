@@ -69,7 +69,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::CreateWireStub(const guid_t& iid, Syst
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
 	System::MetaInfo::IWireStub_Safe* pRet = 0;
@@ -93,7 +93,7 @@ System::MetaInfo::IObject_Safe* OOCore::CreateWireProxy(const guid_t& iid, Syste
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
 	System::MetaInfo::IObject_Safe* pRet = 0;

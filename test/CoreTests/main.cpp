@@ -29,7 +29,6 @@ bool exception_tests();
 bool otl_tests();
 bool registry_tests();
 bool registry_tests_2();
-bool registry_tests_3();
 bool interface_tests();
 
 int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
@@ -44,7 +43,6 @@ int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
 		RUN_TEST(otl_tests);
 		RUN_TEST(registry_tests);
 		RUN_TEST(registry_tests_2);
-		RUN_TEST(registry_tests_3);
 		RUN_TEST(interface_tests);
 	}
 
@@ -148,8 +146,5 @@ bool run_test(pfnTest t, const char* pszName)
 // This is here so I don't have to include ACE everywhere...
 int test_system(const wchar_t* pszCommand)
 {
-	char szBuf[MAX_PATH];
-	::getcwd(szBuf,MAX_PATH);
-
 	return ACE_OS::system(ACE_TEXT_WCHAR_TO_TCHAR(pszCommand));
 }

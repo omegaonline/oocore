@@ -85,7 +85,7 @@ Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, O
 	if (!(flags & Omega::Activation::InProcess))
 		return 0;
 
-    const CreatorEntry* g=getCreatorEntries();
+	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
 		if (*(g[i].pfnOid)() == oid)

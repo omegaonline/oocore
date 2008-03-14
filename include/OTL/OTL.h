@@ -294,7 +294,7 @@ namespace OTL
 		{ }
 	};
 
-    class ObjectBase
+	class ObjectBase
 	{
 	protected:
 		ObjectBase() : m_refcount(0)
@@ -346,42 +346,42 @@ namespace OTL
 		#endif
 
 		template <class Interface, class Implementation>
-        static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
-        {
+		static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
+		{
 			Interface* pI = static_cast<Interface*>(static_cast<Implementation*>(pThis));
 			pI->AddRef();
-            return pI;
-        }
+			return pI;
+		}
 
 		template <class Interface, class Interface2, class Implementation>
 		static Omega::IObject* QIDelegate2(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
-        {
+		{
 			Interface* pI = static_cast<Interface*>(static_cast<Interface2*>(static_cast<Implementation*>(pThis)));
 			pI->AddRef();
-            return pI;
+			return pI;
 		}
 
-        template <class Base, class Implementation>
-        static Omega::IObject* QIChain(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI)
-        {
-            return static_cast<Implementation*>(pThis)->Internal_QueryInterface(iid,Base::getQIEntries());
-        }
+		template <class Base, class Implementation>
+		static Omega::IObject* QIChain(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI)
+		{
+			return static_cast<Implementation*>(pThis)->Internal_QueryInterface(iid,Base::getQIEntries());
+		}
 
-        static Omega::IObject* QIAggregate(const Omega::guid_t& iid, void* pThis, size_t offset, ObjectBase::PFNMEMQI)
-        {
-            return reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+offset)->QueryInterface(iid);
-        }
+		static Omega::IObject* QIAggregate(const Omega::guid_t& iid, void* pThis, size_t offset, ObjectBase::PFNMEMQI)
+		{
+			return reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+offset)->QueryInterface(iid);
+		}
 
-        template <class Implementation>
-        static Omega::IObject* QIFunction(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI pfnMemQI)
-        {
+		template <class Implementation>
+		static Omega::IObject* QIFunction(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI pfnMemQI)
+		{
 			return (static_cast<Implementation*>(pThis)->*pfnMemQI)(iid);
-        }
+		}
 
-        static Omega::IObject* QIFail(const Omega::guid_t&, void*, size_t, ObjectBase::PFNMEMQI)
-        {
-            return 0;
-        }
+		static Omega::IObject* QIFail(const Omega::guid_t&, void*, size_t, ObjectBase::PFNMEMQI)
+		{
+			return 0;
+		}
 
 	protected:
 		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
@@ -922,7 +922,7 @@ namespace OTL
 	class AutoObjectFactory
 	{
 	public:
-        typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 		static const Omega::guid_t* GetOid()
 		{
@@ -944,14 +944,14 @@ namespace OTL
 	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
-        typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
 	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::OutOfProcess, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
-        typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
 	// Fix this with a cut and paste job from Singleton - if needed!
@@ -1053,7 +1053,7 @@ namespace OTL
 
 			while (count > 0 && m_pos!=m_listItems.end())
 			{
-                ++m_pos;
+				++m_pos;
 				--count;
 			}
 

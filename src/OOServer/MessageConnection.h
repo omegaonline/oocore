@@ -54,9 +54,9 @@ namespace Root
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
-        static const size_t         s_initial_read = ACE_CDR::LONG_SIZE;
+		static const size_t s_initial_read = ACE_CDR::LONG_SIZE;
 
-        MessageHandler*                                     m_pHandler;
+		MessageHandler*                                     m_pHandler;
 		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> m_pipe;
 		size_t                                              m_read_len;
 		ACE_CDR::ULong                                      m_channel_id;
@@ -125,7 +125,7 @@ namespace Root
 		
 		struct Message
 		{
-			enum Flags
+			enum Type
 			{
 				Response = 0,
 				Request = 1

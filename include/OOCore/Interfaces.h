@@ -42,7 +42,7 @@ namespace Omega
 
 		enum RegisterFlags
 		{
-			MultipleUse = 0,    
+			MultipleUse = 0,
 			SingleUse = 1,              // AutoRevoke after 1st GetObject
 			MultipleRegistration = 2,   // Allow multiple calls to Register with different flags
 			Suspended = 4
@@ -72,17 +72,11 @@ namespace Omega
 			virtual string_t GetLibraryName() = 0;
 		};
 		
+		// WARNING - THIS IS GOING TO CHANGE!!!
 		interface IRunningObjectTable : public IObject
 		{
-			enum Flags
-			{
-				Default = 0,
-				AllowAnyUser = 1
-			};
-			typedef uint16_t Flags_t;
-
-			virtual void Register(const guid_t& oid, Flags_t flags, IObject* pObject) = 0;
-			virtual void Revoke(const guid_t& oid) = 0;
+			virtual uint32_t Register(const guid_t& oid, IObject* pObject) = 0;
+			virtual void Revoke(uint32_t cookie) = 0;
 			virtual IObject* GetObject(const guid_t& oid) = 0;
 
 			inline static IRunningObjectTable* GetRunningObjectTable();
@@ -154,7 +148,7 @@ namespace Omega
 			virtual string_t GetName() = 0;
 		};
 		
-        interface IWrongValueTypeException : public IException
+		interface IWrongValueTypeException : public IException
 		{
 			virtual string_t GetValueName() = 0;
 			virtual ValueType_t GetValueType() = 0;
@@ -223,8 +217,8 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IRunningObjectTable, "{0A36F849-8DBC-49c6-9ECA-8AD71BF3C8D0}",
 
 	// Methods
-	OMEGA_METHOD_VOID(Register,3,((in),const Omega::guid_t&,oid,(in),Omega::Activation::IRunningObjectTable::Flags_t,flags,(in),Omega::IObject*,pObject))
-	OMEGA_METHOD_VOID(Revoke,1,((in),const Omega::guid_t&,oid))
+	OMEGA_METHOD(Omega::uint32_t,Register,2,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject))
+	OMEGA_METHOD_VOID(Revoke,1,((in),Omega::uint32_t,cookie))
 	OMEGA_METHOD(Omega::IObject*,GetObject,1,((in),const Omega::guid_t&,oid))
 )
 

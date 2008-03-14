@@ -108,7 +108,7 @@ namespace OOCore
 	// IObjectManager members
 	public:
 		void Connect(Omega::Remoting::IChannel* pChannel, Omega::Remoting::MarshalFlags_t marshal_flags);
-		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut);
+		void Invoke(Omega::Serialize::IFormattedStream* pParamsIn, Omega::Serialize::IFormattedStream* pParamsOut, Omega::uint64_t deadline_secs, Omega::int32_t deadline_usecs, Omega::uint32_t src_id, Omega::Remoting::MarshalFlags_t marshal_flags);
 		void Disconnect();
 		void CreateRemoteInstance(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject* pOuter, Omega::IObject*& pObject);
 

@@ -661,7 +661,7 @@ namespace Omega
 				I* m_pI;
 
 			private:
-				SafeStub*          m_pStub;
+				SafeStub* m_pStub;
 			};
 
 			interface ISafeProxy : public IObject

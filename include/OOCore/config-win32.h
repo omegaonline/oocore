@@ -64,9 +64,9 @@
 #define OMEGA_CALL __cdecl
 
 #if defined(OMEGA_WIN64)
-#define OMEGA_PLATFORM_STRING	"Win64"
+#define OMEGA_PLATFORM_STRING "Win64"
 #else
-#define OMEGA_PLATFORM_STRING	"Win32"
+#define OMEGA_PLATFORM_STRING "Win32"
 #endif
 
 #define OMEGA_HAS_ATOMIC_OP_32

@@ -266,6 +266,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\InterProcessService.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MessageConnection.cpp"
 				>
 				<FileConfiguration
@@ -475,6 +479,10 @@
 			</File>
 			<File
 				RelativePath=".\Database.h"
+				>
+			</File>
+			<File
+				RelativePath=".\InterProcessService.h"
 				>
 			</File>
 			<File

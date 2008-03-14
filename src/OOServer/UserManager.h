@@ -31,7 +31,7 @@ namespace User
 	class Manager : public Root::MessageHandler
 	{
 	public:
-        static int run(const ACE_WString& strPipe);
+		static int run(const ACE_WString& strPipe);
 		
 		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request);
 
@@ -47,9 +47,9 @@ namespace User
 		Manager(const Manager&) : Root::MessageHandler() {}
 		Manager& operator = (const Manager&) { return *this; }
 
-		ACE_RW_Thread_Mutex			m_lock;
-		ACE_CDR::ULong              m_root_channel;
-		Omega::uint32_t             m_nIPSCookie;
+		ACE_RW_Thread_Mutex m_lock;
+		ACE_CDR::ULong      m_root_channel;
+		Omega::uint32_t     m_nIPSCookie;
 
 		Root::MessagePipeAsyncAcceptor<Manager> m_process_acceptor;
 

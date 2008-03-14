@@ -356,7 +356,11 @@ void OOCore::UserSession::term_i()
 
 ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
 {
-	return (ACE_THR_FUNC_RETURN)static_cast<UserSession*>(pParam)->run_read_loop();
+	int r = static_cast<UserSession*>(pParam)->run_read_loop();
+	if (r != 0)
+		DebugBreak();
+
+	return (ACE_THR_FUNC_RETURN)r;
 }
 
 int OOCore::UserSession::run_read_loop()
@@ -453,9 +457,9 @@ int OOCore::UserSession::run_read_loop()
 		(*msg->m_ptrPayload) >> msg->m_src_channel_id;
 
 		// Read the deadline
-		ACE_CDR::ULong req_dline_secs;
+		ACE_CDR::ULongLong req_dline_secs;
 		(*msg->m_ptrPayload) >> req_dline_secs;
-		ACE_CDR::ULong req_dline_usecs;
+		ACE_CDR::Long req_dline_usecs;
 		(*msg->m_ptrPayload) >> req_dline_usecs;
 		msg->m_deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
 
@@ -507,7 +511,7 @@ int OOCore::UserSession::run_read_loop()
 
 		msg->m_ptrPayload->reset_byte_order(byte_order);
 	
-		(*msg->m_ptrPayload) >> msg->m_flags;
+		(*msg->m_ptrPayload) >> msg->m_type;
 		(*msg->m_ptrPayload) >> msg->m_seq_no;
 
 		// Did everything make sense?
@@ -539,7 +543,7 @@ int OOCore::UserSession::run_read_loop()
 					err = EACCES;
 				else 
 				{
-					if (i->second->m_usage == 0 && (msg->m_flags & Message::Request))
+					if (i->second->m_usage == 0 && msg->m_type == Message::Request)
 					{
 						// This incoming request may not be processed for some time...
 						void* TODO;	// Alert!
@@ -557,7 +561,7 @@ int OOCore::UserSession::run_read_loop()
 		else if (msg->m_attribs & Message::system_message)
 		{
 			// Process system messages here...
-			if ((msg->m_attribs & Message::channel_close) && (msg->m_flags & Message::Request))
+			if ((msg->m_attribs & Message::channel_close) && msg->m_type == Message::Request)
 			{
 				ACE_CDR::ULong closed_channel_id;
 				(*msg->m_ptrPayload) >> closed_channel_id;
@@ -575,7 +579,7 @@ int OOCore::UserSession::run_read_loop()
 				err = EINVAL;
 			}
 		}
-		else if (!(msg->m_flags & Message::Request))
+		else if (msg->m_type != Message::Request)
 		{
 			// Cannot have a response to 0 thread!
 			err = EINVAL;
@@ -767,7 +771,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 		}
 		else
 		{
-			if (msg->m_flags & Message::Request)
+			if (msg->m_type == Message::Request)
 			{
 				// Update deadline
 				ACE_Time_Value old_deadline = pContext->m_deadline;
@@ -943,17 +947,27 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 	if (!build_header(seq_no,src_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
 		return false;
 
-	// Send to the handle
-	ACE_Time_Value now = ACE_OS::gettimeofday();
-	
 	// Scope lock...
 	{
-        ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
+
+		// Send to the handle
+		
+		ACE_Time_Value wait = deadline;
+		if (deadline != ACE_Time_Value::max_time)
+		{
+			ACE_Time_Value now = ACE_OS::gettimeofday();
+			if (deadline <= now)
+			{
+				ACE_OS::last_error(ETIMEDOUT);
+				return false;
+			}
+
+			wait = deadline - now;
+		}
 
 		size_t sent = 0;
-		ACE_Time_Value wait = deadline - now;
-
-		if (m_stream.send(header.begin(),deadline==ACE_Time_Value::max_time ? 0 : &wait,&sent) == -1)
+		if (m_stream.send(header.begin(),wait != ACE_Time_Value::max_time ? &wait : 0,&sent) == -1)
 			return false;
 
 		if (sent != header.total_length())
@@ -977,14 +991,22 @@ void OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong de
 	if (!build_header(seq_no,pContext->m_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,false,0))
 		return;
 
-	ACE_Time_Value now = ACE_OS::gettimeofday();
-	if (deadline != ACE_Time_Value::max_time && deadline <= now)
-		return;
-
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
 
-	ACE_Time_Value wait = deadline - now;
-	m_stream.send(header.begin(),deadline==ACE_Time_Value::max_time ? 0 : &wait);
+	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	if (deadline != ACE_Time_Value::max_time)
+	{
+		ACE_Time_Value now = ACE_OS::gettimeofday();
+		if (deadline <= now)
+		{
+			ACE_OS::last_error(ETIMEDOUT);
+			return;
+		}
+
+		wait = deadline - now;
+	}
+	
+	m_stream.send(header.begin(),wait != ACE_Time_Value::max_time ? &wait : 0);
 }
 
 namespace OOCore
@@ -996,20 +1018,20 @@ bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 {
 #if ACE_MAJOR_VERSION <= 5 && ACE_MINOR_VERSION <= 5 && ACE_BETA_VERSION == 0
 
-    ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
+	ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
 
 #if !defined (ACE_ENABLE_SWAP_ON_WRITE)
-    *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+	*reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
 #else
-    if (!stream.do_byte_swap())
-        *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
-    else
-        ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
+	if (!stream.do_byte_swap())
+		*reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+	else
+		ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
 #endif
 
-    return true;
+	return true;
 #else
-    return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
+	return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
 #endif
 }
 
@@ -1029,8 +1051,8 @@ bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort sr
 	header << dest_channel_id;
 	header << m_channel_id;
 
-	header.write_ulong(static_cast<const timeval*>(deadline)->tv_sec);
-	header.write_ulong(static_cast<const timeval*>(deadline)->tv_usec);
+	header.write_ulonglong(deadline.sec());
+	header.write_long(deadline.usec());
 
 	header << dest_thread_id;
 	header << src_thread_id;
@@ -1062,20 +1084,25 @@ bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort sr
 	return true;
 }
 
+Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(ACE_CDR::ULong channel)
+{
+	Remoting::MarshalFlags_t mflags = Remoting::same;
+	if ((channel & 0xFF000000) == (m_channel_id & 0xFF000000))
+		mflags = Remoting::inter_process;
+	else if ((channel & 0x80000000) == (m_channel_id & 0x80000000))
+		mflags = Remoting::inter_user;
+	else 
+		mflags = Remoting::another_machine;
+
+	return mflags;
+}
+
 void OOCore::UserSession::process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline)
 {
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		Remoting::MarshalFlags_t mflags = Remoting::same;
-		if ((pMsg->m_src_channel_id & 0xFF000000) == (m_channel_id & 0xFF000000))
-			mflags = Remoting::inter_process;
-		else if ((pMsg->m_src_channel_id & 0x80000000) == (m_channel_id & 0x80000000))
-			mflags = Remoting::inter_user;
-		else 
-			mflags = Remoting::another_machine;
-
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id,mflags);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id,classify_channel(pMsg->m_src_channel_id));
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -1091,13 +1118,20 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 		}
 
 		// Check timeout
-		ACE_Time_Value now = ACE_OS::gettimeofday();
-		if (deadline != ACE_Time_Value::max_time && deadline <= now)
-			return;
+		if (deadline != ACE_Time_Value::max_time)
+		{
+			if (deadline <= ACE_OS::gettimeofday())
+			{
+				ACE_OS::last_error(ETIMEDOUT);
+				return;
+			}
+		}
+		uint64_t deadline_secs = deadline.sec();
+		int32_t deadline_usecs = deadline.usec();
 
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse);
+			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs,pMsg->m_src_channel_id,classify_channel(pMsg->m_src_channel_id));
 		}
 		catch (IException* pInner)
 		{
@@ -1120,9 +1154,9 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 
 		if (!(pMsg->m_attribs & Remoting::asynchronous))
 		{
-		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
+			ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
 			send_response(pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,mb);
-            mb->release();
+			mb->release();
 		}
 	}
 	catch (IException* pOuter)
@@ -1153,7 +1187,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		{
 			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+			std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
 			{
 				if (i->second.m_marshal_flags == marshal_flags)
@@ -1191,7 +1225,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 

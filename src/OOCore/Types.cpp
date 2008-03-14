@@ -430,9 +430,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(
 		OMEGA_NEW(buf,wchar_t[len]);
 		
 		int len2 = ACE_OS::vsnprintf(buf,len,sz,*ap);
-        if (len2 >= 0 && static_cast<size_t>(len2) <= len)
+		if (len2 >= 0 && static_cast<size_t>(len2) <= len)
 		{
-            StringNode* s1;
+			StringNode* s1;
 			OMEGA_NEW(s1,StringNode(ACE_WString(buf,len2)));
 
 			delete [] buf;

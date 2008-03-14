@@ -27,9 +27,9 @@ bool OORegEditApp::OnInit()
 	m_pfsResources = new wxFileSystem;
 
 	// create and show the main frame
-    MainFrame* frame = new MainFrame;
+	MainFrame* frame = new MainFrame;
 
-    frame->Show(true);
+	frame->Show(true);
 
 	return true;
 }

@@ -243,7 +243,7 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 			}
 			else
 			{
-                OMEGA_NEW(ptrStub,SafeStub(ptrObj));
+				OMEGA_NEW(ptrStub,SafeStub(ptrObj));
 
 				System::WriteGuard guard(stub_map.m_lock);
 

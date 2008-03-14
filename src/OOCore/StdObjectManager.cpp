@@ -57,6 +57,42 @@ namespace OOCore
 		void DoInvoke2(System::MetaInfo::IWireStub_Safe* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE);
 		int DoInvoke(System::MetaInfo::IWireStub_Safe* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE);
 	}
+
+	struct CallContext
+	{
+		CallContext() : 
+			m_deadline(ACE_Time_Value::max_time),
+			m_src_id(0),
+			m_flags(0)
+		{}
+
+		virtual ~CallContext()
+		{
+		}
+
+		ACE_Time_Value           m_deadline;
+		uint32_t                 m_src_id;
+		Remoting::MarshalFlags_t m_flags;
+	};
+
+	class StdCallContext :
+		public ObjectBase,
+		public Remoting::ICallContext
+	{
+		BEGIN_INTERFACE_MAP(StdCallContext)
+			INTERFACE_ENTRY(Remoting::ICallContext)
+		END_INTERFACE_MAP()
+
+	public:
+		void Deadline(uint64_t& secs, int32_t& usecs);
+		uint32_t Timeout();
+		bool_t HasTimedOut();
+		uint32_t SourceId();
+		Remoting::MarshalFlags_t SourceType();
+
+	public:
+		CallContext m_cc;
+	};
 }
 
 void OOCore::SEH::DoInvoke2(System::MetaInfo::IWireStub_Safe* pStub, Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, IException*& pE)
@@ -158,6 +194,44 @@ void OOCore::StdObjectManagerMarshalFactory::UnmarshalInterface(Omega::Remoting:
 	pObject = ptrOM->QueryInterface(iid);	
 }
 
+void OOCore::StdCallContext::Deadline(uint64_t& secs, int32_t& usecs)
+{
+	secs = m_cc.m_deadline.sec();
+	usecs = m_cc.m_deadline.usec();
+}
+
+uint32_t OOCore::StdCallContext::Timeout()
+{
+	ACE_Time_Value now = ACE_OS::gettimeofday();
+	if (m_cc.m_deadline <= now)
+		return 0;
+
+	const ACE_Time_Value diff = m_cc.m_deadline - now;
+
+	ACE_UINT64 ms = 0;
+	diff.msec(ms);
+
+	if (ms > (uint32_t)-1)
+		return (uint32_t)-1;
+	else
+		return static_cast<uint32_t>(ms);
+}
+
+bool_t OOCore::StdCallContext::HasTimedOut()
+{
+	return (m_cc.m_deadline <= ACE_OS::gettimeofday());
+}
+
+uint32_t OOCore::StdCallContext::SourceId()
+{
+	return m_cc.m_src_id;
+}
+
+Remoting::MarshalFlags_t OOCore::StdCallContext::SourceType()
+{
+	return m_cc.m_flags;
+}
+
 OOCore::StdObjectManager::StdObjectManager() :
 	m_uNextStubId(1)
 {
@@ -176,7 +250,7 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel, Remoting::M
 	m_marshal_flags = marshal_flags;
 }
 
-void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut)
+void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint64_t deadline_secs, int32_t deadline_usecs, uint32_t src_id, Remoting::MarshalFlags_t flags)
 {
 	if (!pParamsIn)
 		OMEGA_THROW(EINVAL);
@@ -230,12 +304,23 @@ void OOCore::StdObjectManager::Invoke(Serialize::IFormattedStream* pParamsIn, Se
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
+	// Stash call context
+	CallContext* pCC = ACE_TSS_Singleton<CallContext,ACE_Thread_Mutex>::instance();
+	CallContext old_context = *pCC;
+	pCC->m_deadline = ACE_Time_Value(deadline_secs,deadline_usecs);
+	pCC->m_src_id = src_id;
+	pCC->m_flags = flags;
+	
 	// Ask the stub to make the call
 	IException* pE = 0;
 	int err = SEH::DoInvoke(ptrStub,pParamsIn,pParamsOut,pE);
+
+	// Restore context
+	*pCC = old_context;
+
 	if (pE)
 		throw pE;
 	else if (err != 0)
@@ -312,6 +397,9 @@ Serialize::IFormattedStream* OOCore::StdObjectManager::CreateOutputStream()
 
 IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout)
 {
+	if (!m_ptrChannel)
+		OMEGA_THROW(ECONNRESET);
+
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 	if (pE)
 		return pE;
@@ -384,8 +472,7 @@ void OMEGA_CALL OOCore::StdObjectManager::Release_Safe()
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
 	*ppS = 0;
-	if (*piid == OMEGA_UUIDOF(IObject) ||
-		*piid == OMEGA_UUIDOF(System::MetaInfo::IWireManager))
+	if (*piid == OMEGA_UUIDOF(IObject) || *piid == OMEGA_UUIDOF(System::MetaInfo::IWireManager))
 	{
 		*ppS = static_cast<System::MetaInfo::IWireManager_Safe*>(this);
 		(*ppS)->AddRef_Safe();
@@ -650,7 +737,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 			}
 			catch (std::exception& e)
 			{
-				OMEGA_THROW(string_t(e.what(),false));
+				OMEGA_THROW(e);
 			}
 
 			// If there is no stub... what are we unmarshalling?
@@ -764,11 +851,17 @@ Omega::guid_t OOCore::StdObjectManager::GetUnmarshalFactoryOID(const Omega::guid
 
 void OOCore::StdObjectManager::MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
+	if (!m_ptrChannel)
+		OMEGA_THROW(ECONNRESET);
+	
 	pObjectManager->MarshalInterface(pStream,OMEGA_UUIDOF(Remoting::IChannel),m_ptrChannel);
 }
 
 void OOCore::StdObjectManager::ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 {
+	if (!m_ptrChannel)
+		OMEGA_THROW(ECONNRESET);
+		
 	pObjectManager->ReleaseMarshalData(pStream,OMEGA_UUIDOF(Remoting::IChannel),m_ptrChannel);
 }
 
@@ -802,6 +895,15 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 	{
 		return System::MetaInfo::return_safe_exception(pE);
 	}
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,Remoting_GetCallContext,0,())
+{
+	ObjectPtr<ObjectImpl<OOCore::StdCallContext> > ptrCC = ObjectImpl<OOCore::StdCallContext>::CreateInstancePtr();
+	
+	ptrCC->m_cc = *ACE_TSS_Singleton<OOCore::CallContext,ACE_Thread_Mutex>::instance();
+	
+	return ptrCC.AddRef();
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_WireProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");

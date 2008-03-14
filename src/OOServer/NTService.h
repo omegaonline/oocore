@@ -60,14 +60,14 @@ namespace Root
 		static BOOL WINAPI control_c(DWORD);
 		
 		int description(const wchar_t *desc);
-		int insert(	const wchar_t *cmd_line = 0,
-					DWORD start_type = SERVICE_DEMAND_START,
-					DWORD error_control = SERVICE_ERROR_IGNORE,
-					const wchar_t *group_name = 0,
-					LPDWORD tag_id = 0,
-					const wchar_t *dependencies = 0,
-					const wchar_t *account_name = 0,
-					const wchar_t *password = 0);
+		int insert(const wchar_t *cmd_line = 0,
+		           DWORD start_type = SERVICE_DEMAND_START,
+		           DWORD error_control = SERVICE_ERROR_IGNORE,
+		           const wchar_t *group_name = 0,
+		           LPDWORD tag_id = 0,
+		           const wchar_t *dependencies = 0,
+		           const wchar_t *account_name = 0,
+		           const wchar_t *password = 0);
 
 		int svc();
 		void stop_requested(DWORD control_code);

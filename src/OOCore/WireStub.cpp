@@ -168,7 +168,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 }
 

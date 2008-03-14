@@ -52,7 +52,7 @@ Root::NTService::~NTService()
 
 bool Root::NTService::open()
 {	
-    // Do the ServiceMain in a separate thread
+	// Do the ServiceMain in a separate thread
 	NTSERVICE::instance()->m_svc_thread = ACE_Thread_Manager::instance()->spawn(NTService::start_service);
 	if (NTSERVICE::instance()->m_svc_thread == -1)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Error spawning service thread"),false);
@@ -141,11 +141,7 @@ int Root::NTService::description(const wchar_t *desc)
 	SERVICE_DESCRIPTIONW sdesc;
 	sdesc.lpDescription = const_cast<LPWSTR>(desc);
 
-	BOOL ok = ::ChangeServiceConfig2W(svc,
-							(DWORD)SERVICE_CONFIG_DESCRIPTION,	// Change the description
-							(LPVOID)&sdesc);
-
-	return ok ? 0 : -1;
+	return ChangeServiceConfig2W(svc,(DWORD)SERVICE_CONFIG_DESCRIPTION,(LPVOID)&sdesc) ? 0 : -1;
 }
 
 BOOL Root::NTService::control_c(DWORD)

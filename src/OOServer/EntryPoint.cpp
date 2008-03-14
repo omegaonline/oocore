@@ -121,10 +121,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			return Help();
 
 		default:
-			{
-				ACE_OS::printf("Invalid argument '%ls'.\n\n",cmd_opts.last_option());
-				return Help();
-			}
+			ACE_OS::printf("Invalid argument '%ls'.\n\n",cmd_opts.last_option());
+			return Help();
 		}
 	}
 

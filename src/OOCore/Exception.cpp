@@ -63,7 +63,7 @@ static string_t Win32Msg(DWORD dwErr)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
 {
-    ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
+	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strSource = source;
 	pExcept->m_strDesc = string_t(ACE_OS::strerror(e),false);
 	pExcept->m_errno = e;
@@ -79,7 +79,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create,2,((in),const string_t&,desc,(in),const string_t&,source))
 {
-    ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
+	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strDesc = desc;
 	pExcept->m_strSource = source;
 	pExcept->m_errno = EINVAL;

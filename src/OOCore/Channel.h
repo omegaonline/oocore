@@ -79,12 +79,8 @@ namespace OOCore
 
 	// IStream members
 	public:
-		Omega::byte_t ReadByte()
-			{ Omega::byte_t val; if (!get_input().read_octet(val)) OOCORE_THROW_LASTERROR(); return val; }
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!get_input().read_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
-		void WriteByte(Omega::byte_t val)
-			{ if (!write_octet(val)) OOCORE_THROW_LASTERROR(); }
 		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
 			{ if (!write_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
 
@@ -92,6 +88,8 @@ namespace OOCore
 	public:
 		Omega::bool_t ReadBoolean()
 			{ Omega::bool_t val; if (!get_input().read_boolean(val)) OOCORE_THROW_LASTERROR(); return val; }
+		Omega::byte_t ReadByte()
+			{ Omega::byte_t val; if (!get_input().read_octet(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::int16_t ReadInt16()
 			{ Omega::int16_t val; if (!get_input().read_short(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::uint16_t ReadUInt16()
@@ -121,6 +119,8 @@ namespace OOCore
 
 		void WriteBoolean(Omega::bool_t val)
 			{ if (!write_boolean(val)) OOCORE_THROW_LASTERROR(); }
+		void WriteByte(Omega::byte_t val)
+			{ if (!write_octet(val)) OOCORE_THROW_LASTERROR(); }
 		void WriteInt16(Omega::int16_t val)
 			{ if (!write_short(val)) OOCORE_THROW_LASTERROR(); }
 		void WriteUInt16(Omega::uint16_t val)
@@ -165,12 +165,8 @@ namespace OOCore
 
 	// IStream members
 	public:
-		Omega::byte_t ReadByte()
-			{ Omega::byte_t val; if (!read_octet(val)) OOCORE_THROW_LASTERROR(); return val; }
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
-		void WriteByte(Omega::byte_t)
-			{ OMEGA_THROW(EACCES); }
 		void WriteBytes(Omega::uint32_t, const Omega::byte_t*)
 			{ OMEGA_THROW(EACCES); }
 
@@ -178,6 +174,8 @@ namespace OOCore
 	public:
 		Omega::bool_t ReadBoolean()
 			{ Omega::bool_t val; if (!read_boolean(val)) OOCORE_THROW_LASTERROR(); return val; }
+		Omega::byte_t ReadByte()
+			{ Omega::byte_t val; if (!read_octet(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::int16_t ReadInt16()
 			{ Omega::int16_t val; if (!read_short(val)) OOCORE_THROW_LASTERROR(); return val; }
 		Omega::uint16_t ReadUInt16()
@@ -205,6 +203,8 @@ namespace OOCore
 			return g;
 		}
 		void WriteBoolean(Omega::bool_t)
+			{ OMEGA_THROW(EACCES); }
+		void WriteByte(Omega::byte_t)
 			{ OMEGA_THROW(EACCES); }
 		void WriteInt16(Omega::int16_t)
 			{ OMEGA_THROW(EACCES); }

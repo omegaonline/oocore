@@ -30,7 +30,7 @@
 
 #define OMEGA_UNIX
 
-#define OMEGA_PLATFORM_STRING	"Unix"
+#define OMEGA_PLATFORM_STRING "Unix"
 
 #define OMEGA_EXPORT
 #define OMEGA_IMPORT

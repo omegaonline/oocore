@@ -44,10 +44,21 @@ namespace Omega
 		};
 		typedef uint16_t MarshalFlags_t;
 
+		interface ICallContext : public IObject
+		{
+			virtual void Deadline(uint64_t& secs, int32_t& usecs) = 0;
+			virtual uint32_t Timeout() = 0;
+			virtual bool_t HasTimedOut() = 0;
+			virtual uint32_t SourceId() = 0;
+			virtual MarshalFlags_t SourceType() = 0;
+		};
+
+		inline ICallContext* GetCallContext();
+
 		interface IObjectManager : public IObject
 		{
 			virtual void Connect(IChannel* pChannel, MarshalFlags_t marshal_flags) = 0;
-			virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut) = 0;
+			virtual void Invoke(Serialize::IFormattedStream* pParamsIn, Serialize::IFormattedStream* pParamsOut, uint64_t deadline_secs, int32_t deadline_usecs, uint32_t src_id, MarshalFlags_t flags) = 0;
 			virtual void Disconnect() = 0;
 			virtual void CreateRemoteInstance(const guid_t& oid, const guid_t& iid, IObject* pOuter, IObject*& pObject) = 0;
 			virtual void MarshalInterface(Serialize::IFormattedStream* pStream, const guid_t& iid, IObject* pObject) = 0;
@@ -92,10 +103,21 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
+	Omega::Remoting, ICallContext, "{05340979-0CEA-48f6-91C9-2FE13F8546E0}",
+		
+	OMEGA_METHOD_VOID(Deadline,2,((out),uint64_t&,secs,(out),int32_t&,usecs))
+	OMEGA_METHOD(uint32_t,Timeout,0,())
+	OMEGA_METHOD(bool_t,HasTimedOut,0,())
+	OMEGA_METHOD(uint32_t,SourceId,0,())
+	OMEGA_METHOD(Remoting::MarshalFlags_t,SourceType,0,())
+)
+
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
 	Omega::Remoting, IObjectManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
 
 	OMEGA_METHOD_VOID(Connect,2,((in),Remoting::IChannel*,pChannel,(in),Omega::Remoting::MarshalFlags_t,flags))
-	OMEGA_METHOD_VOID(Invoke,2,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut))
+	OMEGA_METHOD_VOID(Invoke,6,((in),Serialize::IFormattedStream*,pParamsIn,(in),Serialize::IFormattedStream*,pParamsOut,(in),uint64_t,deadline_secs,(in),int32_t,deadline_usecs,(in),uint32_t,src_id,(in),Remoting::MarshalFlags_t,flags))
 	OMEGA_METHOD_VOID(Disconnect,0,())
 	OMEGA_METHOD_VOID(CreateRemoteInstance,4,((in),const guid_t&,oid,(in),const guid_t&,iid,(in),IObject*,pOuter,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
@@ -127,5 +149,11 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
 	OMEGA_METHOD_VOID(GetRegisteredObject,4,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
+
+OMEGA_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,Remoting_GetCallContext,0,());
+Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
+{
+	return Remoting_GetCallContext();
+}
 
 #endif // OOCORE_REMOTING_H_INCLUDED_

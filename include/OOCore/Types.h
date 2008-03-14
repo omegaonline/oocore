@@ -178,14 +178,13 @@ namespace Omega
 		static const size_t npos = size_t(-1);
 
 	private:
-		typedef struct tag_handle_t
+		struct handle_t
 		{
 			int unused;
-		}* handle_t;
+		}* m_handle;
 
-		inline explicit string_t(handle_t);
-		handle_t m_handle;
-
+		inline explicit string_t(handle_t*);
+		
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
 #endif

@@ -471,8 +471,11 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	if (!response->read_ulong(cbLen))
 		OOSERVER_THROW_LASTERROR();
 
-	if (!bNoDataBack && !response->read_octet_array(pBuffer,cbLen))
-		OOSERVER_THROW_LASTERROR();
+	if (!bNoDataBack)
+	{
+		if (!response->read_octet_array(pBuffer,cbLen))
+			OOSERVER_THROW_LASTERROR();
+	}
 }
 
 void Key::SetStringValue(const string_t& strName, const string_t& strValue)
@@ -708,7 +711,7 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
-    *response >> err;
+	*response >> err;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();
 	
@@ -724,7 +727,7 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 		OMEGA_THROW(err);
 
 	ACE_INT64 key = 0;
-    *response >> key;
+	*response >> key;
 	if (!response->good_bit())
 		OOSERVER_THROW_LASTERROR();	
 	
@@ -778,7 +781,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
 	ptrEnum->Init();
@@ -827,7 +830,7 @@ Omega::IEnumString* Key::EnumValues()
 	}
 	catch (std::exception& e)
 	{
-		OMEGA_THROW(string_t(e.what(),false));
+		OMEGA_THROW(e);
 	}
 
 	ptrEnum->Init();

@@ -4,11 +4,11 @@
 class OORegEditApp : public wxApp
 {
 public:
-    OORegEditApp() 
+	OORegEditApp() 
 	{
 	}
 
-    virtual bool OnInit();
+	virtual bool OnInit();
 	virtual int OnExit();
 
 	wxImage* LoadImage(const wxString& name, wxBitmapType type = wxBITMAP_TYPE_BMP);

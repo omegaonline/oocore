@@ -28,15 +28,14 @@ namespace Omega
 	{
 		interface IStream : public IObject
 		{
-			virtual byte_t ReadByte() = 0;
 			virtual void ReadBytes(uint32_t& cbBytes, byte_t* val) = 0;
-			virtual void WriteByte(byte_t val) = 0;
 			virtual void WriteBytes(uint32_t cbBytes, const byte_t* val) = 0;
 		};
 
 		interface IFormattedStream : public IStream
 		{
 			virtual bool_t ReadBoolean() = 0;
+			virtual byte_t ReadByte() = 0;
 			virtual int16_t ReadInt16() = 0;
 			virtual uint16_t ReadUInt16() = 0;
 			virtual int32_t ReadInt32() = 0;
@@ -47,6 +46,7 @@ namespace Omega
 			virtual guid_t ReadGuid() = 0;
 
 			virtual void WriteBoolean(bool_t val) = 0;
+			virtual void WriteByte(byte_t val) = 0;
 			virtual void WriteInt16(int16_t val) = 0;
 			virtual void WriteUInt16(uint16_t val) = 0;
 			virtual void WriteInt32(int32_t val) = 0;
@@ -129,9 +129,7 @@ namespace Omega
 			(
 				Omega::Serialize, IStream,
 
-				OMEGA_METHOD(byte_t,ReadByte,0,())
 				OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
-				OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 				OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 			)
 
@@ -140,6 +138,7 @@ namespace Omega
 				Omega::Serialize, IFormattedStream,
 
 				OMEGA_METHOD(bool_t,ReadBoolean,0,())
+				OMEGA_METHOD(byte_t,ReadByte,0,())
 				OMEGA_METHOD(int16_t,ReadInt16,0,())
 				OMEGA_METHOD(uint16_t,ReadUInt16,0,())
 				OMEGA_METHOD(int32_t,ReadInt32,0,())
@@ -150,6 +149,7 @@ namespace Omega
 				OMEGA_METHOD(guid_t,ReadGuid,0,())
 
 				OMEGA_METHOD_VOID(WriteBoolean,1,((in),bool_t,val))
+				OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 				OMEGA_METHOD_VOID(WriteInt16,1,((in),int16_t,val))
 				OMEGA_METHOD_VOID(WriteUInt16,1,((in),uint16_t,val))
 				OMEGA_METHOD_VOID(WriteInt32,1,((in),int32_t,val))
@@ -349,11 +349,6 @@ namespace Omega
 					return marshal_info<T>::wire_type::read(pManager,pStream,const_cast<typename marshal_info<T>::wire_type::type&>(val));
 				}
 
-				/*static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, type& val, uint32_t cbSize)
-				{
-					return marshal_info<T>::wire_type::read(pManager,pStream,const_cast<typename marshal_info<T>::wire_type::type&>(val),cbSize);
-				}*/
-
 				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val)
 				{
 					return marshal_info<T>::wire_type::write(pManager,pStream,val);
@@ -487,7 +482,7 @@ namespace Omega
 				};
 				typedef array_holder type;
 
-				static IException_Safe* init(type& val, uint32_t* cbSize)
+				static IException_Safe* init(type& val, const uint32_t* cbSize)
 				{
 					return val.init(*cbSize);
 				}
@@ -534,15 +529,16 @@ namespace Omega
 					return 0;
 				}
 
-				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, uint32_t* cbSize)
+				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, const uint32_t* cbSize)
 				{
 					return write(pManager,pStream,pVals,*cbSize);
 				}
 
 				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
 				{
+					// Only write back what we have room for...
 					if (cbSize > val.m_alloc_size)
-						return return_safe_exception(IException::Create(L"Buffer overflow"));
+						cbSize = val.m_alloc_size;
 
 					for (uint32_t i=0;i<cbSize;++i)
 					{
@@ -554,7 +550,12 @@ namespace Omega
 					return 0;
 				}
 
-				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, uint32_t* cbSize)
+				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
+				{
+					return write(pManager,pStream,val,*cbSize);
+				}
+
+				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, const uint32_t* cbSize)
 				{
 					if (pVals)
 					{
@@ -570,8 +571,9 @@ namespace Omega
 
 				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
 				{
+					// Only write back what we have room for...
 					if (cbSize > val.m_alloc_size)
-						return return_safe_exception(IException::Create(L"Buffer overflow"));
+						cbSize = val.m_alloc_size;
 
 					for (uint32_t i=0;i<cbSize;++i)
 					{
@@ -582,13 +584,18 @@ namespace Omega
 
 					return 0;
 				}
+
+				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
+				{
+					return unpack(pManager,pStream,val,*cbSize);
+				}
 				
 				static IException_Safe* no_op(bool, uint32_t)
 				{
 					return 0;
 				}
 
-				static IException_Safe* no_op(bool, uint32_t* = 0)
+				static IException_Safe* no_op(bool, const uint32_t* = 0)
 				{
 					return 0;
 				}
@@ -636,7 +643,7 @@ namespace Omega
 				};
 				typedef array_holder type;
 
-				static IException_Safe* init(type& val, uint32_t* cbSize)
+				static IException_Safe* init(type& val, const uint32_t* cbSize)
 				{
 					return val.init(*cbSize);
 				}
@@ -680,20 +687,26 @@ namespace Omega
 					return 0;
 				}
 
-				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const byte_t* pVals, uint32_t* cbSize)
+				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const byte_t* pVals, const uint32_t* cbSize)
 				{
 					return write(pManager,pStream,pVals,*cbSize);
 				}
 
 				static IException_Safe* write(IWireManager_Safe*, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
 				{
+					// Only write back what we have room for...
 					if (cbSize > val.m_alloc_size)
-						return return_safe_exception(ISystemException::Create(E2BIG));
+						cbSize = val.m_alloc_size;
 
 					return pStream->WriteBytes_Safe(cbSize,val.m_pVals);
 				}
 
-				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const byte_t* pVals, uint32_t* cbSize)
+				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
+				{
+					return write(pManager,pStream,val,*cbSize);
+				}
+
+				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const byte_t* pVals, const uint32_t* cbSize)
 				{
 					if (pVals)
 					{
@@ -709,8 +722,9 @@ namespace Omega
 
 				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
 				{
+					// Only write back what we have room for...
 					if (cbSize > val.m_alloc_size)
-						return return_safe_exception(ISystemException::Create(E2BIG));
+						cbSize = val.m_alloc_size;
 
 					for (uint32_t i=0;i<cbSize;++i)
 					{
@@ -721,13 +735,18 @@ namespace Omega
 
 					return 0;
 				}
+
+				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
+				{
+					return unpack(pManager,pStream,val,*cbSize);
+				}
 				
 				static IException_Safe* no_op(bool, uint32_t)
 				{
 					return 0;
 				}
 
-				static IException_Safe* no_op(bool, uint32_t* = 0)
+				static IException_Safe* no_op(bool, const uint32_t* = 0)
 				{
 					return 0;
 				}
@@ -741,12 +760,12 @@ namespace Omega
 
 				static IException_Safe* read(IWireManager_Safe*, IFormattedStream_Safe*, type&)
 				{
-					return 0;
+					return return_safe_exception(ISystemException::Create(EINVAL));
 				}
 
 				static IException_Safe* write(IWireManager_Safe*, IFormattedStream_Safe*, const type&)
 				{
-					return 0;
+					return return_safe_exception(ISystemException::Create(EINVAL));
 				}
 			};
 
@@ -1133,9 +1152,7 @@ namespace Omega
 			(
 				Omega::Serialize, IStream,
 
-				OMEGA_METHOD(byte_t,ReadByte,0,())
 				OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
-				OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 				OMEGA_METHOD_VOID(WriteBytes,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 			)
 
@@ -1144,6 +1161,7 @@ namespace Omega
 				Omega::Serialize, IFormattedStream,
 
 				OMEGA_METHOD(bool_t,ReadBoolean,0,())
+				OMEGA_METHOD(byte_t,ReadByte,0,())
 				OMEGA_METHOD(int16_t,ReadInt16,0,())
 				OMEGA_METHOD(uint16_t,ReadUInt16,0,())
 				OMEGA_METHOD(int32_t,ReadInt32,0,())
@@ -1154,6 +1172,7 @@ namespace Omega
 				OMEGA_METHOD(guid_t,ReadGuid,0,())
 
 				OMEGA_METHOD_VOID(WriteBoolean,1,((in),bool_t,val))
+				OMEGA_METHOD_VOID(WriteByte,1,((in),byte_t,val))
 				OMEGA_METHOD_VOID(WriteInt16,1,((in),int16_t,val))
 				OMEGA_METHOD_VOID(WriteUInt16,1,((in),uint16_t,val))
 				OMEGA_METHOD_VOID(WriteInt32,1,((in),int32_t,val))

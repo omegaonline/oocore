@@ -25,11 +25,15 @@
 using namespace Omega;
 using namespace OTL;
 
+User::RunningObjectTable::RunningObjectTable() : m_nNextCookie(1)
+{
+}
+
 void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 {
 	if (ptrOM)
 	{
-		// Create a proxy to the server interface
+		// Create a proxy to the global interface
 		IObject* pIPS = 0;
 		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
@@ -40,69 +44,77 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	}
 }
 
-void User::RunningObjectTable::Register(const guid_t& oid, Activation::IRunningObjectTable::Flags_t flags, IObject* pObject)
+uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 {
-	if (m_ptrROT && (flags & Activation::IRunningObjectTable::AllowAnyUser))
-	{
-		// Route to sandbox!
-		m_ptrROT->Register(oid,flags,pObject);
-	}
-	else
-	{
-		try
-		{
-			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
-			if (i != m_mapObjects.end())
-			{
-				bool bOk = true;
-			
-				// QI for IWireProxy and check its still there!
-				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = i->second;
-				if (ptrProxy)
-				{
-					if (!ptrProxy->IsAlive())
-						bOk = false;
-				}
-
-				if (bOk)
-					OMEGA_THROW(EALREADY);
-			}
-
-			m_mapObjects.insert(std::map<guid_t,ObjectPtr<IObject> >::value_type(oid,pObject));
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(string_t(e.what(),false));
-		}
-	}
-}
-
-void User::RunningObjectTable::Revoke(const guid_t& oid)
-{
-	bool bFound = false;
+	// Never allow registration in the global ROT!
+	// If we are a client of the sandbox we will register there (which is correct)
+	// But any other condition will result in a very easy way to achieve priviledge escalation 
+	// You have been warned!
 
 	try
 	{
+		uint32_t src_id = 0;
+		ObjectPtr<Remoting::ICallContext> ptrCC;
+		ptrCC.Attach(Remoting::GetCallContext());
+		if (ptrCC)
+			src_id = ptrCC->SourceId();		
+
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
-		if (i != m_mapObjects.end())
+		// Create a new cookie
+		Info info;
+		info.m_oid = oid;
+		info.m_ptrObject = pObject;
+		info.m_source = src_id;
+		uint32_t nCookie = m_nNextCookie++;
+		while (nCookie==0 && m_mapObjectsByCookie.find(nCookie) != m_mapObjectsByCookie.end())
 		{
-			m_mapObjects.erase(i);
-			bFound = true;
+			nCookie = m_nNextCookie++;
+		}
+		
+		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
+		if (!p.second)
+			OMEGA_THROW(EALREADY);
+
+		m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));	
+
+		return nCookie;
+	}
+	catch (std::exception& e)
+	{ 
+		OMEGA_THROW(e);
+	}
+}
+
+void User::RunningObjectTable::Revoke(uint32_t cookie)
+{
+	try
+	{
+		uint32_t src_id = 0;
+		ObjectPtr<Remoting::ICallContext> ptrCC;
+		ptrCC.Attach(Remoting::GetCallContext());
+		if (ptrCC)
+			src_id = ptrCC->SourceId();	
+
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
+		if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
+		{
+			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid);j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid;++j)
+			{
+				if (j->second->first == cookie)
+				{
+					m_mapObjectsByOid.erase(j);
+					break;
+				}
+			}
+			m_mapObjectsByCookie.erase(i);
 		}
 	}
 	catch (std::exception& e)
-	{
-		OMEGA_THROW(string_t(e.what(),false));
-	}
-
-	if (!bFound && m_ptrROT)
-	{
-		// Route to sandbox
-		m_ptrROT->Revoke(oid);
+	{ 
+		OMEGA_THROW(e);
 	}
 }
 
@@ -110,41 +122,61 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 {
 	try
 	{
-		bool bOk = true;
+		ObjectPtr<IObject> ptrRet;
+		std::list<uint32_t> listDeadEntries;
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::map<guid_t,ObjectPtr<IObject> >::iterator i=m_mapObjects.find(oid);
-			if (i != m_mapObjects.end())
+			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
 			{
 				// QI for IWireProxy and check its still there!
-				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = i->second;
+				bool bOk = true;
+				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = i->second->second.m_ptrObject;
 				if (ptrProxy)
 				{
 					if (!ptrProxy->IsAlive())
+					{
+						listDeadEntries.push_back(i->second->first);
 						bOk = false;
+					}
 				}
 
 				if (bOk)
-					return i->second.AddRef();
+					ptrRet = i->second->second.m_ptrObject;
 			}
 		}
 
-		if (!bOk)
+		if (!listDeadEntries.empty())
 		{
+			// We found at least one dead proxy
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			m_mapObjects.erase(oid);
+			for (std::list<uint32_t>::iterator i=listDeadEntries.begin();i!=listDeadEntries.end();++i)
+			{
+				std::map<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*i);
+				for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator k=m_mapObjectsByOid.find(j->second.m_oid);k!=m_mapObjectsByOid.end() && k->first==j->second.m_oid;++k)
+				{
+					if (k->second->first == *i)
+					{
+						m_mapObjectsByOid.erase(k);
+						break;
+					}
+				}
+				m_mapObjectsByCookie.erase(j);
+			}
 		}
+
+		if (ptrRet)
+			return ptrRet.AddRef();
 	}
 	catch (std::exception& e)
-	{
-		OMEGA_THROW(string_t(e.what(),false));
+	{ 
+		OMEGA_THROW(e);
 	}
 
 	if (m_ptrROT)
 	{
-		// Route to sandbox
+		// Route to global rot
 		return m_ptrROT->GetObject(oid);
 	}
 

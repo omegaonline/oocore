@@ -178,7 +178,7 @@ void OOCore::ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectP
 		if (i != attribs.end() && i->second!=L"Remove")
 			bRemove = false;
 
-        if (bRemove && ptrKey && ptrKey->IsValue(strName))
+		if (bRemove && ptrKey && ptrKey->IsValue(strName))
 			ptrKey->DeleteValue(strName);
 	}
 	else
@@ -264,7 +264,7 @@ void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IReg
 	string_t strNSpace;
 	Xml::ParseXMLName(strName2,strNSpace,namespaces2);
 	if (namespaces2[strNSpace] != xmlns)
-    	OMEGA_THROW(L"Invalid schema");
+		OMEGA_THROW(L"Invalid schema");
 
 	// Check what we have found...
 	if (strName2 != L"key" && strName2 != L"value")
@@ -325,7 +325,7 @@ void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey
 	string_t strNSpace;
 	Xml::ParseXMLName(strName2,strNSpace,namespaces2);
 	if (namespaces2[strNSpace] != xmlns)
-    	OMEGA_THROW(L"Invalid schema");
+		OMEGA_THROW(L"Invalid schema");
 
 	// Check what we have found...
 	if (strName2 != L"key")
@@ -349,7 +349,7 @@ void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey
 			Xml::ParseXMLCharData(rd_ptr,strGuff);
 		} 
 
-        Xml::ParseXMLEndElement(rd_ptr,strName);
+		Xml::ParseXMLEndElement(rd_ptr,strName);
 	}
 }
 
@@ -414,7 +414,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strX
 	string_t strNSpace;
 	OOCore::Xml::ParseXMLName(strName2,strNSpace,namespaces);
 	if (namespaces[strNSpace] != OOCore::xmlns)
-    	OMEGA_THROW(L"Invalid schema");
+		OMEGA_THROW(L"Invalid schema");
 
 	// Check we have an root element
 	if (strName2 != L"root")
@@ -439,7 +439,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strX
 		OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
 
 	} while (ACE_OS::strncmp(rd_ptr,L"</",2) != 0);
-	
-    // End of root element
+
+	// End of root element
 	OOCore::Xml::ParseXMLEndElement(rd_ptr,strName);
 }

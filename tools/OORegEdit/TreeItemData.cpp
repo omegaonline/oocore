@@ -168,7 +168,7 @@ void TreeItemData::RenameKey(const Omega::string_t& strFrom, const Omega::string
 
 	m_ptrKey->DeleteKey(strFrom);
 
-    pItem->m_ptrKey = ptrNewKey;
+	pItem->m_ptrKey = ptrNewKey;
 }
 
 void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOldKey, OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrNewKey)

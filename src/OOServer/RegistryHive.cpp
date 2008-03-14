@@ -401,7 +401,7 @@ int Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong chann
 void Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-    if (guard.locked() == 0)
+	if (guard.locked() == 0)
 	{
 		response << ACE_OS::last_error();
 		return;
@@ -503,7 +503,7 @@ int Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channe
 void Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-    if (guard.locked() == 0)
+	if (guard.locked() == 0)
 	{
 		response << ACE_OS::last_error();
 		return;
@@ -714,7 +714,7 @@ int Root::RegistryHive::get_integer_value(const ACE_INT64& uKey, const ACE_CStri
 void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong cbLen, ACE_CDR::ULong channel_id, ACE_OutputCDR& response)
 {
 	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-    if (guard.locked() == 0)
+	if (guard.locked() == 0)
 	{
 		response << ACE_OS::last_error();
 		return;
@@ -776,11 +776,18 @@ void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CStri
 			else
 				cbLen = static_cast<ACE_CDR::ULong>(len);
 
-			if (!response.write_ulong(cbLen) || 
-				(bData && !response.write_octet_array(static_cast<const ACE_CDR::Octet*>(pData),cbLen)))
+			if (!response.write_ulong(cbLen))
 			{
 				response.reset();
 				response << ACE_OS::last_error();
+			}
+			else if (bData)
+			{
+				if (!response.write_octet_array(static_cast<const ACE_CDR::Octet*>(pData),cbLen))
+				{
+					response.reset();
+					response << ACE_OS::last_error();
+				}
 			}
 		}
 

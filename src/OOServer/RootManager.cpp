@@ -469,7 +469,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 
 void Root::Manager::close_users()
 {
-    // Close all connections to user processes
+	// Close all connections to user processes
 	try
 	{
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -828,7 +828,7 @@ void Root::Manager::registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 
 void Root::Manager::registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-    ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	bool bCurrent = false;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);

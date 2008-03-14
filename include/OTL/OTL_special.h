@@ -65,7 +65,6 @@ namespace OTL
 			return en;
 		}
 	};
-
 }
 
 #endif // OTL_OTL_SPECIAL_H_INCLUDED_

@@ -29,12 +29,12 @@ namespace User
 		public Omega::Activation::IRunningObjectTable
 	{
 	public:
-		RunningObjectTable() {}
+		RunningObjectTable();
 
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM);
 
-		void Register(const Omega::guid_t& oid, Omega::Activation::IRunningObjectTable::Flags_t flags, Omega::IObject* pObject);
-		void Revoke(const Omega::guid_t& oid);
+		Omega::uint32_t Register(const Omega::guid_t& oid, Omega::IObject* pObject);
+		void Revoke(Omega::uint32_t cookie);
 		Omega::IObject* GetObject(const Omega::guid_t& oid);
 
 		BEGIN_INTERFACE_MAP(RunningObjectTable)
@@ -45,9 +45,18 @@ namespace User
 		RunningObjectTable(const RunningObjectTable&) : OTL::ObjectBase(), Omega::Activation::IRunningObjectTable() {}
 		RunningObjectTable& operator = (const RunningObjectTable&) { return *this; }
 
-		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable>   m_ptrROT;
-		ACE_RW_Thread_Mutex                                      m_lock;
-		std::map<Omega::guid_t,OTL::ObjectPtr<Omega::IObject> >  m_mapObjects;
+		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
+		ACE_RW_Thread_Mutex                                    m_lock;
+		Omega::uint32_t                                        m_nNextCookie;
+
+		struct Info
+		{
+			Omega::guid_t                      m_oid;
+			OTL::ObjectPtr<Omega::IObject>     m_ptrObject;
+			ACE_CDR::ULong                     m_source;
+		};
+		std::map<Omega::uint32_t,Info>                                        m_mapObjectsByCookie;
+		std::multimap<Omega::guid_t,std::map<Omega::uint32_t,Info>::iterator> m_mapObjectsByOid;
 	};
 }
 

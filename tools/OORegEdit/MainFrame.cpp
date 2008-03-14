@@ -51,11 +51,11 @@ MainFrame::~MainFrame(void)
 
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 	// Main events
-    EVT_CLOSE(MainFrame::OnClose)
+	EVT_CLOSE(MainFrame::OnClose)
 	EVT_CONTEXT_MENU(MainFrame::OnContextMenu)
 	
 	// Menu commands
-    EVT_MENU(wxID_EXIT, MainFrame::OnQuit)
+	EVT_MENU(wxID_EXIT, MainFrame::OnQuit)
 	EVT_MENU(wxID_DELETE, MainFrame::OnDelete)
 	EVT_UPDATE_UI(wxID_DELETE, MainFrame::MustHaveTreeSelection)
 	EVT_MENU(wxID_ABOUT, MainFrame::OnAbout)
@@ -119,7 +119,7 @@ void MainFrame::CreateChildWindows(void)
 		sz.y = ptrKey->GetIntegerValue(L"Height");
 		SetSize(sz);
 
-        split_width = ptrKey->GetIntegerValue(L"SplitWidth");
+		split_width = ptrKey->GetIntegerValue(L"SplitWidth");
 		split_width2 = ptrKey->GetIntegerValue(L"SplitWidth2");
 
 		col_width[0] = ptrKey->GetIntegerValue(L"ColWidth0");
@@ -155,12 +155,12 @@ void MainFrame::CreateChildWindows(void)
 
 	// Create the splitter
 	m_pSplitter2 = new wxSplitterWindow(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxNO_BORDER | wxSP_LIVE_UPDATE);
-    m_pSplitter2->SetSashGravity(0.90);
+	m_pSplitter2->SetSashGravity(0.90);
 	m_pSplitter2->SetMinimumPaneSize(50);
 	
 	// Create the second splitter
 	m_pSplitter = new wxSplitterWindow(m_pSplitter2,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxNO_BORDER | wxSP_LIVE_UPDATE);
-    m_pSplitter->SetSashGravity(0.25);
+	m_pSplitter->SetSashGravity(0.25);
 	m_pSplitter->SetMinimumPaneSize(150);
 
 	// Create the list and tree
@@ -172,7 +172,7 @@ void MainFrame::CreateChildWindows(void)
 	if (pImage)
 	{
 		wxImageList* pImagelist = new wxImageList(16,16);
-        pImagelist->Add(wxBitmap(*pImage),wxColor(255,0,255));
+		pImagelist->Add(wxBitmap(*pImage),wxColor(255,0,255));
 
 		m_pList->SetImageList(pImagelist,wxIMAGE_LIST_SMALL);
 		m_pTree->AssignImageList(pImagelist);
@@ -330,19 +330,19 @@ void MainFrame::CreateMenus(void)
 	pHelpMenu->AppendSeparator();
 	pHelpMenu->Append(wxID_ABOUT, _("&About Omega Online Registry Editor"), _("Displays program information, version and copyright."));
 
-    wxMenuBar* pMainMenu = new wxMenuBar;
-    pMainMenu->Append(pRegistryMenu, _("&Registry"));
+	wxMenuBar* pMainMenu = new wxMenuBar;
+	pMainMenu->Append(pRegistryMenu, _("&Registry"));
 	pMainMenu->Append(pEditMenu, _("&Edit"));
 	pMainMenu->Append(pViewMenu, _("&View"));
 	pMainMenu->Append(pFavMenu, _("&Favourites"));
 	pMainMenu->Append(pHelpMenu, _("&Help"));
 
-    SetMenuBar(pMainMenu);
+	SetMenuBar(pMainMenu);
 }
 
 void MainFrame::OnQuit(wxCommandEvent& WXUNUSED(evt))
 {
-    Close(true);
+	Close(true);
 }
 
 void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
@@ -684,7 +684,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 				}
 				catch (Omega::IException* pE)
 				{
-                    wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+					wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 					pE->Release();
 				}
 			}
@@ -692,7 +692,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 	}
 	else if (pFocus==m_pList)
 	{
-        if (m_pList->GetSelectedItemCount()>0)
+		if (m_pList->GetSelectedItemCount()>0)
 		{
 			wxTreeItemId tree_id = m_pTree->GetSelection();
 			if (!tree_id)
@@ -874,7 +874,7 @@ void MainFrame::OnUpdateModify(wxUpdateUIEvent& evt)
 	bool bEnable = false;
 	if (FindFocus()==m_pList)
 	{
-        if (m_pList->GetSelectedItemCount()>0)
+		if (m_pList->GetSelectedItemCount()>0)
 		{
 			wxTreeItemId tree_id = m_pTree->GetSelection();
 			if (tree_id)
@@ -895,7 +895,7 @@ void MainFrame::OnModify(wxCommandEvent& WXUNUSED(evt))
 {
 	if (FindFocus()==m_pList)
 	{
-        if (m_pList->GetSelectedItemCount()>0)
+		if (m_pList->GetSelectedItemCount()>0)
 		{
 			wxTreeItemId tree_id = m_pTree->GetSelection();
 			if (!tree_id)
@@ -1107,7 +1107,7 @@ void MainFrame::OnListDblClk(wxListEvent& evt)
 void MainFrame::OnMRUFavourites(wxCommandEvent& event)
 {
 	wxString strFav(m_fileHistory.GetHistoryFile(event.GetId() - wxID_FILE1));
-    if (!strFav.IsEmpty())
+	if (!strFav.IsEmpty())
 	{
 		std::map<wxString,Omega::string_t>::const_iterator i=m_mapMRU.find(strFav);
 		if (i!=m_mapMRU.end())

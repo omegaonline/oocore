@@ -111,6 +111,7 @@ namespace OOCore
 			ObjectPtr<IObject>          m_ptrObject;
 			Activation::Flags_t         m_flags;
 			Activation::RegisterFlags_t m_reg_flags;
+			uint32_t                    m_rot_cookie;
 		};
 		std::map<uint32_t,Info>                                 m_mapServicesByCookie;
 		std::multimap<guid_t,std::map<uint32_t,Info>::iterator> m_mapServicesByOid;
@@ -148,26 +149,6 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
 {
-#if defined(ACE_WIN32)
-	// This is because when the OOServer starts it does not call Omega::Initialize,
-	// and this ensures that ACE is initialized in this DLL correctly...
-	static struct AutoUninit
-	{
-		AutoUninit() : bInitCalled(false)
-		{
-			bInitCalled = (ACE::init() != -1);
-		}
-
-		~AutoUninit()
-		{
-			if (bInitCalled)
-				ACE::fini();
-		}
-
-		bool bInitCalled;
-	} auto_uninit;
-#endif
-
 	return OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
 }
 
@@ -176,33 +157,28 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_RevokeObject,1,((in),Omega::uint3
 	OOCore::SERVICE_MANAGER::instance()->RevokeObject(cookie);
 }
 
-OOCore::ServiceManager::ServiceManager() : m_nNextCookie(0x843A9B81)
+OOCore::ServiceManager::ServiceManager() : m_nNextCookie(1)
 {
-	void* SHITE;
-
-	// Obfuscate the cookie start value... this makes guessing cookie values harder (not impossible)
-	m_nNextCookie ^= uint32_t(ACE_OS::getpid());
 }
 
 uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags)
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+	uint32_t rot_cookie = 0;
 	if (flags & Activation::OutOfProcess)
 	{
 		// Register in ROT
 		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());			
 
-		void* TODO; // Change this to use Monikers
-
-		ptrROT->Register(oid,Activation::IRunningObjectTable::Default,pObject);
+		rot_cookie = ptrROT->Register(oid,pObject);
 	}
 
 	try
 	{
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 		// Remove any flags we don't store...
 		flags &= ~(Activation::DontLaunch);
-
-		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		// Check if we have someone registered already
 		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
@@ -215,17 +191,17 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		}
 
 		// Create a new cookie
-		uint32_t nCookie = m_nNextCookie++;
-		while (nCookie==0 && m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
-		{
-			nCookie = m_nNextCookie++;
-		}
-
 		Info info;
 		info.m_oid = oid;
 		info.m_flags = flags;
 		info.m_reg_flags = reg_flags;
 		info.m_ptrObject = pObject;
+		info.m_rot_cookie = rot_cookie;
+		uint32_t nCookie = m_nNextCookie++;
+		while (nCookie==0 && m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
+		{
+			nCookie = m_nNextCookie++;
+		}		
 
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 		if (!p.second)
@@ -237,15 +213,15 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 	}
 	catch (std::exception& e)
 	{ 
-		if (flags & Activation::OutOfProcess)
-			ptrROT->Revoke(oid);
+		if (rot_cookie)
+			ptrROT->Revoke(rot_cookie);
 
 		OMEGA_THROW(e);
 	}
 	catch (...)
 	{
-		if (flags & Activation::OutOfProcess)
-			ptrROT->Revoke(oid);
+		if (rot_cookie)
+			ptrROT->Revoke(rot_cookie);
 
 		throw;
 	}
@@ -281,8 +257,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 {
 	try
 	{
-		bool bUnROT = false;
-		guid_t oid;
+		uint32_t rot_cookie = 0;
 		
 		{
 			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -291,21 +266,27 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 			if (i == m_mapServicesByCookie.end())
 				OMEGA_THROW(ENOENT);
 
-			bUnROT = ((i->second.m_flags & Activation::OutOfProcess) == Activation::OutOfProcess);
-			oid = i->second.m_oid;
-
-			m_mapServicesByOid.erase(i->second.m_oid);
+			rot_cookie = i->second.m_rot_cookie;
+			
+			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid);j!=m_mapServicesByOid.end() && j->first==i->second.m_oid;++j)
+			{
+				if (j->second->first == cookie)
+				{
+					m_mapServicesByOid.erase(j);
+					break;
+				}
+			}
 			m_mapServicesByCookie.erase(i);		
 		}
 
-		if (bUnROT)
+		if (rot_cookie)
 		{
 			// Revoke from ROT
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 			// Change to use monikers...
-			ptrROT->Revoke(oid);
+			ptrROT->Revoke(rot_cookie);
 		}
 	}
 	catch (std::exception& e)
@@ -327,7 +308,7 @@ IObject* OOCore::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, 
 		// Ensure we are using per-dll unloading
 		ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
 
-        if (dll.open(dll_name.c_str()) != 0)
+		if (dll.open(dll_name.c_str()) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);

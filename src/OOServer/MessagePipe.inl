@@ -72,7 +72,7 @@ void Root::MessagePipeAsyncAcceptor<T>::stop()
 {
 	ACE_Reactor::instance()->remove_handler(m_acceptor.get_handle(),ACE_Event_Handler::ALL_EVENTS_MASK);
 
-    m_acceptor.close();
+	m_acceptor.close();
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)

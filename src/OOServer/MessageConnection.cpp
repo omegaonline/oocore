@@ -66,7 +66,7 @@ ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<Messa
 	if (m_reader.open(*this,pipe->get_read_handle()) != 0)
 #endif
 	{
-	    ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"reader.open() failed"),0);
+		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"reader.open() failed"),0);
 	}
 
 	m_channel_id = m_pHandler->register_channel(pipe,channel_id);
@@ -366,9 +366,9 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 	input >> src_channel_id;
 
 	// Read the deadline
-	ACE_CDR::ULong req_dline_secs;
+	ACE_CDR::ULongLong req_dline_secs;
 	input >> req_dline_secs;
-	ACE_CDR::ULong req_dline_usecs;
+	ACE_CDR::Long req_dline_usecs;
 	input >> req_dline_usecs;
 	ACE_Time_Value deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
 
@@ -513,8 +513,20 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 	// Send on...
 	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
 
-	ACE_Time_Value wait = deadline - ACE_OS::gettimeofday();
-	return (dest_channel.pipe->send(mb,deadline==ACE_Time_Value::max_time ? 0 : &wait) == static_cast<ssize_t>(mb->total_length()));
+	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	if (deadline != ACE_Time_Value::max_time)
+	{
+		ACE_Time_Value now = ACE_OS::gettimeofday();
+		if (deadline <= now)
+		{
+			ACE_OS::last_error(ETIMEDOUT);
+			return false;
+		}
+
+		wait = deadline - now;
+	}
+
+	return (dest_channel.pipe->send(mb,wait != ACE_Time_Value::max_time ? &wait : 0) == static_cast<ssize_t>(mb->total_length()));
 }
 
 Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instance(Root::MessageHandler* pHandler)
@@ -676,8 +688,8 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 
 			msg->m_ptrPayload->reset_byte_order(byte_order);
 		
-			ACE_CDR::UShort flags = 0;
-			(*msg->m_ptrPayload) >> flags;
+			ACE_CDR::UShort type = 0;
+			(*msg->m_ptrPayload) >> type;
 
 			ACE_CDR::ULong recv_seq_no = 0;
 			(*msg->m_ptrPayload) >> recv_seq_no;
@@ -686,7 +698,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 			
 			if (msg->m_ptrPayload->good_bit() && version == 1)
 			{
-				if (flags & Message::Request)
+				if (type == Message::Request)
 				{
 					// Update deadline
 					ACE_Time_Value old_deadline = pContext->m_deadline;
@@ -766,15 +778,15 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 
 		msg->m_ptrPayload->reset_byte_order(byte_order);
 	
-		ACE_CDR::UShort flags = 0;
-		(*msg->m_ptrPayload) >> flags;
+		ACE_CDR::UShort type = 0;
+		(*msg->m_ptrPayload) >> type;
 
 		ACE_CDR::ULong seq_no = 0;
 		(*msg->m_ptrPayload) >> seq_no;
 
 		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 		
-		if (msg->m_ptrPayload->good_bit() && version == 1 && (flags & Message::Request))
+		if (msg->m_ptrPayload->good_bit() && version == 1 && type == Message::Request)
 		{
 			if (msg->m_attribs & Message::system_message)
 			{
@@ -941,21 +953,27 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	if (!build_header(header,Message::Request,seq_no,dest_channel_id,msg,mb))
 		return false;
 
-	// Check the timeout
-	ACE_Time_Value now = ACE_OS::gettimeofday();
-	if (msg.m_deadline != ACE_Time_Value::max_time && msg.m_deadline <= now)
-	{
-		ACE_OS::last_error(ETIMEDOUT);
-		return false;
-	}
-
 	// Send to the handle
 	{
 		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
 
+		// Check the timeout
+		ACE_Time_Value wait = ACE_Time_Value::max_time;
+		if (msg.m_deadline != ACE_Time_Value::max_time)
+		{
+			ACE_Time_Value now = ACE_OS::gettimeofday();
+			
+			if (msg.m_deadline <= now)
+			{
+				ACE_OS::last_error(ETIMEDOUT);
+				return false;
+			}
+
+			wait = msg.m_deadline - now;
+		}
+
 		size_t sent = 0;
-		ACE_Time_Value wait = msg.m_deadline - now;
-		if (dest_channel.pipe->send(header.begin(),msg.m_deadline==ACE_Time_Value::max_time ? 0 : &wait,&sent) == -1)
+		if (dest_channel.pipe->send(header.begin(),wait != ACE_Time_Value::max_time ? &wait : 0,&sent) == -1)
 			return false;
 
 		if (sent != header.total_length())
@@ -1018,35 +1036,44 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	if (!build_header(header,Message::Response,seq_no,dest_channel_id,msg,mb))
 		return;
 
-	// Check the timeout
-	ACE_Time_Value now = ACE_OS::gettimeofday();
-	if (msg.m_deadline != ACE_Time_Value::max_time && msg.m_deadline <= now)
-		return;
-
 	ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
 
-	ACE_Time_Value wait = msg.m_deadline - now;
-	dest_channel.pipe->send(header.begin(),msg.m_deadline==ACE_Time_Value::max_time ? 0 : &wait);
+	// Check the timeout
+	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	if (msg.m_deadline != ACE_Time_Value::max_time)
+	{
+		ACE_Time_Value now = ACE_OS::gettimeofday();
+
+		if (msg.m_deadline <= now)
+		{
+			ACE_OS::last_error(ETIMEDOUT);
+			return;
+		}
+
+		wait = msg.m_deadline - now;
+	}
+
+	dest_channel.pipe->send(header.begin(),wait != ACE_Time_Value::max_time ? &wait : 0);
 }
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 {
 #if ACE_MAJOR_VERSION <= 5 && ACE_MINOR_VERSION <= 5 && ACE_BETA_VERSION == 0
 
-    ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
+	ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
 
 #if !defined (ACE_ENABLE_SWAP_ON_WRITE)
-    *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+	*reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
 #else
-    if (!stream.do_byte_swap())
-        *reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
-    else
-        ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
+	if (!stream.do_byte_swap())
+		*reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
+	else
+		ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
 #endif
 
-    return true;
+	return true;
 #else
-    return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
+	return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
 #endif
 }
 
@@ -1063,14 +1090,12 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 	header << dest_channel_id;
 	header << msg.m_src_channel_id;
 
-	header.write_ulong(static_cast<const timeval*>(msg.m_deadline)->tv_sec);
-	header.write_ulong(static_cast<const timeval*>(msg.m_deadline)->tv_usec);
+	header.write_ulonglong(msg.m_deadline.sec());
+	header.write_long(msg.m_deadline.usec());
 
 	header << msg.m_dest_thread_id;
 	header << msg.m_src_thread_id;
 	header << msg.m_attribs;
-
-	// There are 4 spare bytes here..
 
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);

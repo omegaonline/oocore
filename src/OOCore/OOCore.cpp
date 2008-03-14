@@ -45,20 +45,24 @@ BEGIN_LIBRARY_OBJECT_MAP()
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
-BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason)
+BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserved*/)
 {
 #if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
-	static DWORD main_thread = GetCurrentThreadId();
-
 	if (reason == DLL_PROCESS_ATTACH)
 	{
+		// Call ACE::init() first
+		ACE::init();
+					
 		// If ACE is linked statically we need to do this...
-		ACE_OS::set_win32_resource_module(instance);
+		ACE_OS::set_win32_resource_module((HINSTANCE)instance);
 	}
 	else if (reason == DLL_THREAD_DETACH)
 	{
-		// If ACE is linked statically we need to do this...
-		ACE_OS::cleanup_tss(GetCurrentThreadId() == main_thread ? 1 : 0);
+		ACE_OS::cleanup_tss(0);
+	}
+	else if (reason == DLL_PROCESS_DETACH)
+	{
+		ACE::fini();
 	}
 #else
 	OMEGA_UNUSED_ARG(instance);
@@ -97,17 +101,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 		}
 #endif
 
-		// Call ACE::init() first
-		int ret = ACE::init();
-		if (ret == 1)
-			ret = 0;
-
-		if (ret != 0)
-		{
-			--OOCore::s_initcount;
-			return ISystemException::Create(ACE_OS::last_error(),L"ACE::init");
-		}
-
 		// Turn off all ACE logging
 		ACE_Log_Msg::instance()->priority_mask(0,ACE_Log_Msg::PROCESS);
 	}
@@ -127,7 +120,5 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 	if (--OOCore::s_initcount==0)
 	{
 		OOCore::UserSession::term();
-
-		ACE::fini();
 	}
 }

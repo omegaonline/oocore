@@ -22,9 +22,8 @@
 #include "OOServer.h"
 
 #include "./UserManager.h"
+#include "./InterProcessService.h"
 #include "./Channel.h"
-#include "./UserROT.h"
-#include "./UserRegistry.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -33,10 +32,6 @@
 BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 END_PROCESS_OBJECT_MAP()
-
-#ifdef OMEGA_DEBUG
-void AttachDebugger(DWORD pid);
-#endif
 
 int UserMain(const ACE_WString& strPipe)
 {
@@ -63,260 +58,6 @@ int UserMain(const ACE_WString& strPipe)
 
 using namespace Omega;
 using namespace OTL;
-
-namespace User
-{
-	void ExecProcess(ACE_Process& process, const string_t& strExeName);
-	ACE_WString ShellParse(const wchar_t* pszFile);
-
-	class InterProcessService :
-		public ObjectBase,
-		public Remoting::IInterProcessService
-	{
-	public:
-		void Init(ObjectPtr<Remoting::IObjectManager> ptrOMSB, ObjectPtr<Remoting::IObjectManager> ptrOMUser, Manager* pManager)
-		{
-			m_ptrOMSB = ptrOMSB;
-			m_ptrOMUser = ptrOMUser;
-			m_pManager = pManager;
-		}
-
-		BEGIN_INTERFACE_MAP(InterProcessService)
-			INTERFACE_ENTRY(Remoting::IInterProcessService)
-		END_INTERFACE_MAP()
-
-	private:
-		ACE_Thread_Mutex                           m_lock;
-		ObjectPtr<Remoting::IObjectManager>        m_ptrOMSB;
-		ObjectPtr<Remoting::IObjectManager>        m_ptrOMUser;
-		ObjectPtr<ObjectImpl<RunningObjectTable> > m_ptrROT;
-		ObjectPtr<Omega::Registry::IRegistryKey>   m_ptrReg;
-		Manager*                                   m_pManager;
-
-	// Remoting::IInterProcessService members
-	public:
-		Omega::Registry::IRegistryKey* GetRegistry();
-		Activation::IRunningObjectTable* GetRunningObjectTable();
-		void GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
-	};
-}
-
-ACE_WString User::ShellParse(const wchar_t* pszFile)
-{
-	ACE_WString strRet = pszFile;
-
-#if defined(OMEGA_WIN32)
-		
-	const wchar_t* pszExt = PathFindExtensionW(pszFile);
-	if (pszExt)
-	{
-		DWORD dwLen = 1024;
-		wchar_t szBuf[1024];	
-		HRESULT hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
-		if (hRes == S_OK)
-			strRet = szBuf;
-		else if (hRes == E_POINTER)
-		{
-			wchar_t* pszBuf = new wchar_t[dwLen+1];
-			hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
-			if (hRes==S_OK)
-				strRet = pszBuf;
-
-			delete [] pszBuf;
-		}
-
-		if (hRes == S_OK)
-		{
-			LPVOID lpBuffer = 0;
-			if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-				strRet.c_str(),0,0,(LPWSTR)&lpBuffer,0,(va_list*)&pszFile))
-			{
-				strRet = (LPWSTR)lpBuffer;
-				LocalFree(lpBuffer);
-			}
-		}
-	}
-
-#endif
-
-	return strRet;
-}
-
-void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
-{
-	// Set the process options 
-	ACE_Process_Options options(0);
-	options.avoid_zombies(0);
-	options.handle_inheritence(0);
-
-	// Do a ShellExecute style lookup for the actual thing to call..
-	ACE_WString strActualName = ShellParse(strExeName.c_str());
-
-	if (options.command_line(strActualName.c_str()) == -1)
-		OOSERVER_THROW_LASTERROR();
-
-	// Set the creation flags
-	u_long flags = 0;
-#if defined(OMEGA_WIN32)
-	flags |= CREATE_NEW_CONSOLE;
-
-#if defined(OMEGA_DEBUG)
-	HANDLE hDebugEvent = NULL;
-	if (IsDebuggerPresent())
-	{
-		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
-			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-	}
-#endif
-#endif
-
-	options.creation_flags(flags);
-
-	// Spawn the process
-	if (process.spawn(options)==ACE_INVALID_PID)
-		OOSERVER_THROW_LASTERROR();
-
-#if defined(OMEGA_WIN32) && defined(OMEGA_DEBUG)
-	if (IsDebuggerPresent())
-	{
-		AttachDebugger(process.getpid());
-		if (hDebugEvent)
-		{
-			SetEvent(hDebugEvent);
-			CloseHandle(hDebugEvent);
-		}
-	}
-#endif
-}
-
-Registry::IRegistryKey* User::InterProcessService::GetRegistry()
-{
-	if (!m_ptrReg)
-	{
-		// Double lock for speed
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-		if (!m_ptrReg)
-		{
-			if (m_ptrOMUser)
-			{
-				// Create a proxy to the server interface
-				IObject* pIPS = 0;
-				m_ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
-				ObjectPtr<Remoting::IInterProcessService> ptrIPS;
-				ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
-
-				// Get the running object table
-				m_ptrReg.Attach(ptrIPS->GetRegistry());
-			}
-			else
-			{
-				ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
-				ptrKey->Init(m_pManager,L"",0);
-				
-				m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
-			}
-		}
-	}
-
-	return m_ptrReg.AddRef();
-}
-
-Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTable()
-{
-	if (!m_ptrROT)
-	{
-		// Double lock for speed
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-		if (!m_ptrROT)
-		{
-			m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
-			try
-			{
-				m_ptrROT->Init(m_ptrOMSB);
-			}
-			catch (...)
-			{
-				m_ptrROT.Release();
-				throw;
-			}
-		}
-	}
-
-	return m_ptrROT.AddRef();
-}
-
-void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
-{
-	// Make sure we have a registry pointer...
-	if (!m_ptrReg)
-		GetRegistry()->Release();
-
-	// And a ROT
-	if (!m_ptrROT)
-		GetRunningObjectTable()->Release();
-
-	// Change this to use monikers,
-	// Make the monikers record whether a process is single instance or whatever
-	// Also include in the entry whether an entry is currently being started
-	void* TODO; 
-
-	// Try RunningObjectTable first
-	ObjectPtr<IObject> ptrObject;
-	ptrObject.Attach(m_ptrROT->GetObject(oid));
-	if (!!ptrObject)
-	{
-		pObject = ptrObject->QueryInterface(iid);
-		if (!pObject)
-			throw INoInterfaceException::Create(iid);
-		return;
-	}
-	
-	if (!(flags & Activation::DontLaunch))
-	{
-		// Lookup OID
-		ObjectPtr<Omega::Registry::IRegistryKey> ptrOidsKey = m_ptrReg.OpenSubKey(L"Objects\\OIDs");
-		if (ptrOidsKey->IsSubKey(oid.ToString()))
-		{
-			ObjectPtr<Omega::Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
-			
-			// Find the name of the executeable to run
-			ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = m_ptrReg.OpenSubKey(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
-
-			// Launch the executeable
-			ACE_Process process;
-			ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
-
-			// The timeout needs to be related to the request timeout...
-			void* TODO;
-
-			// Wait for startup
-			ACE_Time_Value wait(15);
-			ACE_Countdown_Time timeout(&wait);
-			while (wait != ACE_Time_Value::zero)
-			{
-				ObjectPtr<IObject> ptrObject;
-				ptrObject.Attach(m_ptrROT->GetObject(oid));
-				if (ptrObject)
-				{
-					pObject = ptrObject->QueryInterface(iid);
-					if (!pObject)
-						throw INoInterfaceException::Create(iid);
-					return;
-				}
-
-				// Check if the process is still running...
-				if (!process.running())
-					break;
-
-				// Update our countdown
-				timeout.update();
-			}
-		}
-	}
-}
 
 // UserManager
 User::Manager::Manager() :
@@ -639,13 +380,20 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 		}
 
 		// Check timeout
-		ACE_Time_Value now = ACE_OS::gettimeofday();
-		if (deadline <= now)
-			return;
+		if (deadline != ACE_Time_Value::max_time)
+		{
+			if (deadline <= ACE_OS::gettimeofday())
+			{
+				ACE_OS::last_error(ETIMEDOUT);
+				return;
+			}
+		}
+		uint64_t deadline_secs = deadline.sec();
+		int32_t deadline_usecs = deadline.usec();
 
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse);
+			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs,src_channel_id,classify_channel(src_channel_id));
 		}
 		catch (IException* pInner)
 		{
@@ -668,9 +416,9 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		if (!(attribs & Remoting::asynchronous))
 		{
-		    ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
+			ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
 			send_response(seq_no,src_channel_id,src_thread_id,mb,deadline,attribs);
-            mb->release();
+			mb->release();
 		}
 	}
 	catch (IException* pOuter)
@@ -701,7 +449,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-            std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
+			std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
 			{
 				if (i->second.m_marshal_flags == marshal_flags)

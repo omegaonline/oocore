@@ -481,7 +481,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_READ_PROXY_PARAM_I,meta,(type,name))
 
 #define OMEGA_READ_PARAM_WIRE_PROXY_I(meta,t,name) \
-    marshal_info<t>::wire_type:: OMEGA_WIRE_READ_PROXY_PARAM(meta,t,name)
+	marshal_info<t>::wire_type:: OMEGA_WIRE_READ_PROXY_PARAM(meta,t,name)
 
 #define OMEGA_READ_PARAM_WIRE_PROXY(index,param,d) \
 	__wire__pException = OMEGA_READ_PARAM_WIRE_PROXY_I param ); if (__wire__pException) return __wire__pException;

@@ -39,8 +39,8 @@
 #define OMEGA_HAS_INT64_T
 #define OMEGA_HAS_UINT64_T
 
-#define OMEGA_UNUSED_ARG(n)	(void)(n)
+#define OMEGA_UNUSED_ARG(n)    (void)(n)
 
-#define OMEGA_COMPILER_STRING           "gcc " __VERSION__
+#define OMEGA_COMPILER_STRING  "gcc " __VERSION__
 
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

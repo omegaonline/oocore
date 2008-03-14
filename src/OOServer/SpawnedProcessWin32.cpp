@@ -37,7 +37,7 @@
 
 #ifdef OMEGA_DEBUG
 #define WIN32_DEBUGGING() (IsDebuggerPresent() ? true : false)
-void AttachDebugger(DWORD pid);
+void AttachDebugger(pid_t pid);
 #else
 #define WIN32_DEBUGGING() false
 #endif
@@ -73,7 +73,7 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 #define LOG_FAILURE(err) LogFailure((err),OMEGA_WIDEN_STRING(__FILE__),__LINE__)
 
 #ifndef PROTECTED_DACL_SECURITY_INFORMATION
-#define PROTECTED_DACL_SECURITY_INFORMATION     (0x80000000L)
+#define PROTECTED_DACL_SECURITY_INFORMATION	 (0x80000000L)
 #endif
 
 Root::SpawnedProcess::SpawnedProcess() :
@@ -128,50 +128,50 @@ DWORD Root::SpawnedProcess::GetNameFromToken(HANDLE hToken, ACE_WString& strUser
 		err = GetLastError();
 		LOG_FAILURE(err);
 	}
-    else
+	else
 	{
 		LPWSTR pszUserName = 0;
 		ACE_NEW_NORETURN(pszUserName,wchar_t[dwUNameSize]);
-        if (!pszUserName)
+		if (!pszUserName)
 		{
-            err = ERROR_OUTOFMEMORY;
+			err = ERROR_OUTOFMEMORY;
 			LOG_FAILURE(err);
 		}
-        else
-        {
-            LPWSTR pszDomainName = NULL;
-            if (dwDNameSize)
-            {
+		else
+		{
+			LPWSTR pszDomainName = NULL;
+			if (dwDNameSize)
+			{
 				ACE_NEW_NORETURN(pszDomainName,wchar_t[dwDNameSize]);
-                if (!pszDomainName)
+				if (!pszDomainName)
 				{
 					err = ERROR_OUTOFMEMORY;
 					LOG_FAILURE(err);
 				}
-            }
+			}
 
-            if (err == 0)
-            {
-                if (!LookupAccountSidW(NULL,pUserInfo->User.Sid,pszUserName,&dwUNameSize,pszDomainName,&dwDNameSize,&name_use))
+			if (err == 0)
+			{
+				if (!LookupAccountSidW(NULL,pUserInfo->User.Sid,pszUserName,&dwUNameSize,pszDomainName,&dwDNameSize,&name_use))
 				{
-                    err = GetLastError();
+					err = GetLastError();
 					LOG_FAILURE(err);
 				}
-                else
-                {
-                    strUserName = pszUserName;
-                    strDomainName = pszDomainName;
-                }
-            }
-            delete [] pszDomainName;
-            delete [] pszUserName;
-        }
+				else
+				{
+					strUserName = pszUserName;
+					strDomainName = pszDomainName;
+				}
+			}
+			delete [] pszDomainName;
+			delete [] pszUserName;
+		}
 	}
 
 	// Done with user info
 	ACE_OS::free(pUserInfo);
 
-    return err;
+	return err;
 }
 
 DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
@@ -182,32 +182,32 @@ DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hPro
 
 	DWORD err = GetNameFromToken(hToken,strUserName,strDomainName);
 	if (err != ERROR_SUCCESS)
-		return err;    
+		return err;
 
 	// Lookup a DC for pszDomain
-    ACE_WString strDCName;
-    LPWSTR pszDCName = NULL;
-    if (NetGetAnyDCName(NULL,strDomainName.is_empty() ? NULL : strDomainName.c_str(),(LPBYTE*)&pszDCName) == NERR_Success)
-    {
-        strDCName = pszDCName;
-        NetApiBufferFree(pszDCName);
-    }
+	ACE_WString strDCName;
+	LPWSTR pszDCName = NULL;
+	if (NetGetAnyDCName(NULL,strDomainName.is_empty() ? NULL : strDomainName.c_str(),(LPBYTE*)&pszDCName) == NERR_Success)
+	{
+		strDCName = pszDCName;
+		NetApiBufferFree(pszDCName);
+	}
 
-    // Try to find the user's profile path...
-    ACE_WString strProfilePath;
-    USER_INFO_3* pInfo = NULL;
-    if (NetUserGetInfo(strDCName.is_empty() ? NULL : strDCName.c_str(),strUserName.c_str(),3,(LPBYTE*)&pInfo) == NERR_Success)
-    {
-        if (pInfo->usri3_profile)
-            strProfilePath = pInfo->usri3_profile;
+	// Try to find the user's profile path...
+	ACE_WString strProfilePath;
+	USER_INFO_3* pInfo = NULL;
+	if (NetUserGetInfo(strDCName.is_empty() ? NULL : strDCName.c_str(),strUserName.c_str(),3,(LPBYTE*)&pInfo) == NERR_Success)
+	{
+		if (pInfo->usri3_profile)
+			strProfilePath = pInfo->usri3_profile;
 
-        NetApiBufferFree(pInfo);
-    }
+		NetApiBufferFree(pInfo);
+	}
 
 	// Load the Users Profile
 	PROFILEINFOW profile_info;
 	ACE_OS::memset(&profile_info,0,sizeof(profile_info));
-    profile_info.dwSize = sizeof(PROFILEINFOW);
+	profile_info.dwSize = sizeof(PROFILEINFOW);
 	profile_info.dwFlags = PI_NOUI;
 	profile_info.lpUserName = (WCHAR*)strUserName.c_str();
 	if (!strProfilePath.empty())
@@ -894,7 +894,7 @@ void Root::SpawnedProcess::CloseSandboxLogon(user_id_type hToken)
 
 bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
-    PSECURITY_DESCRIPTOR pSD = NULL;
+	PSECURITY_DESCRIPTOR pSD = NULL;
 	DWORD cbNeeded = 0;
 	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
 	{

@@ -38,9 +38,9 @@
 #define _UNICODE
 #include <objbase.h>
 
-#define OMEGA_MAX_DEFINES	249
+#define OMEGA_MAX_DEFINES 249
 
-#define OMEGA_FUNCNAME		__FUNCSIG__
+#define OMEGA_FUNCNAME    __FUNCSIG__
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \

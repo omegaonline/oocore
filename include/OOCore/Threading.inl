@@ -227,7 +227,7 @@ T* Omega::System::AtomicOp<T*>::exchange(T* v)
 
 OMEGA_EXPORTED_FUNCTION(void*,cs__ctor,0,());
 Omega::System::CriticalSection::CriticalSection() :
-	m_handle(static_cast<handle_t>(cs__ctor()))
+	m_handle(static_cast<handle_t*>(cs__ctor()))
 {
 }
 
@@ -252,7 +252,7 @@ void Omega::System::CriticalSection::Unlock()
 
 OMEGA_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,());
 Omega::System::ReaderWriterLock::ReaderWriterLock() :
-	m_handle(static_cast<handle_t>(rw_lock__ctor()))
+	m_handle(static_cast<handle_t*>(rw_lock__ctor()))
 {	
 }
 

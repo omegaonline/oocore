@@ -75,20 +75,20 @@ Root::pw_info::pw_info(uid_t uid) :
 	m_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
 #endif
 
-    // _SC_GETPW_R_SIZE_MAX is defined on Mac OS X. However,
-    // sysconf(_SC_GETPW_R_SIZE_MAX) returns an error. Therefore, the
-    // constant is used as below when error was retured.
-    if (m_buf_len <= 0)
+	// _SC_GETPW_R_SIZE_MAX is defined on Mac OS X. However,
+	// sysconf(_SC_GETPW_R_SIZE_MAX) returns an error. Therefore, the
+	// constant is used as below when error was retured.
+	if (m_buf_len <= 0)
 		m_buf_len = 1024;
 
 	m_pBuffer = new char[m_buf_len];
 	if (m_pBuffer)
 	{
-    	ACE_OS::setpwent();
+		ACE_OS::setpwent();
 		if (::getpwuid_r(uid,&m_pwd2,m_pBuffer,m_buf_len,&m_pwd) != 0)
 			m_pwd = 0;
 
-     	ACE_OS::endpwent();
+		ACE_OS::endpwent();
 	}
 }
 
@@ -365,7 +365,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 
 bool Root::SpawnedProcess::UninstallSandbox()
 {
-    return (Manager::get_registry().delete_value(L"Server\\Sandbox",L"Uid") == 0);
+	return (Manager::get_registry().delete_value(L"Server\\Sandbox",L"Uid") == 0);
 }
 
 ACE_CString Root::SpawnedProcess::get_home_dir()

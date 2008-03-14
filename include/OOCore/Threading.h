@@ -36,12 +36,10 @@ namespace Omega
 			inline void Unlock();
 
 		private:
-			typedef struct tag_handle_t
+			struct handle_t
 			{
 				int unused;
-			}* handle_t;
-
-			handle_t m_handle;
+			}* m_handle;
 		};
 
 		class Guard
@@ -74,12 +72,10 @@ namespace Omega
 			inline void Unlock();
 
 		private:
-			typedef struct tag_handle_t
+			struct handle_t
 			{
 				int unused;
-			}* handle_t;
-
-			handle_t m_handle;
+			}* m_handle;
 		};
 
 		class ReadGuard

@@ -400,15 +400,7 @@ bool registry_tests_2()
 	TEST(ptrKey == (Omega::IObject*)0);
 	TEST(ptrKey == (Omega::Registry::IRegistryKey*)0);
 
-	// More here!
-	void* TODO;
-
-	return true;
-}
-
-bool registry_tests_3()
-{
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\");
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
 
 	// Generate a unique value name
 	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());

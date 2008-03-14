@@ -32,7 +32,7 @@ public:
 	virtual ~MainFrame(void);
 
 	DECLARE_EVENT_TABLE()
-    DECLARE_NO_COPY_CLASS(MainFrame)
+	DECLARE_NO_COPY_CLASS(MainFrame)
 
 private:
 	wxFileHistory		m_fileHistory;

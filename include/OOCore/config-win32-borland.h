@@ -24,7 +24,7 @@
 
 #define OMEGA_MAX_DEFINES     124
 
-#define OMEGA_FUNCNAME		__FUNC__
+#define OMEGA_FUNCNAME        __FUNC__
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new (std::nothrow) CONSTRUCTOR; \

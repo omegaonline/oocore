@@ -513,7 +513,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 	// Send on...
 	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
 
-	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	ACE_Time_Value wait = deadline;
 	if (deadline != ACE_Time_Value::max_time)
 	{
 		ACE_Time_Value now = ACE_OS::gettimeofday();
@@ -702,7 +702,9 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 				{
 					// Update deadline
 					ACE_Time_Value old_deadline = pContext->m_deadline;
-					pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
+					pContext->m_deadline = msg->m_deadline;
+					if (deadline && *deadline < pContext->m_deadline)
+						pContext->m_deadline = *deadline;
 					
 					// Set per channel thread id
 					std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
@@ -958,7 +960,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,*dest_channel.lock,false);
 
 		// Check the timeout
-		ACE_Time_Value wait = ACE_Time_Value::max_time;
+		ACE_Time_Value wait = msg.m_deadline;
 		if (msg.m_deadline != ACE_Time_Value::max_time)
 		{
 			ACE_Time_Value now = ACE_OS::gettimeofday();
@@ -984,7 +986,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		return true;
 	else
 		// Wait for response...
-		return wait_for_response(response,seq_no,&msg.m_deadline,actual_dest_channel_id);
+		return wait_for_response(response,seq_no,msg.m_deadline != ACE_Time_Value::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
 void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
@@ -1039,7 +1041,7 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
 
 	// Check the timeout
-	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	ACE_Time_Value wait = msg.m_deadline;
 	if (msg.m_deadline != ACE_Time_Value::max_time)
 	{
 		ACE_Time_Value now = ACE_OS::gettimeofday();

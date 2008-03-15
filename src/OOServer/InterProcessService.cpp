@@ -209,22 +209,40 @@ void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activatio
 			
 			// Find the name of the executeable to run
 			ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = m_ptrReg.OpenSubKey(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
+			string_t strProcess = ptrServer->GetStringValue(L"Activation");
 
-			// Launch the executable
-			ACE_Process process;
-			ExecProcess(process,ptrServer->GetStringValue(L"Activation"));
-
-			// The timeout needs to be related to the request timeout...
+			// Check for 2 requests to activate the same process...
 			void* TODO;
 
-			// Wait for startup
-			ACE_Time_Value wait(15);
-			ACE_Countdown_Time timeout(&wait);
-			while (wait != ACE_Time_Value::zero)
+			// The timeout needs to be related to the request timeout...
+			ACE_Time_Value deadline = ACE_Time_Value::max_time;
+			ObjectPtr<Remoting::ICallContext> ptrCC;
+			ptrCC.Attach(Remoting::GetCallContext());
+			if (ptrCC)
 			{
-				// Sleep for a brief moment - it will take a moment for the process to start
-				ACE_OS::sleep(ACE_Time_Value(0,100));
+				uint64_t secs = 0;
+				int32_t usecs = 0;
+				ptrCC->Deadline(secs,usecs);
+				deadline = ACE_Time_Value(secs,usecs);
+			}			
+			
+			// Launch the executable
+			ACE_Process process;
+			ExecProcess(process,strProcess);
 
+			// Wait for the process to start and register its parts...
+			ACE_Time_Value wait;
+			ACE_Time_Value now = ACE_OS::gettimeofday();
+			if (deadline == ACE_Time_Value::max_time)
+				wait = ACE_Time_Value(15);
+			else if (deadline <= now)
+				wait = ACE_Time_Value::zero;
+			else
+				wait = deadline - now;
+
+			ACE_Countdown_Time timeout(&wait);
+			do
+			{
 				ObjectPtr<IObject> ptrObject;
 				ptrObject.Attach(m_ptrROT->GetObject(oid));
 				if (ptrObject)
@@ -232,16 +250,20 @@ void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activatio
 					pObject = ptrObject->QueryInterface(iid);
 					if (!pObject)
 						throw INoInterfaceException::Create(iid);
-					return;
+					break;
 				}
 
 				// Check if the process is still running...
 				if (!process.running())
 					break;
 
+				// Sleep for a brief moment - it will take a moment for the process to start
+				ACE_OS::sleep(ACE_Time_Value(0,100));
+
 				// Update our countdown
 				timeout.update();
-			}
+
+			} while (wait != ACE_Time_Value::zero);
 		}
 	}
 }

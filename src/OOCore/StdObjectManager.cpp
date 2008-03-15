@@ -827,7 +827,7 @@ void OOCore::StdObjectManager::CreateRemoteInstance(const guid_t& oid, const gui
 		
 	try
 	{
-		pERet = SendAndReceive(0,ptrParamsOut,pParamsIn,0);
+		pERet = SendAndReceive(Remoting::synchronous,ptrParamsOut,pParamsIn);
 	}
 	catch (IException* pE)
 	{

@@ -31,7 +31,7 @@ namespace Omega
 		interface IChannel : public IObject
 		{
 			virtual Serialize::IFormattedStream* CreateOutputStream() = 0;
-			virtual IException* SendAndReceive(MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout) = 0;
+			virtual IException* SendAndReceive(MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout = 0) = 0;
 		};
 
 		enum MarshalFlags

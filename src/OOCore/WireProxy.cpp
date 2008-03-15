@@ -148,7 +148,7 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 	pParamsOut->WriteGuid(iid);
 
 	Serialize::IFormattedStream* pParamsIn = 0;
-	IException* pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
+	IException* pE = m_pManager->SendAndReceive(Remoting::synchronous,pParamsOut,pParamsIn);
 	if (pE)
 		throw pE;
 
@@ -275,7 +275,7 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 	IException* pE = 0;
 	try
 	{
-		pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
+		pE = m_pManager->SendAndReceive(Remoting::synchronous,pParamsOut,pParamsIn);
 	}
 	catch (IException* pE2)
 	{
@@ -318,8 +318,9 @@ void OOCore::WireProxy::CallRemoteRelease()
 
 		pParamsOut->WriteUInt32(m_marshal_count.value());
 		
+		// This is an synch call, because we are leaving whatever happens at the other end!
 		Serialize::IFormattedStream* pParamsIn = 0;
-		IException* pE = m_pManager->SendAndReceive(0,pParamsOut,pParamsIn,0);
+		IException* pE = m_pManager->SendAndReceive(Remoting::asynchronous,pParamsOut,pParamsIn);
 		if (pE)
 			pE->Release();
 		if (pParamsIn)

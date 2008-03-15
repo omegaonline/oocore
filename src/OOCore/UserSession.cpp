@@ -356,11 +356,7 @@ void OOCore::UserSession::term_i()
 
 ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
 {
-	int r = static_cast<UserSession*>(pParam)->run_read_loop();
-	if (r != 0)
-		DebugBreak();
-
-	return (ACE_THR_FUNC_RETURN)r;
+	return (ACE_THR_FUNC_RETURN)(static_cast<UserSession*>(pParam)->run_read_loop());
 }
 
 int OOCore::UserSession::run_read_loop()
@@ -775,7 +771,9 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 			{
 				// Update deadline
 				ACE_Time_Value old_deadline = pContext->m_deadline;
-				pContext->m_deadline = (msg->m_deadline < *deadline ? msg->m_deadline : *deadline);
+				pContext->m_deadline = msg->m_deadline;
+				if (deadline && *deadline < pContext->m_deadline)
+					pContext->m_deadline = *deadline;
 
 				// Set per channel thread id
 				std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
@@ -952,7 +950,6 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
 
 		// Send to the handle
-		
 		ACE_Time_Value wait = deadline;
 		if (deadline != ACE_Time_Value::max_time)
 		{
@@ -978,7 +975,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		return true;
 	else
 		// Wait for response...
-		return wait_for_response(response,seq_no,&deadline,dest_channel_id);
+		return wait_for_response(response,seq_no,deadline != ACE_Time_Value::max_time ? &deadline : 0,dest_channel_id);
 }
 
 void OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb)
@@ -993,7 +990,7 @@ void OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong de
 
 	ACE_GUARD(ACE_Thread_Mutex,guard,m_send_lock);
 
-	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	ACE_Time_Value wait = deadline;
 	if (deadline != ACE_Time_Value::max_time)
 	{
 		ACE_Time_Value now = ACE_OS::gettimeofday();

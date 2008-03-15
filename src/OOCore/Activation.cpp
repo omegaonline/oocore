@@ -369,6 +369,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		if (pObject)
 			return;
 		
+		// Try to load a library, if allowed
 		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{
 			// Use the registry
@@ -378,6 +379,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
 				if (ptrOidKey->IsValue(L"Library"))
 				{
+					void* TODO; // Surrogates here?!?
+
 					pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
 					if (pObject)
 						return;
@@ -385,6 +388,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 			}
 		}
 
+		// Try out-of-process...
 		if (flags & Activation::OutOfProcess)
 		{
 			ObjectPtr<Remoting::IInterProcessService> ptrIPC = OOCore::GetInterProcessService();

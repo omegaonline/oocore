@@ -77,7 +77,7 @@ bool Root::NTService::install()
 	// Remove the service config first, this allows us to alter the config
 	NTSERVICE::instance()->remove();
 
-	if (NTSERVICE::instance()->insert(L"--service") != 0 && GetLastError() != ERROR_SERVICE_MARKED_FOR_DELETE)
+	if (NTSERVICE::instance()->insert(ACE_TEXT("--service")) != 0 && GetLastError() != ERROR_SERVICE_MARKED_FOR_DELETE)
 	{
 		if (errno > 0 && errno <= 42)
 			ACE_ERROR_RETURN((LM_ERROR,L"Service install failed: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
@@ -107,41 +107,41 @@ bool Root::NTService::uninstall()
 	return true;
 }
 
-int Root::NTService::insert(const wchar_t *cmd_line,
+int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 							DWORD start_type,
 							DWORD error_control,
-							const wchar_t *group_name,
+							const ACE_TCHAR *group_name,
 							LPDWORD tag_id,
-							const wchar_t *dependencies,
-							const wchar_t *account_name,
-							const wchar_t *password)
+							const ACE_TCHAR *dependencies,
+							const ACE_TCHAR *account_name,
+							const ACE_TCHAR *password)
 {
-	wchar_t this_exe[PATH_MAX + 2];
+	ACE_TCHAR this_exe[PATH_MAX + 2];
 
-	if (GetModuleFileNameW(0,this_exe+1,PATH_MAX) == 0)
+	if (GetModuleFileName(0,this_exe+1,PATH_MAX) == 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: GetModuleFilename failed: %#x\n",GetLastError()),-1);
 		
 	// Make sure that this_exe is quoted
-	this_exe[0] = L'\"';
-	ACE_OS::strcat(this_exe,L"\"");
+	this_exe[0] = ACE_TEXT('\"');
+	ACE_OS::strcat(this_exe,ACE_TEXT("\""));
 	
-	ACE_WString exe_path(this_exe);
-	exe_path += L" ";
+	ACE_TString exe_path(this_exe);
+	exe_path += ACE_TEXT(" ");
 	exe_path += cmd_line;
 
 	return ACE_NT_Service::insert(start_type,error_control,exe_path.c_str(),group_name,tag_id,dependencies,account_name,password);
 }
 
-int Root::NTService::description(const wchar_t *desc)
+int Root::NTService::description(const ACE_TCHAR *desc)
 {
 	SC_HANDLE svc = this->svc_sc_handle ();
 	if (svc == 0)
 		return -1;
 
-	SERVICE_DESCRIPTIONW sdesc;
-	sdesc.lpDescription = const_cast<LPWSTR>(desc);
+	SERVICE_DESCRIPTION sdesc;
+	sdesc.lpDescription = const_cast<LPTSTR>(desc);
 
-	return ChangeServiceConfig2W(svc,(DWORD)SERVICE_CONFIG_DESCRIPTION,(LPVOID)&sdesc) ? 0 : -1;
+	return ChangeServiceConfig2(svc,(DWORD)SERVICE_CONFIG_DESCRIPTION,(LPVOID)&sdesc) ? 0 : -1;
 }
 
 BOOL Root::NTService::control_c(DWORD)

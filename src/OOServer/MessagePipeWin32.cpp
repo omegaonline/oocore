@@ -43,7 +43,7 @@ Root::MessagePipe::MessagePipe() :
 {
 }
 
-int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_TString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_NEW_RETURN(pipe,MessagePipe,-1);
 
@@ -57,14 +57,14 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 	ACE_SPIPE_Addr addr;
 
 	ACE_SPIPE_Stream down;
-	addr.string_to_addr((strAddr + L"\\down").c_str());
+	addr.string_to_addr((strAddr + ACE_TEXT("\\down")).c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"connector.connect() failed"),-1);
 
 	countdown.update();
 
 	ACE_SPIPE_Stream up;
-	addr.string_to_addr((strAddr + L"\\up").c_str());
+	addr.string_to_addr((strAddr + ACE_TEXT("\\up")).c_str());
 	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
 	{
 		down.close();
@@ -280,7 +280,7 @@ bool Root::MessagePipeAcceptor::CreateSA(HANDLE hToken, void*& pSD, PACL& pACL)
 	return true;
 }
 
-int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
+int Root::MessagePipeAcceptor::open(const ACE_TString& strAddr, HANDLE hToken)
 {
 	if (m_sa.nLength == 0)
 	{
@@ -292,11 +292,11 @@ int Root::MessagePipeAcceptor::open(const ACE_WString& strAddr, HANDLE hToken)
 	}
 
 	ACE_SPIPE_Addr addr;
-	addr.string_to_addr((strAddr + L"\\up").c_str());
+	addr.string_to_addr((strAddr + ACE_TEXT("\\up")).c_str());
 	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
 
-	addr.string_to_addr((strAddr + L"\\down").c_str());
+	addr.string_to_addr((strAddr + ACE_TEXT("\\down")).c_str());
 	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 	{
 		m_acceptor_up.close();

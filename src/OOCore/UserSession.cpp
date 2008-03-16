@@ -28,7 +28,7 @@ using namespace OTL;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 
-int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
+int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_TString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_Time_Value val(30);
 	if (!wait)
@@ -40,14 +40,14 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WStri
 	ACE_SPIPE_Addr addr;
 
 	ACE_SPIPE_Stream down;
-	addr.string_to_addr((strAddr + L"\\down").c_str());
+	addr.string_to_addr((strAddr + ACE_TEXT("\\down")).c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		return -1;
 
 	countdown.update();
 
 	ACE_SPIPE_Stream up;
-	addr.string_to_addr((strAddr + L"\\up").c_str());
+	addr.string_to_addr((strAddr + ACE_TEXT("\\up")).c_str());
 	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
 	{
 		down.close();
@@ -163,7 +163,7 @@ IException* OOCore::UserSession::init()
 
 bool OOCore::UserSession::init_i()
 {
-	ACE_WString strPipe;
+	ACE_TString strPipe;
 	if (!discover_server_port(strPipe))
 		return false;
 
@@ -231,7 +231,7 @@ IException* OOCore::UserSession::bootstrap()
 bool OOCore::UserSession::launch_server()
 {
 #if defined(OMEGA_WIN32)
-	ACE_NT_Service service(L"OOServer");
+	ACE_NT_Service service(ACE_TEXT("OOServer"));
 	ACE_Time_Value wait(30);
 	if (service.start_svc(&wait) != 0)
 		return false;
@@ -263,13 +263,13 @@ bool OOCore::UserSession::launch_server()
 	return true;
 }
 
-bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
+bool OOCore::UserSession::discover_server_port(ACE_TString& strPipe)
 {
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Stream peer;
 	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(L"ooserver");
+	addr.string_to_addr(ACE_TEXT("ooserver"));
 #else
 	ACE_SOCK_Connector connector;
 	ACE_SOCK_Stream peer;
@@ -325,7 +325,7 @@ bool OOCore::UserSession::discover_server_port(ACE_WString& strPipe)
 		return false;
 	}
 
-	ACE_WString str = buf;
+	ACE_TString str = ACE_TEXT_WCHAR_TO_TCHAR(buf);
 	delete [] buf;
 
 	strPipe = str;

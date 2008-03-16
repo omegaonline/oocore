@@ -308,11 +308,11 @@ IObject* OOCore::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, 
 		// Ensure we are using per-dll unloading
 		ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_PER_DLL);
 
-		if (dll.open(dll_name.c_str()) != 0)
+		if (dll.open(ACE_TEXT_WCHAR_TO_TCHAR(dll_name.c_str())) != 0)
 			LibraryNotFoundException::Throw(dll_name);
 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
-		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll.symbol(L"Omega_GetLibraryObject_Safe");
+		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll.symbol(ACE_TEXT("Omega_GetLibraryObject_Safe"));
 		if (pfn == 0)
 			OOCORE_THROW_LASTERROR();
 

@@ -46,10 +46,10 @@ namespace Root
 		public MessageHandler
 	{
 	public:
-		static int run(int argc, wchar_t* argv[]);
+		static int run(int argc, ACE_TCHAR* argv[]);
 		static void end();
 		static ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> get_registry();
-		static bool install(int argc, wchar_t* argv[]);
+		static bool install(int argc, ACE_TCHAR* argv[]);
 		static bool uninstall();
 		static int registry_access_check(ACE_CDR::ULong channel_id);
 
@@ -65,7 +65,7 @@ namespace Root
 
 		ACE_RW_Thread_Mutex  m_lock;
 
-		int run_event_loop_i(int argc, wchar_t* argv[]);
+		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
 		bool init();
 		int init_database();
 		void end_event_loop_i();

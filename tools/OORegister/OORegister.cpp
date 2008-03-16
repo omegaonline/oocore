@@ -49,7 +49,8 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 
 	try
 	{
-		Omega::string_t strSubsts = L"LIB_PATH=" + Omega::string_t(lib_path);
+		Omega::string_t strSubsts = L"LIB_PATH=";
+		strSubsts += ACE_TEXT_ALWAYS_WCHAR(lib_path);
 
 		Omega::System::MetaInfo::IException_Safe* pSE = pfn(
 			Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
@@ -169,7 +170,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	return res;
 }
 
-#if defined(ACE_WIN32) && defined(__MINGW32__)
+#if defined(ACE_WIN32) && defined(ACE_USES_WCHAR) && defined(__MINGW32__)
 #include <shellapi.h>
 int main(int argc, char* /*argv*/[])
 {

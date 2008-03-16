@@ -655,20 +655,20 @@ DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
 //	dwRes = SetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,NULL,NULL,pACLNew,NULL);
 //}
 
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox)
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& strPipe, bool bSandbox)
 {
 	// Get our module name
-	WCHAR szPath[MAX_PATH];
-	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
+	TCHAR szPath[MAX_PATH];
+	if (!GetModuleFileName(NULL,szPath,MAX_PATH))
 	{
 		DWORD dwErr = GetLastError();
 		LOG_FAILURE(dwErr);
 		return dwErr;
 	}
 
-	ACE_WString strCmdLine = L"\"" + ACE_WString(szPath) + L"\" --spawned " + strPipe;
+	ACE_TString strCmdLine = ACE_TEXT("\"") + ACE_TString(szPath) + ACE_TEXT("\" --spawned ") + strPipe;
 	
-	// WIndow station vars
+	// Window station vars
 	ACE_WString strWindowStation;
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
@@ -810,7 +810,7 @@ CleanupProfile:
 	return dwRes;
 }
 
-bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_WString& strPipe, bool bSandbox)
+bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_TString& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
@@ -990,15 +990,15 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigne
 	return false;
 }
 
-bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
+bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 {
 	ACE_WString strUName = L"_OMEGA_SANDBOX_USER_";
 	ACE_WString strPwd = L"4th_(*%LGe895y^$N|2";
 
 	if (argc>=1)
-		strUName = argv[0];
+		strUName = ACE_TEXT_ALWAYS_WCHAR(argv[0]);
 	if (argc>=2)
-		strPwd = argv[1];
+		strPwd = ACE_TEXT_ALWAYS_WCHAR(argv[1]);
 
 	USER_INFO_2	info =
 	{

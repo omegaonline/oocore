@@ -44,10 +44,10 @@ namespace Root
 		SpawnedProcess();
 		~SpawnedProcess();
 
-		bool Spawn(user_id_type id, const ACE_WString& strPipe, bool bSandbox);
+		bool Spawn(user_id_type id, const ACE_TString& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
 
-		static bool InstallSandbox(int argc, wchar_t* argv[]);
+		static bool InstallSandbox(int argc, ACE_TCHAR* argv[]);
 		static bool UninstallSandbox();
 		static bool SecureFile(const ACE_CString& strFilename);
 
@@ -66,7 +66,7 @@ namespace Root
 		bool   m_bSandbox;
 
 		static DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-		DWORD SpawnFromToken(HANDLE hToken, const ACE_WString& strPipe, bool bSandbox);
+		DWORD SpawnFromToken(HANDLE hToken, const ACE_TString& strPipe, bool bSandbox);
 		static void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
 		static bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
 		static bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);

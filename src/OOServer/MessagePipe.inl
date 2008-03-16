@@ -35,7 +35,7 @@
 #define OOSERVER_MSG_PIPE_INL_INCLUDED_
 
 template <class T>
-int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_WString& strAddr)
+int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_TString& strAddr)
 {
 	m_pHandler = pHandler;
 	
@@ -93,7 +93,7 @@ Root::MessagePipeSingleAsyncAcceptor<T>::~MessagePipeSingleAsyncAcceptor()
 }
 
 template <class T>
-int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_WString& strAddr)
+int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_TString& strAddr)
 {
 	m_pHandler = pHandler;
 	

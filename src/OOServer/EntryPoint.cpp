@@ -37,9 +37,9 @@
 #include "./Version.h"
 
 // Forward declare UserMain
-int UserMain(const ACE_WString& strPipe);
+int UserMain(const ACE_TString& strPipe);
 
-static int Install(int argc, wchar_t* argv[])
+static int Install(int argc, ACE_TCHAR* argv[])
 {
 #if defined(ACE_WIN32)
 	if (!Root::NTService::install())
@@ -82,19 +82,19 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #if defined(ACE_WIN32)
 	// Check to see if we have been spawned
-	if (argc>2 && ACE_OS::strcmp(argv[1],L"--spawned")==0)
+	if (argc>2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--spawned"))==0)
 		return UserMain(argv[2]);
 	
-	if (argc>=2 && ACE_OS::strcmp(argv[1],L"--service")==0)
+	if (argc>=2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--service"))==0)
 		skip_args = 2;
 #endif
 
 	// Check command line options
-	ACE_Get_Opt cmd_opts(argc,argv,L":iuvh",skip_args);
-	if (cmd_opts.long_option(L"install",L'i')!=0 ||
-		cmd_opts.long_option(L"uninstall",L'u')!=0 ||
-		cmd_opts.long_option(L"version",L'v')!=0 ||
-		cmd_opts.long_option(L"help",L'h')!=0)
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iuvh"),skip_args);
+	if (cmd_opts.long_option(ACE_TEXT("install"),ACE_TEXT('i'))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("uninstall"),ACE_TEXT('u'))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
+		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
 	{
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error parsing cmdline"),-1);
 	}
@@ -127,13 +127,13 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	}
 
 #if defined(ACE_WIN32)
-	if (argc<2 || ACE_OS::strcmp(argv[1],L"--service") != 0)
+	if (argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"OOServer must be started as a Win32 service.\n"),-1);
 	
 #if defined(OMEGA_DEBUG)
-	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::STDERR,L"OOServer") != 0)
+	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::STDERR,ACE_TEXT("OOServer")) != 0)
 #endif
-	if (ACE_LOG_MSG->open(L"OOServer",ACE_Log_Msg::SYSLOG,L"OOServer") != 0)
+	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
 
 	if (!Root::NTService::open())
@@ -161,7 +161,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	return ret;
 }
 
-#if defined(ACE_WIN32) && defined(__MINGW32__)
+#if defined(ACE_WIN32) && defined(ACE_USES_WCHAR) && defined(__MINGW32__)
 #include <shellapi.h>
 int main(int argc, char* /*argv*/[])
 {

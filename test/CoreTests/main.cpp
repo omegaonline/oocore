@@ -49,7 +49,7 @@ int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
 	return test_summary();
 }
 
-#if defined(ACE_WIN32) && defined(__MINGW32__)
+#if defined(ACE_WIN32) && defined(ACE_USES_WCHAR) && defined(__MINGW32__)
 #include <shellapi.h>
 int main(int argc, char* /*argv*/[])
 {

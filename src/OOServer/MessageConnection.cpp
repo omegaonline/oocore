@@ -34,12 +34,12 @@
 #include "./OOServer_Root.h"
 #include "./MessageConnection.h"
 
-ACE_WString Root::MessagePipe::unique_name(const ACE_WString& strPrefix)
+ACE_TString Root::MessagePipe::unique_name(const ACE_TString& strPrefix)
 {
 	ACE_Time_Value t = ACE_OS::gettimeofday();
 
-	wchar_t szBuf[32];
-	ACE_OS::snprintf(szBuf,32,L"%lx%lx",t.sec(),t.usec());
+	ACE_TCHAR szBuf[32];
+	ACE_OS::snprintf(szBuf,32,ACE_TEXT("%lx%lx"),t.sec(),t.usec());
 
 	return strPrefix + szBuf;
 }

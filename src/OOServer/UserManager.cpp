@@ -33,7 +33,7 @@ BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 END_PROCESS_OBJECT_MAP()
 
-int UserMain(const ACE_WString& strPipe)
+int UserMain(const ACE_TString& strPipe)
 {
 	u_long options = ACE_Log_Msg::SYSLOG;
 
@@ -50,7 +50,7 @@ int UserMain(const ACE_WString& strPipe)
 	}
 #endif
 
-	if (ACE_LOG_MSG->open(L"OOServer",options,L"OOServer") != 0)
+	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),options,ACE_TEXT("OOServer")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Error opening logger"),-1);
 
 	return User::Manager::run(strPipe);
@@ -69,12 +69,12 @@ User::Manager::~Manager()
 {
 }
 
-int User::Manager::run(const ACE_WString& strPipe)
+int User::Manager::run(const ACE_TString& strPipe)
 {
 	return USER_MANAGER::instance()->run_event_loop_i(strPipe);
 }
 
-int User::Manager::run_event_loop_i(const ACE_WString& strPipe)
+int User::Manager::run_event_loop_i(const ACE_TString& strPipe)
 {
 	int ret = -1;
 
@@ -149,7 +149,7 @@ bool User::Manager::channel_open(ACE_CDR::ULong channel)
 	return true;
 }
 
-bool User::Manager::init(const ACE_WString& strPipe)
+bool User::Manager::init(const ACE_TString& strPipe)
 {
 	// Connect to the root
 	ACE_Time_Value wait(5);
@@ -167,7 +167,7 @@ bool User::Manager::init(const ACE_WString& strPipe)
 	}
 
 	// Invent a new pipe name..
-	ACE_WString strNewPipe = Root::MessagePipe::unique_name(L"oou");
+	ACE_TString strNewPipe = Root::MessagePipe::unique_name(ACE_TEXT("oou"));
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;

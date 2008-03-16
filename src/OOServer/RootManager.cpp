@@ -45,7 +45,7 @@ Root::Manager::~Manager()
 {
 }
 
-bool Root::Manager::install(int argc, wchar_t* argv[])
+bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 {
 	if (ROOT_MANAGER::instance()->init_database() != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening database"),false);
@@ -89,7 +89,7 @@ bool Root::Manager::uninstall()
 	return true;
 }
 
-int Root::Manager::run(int argc, wchar_t* argv[])
+int Root::Manager::run(int argc, ACE_TCHAR* argv[])
 {
 	return ROOT_MANAGER::instance()->run_event_loop_i(argc,argv);
 }
@@ -104,7 +104,7 @@ void Root::Manager::end()
 	ROOT_MANAGER::instance()->end_event_loop_i();
 }
 
-int Root::Manager::run_event_loop_i(int /*argc*/, wchar_t* /*argv*/[])
+int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 {
 	int ret = -1;
 
@@ -281,9 +281,9 @@ void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 int Root::Manager::process_client_connects()
 {
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	const wchar_t* pipe_name = L"ooserver";
+	const ACE_TCHAR* pipe_name = ACE_TEXT("ooserver");
 #else
-	const wchar_t* pipe_name = L"/var/ooserver";
+	const ACE_TCHAR* pipe_name = ACE_TEXT("/var/ooserver");
 #endif
 
 	if (m_client_acceptor.start(this,pipe_name) != 0)
@@ -358,7 +358,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 	ACE_CDR::ULong nChannelId = 0;
 	
 	MessagePipeAcceptor acceptor;
-	ACE_WString strNewPipe = MessagePipe::unique_name(L"oor");
+	ACE_TString strNewPipe = MessagePipe::unique_name(ACE_TEXT("oor"));
 	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
 		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"));
 	else 

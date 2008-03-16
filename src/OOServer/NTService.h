@@ -36,9 +36,9 @@
 
 #if defined(ACE_WIN32)
 
-#define NTSERVICE_NAME		L"OOServer"
-#define NTSERVICE_DESC		L"Omega Online Network Gateway"
-#define NTSERVICE_LONGDESC	L"Manages the peer connections for the Omega Online network"
+#define NTSERVICE_NAME		ACE_TEXT("OOServer")
+#define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Gateway")
+#define NTSERVICE_LONGDESC	ACE_TEXT("Manages the peer connections for the Omega Online network")
 
 namespace Root
 {
@@ -59,15 +59,15 @@ namespace Root
 		static ACE_THR_FUNC_RETURN start_service(void*);
 		static BOOL WINAPI control_c(DWORD);
 		
-		int description(const wchar_t *desc);
-		int insert(const wchar_t *cmd_line = 0,
+		int description(const ACE_TCHAR *desc);
+		int insert(const ACE_TCHAR *cmd_line = 0,
 		           DWORD start_type = SERVICE_DEMAND_START,
 		           DWORD error_control = SERVICE_ERROR_IGNORE,
-		           const wchar_t *group_name = 0,
+		           const ACE_TCHAR *group_name = 0,
 		           LPDWORD tag_id = 0,
-		           const wchar_t *dependencies = 0,
-		           const wchar_t *account_name = 0,
-		           const wchar_t *password = 0);
+		           const ACE_TCHAR *dependencies = 0,
+		           const ACE_TCHAR *account_name = 0,
+		           const ACE_TCHAR *password = 0);
 
 		int svc();
 		void stop_requested(DWORD control_code);

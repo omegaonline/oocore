@@ -21,7 +21,7 @@
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="0"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -107,7 +107,7 @@
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			CharacterSet="0"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -440,6 +440,30 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\extern\sqlite\sqlite3.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+						WarningLevel="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+						WarningLevel="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\UserManager.cpp"
 				>
 				<FileConfiguration
@@ -523,6 +547,10 @@
 			</File>
 			<File
 				RelativePath=".\SpawnedProcess.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\extern\sqlite\sqlite3.h"
 				>
 			</File>
 			<File

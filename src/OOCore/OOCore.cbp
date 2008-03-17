@@ -8,7 +8,7 @@
 		<Build>
 			<Target title="Debug_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Debug\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\OOCore" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -38,11 +38,12 @@
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
 					<Add library="librpcrt4" />
+					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
 			<Target title="Release_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Release\OOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\OOCore" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -75,11 +76,12 @@
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
 					<Add library="librpcrt4" />
+					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
 			<Target title="Debug_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Debug\libOOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\libOOCore" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -100,7 +102,7 @@
 			</Target>
 			<Target title="Release_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Release\libOOCore.dll" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\libOOCore" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -162,6 +164,7 @@
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
 		<Unit filename="Exception.cpp" />
+		<Unit filename="Exception.h" />
 		<Unit filename="OOCore.cpp" />
 		<Unit filename="OOCore.rc">
 			<Option compilerVar="WINDRES" />
@@ -177,6 +180,12 @@
 		<Unit filename="Types.cpp" />
 		<Unit filename="UserSession.cpp" />
 		<Unit filename="UserSession.h" />
+		<Unit filename="WireImpl.cpp" />
+		<Unit filename="WireImpl.h" />
+		<Unit filename="WireProxy.cpp" />
+		<Unit filename="WireProxy.h" />
+		<Unit filename="WireStub.cpp" />
+		<Unit filename="WireStub.h" />
 		<Unit filename="Xml.cpp" />
 		<Unit filename="Xml.h" />
 		<Extensions>

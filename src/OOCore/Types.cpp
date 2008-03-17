@@ -23,37 +23,15 @@
 
 namespace OOCore
 {
-	class UTF_Converter
-	{
-	public:
-		ACE_WString from_utf8(const char* sz);
-		ACE_CString to_utf8(const wchar_t* wsz);
-
-	private:
-		friend class ACE_Singleton<UTF_Converter,ACE_Thread_Mutex>;
-
-		UTF_Converter() :
-			m_conv(0)
-		{
-			static const wchar_t szBuf[] = L"This is my exciting text string, that should hopefully be picked up as the correct native wchar_t encoding";
-			m_conv = ACE_Encoding_Converter_Factory::create(reinterpret_cast<const ACE_Byte*>(szBuf),sizeof(szBuf));
-		}
-
-		~UTF_Converter()
-		{
-			delete m_conv;
-		}
-
-		ACE_Encoding_Converter* m_conv;
-	};
-	typedef ACE_Singleton<UTF_Converter,ACE_Thread_Mutex> UTF_CONVERTER;
+	ACE_WString from_utf8(const char* sz);
+	ACE_CString to_utf8(const wchar_t* wsz);
 
 	struct StringNode
 	{
 		StringNode() : m_refcount(1)
 		{}
 
-		StringNode(const char* sz) : m_str(UTF_CONVERTER::instance()->from_utf8(sz)), m_refcount(1)
+		StringNode(const char* sz) : m_str(from_utf8(sz)), m_refcount(1)
 		{}
 
 		StringNode(const wchar_t* sz) : m_str(sz), m_refcount(1)
@@ -85,60 +63,111 @@ namespace OOCore
 
 using namespace OOCore;
 
-ACE_WString OOCore::UTF_Converter::from_utf8(const char* sz)
+ACE_WString OOCore::from_utf8(const char* sz)
 {
-	if (!m_conv)
-		OMEGA_THROW(L"Failed to construct utf converter!");
-
-	for (size_t len=128;len<=(size_t)-1 / sizeof(wchar_t);len*=2)
+	static const int trailingBytesForUTF8[256] = 
 	{
-		wchar_t* pszBuf;
-		OMEGA_NEW(pszBuf,wchar_t[len]);
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
+		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
+		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,9,9,9,4,4,4,4,5,5,6,7
+	};
 
-		ACE_Encoding_Converter::Result res = m_conv->from_utf8(reinterpret_cast<const ACE_Byte*>(sz),ACE_OS::strlen(sz)+1,pszBuf,len);
-
-		if (res == ACE_Encoding_Converter::CONVERSION_OK)
+	ACE_WString strRet;
+	strRet.fast_resize(ACE_OS::strlen(sz));
+	for (const char* p=sz;*p!=0;)
+	{
+		wchar_t c;
+		unsigned char v = *p++;
+		int trailers = trailingBytesForUTF8[v];
+		switch (trailers)
 		{
-			ACE_WString strRet = pszBuf;
-			delete [] pszBuf;
-			return strRet;
+		case 0:
+			c = v;
+			break;
+		
+		case 1:
+			c = v & 0x1f;
+			break;
+
+		case 2:
+			c = v & 0xf;
+			break;
+
+		case 3:
+			c = v & 0x7;
+			break;
+
+		default:
+			OMEGA_THROW(L"utf8 decoding failed!");
+		}
+		
+		for (int i=0;i<trailers;++i)
+		{
+			if (*p == '\0')
+				OMEGA_THROW(L"utf8 decoding failed!");
+
+			c <<= 8;
+			c += (*p++ & 0x3f);
 		}
 
-		delete [] pszBuf;
-
-		if (res != ACE_Encoding_Converter::TARGET_EXHAUSTED)
-			break;
+		strRet += c;
 	}
 
-	OMEGA_THROW(L"utf8 decoding failed!");
+	return strRet;
 }
 
-ACE_CString OOCore::UTF_Converter::to_utf8(const wchar_t* wsz)
+ACE_CString OOCore::to_utf8(const wchar_t* wsz)
 {
-	if (!m_conv)
-		OMEGA_THROW(L"Failed to construct utf converter!");
-
-	for (size_t len=256;;len*=2)
+	ACE_CString strRet;
+	strRet.fast_resize(ACE_OS::strlen(wsz));
+	for (const wchar_t* p=wsz;*p!=0;)
 	{
-		char* pszBuf;
-		OMEGA_NEW(pszBuf,char[len]);
+		char c;
+		unsigned int v = *p++;
 
-		ACE_Encoding_Converter::Result res = m_conv->to_utf8(reinterpret_cast<const ACE_Byte*>(wsz),(ACE_OS::strlen(wsz)+1)*sizeof(wchar_t),(ACE_Byte*)(pszBuf),len);
-
-		if (res == ACE_Encoding_Converter::CONVERSION_OK)
+		if (v <= 0x7f)
+			strRet += static_cast<char>(v);
+		else if (v <= 0x7FF)
 		{
-			ACE_CString strRet = pszBuf;
-			delete [] pszBuf;
-			return strRet;
+			c = static_cast<char>(v >> 6) & 0xc0;
+			strRet += c;
+			c = static_cast<char>(v & 0x3f) & 0x80;
+			strRet += c;
 		}
+		else if (v <= 0xFFFF)
+		{
+			// Invalid range
+			if (v > 0xD7FF && v < 0xE00)
+				OMEGA_THROW(L"utf8 encoding failed!");
 
-		delete [] pszBuf;
-
-		if (res != ACE_Encoding_Converter::TARGET_EXHAUSTED)
-			break;
+			c = static_cast<char>(v >> 12) & 0xe0;
+			strRet += c;
+			c = static_cast<char>((v & 0xfc0) >> 6) & 0x80;
+			strRet += c;
+			c = static_cast<char>(v & 0x3f) & 0x80;
+			strRet += c;
+		}
+		else if (v <= 0x10FFFF)
+		{
+			c = static_cast<char>(v >> 18) & 0xf0;
+			strRet += c;
+			c = static_cast<char>((v & 0x3f000) >> 12) & 0x80;
+			strRet += c;
+			c = static_cast<char>((v & 0xfc0) >> 6) & 0x80;
+			strRet += c;
+			c = static_cast<char>(v & 0x3f) & 0x80;
+			strRet += c;
+		}
+		else
+			OMEGA_THROW(L"utf8 encoding failed!");
 	}
 
-	OMEGA_THROW(L"utf8 encoding failed!");
+	return strRet;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,())
@@ -214,7 +243,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(const wchar_t*,string_t_cast,1,((in),const void*,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size))
 {
-	ACE_CString str = UTF_CONVERTER::instance()->to_utf8(static_cast<const StringNode*>(h)->m_str.c_str());
+	ACE_CString str = to_utf8(static_cast<const StringNode*>(h)->m_str.c_str());
 	if (size < str.length()+1)
 	{
 		ACE_OS::strncpy(sz,str.c_str(),size-1);

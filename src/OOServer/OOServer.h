@@ -61,8 +61,10 @@
 #error OmegaOnline requires ACE_HAS_WCHAR support!
 #endif
 
-#if !defined(ACE_USES_WCHAR)
-#error OmegaOnline requires ACE_USES_WCHAR support!
+#if defined(ACE_WIN32)
+#if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))
+#error You cannot mix and match UNICODE and ACE_USES_WCHAR!
+#endif
 #endif
 
 #if defined(_MSC_VER)
@@ -72,6 +74,7 @@
 #endif
 
 #pragma warning(pop)
+
 #endif
 
 // End of ACE includes
@@ -97,9 +100,6 @@
 /////////////////////////////////////////////////
 // Include Windows components
 #if defined(ACE_WIN32)
-
-// We use the unicode CRT
-#define _UNICODE
 
 #include <shlobj.h>
 #include <shlwapi.h>

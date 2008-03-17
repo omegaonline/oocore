@@ -64,6 +64,23 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 #include <ntsecapi.h>
 #include <aclapi.h>
 
+#if defined(__MINGW32__)
+
+typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
+    DWORD SidCount;
+    DWORD SidLength;
+    PSID_AND_ATTRIBUTES Sids;
+    DWORD RestrictedSidCount;
+    DWORD RestrictedSidLength;
+    PSID_AND_ATTRIBUTES RestrictedSids;
+    DWORD PrivilegeCount;
+    DWORD PrivilegeLength;
+    PLUID_AND_ATTRIBUTES Privileges;
+    LUID AuthenticationId;
+} TOKEN_GROUPS_AND_PRIVILEGES;
+
+#endif
+
 #if !defined(OMEGA_WIDEN_STRING)
 #define OMEGA_WIDEN_STRING_II(STRING) L ## STRING
 #define OMEGA_WIDEN_STRING_I(STRING)  OMEGA_WIDEN_STRING_II(STRING)
@@ -240,14 +257,14 @@ DWORD Root::SpawnedProcess::GetLogonSID(HANDLE hToken, PSID& pSIDLogon)
 	// Loop through the groups to find the logon SID
 	for (DWORD dwIndex = 0; dwIndex < pGroups->GroupCount; dwIndex++)
 	{
-		if ((pGroups->Groups[dwIndex].Attributes & SE_GROUP_LOGON_ID) ==  SE_GROUP_LOGON_ID) 
+		if ((pGroups->Groups[dwIndex].Attributes & SE_GROUP_LOGON_ID) ==  SE_GROUP_LOGON_ID)
 		{
 			// Found the logon SID...
 			DWORD dwLen = GetLengthSid(pGroups->Groups[dwIndex].Sid);
 			pSIDLogon = static_cast<PSID>(ACE_OS::malloc(dwLen));
 			if (!pSIDLogon)
 				dwRes = ERROR_OUTOFMEMORY;
-			else 
+			else
 			{
 				if (!CopySid(dwLen,pSIDLogon,pGroups->Groups[dwIndex].Sid))
 					dwRes = GetLastError();
@@ -271,7 +288,7 @@ DWORD Root::SpawnedProcess::CreateSD(PACL pACL, void*& pSD)
 		return GetLastError();
 
 	DWORD dwRes = ERROR_SUCCESS;
-	
+
 	// Initialize a security descriptor.
 	if (!InitializeSecurityDescriptor(static_cast<PSECURITY_DESCRIPTOR>(pSD),SECURITY_DESCRIPTOR_REVISION))
 	{
@@ -306,7 +323,7 @@ DWORD Root::SpawnedProcess::CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID
 	ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
 
 	// Set default access for Specific logon.
-	ea[1].grfAccessPermissions = 
+	ea[1].grfAccessPermissions =
 		WINSTA_ACCESSCLIPBOARD |
 		WINSTA_ACCESSGLOBALATOMS |
 		WINSTA_CREATEDESKTOP |
@@ -354,7 +371,7 @@ DWORD Root::SpawnedProcess::CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDL
 	ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
 
 	// Set full access for Specific logon.
-	ea[1].grfAccessPermissions = 
+	ea[1].grfAccessPermissions =
 		DESKTOP_CREATEMENU |
 		DESKTOP_CREATEWINDOW |
 		DESKTOP_ENUMERATE |
@@ -426,7 +443,7 @@ DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString&
 		ACE_OS::free(pSIDLogon);
 		return ERROR_INVALID_SID;
 	}
-				
+
 	wchar_t szBuf[256];
 	ACE_OS::sprintf(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
 	strWindowStation = szBuf;
@@ -453,7 +470,7 @@ DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString&
 
 	// Open or create the new window station and desktop
 	// Now confirm the Window Station exists...
-	hWinsta = OpenWindowStationW(strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
+	hWinsta = OpenWindowStationW((LPWSTR)strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
 	if (!hWinsta)
 	{
 		// See if just doesn't exist yet...
@@ -492,7 +509,7 @@ DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString&
 			ACE_OS::free(pProcessUser);
 			return GetLastError();
 		}
-	}	
+	}
 
 	// Stash our old
 	HWINSTA hOldWinsta = GetProcessWindowStation();
@@ -514,7 +531,7 @@ DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString&
 		CloseHandle(hWinsta);
 		return dwRes;
 	}
-		
+
 	// Try for the desktop
 	hDesktop = OpenDesktopW(L"default",0,FALSE,DESKTOP_CREATEWINDOW);
 	if (!hDesktop)
@@ -624,7 +641,7 @@ DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
 //static void EnableSandboxAccessToOOServer(LPWSTR pszPath, TOKEN_USER* pUser)
 //{
 //	PathRemoveFileSpecW(pszPath);
-//	
+//
 //	PACL pACL = 0;
 //	PSECURITY_DESCRIPTOR pSD = 0;
 //	DWORD dwRes = GetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,&pACL,NULL,&pSD);
@@ -658,8 +675,8 @@ DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
 DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& strPipe, bool bSandbox)
 {
 	// Get our module name
-	TCHAR szPath[MAX_PATH];
-	if (!GetModuleFileName(NULL,szPath,MAX_PATH))
+	ACE_TCHAR szPath[MAX_PATH];
+	if (!ACE_TEXT_GetModuleFileName(NULL,szPath,MAX_PATH))
 	{
 		DWORD dwErr = GetLastError();
 		LOG_FAILURE(dwErr);
@@ -667,11 +684,16 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& str
 	}
 
 	ACE_TString strCmdLine = ACE_TEXT("\"") + ACE_TString(szPath) + ACE_TEXT("\" --spawned ") + strPipe;
-	
+
 	// Window station vars
 	ACE_WString strWindowStation;
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
+
+	// Forward declare these because of goto's
+	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
+	HANDLE hDebugEvent = NULL;
+	HANDLE hPriToken = 0;
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -699,7 +721,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& str
 	}
 
 	// Get the primary token from the impersonation token
-	HANDLE hPriToken = 0;
 	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT ,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
 		dwRes = GetLastError();
@@ -719,9 +740,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& str
 	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
 
-	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
-	
-	HANDLE hDebugEvent = NULL;
 	if (WIN32_DEBUGGING())
 	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
@@ -736,9 +754,9 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& str
 		dwFlags |= DETACHED_PROCESS;
 		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 	}
-	
+
 	// Actually create the process!
-	PROCESS_INFORMATION process_info;	
+	PROCESS_INFORMATION process_info;
 	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
@@ -760,7 +778,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& str
 			CloseHandle(hDebugEvent);
 		}
 	}
-	
+
 	// See if process has immediately terminated...
 	DWORD dwWait = WaitForSingleObject(process_info.hProcess,100);
 	if (dwWait != WAIT_TIMEOUT)
@@ -780,10 +798,10 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& str
 	// Stash handles to close on end...
 	m_hProfile = hProfile;
 	m_hProcess = process_info.hProcess;
-	
+
 	// Duplicate the impersonated token...
 	DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
-	
+
 	// And close any others
 	CloseHandle(process_info.hThread);
 
@@ -832,7 +850,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_TString& strPipe
 						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
 						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '%ls\\%ls'\n\n"
 						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
-						
+
 					wchar_t szBuf[1024];
 					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
 					wchar_t szBuf2[1024];
@@ -856,7 +874,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_TString& strPipe
 			}
 		}
 	}
-	
+
 	return (dwRes == ERROR_SUCCESS);
 }
 
@@ -878,7 +896,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
 
 	reg_root->get_string_value(key,L"Password",strPwd);
 
-	if (!LogonUserW(strUName.c_str(),NULL,strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
+	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 	{
 		LOG_FAILURE(GetLastError());
 		return false;
@@ -948,7 +966,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	BOOL bRes = ::AccessCheck(pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 	DWORD err = GetLastError();
 	ACE_OS::free(pSD);
-	
+
 	if (!bRes && err != ERROR_SUCCESS)
 	{
 		ACE_OS::last_error(err);
@@ -984,7 +1002,7 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigne
 		else
 		{
 			ACE_ERROR((LM_ERROR,L"%W:%u: Unknown system err %#x\n",pszFile,nLine,err));
-		}		
+		}
 	}
 
 	return false;
@@ -1184,7 +1202,7 @@ bool Root::SpawnedProcess::UninstallSandbox()
 		if (bUserAdded == 1)
 			NetUserDel(NULL,strUName.c_str());
 	}
-	
+
 	return true;
 }
 
@@ -1268,7 +1286,7 @@ void* Root::SpawnedProcess::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS 
 	DWORD dwLen = 0;
 	if (!GetTokenInformation(hToken,cls,NULL,0,&dwLen) && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
 		return 0;
-		
+
 	void* pBuffer = ACE_OS::malloc(dwLen);
 	if (!pBuffer)
 	{
@@ -1292,12 +1310,12 @@ bool Root::SpawnedProcess::MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PS
 		bool bFound = false;
 		for (ULONG j=0;j<count;++j)
 		{
-			if (EqualSid(pSids1[i].Sid,pSids2[j].Sid) && 
+			if (EqualSid(pSids1[i].Sid,pSids2[j].Sid) &&
 				pSids1[i].Attributes == pSids2[j].Attributes)
 			{
 				bFound = true;
 				break;
-			}			
+			}
 		}
 
 		if (!bFound)
@@ -1314,13 +1332,13 @@ bool Root::SpawnedProcess::MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Pri
 		bool bFound = false;
 		for (ULONG j=0;j<count;++j)
 		{
-			if (Privs1[i].Luid.LowPart == Privs2[j].Luid.LowPart && 
-				Privs1[i].Luid.HighPart == Privs2[j].Luid.HighPart && 
+			if (Privs1[i].Luid.LowPart == Privs2[j].Luid.LowPart &&
+				Privs1[i].Luid.HighPart == Privs2[j].Luid.HighPart &&
 				Privs1[i].Attributes == Privs2[j].Attributes)
 			{
 				bFound = true;
 				break;
-			}			
+			}
 		}
 
 		if (!bFound)
@@ -1344,8 +1362,8 @@ bool Root::SpawnedProcess::Compare(user_id_type hToken)
 		return false;
 	}
 
-	bool bSame = (pStats1->SidCount==pStats2->SidCount && 
-		pStats1->RestrictedSidCount==pStats2->RestrictedSidCount && 
+	bool bSame = (pStats1->SidCount==pStats2->SidCount &&
+		pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
 		pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
 		MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
 		MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&

@@ -70,9 +70,9 @@ namespace OOCore
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL RemoteRelease_Safe(Omega::uint32_t release_count);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SupportsInterface_Safe(Omega::bool_t* pbSupports, const Omega::guid_t* piid);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalStub_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pParamsIn, Omega::System::MetaInfo::IFormattedStream_Safe* pParamsOut);
-				
+
 	private:
-		WireStub(const WireStub&) {}
+		WireStub(const WireStub&) : Omega::System::MetaInfo::IWireStubController_Safe() {}
 		WireStub& operator = (const WireStub&) { return *this; }
 
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;

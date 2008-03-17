@@ -8,7 +8,7 @@
 		<Build>
 			<Target title="Debug_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Debug\OOServer.exe" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\OOServer" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
 				<Option type="1" />
@@ -24,6 +24,7 @@
 					<Add option="-D_CONSOLE" />
 					<Add directory="..\..\include" />
 					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\include" />
@@ -41,7 +42,7 @@
 			</Target>
 			<Target title="Release_Win32">
 				<Option platforms="Windows;" />
-				<Option output="Release\OOServer.exe" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\OOServer" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -58,6 +59,7 @@
 					<Add option="-D_CONSOLE" />
 					<Add directory="..\..\include" />
 					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</Compiler>
 				<ResourceCompiler>
 					<Add directory="..\..\include" />
@@ -76,7 +78,7 @@
 			</Target>
 			<Target title="Debug_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Debug\ooserverd.sys" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\ooserverd" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="Debug" />
 				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
@@ -91,6 +93,7 @@
 					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="..\..\include" />
 					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
@@ -99,7 +102,7 @@
 			</Target>
 			<Target title="Release_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Release\ooserverd.sys" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\ooserverd" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="Release" />
 				<Option type="5" />
@@ -115,6 +118,7 @@
 					<Add option="-DNDEBUG" />
 					<Add directory="..\..\include" />
 					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -123,11 +127,29 @@
 				</Linker>
 			</Target>
 		</Build>
+		<Unit filename="..\..\extern\sqlite\sqlite3.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\..\extern\sqlite\sqlite3.h" />
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
+		<Unit filename="Database.cpp" />
+		<Unit filename="Database.h" />
+		<Unit filename="DebuggerWin32.cpp" />
 		<Unit filename="EntryPoint.cpp" />
+		<Unit filename="InterProcessService.cpp" />
+		<Unit filename="InterProcessService.h" />
 		<Unit filename="MessageConnection.cpp" />
 		<Unit filename="MessageConnection.h" />
+		<Unit filename="MessagePipe.h" />
+		<Unit filename="MessagePipeUnix.cpp">
+			<Option target="Debug_Unix" />
+			<Option target="Release_Unix" />
+		</Unit>
+		<Unit filename="MessagePipeWin32.cpp">
+			<Option target="Debug_Win32" />
+			<Option target="Release_Win32" />
+		</Unit>
 		<Unit filename="NTService.cpp" />
 		<Unit filename="NTService.h" />
 		<Unit filename="OOServer.h" />
@@ -137,18 +159,19 @@
 			<Option target="Release_Win32" />
 		</Unit>
 		<Unit filename="OOServer_Root.h" />
-		<Unit filename="OOServer_msgs.mc">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="Protocol.h" />
+		<Unit filename="RegistryHive.cpp" />
+		<Unit filename="RegistryHive.h" />
 		<Unit filename="RootManager.cpp" />
 		<Unit filename="RootManager.h" />
 		<Unit filename="SpawnedProcess.h" />
-		<Unit filename="SpawnedProcessUnix.cpp" />
+		<Unit filename="SpawnedProcessUnix.cpp">
+			<Option target="Debug_Unix" />
+			<Option target="Release_Unix" />
+		</Unit>
 		<Unit filename="SpawnedProcessWin32.cpp">
 			<Option target="Debug_Win32" />
 			<Option target="Release_Win32" />
-			<Option target="Debug_Unix" />
 		</Unit>
 		<Unit filename="UserManager.cpp" />
 		<Unit filename="UserManager.h" />

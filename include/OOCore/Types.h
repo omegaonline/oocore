@@ -28,7 +28,7 @@ namespace Omega
 {
 	typedef bool bool_t;
 	typedef unsigned char byte_t;
-	
+
 #if defined(OMEGA_INT16_TYPE)
 	typedef OMEGA_INT16_TYPE      int16_t;
 #elif defined(OMEGA_HAS_INT16_T)
@@ -136,7 +136,7 @@ namespace Omega
 		template <class T>
 		bool operator == (T t) const
 		{ return Compare(t) == 0; }
-		
+
 		template <class T>
 		bool operator != (T t) const
 		{ return Compare(t) != 0; }
@@ -184,7 +184,7 @@ namespace Omega
 		}* m_handle;
 
 		inline explicit string_t(handle_t*);
-		
+
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
 #endif
@@ -201,7 +201,7 @@ namespace Omega
 		inline bool operator==(const string_t& str) const;
 		inline bool operator!=(const guid_t& rhs) const;
 		inline bool operator<(const guid_t& rhs) const;
-		
+
 		inline string_t ToString() const;
 
 		inline static guid_t FromString(const wchar_t* sz);
@@ -254,7 +254,6 @@ namespace Omega
 			};
 			#endif
 
-			#if defined(__BORLANDC__)
 			template <class T> struct remove_const
 			{
 				typedef T type;
@@ -274,7 +273,6 @@ namespace Omega
 			{
 				typedef typename remove_const<T>::type* type;
 			};
-			#endif
 		}
 	}
 }

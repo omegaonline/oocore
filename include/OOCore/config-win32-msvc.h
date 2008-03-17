@@ -34,10 +34,6 @@
 #define OMEGA_DEBUG
 #endif
 
-// We use the unicode CRT
-#define _UNICODE
-#include <objbase.h>
-
 #define OMEGA_MAX_DEFINES 249
 
 #define OMEGA_FUNCNAME    __FUNCSIG__

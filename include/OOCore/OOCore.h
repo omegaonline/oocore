@@ -25,6 +25,11 @@
 //////////////////////////////////////////////
 #include <OOCore/config-guess.h>
 
+#if defined(OMEGA_WIN32)
+// MS define interface as well...
+#include <objbase.h>
+#endif
+
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
 #if !defined(OMEGA_EXPORTED_FUNCTION_VOID)
@@ -45,6 +50,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <string>
 
 // End of STL includes
 //////////////////////////////////////////////

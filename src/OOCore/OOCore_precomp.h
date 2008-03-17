@@ -49,8 +49,6 @@
 #include <ace/Countdown_Time.h>
 #include <ace/DLL.h>
 #include <ace/DLL_Manager.h>
-#include <ace/Encoding_Converter.h>
-#include <ace/Encoding_Converter_Factory.h>
 #include <ace/Message_Queue.h>
 #include <ace/NT_Service.h>
 #include <ace/OS.h>
@@ -70,8 +68,10 @@
 #error OmegaOnline requires has wchar_t support!
 #endif
 
-#if !defined(ACE_USES_WCHAR)
-#error OmegaOnline requires uses wchar_t support!
+#if defined(ACE_WIN32)
+#if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))
+#error You cannot mix and match UNICODE and ACE_USES_WCHAR!
+#endif
 #endif
 
 #if defined(_MSC_VER)
@@ -79,6 +79,7 @@
 #undef _CRT_SECURE_NO_WARNINGS
 #endif
 #pragma warning(pop)
+
 #endif
 
 // End of ACE includes
@@ -107,9 +108,6 @@
 /////////////////////////////////////////////////
 // Include Windows components
 #ifdef OMEGA_WIN32
-
-// We use the unicode CRT
-#define _UNICODE
 #include <shlobj.h>
 #include <shlwapi.h>
 

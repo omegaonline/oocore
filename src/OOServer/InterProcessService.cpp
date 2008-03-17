@@ -35,6 +35,23 @@ ACE_WString User::ShellParse(const wchar_t* pszFile)
 	ACE_WString strRet = pszFile;
 
 #if defined(OMEGA_WIN32)
+
+#if defined(__MINGW32__)
+	// These are missing from mingGW
+	enum {
+		ASSOCF_INIT_NOREMAPCLSID           = 0x00000001,  //  do not remap clsids to progids
+		ASSOCF_INIT_BYEXENAME              = 0x00000002,  //  executable is being passed in
+		ASSOCF_OPEN_BYEXENAME              = 0x00000002,  //  executable is being passed in
+		ASSOCF_INIT_DEFAULTTOSTAR          = 0x00000004,  //  treat "*" as the BaseClass
+		ASSOCF_INIT_DEFAULTTOFOLDER        = 0x00000008,  //  treat "Folder" as the BaseClass
+		ASSOCF_NOUSERSETTINGS              = 0x00000010,  //  dont use HKCU
+		ASSOCF_NOTRUNCATE                  = 0x00000020,  //  dont truncate the return string
+		ASSOCF_VERIFY                      = 0x00000040,  //  verify data is accurate (DISK HITS)
+		ASSOCF_REMAPRUNDLL                 = 0x00000080,  //  actually gets info about rundlls target if applicable
+		ASSOCF_NOFIXUPS                    = 0x00000100,  //  attempt to fix errors if found
+		ASSOCF_IGNOREBASECLASS             = 0x00000200,  //  dont recurse into the baseclass
+	};
+#endif
 		
 	const wchar_t* pszExt = PathFindExtensionW(pszFile);
 	if (pszExt)

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="TestProcess" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug Win32">
+				<Option output="..\..\..\bin\Debug\TestProcess" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="..\..\..\include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\..\include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-mthreads" />
+					<Add library="..\..\..\src\OOCore\debug\libOOCore.a" />
+				</Linker>
+			</Target>
+			<Target title="Release Win32">
+				<Option output="..\..\..\bin\TestProcess" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-W" />
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="..\..\..\include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\..\include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-mthreads" />
+					<Add library="..\..\..\src\OOCore\debug\libOOCore.a" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="testprocess.cpp" />
+		<Unit filename="testprocess.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

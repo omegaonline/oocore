@@ -48,7 +48,7 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 {
 	// Never allow registration in the global ROT!
 	// If we are a client of the sandbox we will register there (which is correct)
-	// But any other condition will result in a very easy way to achieve priviledge escalation 
+	// But any other condition will result in a very easy way to achieve priviledge escalation
 	// You have been warned!
 
 	try
@@ -57,7 +57,7 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 		ObjectPtr<Remoting::ICallContext> ptrCC;
 		ptrCC.Attach(Remoting::GetCallContext());
 		if (ptrCC)
-			src_id = ptrCC->SourceId();		
+			src_id = ptrCC->SourceId();
 
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -71,17 +71,17 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 		{
 			nCookie = m_nNextCookie++;
 		}
-		
+
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 		if (!p.second)
 			OMEGA_THROW(EALREADY);
 
-		m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));	
+		m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
 
 		return nCookie;
 	}
 	catch (std::exception& e)
-	{ 
+	{
 		OMEGA_THROW(e);
 	}
 }
@@ -94,7 +94,7 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 		ObjectPtr<Remoting::ICallContext> ptrCC;
 		ptrCC.Attach(Remoting::GetCallContext());
 		if (ptrCC)
-			src_id = ptrCC->SourceId();	
+			src_id = ptrCC->SourceId();
 
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -113,7 +113,7 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 		}
 	}
 	catch (std::exception& e)
-	{ 
+	{
 		OMEGA_THROW(e);
 	}
 }
@@ -131,7 +131,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 			{
 				// QI for IWireProxy and check its still there!
 				bool bOk = true;
-				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = i->second->second.m_ptrObject;
+				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
 				if (ptrProxy)
 				{
 					if (!ptrProxy->IsAlive())
@@ -170,7 +170,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 			return ptrRet.AddRef();
 	}
 	catch (std::exception& e)
-	{ 
+	{
 		OMEGA_THROW(e);
 	}
 

@@ -69,7 +69,14 @@ namespace OOCore
 		bool IsAlive();
 
 	private:
-		StdObjectManager(const StdObjectManager&) : OTL::ObjectBase(),Omega::Remoting::IObjectManager(),Omega::System::MetaInfo::IWireManager() {};
+		StdObjectManager(const StdObjectManager&) :
+            OTL::ObjectBase(),
+            Omega::Remoting::IObjectManager(),
+            Omega::System::MetaInfo::IWireManager(),
+            Omega::System::MetaInfo::IWireManager_Safe(),
+            Omega::Remoting::IMarshal(),
+            Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class()
+        {}
 		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
 
 		ACE_RW_Thread_Mutex                       m_lock;

@@ -95,7 +95,18 @@ bool Root::MessageConnection::read()
 	// Start an async read
 	if (m_reader.read(*mb,s_initial_read) != 0)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: read failed, code: %#x\n",errno));
+#if defined(OMEGA_DEBUG)
+		int err = ACE_OS::last_error();
+#if defined(OMEGA_WIN32)
+		if (err == ERROR_BROKEN_PIPE)
+#else
+		if (err == ENOTSOCK)
+#endif
+			err = 0;
+		
+		if (err)
+			ACE_ERROR((LM_ERROR,L"%N:%l: read failed, code: %#x\n",err));
+#endif
 		mb->release();
 		return false;
 	}

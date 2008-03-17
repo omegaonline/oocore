@@ -29,7 +29,7 @@ namespace OOCore
 	ObjectPtr<Remoting::IInterProcessService> GetInterProcessService();
 
 	class OidNotFoundException :
-		public ExceptionImpl<Activation::IOidNotFoundException>
+		public ExceptionImpl<Omega::Activation::IOidNotFoundException>
 	{
 	public:
 		guid_t m_oid;
@@ -97,7 +97,7 @@ namespace OOCore
 
 	private:
 		friend class ACE_Singleton<ServiceManager, ACE_Thread_Mutex>;
-				
+
 		ServiceManager();
 		ServiceManager(const ServiceManager&) {}
 		ServiceManager& operator = (const ServiceManager&) { return *this; }
@@ -168,7 +168,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 	if (flags & Activation::OutOfProcess)
 	{
 		// Register in ROT
-		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());			
+		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 		rot_cookie = ptrROT->Register(oid,pObject);
 	}
@@ -201,18 +201,18 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 		while (nCookie==0 && m_mapServicesByCookie.find(nCookie) != m_mapServicesByCookie.end())
 		{
 			nCookie = m_nNextCookie++;
-		}		
+		}
 
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapServicesByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
 		if (!p.second)
 			OMEGA_THROW(EALREADY);
 
-		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));	
+		m_mapServicesByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
 
 		return nCookie;
 	}
 	catch (std::exception& e)
-	{ 
+	{
 		if (rot_cookie)
 			ptrROT->Revoke(rot_cookie);
 
@@ -248,7 +248,7 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 		return 0;
 	}
 	catch (std::exception& e)
-	{ 
+	{
 		OMEGA_THROW(e);
 	}
 }
@@ -258,7 +258,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 	try
 	{
 		uint32_t rot_cookie = 0;
-		
+
 		{
 			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -267,7 +267,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 				OMEGA_THROW(ENOENT);
 
 			rot_cookie = i->second.m_rot_cookie;
-			
+
 			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid);j!=m_mapServicesByOid.end() && j->first==i->second.m_oid;++j)
 			{
 				if (j->second->first == cookie)
@@ -276,7 +276,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 					break;
 				}
 			}
-			m_mapServicesByCookie.erase(i);		
+			m_mapServicesByCookie.erase(i);
 		}
 
 		if (rot_cookie)
@@ -290,7 +290,7 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 		}
 	}
 	catch (std::exception& e)
-	{ 
+	{
 		OMEGA_THROW(e);
 	}
 }
@@ -347,7 +347,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 			continue;
 		}
 
-		return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));		
+		return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));
 	}
 }
 
@@ -368,7 +368,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		pObject = OOCore::SERVICE_MANAGER::instance()->GetObject(oid,flags,iid);
 		if (pObject)
 			return;
-		
+
 		// Try to load a library, if allowed
 		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{

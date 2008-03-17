@@ -1,8 +1,4 @@
 
-#define _UNICODE
-#define UNICODE
-#include <tchar.h>
-
 #include <OTL/OTL.h>
 
 #include <map>

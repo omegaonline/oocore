@@ -100,7 +100,7 @@ namespace Omega
 			{
 				virtual void WriteKey(Serialize::IFormattedStream* pStream) = 0;
 				virtual bool_t IsAlive() = 0;
-			};			
+			};
 		}
 	}
 }
@@ -188,11 +188,11 @@ namespace Omega
 				OMEGA_METHOD(bool_t,IsAlive,0,())
 			)
 			typedef IWireProxy_Impl_Safe<IObject_Safe> IWireProxy_Safe;
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
 				Omega::System::MetaInfo, IWireManager,
-			
+
 				OMEGA_METHOD_VOID(MarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 				OMEGA_METHOD_VOID(ReleaseMarshalData,3,((in),Serialize::IFormattedStream*,pStream,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
@@ -408,7 +408,7 @@ namespace Omega
 				{
 					return marshal_info<T>::wire_type::read(pManager,pStream,*val,piid);
 				}
-				
+
 				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T&>::safe_type::type val)
 				{
 					return marshal_info<T>::wire_type::write(pManager,pStream,*val);
@@ -459,11 +459,11 @@ namespace Omega
 					{
 						try
 						{
-							if (cbSize > (size_t)-1 / sizeof(typename marshal_info<T>::wire_type::type))
+							if (cbSize > (size_t)-1 / sizeof(typename marshal_info<typename remove_const<T>::type>::wire_type::type))
 								OMEGA_THROW(E2BIG);
 
 							m_alloc_size = cbSize;
-							OMEGA_NEW(m_pVals,typename marshal_info<T>::wire_type::type[m_alloc_size]);								
+							OMEGA_NEW(m_pVals,typename marshal_info<typename remove_const<T>::type>::wire_type::type[m_alloc_size]);
 						}
 						catch (IException* pE)
 						{
@@ -477,8 +477,8 @@ namespace Omega
 						return m_pVals;
 					}
 
-					uint32_t                                   m_alloc_size;
-					typename marshal_info<T>::wire_type::type* m_pVals;
+					uint32_t                                                                m_alloc_size;
+					typename marshal_info<typename remove_const<T>::type>::wire_type::type* m_pVals;
 				};
 				typedef array_holder type;
 
@@ -589,7 +589,7 @@ namespace Omega
 				{
 					return unpack(pManager,pStream,val,*cbSize);
 				}
-				
+
 				static IException_Safe* no_op(bool, uint32_t)
 				{
 					return 0;
@@ -624,7 +624,7 @@ namespace Omega
 								OMEGA_THROW(E2BIG);
 
 							m_alloc_size = cbSize;
-							OMEGA_NEW(m_pVals,byte_t[m_alloc_size]);								
+							OMEGA_NEW(m_pVals,byte_t[m_alloc_size]);
 						}
 						catch (IException* pE)
 						{
@@ -740,7 +740,7 @@ namespace Omega
 				{
 					return unpack(pManager,pStream,val,*cbSize);
 				}
-				
+
 				static IException_Safe* no_op(bool, uint32_t)
 				{
 					return 0;
@@ -893,7 +893,7 @@ namespace Omega
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 				{
 					*retval = 0;
-					if (*piid == OMEGA_UUIDOF(IObject) || 
+					if (*piid == OMEGA_UUIDOF(IObject) ||
 						*piid == OMEGA_UUIDOF(IWireStub))
 					{
 						++m_refcount;
@@ -924,7 +924,7 @@ namespace Omega
 
 					return Internal_Invoke_Safe(method_id,pParamsIn,pParamsOut);
 				}
-				
+
 				virtual IException_Safe* Internal_Invoke_Safe(uint32_t method_id, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut)
 				{
 					static const MethodTableEntry MethodTable[] =
@@ -938,14 +938,14 @@ namespace Omega
 						return MethodTable[method_id](this,pParamsIn,pParamsOut);
 					else
 						return return_safe_exception(ISystemException::Create(EINVAL));
-				}		
+				}
 				static const uint32_t MethodCount = 3; // This must match IObject_WireProxy
 
 				IWireManager_Safe*  m_pManager;
 				I*                  m_pS;
 
 			protected:
-				virtual ~IObject_WireStub() 
+				virtual ~IObject_WireStub()
 				{
 					m_pS->Release_Safe();
 				}
@@ -953,7 +953,7 @@ namespace Omega
 			private:
 				System::AtomicOp<uint32_t> m_refcount;
 				IWireStubController_Safe*  m_pController;
-				
+
 				IObject_WireStub(const IObject_WireStub&) {};
 				IObject_WireStub& operator =(const IObject_WireStub&) {};
 
@@ -978,7 +978,7 @@ namespace Omega
 					pSE = static_cast<IObject_WireStub<I>*>(pParam)->m_pController->SupportsInterface_Safe(bQI,&iid);
 					if (pSE)
 						return pSE;
-					
+
 					return marshal_info<bool_t&>::wire_type::write(static_cast<IObject_WireStub<I>*>(pParam)->m_pManager,pParamsOut,bQI);
 				}
 
@@ -1035,13 +1035,13 @@ namespace Omega
 				AtomicOp<uint32_t> m_refcount;
 				I_WireProxy        m_contained;
 
-				WireProxyImpl(IWireProxy_Safe* pProxy, IWireManager_Safe* pManager) : 
+				WireProxyImpl(IWireProxy_Safe* pProxy, IWireManager_Safe* pManager) :
 					m_refcount(1), m_contained(pProxy,pManager)
 				{ }
 
 				virtual ~WireProxyImpl()
 				{ }
-			};			
+			};
 
 			template <class Base>
 			class IObject_WireProxy : public Base
@@ -1070,7 +1070,7 @@ namespace Omega
 
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
-					return Internal_QueryInterface_Safe(true,piid,ppS);					
+					return Internal_QueryInterface_Safe(true,piid,ppS);
 				}
 
 				virtual void OMEGA_CALL Pin()
@@ -1126,7 +1126,7 @@ namespace Omega
 
 					return wire_write(pStream,iid);
 				}
-				
+
 			private:
 				IWireProxy_Safe* m_pProxy;
 			};

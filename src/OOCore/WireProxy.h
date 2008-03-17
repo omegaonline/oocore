@@ -44,7 +44,7 @@ namespace OOCore
 		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
-	class WireProxy : 
+	class WireProxy :
 		public Omega::System::MetaInfo::IWireProxy_Safe,
 		public Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class
 	{
@@ -55,7 +55,7 @@ namespace OOCore
 		void Disconnect();
 
 		Omega::System::MetaInfo::IObject_Safe* UnmarshalInterface(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t& iid);
-		
+
 	// IObject_Safe methods
 	public:
 		void OMEGA_CALL AddRef_Safe()
@@ -71,16 +71,16 @@ namespace OOCore
 
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppS);
 
-		void OMEGA_CALL Pin() 
+		void OMEGA_CALL Pin()
 		{
 			void* TODO;
 		}
 
-		void OMEGA_CALL Unpin() 
+		void OMEGA_CALL Unpin()
 		{
 			void* TODO;
 		}
-		
+
 	// IWireProxy_Safe members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL WriteKey_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream)
@@ -100,9 +100,9 @@ namespace OOCore
 
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
-	
+
 	private:
-		WireProxy(const WireProxy&) {}
+		WireProxy(const WireProxy&) : Omega::System::MetaInfo::IWireProxy_Safe(), Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class() {}
 		WireProxy& operator = (const WireProxy&) { return *this; }
 
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;

@@ -44,9 +44,9 @@ class RegistryHive
 {
 public:
 	RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex>& db);
-	
+
 	int open();
-	
+
 	int open_key(ACE_INT64& uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id);
 	int create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool bFailIfThere, int access, ACE_CDR::ULong channel_id);
 	int delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id);
@@ -60,7 +60,7 @@ public:
 	int get_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CString& val);
 	int get_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::LongLong& val);
 	void get_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong cbLen, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
-	
+
 	int set_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const char* val);
 	int set_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CDR::LongLong& val);
 	int set_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_InputCDR& request);
@@ -92,3 +92,4 @@ private:
 }
 
 #endif // OOSERVER_REGISTRY_HIVE_H_INCLUDED_
+

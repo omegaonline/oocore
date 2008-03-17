@@ -118,7 +118,7 @@ int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 {
 	ACE_TCHAR this_exe[PATH_MAX + 2];
 
-	if (GetModuleFileName(0,this_exe+1,PATH_MAX) == 0)
+	if (ACE_TEXT_GetModuleFileName(0,this_exe+1,PATH_MAX) == 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: GetModuleFilename failed: %#x\n",GetLastError()),-1);
 		
 	// Make sure that this_exe is quoted
@@ -138,10 +138,15 @@ int Root::NTService::description(const ACE_TCHAR *desc)
 	if (svc == 0)
 		return -1;
 
-	SERVICE_DESCRIPTION sdesc;
-	sdesc.lpDescription = const_cast<LPTSTR>(desc);
-
-	return ChangeServiceConfig2(svc,(DWORD)SERVICE_CONFIG_DESCRIPTION,(LPVOID)&sdesc) ? 0 : -1;
+#if defined(ACE_USES_WCHAR)
+	SERVICE_DESCRIPTIONW sdesc;
+	sdesc.lpDescription = const_cast<LPWSTR>(desc);
+	return ChangeServiceConfig2W(svc,(DWORD)SERVICE_CONFIG_DESCRIPTION,(LPVOID)&sdesc) ? 0 : -1;
+#else
+	SERVICE_DESCRIPTIONA sdesc;
+	sdesc.lpDescription = const_cast<LPSTR>(desc);
+	return ChangeServiceConfig2A(svc,(DWORD)SERVICE_CONFIG_DESCRIPTION,(LPVOID)&sdesc) ? 0 : -1;
+#endif
 }
 
 BOOL Root::NTService::control_c(DWORD)

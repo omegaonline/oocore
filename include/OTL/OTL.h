@@ -35,41 +35,41 @@
 
 #define BEGIN_INTERFACE_MAP(cls) \
 	private: typedef cls RootClass; \
-	public: static const QIEntry* getQIEntries() {static const QIEntry QIEntries[] = {
+	public: static const OTL::ObjectBase::QIEntry* getQIEntries() {static const OTL::ObjectBase::QIEntry QIEntries[] = {
 
 #define INTERFACE_ENTRY(iface) \
-	{ &OMEGA_UUIDOF(iface), &QIDelegate<iface,RootClass>, 0, 0 },
+	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY_IID(iid,iface) \
-	{ &iid, &QIDelegate<iface,RootClass>, 0, 0 },
+	{ &iid, &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY2(iface,iface2) \
-	{ &OMEGA_UUIDOF(iface), &QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY2_IID(iid,iface,iface2) \
-	{ &iid, &QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &iid, &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY_CHAIN(baseClass) \
-	{ &Omega::guid_t::Null(), &QIChain<baseClass,RootClass>, 0, 0 },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIChain<baseClass,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE(iface,member_object) \
-	{ &OMEGA_UUIDOF(iface), &QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
-	{ &Omega::guid_t::Null(), &QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
 
 #define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
-	{ &OMEGA_UUIDOF(iface), &QIFunction<RootClass>, 0, static_cast<ObjectBase::PFNMEMQI>(&pfn) },
+	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::Null(), &QIFunction<RootClass>, 0, &pfn },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, &pfn },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
-	{ &OMEGA_UUIDOF(iface), &QIFail, 0, 0 },
+	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },
 
 #define END_INTERFACE_MAP() \
 	{ 0,0,0,0 } }; return QIEntries; }
-	
+
 ///////////////////////////////////////////////////////////////////
 // Object map macros
 //
@@ -128,7 +128,7 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
@@ -387,10 +387,9 @@ namespace OTL
 		Omega::System::AtomicOp<Omega::uint32_t> m_refcount;
 	};
 
-	template <class E, const Omega::guid_t* pOID = 0>
+	template <typename E>
 	class ExceptionImpl :
 		public ObjectBase,
-		public Omega::Remoting::IMarshal,
 		public E
 	{
 	public:
@@ -400,31 +399,8 @@ namespace OTL
 
 		BEGIN_INTERFACE_MAP(ExceptionImpl)
 			INTERFACE_ENTRY(Omega::IException)
-			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,ExceptionImpl::QIMarshal)
 			INTERFACE_ENTRY(E)
 		END_INTERFACE_MAP()
-
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t)
-		{
-			m_strDesc = pStream->ReadString();
-			m_strSource = pStream->ReadString();
-			Omega::IObject* pE = 0;
-			pManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),pE);
-			m_ptrCause.Attach(static_cast<Omega::IException*>(pE));
-		}
-
-	private:
-		Omega::IObject* QIMarshal(const Omega::guid_t&)
-		{
-			if (pOID == 0)
-				return 0;
-			else
-			{
-				Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
-				pRet->AddRef();
-				return pRet;
-			}
-		}
 
 	// IException members
 	public:
@@ -443,50 +419,6 @@ namespace OTL
 		virtual Omega::string_t Source()
 		{
 			return m_strSource;
-		}
-
-	// IMarshal members
-	public:
-		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
-		{
-			if (pOID)
-				return *pOID;
-			else
-				return Omega::guid_t::Null();
-		}
-
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
-		{
-			pStream->WriteString(m_strDesc);
-			pStream->WriteString(m_strSource);
-			pManager->MarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),m_ptrCause);
-		}
-
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
-		{
-			pStream->ReadString();
-			pStream->ReadString();
-			pManager->ReleaseMarshalData(pStream,OMEGA_UUIDOF(Omega::IException),m_ptrCause);
-		}
-	};
-
-	template <class E>
-	class ExceptionMarshalFactoryImpl : 
-		public ObjectBase,
-		public Omega::Remoting::IMarshalFactory
-	{
-	public:
-		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
-		END_INTERFACE_MAP()
-
-	// IMarshalFactory members
-	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
-		{
-			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
-			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
-			pObject = ptrE->QueryInterface(iid);
 		}
 	};
 
@@ -853,7 +785,7 @@ namespace OTL
 		inline void UnregisterObjectFactories();
 
 		inline void Run();
-		
+
 	protected:
 		template <class T>
 		struct Creator

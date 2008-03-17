@@ -234,7 +234,7 @@ namespace User
 		Channel();
 
 		void init(ACE_CDR::ULong channel_id);
-		
+
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
@@ -242,8 +242,8 @@ namespace User
 
 	private:
 		ACE_CDR::ULong  m_channel_id;
-		
-		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel() {}
+
+		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }
 
 	// IChannel members

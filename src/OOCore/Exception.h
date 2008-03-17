@@ -24,6 +24,85 @@
 
 namespace OOCore
 {
+	template <typename E, const Omega::guid_t* pOID>
+	class ExceptionAutoMarshalImpl :
+		public OTL::ExceptionImpl<E>,
+		public Omega::Remoting::IMarshal
+	{
+	public:
+
+		BEGIN_INTERFACE_MAP(ExceptionAutoMarshalImpl)
+			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,ExceptionAutoMarshalImpl::QIMarshal)
+			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
+		END_INTERFACE_MAP()
+
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t)
+		{
+			this->m_strDesc = pStream->ReadString();
+			this->m_strSource = pStream->ReadString();
+			Omega::IObject* pE = 0;
+			pManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),pE);
+			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pE));
+		}
+
+	private:
+		Omega::IObject* QIMarshal(const Omega::guid_t&)
+		{
+			if (pOID == 0)
+				return 0;
+			else
+			{
+				Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
+				pRet->AddRef();
+				return pRet;
+			}
+		}
+
+	// IMarshal members
+	public:
+		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			if (pOID)
+				return *pOID;
+			else
+				return Omega::guid_t::Null();
+		}
+
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			pStream->WriteString(this->m_strDesc);
+			pStream->WriteString(this->m_strSource);
+			pManager->MarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
+		}
+
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			pStream->ReadString();
+			pStream->ReadString();
+			pManager->ReleaseMarshalData(pStream,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
+		}
+	};
+
+	template <class E>
+	class ExceptionMarshalFactoryImpl :
+		public OTL::ObjectBase,
+		public Omega::Remoting::IMarshalFactory
+	{
+	public:
+		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
+		END_INTERFACE_MAP()
+
+	// IMarshalFactory members
+	public:
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		{
+			OTL::ObjectPtr<OTL::ObjectImpl<E> > ptrE = OTL::ObjectImpl<E>::CreateInstancePtr();
+			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
+			pObject = ptrE->QueryInterface(iid);
+		}
+	};
+
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
 	OMEGA_DECLARE_OID(OID_SystemExceptionMarshalFactory);
 
@@ -31,9 +110,9 @@ namespace OOCore
 	OMEGA_DECLARE_OID(OID_NoInterfaceExceptionMarshalFactory);
 
 	class SystemException :
-		public OTL::ExceptionImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
+		public ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
 	{
-		typedef OTL::ExceptionImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory> baseClass;
+		typedef ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory> baseClass;
 	public:
 		Omega::uint32_t m_errno;
 
@@ -69,14 +148,14 @@ namespace OOCore
 
 	class SystemExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactoryNoAggregation<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory>,
-		public OTL::ExceptionMarshalFactoryImpl<SystemException>
+		public ExceptionMarshalFactoryImpl<SystemException>
 	{
 	};
 
 	class NoInterfaceException :
-		public OTL::ExceptionImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
+		public ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
 	{
-		typedef OTL::ExceptionImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory> baseClass;
+		typedef ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory> baseClass;
 	public:
 		Omega::guid_t m_iid;
 
@@ -112,7 +191,7 @@ namespace OOCore
 
 	class NoInterfaceExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactoryNoAggregation<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory>,
-		public OTL::ExceptionMarshalFactoryImpl<NoInterfaceException>
+		public ExceptionMarshalFactoryImpl<NoInterfaceException>
 	{
 	};
 }

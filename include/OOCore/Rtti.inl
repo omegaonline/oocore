@@ -32,7 +32,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 	}
 
 	*retval = 0;
-	
+
 	try
 	{
 		auto_iface_safe_ptr<IObject_Safe> ptrQI;
@@ -73,7 +73,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 			auto_iface_ptr<IObject> ptrI(m_pObj->QueryInterface(*piid));
 			if (!ptrI)
 				return 0;
-				
+
 			// New stub required
 			const qi_rtti* pRtti = get_qi_rtti_info(*piid);
 			if (!pRtti || !pRtti->pfnCreateSafeStub)
@@ -81,7 +81,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 
 			ptrStub = pRtti->pfnCreateSafeStub(this,ptrI);
 		}
-		
+
 		{
 			System::WriteGuard guard(m_lock);
 
@@ -141,7 +141,7 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 			std::map<const guid_t,IObject*>::iterator i=m_iid_map.find(iid);
 			if (i != m_iid_map.end())
 				return i->second->QueryInterface(iid);
-			
+
 			// See if any known interface supports the new interface
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
@@ -165,7 +165,7 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 				return 0;
 
 			auto_iface_safe_ptr<IObject_Safe> ptrS(pS);
-			
+
 			// New interface required
 			const qi_rtti* pRtti = get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateSafeProxy)
@@ -173,13 +173,13 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 
 			ptrProxy = pRtti->pfnCreateSafeProxy(this,ptrS);
 		}
-		
+
 		{
 			System::WriteGuard guard(m_lock);
-				
+
 			std::pair<std::map<const guid_t,IObject*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,ptrProxy));
 			if (!p.second)
-			{	
+			{
 				ptrQI = 0;
 				ptrProxy = p.first->second;
 			}
@@ -308,7 +308,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 		if (!ptrProxy)
 		{
 			OMEGA_NEW(ptrProxy,SafeProxy(pObjS));
-			
+
 			System::WriteGuard guard(proxy_map.m_lock);
 
 			std::pair<std::map<IObject_Safe*,ISafeProxy*>::iterator,bool> p = proxy_map.m_map.insert(std::map<IObject_Safe*,ISafeProxy*>::value_type(pObjS,ptrProxy));
@@ -341,7 +341,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 
 	if (!pRet)
 		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-			
+
 	return pRet;
 }
 
@@ -394,7 +394,7 @@ bool Omega::PinObjectPointer(IObject* pObject)
 		Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::ISafeProxy))));
 		if (ptrProxy)
 		{
-			ptrProxy->Pin();	
+			ptrProxy->Pin();
 			return true;
 		}
 	}

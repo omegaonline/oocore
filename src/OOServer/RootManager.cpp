@@ -307,7 +307,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"recv() failed"),-1);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (!ImpersonateNamedPipeClient(pipe.get_handle()))
+	if (!ImpersonateNamedPipeClient(pipe->get_handle()))
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: ImpersonateNamedPipeClient failed: %#x\n",GetLastError()),-1);
 
 	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
@@ -336,7 +336,6 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_
 	CloseHandle(uid);
 #endif
 
-	pipe->close();
 	return 0;
 }
 

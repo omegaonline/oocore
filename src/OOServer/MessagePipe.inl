@@ -129,11 +129,18 @@ template <class T>
 int Root::MessagePipeSingleAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucontext_t*)
 {
 	ACE_SPIPE_Stream stream;
-
 	if (m_acceptor.accept(stream) != 0 && GetLastError() != ERROR_MORE_DATA)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.accept() failed"),-1);
 
-	return m_pHandler->on_accept(stream);
+	ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Null_Mutex> pipe;
+	ACE_NEW_NORETURN(pipe,ACE_SPIPE_Stream(stream));
+	if (pipe.null())
+	{
+		stream.close();
+		return -1;
+	}
+
+	return m_pHandler->on_accept(pipe);
 }
 #endif
 

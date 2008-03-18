@@ -259,7 +259,7 @@ namespace User
 	};
 
 	// {1A7672C5-8478-4e5a-9D8B-D5D019E25D15}
-	OMEGA_DECLARE_OID(OID_ChannelMarshalFactory);
+	OMEGA_EXPORT_OID(OID_ChannelMarshalFactory);
 
 	class ChannelMarshalFactory :
 		public OTL::ObjectBase,

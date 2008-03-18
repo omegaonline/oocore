@@ -27,7 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
+#if defined(OMEGA_DEBUG) && defined(ACE_WIN32)
 
 #if defined(_MSC_VER) && _MSC_VER >= 1300
 #if _MSC_VER == 1300

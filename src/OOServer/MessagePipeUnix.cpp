@@ -41,7 +41,7 @@ Root::MessagePipe::MessagePipe() :
 {
 }
 
-int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_TString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
 
@@ -97,9 +97,10 @@ Root::MessagePipeAcceptor::~MessagePipeAcceptor()
 {
 }
 
-int Root::MessagePipeAcceptor::open(const ACE_TString& strAddr, uid_t uid)
+int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 {
-	ACE_UNIX_Addr addr(strAddr.c_str());
+	ACE_UNIX_Addr addr(ACE_CHAR_TO_TCHAR(strAddr.c_str()));
+
 	if (m_acceptor.open(addr) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
 

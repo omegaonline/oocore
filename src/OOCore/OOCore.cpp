@@ -45,14 +45,14 @@ BEGIN_LIBRARY_OBJECT_MAP()
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
-BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserved*/)
+extern "C" BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserved*/)
 {
 #if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
 	if (reason == DLL_PROCESS_ATTACH)
 	{
 		// Call ACE::init() first
 		ACE::init();
-					
+
 		// If ACE is linked statically we need to do this...
 		ACE_OS::set_win32_resource_module((HINSTANCE)instance);
 	}

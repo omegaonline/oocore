@@ -35,7 +35,7 @@
 #define OOSERVER_MSG_PIPE_INL_INCLUDED_
 
 template <class T>
-int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_TString& strAddr)
+int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_CString& strAddr)
 {
 	m_pHandler = pHandler;
 	
@@ -93,7 +93,7 @@ Root::MessagePipeSingleAsyncAcceptor<T>::~MessagePipeSingleAsyncAcceptor()
 }
 
 template <class T>
-int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_TString& strAddr)
+int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_CString& strAddr)
 {
 	m_pHandler = pHandler;
 	
@@ -107,7 +107,7 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_TStrin
 	}
 
 	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(strAddr.c_str());
+	addr.string_to_addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
 	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open failed"),-1);
 	

@@ -1,7 +1,7 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
-static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)
+static bool test_values(Omega::Registry::IRegistryKey* pKey)
 {
 	// Generate a unique value name
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
@@ -28,7 +28,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	TEST(pKey->GetValueDescription(strTestValue) == L"A test description");
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 	TEST(!pKey->IsValue(strTestValue));
-	
+
 	const Omega::byte_t szBuf[] = "Welcome to the project site for Omega Online ¶"
 							"Omega Online is a massively-multiplayer online roleplaying game, based on the successful live-roleplaying system from Omega LRP. "
 							"The goals of the project are to produce a game that is: "
@@ -95,7 +95,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 	}
 
 	TEST_VOID(pKey->DeleteValue(strTestValue));
-	
+
 	try
 	{
 		pKey->SetStringValue(L"",L"Invalid name");
@@ -116,7 +116,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 		TEST(pE->GetName() == "\\");
 		pE->Release();
 	}
-	
+
 	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 
 	Omega::IEnumString* pValues = pKey->EnumValues();
@@ -166,7 +166,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey, const Omega::string
 
 static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)
 {
-	if (!test_values(pKey,strKey))
+	if (!test_values(pKey))
 		return false;
 
 	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
@@ -179,7 +179,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	TEST(pSubKey);
 	TEST(pKey->IsSubKey(strTestKey));
 
-	if (!test_values(pSubKey,strKey + "\\" + strTestKey))
+	if (!test_values(pSubKey))
 		return false;
 
 	TEST_VOID(pSubKey->SetDescription(L"A test description"));
@@ -213,7 +213,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 		TEST(pE->GetName() == "\\");
 		pE->Release();
 	}
-	
+
 	Omega::IEnumString* pKeys = pKey->EnumSubKeys();
 	TEST(pKeys);
 
@@ -349,7 +349,7 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 	{
 		TEST_VOID(pKey->DeleteValue(strTestValue));
 
-		if (!test_values(pKey,L""))
+		if (!test_values(pKey))
 			return false;
 	}
 
@@ -425,13 +425,13 @@ bool registry_tests_2()
 		L"</oo:root>\r\n";
 
 	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=\\" + strTestKey;
-	
+
 	try
 	{
 		Omega::Registry::AddXML(strXML,true,strSubsts);
 		TEST(ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 		TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
-		
+
 		Omega::Registry::AddXML(strXML,false,strSubsts);
 		TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 		TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
@@ -462,7 +462,7 @@ bool registry_tests_2()
 	Omega::Registry::AddXML(strXML,false,strSubsts);
 	TEST(!ptrKey->IsSubKey(strTestKey + L"\\Testkey"));
 	TEST(ptrKey->IsSubKey(strTestKey + L"\\My Module"));
-	
+
 	if (ptrKey->IsSubKey(strTestKey))
 		ptrKey->DeleteKey(strTestKey);
 

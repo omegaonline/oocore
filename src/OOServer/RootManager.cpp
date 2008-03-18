@@ -70,7 +70,7 @@ bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 	// Set up the sandbox user
 	if (!SpawnedProcess::InstallSandbox(argc,argv))
 		return false;
-	
+
 	// Now secure the files we will use...
 	if (!SpawnedProcess::SecureFile(ROOT_MANAGER::instance()->m_strRegistry))
 		return false;
@@ -133,7 +133,7 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 
 			// Close all pipes
 			close();
-			
+
 			// Stop the proactor
 			ACE_Proactor::instance()->proactor_end_event_loop();
 
@@ -173,10 +173,10 @@ bool Root::Manager::init()
 		return false;
 
 	// Setup the handler
-	set_channel(0x80000000,0x80000000,0x7F000000,0x40000000);	
+	set_channel(0x80000000,0x80000000,0x7F000000,0x40000000);
 
 	// Spawn the sandbox
-	ACE_WString strPipe;
+	ACE_CString strPipe;
 	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),strPipe,0);
 	if (!m_sandbox_channel)
 		return false;
@@ -239,7 +239,7 @@ int Root::Manager::init_database()
 
 	if (m_registry->open() != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"registry open() failed"),-1);
-	
+
 	return 0;
 }
 
@@ -281,9 +281,9 @@ void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 int Root::Manager::process_client_connects()
 {
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	const ACE_TCHAR* pipe_name = ACE_TEXT("ooserver");
+	const char* pipe_name = "ooserver";
 #else
-	const ACE_TCHAR* pipe_name = ACE_TEXT("/var/ooserver");
+	const char* pipe_name = "/var/ooserver";
 #endif
 
 	if (m_client_acceptor.start(this,pipe_name) != 0)
@@ -324,12 +324,12 @@ int Root::Manager::on_accept(MessagePipe& pipe)
 	}
 #endif
 
-	ACE_WString strPipe;
+	ACE_CString strPipe;
 	if (connect_client(uid,strPipe))
 	{
 		size_t uLen = strPipe.length()+1;
 		pipe.send(&uLen,sizeof(uLen));
-		pipe.send(strPipe.c_str(),uLen*sizeof(wchar_t));
+		pipe.send(strPipe.c_str(),uLen);
 	}
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -340,7 +340,7 @@ int Root::Manager::on_accept(MessagePipe& pipe)
 	return 0;
 }
 
-ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry)
+ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry)
 {
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == static_cast<user_id_type>(0));
@@ -356,12 +356,12 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 	}
 
 	ACE_CDR::ULong nChannelId = 0;
-	
+
 	MessagePipeAcceptor acceptor;
-	ACE_TString strNewPipe = MessagePipe::unique_name(ACE_TEXT("oor"));
-	if (acceptor.open(strNewPipe.c_str(),uid) != 0)
+	ACE_CString strNewPipe = MessagePipe::unique_name("oor");
+	if (acceptor.open(strNewPipe,uid) != 0)
 		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"));
-	else 
+	else
 	{
 		// Spawn process
 		if (pSpawn->Spawn(uid,strNewPipe,bSandbox))
@@ -416,7 +416,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 								ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
 								nChannelId = 0;
 							}
-							
+
 							if (nChannelId)
 							{
 								if (!pMC->read())
@@ -428,7 +428,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 									ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"));
 									bOk = false;
 								}
-								
+
 								if (!bOk)
 								{
 									try
@@ -460,7 +460,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_WString& strPipe,
 
 	if (bSandbox)
 		SpawnedProcess::CloseSandboxLogon(uid);
-	
+
 	if (!nChannelId)
 		delete pSpawn;
 
@@ -486,45 +486,38 @@ void Root::Manager::close_users()
 	}
 }
 
-ACE_WString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe)
+ACE_CString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe)
 {
 	if (pipe->send(&m_sandbox_channel,sizeof(m_sandbox_channel)) != sizeof(m_sandbox_channel))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"));
-		return L"";
+		return "";
 	}
 
 	size_t uLen = 0;
 	if (pipe->recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.recv() failed"));
-		return L"";
+		return "";
 	}
 
-	// Check for the integer overflow...
-	if (uLen > (size_t)-1 / sizeof(wchar_t))
-	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Overflow on buffer size"));
-		return L"";
-	}
+	char* buf;
+	ACE_NEW_RETURN(buf,char[uLen],"");
 
-	wchar_t* buf;
-	ACE_NEW_RETURN(buf,wchar_t[uLen],L"");
-
-	if (pipe->recv(buf,uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	if (pipe->recv(buf,uLen) != static_cast<ssize_t>(uLen))
 	{
 		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"pipe.recv() failed"));
 		delete [] buf;
-		return L"";
+		return "";
 	}
 
-	ACE_WString strRet = buf;
+	ACE_CString strRet(buf);
 	delete [] buf;
 
 	return strRet;
 }
 
-bool Root::Manager::connect_client(user_id_type uid, ACE_WString& strPipe)
+bool Root::Manager::connect_client(user_id_type uid, ACE_CString& strPipe)
 {
 	try
 	{
@@ -687,7 +680,7 @@ int Root::Manager::registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& 
 			//strSubKey.clear();
 			bCurrent = true;
 		}
-		
+
 		if (bCurrent)
 		{
 			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
@@ -744,7 +737,7 @@ int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& 
 		bCurrent = false;
 		ptrHive = m_registry;
 	}
-	
+
 	return 0;
 }
 
@@ -844,7 +837,7 @@ void Root::Manager::registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 				err = ptrHive->delete_key(uKey,strSubKey,channel_id);
 		}
 	}
-	
+
 	response << err;
 }
 
@@ -855,7 +848,7 @@ void Root::Manager::registry_enum_subkeys(ACE_CDR::ULong channel_id, ACE_InputCD
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 		ptrHive->enum_subkeys(uKey,channel_id,response);
-	
+
 	if (err != 0)
 		response << err;
 }
@@ -899,7 +892,7 @@ void Root::Manager::registry_get_string_value(ACE_CDR::ULong channel_id, ACE_Inp
 
 	response << err;
 	if (err == 0)
-		response.write_string(val);		
+		response.write_string(val);
 }
 
 void Root::Manager::registry_get_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
@@ -1059,10 +1052,10 @@ void Root::Manager::registry_get_description(ACE_CDR::ULong channel_id, ACE_Inpu
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 		err = ptrHive->get_description(uKey,channel_id,val);
-	
+
 	response << err;
 	if (err == 0)
-		response.write_string(val);	
+		response.write_string(val);
 }
 
 void Root::Manager::registry_get_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
@@ -1083,7 +1076,7 @@ void Root::Manager::registry_get_value_description(ACE_CDR::ULong channel_id, AC
 
 	response << err;
 	if (err == 0)
-		response.write_string(val);	
+		response.write_string(val);
 }
 
 void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
@@ -1093,7 +1086,7 @@ void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
 		ptrHive->enum_values(uKey,channel_id,response);
-	
+
 	if (err != 0)
 		response << err;
 }

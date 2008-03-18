@@ -672,18 +672,21 @@ DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
 //	dwRes = SetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,NULL,NULL,pACLNew,NULL);
 //}
 
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_TString& strPipe, bool bSandbox)
+DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox)
 {
 	// Get our module name
-	ACE_TCHAR szPath[MAX_PATH];
-	if (!ACE_TEXT_GetModuleFileName(NULL,szPath,MAX_PATH))
+	wchar_t szPath[MAX_PATH];
+	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 	{
 		DWORD dwErr = GetLastError();
 		LOG_FAILURE(dwErr);
 		return dwErr;
 	}
 
-	ACE_TString strCmdLine = ACE_TEXT("\"") + ACE_TString(szPath) + ACE_TEXT("\" --spawned ") + strPipe;
+	ACE_WString strCmdLine = L"\"";
+	strCmdLine += szPath;
+	strCmdLine += L"\" --spawned ";
+	strCmdLine += ACE_Ascii_To_Wide(strPipe.c_str()).wchar_rep();
 
 	// Window station vars
 	ACE_WString strWindowStation;
@@ -828,7 +831,7 @@ CleanupProfile:
 	return dwRes;
 }
 
-bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_TString& strPipe, bool bSandbox)
+bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
@@ -861,7 +864,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_TString& strPipe
 						dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 						if (dwRes == ERROR_SUCCESS)
 						{
-							ACE_ERROR((LM_WARNING,L"%s",szBuf));
+							ACE_ERROR((LM_WARNING,L"%W",szBuf));
 							ACE_OS::printf("\n\nYou chose to continue... on your head be it!\n\n");
 
 							CloseHandle(m_hToken);

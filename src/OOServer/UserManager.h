@@ -31,7 +31,7 @@ namespace User
 	class Manager : public Root::MessageHandler
 	{
 	public:
-		static int run(const ACE_TString& strPipe);
+		static int run(const ACE_CString& strPipe);
 		
 		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request);
 
@@ -64,8 +64,8 @@ namespace User
 
 		virtual bool channel_open(ACE_CDR::ULong channel);
 
-		int run_event_loop_i(const ACE_TString& strPipe);
-		bool init(const ACE_TString& strPipe);
+		int run_event_loop_i(const ACE_CString& strPipe);
+		bool init(const ACE_CString& strPipe);
 		bool bootstrap(ACE_CDR::ULong sandbox_channel);
 		void end_event_loop();
 

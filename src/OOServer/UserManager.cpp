@@ -33,7 +33,7 @@ BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 END_PROCESS_OBJECT_MAP()
 
-int UserMain(const ACE_TString& strPipe)
+int UserMain(const ACE_CString& strPipe)
 {
 	u_long options = ACE_Log_Msg::SYSLOG;
 
@@ -69,12 +69,12 @@ User::Manager::~Manager()
 {
 }
 
-int User::Manager::run(const ACE_TString& strPipe)
+int User::Manager::run(const ACE_CString& strPipe)
 {
 	return USER_MANAGER::instance()->run_event_loop_i(strPipe);
 }
 
-int User::Manager::run_event_loop_i(const ACE_TString& strPipe)
+int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 {
 	int ret = -1;
 
@@ -116,7 +116,7 @@ int User::Manager::run_event_loop_i(const ACE_TString& strPipe)
 
 			// Stop the proactor
 			ACE_Proactor::instance()->proactor_end_event_loop();
-			
+
 			// Wait for all the request threads to finish
 			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
@@ -149,7 +149,7 @@ bool User::Manager::channel_open(ACE_CDR::ULong channel)
 	return true;
 }
 
-bool User::Manager::init(const ACE_TString& strPipe)
+bool User::Manager::init(const ACE_CString& strPipe)
 {
 	// Connect to the root
 	ACE_Time_Value wait(5);
@@ -167,12 +167,12 @@ bool User::Manager::init(const ACE_TString& strPipe)
 	}
 
 	// Invent a new pipe name..
-	ACE_TString strNewPipe = Root::MessagePipe::unique_name(ACE_TEXT("oou"));
+	ACE_CString strNewPipe = Root::MessagePipe::unique_name("oou");
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
 	if (pipe->send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
-		pipe->send(strNewPipe.c_str(),uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+		pipe->send(strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
 	{
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"),false);
 	}
@@ -181,11 +181,11 @@ bool User::Manager::init(const ACE_TString& strPipe)
 	ACE_CDR::ULong our_channel = 0;
 	if (pipe->recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::recv() failed"),false);
-		
+
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC = 0;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
-		
+
 	// Open the root connection
 	if (pMC->open(pipe,m_root_channel) == 0)
 	{
@@ -193,7 +193,7 @@ bool User::Manager::init(const ACE_TString& strPipe)
 		pipe->close();
 		return false;
 	}
-		
+
 	// Init the handler
 	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
 
@@ -224,7 +224,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 			ptrOMSb = create_object_manager(sandbox_channel,Remoting::inter_user);
 
 		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
-				
+
 		ObjectPtr<ObjectImpl<InterProcessService> > ptrIPS = ObjectImpl<InterProcessService>::CreateInstancePtr();
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
@@ -292,13 +292,13 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 				bool bErase = false;
 				if ((i->first & 0xFFFFF000) == channel)
 				{
-					// Close all subchannels 
+					// Close all subchannels
 					bErase = true;
 				}
 				else if (channel == m_root_channel && classify_channel(i->first) > 2)
 				{
 					// If the root channel closes, close all upstream OMs
-					bErase = true;	
+					bErase = true;
 				}
 
 				if (bErase)
@@ -478,7 +478,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
-				OMEGA_THROW(EINVAL);		
+				OMEGA_THROW(EINVAL);
 
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}
@@ -495,13 +495,7 @@ ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 {
 	ACE_InputCDR* response = 0;
 	if (!send_request(m_root_channel,request.begin(),response,0,Remoting::synchronous))
-	{
-		if (ACE_OS::last_error() == ENOENT)
-		{
-			void* TODO;  // Throw a remoting error
-		}
 		OOSERVER_THROW_LASTERROR();
-	}
 
 	return response;
 }

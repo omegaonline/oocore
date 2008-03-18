@@ -37,7 +37,7 @@
 #include "./Version.h"
 
 // Forward declare UserMain
-int UserMain(const ACE_TString& strPipe);
+int UserMain(const ACE_CString& strPipe);
 
 static int Install(int argc, ACE_TCHAR* argv[])
 {
@@ -83,8 +83,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #if defined(ACE_WIN32)
 	// Check to see if we have been spawned
 	if (argc>2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--spawned"))==0)
-		return UserMain(argv[2]);
-	
+		return UserMain(ACE_TEXT_ALWAYS_CHAR(argv[2]));
+
 	if (argc>=2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--service"))==0)
 		skip_args = 2;
 #endif
@@ -127,9 +127,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	}
 
 #if defined(ACE_WIN32)
-	if (argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0)
+
+	if ((argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0) && !IsDebuggerPresent())
 		ACE_ERROR_RETURN((LM_ERROR,L"OOServer must be started as a Win32 service.\n"),-1);
-	
+
 #if defined(OMEGA_DEBUG)
 	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::STDERR,ACE_TEXT("OOServer")) != 0)
 #endif

@@ -72,7 +72,7 @@ namespace Root
 
 		struct UserProcess
 		{
-			ACE_WString                                          strPipe;
+			ACE_CString                                          strPipe;
 			SpawnedProcess*                                      pSpawn;
 			ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry;
 		};
@@ -88,9 +88,9 @@ namespace Root
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual void channel_closed(ACE_CDR::ULong channel);
 		int process_client_connects();
-		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_WString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry);
-		ACE_WString bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe);
-		bool connect_client(user_id_type uid, ACE_WString& strPipe);
+		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry);
+		ACE_CString bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe);
+		bool connect_client(user_id_type uid, ACE_CString& strPipe);
 		void close_users();
 
 		void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);

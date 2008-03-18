@@ -28,8 +28,10 @@ using namespace OTL;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 
-int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_TString& strAddr, ACE_Time_Value* wait)
+int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
+	ACE_TString strPipe = ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str());
+
 	ACE_Time_Value val(30);
 	if (!wait)
 		wait = &val;
@@ -40,14 +42,14 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_TStri
 	ACE_SPIPE_Addr addr;
 
 	ACE_SPIPE_Stream down;
-	addr.string_to_addr((strAddr + ACE_TEXT("\\down")).c_str());
+	addr.string_to_addr((strPipe + ACE_TEXT("\\down")).c_str());
 	if (connector.connect(down,addr,wait,ACE_Addr::sap_any,0,O_RDWR | FILE_FLAG_OVERLAPPED) != 0)
 		return -1;
 
 	countdown.update();
 
 	ACE_SPIPE_Stream up;
-	addr.string_to_addr((strAddr + ACE_TEXT("\\up")).c_str());
+	addr.string_to_addr((strPipe + ACE_TEXT("\\up")).c_str());
 	if (connector.connect(up,addr,wait,ACE_Addr::sap_any,0,O_WRONLY) != 0)
 	{
 		down.close();
@@ -96,9 +98,9 @@ ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 
 #else // defined(ACE_HAS_WIN32_NAMED_PIPES)
 
-int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_WString& strAddr, ACE_Time_Value* wait)
+int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
-	ACE_UNIX_Addr addr(strAddr.c_str());
+	ACE_UNIX_Addr addr(ACE_CHAR_TO_TCHAR(strAddr.c_str()));
 
 	ACE_SOCK_Stream stream;
 	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
@@ -138,8 +140,8 @@ ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
 
 OOCore::UserSession::UserSession() :
-	m_thrd_grp_id(-1), 
-	m_channel_id(0), 
+	m_thrd_grp_id(-1),
+	m_channel_id(0),
 	m_nIPSCookie(0),
 	m_consumers(0)
 {
@@ -153,21 +155,21 @@ IException* OOCore::UserSession::init()
 {
 	if (!USER_SESSION::instance()->init_i())
 		return ISystemException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
-	
+
 	IException* pE = USER_SESSION::instance()->bootstrap();
 	if (pE)
 		term();
-	
+
 	return pE;
 }
 
 bool OOCore::UserSession::init_i()
 {
-	ACE_TString strPipe;
+	ACE_CString strPipe;
 	if (!discover_server_port(strPipe))
 		return false;
 
-	// Connect to the root - we should loop here, it might take a while 
+	// Connect to the root - we should loop here, it might take a while
 	// for the accept socket to be created...
 	ACE_Time_Value wait(10);
 	if (MessagePipe::connect(m_stream,strPipe,&wait) != 0)
@@ -176,7 +178,7 @@ bool OOCore::UserSession::init_i()
 		do
 		{
 			ACE_OS::sleep(ACE_Time_Value(0,100));
- 
+
 			// Try again
 			countdown.update();
 		} while (MessagePipe::connect(m_stream,strPipe,&wait) != 0 && wait != ACE_Time_Value::zero);
@@ -222,7 +224,7 @@ IException* OOCore::UserSession::bootstrap()
 	}
 	catch (IException* pE)
 	{
-		return pE;	
+		return pE;
 	}
 
 	return 0;
@@ -238,9 +240,9 @@ bool OOCore::UserSession::launch_server()
 
 #else
 	// Find what the server is called
-	ACE_WString strExec = ACE_Ascii_To_Wide(ACE_OS::getenv("OOSERVER")).wchar_rep();
+	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
 	if (strExec.empty())
-		strExec = L"ooserver";
+		strExec = "ooserver";
 
 	// Set the process options
 	ACE_Process_Options options;
@@ -263,7 +265,7 @@ bool OOCore::UserSession::launch_server()
 	return true;
 }
 
-bool OOCore::UserSession::discover_server_port(ACE_TString& strPipe)
+bool OOCore::UserSession::discover_server_port(ACE_CString& strPipe)
 {
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	ACE_SPIPE_Connector connector;
@@ -311,21 +313,17 @@ bool OOCore::UserSession::discover_server_port(ACE_TString& strPipe)
 	if (peer.recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 		return false;
 
-	// Check for the integer overflow...
-	if (uLen > (size_t)-1 / sizeof(wchar_t))
-		return false;
-
 	// Read the string
-	wchar_t* buf;
-	ACE_NEW_RETURN(buf,wchar_t[uLen],false);
+	char* buf;
+	ACE_NEW_RETURN(buf,char[uLen],false);
 
-	if (peer.recv(buf,uLen*sizeof(wchar_t)) != static_cast<ssize_t>(uLen*sizeof(wchar_t)))
+	if (peer.recv(buf,uLen) != static_cast<ssize_t>(uLen))
 	{
 		delete [] buf;
 		return false;
 	}
 
-	ACE_TString str = ACE_TEXT_WCHAR_TO_TCHAR(buf);
+	ACE_CString str(buf);
 	delete [] buf;
 
 	strPipe = str;
@@ -506,7 +504,7 @@ int OOCore::UserSession::run_read_loop()
 		msg->m_ptrPayload->read_octet(version);
 
 		msg->m_ptrPayload->reset_byte_order(byte_order);
-	
+
 		(*msg->m_ptrPayload) >> msg->m_type;
 		(*msg->m_ptrPayload) >> msg->m_seq_no;
 
@@ -537,7 +535,7 @@ int OOCore::UserSession::run_read_loop()
 				std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
 				if (i == m_mapThreadContexts.end())
 					err = EACCES;
-				else 
+				else
 				{
 					if (i->second->m_usage == 0 && msg->m_type == Message::Request)
 					{
@@ -581,7 +579,7 @@ int OOCore::UserSession::run_read_loop()
 			err = EINVAL;
 		}
 		else if (m_consumers > 0)
-		{		
+		{
 			if (m_default_msg_queue.enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
 				err = ACE_OS::last_error();
 		}
@@ -622,7 +620,7 @@ int OOCore::UserSession::run_read_loop()
 				void* TODO;	// Alert!
 			}
 		}
-		
+
 		if (err != 0)
 		{
 			delete msg;
@@ -647,7 +645,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOn
 		int ret = m_default_msg_queue.dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline));
 		if (ret == -1)
 			break;
-		
+
 		// Set deadline
 		ACE_Time_Value old_deadline = pContext->m_deadline;
 		pContext->m_deadline = msg->m_deadline;
@@ -666,7 +664,7 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOn
 			delete msg;
 			continue;
 		}
-		
+
 		// Process the message...
 		process_request(msg,pContext->m_deadline);
 
@@ -675,13 +673,13 @@ void OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOn
 
 		// Reset the deadline
 		pContext->m_deadline = old_deadline;
-				
+
 		delete msg;
 
 	} while (!bOnce);
 
 	// Decrement the consumers...
-	--m_consumers;		
+	--m_consumers;
 }
 
 void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id)
@@ -696,13 +694,13 @@ void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id
 			bool bErase = false;
 			if ((i->first & 0xFFFFF000) == closed_channel_id)
 			{
-				// Close all apartment channels 
+				// Close all apartment channels
 				bErase = true;
 			}
 			else if (closed_channel_id == m_channel_id && ((i->first & 0xFFFFF000) != m_channel_id))
 			{
 				// If the user channel closes, close all upstream OMs
-				bErase = true;	
+				bErase = true;
 			}
 
 			if (bErase)
@@ -748,7 +746,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 			if (guard.locked() == 0)
 				break;
-			
+
 			std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(from_channel_id);
 			if (i == m_mapOMs.end())
 			{
@@ -888,7 +886,7 @@ bool OOCore::UserSession::send_channel_close(ACE_CDR::ULong closed_channel_id)
 {
 	ACE_OutputCDR msg;
 	msg << closed_channel_id;
-	
+
 	if (!msg.good_bit())
 		return false;
 
@@ -923,7 +921,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 
 		src_thread_id = pContext->m_thread_id;
 		deadline = pContext->m_deadline;
-		
+
 		if (!(attribs & Message::asynchronous))
 		{
 			while (!seq_no)
@@ -939,7 +937,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		if (deadline2 < deadline)
 			deadline = deadline2;
 	}
-	
+
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(seq_no,src_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,true,attribs))
@@ -1002,7 +1000,7 @@ void OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong de
 
 		wait = deadline - now;
 	}
-	
+
 	m_stream.send(header.begin(),wait != ACE_Time_Value::max_time ? &wait : 0);
 }
 
@@ -1065,7 +1063,7 @@ bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort sr
 
 	if (!header.good_bit())
 		return false;
-	
+
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -1088,7 +1086,7 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(ACE_CDR::ULong ch
 		mflags = Remoting::inter_process;
 	else if ((channel & 0x80000000) == (m_channel_id & 0x80000000))
 		mflags = Remoting::inter_user;
-	else 
+	else
 		mflags = Remoting::another_machine;
 
 	return mflags;
@@ -1213,7 +1211,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 		if (!p.second)
 		{
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
-				OMEGA_THROW(EINVAL);		
+				OMEGA_THROW(EINVAL);
 
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}

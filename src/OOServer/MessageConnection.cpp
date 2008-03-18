@@ -34,12 +34,12 @@
 #include "./OOServer_Root.h"
 #include "./MessageConnection.h"
 
-ACE_TString Root::MessagePipe::unique_name(const ACE_TString& strPrefix)
+ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 {
 	ACE_Time_Value t = ACE_OS::gettimeofday();
 
-	ACE_TCHAR szBuf[32];
-	ACE_OS::snprintf(szBuf,32,ACE_TEXT("%lx%lx"),t.sec(),t.usec());
+	char szBuf[32];
+	ACE_OS::snprintf(szBuf,32,"%lu%lx",ACE_OS::getpid(),t.usec());
 
 	return strPrefix + szBuf;
 }
@@ -97,7 +97,7 @@ bool Root::MessageConnection::read()
 	{
 #if defined(OMEGA_DEBUG)
 		int err = ACE_OS::last_error();
-#if defined(OMEGA_WIN32)
+#if defined(ACE_WIN32)
 		if (err == ERROR_BROKEN_PIPE)
 #else
 		if (err == ENOTSOCK)

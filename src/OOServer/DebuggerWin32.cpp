@@ -29,7 +29,7 @@
 
 #if defined(OMEGA_DEBUG)
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && _MSC_VER >= 1300
 #if _MSC_VER == 1300
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte.olb" raw_interfaces_only named_guids
 using namespace EnvDTE;
@@ -41,14 +41,9 @@ using namespace EnvDTE;
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80.olb" raw_interfaces_only named_guids
 using namespace EnvDTE80;
 #endif
-#endif
 
-static bool AttachVS8Debugger(DWORD our_pid)
+static bool AttachVSDebugger(DWORD our_pid)
 {
-#if !defined(_MSC_VER) || _MSC_VER < 1300
-	return false;
-#else
-
 	bool bRet = false;
 	HRESULT hr = CoInitialize(NULL);
 	if SUCCEEDED(hr)
@@ -59,10 +54,10 @@ static bool AttachVS8Debugger(DWORD our_pid)
 	#elif _MSC_VER == 1300
 		pUnk.GetActiveObject("VisualStudio.DTE.7.1");
 	#endif
-		if (pUnk != NULL) 
+		if (pUnk != NULL)
 		{
 			_DTEPtr pDTE = pUnk;
-			if (pDTE) 
+			if (pDTE)
 			{
 				DebuggerPtr pDebugger;
 				if (SUCCEEDED(pDTE->get_Debugger(&pDebugger)) && pDebugger != NULL)
@@ -99,10 +94,9 @@ static bool AttachVS8Debugger(DWORD our_pid)
 		CoUninitialize();
 	}
 
-	return bRet;	
-
-#endif
+	return bRet;
 }
+#endif
 
 static void PromptForDebugger(DWORD pid)
 {
@@ -113,8 +107,10 @@ static void PromptForDebugger(DWORD pid)
 
 void AttachDebugger(pid_t pid)
 {
-	if (AttachVS8Debugger(pid))
+#if defined(_MSC_VER) && _MSC_VER >= 1300
+	if (AttachVSDebugger(pid))
 		return;
+#endif
 
 	PromptForDebugger(pid);
 }

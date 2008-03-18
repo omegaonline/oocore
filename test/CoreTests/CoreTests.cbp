@@ -78,7 +78,9 @@
 		<Extensions>
 			<code_completion />
 			<envvars />
-			<debugger />
+			<debugger>
+				<search_path add="D:\OO\extern\ACE_wrappers\ace" />
+			</debugger>
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

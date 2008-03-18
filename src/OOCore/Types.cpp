@@ -65,7 +65,7 @@ using namespace OOCore;
 
 ACE_WString OOCore::from_utf8(const char* sz)
 {
-	static const int trailingBytesForUTF8[256] = 
+	static const int trailingBytesForUTF8[256] =
 	{
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -89,7 +89,7 @@ ACE_WString OOCore::from_utf8(const char* sz)
 		case 0:
 			c = v;
 			break;
-		
+
 		case 1:
 			c = v & 0x1f;
 			break;
@@ -105,7 +105,7 @@ ACE_WString OOCore::from_utf8(const char* sz)
 		default:
 			OMEGA_THROW(L"utf8 decoding failed!");
 		}
-		
+
 		for (int i=0;i<trailers;++i)
 		{
 			if (*p == '\0')
@@ -262,7 +262,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	
+
 	pOld->Release();
 
 	pNode->m_str += static_cast<const StringNode*>(s2)->m_str;
@@ -275,7 +275,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const c
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	
+
 	pOld->Release();
 
 	pNode->m_str += ACE_Ascii_To_Wide(sz).wchar_rep();
@@ -288,7 +288,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add3,2,((in),void*,s1,(in),const w
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-	
+
 	pOld->Release();
 
 	pNode->m_str += wsz;
@@ -394,7 +394,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find2,4,((in),const void*,s1,(in)
 
 	if (bIgnoreCase)
 		c2 = static_cast<wchar_t>(ACE_OS::ace_towlower(c2));
-	
+
 	return static_cast<const StringNode*>(s1)->m_str.find(c2,pos);
 }
 
@@ -457,7 +457,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(
 	{
 		wchar_t* buf = 0;
 		OMEGA_NEW(buf,wchar_t[len]);
-		
+
 		int len2 = ACE_OS::vsnprintf(buf,len,sz,*ap);
 		if (len2 >= 0 && static_cast<size_t>(len2) <= len)
 		{

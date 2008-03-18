@@ -126,7 +126,7 @@ Root::SpawnedProcess::~SpawnedProcess()
 }
 
 // Forward declare UserMain
-int UserMain(const ACE_TString& strPipe);
+int UserMain(const ACE_CString& strPipe);
 
 extern char **environ;
 
@@ -201,7 +201,7 @@ void Root::SpawnedProcess::CloseSandboxLogon(user_id_type /*uid*/)
 {
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_TString& strPipe, bool /*bSandbox*/)
+bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool /*bSandbox*/)
 {
 	pid_t child_id = ACE_OS::fork();
 	if (child_id == -1)
@@ -254,9 +254,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_TString& strPipe, bool /*b
 		}
 
 		// Now just run UserMain and exit
-		int err = UserMain(strPipe);
-
-		ACE_OS::exit(err);
+		ACE_OS::exit(UserMain(ACE_TEXT_TO_TCHAR(strPipe.c_str())));
 	}
 	else
 	{
@@ -377,7 +375,7 @@ ACE_CString Root::SpawnedProcess::get_home_dir()
 	return pw->pw_dir;
 }
 
-bool Root::SpawnedProcess::SecureFile(const ACE_TString& strFilename)
+bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
 {
 	ACE_CString strShortName = ACE_Wide_To_Ascii(strFilename.c_str()).char_rep();
 
@@ -403,9 +401,9 @@ bool Root::SpawnedProcess::IsSameUser(user_id_type uid)
 	return Compare(uid);
 }
 
-ACE_TString Root::SpawnedProcess::GetRegistryHive()
+ACE_WString Root::SpawnedProcess::GetRegistryHive()
 {
-	ACE_TString strDir;
+	ACE_WString strDir;
 	if (bSandbox)
 		strDir = L"/var/lib/omegaonline";
 	else
@@ -418,7 +416,7 @@ ACE_TString Root::SpawnedProcess::GetRegistryHive()
 			return -1;
 	}
 
-	ACE_TString strRegistry = strDir + L"/user.regdb";
+	ACE_WString strRegistry = strDir + L"/user.regdb";
 }
 
 #endif // !ACE_WIN32

@@ -43,7 +43,7 @@ namespace OOCore
 		class MessagePipe
 		{
 		public:
-			static int connect(MessagePipe& pipe, const ACE_TString& strAddr, ACE_Time_Value* wait = 0);
+			static int connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
 			void close();
 			
 			ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
@@ -144,7 +144,7 @@ namespace OOCore
 		bool init_i();
 		void term_i();
 		Omega::IException* bootstrap();
-		bool discover_server_port(ACE_TString& uPort);
+		bool discover_server_port(ACE_CString& uPort);
 		bool launch_server();
 
 		int run_read_loop();

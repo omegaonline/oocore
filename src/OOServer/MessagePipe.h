@@ -43,8 +43,8 @@ namespace Root
 	public:
 		MessagePipe();
 		
-		static ACE_TString unique_name(const ACE_TString& strPrefix);
-		static int connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_TString& strAddr, ACE_Time_Value* wait = 0);
+		static ACE_CString unique_name(const ACE_CString& strPrefix);
+		static int connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
 		void close();
 
 		ACE_HANDLE get_read_handle() const;
@@ -69,9 +69,9 @@ namespace Root
 		~MessagePipeAcceptor();
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		int open(const ACE_TString& strAddr, HANDLE hToken);
+		int open(const ACE_CString& strAddr, HANDLE hToken);
 #else
-		int open(const ACE_TString& strAddr, uid_t uid);
+		int open(const ACE_CString& strAddr, uid_t uid);
 #endif
 
 		int accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout = 0);
@@ -89,7 +89,7 @@ namespace Root
 #else
 	private:
 		ACE_SOCK_Acceptor   m_acceptor;
-		ACE_TString         m_strAddr;
+		ACE_CString         m_strAddr;
 #endif
 
 		MessagePipeAcceptor(const MessagePipeAcceptor&) {}
@@ -103,7 +103,7 @@ namespace Root
 		MessagePipeAsyncAcceptor() : ACE_Event_Handler()
 		{}
 
-		int start(T* pHandler, const ACE_TString& strAddr);
+		int start(T* pHandler, const ACE_CString& strAddr);
 		void stop();
 
 	private:
@@ -124,7 +124,7 @@ namespace Root
 		MessagePipeSingleAsyncAcceptor();
 		virtual ~MessagePipeSingleAsyncAcceptor();
 
-		int start(T* pHandler, const ACE_TString& strAddr);
+		int start(T* pHandler, const ACE_CString& strAddr);
 		void stop();
 
 	private:

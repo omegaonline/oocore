@@ -53,6 +53,7 @@
 #include <ace/NT_Service.h>
 #include <ace/OS.h>
 #include <ace/Proactor.h>
+#include <ace/Process.h>
 #include <ace/Recursive_Thread_Mutex.h>
 #include <ace/RW_Thread_Mutex.h>
 #include <ace/Singleton.h>
@@ -67,6 +68,7 @@
 #if !defined(ACE_HAS_WCHAR)
 #error OmegaOnline requires has wchar_t support!
 #endif
+
 
 #if defined(ACE_WIN32)
 #if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))

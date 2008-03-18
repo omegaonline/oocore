@@ -1409,6 +1409,7 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 		hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	else
 		hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
+
 	if SUCCEEDED(hr)
 	{
 		char szBuf2[MAX_PATH] = {0};

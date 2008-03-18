@@ -80,9 +80,9 @@ namespace Root
 		MessagePipeSingleAsyncAcceptor<Manager> m_client_acceptor;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		int on_accept(ACE_SPIPE_Stream& pipe);
+		int on_accept(const ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Null_Mutex>& pipe);
 #else
-		int on_accept(ACE_SOCK_Stream& pipe);
+		int on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe);
 #endif
 
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
@@ -94,7 +94,7 @@ namespace Root
 		void close_users();
 
 		void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-		
+
 		ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> m_db;
 		ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> m_registry;
 		ACE_CString                                          m_strRegistry;

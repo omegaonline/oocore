@@ -142,7 +142,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #else
 	// Daemonize ourselves
-	wchar_t szCwd[PATH_MAX];
+	ACE_TCHAR szCwd[PATH_MAX];
 	ACE_OS::getcwd(szCwd,PATH_MAX);
 	if (ACE::daemonize(szCwd,1,argv[0]) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error daemonizing"),-1);

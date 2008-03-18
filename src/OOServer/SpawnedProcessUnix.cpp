@@ -188,8 +188,12 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	// Get the uid...
-	ACE_CDR::ULong sb_uid = (ACE_CDR::ULong)-1;
-	int err = reg_root->get_integer_value(L"Server\\Sandbox",L"Uid",sb_uid);
+	ACE_INT64 key = 0;
+	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
+		return true;
+
+	ACE_CDR::LongLong sb_uid = (ACE_CDR::ULong)-1;
+	int err = reg_root->get_integer_value(key,"Uid",0,sb_uid);
 	if (err != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to get sandbox uid from registry: %s\n",ACE_OS::strerror(err)),false);
 
@@ -201,8 +205,10 @@ void Root::SpawnedProcess::CloseSandboxLogon(user_id_type /*uid*/)
 {
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool /*bSandbox*/)
+bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSandbox)
 {
+    m_bSandbox = bSandbox;
+
 	pid_t child_id = ACE_OS::fork();
 	if (child_id == -1)
 	{
@@ -254,7 +260,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool /*b
 		}
 
 		// Now just run UserMain and exit
-		ACE_OS::exit(UserMain(ACE_TEXT_TO_TCHAR(strPipe.c_str())));
+		ACE_OS::exit(UserMain(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str())));
 	}
 	else
 	{
@@ -266,7 +272,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool /*b
 	return true;
 }
 
-bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
 {
 	bAllowed = false;
 
@@ -339,11 +345,11 @@ bool Root::SpawnedProcess::CheckAccess(const wchar_t* pszFName, ACE_UINT32 mode,
 	return true;
 }
 
-bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
+bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 {
 	ACE_CString strUName = "omega_sandbox";
 	if (argc>=1)
-		strUName = ACE_Wide_To_Ascii(argv[0]).char_rep();
+		strUName = ACE_TEXT_ALWAYS_CHAR(argv[0]);
 
 	ACE_OS::setpwent();
 	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
@@ -354,7 +360,11 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	// Set the sandbox uid
-	int err = reg_root->set_integer_value(L"Server\\Sandbox",L"Uid",pw->pw_uid);
+	ACE_INT64 key = 0;
+	if (Manager::get_registry()->create_key(key,"Server\\Sandbox",false,0,0) != 0)
+		return false;
+
+	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);
 	if (err != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to set sandbox uid in registry: %s\n",ACE_OS::strerror(err)),false);
 
@@ -363,7 +373,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, wchar_t* argv[])
 
 bool Root::SpawnedProcess::UninstallSandbox()
 {
-	return (Manager::get_registry().delete_value(L"Server\\Sandbox",L"Uid") == 0);
+	return true;
 }
 
 ACE_CString Root::SpawnedProcess::get_home_dir()
@@ -375,17 +385,15 @@ ACE_CString Root::SpawnedProcess::get_home_dir()
 	return pw->pw_dir;
 }
 
-bool Root::SpawnedProcess::SecureFile(const ACE_WString& strFilename)
+bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
 {
-	ACE_CString strShortName = ACE_Wide_To_Ascii(strFilename.c_str()).char_rep();
-
 	// Make sure the file is owned by root (0)
-	if (::chown(strShortName.c_str(),0,(gid_t)-1) != 0)
+	if (::chown(strFilename.c_str(),0,(gid_t)-1) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"chown failed"),false);
 
 	void* TODO; // Check the group permissions...
 
-	if (::chmod(strShortName.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (::chmod(strFilename.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"chmod failed"),false);
 
 	return true;
@@ -401,22 +409,22 @@ bool Root::SpawnedProcess::IsSameUser(user_id_type uid)
 	return Compare(uid);
 }
 
-ACE_WString Root::SpawnedProcess::GetRegistryHive()
+ACE_CString Root::SpawnedProcess::GetRegistryHive()
 {
-	ACE_WString strDir;
-	if (bSandbox)
-		strDir = L"/var/lib/omegaonline";
+	ACE_CString strDir;
+	if (m_bSandbox)
+		strDir = "/var/lib/omegaonline";
 	else
-		strDir = ACE_Ascii_To_Wide((Root::SpawnedProcess::get_home_dir() + "/.omegaonline").c_str()).wchar_rep();
+		strDir = Root::SpawnedProcess::get_home_dir() + "/.omegaonline";
 
 	if (ACE_OS::mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)
-			return -1;
+			return "";
 	}
 
-	ACE_WString strRegistry = strDir + L"/user.regdb";
+	return strDir + "/user.regdb";
 }
 
 #endif // !ACE_WIN32

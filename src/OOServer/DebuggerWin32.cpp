@@ -27,7 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(OMEGA_DEBUG)
+#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
 
 #if defined(_MSC_VER) && _MSC_VER >= 1300
 #if _MSC_VER == 1300
@@ -102,7 +102,7 @@ static void PromptForDebugger(DWORD pid)
 {
 	wchar_t szBuf[256];
 	ACE_OS::snprintf(szBuf,256,L"Attach the debugger to process id %lu now if you want!",pid);
-	MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
+    MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
 void AttachDebugger(pid_t pid)
@@ -115,4 +115,4 @@ void AttachDebugger(pid_t pid)
 	PromptForDebugger(pid);
 }
 
-#endif // OMEGA_DEBUG
+#endif // OMEGA_DEBUG && OMEGA_WIN32

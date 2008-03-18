@@ -754,6 +754,26 @@ namespace OTL
 		}
 	};
 
+	template <class E>
+	class ExceptionMarshalFactoryImpl :
+		public ObjectBase,
+		public Omega::Remoting::IMarshalFactory
+	{
+	public:
+		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
+		END_INTERFACE_MAP()
+
+	// IMarshalFactory members
+	public:
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		{
+			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
+			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
+			pObject = ptrE->QueryInterface(iid);
+		}
+	};
+
 	class LibraryModule : public ModuleBase
 	{
 	public:

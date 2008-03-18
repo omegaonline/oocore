@@ -37,7 +37,7 @@ int UserMain(const ACE_CString& strPipe)
 {
 	u_long options = ACE_Log_Msg::SYSLOG;
 
-#if defined(OMEGA_DEBUG)
+#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
 	// If this event exists, then we are being debugged
 	HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 	if (hDebugEvent)

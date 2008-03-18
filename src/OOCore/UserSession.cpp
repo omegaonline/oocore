@@ -100,7 +100,7 @@ ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 
 int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
-	ACE_UNIX_Addr addr(ACE_CHAR_TO_TCHAR(strAddr.c_str()));
+	ACE_UNIX_Addr addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
 
 	ACE_SOCK_Stream stream;
 	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
@@ -128,13 +128,7 @@ ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, ACE_
 
 ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 {
-	for (;;)
-	{
-		ACE_Time_Value wait(60);	// We use a timeout to force ACE to block!
-		ssize_t nRead = ACE_OS::recv(m_hSocket,(char*)buf,len,&wait);
-		if (nRead != -1 || ACE_OS::last_error() != ETIMEDOUT)
-			return nRead;
-	}
+	return ACE_OS::recv(m_hSocket,(char*)buf,len);
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)

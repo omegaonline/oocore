@@ -86,7 +86,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 
 				throw ISystemException::Create(string_t(strDesc.c_str(),true),string_t(strSrc.c_str(),true));
 			}
-						
+
 			// Wrap the response
 			ObjectPtr<ObjectImpl<InputCDR> > ptrRecv = ObjectImpl<InputCDR>::CreateInstancePtr();
 			ptrRecv->init(*response);

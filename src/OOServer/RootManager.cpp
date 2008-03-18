@@ -293,17 +293,17 @@ int Root::Manager::process_client_connects()
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-int Root::Manager::on_accept(ACE_SPIPE_Stream& pipe)
+int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Null_Mutex>& pipe)
 {
 #else
-int Root::Manager::on_accept(MessagePipe& pipe)
+int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe)
 {
 #endif
 
 	user_id_type uid = 0;
 
 	// Read the uid - we must read even for Windows
-	if (pipe.recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
+	if (pipe->recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"recv() failed"),-1);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -328,15 +328,15 @@ int Root::Manager::on_accept(MessagePipe& pipe)
 	if (connect_client(uid,strPipe))
 	{
 		size_t uLen = strPipe.length()+1;
-		pipe.send(&uLen,sizeof(uLen));
-		pipe.send(strPipe.c_str(),uLen);
+		pipe->send(&uLen,sizeof(uLen));
+		pipe->send(strPipe.c_str(),uLen);
 	}
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	CloseHandle(uid);
 #endif
 
-	pipe.close();
+	pipe->close();
 	return 0;
 }
 
@@ -372,13 +372,17 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 			{
 				bOk = false;
 
-				// Create a new database
-				ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> db;
-				ACE_NEW_NORETURN(db,Db::Database());
-				if (!db.null() && db->open(pSpawn->GetRegistryHive()) == 0)
+				ACE_CString strDb = pSpawn->GetRegistryHive();
+				if (!strDb.empty())
 				{
-					ACE_NEW_NORETURN(ptrRegistry,RegistryHive(db));
-					bOk = (!ptrRegistry.null() && ptrRegistry->open()==0);
+                    // Create a new database
+                    ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> db;
+                    ACE_NEW_NORETURN(db,Db::Database());
+                    if (!db.null() && db->open(pSpawn->GetRegistryHive()) == 0)
+                    {
+                        ACE_NEW_NORETURN(ptrRegistry,RegistryHive(db));
+                        bOk = (!ptrRegistry.null() && ptrRegistry->open()==0);
+                    }
 				}
 			}
 

@@ -41,7 +41,7 @@ Root::MessagePipe::MessagePipe() :
 {
 }
 
-int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
 
@@ -49,7 +49,7 @@ int Root::MessagePipe::connect(MessagePipe& pipe, const ACE_CString& strAddr, AC
 	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"connector.connect() failed"),-1);
 
-	pipe.m_hSocket = stream.get_handle();
+	pipe->m_hSocket = stream.get_handle();
 	stream.set_handle(ACE_INVALID_HANDLE);
 
 	return 0;
@@ -67,11 +67,6 @@ void Root::MessagePipe::close()
 ACE_HANDLE Root::MessagePipe::get_read_handle() const
 {
 	return m_hSocket;
-}
-
-bool Root::MessagePipe::operator < (const MessagePipe& rhs) const
-{
-	return (m_hSocket < rhs.m_hSocket);
 }
 
 ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
@@ -99,7 +94,7 @@ Root::MessagePipeAcceptor::~MessagePipeAcceptor()
 
 int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 {
-	ACE_UNIX_Addr addr(ACE_CHAR_TO_TCHAR(strAddr.c_str()));
+	ACE_UNIX_Addr addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
 
 	if (m_acceptor.open(addr) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
@@ -109,14 +104,13 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(MessagePipe& pipe, ACE_Time_Value* timeout)
+int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout)
 {
 	ACE_SOCK_Stream stream;
 	if (m_acceptor.accept(stream,0,timeout) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.accept() failed"),-1);
 
-	pipe.m_hSocket = stream.get_handle();
-
+	pipe->m_hSocket = stream.get_handle();
 	stream.set_handle(ACE_INVALID_HANDLE);
 
 	return 0;

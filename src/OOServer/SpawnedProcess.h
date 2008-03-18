@@ -54,7 +54,7 @@ namespace Root
 		bool Compare(user_id_type uid);
 		bool IsSameUser(user_id_type uid);
 		ACE_CString GetRegistryHive();
-		
+
 		static bool LogonSandboxUser(user_id_type& uid);
 		static void CloseSandboxLogon(user_id_type uid);
 
@@ -63,7 +63,6 @@ namespace Root
 		HANDLE m_hToken;
 		HANDLE m_hProfile;
 		HANDLE m_hProcess;
-		bool   m_bSandbox;
 
 		static DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
 		DWORD SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox);
@@ -79,7 +78,7 @@ namespace Root
 		static DWORD SetTokenDefaultDACL(HANDLE hToken);
 
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
-		
+
 #else // !ACE_WIN32
 		static ACE_CString get_home_dir();
 
@@ -88,10 +87,12 @@ namespace Root
 		pid_t	m_pid;
 
 		bool CleanEnvironment();
-		
+
 #endif // ACE_WIN32
 
 	private:
+        bool   m_bSandbox;
+
 		static bool unsafe_sandbox();
 	};
 }

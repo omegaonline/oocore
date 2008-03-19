@@ -20,8 +20,5 @@
 		<Project filename="../test/CoreTests/TestProcess/TestProcess.cbp">
 			<Depends filename="../src/OOCore/OOCore.cbp" />
 		</Project>
-		<Project filename="..\src\OOServer\OOServer.cbp" active="1">
-			<Depends filename="..\src\OOCore\OOCore.cbp" />
-		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

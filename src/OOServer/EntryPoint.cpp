@@ -96,7 +96,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error parsing cmdline"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),-1);
 	}
 
 	int option;
@@ -117,11 +117,11 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			return Help();
 
 		case L':':
-			ACE_OS::printf("Missing argument for %ls.\n\n",cmd_opts.last_option());
+			ACE_OS::printf("Missing argument for %s.\n\n",cmd_opts.last_option());
 			return Help();
 
 		default:
-			ACE_OS::printf("Invalid argument '%ls'.\n\n",cmd_opts.last_option());
+			ACE_OS::printf("Invalid argument '%s'.\n\n",cmd_opts.last_option());
 			return Help();
 		}
 	}
@@ -135,20 +135,27 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::STDERR,ACE_TEXT("OOServer")) != 0)
 #endif
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
 
 	if (!Root::NTService::open())
 		return -1;
 
 #else
-	// Daemonize ourselves
+
+#if !defined(OMEGA_DEBUG)
+    // Daemonize ourselves
 	ACE_TCHAR szCwd[PATH_MAX];
 	ACE_OS::getcwd(szCwd,PATH_MAX);
-	if (ACE::daemonize(szCwd,1,argv[0]) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error daemonizing"),-1);
 
-	if (ACE_LOG_MSG->open(argv[0],ACE_Log_Msg::SYSLOG) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening logger"),-1);
+	if (ACE::daemonize(szCwd,1,ACE_TEXT("ooserverd")) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),-1);
+
+    if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::SYSLOG) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+#else
+	if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+#endif
 
 	// TODO - Install signal handlers...
 #endif

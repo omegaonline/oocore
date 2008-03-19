@@ -4,7 +4,7 @@
 	<Project>
 		<Option title="OOServer" />
 		<Option pch_mode="2" />
-		<Option default_target="Release_Win32" />
+		<Option default_target="Debug_Unix" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug_Win32">
@@ -16,11 +16,11 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
+					<Add option="-O0" />
 					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_CONSOLE" />
@@ -53,7 +53,6 @@
 					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
@@ -81,45 +80,46 @@
 			</Target>
 			<Target title="Debug_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Debug/ooserverd" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="" />
+				<Option output="../../bin/Debug/ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option external_deps="../OOCore/debug/libOOCore.a;" />
-				<Option type="5" />
+				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="--service" />
+				<Option parameters="--install" />
 				<Compiler>
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-O0" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
-					<Add library="OOCore" />
+					<Add library="OOCored" />
 					<Add library="sqlite3" />
-					<Add directory="../OOCore/Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Release/ooserverd" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="" />
+				<Option output="../../bin/ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
-				<Option type="5" />
+				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
 				<Option parameters="--service" />
 				<Compiler>
 					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
 					<Add option="-DNDEBUG" />
 					<Add directory="../../include" />
 				</Compiler>
@@ -128,7 +128,6 @@
 					<Add library="ACE" />
 					<Add library="OOCore" />
 					<Add library="sqlite3" />
-					<Add directory="../OOCore/Release" />
 				</Linker>
 			</Target>
 		</Build>
@@ -196,6 +195,7 @@
 			<envvars />
 			<debugger>
 				<search_path add="..\..\extern\ACE_Wrappers\ace" />
+				<search_path add="/usr/include/ace" />
 			</debugger>
 		</Extensions>
 	</Project>

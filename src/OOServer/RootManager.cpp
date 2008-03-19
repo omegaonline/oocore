@@ -48,7 +48,7 @@ Root::Manager::~Manager()
 bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 {
 	if (ROOT_MANAGER::instance()->init_database() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%p\n",L"Error opening database"),false);
+		return false;
 
 	// Add the default keys
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive = ROOT_MANAGER::instance()->get_registry();
@@ -219,11 +219,11 @@ int Root::Manager::init_database()
 
 	#define OMEGA_REGISTRY_DIR "/var/lib/omegaonline"
 
-	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"mkdir failed"),-1);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("mkdir failed")),-1);
 	}
 	m_strRegistry = OMEGA_REGISTRY_DIR "/system.regdb";
 
@@ -233,12 +233,12 @@ int Root::Manager::init_database()
 	ACE_NEW_RETURN(m_db,Db::Database(),-1);
 
 	if (m_db->open(m_strRegistry) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"registry open() failed"),-1);
+		return -1;
 
 	ACE_NEW_RETURN(m_registry,RegistryHive(m_db),-1);
 
 	if (m_registry->open() != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"registry open() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("registry open() failed")),-1);
 
 	return 0;
 }

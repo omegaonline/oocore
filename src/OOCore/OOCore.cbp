@@ -16,11 +16,11 @@
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
+					<Add option="-O0" />
 					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_WINDOWS" />
@@ -55,7 +55,6 @@
 					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
@@ -83,18 +82,22 @@
 			</Target>
 			<Target title="Debug_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Debug/libOOCore" prefix_auto="1" extension_auto="1" />
+				<Option output="../../bin/Debug/libOOCored" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
+				<Option parameters="--service" />
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-fPIC" />
+					<Add option="-pthread" />
+					<Add option="-O0" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="../../include" />
 				</Compiler>
@@ -104,20 +107,23 @@
 			</Target>
 			<Target title="Release_Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="Release/libOOCore" prefix_auto="1" extension_auto="1" />
+				<Option output="../../bin/libOOCore" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
+				<Option parameters="--service" />
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
-					<Add option="-W" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-fPIC" />
+					<Add option="-pthread" />
 					<Add option="-DNDEBUG" />
 					<Add directory="../../include" />
 				</Compiler>

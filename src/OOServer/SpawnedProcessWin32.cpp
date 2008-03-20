@@ -688,15 +688,14 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	strCmdLine += L"\" --spawned ";
 	strCmdLine += ACE_Ascii_To_Wide(strPipe.c_str()).wchar_rep();
 
-	// Window station vars
+	// Forward declare these because of goto's
 	ACE_WString strWindowStation;
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
-
-	// Forward declare these because of goto's
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
+	ACE_WString strTitle;
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -742,6 +741,8 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	STARTUPINFOW startup_info;
 	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
+	startup_info.dwFlags = STARTF_USESHOWWINDOW;
+	startup_info.wShowWindow = SW_MINIMIZE;
 
 	if (WIN32_DEBUGGING())
 	{
@@ -750,13 +751,30 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 
 		dwFlags |= CREATE_NEW_CONSOLE;
-		startup_info.lpTitle = L"OOServer - spawned user process";
+
+		strTitle = L"OOServer";
+
+		// Get the names associated with the user SID
+        ACE_WString strUserName;
+        ACE_WString strDomainName;
+        if (GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
+        {
+            strTitle += L" - ";
+            strTitle += strDomainName;
+            strTitle += L"\\";
+            strTitle += strUserName;
+        }
+
+        if (bSandbox)
+            strTitle += L" [Sandbox]";
 	}
 	else
 	{
 		dwFlags |= DETACHED_PROCESS;
 		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 	}
+	if (!strTitle.empty())
+        startup_info.lpTitle = (LPWSTR)strTitle.c_str();
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
@@ -851,13 +869,13 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 				{
 					const wchar_t msg[] =
 						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '%ls\\%ls'\n\n"
+						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '%s\\%s'\n\n"
 						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
 					wchar_t szBuf[1024];
 					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
 					wchar_t szBuf2[1024];
-					ACE_OS::sprintf(szBuf2,L"%ls\n\nDo you want to allow this?",szBuf);
+					ACE_OS::sprintf(szBuf2,L"%s\n\nDo you want to allow this?",szBuf);
 
 					if (MessageBoxW(NULL,szBuf2,L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
@@ -895,7 +913,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
 	ACE_WString strPwd;
 	int err = reg_root->get_string_value(key,L"UserName",strUName);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"Failed to read sandbox username from registry: %d\n",err),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to read sandbox username from registry: %s\n"),ACE_OS::strerror(err)),false);
 
 	reg_root->get_string_value(key,L"Password",strPwd);
 
@@ -1053,7 +1071,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	if (err == NERR_UserExists)
 		bAddedUser = false;
 	else if (err != NERR_Success)
-		ACE_ERROR_RETURN((LM_ERROR,L"Failed to add sandbox user\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to add sandbox user: %#x\n"),err),false);
 
 	// Now we have to add the SE_BATCH_LOGON_NAME priviledge and remove all the others
 
@@ -1066,7 +1084,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	{
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,L"Failed to lookup account SID\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to lookup account SID\n")),false);
 	}
 
 	PSID pSid = static_cast<PSID>(ACE_OS::malloc(dwSidSize));
@@ -1092,7 +1110,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 		delete [] pszDName;
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,L"Failed to lookup account SID\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to lookup account SID\n")),false);
 	}
 	delete [] pszDName;
 
@@ -1101,7 +1119,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 		ACE_OS::free(pSid);
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,L"Bad username\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad username\n")),false);
 	}
 
 	// Open the local account policy...
@@ -1114,7 +1132,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 		ACE_OS::free(pSid);
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,L"Failed to access policy elements\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to access policy elements\n")),false);
 	}
 
 	LSA_UNICODE_STRING szName;
@@ -1154,7 +1172,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	{
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,L"Failed to modify account priviledges\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to modify account priviledges\n")),false);
 	}
 
 	// Set the user name and pwd...
@@ -1166,21 +1184,11 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 
 	err = reg_root->set_string_value(key,L"UserName",info.usri2_name);
 	if (err != 0)
-	{
-		if (errno > 0 && errno <= 42)
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
-		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox username in registry: error %#x",ACE_OS::last_error()),false);
-	}
+		return false;
 
 	err = reg_root->set_string_value(key,L"Password",info.usri2_password);
 	if (err != 0)
-	{
-		if (errno > 0 && errno <= 42)
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
-		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Failed to set sandbox password in registry: error %#x",ACE_OS::last_error()),false);
-	}
+		return false;
 
 	if (bAddedUser)
 		reg_root->set_integer_value(key,"AutoAdded",0,1);

@@ -112,9 +112,9 @@ size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
 inline std::string Omega::string_t::ToUTF8() const
 {
 	std::string str;
-	char szBuf[256];
-	size_t len = ToUTF8(szBuf,256);
-	if (len > 256)
+	char szBuf[128];
+	size_t len = ToUTF8(szBuf,128);
+	if (len > 128)
 	{
 		char* pszBuf;
 		OMEGA_NEW(pszBuf,char[len]);

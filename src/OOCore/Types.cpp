@@ -65,23 +65,26 @@ using namespace OOCore;
 
 ACE_WString OOCore::from_utf8(const char* sz)
 {
+    if (!sz || *sz=='\0')
+        return L"";
+
 	static const int trailingBytesForUTF8[256] =
 	{
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
-		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
-		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,9,9,9,4,4,4,4,5,5,6,7
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x00 - 0x1F
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x20 - 0x3F
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x40 - 0x5F
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x60 - 0x7F
+		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,	// 0x80 - 0x9F
+		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,	// 0xA0 - 0xBF
+		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,	// 0xC0 - 0xDF
+		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,11,11,11,4,4,4,4,5,5,6,7	// 0xE0 - 0xFF
 	};
 
 	ACE_WString strRet;
 	strRet.fast_resize(ACE_OS::strlen(sz));
-	for (const char* p=sz;*p!=0;)
+	for (const char* p=sz;*p!='\0';)
 	{
-		wchar_t c;
+		unsigned int c;
 		unsigned char v = *p++;
 		int trailers = trailingBytesForUTF8[v];
 		switch (trailers)
@@ -103,19 +106,44 @@ ACE_WString OOCore::from_utf8(const char* sz)
 			break;
 
 		default:
-			OMEGA_THROW(L"utf8 decoding failed!");
+			trailers &= 7;
+			c = L'\xFFFD';
 		}
 
-		for (int i=0;i<trailers;++i)
+		for (int i=0;i<trailers;++i,++p)
 		{
 			if (*p == '\0')
-				OMEGA_THROW(L"utf8 decoding failed!");
+			{
+				c = L'\xFFFD';
+				break;
+			}
 
-			c <<= 8;
-			c += (*p++ & 0x3f);
+			if (c != L'\xFFFD')
+			{
+				c <<= 6;
+				c += (*p & 0x3f);
+			}
 		}
 
-		strRet += c;
+		if (sizeof(wchar_t)==2)
+		{
+			if (c & 0xFFFF0000)
+			{
+				// Oh god.. we're big!
+				c -= 0x10000;
+
+#if (OMEGA_BYTE_ORDER == OMEGA_BIG_ENDIAN)
+				strRet += static_cast<wchar_t>((c >> 10) | 0xD800);
+				strRet += static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
+#else
+				strRet += static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
+				strRet += static_cast<wchar_t>((c >> 10) | 0xD800);
+#endif
+				continue;
+			}
+		}
+
+		strRet += static_cast<wchar_t>(c);
 	}
 
 	return strRet;
@@ -123,8 +151,11 @@ ACE_WString OOCore::from_utf8(const char* sz)
 
 ACE_CString OOCore::to_utf8(const wchar_t* wsz)
 {
+    if (!wsz || *wsz==L'\0')
+        return "";
+
 	ACE_CString strRet;
-	strRet.fast_resize(ACE_OS::strlen(wsz));
+	strRet.fast_resize(ACE_OS::strlen(wsz)*2);
 	for (const wchar_t* p=wsz;*p!=0;)
 	{
 		char c;
@@ -134,37 +165,39 @@ ACE_CString OOCore::to_utf8(const wchar_t* wsz)
 			strRet += static_cast<char>(v);
 		else if (v <= 0x7FF)
 		{
-			c = static_cast<char>(v >> 6) & 0xc0;
+			c = static_cast<char>(v >> 6) | 0xc0;
 			strRet += c;
-			c = static_cast<char>(v & 0x3f) & 0x80;
+			c = static_cast<char>(v & 0x3f) | 0x80;
 			strRet += c;
 		}
 		else if (v <= 0xFFFF)
 		{
 			// Invalid range
 			if (v > 0xD7FF && v < 0xE00)
-				OMEGA_THROW(L"utf8 encoding failed!");
-
-			c = static_cast<char>(v >> 12) & 0xe0;
-			strRet += c;
-			c = static_cast<char>((v & 0xfc0) >> 6) & 0x80;
-			strRet += c;
-			c = static_cast<char>(v & 0x3f) & 0x80;
-			strRet += c;
+				strRet += "\xEF\xBF\xBD";
+			else
+			{
+				c = static_cast<char>(v >> 12) | 0xe0;
+				strRet += c;
+				c = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
+				strRet += c;
+				c = static_cast<char>(v & 0x3f) | 0x80;
+				strRet += c;
+			}
 		}
 		else if (v <= 0x10FFFF)
 		{
-			c = static_cast<char>(v >> 18) & 0xf0;
+			c = static_cast<char>(v >> 18) | 0xf0;
 			strRet += c;
-			c = static_cast<char>((v & 0x3f000) >> 12) & 0x80;
+			c = static_cast<char>((v & 0x3f000) >> 12) | 0x80;
 			strRet += c;
-			c = static_cast<char>((v & 0xfc0) >> 6) & 0x80;
+			c = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
 			strRet += c;
-			c = static_cast<char>(v & 0x3f) & 0x80;
+			c = static_cast<char>(v & 0x3f) | 0x80;
 			strRet += c;
 		}
 		else
-			OMEGA_THROW(L"utf8 encoding failed!");
+			strRet += "\xEF\xBF\xBD";
 	}
 
 	return strRet;

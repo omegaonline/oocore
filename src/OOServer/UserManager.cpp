@@ -51,7 +51,7 @@ int UserMain(const ACE_CString& strPipe)
 #endif
 
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),options,ACE_TEXT("OOServer")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Error opening logger"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
 
 	return User::Manager::run(strPipe);
 }
@@ -86,13 +86,13 @@ int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 	// Spawn off the request threads
 	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
 	if (req_thrd_grp_id == -1)
-		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Error spawning threads"));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error spawning threads")));
 	else
 	{
 		// Spawn off the proactor threads
 		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
 		if (pro_thrd_grp_id == -1)
-			ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Error spawning threads"));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error spawning threads")));
 		else
 		{
 			if (init(strPipe))
@@ -141,7 +141,7 @@ bool User::Manager::channel_open(ACE_CDR::ULong channel)
 		}
 		catch (IException* pE)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l: Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W - %W\n"),pE->Description().c_str(),pE->Source().c_str()));
 			pE->Release();
 			return false;
 		}
@@ -155,13 +155,13 @@ bool User::Manager::init(const ACE_CString& strPipe)
 	ACE_Time_Value wait(5);
 	ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex> pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::connect() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::connect() failed")),false);
 
 	// Read the sandbox channel
 	ACE_CDR::ULong sandbox_channel = 0;
 	if (pipe->recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::recv() failed"));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::recv() failed")));
 		pipe->close();
 		return false;
 	}
@@ -174,13 +174,13 @@ bool User::Manager::init(const ACE_CString& strPipe)
 	if (pipe->send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
 		pipe->send(strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"pipe.send() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")),false);
 	}
 
 	// Read our channel id
 	ACE_CDR::ULong our_channel = 0;
 	if (pipe->recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Root::MessagePipe::recv() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::recv() failed")),false);
 
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC = 0;
@@ -236,7 +236,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: Exception thrown: %ls - %ls\n",pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W - %W\n"),pE->Description().c_str(),pE->Source().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -346,7 +346,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong /
 
 	if (!request.good_bit())
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: %p\n",L"Bad request"));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Bad request")));
 		return;
 	}
 
@@ -354,7 +354,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong /
 	{
 	case 0:
 	default:
-		ACE_ERROR((LM_ERROR,L"%N:%l: Bad request op_code\n"));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Bad request op_code: %u\n"),op_code));
 		return;
 	}
 }

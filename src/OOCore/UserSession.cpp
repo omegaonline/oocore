@@ -802,11 +802,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 				delete msg;
 				break;
 			}
-			else
-			{
-				ACE_ERROR((LM_ERROR,L"%N:%l: Duff message\n"));
-			}
-
+			
 			delete msg;
 		}
 	}

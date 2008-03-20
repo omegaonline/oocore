@@ -1,7 +1,7 @@
 #include <OOCore/Remoting.h>
 #include "Test.h"
 
-bool string_tests_wchar()
+static bool string_tests_wchar()
 {
 	const wchar_t sz1[] = L"abcdef";
 	const wchar_t sz1_1[] = L"abcdef";
@@ -56,9 +56,6 @@ bool string_tests_wchar()
 	TEST(s1.Find(s2.ToUpper(),0,true) == 0);
 	TEST(s1.Find(s2.ToUpper(),1,true) == 10);
 
-	// Some more here maybe?
-	TEST(Omega::string_t::Format(L"%ls:%d",L"hello",1) == L"hello:1");
-
 	TEST(s1.Left(5) == L"abcde");
 	TEST(s1.Mid(15) == L"fghij");
 	TEST(s1.Mid(15,3) == L"fgh");
@@ -67,7 +64,7 @@ bool string_tests_wchar()
 	return true;
 }
 
-bool string_tests_char()
+static bool string_tests_char()
 {
 	const char sz1[] = "abcdef";
 	const char sz1_1[] = "abcdef";
@@ -81,7 +78,7 @@ bool string_tests_char()
 	TEST(s1.CompareNoCase(sz1_2) == 0);
 
 	const char sz2[] = "ghijk";
-	Omega::string_t s2(sz2,true);
+	Omega::string_t s2(sz2,false);
 	TEST(s2 == sz2);
 
 	Omega::string_t s3(s1);
@@ -109,9 +106,6 @@ bool string_tests_char()
 	TEST(s1.Find(s2.ToUpper(),0,true) == 0);
 	TEST(s1.Find(s2.ToUpper(),1,true) == 10);
 
-	// Some more here maybe?
-	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == "hello:1");
-
 	TEST(s1.Left(5) == "abcde");
 	TEST(s1.Mid(15) == "fghij");
 	TEST(s1.Mid(15,3) == "fgh");
@@ -120,10 +114,69 @@ bool string_tests_char()
 	return true;
 }
 
+static bool string_tests_format()
+{
+	void* TODO; // Need more!
+
+	TEST(Omega::string_t::Format(L"%ls:%d",L"hello",1) == L"hello:1");
+	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == "hello:1");
+
+	return true;
+}
+
+static bool string_tests_utf8()
+{
+/*	This test is automated...
+
+	FILE* pIn = fopen("UTF-8-test.txt","rb");
+	if (!pIn)
+		return false;
+
+	// Loop reading and converting...
+	Omega::string_t str;
+	for (;;)
+	{
+		char szBuf[129];
+		if (!fgets(szBuf,128,pIn))
+			break;
+
+		szBuf[128] = '\0';
+		str += Omega::string_t(szBuf,true);
+	}
+
+	fclose(pIn);
+
+	FILE* pOut = fopen("UTF-8-results.txt","w+b");
+	if (!pOut)
+		return false;
+
+	fwrite(L"\xFEFF",sizeof(wchar_t),1,pOut);
+	fwrite(str.c_str(),sizeof(wchar_t),str.Length(),pOut);
+	
+	fclose(pOut);
+
+	pOut = fopen("UTF-8-results2.txt","w+b");
+	if (!pOut)
+		return false;
+
+	std::string str2 = str.ToUTF8();
+	fwrite(str2.c_str(),sizeof(char),str2.length(),pOut);
+
+	fclose(pOut); */
+
+	return true;
+}
+
 bool string_tests()
 {
 	TEST(string_tests_wchar());
 	TEST(string_tests_char());
+	TEST(string_tests_format());
+	TEST(string_tests_utf8());
+
+#ifdef __STDC_ISO_10646__
+#error Yes!
+#endif
 
 	return true;
 }

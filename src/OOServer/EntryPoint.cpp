@@ -104,19 +104,19 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	{
 		switch (option)
 		{
-		case L'i':
+		case ACE_TEXT('i'):
 			return Install(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
 
-		case L'u':
+		case ACE_TEXT('u'):
 			return Uninstall();
 
-		case L'v':
+		case ACE_TEXT('v'):
 			return Version();
 
-		case L'h':
+		case ACE_TEXT('h'):
 			return Help();
 
-		case L':':
+		case ACE_TEXT(':'):
 			ACE_OS::printf("Missing argument for %s.\n\n",cmd_opts.last_option());
 			return Help();
 
@@ -129,7 +129,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #if defined(ACE_WIN32)
 
 	if ((argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0) && !IsDebuggerPresent())
-		ACE_ERROR_RETURN((LM_ERROR,L"OOServer must be started as a Win32 service.\n"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a Win32 service.\n")),-1);
 
 #if defined(OMEGA_DEBUG)
 	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::STDERR,ACE_TEXT("OOServer")) != 0)

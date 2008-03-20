@@ -58,7 +58,7 @@ Root::MessageConnection::~MessageConnection()
 ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id, bool bStart)
 {
 	if (m_channel_id)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("already open!")),0);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Already open!")),0);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (m_reader.open(*this,pipe->get_read_handle()) != 0 && GetLastError() != ERROR_MORE_DATA)
@@ -105,7 +105,7 @@ bool Root::MessageConnection::read()
 			err = 0;
 
 		if (err)
-			ACE_ERROR((LM_ERROR,L"%N:%l: read failed, code: %#x\n",err));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: read failed, code: %#x - %m\n"),err));
 #endif
 		mb->release();
 		return false;
@@ -159,13 +159,13 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 							ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("reader.read() failed")));
 					}
 					else
-						ACE_ERROR((LM_ERROR,L"%N:%l: Packet too big\n"));
+						ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Packet too big\n")));
 				}
 				else
-					ACE_ERROR((LM_ERROR,L"%N:%l: Corrupt header\n"));
+					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Corrupt header\n")));
 			}
 			else
-				ACE_ERROR((LM_ERROR,L"%N:%l: Over-read?\n"));
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Over-read?\n")));
 		}
 		else
 		{
@@ -186,7 +186,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 				}
 			}
 			else
-				ACE_ERROR((LM_ERROR,L"%N:%l: Over-read?\n"));
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Over-read?\n")));
 		}
 	}
 
@@ -253,11 +253,11 @@ ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_
 			if (channel_id != 0)
 			{
 				if (m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end())
-					ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Duplicate fixed channel registered\n"),0);
+					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Duplicate fixed channel registered\n")),0);
 			}
 			else if (m_mapChannelIds.size() >= m_uNextChannelMask - 0xF)
 			{
-				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Out of free channels\n"),0);
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Out of free channels\n")),0);
 			}
 			else
 			{
@@ -280,7 +280,7 @@ ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()),0);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),0);
 	}
 
 	return channel_id;
@@ -322,7 +322,7 @@ void Root::MessageHandler::pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 	}
 
 	try
@@ -334,7 +334,7 @@ void Root::MessageHandler::pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 	}
 }
 
@@ -487,7 +487,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 			catch (std::exception& e)
 			{
 				delete msg;
-				ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()),false);
+				ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),false);
 			}
 		}
 		else
@@ -518,7 +518,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()),0);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),0);
 	}
 
 	// Send on...
@@ -593,7 +593,7 @@ ACE_CDR::UShort Root::MessageHandler::insert_thread_context(const Root::MessageH
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()),0);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),0);
 	}
 }
 
@@ -619,7 +619,7 @@ void Root::MessageHandler::close()
 		}
 		catch (std::exception& e)
 		{
-			ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+			ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 		}
 	}
 
@@ -650,7 +650,7 @@ void Root::MessageHandler::stop()
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 	}
 
 	m_default_msg_queue.close();
@@ -728,7 +728,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 					catch (std::exception& e)
 					{
 						// This shouldn't ever occur, but that means it will ;)
-						ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+						ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 						pContext->m_deadline = old_deadline;
 						delete msg;
 						continue;
@@ -749,7 +749,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 				{
 					ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
 					if (!response)
-						ACE_ERROR((LM_ERROR,L"%N:%l: Out of memory\n"));
+						ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
 					else
 						bRet = true;
 
@@ -758,7 +758,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 				}
 				else
 				{
-					ACE_ERROR((LM_ERROR,L"%N:%l: Duff message\n"));
+					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Duff message\n")));
 				}
 			}
 
@@ -822,7 +822,7 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 				catch (std::exception& e)
 				{
 					// This shouldn't ever occur, but that means it will ;)
-					ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+					ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 					pContext->m_deadline = old_deadline;
 					delete msg;
 					continue;
@@ -867,7 +867,7 @@ void Root::MessageHandler::process_channel_close(Message* msg)
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 	}
 }
 
@@ -907,7 +907,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		}
 		catch (std::exception& e)
 		{
-			ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()),false);
+			ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),false);
 		}
 
 		msg.m_src_thread_id = pContext->m_thread_id;
@@ -958,7 +958,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()),false);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),false);
 	}
 
 	// Write the header info
@@ -1040,7 +1040,7 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,L"%N:%l: std::exception thrown %C\n",e.what()));
+		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 		return;
 	}
 
@@ -1094,7 +1094,7 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 {
 	// Check the size
 	if (mb->total_length() > ACE_INT32_MAX)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Message too big!\n"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Message too big!\n")),false);
 
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
@@ -1120,7 +1120,7 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 
 	if (!header.good_bit())
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
-
+	
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -1131,7 +1131,7 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 
 	// Update the total length
 	if (!ACE_OutputCDR_replace(header,msg_len_point))
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"CDR replace() failed"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR replace() failed")),false);
 
 	return true;
 }

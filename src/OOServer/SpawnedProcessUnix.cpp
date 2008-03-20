@@ -195,7 +195,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	ACE_CDR::LongLong sb_uid = (ACE_CDR::ULong)-1;
 	int err = reg_root->get_integer_value(key,"Uid",0,sb_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to get sandbox uid from registry: %s\n",ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to get sandbox uid from registry: %s\n"),ACE_OS::strerror(err)),false);
 
 	uid = static_cast<uid_t>(sb_uid);
 	return true;
@@ -223,7 +223,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		Root::pw_info pw(uid);
 		if (!pw)
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("::getpwuid() failed!")));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")));
 			ACE_OS::exit(errno);
 		}
 
@@ -235,9 +235,9 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		}
 
 		// Init our groups...
-		if (::initgroups(pw->pw_name,pw->pw_gid) != 0)
+		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("::initgroups() failed!")));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
 			ACE_OS::exit(errno);
 		}
 
@@ -320,7 +320,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	// Get the suppied user's group see if that is the same as the file's group
 	Root::pw_info pw(m_uid);
 	if (!pw)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("::getpwuid() failed!")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
 
 	// Is the file's gid the same as the specified user's
 	if (pw->pw_gid == sb.st_gid)
@@ -366,7 +366,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 
 	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: Failed to set sandbox uid in registry: %s\n",ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to set sandbox uid in registry: %s\n"),ACE_OS::strerror(err)),false);
 
 	return true;
 }

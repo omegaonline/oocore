@@ -47,7 +47,7 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 
 	ACE_SOCK_Stream stream;
 	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"connector.connect() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("connector.connect() failed")),-1);
 
 	pipe->m_hSocket = stream.get_handle();
 	stream.set_handle(ACE_INVALID_HANDLE);
@@ -97,7 +97,7 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 	ACE_UNIX_Addr addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
 
 	if (m_acceptor.open(addr) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.open() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")),-1);
 
 	m_strAddr = strAddr;
 
@@ -108,7 +108,7 @@ int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Nu
 {
 	ACE_SOCK_Stream stream;
 	if (m_acceptor.accept(stream,0,timeout) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"acceptor.accept() failed"),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.accept() failed")),-1);
 
 	pipe->m_hSocket = stream.get_handle();
 	stream.set_handle(ACE_INVALID_HANDLE);

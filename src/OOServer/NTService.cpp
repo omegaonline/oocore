@@ -55,7 +55,7 @@ bool Root::NTService::open()
 	// Do the ServiceMain in a separate thread
 	NTSERVICE::instance()->m_svc_thread = ACE_Thread_Manager::instance()->spawn(NTService::start_service);
 	if (NTSERVICE::instance()->m_svc_thread == -1)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: %p\n",L"Error spawning service thread"),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error spawning service thread")),false);
 	
 	return true;
 }
@@ -80,9 +80,9 @@ bool Root::NTService::install()
 	if (NTSERVICE::instance()->insert(ACE_TEXT("--service")) != 0 && GetLastError() != ERROR_SERVICE_MARKED_FOR_DELETE)
 	{
 		if (errno > 0 && errno <= 42)
-			ACE_ERROR_RETURN((LM_ERROR,L"Service install failed: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Service install failed: %m")),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Service install failed: error %#x",ACE_OS::last_error()),false);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Service install failed: error %#x"),ACE_OS::last_error()),false);
 	}
 
 	NTSERVICE::instance()->description(NTSERVICE_LONGDESC);
@@ -99,9 +99,9 @@ bool Root::NTService::uninstall()
 	if (NTSERVICE::instance()->remove() != 0)
 	{
 		if (errno > 0 && errno <= 42)
-			ACE_ERROR_RETURN((LM_ERROR,L"Service uninstall failed: %C",ACE_OS::strerror(ACE_OS::last_error())),false);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Service uninstall failed: %m")),false);
 		else
-			ACE_ERROR_RETURN((LM_ERROR,L"Service uninstall failed: error %#x",ACE_OS::last_error()),false);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Service uninstall failed: error %#x"),ACE_OS::last_error()),false);
 	}
 
 	return true;
@@ -119,7 +119,7 @@ int Root::NTService::insert(const ACE_TCHAR *cmd_line,
 	ACE_TCHAR this_exe[PATH_MAX + 2];
 
 	if (ACE_TEXT_GetModuleFileName(0,this_exe+1,PATH_MAX) == 0)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: GetModuleFilename failed: %#x\n",GetLastError()),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: GetModuleFilename failed: %#x\n"),GetLastError()),-1);
 		
 	// Make sure that this_exe is quoted
 	this_exe[0] = ACE_TEXT('\"');

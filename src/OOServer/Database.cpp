@@ -44,7 +44,7 @@ int Db::Statement::step()
 {
 	int err = sqlite3_step(m_pStmt);
 	if (err != SQLITE_ROW && err != SQLITE_DONE)
-		ACE_ERROR((LM_ERROR,L"%N:%l: sqlite3_step failed: %C\n",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
+		ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_step failed: %s\n",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
 	return err;
 }
 
@@ -96,7 +96,7 @@ Db::Database::Database() :
 Db::Database::~Database()
 {
 	if (sqlite3_close(m_db) != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,L"%N:%l: database open() failed: %C\n",sqlite3_errmsg(m_db)));
+		ACE_ERROR((LM_ERROR,"%N:%l: database open() failed: %s\n",sqlite3_errmsg(m_db)));
 }
 
 int Db::Database::open(const ACE_CString& strDb)
@@ -109,7 +109,7 @@ int Db::Database::open(const ACE_CString& strDb)
 
 	int err = sqlite3_open(strDb.c_str(),&m_db);
 	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: database open() failed: %C\n",sqlite3_errmsg(m_db)),-1);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: database open() failed: %s\n",sqlite3_errmsg(m_db)),-1);
 
 	return 0;
 }
@@ -118,7 +118,7 @@ int Db::Database::exec(const char* szSQL)
 {
 	int err = sqlite3_exec(m_db,szSQL,NULL,0,NULL);
 	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,L"%N:%l: sqlite3_exec failed: %C\n",sqlite3_errmsg(m_db)));
+		ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_exec failed: %s\n",sqlite3_errmsg(m_db)));
 	return err;
 }
 
@@ -142,7 +142,7 @@ ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex> Db::Database::begin_tran
 	if (ptrTrans.null())
 	{
 		sqlite3_exec(m_db,"ROLLBACK;",NULL,0,NULL);
-		ACE_ERROR((LM_ERROR,L"%N:%l: ACE_NEW_NORETURN: out of memory\n"));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
 	}
 	
 	return ptrTrans;
@@ -156,21 +156,21 @@ ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> Db::Database::prepare_stat
 	va_end(ap);
 
 	if (!pszBuf)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: sqlite3_vmprintf failed: %C\n",sqlite3_errmsg(m_db)),0);	
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_vmprintf failed: %s\n",sqlite3_errmsg(m_db)),0);	
 
 	sqlite3_stmt* pStmt = 0;
 	int err = sqlite3_prepare_v2(m_db,pszBuf,-1,&pStmt,NULL);
 	sqlite3_free(pszBuf);
 
 	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,L"%N:%l: sqlite3_prepare_v2 failed: %C\n",sqlite3_errmsg(m_db)),0);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %s\n",sqlite3_errmsg(m_db)),0);
 		
 	ACE_Refcounted_Auto_Ptr<Statement,ACE_Null_Mutex> ptrStmt;
 	ACE_NEW_NORETURN(ptrStmt,Statement(pStmt));
 	if (ptrStmt.null())
 	{
 		sqlite3_finalize(pStmt);
-		ACE_ERROR((LM_ERROR,L"%N:%l: ACE_NEW_NORETURN: out of memory\n"));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
 	}
 
 	return ptrStmt;

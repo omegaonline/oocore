@@ -251,6 +251,56 @@ namespace Omega
 				return pStream->ReadString_Safe(&val);
 			}
 
+			template <class T>
+			static IException_Safe* wire_read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, T* pVals, uint32_t cbMaxSize)
+			{
+				if (!pVals)
+					cbMaxSize = 0;
+
+				uint32_t cbSize = 0;
+				IException_Safe* pSE = wire_read(pStream,cbSize);
+				if (pSE)
+					return pSE;
+
+				if (cbSize > cbMaxSize)
+					cbSize = cbMaxSize;
+
+				for (uint32_t i=0;i<cbSize;++i)
+				{
+					pSE = marshal_info<T>::wire_type::read(pManager,pStream,pVals[i]);
+					if (pSE)
+						return pSE;
+				}
+				
+				return 0;
+			}
+
+			static IException_Safe* wire_read(IWireManager_Safe*, IFormattedStream_Safe* pStream, byte_t* pVals, uint32_t cbMaxSize)
+			{
+				if (!pVals)
+					cbMaxSize = 0;
+
+				uint32_t cbSize = 0;
+				IException_Safe* pSE = wire_read(pStream,cbSize);
+				if (pSE)
+					return pSE;
+
+				if (cbSize > cbMaxSize)
+					cbSize = cbMaxSize;
+
+				if (!cbSize)
+					return 0;
+
+				uint32_t i = cbSize;
+				pSE = pStream->ReadBytes_Safe(&i,pVals);
+				if (pSE)
+					return pSE;
+				if (i != cbSize)
+					return return_safe_exception(ISystemException::Create(EIO));
+
+				return 0;
+			}
+
 			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, byte_t val)
 			{
 				return pStream->WriteByte_Safe(val);
@@ -299,6 +349,41 @@ namespace Omega
 			static IException_Safe* wire_write(IFormattedStream_Safe* pStream, const string_t& val)
 			{
 				return pStream->WriteString_Safe(&val);
+			}
+
+			template <class T>
+			static IException_Safe* wire_write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const T* pVals, uint32_t cbSize)
+			{
+				if (!pVals)
+					cbSize = 0;
+
+				IException_Safe* pSE = wire_write(pStream,cbSize);
+				if (pSE)
+					return pSE;
+				
+				for (uint32_t i=0;i<cbSize;++i)
+				{
+					pSE = marshal_info<T>::wire_type::write(pManager,pStream,pVals[i]);
+					if (pSE)
+						return pSE;
+				}
+				
+				return 0;
+			}
+
+			static IException_Safe* wire_write(IWireManager_Safe*, IFormattedStream_Safe* pStream, const byte_t* pVals, uint32_t cbSize)
+			{
+				if (!pVals)
+					cbSize = 0;
+
+				IException_Safe* pSE = wire_write(pStream,cbSize);
+				if (pSE)
+					return pSE;
+
+				if (!cbSize)
+					return 0;
+				
+				return pStream->WriteBytes_Safe(cbSize,pVals);
 			}
 
 			template <class T>
@@ -489,16 +574,7 @@ namespace Omega
 
 				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, typename marshal_info<T>::wire_type::type* pVals, uint32_t cbSize)
 				{
-					if (pVals)
-					{
-						for (uint32_t i=0;i<cbSize;++i)
-						{
-							IException_Safe* pSE = marshal_info<T>::wire_type::read(pManager,pStream,pVals[i]);
-							if (pSE)
-								return pSE;
-						}
-					}
-					return 0;
+					return wire_read(pManager,pStream,pVals,cbSize);
 				}
 
 				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, typename marshal_info<T>::wire_type::type* pVals, const uint32_t* cbSize)
@@ -512,21 +588,12 @@ namespace Omega
 					if (pSE)
 						return pSE;
 
-					return read(pManager,pStream,val,&cbSize);
+					return read(pManager,pStream,val.m_pVals,cbSize);
 				}
 
 				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, uint32_t cbSize)
 				{
-					if (pVals)
-					{
-						for (uint32_t i=0;i<cbSize;++i)
-						{
-							IException_Safe* pSE = marshal_info<T>::wire_type::write(pManager,pStream,pVals[i]);
-							if (pSE)
-								return pSE;
-						}
-					}
-					return 0;
+					return wire_write(pManager,pStream,pVals,cbSize);
 				}
 
 				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, const uint32_t* cbSize)
@@ -540,14 +607,7 @@ namespace Omega
 					if (cbSize > val.m_alloc_size)
 						cbSize = val.m_alloc_size;
 
-					for (uint32_t i=0;i<cbSize;++i)
-					{
-						IException_Safe* pSE = marshal_info<T>::wire_type::write(pManager,pStream,val.m_pVals[i]);
-						if (pSE)
-							return pSE;
-					}
-
-					return 0;
+					return wire_write(pManager,pStream,val.m_pVals,cbSize);
 				}
 
 				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
@@ -557,183 +617,16 @@ namespace Omega
 
 				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const typename marshal_info<T>::wire_type::type* pVals, const uint32_t* cbSize)
 				{
-					if (pVals)
-					{
-						for (uint32_t i=0;i<*cbSize;++i)
-						{
-							IException_Safe* pSE = marshal_info<T>::wire_type::unpack(pManager,pStream,pVals[i]);
-							if (pSE)
-								return pSE;
-						}
-					}
-					return 0;
+					return wire_read(pManager,pStream,pVals,*cbSize);
 				}
 
 				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
 				{
-					// Only write back what we have room for...
+					// Only read what we have room for...
 					if (cbSize > val.m_alloc_size)
 						cbSize = val.m_alloc_size;
 
-					for (uint32_t i=0;i<cbSize;++i)
-					{
-						IException_Safe* pSE = marshal_info<T>::wire_type::unpack(pManager,pStream,val.m_pVals[i]);
-						if (pSE)
-							return pSE;
-					}
-
-					return 0;
-				}
-
-				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
-				{
-					return unpack(pManager,pStream,val,*cbSize);
-				}
-
-				static IException_Safe* no_op(bool, uint32_t)
-				{
-					return 0;
-				}
-
-				static IException_Safe* no_op(bool, const uint32_t* = 0)
-				{
-					return 0;
-				}
-			};
-
-			template <>
-			class std_wire_type_array<byte_t>
-			{
-			public:
-				class array_holder
-				{
-				public:
-					array_holder() : m_alloc_size(0),m_pVals(0)
-					{}
-
-					~array_holder()
-					{
-						delete [] m_pVals;
-					}
-
-					IException_Safe* init(uint32_t cbSize)
-					{
-						try
-						{
-							if (cbSize > (size_t)-1)
-								OMEGA_THROW(E2BIG);
-
-							m_alloc_size = cbSize;
-							OMEGA_NEW(m_pVals,byte_t[m_alloc_size]);
-						}
-						catch (IException* pE)
-						{
-							return return_safe_exception(pE);
-						}
-						return 0;
-					}
-
-					operator byte_t*()
-					{
-						return m_pVals;
-					}
-
-					uint32_t m_alloc_size;
-					byte_t*  m_pVals;
-				};
-				typedef array_holder type;
-
-				static IException_Safe* init(type& val, const uint32_t* cbSize)
-				{
-					return val.init(*cbSize);
-				}
-
-				static IException_Safe* read(IWireManager_Safe*, IFormattedStream_Safe* pStream, byte_t* pVals, uint32_t cbSize)
-				{
-					if (pVals)
-					{
-						uint32_t i = cbSize;
-						IException_Safe* pSE = pStream->ReadBytes_Safe(&i,pVals);
-						if (pSE)
-							return pSE;
-						if (i != cbSize)
-							return return_safe_exception(ISystemException::Create(EIO));
-					}
-					return 0;
-				}
-
-				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, byte_t* pVals, const uint32_t* cbSize)
-				{
-					return read(pManager,pStream,pVals,*cbSize);
-				}
-
-				static IException_Safe* read(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, type& val, uint32_t cbSize)
-				{
-					IException_Safe* pSE = val.init(cbSize);
-					if (pSE)
-						return pSE;
-
-					return read(pManager,pStream,val,&cbSize);
-				}
-
-				static IException_Safe* write(IWireManager_Safe*, IFormattedStream_Safe* pStream, const byte_t* pVals, uint32_t cbSize)
-				{
-					if (pVals)
-					{
-						IException_Safe* pSE = pStream->WriteBytes_Safe(cbSize,pVals);
-						if (pSE)
-							return pSE;
-					}
-					return 0;
-				}
-
-				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const byte_t* pVals, const uint32_t* cbSize)
-				{
-					return write(pManager,pStream,pVals,*cbSize);
-				}
-
-				static IException_Safe* write(IWireManager_Safe*, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
-				{
-					// Only write back what we have room for...
-					if (cbSize > val.m_alloc_size)
-						cbSize = val.m_alloc_size;
-
-					return pStream->WriteBytes_Safe(cbSize,val.m_pVals);
-				}
-
-				static IException_Safe* write(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)
-				{
-					return write(pManager,pStream,val,*cbSize);
-				}
-
-				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const byte_t* pVals, const uint32_t* cbSize)
-				{
-					if (pVals)
-					{
-						for (uint32_t i=0;i<*cbSize;++i)
-						{
-							IException_Safe* pSE = marshal_info<byte_t>::wire_type::unpack(pManager,pStream,pVals[i]);
-							if (pSE)
-								return pSE;
-						}
-					}
-					return 0;
-				}
-
-				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, uint32_t cbSize)
-				{
-					// Only write back what we have room for...
-					if (cbSize > val.m_alloc_size)
-						cbSize = val.m_alloc_size;
-
-					for (uint32_t i=0;i<cbSize;++i)
-					{
-						IException_Safe* pSE = marshal_info<byte_t>::wire_type::unpack(pManager,pStream,val.m_pVals[i]);
-						if (pSE)
-							return pSE;
-					}
-
-					return 0;
+					return wire_read(pManager,pStream,val.m_pVals,cbSize);
 				}
 
 				static IException_Safe* unpack(IWireManager_Safe* pManager, IFormattedStream_Safe* pStream, const type& val, const uint32_t* cbSize)

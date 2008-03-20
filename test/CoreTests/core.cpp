@@ -22,18 +22,18 @@ bool init_tests()
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 		throw pE;
-	
+
 	auto_uninit.bInitCalled = true;
 	return true;
 }
 
 static bool complex_throw()
 {
-	const wchar_t szDesc[] = L"A test description";
+	/*const wchar_t szDesc[] = L"A test description";
 	const wchar_t szFile[] = OMEGA_WIDEN_STRING(__FILE__);
 
 	// try a more complex throw
-	/*try
+	try
 	{
 		try
 		{

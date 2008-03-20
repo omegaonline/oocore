@@ -242,7 +242,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		}
 
 		// Stop being priviledged!
-		if (!ACE_OS::setuid(uid) != 0)
+		if (ACE_OS::setuid(uid) != 0)
 		{
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
 			ACE_OS::exit(errno);
@@ -253,14 +253,18 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 			ACE_OS::exit(errno);
 
 		// Set cwd
-		if (ACE_OS::chdir(pw->pw_dir) != 0)
+		if (!bSandbox && ACE_OS::chdir(pw->pw_dir) != 0)
 		{
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("chdir() failed!")));
 			ACE_OS::exit(errno);
 		}
 
 		// Now just run UserMain and exit
-		ACE_OS::exit(UserMain(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str())));
+		int err = UserMain(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
+
+		ACE_ERROR((LM_WARNING,ACE_TEXT("Child process exiting with code: %d\n"),err));
+
+		ACE_OS::exit(err);
 	}
 	else
 	{
@@ -354,7 +358,12 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	ACE_OS::setpwent();
 	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
 	if (!pw)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwnam() failed!")),false);
+	{
+	    if (errno)
+            ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwnam() failed!")),false);
+        else
+            ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("You must add a user account for 'omega_sandbox' or supply a valid user name on the command line\n")),false);
+	}
 	ACE_OS::endpwent();
 
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();

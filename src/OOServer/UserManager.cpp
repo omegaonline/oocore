@@ -35,9 +35,11 @@ END_PROCESS_OBJECT_MAP()
 
 int UserMain(const ACE_CString& strPipe)
 {
+
+#if defined(OMEGA_WIN32)
 	u_long options = ACE_Log_Msg::SYSLOG;
 
-#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
+#if defined(OMEGA_DEBUG)
 	// If this event exists, then we are being debugged
 	HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 	if (hDebugEvent)
@@ -51,7 +53,14 @@ int UserMain(const ACE_CString& strPipe)
 #endif
 
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),options,ACE_TEXT("OOServer")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
+        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
+
+#else // OMEGA_WIN32
+
+    if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG) != 0)
+        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
+
+#endif
 
 	return User::Manager::run(strPipe);
 }

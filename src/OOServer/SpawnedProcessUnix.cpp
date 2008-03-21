@@ -209,6 +209,54 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 {
     m_bSandbox = bSandbox;
 
+    // Check our uid
+    bool bUnsafeStart = false;
+    uid_t our_uid = ACE_OS::getuid();
+	if (our_uid != 0)
+	{
+	    if (!unsafe_sandbox())
+            ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a root.\n")),false);
+        else
+        {
+            Root::pw_info pw(our_uid);
+            if (!pw)
+                ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
+
+            const char msg[] =
+                "OOServer is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
+                "Because the 'Unsafe' value is set in the registry, the new user process will be started under the user account '%s'\n\n"
+                "This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+
+            char szBuf[1024];
+            ACE_OS::sprintf(szBuf,msg,pw->pw_name);
+
+            // Prompt for continue...
+            ACE_ERROR((LM_WARNING,L"%s",szBuf));
+#if defined(OMEGA_DEBUG)
+            ACE_OS::printf("\n\nDo you want to allow this? [Y/N/D(ebug)]: ");
+#else
+            ACE_OS::printf("\n\nDo you want to allow this? [Y/N]: ");
+#endif
+            ACE_OS::fflush(stdout);
+
+            char szIn[2];
+            ACE_OS::fgets(szIn,2,stdin);
+
+#if defined(OMEGA_DEBUG)
+            if (szIn[0] == 'D' || szIn[0] == 'd')
+                raise(SIGTRAP);
+            else
+#endif
+            if (szIn[0] != 'Y' && szIn[0] != 'y')
+                return false;
+
+            ACE_OS::printf("\nYou chose to continue... on your head be it!\n\n");
+            ACE_OS::fflush(stdout);
+
+            bUnsafeStart = true;
+        }
+	}
+
 	pid_t child_id = ACE_OS::fork();
 	if (child_id == -1)
 	{
@@ -227,26 +275,29 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 			ACE_OS::exit(errno);
 		}
 
-		// Set our gid...
-		if (ACE_OS::setgid(pw->pw_gid) != 0)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setgid() failed!")));
-			ACE_OS::exit(errno);
-		}
+        if (!bUnsafeStart)
+        {
+            // Set our gid...
+            if (ACE_OS::setgid(pw->pw_gid) != 0)
+            {
+                ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setgid() failed!")));
+                ACE_OS::exit(errno);
+            }
 
-		// Init our groups...
-		if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
-			ACE_OS::exit(errno);
-		}
+            // Init our groups...
+            if (initgroups(pw->pw_name,pw->pw_gid) != 0)
+            {
+                ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
+                ACE_OS::exit(errno);
+            }
 
-		// Stop being priviledged!
-		if (ACE_OS::setuid(uid) != 0)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
-			ACE_OS::exit(errno);
-		}
+            // Stop being priviledged!
+            if (ACE_OS::setuid(uid) != 0)
+            {
+                ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
+                ACE_OS::exit(errno);
+            }
+        }
 
 		// Clean up environment...
 		if (!CleanEnvironment())
@@ -434,6 +485,24 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 	}
 
 	return strDir + "/user.regdb";
+}
+
+bool Root::SpawnedProcess::unsafe_sandbox()
+{
+	// Get the user name and pwd...
+	ACE_INT64 key = 0;
+	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+		return false;
+
+	ACE_CDR::LongLong v = 0;
+	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
+#if defined(OMEGA_DEBUG)
+		return true;
+#else
+        return false;
+#endif
+
+	return (v == 1);
 }
 
 #endif // !ACE_WIN32

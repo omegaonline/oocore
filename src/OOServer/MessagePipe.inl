@@ -38,31 +38,39 @@ template <class T>
 int Root::MessagePipeAsyncAcceptor<T>::start(T* pHandler, const ACE_CString& strAddr)
 {
 	m_pHandler = pHandler;
-	
+
 	if (m_acceptor.open(strAddr,0) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")),-1);
 
-	// This will probably have to change under UNIX
-
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
+#else
+    if (ACE_Reactor::instance()->register_handler(m_acceptor.get_handle(),this,ACE_Event_Handler::ACCEPT_MASK) != 0)
+#endif
+    {
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("register_handler() failed")),-1);
+    }
 
 	return 0;
 }
 
 template <class T>
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 int Root::MessagePipeAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucontext_t*)
+#else
+int Root::MessagePipeAsyncAcceptor<T>::handle_input(ACE_HANDLE)
+#endif
 {
 	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> pipe;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (m_acceptor.accept(pipe) != 0 && GetLastError() != ERROR_MORE_DATA)
 #else
-	if (m_acceptor.accept(pipe) != 0)
+    if (m_acceptor.accept(pipe) != 0)
 #endif
-	{
+    {
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.accept() failed")),-1);
-	}
+    }
 
 	return m_pHandler->on_accept(pipe);
 }
@@ -86,7 +94,7 @@ Root::MessagePipeSingleAsyncAcceptor<T>::MessagePipeSingleAsyncAcceptor() : ACE_
 }
 
 template <class T>
-Root::MessagePipeSingleAsyncAcceptor<T>::~MessagePipeSingleAsyncAcceptor()	
+Root::MessagePipeSingleAsyncAcceptor<T>::~MessagePipeSingleAsyncAcceptor()
 {
 	LocalFree(m_pACL);
 	LocalFree(m_sa.lpSecurityDescriptor);
@@ -96,7 +104,7 @@ template <class T>
 int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_CString& strAddr)
 {
 	m_pHandler = pHandler;
-	
+
 	if (m_sa.nLength == 0)
 	{
 		m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -110,7 +118,7 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::start(T* pHandler, const ACE_CStrin
 	addr.string_to_addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
 	if (m_acceptor.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open failed")),-1);
-	
+
 	if (ACE_Reactor::instance()->register_handler(this,m_acceptor.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("register_handler failed")),-1);
 

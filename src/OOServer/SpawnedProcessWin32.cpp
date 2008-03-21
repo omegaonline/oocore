@@ -35,27 +35,6 @@
 
 #include "./SpawnedProcess.h"
 
-#ifdef OMEGA_DEBUG
-#define WIN32_DEBUGGING() (IsDebuggerPresent() ? true : false)
-void AttachDebugger(pid_t pid);
-#else
-#define WIN32_DEBUGGING() false
-#endif
-
-bool Root::SpawnedProcess::unsafe_sandbox()
-{
-	// Get the user name and pwd...
-	ACE_INT64 key = 0;
-	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
-		return false;
-
-	ACE_CDR::LongLong v = 0;
-	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
-		return WIN32_DEBUGGING();
-
-	return (v == 1);
-}
-
 #if defined(ACE_WIN32)
 
 #include <userenv.h>
@@ -91,6 +70,13 @@ typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
 
 #ifndef PROTECTED_DACL_SECURITY_INFORMATION
 #define PROTECTED_DACL_SECURITY_INFORMATION	 (0x80000000L)
+#endif
+
+#ifdef OMEGA_DEBUG
+#define WIN32_DEBUGGING() (IsDebuggerPresent() ? true : false)
+void AttachDebugger(pid_t pid);
+#else
+#define WIN32_DEBUGGING() false
 #endif
 
 Root::SpawnedProcess::SpawnedProcess() :
@@ -1432,6 +1418,20 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 	}
 
 	return strRegistry;
+}
+
+bool Root::SpawnedProcess::unsafe_sandbox()
+{
+	// Get the user name and pwd...
+	ACE_INT64 key = 0;
+	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+		return false;
+
+	ACE_CDR::LongLong v = 0;
+	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
+		return WIN32_DEBUGGING();
+
+	return (v == 1);
 }
 
 #endif // ACE_WIN32

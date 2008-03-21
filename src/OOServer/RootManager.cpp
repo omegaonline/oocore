@@ -281,9 +281,9 @@ void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 int Root::Manager::process_client_connects()
 {
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	const char* pipe_name = "ooserver";
+	const char* pipe_name = "OOServer";
 #else
-	const char* pipe_name = "/var/ooserver";
+	const char* pipe_name = "/tmp/omegaonline/ooserverd";
 #endif
 
 	if (m_client_acceptor.start(this,pipe_name) != 0)

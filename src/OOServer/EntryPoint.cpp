@@ -140,7 +140,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (!Root::NTService::open())
 		return -1;
 
-#else
+#else // ACE_WIN32
 
 #if !defined(OMEGA_DEBUG)
     // Daemonize ourselves
@@ -149,16 +149,13 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 	if (ACE::daemonize(szCwd,1,ACE_TEXT("ooserverd")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),-1);
-
-    if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::SYSLOG) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
-#else
-	if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
 #endif
+
+	if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
 
 	// TODO - Install signal handlers...
-#endif
+#endif // ACE_WIN32
 
 	int ret = Root::Manager::run(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
 

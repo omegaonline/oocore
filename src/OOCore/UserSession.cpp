@@ -265,11 +265,11 @@ bool OOCore::UserSession::discover_server_port(ACE_CString& strPipe)
 	ACE_SPIPE_Connector connector;
 	ACE_SPIPE_Stream peer;
 	ACE_SPIPE_Addr addr;
-	addr.string_to_addr(ACE_TEXT("ooserver"));
+	addr.string_to_addr(ACE_TEXT("OOServer"));
 #else
 	ACE_SOCK_Connector connector;
 	ACE_SOCK_Stream peer;
-	ACE_UNIX_Addr addr(L"/var/ooserver");
+	ACE_UNIX_Addr addr(L"/tmp/ooserverd");
 #endif
 
 	ACE_Time_Value wait(10);
@@ -802,7 +802,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 				delete msg;
 				break;
 			}
-			
+
 			delete msg;
 		}
 	}

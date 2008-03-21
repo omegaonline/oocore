@@ -41,7 +41,20 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 	char szBuf[32];
 	ACE_OS::snprintf(szBuf,32,"%lu%lx",ACE_OS::getpid(),t.usec());
 
+#if defined(ACE_WIN32)
+    // ACE Adds the "\\.\"...
 	return strPrefix + szBuf;
+#else
+
+    if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+	{
+		int err = ACE_OS::last_error();
+		if (err != EEXIST)
+			return "";
+	}
+
+    return "/tmp/omegaonline/" + strPrefix + szBuf;
+#endif
 }
 
 Root::MessageConnection::MessageConnection(MessageHandler* pHandler)  :
@@ -1120,7 +1133,7 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 
 	if (!header.good_bit())
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
-	
+
 	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 

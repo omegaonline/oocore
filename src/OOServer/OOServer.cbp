@@ -151,6 +151,7 @@
 		<Unit filename="MessageConnection.cpp" />
 		<Unit filename="MessageConnection.h" />
 		<Unit filename="MessagePipe.h" />
+		<Unit filename="MessagePipe.inl" />
 		<Unit filename="MessagePipeUnix.cpp">
 			<Option target="Debug_Unix" />
 			<Option target="Release_Unix" />

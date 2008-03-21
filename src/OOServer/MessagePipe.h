@@ -42,13 +42,13 @@ namespace Root
 
 	public:
 		MessagePipe();
-		
+
 		static ACE_CString unique_name(const ACE_CString& strPrefix);
 		static int connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
 		void close();
 
 		ACE_HANDLE get_read_handle() const;
-		
+
 		ssize_t send(const void* buf, size_t len, size_t* sent = 0);
 		ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
 		ssize_t recv(void* buf, size_t len);
@@ -77,7 +77,7 @@ namespace Root
 		int accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout = 0);
 		ACE_HANDLE get_handle();
 		void close();
-	
+
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		static bool CreateSA(HANDLE hToken, void*& pSD, PACL& pACL);
 
@@ -110,7 +110,11 @@ namespace Root
 		T*                  m_pHandler;
 		MessagePipeAcceptor m_acceptor;
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		int handle_signal(int, siginfo_t*, ucontext_t*);
+#else
+        int handle_input(ACE_HANDLE);
+#endif
 
 		MessagePipeAsyncAcceptor(const MessagePipeAsyncAcceptor&) : ACE_Event_Handler() {};
 		MessagePipeAsyncAcceptor& operator = (const MessagePipeAsyncAcceptor&) { return *this; };

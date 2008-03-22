@@ -33,7 +33,7 @@ static bool string_tests_wchar()
 
 	s3.Clear();
 	TEST(s3.IsEmpty())
-	
+
 	s3 = sz1_2;
 	TEST(s1.CompareNoCase(s3) == 0);
 	TEST(s1 == s3.ToLower());
@@ -83,7 +83,7 @@ static bool string_tests_char()
 
 	Omega::string_t s3(s1);
 	TEST(s3 == sz1);
-	
+
 	s3 = sz1_2;
 	TEST(s1.CompareNoCase(s3) == 0);
 	TEST(s1 == s3.ToLower());
@@ -152,7 +152,7 @@ static bool string_tests_utf8()
 
 	fwrite(L"\xFEFF",sizeof(wchar_t),1,pOut);
 	fwrite(str.c_str(),sizeof(wchar_t),str.Length(),pOut);
-	
+
 	fclose(pOut);
 
 	pOut = fopen("UTF-8-results2.txt","w+b");
@@ -173,10 +173,6 @@ bool string_tests()
 	TEST(string_tests_char());
 	TEST(string_tests_format());
 	TEST(string_tests_utf8());
-
-#ifdef __STDC_ISO_10646__
-#error Yes!
-#endif
 
 	return true;
 }

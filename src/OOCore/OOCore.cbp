@@ -98,6 +98,7 @@
 					<Add option="-fPIC" />
 					<Add option="-pthread" />
 					<Add option="-O0" />
+					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="../../include" />
 				</Compiler>
@@ -124,6 +125,7 @@
 					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-fPIC" />
 					<Add option="-pthread" />
+					<Add option="-fvisibility=hidden" />
 					<Add option="-DNDEBUG" />
 					<Add directory="../../include" />
 				</Compiler>

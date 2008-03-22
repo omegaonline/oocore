@@ -4,8 +4,8 @@
 #pragma warning(disable : 4267)
 #endif
 
-#include <ace/OS_NS_stdio.h>
-#include <ace/OS_NS_stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -31,9 +31,10 @@ bool registry_tests();
 bool registry_tests_2();
 bool interface_tests();
 
-int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
+int main(int /*argc*/, char* /*argv*/[])
 {
-	ACE_OS::fprintf(stdout,L"OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
+	printf("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
+	fflush(stdout);
 
 	if (RUN_TEST(init_tests))
 	{
@@ -48,18 +49,6 @@ int ACE_TMAIN(int /*argc*/, ACE_TCHAR* /*argv*/[])
 
 	return test_summary();
 }
-
-#if defined(ACE_WIN32) && defined(ACE_USES_WCHAR) && defined(__MINGW32__)
-#include <shellapi.h>
-int main(int argc, char* /*argv*/[])
-{
-	// MinGW doesn't understand wmain, so...
-	wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(),&argc);
-
-	ACE_Main m;
-	return ace_os_wmain_i (m, argc, wargv);   /* what the user calls "main" */
-}
-#endif
 
 /////////////////////////////////////////////////////////////
 // The following are the functions that actually do the tests
@@ -81,7 +70,8 @@ void add_success()
 
 void add_failure(const wchar_t* pszText)
 {
-	ACE_OS::fprintf(stdout,L"[Failed]\n\n%ls",pszText);
+	printf("[Failed]\n\n%ls",pszText);
+	fflush(stdout);
 	++fail_count;
 }
 
@@ -89,12 +79,12 @@ int test_summary()
 {
 	if (fail_count || exception_count)
 	{
-		ACE_OS::fprintf(stdout,"\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
+		printf("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
 		return -1;
 	}
 	else
 	{
-		ACE_OS::fprintf(stdout,"\nAll (%lu) tests passed.\n",pass_count);
+		printf("\nAll (%lu) tests passed.\n",pass_count);
 		return 0;
 	}
 }
@@ -104,7 +94,7 @@ static void recurse_printf_exception(Omega::IException* pE)
 	Omega::IException* pCause = pE->Cause();
 	if (pCause)
 	{
-		ACE_OS::fprintf(stdout,L"Cause:\t%ls\n\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
+		printf("Cause:\t%ls\n\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
 		recurse_printf_exception(pCause);
 		pCause->Release();
 	}
@@ -112,39 +102,48 @@ static void recurse_printf_exception(Omega::IException* pE)
 
 bool run_test(pfnTest t, const char* pszName)
 {
-	ACE_OS::fprintf(stdout,"Running %-40s",pszName);
+	printf("Running %-40s",pszName);
 
 	try
 	{
 		if ((*t)())
 		{
-			ACE_OS::fprintf(stdout,"[Ok]\n");
+			printf("[Ok]\n");
+			fflush(stdout);
 			return true;
 		}
 	}
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		ACE_OS::fprintf(stdout,L"[Unhandled Omega::IException]\n\t%ls\n\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
+		printf("[Unhandled Omega::IException]\n\t%ls\n\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
 		recurse_printf_exception(pE);
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		ACE_OS::fprintf(stdout,"[Unhandled std::exception]\n\t%s\n",e.what());
+		printf("[Unhandled std::exception]\n\t%s\n",e.what());
 	}
 	catch (...)
 	{
 		++exception_count;
-		ACE_OS::fprintf(stdout,"[Unhandled C++ exception!]\n");
+		printf("[Unhandled C++ exception!]\n");
 	}
 
+    fflush(stdout);
 	return false;
 }
 
 // This is here so I don't have to include ACE everywhere...
-int test_system(const wchar_t* pszCommand)
+int test_system(const char* pszCommand)
 {
-	return ACE_OS::system(ACE_TEXT_WCHAR_TO_TCHAR(pszCommand));
+	return system(pszCommand);
 }
+
+#if !defined(WIN32)
+pid_t GetCurrentProcessId()
+{
+    return getpid();
+}
+#endif

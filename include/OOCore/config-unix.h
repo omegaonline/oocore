@@ -32,9 +32,6 @@
 
 #define OMEGA_PLATFORM_STRING "Unix"
 
-#define OMEGA_EXPORT
-#define OMEGA_IMPORT
-
 #include <errno.h>
 
 #endif // OOCORE_CONFIG_UNIX_H_INCLUDED_

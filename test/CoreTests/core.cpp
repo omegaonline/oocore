@@ -1,5 +1,4 @@
 #include <OOCore/OOCore.h>
-#include <ace/OS.h>
 #include "Test.h"
 
 bool init_tests()

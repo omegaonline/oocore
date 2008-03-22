@@ -26,7 +26,8 @@
 
 #define ACE_LACKS_SYSTEM
 
-#define OMEGA_IMPORT __declspec(dllimport)
-#define OMEGA_EXPORT __declspec(dllexport)
+#define OMEGA_IMPORT  __declspec(dllimport)
+#define OMEGA_EXPORT  __declspec(dllexport)
+#define OMEGA_PRIVATE
 
 #endif // OOCORE_CONFIG_WIN32_GCC_H_INCLUDED_

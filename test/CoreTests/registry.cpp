@@ -1,6 +1,10 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
+#if !defined(WIN32)
+pid_t GetCurrentProcessId();
+#endif
+
 static bool test_values(Omega::Registry::IRegistryKey* pKey)
 {
 	// Generate a unique value name

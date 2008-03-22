@@ -93,20 +93,20 @@
 	namespace { \
 	class LibraryModuleImpl : public LibraryModule \
 	{ \
-		ModuleBase::CreatorEntry* getCreatorEntries() { static CreatorEntry CreatorEntries[] = {
+		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj,name) \
-		{ obj::GetOid, obj::GetActivationFlags, obj::GetRegistrationFlags, name, Creator<obj::ObjectFactoryClass>::Create,0 },
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
 #define OBJECT_MAP_ENTRY_UNNAMED(obj) \
-		{ obj::GetOid, obj::GetActivationFlags, obj::GetRegistrationFlags, 0, Creator<obj::ObjectFactoryClass>::Create,0 },
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, 0, Creator<obj::ObjectFactoryClass>::Create, 0 },
 
 #define END_LIBRARY_OBJECT_MAP() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
-	LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
-	ModuleBase* GetModuleBase() { return GetModule(); } \
+	OMEGA_PRIVATE LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
+	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
 	} \
 	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() \
 	{ return (OTL::GetModuleBase()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
@@ -115,7 +115,6 @@
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,2,((in),Omega::bool_t,bInstall,(in),const Omega::string_t&,strSubsts)) \
 	{ OTL::GetModule()->RegisterLibrary(bInstall,strSubsts); }
 
-// THIS ALL NEEDS TO BE CHANGED TO USE THE SERVICE TABLE
 #define BEGIN_PROCESS_OBJECT_MAP(app_name) \
 	namespace OTL { \
 	namespace { \
@@ -131,8 +130,8 @@
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
-	ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
-	ModuleBase* GetModuleBase() { return GetModule(); } \
+	OMEGA_PRIVATE ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
+	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
 #include <OOCore/Remoting.h>

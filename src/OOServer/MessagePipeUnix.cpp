@@ -105,6 +105,9 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 	if (m_acceptor.open(addr) != 0)
 	    ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")),-1);
 
+    if (chmod(strAddr.c_str(),S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chmod failed")),false);
+
 	m_strAddr = strAddr;
 
 	return 0;

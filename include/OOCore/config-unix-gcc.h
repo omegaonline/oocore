@@ -27,7 +27,11 @@
 #undef interface
 #define interface struct
 
-#define OMEGA_CALL
+#define OMEGA_CALL   __attribute__((cdecl))
+
+#define OMEGA_EXPORT  __attribute__((visibility("default")))
+#define OMEGA_IMPORT  __attribute__((visibility("default")))
+#define OMEGA_PRIVATE __attribute__((visibility("hidden")))
 
 #include <stdarg.h>
 

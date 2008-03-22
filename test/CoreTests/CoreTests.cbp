@@ -7,7 +7,7 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug_Win32">
-				<Option output="../../bin/debug/CoreTests_mingw" prefix_auto="1" extension_auto="1" />
+				<Option output="../../bin/Debug/CoreTests_mingw" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -65,6 +65,27 @@
 					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+			<Target title="Debug_Unix">
+				<Option output="../../bin/Debug/coretests" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
+				<Option object_output="Debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-O0" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add library="OOCored" />
 				</Linker>
 			</Target>
 		</Build>

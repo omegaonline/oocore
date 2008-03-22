@@ -22,7 +22,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 	try
 	{
 		ptrTestLib->Abort();
-	} 
+	}
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
@@ -33,7 +33,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 
 static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 {
-	int err = test_system((Omega::string_t(L"OORegister -i -s ") + pszLibName).c_str());
+	int err = test_system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str());
 	if (err != 0)
 		return false;
 
@@ -69,15 +69,15 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 		do_interface_tests(iface);
 	}
 
-	TEST(test_system((Omega::string_t(L"OORegister -u -s ") + pszLibName).c_str()) == 0);
+	TEST(test_system((Omega::string_t(L"OORegister -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
 
 	return true;
 }
 
 static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObject)
 {
-	int can_write = test_system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).c_str());
-	
+	int can_write = test_system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
+
 	{
 		OTL::ObjectPtr<Test::Iface> iface(pszObject);
 		do_interface_tests(iface);
@@ -112,7 +112,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 			do_interface_tests(iface);
 		}
 
-		TEST(test_system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).c_str()) == 0);
+		TEST(test_system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
 	}
 
 	return true;

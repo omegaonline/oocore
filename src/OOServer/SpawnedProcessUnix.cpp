@@ -216,6 +216,8 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 	{
 	    if (!unsafe_sandbox())
             ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a root.\n")),false);
+        else if (our_uid == uid)
+            bUnsafeStart = true;
         else
         {
             Root::pw_info pw(our_uid);
@@ -448,12 +450,12 @@ ACE_CString Root::SpawnedProcess::get_home_dir()
 bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
 {
 	// Make sure the file is owned by root (0)
-	if (::chown(strFilename.c_str(),0,(gid_t)-1) != 0)
+	if (chown(strFilename.c_str(),0,(gid_t)-1) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chown failed")),false);
 
 	void* TODO; // Check the group permissions...
 
-	if (::chmod(strFilename.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (chmod(strFilename.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chmod failed")),false);
 
 	return true;

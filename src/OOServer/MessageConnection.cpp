@@ -46,7 +46,7 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 	return strPrefix + szBuf;
 #else
 
-    if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)

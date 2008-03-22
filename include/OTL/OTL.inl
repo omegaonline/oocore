@@ -85,10 +85,10 @@ Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, O
 	if (!(flags & Omega::Activation::InProcess))
 		return 0;
 
-	const CreatorEntry* g=getCreatorEntries();
+    const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
-		if (*(g[i].pfnOid)() == oid)
+	    if (*(g[i].pfnOid)() == oid)
 		{
 			return g[i].pfnCreate(iid,flags);
 		}
@@ -98,7 +98,7 @@ Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, O
 
 void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::string_t& strSubsts)
 {
-	Omega::string_t strXML;		
+	Omega::string_t strXML;
 
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
@@ -108,7 +108,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
-			strXML += 
+			strXML +=
 				L"<key name=\"\\Objects\">"
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
@@ -119,7 +119,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 						L"</key>"
 					L"</key>"
 				L"</key>";
-		}		
+		}
 	}
 
 	if (!strXML.IsEmpty())
@@ -150,7 +150,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega
 			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
-			strXML += 
+			strXML +=
 				L"<key name=\"\\Objects\">"
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
@@ -161,7 +161,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega
 						L"</key>"
 					L"</key>"
 				L"</key>";
-		}		
+		}
 	}
 
 	if (!strXML.IsEmpty())
@@ -200,7 +200,7 @@ void OTL::ProcessModule::UnregisterObjectFactories()
 void OTL::ProcessModule::Run()
 {
 	RegisterObjectFactories();
-	
+
 	try
 	{
 		do
@@ -213,7 +213,7 @@ void OTL::ProcessModule::Run()
 		UnregisterObjectFactories();
 		throw pE;
 	}
-	
+
 	UnregisterObjectFactories();
 }
 

@@ -269,7 +269,7 @@ bool OOCore::UserSession::discover_server_port(ACE_CString& strPipe)
 #else
 	ACE_SOCK_Connector connector;
 	ACE_SOCK_Stream peer;
-	ACE_UNIX_Addr addr(L"/tmp/ooserverd");
+	ACE_UNIX_Addr addr(ACE_TEXT("/tmp/omegaonline/ooserverd"));
 #endif
 
 	ACE_Time_Value wait(10);

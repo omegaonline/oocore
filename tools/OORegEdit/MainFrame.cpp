@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "./OORegEdit.h"
 #include "./MainFrame.h"
 #include "./TreeItemData.h"
@@ -21,7 +21,7 @@ MainFrame::MainFrame(void) : wxFrame(NULL, wxID_ANY, _("Omega Online Registry Ed
 		icon.CopyFromBitmap(wxBitmap(*pImage));
 		icon_bundle.AddIcon(icon);
 		delete pImage;
-		
+
 	}
 	pImage = wxGetApp().LoadImage(wxT("frame_icon_small.bmp"));
 	if (pImage)
@@ -40,7 +40,7 @@ MainFrame::MainFrame(void) : wxFrame(NULL, wxID_ANY, _("Omega Online Registry Ed
 	m_bData = false;
 	m_bMatchAll = false;
 	m_bIgnoreCase = false;
-	
+
 	CreateChildWindows();
 	CreateMenus();
 }
@@ -53,7 +53,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 	// Main events
 	EVT_CLOSE(MainFrame::OnClose)
 	EVT_CONTEXT_MENU(MainFrame::OnContextMenu)
-	
+
 	// Menu commands
 	EVT_MENU(wxID_EXIT, MainFrame::OnQuit)
 	EVT_MENU(wxID_DELETE, MainFrame::OnDelete)
@@ -103,17 +103,17 @@ void MainFrame::CreateChildWindows(void)
 	Omega::uint32_t split_width2 = 100;
 	Omega::uint32_t col_width[3] = { 100, 100, 100 };
 	Omega::string_t strSelection;
-		
+
 	try
 	{
 		// get some defaults...
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
-		
+
 		wxPoint ptPos;
 		ptPos.x = ptrKey->GetIntegerValue(L"Left");
 		ptPos.y = ptrKey->GetIntegerValue(L"Top");
 		SetPosition(ptPos);
-	
+
 		wxSize sz;
 		sz.x = ptrKey->GetIntegerValue(L"Width");
 		sz.y = ptrKey->GetIntegerValue(L"Height");
@@ -157,7 +157,7 @@ void MainFrame::CreateChildWindows(void)
 	m_pSplitter2 = new wxSplitterWindow(this,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxNO_BORDER | wxSP_LIVE_UPDATE);
 	m_pSplitter2->SetSashGravity(0.90);
 	m_pSplitter2->SetMinimumPaneSize(50);
-	
+
 	// Create the second splitter
 	m_pSplitter = new wxSplitterWindow(m_pSplitter2,wxID_ANY,wxDefaultPosition,wxDefaultSize,wxNO_BORDER | wxSP_LIVE_UPDATE);
 	m_pSplitter->SetSashGravity(0.25);
@@ -165,17 +165,19 @@ void MainFrame::CreateChildWindows(void)
 
 	// Create the list and tree
 	m_pList = new wxListCtrl(m_pSplitter,ID_LIST,wxPoint(0,0),wxSize(0,0),wxLC_SORT_ASCENDING | wxLC_REPORT | wxLC_NO_SORT_HEADER | wxLC_EDIT_LABELS);
-	m_pTree = new wxTreeCtrl(m_pSplitter,ID_TREE,wxPoint(0,0),wxSize(0,0),wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_EDIT_LABELS); 
+	m_pTree = new wxTreeCtrl(m_pSplitter,ID_TREE,wxPoint(0,0),wxSize(0,0),wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_EDIT_LABELS);
 
 	// Load the imagelist
 	wxImage* pImage = wxGetApp().LoadImage(wxT("imagelist.bmp"));
 	if (pImage)
 	{
+#if defined (OMEGA_WIN32)
 		wxImageList* pImagelist = new wxImageList(16,16);
 		pImagelist->Add(wxBitmap(*pImage),wxColor(255,0,255));
 
 		m_pList->SetImageList(pImagelist,wxIMAGE_LIST_SMALL);
 		m_pTree->AssignImageList(pImagelist);
+#endif
 
 		delete pImage;
 	}
@@ -185,22 +187,22 @@ void MainFrame::CreateChildWindows(void)
 	wxFont ft = m_pTree->GetFont();
 	m_pDescription->SetFonts(ft.GetFaceName(),wxT(""));
 	m_pDescription->SetBorders(1);
-		
+
 	m_pSplitter->SplitVertically(m_pTree, m_pList, split_width);
 	m_pSplitter2->SplitHorizontally(m_pSplitter, m_pDescription, split_width2);
 
 	// Init the list
-	wxListItem itemCol; 
-	itemCol.SetText(_("Name")); 
-	m_pList->InsertColumn(0,itemCol); 
-	m_pList->SetColumnWidth(0, col_width[0]); 
-	itemCol.SetText(_("Type")); 
-	m_pList->InsertColumn(1,itemCol); 
-	m_pList->SetColumnWidth(1, col_width[1]); 
-	itemCol.SetText(_("Data")); 
+	wxListItem itemCol;
+	itemCol.SetText(_("Name"));
+	m_pList->InsertColumn(0,itemCol);
+	m_pList->SetColumnWidth(0, col_width[0]);
+	itemCol.SetText(_("Type"));
+	m_pList->InsertColumn(1,itemCol);
+	m_pList->SetColumnWidth(1, col_width[1]);
+	itemCol.SetText(_("Data"));
 	m_pList->InsertColumn(2,itemCol);
-	m_pList->SetColumnWidth(2, col_width[2]); 
-		
+	m_pList->SetColumnWidth(2, col_width[2]);
+
 	try
 	{
 		// Open the registry root
@@ -234,7 +236,7 @@ void MainFrame::SelectItem(Omega::string_t strSelection)
 	{
 		size_t pos = strSelection.Find(L'\\');
 		wxString strSubKey;
-		if (pos != -1)
+		if (pos != Omega::string_t::npos)
 		{
 			strSubKey = strSelection.Left(pos).c_str();
 			strSelection = strSelection.Mid(pos+1);
@@ -315,7 +317,7 @@ void MainFrame::CreateMenus(void)
 	pEditMenu->AppendSeparator();
 	pEditMenu->Append(ID_FIND, _("&Find...\tCtrl+F"), _("Finds a text string in a key, value, or data."));
 	pEditMenu->Append(ID_FIND_NEXT, _("Find Ne&xt\tF3"), _("Finds the next occurrence of text specified in a previous search."));
-	
+
 	wxMenu* pViewMenu = new wxMenu;
 	pViewMenu->Append(ID_REFRESH, _("&Refresh\tF5"), _("Refreshes the window."));
 
@@ -375,10 +377,10 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 
 		ptrKey->SetStringValue(L"Selection",Omega::string_t(m_strSelection));
 
-		Omega::uint32_t nFiles = static_cast<Omega::uint32_t>(m_fileHistory.GetCount());
+		int nFiles = m_fileHistory.GetCount();
 		ptrKey->SetIntegerValue(L"Favourites",nFiles);
 
-		for (nFiles;nFiles>0;--nFiles)
+		for (;nFiles>0;--nFiles)
 		{
 			wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
 
@@ -535,7 +537,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 {
 	if (evt.IsEditCancelled())
 		return;
-	
+
 	wxTreeItemId tree_id = m_pTree->GetItemParent(evt.GetItem());
 	if (!tree_id)
 		return evt.Veto();
@@ -555,7 +557,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 		m_pTree->EditLabel(evt.GetItem());
 	}
@@ -563,7 +565,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name is invalid. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name is invalid. Type another name and try again."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 		m_pTree->EditLabel(evt.GetItem());
 	}
@@ -571,7 +573,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: You do not have permission to edit this part of the registry."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: You do not have permission to edit this part of the registry."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 		m_pTree->EditLabel(evt.GetItem());
 	}
@@ -599,7 +601,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 {
 	if (evt.IsEditCancelled())
 		return;
-	
+
 	wxTreeItemId tree_id = m_pTree->GetSelection();
 	if (!tree_id)
 		return evt.Veto();
@@ -614,7 +616,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 	{
 		if (!pItem->RenameValue(Omega::string_t(strOld),Omega::string_t(evt.GetLabel())))
 		{
-			wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+			wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 			evt.Veto();
 		}
 	}
@@ -622,21 +624,21 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name is invalid. Type another name and try again."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name is invalid. Type another name and try again."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
 		pE->Release();
 
-		wxMessageBox(wxString::Format(_("Cannot rename %s: You do not have permission to edit this part of the registry."),strOld),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(wxString::Format(_("Cannot rename %s: You do not have permission to edit this part of the registry."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 		evt.Veto();
 	}
 	catch (Omega::IException* pE)
@@ -670,7 +672,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 				return;
 
 			if (wxMessageBox(_("Are you sure you want to delete this key?"),_("Confirm Key Delete"),wxYES_DEFAULT|wxYES_NO|wxICON_WARNING,this) == wxYES)
-			{		
+			{
 				try
 				{
 					pItem->DeleteKey(Omega::string_t(m_pTree->GetItemText(sel_id)));
@@ -864,7 +866,7 @@ void MainFrame::OnRefresh(wxCommandEvent& WXUNUSED(evt))
 		TreeItemData* pItem = (TreeItemData*)m_pTree->GetItemData(tree_id);
 		if (pItem)
 			pItem->Refresh(m_pList,m_pTree,tree_id);
-	}	
+	}
 
 	SetCursor(*wxSTANDARD_CURSOR);
 }
@@ -909,7 +911,7 @@ void MainFrame::OnModify(wxCommandEvent& WXUNUSED(evt))
 
 			try
 			{
-				pItem->Modify(m_pList,item);		
+				pItem->Modify(m_pList,item);
 			}
 			catch (Omega::Registry::IAccessDeniedException* pE)
 			{
@@ -1004,7 +1006,7 @@ void MainFrame::OnTreeSelChanged(wxTreeEvent& evt)
 	{
 		if (item_id != m_pTree->GetRootItem())
 			strText = wxT("\\") + m_pTree->GetItemText(item_id) + strText;
-	
+
 		item_id = m_pTree->GetItemParent(item_id);
 	}
 	if (strText.IsEmpty())
@@ -1022,7 +1024,7 @@ void MainFrame::SetKeyDescription(const wxTreeItemId& id)
 	wxString strHTML = wxT("<html><body><table><tr><td align=\"right\"><b>Key:</b></td><td>");
 	strHTML += m_strSelection;
 	strHTML += wxT("</td></tr><tr><td align=\"right\"><b>Description:</b></td><td>");
-		
+
 	if (id.IsOk())
 	{
 		TreeItemData* pItem = static_cast<TreeItemData*>(m_pTree->GetItemData(id));
@@ -1059,7 +1061,7 @@ void MainFrame::SetValueDescription(const wxString& strSel, const wxString& strD
 	strHTML += wxT("</td><td align=\"right\"><b>Value:</b></td><td>");
 	strHTML += strSel;
 	strHTML += wxT("</td></tr><tr><td align=\"right\"><b>Description:</b></td><td colspan=\"3\">");
-	
+
 	if (!strDesc.IsEmpty())
 	{
 		strHTML += strDesc + wxT(" <i><a href=\"edit_value\" target=\"");
@@ -1072,7 +1074,7 @@ void MainFrame::SetValueDescription(const wxString& strSel, const wxString& strD
 		strHTML += strSel;
 		strHTML += wxT("\">Add...</a></i>");
 	}
-	
+
 	strHTML += wxT("</td></tr></table></body></html>");
 	m_pDescription->SetPage(strHTML);
 }
@@ -1181,7 +1183,7 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 		if (dialog.ShowModal() == wxID_OK)
 		{
 			ptrKey->SetDescription(dialog.m_strDesc.c_str());
-		
+
 			SetKeyDescription(m_pTree->GetSelection());
 		}
 	}
@@ -1197,7 +1199,7 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 		if (dialog.ShowModal() == wxID_OK)
 		{
 			ptrKey->SetValueDescription(dialog.m_strValue.c_str(),dialog.m_strDesc.c_str());
-		
+
 			SetValueDescription(dialog.m_strValue,dialog.m_strDesc);
 		}
 	}

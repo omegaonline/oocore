@@ -4,7 +4,7 @@
 class OORegEditApp : public wxApp
 {
 public:
-	OORegEditApp() 
+	OORegEditApp()
 	{
 	}
 
@@ -22,4 +22,3 @@ private:
 DECLARE_APP(OORegEditApp)
 
 #endif // OOREGEDIT_OOREGEDIT_H_INCLUDED_
-	

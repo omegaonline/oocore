@@ -233,26 +233,31 @@ bool OOCore::UserSession::launch_server()
 		return false;
 
 #else
-	// Find what the server is called
-	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
-	if (strExec.empty())
-		strExec = "ooserver";
 
-	// Set the process options
-	ACE_Process_Options options;
-	options.avoid_zombies(0);
-	options.handle_inheritence(0);
-	if (options.command_line(strExec.c_str()) == -1)
-		return false;
+    // No point trying to start ooserverd, because we don't want it setuid(0)
+    // and it can't run if its not!
+    return false;
 
-	// Set the creation flags
-	u_long flags = 0;
-	options.creation_flags(flags);
-
-	// Spawn the process
-	ACE_Process process;
-	if (process.spawn(options)==ACE_INVALID_PID)
-		return false;
+//	// Find what the server is called
+//	ACE_CString strExec = ACE_OS::getenv("OOSERVER");
+//	if (strExec.empty())
+//		strExec = "ooserver";
+//
+//	// Set the process options
+//	ACE_Process_Options options;
+//	options.avoid_zombies(0);
+//	options.handle_inheritence(0);
+//	if (options.command_line(strExec.c_str()) == -1)
+//		return false;
+//
+//	// Set the creation flags
+//	u_long flags = 0;
+//	options.creation_flags(flags);
+//
+//	// Spawn the process
+//	ACE_Process process;
+//	if (process.spawn(options)==ACE_INVALID_PID)
+//		return false;
 
 #endif
 

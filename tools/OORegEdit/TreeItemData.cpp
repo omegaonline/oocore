@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "./TreeItemData.h"
 #include "./EditUIntDlg.h"
 #include "./EditStringDlg.h"
@@ -26,14 +26,14 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey = m_ptrKey.OpenSubKey(strName);
 
 		TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-		wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem); 
+		wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem);
 
 		if (m_nDepth==0)
 		{
 			OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
 			ptrEnum2->Next(count,&strName);
 			if (count==1)
-				pTree->AppendItem(itemId,wxT("DUFF!")); 
+				pTree->AppendItem(itemId,wxT("DUFF!"));
 		}
 		else
 		{
@@ -61,7 +61,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
 
 		long item = pList->InsertItem(i,wxString(strName.c_str()),type==Omega::Registry::String ? 4 : 5);
-		
+
 		if (type==Omega::Registry::String)
 		{
 			pList->SetItem(item,1,_("String"));
@@ -252,7 +252,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	}
 
 	TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-	wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem); 
+	wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem);
 
 	if (m_nDepth==0)
 	{
@@ -260,7 +260,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
 		ptrEnum2->Next(count,&strName);
 		if (count==1)
-			pTree->AppendItem(itemId,wxT("DUFF!")); 
+			pTree->AppendItem(itemId,wxT("DUFF!"));
 	}
 	else
 	{
@@ -285,7 +285,7 @@ void TreeItemData::NewString(wxListCtrl* pList)
 	}
 
 	m_ptrKey->SetStringValue(strName,L"");
-	
+
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),4);
 	pList->SetItem(item,1,_("String"));
 
@@ -351,7 +351,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 
 		dialog.m_strName = wxString(strName.c_str());
 		dialog.m_strValue = wxString(m_ptrKey->GetStringValue(strName).c_str());
-	
+
 		if (dialog.ShowModal() == wxID_OK)
 		{
 			m_ptrKey->SetStringValue(strName,Omega::string_t(dialog.m_strValue));
@@ -366,7 +366,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 		dialog.m_nBase = 0;
 		dialog.m_strName = wxString(strName.c_str());
 		dialog.m_strValue = wxString::Format(wxT("%lld"),m_ptrKey->GetIntegerValue(strName));
-	
+
 		if (dialog.ShowModal() == wxID_OK)
 		{
 			wxLongLong_t lVal;
@@ -418,7 +418,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 		for (;;)
 		{
 			size_t pos = strFoundPos.Find('\\');
-			if (pos != -1)
+			if (pos != Omega::string_t::npos)
 			{
 				strSubKey = strFoundPos.Left(pos).c_str();
 				strFoundPos = strFoundPos.Mid(pos+1);
@@ -492,7 +492,7 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 			wxMessageBox(_("Reached the end of the registry."),_("Find"),wxOK|wxICON_INFORMATION,NULL);
 			return;
 		}
-		
+
 		tree_id = pTree->GetItemParent(tree_id);
 		next_id = pTree->GetNextSibling(tree_id);
 	}

@@ -198,8 +198,7 @@ bool User::Manager::init(const ACE_CString& strPipe)
 	// Open the root connection
 	if (pMC->open(pipe,m_root_channel) == 0)
 	{
-		delete pMC;
-		pipe->close();
+	    pipe->close();
 		return false;
 	}
 

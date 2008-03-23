@@ -377,7 +377,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 
 		ptrKey->SetStringValue(L"Selection",Omega::string_t(m_strSelection));
 
-		int nFiles = m_fileHistory.GetCount();
+		size_t nFiles = m_fileHistory.GetCount();
 		ptrKey->SetIntegerValue(L"Favourites",nFiles);
 
 		for (;nFiles>0;--nFiles)

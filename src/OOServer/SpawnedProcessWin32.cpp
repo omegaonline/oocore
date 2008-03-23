@@ -698,21 +698,14 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
 		dwRes = GetLastError();
-		goto CleanupProfile;
-	}
-
-	dwRes = OpenCorrectWindowStation(hToken,strWindowStation,hWinsta,hDesktop);
-	if (dwRes != ERROR_SUCCESS)
-	{
-		DestroyEnvironmentBlock(lpEnv);
-		goto CleanupProfile;
+		goto Cleanup;
 	}
 
 	// Get the primary token from the impersonation token
-	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT ,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
+	if (!DuplicateTokenEx(hToken,TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT,NULL,SecurityImpersonation,TokenPrimary,&hPriToken))
 	{
 		dwRes = GetLastError();
-		goto CleanupDesktop;
+		goto Cleanup;
 	}
 
 	// This might be needed for retricted tokens...
@@ -720,7 +713,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	if (dwRes != ERROR_SUCCESS)
 	{
 		CloseHandle(hPriToken);
-		goto CleanupDesktop;
+		goto Cleanup;
 	}*/
 
 	// Init our startup info
@@ -756,6 +749,10 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	}
 	else
 	{
+		dwRes = OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
+		if (dwRes != ERROR_SUCCESS)
+			goto Cleanup;
+		
 		dwFlags |= DETACHED_PROCESS;
 		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 	}
@@ -767,12 +764,11 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
-		CloseHandle(hPriToken);
-
+		
 		if (WIN32_DEBUGGING() && hDebugEvent)
 			CloseHandle(hDebugEvent);
 
-		goto CleanupDesktop;
+		goto Cleanup;
 	}
 
 	// Attach a debugger if we are debugging
@@ -797,9 +793,8 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 		CloseHandle(process_info.hProcess);
 		CloseHandle(process_info.hThread);
-		CloseHandle(hPriToken);
-
-		goto CleanupDesktop;
+		
+		goto Cleanup;
 	}
 
 	// Stash handles to close on end...
@@ -811,21 +806,27 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 	// And close any others
 	CloseHandle(process_info.hThread);
-
+	
 	// Don't want to close this one...
 	hProfile = NULL;
 
-CleanupDesktop:
+Cleanup:
+	// Done with hPriToken
+	if (hPriToken)
+		CloseHandle(hPriToken);
+			
 	// Done with Desktop
-	CloseDesktop(hDesktop);
+	if (hDesktop)
+		CloseDesktop(hDesktop);
 
 	// Done with Window Station
-	CloseWindowStation(hWinsta);
+	if (hWinsta)
+		CloseWindowStation(hWinsta);
 
 	// Done with environment block...
-	DestroyEnvironmentBlock(lpEnv);
+	if (lpEnv)
+		DestroyEnvironmentBlock(lpEnv);
 
-CleanupProfile:
 	if (hProfile)
 		UnloadUserProfile(hToken,hProfile);
 

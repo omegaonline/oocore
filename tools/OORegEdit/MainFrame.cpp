@@ -183,7 +183,7 @@ void MainFrame::CreateChildWindows(void)
 	}
 
 	// Create the description text field
-	m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_SUNKEN | wxHW_SCROLLBAR_NEVER);
+	m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_THEME | wxHW_SCROLLBAR_NEVER);
 	wxFont ft = m_pTree->GetFont();
 	m_pDescription->SetFonts(ft.GetFaceName(),wxT(""));
 	m_pDescription->SetBorders(1);

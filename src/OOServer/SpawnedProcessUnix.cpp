@@ -39,6 +39,19 @@
 
 #include <grp.h>
 
+bool IsDebuggerPresent()
+{
+	void* TODO;	// Do something clever here with ptrace()?
+	return false;
+}
+
+#ifdef OMEGA_DEBUG
+void AttachDebugger(pid_t pid)
+{
+	kill(pid,SIG_STOP);
+}
+#endif
+
 // Helper for the recusive getpwuid_r fns()
 namespace Root
 {
@@ -246,7 +259,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 
 #if defined(OMEGA_DEBUG)
             if (szIn[0] == 'D' || szIn[0] == 'd')
-                raise(SIGTRAP);
+				AttachDebugger(ACE_OS::getpid());
             else
 #endif
             if (szIn[0] != 'Y' && szIn[0] != 'y')
@@ -498,11 +511,13 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 
 	ACE_CDR::LongLong v = 0;
 	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
+	{
 #if defined(OMEGA_DEBUG)
 		return true;
 #else
         return false;
 #endif
+	}
 
 	return (v == 1);
 }

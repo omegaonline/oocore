@@ -35,30 +35,27 @@ namespace User
 		public Omega::Remoting::IInterProcessService
 	{
 	public:
-		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager)
-		{
-			m_ptrOMSB = ptrOMSB;
-			m_ptrOMUser = ptrOMUser;
-			m_pManager = pManager;
-		}
+		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager);
 
 		BEGIN_INTERFACE_MAP(InterProcessService)
 			INTERFACE_ENTRY(Omega::Remoting::IInterProcessService)
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex                                     m_lock;
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager>      m_ptrOMSB;
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager>      m_ptrOMUser;
-		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> > m_ptrROT;
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey>        m_ptrReg;
-		Manager*                                             m_pManager;
+		ACE_Thread_Mutex                                      m_lock;
+		OTL::ObjectPtr<Omega::Remoting::IInterProcessService> m_ptrSBIPS;
+		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
+		OTL::ObjectPtr<Omega::Registry::IRegistryKey>         m_ptrReg;
+		Manager*                                              m_pManager;
+
+		std::map<Omega::string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> > m_mapInProgress;
 
 	// Remoting::IInterProcessService members
 	public:
 		Omega::Registry::IRegistryKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
-		void GetRegisteredObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		Omega::bool_t ExecProcess(const Omega::string_t& strProcess, Omega::bool_t bPublic);
+		Omega::uint32_t OpenStream(const Omega::string_t& strEndPoint);
 	};
 }
 

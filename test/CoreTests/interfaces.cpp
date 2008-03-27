@@ -33,15 +33,13 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 
 static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 {
-	int err = test_system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str());
+	int err = system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str());
 	if (err != 0)
 		return false;
 
-	{
-		OTL::ObjectPtr<Test::Iface> iface(pszObject);
-		do_interface_tests(iface);
-	}
-
+	OTL::ObjectPtr<Test::Iface> iface(pszObject);
+	do_interface_tests(iface);
+	
 	Omega::string_t strXML =
 		L"<?xml version=\"1.0\" ?>"
 		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
@@ -57,63 +55,103 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	{
-		OTL::ObjectPtr<Test::Iface> iface(L"MyLittleTest");
-		do_interface_tests(iface);
-	}
+	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
+	do_interface_tests(iface);
+	
+	Omega::Registry::AddXML(strXML,false);
 
-	Omega::Registry::AddXML(strXML,false,L"");
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	do_interface_tests(iface);
 
-	{
-		OTL::ObjectPtr<Test::Iface> iface(pszObject);
-		do_interface_tests(iface);
-	}
+	strXML =
+		L"<?xml version=\"1.0\" ?>"
+		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+			L"<key name=\"\\Local User\\Objects\">"
+				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
+					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
+				L"</key>"
+			L"</key>"
+		L"</root>";
 
-	TEST(test_system((Omega::string_t(L"OORegister -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
+	Omega::Registry::AddXML(strXML,true,strSubsts);
+
+	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
+	do_interface_tests(iface);
+	
+	Omega::Registry::AddXML(strXML,false);
+
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	do_interface_tests(iface);
+	
+	TEST(system((Omega::string_t(L"OORegister -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
 
 	return true;
 }
 
 static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObject)
 {
-	int can_write = test_system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
+	int err = system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
+	if (err != 0)
+		return false;
 
-	{
-		OTL::ObjectPtr<Test::Iface> iface(pszObject);
-		do_interface_tests(iface);
-	}
-
-	if (can_write == 0)
-	{
-		Omega::string_t strXML =
-			L"<?xml version=\"1.0\" ?>"
-			L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-				L"<key name=\"\\Objects\">"
-					L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
-						L"<value name=\"CurrentVersion\">%OBJECT%</value>"
-					L"</key>"
+	OTL::ObjectPtr<Test::Iface> iface(pszObject);
+	do_interface_tests(iface);
+	
+	Omega::string_t strXML =
+		L"<?xml version=\"1.0\" ?>"
+		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+			L"<key name=\"\\Objects\">"
+				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
+					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
 				L"</key>"
-			L"</root>";
+			L"</key>"
+		L"</root>";
 
-		Omega::string_t strSubsts = L"OBJECT=";
-		strSubsts += pszObject;
+	Omega::string_t strSubsts = L"OBJECT=";
+	strSubsts += pszObject;
 
-		Omega::Registry::AddXML(strXML,true,strSubsts);
+	Omega::Registry::AddXML(strXML,true,strSubsts);
+	
+	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
+	do_interface_tests(iface);
+	
+	Omega::Registry::AddXML(strXML,false);
+	
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	do_interface_tests(iface);
 
-		{
-			OTL::ObjectPtr<Test::Iface> iface(L"MyLittleTest");
-			do_interface_tests(iface);
-		}
+	strXML =
+		L"<?xml version=\"1.0\" ?>"
+		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+			L"<key name=\"\\Local User\\Objects\">"
+				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
+					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
+				L"</key>"
+			L"</key>"
+		L"</root>";
 
-		Omega::Registry::AddXML(strXML,false,L"");
+	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-		{
-			OTL::ObjectPtr<Test::Iface> iface(pszObject);
-			do_interface_tests(iface);
-		}
+	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
+	do_interface_tests(iface);
+	
+	Omega::Registry::AddXML(strXML,false);
 
-		TEST(test_system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
-	}
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	do_interface_tests(iface);
+
+	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrReg(L"\\Applications\\TestProcess");
+	ptrReg->SetIntegerValue(L"Public",0);
+
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	do_interface_tests(iface);
+
+	ptrReg->SetIntegerValue(L"Public",1);
+
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	do_interface_tests(iface);
+
+	TEST(system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
 
 	return true;
 }

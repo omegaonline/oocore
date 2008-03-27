@@ -36,7 +36,7 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t)
 		{
 			this->m_strDesc = pStream->ReadString();
 			this->m_strSource = pStream->ReadString();
@@ -68,14 +68,14 @@ namespace OOCore
 				return Omega::guid_t::Null();
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			pStream->WriteString(this->m_strDesc);
 			pStream->WriteString(this->m_strSource);
 			pManager->MarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			pStream->ReadString();
 			pStream->ReadString();
@@ -95,7 +95,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 		{
 			OTL::ObjectPtr<OTL::ObjectImpl<E> > ptrE = OTL::ObjectImpl<E>::CreateInstancePtr();
 			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
@@ -120,19 +120,19 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t flags)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pObjectManager,pStream,flags);
 			m_errno = pStream->ReadInt32();
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pManager,pStream,iid,flags);
 			pStream->WriteUInt32(m_errno);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pManager,pStream,iid,flags);
 			pStream->ReadUInt32();
@@ -163,19 +163,19 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t flags)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pObjectManager,pStream,flags);
 			m_iid = pStream->ReadGuid();
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pManager,pStream,iid,flags);
 			pStream->WriteGuid(m_iid);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pManager,pStream,iid,flags);
 			pStream->ReadGuid();

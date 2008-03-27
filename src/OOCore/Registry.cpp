@@ -34,9 +34,6 @@ using namespace OTL;
 
 namespace OOCore
 {
-	ObjectPtr<Remoting::IInterProcessService> GetInterProcessService();
-	ObjectPtr<Registry::IRegistryKey> GetRootKey();
-
 	class BadNameException :
 		public ExceptionImpl<Registry::IBadNameException>
 	{
@@ -63,13 +60,14 @@ namespace OOCore
 		}
 	};
 
-	void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	ObjectPtr<Registry::IRegistryKey> ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	void ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	string_t SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts);
+	static ObjectPtr<Registry::IRegistryKey> GetRootKey();
+	static void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static ObjectPtr<Registry::IRegistryKey> ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static void ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static string_t SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts);
 
-	const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
+	static const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
 }
 
 ObjectPtr<Registry::IRegistryKey> OOCore::GetRootKey()

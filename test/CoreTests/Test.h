@@ -5,7 +5,6 @@ bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();
 void add_success();
 void add_failure(const wchar_t* pszText);
-int test_system(const char* pszCommand);
 
 typedef bool (*pfnTest)();
 bool run_test(pfnTest t, const char* pszName);

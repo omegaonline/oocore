@@ -70,6 +70,7 @@ namespace Root
 		           const ACE_TCHAR *password = 0);
 
 		int svc();
+		int fini();
 		void stop_requested(DWORD control_code);
 		void pause_requested(DWORD control_code);
 		void continue_requested(DWORD control_code);

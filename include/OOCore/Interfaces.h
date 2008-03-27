@@ -162,6 +162,30 @@ namespace Omega
 		inline void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = L"");
 	}
 
+	namespace IO
+	{
+		interface IAsyncStreamCallback : public IObject
+		{
+			enum SignalType
+			{
+				ReadPending = 0,
+				Written = 1,
+				Closed = 2
+			};
+			typedef byte_t SignalType_t;
+
+			virtual void OnSignal(SignalType_t type, uint32_t cbBytes) = 0;
+		};
+
+		// This may well change!!  You have been warned
+		interface IProtocolHandler : public IObject
+		{
+			virtual IStream* OpenStream(const string_t& strEndPoint, IAsyncStreamCallback* pCallback) = 0;
+		};
+
+		inline IStream* OpenStream(const string_t& strEndPoint, IAsyncStreamCallback* pCallback = 0);
+	}
+
 	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	inline void HandleRequests(uint32_t timeout = (uint32_t)-1);
 }
@@ -299,6 +323,22 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
 )
 
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::IO, IAsyncStreamCallback, "{1E587515-AE98-45ef-9E74-497784169F38}",
+	
+	// Methods
+	OMEGA_METHOD_VOID(OnSignal,2,((in),Omega::IO::IAsyncStreamCallback::SignalType_t,type,(in),Omega::uint32_t,cbBytes))
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::IO, IProtocolHandler, "{76416648-0AFE-4474-BD8F-FEB033F17EAF}",
+	
+	// Methods
+	OMEGA_METHOD(Omega::IO::IStream*,OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback))
+)
+
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,());
 Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
 {
@@ -361,6 +401,12 @@ OMEGA_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&
 void Omega::HandleRequests(uint32_t timeout)
 {
 	Omega_HandleRequests(timeout);
+}
+
+OMEGA_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback));
+Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback)
+{
+	return Omega_IO_OpenStream(strEndPoint,pCallback);
 }
 
 #endif // OOCORE_IFACES_H_INCLUDED_

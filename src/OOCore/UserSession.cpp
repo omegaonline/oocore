@@ -204,7 +204,7 @@ IException* OOCore::UserSession::bootstrap()
 	try
 	{
 		// Create a new object manager for the user channel
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(m_channel_id & 0xFF000000,Remoting::inter_process);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(m_channel_id & 0xFF000000);
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
@@ -536,10 +536,10 @@ int OOCore::UserSession::run_read_loop()
 					err = EACCES;
 				else
 				{
-					if (i->second->m_usage == 0 && msg->m_type == Message::Request)
+					if (i->second->m_usage == 0)
 					{
 						// This incoming request may not be processed for some time...
-						void* TODO;	// Alert!
+						void* RAISE_ALERT;	// Alert!
 					}
 
 					if (i->second->m_msg_queue->enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
@@ -616,7 +616,7 @@ int OOCore::UserSession::run_read_loop()
 			if (!bSent)
 			{
 				// This incoming request may not be processed for some time...
-				void* TODO;	// Alert!
+				void* RAISE_ALERT;	// Alert!
 			}
 		}
 
@@ -704,6 +704,7 @@ void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id
 
 			if (bErase)
 			{
+				i->second.m_ptrChannel->disconnect();
 				i->second.m_ptrOM->Disconnect();
 				m_mapOMs.erase(i++);
 			}
@@ -798,7 +799,7 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 				pContext->m_deadline = old_deadline;
 				i->second = old_thread_id;
 			}
-			else if (msg->m_seq_no == seq_no)
+			else if (msg->m_type == Message::Response && msg->m_seq_no == seq_no)
 			{
 				ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
 				if (response)
@@ -1001,7 +1002,7 @@ void OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong de
 
 namespace OOCore
 {
-	bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point);
+	static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point);
 }
 
 bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
@@ -1092,7 +1093,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id,classify_channel(pMsg->m_src_channel_id));
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(pMsg->m_src_channel_id);
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -1121,7 +1122,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs,pMsg->m_src_channel_id,classify_channel(pMsg->m_src_channel_id));
+			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs);
 		}
 		catch (IException* pInner)
 		{
@@ -1169,7 +1170,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(ACE_CDR::ULong src_channel_id, Remoting::MarshalFlags_t marshal_flags)
+ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(ACE_CDR::ULong src_channel_id)
 {
 	try
 	{
@@ -1179,25 +1180,20 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 
 			std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
-			{
-				if (i->second.m_marshal_flags == marshal_flags)
-					return i->second.m_ptrOM;
-
-				OMEGA_THROW(EINVAL);
-			}
+				return i->second.m_ptrOM;
 		}
 
 		// Create a new channel
-		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		ptrChannel->init(src_channel_id);
+		OMInfo info;
+		info.m_marshal_flags = classify_channel(src_channel_id);
+		info.m_ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+		info.m_ptrChannel->init(src_channel_id,info.m_marshal_flags);
 
 		// Create a new OM
-		OMInfo info;
-		info.m_marshal_flags = marshal_flags;
 		info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 		// Associate it with the channel
-		info.m_ptrOM->Connect(ptrChannel,marshal_flags);
+		info.m_ptrOM->Connect(info.m_ptrChannel);
 
 		// And add to the map
 		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -1208,6 +1204,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::create_object_manager(A
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
 				OMEGA_THROW(EINVAL);
 
+			info.m_ptrChannel = p.first->second.m_ptrChannel;
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}
 

@@ -122,3 +122,11 @@
 #define OOSERVER_WRITE_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
 	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();
+
+#ifdef OMEGA_DEBUG
+void AttachDebugger(pid_t pid);
+#endif
+
+#if !defined(ACE_WIN32)
+bool IsDebuggerPresent();
+#endif

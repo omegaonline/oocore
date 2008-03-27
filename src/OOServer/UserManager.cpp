@@ -24,6 +24,8 @@
 #include "./UserManager.h"
 #include "./InterProcessService.h"
 #include "./Channel.h"
+#include "./NetTcp.h"
+#include "./NetHttp.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -31,6 +33,8 @@
 
 BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
+	OBJECT_MAP_ENTRY_UNNAMED(User::TcpProtocolHandler)
+	OBJECT_MAP_ENTRY_UNNAMED(User::HttpProtocolHandler)	
 END_PROCESS_OBJECT_MAP()
 
 int UserMain(const ACE_CString& strPipe)
@@ -69,8 +73,10 @@ using namespace Omega;
 using namespace OTL;
 
 // UserManager
+const ACE_CDR::ULong User::Manager::m_root_channel = 0x80000000;
+
 User::Manager::Manager() :
-	m_root_channel(0x80000000),  m_nIPSCookie(0)
+	m_nIPSCookie(0), m_nNextStream(0)
 {
 }
 
@@ -146,7 +152,7 @@ bool User::Manager::channel_open(ACE_CDR::ULong channel)
 	{
 		try
 		{
-			create_object_manager(channel,Remoting::inter_process);
+			create_object_manager(channel);
 		}
 		catch (IException* pE)
 		{
@@ -229,7 +235,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	{
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
-			ptrOMSb = create_object_manager(sandbox_channel,Remoting::inter_user);
+			ptrOMSb = create_object_manager(sandbox_channel);
 
 		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
 
@@ -311,6 +317,7 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 
 				if (bErase)
 				{
+					i->second.m_ptrChannel->disconnect();
 					i->second.m_ptrOM->Disconnect();
 					m_mapOMs.erase(i++);
 				}
@@ -372,7 +379,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id,classify_channel(src_channel_id));
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
@@ -401,7 +408,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		try
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs,src_channel_id,classify_channel(src_channel_id));
+			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs);
 		}
 		catch (IException* pInner)
 		{
@@ -449,7 +456,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id, Remoting::MarshalFlags_t marshal_flags)
+ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id)
 {
 	try
 	{
@@ -459,25 +466,20 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 
 			std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
 			if (i != m_mapOMs.end())
-			{
-				if (i->second.m_marshal_flags == marshal_flags)
-					return i->second.m_ptrOM;
-
-				OMEGA_THROW(EINVAL);
-			}
+				return i->second.m_ptrOM;
 		}
 
 		// Create a new channel
-		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		ptrChannel->init(src_channel_id);
+		OMInfo info;
+		info.m_marshal_flags = classify_channel(src_channel_id);
+		info.m_ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+		info.m_ptrChannel->init(src_channel_id,info.m_marshal_flags);
 
 		// Create a new OM
-		OMInfo info;
-		info.m_marshal_flags = marshal_flags;
 		info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 		// Associate it with the channel
-		info.m_ptrOM->Connect(ptrChannel,marshal_flags);
+		info.m_ptrOM->Connect(info.m_ptrChannel);
 
 		// And add to the map
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -488,6 +490,7 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
 				OMEGA_THROW(EINVAL);
 
+			info.m_ptrChannel = p.first->second.m_ptrChannel;
 			info.m_ptrOM = p.first->second.m_ptrOM;
 		}
 
@@ -501,8 +504,20 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 
 ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 {
+	// The timeout needs to be related to the request timeout...
+	ACE_Time_Value deadline = ACE_Time_Value::max_time;
+	ObjectPtr<Remoting::ICallContext> ptrCC;
+	ptrCC.Attach(Remoting::GetCallContext());
+	if (ptrCC)
+	{
+		uint64_t secs = 0;
+		int32_t usecs = 0;
+		ptrCC->Deadline(secs,usecs);
+		deadline = ACE_Time_Value(secs,usecs);
+	}	
+
 	ACE_InputCDR* response = 0;
-	if (!send_request(m_root_channel,request.begin(),response,0,Remoting::synchronous))
+	if (!send_request(m_root_channel,request.begin(),response,deadline == ACE_Time_Value::max_time ? 0 : &deadline,Remoting::synchronous))
 		OOSERVER_THROW_LASTERROR();
 
 	return response;

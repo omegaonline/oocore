@@ -23,8 +23,8 @@
 
 namespace OOCore
 {
-	ACE_WString from_utf8(const char* sz);
-	ACE_CString to_utf8(const wchar_t* wsz);
+	static ACE_WString from_utf8(const char* sz);
+	static ACE_CString to_utf8(const wchar_t* wsz);
 
 	struct StringNode
 	{

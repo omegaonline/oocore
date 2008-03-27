@@ -27,24 +27,38 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::Channel::Channel()
+OOCore::Channel::Channel() :
+	m_channel_id(0),
+	m_marshal_flags(0)
 {
 }
 
-void OOCore::Channel::init(ACE_CDR::ULong channel_id)
+void OOCore::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags)
 {
 	m_channel_id = channel_id;
+	m_marshal_flags = marshal_flags;
 }
 
-Omega::Serialize::IFormattedStream* OOCore::Channel::CreateOutputStream()
+void OOCore::Channel::disconnect()
 {
+	m_channel_id = 0;
+}
+
+IO::IFormattedStream* OOCore::Channel::CreateOutputStream()
+{
+	if (!m_channel_id)
+		OMEGA_THROW(ECONNRESET);
+
 	// Create a fresh OutputCDR
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr();
-	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
+	return ptrOutput.QueryInterface<IO::IFormattedStream>();
 }
 
-IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv,  uint16_t timeout)
+IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, IO::IFormattedStream* pSend, IO::IFormattedStream*& pRecv,  uint16_t timeout)
 {
+	if (!m_channel_id)
+		OMEGA_THROW(ECONNRESET);
+
 	// QI pStream for our private interface
 	ObjectPtr<IOutputCDR> ptrOutput;
 	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
@@ -108,29 +122,43 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	return 0;
 }
 
-Omega::guid_t OOCore::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+Remoting::MarshalFlags_t OOCore::Channel::GetMarshalFlags()
 {
+	return m_marshal_flags;
+}
+
+uint32_t OOCore::Channel::GetSource()
+{
+	return m_channel_id;
+}
+
+guid_t OOCore::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t flags)
+{
+	// We cannot custom marshal to another machine
+	if (flags == Remoting::another_machine)
+		return guid_t::Null();
+
 	return OID_ChannelMarshalFactory;
 }
 
-void OOCore::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+void OOCore::Channel::MarshalInterface(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pStream->WriteUInt32(m_channel_id);
 }
 
-void OOCore::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pStream->ReadUInt32();
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
-void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, IO::IFormattedStream* pStream, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
 	try
 	{
 		// This must match OOServer::User::OID_ChannelMarshalFactory
-		static guid_t oid = guid_t::FromString(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+		static const guid_t oid = guid_t::FromString(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess | Activation::DontLaunch);
 
 		// If we have a pointer by now then we are actually running in the OOServer.exe, 
@@ -146,7 +174,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectM
 	// If we get here, then we are loaded into a different exe from OOServer,
 	// therefore we do simple unmarshalling
 	ACE_CDR::ULong channel_id = pStream->ReadUInt32();
-
+	
 	// Create a new object manager (and channel)
-	pObject = UserSession::USER_SESSION::instance()->create_object_manager(channel_id,flags)->QueryInterface(iid);
+	pObject = UserSession::USER_SESSION::instance()->create_object_manager(channel_id)->QueryInterface(iid);
 }

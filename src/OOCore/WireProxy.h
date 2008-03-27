@@ -41,7 +41,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class WireProxy :
@@ -73,12 +73,12 @@ namespace OOCore
 
 		void OMEGA_CALL Pin()
 		{
-			void* TODO;
+			void* IMPLEMENT_PIN;
 		}
 
 		void OMEGA_CALL Unpin()
 		{
-			void* TODO;
+			void* IMPLEMENT_UNPIN;
 		}
 
 	// IWireProxy_Safe members

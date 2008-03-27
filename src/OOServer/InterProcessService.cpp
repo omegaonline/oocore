@@ -22,10 +22,7 @@
 #include "OOServer.h"
 
 #include "./InterProcessService.h"
-
-#ifdef OMEGA_DEBUG
-void AttachDebugger(pid_t pid);
-#endif
+#include "./UserManager.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -101,12 +98,7 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	if (options.command_line(strActualName.c_str()) == -1)
 		OOSERVER_THROW_LASTERROR();
 
-	// Set the creation flags
-	u_long flags = 0;
-#if defined(OMEGA_WIN32)
-	flags |= CREATE_NEW_CONSOLE;
-
-#if defined(OMEGA_DEBUG)
+#if defined(OMEGA_WIN32) && defined(OMEGA_DEBUG)
 	HANDLE hDebugEvent = NULL;
 	if (IsDebuggerPresent())
 	{
@@ -114,10 +106,7 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
 			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 	}
-#endif // OMEGA_DEBUG
-#endif // OMEGA_WIN32
-
-	options.creation_flags(flags);
+#endif // OMEGA_DEBUG && OMEGA_WIN32
 
 	// Spawn the process
 	if (process.spawn(options)==ACE_INVALID_PID)
@@ -134,153 +123,103 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 #endif
 }
 
-Registry::IRegistryKey* User::InterProcessService::GetRegistry()
+void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager)
 {
-	if (!m_ptrReg)
+	m_pManager = pManager;
+
+	// Create a proxy to the server interface
+	if (ptrOMSB)
 	{
-		// Double lock for speed
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-		if (!m_ptrReg)
-		{
-			if (m_ptrOMUser)
-			{
-				// Create a proxy to the server interface
-				IObject* pIPS = 0;
-				m_ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
-				ObjectPtr<Remoting::IInterProcessService> ptrIPS;
-				ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
-
-				// Get the running object table
-				m_ptrReg.Attach(ptrIPS->GetRegistry());
-			}
-			else
-			{
-				ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
-				ptrKey->Init(m_pManager,L"",0);
-				
-				m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
-			}
-		}
+		IObject* pIPS = 0;
+		ptrOMSB->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		m_ptrSBIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 	}
 
+	if (ptrOMUser)
+	{
+		// Create a proxy to the server interface
+		IObject* pIPS = 0;
+		ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
+
+		// Get the running object table
+		m_ptrReg.Attach(ptrIPS->GetRegistry());
+	}
+	else
+	{
+		// Create a local registry impl
+		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
+		ptrKey->Init(m_pManager,L"",0);
+		
+		m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
+	}
+
+	// Create the ROT
+	m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
+	try
+	{
+		m_ptrROT->Init(ptrOMSB);
+	}
+	catch (...)
+	{
+		m_ptrROT.Release();
+		throw;
+	}
+}
+
+Registry::IRegistryKey* User::InterProcessService::GetRegistry()
+{
 	return m_ptrReg.AddRef();
 }
 
 Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTable()
 {
-	if (!m_ptrROT)
-	{
-		// Double lock for speed
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-		if (!m_ptrROT)
-		{
-			m_ptrROT = ObjectImpl<User::RunningObjectTable>::CreateInstancePtr();
-			try
-			{
-				m_ptrROT->Init(m_ptrOMSB);
-			}
-			catch (...)
-			{
-				m_ptrROT.Release();
-				throw;
-			}
-		}
-	}
-
 	return m_ptrROT.AddRef();
 }
 
-void User::InterProcessService::GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+bool_t User::InterProcessService::ExecProcess(const string_t& strProcess, bool_t bPublic)
 {
-	// Make sure we have a registry pointer...
-	if (!m_ptrReg)
-		GetRegistry()->Release();
-
-	// And a ROT
-	if (!m_ptrROT)
-		GetRunningObjectTable()->Release();
-
-	// Change this to use monikers
-	void* TODO;
-
-	// Try RunningObjectTable first
-	ObjectPtr<IObject> ptrObject;
-	ptrObject.Attach(m_ptrROT->GetObject(oid));
-	if (ptrObject)
-	{
-		pObject = ptrObject->QueryInterface(iid);
-		if (!pObject)
-			throw INoInterfaceException::Create(iid);
-		return;
-	}
+	if (bPublic && m_ptrSBIPS)
+		return m_ptrSBIPS->ExecProcess(strProcess,false);
 	
-	if (!(flags & Activation::DontLaunch))
+	ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> ptrProcess;
+
+	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+	std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> >::iterator i = m_mapInProgress.find(strProcess);
+	if (i != m_mapInProgress.end())
 	{
-		// Lookup OID
-		ObjectPtr<Omega::Registry::IRegistryKey> ptrOidsKey = m_ptrReg.OpenSubKey(L"Objects\\OIDs");
-		if (ptrOidsKey->IsSubKey(oid.ToString()))
+		ptrProcess = i->second;
+		if (!ptrProcess->running())
 		{
-			ObjectPtr<Omega::Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
-			
-			// Find the name of the executeable to run
-			ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = m_ptrReg.OpenSubKey(L"Applications\\" + ptrOidKey->GetStringValue(L"Application"));
-			string_t strProcess = ptrServer->GetStringValue(L"Activation");
-
-			// Check for 2 requests to activate the same process...
-			void* TODO;
-
-			// The timeout needs to be related to the request timeout...
-			ACE_Time_Value deadline = ACE_Time_Value::max_time;
-			ObjectPtr<Remoting::ICallContext> ptrCC;
-			ptrCC.Attach(Remoting::GetCallContext());
-			if (ptrCC)
-			{
-				uint64_t secs = 0;
-				int32_t usecs = 0;
-				ptrCC->Deadline(secs,usecs);
-				deadline = ACE_Time_Value(secs,usecs);
-			}			
-			
-			// Launch the executable
-			ACE_Process process;
-			ExecProcess(process,strProcess);
-
-			// Wait for the process to start and register its parts...
-			ACE_Time_Value wait;
-			ACE_Time_Value now = ACE_OS::gettimeofday();
-			if (deadline == ACE_Time_Value::max_time)
-				wait = ACE_Time_Value(15);
-			else if (deadline <= now)
-				wait = ACE_Time_Value::zero;
-			else
-				wait = deadline - now;
-
-			ACE_Countdown_Time timeout(&wait);
-			do
-			{
-				ObjectPtr<IObject> ptrObject;
-				ptrObject.Attach(m_ptrROT->GetObject(oid));
-				if (ptrObject)
-				{
-					pObject = ptrObject->QueryInterface(iid);
-					if (!pObject)
-						throw INoInterfaceException::Create(iid);
-					break;
-				}
-
-				// Check if the process is still running...
-				if (!process.running())
-					break;
-
-				// Sleep for a brief moment - it will take a moment for the process to start
-				ACE_OS::sleep(ACE_Time_Value(0,100));
-
-				// Update our countdown
-				timeout.update();
-
-			} while (wait != ACE_Time_Value::zero);
+			m_mapInProgress.erase(strProcess);
+			ptrProcess.release();
 		}
 	}
+
+	if (ptrProcess.null())
+	{
+		// Create a new process
+		OMEGA_NEW(ptrProcess,ACE_Process());
+		
+		// Start it
+		User::ExecProcess(*ptrProcess,strProcess);
+
+		m_mapInProgress.insert(std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> >::value_type(strProcess,ptrProcess));
+	}
+	
+	if (!ptrProcess->running())
+	{
+		m_mapInProgress.erase(strProcess);
+
+		return false;
+	}
+	
+	return true;
+}
+
+uint32_t User::InterProcessService::OpenStream(const string_t& strEndPoint)
+{
+	return User::Manager::open_stream(strEndPoint);
 }

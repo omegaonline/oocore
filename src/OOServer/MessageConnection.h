@@ -76,7 +76,7 @@ namespace Root
 		MessageHandler();
 		virtual ~MessageHandler() {}
 
-		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs);
+		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs);
 		void send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		void pump_requests(const ACE_Time_Value* deadline = 0);
 		
@@ -86,6 +86,7 @@ namespace Root
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual bool channel_open(ACE_CDR::ULong channel);
 		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
+		virtual bool route_off(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, const ACE_Message_Block* mb);
 		
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
@@ -128,7 +129,8 @@ namespace Root
 			enum Type
 			{
 				Response = 0,
-				Request = 1
+				Request = 1,
+				Stream = 2
 			};
 
 			enum Attributes
@@ -185,8 +187,9 @@ namespace Root
 		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id);
 		void pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
 		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
-
+		
 		bool parse_message(const ACE_Message_Block* mb);
+		bool send_off_i(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
 

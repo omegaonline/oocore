@@ -108,8 +108,13 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
+			void* TODO;
+			if (false)
+				strXML += L"<key name=\"\\Local User\\Objects\">";
+			else
+				strXML += L"<key name=\"\\Objects\">";
+
 			strXML +=
-				L"<key name=\"\\Objects\">"
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
 					L"</key>"
@@ -133,15 +138,22 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 	}
 }
 
-void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
+void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
 {
-	Omega::string_t strXML =
-		L"<key name=\"\\Applications\">"
-			L"<key name=\"" + strAppName + L"\" uninstall=\"Remove\">"
-				L"<value name=\"Activation\">%MODULE_PATH%</value>"
-			L"</key>"
-		L"</key>";
+	Omega::string_t strXML;
+	
+	if (bLocal)
+		strXML = L"<key name=\"\\Local User\\Applications\">";
+	else
+		strXML = L"<key name=\"\\Applications\">";
 
+	strXML += 	L"<key name=\"" + strAppName + L"\" uninstall=\"Remove\">"
+					L"<key name=\"Activation\">"
+						L"<value name=\"Path\">%MODULE_PATH%</value>"
+					L"</key>"
+				L"</key>"
+			L"</key>";
+	
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
@@ -150,15 +162,24 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, const Omega
 			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
+			void* TODO;
+			if (false)
+				strXML += L"<key name=\"\\Local User\\Objects\">";
+			else
+				strXML += L"<key name=\"\\Objects\">";
+
 			strXML +=
-				L"<key name=\"\\Objects\">"
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
 					L"</key>"
 					L"<key name=\"OIDs\">"
 						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
-							L"<value name=\"Application\">" + strAppName + L"</value>"
-						L"</key>"
+							L"<value name=\"Application\">" + strAppName + L"</value>";
+
+			if (false)
+				strXML +=	L"<value name=\"Public\" type=\"Integer\">1</value>";
+
+			strXML +=	L"</key>"
 					L"</key>"
 				L"</key>";
 		}

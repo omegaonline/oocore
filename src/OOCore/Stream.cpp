@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor
+// Copyright (C) 2008 Rick Taylor
 //
 // This file is part of OOCore, the OmegaOnline Core library.
 //
@@ -24,23 +24,9 @@
 using namespace Omega;
 using namespace OTL;
 
-ObjectPtr<Remoting::IInterProcessService> OOCore::GetInterProcessService()
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback))
 {
-	try
-	{
-		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(Activation::GetRegisteredObject(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService))));
-		return ptrIPS;
-	}
-	catch (IException* pE2)
-	{
-		IException* pE = ISystemException::Create(L"Omega::Initialize not called",L"");
-		pE2->Release();
-		throw pE;
-	}
-}
+	uint32_t nStreamId = OOCore::GetInterProcessService()->OpenStream(strEndPoint);
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())
-{
-	return OOCore::GetInterProcessService()->GetRunningObjectTable();
+	return 0;
 }

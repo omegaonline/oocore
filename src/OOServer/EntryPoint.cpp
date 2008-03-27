@@ -71,8 +71,8 @@ static int Version();
 
 static int Help()
 {
-	ACE_OS::fprintf(stdout,ACE_TEXT("OOServer - The OmegaOnline network deamon.\n\n"));
-	ACE_OS::fprintf(stdout,ACE_TEXT("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n"));
+	ACE_OS::printf("OOServer - The OmegaOnline network deamon.\n\n");
+	ACE_OS::printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
 	return 0;
 }
 
@@ -117,46 +117,58 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			return Help();
 
 		case ACE_TEXT(':'):
-			ACE_OS::printf("Missing argument for %s.\n\n",cmd_opts.last_option());
+			ACE_OS::fprintf(stdout,ACE_TEXT("Missing argument for %s.\n\n"),cmd_opts.last_option());
 			return Help();
 
 		default:
-			ACE_OS::printf("Invalid argument '%s'.\n\n",cmd_opts.last_option());
+			ACE_OS::fprintf(stdout,ACE_TEXT("Invalid argument '%s'.\n\n"),cmd_opts.last_option());
 			return Help();
 		}
 	}
 
 #if defined(ACE_WIN32)
+	const ACE_TCHAR* pszAppName = ACE_TEXT("OOServer");
 
-	if ((argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0) && !IsDebuggerPresent())
+	if (argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a Win32 service.\n")),-1);
 
-#if defined(OMEGA_DEBUG)
-	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::STDERR,ACE_TEXT("OOServer")) != 0)
+#else
+	const ACE_TCHAR* pszAppName = ACE_TEXT("ooserverd");
 #endif
-	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),ACE_Log_Msg::SYSLOG,ACE_TEXT("OOServer")) != 0)
+
+	// Start the logger
+#if defined(OMEGA_DEBUG)
+	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(pszAppName,ACE_Log_Msg::STDERR,pszAppName) != 0)
+#endif
+	if (ACE_LOG_MSG->open(pszAppName,ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG,pszAppName) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+
+	// Start any daemons or services
+#if defined(ACE_WIN32)
 
 	if (!Root::NTService::open())
 		return -1;
 
 #else // ACE_WIN32
-
 #if !defined(OMEGA_DEBUG)
     // Daemonize ourselves
 	ACE_TCHAR szCwd[PATH_MAX];
 	ACE_OS::getcwd(szCwd,PATH_MAX);
 
-	if (ACE::daemonize(szCwd,1,ACE_TEXT("ooserverd")) != 0)
+	if (ACE::daemonize(szCwd,1,pszAppName) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),-1);
-#endif
 
-	if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+#endif // OMEGA_DEBUG
 
 	// TODO - Install signal handlers...
+
 #endif // ACE_WIN32
 
+#if defined(OMEGA_DEBUG)
+	Version();
+#endif
+
+	// Run the RootManager
 	int ret = Root::Manager::run(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
 
 #if defined(ACE_WIN32)
@@ -179,11 +191,20 @@ int main(int argc, char* /*argv*/[])
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// Leave this function last, because we include <OOCore/config-guess.h> which might be dangerous!
+// Leave this function last because we includes a lot of headers, which might be dangerous!
 #include <OOCore/config-guess.h>
-#include <OOCore/Version.h>
+#include <OOCore/OOCore.h>
+#include <sqlite3.h>
 static int Version()
 {
-	ACE_OS::printf("Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE %hs\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	ACE_OS::printf("OOServer version information:\n");
+	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	
+	ACE_OS::printf("OOCore version information:\n");
+	ACE_OS::printf("%ls\n\n",Omega::System::GetVersion().c_str());
+	
+	ACE_OS::printf("SQLite version: %s\n",SQLITE_VERSION);
+
+	ACE_OS::printf("\n");
 	return 0;
 }

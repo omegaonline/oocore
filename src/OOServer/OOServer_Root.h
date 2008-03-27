@@ -152,4 +152,12 @@
 	typedef uid_t user_id_type;
 #endif
 
+#ifdef OMEGA_DEBUG
+void AttachDebugger(pid_t pid);
+#endif
+
+#if !defined(ACE_WIN32)
+bool IsDebuggerPresent();
+#endif
+
 #endif // OOSERVER_ROOT_H_INCLUDED_

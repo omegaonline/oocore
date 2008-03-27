@@ -310,6 +310,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\NetHttp.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NetTcp.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\NTService.cpp"
 				>
 				<FileConfiguration
@@ -355,6 +363,28 @@
 			</File>
 			<File
 				RelativePath=".\RootManager.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\RootRegistry.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -442,6 +472,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\UserNet.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UserRegistry.cpp"
 				>
 			</File>
@@ -477,6 +511,14 @@
 			</File>
 			<File
 				RelativePath=".\MessagePipe.inl"
+				>
+			</File>
+			<File
+				RelativePath=".\NetHttp.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NetTcp.h"
 				>
 			</File>
 			<File

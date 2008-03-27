@@ -45,19 +45,11 @@ void OOCore::Xml::XMLSplitAttr(const string_t& strAttr, std::map<string_t,string
 		OMEGA_THROW(string_t::Format(L"%ls is not an XML attribute",strAttr.c_str()));
 
 	string_t strVal;
-	if (strAttr[pos+1] == L'"')
+	if (strAttr[pos+1] == L'"' || strAttr[pos+1] == L'\'')
 	{
-		size_t pos2 = strAttr.Find(L'"',pos+2);
+		size_t pos2 = strAttr.Find(strAttr[pos+1],pos+2);
 		if (pos2 == string_t::npos)
-			OMEGA_THROW(string_t::Format(L"Unmatched \" in attribute %ls",strAttr.c_str()));
-
-		strVal = strAttr.Mid(pos+2,pos2-pos-2);
-	}
-	else if (strAttr[pos+1] == L'\'')
-	{
-		size_t pos2 = strAttr.Find(L'\'',pos+2);
-		if (pos2 == string_t::npos)
-			OMEGA_THROW(string_t::Format(L"Unmatched ' in attribute %ls",strAttr.c_str()));
+			OMEGA_THROW(string_t::Format(L"Unmatched quote in attribute %ls",strAttr.c_str()));
 
 		strVal = strAttr.Mid(pos+2,pos2-pos-2);
 	}
@@ -159,7 +151,7 @@ void OOCore::Xml::ParseXMLProlog(const wchar_t*& rd_ptr)
 void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, bool& bHasContents, std::map<string_t,string_t>& attribs)
 {
 	const wchar_t* p = rd_ptr;
-	if (*p != L'<')
+	if (p[0] != L'<')
 		OMEGA_THROW(L"ParseXMLElement called inappropriately");
 
 	++p;
@@ -180,11 +172,19 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		p = rd_ptr;
 		for (;;)
 		{
-			p = ACE_OS::strpbrk(p,L"/>" XML_WHITESPACE);
+			p = ACE_OS::strpbrk(p,L"'\"/>" XML_WHITESPACE);
 			if (!p)
 				OMEGA_THROW(string_t::Format(L"Unterminated XML element: %ls",string_t(rd_ptr,25).c_str()));
 
-			if (p[0]==L'/' && p[1]!=L'>')
+			if (p[0]==L'"' || p[0]==L'\'')
+			{
+				p = ACE_OS::strchr(p+1,p[0]);
+				if (!p)
+					OMEGA_THROW(string_t::Format(L"Mismatched quote: %ls",string_t(rd_ptr,25).c_str()));
+				++p;
+				continue;
+			}
+			else if (p[0]==L'/' && p[1]!=L'>')
 			{
 				++p;
 				continue;
@@ -199,13 +199,13 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		// Skip the rest of the whitespace
 		p += ACE_OS::strspn(p,XML_WHITESPACE);
 
-		if (*p == L'/' && *(p+1) == L'>')
+		if (p[0] == L'/' && p[1] == L'>')
 		{
 			rd_ptr = p + 2;
 			break;
 		}
 
-		if (*p == L'>')
+		if (p[0] == L'>')
 		{
 			rd_ptr = p + 1;
 			bHasContents = true;
@@ -227,7 +227,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			strData += rd_ptr;
 			break;
 		}
-		else if (*p == L'&')
+		else if (p[0] == L'&')
 		{
 			if (ACE_OS::strncmp(p,L"&amp;",5)==0)
 			{
@@ -321,7 +321,7 @@ void OOCore::Xml::ParseXMLEndElement(const wchar_t*& rd_ptr, const string_t& str
 	p += strName.Length()+2;
 	p += ACE_OS::strspn(p,XML_WHITESPACE);
 	
-	if (*p != L'>')
+	if (p[0] != L'>')
 		OMEGA_THROW(string_t::Format(L"Invalid element end tag: %ls",string_t(rd_ptr,25).c_str()));
 	
 	rd_ptr = p+1;

@@ -24,7 +24,7 @@
 
 namespace OOCore
 {
-	interface IOutputCDR : public Omega::Serialize::IFormattedStream
+	interface IOutputCDR : public Omega::IO::IFormattedStream
 	{
 		virtual void* GetMessageBlock() = 0;
 	};
@@ -32,7 +32,7 @@ namespace OOCore
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
-	OOCore, IOutputCDR, Omega::Serialize, IFormattedStream, "{5251283B-95C8-4e5b-9136-5DDCBE636A4E}",
+	OOCore, IOutputCDR, Omega::IO, IFormattedStream, "{5251283B-95C8-4e5b-9136-5DDCBE636A4E}",
 
 	// Methods
 	OMEGA_METHOD(void*,GetMessageBlock,0,())
@@ -61,8 +61,8 @@ namespace OOCore
 		}
 
 		BEGIN_INTERFACE_MAP(OutputCDR)
-			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
-			INTERFACE_ENTRY(Omega::Serialize::IStream)
+			INTERFACE_ENTRY(Omega::IO::IFormattedStream)
+			INTERFACE_ENTRY(Omega::IO::IStream)
 			INTERFACE_ENTRY(OOCore::IOutputCDR)
 		END_INTERFACE_MAP()
 
@@ -81,8 +81,8 @@ namespace OOCore
 	public:
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!get_input().read_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
-		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
-			{ if (!write_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
+		Omega::uint32_t WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
+			{ if (!write_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); return cbBytes; }
 
 	// IFormattedStream members
 	public:
@@ -140,14 +140,15 @@ namespace OOCore
 			WriteUInt32(val.Data1);
 			WriteUInt16(val.Data2);
 			WriteUInt16(val.Data3);
-			WriteBytes(8,val.Data4);
+			if (WriteBytes(8,val.Data4) != 8)
+				OOCORE_THROW_LASTERROR();
 		}
 	};
 
 	class InputCDR :
 		public OTL::ObjectBase,
 		public ACE_InputCDR,
-		public Omega::Serialize::IFormattedStream
+		public Omega::IO::IFormattedStream
 	{
 	public:
 		InputCDR() : ACE_InputCDR(size_t(0))
@@ -159,15 +160,15 @@ namespace OOCore
 		}
 
 		BEGIN_INTERFACE_MAP(InputCDR)
-			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
-			INTERFACE_ENTRY(Omega::Serialize::IStream)
+			INTERFACE_ENTRY(Omega::IO::IFormattedStream)
+			INTERFACE_ENTRY(Omega::IO::IStream)
 		END_INTERFACE_MAP()
 
 	// IStream members
 	public:
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) OOCORE_THROW_LASTERROR(); }
-		void WriteBytes(Omega::uint32_t, const Omega::byte_t*)
+		Omega::uint32_t WriteBytes(Omega::uint32_t, const Omega::byte_t*)
 			{ OMEGA_THROW(EACCES); }
 
 	// IFormattedStream members
@@ -232,7 +233,8 @@ namespace OOCore
 	public:
 		Channel();
 
-		void init(ACE_CDR::ULong channel_id);
+		void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags);
+		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -240,21 +242,24 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_CDR::ULong	m_channel_id;
+		ACE_CDR::ULong	                m_channel_id;
+		Omega::Remoting::MarshalFlags_t m_marshal_flags;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }
 
 	// IChannel members
 	public:
-		Omega::Serialize::IFormattedStream* CreateOutputStream();
-		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
+		Omega::IO::IFormattedStream* CreateOutputStream();
+		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::IO::IFormattedStream* pSend, Omega::IO::IFormattedStream*& pRecv, Omega::uint16_t timeout);
+		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
+		Omega::uint32_t GetSource();
 
 	// IMarshal members
 	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
 	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}
@@ -272,7 +277,7 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 }
 

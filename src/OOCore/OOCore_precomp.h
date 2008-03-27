@@ -132,4 +132,9 @@
 	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
 	if (OBJ.locked () == 0) OOCORE_THROW_LASTERROR();
 
+namespace OOCore
+{
+	OTL::ObjectPtr<Omega::Remoting::IInterProcessService> GetInterProcessService();
+}
+
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_

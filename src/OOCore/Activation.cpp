@@ -26,8 +26,6 @@ using namespace OTL;
 
 namespace OOCore
 {
-	ObjectPtr<Remoting::IInterProcessService> GetInterProcessService();
-
 	class OidNotFoundException :
 		public ExceptionImpl<Omega::Activation::IOidNotFoundException>
 	{
@@ -118,7 +116,10 @@ namespace OOCore
 	};
 	typedef ACE_Singleton<ServiceManager, ACE_Thread_Mutex> SERVICE_MANAGER;
 
-	IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	static IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	
+	static ObjectPtr<Omega::Registry::IRegistryKey> FindOIDKey(const guid_t& oid);
+	static ObjectPtr<Omega::Registry::IRegistryKey> FindAppKey(const guid_t& oid);
 }
 
 void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
@@ -339,7 +340,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"\\Objects\\" + strCurName);
+		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"\\Local User");
+		if (ptrOidKey->IsSubKey(L"Objects\\" + strCurName))
+			ptrOidKey = ptrOidKey.OpenSubKey(L"Objects\\" + strCurName);
+		else
+			ptrOidKey = ObjectPtr<Registry::IRegistryKey>(L"\\Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue(L"CurrentVersion"))
 		{
@@ -349,6 +354,46 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 
 		return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));
 	}
+}
+
+ObjectPtr<Omega::Registry::IRegistryKey> OOCore::FindOIDKey(const guid_t& oid)
+{
+	// Lookup OID
+	string_t strOid = oid.ToString();
+
+	// Check Local User first
+	ObjectPtr<Omega::Registry::IRegistryKey> ptrOidsKey(L"\\Local User");
+	if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
+		return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
+	
+	ptrOidsKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\Objects\\OIDs");
+	if (ptrOidsKey->IsSubKey(strOid))
+		return ptrOidsKey.OpenSubKey(strOid);
+	
+	return 0;
+}
+
+ObjectPtr<Omega::Registry::IRegistryKey> OOCore::FindAppKey(const guid_t& oid)
+{
+	ObjectPtr<Omega::Registry::IRegistryKey> ptrOidKey = FindOIDKey(oid);
+	if (!ptrOidKey)
+		return 0;
+
+	if (!ptrOidKey->IsValue(L"Application"))
+		return 0;
+
+	string_t strAppName = ptrOidKey->GetStringValue(L"Application");
+
+	// Find the name of the executeable to run
+	ObjectPtr<Omega::Registry::IRegistryKey> ptrServer(L"\\Local User");
+	if (ptrServer->IsSubKey(L"Applications\\" + strAppName + L"\\Activation"))
+		return ptrServer.OpenSubKey(L"Applications\\" + strAppName + L"\\Activation");
+	
+	ptrServer = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\Applications");
+	if (ptrServer->IsSubKey(strAppName + L"\\Activation"))
+		return ptrServer.OpenSubKey(strAppName + L"\\Activation");
+
+	return 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
@@ -373,28 +418,94 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IRegistryKey> ptrOidsKey(L"\\Objects\\OIDs");
-			if (ptrOidsKey->IsSubKey(oid.ToString()))
+			ObjectPtr<Registry::IRegistryKey> ptrOidKey = OOCore::FindOIDKey(oid);
+			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
-				ObjectPtr<Registry::IRegistryKey> ptrOidKey = ptrOidsKey.OpenSubKey(oid.ToString());
-				if (ptrOidKey->IsValue(L"Library"))
-				{
-					void* TODO; // Surrogates here?!?
+				void* TODO; // Surrogates here?!?
 
-					pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
-					if (pObject)
-						return;
-				}
+				pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
+				if (pObject)
+					return;
 			}
 		}
 
 		// Try out-of-process...
 		if (flags & Activation::OutOfProcess)
 		{
-			ObjectPtr<Remoting::IInterProcessService> ptrIPC = OOCore::GetInterProcessService();
-			ptrIPC->GetRegisteredObject(oid,flags,iid,pObject);
-			if (pObject)
+			// Try RunningObjectTable first
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+			// Change this to use monikers
+			void* TODO;
+			
+			ObjectPtr<IObject> ptrObject;
+			ptrObject.Attach(ptrROT->GetObject(oid));
+			if (ptrObject)
+			{
+				pObject = ptrObject->QueryInterface(iid);
+				if (!pObject)
+					throw INoInterfaceException::Create(iid);
 				return;
+			}
+			
+			if (!(flags & Activation::DontLaunch))
+			{
+				void* TODO;	// Search Local User as well...
+
+				// Lookup OID
+				ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = OOCore::FindAppKey(oid);
+				if (ptrServer)
+				{
+					string_t strProcess = ptrServer->GetStringValue(L"Path");
+					bool_t bPublic = false;
+					if (ptrServer->IsValue(L"Public"))
+						bPublic = (ptrServer->GetIntegerValue(L"Public") == 1);
+
+					// The timeout needs to be related to the request timeout...
+					ACE_Time_Value deadline = ACE_Time_Value::max_time;
+					ObjectPtr<Remoting::ICallContext> ptrCC;
+					ptrCC.Attach(Remoting::GetCallContext());
+					if (ptrCC)
+					{
+						uint64_t secs = 0;
+						int32_t usecs = 0;
+						ptrCC->Deadline(secs,usecs);
+						deadline = ACE_Time_Value(secs,usecs);
+					}	
+
+					// Wait for the process to start and register its parts...
+					ACE_Time_Value wait;
+					ACE_Time_Value now = ACE_OS::gettimeofday();
+					if (deadline == ACE_Time_Value::max_time)
+						wait = ACE_Time_Value(15);
+					else if (deadline <= now)
+						wait = ACE_Time_Value::zero;
+					else
+						wait = deadline - now;
+
+					// Ask the IPS to run it...
+					ACE_Countdown_Time timeout(&wait);
+					while (OOCore::GetInterProcessService()->ExecProcess(strProcess,bPublic) && wait != ACE_Time_Value::zero)
+					{
+						ObjectPtr<IObject> ptrObject;
+						ptrObject.Attach(ptrROT->GetObject(oid));
+						if (ptrObject)
+						{
+							pObject = ptrObject->QueryInterface(iid);
+							if (!pObject)
+								throw INoInterfaceException::Create(iid);
+							return;
+						}
+
+						// Sleep for a brief moment - it will take a moment for the process to start
+						ACE_OS::sleep(ACE_Time_Value(0,500));
+
+						// Update our countdown
+						timeout.update();
+					}
+				}
+			}
 		}
 	}
 	catch (IException* pE)

@@ -26,7 +26,7 @@ namespace User
 {
 	class Manager;
 
-	interface IOutputCDR : public Omega::Serialize::IFormattedStream
+	interface IOutputCDR : public Omega::IO::IFormattedStream
 	{
 		virtual void* GetMessageBlock() = 0;
 	};
@@ -34,7 +34,7 @@ namespace User
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
-	User, IOutputCDR, Omega::Serialize, IFormattedStream, "{9C4FFF8C-93E4-49f9-A11C-99249C321206}",
+	User, IOutputCDR, Omega::IO, IFormattedStream, "{9C4FFF8C-93E4-49f9-A11C-99249C321206}",
 
 	// Methods
 	OMEGA_METHOD(void*,GetMessageBlock,0,())
@@ -63,8 +63,8 @@ namespace User
 		}
 
 		BEGIN_INTERFACE_MAP(OutputCDR)
-			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
-			INTERFACE_ENTRY(Omega::Serialize::IStream)
+			INTERFACE_ENTRY(Omega::IO::IFormattedStream)
+			INTERFACE_ENTRY(Omega::IO::IStream)
 			INTERFACE_ENTRY(IOutputCDR)
 		END_INTERFACE_MAP()
 
@@ -83,8 +83,8 @@ namespace User
 	public:
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!get_input().read_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
-		void WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
-			{ if (!write_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
+		Omega::uint32_t WriteBytes(Omega::uint32_t cbBytes, const Omega::byte_t* val)
+			{ if (!write_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); return cbBytes; }
 
 	// IFormattedStream members
 	public:
@@ -141,14 +141,15 @@ namespace User
 			WriteUInt32(val.Data1);
 			WriteUInt16(val.Data2);
 			WriteUInt16(val.Data3);
-			WriteBytes(8,val.Data4);
+			if (WriteBytes(8,val.Data4) != 8)
+				OOSERVER_THROW_LASTERROR();
 		}
 	};
 
 	class InputCDR :
 		public OTL::ObjectBase,
 		public ACE_InputCDR,
-		public Omega::Serialize::IFormattedStream
+		public Omega::IO::IFormattedStream
 	{
 	public:
 		InputCDR() : ACE_InputCDR(size_t(0))
@@ -160,15 +161,15 @@ namespace User
 		}
 
 		BEGIN_INTERFACE_MAP(InputCDR)
-			INTERFACE_ENTRY(Omega::Serialize::IFormattedStream)
-			INTERFACE_ENTRY(Omega::Serialize::IStream)
+			INTERFACE_ENTRY(Omega::IO::IFormattedStream)
+			INTERFACE_ENTRY(Omega::IO::IStream)
 		END_INTERFACE_MAP()
 
 	// IStream members
 	public:
 		void ReadBytes(Omega::uint32_t& cbBytes, Omega::byte_t* val)
 			{ if (!read_octet_array(val,cbBytes)) OOSERVER_THROW_LASTERROR(); }
-		void WriteBytes(Omega::uint32_t, const Omega::byte_t*)
+		Omega::uint32_t WriteBytes(Omega::uint32_t, const Omega::byte_t*)
 			{ OMEGA_THROW(EACCES); }
 
 	// IFormattedStream members
@@ -233,7 +234,8 @@ namespace User
 	public:
 		Channel();
 
-		void init(ACE_CDR::ULong channel_id);
+		void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags);
+		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -241,21 +243,24 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_CDR::ULong  m_channel_id;
+		ACE_CDR::ULong	                m_channel_id;
+		Omega::Remoting::MarshalFlags_t m_marshal_flags;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }
 
 	// IChannel members
 	public:
-		Omega::Serialize::IFormattedStream* CreateOutputStream();
-		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Serialize::IFormattedStream* pSend, Omega::Serialize::IFormattedStream*& pRecv, Omega::uint16_t timeout);
+		Omega::IO::IFormattedStream* CreateOutputStream();
+		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::IO::IFormattedStream* pSend, Omega::IO::IFormattedStream*& pRecv, Omega::uint16_t timeout);
+		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
+		Omega::uint32_t GetSource();
 
 	// IMarshal members
 	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
 	// {1A7672C5-8478-4e5a-9D8B-D5D019E25D15}
@@ -273,7 +278,7 @@ namespace User
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 }
 

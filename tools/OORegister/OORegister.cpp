@@ -17,12 +17,12 @@
 
 static void print_help()
 {
-	ACE_OS::fprintf(stdout,ACE_TEXT("OORegister - Registers a library with OmegaOnline.\n\n"));
-	ACE_OS::fprintf(stdout,ACE_TEXT("Usage: OORegister [-i] [-u] library_name\n"));
-	ACE_OS::fprintf(stdout,ACE_TEXT("-i\tInstall the library\n"));
-	ACE_OS::fprintf(stdout,ACE_TEXT("-u\tUninstall the library\n"));
-	ACE_OS::fprintf(stdout,ACE_TEXT("-s\tSilent, do not output anything\n"));
-	ACE_OS::fprintf(stdout,ACE_TEXT("\n"));
+	ACE_OS::printf("OORegister - Registers a library with OmegaOnline.\n\n");
+	ACE_OS::printf("Usage: OORegister [-i] [-u] library_name\n");
+	ACE_OS::printf("-i\tInstall the library\n");
+	ACE_OS::printf("-u\tUninstall the library\n");
+	ACE_OS::printf("-s\tSilent, do not output anything\n");
+	ACE_OS::printf("\n");
 }
 
 static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)

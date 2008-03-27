@@ -72,13 +72,6 @@ typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
 #define PROTECTED_DACL_SECURITY_INFORMATION	 (0x80000000L)
 #endif
 
-#ifdef OMEGA_DEBUG
-#define WIN32_DEBUGGING() (IsDebuggerPresent() ? true : false)
-void AttachDebugger(pid_t pid);
-#else
-#define WIN32_DEBUGGING() false
-#endif
-
 Root::SpawnedProcess::SpawnedProcess() :
 	m_hToken(NULL),
 	m_hProfile(NULL),
@@ -723,7 +716,8 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
 
-	if (WIN32_DEBUGGING())
+#if defined(OMEGA_DEBUG)
+	if (IsDebuggerPresent())
 	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
@@ -748,13 +742,23 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
             strTitle += L" [Sandbox]";
 	}
 	else
+#endif
 	{
-		dwRes = OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
-		if (dwRes != ERROR_SUCCESS)
-			goto Cleanup;
-		
 		dwFlags |= DETACHED_PROCESS;
-		startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
+
+		if (bSandbox)
+		{
+			dwRes = OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
+			if (dwRes != ERROR_SUCCESS)
+				goto Cleanup;
+					
+			startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
+		}
+		else
+		{
+			startup_info.lpDesktop = L"";
+			startup_info.wShowWindow = SW_HIDE;
+		}
 	}
 	if (!strTitle.empty())
         startup_info.lpTitle = (LPWSTR)strTitle.c_str();
@@ -765,14 +769,15 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	{
 		dwRes = GetLastError();
 		
-		if (WIN32_DEBUGGING() && hDebugEvent)
+		if (hDebugEvent)
 			CloseHandle(hDebugEvent);
 
 		goto Cleanup;
 	}
 
 	// Attach a debugger if we are debugging
-	if (WIN32_DEBUGGING())
+#if defined(OMEGA_DEBUG)
+	if (hDebugEvent)
 	{
 		AttachDebugger(process_info.dwProcessId);
 		if (hDebugEvent)
@@ -781,6 +786,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 			CloseHandle(hDebugEvent);
 		}
 	}
+#endif
 
 	// See if process has immediately terminated...
 	DWORD dwWait = WaitForSingleObject(process_info.hProcess,100);
@@ -1430,7 +1436,13 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 
 	ACE_CDR::LongLong v = 0;
 	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
-		return WIN32_DEBUGGING();
+	{
+#if defined(OMEGA_DEBUG)
+		return IsDebuggerPresent() ? true : false;
+#else
+		return false;
+#endif
+	}
 
 	return (v == 1);
 }

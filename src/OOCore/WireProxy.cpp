@@ -139,7 +139,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 
 bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 {
-	ObjectPtr<Serialize::IFormattedStream> pParamsOut;
+	ObjectPtr<IO::IFormattedStream> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateOutputStream());
 
 	pParamsOut->WriteUInt32(m_proxy_id);
@@ -147,12 +147,12 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 	pParamsOut->WriteUInt32(1);
 	pParamsOut->WriteGuid(iid);
 
-	Serialize::IFormattedStream* pParamsIn = 0;
+	IO::IFormattedStream* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(Remoting::synchronous,pParamsOut,pParamsIn);
 	if (pE)
 		throw pE;
 
-	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn;
+	ObjectPtr<IO::IFormattedStream> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
 	return ptrParamsIn->ReadBoolean();
@@ -261,7 +261,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::IsAlive_Safe(bo
 
 uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)
 {
-	ObjectPtr<Serialize::IFormattedStream> pParamsOut;
+	ObjectPtr<IO::IFormattedStream> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateOutputStream());
 
 	pParamsOut->WriteUInt32(m_proxy_id);
@@ -271,7 +271,7 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 	pParamsOut->WriteGuid(iid);
 	m_pManager->MarshalInterface(pParamsOut,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pObjectManager);
 
-	Serialize::IFormattedStream* pParamsIn = 0;
+	IO::IFormattedStream* pParamsIn = 0;
 	IException* pE = 0;
 	try
 	{
@@ -290,7 +290,7 @@ uint32_t OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObj
 
 		throw ptrE.AddRef();
 	}
-	ObjectPtr<Serialize::IFormattedStream> ptrParamsIn;
+	ObjectPtr<IO::IFormattedStream> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
 	if (pE)
@@ -309,7 +309,7 @@ void OOCore::WireProxy::CallRemoteRelease()
 
 	try
 	{
-		ObjectPtr<Serialize::IFormattedStream> pParamsOut;
+		ObjectPtr<IO::IFormattedStream> pParamsOut;
 		pParamsOut.Attach(m_pManager->CreateOutputStream());
 
 		pParamsOut->WriteUInt32(m_proxy_id);
@@ -319,7 +319,7 @@ void OOCore::WireProxy::CallRemoteRelease()
 		pParamsOut->WriteUInt32(m_marshal_count.value());
 		
 		// This is an synch call, because we are leaving whatever happens at the other end!
-		Serialize::IFormattedStream* pParamsIn = 0;
+		IO::IFormattedStream* pParamsIn = 0;
 		IException* pE = m_pManager->SendAndReceive(Remoting::asynchronous,pParamsOut,pParamsIn);
 		if (pE)
 			pE->Release();
@@ -421,7 +421,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::ReleaseMarshalD
 	return pStream->ReadUInt32_Safe(&key);
 }
 
-void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Serialize::IFormattedStream* pStream, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, IO::IFormattedStream* pStream, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	IObject* pOM = 0;
 	pObjectManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(Remoting::IObjectManager),pOM);

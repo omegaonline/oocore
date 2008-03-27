@@ -87,6 +87,7 @@ namespace Root
 
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual void channel_closed(ACE_CDR::ULong channel);
+		
 		int process_client_connects();
 		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry);
 		ACE_CString bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe);

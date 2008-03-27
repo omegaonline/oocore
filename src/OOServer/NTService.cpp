@@ -201,4 +201,10 @@ void Root::NTService::stop_requested(DWORD)
 	m_finished.signal();
 }
 
+int Root::NTService::fini()
+{
+	ACE_OS::cleanup_tss(0);
+	return 0;
+}
+
 #endif // ACE_WIN32

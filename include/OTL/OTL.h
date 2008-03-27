@@ -121,8 +121,8 @@
 	class ProcessModuleImpl : public ProcessModule \
 	{ \
 	public: \
-		void RegisterObjects(Omega::bool_t bInstall, const Omega::string_t& strSubsts) \
-			{ RegisterObjectsImpl(bInstall,app_name,strSubsts); } \
+		void RegisterObjects(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts) \
+			{ RegisterObjectsImpl(bInstall,bLocal,app_name,strSubsts); } \
 	private: \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
@@ -218,6 +218,12 @@ namespace OTL
 		void Release()
 		{
 			Attach(0);
+		}
+
+		template <class Q>
+		Q* QueryInterface()
+		{
+			return static_cast<Q*>(m_ptr.value()->QueryInterface(OMEGA_UUIDOF(Q)));
 		}
 
 		void CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0)
@@ -347,6 +353,8 @@ namespace OTL
 		template <class Interface, class Implementation>
 		static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
+			// If you get compiler errors here, make sure you have derived from each class
+			// you have included in your interface map!
 			Interface* pI = static_cast<Interface*>(static_cast<Implementation*>(pThis));
 			pI->AddRef();
 			return pI;
@@ -765,7 +773,7 @@ namespace OTL
 
 	// IMarshalFactory members
 	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 		{
 			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
 			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
@@ -822,7 +830,7 @@ namespace OTL
 		{}
 
 		// Register and unregister with the OORegistry
-		inline void RegisterObjectsImpl(Omega::bool_t bInstall, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
+		inline void RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
 	};
 
 	template <class T, const Omega::guid_t* pOID>

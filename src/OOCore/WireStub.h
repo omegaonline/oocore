@@ -34,7 +34,7 @@ namespace OOCore
 
 		Omega::System::MetaInfo::IException_Safe* MarshalInterface(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t& iid);
 		Omega::System::MetaInfo::IException_Safe* ReleaseMarshalData(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t&);
-		Omega::System::MetaInfo::IWireStub_Safe* LookupStub(Omega::Serialize::IFormattedStream* pStream);
+		Omega::System::MetaInfo::IWireStub_Safe* LookupStub(Omega::IO::IFormattedStream* pStream);
 
 	// IObject_Safe methods
 	public:

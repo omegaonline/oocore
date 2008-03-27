@@ -58,12 +58,12 @@ static int install(int argc, char* argv[])
 			if (argc != 3) return -1;
 	#endif
 
-			OTL::GetModule()->RegisterObjects(true,strSubsts);
+			OTL::GetModule()->RegisterObjects(true,false,strSubsts);
 			return 0;
 		}
 		else if (strcmp(argv[1],"-u") == 0 || strcmp(argv[1],"--uninstall") == 0)
 		{
-			OTL::GetModule()->RegisterObjects(false,strSubsts);
+			OTL::GetModule()->RegisterObjects(false,false,strSubsts);
 			return 0;
 		}
 		else

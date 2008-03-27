@@ -92,7 +92,7 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::
 	return pSE;
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::WireStub::LookupStub(Serialize::IFormattedStream* pStream)
+System::MetaInfo::IWireStub_Safe* OOCore::WireStub::LookupStub(IO::IFormattedStream* pStream)
 {
 	return FindStub(pStream->ReadGuid());
 }

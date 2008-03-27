@@ -27,24 +27,38 @@
 using namespace Omega;
 using namespace OTL;
 
-User::Channel::Channel()
+User::Channel::Channel() :
+	m_channel_id(0),
+	m_marshal_flags(0)
 {
 }
 
-void User::Channel::init(ACE_CDR::ULong channel_id)
+void User::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags)
 {
 	m_channel_id = channel_id;
+	m_marshal_flags = marshal_flags;
 }
 
-Serialize::IFormattedStream* User::Channel::CreateOutputStream()
+void User::Channel::disconnect()
 {
+	m_channel_id = 0;
+}
+
+IO::IFormattedStream* User::Channel::CreateOutputStream()
+{
+	if (!m_channel_id)
+		OMEGA_THROW(ECONNRESET);
+
 	// Create a fresh OutputCDR
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr();
-	return static_cast<Serialize::IFormattedStream*>(ptrOutput->QueryInterface(OMEGA_UUIDOF(Omega::Serialize::IFormattedStream)));
+	return ptrOutput.QueryInterface<IO::IFormattedStream>();
 }
 
-IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Serialize::IFormattedStream* pSend, Serialize::IFormattedStream*& pRecv, uint16_t timeout)
+IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, IO::IFormattedStream* pSend, IO::IFormattedStream*& pRecv, uint16_t timeout)
 {
+	if (!m_channel_id)
+		OMEGA_THROW(ECONNRESET);
+
 	// QI pStream for our private interface
 	ObjectPtr<IOutputCDR> ptrOutput;
 	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
@@ -54,8 +68,12 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	// Get the message block
 	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
+	ACE_Time_Value deadline;
+	if (timeout > 0)
+		deadline = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000);
+	
 	ACE_InputCDR* response = 0;
-	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout,attribs))
+	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs))
 	{
 		request->release();
 		OOSERVER_THROW_LASTERROR();
@@ -103,30 +121,44 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	return 0;
 }
 
+Remoting::MarshalFlags_t User::Channel::GetMarshalFlags()
+{
+	return m_marshal_flags;
+}
+
+uint32_t User::Channel::GetSource()
+{
+	return m_channel_id;
+}
+
 OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 
-Omega::guid_t User::Channel::GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+guid_t User::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t flags)
 {
+	// We cannot custom marshal to another machine
+	if (flags == Remoting::another_machine)
+		return guid_t::Null();
+
 	// This must match OOCore::OID_ChannelMarshalFactory
-	static guid_t oid = guid_t::FromString(L"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
+	static const guid_t oid = guid_t::FromString(L"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 	return oid;
 }
 
-void User::Channel::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+void User::Channel::MarshalInterface(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pStream->WriteUInt32(m_channel_id);
 }
 
-void User::Channel::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+void User::Channel::ReleaseMarshalData(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pStream->ReadUInt32();
 }
 
-void User::ChannelMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager*, Omega::Serialize::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	// We are unmarshalling a channel from another process...
 	ACE_CDR::ULong channel_id = pStream->ReadUInt32();
-
+	
 	// Create a new object manager (and channel)
-	pObject = User::Manager::USER_MANAGER::instance()->create_object_manager(channel_id,flags)->QueryInterface(iid);
+	pObject = User::Manager::USER_MANAGER::instance()->create_object_manager(channel_id)->QueryInterface(iid);
 }

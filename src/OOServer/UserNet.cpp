@@ -154,7 +154,7 @@ uint32_t User::Manager::open_stream_i(const string_t& strEndPoint)
 
 	// Open the stream...
 	ObjectPtr<IO::IStream> ptrStream;
-	ptrStream.Attach(ptrHandler->OpenStream(strEndPoint.Mid(pos+3),ptrCallback));
+	ptrStream.Attach(ptrHandler->OpenStream(strEndPoint,ptrCallback));
 
 	// Create a new stream id and insert into the map
 	uint32_t channel_id = 0;

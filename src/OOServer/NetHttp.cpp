@@ -110,6 +110,7 @@ void User::HttpCallback::OnSignal(IO::IAsyncStreamCallback::SignalType_t type, u
 
 void User::HttpCallback::ReadPending(uint32_t cbBytes)
 {
+	// This is where we parse HTTP response send on the results...
 	void* MORE_HERE_NOW;
 }
 
@@ -132,15 +133,29 @@ uint32_t User::HttpCallback::WriteBytes(uint32_t cbBytes, const byte_t* val)
 
 IO::IStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
 {
+	// First try to determine the protocol...
+	size_t pos = strEndPoint.Find(L"://");
+	if (pos == string_t::npos)
+		OMEGA_THROW(L"No protocol specified!");
+
+	// Look up handler in registry
+	string_t strProtocol = strEndPoint.Left(pos).ToLower();
+
+	// Make sure we are using at least one port...
+	string_t strEnd = L"tcp://" + strEndPoint.Mid(pos+3);
+	if (strEnd.Find(L':',pos+3) == string_t::npos)
+		strEnd += L":80";
+
 	// Create a Tcp Protocol Handler
 	OTL::ObjectPtr<Omega::IO::IProtocolHandler> ptrTcp(OID_TcpProtocolHandler);
 
 	// Create a callback handler...
 	ObjectPtr<ObjectImpl<HttpCallback> > ptrCallback = ObjectImpl<HttpCallback>::CreateInstancePtr();
+	
 
 	// Create a Tcp stream
 	ObjectPtr<IO::IStream> ptrStream;
-	ptrStream.Attach(ptrTcp->OpenStream(strEndPoint,ptrCallback));
+	ptrStream.Attach(ptrTcp->OpenStream(strEnd,ptrCallback));
 
 	// Init the callback
 	ptrCallback->init(ptrStream,pCallback);

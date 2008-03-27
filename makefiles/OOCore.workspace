@@ -20,7 +20,7 @@
 		<Project filename="../test/CoreTests/TestProcess/TestProcess.cbp">
 			<Depends filename="../src/OOCore/OOCore.cbp" />
 		</Project>
-		<Project filename="../tools/OORegEdit/OORegEdit_vc8.cbp">
+		<Project filename="../tools/OORegEdit/OORegEdit.cbp">
 			<Depends filename="../src/OOCore/OOCore.cbp" />
 			<Depends filename="../src/OOServer/OOServer.cbp" />
 		</Project>

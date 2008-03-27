@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OORegEdit" />
+		<Option platforms="Unix;Mac;" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../bin/Debug/OORegEdit" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
+				<Option object_output="Debug" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-O0" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="`wx-config --cxxflags`" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add option="`wx-config --libs`" />
+					<Add library="OOCored" />
+				</Linker>
+			</Target>
+			<Target title="Release Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../bin/OORegEdit" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
+				<Option object_output="Release" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="`wx-config --cxxflags`" />
+					<Add option="-DNDEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="`wx-config --libs`" />
+					<Add library="OOCore" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="AboutDlg.cpp" />
+		<Unit filename="AboutDlg.h" />
+		<Unit filename="AddFavDlg.cpp" />
+		<Unit filename="AddFavDlg.h" />
+		<Unit filename="EditKeyDescDlg.cpp" />
+		<Unit filename="EditKeyDescDlg.h" />
+		<Unit filename="EditStringDlg.cpp" />
+		<Unit filename="EditStringDlg.h" />
+		<Unit filename="EditUIntDlg.cpp" />
+		<Unit filename="EditUIntDlg.h" />
+		<Unit filename="EditValueDescDlg.cpp" />
+		<Unit filename="EditValueDescDlg.h" />
+		<Unit filename="FindDlg.cpp" />
+		<Unit filename="FindDlg.h" />
+		<Unit filename="MainFrame.cpp" />
+		<Unit filename="MainFrame.h" />
+		<Unit filename="OORegEdit.cpp" />
+		<Unit filename="OORegEdit.h" />
+		<Unit filename="OORegEdit.rc">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="RemoveFavDlg.cpp" />
+		<Unit filename="RemoveFavDlg.h" />
+		<Unit filename="TreeItemData.cpp" />
+		<Unit filename="TreeItemData.h" />
+		<Unit filename="res/OORegEdit.ico" />
+		<Unit filename="resource.h" />
+		<Unit filename="stdafx.cpp" />
+		<Unit filename="stdafx.h" />
+		<Unit filename="wxGladeAssist.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

@@ -48,7 +48,7 @@ bool IsDebuggerPresent()
 #ifdef OMEGA_DEBUG
 void AttachDebugger(pid_t pid)
 {
-	kill(pid,SIG_STOP);
+	kill(pid,SIGSTOP);
 }
 #endif
 

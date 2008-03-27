@@ -186,6 +186,7 @@
 		<Unit filename="RunningObjectTable.cpp" />
 		<Unit filename="StdObjectManager.cpp" />
 		<Unit filename="StdObjectManager.h" />
+		<Unit filename="Stream.cpp" />
 		<Unit filename="Threading.cpp" />
 		<Unit filename="Types.cpp" />
 		<Unit filename="UserSession.cpp" />

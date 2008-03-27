@@ -93,6 +93,7 @@
 		<Unit filename="core.cpp" />
 		<Unit filename="interfaces.cpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="net.cpp" />
 		<Unit filename="registry.cpp" />
 		<Unit filename="strings.cpp" />
 		<Extensions>

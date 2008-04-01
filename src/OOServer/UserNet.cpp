@@ -36,67 +36,68 @@ namespace User
 	{
 	public:
 		AsyncStreamCallback();
+		virtual ~AsyncStreamCallback();
 		
-		void init(Manager* pManager, IO::IStream* pStream, uint32_t channel_id);
+		void init(Manager* pManager, uint32_t channel_id, IO::IAsyncStreamCallback* pCallback);
 
 		BEGIN_INTERFACE_MAP(AsyncStreamCallback)
 			INTERFACE_ENTRY(IO::IAsyncStreamCallback)
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex m_lock;
-		Manager*         m_pManager;
-		IO::IStream*     m_pStream;
-		uint32_t         m_cbBytesPending;
-		uint32_t         m_channel_id;
+		Manager*                  m_pManager;
+		IO::IAsyncStreamCallback* m_pCallback;
+		uint32_t                  m_channel_id;
 
-		void ReadPending(uint32_t cbBytes);
-		void Closed();
+		void OnRead(uint32_t cbBytes, const byte_t* pData);
+		void OnWritten(uint32_t cbBytes, const byte_t* pData);
+		void OnClosed();
 
 	// IAsyncStreamCallback members
 	public:
-		void OnSignal(IO::IAsyncStreamCallback::SignalType_t type, uint32_t cbBytes);
+		void OnSignal(IO::IAsyncStreamCallback::SignalType_t type, uint32_t cbBytes, const byte_t* pData);
 	};
 }
 
 User::AsyncStreamCallback::AsyncStreamCallback() :
 	m_pManager(0),
-	m_pStream(0),
-	m_cbBytesPending(0),
+	m_pCallback(0),
 	m_channel_id(0)
 {
 }
 
-void User::AsyncStreamCallback::init(Manager* pManager, IO::IStream* pStream, uint32_t channel_id)
+User::AsyncStreamCallback::~AsyncStreamCallback()
 {
-	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-	m_pManager = pManager;
-	m_pStream = pStream;
-	m_channel_id = channel_id;
-
-	if (m_cbBytesPending)
+	if (m_channel_id)
 	{
-		// We have something ready for us already!
-		ReadPending(m_cbBytesPending);
+		// Remove from the map...
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_pManager->m_lock);
+
+		m_pManager->m_mapStreamCallbacks.erase(m_channel_id);
 	}
 }
 
-void User::AsyncStreamCallback::OnSignal(IO::IAsyncStreamCallback::SignalType_t type, uint32_t cbBytes)
+void User::AsyncStreamCallback::init(Manager* pManager, uint32_t channel_id, IO::IAsyncStreamCallback* pCallback)
 {
-	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	m_pManager = pManager;
+	m_pCallback = pCallback;
+	m_channel_id = channel_id;
+}
 
+void User::AsyncStreamCallback::OnSignal(IO::IAsyncStreamCallback::SignalType_t type, uint32_t cbBytes, const byte_t* pData)
+{
 	switch (type)
 	{
-	case IO::IAsyncStreamCallback::ReadPending:
-		if (!m_pStream)
-			m_cbBytesPending += cbBytes;
-		else
-			ReadPending(cbBytes);
+	case IO::IAsyncStreamCallback::Read:
+		OnRead(cbBytes,pData);
+		break;
+
+	case IO::IAsyncStreamCallback::Written:
+		OnWritten(cbBytes,pData);
 		break;
 
 	case IO::IAsyncStreamCallback::Closed:
-		Closed();
+		OnClosed();
 		break;
 
 	default:
@@ -104,22 +105,27 @@ void User::AsyncStreamCallback::OnSignal(IO::IAsyncStreamCallback::SignalType_t 
 	}
 }
 
-void User::AsyncStreamCallback::ReadPending(uint32_t cbBytes)
+void User::AsyncStreamCallback::OnRead(uint32_t cbBytes, const byte_t* pData)
 {
 	void* MORE_HERE_NOW;
 }
 
-void User::AsyncStreamCallback::Closed()
+void User::AsyncStreamCallback::OnWritten(uint32_t cbBytes, const byte_t* pData)
 {
 	void* MORE_HERE_NOW;
 }
 
-uint32_t User::Manager::open_stream(const string_t& strEndPoint)
+void User::AsyncStreamCallback::OnClosed()
 {
-	return USER_MANAGER::instance()->open_stream_i(strEndPoint);
+	void* MORE_HERE_NOW;
 }
 
-uint32_t User::Manager::open_stream_i(const string_t& strEndPoint)
+IO::IStream* User::Manager::open_stream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
+{
+	return USER_MANAGER::instance()->open_stream_i(strEndPoint,pCallback);
+}
+
+IO::IStream* User::Manager::open_stream_i(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
 {
 	// First try to determine the protocol...
 	size_t pos = strEndPoint.Find(L"://");
@@ -129,14 +135,27 @@ uint32_t User::Manager::open_stream_i(const string_t& strEndPoint)
 	// Look up handler in registry
 	string_t strProtocol = strEndPoint.Left(pos).ToLower();
 	
-	guid_t oid;
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Server");
-	if (ptrKey->IsSubKey(L"Networking\\ProtocolHandlers\\" + strProtocol))
+	guid_t oid = guid_t::Null();
+	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User");
+	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 	{
-		ptrKey = ptrKey.OpenSubKey(L"Networking\\ProtocolHandlers\\" + strProtocol);
-		oid = guid_t::FromString(ptrKey->GetStringValue(L"OID"));
+		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+		if (ptrKey->IsValue(L"ServerHandlerOID"))
+			oid = guid_t::FromString(ptrKey->GetStringValue(L"ServerHandlerOID"));
 	}
-	else
+	
+	if (oid == guid_t::Null())
+	{
+		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
+		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+		{
+			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+			if (ptrKey->IsValue(L"ServerHandlerOID"))
+				oid = guid_t::FromString(ptrKey->GetStringValue(L"ServerHandlerOID"));
+		}
+	}
+	
+	if (oid == guid_t::Null())
 	{
 		if (strProtocol == L"tcp")
 			oid = OID_TcpProtocolHandler;
@@ -145,106 +164,75 @@ uint32_t User::Manager::open_stream_i(const string_t& strEndPoint)
 		else
 			OMEGA_THROW(L"No handler for protocol " + strProtocol);		
 	}
-
+	
 	// Create the handler...
 	ObjectPtr<IO::IProtocolHandler> ptrHandler(oid);
 
-	// Create a callback handler...
-	ObjectPtr<ObjectImpl<AsyncStreamCallback> > ptrCallback = ObjectImpl<AsyncStreamCallback>::CreateInstancePtr();
-
 	// Open the stream...
 	ObjectPtr<IO::IStream> ptrStream;
-	ptrStream.Attach(ptrHandler->OpenStream(strEndPoint,ptrCallback));
-
-	// Create a new stream id and insert into the map
 	uint32_t channel_id = 0;
-	try
-	{
-		// Add to the map...
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		do
+	if (pCallback)
+	{
+		// Create a new stream id and insert into the map
+		try
 		{
-			channel_id = ++m_nNextStream;
-			if (channel_id & m_root_channel)
+			// Add to the map...
+			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			do
 			{
-				// Don't cross into pipe channels...
-				channel_id = 0;
-				m_nNextStream = 0;
+				channel_id = ++m_nNextStreamCallback;
+				if (channel_id & m_root_channel)
+				{
+					// Don't cross into pipe channels...
+					channel_id = 0;
+					m_nNextStreamCallback = 0;
+				}
+			} while (!channel_id || m_mapStreamCallbacks.find(channel_id) != m_mapStreamCallbacks.end());
+
+			m_mapStreamCallbacks.insert(std::map<uint32_t,ObjectPtr<IO::IAsyncStreamCallback> >::value_type(channel_id,pCallback));
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
+
+		try
+		{
+			// Create a callback handler...
+			ObjectPtr<ObjectImpl<AsyncStreamCallback> > ptrCallback = ObjectImpl<AsyncStreamCallback>::CreateInstancePtr();
+
+			// Add to internal map
+			ptrCallback->init(this,channel_id,pCallback);
+
+			// Open with our callback
+			ptrStream.Attach(ptrHandler->OpenStream(strEndPoint,ptrCallback));
+		}
+		catch (...)
+		{
+			if (channel_id)
+			{
+				// Remove from map!
+				OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+				m_mapStreamCallbacks.erase(channel_id);
 			}
-		} while (!channel_id || m_mapStreams.find(channel_id) != m_mapStreams.end());
-
-		m_mapStreams.insert(std::map<uint32_t,ObjectPtr<IO::IStream> >::value_type(channel_id,ptrStream));
+			throw;
+		}
 	}
-	catch (std::exception& e)
+	else
 	{
-		OMEGA_THROW(e);
+		// Open with no callback
+		ptrStream.Attach(ptrHandler->OpenStream(strEndPoint,0));
 	}
 
-	try
-	{
-		// Add to internal map
-		ptrCallback->init(this,ptrStream,channel_id);
-	}
-	catch (...)
-	{
-		// Remove from map!
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		m_mapStreams.erase(channel_id);
-
-		throw;
-	}
-
-	return channel_id;
+	return ptrStream.AddRef();
 }
 
 bool User::Manager::route_off(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, const ACE_Message_Block* mb)
 {
-	ObjectPtr<IO::IStream> ptrStream;
-	try
-	{
-		// Add to the map...
-		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::map<uint32_t,ObjectPtr<IO::IStream> >::iterator i = m_mapStreams.find(dest_channel_id);
-		if (i != m_mapStreams.end())
-			ptrStream = i->second;
-	}
-	catch (std::exception&)
-	{
-		ACE_OS::last_error(EINVAL);
-		return false;
-	}
-
-	if (ptrStream)
-	{
-		void* MORE_HERE_NOW;
-
-		ACE_Message_Block* mb2 = mb->duplicate();
-
-		try
-		{
-			size_t cbToWrite = mb->total_length();
-			while (cbToWrite)
-			{
-				uint32_t cb = (uint32_t)cbToWrite;
-				if (cbToWrite > (uint32_t)-1)
-					cb = (uint32_t)-1;
-
-				cb = ptrStream->WriteBytes(cb,(byte_t*)mb2->rd_ptr());
-				cbToWrite -= cb;
-				mb2->rd_ptr(cb);
-			};
-		}
-		catch (...)
-		{
-			mb2->release();
-			throw;
-		}
-
-		mb2->release();
-	}
+	void* TODO;
 
 	return MessageHandler::route_off(dest_channel_id,src_channel_id,dest_thread_id,src_thread_id,deadline,attribs,mb);
 }

@@ -52,7 +52,7 @@ namespace Registry
 		{
 			if (strSubKey.IsEmpty() ||
 				strSubKey == L"\\" ||
-				strSubKey.Right(1) == "\\" ||
+				strSubKey.Right(1) == L"\\" ||
 				strSubKey.Find(L"\\\\") != string_t::npos)
 			{
 				Throw(strSubKey,strSource);
@@ -109,11 +109,11 @@ namespace Registry
 			
 			string_t tp = L"Corrupt!";
 			if (actual_type==String)
-				tp = "String";
+				tp = L"String";
 			else if (actual_type==Integer)
-				tp = "Integer";
+				tp = L"Integer";
 			else if (actual_type==Binary)
-				tp = "Binary";
+				tp = L"Binary";
 
 			pRE->m_strDesc = string_t::Format(L"Incorrect registry value type, actual value type is %ls.",tp.c_str());
 

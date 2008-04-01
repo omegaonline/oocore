@@ -83,8 +83,7 @@ namespace OOCore
 			enum Type
 			{
 				Response = 0,
-				Request = 1,
-				Stream = 2
+				Request = 1
 			};
 
 			enum Attributes
@@ -141,6 +140,12 @@ namespace OOCore
 
 		// Accessors for Channel
 		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs);
+
+		// Accessors for Stream
+		typedef void (*pfnStreamCallback)(void* pThis, Omega::IO::IAsyncStreamCallback::SignalType_t type, Omega::uint32_t cbBytes, const ACE_Message_Block& mb);
+		void register_stream_callback(Omega::uint32_t nStreamId, pfnStreamCallback pCallback, void* pThis);
+		void stream_write(Omega::uint32_t nStreamId, ACE_Message_Block* mb);
+		void stream_close(Omega::uint32_t nStreamId);
 		
 		// Proper private members
 		bool init_i();

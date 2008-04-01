@@ -122,3 +122,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 		OOCore::UserSession::term();
 	}
 }
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback))
+{
+	// Ask the IPS to open the stream...
+	return OOCore::GetInterProcessService()->OpenStream(strEndPoint,pCallback);
+}

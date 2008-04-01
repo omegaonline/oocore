@@ -76,7 +76,7 @@ using namespace OTL;
 const ACE_CDR::ULong User::Manager::m_root_channel = 0x80000000;
 
 User::Manager::Manager() :
-	m_nIPSCookie(0), m_nNextStream(0)
+	m_nIPSCookie(0), m_nNextStreamCallback(0)
 {
 }
 

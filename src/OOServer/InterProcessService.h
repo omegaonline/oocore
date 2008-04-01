@@ -55,7 +55,7 @@ namespace User
 		Omega::Registry::IRegistryKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
 		Omega::bool_t ExecProcess(const Omega::string_t& strProcess, Omega::bool_t bPublic);
-		Omega::uint32_t OpenStream(const Omega::string_t& strEndPoint);
+		Omega::IO::IStream* OpenStream(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback);
 	};
 }
 

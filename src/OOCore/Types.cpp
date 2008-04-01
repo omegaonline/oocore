@@ -251,15 +251,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_1,2,((in),void*,s1,(in),con
 	return pNode;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_2,2,((in),void*,s1,(in),const char*,sz))
-{
-	static_cast<StringNode*>(s1)->Release();
-
-	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(ACE_Ascii_To_Wide(sz).wchar_rep()));
-	return pNode;
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_3,2,((in),void*,s1,(in),const wchar_t*,wsz))
 {
 	static_cast<StringNode*>(s1)->Release();
@@ -302,19 +293,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add1,2,((in),void*,s1,(in),const v
 	return pNode;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,s1,(in),const char*,sz))
-{
-	StringNode* pOld = static_cast<StringNode*>(s1);
-
-	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(pOld->m_str));
-
-	pOld->Release();
-
-	pNode->m_str += ACE_Ascii_To_Wide(sz).wchar_rep();
-	return pNode;
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add3,2,((in),void*,s1,(in),const wchar_t*,wsz))
 {
 	StringNode* pOld = static_cast<StringNode*>(s1);
@@ -333,11 +311,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp1,2,((in),const void*,s1,(in),con
 	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp2,2,((in),const void*,s1,(in),const char*,sz))
-{
-	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),ACE_Ascii_To_Wide(sz).wchar_rep());
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
 	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
@@ -346,11 +319,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp3,2,((in),const void*,s1,(in),con
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,s1,(in),const void*,s2))
 {
 	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc2,2,((in),const void*,s1,(in),const char*,sz))
-{
-	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),ACE_Ascii_To_Wide(sz).wchar_rep());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
@@ -420,31 +388,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find1,3,((in),const void*,s1,(in)
 	return static_cast<const StringNode*>(s1)->m_str.find(static_cast<const StringNode*>(s2)->m_str,pos);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find2,4,((in),const void*,s1,(in),char,c,(in),size_t,pos,(in),bool,bIgnoreCase))
-{
-	ACE_WString str2 = ACE_Ascii_To_Wide(ACE_CString(c).c_str()).wchar_rep();
-	wchar_t c2 = str2[0];
-
-	if (bIgnoreCase)
-		c2 = static_cast<wchar_t>(ACE_OS::ace_towlower(c2));
-
-	return static_cast<const StringNode*>(s1)->m_str.find(c2,pos);
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find3,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
 	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind1,4,((in),const void*,s1,(in),char,c,(in),size_t,pos,(in),bool,bIgnoreCase))
-{
-	ACE_WString str2 = ACE_Ascii_To_Wide(ACE_CString(c).c_str()).wchar_rep();
-	wchar_t c2 = str2[0];
-
-	if (bIgnoreCase)
-		c2 = static_cast<wchar_t>(ACE_OS::ace_towlower(c2));
-
-	return static_cast<const StringNode*>(s1)->m_str.rfind(c2,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind2,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))

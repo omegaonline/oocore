@@ -207,7 +207,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 
 	if (!bSuccess)
 	{
-		int err = ACE_OS::last_error();
+		int err = result.error();
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		if (err != 0 && err != ERROR_BROKEN_PIPE)
 #else

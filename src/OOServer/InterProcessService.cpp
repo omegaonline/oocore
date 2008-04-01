@@ -219,7 +219,7 @@ bool_t User::InterProcessService::ExecProcess(const string_t& strProcess, bool_t
 	return true;
 }
 
-uint32_t User::InterProcessService::OpenStream(const string_t& strEndPoint)
+IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
 {
-	return User::Manager::open_stream(strEndPoint);
+	return User::Manager::open_stream(strEndPoint,pCallback);
 }

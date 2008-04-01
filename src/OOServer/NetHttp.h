@@ -33,14 +33,12 @@ namespace User
 		public Omega::IO::IProtocolHandler
 	{
 	public:
-
-
 		BEGIN_INTERFACE_MAP(HttpProtocolHandler)
 			INTERFACE_ENTRY(Omega::IO::IProtocolHandler)
 		END_INTERFACE_MAP()
 
 	private:
-		
+		Omega::string_t FindProxy(const Omega::string_t& strURL, const Omega::string_t& strProtocol);
 
 	// IProtocolHandler members
 	public:

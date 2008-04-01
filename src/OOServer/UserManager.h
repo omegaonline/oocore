@@ -33,7 +33,7 @@ namespace User
 	public:
 		static int run(const ACE_CString& strPipe);
 
-		static Omega::uint32_t open_stream(const Omega::string_t& strEndPoint);
+		static Omega::IO::IStream* open_stream(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback);
 		
 		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request);
 
@@ -82,10 +82,10 @@ namespace User
 		void process_user_request(const ACE_InputCDR& input, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		void process_root_request(ACE_InputCDR& input, ACE_CDR::ULong seq_no, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 
-		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::IO::IStream> > m_mapStreams;
-		Omega::uint32_t open_stream_i(const Omega::string_t& strEndPoint);
+		std::map<Omega::uint32_t,OTL::ObjectPtr<Omega::IO::IAsyncStreamCallback> > m_mapStreamCallbacks;
+		Omega::IO::IStream* open_stream_i(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback);
 
-		Omega::uint32_t m_nNextStream;
+		Omega::uint32_t m_nNextStreamCallback;
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);

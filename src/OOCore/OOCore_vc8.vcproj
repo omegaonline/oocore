@@ -239,10 +239,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Stream.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Threading.cpp"
 				>
 			</File>

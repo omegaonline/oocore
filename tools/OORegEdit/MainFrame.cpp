@@ -110,21 +110,21 @@ void MainFrame::CreateChildWindows(void)
 		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
 
 		wxPoint ptPos;
-		ptPos.x = ptrKey->GetIntegerValue(L"Left");
-		ptPos.y = ptrKey->GetIntegerValue(L"Top");
+		ptPos.x = (int)ptrKey->GetIntegerValue(L"Left");
+		ptPos.y = (int)ptrKey->GetIntegerValue(L"Top");
 		SetPosition(ptPos);
 
 		wxSize sz;
-		sz.x = ptrKey->GetIntegerValue(L"Width");
-		sz.y = ptrKey->GetIntegerValue(L"Height");
+		sz.x = (int)ptrKey->GetIntegerValue(L"Width");
+		sz.y = (int)ptrKey->GetIntegerValue(L"Height");
 		SetSize(sz);
 
-		split_width = ptrKey->GetIntegerValue(L"SplitWidth");
-		split_width2 = ptrKey->GetIntegerValue(L"SplitWidth2");
+		split_width = (Omega::uint32_t)ptrKey->GetIntegerValue(L"SplitWidth");
+		split_width2 = (Omega::uint32_t)ptrKey->GetIntegerValue(L"SplitWidth2");
 
-		col_width[0] = ptrKey->GetIntegerValue(L"ColWidth0");
-		col_width[1] = ptrKey->GetIntegerValue(L"ColWidth1");
-		col_width[2] = ptrKey->GetIntegerValue(L"ColWidth2");
+		col_width[0] = (Omega::uint32_t)ptrKey->GetIntegerValue(L"ColWidth0");
+		col_width[1] = (Omega::uint32_t)ptrKey->GetIntegerValue(L"ColWidth1");
+		col_width[2] = (Omega::uint32_t)ptrKey->GetIntegerValue(L"ColWidth2");
 
 		strSelection = ptrKey->GetStringValue(L"Selection");
 
@@ -384,7 +384,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		{
 			wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
 
-			Omega::string_t strVal = m_mapMRU[strName] + "\\" + Omega::string_t(strName);
+			Omega::string_t strVal = m_mapMRU[strName] + L"\\" + Omega::string_t(strName);
 
 			ptrKey->SetStringValue(Omega::string_t::Format(L"Favourite%u",nFiles-1),strVal);
 		}

@@ -73,12 +73,12 @@ namespace OOCore
 
 		void OMEGA_CALL Pin()
 		{
-			void* IMPLEMENT_PIN;
+			void* TICKET_88;
 		}
 
 		void OMEGA_CALL Unpin()
 		{
-			void* IMPLEMENT_UNPIN;
+			void* TICKET_88;
 		}
 
 	// IWireProxy_Safe members

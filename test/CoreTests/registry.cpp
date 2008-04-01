@@ -107,7 +107,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey)
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == "");
+		TEST(pE->GetName() == L"");
 		pE->Release();
 	}
 	try
@@ -117,7 +117,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey)
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == "\\");
+		TEST(pE->GetName() == L"\\");
 		pE->Release();
 	}
 
@@ -203,7 +203,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == "");
+		TEST(pE->GetName() == L"");
 		pE->Release();
 	}
 	try
@@ -214,7 +214,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == "\\");
+		TEST(pE->GetName() == L"\\");
 		pE->Release();
 	}
 
@@ -246,7 +246,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
-		TEST(pE->GetKeyName() == strKey + "\\" + strTestKey);
+		TEST(pE->GetKeyName() == strKey + L"\\" + strTestKey);
 		pE->Release();
 	}
 
@@ -260,7 +260,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetName() == strKey + "\\" + strTestKey);
+		TEST(pE->GetName() == strKey + L"\\" + strTestKey);
 		pE->Release();
 	}
 

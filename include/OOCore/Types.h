@@ -123,7 +123,6 @@ namespace Omega
 		inline ~string_t();
 
 		inline string_t& operator = (const string_t& s);
-		inline string_t& operator = (const char* sz);
 		inline string_t& operator = (const wchar_t* wsz);
 
 		inline const wchar_t* c_str() const;
@@ -150,21 +149,16 @@ namespace Omega
 		{ return Compare(t) > 0; }
 
 		inline string_t& operator += (const string_t& s);
-		inline string_t& operator += (const char* sz);
 		inline string_t& operator += (const wchar_t* wsz);
 
 		inline int Compare(const string_t& s) const;
-		inline int Compare(const char* sz) const;
 		inline int Compare(const wchar_t* sz) const;
 		inline int CompareNoCase(const string_t& s) const;
-		inline int CompareNoCase(const char* sz) const;
 		inline int CompareNoCase(const wchar_t* sz) const;
 		inline bool IsEmpty() const;
 		inline size_t Length() const;
 		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
-		inline size_t Find(char c, size_t pos = 0, bool bIgnoreCase = false) const;
 		inline size_t Find(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
-		inline size_t ReverseFind(char c, size_t pos = npos, bool bIgnoreCase = false) const;
 		inline size_t ReverseFind(wchar_t c, size_t pos = npos, bool bIgnoreCase = false) const;
 		inline string_t Left(size_t length) const;
 		inline string_t Mid(size_t start, size_t length = npos) const;

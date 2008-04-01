@@ -108,7 +108,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
-			void* TODO;
+			void* TICKET_87;
 			if (false)
 				strXML += L"<key name=\"\\Local User\\Objects\">";
 			else
@@ -162,7 +162,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 			Omega::string_t strName = g[i].pszName;
 			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
-			void* TODO;
+			void* TICKET_87;
 			if (false)
 				strXML += L"<key name=\"\\Local User\\Objects\">";
 			else

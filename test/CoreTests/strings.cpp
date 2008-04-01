@@ -64,62 +64,12 @@ static bool string_tests_wchar()
 	return true;
 }
 
-static bool string_tests_char()
-{
-	const char sz1[] = "abcdef";
-	const char sz1_1[] = "abcdef";
-	const char sz1_2[] = "ABCDEF";
-
-	Omega::string_t s1(sz1,false);
-	TEST(!s1.IsEmpty());
-	TEST(s1.Length() == 6);
-	TEST(s1 == sz1_1 && !(s1 != sz1_1));
-	TEST(s1.Compare(sz1_1) == 0);
-	TEST(s1.CompareNoCase(sz1_2) == 0);
-
-	const char sz2[] = "ghijk";
-	Omega::string_t s2(sz2,false);
-	TEST(s2 == sz2);
-
-	Omega::string_t s3(s1);
-	TEST(s3 == sz1);
-
-	s3 = sz1_2;
-	TEST(s1.CompareNoCase(s3) == 0);
-	TEST(s1 == s3.ToLower());
-	TEST(s1.ToUpper() == s3);
-
-	s1 = "abcdefghijabcdefghij";
-	TEST(s1.Find('a') == 0);
-	TEST(s1.Find('a',1) == 10);
-	TEST(s1.Find('A',0,true) == 0);
-	TEST(s1.Find('A',1,true) == 10);
-
-	TEST(s1.ReverseFind('a') == 10);
-	TEST(s1.ReverseFind('a',10) == 0);
-	TEST(s1.ReverseFind('A',Omega::string_t::npos,true) == 10);
-	TEST(s1.ReverseFind('A',10,true) == 0);
-
-	s2 = sz1;
-	TEST(s1.Find(s2) == 0);
-	TEST(s1.Find(s2,1) == 10);
-	TEST(s1.Find(s2.ToUpper(),0,true) == 0);
-	TEST(s1.Find(s2.ToUpper(),1,true) == 10);
-
-	TEST(s1.Left(5) == "abcde");
-	TEST(s1.Mid(15) == "fghij");
-	TEST(s1.Mid(15,3) == "fgh");
-	TEST(s1.Right(3) == "hij");
-
-	return true;
-}
-
 static bool string_tests_format()
 {
 	void* TODO; // Need more!
 
 	TEST(Omega::string_t::Format(L"%ls:%d",L"hello",1) == L"hello:1");
-	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == "hello:1");
+	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == L"hello:1");
 
 	return true;
 }
@@ -170,7 +120,6 @@ static bool string_tests_utf8()
 bool string_tests()
 {
 	TEST(string_tests_wchar());
-	TEST(string_tests_char());
 	TEST(string_tests_format());
 	TEST(string_tests_utf8());
 

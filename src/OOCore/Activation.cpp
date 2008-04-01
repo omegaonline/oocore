@@ -421,7 +421,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 			ObjectPtr<Registry::IRegistryKey> ptrOidKey = OOCore::FindOIDKey(oid);
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
-				void* TODO; // Surrogates here?!?
+				void* TICKET_89; // Surrogates here?!?
 
 				pObject = OOCore::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
 				if (pObject)
@@ -437,7 +437,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
 			// Change this to use monikers
-			void* TODO;
+			void* TICKET_90;
 			
 			ObjectPtr<IObject> ptrObject;
 			ptrObject.Attach(ptrROT->GetObject(oid));
@@ -451,8 +451,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 			
 			if (!(flags & Activation::DontLaunch))
 			{
-				void* TODO;	// Search Local User as well...
-
 				// Lookup OID
 				ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = OOCore::FindAppKey(oid);
 				if (ptrServer)

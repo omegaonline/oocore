@@ -56,7 +56,6 @@ namespace User
 		public ACE_Service_Handler
 	{
 	public:
-		TcpAsyncStream();
 		virtual ~TcpAsyncStream();
 
 		bool init(const ACE_SOCK_Stream& stream, IO::IAsyncStreamCallback* pCallback);
@@ -176,13 +175,9 @@ uint32_t User::TcpStream::WriteBytes(uint32_t cbBytes, const byte_t* val)
 	return static_cast<uint32_t>(s);
 }
 
-User::TcpAsyncStream::TcpAsyncStream()
-{
-}
-
 User::TcpAsyncStream::~TcpAsyncStream()
 {
-	void* TODO;
+	void* MORE_HERE_NOW;
 }
 
 bool User::TcpAsyncStream::init(const ACE_SOCK_Stream& stream, IO::IAsyncStreamCallback* pCallback)

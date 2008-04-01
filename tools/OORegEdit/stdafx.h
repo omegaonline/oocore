@@ -3,6 +3,12 @@
 
 #include <map>
 
+#if _MSC_VER >= 1400
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #define wxUSE_GUI 1
 
 // For compilers that support precompilation, includes <wx/wx.h>.
@@ -26,3 +32,8 @@
 #include <wx/valgen.h>
 #include <wx/docview.h>
 #include <wx/html/htmlwin.h>
+
+#if _MSC_VER >= 1400
+#undef _CRT_SECURE_NO_WARNINGS
+#pragma warning(pop)
+#endif

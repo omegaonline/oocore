@@ -529,7 +529,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 		}
 		else
 		{
-			void* HIGHWATERMARK; // Check for timeout on high water mark and spawn more threads
+			void* TICKET_93; // Check for timeout on high water mark and spawn more threads
 
 			if (m_default_msg_queue.enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
 			{

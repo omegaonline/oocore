@@ -539,7 +539,7 @@ int OOCore::UserSession::run_read_loop()
 					if (i->second->m_usage == 0)
 					{
 						// This incoming request may not be processed for some time...
-						void* RAISE_ALERT;	// Alert!
+						void* TICKET_91;	// Alert!
 					}
 
 					if (i->second->m_msg_queue->enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
@@ -616,7 +616,7 @@ int OOCore::UserSession::run_read_loop()
 			if (!bSent)
 			{
 				// This incoming request may not be processed for some time...
-				void* RAISE_ALERT;	// Alert!
+				void* TICKET_91;	// Alert!
 			}
 		}
 

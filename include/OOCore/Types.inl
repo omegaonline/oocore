@@ -82,14 +82,6 @@ Omega::string_t& Omega::string_t::operator = (const string_t& s)
 	return *this;
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,string_t_assign_2,2,((in),void*,h,(in),const char*,sz));
-Omega::string_t& Omega::string_t::operator = (const char* sz)
-{
-	m_handle = static_cast<handle_t*>(string_t_assign_2(m_handle,sz));
-	OMEGA_DEBUG_STASH_STRING();
-	return *this;
-}
-
 OMEGA_EXPORTED_FUNCTION(void*,string_t_assign_3,2,((in),void*,h,(in),const wchar_t*,wsz));
 Omega::string_t& Omega::string_t::operator = (const wchar_t* wsz)
 {
@@ -136,14 +128,6 @@ Omega::string_t& Omega::string_t::operator += (const string_t& s)
 	return *this;
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,string_t_add2,2,((in),void*,h,(in),const char*,sz));
-Omega::string_t& Omega::string_t::operator += (const char* sz)
-{
-	m_handle = static_cast<handle_t*>(string_t_add2(m_handle,sz));
-	OMEGA_DEBUG_STASH_STRING();
-	return *this;
-}
-
 OMEGA_EXPORTED_FUNCTION(void*,string_t_add3,2,((in),void*,h,(in),const wchar_t*,wsz));
 Omega::string_t& Omega::string_t::operator += (const wchar_t* wsz)
 {
@@ -158,12 +142,6 @@ int Omega::string_t::Compare(const string_t& s) const
 	return string_t_cmp1(m_handle,s.m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION(int,string_t_cmp2,2,((in),const void*,h1,(in),const char*,sz));
-int Omega::string_t::Compare(const char* sz) const
-{
-	return string_t_cmp2(m_handle,sz);
-}
-
 OMEGA_EXPORTED_FUNCTION(int,string_t_cmp3,2,((in),const void*,h1,(in),const wchar_t*,wsz));
 int Omega::string_t::Compare(const wchar_t* wsz) const
 {
@@ -174,12 +152,6 @@ OMEGA_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,h1,(in),const void
 int Omega::string_t::CompareNoCase(const string_t& s) const
 {
 	return string_t_cnc1(m_handle,s.m_handle);
-}
-
-OMEGA_EXPORTED_FUNCTION(int,string_t_cnc2,2,((in),const void*,h1,(in),const char*,sz));
-int Omega::string_t::CompareNoCase(const char* sz) const
-{
-	return string_t_cnc2(m_handle,sz);
 }
 
 OMEGA_EXPORTED_FUNCTION(int,string_t_cnc3,2,((in),const void*,h1,(in),const wchar_t*,wsz));
@@ -209,15 +181,6 @@ size_t Omega::string_t::Find(const string_t& str, size_t pos, bool bIgnoreCase) 
 		return this->ToLower().Find(str.ToLower(),pos,false);
 }
 
-OMEGA_EXPORTED_FUNCTION(size_t,string_t_find2,4,((in),const void*,a,(in),char,b,(in),size_t,c,(in),bool,d));
-size_t Omega::string_t::Find(char c, size_t pos, bool bIgnoreCase) const
-{
-	if (!bIgnoreCase)
-		return string_t_find2(m_handle,c,pos,false);
-	else
-		return string_t_find2(this->ToLower().m_handle,c,pos,true);
-}
-
 OMEGA_EXPORTED_FUNCTION(size_t,string_t_find3,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),bool,d));
 size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
 {
@@ -225,15 +188,6 @@ size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
 		return string_t_find3(m_handle,c,pos,false);
 	else
 		return string_t_find3(this->ToLower().m_handle,c,pos,true);
-}
-
-OMEGA_EXPORTED_FUNCTION(size_t,string_t_rfind1,4,((in),const void*,a,(in),char,b,(in),size_t,c,(in),bool,d));
-size_t Omega::string_t::ReverseFind(char c, size_t pos, bool bIgnoreCase) const
-{
-	if (!bIgnoreCase)
-		return string_t_rfind1(m_handle,c,pos,false);
-	else
-		return string_t_rfind1(this->ToLower().m_handle,c,pos,true);
 }
 
 OMEGA_EXPORTED_FUNCTION(size_t,string_t_rfind2,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),bool,d));
@@ -300,11 +254,6 @@ Omega::string_t Omega::string_t::Format(const wchar_t* pszFormat, ...)
 }
 
 inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
-}
-
-inline Omega::string_t operator + (const Omega::string_t& lhs, const char* rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
 }

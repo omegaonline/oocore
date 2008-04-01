@@ -553,7 +553,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 			{
 				// Found it!
 				bKey = false;
-				return strName + "\\" + strValue;
+				return strName + L"\\" + strValue;
 			}
 		}
 
@@ -561,7 +561,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 		Omega::string_t strNext = Find3(ptrSubKey,strFind,bKeys,bValues,bData,bMatchAll,bIgnoreCase,bKey);
 		if (!strNext.IsEmpty())
 		{
-			return strName + "\\" + strNext;
+			return strName + L"\\" + strNext;
 		}
 	}
 

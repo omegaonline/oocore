@@ -85,7 +85,7 @@ namespace Omega
 			virtual Registry::IRegistryKey* GetRegistry() = 0;
 			virtual Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
 			virtual bool_t ExecProcess(const string_t& strProcess, bool_t bPublic) = 0;
-			virtual uint32_t OpenStream(const string_t& strEndPoint) = 0;
+			virtual IO::IStream* OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback) = 0;
 		};
 
 		// {63EB243E-6AE3-43bd-B073-764E096775F8}
@@ -153,7 +153,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Registry::IRegistryKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())
 	OMEGA_METHOD(bool_t,ExecProcess,2,((in),const string_t&,strProcess,(in),bool_t,bPublic))
-	OMEGA_METHOD(uint32_t,OpenStream,1,((in),const string_t&,strEndPoint))
+	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndPoint,(in),IO::IAsyncStreamCallback*,pCallback))
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,Remoting_GetCallContext,0,());

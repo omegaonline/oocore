@@ -168,13 +168,13 @@ namespace Omega
 		{
 			enum SignalType
 			{
-				ReadPending = 0,
+				Read = 0,
 				Written = 1,
 				Closed = 2
 			};
 			typedef byte_t SignalType_t;
 
-			virtual void OnSignal(SignalType_t type, uint32_t cbBytes) = 0;
+			virtual void OnSignal(SignalType_t type, uint32_t cbBytes, const byte_t* pData) = 0;
 		};
 
 		// This may well change!!  You have been warned
@@ -328,7 +328,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::IO, IAsyncStreamCallback, "{1E587515-AE98-45ef-9E74-497784169F38}",
 	
 	// Methods
-	OMEGA_METHOD_VOID(OnSignal,2,((in),Omega::IO::IAsyncStreamCallback::SignalType_t,type,(in),Omega::uint32_t,cbBytes))
+	OMEGA_METHOD_VOID(OnSignal,3,((in),Omega::IO::IAsyncStreamCallback::SignalType_t,type,(in),Omega::uint32_t,cbBytes,(in)(size_is(cbBytes)),const Omega::byte_t*,pData))
 )
 
 OMEGA_DEFINE_INTERFACE

@@ -85,10 +85,10 @@ namespace User
 
 				bOk = true;
 			}
-			
+
 			(*m_pClose)(hHttpSession);
 
-			return bOk;			
+			return bOk;
 		}
 
 		bool WinHttpGetIEProxyConfigForCurrentUser(const string_t& strURL, string_t& strProxy)
@@ -104,7 +104,7 @@ namespace User
 			bool bOk = false;
 			if (config.lpszAutoConfigUrl)
 				bOk = WinHttpGetProxyFromPAC(strURL,config.lpszAutoConfigUrl,strProxy);
-			
+
 			if (!bOk && config.lpszProxy)
 				strProxy = config.lpszProxy;
 
@@ -154,7 +154,7 @@ namespace User
 		typedef HINTERNET (WINAPI *pfnWinHttpOpen)(LPCWSTR pwszUserAgent,DWORD dwAccessType,LPCWSTR pwszProxyName, LPCWSTR pwszProxyBypass, DWORD dwFlags);
 		typedef BOOL (WINAPI *pfnWinHttpGetProxyForUrl)(HINTERNET hSession, LPCWSTR lpcwszUrl, WINHTTP_AUTOPROXY_OPTIONS *pAutoProxyOptions, WINHTTP_PROXY_INFO *pProxyInfo);
 		typedef BOOL (WINAPI *pfnWinHttpCloseHandle)(HINTERNET hInternet);
-		
+
 		pfnWinHttpGetIEProxyConfigForCurrentUser m_pIE;
 		pfnWinHttpOpen                           m_pOpen;
 		pfnWinHttpGetProxyForUrl                 m_pGP;
@@ -192,10 +192,10 @@ namespace User
 
 				bOk = true;
 			}
-			
+
 			(*m_pClose)(hHttpSession);
 
-			return bOk;			
+			return bOk;
 		}
 	};
 	static WinHttpWrapper win_http_wrapper;
@@ -253,7 +253,7 @@ string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const stri
 		if (ptrKey->IsValue(L"Proxy"))
 			strProxy = ptrKey->GetStringValue(L"Proxy");
 	}
-	
+
 	if (strProxy.IsEmpty())
 	{
 		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
@@ -282,7 +282,7 @@ string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const stri
 
 #else
 
-	strProxy = ACE_OS::getenv(L"http_proxy");
+	strProxy = string_t(ACE_OS::getenv("http_proxy"),false);
 
 #endif
 

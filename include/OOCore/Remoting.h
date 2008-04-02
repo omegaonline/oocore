@@ -134,16 +134,16 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IMarshal, "{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}",
 
-	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags))
-	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),IO::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags))
-	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),IO::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),IO::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),IO::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IMarshalFactory, "{68C779B3-72E7-4c09-92F0-118A01AF224D}",
 
-	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IObjectManager*,pObjectManager,(in),IO::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Omega::Remoting::MarshalFlags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IObjectManager*,pObjectManager,(in),IO::IFormattedStream*,pStream,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE

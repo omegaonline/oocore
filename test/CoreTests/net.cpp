@@ -24,20 +24,36 @@ void Callback::OnSignal(Omega::IO::IAsyncStreamCallback::SignalType_t type, Omeg
 
 bool net_tests()
 {
-	OTL::ObjectPtr<OTL::ObjectImpl<Callback> > ptrCallback; // = OTL::ObjectImpl<Callback>::CreateInstancePtr();
+	char szRequest[] = "GET / HTTP/1.1\r\nHost: www.google.co.uk\r\n\r\n";
+	char szBuf[2048];
 
 	OTL::ObjectPtr<Omega::IO::IStream> ptrStream;
-	ptrStream.Attach(Omega::IO::OpenStream(L"http://www.google.com",ptrCallback));
 
+	// Try sync
+	ptrStream.Attach(Omega::IO::OpenStream(L"http://www.google.com"));
 	TEST(ptrStream);
+	
+	ptrStream->WriteBytes((Omega::uint32_t)strlen(szRequest),(Omega::byte_t*)szRequest);
 
-	char szRequest[] = "GET / HTTP/1.1\r\nHost: www.google.co.uk\r\n\r\n";
-	ptrStream->WriteBytes(strlen(szRequest),(Omega::byte_t*)szRequest);
-
-	char szBuf[2048];
-	Omega::uint32_t cbBytes = 2048;
+	Omega::uint32_t cbBytes = 2047;
 	ptrStream->ReadBytes(cbBytes,(Omega::byte_t*)szBuf);
 	szBuf[cbBytes] = '\0';
 
+	// Try async
+	OTL::ObjectPtr<OTL::ObjectImpl<Callback> > ptrCallback = OTL::ObjectImpl<Callback>::CreateInstancePtr();
+
+	ptrStream.Attach(Omega::IO::OpenStream(L"http://www.google.com",ptrCallback));
+	TEST(ptrStream);
+	
+	ptrStream->WriteBytes((Omega::uint32_t)strlen(szRequest),(Omega::byte_t*)szRequest);
+
+	Omega::HandleRequests(2000);
+
+	cbBytes = 2047;
+	ptrStream->ReadBytes(cbBytes,(Omega::byte_t*)szBuf);
+	szBuf[cbBytes] = '\0';
+
+	Omega::HandleRequests(2000);
+	
 	return true;
 }

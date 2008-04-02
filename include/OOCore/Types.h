@@ -210,7 +210,7 @@ namespace Omega
 #ifdef OMEGA_HAS_UUIDOF
 		inline static const guid_t& FromUuidof(const _GUID& rhs)
 		{
-			return *reinterpret_cast<const Omega::guid_t*>(&rhs);
+			return *reinterpret_cast<const guid_t*>(&rhs);
 		}
 #endif
 	};

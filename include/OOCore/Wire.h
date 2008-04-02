@@ -1013,7 +1013,7 @@ namespace Omega
 					return 0;
 				}
 
-				IException_Safe* SendAndReceive(IException_Safe*& pRet, Remoting::MethodAttributes_t attribs, IFormattedStream_Safe* pParamsOut, auto_iface_safe_ptr<IFormattedStream_Safe>& pParamsIn, Omega::uint16_t timeout = 0)
+				IException_Safe* SendAndReceive(IException_Safe*& pRet, Remoting::MethodAttributes_t attribs, IFormattedStream_Safe* pParamsOut, auto_iface_safe_ptr<IFormattedStream_Safe>& pParamsIn, uint16_t timeout = 0)
 				{
 					IFormattedStream_Safe* p = 0;
 					IException_Safe* pSE = m_pManager->SendAndReceive_Safe(&pRet,attribs,pParamsOut,&p,timeout);

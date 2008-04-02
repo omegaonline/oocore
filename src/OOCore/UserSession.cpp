@@ -1230,5 +1230,11 @@ void OOCore::UserSession::handle_requests(uint32_t timeout)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const uint32_t&,timeout))
 {
+	ObjectPtr<Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+	ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy;
+	ptrProxy.Attach(ptrIPS.QueryInterface<System::MetaInfo::IWireProxy>());
+	if (!ptrProxy)
+		OMEGA_THROW(L"Do not call handle requests when you are loaded into OOServer!");
+
 	OOCore::UserSession::handle_requests(timeout);
 }

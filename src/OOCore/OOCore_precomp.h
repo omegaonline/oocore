@@ -49,7 +49,6 @@
 #include <ace/Countdown_Time.h>
 #include <ace/DLL.h>
 #include <ace/DLL_Manager.h>
-#include <ace/Event.h>
 #include <ace/Message_Queue.h>
 #include <ace/NT_Service.h>
 #include <ace/OS.h>

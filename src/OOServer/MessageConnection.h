@@ -78,8 +78,8 @@ namespace Root
 
 		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs);
 		void send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-		void pump_requests(const ACE_Time_Value* deadline = 0);
-		
+				
+		int start();
 		void close();
 		void stop();
 		
@@ -101,6 +101,8 @@ namespace Root
 		MessageHandler& operator = (const MessageHandler&) { return *this; }
 
 		ACE_RW_Thread_Mutex  m_lock;
+		int                  m_req_thrd_grp_id;
+		int                  m_pro_thrd_grp_id;
 		ACE_CDR::ULong       m_uChannelId;
 		ACE_CDR::ULong       m_uChannelMask;
 		ACE_CDR::ULong       m_uChildMask;
@@ -177,7 +179,13 @@ namespace Root
 		};
 
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
-		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>      m_default_msg_queue;
+
+		struct WorkerInfo
+		{
+			ACE_Event  m_Event;
+			Message*   m_msg;
+		};
+		ACE_Message_Queue_Ex<WorkerInfo,ACE_MT_SYNCH>  m_thread_queue;
 
 		// Accessors for ThreadContext
 		ACE_CDR::UShort insert_thread_context(const ThreadContext* pContext);
@@ -188,12 +196,16 @@ namespace Root
 		void pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
 		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
 		
+		void pump_requests();
 		bool parse_message(const ACE_Message_Block* mb);
 		bool send_off_i(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
 
 		void process_channel_close(Message* msg);
+
+		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
+		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
 	};
 }
 

@@ -96,13 +96,16 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define OBJECT_MAP_ENTRY(obj,name) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, &Creator<obj::ObjectFactoryClass>::Create, 0 },
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, false, &Creator<obj::ObjectFactoryClass>::Create, 0 },
+
+#define OBJECT_MAP_ENTRY_LOCAL(obj,name) \
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, true, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
 #define OBJECT_MAP_ENTRY_UNNAMED(obj) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, 0, Creator<obj::ObjectFactoryClass>::Create, 0 },
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, 0, false, Creator<obj::ObjectFactoryClass>::Create, 0 },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,false,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	OMEGA_PRIVATE LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
@@ -127,7 +130,7 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,false,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	OMEGA_PRIVATE ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
@@ -453,6 +456,7 @@ namespace OTL
 			const Omega::Activation::Flags_t (*pfnActivationFlags)();
 			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
 			const wchar_t* pszName;
+			bool bLocal;
 			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
 			Omega::uint32_t cookie;
 		};

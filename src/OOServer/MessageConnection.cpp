@@ -224,6 +224,8 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 }
 
 Root::MessageHandler::MessageHandler() :
+	m_req_thrd_grp_id(-1),
+	m_pro_thrd_grp_id(-1),
 	m_uChannelId(0),
 	m_uChannelMask(0),
 	m_uChildMask(0),
@@ -232,6 +234,52 @@ Root::MessageHandler::MessageHandler() :
 	m_uNextChannelMask(0),
 	m_uNextChannelShift(0)
 {
+}
+
+int Root::MessageHandler::start()
+{
+	// Determine default threads from processor count
+	int threads = ACE_OS::num_processors();
+	if (threads < 1)
+		threads = 1;
+
+	// Spawn off the request threads
+	m_req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
+	if (m_req_thrd_grp_id == -1)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")),-1);
+	else
+	{
+		// Spawn off the proactor threads
+		m_pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn,0);
+		if (m_pro_thrd_grp_id == -1)
+		{
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")));
+
+			// Stop the MessageHandler
+			stop();
+
+			return -1;
+		}
+		else
+		{
+			m_thread_queue.high_water_mark(sizeof(WorkerInfo) * (threads+1));
+			m_thread_queue.low_water_mark(m_thread_queue.high_water_mark());
+		}
+	}
+
+	return 0;
+}
+
+ACE_THR_FUNC_RETURN Root::MessageHandler::proactor_worker_fn(void*)
+{
+	ACE_Proactor::instance()->proactor_run_event_loop();
+	return 0;
+}
+
+ACE_THR_FUNC_RETURN Root::MessageHandler::request_worker_fn(void* pParam)
+{
+	static_cast<MessageHandler*>(pParam)->pump_requests();
+	return 0;
 }
 
 void Root::MessageHandler::set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask, ACE_CDR::ULong child_mask, ACE_CDR::ULong upstream_id)
@@ -529,9 +577,51 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 		}
 		else
 		{
-			void* TICKET_93; // Check for timeout on high water mark and spawn more threads
+			// Sort out the timeout
+			ACE_Time_Value deadline = msg->m_deadline;
+			ACE_Time_Value now = ACE_OS::gettimeofday();
 
-			if (m_default_msg_queue.enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
+			if (deadline <= now)
+			{
+				// Timeout
+				delete msg;
+				return true;
+			}
+
+			if (deadline - now > ACE_Time_Value(1))
+				deadline = now + ACE_Time_Value(1);
+						
+			// Get the next thread from the queue
+			WorkerInfo* pInfo;
+
+			for (;;)
+			{
+				if (m_thread_queue.dequeue_head(pInfo,&deadline) == -1)
+				{
+					if (ACE_OS::last_error() == EWOULDBLOCK)
+					{
+						// Spawn off an extra thread
+						if (ACE_Thread_Manager::instance()->spawn(request_worker_fn,this,THR_NEW_LWP | THR_JOINABLE,0,0,0,m_req_thrd_grp_id) == -1)
+						{
+							delete msg;
+							return false;
+						}					
+
+						// Sleep to let the new thread have a chance to start..
+						ACE_OS::sleep(ACE_Time_Value(1));
+						continue;
+					}
+
+					delete msg;
+					return true;
+				}
+
+				break;
+			}
+
+			// Set the message and signal
+			pInfo->m_msg = msg;
+			if (pInfo->m_Event.signal() != 0)
 			{
 				delete msg;
 				return true;
@@ -671,14 +761,20 @@ void Root::MessageHandler::close()
 
 		ACE_OS::sleep(wait);
 	}
+
+	// Stop the proactor
+	ACE_Proactor::instance()->proactor_end_event_loop();
+
+	// Wait for all the proactor threads to finish
+	ACE_Thread_Manager::instance()->wait_grp(m_pro_thrd_grp_id);
 }
 
 void Root::MessageHandler::stop()
 {
-	ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
 	try
 	{
+		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
 		for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
 			if (i->second->m_usage_count)
@@ -690,7 +786,22 @@ void Root::MessageHandler::stop()
 		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
 	}
 
-	m_default_msg_queue.close();
+	// Close all waiting threads
+	while (!m_thread_queue.is_empty())
+	{
+		// Dequeu each waiter
+		WorkerInfo* pInfo;
+		if (m_thread_queue.dequeue_head(pInfo,0) == -1)
+			break;
+		
+		// Set the message and signal
+		pInfo->m_msg = 0;
+		pInfo->m_Event.signal();
+	}
+	m_thread_queue.close();
+
+	// Wait for all the request threads to finish
+	ACE_Thread_Manager::instance()->wait_grp(m_req_thrd_grp_id);
 }
 
 bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id)
@@ -809,17 +920,31 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 	return bRet;
 }
 
-void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
+void Root::MessageHandler::pump_requests()
 {
+	WorkerInfo info;
+	info.m_msg = 0;
+
 	ThreadContext* pContext = ThreadContext::instance(this);
 	for (;;)
 	{
-		// Get the next message
-		Message* msg;
-		int ret = m_default_msg_queue.dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline));
-		if (ret == -1)
+		ACE_Time_Value deadline = ACE_Time_Value(15) + ACE_OS::gettimeofday();
+		
+		// Enqueue ourselves to the worker pool
+		if (m_thread_queue.enqueue_tail(&info,&deadline) == -1)
 			break;
 
+		// Wait for our signal
+		if (info.m_Event.wait() != 0)
+			break;
+
+		// Check for close
+		if (!info.m_msg)
+			break;
+
+		// Get the next message
+		Message* msg = info.m_msg;
+		
 		// Read the payload specific data
 		ACE_CDR::Octet byte_order;
 		msg->m_ptrPayload->read_octet(byte_order);
@@ -850,9 +975,7 @@ void Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline)
 					// Set deadline
 					ACE_Time_Value old_deadline = pContext->m_deadline;
 					pContext->m_deadline = msg->m_deadline;
-					if (deadline && *deadline < pContext->m_deadline)
-						pContext->m_deadline = *deadline;
-
+					
 					try
 					{
 						// Set per channel thread id

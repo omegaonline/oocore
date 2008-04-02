@@ -73,11 +73,13 @@ namespace OOCore
 
 		void OMEGA_CALL Pin()
 		{
+			// This needs implementing
 			void* TICKET_88;
 		}
 
 		void OMEGA_CALL Unpin()
 		{
+			// This needs implementing
 			void* TICKET_88;
 		}
 

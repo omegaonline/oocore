@@ -46,7 +46,7 @@ namespace Omega
 	{
 		virtual uint32_t ErrorCode() = 0;
 
-		inline static ISystemException* Create(Omega::uint32_t errno_val, const string_t& source = L"");
+		inline static ISystemException* Create(uint32_t errno_val, const string_t& source = L"");
 		inline static ISystemException* Create(const std::exception& e, const string_t& source = L"");
 		inline static ISystemException* Create(const string_t& desc, const string_t& source = L"");
 	};

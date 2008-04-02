@@ -106,64 +106,27 @@ void Root::Manager::end()
 
 int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 {
-	int ret = -1;
-
-	// Determine default threads from processor count
-	int threads = ACE_OS::num_processors();
-	if (threads < 1)
-		threads = 1;
-
-	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
-	if (req_thrd_grp_id == -1)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")));
-	else
+	// Start the handler
+	int ret = start();
+	if (ret != -1)
 	{
-		// Spawn off the proactor threads
-		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
-		if (pro_thrd_grp_id == -1)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")));
-		else
+		if (init())
 		{
-			if (init())
-			{
-				// Now just process client requests
-				ret = process_client_connects();
-			}
-
-			// Close all pipes
-			close();
-
-			// Stop the proactor
-			ACE_Proactor::instance()->proactor_end_event_loop();
-
-			// Wait for all the proactor threads to finish
-			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
+			// Now just process client requests
+			ret = process_client_connects();
 		}
 
+		// Close all pipes
+		close();
+				
 		// Close the user processes
 		close_users();
 
 		// Stop the MessageHandler
 		stop();
-
-		// Wait for all the request threads to finish
-		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
 	return ret;
-}
-
-ACE_THR_FUNC_RETURN Root::Manager::proactor_worker_fn(void*)
-{
-	ACE_Proactor::instance()->proactor_run_event_loop();
-	return 0;
-}
-
-ACE_THR_FUNC_RETURN Root::Manager::request_worker_fn(void* pParam)
-{
-	static_cast<Manager*>(pParam)->pump_requests();
-	return 0;
 }
 
 bool Root::Manager::init()

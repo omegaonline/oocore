@@ -402,8 +402,6 @@ namespace Omega
 				typedef iface_wire_type<IObject> wire_type;
 			};
 
-
-
 			inline void throw_correct_exception(IException_Safe* pE);
 			inline IException_Safe* return_safe_exception(IException* pE);
 			inline string_t lookup_iid(const guid_t& iid);

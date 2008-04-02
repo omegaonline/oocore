@@ -28,7 +28,7 @@ namespace Omega
 	{
 		interface IObjectFactory : public IObject
 		{
-			virtual void CreateInstance(IObject* pOuter, const Omega::guid_t& iid, IObject*& pObject) = 0;
+			virtual void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
 		};
 		
 		enum Flags
@@ -195,21 +195,21 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateInstance,3,((in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega, ISystemException, Omega, IException, "{A0E1EEDB-BA00-4078-B67B-D990D43D5E7C}",
 
-	OMEGA_METHOD(Omega::uint32_t,ErrorCode,0,())
+	OMEGA_METHOD(uint32_t,ErrorCode,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega, INoInterfaceException, Omega, IException, "{68778245-9EA7-49f7-9EF4-D5D742E781D5}",
 
-	OMEGA_METHOD(Omega::guid_t,GetUnsupportedIID,0,())
+	OMEGA_METHOD(guid_t,GetUnsupportedIID,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -217,7 +217,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Activation, IOidNotFoundException, Omega, IException, "{162BBEBD-770B-4925-A8E7-48DEC7224ABE}",
 
 	// Methods
-	OMEGA_METHOD(Omega::guid_t,GetMissingOid,0,())
+	OMEGA_METHOD(guid_t,GetMissingOid,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -225,7 +225,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Activation, INoAggregationException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
 
 	// Methods
-	OMEGA_METHOD(Omega::guid_t,GetFailingOid,0,())
+	OMEGA_METHOD(guid_t,GetFailingOid,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -233,7 +233,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Activation, ILibraryNotFoundException, Omega, IException, "{C7D970C0-D5D9-42e2-B927-E6E2E5624E50}",
 
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetLibraryName,0,())
+	OMEGA_METHOD(string_t,GetLibraryName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -241,9 +241,9 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IRunningObjectTable, "{0A36F849-8DBC-49c6-9ECA-8AD71BF3C8D0}",
 
 	// Methods
-	OMEGA_METHOD(Omega::uint32_t,Register,2,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject))
-	OMEGA_METHOD_VOID(Revoke,1,((in),Omega::uint32_t,cookie))
-	OMEGA_METHOD(Omega::IObject*,GetObject,1,((in),const Omega::guid_t&,oid))
+	OMEGA_METHOD(uint32_t,Register,2,((in),const guid_t&,oid,(in),IObject*,pObject))
+	OMEGA_METHOD_VOID(Revoke,1,((in),uint32_t,cookie))
+	OMEGA_METHOD(IObject*,GetObject,1,((in),const guid_t&,oid))
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -251,8 +251,8 @@ OMEGA_DEFINE_INTERFACE
 	Omega, IEnumString, "{0D796351-7197-4444-B6E0-74A669289D8F}",
 
 	// Methods
-	OMEGA_METHOD(bool_t,Next,2,((in_out),Omega::uint32_t&,count,(out)(size_is(count)),Omega::string_t*,parrVals))
-	OMEGA_METHOD(bool_t,Skip,1,((in),Omega::uint32_t,count))
+	OMEGA_METHOD(bool_t,Next,2,((in_out),uint32_t&,count,(out)(size_is(count)),string_t*,parrVals))
+	OMEGA_METHOD(bool_t,Skip,1,((in),uint32_t,count))
 	OMEGA_METHOD_VOID(Reset,0,())
 	OMEGA_METHOD(IEnumString*,Clone,0,())
 )
@@ -262,24 +262,24 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Registry, IRegistryKey, "{F33E828A-BF5E-4c26-A541-BDB2CA736DBD}",
 
 	// Methods
-	OMEGA_METHOD(Omega::bool_t,IsSubKey,1,((in),const Omega::string_t&,key))
-	OMEGA_METHOD(Omega::bool_t,IsValue,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD(Omega::string_t,GetStringValue,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD(int64_t,GetIntegerValue,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const Omega::string_t&,name,(in_out),Omega::uint32_t&,cbLen,(out)(size_is(cbLen)),Omega::byte_t*,pBuffer))
-	OMEGA_METHOD_VOID(SetStringValue,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,val))
-	OMEGA_METHOD_VOID(SetIntegerValue,2,((in),const Omega::string_t&,name,(in),const Omega::int64_t&,val))
-	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const Omega::string_t&,name,(in),Omega::uint32_t,cbLen,(in)(size_is(cbLen)),const Omega::byte_t*,val))
-	OMEGA_METHOD(Omega::string_t,GetDescription,0,())
-	OMEGA_METHOD(Omega::string_t,GetValueDescription,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD_VOID(SetDescription,1,((in),const Omega::string_t&,desc))
-	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const Omega::string_t&,name,(in),const Omega::string_t&,desc))
-	OMEGA_METHOD(Omega::Registry::ValueType_t,GetValueType,1,((in),const Omega::string_t&,name))
-	OMEGA_METHOD(Omega::Registry::IRegistryKey*,OpenSubKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags))
+	OMEGA_METHOD(bool_t,IsSubKey,1,((in),const string_t&,key))
+	OMEGA_METHOD(bool_t,IsValue,1,((in),const string_t&,name))
+	OMEGA_METHOD(string_t,GetStringValue,1,((in),const string_t&,name))
+	OMEGA_METHOD(int64_t,GetIntegerValue,1,((in),const string_t&,name))
+	OMEGA_METHOD_VOID(GetBinaryValue,3,((in),const string_t&,name,(in_out),uint32_t&,cbLen,(out)(size_is(cbLen)),byte_t*,pBuffer))
+	OMEGA_METHOD_VOID(SetStringValue,2,((in),const string_t&,name,(in),const string_t&,val))
+	OMEGA_METHOD_VOID(SetIntegerValue,2,((in),const string_t&,name,(in),const int64_t&,val))
+	OMEGA_METHOD_VOID(SetBinaryValue,3,((in),const string_t&,name,(in),uint32_t,cbLen,(in)(size_is(cbLen)),const byte_t*,val))
+	OMEGA_METHOD(string_t,GetDescription,0,())
+	OMEGA_METHOD(string_t,GetValueDescription,1,((in),const string_t&,name))
+	OMEGA_METHOD_VOID(SetDescription,1,((in),const string_t&,desc))
+	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const string_t&,name,(in),const string_t&,desc))
+	OMEGA_METHOD(Registry::ValueType_t,GetValueType,1,((in),const string_t&,name))
+	OMEGA_METHOD(Registry::IRegistryKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
 	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())
 	OMEGA_METHOD(IEnumString*,EnumValues,0,())
-	OMEGA_METHOD_VOID(DeleteKey,1,((in),const Omega::string_t&,strKey))
-	OMEGA_METHOD_VOID(DeleteValue,1,((in),const Omega::string_t&,strValue))
+	OMEGA_METHOD_VOID(DeleteKey,1,((in),const string_t&,strKey))
+	OMEGA_METHOD_VOID(DeleteValue,1,((in),const string_t&,strValue))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -287,7 +287,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Registry, INotFoundException, Omega, IException, "{A851A685-A3AB-430b-BA52-E277655AC9CF}",
 
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetName,0,())
+	OMEGA_METHOD(string_t,GetName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -295,8 +295,8 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Registry, IWrongValueTypeException, Omega, IException, "{B7FF3FE7-11AF-4f62-9341-8470BCB8F0D7}",
 
 	// Methods
-	OMEGA_METHOD(Omega::Registry::ValueType_t,GetValueType,0,())
-	OMEGA_METHOD(Omega::string_t,GetValueName,0,())
+	OMEGA_METHOD(Registry::ValueType_t,GetValueType,0,())
+	OMEGA_METHOD(string_t,GetValueName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -304,7 +304,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Registry, IBadNameException, Omega, IException, "{5ADD9FB6-2044-40fd-9F3C-31E9B66B865E}",
 
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetName,0,())
+	OMEGA_METHOD(string_t,GetName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -312,7 +312,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Registry, IAlreadyExistsException, Omega, IException, "{5EC948EA-D7F1-4733-80A3-FF4BF5B2F4A7}",
 
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
+	OMEGA_METHOD(string_t,GetKeyName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -320,7 +320,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Registry, IAccessDeniedException, Omega, IException, "{08AE0A04-1765-493b-93A3-8738768F09BC}",
 	
 	// Methods
-	OMEGA_METHOD(Omega::string_t,GetKeyName,0,())
+	OMEGA_METHOD(string_t,GetKeyName,0,())
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -328,7 +328,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::IO, IAsyncStreamCallback, "{1E587515-AE98-45ef-9E74-497784169F38}",
 	
 	// Methods
-	OMEGA_METHOD_VOID(OnSignal,3,((in),Omega::IO::IAsyncStreamCallback::SignalType_t,type,(in),Omega::uint32_t,cbBytes,(in)(size_is(cbBytes)),const Omega::byte_t*,pData))
+	OMEGA_METHOD_EX_VOID(Remoting::asynchronous,0,OnSignal,3,((in),IO::IAsyncStreamCallback::SignalType_t,type,(in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -336,7 +336,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::IO, IProtocolHandler, "{76416648-0AFE-4474-BD8F-FEB033F17EAF}",
 	
 	// Methods
-	OMEGA_METHOD(Omega::IO::IStream*,OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback))
+	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndPoint,(in),IO::IAsyncStreamCallback*,pCallback))
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,());

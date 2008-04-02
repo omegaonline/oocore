@@ -121,9 +121,6 @@ namespace Root
 		void registry_get_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
 		void registry_delete_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-
-		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
-		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
 	};
 }
 

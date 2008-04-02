@@ -69,34 +69,11 @@ namespace User
 		ACE_SOCK_Stream                     m_stream;
 		ObjectPtr<IO::IAsyncStreamCallback> m_ptrCallback;
 		ACE_Asynch_Read_Stream              m_reader;
+		ACE_Asynch_Write_Stream             m_writer;
 
 		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
+		void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);
 		
-	// IStream members
-	public:
-		void ReadBytes(uint32_t& cbBytes, byte_t* val);
-		uint32_t WriteBytes(uint32_t cbBytes, const byte_t* val);
-	};
-	
-	class TcpStreamResult :
-		public ObjectBase,
-		public IO::IStream
-	{
-		friend class TcpAsyncStream;
-
-	public:
-		TcpStreamResult();
-		virtual ~TcpStreamResult();
-
-		void init(const ACE_Message_Block& mb);
-		
-		BEGIN_INTERFACE_MAP(TcpStreamResult)
-			INTERFACE_ENTRY(IO::IStream)
-		END_INTERFACE_MAP()
-
-	private:
-		ACE_Message_Block* m_mb;
-				
 	// IStream members
 	public:
 		void ReadBytes(uint32_t& cbBytes, byte_t* val);
@@ -187,6 +164,9 @@ bool User::TcpAsyncStream::init(const ACE_SOCK_Stream& stream, IO::IAsyncStreamC
 
 	if (m_reader.open(*this,stream.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("reader.open() failed")),false);
+
+	if (m_writer.open(*this,stream.get_handle()) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("writer.open() failed")),false);
 	
 	m_stream = stream;
 	m_ptrCallback = pCallback;
@@ -203,15 +183,12 @@ void User::TcpAsyncStream::handle_read_stream(const ACE_Asynch_Read_Stream::Resu
 	{
 		try
 		{
-			ObjectPtr<ObjectImpl<TcpStreamResult> > ptrResult = ObjectImpl<TcpStreamResult>::CreateInstancePtr();
-			ptrResult->init(mb);
-
 			OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
 			if (m_ptrCallback)
 			{
 				size_t res = result.bytes_transferred();
-				char* rd_pos = ptrResult->m_mb->rd_ptr();
+				char* rd_pos = mb.rd_ptr();
 				while (res)
 				{
 					uint32_t cbBytes = (uint32_t)-1;
@@ -221,7 +198,7 @@ void User::TcpAsyncStream::handle_read_stream(const ACE_Asynch_Read_Stream::Resu
 					m_ptrCallback->OnSignal(IO::IAsyncStreamCallback::Read,cbBytes,(const byte_t*)rd_pos);
 					res -= cbBytes;
 					rd_pos += cbBytes;
-					ptrResult->m_mb->rd_ptr(rd_pos);
+					mb.rd_ptr(rd_pos);
 				};
 			}
 		}
@@ -242,7 +219,66 @@ void User::TcpAsyncStream::handle_read_stream(const ACE_Asynch_Read_Stream::Resu
 	{
 		int err = result.error();
 		if (err != 0 && err != ENOTSOCK)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("handle_read_*() failed")));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("handle_read_stream() failed")));
+
+		// Ignore the failure, we will try our best anyway!
+		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
+	
+		m_stream.close();
+		
+		if (m_ptrCallback)
+		{
+			m_ptrCallback->OnSignal(IO::IAsyncStreamCallback::Closed,0,0);
+			m_ptrCallback.Release();
+		}
+	}
+}
+
+void User::TcpAsyncStream::handle_write_stream(const ACE_Asynch_Write_Stream::Result& result)
+{
+	ACE_Message_Block& mb = result.message_block();
+
+	bool bSuccess = (result.success() != 0);
+	if (result.bytes_transferred())
+	{
+		try
+		{
+			OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+			if (m_ptrCallback)
+			{
+				size_t res = result.bytes_transferred();
+				char* rd_pos = mb.base();
+				while (res)
+				{
+					uint32_t cbBytes = (uint32_t)-1;
+					if (res < (uint32_t)-1)
+						cbBytes = (uint32_t)res;
+
+					m_ptrCallback->OnSignal(IO::IAsyncStreamCallback::Written,cbBytes,(const byte_t*)rd_pos);
+					res -= cbBytes;
+					rd_pos += cbBytes;
+				};
+			}
+		}
+		catch (IException* pE)
+		{
+			pE->Release();
+			bSuccess = false;
+		}
+		catch (...)
+		{
+			bSuccess = false;
+		}	
+	}
+
+	mb.release();
+
+	if (!bSuccess)
+	{
+		int err = result.error();
+		if (err != 0 && err != ENOTSOCK)
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("handle_write_stream() failed")));
 
 		// Ignore the failure, we will try our best anyway!
 		ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
@@ -278,39 +314,28 @@ void User::TcpAsyncStream::ReadBytes(uint32_t& cbBytes, byte_t* /*val*/)
 
 uint32_t User::TcpAsyncStream::WriteBytes(uint32_t cbBytes, const byte_t* val)
 {
-	void* MORE_HERE_NOW;
+	// Create a new Message_Block
+	ACE_Message_Block* mb = 0;
+	OMEGA_NEW(mb,ACE_Message_Block(cbBytes));
 
-	return 0;
-}
-
-User::TcpStreamResult::TcpStreamResult() :
-	m_mb(0)
-{
-}
-
-User::TcpStreamResult::~TcpStreamResult()
-{
-	if (m_mb)
-		m_mb->release();
-}
-
-void User::TcpStreamResult::init(const ACE_Message_Block& mb)
-{
-	m_mb = mb.duplicate();
-}
-
-void User::TcpStreamResult::ReadBytes(uint32_t& cbBytes, byte_t* val)
-{
-	if (cbBytes > m_mb->length())
-		cbBytes = static_cast<uint32_t>(m_mb->length());
+	// Copy the data to write
+	if (mb->copy(reinterpret_cast<const char*>(val),cbBytes) != 0)
+	{
+		mb->release();
+		OMEGA_THROW(ACE_OS::last_error());
+	}
 	
-	ACE_OS::memcpy(val,m_mb->rd_ptr(),cbBytes);
-	m_mb->rd_ptr(cbBytes);
-}
+	// Start an async write
+	if (m_writer.write(*mb,cbBytes) != 0)
+	{
+		int err = ACE_OS::last_error();
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: read failed, code: %#x - %m\n"),err));
+		mb->release();
+		OMEGA_THROW(err);
+	}
 
-uint32_t User::TcpStreamResult::WriteBytes(uint32_t /*cbBytes*/, const byte_t* /*val*/)
-{
-	OMEGA_THROW(EACCES);
+	// Always 0, because we are always async
+	return 0;
 }
 
 IO::IStream* User::TcpProtocolHandler::OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
@@ -321,7 +346,7 @@ IO::IStream* User::TcpProtocolHandler::OpenStream(const string_t& strEndPoint, I
 		OMEGA_THROW(L"No protocol specified!");
 
 	// Create an address
-	ACE_INET_Addr addr(ACE_TEXT_WCHAR_TO_TCHAR(strEndPoint.Mid(pos+3).c_str()));
+	ACE_INET_Addr addr(ACE_TEXT_WCHAR_TO_TCHAR(strEndPoint.Mid(pos+3).c_str()),PF_INET);
 
 	// Get the timeout
 	ACE_Time_Value deadline = ACE_Time_Value::max_time;

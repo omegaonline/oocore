@@ -228,7 +228,7 @@ IO::IStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndPoint, 
 
 	// Make sure we are using at least one port...
 	string_t strEnd = L"tcp://" + strProxy.ToLower();
-	if (strEnd.Find(L':') == string_t::npos)
+	if (strEnd.Find(L':',6) == string_t::npos)
 		strEnd += L":80";
 
 	// Create a Tcp Protocol Handler

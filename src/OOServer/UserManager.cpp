@@ -76,7 +76,7 @@ using namespace OTL;
 const ACE_CDR::ULong User::Manager::m_root_channel = 0x80000000;
 
 User::Manager::Manager() :
-	m_nIPSCookie(0), m_nNextStreamCallback(0)
+	m_nIPSCookie(0)
 {
 }
 
@@ -91,56 +91,30 @@ int User::Manager::run(const ACE_CString& strPipe)
 
 int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 {
-	int ret = -1;
-
-	// Determine default threads from processor count
-	int threads = ACE_OS::num_processors();
-	if (threads < 1)
-		threads = 1;
-
-	// Spawn off the request threads
-	int req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
-	if (req_thrd_grp_id == -1)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error spawning threads")));
-	else
+	int ret = start();
+	if (ret != -1)
 	{
-		// Spawn off the proactor threads
-		int pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn);
-		if (pro_thrd_grp_id == -1)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error spawning threads")));
-		else
+		if (init(strPipe))
 		{
-			if (init(strPipe))
+			// Wait for stop
+			ret = ACE_Reactor::instance()->run_reactor_event_loop();
+
+			// Close the user pipes
+			close();
+
+			// Unregister our object factories
+			GetModule()->UnregisterObjectFactories();
+
+			// Unregister InterProcessService
+			if (m_nIPSCookie)
 			{
-				// Wait for stop
-				ret = ACE_Reactor::instance()->run_reactor_event_loop();
-
-				// Close the user pipes
-				close();
-
-				// Unregister our object factories
-				GetModule()->UnregisterObjectFactories();
-
-				// Unregister InterProcessService
-				if (m_nIPSCookie)
-				{
-					Activation::RevokeObject(m_nIPSCookie);
-					m_nIPSCookie = 0;
-				}
+				Activation::RevokeObject(m_nIPSCookie);
+				m_nIPSCookie = 0;
 			}
-
-			// Stop the proactor
-			ACE_Proactor::instance()->proactor_end_event_loop();
-
-			// Wait for all the request threads to finish
-			ACE_Thread_Manager::instance()->wait_grp(pro_thrd_grp_id);
 		}
 
 		// Stop the MessageHandler
 		stop();
-
-		// Wait for all the request threads to finish
-		ACE_Thread_Manager::instance()->wait_grp(req_thrd_grp_id);
 	}
 
 	return ret;
@@ -332,18 +306,6 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 	// If the root closes, we should end!
 	if (channel == m_root_channel)
 		end_event_loop();
-}
-
-ACE_THR_FUNC_RETURN User::Manager::proactor_worker_fn(void*)
-{
-	ACE_Proactor::instance()->proactor_run_event_loop();
-	return 0;
-}
-
-ACE_THR_FUNC_RETURN User::Manager::request_worker_fn(void* pParam)
-{
-	static_cast<Manager*>(pParam)->pump_requests();
-	return 0;
 }
 
 void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)

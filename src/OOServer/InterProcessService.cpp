@@ -23,6 +23,8 @@
 
 #include "./InterProcessService.h"
 #include "./UserManager.h"
+#include "./NetTcp.h"
+#include "./NetHttp.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -221,5 +223,47 @@ bool_t User::InterProcessService::ExecProcess(const string_t& strProcess, bool_t
 
 IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
 {
-	return User::Manager::open_stream(strEndPoint,pCallback);
+	// First try to determine the protocol...
+	size_t pos = strEndPoint.Find(L"://");
+	if (pos == string_t::npos)
+		OMEGA_THROW(L"No protocol specified!");
+
+	// Look up handler in registry
+	string_t strProtocol = strEndPoint.Left(pos).ToLower();
+	
+	guid_t oid = guid_t::Null();
+	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User");
+	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+	{
+		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+		if (ptrKey->IsValue(L"ServerHandlerOID"))
+			oid = guid_t::FromString(ptrKey->GetStringValue(L"ServerHandlerOID"));
+	}
+	
+	if (oid == guid_t::Null())
+	{
+		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
+		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+		{
+			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+			if (ptrKey->IsValue(L"ServerHandlerOID"))
+				oid = guid_t::FromString(ptrKey->GetStringValue(L"ServerHandlerOID"));
+		}
+	}
+	
+	if (oid == guid_t::Null())
+	{
+		if (strProtocol == L"tcp")
+			oid = OID_TcpProtocolHandler;
+		else if (strProtocol == L"http")
+			oid = OID_HttpProtocolHandler;
+		else
+			OMEGA_THROW(L"No handler for protocol " + strProtocol);		
+	}
+	
+	// Create the handler...
+	ObjectPtr<IO::IProtocolHandler> ptrHandler(oid);
+
+	// Open the stream...
+	return ptrHandler->OpenStream(strEndPoint,pCallback);
 }

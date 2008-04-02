@@ -17,7 +17,7 @@ void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = m_ptrKey.EnumSubKeys();
 	for (;;)
 	{
-		size_t count = 1;
+		Omega::uint32_t count = 1;
 		Omega::string_t strName;
 		ptrEnum->Next(count,&strName);
 		if (count==0)
@@ -52,9 +52,9 @@ void TreeItemData::InitList(wxListCtrl* pList)
 	int i;
 	for (i=0;;++i)
 	{
-		size_t count = 1;
+		Omega::uint32_t count = 1;
 		Omega::string_t strName;
-		ptrEnum->Next(count,&strName);
+ 		ptrEnum->Next(count,&strName);
 		if (count==0)
 			break;
 
@@ -176,7 +176,7 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = ptrOldKey.EnumValues();
 	for (;;)
 	{
-		size_t count = 1;
+		Omega::uint32_t count = 1;
 		Omega::string_t strName;
 		ptrEnum->Next(count,&strName);
 		if (count==0)
@@ -217,7 +217,7 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOld
 	ptrEnum = ptrOldKey.EnumSubKeys();
 	for (;;)
 	{
-		size_t count = 1;
+		Omega::uint32_t count = 1;
 		Omega::string_t strName;
 		ptrEnum->Next(count,&strName);
 		if (count==0)
@@ -256,7 +256,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 
 	if (m_nDepth==0)
 	{
-		size_t count = 1;
+		Omega::uint32_t count = 1;
 		OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
 		ptrEnum2->Next(count,&strName);
 		if (count==1)

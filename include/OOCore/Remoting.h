@@ -109,7 +109,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, ICallContext, "{05340979-0CEA-48f6-91C9-2FE13F8546E0}",
-		
+
 	OMEGA_METHOD_VOID(Deadline,2,((out),uint64_t&,secs,(out),int32_t&,usecs))
 	OMEGA_METHOD(uint32_t,Timeout,0,())
 	OMEGA_METHOD(bool_t,HasTimedOut,0,())

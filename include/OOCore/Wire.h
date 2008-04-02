@@ -271,7 +271,7 @@ namespace Omega
 					if (pSE)
 						return pSE;
 				}
-				
+
 				return 0;
 			}
 
@@ -360,14 +360,14 @@ namespace Omega
 				IException_Safe* pSE = wire_write(pStream,cbSize);
 				if (pSE)
 					return pSE;
-				
+
 				for (uint32_t i=0;i<cbSize;++i)
 				{
 					pSE = marshal_info<T>::wire_type::write(pManager,pStream,pVals[i]);
 					if (pSE)
 						return pSE;
 				}
-				
+
 				return 0;
 			}
 
@@ -394,7 +394,7 @@ namespace Omega
 					p += cb;
 					cbSize -= cb;
 				}
-					
+
 				return 0;
 			}
 
@@ -556,8 +556,10 @@ namespace Omega
 					{
 						try
 						{
+#if !defined(OMEGA_64)
 							if (cbSize > (size_t)-1 / sizeof(typename marshal_info<typename remove_const<T>::type>::wire_type::type))
 								OMEGA_THROW(E2BIG);
+#endif
 
 							m_alloc_size = cbSize;
 							OMEGA_NEW(m_pVals,typename marshal_info<typename remove_const<T>::type>::wire_type::type[m_alloc_size]);

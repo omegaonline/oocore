@@ -27,7 +27,16 @@
 #undef interface
 #define interface struct
 
+/* stop lots of attributes warnings */
+#ifndef __x86_64__
 #define OMEGA_CALL   __attribute__((cdecl))
+#else
+#define OMEGA_CALL
+#endif /* ndef __x86_64__ */
+
+#ifdef __LP64__
+#define OMEGA_64
+#endif
 
 #define OMEGA_EXPORT  __attribute__((visibility("default")))
 #define OMEGA_IMPORT  __attribute__((visibility("default")))

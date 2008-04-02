@@ -506,7 +506,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey
 	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = ptrKey.EnumSubKeys();
 	for (;;)
 	{
-		size_t count = 1;
+		Omega::uint32_t count = 1;
 		Omega::string_t strName;
 		ptrEnum->Next(count,&strName);
 		if (count==0)

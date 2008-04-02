@@ -46,7 +46,7 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 	return strPrefix + szBuf;
 #else
 
-    if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
+    if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)
@@ -590,7 +590,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 
 			if (deadline - now > ACE_Time_Value(1))
 				deadline = now + ACE_Time_Value(1);
-						
+
 			// Get the next thread from the queue
 			WorkerInfo* pInfo;
 
@@ -605,7 +605,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 						{
 							delete msg;
 							return false;
-						}					
+						}
 
 						// Sleep to let the new thread have a chance to start..
 						ACE_OS::sleep(ACE_Time_Value(1));
@@ -793,7 +793,7 @@ void Root::MessageHandler::stop()
 		WorkerInfo* pInfo;
 		if (m_thread_queue.dequeue_head(pInfo,0) == -1)
 			break;
-		
+
 		// Set the message and signal
 		pInfo->m_msg = 0;
 		pInfo->m_Event.signal();
@@ -929,7 +929,7 @@ void Root::MessageHandler::pump_requests()
 	for (;;)
 	{
 		ACE_Time_Value deadline = ACE_Time_Value(15) + ACE_OS::gettimeofday();
-		
+
 		// Enqueue ourselves to the worker pool
 		if (m_thread_queue.enqueue_tail(&info,&deadline) == -1)
 			break;
@@ -944,7 +944,7 @@ void Root::MessageHandler::pump_requests()
 
 		// Get the next message
 		Message* msg = info.m_msg;
-		
+
 		// Read the payload specific data
 		ACE_CDR::Octet byte_order;
 		msg->m_ptrPayload->read_octet(byte_order);
@@ -975,7 +975,7 @@ void Root::MessageHandler::pump_requests()
 					// Set deadline
 					ACE_Time_Value old_deadline = pContext->m_deadline;
 					pContext->m_deadline = msg->m_deadline;
-					
+
 					try
 					{
 						// Set per channel thread id
@@ -1055,8 +1055,8 @@ bool Root::MessageHandler::send_off_i(ACE_CDR::UShort flags, ACE_CDR::ULong seq_
 	}
 
 	// Build a packet
-	ACE_OutputCDR packet(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);	
-	
+	ACE_OutputCDR packet(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+
 	packet.write_octet(static_cast<ACE_CDR::Octet>(packet.byte_order()));
 	packet.write_octet(1);	 // version
 	packet << flags;

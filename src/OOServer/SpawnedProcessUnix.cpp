@@ -466,9 +466,7 @@ bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
 	if (chown(strFilename.c_str(),0,(gid_t)-1) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chown failed")),false);
 
-	void* TODO; // Check the group permissions...
-
-	if (chmod(strFilename.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (chmod(strFilename.c_str(),S_IRWXU) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chmod failed")),false);
 
 	return true;

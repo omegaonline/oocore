@@ -58,7 +58,7 @@ namespace Root
 
 		MessageHandler*                                     m_pHandler;
 		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> m_pipe;
-		size_t                                              m_read_len;
+		ACE_CDR::ULong                                      m_read_len;
 		ACE_CDR::ULong                                      m_channel_id;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -78,21 +78,21 @@ namespace Root
 
 		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs);
 		void send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-				
+
 		int start();
 		void close();
 		void stop();
-		
+
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual bool channel_open(ACE_CDR::ULong channel);
 		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
 		virtual bool route_off(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, const ACE_Message_Block* mb);
-		
+
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
 
 		virtual void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs) = 0;
-		
+
 	private:
 		friend class MessageConnection;
 		friend class MessagePipeAsyncAcceptor<MessageHandler>;
@@ -110,7 +110,7 @@ namespace Root
 		ACE_CDR::ULong       m_uNextChannelId;
 		ACE_CDR::ULong       m_uNextChannelMask;
 		ACE_CDR::ULong       m_uNextChannelShift;
-		
+
 		struct ChannelInfo
 		{
 			ChannelInfo() :
@@ -125,7 +125,7 @@ namespace Root
 			ACE_Refcounted_Auto_Ptr<ACE_Thread_Mutex,ACE_Null_Mutex> lock;
 		};
 		std::map<ACE_CDR::ULong,ChannelInfo> m_mapChannelIds;
-		
+
 		struct Message
 		{
 			enum Type
@@ -136,7 +136,7 @@ namespace Root
 			};
 
 			enum Attributes
-			{	
+			{
 				// Low 16 bits must match Remoting::MethodAttributes
 				synchronous = 0,
 				asynchronous = 1,
@@ -195,7 +195,7 @@ namespace Root
 		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id);
 		void pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
 		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
-		
+
 		void pump_requests();
 		bool parse_message(const ACE_Message_Block* mb);
 		bool send_off_i(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);

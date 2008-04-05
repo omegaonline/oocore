@@ -40,7 +40,7 @@ OBJS	     = src/OOCore/Registry.o     	\
 # force dependecy generation
 
 build: $(TARGET)
-	echo "making OOCore library $(TARGET)"
+	@echo "making OOCore library $(TARGET)"
 
 full:clean build
 
@@ -48,7 +48,8 @@ $(TARGET): src/OOCore/.depend $(OBJS)
 	$(CC) -shared $(OBJS) $(LDFLAGS) $(CFLAGS) -Wl -o $(TARGET)  
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	[ -f $(TARGET) ] && rm -f $(TARGET)
+	rm $(OBJS)
 	[ -f src/OOCore/.depend ] && rm -f src/OOCore/.depend 
 
 src/OOCore/.depend : depend
@@ -59,6 +60,6 @@ depend: $(SRCS)
 include src/OOCore/.depend
 
 install:
-	install -m 755 $(TARGET) /usr/lib || echo "Install failed, you need to be root to install libraries"
-	echo "$(TARGET) is installed"	
+	@install -m 755 $(TARGET) /usr/lib || echo "Install failed, you need to be root to install libraries"
+	@echo "$(TARGET) is installed"	
 

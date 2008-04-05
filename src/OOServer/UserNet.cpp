@@ -26,9 +26,9 @@
 using namespace Omega;
 using namespace OTL;
 
-bool User::Manager::route_off(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, const ACE_Message_Block* mb)
+bool User::Manager::route_off(const ACE_Message_Block* mb, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	void* TICKET_92;
 
-	return MessageHandler::route_off(dest_channel_id,src_channel_id,dest_thread_id,src_thread_id,deadline,attribs,mb);
+	return MessageHandler::route_off(mb,dest_channel_id,deadline,attribs);
 }

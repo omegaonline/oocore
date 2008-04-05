@@ -358,8 +358,8 @@ ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
 
 int OOCore::UserSession::run_read_loop()
 {
-	static const ssize_t s_initial_read = ACE_CDR::LONG_SIZE;
-	char szBuffer[ACE_CDR::LONG_SIZE + ACE_CDR::MAX_ALIGNMENT];
+	static const ssize_t s_initial_read = ACE_CDR::LONG_SIZE * 2;
+	char szBuffer[ACE_CDR::LONG_SIZE*2 + ACE_CDR::MAX_ALIGNMENT];
 	char* pBuffer = ACE_ptr_align_binary(szBuffer,ACE_CDR::MAX_ALIGNMENT);
 
 	int err = 0;
@@ -384,9 +384,18 @@ int OOCore::UserSession::run_read_loop()
 		// Create a temp input CDR
 		ACE_InputCDR header(pBuffer,nRead);
 
+		// Read the payload specific data
+		ACE_CDR::Octet byte_order;
+		header.read_octet(byte_order);
+		ACE_CDR::Octet version;
+		header.read_octet(version);
+
+		// Set the read for the right endianess
+		header.reset_byte_order(byte_order);
+
 		// Read the length
 		ACE_CDR::ULong nReadLen = 0;
-		if (!header.read_ulong(nReadLen))
+		if (!header.read_ulong(nReadLen) || version != 1)
 		{
 			err = ACE_OS::last_error();
 			break;
@@ -442,11 +451,12 @@ int OOCore::UserSession::run_read_loop()
 			break;
 		}
 
-		// Read the destination
+		// Reset the byte order
+		msg->m_ptrPayload->reset_byte_order(byte_order);
+
+		// Read the destination and source channels
 		ACE_CDR::ULong dest_channel_id;
 		(*msg->m_ptrPayload) >> dest_channel_id;
-
-		// Read the source
 		(*msg->m_ptrPayload) >> msg->m_src_channel_id;
 
 		// Read the deadline
@@ -456,21 +466,13 @@ int OOCore::UserSession::run_read_loop()
 		(*msg->m_ptrPayload) >> req_dline_usecs;
 		msg->m_deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
 
-		// Did everything make sense?
-		if (!msg->m_ptrPayload->good_bit() || (dest_channel_id & 0xFFFFF000) != m_channel_id)
-		{
-			err = ACE_OS::last_error();
-			delete msg;
-			break;
-		}
-
 		// Read the rest of the message
+		(*msg->m_ptrPayload) >> msg->m_attribs;
 		(*msg->m_ptrPayload) >> msg->m_dest_thread_id;
 		(*msg->m_ptrPayload) >> msg->m_src_thread_id;
-		(*msg->m_ptrPayload) >> msg->m_attribs;
-
+		
 		// Did everything make sense?
-		if (!msg->m_ptrPayload->good_bit())
+		if (!msg->m_ptrPayload->good_bit() || (dest_channel_id & 0xFFFFF000) != m_channel_id)
 		{
 			err = ACE_OS::last_error();
 			delete msg;
@@ -493,30 +495,19 @@ int OOCore::UserSession::run_read_loop()
 			msg->m_dest_thread_id = dest_apartment_id;
 		}
 
-		// Align
+		(*msg->m_ptrPayload) >> msg->m_seq_no;
+		(*msg->m_ptrPayload) >> msg->m_type;
+		
+		// 6 Bytes of padding here
 		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-		// Read the payload specific data
-		ACE_CDR::Octet byte_order;
-		msg->m_ptrPayload->read_octet(byte_order);
-		ACE_CDR::Octet version;
-		msg->m_ptrPayload->read_octet(version);
-
-		msg->m_ptrPayload->reset_byte_order(byte_order);
-
-		(*msg->m_ptrPayload) >> msg->m_type;
-		(*msg->m_ptrPayload) >> msg->m_seq_no;
-
 		// Did everything make sense?
-		if (!msg->m_ptrPayload->good_bit() || version != 1)
+		if (!msg->m_ptrPayload->good_bit())
 		{
 			err = ACE_OS::last_error();
 			delete msg;
 			break;
 		}
-
-		// Align
-		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 		// Find the right queue to send it to...
 		if (msg->m_dest_thread_id != 0)
@@ -1035,6 +1026,9 @@ bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort sr
 		return false;
 	}
 
+	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
+	header.write_octet(1);	 // version
+
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
 	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
@@ -1045,22 +1039,15 @@ bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort sr
 	header.write_ulonglong(deadline.sec());
 	header.write_long(deadline.usec());
 
-	header << dest_thread_id;
-	header << src_thread_id;
 	header << attribs;
-
-	// Align the buffer
-	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
-	header.write_octet(1);	 // version
-	header << flags;
+	header << dest_thread_id;
+	header << src_thread_id;	
 	header << seq_no;
-
+	header << flags;
+	
 	if (!header.good_bit())
 		return false;
 
-	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 	// Write the request stream

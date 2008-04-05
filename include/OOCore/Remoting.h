@@ -156,7 +156,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndPoint,(in),IO::IAsyncStreamCallback*,pCallback))
 )
 
-OMEGA_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,Remoting_GetCallContext,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,Remoting_GetCallContext,0,())
 Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
 {
 	return Remoting_GetCallContext();

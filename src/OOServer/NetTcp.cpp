@@ -56,8 +56,6 @@ namespace User
 		public ACE_Service_Handler
 	{
 	public:
-		virtual ~TcpAsyncStream();
-
 		bool init(const ACE_SOCK_Stream& stream, IO::IAsyncStreamCallback* pCallback);
 		
 		BEGIN_INTERFACE_MAP(TcpAsyncStream)
@@ -152,15 +150,10 @@ uint32_t User::TcpStream::WriteBytes(uint32_t cbBytes, const byte_t* val)
 	return static_cast<uint32_t>(s);
 }
 
-User::TcpAsyncStream::~TcpAsyncStream()
-{
-	void* MORE_HERE_NOW;
-}
-
 bool User::TcpAsyncStream::init(const ACE_SOCK_Stream& stream, IO::IAsyncStreamCallback* pCallback)
 {
 	if (!pCallback)
-		OMEGA_THROW(L"Tcp protocol handler must be async!");
+		OMEGA_THROW(L"TcpAsyncStream must be async!");
 
 	if (m_reader.open(*this,stream.get_handle()) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("reader.open() failed")),false);
@@ -248,16 +241,14 @@ void User::TcpAsyncStream::handle_write_stream(const ACE_Asynch_Write_Stream::Re
 			if (m_ptrCallback)
 			{
 				size_t res = result.bytes_transferred();
-				char* rd_pos = mb.base();
 				while (res)
 				{
 					uint32_t cbBytes = (uint32_t)-1;
 					if (res < (uint32_t)-1)
 						cbBytes = (uint32_t)res;
 
-					m_ptrCallback->OnSignal(IO::IAsyncStreamCallback::Written,cbBytes,(const byte_t*)rd_pos);
+					m_ptrCallback->OnSignal(IO::IAsyncStreamCallback::Written,cbBytes,0);
 					res -= cbBytes;
-					rd_pos += cbBytes;
 				};
 			}
 		}
@@ -346,7 +337,7 @@ IO::IStream* User::TcpProtocolHandler::OpenStream(const string_t& strEndPoint, I
 		OMEGA_THROW(L"No protocol specified!");
 
 	// Create an address
-	ACE_INET_Addr addr(ACE_TEXT_WCHAR_TO_TCHAR(strEndPoint.Mid(pos+3).c_str()),PF_INET);
+	ACE_INET_Addr addr(ACE_TEXT_WCHAR_TO_TCHAR(strEndPoint.Mid(pos+3).c_str()));
 
 	// Get the timeout
 	ACE_Time_Value deadline = ACE_Time_Value::max_time;

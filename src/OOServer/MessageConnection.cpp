@@ -156,6 +156,15 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 			{
 				ACE_InputCDR input(&mb);
 
+				// Read the payload specific data
+				ACE_CDR::Octet byte_order;
+				input.read_octet(byte_order);
+				ACE_CDR::Octet version;
+				input.read_octet(version);
+
+				// Set the read for the right endianess
+				input.reset_byte_order(byte_order);
+
 				// Read the length
 				input >> m_read_len;
 				if (input.good_bit())
@@ -184,7 +193,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 		{
 			if (result.bytes_transferred() < m_read_len)
 			{
-				m_read_len -= result.bytes_transferred();
+				m_read_len -= static_cast<ACE_CDR::ULong>(result.bytes_transferred());
 				if (m_reader.read(mb,m_read_len) == 0)
 					return;
 				else
@@ -359,7 +368,7 @@ bool Root::MessageHandler::channel_open(ACE_CDR::ULong)
 	return true;
 }
 
-bool Root::MessageHandler::route_off(ACE_CDR::ULong, ACE_CDR::ULong, ACE_CDR::UShort, ACE_CDR::UShort, const ACE_Time_Value&, ACE_CDR::ULong, const ACE_Message_Block*)
+bool Root::MessageHandler::route_off(const ACE_Message_Block*, ACE_CDR::ULong, const ACE_Time_Value&, ACE_CDR::ULong)
 {
 	// We have nowhere to route!
 	ACE_OS::last_error(ENOENT);
@@ -432,6 +441,15 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 {
 	ACE_InputCDR input(mb);
 
+	// Read the payload specific data
+	ACE_CDR::Octet byte_order;
+	input.read_octet(byte_order);
+	ACE_CDR::Octet version;
+	input.read_octet(version);
+
+	// Set the read for the right endianess
+	input.reset_byte_order(byte_order);
+
 	// Skip the length
 	ACE_CDR::ULong read_len;
 	input >> read_len;
@@ -479,24 +497,18 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 			dest_channel_id &= (m_uChannelMask | m_uChildMask);
 		}
 	}
-	else if (!(dest_channel_id & m_uUpstreamChannel))
+	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Read the rest of the message
-		ACE_CDR::UShort dest_thread_id = 0;
-		input >> dest_thread_id;
-		ACE_CDR::UShort src_thread_id = 0;
-		input >> src_thread_id;
 		ACE_CDR::ULong attribs = 0;
 		input >> attribs;
-
+		
 		if (!input.good_bit())
 			return false;
 
-		input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-		return route_off(dest_channel_id,src_channel_id,dest_thread_id,src_thread_id,deadline,attribs,input.start());
+		return route_off(mb,dest_channel_id,deadline,attribs);
 	}
-	else
+	else 
 	{
 		// Send upstream
 		dest_channel_id = m_uUpstreamChannel;
@@ -514,10 +526,10 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 		msg->m_src_channel_id = src_channel_id;
 
 		// Read the rest of the message
+		input >> msg->m_attribs;
 		input >> msg->m_dest_thread_id;
 		input >> msg->m_src_thread_id;
-		input >> msg->m_attribs;
-
+		
 		// Did everything make sense?
 		if (!input.good_bit())
 		{
@@ -538,8 +550,6 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 			// Route to the correct thread
 			msg->m_dest_thread_id = dest_apartment_id;
 		}
-
-		input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 		ACE_NEW_NORETURN(msg->m_ptrPayload,ACE_InputCDR(input));
 		if (msg->m_ptrPayload.null())
@@ -630,7 +640,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 
 		return true;
 	}
-
+	
 	// Find the correct channel
 	ChannelInfo dest_channel;
 	try
@@ -839,23 +849,16 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 		}
 		else
 		{
-			// Read the payload specific data
-			ACE_CDR::Octet byte_order;
-			msg->m_ptrPayload->read_octet(byte_order);
-			ACE_CDR::Octet version = 0;
-			msg->m_ptrPayload->read_octet(version);
-
-			msg->m_ptrPayload->reset_byte_order(byte_order);
+			ACE_CDR::ULong recv_seq_no = 0;
+			(*msg->m_ptrPayload) >> recv_seq_no;
 
 			ACE_CDR::UShort type = 0;
 			(*msg->m_ptrPayload) >> type;
 
-			ACE_CDR::ULong recv_seq_no = 0;
-			(*msg->m_ptrPayload) >> recv_seq_no;
-
+			// 6 Bytes of padding here
 			msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-			if (msg->m_ptrPayload->good_bit() && version == 1)
+			if (msg->m_ptrPayload->good_bit())
 			{
 				if (type == Message::Request)
 				{
@@ -945,23 +948,16 @@ void Root::MessageHandler::pump_requests()
 		// Get the next message
 		Message* msg = info.m_msg;
 
-		// Read the payload specific data
-		ACE_CDR::Octet byte_order;
-		msg->m_ptrPayload->read_octet(byte_order);
-		ACE_CDR::Octet version = 0;
-		msg->m_ptrPayload->read_octet(version);
-
-		msg->m_ptrPayload->reset_byte_order(byte_order);
+		ACE_CDR::ULong seq_no = 0;
+		(*msg->m_ptrPayload) >> seq_no;
 
 		ACE_CDR::UShort type = 0;
 		(*msg->m_ptrPayload) >> type;
 
-		ACE_CDR::ULong seq_no = 0;
-		(*msg->m_ptrPayload) >> seq_no;
-
+		// 6 Bytes of padding here
 		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
-		if (msg->m_ptrPayload->good_bit() && version == 1)
+		if (msg->m_ptrPayload->good_bit())
 		{
 			if (type == Message::Request)
 			{
@@ -1045,38 +1041,6 @@ bool Root::MessageHandler::send_channel_close(ACE_CDR::ULong dest_channel_id, AC
 	return send_request(dest_channel_id,msg.begin(),null,0,Message::asynchronous | Message::system_message | Message::channel_close);
 }
 
-bool Root::MessageHandler::send_off_i(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb)
-{
-	// Check the size
-	if (mb->total_length() > ACE_INT32_MAX - 128)
-	{
-		ACE_OS::last_error(E2BIG);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Message too big!\n")),false);
-	}
-
-	// Build a packet
-	ACE_OutputCDR packet(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-
-	packet.write_octet(static_cast<ACE_CDR::Octet>(packet.byte_order()));
-	packet.write_octet(1);	 // version
-	packet << flags;
-	packet << seq_no;
-
-	if (!packet.good_bit())
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
-
-	// Align the buffer
-	packet.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-	// Write the request stream
-	packet.write_octet_array_mb(mb);
-	if (!packet.good_bit())
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
-
-	// Now let the derived class do it's bit...
-	return route_off(dest_channel_id,msg.m_src_channel_id,msg.m_dest_thread_id,msg.m_src_thread_id,msg.m_deadline,msg.m_attribs,packet.begin());
-}
-
 bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs)
 {
 	// Build a header
@@ -1124,15 +1088,22 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	else if (!(dest_channel_id & m_uUpstreamChannel))
-	{
-		// Send off-machine
-		return send_off_i(Message::Request,seq_no,dest_channel_id,msg,mb);
-	}
 	else
 	{
 		// Send upstream
 		actual_dest_channel_id = m_uUpstreamChannel;
+	}
+
+	// Write the header info
+	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+	if (!build_header(header,Message::Request,seq_no,dest_channel_id,msg,mb))
+		return false;
+
+	// Route upstream?
+	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
+	{
+		// Send off-machine
+		return route_off(header.begin(),dest_channel_id,msg.m_deadline,attribs);
 	}
 
 	ChannelInfo dest_channel;
@@ -1154,11 +1125,6 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		ACE_OS::last_error(EINVAL);
 		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()),false);
 	}
-
-	// Write the header info
-	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(header,Message::Request,seq_no,dest_channel_id,msg,mb))
-		return false;
 
 	// Send to the handle
 	{
@@ -1215,16 +1181,23 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	else if (!(dest_channel_id & m_uUpstreamChannel))
-	{
-		// Send off-machine
-		send_off_i(Message::Response,seq_no,dest_channel_id,msg,mb);
-		return;
-	}
-	else
+	else 
 	{
 		// Send upstream
 		actual_dest_channel_id = m_uUpstreamChannel;
+	}
+
+	// Write the header info
+	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
+	if (!build_header(header,Message::Response,seq_no,dest_channel_id,msg,mb))
+		return;
+
+	// Route upstream?
+	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
+	{
+		// Send off-machine
+		route_off(header.begin(),dest_channel_id,msg.m_deadline,attribs);
+		return;
 	}
 
 	ChannelInfo dest_channel;
@@ -1247,11 +1220,6 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 		ACE_OS::last_error(EINVAL);
 		return;
 	}
-
-	// Write the header info
-	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(header,Message::Response,seq_no,dest_channel_id,msg,mb))
-		return;
 
 	ACE_GUARD(ACE_Thread_Mutex,guard,*dest_channel.lock);
 
@@ -1303,6 +1271,9 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Message too big!\n")),false);
 	}
 
+	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
+	header.write_octet(1);	 // version
+
 	// Write out the header length and remember where we wrote it
 	header.write_ulong(0);
 	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
@@ -1313,22 +1284,15 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 	header.write_ulonglong(msg.m_deadline.sec());
 	header.write_long(msg.m_deadline.usec());
 
-	header << msg.m_dest_thread_id;
-	header << msg.m_src_thread_id;
 	header << msg.m_attribs;
-
-	// Align the buffer
-	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
-	header.write_octet(1);	 // version
-	header << flags;
+	header << msg.m_dest_thread_id;
+	header << msg.m_src_thread_id;	
 	header << seq_no;
-
+	header << flags;
+	
 	if (!header.good_bit())
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
 
-	// Align the buffer
 	header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
 
 	// Write the request stream

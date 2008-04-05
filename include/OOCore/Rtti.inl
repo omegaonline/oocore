@@ -409,7 +409,7 @@ void Omega::UnpinObjectPointer(IObject* pObject)
 		ptrProxy->Unpin();
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source));
+OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
 Omega::ISystemException* Omega::ISystemException::Create(Omega::uint32_t errno_val, const Omega::string_t& source)
 {
 	return ISystemException_Create_errno(errno_val,source);

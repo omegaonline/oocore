@@ -59,6 +59,7 @@
 #define OMEGA_WIN32
 #if defined (__WIN64) || defined (_WIN64) || defined (WIN64)
 #define OMEGA_WIN64
+#define OMEGA_64
 #endif /* _WIN64 || WIN64 */
 
 #define OMEGA_CALL __cdecl

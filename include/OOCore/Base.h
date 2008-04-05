@@ -59,7 +59,7 @@ namespace Omega
 	};
 }
 
-#ifdef OMEGA_HAS_UUIDOF
+#if defined(OMEGA_HAS_UUIDOF)
 
 #define OMEGA_DEFINE_IID(n_space, type, guid) \
 	interface __declspec(uuid(guid)) n_space::type;

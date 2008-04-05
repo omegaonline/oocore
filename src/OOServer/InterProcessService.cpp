@@ -236,8 +236,8 @@ IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndPoint, 
 	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
-		if (ptrKey->IsValue(L"ServerHandlerOID"))
-			oid = guid_t::FromString(ptrKey->GetStringValue(L"ServerHandlerOID"));
+		if (ptrKey->IsValue(L"Handler"))
+			oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
 	}
 	
 	if (oid == guid_t::Null())
@@ -246,16 +246,17 @@ IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndPoint, 
 		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
-			if (ptrKey->IsValue(L"ServerHandlerOID"))
-				oid = guid_t::FromString(ptrKey->GetStringValue(L"ServerHandlerOID"));
+			if (ptrKey->IsValue(L"Handler"))
+				oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
 		}
 	}
 	
 	if (oid == guid_t::Null())
 	{
+		// We have some built-ins
 		if (strProtocol == L"tcp")
 			oid = OID_TcpProtocolHandler;
-		else if (strProtocol == L"http")
+		else if (strProtocol == L"http" || strProtocol == L"https")
 			oid = OID_HttpProtocolHandler;
 		else
 			OMEGA_THROW(L"No handler for protocol " + strProtocol);		

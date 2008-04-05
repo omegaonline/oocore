@@ -211,6 +211,33 @@ IO::IStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndPoint, 
 	if (pos == string_t::npos)
 		OMEGA_THROW(L"No protocol specified!");
 
+	// Get the protocol
+	string_t strProtocol = L"tcp";
+	
+	// Find the protocol handler
+	guid_t oid = guid_t::Null();
+	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User");
+	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+	{
+		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+		if (ptrKey->IsValue(L"Handler"))
+			oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
+	}
+	
+	if (oid == guid_t::Null())
+	{
+		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
+		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+		{
+			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+			if (ptrKey->IsValue(L"Handler"))
+				oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
+		}
+	}
+	
+	if (oid == guid_t::Null())
+		oid = OID_TcpProtocolHandler;
+		
 	// Find hostname
 	string_t strHostName(strEndPoint.Mid(pos+3));
 	string_t strResource;
@@ -226,20 +253,18 @@ IO::IStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndPoint, 
 	if (strProxy.IsEmpty())
 		strProxy = strHostName;
 
-	// Make sure we are using at least one port...
-	string_t strEnd = L"tcp://" + strProxy.ToLower();
-	if (strEnd.Find(L':',6) == string_t::npos)
-		strEnd += L":80";
+	// Build the correct proxy address...
+	string_t strEnd = strProtocol + L"://" + strProxy.ToLower();
+	
+	// Make sure we have a default port
+	if (strEnd.Find(L':',strProtocol.Length()+3) == string_t::npos)
+		strEnd += L":80";		
+	
+	// Create a Protocol Handler
+	OTL::ObjectPtr<Omega::IO::IProtocolHandler> ptrHandler(oid);
 
-	// Create a Tcp Protocol Handler
-	OTL::ObjectPtr<Omega::IO::IProtocolHandler> ptrTcp(OID_TcpProtocolHandler);
-
-	// Create a Tcp stream
-	ObjectPtr<IO::IStream> ptrStream;
-	ptrStream.Attach(ptrTcp->OpenStream(strEnd,pCallback));
-
-	// Return the Tcp stream
-	return ptrStream.AddRef();
+	// Create a stream
+	return ptrHandler->OpenStream(strEnd,pCallback);
 }
 
 string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const string_t& strProtocol)

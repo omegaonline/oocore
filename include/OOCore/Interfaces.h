@@ -339,7 +339,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndPoint,(in),IO::IAsyncStreamCallback*,pCallback))
 )
 
-OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())
 Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
 {
 	return Activation_GetRunningObjectTable();

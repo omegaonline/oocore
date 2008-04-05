@@ -54,7 +54,7 @@ namespace Root
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
-		static const size_t s_initial_read = ACE_CDR::LONG_SIZE;
+		static const size_t s_initial_read = ACE_CDR::LONG_SIZE * 2;
 
 		MessageHandler*                                     m_pHandler;
 		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> m_pipe;
@@ -86,7 +86,7 @@ namespace Root
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
 		virtual bool channel_open(ACE_CDR::ULong channel);
 		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
-		virtual bool route_off(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, const ACE_Message_Block* mb);
+		virtual bool route_off(const ACE_Message_Block* mb, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
@@ -198,7 +198,6 @@ namespace Root
 
 		void pump_requests();
 		bool parse_message(const ACE_Message_Block* mb);
-		bool send_off_i(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
 

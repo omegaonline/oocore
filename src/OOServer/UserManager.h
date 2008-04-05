@@ -65,7 +65,7 @@ namespace User
 		std::map<ACE_CDR::ULong,OMInfo> m_mapOMs;
 
 		virtual bool channel_open(ACE_CDR::ULong channel);
-		virtual bool route_off(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, const ACE_Message_Block* mb);
+		virtual bool route_off(const ACE_Message_Block* mb, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 
 		int run_event_loop_i(const ACE_CString& strPipe);
 		bool init(const ACE_CString& strPipe);

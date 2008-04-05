@@ -32,7 +32,7 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#if !defined(OMEGA_EXPORTED_FUNCTION_VOID)
+#if !defined(OMEGA_EXPORTED_FUNCTION_VOID) && !defined(__DOXYGEN__)
 #define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
 
@@ -63,6 +63,18 @@
 #include <OOCore/Rtti.h>
 #include <OOCore/Wire.h>
 #include <OOCore/Interfaces.h>
+
+#if defined(__DOXYGEN__)
+#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
+
+#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+	OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
+
+#define OMEGA_DECLARE_OID(n) \
+	OMEGA_IMPORT_OID(n)
+
+#endif
 
 namespace Omega
 {

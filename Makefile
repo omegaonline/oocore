@@ -54,4 +54,4 @@ src/OOCore/.depend : depend
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $(SRCS) > src/OOCore/.depend
-	include src/OOCore/.depend
+include src/OOCore/.depend

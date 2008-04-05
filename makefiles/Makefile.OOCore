@@ -38,6 +38,7 @@ OBJS	     = src/OOCore/Registry.o     	\
 	       src/OOCore/OOCore.o		\
 
 # force dependecy generation
+
 build: $(TARGET)
 	echo "making OOCore library $(TARGET)"
 
@@ -54,8 +55,8 @@ src/OOCore/.depend : depend
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $(SRCS) > src/OOCore/.depend
-	include src/OOCore/.depend
 
+include src/OOCore/.depend
 
 install:
 	install -m 755 $(TARGET) /usr/lib || echo "Install failed, you need to be root to install libraries"

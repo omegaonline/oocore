@@ -43,7 +43,7 @@ build: $(TARGET)
 
 full:clean build
 
-$(TARGET): depend $(OBJS)
+$(TARGET): src/OOCore/.depend $(OBJS)
 	$(CC) -shared $(OBJS) $(LDFLAGS) $(CFLAGS) -Wl -o $(TARGET)  
 
 clean:
@@ -54,4 +54,10 @@ src/OOCore/.depend : depend
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $(SRCS) > src/OOCore/.depend
-include src/OOCore/.depend
+	include src/OOCore/.depend
+
+
+install:
+	install -m 755 $(TARGET) /usr/lib || echo "Install failed, you need to be root to install libraries"
+	echo "$(TARGET) is installed"	
+

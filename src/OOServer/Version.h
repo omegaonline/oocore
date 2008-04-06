@@ -26,8 +26,8 @@
 // Version defines
 
 #define OOSERVER_MAJOR_VERSION  0
-#define OOSERVER_MINOR_VERSION  3
-#define OOSERVER_BUILD_VERSION  4
+#define OOSERVER_MINOR_VERSION  4
+#define OOSERVER_BUILD_VERSION  0
 
 #define OOSERVER_VERSION_II(a,b,c)	#a "." #b "." #c
 #define OOSERVER_VERSION_I(a,b,c)	OOSERVER_VERSION_II(a,b,c)

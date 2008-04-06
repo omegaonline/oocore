@@ -198,9 +198,13 @@ int main(int argc, char* /*argv*/[])
 static int Version()
 {
 	ACE_OS::printf("OOServer version information:\n");
-	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+
+#if defined(OMEGA_DEBUG)
+	ACE_OS::printf("Debug build\n");
+#endif
 	
-	ACE_OS::printf("OOCore version information:\n");
+	ACE_OS::printf("\nOOCore version information:\n");
 	ACE_OS::printf("%ls\n\n",Omega::System::GetVersion().c_str());
 	
 	ACE_OS::printf("SQLite version: %s\n",SQLITE_VERSION);

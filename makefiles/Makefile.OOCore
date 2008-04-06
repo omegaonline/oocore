@@ -81,9 +81,12 @@ full:clean build
 
 # LIBRARY TARGET
 # 1) link object files to produce shared object file
+# 2) link object files to produce object archive
 $(TARGET): $(DEPS) $(OBJS)
 	@echo "linking library $(TARGET)"
 	@$(CC) -shared $(OBJS) $(LDFLAGS) $(CFLAGS) -Wl -o $(TARGET)  
+	@echo "linking static library libOOCore.a"
+	ar -cvq libOOCore.a  $(OBJS) 
 
 # CLEAN TARGET
 # 1) remove dependency listing, object files, target
@@ -110,3 +113,4 @@ include $(DEPS)
 # 2) chmod target to final permisions
 install:
 	@! ( $(INSTALL) $(INSTALL_PERM) $(TARGET) $(INSTALL_DIR) )  || echo "$(TARGET) is installed"	
+	@! ( $(INSTALL) $(INSTALL_PERM) libOOCore.a $(INSTALL_DIR) )  || echo "libOOCore.a is installed"	

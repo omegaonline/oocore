@@ -13,7 +13,7 @@ CFLAGS       =  -Wall -g -fno-rtti -Wno-non-virtual-dtor -pthread -O0 -fvisibili
 CXXFLAGS     =  $(CFLAGS)
 
 # produce this file
-TARGET	     =  OOServerd
+TARGET	     =  bin/OOServerd
 
 # sources live here
 SRC_DIR	     = src/OOServer
@@ -110,7 +110,7 @@ $(DEPS) : depend
 depend: $(SRCS)
 	@$(CC) -MM $(CFLAGS) $(SRCS) | sed -e "s:^[A-Z]:$(OBJ_DIR)/:" > $(DEPS)
 
-include $(DEPS)
+-include $(DEPS)
 
 # INSTALL TARGET (requires root access)
 # 1) copy server to final destination

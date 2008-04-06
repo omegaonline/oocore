@@ -13,7 +13,7 @@ CFLAGS       =  -Wall -g -fno-rtti -Wno-non-virtual-dtor -fPIC -pthread -O0 -fvi
 CXXFLAGS     =  $(CFLAGS)
 
 # produce this file
-TARGET	     =  libOOCored.so
+TARGET	     =  bin/libOOCored.so
 
 # sources live here
 SRC_DIR	     = src/OOCore
@@ -85,8 +85,8 @@ full:clean build
 $(TARGET): $(DEPS) $(OBJS)
 	@echo "linking library $(TARGET)"
 	@$(CC) -shared $(OBJS) $(LDFLAGS) $(CFLAGS) -Wl -o $(TARGET)  
-	@echo "linking static library libOOCore.a"
-	ar -cvq libOOCore.a  $(OBJS) 
+#	@echo "linking static library libOOCore.a"
+#	ar -cvq libOOCore.a  $(OBJS) 
 
 # CLEAN TARGET
 # 1) remove dependency listing, object files, target
@@ -106,11 +106,11 @@ $(DEPS) : depend
 depend: $(SRCS)
 	@$(CC) -MM $(CFLAGS) $(SRCS) | sed -e "s:^[A-Z]:$(OBJ_DIR)/:" > $(DEPS)
 
-include $(DEPS)
+-include $(DEPS)
 
 # INSTALL TARGET (requires root access)
 # 1) copy library to final destination
 # 2) chmod target to final permisions
 install:
 	@! ( $(INSTALL) $(INSTALL_PERM) $(TARGET) $(INSTALL_DIR) )  || echo "$(TARGET) is installed"	
-	@! ( $(INSTALL) $(INSTALL_PERM) libOOCore.a $(INSTALL_DIR) )  || echo "libOOCore.a is installed"	
+#	@! ( $(INSTALL) $(INSTALL_PERM) libOOCore.a $(INSTALL_DIR) )  || echo "libOOCore.a is installed"	

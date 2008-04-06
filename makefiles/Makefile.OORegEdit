@@ -13,7 +13,7 @@ CFLAGS       :=   `wx-config --cflags` -Wall -g -fno-rtti -Wno-non-virtual-dtor 
 CXXFLAGS     :=  $(CFLAGS)
 
 # produce this file
-TARGET	     :=  OORegEdit
+TARGET	     :=  bin/OORegEdit
 
 # sources live here
 SRC_DIR	     := tools/OORegEdit

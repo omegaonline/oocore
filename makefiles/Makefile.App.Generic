@@ -25,7 +25,7 @@ CFLAGS 		:= -g -O0 -DOMEGA_DEBUG $(CFLAGS)
 BUILD_DIR 	:= $(BUILD_DIR)/Debug
 LDFLAGS		:= $(LDFLAGS) -lOOCored
 DEPS		:= $(DEPS)_release
-OBJ_DIR 	:= $(OBJ_DIR)_debug
+OBJ_DIR 	:= $(OBJ_DIR)_release
 else 
 CFLAGS 		:= -O2 $(CFLAGS)
 LDFLAGS		:= $(LDFLAGS) -lOOCore

@@ -36,8 +36,7 @@
 
 #if !defined(ACE_HAS_WIN32_NAMED_PIPES)
 
-Root::MessagePipe::MessagePipe() :
-	m_hSocket(ACE_INVALID_HANDLE)
+Root::MessagePipe::MessagePipe()
 {
 }
 
@@ -47,43 +46,39 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 
 	ACE_NEW_RETURN(pipe,MessagePipe,-1);
 
-	ACE_SOCK_Stream stream;
-	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
+	if (ACE_SOCK_Connector().connect(pipe->m_stream,addr,wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("connector.connect() failed")),-1);
-
-	pipe->m_hSocket = stream.get_handle();
-	stream.set_handle(ACE_INVALID_HANDLE);
 
 	return 0;
 }
 
 void Root::MessagePipe::close()
 {
-	ACE_HANDLE hSocket = m_hSocket;
-	m_hSocket = ACE_INVALID_HANDLE;
-
-	if (hSocket != ACE_INVALID_HANDLE)
-		ACE_OS::close(hSocket);
+	m_stream.close();
 }
 
 ACE_HANDLE Root::MessagePipe::get_read_handle() const
 {
-	return m_hSocket;
+	return m_stream.get_handle();
 }
 
 ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
 {
-	return ACE_OS::send(m_hSocket,(const char*)buf,len);
+	ssize_t r = m_stream.send(buf,len);
+	if (sent)
+        *sent = static_cast<size_t>(r);
+
+	return r;
 }
 
 ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value* timeout, size_t* sent)
 {
-	return ACE::send_n(m_hSocket,mb,timeout,sent);
+	return ACE::send_n(m_stream.get_handle(),mb,timeout,sent);
 }
 
 ssize_t Root::MessagePipe::recv(void* buf, size_t len)
 {
-	return ACE_OS::recv(m_hSocket,(char*)buf,len);
+	return m_stream.recv(buf,len);
 }
 
 Root::MessagePipeAcceptor::MessagePipeAcceptor()
@@ -117,12 +112,8 @@ int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Nu
 {
     ACE_NEW_RETURN(pipe,MessagePipe,-1);
 
-	ACE_SOCK_Stream stream;
-	if (m_acceptor.accept(stream,0,timeout) != 0)
+	if (m_acceptor.accept(pipe->m_stream,0,timeout) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.accept() failed")),-1);
-
-	pipe->m_hSocket = stream.get_handle();
-	stream.set_handle(ACE_INVALID_HANDLE);
 
 	return 0;
 }

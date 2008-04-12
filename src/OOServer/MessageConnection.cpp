@@ -53,6 +53,9 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 			return "";
 	}
 
+    // Try to make it public
+	chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
+
     return "/tmp/omegaonline/" + strPrefix + szBuf;
 #endif
 }
@@ -223,7 +226,7 @@ void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::R
 		if (err != 0 && err != ENOTSOCK)
 #endif
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("handle_read_*() failed")));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: handle_read_*() failed %s\n"),ACE_OS::strerror(err)));
 		}
 
 		m_pHandler->pipe_closed(m_channel_id,0);
@@ -502,13 +505,13 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 		// Read the rest of the message
 		ACE_CDR::ULong attribs = 0;
 		input >> attribs;
-		
+
 		if (!input.good_bit())
 			return false;
 
 		return route_off(mb,dest_channel_id,deadline,attribs);
 	}
-	else 
+	else
 	{
 		// Send upstream
 		dest_channel_id = m_uUpstreamChannel;
@@ -529,7 +532,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 		input >> msg->m_attribs;
 		input >> msg->m_dest_thread_id;
 		input >> msg->m_src_thread_id;
-		
+
 		// Did everything make sense?
 		if (!input.good_bit())
 		{
@@ -640,7 +643,7 @@ bool Root::MessageHandler::parse_message(const ACE_Message_Block* mb)
 
 		return true;
 	}
-	
+
 	// Find the correct channel
 	ChannelInfo dest_channel;
 	try
@@ -1181,7 +1184,7 @@ void Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	else 
+	else
 	{
 		// Send upstream
 		actual_dest_channel_id = m_uUpstreamChannel;
@@ -1286,10 +1289,10 @@ bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort f
 
 	header << msg.m_attribs;
 	header << msg.m_dest_thread_id;
-	header << msg.m_src_thread_id;	
+	header << msg.m_src_thread_id;
 	header << seq_no;
 	header << flags;
-	
+
 	if (!header.good_bit())
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
 

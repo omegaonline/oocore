@@ -32,29 +32,29 @@ namespace OOCore
 		static Omega::IException* init();
 		static void term();
 		static void handle_requests(Omega::uint32_t timeout);
-		
+
 	private:
 		friend class Channel;
 		friend class ThreadContext;
 		friend class ChannelMarshalFactory;
 		friend class ACE_Singleton<UserSession, ACE_Thread_Mutex>;
 		typedef ACE_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
-		
+
 		class MessagePipe
 		{
 		public:
 			static int connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
 			void close();
-			
+
 			ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
 			ssize_t recv(void* buf, size_t len);
-			
+
 		private:
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 			ACE_HANDLE m_hRead;
 			ACE_HANDLE m_hWrite;
 #else
-			ACE_HANDLE m_hSocket;
+			ACE_SOCK_Stream m_stream;
 #endif
 		};
 
@@ -74,10 +74,10 @@ namespace OOCore
 		{
 			Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
 			OTL::ObjectPtr<OTL::ObjectImpl<Channel> >       m_ptrChannel;
-			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;			
+			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
 		};
 		std::map<ACE_CDR::ULong,OMInfo> m_mapOMs;
-		
+
 		struct Message
 		{
 			enum Type
@@ -87,7 +87,7 @@ namespace OOCore
 			};
 
 			enum Attributes
-			{	
+			{
 				// Low 16 bits must match Remoting::MethodAttributes
 				synchronous = 0,
 				asynchronous = 1,
@@ -113,13 +113,13 @@ namespace OOCore
 		{
 			ACE_CDR::UShort                             m_thread_id;
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
-						
+
 			// Transient data
 			size_t                                      m_usage;
 			std::map<ACE_CDR::ULong,ACE_CDR::UShort>    m_mapChannelThreads;
 			ACE_Time_Value                              m_deadline;
 			ACE_CDR::ULong                              m_seq_no;
-			
+
 			static ThreadContext* instance();
 
 		private:
@@ -129,7 +129,7 @@ namespace OOCore
 			ThreadContext();
 			~ThreadContext();
 		};
-		
+
 		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long>   m_consumers;
 		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
 		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>      m_default_msg_queue;
@@ -146,7 +146,7 @@ namespace OOCore
 		void register_stream_callback(Omega::uint32_t nStreamId, pfnStreamCallback pCallback, void* pThis);
 		void stream_write(Omega::uint32_t nStreamId, ACE_Message_Block* mb);
 		void stream_close(Omega::uint32_t nStreamId);
-		
+
 		// Proper private members
 		bool init_i();
 		void term_i();
@@ -164,7 +164,7 @@ namespace OOCore
 		bool send_channel_close(ACE_CDR::ULong closed_channel_id);
 		void process_channel_close(ACE_CDR::ULong closed_channel_id);
 		Omega::Remoting::MarshalFlags_t classify_channel(ACE_CDR::ULong channel);
-				
+
 		static ACE_THR_FUNC_RETURN io_worker_fn(void* pParam);
 	};
 }

@@ -58,7 +58,7 @@ namespace Root
 		ACE_HANDLE m_hRead;
 		ACE_HANDLE m_hWrite;
 #else
-		ACE_HANDLE m_hSocket;
+		ACE_SOCK_Stream m_stream;
 #endif
 	};
 

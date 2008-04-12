@@ -118,7 +118,7 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 
 		// Close all pipes
 		close();
-				
+
 		// Close the user processes
 		close_users();
 
@@ -319,7 +319,9 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 
 	MessagePipeAcceptor acceptor;
 	ACE_CString strNewPipe = MessagePipe::unique_name("oor");
-	if (acceptor.open(strNewPipe,uid) != 0)
+	if (strNewPipe.empty())
+        ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Failed to create unique domain socket name")));
+	else if (acceptor.open(strNewPipe,uid) != 0)
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")));
 	else
 	{

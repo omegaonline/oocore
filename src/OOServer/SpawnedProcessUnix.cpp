@@ -41,7 +41,7 @@
 
 bool IsDebuggerPresent()
 {
-	void* TODO;	// Do something clever here with ptrace()?
+	void* TICKET_95;	// Do something clever here with ptrace()?
 	return false;
 }
 
@@ -195,7 +195,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 
 bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 {
-	void* TODO; // Look at using PAM for this...
+	void* TICKET_96; // Look at using PAM for this...
 
 	// Get the correct uid from the registry
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();

@@ -34,7 +34,7 @@
 BEGIN_PROCESS_OBJECT_MAP(L"")
 	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(User::TcpProtocolHandler)
-	OBJECT_MAP_ENTRY_UNNAMED(User::HttpProtocolHandler)	
+	OBJECT_MAP_ENTRY_UNNAMED(User::HttpProtocolHandler)
 END_PROCESS_OBJECT_MAP()
 
 int UserMain(const ACE_CString& strPipe)
@@ -157,23 +157,40 @@ bool User::Manager::init(const ACE_CString& strPipe)
 
 	// Invent a new pipe name..
 	ACE_CString strNewPipe = Root::MessagePipe::unique_name("oou");
+	if (strNewPipe.empty())
+	{
+        ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Failed to create unique domain socket name")));
+        pipe->close();
+		return false;
+	}
 
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
 	if (pipe->send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
 		pipe->send(strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
 	{
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")),false);
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")));
+		pipe->close();
+		return false;
 	}
 
 	// Read our channel id
 	ACE_CDR::ULong our_channel = 0;
 	if (pipe->recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::recv() failed")),false);
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::recv() failed")));
+		pipe->close();
+		return false;
+	}
 
 	// Create a new MessageConnection
 	Root::MessageConnection* pMC = 0;
-	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),false);
+	ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
+	if (!pMC)
+	{
+	    pipe->close();
+		return false;
+	}
 
 	// Open the root connection
 	if (pMC->open(pipe,m_root_channel) == 0)
@@ -476,7 +493,7 @@ ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request)
 		int32_t usecs = 0;
 		ptrCC->Deadline(secs,usecs);
 		deadline = ACE_Time_Value(secs,usecs);
-	}	
+	}
 
 	ACE_InputCDR* response = 0;
 	if (!send_request(m_root_channel,request.begin(),response,deadline == ACE_Time_Value::max_time ? 0 : &deadline,Remoting::synchronous))

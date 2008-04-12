@@ -102,33 +102,25 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_CStri
 {
 	ACE_UNIX_Addr addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
 
-	ACE_SOCK_Stream stream;
-	if (ACE_SOCK_Connector().connect(stream,addr,wait) != 0)
+	if (ACE_SOCK_Connector().connect(pipe.m_stream,addr,wait) != 0)
 		return -1;
-
-	pipe.m_hSocket = stream.get_handle();
-	stream.set_handle(ACE_INVALID_HANDLE);
 
 	return 0;
 }
 
 void OOCore::UserSession::MessagePipe::close()
 {
-	ACE_HANDLE hSocket = m_hSocket;
-	m_hSocket = ACE_INVALID_HANDLE;
-
-	if (hSocket != ACE_INVALID_HANDLE)
-		ACE_OS::close(hSocket);
+	m_stream.close();
 }
 
 ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value* timeout, size_t* sent)
 {
-	return ACE::send_n(m_hSocket,mb,timeout,sent);
+	return ACE::send_n(m_stream.get_handle(),mb,timeout,sent);
 }
 
 ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
 {
-	return ACE_OS::recv(m_hSocket,(char*)buf,len);
+	return m_stream.recv(buf,len);
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -470,7 +462,7 @@ int OOCore::UserSession::run_read_loop()
 		(*msg->m_ptrPayload) >> msg->m_attribs;
 		(*msg->m_ptrPayload) >> msg->m_dest_thread_id;
 		(*msg->m_ptrPayload) >> msg->m_src_thread_id;
-		
+
 		// Did everything make sense?
 		if (!msg->m_ptrPayload->good_bit() || (dest_channel_id & 0xFFFFF000) != m_channel_id)
 		{
@@ -497,7 +489,7 @@ int OOCore::UserSession::run_read_loop()
 
 		(*msg->m_ptrPayload) >> msg->m_seq_no;
 		(*msg->m_ptrPayload) >> msg->m_type;
-		
+
 		// 6 Bytes of padding here
 		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
 
@@ -1041,10 +1033,10 @@ bool OOCore::UserSession::build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort sr
 
 	header << attribs;
 	header << dest_thread_id;
-	header << src_thread_id;	
+	header << src_thread_id;
 	header << seq_no;
 	header << flags;
-	
+
 	if (!header.good_bit())
 		return false;
 

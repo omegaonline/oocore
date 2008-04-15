@@ -80,8 +80,7 @@ namespace Root
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
 
 #else // !ACE_WIN32
-		static ACE_CString get_home_dir();
-
+		
 	private:
 		uid_t	m_uid;
 		pid_t	m_pid;

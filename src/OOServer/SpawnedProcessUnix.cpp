@@ -82,7 +82,7 @@ namespace Root
 }
 
 Root::pw_info::pw_info(uid_t uid) :
-	m_pwd(0), m_pBuffer(0), m_buf_len(1024)
+m_pwd(0), m_pBuffer(0), m_buf_len(1024)
 {
 #ifdef _SC_GETPW_R_SIZE_MAX
 	m_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
@@ -111,7 +111,7 @@ Root::pw_info::~pw_info()
 }
 
 Root::SpawnedProcess::SpawnedProcess() :
-	m_pid(ACE_INVALID_PID)
+m_pid(ACE_INVALID_PID)
 {
 }
 
@@ -162,8 +162,8 @@ bool Root::SpawnedProcess::CleanEnvironment()
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("ACE_OS::calloc() failed!")),false);
 
 	char pathbuf[PATH_MAX + 6];
-	sprintf(pathbuf,"PATH=%s",SAFE_PATH);
-	cleanenv[0] = strdup(pathbuf);
+	ACE_OS::snprintf(pathbuf,PATH_MAX + 6,"PATH=%s",SAFE_PATH);
+	cleanenv[0] = ACE_OS::strdup(pathbuf);
 
 	size_t cidx = 1;
 	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
@@ -220,56 +220,56 @@ void Root::SpawnedProcess::CloseSandboxLogon(user_id_type /*uid*/)
 
 bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSandbox)
 {
-    m_bSandbox = bSandbox;
+	m_bSandbox = bSandbox;
 
-    // Check our uid
-    bool bUnsafeStart = false;
-    uid_t our_uid = ACE_OS::getuid();
+	// Check our uid
+	bool bUnsafeStart = false;
+	uid_t our_uid = ACE_OS::getuid();
 	if (our_uid != 0)
 	{
-	    if (!unsafe_sandbox())
-            ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a root.\n")),false);
-        else if (our_uid == uid)
-            bUnsafeStart = true;
-        else
-        {
-            Root::pw_info pw(our_uid);
-            if (!pw)
-                ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
+		if (!unsafe_sandbox())
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a root.\n")),false);
+		else if (our_uid == uid)
+			bUnsafeStart = true;
+		else
+		{
+			Root::pw_info pw(our_uid);
+			if (!pw)
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
 
-            const char msg[] =
-                "OOServer is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
-                "Because the 'Unsafe' value is set in the registry, the new user process will be started under the user account '%s'\n\n"
-                "This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+			const char msg[] =
+				"OOServer is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
+				"Because the 'Unsafe' value is set in the registry, the new user process will be started under the user account '%s'\n\n"
+				"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
-            char szBuf[1024];
-            ACE_OS::sprintf(szBuf,msg,pw->pw_name);
+			char szBuf[1024];
+			ACE_OS::snprintf(szBuf,1024,msg,pw->pw_name);
 
-            // Prompt for continue...
-            ACE_ERROR((LM_WARNING,L"%s",szBuf));
+			// Prompt for continue...
+			ACE_ERROR((LM_WARNING,L"%s",szBuf));
 #if defined(OMEGA_DEBUG)
-            ACE_OS::printf("\n\nDo you want to allow this? [Y/N/D(ebug)]: ");
+			ACE_OS::printf("\n\nDo you want to allow this? [Y/N/D(ebug)]: ");
 #else
-            ACE_OS::printf("\n\nDo you want to allow this? [Y/N]: ");
+			ACE_OS::printf("\n\nDo you want to allow this? [Y/N]: ");
 #endif
-            ACE_OS::fflush(stdout);
+			ACE_OS::fflush(stdout);
 
-            char szIn[2];
-            ACE_OS::fgets(szIn,2,stdin);
+			char szIn[2];
+			ACE_OS::fgets(szIn,2,stdin);
 
 #if defined(OMEGA_DEBUG)
-            if (szIn[0] == 'D' || szIn[0] == 'd')
+			if (szIn[0] == 'D' || szIn[0] == 'd')
 				AttachDebugger(ACE_OS::getpid());
-            else
+			else
 #endif
-            if (szIn[0] != 'Y' && szIn[0] != 'y')
-                return false;
+				if (szIn[0] != 'Y' && szIn[0] != 'y')
+					return false;
 
-            ACE_OS::printf("\nYou chose to continue... on your head be it!\n\n");
-            ACE_OS::fflush(stdout);
+			ACE_OS::printf("\nYou chose to continue... on your head be it!\n\n");
+			ACE_OS::fflush(stdout);
 
-            bUnsafeStart = true;
-        }
+			bUnsafeStart = true;
+		}
 	}
 
 	pid_t child_id = ACE_OS::fork();
@@ -290,29 +290,29 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 			ACE_OS::exit(errno);
 		}
 
-        if (!bUnsafeStart)
-        {
-            // Set our gid...
-            if (ACE_OS::setgid(pw->pw_gid) != 0)
-            {
-                ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setgid() failed!")));
-                ACE_OS::exit(errno);
-            }
+		if (!bUnsafeStart)
+		{
+			// Set our gid...
+			if (ACE_OS::setgid(pw->pw_gid) != 0)
+			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setgid() failed!")));
+				ACE_OS::exit(errno);
+			}
 
-            // Init our groups...
-            if (initgroups(pw->pw_name,pw->pw_gid) != 0)
-            {
-                ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
-                ACE_OS::exit(errno);
-            }
+			// Init our groups...
+			if (initgroups(pw->pw_name,pw->pw_gid) != 0)
+			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
+				ACE_OS::exit(errno);
+			}
 
-            // Stop being priviledged!
-            if (ACE_OS::setuid(uid) != 0)
-            {
-                ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
-                ACE_OS::exit(errno);
-            }
-        }
+			// Stop being priviledged!
+			if (ACE_OS::setuid(uid) != 0)
+			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
+				ACE_OS::exit(errno);
+			}
+		}
 
 		// Clean up environment...
 		if (!CleanEnvironment())
@@ -425,10 +425,10 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
 	if (!pw)
 	{
-	    if (errno)
-            ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwnam() failed!")),false);
-        else
-            ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("You must add a user account for 'omega_sandbox' or supply a valid user name on the command line\n")),false);
+		if (errno)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwnam() failed!")),false);
+		else
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("You must add a user account for 'omega_sandbox' or supply a valid user name on the command line\n")),false);
 	}
 	ACE_OS::endpwent();
 
@@ -449,15 +449,6 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 bool Root::SpawnedProcess::UninstallSandbox()
 {
 	return true;
-}
-
-ACE_CString Root::SpawnedProcess::get_home_dir()
-{
-	pw_info pw(ACE_OS::getuid());
-	if (!pw)
-		return "";
-
-	return pw->pw_dir;
 }
 
 bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
@@ -488,7 +479,14 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 	if (m_bSandbox)
 		strDir = "/var/lib/omegaonline";
 	else
-		strDir = Root::SpawnedProcess::get_home_dir() + "/.omegaonline";
+	{
+		pw_info pw(m_uid);
+		if (!pw)
+			return "";
+
+		strDir = pw->pw_dir;
+		strDir += "/.omegaonline";
+	}
 
 	if (ACE_OS::mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
@@ -513,7 +511,7 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 #if defined(OMEGA_DEBUG)
 		return true;
 #else
-        return false;
+		return false;
 #endif
 	}
 

@@ -45,6 +45,10 @@ ifndef LDFLAGS
 	$(ECHO) "LDFLAGS is unset"
 	false
 endif
+ifndef BUILD_ROOT
+	$(ECHO) "BUILD_ROOT is unset"
+	false
+endif
 ifndef CPPFLAGS
 	$(ECHO) "CPPFLAGS is unset"
 	false
@@ -69,10 +73,12 @@ endif
 	$(ECHO) "LDFLAGS=[$(LDFLAGS)]"
 	$(ECHO) "CPPFLAGS=[$(CPPFLAGS)]"
 	$(ECHO) "SRC_DIR=[$(SRC_DIR)]"
+	$(ECHO) "BUILD_ROOT=[$(BUILD_ROOT)]"
 	$(ECHO) "BUILD_DIR=[$(BUILD_DIR)]"
 	$(ECHO) "OBJ_DIR=[$(OBJ_DIR)]"
 	$(ECHO) "TARGET=[$(TARGET)]"
 	-! [ -d "$(OBJ_DIR)" ]  && mkdir $(OBJ_DIR) && $(ECHO) "created $(OBJ_DIR)"
+	-! [ -d "$(BUILD_ROOT)" ]  && mkdir $(BUILD_ROOT) && $(ECHO) "created $(BUILD_ROOT)"
 	-! [ -d "$(BUILD_DIR)" ]  && mkdir $(BUILD_DIR) && $(ECHO) "created $(BUILD_DIR)"
 	$(ECHO) "$(BUILD_TYPE) on " `date`
 	$(CC) -MM $(CPPFLAGS) $(SRCS) > $(OBJ_DIR)/$(DEPS) 

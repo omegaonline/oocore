@@ -1,4 +1,4 @@
-# Makefile for applications that link against libOOCore(d).so
+# Makefile for shared libraries that link against libOOCore(d).so
 # TARGET	should be set to name of desired binary/lib
 # LDFLAGS	should be set to libs to build against
 # SRC_DIR 	should be set to relative path to source directory from trunk
@@ -10,7 +10,8 @@
 #
 TARGET		:= 
 SRC_DIR 	:= 
-INSTALL_DIR  	:= /usr/bin
+INSTALL_DIR  	:= /usr/lib
+BUILDING_LIB	:= 1
 #boilerplate definitions must be after local overrides to allow proper macro expansion
 include ./makefiles/Makefile.env
 

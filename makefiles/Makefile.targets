@@ -1,0 +1,92 @@
+ifdef BUILDING_LIB
+CPPFLAGS := $(CPPFLAGS) -fPIC
+endif
+
+# boilerplate targets for omega applications
+build:  $(OBJS) $(BUILD_DIR)/$(TARGET)
+	$(ECHO) "entering build"
+ifdef BUILDING_LIB
+	@$(CC) -shared $(OBJS) $(LDFLAGS) $(CPPFLAGS) -Wl -o $(BUILD_DIR)/$(TARGET) -I$(SRC_DIR) -I$(OBJ_DIR)
+else
+	@$(CC) $(OBJS) $(LDFLAGS) $(CPPFLAGS) -o $(BUILD_DIR)/$(TARGET) -I$(SRC_DIR) -I$(OBJ_DIR)
+endif	
+	$(ECHO) "leaving  build\n"
+
+# INCLUDE RESOLUTION TARGET
+# 1) force generation of dependency listing
+depend:$(OBJ_DIR)/$(DEPS)
+
+# DEPENDENCY GENERATION TARGET
+# 1) actual generation of dependency listing
+# 2) prepending value of OBJ_DIR to each build target
+$(OBJ_DIR)/$(DEPS):
+	$(ECHO) "entering depend"
+ifndef LDFLAGS
+	$(ECHO) "LDFLAGS is unset"
+	false
+endif
+ifndef CPPFLAGS
+	$(ECHO) "CPPFLAGS is unset"
+	false
+endif
+ifndef SRC_DIR
+	$(ECHO) "SRC_DIR is unset"
+	false
+endif
+ifndef BUILD_DIR
+	$(ECHO) "BUILD_DIR is unset"
+	false
+endif
+ifndef OBJ_DIR
+	$(ECHO) "OBJ_DIR is unset"
+	false
+endif
+ifndef TARGET
+	$(ECHO) "TARGET is unset"
+	false
+endif
+	$(ECHO) "Generating Dependencies for $(BUILD_DIR)/$(TARGET)"
+	$(ECHO) "LDFLAGS=[$(LDFLAGS)]"
+	$(ECHO) "CPPFLAGS=[$(CPPFLAGS)]"
+	$(ECHO) "SRC_DIR=[$(SRC_DIR)]"
+	$(ECHO) "BUILD_DIR=[$(BUILD_DIR)]"
+	$(ECHO) "OBJ_DIR=[$(OBJ_DIR)]"
+	$(ECHO) "TARGET=[$(TARGET)]"
+	-! [ -d "$(OBJ_DIR)" ]  && mkdir $(OBJ_DIR) && $(ECHO) "created $(OBJ_DIR)"
+	-! [ -d "$(BUILD_DIR)" ]  && mkdir $(BUILD_DIR) && $(ECHO) "created $(BUILD_DIR)"
+	$(ECHO) "$(BUILD_TYPE) on " `date`
+	$(CC) -MM $(CPPFLAGS) $(SRCS) > $(OBJ_DIR)/$(DEPS) 
+	$(ECHO) "leaving  depend\n"
+
+# $(OBJS): $(SRCS)
+
+	
+# SERVER TARGET
+# 1) link object files to produce target
+$(BUILD_DIR)/$(TARGET): $(OBJS)
+
+clean:
+	$(ECHO) "entering clean"
+	- ! [ -f $(BUILD_DIR)/$(TARGET) ] || ( $(RM) $(BUILD_DIR)/$(TARGET) && $(ECHO) "removed $(TARGET)" )
+	- $(RM) $(OBJS)  && $(ECHO) "removed $(OBJS)"
+	- ! [ -f $(OBJ_DIR)/$(DEPS) ] || ( $(RM) $(OBJ_DIR)/$(DEPS) && $(ECHO) "removed $(OBJ_DIR)/$(DEPS)")
+	$(ECHO) "leaving  clean\n"
+
+# INSTALL TARGET (requires root access)
+# 1) copy target to final destination
+# 2) chmod target to final permisions
+install:
+	$(ECHO) "entering install"
+	! ( $(INSTALL) $(INSTALL_PERM) $(BUILD_DIR)/$(TARGET) $(INSTALL_DIR) ) || $(ECHO) "$(TARGET) is installed"
+	$(ECHO) "leaving  install\n"
+
+all:	clean depend build
+
+# magic to allow parallel build directories
+$(OBJ_DIR)/%.o : %.cpp
+	$(CC) -c $< $(CPPFLAGS) -o $@ -I$(SRC_DIR) -I$(OBJ_DIR)
+	
+vpath %.cpp $(SRC_DIR)
+vpath %.o $(OBJ_DIR)
+vpath %$(DEPS) $(OBJ_DIR)
+-include $(OBJ_DIR)/$(DEPS)

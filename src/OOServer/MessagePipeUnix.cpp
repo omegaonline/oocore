@@ -54,6 +54,7 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 
 void Root::MessagePipe::close()
 {
+	m_stream.close_writer();
 	m_stream.close();
 }
 
@@ -64,16 +65,12 @@ ACE_HANDLE Root::MessagePipe::get_read_handle() const
 
 ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
 {
-	ssize_t r = m_stream.send(buf,len);
-	if (sent)
-        *sent = static_cast<size_t>(r);
-
-	return r;
+	return m_stream.send_n(buf,len,0,sent);
 }
 
 ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value* timeout, size_t* sent)
 {
-	return ACE::send_n(m_stream.get_handle(),mb,timeout,sent);
+	return m_stream.send_n(mb,timeout,sent);
 }
 
 ssize_t Root::MessagePipe::recv(void* buf, size_t len)

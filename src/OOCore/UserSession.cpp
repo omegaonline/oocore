@@ -110,12 +110,13 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_CStri
 
 void OOCore::UserSession::MessagePipe::close()
 {
+	m_stream.close_writer();
 	m_stream.close();
 }
 
 ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value* timeout, size_t* sent)
 {
-	return ACE::send_n(m_stream.get_handle(),mb,timeout,sent);
+	return m_stream.send_n(mb,timeout,sent);
 }
 
 ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)

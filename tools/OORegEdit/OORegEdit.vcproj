@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.3\include&quot;;&quot;..\..\extern\wxWidgets-2.8.3\include\msvc&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.4\include&quot;;&quot;..\..\extern\wxWidgets-2.8.4\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"

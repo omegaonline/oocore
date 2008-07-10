@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -32,7 +32,7 @@ namespace OOCore
 
 	class StdObjectManagerMarshalFactory :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<StdObjectManagerMarshalFactory,&OID_StdObjectManagerMarshalFactory>,
+		public OTL::AutoObjectFactorySingleton<StdObjectManagerMarshalFactory,&OID_StdObjectManagerMarshalFactory,Omega::Activation::InProcess>,
 		public Omega::Remoting::IMarshalFactory
 	{
 	public:
@@ -42,12 +42,12 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class StdObjectManager :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager>,
+		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
 		public Omega::Remoting::IObjectManager,
 		public Omega::System::MetaInfo::IWireManager,
 		public Omega::System::MetaInfo::IWireManager_Safe,
@@ -87,6 +87,8 @@ namespace OOCore
 		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>::iterator> m_mapStubIds;
 		std::map<Omega::uint32_t,WireProxy*>                                                           m_mapProxyIds;
 
+		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
+		
 	// IObject_Safe members
 	public:
 		void OMEGA_CALL AddRef_Safe();
@@ -97,38 +99,40 @@ namespace OOCore
 
 	// IWireManager members
 	public:
-		void MarshalInterface(Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
-		void ReleaseMarshalData(Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject* pObject);
-		void UnmarshalInterface(Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::IObject*& pObject);
-		Omega::IO::IFormattedStream* CreateOutputStream();
-		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::IO::IFormattedStream* pSend, Omega::IO::IFormattedStream*& pRecv, Omega::uint16_t timeout = 0);
+		void MarshalInterface(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
+		void ReleaseMarshalData(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
+		void UnmarshalInterface(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		Omega::Remoting::IMessage* CreateMessage();
+		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout = 0);
+		Omega::Remoting::IMessage* ReflectChannel();
 
 	// IWireManager_Safe members
 	public:
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateOutputStream_Safe(Omega::System::MetaInfo::IFormattedStream_Safe** ppRet);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SendAndReceive_Safe(Omega::System::MetaInfo::IException_Safe** ppRet, Omega::Remoting::MethodAttributes_t attribs, Omega::System::MetaInfo::IFormattedStream_Safe* pSend, Omega::System::MetaInfo::IFormattedStream_Safe** ppRecv, Omega::uint16_t timeout);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateMessage_Safe(Omega::System::MetaInfo::IMessage_Safe** ppRet);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SendAndReceive_Safe(Omega::System::MetaInfo::IException_Safe** ppRet, Omega::Remoting::MethodAttributes_t attribs, Omega::System::MetaInfo::IMessage_Safe* pSend, Omega::System::MetaInfo::IMessage_Safe** ppRecv, Omega::uint32_t timeout);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReflectChannel_Safe(Omega::System::MetaInfo::IMessage_Safe** ppRet);
 
 	// IObjectManager members
 	public:
 		void Connect(Omega::Remoting::IChannel* pChannel);
-		void Invoke(Omega::IO::IFormattedStream* pParamsIn, Omega::IO::IFormattedStream* pParamsOut, Omega::uint64_t deadline_secs, Omega::int32_t deadline_usecs);
+		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Disconnect();
-		void CreateRemoteInstance(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject* pOuter, Omega::IObject*& pObject);
+		void GetRemoteInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 
 	// IMarshal members
 	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
 	// IMarshal_Safe members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::MarshalFlags_t);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
 	};
 }
 

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #ifndef OOSERVER_NETHTTP_H_INCLUDED_
 #define OOSERVER_NETHTTP_H_INCLUDED_
 
+#include "./Database.h"
+
 namespace User
 {
 	// {EDB0676F-70B0-4e49-AACC-E8478F615277}
@@ -29,20 +31,24 @@ namespace User
 
 	class HttpProtocolHandler :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactoryNoAggregation<HttpProtocolHandler,&OID_HttpProtocolHandler,Omega::Activation::InProcess>,
-		public Omega::IO::IProtocolHandler
+		public OTL::AutoObjectFactorySingleton<HttpProtocolHandler,&OID_HttpProtocolHandler,Omega::Activation::InProcess>,
+		public Omega::Net::IProtocolHandler
 	{
 	public:
+		HttpProtocolHandler();
+
 		BEGIN_INTERFACE_MAP(HttpProtocolHandler)
-			INTERFACE_ENTRY(Omega::IO::IProtocolHandler)
+			INTERFACE_ENTRY(Omega::Net::IProtocolHandler)
 		END_INTERFACE_MAP()
 
 	private:
 		Omega::string_t FindProxy(const Omega::string_t& strURL, const Omega::string_t& strProtocol);
 
+		Db::Database m_db;
+
 	// IProtocolHandler members
 	public:
-		Omega::IO::IStream* OpenStream(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback);
+		Omega::Net::IConnectedStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);
 	};
 }
 

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -31,14 +31,15 @@ namespace OOCore
 	public:
 		static Omega::IException* init();
 		static void term();
-		static void handle_requests(Omega::uint32_t timeout);
+		static bool handle_request(Omega::uint32_t timeout);
+		static OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t channel_id, const Omega::guid_t& message_oid);
 
 	private:
 		friend class Channel;
 		friend class ThreadContext;
 		friend class ChannelMarshalFactory;
-		friend class ACE_Singleton<UserSession, ACE_Thread_Mutex>;
-		typedef ACE_Singleton<UserSession, ACE_Thread_Mutex> USER_SESSION;
+		friend class ACE_Singleton<UserSession, ACE_Recursive_Thread_Mutex>;
+		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex> USER_SESSION;
 
 		class MessagePipe
 		{
@@ -95,8 +96,9 @@ namespace OOCore
 				encrypted = 4,
 
 				// Upper 16 bits can be used for system messages
-				system_message = 0x10000,
-				channel_close = 0x20000 | system_message
+				system_message = 0xFFFF0000,
+				channel_close = 0x10000,
+				channel_reflect = 0x20000
 			};
 
 			ACE_CDR::UShort                                      m_dest_thread_id;
@@ -111,6 +113,7 @@ namespace OOCore
 
 		struct ThreadContext
 		{
+			bool                                        m_bApartment;
 			ACE_CDR::UShort                             m_thread_id;
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
 
@@ -123,27 +126,27 @@ namespace OOCore
 			static ThreadContext* instance();
 
 		private:
-			friend class ACE_TSS_Singleton<ThreadContext,ACE_Thread_Mutex>;
+			friend class ACE_TSS_Singleton<ThreadContext,ACE_Recursive_Thread_Mutex>;
 			friend class ACE_TSS<ThreadContext>;
 
 			ThreadContext();
 			~ThreadContext();
 		};
 
-		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long>   m_consumers;
-		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
-		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>      m_default_msg_queue;
+		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_consumers;
+		std::map<ACE_CDR::UShort,ThreadContext*>      m_mapThreadContexts;
+		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>    m_default_msg_queue;
 
 		// Accessors for ThreadContext
-		ACE_CDR::UShort insert_thread_context(const ThreadContext* pContext);
-		void remove_thread_context(const ThreadContext* pContext);
+		ACE_CDR::UShort insert_thread_context(ThreadContext* pContext);
+		void remove_thread_context(ACE_CDR::UShort thread_id);
 
 		// Accessors for Channel
-		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::UShort timeout, ACE_CDR::ULong attribs);
+		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::ULong timeout, ACE_CDR::ULong attribs);
 
 		// Accessors for Stream
-		typedef void (*pfnStreamCallback)(void* pThis, Omega::IO::IAsyncStreamCallback::SignalType_t type, Omega::uint32_t cbBytes, const ACE_Message_Block& mb);
-		void register_stream_callback(Omega::uint32_t nStreamId, pfnStreamCallback pCallback, void* pThis);
+		typedef void (*pfnStreamNotify)(void* pThis, Omega::uint32_t type, Omega::uint32_t cbBytes, const ACE_Message_Block& mb);
+		void register_stream_callback(Omega::uint32_t nStreamId, pfnStreamNotify pNotify, void* pThis);
 		void stream_write(Omega::uint32_t nStreamId, ACE_Message_Block* mb);
 		void stream_close(Omega::uint32_t nStreamId);
 
@@ -155,12 +158,12 @@ namespace OOCore
 		bool launch_server();
 
 		int run_read_loop();
-		void pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
+		int pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
 		void process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline);
 		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
-		bool build_header(ACE_CDR::ULong seq_no, ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
-		void send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong src_channel_id);
+		bool build_header(ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
+		bool send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs = Message::synchronous);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager_i(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 		bool send_channel_close(ACE_CDR::ULong closed_channel_id);
 		void process_channel_close(ACE_CDR::ULong closed_channel_id);
 		Omega::Remoting::MarshalFlags_t classify_channel(ACE_CDR::ULong channel);

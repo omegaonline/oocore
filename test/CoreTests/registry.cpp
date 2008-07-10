@@ -5,7 +5,7 @@
 pid_t GetCurrentProcessId();
 #endif
 
-static bool test_values(Omega::Registry::IRegistryKey* pKey)
+static bool test_values(Omega::Registry::IKey* pKey)
 {
 	// Generate a unique value name
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
@@ -168,7 +168,7 @@ static bool test_values(Omega::Registry::IRegistryKey* pKey)
 	return true;
 }
 
-static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strKey)
+static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey)
 {
 	if (!test_values(pKey))
 		return false;
@@ -179,7 +179,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 		strTestKey = "_" + strTestKey;
 	}
 
-	Omega::Registry::IRegistryKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create);
+	Omega::Registry::IKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create);
 	TEST(pSubKey);
 	TEST(pKey->IsSubKey(strTestKey));
 
@@ -191,13 +191,13 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 
 	pSubKey->Release();
 
-	pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
+	pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::OpenExisting);
 	TEST(pSubKey);
 	pSubKey->Release();
 
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"",Omega::Registry::IRegistryKey::Create);
+		pSubKey = pKey->OpenSubKey(L"",Omega::Registry::IKey::Create);
 		pSubKey->Release();
 		TEST(!"No exception thrown!");
 	}
@@ -208,7 +208,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 	}
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IRegistryKey::Create);
+		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::Create);
 		pSubKey->Release();
 		TEST(!"No exception thrown!");
 	}
@@ -241,7 +241,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 
 	try
 	{
-		pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::Create | Omega::Registry::IRegistryKey::FailIfThere);
+		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
@@ -255,7 +255,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 
 	try
 	{
-		pKey->OpenSubKey(strTestKey,Omega::Registry::IRegistryKey::OpenExisting);
+		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::OpenExisting);
 		TEST(!"No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
@@ -288,7 +288,7 @@ static bool test_key2(Omega::Registry::IRegistryKey* pKey, const Omega::string_t
 
 static bool test_key(const Omega::string_t& strKey)
 {
-	Omega::Registry::IRegistryKey* pKey = Omega::Registry::IRegistryKey::OpenKey(strKey);
+	Omega::Registry::IKey* pKey = Omega::Registry::IKey::OpenKey(strKey);
 	TEST(pKey);
 
 	bool bTest;
@@ -308,7 +308,7 @@ static bool test_key(const Omega::string_t& strKey)
 	return true;
 }
 
-static bool test_privates(Omega::Registry::IRegistryKey* pKey, const Omega::string_t& strSubKey)
+static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& strSubKey)
 {
 	try
 	{
@@ -324,7 +324,7 @@ static bool test_privates(Omega::Registry::IRegistryKey* pKey, const Omega::stri
 	return true;
 }
 
-static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
+static bool test_root_key(Omega::Registry::IKey* pKey)
 {
 	TEST(pKey->IsSubKey(L"All Users"));
 	TEST(pKey->IsSubKey(L"Server"));
@@ -369,7 +369,7 @@ static bool test_root_key(Omega::Registry::IRegistryKey* pKey)
 
 bool registry_tests()
 {
-	Omega::Registry::IRegistryKey* pRootKey = Omega::Registry::IRegistryKey::OpenKey(L"\\");
+	Omega::Registry::IKey* pRootKey = Omega::Registry::IKey::OpenKey(L"\\");
 	TEST(pRootKey);
 
 	bool bTest;
@@ -399,12 +399,12 @@ bool registry_tests()
 
 bool registry_tests_2()
 {
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey;
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey;
 	TEST(!ptrKey);
 	TEST(ptrKey == (Omega::IObject*)0);
-	TEST(ptrKey == (Omega::Registry::IRegistryKey*)0);
+	TEST(ptrKey == (Omega::Registry::IKey*)0);
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\");
 
 	// Generate a unique value name
 	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
@@ -449,7 +449,7 @@ bool registry_tests_2()
 		pE->Release();
 	}
 
-	ptrKey = OTL::ObjectPtr<Omega::Registry::IRegistryKey>(L"\\Local User");
+	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User");
 	// Generate a unique value name
 	strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
 	while (ptrKey->IsSubKey(strTestKey))

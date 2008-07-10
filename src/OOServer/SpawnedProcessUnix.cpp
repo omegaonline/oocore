@@ -48,7 +48,7 @@ bool IsDebuggerPresent()
 #ifdef OMEGA_DEBUG
 void AttachDebugger(pid_t pid)
 {
-	kill(pid,SIGSTOP);
+	kill(pid,SIGTRAP);
 }
 #endif
 
@@ -138,9 +138,6 @@ Root::SpawnedProcess::~SpawnedProcess()
 	}
 }
 
-// Forward declare UserMain
-int UserMain(const ACE_CString& strPipe);
-
 extern char **environ;
 
 #define SAFE_PATH "/usr/local/bin:/usr/bin:/bin"
@@ -193,6 +190,106 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	return true;
 }
 
+bool Root::SpawnedProcess::close_all_fds()
+{
+#ifdef LINUX 
+	/* faster under linux as avoid untold syscalls */
+	return linux_close_all_fds();
+
+#elif defined(_POSIX_OPEN_MAX)
+	/* POSIX's way, needs testing on other unix systems particuarly solaris */
+	#if (_POSIX_OPEN_MAX == -1)
+		/* value unsupported */
+		
+	#elif (_POSIX_OPEN_MAX == 0)
+		/* value only obtainable at runtime */
+		return_posix_close_all_fds(sysconf(_SC_OPEN_MAX));
+	#else
+		/* value statically defined */
+		return_posix_close_all_fds(onf(_POSIX_OPEN_MAX));
+	#endif
+
+#else
+	#error Not linux and not POSIX compliant, enable a system specific way
+#endif /* def LINUX */
+}
+
+bool Root::SpawnedProcess::posix_close_all_fds(long max_fd)
+{
+	long x =3;
+
+	/* this is seriously slow as involves SC_OPEN_MAX close() syscalls
+	most of which were never opened */
+	if (max_fd <= 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Indeterminate limit passed in, pick a high limit and pass that to %s\n"),__func__),false);
+	
+	while(x <= max_fd)
+		close(x++);
+
+	return true;
+}
+
+/* this might work for a mac too */
+bool Root::SpawnedProcess::linux_close_all_fds()
+{
+	/* should have nothing like this many file descriptors open */
+	const int MAX_N_FDS = 100
+	int fds[MAX_N_FDS] = {0};
+	str[1024] = {0};
+	int count=-1;
+	DIR *pdir;
+	struct dirent *pfile;
+	snprintf(str,1024,"/proc/%u/fd/",getpid())
+
+again:
+	/* walk proc filesystem and close fds there */
+	errno = 0;
+	pdir = opendir(str);
+	if(!pdir)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("opendir() failed!")),false);
+		
+	while ((pfile = readdir(pdir)) != 0)
+	{
+		/* skip ./ and ../ entries */
+		if ('.' == *pfile->d_name)
+			continue;
+
+		/* skip stdin */
+		if (!strcmp("0",pfile->d_name))
+			continue;
+
+		/* skip stderr */
+		if (!strcmp("1",pfile->d_name))
+			continue;
+
+		/* skip stdout */
+		if (!strcmp("2",pfile->d_name))
+			continue;
+
+		/* close all existing entries and restart loop */
+		if (++count >= entries)
+		{
+			while(--count >= 0 )
+			{
+				/* FIXME add propper error handling */
+				close(fds[x++]);
+			}
+
+			closedir(pdir);
+			pdir  = NULL;
+			pfile = NULL;
+			goto again;
+		}
+		fds[count] = atoi(pfile->d_name);
+	}
+
+	void* TODO; // Check this!
+
+	closedir(pdir);
+	
+	return true;
+}
+
 bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 {
 	void* TICKET_96; // Look at using PAM for this...
@@ -208,7 +305,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	ACE_CDR::LongLong sb_uid = (ACE_CDR::ULong)-1;
 	int err = reg_root->get_integer_value(key,"Uid",0,sb_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to get sandbox uid from registry: %s\n"),ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to get sandbox uid from registry: %C"),ACE_OS::strerror(err)),false);
 
 	uid = static_cast<uid_t>(sb_uid);
 	return true;
@@ -314,19 +411,30 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 			}
 		}
 
+		// Close all open handles
+		if (!close_all_fds())
+			ACE_OS::exit(errno);
+
 		// Clean up environment...
 		if (!CleanEnvironment())
 			ACE_OS::exit(errno);
 
-		// Set cwd
-		if (!bSandbox && ACE_OS::chdir(pw->pw_dir) != 0)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("chdir() failed!")));
-			ACE_OS::exit(errno);
-		}
+		// This all needs sorting out badly!
+        void* TODO;
 
-		// Now just run UserMain and exit
-		int err = UserMain(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
+		// mount and chroot into our own FUSE dir
+
+
+		// Exec the user process
+		char* cmd_line[] =
+		{
+		    "oosvruser", //  argv[0] = Process name
+		    0,           //  argv[1] = Pipe name
+		    0
+		};
+		cmd_line[1] = const_cast<char*>(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
+
+		int err = ACE_OS::execv("./oosvruser",cmd_line);
 
 		ACE_ERROR((LM_WARNING,ACE_TEXT("Child process exiting with code: %d\n"),err));
 
@@ -352,63 +460,37 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 		return false;
 
 	if (mode==O_RDONLY && (sb.st_mode & S_IROTH))
-	{
 		bAllowed = true;
-		return true;
-	}
 	else if (mode==O_WRONLY && (sb.st_mode & S_IWOTH))
-	{
 		bAllowed = true;
-		return true;
-	}
 	else if (mode==O_RDWR && (sb.st_mode & (S_IROTH | S_IWOTH)))
-	{
 		bAllowed = true;
-		return true;
-	}
-
-	// Is the supplied user the file's owner
-	if (sb.st_uid == m_uid)
+	else if (sb.st_uid == m_uid)
 	{
+		// Is the supplied user the file's owner
 		if (mode==O_RDONLY && (sb.st_mode & S_IRUSR))
-		{
 			bAllowed = true;
-			return true;
-		}
 		else if (mode==O_WRONLY && (sb.st_mode & S_IWUSR))
-		{
 			bAllowed = true;
-			return true;
-		}
 		else if (mode==O_RDWR && (sb.st_mode & (S_IRUSR | S_IWUSR)))
-		{
 			bAllowed = true;
-			return true;
-		}
 	}
-
-	// Get the suppied user's group see if that is the same as the file's group
-	Root::pw_info pw(m_uid);
-	if (!pw)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
-
-	// Is the file's gid the same as the specified user's
-	if (pw->pw_gid == sb.st_gid)
+	else
 	{
-		if (mode==O_RDONLY && (sb.st_mode & S_IRGRP))
+		// Get the suppied user's group see if that is the same as the file's group
+		Root::pw_info pw(m_uid);
+		if (!pw)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
+
+		// Is the file's gid the same as the specified user's
+		if (pw->pw_gid == sb.st_gid)
 		{
-			bAllowed = true;
-			return true;
-		}
-		else if (mode==O_WRONLY && (sb.st_mode & S_IWGRP))
-		{
-			bAllowed = true;
-			return true;
-		}
-		else if (mode==O_RDWR && (sb.st_mode & (S_IRGRP | S_IWGRP)))
-		{
-			bAllowed = true;
-			return true;
+			if (mode==O_RDONLY && (sb.st_mode & S_IRGRP))
+				bAllowed = true;
+			else if (mode==O_WRONLY && (sb.st_mode & S_IWGRP))
+				bAllowed = true;
+			else if (mode==O_RDWR && (sb.st_mode & (S_IRGRP | S_IWGRP)))
+				bAllowed = true;
 		}
 	}
 
@@ -441,7 +523,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 
 	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to set sandbox uid in registry: %s\n"),ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to set sandbox uid in registry: %C"),ACE_OS::strerror(err)),false);
 
 	return true;
 }

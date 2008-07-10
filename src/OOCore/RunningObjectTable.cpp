@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -38,6 +38,26 @@ ObjectPtr<Remoting::IInterProcessService> OOCore::GetInterProcessService()
 		pE2->Release();
 		throw pE;
 	}
+}
+
+bool OOCore::HostedByOOServer()
+{
+	static bool bChecked = false;
+	static bool bHosted = false;
+
+	if (!bChecked)
+	{
+		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
+		ObjectPtr<Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy;
+		ptrProxy.Attach(ptrIPS.QueryInterface<System::MetaInfo::IWireProxy>());
+		if (!ptrProxy)
+			bHosted = true;
+		
+		bChecked = true;
+	}
+
+	return bHosted;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())

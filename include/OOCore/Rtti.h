@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -24,11 +24,11 @@
 
 namespace Omega
 {
-	inline bool PinObjectPointer(IObject* pObject);
-	inline void UnpinObjectPointer(IObject* pObject);
-
 	namespace System
 	{
+		inline bool PinObjectPointer(IObject* pObject);
+		inline void UnpinObjectPointer(IObject* pObject);
+
 		namespace MetaInfo
 		{
 			template <class T>
@@ -86,6 +86,20 @@ namespace Omega
 				typedef std_safe_type<T> safe_type;
 				typedef std_wire_type<T> wire_type;
 			};
+
+			#if defined(_MSC_VER) && defined(_Wp64)
+			// VC gets badly confused with size_t
+			template <> struct marshal_info<size_t>
+			{
+			#if defined(OMEGA_64)
+				typedef std_safe_type<uint64_t> safe_type;
+				typedef std_wire_type<uint64_t> wire_type;
+			#else
+				typedef std_safe_type<uint32_t> safe_type;
+				typedef std_wire_type<uint32_t> wire_type;
+			#endif
+			};
+			#endif
 
 			template <class T> struct marshal_info<T*>
 			{
@@ -263,6 +277,7 @@ namespace Omega
 
 				~iface_stub_functor()
 				{
+					// If this blows, then you have released an (in) parameter!
 					if (m_pI)
 						m_pI->Release();
 				}
@@ -667,6 +682,7 @@ namespace Omega
 				virtual IObject_Safe* GetSafeStub() = 0;
 				virtual void Pin() = 0;
 				virtual void Unpin() = 0;
+				virtual IObject* ProxyQI(const guid_t& iid, bool bPartialAllowed) = 0;
 			};
 
 			template <class I_SafeProxy, class I>
@@ -814,8 +830,12 @@ namespace Omega
 
 			struct SafeStubMap
 			{
+				bool                             m_bSafetyCheck;
 				ReaderWriterLock                 m_lock;
 				std::map<IObject*,IObject_Safe*> m_map;
+
+				SafeStubMap() : m_bSafetyCheck(true) {}
+				~SafeStubMap() { m_bSafetyCheck = false; }
 			};
 			inline SafeStubMap& get_stub_map();
 
@@ -837,6 +857,14 @@ namespace Omega
 				{
 					if (--m_refcount==0)
 					{
+						// Remove ourselves from the stub_map
+						SafeStubMap& stub_map = get_stub_map();
+						if (stub_map.m_bSafetyCheck)
+						{
+							WriteGuard guard(stub_map.m_lock);
+							stub_map.m_map.erase(m_pObj);
+						}
+						
 						try
 						{
 							// Release all interfaces
@@ -904,20 +932,16 @@ namespace Omega
 				ReaderWriterLock                     m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				IObject*                             m_pObj;
-
-				virtual ~SafeStub()
-				{
-					// Remove ourselves from the stub_map
-					SafeStubMap& stub_map = get_stub_map();
-					WriteGuard guard(stub_map.m_lock);
-					stub_map.m_map.erase(m_pObj);
-				}
 			};
 
 			struct SafeProxyMap
 			{
+				bool                                m_bSafetyCheck;
 				ReaderWriterLock                    m_lock;
 				std::map<IObject_Safe*,ISafeProxy*> m_map;
+
+				SafeProxyMap() : m_bSafetyCheck(true) {}
+				~SafeProxyMap() { m_bSafetyCheck = false; }
 			};
 			inline SafeProxyMap& get_proxy_map();
 
@@ -956,7 +980,12 @@ namespace Omega
 					m_pS->Unpin();
 				}
 
-				inline virtual IObject* QueryInterface(const guid_t& iid);
+				virtual IObject* QueryInterface(const guid_t& iid)
+				{
+					return ProxyQI(iid,false);
+				}
+
+				inline virtual IObject* ProxyQI(const guid_t& iid, bool bPartialAllowed);
 				
 			private:
 				AtomicOp<uint32_t>               m_refcount;
@@ -966,6 +995,14 @@ namespace Omega
 				
 				virtual ~SafeProxy()
 				{
+					// Remove ourselves from the proxy_map
+					SafeProxyMap& proxy_map = get_proxy_map();
+					if (proxy_map.m_bSafetyCheck)
+					{
+						WriteGuard guard(proxy_map.m_lock);
+						proxy_map.m_map.erase(m_pS);
+					}
+
 					try
 					{
 						// Release all interfaces
@@ -974,18 +1011,12 @@ namespace Omega
 							i->second->Release();
 						}
 					}
-					catch (std::exception&)
-					{ }
+					catch (std::exception& e)
+					{ 
+						OMEGA_THROW(e);
+					}
 
 					m_iid_map.clear();
-
-					// Remove ourselves from the proxy_map
-					{
-						SafeProxyMap& proxy_map = get_proxy_map();
-
-						WriteGuard guard(proxy_map.m_lock);
-						proxy_map.m_map.erase(m_pS);
-					}
 
 					m_pS->Release_Safe();
 				}

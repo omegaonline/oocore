@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -68,9 +68,9 @@ ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
 	return m_stream.send_n(buf,len,0,sent);
 }
 
-ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value* timeout, size_t* sent)
+ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, size_t* sent)
 {
-	return m_stream.send_n(mb,timeout,sent);
+	return m_stream.send_n(mb,0,sent);
 }
 
 ssize_t Root::MessagePipe::recv(void* buf, size_t len)

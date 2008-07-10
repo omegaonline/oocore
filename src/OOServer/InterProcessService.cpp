@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "OOServer.h"
-
+#include "./OOServer_User.h"
 #include "./InterProcessService.h"
 #include "./UserManager.h"
 #include "./NetTcp.h"
@@ -28,6 +27,12 @@
 
 using namespace Omega;
 using namespace OTL;
+
+namespace User
+{
+	void ExecProcess(ACE_Process& process, const Omega::string_t& strExeName);
+	ACE_WString ShellParse(const wchar_t* pszFile);
+}
 
 ACE_WString User::ShellParse(const wchar_t* pszFile)
 {
@@ -53,7 +58,7 @@ ACE_WString User::ShellParse(const wchar_t* pszFile)
 #endif
 		
 	const wchar_t* pszExt = PathFindExtensionW(pszFile);
-	if (pszExt)
+	if (pszExt && ACE_OS::strcasecmp(pszExt,L".exe")!=0)
 	{
 		DWORD dwLen = 1024;
 		wchar_t szBuf[1024];	
@@ -98,12 +103,14 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	ACE_WString strActualName = ShellParse(strExeName.c_str());
 
 	if (options.command_line(strActualName.c_str()) == -1)
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 #if defined(OMEGA_WIN32) && defined(OMEGA_DEBUG)
 	HANDLE hDebugEvent = NULL;
 	if (IsDebuggerPresent())
 	{
+		options.creation_flags(CREATE_NEW_CONSOLE);
+
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
 		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
 			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
@@ -112,7 +119,7 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 
 	// Spawn the process
 	if (process.spawn(options)==ACE_INVALID_PID)
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 #if defined(OMEGA_WIN32) && defined(OMEGA_DEBUG)
 	if (hDebugEvent)
@@ -133,7 +140,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	if (ptrOMSB)
 	{
 		IObject* pIPS = 0;
-		ptrOMSB->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		ptrOMSB->GetRemoteInstance(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
 		m_ptrSBIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 	}
 
@@ -141,7 +148,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOMUser->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		ptrOMUser->GetRemoteInstance(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
@@ -154,7 +161,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
 		ptrKey->Init(m_pManager,L"",0);
 		
-		m_ptrReg = static_cast<Omega::Registry::IRegistryKey*>(ptrKey);
+		m_ptrReg = static_cast<Omega::Registry::IKey*>(ptrKey);
 	}
 
 	// Create the ROT
@@ -170,7 +177,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	}
 }
 
-Registry::IRegistryKey* User::InterProcessService::GetRegistry()
+Registry::IKey* User::InterProcessService::GetRegistry()
 {
 	return m_ptrReg.AddRef();
 }
@@ -180,11 +187,11 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
-bool_t User::InterProcessService::ExecProcess(const string_t& strProcess, bool_t bPublic)
+void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPublic, const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
 	if (bPublic && m_ptrSBIPS)
-		return m_ptrSBIPS->ExecProcess(strProcess,false);
-	
+		return m_ptrSBIPS->GetObject(strProcess,false,oid,iid,pObject);
+
 	ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> ptrProcess;
 
 	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
@@ -196,61 +203,108 @@ bool_t User::InterProcessService::ExecProcess(const string_t& strProcess, bool_t
 		if (!ptrProcess->running())
 		{
 			m_mapInProgress.erase(strProcess);
-			ptrProcess.release();
+			ptrProcess.reset(0);
 		}
 	}
 
 	if (ptrProcess.null())
 	{
 		// Create a new process
-		OMEGA_NEW(ptrProcess,ACE_Process());
+		ACE_Process* pProcess = 0;
+		OMEGA_NEW(pProcess,ACE_Process());
+		ptrProcess.reset(pProcess);
 		
 		// Start it
 		User::ExecProcess(*ptrProcess,strProcess);
 
 		m_mapInProgress.insert(std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> >::value_type(strProcess,ptrProcess));
 	}
-	
-	if (!ptrProcess->running())
-	{
-		m_mapInProgress.erase(strProcess);
 
-		return false;
+	guard.release();
+
+	// The timeout needs to be related to the request timeout...
+	ACE_Time_Value wait(15);
+	ObjectPtr<Remoting::ICallContext> ptrCC;
+	ptrCC.Attach(Remoting::GetCallContext());
+	if (ptrCC)
+	{
+		uint32_t msecs = ptrCC->Timeout();
+		if (msecs != (uint32_t)-1)
+			wait = ACE_Time_Value(msecs / 1000,(msecs % 1000) * 1000);
 	}
 	
-	return true;
+	// Wait for the process to start and register its parts...
+	ACE_Countdown_Time timeout(&wait);
+	while (wait != ACE_Time_Value::zero)
+	{
+		ObjectPtr<IObject> ptrObject;
+		ptrObject.Attach(m_ptrROT->GetObject(oid));
+		if (ptrObject)
+		{
+			pObject = ptrObject->QueryInterface(iid);
+			if (!pObject)
+				throw INoInterfaceException::Create(iid);
+			return;
+		}
+
+		// Check the process is still alive
+		if (!ptrProcess->running())
+		{
+			guard.acquire();
+
+			m_mapInProgress.erase(strProcess);
+
+			break;
+		}
+
+		// Sleep for a brief moment - it will take a moment for the process to start
+		ACE_OS::sleep(ACE_Time_Value(0,100000));
+
+		// Update our countdown
+		timeout.update();
+	}
+
+	OMEGA_THROW(ENOENT);
 }
 
-IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
+IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify)
 {
 	// First try to determine the protocol...
-	size_t pos = strEndPoint.Find(L"://");
+	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
 		OMEGA_THROW(L"No protocol specified!");
 
 	// Look up handler in registry
-	string_t strProtocol = strEndPoint.Left(pos).ToLower();
-	
-	guid_t oid = guid_t::Null();
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User");
+	string_t strProtocol = strEndpoint.Left(pos).ToLower();
+		
+	string_t strHandler;
+	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
 	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 		if (ptrKey->IsValue(L"Handler"))
-			oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
+			strHandler = ptrKey->GetStringValue(L"Handler");
 	}
 	
-	if (oid == guid_t::Null())
+	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\");
 		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
 			if (ptrKey->IsValue(L"Handler"))
-				oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
+				strHandler = ptrKey->GetStringValue(L"Handler");
 		}
 	}
-	
+
+	guid_t oid = guid_t::Null();
+	if (!strHandler.IsEmpty())
+	{
+		oid = guid_t::FromString(strHandler);
+		if (oid == guid_t::Null())
+			oid = Activation::NameToOid(strHandler);
+	}
+
 	if (oid == guid_t::Null())
 	{
 		// We have some built-ins
@@ -263,8 +317,34 @@ IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndPoint, 
 	}
 	
 	// Create the handler...
-	ObjectPtr<IO::IProtocolHandler> ptrHandler(oid);
+	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
 
 	// Open the stream...
-	return ptrHandler->OpenStream(strEndPoint,pCallback);
+	return ptrHandler->OpenStream(strEndpoint,pNotify);
+}
+
+bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
+{
+	ACE_Time_Value wait(timeout/1000,(timeout % 1000) * 1000);
+	wait += ACE_OS::gettimeofday();
+
+	ACE_Time_Value* wait2 = &wait;
+	if (timeout == (uint32_t)0)
+		wait2 = 0;
+
+	int ret = m_pManager->pump_requests(wait2,true);
+	if (ret == -1)
+		OMEGA_THROW(ACE_OS::last_error());
+	else
+		return (ret == 0 ? false : true);
+}
+
+Remoting::IObjectManager* User::InterProcessService::OpenRemoteObjectManager(const string_t& strEndpoint)
+{
+	return Manager::open_remote_channel(strEndpoint);	
+}
+
+Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
+{
+	return Manager::open_server_sink(message_oid,pSink);	
 }

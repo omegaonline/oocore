@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -70,7 +70,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2
 
 #if defined(OMEGA_WIN32)
 	// If errno is not set, then it isn't a std error
-	if (errno == 0 || e > 42)
+	if (e >= 42)
 		pExcept->m_strDesc = Win32Msg(static_cast<DWORD>(e));
 #endif
 

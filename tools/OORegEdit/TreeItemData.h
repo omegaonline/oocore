@@ -4,7 +4,7 @@
 class TreeItemData : public wxTreeItemData
 {
 public:
-	TreeItemData(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrKey, size_t nDepth);
+	TreeItemData(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey, size_t nDepth);
 	virtual ~TreeItemData(void);
 
 	void Fill(wxTreeCtrl* pTree, const wxTreeItemId& id);
@@ -24,13 +24,13 @@ public:
 	wxString GetValueDesc(const wxString& strVal);
 
 private:
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> m_ptrKey;
+	OTL::ObjectPtr<Omega::Registry::IKey> m_ptrKey;
 	size_t m_nDepth;
 
-	void CopyKey(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrOldKey, OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrNewKey);
-	static bool MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrKey, const Omega::string_t& strName, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase);
+	void CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL::ObjectPtr<Omega::Registry::IKey>& ptrNewKey);
+	static bool MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey, const Omega::string_t& strName, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase);
 	static void Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pList, const Omega::string_t& strFind, bool bKeys, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase);
-	static Omega::string_t Find3(OTL::ObjectPtr<Omega::Registry::IRegistryKey>& ptrKey, const Omega::string_t& strFind, bool bKeys, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase, bool& bKey);
+	static Omega::string_t Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey, const Omega::string_t& strFind, bool bKeys, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase, bool& bKey);
 };
 
 #endif // OOREGEDIT_TREEITEMDATA_H_INCLUDED_

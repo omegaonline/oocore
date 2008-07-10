@@ -9,29 +9,120 @@
 #include "./EditKeyDescDlg.h"
 #include "./EditValueDescDlg.h"
 
+/* XPM */
+static char* imagelist[] = 
+{
+	"96 16 11 1 0 0",
+	"  c #000000",
+	"! c #800000",
+	"# c #FFFF00",
+	"$ c #008080",
+	"% c #808080",
+	"& c #C0C0C0",
+	"' c #0000FF",
+	"( c #FF00FF",
+	") c #00FFFF",
+	"* c #FFFFFF",
+	"+ c None",
+	"+++++++++++++++++++%%%%%%%%%%%++++++++++++++++++++++++++++++++++%%%%%%%%%%%%%+++%%%%%%%%%%%%%+++",
+	"++++++%%%%%%%%++++%&&&&&&&&&&% +++%%%%%++++++++++++%%%%%++++++++%***********%%++%***********%%++",
+	"+++++%&&&&&&&% +++%&%%%%%%%%&% ++%&#&#&%++++++++++%*****%+++++++%***********%*%+%***********%*%+",
+	"++++%******&%% +++%&%)))))))&% +%&#&#&#&%%%%%%+++%*&#&#&*%%%%%%+%*******!!**%   %**'''**''*'%   ",
+	"++++%*     &%% +++%&%))    )&% +%************% ++%*#&#&#&*****% %*******!!****& %*''*''*''*''*& ",
+	"++++%* )$$%&%% +++%&%)) ** )&% +%*#&#&#&#&#&#% ++%*&#&#&#&#&#&% %**!!!&*!!!!**& %*''*''*''*''*& ",
+	"++++%* $$$%&%% +++%&%))    )&% +%*&#&#&#&#&#&% +%%%%%%%%%%%%%#% %****!!*!!*!!*& %**'''**''*''*& ",
+	"++++%* %%%%&%% +++%&%)))))))&% +%*#&#&#&#&#&#% +%**********% &% %**!!!!*!!*!!*& %*************& ",
+	"++++%*&&&&&&% %%++%&&&&&&&&&&% +%*&#&#&#&#&#&% +%*&#&#&#&#&# %% %*!!*!!*!!*!!*& %*''*''**'''**& ",
+	"++++%        %& ++%%%%%%%%%%%% +%*#&#&#&#&#&#% ++%*&#&#&#&#&% % %**!!!!!!!!!**& %*''*''*''*''*& ",
+	"+++%&&&&&&&&%&% +%************% %*&#&#&#&#&#&% ++%*#&#&#&#&#& % %*************& %*''*''*''*''*& ",
+	"+++% % % % % %% +%*&&&&&&%%%%&% %*#&#&#&#&#&#% +++%*#&#&#&#&#%  %*************& %*''*''**'''**& ",
+	"++% & & & & &  ++%*&&&&&&    &% %%%%%%%%%%%%%% +++%%%%%%%%%%%%  %&******&&&&**& %&******&&&&**& ",
+	"+%**********& +++%*&&&&&&&&&&&% +              ++++             %  &&&&%    %*& %  &&&&%    %*& ",
+	"+            ++++%%%%%%%%%%%%%% +++++++++++++++++++++++++++++++++++%    ++++ %& +++%    ++++ %& ",
+	"++++++++++++++++++             ++++++++++++++++++++++++++++++++++++++++++++++   +++++++++++++   "
+};
+
+/* XPM */
+static char *icon_large[] = 
+{
+	"32 32 7 1 0 0",
+	"  c #000000",
+	"! c #808000",
+	"# c #FFFF00",
+	"$ c #808080",
+	"% c #FF00FF",
+	"& c #FFFFFF",
+	"' c None",
+	"''''''''''''''''''$'''''''''''''",
+	"'''''''''''''''''$& ''''''''''''",
+	"''''''''''''''''$&#& '''''''''''",
+	"'''''''''''''''$&#&#& ''''$$$'''",
+	"'''''''''''''''$!&#&! '''$&!! ''",
+	"'''''''''''''''$!!&!! ''$&#&!! '",
+	"''''''''''''''''$!!! ''$&#&#&!! ",
+	"'''''''''''''''''$! ''''$&#&!! '",
+	"'''''''''''''''''' ''''''$&!! ''",
+	"''''''''''''''''''''''''''$  '''",
+	"''''''$$$$$$$$$$$$$$$$''''''''''",
+	"'''''$#&#&!&#&#!#&#&! ''''''''''",
+	"''''$!!!!!!!!! &&&&!! $$$'''''''",
+	"'''$&&&&!&#&#! !#&#!! &!! ''''''",
+	"''$!!!! &&&&!! !!#&!!&#&!! '''''",
+	"'$#&#&! !&#&!! !!!#!&#&#&!! ''''",
+	"$&&&&!! !!&#!! !!!!! &#&!! '''''",
+	"$&#&#!! !!!&!!      ! &!! ''''''",
+	"$#&#&!! !!!!! &#&#! !    '''''''",
+	"$&#&#!!      &&&&!! ! ''''''''''",
+	"$#&#&! !!#&! !&#&!! ! ''''''''''",
+	"$!!!! &&&&!! !!&#!!   ''''''''''",
+	"$#&#&!&#&#!! !!!&!! ! ''''''''''",
+	"$&#&#!#&#&!! !!!!!  ! ''''''''''",
+	"$#&#&!&#&#!!      ! ! ''''''''''",
+	"$&#&#!#&#&! #&#&! ! ! ''''''''''",
+	"$!!!!!!!!! &&&&!! !  '''''''''''",
+	"$&#&#!#&#&!&#&#!! ! ''''''''''''",
+	"$#&#&!&#&#!#&#&!!  '''''''''''''",
+	"$&#&#!#&#&!&#&#!! ''''''''''''''",
+	"$#&#&!&#&#!#&#&! '''''''''''''''",
+	"                ''''''''''''''''"
+};
+
+/* XPM */
+static char *icon_small[] = 
+{
+	"16 16 7 1 0 0",
+	"  c #000000",
+	"! c #808000",
+	"# c #FFFF00",
+	"$ c #808080",
+	"% c #FF00FF",
+	"& c #FFFFFF",
+	"' c None",
+	"'''''''''$''''''",
+	"''''''''$& '''''",
+	"'''''''$!#! '$''",
+	"''''''''$! '$& '",
+	"'''$$$$$$ '$!#! ",
+	"''$!!&&! !$ $! '",
+	"'$#& #&! ! !  ''",
+	"$#&! !!!   ! '''",
+	"$&#!    &! ! '''",
+	"$!! !&! #!   '''",
+	"$#&!#&! !! ! '''",
+	"$&#!&#!    ! '''",
+	"$!!!!!!&#! ! '''",
+	"$#&!#&!#&!  ''''",
+	"$&#!&#!&#! '''''",
+	"          ''''''"
+};
+
+
 MainFrame::MainFrame(void) : wxFrame(NULL, wxID_ANY, _("Omega Online Registry Editor")),
 	m_fileHistory(8)
 {
 	wxIconBundle icon_bundle;
-	wxImage* pImage = wxGetApp().LoadImage(wxT("frame_icon.bmp"));
-	if (pImage)
-	{
-		pImage->SetMaskColour(255,0,255);
-		wxIcon icon;
-		icon.CopyFromBitmap(wxBitmap(*pImage));
-		icon_bundle.AddIcon(icon);
-		delete pImage;
-
-	}
-	pImage = wxGetApp().LoadImage(wxT("frame_icon_small.bmp"));
-	if (pImage)
-	{
-		pImage->SetMaskColour(255,0,255);
-		wxIcon icon;
-		icon.CopyFromBitmap(wxBitmap(*pImage));
-		icon_bundle.AddIcon(icon);
-		delete pImage;
-	}
+	icon_bundle.AddIcon(wxIcon(icon_large));
+	icon_bundle.AddIcon(wxIcon(icon_small));
 
 	SetIcons(icon_bundle);
 
@@ -107,7 +198,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// get some defaults...
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout");
 
 		wxPoint ptPos;
 		ptPos.x = (int)ptrKey->GetIntegerValue(L"Left");
@@ -168,22 +259,25 @@ void MainFrame::CreateChildWindows(void)
 	m_pTree = new wxTreeCtrl(m_pSplitter,ID_TREE,wxPoint(0,0),wxSize(0,0),wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_EDIT_LABELS);
 
 	// Load the imagelist
-	wxImage* pImage = wxGetApp().LoadImage(wxT("imagelist.bmp"));
-	if (pImage)
-	{
-#if defined (OMEGA_WIN32)
-		wxImageList* pImagelist = new wxImageList(16,16);
-		pImagelist->Add(wxBitmap(*pImage),wxColor(255,0,255));
+	wxImageList* pImagelist = new wxImageList(16,16);
+	pImagelist->Add(wxBitmap(imagelist));
 
-		m_pList->SetImageList(pImagelist,wxIMAGE_LIST_SMALL);
-		m_pTree->AssignImageList(pImagelist);
-#endif
-
-		delete pImage;
-	}
+	m_pList->SetImageList(pImagelist,wxIMAGE_LIST_SMALL);
+	m_pTree->AssignImageList(pImagelist);
 
 	// Create the description text field
-	m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_THEME | wxHW_SCROLLBAR_NEVER);
+#if defined(__WINDOWS__)
+	OSVERSIONINFO os = {0};
+	os.dwOSVersionInfoSize = sizeof(os);
+	GetVersionEx(&os);
+	if (os.dwMajorVersion >= 6)
+		m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_SIMPLE  | wxHW_SCROLLBAR_NEVER);
+	else
+		m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_SUNKEN | wxHW_SCROLLBAR_NEVER);
+#else
+	m_pDescription = new wxHtmlWindow(m_pSplitter2,ID_DESC,wxPoint(0,0),wxSize(0,0),wxBORDER_SUNKEN | wxHW_SCROLLBAR_NEVER);
+#endif
+
 	wxFont ft = m_pTree->GetFont();
 	m_pDescription->SetFonts(ft.GetFaceName(),wxT(""));
 	m_pDescription->SetBorders(1);
@@ -206,7 +300,7 @@ void MainFrame::CreateChildWindows(void)
 	try
 	{
 		// Open the registry root
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\");
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\");
 
 		// Init the tree
 		TreeItemData* pItem = new TreeItemData(ptrKey,5);
@@ -352,7 +446,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	// Set some defaults...
 	try
 	{
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IRegistryKey::Create);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::Create);
 
 		wxPoint pt = GetPosition();
 		ptrKey->SetIntegerValue(L"Top",pt.y);
@@ -1174,7 +1268,7 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 {
 	if (evt.GetLinkInfo().GetHref() == wxT("edit_key"))
 	{
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(m_strSelection.c_str());
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(m_strSelection.c_str());
 
 		EditKeyDescDlg dialog(this,-1,wxT(""));
 		dialog.m_strName = m_strSelection;
@@ -1189,7 +1283,7 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 	}
 	else if (evt.GetLinkInfo().GetHref() == wxT("edit_value"))
 	{
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(m_strSelection.c_str());
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(m_strSelection.c_str());
 
 		EditValueDescDlg dialog(this,-1,wxT(""));
 		dialog.m_strName = m_strSelection;

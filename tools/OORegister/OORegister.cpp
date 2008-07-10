@@ -1,7 +1,10 @@
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4267)
+#pragma warning(disable : 4355) // 'this' : used in base member initializer list
+
+#if _MSC_VER >= 1400
+#pragma warning(disable : 4996) // 'function' was declared deprecated 
+#endif
 #endif
 
 #include <ace/Get_Opt.h>
@@ -17,12 +20,24 @@
 
 static void print_help()
 {
-	ACE_OS::printf("OORegister - Registers a library with OmegaOnline.\n\n");
+	ACE_OS::printf("OORegister - Registers a library with Omega Online.\n\n");
 	ACE_OS::printf("Usage: OORegister [-i] [-u] library_name\n");
 	ACE_OS::printf("-i\tInstall the library\n");
 	ACE_OS::printf("-u\tUninstall the library\n");
 	ACE_OS::printf("-s\tSilent, do not output anything\n");
 	ACE_OS::printf("\n");
+}
+
+typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnInstallLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
+
+static void call_fn(pfnInstallLib pfn, Omega::bool_t bInstall, const Omega::string_t& strSubsts)
+{
+	Omega::System::MetaInfo::IException_Safe* pSE = pfn(
+		Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
+		Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
+
+	if (pSE)
+		Omega::System::MetaInfo::throw_correct_exception(pSE);
 }
 
 static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
@@ -36,10 +51,12 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
 	}
 
-	typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
-
-	pfnRegisterLib pfn=(pfnRegisterLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
-	if (pfn == 0)
+	
+	
+	pfnInstallLib pfnInstall = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_InstallLibrary_Safe"));
+	
+	pfnInstallLib pfnRegister = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
+	if (pfnRegister == 0)
 	{
 		if (bSilent)
 			return -1;
@@ -52,12 +69,12 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 		Omega::string_t strSubsts = L"LIB_PATH=";
 		strSubsts += ACE_TEXT_ALWAYS_WCHAR(lib_path);
 
-		Omega::System::MetaInfo::IException_Safe* pSE = pfn(
-			Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
-			Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
-
-		if (pSE)
-			Omega::System::MetaInfo::throw_correct_exception(pSE);
+		// Call install if found
+		if (pfnInstall)
+			call_fn(pfnInstall,bInstall,strSubsts);
+		
+		// Call register
+		call_fn(pfnRegister,bInstall,strSubsts);
 	}
 	catch (Omega::IException* pE)
 	{
@@ -72,7 +89,7 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 		if (bSilent)
 			return -1;
 		else
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Function failed with an unknown C++ exception.\n\n")),-1);
+			ACE_ERROR_RETURN((LM_ERROR,"Function failed with an unknown C++ exception.\n\n"),-1);
 	}
 
 	if (!bSilent)

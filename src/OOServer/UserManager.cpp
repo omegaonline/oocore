@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "OOServer.h"
-
+#include "./OOServer_User.h"
 #include "./UserManager.h"
 #include "./InterProcessService.h"
 #include "./Channel.h"
@@ -31,42 +30,48 @@
 #include <vld.h>
 #endif
 
-BEGIN_PROCESS_OBJECT_MAP(L"")
-	OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
-	OBJECT_MAP_ENTRY_UNNAMED(User::TcpProtocolHandler)
-	OBJECT_MAP_ENTRY_UNNAMED(User::HttpProtocolHandler)
-END_PROCESS_OBJECT_MAP()
+// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
 
-int UserMain(const ACE_CString& strPipe)
+namespace OTL 
 {
-
-#if defined(OMEGA_WIN32)
-	u_long options = ACE_Log_Msg::SYSLOG;
-
-#if defined(OMEGA_DEBUG)
-	// If this event exists, then we are being debugged
-	HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-	if (hDebugEvent)
+	namespace 
 	{
-		options = ACE_Log_Msg::STDERR;
+		class ProcessModuleImpl : public ProcessModule
+		{
+		public:
+			void RegisterObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
+				{ /* NOP */ }
 
-		// Wait for a bit, letting the caller attach a debugger
-		WaitForSingleObject(hDebugEvent,60000);
-		CloseHandle(hDebugEvent);
+			void Term()
+				{ fini(); }
+		
+		private:
+			ModuleBase::CreatorEntry* getCreatorEntries() 
+			{ 
+				static ModuleBase::CreatorEntry CreatorEntries[] = 
+				{
+					OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
+					OBJECT_MAP_ENTRY_UNNAMED(User::TcpProtocolHandler)
+					OBJECT_MAP_ENTRY_UNNAMED(User::HttpProtocolHandler)	
+					{ 0,0,0,0,false,0,0 } 
+				}; 
+				return CreatorEntries; 
+			}
+		};
 	}
-#endif
+	ProcessModuleImpl& UserGetModule() 
+	{ 
+		static ProcessModuleImpl i;
+		return i;
+	}
 
-	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),options,ACE_TEXT("OOServer")) != 0)
-        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
-
-#else // OMEGA_WIN32
-
-    if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG) != 0)
-        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
-
-#endif
-
-	return User::Manager::run(strPipe);
+	OMEGA_PRIVATE ProcessModuleImpl* GetModule() 
+	{ 
+		return &(UserGetModule());
+	}
+	
+	OMEGA_PRIVATE ModuleBase* GetModuleBase() 
+		{ return GetModule(); }
 }
 
 using namespace Omega;
@@ -76,7 +81,8 @@ using namespace OTL;
 const ACE_CDR::ULong User::Manager::m_root_channel = 0x80000000;
 
 User::Manager::Manager() :
-	m_nIPSCookie(0)
+	m_nIPSCookie(0),
+	m_nNextRemoteChannel(0)
 {
 }
 
@@ -102,6 +108,12 @@ int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 			// Close the user pipes
 			close();
 
+			// Close all the sinks
+			close_all_remotes();
+
+			// Close all the http stuff
+			close_all_http();
+
 			// Unregister our object factories
 			GetModule()->UnregisterObjectFactories();
 
@@ -111,7 +123,13 @@ int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 				Activation::RevokeObject(m_nIPSCookie);
 				m_nIPSCookie = 0;
 			}
+
+			// Close the OOCore
+			Omega::Uninitialize();
 		}
+
+		// Delete our OTL module
+		UserGetModule().Term();
 
 		// Stop the MessageHandler
 		stop();
@@ -120,13 +138,13 @@ int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 	return ret;
 }
 
-bool User::Manager::channel_open(ACE_CDR::ULong channel)
+bool User::Manager::on_channel_open(ACE_CDR::ULong channel)
 {
 	if (channel != m_root_channel)
 	{
 		try
 		{
-			create_object_manager(channel);
+			create_object_manager(channel,guid_t::Null());
 		}
 		catch (IException* pE)
 		{
@@ -226,7 +244,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	{
 		ObjectPtr<Remoting::IObjectManager> ptrOMSb;
 		if (sandbox_channel != 0)
-			ptrOMSb = create_object_manager(sandbox_channel);
+			ptrOMSb = create_object_manager(sandbox_channel,guid_t::Null());
 
 		ObjectPtr<Remoting::IObjectManager> ptrOMUser;
 
@@ -285,7 +303,7 @@ int User::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE
 	return 0;
 }
 
-void User::Manager::channel_closed(ACE_CDR::ULong channel)
+void User::Manager::on_channel_closed(ACE_CDR::ULong channel)
 {
 	// Close the corresponding Object Manager
 	{
@@ -295,7 +313,12 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 			for (std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.begin();i!=m_mapOMs.end();)
 			{
 				bool bErase = false;
-				if ((i->first & 0xFFFFF000) == channel)
+				if (i->first == channel)
+				{
+					// Close if its an exact match
+					bErase = true;
+				}
+				else if ((i->first & 0xFFFFF000) == channel)
 				{
 					// Close all subchannels
 					bErase = true;
@@ -320,6 +343,9 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 		{}
 	}
 
+	// Give the remote layer a chance to close channels
+	local_channel_closed(channel);
+
 	// If the root closes, we should end!
 	if (channel == m_root_channel)
 		end_event_loop();
@@ -328,12 +354,12 @@ void User::Manager::channel_closed(ACE_CDR::ULong channel)
 void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	if (src_channel_id == m_root_channel)
-		process_root_request(request,seq_no,deadline,attribs);
+		process_root_request(request,seq_no,src_thread_id,deadline,attribs);
 	else
 		process_user_request(request,seq_no,src_channel_id,src_thread_id,deadline,attribs);
 }
 
-void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong /*seq_no*/, const ACE_Time_Value& /*deadline*/, ACE_CDR::ULong /*attribs*/)
+void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	Root::RootOpCode_t op_code;
 	request >> op_code;
@@ -344,13 +370,25 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong /
 		return;
 	}
 
+	ACE_OutputCDR response;
 	switch (op_code)
 	{
+	case Root::HttpOpen:
+		open_http(request,response);
+		break;
+
+	case Root::HttpRecv:
+		recv_http(request);
+		break;
+		
 	case 0:
 	default:
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Bad request op_code: %u\n"),op_code));
 		return;
 	}
+
+	if (!(attribs & Remoting::Asynchronous) && response.good_bit())
+		send_response(seq_no,m_root_channel,src_thread_id,response.begin(),deadline,attribs);
 }
 
 void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
@@ -358,84 +396,56 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
+		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id,guid_t::Null());
 
 		// Wrap up the request
-		ObjectPtr<ObjectImpl<InputCDR> > ptrRequest;
-		ptrRequest = ObjectImpl<InputCDR>::CreateInstancePtr();
-		ptrRequest->init(request);
+		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrEnvelope;
+		ptrEnvelope = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
+		ptrEnvelope->init(request);
 
-		// Create a response if required
-		ObjectPtr<ObjectImpl<OutputCDR> > ptrResponse;
-		if (!(attribs & Remoting::asynchronous))
-		{
-			ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
-			ptrResponse->WriteByte(0);
-		}
+		// Unpack the payload
+		IObject* pPayload = 0;
+		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+		ObjectPtr<Remoting::IMessage> ptrRequest;
+		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pPayload));
 
 		// Check timeout
+		uint32_t timeout = 0;
 		if (deadline != ACE_Time_Value::max_time)
 		{
-			if (deadline <= ACE_OS::gettimeofday())
+			ACE_Time_Value now = ACE_OS::gettimeofday();
+			if (deadline <= now)
 			{
 				ACE_OS::last_error(ETIMEDOUT);
 				return;
 			}
-		}
-		uint64_t deadline_secs = deadline.sec();
-		int32_t deadline_usecs = deadline.usec();
+			timeout = (deadline - now).msec();
+		}		
+		
+		// Make the call
+		ObjectPtr<Remoting::IMessage> ptrResult;
+		ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
 
-		try
+		if (!(attribs & Remoting::Asynchronous))
 		{
-			ptrOM->Invoke(ptrRequest,ptrResponse,deadline_secs,deadline_usecs);
-		}
-		catch (IException* pInner)
-		{
-			// Make sure we release the exception
-			ObjectPtr<IException> ptrInner;
-			ptrInner.Attach(pInner);
+			// Wrap the response...
+			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_UUIDOF(Remoting::IMessage),ptrResult);
 
-			// Reply with an exception if we can send replies...
-			if (!(attribs & Remoting::asynchronous))
-			{
-				// Dump the previous output and create a fresh output
-				ptrResponse = ObjectImpl<OutputCDR>::CreateInstancePtr();
-				ptrResponse->WriteByte(0);
-				ptrResponse->WriteBoolean(false);
-
-				// Write the exception onto the wire
-				ptrOM->MarshalInterface(ptrResponse,pInner->ActualIID(),pInner);
-			}
-		}
-
-		if (!(attribs & Remoting::asynchronous))
-		{
-			ACE_Message_Block* mb = static_cast<ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			send_response(seq_no,src_channel_id,src_thread_id,mb,deadline,attribs);
-			mb->release();
+			// Send it back...
+			const ACE_Message_Block* mb = static_cast<const ACE_Message_Block*>(ptrResponse->GetMessageBlock());
+			if (!send_response(seq_no,src_channel_id,src_thread_id,mb,deadline,attribs))
+				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_UUIDOF(Remoting::IMessage),ptrResult);
 		}
 	}
 	catch (IException* pOuter)
 	{
-		// Make sure we release the exception
-		ObjectPtr<IException> ptrOuter;
-		ptrOuter.Attach(pOuter);
-
-		if (!(attribs & Remoting::asynchronous))
-		{
-			ACE_OutputCDR error;
-
-			// Error code 1 - Exception raw
-			error.write_octet(1);
-			error.write_string(pOuter->Description().ToUTF8().c_str());
-			error.write_string(pOuter->Source().ToUTF8().c_str());
-
-			send_response(seq_no,src_channel_id,src_thread_id,error.begin(),deadline,attribs);
-		}
+		// Just drop the exception, and let it pass...
+		pOuter->Release();
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id)
+ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
 {
 	try
 	{
@@ -452,10 +462,12 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 		OMInfo info;
 		info.m_marshal_flags = classify_channel(src_channel_id);
 		info.m_ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		info.m_ptrChannel->init(src_channel_id,info.m_marshal_flags);
-
+		
 		// Create a new OM
 		info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+
+		// Associate the channel with the OM
+		info.m_ptrChannel->init(src_channel_id,info.m_marshal_flags,message_oid,info.m_ptrOM);
 
 		// Associate it with the channel
 		info.m_ptrOM->Connect(info.m_ptrChannel);
@@ -481,23 +493,27 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 	}
 }
 
-ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request)
+ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request, Remoting::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
-	ACE_Time_Value deadline = ACE_Time_Value::max_time;
+	ACE_Time_Value wait = ACE_Time_Value::max_time;
 	ObjectPtr<Remoting::ICallContext> ptrCC;
 	ptrCC.Attach(Remoting::GetCallContext());
 	if (ptrCC)
 	{
-		uint64_t secs = 0;
-		int32_t usecs = 0;
-		ptrCC->Deadline(secs,usecs);
-		deadline = ACE_Time_Value(secs,usecs);
+		uint32_t msecs = ptrCC->Timeout();
+		if (msecs != (uint32_t)-1)
+			wait = ACE_OS::gettimeofday() + ACE_Time_Value(msecs / 1000,(msecs % 1000) * 1000);
 	}
 
 	ACE_InputCDR* response = 0;
-	if (!send_request(m_root_channel,request.begin(),response,deadline == ACE_Time_Value::max_time ? 0 : &deadline,Remoting::synchronous))
-		OOSERVER_THROW_LASTERROR();
+	if (!send_request(m_root_channel,request.begin(),response,wait == ACE_Time_Value::max_time ? 0 : &wait,attribs))
+		OMEGA_THROW(ACE_OS::last_error());
 
 	return response;
+}
+
+bool User::Manager::call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb)
+{
+	return USER_MANAGER::instance()->call_async_function_i(pfnCall,pParam,mb);
 }

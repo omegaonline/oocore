@@ -5,8 +5,7 @@
 
 #if _MSC_VER >= 1400
 #pragma warning(push)
-#pragma warning(disable : 4996)
-#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif
 
 #define wxUSE_GUI 1
@@ -23,10 +22,9 @@
 #endif
 
 #include <wx/splitter.h>
+#include <wx/imaglist.h>
 #include <wx/treectrl.h>
 #include <wx/listctrl.h>
-#include <wx/fs_zip.h>
-#include <wx/filesys.h>
 #include <wx/image.h>
 #include <wx/clipbrd.h>
 #include <wx/valgen.h>
@@ -34,6 +32,5 @@
 #include <wx/html/htmlwin.h>
 
 #if _MSC_VER >= 1400
-#undef _CRT_SECURE_NO_WARNINGS
 #pragma warning(pop)
 #endif

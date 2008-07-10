@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -20,6 +20,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOCore_precomp.h"
+
+#include "./Activation.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -84,48 +86,17 @@ namespace OOCore
 			return m_dll_name;
 		}
 	};
-
-	// The instance wide ServiceManager instance
-	class ServiceManager
-	{
-	public:
-		uint32_t RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags);
-		IObject* GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
-		void RevokeObject(uint32_t cookie);
-
-	private:
-		friend class ACE_Singleton<ServiceManager, ACE_Thread_Mutex>;
-
-		ServiceManager();
-		ServiceManager(const ServiceManager&) {}
-		ServiceManager& operator = (const ServiceManager&) { return *this; }
-
-		ACE_RW_Thread_Mutex m_lock;
-		uint32_t            m_nNextCookie;
-
-		struct Info
-		{
-			guid_t                      m_oid;
-			ObjectPtr<IObject>          m_ptrObject;
-			Activation::Flags_t         m_flags;
-			Activation::RegisterFlags_t m_reg_flags;
-			uint32_t                    m_rot_cookie;
-		};
-		std::map<uint32_t,Info>                                 m_mapServicesByCookie;
-		std::multimap<guid_t,std::map<uint32_t,Info>::iterator> m_mapServicesByOid;
-	};
-	typedef ACE_Singleton<ServiceManager, ACE_Thread_Mutex> SERVICE_MANAGER;
-
-	static IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
 	
-	static ObjectPtr<Omega::Registry::IRegistryKey> FindOIDKey(const guid_t& oid);
-	static ObjectPtr<Omega::Registry::IRegistryKey> FindAppKey(const guid_t& oid);
+	static IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+
+	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid);
+	static ObjectPtr<Omega::Registry::IKey> FindAppKey(const guid_t& oid);
 }
 
 void OOCore::OidNotFoundException::Throw(const guid_t& oid, IException* pE)
 {
 	ObjectImpl<OOCore::OidNotFoundException>* pNew = ObjectImpl<OOCore::OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found.";
+	pNew->m_strDesc = L"The identified object could not be found: " + oid.ToString();
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
 	throw static_cast<IOidNotFoundException*>(pNew);
@@ -150,7 +121,12 @@ void OOCore::LibraryNotFoundException::Throw(const string_t& strName, IException
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
 {
-	return OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
+	uint32_t ret = OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
+
+	// This forces the detection, so cleanup succeeds
+	OOCore::HostedByOOServer();
+
+	return ret;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_RevokeObject,1,((in),Omega::uint32_t,cookie))
@@ -241,7 +217,14 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 		{
 			if (i->second->second.m_flags & flags)
 			{
-				return i->second->second.m_ptrObject->QueryInterface(iid);
+				if (flags & Activation::RemoteServer)
+				{
+					// Check RemoteServer flag is allowed
+					if (i->second->second.m_flags & Activation::RemoteServer)
+						return i->second->second.m_ptrObject->QueryInterface(iid);
+				}
+				else
+					return i->second->second.m_ptrObject->QueryInterface(iid);
 			}
 		}
 
@@ -286,7 +269,6 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
-			// Change to use monikers...
 			ptrROT->Revoke(rot_cookie);
 		}
 	}
@@ -315,7 +297,7 @@ IObject* OOCore::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, 
 		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
 		pfnGetLibraryObject pfn = (pfnGetLibraryObject)dll.symbol(ACE_TEXT("Omega_GetLibraryObject_Safe"));
 		if (pfn == 0)
-			OOCORE_THROW_LASTERROR();
+			OMEGA_THROW(ACE_OS::last_error());
 
 		System::MetaInfo::IException_Safe* GetLibraryObject_Exception = pfn(
 			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
@@ -340,11 +322,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IRegistryKey> ptrOidKey(L"\\Local User");
+		ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User");
 		if (ptrOidKey->IsSubKey(L"Objects\\" + strCurName))
 			ptrOidKey = ptrOidKey.OpenSubKey(L"Objects\\" + strCurName);
 		else
-			ptrOidKey = ObjectPtr<Registry::IRegistryKey>(L"\\Objects\\" + strCurName);
+			ptrOidKey = ObjectPtr<Registry::IKey>(L"\\Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue(L"CurrentVersion"))
 		{
@@ -356,26 +338,26 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,Activation_NameToOid,1,((in),const string_
 	}
 }
 
-ObjectPtr<Omega::Registry::IRegistryKey> OOCore::FindOIDKey(const guid_t& oid)
+ObjectPtr<Omega::Registry::IKey> OOCore::FindOIDKey(const guid_t& oid)
 {
 	// Lookup OID
 	string_t strOid = oid.ToString();
 
 	// Check Local User first
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrOidsKey(L"\\Local User");
+	ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
 	if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
 		return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
-	
-	ptrOidsKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\Objects\\OIDs");
+
+	ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\Objects\\OIDs");
 	if (ptrOidsKey->IsSubKey(strOid))
 		return ptrOidsKey.OpenSubKey(strOid);
-	
+
 	return 0;
 }
 
-ObjectPtr<Omega::Registry::IRegistryKey> OOCore::FindAppKey(const guid_t& oid)
+ObjectPtr<Omega::Registry::IKey> OOCore::FindAppKey(const guid_t& oid)
 {
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrOidKey = FindOIDKey(oid);
+	ObjectPtr<Omega::Registry::IKey> ptrOidKey = FindOIDKey(oid);
 	if (!ptrOidKey)
 		return 0;
 
@@ -385,11 +367,11 @@ ObjectPtr<Omega::Registry::IRegistryKey> OOCore::FindAppKey(const guid_t& oid)
 	string_t strAppName = ptrOidKey->GetStringValue(L"Application");
 
 	// Find the name of the executeable to run
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrServer(L"\\Local User");
+	ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User");
 	if (ptrServer->IsSubKey(L"Applications\\" + strAppName + L"\\Activation"))
 		return ptrServer.OpenSubKey(L"Applications\\" + strAppName + L"\\Activation");
-	
-	ptrServer = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\Applications");
+
+	ptrServer = ObjectPtr<Omega::Registry::IKey>(L"\\Applications");
 	if (ptrServer->IsSubKey(strAppName + L"\\Activation"))
 		return ptrServer.OpenSubKey(strAppName + L"\\Activation");
 
@@ -418,7 +400,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IRegistryKey> ptrOidKey = OOCore::FindOIDKey(oid);
+			ObjectPtr<Registry::IKey> ptrOidKey = OOCore::FindOIDKey(oid);
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				void* TICKET_89; // Surrogates here?!?
@@ -438,7 +420,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 
 			// Change this to use monikers
 			void* TICKET_90;
-			
+
 			ObjectPtr<IObject> ptrObject;
 			ptrObject.Attach(ptrROT->GetObject(oid));
 			if (ptrObject)
@@ -448,11 +430,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 					throw INoInterfaceException::Create(iid);
 				return;
 			}
-			
+
 			if (!(flags & Activation::DontLaunch))
 			{
 				// Lookup OID
-				ObjectPtr<Omega::Registry::IRegistryKey> ptrServer = OOCore::FindAppKey(oid);
+				ObjectPtr<Omega::Registry::IKey> ptrServer = OOCore::FindAppKey(oid);
 				if (ptrServer)
 				{
 					string_t strProcess = ptrServer->GetStringValue(L"Path");
@@ -460,48 +442,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 					if (ptrServer->IsValue(L"Public"))
 						bPublic = (ptrServer->GetIntegerValue(L"Public") == 1);
 
-					// The timeout needs to be related to the request timeout...
-					ACE_Time_Value deadline = ACE_Time_Value::max_time;
-					ObjectPtr<Remoting::ICallContext> ptrCC;
-					ptrCC.Attach(Remoting::GetCallContext());
-					if (ptrCC)
-					{
-						uint64_t secs = 0;
-						int32_t usecs = 0;
-						ptrCC->Deadline(secs,usecs);
-						deadline = ACE_Time_Value(secs,usecs);
-					}	
-
-					// Wait for the process to start and register its parts...
-					ACE_Time_Value wait;
-					ACE_Time_Value now = ACE_OS::gettimeofday();
-					if (deadline == ACE_Time_Value::max_time)
-						wait = ACE_Time_Value(15);
-					else if (deadline <= now)
-						wait = ACE_Time_Value::zero;
-					else
-						wait = deadline - now;
-
 					// Ask the IPS to run it...
-					ACE_Countdown_Time timeout(&wait);
-					while (OOCore::GetInterProcessService()->ExecProcess(strProcess,bPublic) && wait != ACE_Time_Value::zero)
-					{
-						ObjectPtr<IObject> ptrObject;
-						ptrObject.Attach(ptrROT->GetObject(oid));
-						if (ptrObject)
-						{
-							pObject = ptrObject->QueryInterface(iid);
-							if (!pObject)
-								throw INoInterfaceException::Create(iid);
-							return;
-						}
-
-						// Sleep for a brief moment - it will take a moment for the process to start
-						ACE_OS::sleep(ACE_Time_Value(0,500));
-
-						// Update our countdown
-						timeout.update();
-					}
+					return OOCore::GetInterProcessService()->GetObject(strProcess,bPublic,oid,iid,pObject);
 				}
 			}
 		}
@@ -517,10 +459,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 	OOCore::OidNotFoundException::Throw(oid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(in),const wchar_t*,pszEndpoint,(out)(iid_is(iid)),IObject*&,pObject))
 {
+	IObject* pOF = 0;
+	if (!pszEndpoint)
+	{
+		pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_UUIDOF(Activation::IObjectFactory));
+	}
+	else
+	{
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
+		ptrOM.Attach(Omega::Remoting::OpenRemoteOM(pszEndpoint));
+		ptrOM->GetRemoteInstance(oid,flags,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pOF);
+	}
+
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	IObject* pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_UUIDOF(Activation::IObjectFactory));
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }

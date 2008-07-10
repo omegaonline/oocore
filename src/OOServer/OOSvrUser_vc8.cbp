@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OOSvrUser" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug Win32">
+				<Option platforms="Windows;" />
+				<Option output="..\..\bin\Debug\OOSvrUser" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin\Debug" />
+				<Option object_output="Debug_Host" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-mthreads" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\bin\debug\libOOCore.a" />
+					<Add library="shlwapi" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+			<Target title="Release Win32">
+				<Option platforms="Windows;" />
+				<Option output="..\..\bin\OOSvrUser" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="Release_Host" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\bin\libOOCore.a" />
+					<Add library="shlwapi" />
+					<Add library="libws2_32" />
+					<Add library="libmswsock" />
+					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="..\..\extern\sqlite\sqlite3.c">
+			<Option compilerVar="CC" />
+			<Option compiler="gcc" use="1" buildCommand="$compiler -mthreads $includes -c $file -o $object" />
+		</Unit>
+		<Unit filename="..\..\extern\sqlite\sqlite3.h" />
+		<Unit filename="Channel.cpp" />
+		<Unit filename="Channel.h" />
+		<Unit filename="Database.cpp" />
+		<Unit filename="Database.h" />
+		<Unit filename="DebuggerWin32.cpp" />
+		<Unit filename="InterProcessService.cpp" />
+		<Unit filename="InterProcessService.h" />
+		<Unit filename="MessageConnection.cpp" />
+		<Unit filename="MessageConnection.h" />
+		<Unit filename="MessagePipe.h" />
+		<Unit filename="MessagePipe.inl" />
+		<Unit filename="MessagePipeWin32.cpp" />
+		<Unit filename="NetHttp.cpp" />
+		<Unit filename="NetHttp.h" />
+		<Unit filename="NetTcp.cpp" />
+		<Unit filename="NetTcp.h" />
+		<Unit filename="OOServer_User.h" />
+		<Unit filename="OOSvrUser.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="Protocol.h" />
+		<Unit filename="UserHttp.cpp" />
+		<Unit filename="UserHttp.h" />
+		<Unit filename="UserMain.cpp" />
+		<Unit filename="UserManager.cpp" />
+		<Unit filename="UserManager.h" />
+		<Unit filename="UserNet.cpp" />
+		<Unit filename="UserNet.h" />
+		<Unit filename="UserROT.cpp" />
+		<Unit filename="UserROT.h" />
+		<Unit filename="UserRegistry.cpp" />
+		<Unit filename="UserRegistry.h" />
+		<Unit filename="resource.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

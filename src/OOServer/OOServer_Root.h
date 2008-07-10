@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,9 +59,6 @@
 
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable : 4127)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4267)
 
 #ifndef _DEBUG
 // Optimization sometimes re-orders things causing this error
@@ -69,8 +66,7 @@
 #endif
 
 #if _MSC_VER >= 1400
-#pragma warning(disable : 4996)
-#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif
 
 #endif
@@ -101,7 +97,7 @@
 #endif
 
 #if !defined(ACE_HAS_WCHAR)
-#error OmegaOnline requires has wchar_t support!
+#error Omega Online requires has wchar_t support!
 #endif
 
 #if defined(ACE_WIN32)
@@ -111,13 +107,7 @@
 #endif
 
 #if defined(_MSC_VER)
-
-#if _MSC_VER >= 1400
-#undef _CRT_SECURE_NO_WARNINGS
-#endif
-
 #pragma warning(pop)
-
 #endif
 
 // End of ACE includes

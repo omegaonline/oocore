@@ -4,18 +4,59 @@
 #include "./AboutDlg.h"
 #include "./OORegEdit.h"
 
+/* XPM */
+static char *image[] = 
+{
+	"32 32 6 1 0 0",
+	"  c #000000",
+	"! c #808000",
+	"# c #FFFF00",
+	"$ c #808080",
+	"% c #FFFFFF",
+	"& c None",
+	"&&&&&&&&&&&&&&&&&&$&&&&&&&&&&&&&",
+	"&&&&&&&&&&&&&&&&&$% &&&&&&&&&&&&",
+	"&&&&&&&&&&&&&&&&$%#% &&&&&&&&&&&",
+	"&&&&&&&&&&&&&&&$%#%#% &&&&$$$&&&",
+	"&&&&&&&&&&&&&&&$!%#%! &&&$%!! &&",
+	"&&&&&&&&&&&&&&&$!!%!! &&$%#%!! &",
+	"&&&&&&&&&&&&&&&&$!!! &&$%#%#%!! ",
+	"&&&&&&&&&&&&&&&&&$! &&&&$%#%!! &",
+	"&&&&&&&&&&&&&&&&&& &&&&&&$%!! &&",
+	"&&&&&&&&&&&&&&&&&&&&&&&&&&$  &&&",
+	"&&&&&&$$$$$$$$$$$$$$$$&&&&&&&&&&",
+	"&&&&&$#%#%!%#%#!#%#%! &&&&&&&&&&",
+	"&&&&$!!!!!!!!! %%%%!! $$$&&&&&&&",
+	"&&&$%%%%!%#%#! !#%#!! %!! &&&&&&",
+	"&&$!!!! %%%%!! !!#%!!%#%!! &&&&&",
+	"&$#%#%! !%#%!! !!!#!%#%#%!! &&&&",
+	"$%%%%!! !!%#!! !!!!! %#%!! &&&&&",
+	"$%#%#!! !!!%!!      ! %!! &&&&&&",
+	"$#%#%!! !!!!! %#%#! !    &&&&&&&",
+	"$%#%#!!      %%%%!! ! &&&&&&&&&&",
+	"$#%#%! !!#%! !%#%!! ! &&&&&&&&&&",
+	"$!!!! %%%%!! !!%#!!   &&&&&&&&&&",
+	"$#%#%!%#%#!! !!!%!! ! &&&&&&&&&&",
+	"$%#%#!#%#%!! !!!!!  ! &&&&&&&&&&",
+	"$#%#%!%#%#!!      ! ! &&&&&&&&&&",
+	"$%#%#!#%#%! #%#%! ! ! &&&&&&&&&&",
+	"$!!!!!!!!! %%%%!! !  &&&&&&&&&&&",
+	"$%#%#!#%#%!%#%#!! ! &&&&&&&&&&&&",
+	"$#%#%!%#%#!#%#%!!  &&&&&&&&&&&&&",
+	"$%#%#!#%#%!%#%#!! &&&&&&&&&&&&&&",
+	"$#%#%!%#%#!#%#%! &&&&&&&&&&&&&&&",
+	"                &&&&&&&&&&&&&&&&"
+};
+
+
 
 AboutDlg::AboutDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long style):
     wxDialog(parent, id, title, pos, size, wxDEFAULT_DIALOG_STYLE)
 {
-	wxImage* pImage = wxGetApp().LoadImage(wxT("frame_icon.bmp"));
-	if (pImage)
-		pImage->SetMaskColour(255,0,255);
-
 	wxString strVersion = Omega::System::GetVersion().c_str();
 
     // begin wxGlade: AboutDlg::AboutDlg
-    m_picIcon = new wxStaticBitmap(this, -1, wxBitmap(*pImage,wxBITMAP_TYPE_ANY));
+    m_picIcon = new wxStaticBitmap(this, -1, wxBitmap(image));
     m_lblDesc = new wxStaticText(this, -1, _("Omega Online Registry Editor\n\nWARNING:\nEditing the registry can stop Omega Online functioning.\nOnly edit parts of the registry you understand."));
     m_line = new wxStaticLine(this, -1);
     m_lblVersion = new wxStaticText(this, -1, strVersion, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT);
@@ -24,8 +65,6 @@ AboutDlg::AboutDlg(wxWindow* parent, int id, const wxString& title, const wxPoin
     set_properties();
     do_layout();
     // end wxGlade
-
-	delete pImage;
 }
 
 

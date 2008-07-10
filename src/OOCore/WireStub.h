@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -32,9 +32,9 @@ namespace OOCore
 		WireStub(Omega::System::MetaInfo::IObject_Safe* pObjS, Omega::uint32_t stub_id, StdObjectManager* pManager);
 		virtual ~WireStub();
 
-		Omega::System::MetaInfo::IException_Safe* MarshalInterface(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t& iid);
-		Omega::System::MetaInfo::IException_Safe* ReleaseMarshalData(Omega::System::MetaInfo::IFormattedStream_Safe* pStream, const Omega::guid_t&);
-		Omega::System::MetaInfo::IWireStub_Safe* LookupStub(Omega::IO::IFormattedStream* pStream);
+		Omega::System::MetaInfo::IException_Safe* MarshalInterface(Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t& iid);
+		Omega::System::MetaInfo::IException_Safe* ReleaseMarshalData(Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t&);
+		Omega::System::MetaInfo::IWireStub_Safe* LookupStub(Omega::Remoting::IMessage* pMessage);
 
 	// IObject_Safe methods
 	public:
@@ -69,7 +69,7 @@ namespace OOCore
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL RemoteRelease_Safe(Omega::uint32_t release_count);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SupportsInterface_Safe(Omega::bool_t* pbSupports, const Omega::guid_t* piid);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalStub_Safe(Omega::System::MetaInfo::IFormattedStream_Safe* pParamsIn, Omega::System::MetaInfo::IFormattedStream_Safe* pParamsOut);
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalStub_Safe(Omega::System::MetaInfo::IMessage_Safe* pParamsIn, Omega::System::MetaInfo::IMessage_Safe* pParamsOut);
 
 	private:
 		WireStub(const WireStub&) : Omega::System::MetaInfo::IWireStubController_Safe() {}

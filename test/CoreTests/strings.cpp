@@ -66,8 +66,6 @@ static bool string_tests_wchar()
 
 static bool string_tests_format()
 {
-	void* TODO; // Need more!
-
 	TEST(Omega::string_t::Format(L"%ls:%d",L"hello",1) == L"hello:1");
 	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == L"hello:1");
 

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "OOServer.h"
+#include "./OOServer_User.h"
 #include "./UserROT.h"
+
+#include "../OOCore/Server.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -35,7 +37,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the global interface
 		IObject* pIPS = 0;
-		ptrOM->CreateRemoteInstance(Remoting::OID_InterProcessService,OMEGA_UUIDOF(Remoting::IInterProcessService),0,pIPS);
+		ptrOM->GetRemoteInstance(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
 		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
 
@@ -53,10 +55,12 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 
 	try
 	{
+		void* TICKET_99;
+
 		uint32_t src_id = 0;
 		ObjectPtr<Remoting::ICallContext> ptrCC;
 		ptrCC.Attach(Remoting::GetCallContext());
-		if (ptrCC)
+		if (ptrCC != 0)
 			src_id = ptrCC->SourceId();
 
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -93,7 +97,7 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 		uint32_t src_id = 0;
 		ObjectPtr<Remoting::ICallContext> ptrCC;
 		ptrCC.Attach(Remoting::GetCallContext());
-		if (ptrCC)
+		if (ptrCC != 0)
 			src_id = ptrCC->SourceId();
 
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -132,7 +136,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 				// QI for IWireProxy and check its still there!
 				bool bOk = true;
 				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
-				if (ptrProxy)
+				if (ptrProxy != 0)
 				{
 					if (!ptrProxy->IsAlive())
 					{
@@ -166,7 +170,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 			}
 		}
 
-		if (ptrRet)
+		if (ptrRet != 0)
 			return ptrRet.AddRef();
 	}
 	catch (std::exception& e)
@@ -174,7 +178,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 		OMEGA_THROW(e);
 	}
 
-	if (m_ptrROT)
+	if (m_ptrROT != 0)
 	{
 		// Route to global rot
 		return m_ptrROT->GetObject(oid);

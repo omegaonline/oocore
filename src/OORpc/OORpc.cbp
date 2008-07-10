@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="OORpc" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug Win32">
+				<Option platforms="Windows;" />
+				<Option output="..\..\bin\debug\OORpc" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin\Debug" />
+				<Option object_output="Debug" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-mthreads" />
+					<Add library="..\..\bin\debug\libOOCore.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="libws2_32" />
+					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+			<Target title="Release Win32">
+				<Option platforms="Windows;" />
+				<Option output="..\..\bin\OORpc" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin" />
+				<Option object_output="Release" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-Os" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_WINDOWS" />
+					<Add option="-D_USRDLL" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-mthreads" />
+					<Add library="..\..\bin\libOOCore.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="libws2_32" />
+					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="HttpChannelServer.cpp" />
+		<Unit filename="HttpChannelServer.h" />
+		<Unit filename="HttpEndpoint.cpp" />
+		<Unit filename="HttpEndpoint.h" />
+		<Unit filename="HttpMsg.cpp" />
+		<Unit filename="HttpMsg.h" />
+		<Unit filename="OORpc.cpp" />
+		<Unit filename="OORpc.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

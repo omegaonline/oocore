@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -44,6 +44,7 @@ OMEGA_EXPORTED_FUNCTION(void*,string_t__ctor1,0,());
 Omega::string_t::string_t() :
 	m_handle(static_cast<handle_t*>(string_t__ctor1()))
 {
+	OMEGA_DEBUG_STASH_STRING();
 }
 
 OMEGA_EXPORTED_FUNCTION(void*,string_t__ctor2,2,((in),const char*,sz,(in),Omega::bool_t,bUTF8));
@@ -217,10 +218,10 @@ Omega::string_t Omega::string_t::Right(size_t length) const
 	return string_t(static_cast<handle_t*>(string_t_right(m_handle,length)));
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(string_t_clear,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION(void*,string_t_clear,1,((in),void*,h));
 Omega::string_t& Omega::string_t::Clear()
 {
-	string_t_clear(m_handle);
+	m_handle = static_cast<handle_t*>(string_t_clear(m_handle));
 	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }
@@ -253,6 +254,58 @@ Omega::string_t Omega::string_t::Format(const wchar_t* pszFormat, ...)
 		return string_t();
 }
 
+Omega::string_t Omega::string_t::TrimLeft(wchar_t c) const
+{
+	size_t pos = 0;
+	while (Length() >= pos && (*this)[pos] == c)
+		++pos;
+
+	return Mid(pos);
+}
+
+Omega::string_t Omega::string_t::TrimLeft(const wchar_t* sz) const
+{
+	size_t pos = 0;
+	for (;Length() >= pos;++pos)
+	{
+		wchar_t c = (*this)[pos];
+
+		const wchar_t* p = sz;
+		for (;*p!=c && *p!=L'\0';++p)
+		{}
+
+		if (*p != c)
+			break;
+	}
+	return Mid(pos);
+}
+
+Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
+{
+	size_t pos = Length();
+	while (pos > 0 && (*this)[pos-1] == c)
+		--pos;
+	
+	return Left(pos);
+}
+
+Omega::string_t Omega::string_t::TrimRight(const wchar_t* sz) const
+{
+	size_t pos = Length();
+	for (;pos > 0;--pos)
+	{
+		wchar_t c = (*this)[pos-1];
+
+		const wchar_t* p = sz;
+		for (;*p!=c && *p!=L'\0';++p)
+		{}
+
+		if (*p != c)
+			break;
+	}
+	return Left(pos);
+}
+
 inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
@@ -273,26 +326,67 @@ inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rh
 	return (Omega::string_t(lhs) += rhs);
 }
 
-OMEGA_EXPORTED_FUNCTION(bool,guid_t_eq,2,((in),const Omega::guid_t&,a,(in),const Omega::guid_t&,b));
-bool Omega::guid_t::operator==(const guid_t& rhs) const
-{
-	return guid_t_eq(*this,rhs);
-}
-
 bool Omega::guid_t::operator==(const Omega::string_t& str) const
 {
 	return str.CompareNoCase(ToString()) == 0;
 }
 
-bool Omega::guid_t::operator!=(const Omega::guid_t& rhs) const
+int Omega::guid_t::Compare(const guid_t& rhs) const
 {
-	return !guid_t_eq(*this,rhs);
+	// This is intentionally long-winded so we compare in an endianness-agnostic way.
+	if (Data1 != rhs.Data1)
+	{
+		const byte_t* l = (const byte_t*)&Data1;
+		const byte_t* r = (const byte_t*)&rhs.Data1;
+		if (l[0] != r[0]) return (l[0] < r[0] ? -1 : 1);
+		if (l[1] != r[1]) return (l[1] < r[1] ? -1 : 1);
+		if (l[2] != r[2]) return (l[2] < r[2] ? -1 : 1);
+		if (l[3] != r[3]) return (l[3] < r[3] ? -1 : 1);
+	}
+	else if (Data2 != rhs.Data2)
+	{
+		const byte_t* l = (const byte_t*)&Data2;
+		const byte_t* r = (const byte_t*)&rhs.Data2;
+		if (l[0] != r[0]) return (l[0] < r[0] ? -1 : 1);
+		if (l[1] != r[1]) return (l[1] < r[1] ? -1 : 1);
+	}
+	else if (Data3 != rhs.Data3)
+	{
+		const byte_t* l = (const byte_t*)&Data3;
+		const byte_t* r = (const byte_t*)&rhs.Data3;
+		if (l[0] != r[0]) return (l[0] < r[0] ? -1 : 1);
+		if (l[1] != r[1]) return (l[1] < r[1] ? -1 : 1);
+	}
+	else if (*reinterpret_cast<const uint64_t*>(Data4) != *reinterpret_cast<const uint64_t*>(rhs.Data4))
+	{
+		for (int i=0;i<8;++i)
+		{
+			if (Data4[i] != rhs.Data4[i])
+				return (Data4[i] < rhs.Data4[i] ? -1 : 1);
+		}
+	}
+	
+	return 0;
 }
 
-OMEGA_EXPORTED_FUNCTION(bool,guid_t_less,2,((in),const Omega::guid_t&,a,(in),const Omega::guid_t&,b));
+bool Omega::guid_t::operator==(const guid_t& rhs) const
+{
+	return Compare(rhs) == 0;
+}
+
+bool Omega::guid_t::operator!=(const Omega::guid_t& rhs) const
+{
+	return Compare(rhs) != 0;
+}
+
 bool Omega::guid_t::operator<(const guid_t& rhs) const
 {
-	return guid_t_less(*this,rhs);
+	return Compare(rhs) < 0;
+}
+
+bool Omega::guid_t::operator>(const guid_t& rhs) const
+{
+	return Compare(rhs) > 0;
 }
 
 Omega::string_t Omega::guid_t::ToString() const

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -140,15 +140,15 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucon
 	if (m_acceptor.accept(stream) != 0 && GetLastError() != ERROR_MORE_DATA)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.accept() failed")),-1);
 
-	ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Null_Mutex> pipe;
-	ACE_NEW_NORETURN(pipe,ACE_SPIPE_Stream(stream));
-	if (pipe.null())
+	ACE_SPIPE_Stream* pStream = 0;
+	ACE_NEW_NORETURN(pStream,ACE_SPIPE_Stream(stream));
+	if (!pStream)
 	{
 		stream.close();
 		return -1;
 	}
-
-	return m_pHandler->on_accept(pipe);
+	
+	return m_pHandler->on_accept(ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Null_Mutex>(pStream));
 }
 #endif
 

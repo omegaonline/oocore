@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -60,8 +60,15 @@ void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 
 OTL::ModuleBase::~ModuleBase()
 {
+	fini();
+}
+
+void OTL::ModuleBase::fini()
+{
 	try
 	{
+		Omega::System::Guard lock(m_csMain);
+
 		for (std::list<Term>::iterator i=m_listTerminators.begin(); i!=m_listTerminators.end(); ++i)
 		{
 			try
@@ -103,27 +110,29 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
+		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
+
+		if (g[i].bLocal)
+			strXML += L"<key name=\"\\Local User\\Objects\">";
+		else
+			strXML += L"<key name=\"\\Objects\">";
+
 		if (g[i].pszName != 0)
 		{
 			Omega::string_t strName = g[i].pszName;
-			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
-
-			if (g[i].bLocal)
-				strXML += L"<key name=\"\\Local User\\Objects\">";
-			else
-				strXML += L"<key name=\"\\Objects\">";
-
+		
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
-					L"</key>"
-					L"<key name=\"OIDs\">"
+					L"</key>";
+		}
+
+		strXML += 	L"<key name=\"OIDs\">"
 						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
 							L"<value name=\"Library\">%LIB_PATH%</value>"
 						L"</key>"
 					L"</key>"
 				L"</key>";
-		}
 	}
 
 	if (!strXML.IsEmpty())
@@ -139,6 +148,9 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 
 void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
 {
+	if (strAppName.IsEmpty())
+		return;
+
 	Omega::string_t strXML;
 	
 	if (bLocal)
@@ -156,31 +168,34 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
+		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
+
+		if (g[i].bLocal)
+			strXML += L"<key name=\"\\Local User\\Objects\">";
+		else
+			strXML += L"<key name=\"\\Objects\">";
+
 		if (g[i].pszName != 0)
 		{
 			Omega::string_t strName = g[i].pszName;
-			Omega::string_t strOID = (g[i].pfnOid)()->ToString();
-
-			if (g[i].bLocal)
-				strXML += L"<key name=\"\\Local User\\Objects\">";
-			else
-				strXML += L"<key name=\"\\Objects\">";
-
+			
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
-					L"</key>"
-					L"<key name=\"OIDs\">"
-						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
-							L"<value name=\"Application\">" + strAppName + L"</value>";
-
-			if (false)
-				strXML +=	L"<value name=\"Public\" type=\"Integer\">1</value>";
-
-			strXML +=	L"</key>"
-					L"</key>"
-				L"</key>";
+					L"</key>";
 		}
+
+		strXML +=
+				L"<key name=\"OIDs\">"
+					L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
+						L"<value name=\"Application\">" + strAppName + L"</value>";
+
+		//if (false)
+		//	strXML +=	L"<value name=\"Public\" type=\"Integer\">1</value>";
+
+		strXML +=	L"</key>"
+				L"</key>"
+			L"</key>";
 	}
 
 	if (!strXML.IsEmpty())
@@ -222,15 +237,13 @@ void OTL::ProcessModule::Run()
 
 	try
 	{
-		do
-		{
-			Omega::HandleRequests(30000);
-		} while (GetLockCount() > 0);
+		while (!Omega::HandleRequest(30000) || GetLockCount() > 0)
+		{}
 	}
-	catch (Omega::IException* pE)
+	catch (...)
 	{
 		UnregisterObjectFactories();
-		throw pE;
+		throw;
 	}
 
 	UnregisterObjectFactories();

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ namespace Root
 		ACE_HANDLE get_read_handle() const;
 
 		ssize_t send(const void* buf, size_t len, size_t* sent = 0);
-		ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
+		ssize_t send(const ACE_Message_Block* mb, size_t* sent = 0);
 		ssize_t recv(void* buf, size_t len);
 
 	private:

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -43,7 +43,7 @@ OOCore::WireStub::~WireStub()
 	m_pObjS->Release_Safe();
 }
 
-System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t& iid)
+System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::MetaInfo::IMessage_Safe* pMessage, const guid_t& iid)
 {
 	try
 	{
@@ -54,15 +54,15 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::Me
 		return System::MetaInfo::return_safe_exception(pE);
 	}
 
-	System::MetaInfo::IException_Safe* pSE = pStream->WriteUInt32_Safe(m_stub_id);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::wire_write(L"id",pMessage,m_stub_id);
 	if (pSE)
 		return pSE;
 
-	pSE = System::MetaInfo::wire_write(pStream,iid);
+	pSE = System::MetaInfo::wire_write(L"iid",pMessage,iid);
 	if (pSE)
 	{
 		uint32_t v;
-		System::MetaInfo::IException_Safe* pSE2 = pStream->ReadUInt32_Safe(&v);
+		System::MetaInfo::IException_Safe* pSE2 = System::MetaInfo::wire_read(L"id",pMessage,v);
 		if (pSE2)
 		{
 			pSE->Release_Safe();
@@ -76,14 +76,14 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::Me
 	return pSE;
 }
 
-System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::MetaInfo::IFormattedStream_Safe* pStream, const guid_t&)
+System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::MetaInfo::IMessage_Safe* pMessage, const guid_t&)
 {
 	uint32_t v;
-	System::MetaInfo::IException_Safe* pSE = pStream->ReadUInt32_Safe(&v);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::wire_read(L"id",pMessage,v);
 	if (!pSE)
 	{
 		guid_t iid;
-		pSE = System::MetaInfo::wire_read(pStream,iid);
+		pSE = System::MetaInfo::wire_read(L"iid",pMessage,iid);
 	}
 
 	// Deref safely
@@ -92,9 +92,9 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::
 	return pSE;
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::WireStub::LookupStub(IO::IFormattedStream* pStream)
+System::MetaInfo::IWireStub_Safe* OOCore::WireStub::LookupStub(Remoting::IMessage* pMessage)
 {
-	return FindStub(pStream->ReadGuid());
+	return FindStub(ReadGuid(L"$iid",pMessage));
 }
 
 System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
@@ -202,23 +202,45 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::SupportsInterfac
 	return 0;
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe(System::MetaInfo::IFormattedStream_Safe* pParamsIn, System::MetaInfo::IFormattedStream_Safe* pParamsOut)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe(System::MetaInfo::IMessage_Safe* pParamsIn, System::MetaInfo::IMessage_Safe* pParamsOut)
 {
 	System::MetaInfo::marshal_info<guid_t>::wire_type::type iid;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<guid_t>::wire_type::read(m_pManager,pParamsIn,iid);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<guid_t>::wire_type::read(L"iid",m_pManager,pParamsIn,iid);
 	if (pSE)
 		return pSE;
 
-	System::MetaInfo::marshal_info<IObject*>::wire_type::type obj;
-	pSE = System::MetaInfo::marshal_info<IObject*>::wire_type::read(m_pManager,pParamsIn,obj,&OMEGA_UUIDOF(System::MetaInfo::IWireManager));
+	System::MetaInfo::IObject_Safe* pObj = 0;
+	pSE = m_pManager->UnmarshalInterface_Safe(L"pObjectManager",pParamsIn,&OMEGA_UUIDOF(IObject),&pObj);
 	if (pSE)
 		return pSE;
 
 	System::MetaInfo::IObject_Safe* pMO = 0;
-	pSE = obj->QueryInterface_Safe(&OMEGA_UUIDOF(System::MetaInfo::IWireManager),&pMO);
+	pSE = pObj->QueryInterface_Safe(&OMEGA_UUIDOF(System::MetaInfo::IWireManager),&pMO);
+	pObj->Release_Safe();
 	if (pSE)
 		return pSE;
-
 	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IWireManager_Safe> ptrManager(static_cast<System::MetaInfo::IWireManager_Safe*>(pMO));
-	return ptrManager->MarshalInterface_Safe(pParamsOut,&iid,m_pObjS);
+
+	System::MetaInfo::IMessage_Safe* pMessage = 0;
+	pSE = ptrManager->ReflectChannel_Safe(&pMessage);
+	if (pSE)
+		return pSE;
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IMessage_Safe> ptrMessage(pMessage);
+
+	pSE = ptrManager->MarshalInterface_Safe(L"stub",pMessage,&iid,m_pObjS);
+	if (pSE)
+		return pSE;
+		
+	pSE = m_pManager->MarshalInterface_Safe(L"pReflect",pParamsOut,&OMEGA_UUIDOF(Remoting::IMessage),pMessage);
+	if (pSE)
+	{
+		System::MetaInfo::IException_Safe* pSE2 = ptrManager->ReleaseMarshalData_Safe(L"stub",pMessage,&iid,m_pObjS);
+		if (pSE2)
+		{
+			pSE->Release_Safe();
+			return pSE2;
+		}
+	}
+	
+	return pSE;
 }

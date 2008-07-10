@@ -20,7 +20,6 @@
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -46,8 +45,6 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				TreatWChar_tAsBuiltInType="true"
-				ForceConformanceInForLoopScope="true"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOCore_precomp.h"
 				WarningLevel="4"
@@ -72,7 +69,6 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/OOCore.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -105,8 +101,8 @@
 			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="1"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -128,13 +124,12 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
 				StringPooling="true"
 				RuntimeLibrary="0"
-				BufferSecurityCheck="false"
-				TreatWChar_tAsBuiltInType="true"
-				ForceConformanceInForLoopScope="true"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOCore_precomp.h"
 				WarningLevel="4"
@@ -157,6 +152,7 @@
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				LinkTimeCodeGeneration="1"
 				ImportLibrary="$(OutDir)/OOCore.lib"
 				TargetMachine="1"
 			/>
@@ -205,6 +201,32 @@
 			<File
 				RelativePath=".\Exception.cpp"
 				>
+			</File>
+			<File
+				RelativePath=".\HttpImpl.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\md5.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\OOCore.cpp"
@@ -273,11 +295,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Activation.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CDRMessage.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Channel.h"
 				>
 			</File>
 			<File
 				RelativePath=".\Exception.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HttpImpl.h"
 				>
 			</File>
 			<File
@@ -359,6 +393,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\Http.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\Interfaces.h"
 				>
 			</File>
@@ -376,6 +414,10 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Rtti.inl"
+				>
+			</File>
+			<File
+				RelativePath=".\Server.h"
 				>
 			</File>
 			<File

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -64,12 +64,10 @@ int Root::Manager::registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& 
 		// Parse strKey
 		if (strSubKey.substr(0,11) == "Local User\\")
 		{
-			//strSubKey = strSubKey.substr(11);
 			bCurrent = true;
 		}
 		else if (strSubKey == "Local User")
 		{
-			//strSubKey.clear();
 			bCurrent = true;
 		}
 
@@ -177,7 +175,7 @@ void Root::Manager::registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 			err = registry_parse_subkey(uKey,channel_id,strSubKey,bCurrent,ptrHive);
 			if (err == 0)
 			{
-				ACE_CDR::Boolean bCreate = 0;
+				ACE_CDR::Boolean bCreate = false;
 				if (!request.read_boolean(bCreate))
 					err = ACE_OS::last_error();
 				else
@@ -185,10 +183,10 @@ void Root::Manager::registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 					if (bCurrent && strSubKey == "Local User")
 					{
 						// Always create the Local User key...
-						bCreate = 1;
+						bCreate = true;
 					}
 
-					ACE_CDR::Boolean bFailIfThere = 0;
+					ACE_CDR::Boolean bFailIfThere = false;
 					if (!request.read_boolean(bFailIfThere))
 						err = ACE_OS::last_error();
 					else

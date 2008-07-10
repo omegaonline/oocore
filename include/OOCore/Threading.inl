@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -191,6 +191,8 @@ Omega::uint32_t Omega::System::AtomicOp<Omega::uint32_t>::exchange(uint32_t v)
 	return static_cast<uint32_t>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
 }
 
+#if !defined(OMEGA_64)
+
 template <class T>
 Omega::System::AtomicOp<T*>::AtomicOp(T* v) :
 	m_value(v)
@@ -222,6 +224,7 @@ T* Omega::System::AtomicOp<T*>::exchange(T* v)
 {
 	return reinterpret_cast<T*>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
 }
+#endif // !defined(OMEGA_64)
 
 #endif // OMEGA_HAS_ATOMIC_OP_32
 

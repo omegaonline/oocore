@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,13 +52,13 @@ namespace Root
 		static void stop();
 		static bool install();
 		static bool uninstall();
-		
+
 	private:
-		typedef ACE_Singleton<NTService, ACE_Thread_Mutex> NTSERVICE;
+		typedef ACE_Singleton<NTService, ACE_Recursive_Thread_Mutex> NTSERVICE;
 
 		static ACE_THR_FUNC_RETURN start_service(void*);
 		static BOOL WINAPI control_c(DWORD);
-		
+
 		int description(const ACE_TCHAR *desc);
 		int insert(const ACE_TCHAR *cmd_line = 0,
 		           DWORD start_type = SERVICE_DEMAND_START,
@@ -74,7 +74,7 @@ namespace Root
 		void stop_requested(DWORD control_code);
 		void pause_requested(DWORD control_code);
 		void continue_requested(DWORD control_code);
-		
+
 		ACE_Event m_finished;
 		int       m_svc_thread;
 	};

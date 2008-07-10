@@ -4,6 +4,7 @@
 	Version="7.10"
 	Name="TestLibrary"
 	ProjectGUID="{E1E124DB-9220-4148-9336-9F44912D6E41}"
+	RootNamespace="TestLibrary"
 	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
@@ -12,8 +13,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\..\bin\Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="..\..\..\bin\$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool
@@ -65,7 +66,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\..\bin"
-			IntermediateDirectory="Release"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool

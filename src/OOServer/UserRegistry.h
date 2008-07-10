@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,13 +30,13 @@ namespace User
 	{
 		class Key : 
 			public OTL::ObjectBase,
-			public Omega::Registry::IRegistryKey
+			public Omega::Registry::IKey
 		{
 		public:
 			void Init(Manager* pManager, const Omega::string_t& strKey, const ACE_INT64& key);
 			
 			BEGIN_INTERFACE_MAP(Key)
-				INTERFACE_ENTRY(Omega::Registry::IRegistryKey)
+				INTERFACE_ENTRY(Omega::Registry::IKey)
 			END_INTERFACE_MAP()
 
 		private:
@@ -61,7 +61,7 @@ namespace User
 			void SetDescription(const Omega::string_t& strValue);
 			void SetValueDescription(const Omega::string_t& strName, const Omega::string_t& strValue);
 			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
-			Omega::Registry::IRegistryKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IRegistryKey::OpenFlags_t flags = OpenExisting);
+			Omega::Registry::IKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
 			Omega::IEnumString* EnumSubKeys();
 			Omega::IEnumString* EnumValues();
 			void DeleteKey(const Omega::string_t& strSubKey);

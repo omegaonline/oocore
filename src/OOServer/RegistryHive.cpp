@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ int Root::RegistryHive::check_key_exists(const ACE_INT64& uKey, int& access_mask
 	// Lock must be help first...
 	if (uKey == 0)
 	{
-		access_mask = 0;
+		access_mask = 5;
 		return SQLITE_ROW;
 	}
 
@@ -941,7 +941,7 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 	
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
 		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_blob failed: %s\n",sqlite3_errmsg(m_db->database())));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_blob failed: %C\n"),sqlite3_errmsg(m_db->database())));
 		else
 			err = ptrStmt->step();
 	}
@@ -953,7 +953,7 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 			
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
 		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_blob failed: %s\n",sqlite3_errmsg(m_db->database())));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_blob failed: %C\n"),sqlite3_errmsg(m_db->database())));
 		else
 			err = ptrStmt->step();
 	}
@@ -1122,23 +1122,23 @@ int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_WStrin
 	sqlite3_stmt* pStmt;
 	err = sqlite3_prepare16_v2(m_db->database(),L"SELECT Value FROM RegistryValues WHERE Name = ? AND Parent = ? AND Type=0;",-1,&pStmt,NULL);
 	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %s\n",sqlite3_errmsg(m_db->database())),EIO);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %C\n",sqlite3_errmsg(m_db->database())),EIO);
 
 	err = sqlite3_bind_text16(pStmt,1,strValue.c_str(),-1,SQLITE_STATIC);
 	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_text failed: %s\n",sqlite3_errmsg(m_db->database())));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_text failed: %C\n"),sqlite3_errmsg(m_db->database())));
 	else
 	{
 		err = sqlite3_bind_int64(pStmt,2,static_cast<sqlite3_int64>(uKey));
 		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_int64 failed: %s\n",sqlite3_errmsg(m_db->database())));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_int64 failed: %C\n"),sqlite3_errmsg(m_db->database())));
 		else
 		{
 			err = sqlite3_step(pStmt);
 			if (err == SQLITE_ROW)
 				val = static_cast<const wchar_t*>(sqlite3_column_text16(pStmt,0));
 			else if (err != SQLITE_DONE)
-				ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_step failed: %s\n",sqlite3_errmsg(m_db->database())));
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_step failed: %C\n"),sqlite3_errmsg(m_db->database())));
 		}
 	}
 	
@@ -1166,26 +1166,26 @@ int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_WStrin
 	sqlite3_stmt* pStmt;
 	err = sqlite3_prepare16_v2(m_db->database(),L"INSERT OR REPLACE INTO RegistryValues (Name,Parent,Type,Value) VALUES (?,?,0,?);",-1,&pStmt,NULL);
 	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %s\n",sqlite3_errmsg(m_db->database())),EIO);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %C\n",sqlite3_errmsg(m_db->database())),EIO);
 	
 	err = sqlite3_bind_text16(pStmt,1,strValue.c_str(),-1,SQLITE_STATIC);
 	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_text failed: %s\n",sqlite3_errmsg(m_db->database())));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_text failed: %C\n"),sqlite3_errmsg(m_db->database())));
 	else
 	{
 		err = sqlite3_bind_int64(pStmt,2,static_cast<sqlite3_int64>(uKey));
 		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_int64 failed: %s\n",sqlite3_errmsg(m_db->database())));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_int64 failed: %C\n"),sqlite3_errmsg(m_db->database())));
 		else
 		{
 			err = sqlite3_bind_text16(pStmt,3,val.c_str(),-1,SQLITE_STATIC);
 			if (err != SQLITE_OK)
-				ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_bind_text failed: %s\n",sqlite3_errmsg(m_db->database())));
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_text failed: %C\n"),sqlite3_errmsg(m_db->database())));
 			else
 			{
 				err = sqlite3_step(pStmt);
 				if (err != SQLITE_DONE)
-					ACE_ERROR((LM_ERROR,"%N:%l: sqlite3_step failed: %s\n",sqlite3_errmsg(m_db->database())));
+					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_step failed: %C\n"),sqlite3_errmsg(m_db->database())));
 			}
 		}
 	}

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -36,13 +36,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,m1))
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,m1))
 {
 	if (static_cast<ACE_Recursive_Thread_Mutex*>(m1)->acquire() != 0)
-		OOCORE_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,m1))
 {
 	if (static_cast<ACE_Recursive_Thread_Mutex*>(m1)->release() != 0)
-		OOCORE_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,())
@@ -60,17 +60,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,m1))
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_lockread,1,((in),void*,m1))
 {
 	if (static_cast<ACE_RW_Thread_Mutex*>(m1)->acquire_read() != 0)
-		OOCORE_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_lockwrite,1,((in),void*,m1))
 {
 	if (static_cast<ACE_RW_Thread_Mutex*>(m1)->acquire_write() != 0)
-		OOCORE_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_unlock,1,((in),void*,m1))
 {
 	if (static_cast<ACE_RW_Thread_Mutex*>(m1)->release() != 0)
-		OOCORE_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 }

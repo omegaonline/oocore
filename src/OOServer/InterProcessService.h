@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,11 +25,10 @@
 #include "./UserROT.h"
 #include "./UserRegistry.h"
 
+#include "../OOCore/Server.h"
+
 namespace User
 {
-	void ExecProcess(ACE_Process& process, const Omega::string_t& strExeName);
-	ACE_WString ShellParse(const wchar_t* pszFile);
-
 	class InterProcessService :
 		public OTL::ObjectBase,
 		public Omega::Remoting::IInterProcessService
@@ -45,17 +44,22 @@ namespace User
 		ACE_Thread_Mutex                                      m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IInterProcessService> m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
-		OTL::ObjectPtr<Omega::Registry::IRegistryKey>         m_ptrReg;
+		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 		Manager*                                              m_pManager;
 
 		std::map<Omega::string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> > m_mapInProgress;
 
 	// Remoting::IInterProcessService members
 	public:
-		Omega::Registry::IRegistryKey* GetRegistry();
+		Omega::Registry::IKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
-		Omega::bool_t ExecProcess(const Omega::string_t& strProcess, Omega::bool_t bPublic);
-		Omega::IO::IStream* OpenStream(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback);
+		void GetObject(const Omega::string_t& strProcess, Omega::bool_t bPublic, const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		Omega::IO::IStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);
+		Omega::bool_t HandleRequest(Omega::uint32_t timeout);
+
+		// TEMP TEMP TEMP
+		Omega::Remoting::IObjectManager* OpenRemoteObjectManager(const Omega::string_t& strEndpoint);
+		Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 	};
 }
 

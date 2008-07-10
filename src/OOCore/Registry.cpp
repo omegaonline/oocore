@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -60,25 +60,25 @@ namespace OOCore
 		}
 	};
 
-	static ObjectPtr<Registry::IRegistryKey> GetRootKey();
-	static void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	static void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	static ObjectPtr<Registry::IRegistryKey> ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
-	static void ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static ObjectPtr<Registry::IKey> GetRootKey();
+	static void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static ObjectPtr<Registry::IKey> ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
+	static int64_t ProcessXmlInteger(const wchar_t* p);
+	static void ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
 	static string_t SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts);
 
 	static const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
 }
 
-ObjectPtr<Registry::IRegistryKey> OOCore::GetRootKey()
+ObjectPtr<Registry::IKey> OOCore::GetRootKey()
 {
-	ObjectPtr<Registry::IRegistryKey> ptrKey;
-	ObjectPtr<Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-	ptrKey.Attach(static_cast<Registry::IRegistryKey*>(ptrIPS->GetRegistry()));
+	ObjectPtr<Registry::IKey> ptrKey;
+	ptrKey.Attach(static_cast<Registry::IKey*>(OOCore::GetInterProcessService()->GetRegistry()));
 	return ptrKey;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 {
 	if (key.Left(1) != L"\\")
 		OOCore::BadNameException::Throw(key,L"Omega::Registry::OpenKey");
@@ -116,7 +116,7 @@ string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_
 	return strRes1;
 }
 
-ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
+ObjectPtr<Registry::IKey> OOCore::ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
 {
 	std::map<string_t,string_t>::const_iterator i = attribs.find(L"name");
 	if (i == attribs.end())
@@ -127,9 +127,9 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 	if (bAdd)
 	{
 		if (ptrKey)
-			return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::Create);
+			return ptrKey.OpenSubKey(strName,Registry::IKey::Create);
 		else
-			return ObjectPtr<Registry::IRegistryKey>(strName,Registry::IRegistryKey::Create);
+			return ObjectPtr<Registry::IKey>(strName,Registry::IKey::Create);
 	}
 	else
 	{
@@ -140,7 +140,7 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 
 		if (!ptrKey && strName.Left(1) == L"\\")
 		{
-			ptrKey = ObjectPtr<Registry::IRegistryKey>(L"\\");
+			ptrKey = ObjectPtr<Registry::IKey>(L"\\");
 			strName = strName.Mid(1);
 		}
 
@@ -149,14 +149,63 @@ ObjectPtr<Registry::IRegistryKey> OOCore::ProcessXmlKeyAttribs(const std::map<st
 			if (bRemove)
 				ptrKey->DeleteKey(strName);
 			else
-				return ptrKey.OpenSubKey(strName,Registry::IRegistryKey::OpenExisting);
+				return ptrKey.OpenSubKey(strName,Registry::IKey::OpenExisting);
 		}			
 	}
 
 	return 0;
 }
 
-void OOCore::ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IRegistryKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
+int64_t OOCore::ProcessXmlInteger(const wchar_t* p)
+{
+	p += ACE_OS::strspn(p,L" ");
+
+	bool bNeg = false;
+	int base = 10;
+	if (*p==L'-')
+	{
+		bNeg = true;
+		++p;
+	}
+	else if (*p==L'+')
+	{
+		++p;
+	}
+	else if (p[0]==L'0' && p[1]==L'x')
+	{
+		p += 2;
+		base = 16;
+	}
+	
+	int64_t val = 0;
+	for (;;++p)
+	{
+		int v = 0;
+		if (*p >= L'0' && *p <= L'9')
+			v = (*p - L'0');
+		else if (base == 16)
+		{
+			if (*p >= L'A' && *p <= L'F')
+				v = (*p - L'A' + 0xA);
+			else if (*p >= L'a' && *p <= L'f')
+				v = (*p - L'a' + 0xA);
+			else
+				break;
+		}
+		else
+			break;
+
+		val *= base;
+		val += v;
+	}
+
+	if (bNeg)
+		val = -val;
+
+	return val;
+}
+
+void OOCore::ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IKey> ptrKey, const string_t& strData, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
 {
 	std::map<string_t,string_t>::const_iterator i = attribs.find(L"name");
 	if (i == attribs.end())
@@ -186,67 +235,15 @@ void OOCore::ProcessXmlValue(const std::map<string_t,string_t>& attribs, ObjectP
 		if (strType == L"String")
 			ptrKey->SetStringValue(strName,strData2);
 		else if (strType == L"Integer")
-		{
-			// Skip the starting whitespace
-			const wchar_t* p = strData2.c_str();
-			p += ACE_OS::strspn(p,L" ");
-
-			bool bNeg = false;
-			int base = 10;
-			if (*p==L'-')
-			{
-				bNeg = true;
-				++p;
-			}
-			else if (*p==L'+')
-			{
-				++p;
-			}
-			else if (p[0]==L'0' && p[1]==L'x')
-			{
-				p += 2;
-				base = 16;
-			}
-			
-			int64_t val = 0;
-			for (;;++p)
-			{
-				int v = 0;
-				if (*p >= L'0' && *p <= L'9')
-					v = (*p - L'0');
-				else if (base == 16)
-				{
-					if (*p >= L'A' && *p <= L'F')
-						v = (*p - L'A' + 0xA);
-					else if (*p >= L'a' && *p <= L'f')
-						v = (*p - L'a' + 0xA);
-					else
-						break;
-				}
-				else
-					break;
-
-				val *= base;
-				val += v;
-			}
-
-			if (bNeg)
-				val = -val;
-
-			ptrKey->SetIntegerValue(strName,val);
-		}
+			ptrKey->SetIntegerValue(strName,ProcessXmlInteger(strData2.c_str()));
 		else if (strType == L"Binary")
-		{
 			OMEGA_THROW(L"Binary values are not supported");
-		}
 		else
-		{
 			OMEGA_THROW(L"Invalid value type");
-		}
 	}
 }
 
-void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
+void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
 {
 	std::map<string_t,string_t> attribs;
 	bool bHasContent;
@@ -271,7 +268,7 @@ void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IReg
 	if (strName2 == L"key")
 	{
 		// Sort out attributes...
-		ObjectPtr<Registry::IRegistryKey> ptrSubKey = ProcessXmlKeyAttribs(attribs,ptrKey,bAdd,mapSubsts);
+		ObjectPtr<Registry::IKey> ptrSubKey = ProcessXmlKeyAttribs(attribs,ptrKey,bAdd,mapSubsts);
 
 		if (bHasContent)
 		{
@@ -307,7 +304,7 @@ void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IReg
 	}		
 }
 
-void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
+void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts)
 {
 	std::map<string_t,string_t> attribs;
 	bool bHasContent;
@@ -330,7 +327,7 @@ void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IRegistryKey
 		OMEGA_THROW(L"key element expected");
 
 	// Sort out attributes...
-	ObjectPtr<Registry::IRegistryKey> ptrSubKey = ProcessXmlKeyAttribs(attribs,ptrKey,bAdd,mapSubsts);
+	ObjectPtr<Registry::IKey> ptrSubKey = ProcessXmlKeyAttribs(attribs,ptrKey,bAdd,mapSubsts);
 
 	if (bHasContent)
 	{

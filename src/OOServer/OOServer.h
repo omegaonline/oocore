@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@
 
 #endif
 
-#include <ace/Asynch_Acceptor.h>
+#include <ace/Asynch_Connector.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Connector.h>
 #include <ace/Countdown_Time.h>
@@ -58,7 +58,7 @@
 #include <ace/UNIX_Addr.h>
 
 #if !defined(ACE_HAS_WCHAR)
-#error OmegaOnline requires ACE_HAS_WCHAR support!
+#error Omega Online requires ACE_HAS_WCHAR support!
 #endif
 
 #if defined(ACE_WIN32)
@@ -84,6 +84,7 @@
 // Include STL components
 
 #include <set>
+#include <sstream>
 
 // End of STL includes
 //////////////////////////////////////////////
@@ -108,20 +109,17 @@
 // End of Windows includes
 /////////////////////////////////////////////////
 
-#define OOSERVER_THROW_LASTERROR() \
-	OMEGA_THROW(ACE_OS::last_error())
-
 #define OOSERVER_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();
+	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
 
 #define OOSERVER_READ_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Read_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();
+	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
 
 #define OOSERVER_WRITE_GUARD(MUTEX,OBJ,LOCK) \
 	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OOSERVER_THROW_LASTERROR();
+	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
 
 #ifdef OMEGA_DEBUG
 void AttachDebugger(pid_t pid);

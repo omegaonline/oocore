@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -43,9 +43,10 @@ namespace OOCore
 		StringNode(const ACE_WString& s) : m_str(s), m_refcount(1)
 		{}
 
-		void AddRef()
+		void* AddRef() const
 		{
-			++m_refcount;
+			++const_cast<StringNode*>(this)->m_refcount;
+			return const_cast<StringNode*>(this);
 		}
 
 		void Release()
@@ -62,6 +63,15 @@ namespace OOCore
 }
 
 using namespace OOCore;
+
+// Forward declare the md5 stuff
+extern "C"
+{
+	typedef char MD5Context[88];
+	void MD5Init(MD5Context *pCtx);
+	void MD5Update(MD5Context *pCtx, const unsigned char *buf, unsigned int len);
+	void MD5Final(unsigned char digest[16], MD5Context *pCtx);
+}
 
 ACE_WString OOCore::from_utf8(const char* sz)
 {
@@ -222,9 +232,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor2,2,((in),const char*,sz,(in)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor3,1,((in),const void*,s1))
 {
-	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(static_cast<const StringNode*>(s1)->m_str));
-	return pNode;
+	return static_cast<const StringNode*>(s1)->AddRef();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor4,2,((in),const wchar_t*,wsz,(in),size_t,length))
@@ -245,10 +253,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(string_t__dctor,1,((in),void*,s1))
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_1,2,((in),void*,s1,(in),const void*,s2))
 {
 	static_cast<StringNode*>(s1)->Release();
-
-	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(static_cast<const StringNode*>(s2)->m_str));
-	return pNode;
+	return static_cast<const StringNode*>(s2)->AddRef();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_assign_3,2,((in),void*,s1,(in),const wchar_t*,wsz))
@@ -405,40 +410,52 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_len,1,((in),const void*,s1))
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_left,2,((in),const void*,s1,(in),size_t,length))
 {
+	const StringNode* s = static_cast<const StringNode*>(s1);
+	if (length == s->m_str.length())
+		return s->AddRef();
+
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_str.substr(0,length)));
+	OMEGA_NEW(s2,StringNode(s->m_str.substr(0,length)));
 	return s2;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,s1,(in),size_t,start,(in),size_t,length))
 {
+	const StringNode* s = static_cast<const StringNode*>(s1);
+	if (start == 0 && length == s->m_str.length())
+		return s->AddRef();
+		
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_str.substr(start,length)));
+	OMEGA_NEW(s2,StringNode(s->m_str.substr(start,length)));
 	return s2;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),size_t,length))
 {
-	size_t start = static_cast<const StringNode*>(s1)->m_str.length();
-	if (length > start)
+	const StringNode* s = static_cast<const StringNode*>(s1);
+	if (length == 0)
+		return s->AddRef();
+	
+	size_t start = s->m_str.length();
+	if (length >= start)
 		start = 0;
 	else
 		start -= length;
 
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_str.substr(start)));
+	OMEGA_NEW(s2,StringNode(s->m_str.substr(start)));
 	return s2;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(in),va_list*,ap))
 {
-	for (size_t len=256;len<=(size_t)-1 / sizeof(wchar_t);len*=2)
+	for (size_t len=256;len<=(size_t)-1 / sizeof(wchar_t);)
 	{
 		wchar_t* buf = 0;
 		OMEGA_NEW(buf,wchar_t[len]);
 
 		int len2 = ACE_OS::vsnprintf(buf,len,sz,*ap);
-		if (len2 >= 0 && static_cast<size_t>(len2) <= len)
+		if (len2 > -1 && static_cast<size_t>(len2) < len)
 		{
 			StringNode* s1;
 			OMEGA_NEW(s1,StringNode(ACE_WString(buf,len2)));
@@ -448,24 +465,25 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(
 		}
 
 		delete [] buf;
+
+		if (len2 > -1)
+			len = len2 + 1;
+		else
+			len *= 2;
 	}
 
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(string_t_clear,1,((in),void*,s1))
+OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_clear,1,((in),void*,s1))
 {
-	static_cast<StringNode*>(s1)->m_str.clear();
-}
+	StringNode* s = static_cast<StringNode*>(s1);
+	if (s->m_str.empty())
+		return s;
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,guid_t_eq,2,((in),const Omega::guid_t&,lhs,(in),const Omega::guid_t&,rhs))
-{
-	return (lhs.Data1==rhs.Data1 && lhs.Data2==rhs.Data2 && lhs.Data3==rhs.Data3 && ACE_OS::memcmp(lhs.Data4,rhs.Data4,8)==0);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,guid_t_less,2,((in),const Omega::guid_t&,lhs,(in),const Omega::guid_t&,rhs))
-{
-	return (ACE_OS::memcmp(&lhs,&rhs,sizeof(Omega::guid_t)) < 0);
+	s->Release();
+	OMEGA_NEW(s,StringNode());
+	return s;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wchar_t*,sz))
@@ -513,13 +531,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wc
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 {
+	Omega::guid_t guid;
+
 #if defined(OMEGA_WIN32)
 	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
 	UuidCreate(&uuid);
 
-	Omega::guid_t guid;
 	guid = *(Omega::guid_t*)(&uuid);
-	return guid;
 
 #else
 	static bool bInit = false;
@@ -535,11 +553,22 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 
 	const ACE_CString* pStr = uuid.to_string();
 	if (!pStr)
-		OOCORE_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	wchar_t szBuf[64];
-	ACE_OS::sprintf(szBuf,L"{%hs}",pStr->c_str());
+	wchar_t szBuf[41];
+	ACE_OS::snprintf(szBuf,40,L"{%hs}",pStr->c_str());
 
-	return Omega::guid_t::FromString(szBuf);
+	guid = Omega::guid_t::FromString(szBuf);
 #endif
+
+	// MD5 hash the result... it hides the MAC address
+	MD5Context ctx;
+	MD5Init(&ctx);
+	MD5Update(&ctx,(const unsigned char*)&guid,sizeof(guid));
+
+	unsigned char digest[16];
+	MD5Final(digest,&ctx);
+
+	guid = *(Omega::guid_t*)(digest);
+	return guid;
 }

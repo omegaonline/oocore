@@ -7,12 +7,12 @@
 		<Option default_target="Debug_Unix" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Debug_Win32">
+			<Target title="Debug Win32">
 				<Option platforms="Windows;" />
-				<Option output="../../bin/Debug/OOServer" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin/Debug" />
+				<Option output="..\..\bin\Debug\OOServer" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin\Debug" />
 				<Option object_output="Debug" />
-				<Option external_deps="../OOCore/debug/libOOCore.a;" />
+				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option parameters="--service" />
@@ -25,17 +25,17 @@
 					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
-					<Add directory="../../extern/sqlite" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
-					<Add library="../OOCore/debug/libOOCore.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\bin\debug\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
@@ -43,15 +43,14 @@
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
-			<Target title="Release_Win32">
+			<Target title="Release Win32">
 				<Option platforms="Windows;" />
-				<Option output="../../bin/OOServer" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin" />
+				<Option output="..\..\bin\OOServer" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
@@ -60,18 +59,18 @@
 					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
-					<Add directory="../../extern/sqlite" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-mthreads" />
-					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
-					<Add library="../OOCore/release/libOOCore.a" />
+					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\bin\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="userenv" />
 					<Add library="libws2_32" />
@@ -79,11 +78,12 @@
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
-			<Target title="Debug_Unix">
+			<Target title="Debug Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/Debug/ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option output="..\..\bin\Debug\ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin\Debug" />
 				<Option object_output="Debug" />
-				<Option external_deps="../OOCore/debug/libOOCore.a;" />
+				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -95,7 +95,7 @@
 					<Add option="-O0" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
@@ -103,17 +103,16 @@
 					<Add library="sqlite3" />
 				</Linker>
 			</Target>
-			<Target title="Release_Unix">
+			<Target title="Release Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/ooserverd" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin" />
+				<Option output="..\..\bin\ooserverd" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Option use_console_runner="0" />
 				<Option parameters="--service" />
 				<Compiler>
-					<Add option="-march=i686" />
 					<Add option="-fexpensive-optimizations" />
 					<Add option="-O3" />
 					<Add option="-Wall" />
@@ -122,7 +121,7 @@
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DNDEBUG" />
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -132,71 +131,66 @@
 				</Linker>
 			</Target>
 		</Build>
-		<Unit filename="../../extern/sqlite/sqlite3.c">
+		<Unit filename="..\..\extern\sqlite\sqlite3.c">
 			<Option compilerVar="CC" />
 			<Option compiler="gcc" use="1" buildCommand="$compiler -mthreads $includes -c $file -o $object" />
-			<Option target="Debug_Win32" />
-			<Option target="Release_Win32" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
 		</Unit>
-		<Unit filename="../../extern/sqlite/sqlite3.h">
-			<Option target="Debug_Win32" />
-			<Option target="Release_Win32" />
+		<Unit filename="..\..\extern\sqlite\sqlite3.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
 		</Unit>
-		<Unit filename="Channel.cpp" />
-		<Unit filename="Channel.h" />
 		<Unit filename="Database.cpp" />
 		<Unit filename="Database.h" />
-		<Unit filename="DebuggerWin32.cpp" />
-		<Unit filename="EntryPoint.cpp" />
-		<Unit filename="InterProcessService.cpp" />
-		<Unit filename="InterProcessService.h" />
+		<Unit filename="DebuggerWin32.cpp">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
 		<Unit filename="MessageConnection.cpp" />
 		<Unit filename="MessageConnection.h" />
 		<Unit filename="MessagePipe.h" />
 		<Unit filename="MessagePipe.inl" />
 		<Unit filename="MessagePipeUnix.cpp">
-			<Option target="Debug_Unix" />
-			<Option target="Release_Unix" />
+			<Option target="Debug Unix" />
+			<Option target="Release Unix" />
 		</Unit>
 		<Unit filename="MessagePipeWin32.cpp">
-			<Option target="Debug_Win32" />
-			<Option target="Release_Win32" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
 		</Unit>
-		<Unit filename="NTService.cpp" />
-		<Unit filename="NTService.h" />
-		<Unit filename="NetHttp.cpp" />
-		<Unit filename="NetHttp.h" />
-		<Unit filename="NetTcp.cpp" />
-		<Unit filename="NetTcp.h" />
-		<Unit filename="OOServer.h" />
+		<Unit filename="NTService.cpp">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="NTService.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
 		<Unit filename="OOServer.rc">
 			<Option compilerVar="WINDRES" />
-			<Option target="Debug_Win32" />
-			<Option target="Release_Win32" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
 		</Unit>
 		<Unit filename="OOServer_Root.h" />
 		<Unit filename="Protocol.h" />
 		<Unit filename="RegistryHive.cpp" />
 		<Unit filename="RegistryHive.h" />
+		<Unit filename="RootHttp.cpp" />
+		<Unit filename="RootHttp.h" />
+		<Unit filename="RootMain.cpp" />
 		<Unit filename="RootManager.cpp" />
 		<Unit filename="RootManager.h" />
 		<Unit filename="RootRegistry.cpp" />
 		<Unit filename="SpawnedProcess.h" />
 		<Unit filename="SpawnedProcessUnix.cpp">
-			<Option target="Debug_Unix" />
-			<Option target="Release_Unix" />
+			<Option target="Debug Unix" />
+			<Option target="Release Unix" />
 		</Unit>
 		<Unit filename="SpawnedProcessWin32.cpp">
-			<Option target="Debug_Win32" />
-			<Option target="Release_Win32" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
 		</Unit>
-		<Unit filename="UserManager.cpp" />
-		<Unit filename="UserManager.h" />
-		<Unit filename="UserNet.cpp" />
-		<Unit filename="UserROT.cpp" />
-		<Unit filename="UserROT.h" />
-		<Unit filename="UserRegistry.cpp" />
-		<Unit filename="UserRegistry.h" />
 		<Unit filename="Version.h" />
 		<Extensions>
 			<code_completion />

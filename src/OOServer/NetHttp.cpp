@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "OOServer.h"
-
+#include "./OOServer_User.h"
 #include "./NetHttp.h"
 #include "./NetTcp.h"
 
@@ -204,74 +203,119 @@ namespace User
 
 }
 
-IO::IStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndPoint, IO::IAsyncStreamCallback* pCallback)
+User::HttpProtocolHandler::HttpProtocolHandler()
 {
-	// First try to determine the protocol...
-	size_t pos = strEndPoint.Find(L"://");
-	if (pos == string_t::npos)
-		OMEGA_THROW(L"No protocol specified!");
-
-	// Get the protocol
-	string_t strProtocol = L"tcp";
-	
-	// Find the protocol handler
-	guid_t oid = guid_t::Null();
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User");
-	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+	if (m_db.open(":memory:") == 0)
 	{
-		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+		const char szSQL[] = 
+			"BEGIN TRANSACTION; "
+			"CREATE TABLE Proxy "
+			"("
+				"URL TEXT NOT NULL, "
+				"ProxyURL TEXT, "
+				"UNIQUE(URL) "
+			");"
+			"CREATE INDEX IF NOT EXISTS idx_Proxy ON Proxy(URL);"
+			"ANALYZE Proxy;"
+			"COMMIT;";
+				
+		m_db.exec(szSQL);
+	}
+}
+
+Net::IConnectedStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify)
+{
+	// Find the TCP protocol handler
+	string_t strHandler;
+	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
+	if (ptrKey->IsSubKey(L"Networking\\Protocols\\tcp"))
+	{
+		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\tcp");
 		if (ptrKey->IsValue(L"Handler"))
-			oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
+			strHandler = ptrKey->GetStringValue(L"Handler");
 	}
 	
-	if (oid == guid_t::Null())
+	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
-		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\");
+		if (ptrKey->IsSubKey(L"Networking\\Protocols\\tcp"))
 		{
-			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\tcp");
 			if (ptrKey->IsValue(L"Handler"))
-				oid = guid_t::FromString(ptrKey->GetStringValue(L"Handler"));
+				strHandler = ptrKey->GetStringValue(L"Handler");
 		}
+	}
+
+	guid_t oid = guid_t::Null();
+	if (!strHandler.IsEmpty())
+	{
+		oid = guid_t::FromString(strHandler);
+		if (oid == guid_t::Null())
+			oid = Activation::NameToOid(strHandler);
 	}
 	
 	if (oid == guid_t::Null())
 		oid = OID_TcpProtocolHandler;
-		
-	// Find hostname
-	string_t strHostName(strEndPoint.Mid(pos+3));
-	string_t strResource;
-	size_t pos2 = strHostName.Find(L'/');
+
+	// First try to determine the protocol...
+	size_t pos = strEndpoint.Find(L"://");
+	if (pos == string_t::npos)
+		OMEGA_THROW(L"No protocol specified!");
+
+	// Get the protocol
+	string_t strProtocol = strEndpoint.Left(pos);
+
+	// Check for localhost
+	string_t strAddr = strEndpoint.Mid(pos+3);
+	size_t pos2 = strAddr.Find(L':');
 	if (pos2 != string_t::npos)
-	{
-		strHostName = strEndPoint.Left(pos2);
-		strResource = strEndPoint.Mid(pos2);
-	}
+		strAddr = strAddr.Left(pos2);
 
 	// Find the proxy if any...
-	string_t strProxy = FindProxy(strEndPoint,strEndPoint.Left(pos));
-	if (strProxy.IsEmpty())
-		strProxy = strHostName;
+	string_t strProxy;
+	if (strAddr.CompareNoCase(L"127.0.0.1")==0 || 
+		strAddr.CompareNoCase(L"localhost")==0)
+	{
+		strProxy = strEndpoint.Mid(pos+3);
+	}
+	else
+	{
+		strProxy = FindProxy(strEndpoint,strProtocol);
+		if (strProxy.IsEmpty())
+			strProxy = strEndpoint.Mid(pos+3);
+	}
 
 	// Build the correct proxy address...
-	string_t strEnd = strProtocol + L"://" + strProxy.ToLower();
+	string_t strEnd = L"tcp:" + strProxy.ToLower();
 	
 	// Make sure we have a default port
-	if (strEnd.Find(L':',strProtocol.Length()+3) == string_t::npos)
-		strEnd += L":80";		
+	if (strProxy.Find(L':') == string_t::npos)
+	{
+		if (strProtocol == L"http")
+			strEnd += L":80";		
+		else if (strProtocol == L"https")
+			strEnd += L":443";
+	}
 	
 	// Create a Protocol Handler
-	OTL::ObjectPtr<Omega::IO::IProtocolHandler> ptrHandler(oid);
+	OTL::ObjectPtr<Omega::Net::IProtocolHandler> ptrHandler(oid);
 
 	// Create a stream
-	return ptrHandler->OpenStream(strEnd,pCallback);
+	return ptrHandler->OpenStream(strEnd,pNotify);
 }
 
 string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const string_t& strProtocol)
 {
+	// Check our local db first
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+		m_db.prepare_statement("SELECT ProxyURL FROM Proxy WHERE URL = %Q;",strURL.ToUTF8().c_str());
+	
+	if (!ptrStmt.null() && ptrStmt->step() == SQLITE_ROW)
+		return string_t(ptrStmt->column_text(0),true);
+	
 	string_t strProxy;
 
-	ObjectPtr<Omega::Registry::IRegistryKey> ptrKey(L"\\Local User");
+	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
 	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 	{
 		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
@@ -281,7 +325,7 @@ string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const stri
 
 	if (strProxy.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Omega::Registry::IRegistryKey>(L"\\");
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\");
 		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
@@ -291,25 +335,22 @@ string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const stri
 	}
 
 	// 'none' is valid...
-	if (strProxy.ToLower() == L"none")
-		return string_t();
-
-	if (!strProxy.IsEmpty())
-		return strProxy;
-
+	if (strProxy== L"none")
+		strProxy.Clear();
+	else if (strProxy.IsEmpty())
+	{
 #if defined(OMEGA_WIN32)
-
-	if (win_http_wrapper.WinHttpGetProxyForUrl(strURL,strProxy))
-		return strProxy;
-
-	if (win_http_wrapper.WinHttpGetIEProxyConfigForCurrentUser(strURL,strProxy))
-		return strProxy;
-
+		if (!win_http_wrapper.WinHttpGetProxyForUrl(strURL,strProxy))
+			win_http_wrapper.WinHttpGetIEProxyConfigForCurrentUser(strURL,strProxy);
 #else
-
-	strProxy = string_t(ACE_OS::getenv("http_proxy"),false);
-
+		strProxy = string_t(ACE_OS::getenv("http_proxy"),false);
 #endif
+	}
+
+	// Update database
+	ptrStmt = m_db.prepare_statement("INSERT INTO Proxy (URL,ProxyURL) VALUES (%Q,%Q);",strURL.ToUTF8().c_str(),strProxy.ToUTF8().c_str());
+	if (!ptrStmt.null())
+		ptrStmt->step();
 
 	return strProxy;
 }

@@ -31,6 +31,7 @@ bool registry_tests();
 bool registry_tests_2();
 bool interface_tests();
 bool net_tests();
+bool interface_tests2();
 
 int main(int /*argc*/, char* /*argv*/[])
 {
@@ -46,7 +47,8 @@ int main(int /*argc*/, char* /*argv*/[])
 		RUN_TEST(registry_tests);
 		RUN_TEST(registry_tests_2);
 		RUN_TEST(interface_tests);
-		RUN_TEST(net_tests);
+		//RUN_TEST(net_tests);
+		//RUN_TEST(interface_tests2);
 	}
 
 	return test_summary();
@@ -96,10 +98,16 @@ static void recurse_printf_exception(Omega::IException* pE)
 	Omega::IException* pCause = pE->Cause();
 	if (pCause)
 	{
-		printf("Cause:\t%ls\n\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
+		printf("Cause:\t%ls\nSource:\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
 		recurse_printf_exception(pCause);
 		pCause->Release();
 	}
+}
+
+void printf_exception(Omega::IException* pE)
+{
+	printf("Desc:\t%ls\nSource:\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
+	recurse_printf_exception(pE);
 }
 
 bool run_test(pfnTest t, const char* pszName)
@@ -118,14 +126,14 @@ bool run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		printf("[Unhandled Omega::IException]\n\t%ls\n\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
-		recurse_printf_exception(pE);
+		printf("[Unhandled Omega::IException]\n\n");
+		printf_exception(pE);
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		printf("[Unhandled std::exception]\n\t%s\n",e.what());
+		printf("[Unhandled std::exception]\n\nWhat:\t%s\n",e.what());
 	}
 	catch (...)
 	{

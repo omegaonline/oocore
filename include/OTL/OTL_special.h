@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -27,26 +27,26 @@
 namespace OTL
 {
 	template <>
-	class ObjectPtr<Omega::Registry::IRegistryKey> : public ObjectPtrBase<Omega::Registry::IRegistryKey>
+	class ObjectPtr<Omega::Registry::IKey> : public ObjectPtrBase<Omega::Registry::IKey>
 	{
 	public:
-		ObjectPtr<Omega::Registry::IRegistryKey>(Omega::Registry::IRegistryKey* pKey = 0) :
-		  ObjectPtrBase<Omega::Registry::IRegistryKey>(pKey)
+		ObjectPtr(Omega::Registry::IKey* pKey = 0) :
+		  ObjectPtrBase<Omega::Registry::IKey>(pKey)
 		{ }
 
-		ObjectPtr(const ObjectPtr<Omega::Registry::IRegistryKey>& rhs) :
-		  ObjectPtrBase<Omega::Registry::IRegistryKey>(rhs)
+		ObjectPtr(const ObjectPtr<Omega::Registry::IKey>& rhs) :
+		  ObjectPtrBase<Omega::Registry::IKey>(rhs)
 		{ }
 
-		ObjectPtr(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags = Omega::Registry::IRegistryKey::OpenExisting) :
-		  ObjectPtrBase<Omega::Registry::IRegistryKey>(0)
+		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
+		  ObjectPtrBase<Omega::Registry::IKey>(0)
 		{
-			Attach(Omega::Registry::IRegistryKey::OpenKey(key,flags));
+			Attach(Omega::Registry::IKey::OpenKey(key,flags));
 		}
 
-		ObjectPtr<Omega::Registry::IRegistryKey> OpenSubKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags = Omega::Registry::IRegistryKey::OpenExisting)
+		ObjectPtr<Omega::Registry::IKey> OpenSubKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting)
 		{
-			ObjectPtr<Omega::Registry::IRegistryKey> sub_key;
+			ObjectPtr<Omega::Registry::IKey> sub_key;
 			sub_key.Attach(m_ptr.value()->OpenSubKey(key,flags));
 			return sub_key;
 		}

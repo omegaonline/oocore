@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,7 +37,8 @@
 #include "./Protocol.h"
 
 Root::Manager::Manager() :
-	m_sandbox_channel(0)
+	m_sandbox_channel(0),
+	m_http_acceptor(0)
 {
 }
 
@@ -64,7 +65,7 @@ bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 	ptrHive->create_key(key,"Objects",false,5,0);
 	ptrHive->create_key(key,"OIDs",false,5,0);
 	key = 0;
-	ptrHive->create_key(key,"Server",false,4,0);
+	ptrHive->create_key(key,"Server",false,5,0);
 	ptrHive->create_key(key,"Sandbox",false,4,0);
 
 	// Set up the sandbox user
@@ -112,8 +113,17 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 	{
 		if (init())
 		{
+			// Start the http listener
+			HttpAcceptor http_acceptor;
+			m_http_acceptor = &http_acceptor;
+			bool bHttp = http_acceptor.open(this);
+				
 			// Now just process client requests
 			ret = process_client_connects();
+
+			// Stop the http acceptor
+			if (bHttp)
+				http_acceptor.close();
 		}
 
 		// Close all pipes
@@ -140,7 +150,7 @@ bool Root::Manager::init()
 
 	// Spawn the sandbox
 	ACE_CString strPipe;
-	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),strPipe,0);
+	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),strPipe,ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>(0));
 	if (!m_sandbox_channel)
 		return false;
 
@@ -191,12 +201,16 @@ int Root::Manager::init_database()
 #endif
 
 	// Create a new database
-	ACE_NEW_RETURN(m_db,Db::Database(),-1);
+	Db::Database* db = 0;
+	ACE_NEW_RETURN(db,Db::Database(),-1);
+	m_db.reset(db);
 
 	if (m_db->open(m_strRegistry) != 0)
 		return -1;
 
-	ACE_NEW_RETURN(m_registry,RegistryHive(m_db),-1);
+	RegistryHive* reg = 0;
+	ACE_NEW_RETURN(reg,RegistryHive(m_db),-1);
+	m_registry.reset(reg);
 
 	if (m_registry->open() != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("registry open() failed")),-1);
@@ -219,7 +233,7 @@ bool Root::Manager::can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_ch
 	return (src_channel == m_sandbox_channel || dest_channel == m_sandbox_channel);
 }
 
-void Root::Manager::channel_closed(ACE_CDR::ULong channel)
+void Root::Manager::on_channel_closed(ACE_CDR::ULong channel)
 {
 	// Close the channel
 	try
@@ -235,7 +249,7 @@ void Root::Manager::channel_closed(ACE_CDR::ULong channel)
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
 	}
 }
 
@@ -300,6 +314,83 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_
 	return 0;
 }
 
+ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, SpawnedProcess* pSpawn, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry, ACE_CString& strPipe)
+{
+	ACE_CDR::ULong nChannelId = 0;
+
+	// Accept
+#ifdef OMEGA_DEBUG
+	ACE_Time_Value wait(120);
+#else
+	ACE_Time_Value wait(30);
+#endif
+	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> pipe;
+	if (acceptor.accept(pipe,&wait) != 0)
+		return 0;
+
+	strPipe = bootstrap_user(pipe);
+	if (!strPipe.empty())
+	{
+		// Create a new MessageConnection
+		MessageConnection* pMC = 0;
+		ACE_NEW_NORETURN(pMC,MessageConnection(this));
+		if (!pMC)
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
+		else if ((nChannelId = pMC->open(pipe,0,false)) != 0)
+		{
+			// Insert the data into various maps...
+			try
+			{
+				ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+
+				UserProcess process = {strPipe, pSpawn, ptrRegistry };
+				m_mapUserProcesses.insert(std::map<ACE_CDR::ULong,UserProcess>::value_type(nChannelId,process));
+			}
+			catch (std::exception& e)
+			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+				nChannelId = 0;
+			}
+
+			if (nChannelId)
+			{
+				bool bOk = true;
+				if (!pMC->read())
+				{
+					bOk = false;
+				}
+				else if (pipe->send(&nChannelId,sizeof(nChannelId)) != sizeof(nChannelId))
+				{
+					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")));
+					bOk = false;
+				}
+
+				if (!bOk)
+				{
+					try
+					{
+						ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+
+						m_mapUserProcesses.erase(nChannelId);
+					}
+					catch (std::exception& e)
+					{
+						ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+					}
+				}
+			}
+		}
+
+		if (!nChannelId)
+			delete pMC;
+	}
+
+	if (!nChannelId)
+		pipe->close();
+	
+	return nChannelId;
+}
+
 ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry)
 {
 	// Stash the sandbox flag because we adjust uid...
@@ -338,87 +429,28 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 				if (!strDb.empty())
 				{
                     // Create a new database
-                    ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> db;
-                    ACE_NEW_NORETURN(db,Db::Database());
-                    if (!db.null() && db->open(pSpawn->GetRegistryHive()) == 0)
-                    {
-                        ACE_NEW_NORETURN(ptrRegistry,RegistryHive(db));
-                        bOk = (!ptrRegistry.null() && ptrRegistry->open()==0);
-                    }
-				}
-			}
-
-			if (bOk)
-			{
-				// Accept
-		#ifdef OMEGA_DEBUG
-				ACE_Time_Value wait(120);
-		#else
-				ACE_Time_Value wait(30);
-		#endif
-				ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> pipe;
-				if (acceptor.accept(pipe,&wait) == 0)
-				{
-					strPipe = bootstrap_user(pipe);
-					if (!strPipe.empty())
+					Db::Database* pdb = 0;
+                    ACE_NEW_NORETURN(pdb,Db::Database());
+					if (pdb)
 					{
-						// Create a new MessageConnection
-						MessageConnection* pMC = 0;
-						ACE_NEW_NORETURN(pMC,MessageConnection(this));
-						if (!pMC)
-							ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
-						else if ((nChannelId = pMC->open(pipe,0,false)) != 0)
+						ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> db(pdb);
+						if (db->open(pSpawn->GetRegistryHive()) == 0)
 						{
-							// Insert the data into various maps...
-							try
+							RegistryHive* pReg = 0;
+							ACE_NEW_NORETURN(pReg,RegistryHive(db));
+							if (pReg)
 							{
-								ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-								UserProcess process = {strPipe, pSpawn, ptrRegistry };
-								m_mapUserProcesses.insert(std::map<ACE_CDR::ULong,UserProcess>::value_type(nChannelId,process));
-							}
-							catch (std::exception& e)
-							{
-								ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
-								nChannelId = 0;
-							}
-
-							if (nChannelId)
-							{
-								if (!pMC->read())
-								{
-									bOk = false;
-								}
-								else if (pipe->send(&nChannelId,sizeof(nChannelId)) != sizeof(nChannelId))
-								{
-									ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")));
-									bOk = false;
-								}
-
-								if (!bOk)
-								{
-									try
-									{
-										ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-										m_mapUserProcesses.erase(nChannelId);
-									}
-									catch (std::exception& e)
-									{
-										ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
-									}
-								}
+								ptrRegistry.reset(pReg); 
+								bOk = (ptrRegistry->open()==0);
 							}
 						}
-
-						if (!nChannelId)
-							delete pMC;
 					}
-
-					if (!nChannelId)
-						pipe->close();
 				}
 			}
+
+			// If everything is okay... connect up
+			if (bOk)
+				nChannelId = connect_user(acceptor,pSpawn,ptrRegistry,strPipe);
 		}
 
 		acceptor.close();
@@ -448,7 +480,7 @@ void Root::Manager::close_users()
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
 	}
 }
 
@@ -459,14 +491,14 @@ ACE_CString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessageP
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")));
 		return "";
 	}
-
+	
 	size_t uLen = 0;
 	if (pipe->recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.recv() failed")));
 		return "";
 	}
-
+		
 	char* buf;
 	ACE_NEW_RETURN(buf,char[uLen],"");
 
@@ -511,10 +543,8 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_CString& strPipe)
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,"%N:%l: std::exception thrown %s\n",e.what()));
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),false);
 	}
-
-	return false;
 }
 
 void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
@@ -599,6 +629,16 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no
 		registry_delete_value(src_channel_id,request,response);
 		break;
 
+	case HttpSend:
+		if (m_http_acceptor)
+			m_http_acceptor->send_http(request);
+		break;
+
+	case HttpClose:
+		if (m_http_acceptor)
+			m_http_acceptor->close_http(request);
+		break;
+
 	default:
 		response.write_long(EINVAL);
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Bad request op_code: %d\n"),op_code));
@@ -607,4 +647,14 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no
 
 	if (response.good_bit() && !(attribs & 1))
 		send_response(seq_no,src_channel_id,src_thread_id,response.begin(),deadline,attribs);
+}
+
+bool Root::Manager::sendrecv_sandbox(const ACE_OutputCDR& request, ACE_CDR::ULong attribs, ACE_InputCDR*& response)
+{
+	return send_request(m_sandbox_channel,request.begin(),response,0,attribs);
+}
+
+bool Root::Manager::call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb)
+{
+	return ROOT_MANAGER::instance()->call_async_function_i(pfnCall,pParam,mb);
 }

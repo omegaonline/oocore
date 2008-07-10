@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,18 +47,16 @@ namespace Root
 		virtual ~MessageConnection();
 
 		ACE_CDR::ULong open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id = 0, bool bStart = true);
-		bool read();
+		bool read(ACE_Message_Block* mb = 0);
 
 	private:
 		MessageConnection() : ACE_Service_Handler() {}
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
-		static const size_t s_initial_read = ACE_CDR::LONG_SIZE * 2;
-
 		MessageHandler*                                     m_pHandler;
 		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> m_pipe;
-		ACE_CDR::ULong                                      m_read_len;
+		size_t                                              m_chunk_size;
 		ACE_CDR::ULong                                      m_channel_id;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
@@ -70,28 +68,60 @@ namespace Root
 #endif
 	};
 
+	struct Message_t
+	{
+		enum Type
+		{
+			Response = 0,
+			Request = 1
+		};
+
+		enum Attributes
+		{
+			// Low 16 bits must match Remoting::MethodAttributes
+			synchronous = 0,
+			asynchronous = 1,
+			unreliable = 2,
+			encrypted = 4,
+
+			// Upper 16 bits can be used for system messages
+			system_message = 0xFFFF0000,
+			channel_close = 0x10000,
+			channel_reflect = 0x20000,
+
+			// Used internally
+			async_function = 0x0FFF0000
+		};
+	};
+
 	class MessageHandler
 	{
 	protected:
 		MessageHandler();
 		virtual ~MessageHandler() {}
 
+	public:
+		int pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
+		
+	protected:
 		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs);
-		void send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		bool send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		bool call_async_function_i(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb);
+		bool forward_message(ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, const ACE_Message_Block* mb);
 
 		int start();
 		void close();
 		void stop();
 
+		virtual void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs) = 0;
 		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
-		virtual bool channel_open(ACE_CDR::ULong channel);
-		virtual void channel_closed(ACE_CDR::ULong channel) = 0;
-		virtual bool route_off(const ACE_Message_Block* mb, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
+		virtual bool on_channel_open(ACE_CDR::ULong channel);
+		virtual void on_channel_closed(ACE_CDR::ULong channel) = 0;
+		virtual bool route_off(ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no);
 
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
-
-		virtual void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs) = 0;
+		void channel_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
 
 	private:
 		friend class MessageConnection;
@@ -111,43 +141,10 @@ namespace Root
 		ACE_CDR::ULong       m_uNextChannelMask;
 		ACE_CDR::ULong       m_uNextChannelShift;
 
-		struct ChannelInfo
-		{
-			ChannelInfo() :
-				lock(0)
-			{}
-
-			ChannelInfo(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& p, ACE_Thread_Mutex* l = 0) :
-				pipe(p), lock(l)
-			{}
-
-			ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>      pipe;
-			ACE_Refcounted_Auto_Ptr<ACE_Thread_Mutex,ACE_Null_Mutex> lock;
-		};
-		std::map<ACE_CDR::ULong,ChannelInfo> m_mapChannelIds;
+		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> > m_mapChannelIds;
 
 		struct Message
 		{
-			enum Type
-			{
-				Response = 0,
-				Request = 1,
-				Stream = 2
-			};
-
-			enum Attributes
-			{
-				// Low 16 bits must match Remoting::MethodAttributes
-				synchronous = 0,
-				asynchronous = 1,
-				unreliable = 2,
-				encrypted = 4,
-
-				// Upper 16 bits can be used for system messages
-				system_message = 0x10000,
-				channel_close = 0x20000 | system_message
-			};
-
 			ACE_CDR::UShort                                      m_dest_thread_id;
 			ACE_CDR::ULong                                       m_src_channel_id;
 			ACE_CDR::UShort                                      m_src_thread_id;
@@ -158,6 +155,7 @@ namespace Root
 
 		struct ThreadContext
 		{
+			bool                                        m_bPrivate;
 			ACE_CDR::UShort                             m_thread_id;
 			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
 			MessageHandler*                             m_pHandler;
@@ -171,7 +169,7 @@ namespace Root
 			static ThreadContext* instance(Root::MessageHandler* pHandler);
 
 		private:
-			friend class ACE_TSS_Singleton<ThreadContext,ACE_Thread_Mutex>;
+			friend class ACE_TSS_Singleton<ThreadContext,ACE_Recursive_Thread_Mutex>;
 			friend class ACE_TSS<ThreadContext>;
 
 			ThreadContext();
@@ -193,18 +191,20 @@ namespace Root
 
 		// Accessors for MessageConnection
 		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id);
-		void pipe_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
-		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
 
-		void pump_requests();
-		bool parse_message(const ACE_Message_Block* mb);
+		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
+		bool route_message(MessageHandler::Message* msg);
+		bool parse_message(ACE_InputCDR& input, const ACE_Message_Block* mb);
 		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
 		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
 
 		void process_channel_close(Message* msg);
+		void process_async_function(Message* msg);
 
 		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
 		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
+
+		static void do_route_off(void* pParam, ACE_InputCDR& input);
 	};
 }
 

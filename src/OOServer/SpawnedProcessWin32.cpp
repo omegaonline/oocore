@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@
 /////////////////////////////////////////////////////////////
 
 #include "./OOServer_Root.h"
-
 #include "./SpawnedProcess.h"
 
 #if defined(ACE_WIN32)
@@ -42,6 +41,7 @@
 #include <sddl.h>
 #include <ntsecapi.h>
 #include <aclapi.h>
+#include <shlwapi.h>
 
 #if defined(__MINGW32__)
 
@@ -58,6 +58,28 @@ typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
     LUID AuthenticationId;
 } TOKEN_GROUPS_AND_PRIVILEGES;
 
+extern "C"
+WINADVAPI
+BOOL
+APIENTRY
+CreateRestrictedToken(
+    HANDLE ExistingTokenHandle,
+    DWORD Flags,
+    DWORD DisableSidCount,
+    PSID_AND_ATTRIBUTES SidsToDisable,
+    DWORD DeletePrivilegeCount,
+    PLUID_AND_ATTRIBUTES PrivilegesToDelete,
+    DWORD RestrictedSidCount,
+    PSID_AND_ATTRIBUTES SidsToRestrict,
+    PHANDLE NewTokenHandle
+    );
+
+#define DISABLE_MAX_PRIVILEGE   0x1
+#define SANDBOX_INERT           0x2
+
+#else
+// Not available under MinGW
+#include <WinSafer.h>
 #endif
 
 #if !defined(OMEGA_WIDEN_STRING)
@@ -86,7 +108,7 @@ Root::SpawnedProcess::~SpawnedProcess()
 		if (m_hProfile)
 		{
 			// We only need to wait if we have loaded the profile...
-			DWORD dwWait = 30000;
+			DWORD dwWait = 25000;
 			DWORD dwRes = WaitForSingleObject(m_hProcess,dwWait);
 			if (dwRes != WAIT_OBJECT_0)
 				TerminateProcess(m_hProcess,UINT(-1));
@@ -424,7 +446,7 @@ DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString&
 	}
 
 	wchar_t szBuf[256];
-	ACE_OS::sprintf(szBuf,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
+	ACE_OS::snprintf(szBuf,255,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
 	strWindowStation = szBuf;
 
 	// Get the current processes user SID
@@ -615,41 +637,95 @@ DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
 	return dwRes;
 }
 
-//// This will add ALL access to the sandbox user
-//#include <shlwapi.h>
-//static void EnableSandboxAccessToOOServer(LPWSTR pszPath, TOKEN_USER* pUser)
-//{
-//	PathRemoveFileSpecW(pszPath);
-//
-//	PACL pACL = 0;
-//	PSECURITY_DESCRIPTOR pSD = 0;
-//	DWORD dwRes = GetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,&pACL,NULL,&pSD);
-//	if (dwRes != ERROR_SUCCESS)
-//		return;
-//
-//	const int NUM_ACES = 1;
-//	EXPLICIT_ACCESSW ea[NUM_ACES];
-//	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
-//
-//	// Set maximum access for the logon SID
-//	ea[0].grfAccessPermissions = GENERIC_ALL;
-//	ea[0].grfAccessMode = SET_ACCESS;
-//	ea[0].grfInheritance = OBJECT_INHERIT_ACE;
-//	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-//	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-//	ea[0].Trustee.ptstrName = (LPWSTR)pUser->User.Sid;
-//
-//	PACL pACLNew = {0};
-//	dwRes = SetEntriesInAclW(NUM_ACES,ea,pACL,&pACLNew);
-//
-//	LocalFree(pSD);
-//	ACE_OS::free(pUser);
-//
-//	if (dwRes != ERROR_SUCCESS)
-//		return;
-//
-//	dwRes = SetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,NULL,NULL,pACLNew,NULL);
-//}
+void Root::SpawnedProcess::EnableUserAccessToFile(LPWSTR pszPath, TOKEN_USER* pUser)
+{
+	PathRemoveFileSpecW(pszPath);
+
+	PACL pACL = 0;
+	PSECURITY_DESCRIPTOR pSD = 0;
+	DWORD dwRes = GetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,&pACL,NULL,&pSD);
+	if (dwRes != ERROR_SUCCESS)
+		return;
+
+	const int NUM_ACES = 1;
+	EXPLICIT_ACCESSW ea[NUM_ACES];
+	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
+
+	// Set maximum access for the logon SID
+	ea[0].grfAccessPermissions = GENERIC_ALL;
+	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfInheritance = OBJECT_INHERIT_ACE;
+	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+	ea[0].Trustee.ptstrName = (LPWSTR)pUser->User.Sid;
+
+	PACL pACLNew = {0};
+	dwRes = SetEntriesInAclW(NUM_ACES,ea,pACL,&pACLNew);
+
+	LocalFree(pSD);
+
+	if (dwRes != ERROR_SUCCESS)
+		return;
+
+	dwRes = SetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,NULL,NULL,pACLNew,NULL);
+}
+
+bool Root::SpawnedProcess::RestrictToken(HANDLE& hToken)
+{
+	// Work out what version of windows we are running on...
+	OSVERSIONINFO os = {0};
+	os.dwOSVersionInfoSize = sizeof(os);
+	GetVersionEx(&os);
+
+#if !defined(OMEGA_DEBUG)
+	if ((os.dwMajorVersion == 5 && os.dwMinorVersion > 0) || os.dwMajorVersion >= 5)
+	{
+		//// Use SAFER API
+		//SAFER_LEVEL_HANDLE hAuthzLevel = NULL;
+		//if (!SaferCreateLevel(SAFER_SCOPEID_MACHINE,SAFER_LEVELID_UNTRUSTED,SAFER_LEVEL_OPEN,&hAuthzLevel,NULL))
+		//	return false;
+
+		//// Generate the restricted token we will use.
+		//bool bOk = false;
+		//HANDLE hNewToken = NULL;
+		//if (SaferComputeTokenFromLevel(
+		//	hAuthzLevel,    // SAFER Level handle
+		//	hToken,         // Source token
+		//	&hNewToken,     // Target token
+		//	0,              // No flags
+		//	NULL))          // Reserved
+		//{
+		//	// Swap the tokens
+		//	CloseHandle(hToken);
+		//	hToken = hNewToken;
+		//	bOk = true;
+		//}
+
+		//SaferCloseLevel(hAuthzLevel);
+		//
+		//if (!bOk)
+		//	return false;
+	}
+#endif
+
+	if (os.dwMajorVersion >= 5)
+	{
+		// Create a restricted token...
+		HANDLE hNewToken = NULL;
+		if (!CreateRestrictedToken(hToken,DISABLE_MAX_PRIVILEGE | SANDBOX_INERT,0,NULL,0,NULL,0,NULL,&hNewToken))
+			return false;
+
+		CloseHandle(hToken);
+		hToken = hNewToken;
+	}
+
+	if (os.dwMajorVersion > 5)
+	{
+		// Vista - use UAC as well...
+	}
+
+	return true;
+}
 
 DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox)
 {
@@ -662,9 +738,17 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 		return dwErr;
 	}
 
+	// Strip off our name, and add OOSvrUser.exe
+	PathRemoveFileSpecW(szPath);
+
+	wchar_t szCwd[MAX_PATH];
+	ACE_OS::strncpy(szCwd,szPath,MAX_PATH-1);
+
+	PathAppendW(szPath,L"OOSvrUser.exe");
+
 	ACE_WString strCmdLine = L"\"";
 	strCmdLine += szPath;
-	strCmdLine += L"\" --spawned ";
+	strCmdLine += L"\" ";
 	strCmdLine += ACE_Ascii_To_Wide(strPipe.c_str()).wchar_rep();
 
 	// Forward declare these because of goto's
@@ -701,14 +785,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 		goto Cleanup;
 	}
 
-	// This might be needed for retricted tokens...
-	/*dwRes = SetTokenDefaultDACL(hPriToken);
-	if (dwRes != ERROR_SUCCESS)
-	{
-		CloseHandle(hPriToken);
-		goto Cleanup;
-	}*/
-
 	// Init our startup info
 	STARTUPINFOW startup_info;
 	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
@@ -725,7 +801,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 		dwFlags |= CREATE_NEW_CONSOLE;
 
-		strTitle = L"OOServer";
+		strTitle = szPath;
 
 		// Get the names associated with the user SID
         ACE_WString strUserName;
@@ -751,7 +827,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 			dwRes = OpenCorrectWindowStation(hPriToken,strWindowStation,hWinsta,hDesktop);
 			if (dwRes != ERROR_SUCCESS)
 				goto Cleanup;
-					
+
 			startup_info.lpDesktop = const_cast<LPWSTR>(strWindowStation.c_str());
 		}
 		else
@@ -765,10 +841,10 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,szCwd,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
-		
+
 		if (hDebugEvent)
 			CloseHandle(hDebugEvent);
 
@@ -799,7 +875,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 		CloseHandle(process_info.hProcess);
 		CloseHandle(process_info.hThread);
-		
+
 		goto Cleanup;
 	}
 
@@ -812,7 +888,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 	// And close any others
 	CloseHandle(process_info.hThread);
-	
+
 	// Don't want to close this one...
 	hProfile = NULL;
 
@@ -820,7 +896,7 @@ Cleanup:
 	// Done with hPriToken
 	if (hPriToken)
 		CloseHandle(hPriToken);
-			
+
 	// Done with Desktop
 	if (hDesktop)
 		CloseDesktop(hDesktop);
@@ -866,20 +942,26 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
 					wchar_t szBuf[1024];
-					ACE_OS::sprintf(szBuf,msg,strDomainName.c_str(),strUserName.c_str());
+					ACE_OS::snprintf(szBuf,1023,msg,strDomainName.c_str(),strUserName.c_str());
 					wchar_t szBuf2[1024];
-					ACE_OS::sprintf(szBuf2,L"%s\n\nDo you want to allow this?",szBuf);
+					ACE_OS::snprintf(szBuf2,1023,L"%s\n\nDo you want to allow this?",szBuf);
 
 					if (MessageBoxW(NULL,szBuf2,L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
-						dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
-						if (dwRes == ERROR_SUCCESS)
+						// Restrict the Token
+						if (!RestrictToken(hToken2))
+							dwRes = GetLastError();
+						else
 						{
-							ACE_ERROR((LM_WARNING,L"%W",szBuf));
-							ACE_OS::printf("\n\nYou chose to continue... on your head be it!\n\n");
+							dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
+							if (dwRes == ERROR_SUCCESS)
+							{
+								ACE_ERROR((LM_WARNING,L"%W",szBuf));
+								ACE_OS::printf("\n\nYou chose to continue... on your head be it!\n\n");
 
-							CloseHandle(m_hToken);
-							DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
+								CloseHandle(m_hToken);
+								DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);
+							}
 						}
 					}
 				}
@@ -899,20 +981,36 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
 
 	// Get the user name and pwd...
 	ACE_INT64 key = 0;
-	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
 		return false;
 
 	ACE_WString strUName;
 	ACE_WString strPwd;
 	int err = reg_root->get_string_value(key,L"UserName",strUName);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to read sandbox username from registry: %s\n"),ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to read sandbox username from registry: %C"),ACE_OS::strerror(err)),false);
 
 	reg_root->get_string_value(key,L"Password",strPwd);
 
 	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 	{
 		LOG_FAILURE(GetLastError());
+		return false;
+	}
+
+	// Restrict the Token
+	if (!RestrictToken(hToken))
+	{
+		CloseHandle(hToken);
+		LOG_FAILURE(GetLastError());
+		return false;
+	}
+
+	// This might be needed for retricted tokens...
+	DWORD dwRes = SetTokenDefaultDACL(hToken);
+	if (dwRes != ERROR_SUCCESS)
+	{
+		CloseHandle(hToken);
 		return false;
 	}
 
@@ -1008,14 +1106,14 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigne
 			(LPWSTR)&lpMsgBuf,
 			0,	NULL))
 		{
-			ACE_ERROR((LM_ERROR,L"%W:%u: %W\n",pszFile,nLine,(LPWSTR)lpMsgBuf));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%W:%u: %s\n"),pszFile,nLine,(LPWSTR)lpMsgBuf));
 
 			// Free the buffer.
 			LocalFree(lpMsgBuf);
 		}
 		else
 		{
-			ACE_ERROR((LM_ERROR,L"%W:%u: Unknown system err %#x\n",pszFile,nLine,err));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%W:%u: Unknown system err %#x\n"),pszFile,nLine,err));
 		}
 	}
 
@@ -1039,12 +1137,12 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 		0,                         // usri2_password_age;
 		USER_PRIV_USER,            // usri2_priv;
 		NULL,                      // usri2_home_dir;
-		L"This account is used by the OmegaOnline sandbox to control access to system resources", // usri2_comment;
+		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_comment;
 		UF_SCRIPT | UF_PASSWD_CANT_CHANGE | UF_DONT_EXPIRE_PASSWD | UF_NORMAL_ACCOUNT, // usri2_flags;
 		NULL,                      // usri2_script_path;
 		0,                         // usri2_auth_flags;
 		L"Omega Online sandbox user account",   // usri2_full_name;
-		L"This account is used by the OmegaOnline sandbox to control access to system resources", // usri2_usr_comment;
+		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_usr_comment;
 		0,                         // usri2_parms;
 		NULL,                      // usri2_workstations;
 		0,                         // usri2_last_logon;
@@ -1172,7 +1270,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
 
 	ACE_INT64 key = 0;
-	if (Manager::get_registry()->create_key(key,"Server\\Sandbox",false,0,0) != 0)
+	if (reg_root->create_key(key,"Server\\Sandbox",false,0,0) != 0)
 		return false;
 
 	err = reg_root->set_string_value(key,L"UserName",info.usri2_name);
@@ -1429,13 +1527,15 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 
 bool Root::SpawnedProcess::unsafe_sandbox()
 {
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+
 	// Get the user name and pwd...
 	ACE_INT64 key = 0;
-	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
 		return false;
 
 	ACE_CDR::LongLong v = 0;
-	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
+	if (reg_root->get_integer_value(key,"Unsafe",0,v) != 0)
 	{
 #if defined(OMEGA_DEBUG)
 		return IsDebuggerPresent() ? true : false;

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -248,8 +248,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
-#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsIn,name
 #define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
@@ -272,8 +272,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_WRITE_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
-#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_II(t,name)
@@ -295,8 +295,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_II(t,name)
@@ -329,7 +329,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_STUB_METHOD,methods,0)
 
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, IFormattedStream_Safe* __wire__pParamsIn, IFormattedStream_Safe* __wire__pParamsOut) \
+	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, IMessage_Safe* __wire__pParamsIn, IMessage_Safe* __wire__pParamsOut) \
 	{ \
 		OMEGA_UNUSED_ARG(__wire__pParam); OMEGA_UNUSED_ARG(__wire__pParamsIn); OMEGA_UNUSED_ARG(__wire__pParamsOut); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
@@ -347,7 +347,7 @@
 	}
 
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, IFormattedStream_Safe* __wire__pParamsIn, IFormattedStream_Safe* __wire__pParamsOut) \
+	static IException_Safe* OMEGA_CONCAT(name,_Wire)(void* __wire__pParam, IMessage_Safe* __wire__pParamsIn, IMessage_Safe* __wire__pParamsOut) \
 	{ \
 		OMEGA_UNUSED_ARG(__wire__pParam); OMEGA_UNUSED_ARG(__wire__pParamsIn); OMEGA_UNUSED_ARG(__wire__pParamsOut); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
@@ -358,7 +358,7 @@
 		if (__wire__pException) return __wire__pException; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
-		__wire__pException = marshal_info<ret_type>::wire_type::write(static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_RetVal)); \
+		__wire__pException = marshal_info<ret_type>::wire_type::write(L"$retval",static_cast<IObject_WireStub<I>*>(__wire__pParam)->m_pManager,__wire__pParamsOut,OMEGA_CONCAT(name,_RetVal)); \
 		if (__wire__pException) goto __wire_Cleanup; return 0; \
 		__wire_Cleanup: \
 		IException_Safe* __wire__pException2 = 0; OMEGA_UNUSED_ARG(__wire__pException2); \
@@ -408,7 +408,7 @@
 			} \
 			return Base::SupportsInterface_Safe(pbSupports,piid); \
 		} \
-		virtual IException_Safe* Internal_Invoke_Safe(uint32_t method_id, IFormattedStream_Safe* pParamsIn, IFormattedStream_Safe* pParamsOut) \
+		virtual IException_Safe* Internal_Invoke_Safe(uint32_t method_id, IMessage_Safe* pParamsIn, IMessage_Safe* pParamsOut) \
 		{ \
 			static const typename Base::MethodTableEntry MethodTable[] = \
 			{ \
@@ -468,8 +468,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_READ_PROXY_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(this->m_pManager,__wire__pParamsIn,name
-#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(this->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_pManager,__wire__pParamsIn,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_pManager,__wire__pParamsIn,name
 #define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_II(t,name)
@@ -490,8 +490,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_READ_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(this->m_pManager,__wire__pParamsOut,name
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(this->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_II
@@ -514,8 +514,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(this->m_pManager,__wire__pParamsOut,name
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(this->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_pManager,__wire__pParamsOut,name
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_pManager,__wire__pParamsOut,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_II(t,name)
@@ -538,18 +538,21 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)) \
 	{ \
-		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsOut; \
-		IException_Safe* __wire__pException = this->CreateOutputStream(__wire__pParamsOut); \
-		if (__wire__pException) \
-			return __wire__pException; \
+		auto_iface_safe_ptr<IMessage_Safe> __wire__pParamsOut; \
+		IException_Safe* __wire__pException = this->CreateMessage(__wire__pParamsOut); \
+		if (__wire__pException) return __wire__pException; \
+		__wire__pException = __wire__pParamsOut->WriteStructStart_Safe(L"ipc_request",L"$ipc_request_type"); \
+		if (__wire__pException) return __wire__pException; \
 		__wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
 		if (__wire__pException) return __wire__pException; \
-		__wire__pException = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		__wire__pException = wire_write(L"$method_id",__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		if (__wire__pException) return __wire__pException; \
-		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsIn; \
+		auto_iface_safe_ptr<IMessage_Safe> __wire__pParamsIn; \
 		IException_Safe* __wire__pException2 = 0; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
+		__wire__pException = __wire__pParamsOut->WriteStructEnd_Safe(L"ipc_request"); \
+		if (__wire__pException) goto __wire_Cleanup; \
 		__wire__pException = this->SendAndReceive(__wire__pException2,attribs,__wire__pParamsOut,__wire__pParamsIn,timeout); \
 		if (__wire__pException) goto __wire_Cleanup; \
 		if (__wire__pException2) return __wire__pException2; \
@@ -557,9 +560,10 @@
 		return 0; \
 		__wire_Cleanup: \
 		uint32_t key1; guid_t key2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key2); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
+		__wire__pException2 = __wire__pParamsOut->ReadStructStart_Safe(L"ipc_request",L"$ipc_request_type"); if (__wire__pException2) return __wire__pException2; \
+		__wire__pException2 = wire_read(L"$stub_id",__wire__pParamsOut,key1); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
+		__wire__pException2 = wire_read(L"$iid",__wire__pParamsOut,key2); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
+		__wire__pException2 = wire_read(L"$method_id",__wire__pParamsOut,key1); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } \
 		OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
 		return __wire__pException; \
 	} \
@@ -568,28 +572,32 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
 	{ \
-		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsOut; \
-		IException_Safe* __wire__pException = this->CreateOutputStream(__wire__pParamsOut); \
-		if (__wire__pException) \
-			return __wire__pException; \
+		auto_iface_safe_ptr<IMessage_Safe> __wire__pParamsOut; \
+		IException_Safe* __wire__pException = this->CreateMessage(__wire__pParamsOut); \
+		if (__wire__pException) return __wire__pException; \
+		__wire__pException = __wire__pParamsOut->WriteStructStart_Safe(L"ipc_request",L"$ipc_request_type"); \
+		if (__wire__pException) return __wire__pException; \
 		__wire__pException = this->WriteKey(__wire__pParamsOut,this_iid()); \
 		if (__wire__pException) return __wire__pException; \
-		__wire__pException = wire_write(__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
+		__wire__pException = wire_write(L"$method_id",__wire__pParamsOut,OMEGA_CONCAT(name,_MethodId)); \
 		if (__wire__pException) return __wire__pException; \
-		auto_iface_safe_ptr<IFormattedStream_Safe> __wire__pParamsIn; \
+		auto_iface_safe_ptr<IMessage_Safe> __wire__pParamsIn; \
 		IException_Safe* __wire__pException2 = 0; \
 		size_t __wire_unpack_count = 0; OMEGA_UNUSED_ARG(__wire_unpack_count); \
 		OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
+		__wire__pException = __wire__pParamsOut->WriteStructEnd_Safe(L"ipc_request"); \
+		if (__wire__pException) goto __wire_Cleanup; \
 		__wire__pException = this->SendAndReceive(__wire__pException2,attribs,__wire__pParamsOut,__wire__pParamsIn,timeout); \
 		if (__wire__pException) goto __wire_Cleanup; \
 		if (__wire__pException2) return __wire__pException2; \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-		return marshal_info<ret_type>::wire_type::read(this->m_pManager,__wire__pParamsIn,*OMEGA_CONCAT(name,_RetVal)); \
+		return marshal_info<ret_type>::wire_type::read(L"$retval",this->m_pManager,__wire__pParamsIn,*OMEGA_CONCAT(name,_RetVal)); \
 		__wire_Cleanup: \
 		uint32_t key1; guid_t key2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) return __wire__pException2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key2); if (__wire__pException2) return __wire__pException2; \
-		__wire__pException2 = wire_read(__wire__pParamsOut,key1); if (__wire__pException2) return __wire__pException2; \
+		__wire__pException2 = __wire__pParamsOut->ReadStructStart_Safe(L"ipc_request",L"$ipc_request_type"); if (__wire__pException2) return __wire__pException2; \
+		__wire__pException2 = wire_read(L"$stub_id",__wire__pParamsOut,key1); if (__wire__pException2) return __wire__pException2; \
+		__wire__pException2 = wire_read(L"$iid",__wire__pParamsOut,key2); if (__wire__pException2) return __wire__pException2; \
+		__wire__pException2 = wire_read(L"$method_id",__wire__pParamsOut,key1); if (__wire__pException2) return __wire__pException2; \
 		OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
 		return __wire__pException; \
 	} \
@@ -654,7 +662,6 @@
 	OMEGA_DECLARE_PROXY(name,n_space,name,methods)
 	
 #define OMEGA_DEFINE_INTERNAL_INTERFACE_PART2(n_space,name,methods) \
-	OMEGA_QI_MAGIC(n_space,name) \
 	OMEGA_DECLARE_WIRE_STUB(name,n_space,name,methods) \
 	OMEGA_DECLARE_WIRE_PROXY(name,n_space,name,methods) \
 	OMEGA_WIRE_MAGIC(n_space,name)
@@ -689,10 +696,10 @@
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
 
 #define OMEGA_METHOD_VOID(name,param_count,params) \
-	(DECLARED_METHOD_VOID(Omega::Remoting::synchronous,0,name,param_count,params))
+	(DECLARED_METHOD_VOID(Omega::Remoting::Synchronous,0,name,param_count,params))
 
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
-	(DECLARED_METHOD(Omega::Remoting::synchronous,0,ret_type,name,param_count,params))
+	(DECLARED_METHOD(Omega::Remoting::Synchronous,0,ret_type,name,param_count,params))
 
 #define OMEGA_METHOD_EX_VOID(attribs,timeout,name,param_count,params) \
 	(DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params))

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,4 +92,3 @@ private:
 }
 
 #endif // OOSERVER_REGISTRY_HIVE_H_INCLUDED_
-

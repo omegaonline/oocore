@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -33,79 +33,101 @@ OOCore::Channel::Channel() :
 {
 }
 
-void OOCore::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags)
+void OOCore::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid, Omega::Remoting::IObjectManager* pOM)
 {
 	m_channel_id = channel_id;
 	m_marshal_flags = marshal_flags;
+	m_message_oid = message_oid;
+	m_pOM = pOM;
+	System::PinObjectPointer(m_pOM);
 }
 
 void OOCore::Channel::disconnect()
 {
 	m_channel_id = 0;
+	System::UnpinObjectPointer(m_pOM);
+	m_pOM = 0;
 }
 
-IO::IFormattedStream* OOCore::Channel::CreateOutputStream()
+Remoting::IMessage* OOCore::Channel::CreateMessage()
 {
 	if (!m_channel_id)
 		OMEGA_THROW(ECONNRESET);
 
-	// Create a fresh OutputCDR
-	ObjectPtr<ObjectImpl<OutputCDR> > ptrOutput = ObjectImpl<OutputCDR>::CreateInstancePtr();
-	return ptrOutput.QueryInterface<IO::IFormattedStream>();
+	if (m_message_oid == guid_t::Null())
+	{
+		// Create a fresh OutputCDR
+		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrOutput = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+		return ptrOutput.QueryInterface<Remoting::IMessage>();
+	}
+	else
+	{
+		// Create a fresh one
+		ObjectPtr<Remoting::IMessage> ptrMessage(m_message_oid,Activation::InProcess);
+		return ptrMessage.AddRef();
+	}
 }
 
-IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, IO::IFormattedStream* pSend, IO::IFormattedStream*& pRecv,  uint16_t timeout)
+void OOCore::Channel::Reflect(Remoting::IMessage* pMessage)
 {
 	if (!m_channel_id)
 		OMEGA_THROW(ECONNRESET);
 
-	// QI pStream for our private interface
-	ObjectPtr<IOutputCDR> ptrOutput;
-	ptrOutput.Attach(static_cast<IOutputCDR*>(pSend->QueryInterface(OMEGA_UUIDOF(IOutputCDR))));
+	ACE_InputCDR* response = 0;
+	if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,0,response,0,UserSession::Message::synchronous | UserSession::Message::channel_reflect))
+		OMEGA_THROW(ACE_OS::last_error());
+
+	ACE_CDR::ULong other_end = 0;
+	response->read_ulong(other_end);
+
+	// Return in the same format as we marshal
+	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
+	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
+}
+
+IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv,  uint32_t timeout)
+{
+	if (!m_channel_id)
+		OMEGA_THROW(ECONNRESET);
+
+	// We need to wrap the message
+	ObjectPtr<ObjectImpl<OutputCDR> > ptrEnvelope = ObjectImpl<OutputCDR>::CreateInstancePtr();
+	m_pOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+
+	// QI pSend for our private interface
+	ObjectPtr<IMessageBlockHolder> ptrOutput;
+	ptrOutput.Attach(static_cast<IMessageBlockHolder*>(ptrEnvelope->QueryInterface(OMEGA_UUIDOF(IMessageBlockHolder))));
 	if (!ptrOutput)
+	{
+		m_pOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
 		OMEGA_THROW(EINVAL);
+	}
 
 	// Get the message block
-	ACE_Message_Block* request = static_cast<ACE_Message_Block*>(ptrOutput->GetMessageBlock());
+	const ACE_Message_Block* request = static_cast<const ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
 	ACE_InputCDR* response = 0;
 	if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 	{
-		request->release();
-		OOCORE_THROW_LASTERROR();
+		if (m_pOM)
+			m_pOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+
+		OMEGA_THROW(ACE_OS::last_error());
 	}
-	
-	// Done with request
-	request->release();
 
 	try
 	{
 		if (response)
 		{
-			// Unpack and validate response...
-			ACE_CDR::Octet ret_code = 0;
-			if (!response->read_octet(ret_code))
-				OOCORE_THROW_LASTERROR();
-
-			// ret_code must match the values in UserSession::process_request
-			if (ret_code == 1)
-			{
-				ACE_CString strDesc;
-				if (!response->read_string(strDesc))
-					OOCORE_THROW_LASTERROR();
-
-				ACE_CString strSrc;
-				if (!response->read_string(strSrc))
-					OOCORE_THROW_LASTERROR();
-
-				throw ISystemException::Create(string_t(strDesc.c_str(),true),string_t(strSrc.c_str(),true));
-			}
-			
 			// Wrap the response
 			ObjectPtr<ObjectImpl<InputCDR> > ptrRecv = ObjectImpl<InputCDR>::CreateInstancePtr();
 			ptrRecv->init(*response);
 			delete response;
-			pRecv = ptrRecv.Detach();
+
+			// Unwrap the payload...
+			IObject* pRet = 0;
+			m_pOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_UUIDOF(Remoting::IMessage),pRet);
+			pRecv = static_cast<Remoting::IMessage*>(pRet);
 		}
 	}
 	catch (IException* pE)
@@ -132,49 +154,97 @@ uint32_t OOCore::Channel::GetSource()
 	return m_channel_id;
 }
 
-guid_t OOCore::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t flags)
+guid_t OOCore::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
 {
-	// We cannot custom marshal to another machine
-	if (flags == Remoting::another_machine)
-		return guid_t::Null();
-
 	return OID_ChannelMarshalFactory;
 }
 
-void OOCore::Channel::MarshalInterface(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::Channel::MarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
-	pStream->WriteUInt32(m_channel_id);
+	pMessage->WriteUInt32s(L"m_channel_id",1,&m_channel_id);
+
+	printf("Marshalling %#x\n",m_channel_id);
+
+	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
 }
 
-void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, IO::IFormattedStream* pStream, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
-	pStream->ReadUInt32();
+	uint32_t c;
+	if (pMessage->ReadUInt32s(L"m_channel_id",1,&c) != 1)
+		OMEGA_THROW(EIO);
+
+	guid_t g;
+	if (pMessage->ReadGuids(L"m_message_oid",1,&g) != 1)
+		OMEGA_THROW(EIO);
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
-void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, IO::IFormattedStream* pStream, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
-	try
+	if (OOCore::HostedByOOServer())
 	{
 		// This must match OOServer::User::OID_ChannelMarshalFactory
 		static const guid_t oid = guid_t::FromString(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess | Activation::DontLaunch);
 
-		// If we have a pointer by now then we are actually running in the OOServer.exe, 
+		// If we have a pointer by now then we are actually running in the OOServer.exe,
 		// and can therefore do our specialized unmarshalling...
-		return ptrMarshalFactory->UnmarshalInterface(pObjectManager,pStream,iid,flags,pObject);
+		return ptrMarshalFactory->UnmarshalInterface(pObjectManager,pMessage,iid,flags,pObject);
 	}
-	catch (Activation::IOidNotFoundException* pE)
+	else
 	{
-		// We can continue if this happens
-		pE->Release();
-	}
-		
-	// If we get here, then we are loaded into a different exe from OOServer,
-	// therefore we do simple unmarshalling
-	ACE_CDR::ULong channel_id = pStream->ReadUInt32();
+		// If we get here, then we are loaded into a different exe from OOServer,
+		// therefore we do simple unmarshalling
 	
-	// Create a new object manager (and channel)
-	pObject = UserSession::USER_SESSION::instance()->create_object_manager(channel_id)->QueryInterface(iid);
+		ACE_CDR::ULong channel_id;
+		if (pMessage->ReadUInt32s(L"m_channel_id",1,&channel_id) != 1)
+			OMEGA_THROW(EIO);
+
+		guid_t message_oid;
+		if (pMessage->ReadGuids(L"m_message_oid",1,&message_oid) != 1)
+			OMEGA_THROW(EIO);
+
+		// Create a new object manager (and channel)
+		pObject = UserSession::create_object_manager(channel_id,message_oid)->QueryInterface(iid);
+	}
+}
+
+OMEGA_DEFINE_OID(OOCore,OID_OutputCDRMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");
+
+void OOCore::OutputCDRMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+{
+	ACE_Message_Block* mb = 0;
+
+	ObjectPtr<IMessageBlockHolder> ptrMB(pMessage);
+	if (ptrMB)
+	{
+		ACE_InputCDR* pInput = static_cast<ACE_InputCDR*>(ptrMB->GetInputCDR());
+
+		ACE_CDR::ULong len = 0;
+		pInput->read_ulong(len);
+
+		pInput->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
+
+		mb = pInput->start()->duplicate();
+		mb->wr_ptr(mb->rd_ptr() + len);
+		pInput->skip_bytes((ACE_CDR::ULong)len);
+	}
+	else
+	{
+		Omega::uint64_t sz;
+		pMessage->ReadUInt64s(L"length",1,&sz);
+
+		OMEGA_NEW(mb,ACE_Message_Block(static_cast<size_t>(sz)));
+		pMessage->ReadBytes(L"data",static_cast<size_t>(sz),(Omega::byte_t*)mb->wr_ptr());
+		mb->wr_ptr(static_cast<size_t>(sz));
+	}
+
+	ObjectPtr<ObjectImpl<InputCDR> > ptrInput = ObjectImpl<InputCDR>::CreateInstancePtr();
+	ACE_InputCDR input(mb);
+	mb->release();
+
+	ptrInput->init(input);
+	pObject = ptrInput->QueryInterface(iid);
 }

@@ -6,8 +6,10 @@
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Debug_Win32">
+			<Target title="Debug Win32">
+				<Option platforms="Windows;" />
 				<Option output="../../bin/Debug/CoreTests_mingw" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -29,14 +31,16 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="../../src/OOCore/debug/libOOCore.a" />
+					<Add library="../../bin/debug/libOOCore.a" />
 					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
-			<Target title="Release_Win32">
+			<Target title="Release Win32">
+				<Option platforms="Windows;" />
 				<Option output="../../bin/CoreTests_mingw" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -61,13 +65,14 @@
 				<Linker>
 					<Add option="-s" />
 					<Add option="-mthreads" />
-					<Add library="../../src/OOCore/debug/libOOCore.a" />
+					<Add library="../../bin/libOOCore.a" />
 					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
-			<Target title="Debug_Unix">
+			<Target title="Debug Unix">
+				<Option platforms="Unix;Mac;" />
 				<Option output="../../bin/Debug/coretests" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
@@ -88,10 +93,35 @@
 					<Add library="OOCored" />
 				</Linker>
 			</Target>
+			<Target title="Release Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../bin/coretests" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
+				<Option object_output="Release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-Os" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="-DNDEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="OOCore" />
+				</Linker>
+			</Target>
 		</Build>
 		<Unit filename="Test.h" />
 		<Unit filename="core.cpp" />
 		<Unit filename="interfaces.cpp" />
+		<Unit filename="interfaces.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="net.cpp" />
 		<Unit filename="registry.cpp" />

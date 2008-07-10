@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -166,6 +166,10 @@ namespace Omega
 		inline string_t& Clear();
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
+		inline string_t TrimLeft(wchar_t c = L' ') const;
+		inline string_t TrimLeft(const wchar_t* sz) const;
+		inline string_t TrimRight(wchar_t c = L' ') const;
+		inline string_t TrimRight(const wchar_t* sz) const;
 
 		inline static string_t Format(const wchar_t* pszFormat, ...);
 
@@ -195,8 +199,11 @@ namespace Omega
 		inline bool operator==(const string_t& str) const;
 		inline bool operator!=(const guid_t& rhs) const;
 		inline bool operator<(const guid_t& rhs) const;
+		inline bool operator>(const guid_t& rhs) const;
+		inline int Compare(const guid_t& rhs) const;
 
 		inline string_t ToString() const;
+		
 
 		inline static guid_t FromString(const wchar_t* sz);
 		inline static guid_t FromString(const string_t& str);

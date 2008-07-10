@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,6 +76,8 @@ namespace Root
 		static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD);
 		static DWORD CreateSD(PACL pACL, void*& pSD);
 		static DWORD SetTokenDefaultDACL(HANDLE hToken);
+		static bool RestrictToken(HANDLE& hToken);
+		static void EnableUserAccessToFile(LPWSTR pszPath, TOKEN_USER* pUser);
 
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
 
@@ -86,6 +88,9 @@ namespace Root
 		pid_t	m_pid;
 
 		bool CleanEnvironment();
+		bool close_all_fds();
+		bool linux_close_all_fds();
+		bool posix_close_all_fds(long max_fd);
 
 #endif // ACE_WIN32
 

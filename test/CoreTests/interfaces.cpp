@@ -2,7 +2,12 @@
 #include "./interfaces.h"
 #include "TestLibrary/TestLibrary.h"
 
+#include "../src/OOCore/Server.h"
+
 #include "Test.h"
+
+BEGIN_PROCESS_OBJECT_MAP(L"CoreTests")
+END_PROCESS_OBJECT_MAP()
 
 static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 {
@@ -31,15 +36,15 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 	return true;
 }
 
-static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
+static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject, const wchar_t* pszEndpoint)
 {
 	int err = system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str());
 	if (err != 0)
 		return false;
 
-	OTL::ObjectPtr<Test::Iface> iface(pszObject);
+	OTL::ObjectPtr<Test::Iface> iface(pszObject,Omega::Activation::Any,0,pszEndpoint);
 	do_interface_tests(iface);
-	
+
 	Omega::string_t strXML =
 		L"<?xml version=\"1.0\" ?>"
 		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
@@ -55,12 +60,12 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
+	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
 	do_interface_tests(iface);
 	
 	Omega::Registry::AddXML(strXML,false);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
 	do_interface_tests(iface);
 
 	strXML =
@@ -75,12 +80,12 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
+	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
 	do_interface_tests(iface);
 	
 	Omega::Registry::AddXML(strXML,false);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
 	do_interface_tests(iface);
 	
 	TEST(system((Omega::string_t(L"OORegister -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
@@ -88,67 +93,73 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject)
 	return true;
 }
 
-static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObject)
+static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObject, const wchar_t* pszEndpoint)
 {
 	int err = system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
 	if (err != 0)
 		return false;
 
-	OTL::ObjectPtr<Test::Iface> iface(pszObject);
-	do_interface_tests(iface);
-	
-	Omega::string_t strXML =
-		L"<?xml version=\"1.0\" ?>"
-		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-			L"<key name=\"\\Objects\">"
-				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
-					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
+	OTL::ObjectPtr<Test::Iface> iface;
+
+	if (!pszEndpoint)
+	{
+		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(iface);
+		
+		Omega::string_t strXML =
+			L"<?xml version=\"1.0\" ?>"
+			L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+				L"<key name=\"\\Objects\">"
+					L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
+						L"<value name=\"CurrentVersion\">%OBJECT%</value>"
+					L"</key>"
 				L"</key>"
-			L"</key>"
-		L"</root>";
+			L"</root>";
 
-	Omega::string_t strSubsts = L"OBJECT=";
-	strSubsts += pszObject;
+		Omega::string_t strSubsts = L"OBJECT=";
+		strSubsts += pszObject;
 
-	Omega::Registry::AddXML(strXML,true,strSubsts);
-	
-	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
-	do_interface_tests(iface);
-	
-	Omega::Registry::AddXML(strXML,false);
-	
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
-	do_interface_tests(iface);
+		Omega::Registry::AddXML(strXML,true,strSubsts);
+		
+		iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(iface);
+		
+		Omega::Registry::AddXML(strXML,false);
+		
+		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(iface);
 
-	strXML =
-		L"<?xml version=\"1.0\" ?>"
-		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-			L"<key name=\"\\Local User\\Objects\">"
-				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
-					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
+		strXML =
+			L"<?xml version=\"1.0\" ?>"
+			L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
+				L"<key name=\"\\Local User\\Objects\">"
+					L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
+						L"<value name=\"CurrentVersion\">%OBJECT%</value>"
+					L"</key>"
 				L"</key>"
-			L"</key>"
-		L"</root>";
+			L"</root>";
 
-	Omega::Registry::AddXML(strXML,true,strSubsts);
+		Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest");
-	do_interface_tests(iface);
-	
-	Omega::Registry::AddXML(strXML,false);
+		iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(iface);
+		
+		Omega::Registry::AddXML(strXML,false);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
-	do_interface_tests(iface);
+		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(iface);
 
-	OTL::ObjectPtr<Omega::Registry::IRegistryKey> ptrReg(L"\\Applications\\TestProcess");
-	ptrReg->SetIntegerValue(L"Public",0);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
+		ptrReg->SetIntegerValue(L"Public",0);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
-	do_interface_tests(iface);
+		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(iface);
+	}
 
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
 	ptrReg->SetIntegerValue(L"Public",1);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject);
+	iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
 	do_interface_tests(iface);
 
 	TEST(system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
@@ -156,16 +167,72 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 	return true;
 }
 
+static bool do_remote_test()
+{
+	OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
+	ptrOM.Attach(Omega::Remoting::OpenRemoteOM(L"http://localhost:8901/"));
+	if (!ptrOM)
+		return false;
+
+	// Create a Test object
+	Omega::IObject* pFactory = 0;
+	ptrOM->GetRemoteInstance(Omega::Activation::NameToOid(L"Test.Library.msvc"),Omega::Activation::Any,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pFactory);
+
+	OTL::ObjectPtr<Omega::Activation::IObjectFactory> ptrFac;
+	ptrFac.Attach(static_cast<Omega::Activation::IObjectFactory*>(pFactory));
+
+	Omega::IObject* pIFace = 0;
+	ptrFac->CreateInstance(0,OMEGA_UUIDOF(Test::Iface),pIFace);
+
+	OTL::ObjectPtr<Test::Iface> ptrTest;
+	ptrTest.Attach(static_cast<Test::Iface*>(pIFace));
+
+	do_interface_tests(ptrTest);
+
+	try
+	{
+		// Try something sneaky
+		Omega::IObject* pIPS = 0;
+		ptrOM->GetRemoteInstance(Omega::Remoting::OID_InterProcessService,Omega::Activation::InProcess | Omega::Activation::DontLaunch,OMEGA_UUIDOF(Omega::Remoting::IInterProcessService),pIPS);
+		pIPS->Release();
+		return false;
+	}
+	catch (Omega::Activation::IOidNotFoundException* pE)
+	{
+		// This should be the error
+		pE->Release();
+		TEST(true);
+	}
+
+	return true;
+}
+
 bool interface_tests()
 {
 #if defined(OMEGA_WIN32)
-	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc");
-	//do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw");
+	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",0);
+	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",0);
 #else
-	do_library_test(L"TestLibrary",L"Test.Library");
+	do_library_test(L"TestLibrary",L"Test.Library",0);
 #endif
 
-	do_process_test(L"TestProcess",L"Test.Process");
+	do_process_test(L"TestProcess",L"Test.Process",0);
+
+	return true;
+}
+
+bool interface_tests2()
+{
+	const wchar_t host[] = L"http://localhost:8901";
+
+#if defined(OMEGA_WIN32)
+	//do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",host);
+	//do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
+#else
+	do_library_test(L"TestLibrary",L"Test.Library",host);
+#endif
+
+	do_process_test(L"TestProcess",L"Test.Process",host);
 
 	return true;
 }

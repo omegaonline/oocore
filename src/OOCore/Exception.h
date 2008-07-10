@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -36,12 +36,16 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
 		{
-			this->m_strDesc = pStream->ReadString();
-			this->m_strSource = pStream->ReadString();
+			if (pMessage->ReadStrings(L"m_strDesc",1,&this->m_strDesc) != 1)
+				OMEGA_THROW(EIO);
+
+			if (pMessage->ReadStrings(L"m_strSource",1,&this->m_strSource) != 1)
+				OMEGA_THROW(EIO);
+
 			Omega::IObject* pE = 0;
-			pManager->UnmarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),pE);
+			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,OMEGA_UUIDOF(Omega::IException),pE);
 			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pE));
 		}
 
@@ -68,18 +72,23 @@ namespace OOCore
 				return Omega::guid_t::Null();
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			pStream->WriteString(this->m_strDesc);
-			pStream->WriteString(this->m_strSource);
-			pManager->MarshalInterface(pStream,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
+			pMessage->WriteStrings(L"m_strDesc",1,&this->m_strDesc);
+			pMessage->WriteStrings(L"m_strSource",1,&this->m_strSource);
+			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			pStream->ReadString();
-			pStream->ReadString();
-			pManager->ReleaseMarshalData(pStream,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
+			Omega::string_t s;
+			if (pMessage->ReadStrings(L"m_strDesc",1,&s) != 1)
+				OMEGA_THROW(EIO);
+
+			if (pMessage->ReadStrings(L"m_strSource",1,&s) != 1)
+				OMEGA_THROW(EIO);
+
+			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
 		}
 	};
 
@@ -95,10 +104,10 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 		{
 			OTL::ObjectPtr<OTL::ObjectImpl<E> > ptrE = OTL::ObjectImpl<E>::CreateInstancePtr();
-			ptrE->UnmarshalInterface(pObjectManager,pStream,flags);
+			ptrE->UnmarshalInterface(pObjectManager,pMessage,flags);
 			pObject = ptrE->QueryInterface(iid);
 		}
 	};
@@ -120,22 +129,25 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t flags)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::UnmarshalInterface(pObjectManager,pStream,flags);
-			m_errno = pStream->ReadInt32();
+			baseClass::UnmarshalInterface(pObjectManager,pMessage,flags);
+			if (pMessage->ReadUInt32s(L"m_errno",1,&m_errno) != 1)
+				OMEGA_THROW(EIO);
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::MarshalInterface(pManager,pStream,iid,flags);
-			pStream->WriteUInt32(m_errno);
+			baseClass::MarshalInterface(pManager,pMessage,iid,flags);
+			pMessage->WriteUInt32s(L"m_errno",1,&m_errno);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::ReleaseMarshalData(pManager,pStream,iid,flags);
-			pStream->ReadUInt32();
+			baseClass::ReleaseMarshalData(pManager,pMessage,iid,flags);
+			Omega::uint32_t e;
+			if (pMessage->ReadUInt32s(L"m_errno",1,&e) != 1)
+				OMEGA_THROW(EIO);
 		}
 
 	// ISystemException memebers
@@ -147,7 +159,7 @@ namespace OOCore
 	};
 
 	class SystemExceptionMarshalFactoryImpl :
-		public OTL::AutoObjectFactoryNoAggregation<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory>,
+		public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::InProcess>,
 		public ExceptionMarshalFactoryImpl<SystemException>
 	{
 	};
@@ -163,22 +175,25 @@ namespace OOCore
 			INTERFACE_ENTRY_CHAIN(baseClass)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::IO::IFormattedStream* pStream, Omega::Remoting::MarshalFlags_t flags)
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::UnmarshalInterface(pObjectManager,pStream,flags);
-			m_iid = pStream->ReadGuid();
+			baseClass::UnmarshalInterface(pObjectManager,pMessage,flags);
+			if (pMessage->ReadGuids(L"m_iid",1,&m_iid) != 1)
+				OMEGA_THROW(EIO);
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::MarshalInterface(pManager,pStream,iid,flags);
-			pStream->WriteGuid(m_iid);
+			baseClass::MarshalInterface(pManager,pMessage,iid,flags);
+			pMessage->WriteGuids(L"m_iid",1,&m_iid);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::IO::IFormattedStream* pStream, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
-			baseClass::ReleaseMarshalData(pManager,pStream,iid,flags);
-			pStream->ReadGuid();
+			baseClass::ReleaseMarshalData(pManager,pMessage,iid,flags);
+			Omega::guid_t g;
+			if (pMessage->ReadGuids(L"m_iid",1,&g) != 1)
+				OMEGA_THROW(EIO);
 		}
 
 	// INoInterfaceException members
@@ -190,7 +205,7 @@ namespace OOCore
 	};
 
 	class NoInterfaceExceptionMarshalFactoryImpl :
-		public OTL::AutoObjectFactoryNoAggregation<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory>,
+		public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::InProcess>,
 		public ExceptionMarshalFactoryImpl<NoInterfaceException>
 	{
 	};

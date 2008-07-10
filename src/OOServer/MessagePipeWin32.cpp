@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,7 +47,9 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mute
 {
 	ACE_TString strPipe = ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str());
 
-	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+	MessagePipe* p = 0;
+	ACE_NEW_RETURN(p,MessagePipe,-1);
+	pipe.reset(p);
 
 	ACE_Time_Value val(30);
 	if (!wait)
@@ -109,7 +111,7 @@ ssize_t Root::MessagePipe::send(const void* buf, size_t len, size_t* sent)
 	return ACE_OS::write_n(m_hWrite,buf,len,sent);
 }
 
-ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, ACE_Time_Value*, size_t* sent)
+ssize_t Root::MessagePipe::send(const ACE_Message_Block* mb, size_t* sent)
 {
 	return ACE::write_n(m_hWrite,mb,sent);
 }
@@ -312,7 +314,9 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, HANDLE hToken)
 
 int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout)
 {
-	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+	MessagePipe* p = 0;
+	ACE_NEW_RETURN(p,MessagePipe,-1);
+	pipe.reset(p);
 
 	ACE_Time_Value val(30);
 	if (!timeout)

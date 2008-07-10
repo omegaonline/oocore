@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -51,8 +51,11 @@
 
 #define OMEGA_HAS_UUIDOF
 
-// Warning 4127 is rubbish!
+// conditional expression is constant
 #pragma warning(disable : 4127)
+
+// 'function' : unreferenced local function has been removed
+#pragma warning(disable : 4505)
 
 #ifndef _DEBUG
 // Optimization sometimes re-orders things causing this error

@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -22,10 +22,12 @@
 #include "OOCore_precomp.h"
 
 #include "./UserSession.h"
+#include "./Activation.h"
 #include "./StdObjectManager.h"
 #include "./WireProxy.h"
 #include "./Channel.h"
 #include "./Exception.h"
+#include "./HttpImpl.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -40,8 +42,10 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::WireProxyMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManagerMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ChannelMarshalFactory)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::OutputCDRMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::SystemExceptionMarshalFactoryImpl)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY(OOCore::HttpRequest,L"Omega.Http.Request")
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
@@ -80,13 +84,11 @@ namespace OOCore
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 {
-	string_t v = string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
-
 #if defined(OMEGA_DEBUG)
-	v += L"\nDebug build";
+	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+#else
+	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 #endif
-
-	return v;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
@@ -106,7 +108,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 			CloseHandle(hDebugEvent);
 		}
 #endif
-
 		// Turn off all ACE logging
 		ACE_Log_Msg::instance()->priority_mask(0,ACE_Log_Msg::PROCESS);
 	}
@@ -123,14 +124,19 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 {
-	if (--OOCore::s_initcount==0)
+	if (OOCore::HostedByOOServer())
+	{
+		// This is a short-cut close for use by the OOServer
+		OOCore::SERVICE_MANAGER::close();
+	}
+	else if (--OOCore::s_initcount==0)
 	{
 		OOCore::UserSession::term();
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify))
 {
 	// Ask the IPS to open the stream...
-	return OOCore::GetInterProcessService()->OpenStream(strEndPoint,pCallback);
+	return OOCore::GetInterProcessService()->OpenStream(strEndpoint,pNotify);
 }

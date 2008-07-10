@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -35,7 +35,8 @@ namespace Omega
 		{
 			InProcess = 1,
 			OutOfProcess = 2,
-			Any = 3,
+			RemoteServer = 4,
+			Any = 7,
 			DontLaunch = 0x10
 		};
 		typedef uint16_t Flags_t;
@@ -43,7 +44,7 @@ namespace Omega
 		enum RegisterFlags
 		{
 			MultipleUse = 0,
-			SingleUse = 1,              // AutoRevoke after 1st GetObject
+			SingleUse = 1,              // Auto Revoke after 1st GetObject
 			MultipleRegistration = 2,   // Allow multiple calls to Register with different flags
 			Suspended = 4
 		};
@@ -101,7 +102,7 @@ namespace Omega
 		};
 		typedef byte_t ValueType_t;
 
-		interface IRegistryKey : public IObject
+		interface IKey : public IObject
 		{
 			enum OpenFlags
 			{
@@ -124,13 +125,13 @@ namespace Omega
 			virtual void SetDescription(const string_t& desc) = 0;
 			virtual void SetValueDescription(const string_t& name, const string_t& desc) = 0;
 			virtual ValueType_t GetValueType(const string_t& name) = 0;
-			virtual IRegistryKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
+			virtual IKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
 			virtual IEnumString* EnumSubKeys() = 0;
 			virtual IEnumString* EnumValues() = 0;
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
 
-			inline static IRegistryKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
+			inline static IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
 		
 		interface INotFoundException : public IException
@@ -164,30 +165,40 @@ namespace Omega
 
 	namespace IO
 	{
-		interface IAsyncStreamCallback : public IObject
+		interface IStream : public IObject
 		{
-			enum SignalType
-			{
-				Read = 0,
-				Written = 1,
-				Closed = 2
-			};
-			typedef byte_t SignalType_t;
+			virtual void ReadBytes(uint64_t& cbBytes, byte_t* val) = 0;
+			virtual void WriteBytes(const uint64_t& cbBytes, const byte_t* val) = 0;
+		};
 
-			virtual void OnSignal(SignalType_t type, uint32_t cbBytes, const byte_t* pData) = 0;
+		interface IAsyncStreamNotify : public IObject
+		{
+			virtual void OnOpened() = 0;
+			virtual void OnRead(const uint64_t& cbBytes, const byte_t* pData) = 0;
+			virtual void OnWritten(const uint64_t& cbBytes) = 0;
+			virtual void OnError(IException* pE) = 0;
+		};
+
+		inline IStream* OpenStream(const string_t& strEndpoint, IAsyncStreamNotify* pNotify = 0);
+	}
+
+	namespace Net
+	{
+		interface IConnectedStream : public IO::IStream
+		{
+			virtual string_t RemoteEndpoint() = 0;
+			virtual string_t LocalEndpoint() = 0;
 		};
 
 		// This may well change!!  You have been warned
 		interface IProtocolHandler : public IObject
 		{
-			virtual IStream* OpenStream(const string_t& strEndPoint, IAsyncStreamCallback* pCallback) = 0;
+			virtual IConnectedStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
 		};
-
-		inline IStream* OpenStream(const string_t& strEndPoint, IAsyncStreamCallback* pCallback = 0);
 	}
 
-	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
-	inline void HandleRequests(uint32_t timeout = (uint32_t)-1);
+	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, const wchar_t* pszEndpoint);
+	inline bool_t HandleRequest(uint32_t timeout = (uint32_t)0);
 }
 
 OMEGA_DEFINE_INTERFACE
@@ -259,7 +270,7 @@ OMEGA_DEFINE_INTERFACE
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::Registry, IRegistryKey, "{F33E828A-BF5E-4c26-A541-BDB2CA736DBD}",
+	Omega::Registry, IKey, "{F33E828A-BF5E-4c26-A541-BDB2CA736DBD}",
 
 	// Methods
 	OMEGA_METHOD(bool_t,IsSubKey,1,((in),const string_t&,key))
@@ -275,7 +286,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(SetDescription,1,((in),const string_t&,desc))
 	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const string_t&,name,(in),const string_t&,desc))
 	OMEGA_METHOD(Registry::ValueType_t,GetValueType,1,((in),const string_t&,name))
-	OMEGA_METHOD(Registry::IRegistryKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IRegistryKey::OpenFlags_t,flags))
+	OMEGA_METHOD(Registry::IKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())
 	OMEGA_METHOD(IEnumString*,EnumValues,0,())
 	OMEGA_METHOD_VOID(DeleteKey,1,((in),const string_t&,strKey))
@@ -325,18 +336,39 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::IO, IAsyncStreamCallback, "{1E587515-AE98-45ef-9E74-497784169F38}",
-	
+	Omega::IO, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}",
+
 	// Methods
-	OMEGA_METHOD_EX_VOID(Remoting::asynchronous,0,OnSignal,3,((in),IO::IAsyncStreamCallback::SignalType_t,type,(in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
+	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint64_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
+	OMEGA_METHOD_VOID(WriteBytes,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::IO, IProtocolHandler, "{76416648-0AFE-4474-BD8F-FEB033F17EAF}",
+	Omega::IO, IAsyncStreamNotify, "{1E587515-AE98-45ef-9E74-497784169F38}",
 	
 	// Methods
-	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndPoint,(in),IO::IAsyncStreamCallback*,pCallback))
+	OMEGA_METHOD_VOID(OnOpened,0,())
+	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,OnRead,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
+	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,OnWritten,1,((in),const uint64_t&,cbBytes))
+	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,OnError,1,((in),IException*,pE))
+)
+
+OMEGA_DEFINE_INTERFACE_DERIVED
+(
+	Omega::Net, IConnectedStream, Omega::IO, IStream, "{C5C3AB92-9127-4bb5-9AA8-AA0953843E5A}",
+	
+	// Methods
+	OMEGA_METHOD(string_t,RemoteEndpoint,0,())
+	OMEGA_METHOD(string_t,LocalEndpoint,0,())
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::Net, IProtocolHandler, "{76416648-0AFE-4474-BD8F-FEB033F17EAF}",
+	
+	// Methods
+	OMEGA_METHOD(Net::IConnectedStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())
@@ -383,30 +415,30 @@ void Omega::Registry::AddXML(const Omega::string_t& strXML, Omega::bool_t bAdd, 
 	Registry_AddXML(strXML,bAdd,strSubstitutions);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::Registry::IRegistryKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IRegistryKey::OpenFlags_t,flags));
-Omega::Registry::IRegistryKey* Omega::Registry::IRegistryKey::OpenKey(const Omega::string_t& key, Omega::Registry::IRegistryKey::OpenFlags_t flags)
+OMEGA_EXPORTED_FUNCTION(Omega::Registry::IKey*,IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IKey::OpenFlags_t,flags));
+Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
 {
 	return IRegistryKey_OpenKey(key,flags);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
-Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid)
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(in),const wchar_t*,pszEndpoint,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid, const wchar_t* pszEndpoint)
 {
 	IObject* pObj = 0;
-	Omega_CreateInstance(oid,flags,pOuter,iid,pObj);
+	Omega_CreateInstance(oid,flags,pOuter,iid,pszEndpoint,pObj);
 	return pObj;
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_HandleRequests,1,((in),const Omega::uint32_t&,timeout));
-void Omega::HandleRequests(uint32_t timeout)
+OMEGA_EXPORTED_FUNCTION(Omega::bool_t,Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
+Omega::bool_t Omega::HandleRequest(Omega::uint32_t timeout)
 {
-	Omega_HandleRequests(timeout);
+	return Omega_HandleRequest(timeout);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndPoint,(in),Omega::IO::IAsyncStreamCallback*,pCallback));
-Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndPoint, Omega::IO::IAsyncStreamCallback* pCallback)
+OMEGA_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify));
+Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify)
 {
-	return Omega_IO_OpenStream(strEndPoint,pCallback);
+	return Omega_IO_OpenStream(strEndpoint,pNotify);
 }
 
 #endif // OOCORE_IFACES_H_INCLUDED_

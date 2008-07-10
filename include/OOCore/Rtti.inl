@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -120,7 +120,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 	}
 }
 
-Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t& iid)
+Omega::IObject* Omega::System::MetaInfo::SafeProxy::ProxyQI(const guid_t& iid, bool bPartialAllowed)
 {
 	if (iid==OMEGA_UUIDOF(IObject) ||
 		iid==OMEGA_UUIDOF(ISafeProxy))
@@ -169,7 +169,15 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::QueryInterface(const guid_t&
 			// New interface required
 			const qi_rtti* pRtti = get_qi_rtti_info(iid);
 			if (!pRtti || !pRtti->pfnCreateSafeProxy)
-				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+			{
+				if (!bPartialAllowed)
+					throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				else
+				{
+					AddRef();
+					return this;
+				}
+			}
 
 			ptrProxy = pRtti->pfnCreateSafeProxy(this,ptrS);
 		}
@@ -249,7 +257,13 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 
 				std::pair<std::map<IObject*,IObject_Safe*>::iterator,bool> p = stub_map.m_map.insert(std::map<IObject*,IObject_Safe*>::value_type(ptrObj,ptrStub));
 				if (!p.second)
-					ptrStub = p.first->second;
+				{
+					auto_iface_safe_ptr<IObject_Safe> p2 = p.first->second;
+
+					guard.Unlock();
+
+					ptrStub = static_cast<IObject_Safe*>(p2);
+				}
 			}
 		}
 	}
@@ -313,7 +327,13 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 
 			std::pair<std::map<IObject_Safe*,ISafeProxy*>::iterator,bool> p = proxy_map.m_map.insert(std::map<IObject_Safe*,ISafeProxy*>::value_type(pObjS,ptrProxy));
 			if (!p.second)
-				ptrProxy = p.first->second;
+			{
+				auto_iface_ptr<ISafeProxy> p2 = p.first->second;
+
+				guard.Unlock();
+
+				ptrProxy = static_cast<ISafeProxy*>(p2);
+			}
 		}
 	}
 	catch (std::exception& e)
@@ -321,24 +341,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 		OMEGA_THROW(e);
 	}
 
-	I* pRet = 0;
-	try
-	{
-		pRet = static_cast<I*>(ptrProxy->QueryInterface(iid));
-	}
-	catch (INoInterfaceException* pE)
-	{
-		const qi_rtti* pRtti = get_qi_rtti_info(iid);
-		if ((!pRtti || !pRtti->pfnCreateSafeProxy) && bPartialAllowed)
-		{
-			pE->Release();
-			pRet = static_cast<I*>(static_cast<IObject*>(ptrProxy));
-			pRet->AddRef();
-		}
-		else
-			throw pE;
-	}
-
+	I* pRet = static_cast<I*>(ptrProxy->ProxyQI(iid,bPartialAllowed));
 	if (!pRet)
 		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
@@ -387,7 +390,7 @@ Omega::string_t Omega::System::MetaInfo::lookup_iid(const guid_t& iid)
 	return pRtti->strName;
 }
 
-bool Omega::PinObjectPointer(IObject* pObject)
+bool Omega::System::PinObjectPointer(IObject* pObject)
 {
 	if (pObject)
 	{
@@ -402,7 +405,7 @@ bool Omega::PinObjectPointer(IObject* pObject)
 	return false;
 }
 
-void Omega::UnpinObjectPointer(IObject* pObject)
+void Omega::System::UnpinObjectPointer(IObject* pObject)
 {
 	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::ISafeProxy))));
 	if (ptrProxy)

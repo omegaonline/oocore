@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,9 +26,10 @@ namespace Root
 {
 	enum RootOpCode
 	{
-		// Root -> User
+		// Root -> Sandbox
+		HttpOpen = 0x10,
+		HttpRecv,
 		
-
 		// User -> Root
 		KeyExists = 0x80,
 		CreateKey,
@@ -47,6 +48,9 @@ namespace Root
 		SetValueDescription,
 		EnumValues,
 		DeleteValue,
+
+		HttpSend = 0x100,
+		HttpClose
 	};
 	typedef ACE_CDR::UShort RootOpCode_t;
 }

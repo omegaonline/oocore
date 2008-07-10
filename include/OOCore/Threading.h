@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -81,39 +81,85 @@ namespace Omega
 		class ReadGuard
 		{
 		public:
-			ReadGuard(ReaderWriterLock& lock) : m_lock(lock)
+			ReadGuard(ReaderWriterLock& lock) : m_lock(lock), m_bLocked(false)
 			{
-				m_lock.LockRead();
+				Lock();
 			}
 
 			~ReadGuard()
 			{
-				m_lock.Unlock();
+				if (m_bLocked)
+					Unlock();
+			}
+
+			void Lock()
+			{
+				m_lock.LockWrite();
+				m_bLocked = true;
+			}
+
+			void Unlock()
+			{
+				try
+				{
+					m_bLocked = false;
+					m_lock.Unlock();
+				}
+				catch (...)
+				{
+					// Still locked
+					m_bLocked = true;
+					throw;
+				}
 			}
 
 		private:
 			ReadGuard& operator = (const ReadGuard&) { return *this; }
 
 			ReaderWriterLock& m_lock;
+			bool              m_bLocked;
 		};
 
 		class WriteGuard
 		{
 		public:
-			WriteGuard(ReaderWriterLock& lock) : m_lock(lock)
+			WriteGuard(ReaderWriterLock& lock) : m_lock(lock), m_bLocked(false)
 			{
-				m_lock.LockWrite();
+				Lock();
 			}
 
 			~WriteGuard()
 			{
-				m_lock.Unlock();
+				if (m_bLocked)
+					Unlock();
+			}
+
+			void Lock()
+			{
+				m_lock.LockWrite();
+				m_bLocked = true;
+			}
+
+			void Unlock()
+			{
+				try
+				{
+					m_bLocked = false;
+					m_lock.Unlock();
+				}
+				catch (...)
+				{
+					// Still locked
+					m_bLocked = true;
+					throw;
+				}
 			}
 
 		private:
 			WriteGuard& operator = (const WriteGuard&) { return *this; }
 
 			ReaderWriterLock& m_lock;
+			bool              m_bLocked;
 		};
 
 		template <class T> class AtomicOp
@@ -209,6 +255,7 @@ namespace Omega
 			uint32_t	m_value;
 		};
 
+#if !defined(OMEGA_64)
 		template <class T> class AtomicOp<T*>
 		{
 		public:
@@ -234,6 +281,7 @@ namespace Omega
 		private:
 			T*	m_value;
 		};
+#endif
 
 #endif // OMEGA_HAS_ATOMIC_OP_32
 	}

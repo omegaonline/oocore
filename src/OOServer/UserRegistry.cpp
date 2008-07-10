@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "OOServer.h"
+#include "./OOServer_User.h"
 #include "./UserRegistry.h"
 #include "./UserManager.h"
 #include "./SpawnedProcess.h"
@@ -221,16 +221,16 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	request.write_longlong(m_key);
 	request.write_string(strSubKey.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		return false;
@@ -253,16 +253,16 @@ bool_t Key::IsValue(const string_t& strName)
 	request.write_longlong(m_key);
 	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	ACE_CDR::Octet value_type;
 	if (err==0 && !response->read_octet(value_type))
@@ -287,23 +287,23 @@ int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 	request.write_longlong(m_key);
 	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err != 0)
 		return err;
 
 	ACE_CDR::Octet value_type = 0;
 	if (!response->read_octet(value_type))
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	switch (value_type)
 	{
@@ -353,16 +353,16 @@ string_t Key::GetStringValue(const string_t& strName)
 	request.write_longlong(m_key);
 	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
@@ -382,7 +382,7 @@ string_t Key::GetStringValue(const string_t& strName)
 
 	ACE_CString strValue;
 	if (!response->read_string(strValue))
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -396,16 +396,16 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 	request.write_longlong(m_key);
 	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
@@ -425,7 +425,7 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 
 	ACE_CDR::LongLong uValue = 0;
 	if (!response->read_longlong(uValue))
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	return uValue;
 }
@@ -441,16 +441,16 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	request.write_ulong(cbLen);
 	bool bNoDataBack = (cbLen == 0);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
@@ -469,12 +469,12 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 		OMEGA_THROW(err);
 
 	if (!response->read_ulong(cbLen))
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (!bNoDataBack)
 	{
 		if (!response->read_octet_array(pBuffer,cbLen))
-			OOSERVER_THROW_LASTERROR();
+			OMEGA_THROW(ACE_OS::last_error());
 	}
 }
 
@@ -488,16 +488,16 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 	request.write_string(strName.ToUTF8().c_str());
 	request.write_string(strValue.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetStringValue");
@@ -519,16 +519,16 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 	request.write_string(strName.ToUTF8().c_str());
 	request.write_longlong(value);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
@@ -550,16 +550,16 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 	request.write_string(strName.ToUTF8().c_str());
 	request.write_octet_array(val,cbLen);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
@@ -577,16 +577,16 @@ string_t Key::GetDescription()
 	request << static_cast<Root::RootOpCode_t>(Root::GetDescription);
 	request.write_longlong(m_key);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err==EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetDescription");
@@ -597,7 +597,7 @@ string_t Key::GetDescription()
 
 	ACE_CString strValue;
 	if (!response->read_string(strValue))
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -611,16 +611,16 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	request.write_longlong(m_key);
 	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueDescription");
@@ -633,7 +633,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 
 	ACE_CString strValue;
 	if (!response->read_string(strValue))
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -645,16 +645,16 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	request.write_longlong(m_key);
 	request.write_string(strDesc.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == EEXIST)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
@@ -672,16 +672,16 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	request.write_string(strValue.ToUTF8().c_str());
 	request.write_string(strDesc.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strValue,L"Omega::Registry::IRegistry::SetValueDescription");
@@ -693,7 +693,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 		OMEGA_THROW(err);
 }
 
-IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags_t flags)
+IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 
@@ -701,19 +701,19 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 	request << static_cast<Root::RootOpCode_t>(Root::CreateKey);
 	request.write_longlong(m_key);
 	request.write_string(strSubKey.ToUTF8().c_str());
-	request.write_boolean((flags & IRegistryKey::Create) ? true : false);
-	request.write_boolean((flags & IRegistryKey::FailIfThere) ? true : false);
+	request.write_boolean((flags & IKey::Create) ? true : false);
+	request.write_boolean((flags & IKey::FailIfThere) ? true : false);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 	
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::OpenSubKey");
@@ -729,7 +729,7 @@ IRegistryKey* Key::OpenSubKey(const string_t& strSubKey, IRegistryKey::OpenFlags
 	ACE_INT64 key = 0;
 	*response >> key;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();	
+		OMEGA_THROW(ACE_OS::last_error());	
 	
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
@@ -745,16 +745,16 @@ Omega::IEnumString* Key::EnumSubKeys()
 	request << static_cast<Root::RootOpCode_t>(Root::EnumSubKeys);
 	request.write_longlong(m_key);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 	
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
@@ -771,7 +771,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 		{
 			ACE_CString strName;
 			if (!response->read_string(strName))
-				OOSERVER_THROW_LASTERROR();
+				OMEGA_THROW(ACE_OS::last_error());
 
 			if (strName.empty())
 				break;
@@ -794,16 +794,16 @@ Omega::IEnumString* Key::EnumValues()
 	request << static_cast<Root::RootOpCode_t>(Root::EnumValues);
 	request.write_longlong(m_key);
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
@@ -820,7 +820,7 @@ Omega::IEnumString* Key::EnumValues()
 		{
 			ACE_CString strName;
 			if (!response->read_string(strName))
-				OOSERVER_THROW_LASTERROR();
+				OMEGA_THROW(ACE_OS::last_error());
 
 			if (strName.empty())
 				break;
@@ -846,16 +846,16 @@ void Key::DeleteKey(const string_t& strSubKey)
 	request.write_longlong(m_key);
 	request.write_string(strSubKey.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
@@ -876,16 +876,16 @@ void Key::DeleteValue(const string_t& strName)
 	request.write_longlong(m_key);
 	request.write_string(strName.ToUTF8().c_str());
 	if (!request.good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
 	int err = 0;
 	*response >> err;
 	if (!response->good_bit())
-		OOSERVER_THROW_LASTERROR();
+		OMEGA_THROW(ACE_OS::last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::DeleteValue");

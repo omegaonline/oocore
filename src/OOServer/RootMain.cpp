@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOServer, the OmegaOnline Server application.
+// This file is part of OOServer, the Omega Online Server application.
 //
 // OOServer is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,9 +36,6 @@
 #include "./RootManager.h"
 #include "./Version.h"
 
-// Forward declare UserMain
-int UserMain(const ACE_CString& strPipe);
-
 static int Install(int argc, ACE_TCHAR* argv[])
 {
 #if defined(ACE_WIN32)
@@ -71,7 +68,7 @@ static int Version();
 
 static int Help()
 {
-	ACE_OS::printf("OOServer - The OmegaOnline network deamon.\n\n");
+	ACE_OS::printf("OOServer - The Omega Online network deamon.\n\n");
 	ACE_OS::printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
 	return 0;
 }
@@ -81,10 +78,6 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	int skip_args = 1;
 
 #if defined(ACE_WIN32)
-	// Check to see if we have been spawned
-	if (argc>2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--spawned"))==0)
-		return UserMain(ACE_TEXT_ALWAYS_CHAR(argv[2]));
-
 	if (argc>=2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--service"))==0)
 		skip_args = 2;
 #endif
@@ -198,15 +191,15 @@ int main(int argc, char* /*argv*/[])
 static int Version()
 {
 	ACE_OS::printf("OOServer version information:\n");
-	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
-
 #if defined(OMEGA_DEBUG)
-	ACE_OS::printf("Debug build\n");
+	ACE_OS::printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+#else
+	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 #endif
-	
+
 	ACE_OS::printf("\nOOCore version information:\n");
 	ACE_OS::printf("%ls\n\n",Omega::System::GetVersion().c_str());
-	
+
 	ACE_OS::printf("SQLite version: %s\n",SQLITE_VERSION);
 
 	ACE_OS::printf("\n");

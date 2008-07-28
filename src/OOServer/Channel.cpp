@@ -34,20 +34,25 @@ User::Channel::Channel() :
 {
 }
 
-void User::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid, Omega::Remoting::IObjectManager* pOM)
+void User::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
 {
+	// Create a new OM
+	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+
+	// Associate it with the channel
+	m_ptrOM->Connect(this);
+
 	m_channel_id = channel_id;
 	m_marshal_flags = marshal_flags;
 	m_message_oid = message_oid;
-	m_pOM = pOM;
-	System::PinObjectPointer(m_pOM);
 }
 
 void User::Channel::disconnect()
 {
+	m_ptrOM->Disconnect();
+	m_ptrOM.Release();
+
 	m_channel_id = 0;
-	System::UnpinObjectPointer(m_pOM);
-	m_pOM = 0;
 }
 
 Remoting::IMessage* User::Channel::CreateMessage()
@@ -69,24 +74,6 @@ Remoting::IMessage* User::Channel::CreateMessage()
 	}
 }
 
-void User::Channel::Reflect(Remoting::IMessage* pMessage)
-{
-	if (!m_channel_id)
-		OMEGA_THROW(ECONNRESET);
-
-	ACE_InputCDR* response = 0;
-
-	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect))
-		OMEGA_THROW(ACE_OS::last_error());
-
-	ACE_CDR::ULong other_end = 0;
-	response->read_ulong(other_end);
-
-	// Return in the same format as we marshal
-	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
-	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
-}
-
 IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	if (!m_channel_id)
@@ -94,14 +81,14 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrEnvelope = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
-	m_pOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+	m_ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
 
 	// QI pSend for our private interface
 	ObjectPtr<OOCore::IMessageBlockHolder> ptrOutput;
 	ptrOutput.Attach(static_cast<OOCore::IMessageBlockHolder*>(ptrEnvelope->QueryInterface(OMEGA_UUIDOF(OOCore::IMessageBlockHolder))));
 	if (!ptrOutput)
 	{
-		m_pOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+		m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
 		OMEGA_THROW(EINVAL);
 	}
 
@@ -115,8 +102,8 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 	ACE_InputCDR* response = 0;
 	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs))
 	{
-		if (m_pOM)
-			m_pOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+		if (m_ptrOM)
+			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
 	
 		OMEGA_THROW(ACE_OS::last_error());
 	}
@@ -132,7 +119,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 
 			// Unwrap the payload...
 			IObject* pRet = 0;
-			m_pOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_UUIDOF(Remoting::IMessage),pRet);
+			m_ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_UUIDOF(Remoting::IMessage),pRet);
 			pRecv = static_cast<Remoting::IMessage*>(pRet);
 		}
 	}
@@ -160,6 +147,39 @@ uint32_t User::Channel::GetSource()
 	return m_channel_id;
 }
 
+guid_t User::Channel::GetReflectUnmarshalFactoryOID()
+{
+	return OID_ChannelMarshalFactory;
+}
+
+void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
+{
+	if (!m_channel_id)
+		OMEGA_THROW(ECONNRESET);
+
+	ACE_InputCDR* response = 0;
+
+	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect))
+		OMEGA_THROW(ACE_OS::last_error());
+
+	ACE_CDR::ULong other_end = 0;
+	bool bOk = response->read_ulong(other_end);
+
+	delete response;
+
+	if (!bOk)
+		OMEGA_THROW(ACE_OS::last_error());
+
+	// Return in the same format as we marshal
+	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
+	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
+}
+
+Remoting::IObjectManager* User::Channel::GetObjectManager()
+{
+	return m_ptrOM.AddRef();
+}
+
 guid_t User::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
 {
 	// This must match OOCore::OID_ChannelMarshalFactory
@@ -170,9 +190,6 @@ guid_t User::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFla
 void User::Channel::MarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->WriteUInt32s(L"m_channel_id",1,&m_channel_id);
-
-	printf("Marshalling %#x\n",m_channel_id);
-
 	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
 }
 

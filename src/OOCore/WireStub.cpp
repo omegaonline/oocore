@@ -209,32 +209,61 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe
 	if (pSE)
 		return pSE;
 
-	System::MetaInfo::IObject_Safe* pObj = 0;
-	pSE = m_pManager->UnmarshalInterface_Safe(L"pObjectManager",pParamsIn,&OMEGA_UUIDOF(IObject),&pObj);
+	// Unmarshal the channel
+	System::MetaInfo::IObject_Safe* pCh = 0;
+	pSE = m_pManager->UnmarshalInterface_Safe(L"m_ptrChannel",pParamsIn,&OMEGA_UUIDOF(Remoting::IChannelEx),&pCh);
 	if (pSE)
 		return pSE;
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IChannelEx>::safe_class> ptrChannel(static_cast<System::MetaInfo::interface_info<Remoting::IChannelEx>::safe_class*>(pCh));
 
-	System::MetaInfo::IObject_Safe* pMO = 0;
-	pSE = pObj->QueryInterface_Safe(&OMEGA_UUIDOF(System::MetaInfo::IWireManager),&pMO);
-	pObj->Release_Safe();
-	if (pSE)
-		return pSE;
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IWireManager_Safe> ptrManager(static_cast<System::MetaInfo::IWireManager_Safe*>(pMO));
-
+	// Create a new message
 	System::MetaInfo::IMessage_Safe* pMessage = 0;
-	pSE = ptrManager->ReflectChannel_Safe(&pMessage);
+	pSE = ptrChannel->CreateMessage_Safe(&pMessage);
 	if (pSE)
 		return pSE;
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IMessage_Safe> ptrMessage(pMessage);
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IMessage_Safe> ptrMessage(static_cast<System::MetaInfo::IMessage_Safe*>(pMessage));
 
-	pSE = ptrManager->MarshalInterface_Safe(L"stub",pMessage,&iid,m_pObjS);
+	// Reflect the channel
+	guid_t oid;
+	pSE = ptrChannel->GetReflectUnmarshalFactoryOID_Safe(&oid);
+	if (pSE)
+		return pSE;
+
+	// The following format is the same as IObjectManager::UnmarshalInterface...
+	pSE = ptrMessage->WriteStructStart_Safe(L"m_ptrChannel",L"$iface_marshal");
+	if (pSE)
+		return pSE;
+	pSE = System::MetaInfo::wire_write(L"$marshal_type",ptrMessage,(byte_t)2);
+	if (pSE)
+		return pSE;
+	pSE = System::MetaInfo::wire_write(L"$oid",ptrMessage,oid);
+	if (pSE)
+		return pSE;
+
+	pSE = ptrChannel->ReflectMarshal_Safe(ptrMessage);
+	if (pSE)
+		return pSE;
+
+	pSE = ptrMessage->WriteStructEnd_Safe(L"m_ptrChannel");
+	if (pSE)
+		return pSE;
+
+	// Get the channel's OM
+	System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pOM = 0;
+	pSE = ptrChannel->GetObjectManager_Safe(&pOM);
+	if (pSE)
+		return pSE;
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class> ptrManager(static_cast<System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class*>(pOM));
+
+	// Marshal the stub
+	pSE = ptrManager->MarshalInterface_Safe(L"stub",ptrMessage,&iid,m_pObjS);
 	if (pSE)
 		return pSE;
 		
-	pSE = m_pManager->MarshalInterface_Safe(L"pReflect",pParamsOut,&OMEGA_UUIDOF(Remoting::IMessage),pMessage);
+	pSE = m_pManager->MarshalInterface_Safe(L"pReflect",pParamsOut,&OMEGA_UUIDOF(Remoting::IMessage),ptrMessage);
 	if (pSE)
 	{
-		System::MetaInfo::IException_Safe* pSE2 = ptrManager->ReleaseMarshalData_Safe(L"stub",pMessage,&iid,m_pObjS);
+		System::MetaInfo::IException_Safe* pSE2 = ptrManager->ReleaseMarshalData_Safe(L"stub",ptrMessage,&iid,m_pObjS);
 		if (pSE2)
 		{
 			pSE->Release_Safe();

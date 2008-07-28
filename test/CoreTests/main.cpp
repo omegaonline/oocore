@@ -48,7 +48,7 @@ int main(int /*argc*/, char* /*argv*/[])
 		RUN_TEST(registry_tests_2);
 		RUN_TEST(interface_tests);
 		//RUN_TEST(net_tests);
-		//RUN_TEST(interface_tests2);
+		RUN_TEST(interface_tests2);
 	}
 
 	return test_summary();

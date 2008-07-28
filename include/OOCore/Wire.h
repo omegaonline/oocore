@@ -76,7 +76,6 @@ namespace Omega
 				virtual void ReleaseMarshalData(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 				virtual Remoting::IMessage* CreateMessage() = 0;
 				virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0) = 0;
-				virtual Remoting::IMessage* ReflectChannel() = 0;
 			};
 
 			interface IWireStub : public IObject
@@ -231,7 +230,6 @@ namespace Omega
 				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
-				OMEGA_METHOD(Remoting::IMessage*,ReflectChannel,0,())
 			)
 			typedef IWireManager_Impl_Safe<IObject_Safe> IWireManager_Safe;
 

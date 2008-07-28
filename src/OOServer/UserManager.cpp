@@ -310,7 +310,7 @@ void User::Manager::on_channel_closed(ACE_CDR::ULong channel)
 		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 		try
 		{
-			for (std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.begin();i!=m_mapOMs.end();)
+			for (std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
 			{
 				bool bErase = false;
 				if (i->first == channel)
@@ -331,9 +331,8 @@ void User::Manager::on_channel_closed(ACE_CDR::ULong channel)
 
 				if (bErase)
 				{
-					i->second.m_ptrChannel->disconnect();
-					i->second.m_ptrOM->Disconnect();
-					m_mapOMs.erase(i++);
+					i->second->disconnect();
+					m_mapChannels.erase(i++);
 				}
 				else
 					++i;
@@ -447,45 +446,42 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
 {
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(src_channel_id,message_oid);
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	ptrOM.Attach(ptrChannel->GetObjectManager());
+	return ptrOM;
+}
+
+ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+{
 	try
 	{
 		// Lookup existing..
 		{
 			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::map<ACE_CDR::ULong,OMInfo>::iterator i=m_mapOMs.find(src_channel_id);
-			if (i != m_mapOMs.end())
-				return i->second.m_ptrOM;
+			std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+			if (i != m_mapChannels.end())
+				return i->second;
 		}
 
 		// Create a new channel
-		OMInfo info;
-		info.m_marshal_flags = classify_channel(src_channel_id);
-		info.m_ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		
-		// Create a new OM
-		info.m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
-
-		// Associate the channel with the OM
-		info.m_ptrChannel->init(src_channel_id,info.m_marshal_flags,message_oid,info.m_ptrOM);
-
-		// Associate it with the channel
-		info.m_ptrOM->Connect(info.m_ptrChannel);
+		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+		ptrChannel->init(src_channel_id,classify_channel(src_channel_id),message_oid);
 
 		// And add to the map
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		std::pair<std::map<ACE_CDR::ULong,OMInfo>::iterator,bool> p = m_mapOMs.insert(std::map<ACE_CDR::ULong,OMInfo>::value_type(src_channel_id,info));
+		std::pair<std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
 		if (!p.second)
 		{
-			if (p.first->second.m_marshal_flags != info.m_marshal_flags)
+			if (p.first->second->GetMarshalFlags() != ptrChannel->GetMarshalFlags())
 				OMEGA_THROW(EINVAL);
 
-			info.m_ptrChannel = p.first->second.m_ptrChannel;
-			info.m_ptrOM = p.first->second.m_ptrOM;
+			ptrChannel = p.first->second;
 		}
 
-		return info.m_ptrOM;
+		return ptrChannel;
 	}
 	catch (std::exception& e)
 	{

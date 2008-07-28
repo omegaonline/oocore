@@ -55,11 +55,11 @@ namespace User
 		{
 		public:
 			TcpAsync() : 
-				m_pHandler(0), m_stream_id(0), m_refcount(0)
+				m_pHandler(0), m_stream_id(0), m_refcount(1)
 			{}
 
 			TcpAsync(TcpProtocolHandler* pHandler) : 
-				m_pHandler(pHandler), m_stream_id(0), m_refcount(0)
+				m_pHandler(pHandler), m_stream_id(0), m_refcount(1)
 			{}
 
 			void release()

@@ -32,8 +32,7 @@ namespace OOCore
 		static Omega::IException* init();
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
-		static OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t channel_id, const Omega::guid_t& message_oid);
-
+		
 	private:
 		friend class Channel;
 		friend class ThreadContext;
@@ -71,13 +70,7 @@ namespace OOCore
 		ACE_Thread_Mutex    m_send_lock;
 		Omega::uint32_t     m_nIPSCookie;
 
-		struct OMInfo
-		{
-			Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
-			OTL::ObjectPtr<OTL::ObjectImpl<Channel> >       m_ptrChannel;
-			OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
-		};
-		std::map<ACE_CDR::ULong,OMInfo> m_mapOMs;
+		std::map<ACE_CDR::ULong,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
 		struct Message
 		{
@@ -163,7 +156,8 @@ namespace OOCore
 		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
 		bool build_header(ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
 		bool send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs = Message::synchronous);
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager_i(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_channel_om(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
+		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 		bool send_channel_close(ACE_CDR::ULong closed_channel_id);
 		void process_channel_close(ACE_CDR::ULong closed_channel_id);
 		Omega::Remoting::MarshalFlags_t classify_channel(ACE_CDR::ULong channel);

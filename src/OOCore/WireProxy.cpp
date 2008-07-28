@@ -274,7 +274,8 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 	WriteGuid(L"$iid",pParamsOut,OMEGA_UUIDOF(IObject));
 	WriteUInt32(L"$method_id",pParamsOut,2);
 	WriteGuid(L"iid",pParamsOut,iid);
-	m_pManager->MarshalInterface(L"pObjectManager",pParamsOut,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pObjectManager);
+
+	m_pManager->DoMarshalChannel(pObjectManager,pParamsOut);
 
 	pParamsOut->WriteStructEnd(L"ipc_request");
 
@@ -293,7 +294,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 		ReadGuid(L"$iid",pParamsOut);
 		ReadUInt32(L"$method_id",pParamsOut);
 		ReadGuid(L"iid",pParamsOut);
-		m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_UUIDOF(Remoting::IObjectManager),pObjectManager);
+		m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pObjectManager);
 
 		throw ptrE.AddRef();
 	}
@@ -370,15 +371,18 @@ void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManage
 	// Unmarshal the reflect package
 	IObject* pReflect = 0;
 	pObjectManager->UnmarshalInterface(L"pReflect",pMessage,OMEGA_UUIDOF(Remoting::IMessage),pReflect);
-	OTL::ObjectPtr<Remoting::IMessage> ptrReflect;
+	ObjectPtr<Remoting::IMessage> ptrReflect;
 	ptrReflect.Attach(static_cast<Remoting::IMessage*>(pReflect));
 
 	// Unmarshal the manager
-	IObject* pWM = 0;
-	pObjectManager->UnmarshalInterface(L"manager",ptrReflect,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pWM);
-	OTL::ObjectPtr<System::MetaInfo::IWireManager> ptrWM;
-	ptrWM.Attach(static_cast<System::MetaInfo::IWireManager*>(pWM));
+	IObject* pChannel = 0;
+	pObjectManager->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_UUIDOF(Remoting::IChannelEx),pChannel);
+	ObjectPtr<Remoting::IChannelEx> ptrChannel;
+	ptrChannel.Attach(static_cast<Remoting::IChannelEx*>(pChannel));
+
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	ptrOM.Attach(ptrChannel->GetObjectManager());
 
 	// Unmarshal the new proxy on the new manager
-	ptrWM->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
+	ptrOM->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
 }

@@ -24,14 +24,14 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 	}
 
 	// This is a test for channel closing
-	try
+	/*try
 	{
 		ptrTestLib->Abort();
 	}
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}
+	}*/
 
 	return true;
 }
@@ -210,8 +210,8 @@ static bool do_remote_test()
 bool interface_tests()
 {
 #if defined(OMEGA_WIN32)
-	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",0);
-	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",0);
+	//do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",0);
+	//do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",0);
 #else
 	do_library_test(L"TestLibrary",L"Test.Library",0);
 #endif
@@ -226,7 +226,7 @@ bool interface_tests2()
 	const wchar_t host[] = L"http://localhost:8901";
 
 #if defined(OMEGA_WIN32)
-	//do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",host);
+	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",host);
 	//do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
 #else
 	do_library_test(L"TestLibrary",L"Test.Library",host);

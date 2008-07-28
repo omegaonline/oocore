@@ -117,7 +117,7 @@ namespace Rpc
 		ObjectPtr<ObjectImpl<SendNotify> > m_ptrSend;
 		ObjectPtr<ObjectImpl<RecvNotify> > m_ptrRecv;
 
-	// IChannel members
+	// IChannelSink members
 	public:
 		void Send(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout);
 		void Close();

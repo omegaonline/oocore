@@ -61,7 +61,7 @@ namespace Rpc
 
 		void Send_i();
 		
-	// IChannel members
+	// IChannelSink members
 	public:
 		void Send(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pMsg, Omega::uint32_t timeout);
 		void Close();

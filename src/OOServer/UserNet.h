@@ -43,17 +43,16 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex                                m_lock;
-		Manager*                                        m_pManager;
-		Omega::uint32_t                                 m_channel_id;
-		OTL::ObjectPtr<Omega::Remoting::IChannelSink>   m_ptrUpstream;
-		Omega::guid_t                                   m_message_oid;
-		ACE_CDR::ULong                                  m_nNextChannelId;
-		std::map<ACE_CDR::ULong,ACE_CDR::ULong>         m_mapChannels;
+		ACE_Thread_Mutex                                                    m_lock;
+		Manager*                                                            m_pManager;
+		Omega::uint32_t                                                     m_channel_id;
+		OTL::ObjectPtr<Omega::Remoting::IChannelSink>                       m_ptrUpstream;
+		Omega::guid_t                                                       m_message_oid;
+		ACE_CDR::ULong                                                      m_nNextChannelId;
+		std::map<ACE_CDR::ULong,ACE_CDR::ULong>                             m_mapChannelIds;
+		std::map<ACE_CDR::ULong,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
-		std::map<ACE_CDR::ULong,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapOMs;
-
-		Omega::Remoting::IObjectManager* create_object_manager(ACE_CDR::ULong channel_id);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong channel_id);
 		void process_here_i(ACE_InputCDR& input);
 		void send_away_i(Omega::Remoting::IMessage* pPayload, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no);
 		void do_channel_closed_i(Omega::uint32_t channel_id);

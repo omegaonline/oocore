@@ -421,14 +421,6 @@ namespace Omega
 			inline IException_Safe* return_safe_exception(IException* pE);
 			inline string_t lookup_iid(const guid_t& iid);
 
-			/*template <> struct marshal_info<IObject**>
-			{
-				typedef marshal_info<IObject*>::safe_type* safe_type;
-				typedef iface_stub_functor_array<IObject> stub_functor;
-				typedef iface_proxy_functor_array<IObject> proxy_functor;
-				typedef std_wire_type_array<IObject> wire_type;
-			};*/
-
 			OMEGA_DECLARE_FORWARDS(IException,Omega,IException,Omega,IObject)
 			
 			template <class I> class auto_iface_ptr
@@ -565,10 +557,13 @@ namespace Omega
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
 					++m_refcount;
+					//printf("%p (%ls) AddRef(%d)\n",this,lookup_iid(OMEGA_UUIDOF(I)).c_str(),m_refcount.value());
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
+					//printf("%p (%ls) Release(%d)\n",this,lookup_iid(OMEGA_UUIDOF(I)).c_str(),m_refcount.value()-1);
+
 					if (--m_refcount==0)
 					{
 						m_contained.Release_Iface();

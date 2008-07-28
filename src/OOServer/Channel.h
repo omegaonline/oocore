@@ -28,36 +28,43 @@ namespace User
 {
 	class Channel :
 		public OTL::ObjectBase,
-		public Omega::Remoting::IChannel,
+		public Omega::Remoting::IChannelEx,
 		public Omega::Remoting::IMarshal
 	{
 	public:
 		Channel();
 
-		void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid, Omega::Remoting::IObjectManager* pOM);
+		void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
+			INTERFACE_ENTRY(Omega::Remoting::IChannelEx)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_CDR::ULong	                 m_channel_id;
-		Omega::Remoting::MarshalFlags_t  m_marshal_flags;
-		Omega::guid_t					 m_message_oid;
-		Omega::Remoting::IObjectManager* m_pOM;
+		ACE_CDR::ULong	                                m_channel_id;
+		Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
+		Omega::guid_t                                   m_message_oid;
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
 
-		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
+		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannelEx(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }
 
 	// IChannel members
 	public:
 		Omega::Remoting::IMessage* CreateMessage();
-		void Reflect(Omega::Remoting::IMessage* pMessage);
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
+
 		Omega::uint32_t GetSource();
+
+	// IChannelEx members
+	public:
+		Omega::guid_t GetReflectUnmarshalFactoryOID();
+		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
+		Omega::Remoting::IObjectManager* GetObjectManager();
 
 	// IMarshal members
 	public:

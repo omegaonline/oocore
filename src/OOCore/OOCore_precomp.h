@@ -126,7 +126,7 @@
 
 namespace OOCore
 {
-	OTL::ObjectPtr<Omega::Remoting::IInterProcessService> GetInterProcessService();
+	OTL::ObjectPtr<Omega::System::IInterProcessService> GetInterProcessService();
 	bool HostedByOOServer();
 
 	// Some helpers

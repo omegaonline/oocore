@@ -24,7 +24,7 @@
 
 namespace Omega
 {
-	namespace Remoting
+	namespace System
 	{
 		interface IInterProcessService : public IObject
 		{
@@ -34,7 +34,7 @@ namespace Omega
 			virtual IO::IStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
 			virtual bool_t HandleRequest(uint32_t timeout) = 0;
 			virtual void GetRemoteInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, const string_t& strEndpoint, IObject*& pObject) = 0;
-			virtual IChannelSink* OpenServerSink(const guid_t& message_oid, IChannelSink* pSink) = 0;
+			virtual Remoting::IChannelSink* OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink) = 0;
 		};
 
 		// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
@@ -44,7 +44,7 @@ namespace Omega
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::Remoting, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
+	Omega::System, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
 
 	OMEGA_METHOD(Registry::IKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())

@@ -994,7 +994,7 @@ namespace OTL
 	};
 
 	typedef EnumSTL<Omega::IEnumString,Omega::string_t>	EnumString;
-};
+}
 
 #include <OTL/OTL.inl>
 

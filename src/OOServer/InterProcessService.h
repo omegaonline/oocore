@@ -31,25 +31,25 @@ namespace User
 {
 	class InterProcessService :
 		public OTL::ObjectBase,
-		public Omega::Remoting::IInterProcessService
+		public Omega::System::IInterProcessService
 	{
 	public:
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager);
 
 		BEGIN_INTERFACE_MAP(InterProcessService)
-			INTERFACE_ENTRY(Omega::Remoting::IInterProcessService)
+			INTERFACE_ENTRY(Omega::System::IInterProcessService)
 		END_INTERFACE_MAP()
 
 	private:
 		ACE_Thread_Mutex                                      m_lock;
-		OTL::ObjectPtr<Omega::Remoting::IInterProcessService> m_ptrSBIPS;
+		OTL::ObjectPtr<Omega::System::IInterProcessService> m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
 		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 		Manager*                                              m_pManager;
 
 		std::map<Omega::string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> > m_mapInProgress;
 
-	// Remoting::IInterProcessService members
+	// System::IInterProcessService members
 	public:
 		Omega::Registry::IKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();

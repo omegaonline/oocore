@@ -252,7 +252,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 		ptrIPS->Init(ptrOMSb,ptrOMUser,this);
 
 		// Register our interprocess service InProcess so we can react to activation requests
-		m_nIPSCookie = Activation::RegisterObject(Remoting::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+		m_nIPSCookie = Activation::RegisterObject(System::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();

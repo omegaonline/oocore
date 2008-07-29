@@ -140,17 +140,17 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	if (ptrOMSB)
 	{
 		IObject* pIPS = 0;
-		ptrOMSB->GetRemoteInstance(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
-		m_ptrSBIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
+		ptrOMSB->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
+		m_ptrSBIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 	}
 
 	if (ptrOMUser)
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOMUser->GetRemoteInstance(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
-		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
+		ptrOMUser->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
+		ObjectPtr<System::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 
 		// Get the running object table
 		m_ptrReg.Attach(ptrIPS->GetRegistry());

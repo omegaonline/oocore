@@ -472,7 +472,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,o
 	}
 	else
 	{
-		OTL::ObjectPtr<Omega::Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		OTL::ObjectPtr<Omega::System::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 		ptrIPS->GetRemoteInstance(oid,flags,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pszEndpoint,pOF);
 	}
 

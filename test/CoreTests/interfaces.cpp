@@ -2,8 +2,6 @@
 #include "./interfaces.h"
 #include "TestLibrary/TestLibrary.h"
 
-#include "../src/OOCore/Server.h"
-
 #include "Test.h"
 
 BEGIN_PROCESS_OBJECT_MAP(L"CoreTests")

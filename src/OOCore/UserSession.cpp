@@ -202,13 +202,13 @@ IException* OOCore::UserSession::bootstrap()
 		 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
 
-		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(pIPS));
+		ObjectPtr<System::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 
 		// Register locally...
-		m_nIPSCookie = Activation::RegisterObject(Remoting::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+		m_nIPSCookie = Activation::RegisterObject(System::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 	}
 	catch (IException* pE)
 	{

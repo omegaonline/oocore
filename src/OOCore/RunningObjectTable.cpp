@@ -24,12 +24,12 @@
 using namespace Omega;
 using namespace OTL;
 
-ObjectPtr<Remoting::IInterProcessService> OOCore::GetInterProcessService()
+ObjectPtr<System::IInterProcessService> OOCore::GetInterProcessService()
 {
 	try
 	{
-		ObjectPtr<Remoting::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<Remoting::IInterProcessService*>(Activation::GetRegisteredObject(Remoting::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(Remoting::IInterProcessService))));
+		ObjectPtr<System::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<System::IInterProcessService*>(Activation::GetRegisteredObject(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService))));
 		return ptrIPS;
 	}
 	catch (IException* pE2)
@@ -48,7 +48,7 @@ bool OOCore::HostedByOOServer()
 	if (!bChecked)
 	{
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
-		ObjectPtr<Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ObjectPtr<System::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 		ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy;
 		ptrProxy.Attach(ptrIPS.QueryInterface<System::MetaInfo::IWireProxy>());
 		if (!ptrProxy)

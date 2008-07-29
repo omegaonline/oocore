@@ -24,7 +24,7 @@
 
 namespace Omega
 {
-	namespace System
+	namespace Threading
 	{
 		class CriticalSection
 		{

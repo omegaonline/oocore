@@ -343,6 +343,10 @@ ObjectPtr<Omega::Registry::IKey> OOCore::FindOIDKey(const guid_t& oid)
 	// Lookup OID
 	string_t strOid = oid.ToString();
 
+	// This needs to use a local cached map, and register for update notifications from the 
+	// registry to refresh the map... This willr esult in a significant speedup.
+	void* TODO;
+
 	// Check Local User first
 	ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
 	if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
@@ -468,9 +472,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,o
 	}
 	else
 	{
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
-		ptrOM.Attach(Omega::Remoting::OpenRemoteOM(pszEndpoint));
-		ptrOM->GetRemoteInstance(oid,flags,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pOF);
+		OTL::ObjectPtr<Omega::Remoting::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ptrIPS->GetRemoteInstance(oid,flags,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pszEndpoint,pOF);
 	}
 
 	ObjectPtr<Activation::IObjectFactory> ptrOF;

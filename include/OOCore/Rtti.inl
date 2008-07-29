@@ -40,7 +40,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 
 		// See if we have it already
 		{
-			System::ReadGuard guard(m_lock);
+			Threading::ReadGuard guard(m_lock);
 
 			std::map<const guid_t,IObject_Safe*>::iterator i=m_iid_map.find(*piid);
 			if (i != m_iid_map.end())
@@ -83,7 +83,7 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 		}
 
 		{
-			System::WriteGuard guard(m_lock);
+			Threading::WriteGuard guard(m_lock);
 
 			std::pair<std::map<const guid_t,IObject_Safe*>::iterator,bool> p = m_iid_map.insert(std::map<const guid_t,IObject_Safe*>::value_type(*piid,ptrStub));
 			if (!p.second)
@@ -136,7 +136,7 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::ProxyQI(const guid_t& iid, b
 
 		// See if we have it already...
 		{
-			System::ReadGuard guard(m_lock);
+			Threading::ReadGuard guard(m_lock);
 
 			std::map<const guid_t,IObject*>::iterator i=m_iid_map.find(iid);
 			if (i != m_iid_map.end())
@@ -183,7 +183,7 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::ProxyQI(const guid_t& iid, b
 		}
 
 		{
-			System::WriteGuard guard(m_lock);
+			Threading::WriteGuard guard(m_lock);
 
 			std::pair<std::map<const guid_t,IObject*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,IObject*>::value_type(iid,ptrProxy));
 			if (!p.second)
@@ -233,7 +233,7 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 	{
 		// Lookup first
 		{
-			System::ReadGuard guard(stub_map.m_lock);
+			Threading::ReadGuard guard(stub_map.m_lock);
 
 			std::map<IObject*,IObject_Safe*>::iterator i=stub_map.m_map.find(ptrObj);
 			if (i != stub_map.m_map.end())
@@ -253,7 +253,7 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 			{
 				OMEGA_NEW(ptrStub,SafeStub(ptrObj));
 
-				System::WriteGuard guard(stub_map.m_lock);
+				Threading::WriteGuard guard(stub_map.m_lock);
 
 				std::pair<std::map<IObject*,IObject_Safe*>::iterator,bool> p = stub_map.m_map.insert(std::map<IObject*,IObject_Safe*>::value_type(ptrObj,ptrStub));
 				if (!p.second)
@@ -310,7 +310,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 	{
 		// Lookup first
 		{
-			System::ReadGuard guard(proxy_map.m_lock);
+			Threading::ReadGuard guard(proxy_map.m_lock);
 
 			std::map<IObject_Safe*,ISafeProxy*>::iterator i=proxy_map.m_map.find(ptrObjS);
 			if (i != proxy_map.m_map.end())
@@ -323,7 +323,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 		{
 			OMEGA_NEW(ptrProxy,SafeProxy(pObjS));
 
-			System::WriteGuard guard(proxy_map.m_lock);
+			Threading::WriteGuard guard(proxy_map.m_lock);
 
 			std::pair<std::map<IObject_Safe*,ISafeProxy*>::iterator,bool> p = proxy_map.m_map.insert(std::map<IObject_Safe*,ISafeProxy*>::value_type(pObjS,ptrProxy));
 			if (!p.second)

@@ -149,7 +149,7 @@ uint32_t User::Channel::GetSource()
 
 guid_t User::Channel::GetReflectUnmarshalFactoryOID()
 {
-	return OID_ChannelMarshalFactory;
+	return GetUnmarshalFactoryOID(guid_t::Null(),0);
 }
 
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
@@ -215,5 +215,5 @@ void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, 
 		OMEGA_THROW(EIO);
 
 	// Create a new object manager (and channel)
-	pObject = Manager::USER_MANAGER::instance()->create_object_manager(channel_id,message_oid)->QueryInterface(iid);
+	pObject = Manager::USER_MANAGER::instance()->create_channel(channel_id,message_oid)->QueryInterface(iid);
 }

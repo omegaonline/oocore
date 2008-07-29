@@ -60,7 +60,6 @@ namespace OOCore
 		}
 	};
 
-	static ObjectPtr<Registry::IKey> GetRootKey();
 	static void ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
 	static void ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey, const std::map<string_t,string_t>& namespaces, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
 	static ObjectPtr<Registry::IKey> ProcessXmlKeyAttribs(const std::map<string_t,string_t>& attribs, ObjectPtr<Registry::IKey> ptrKey, bool bAdd, const std::map<string_t,string_t>& mapSubsts);
@@ -71,22 +70,18 @@ namespace OOCore
 	static const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
 }
 
-ObjectPtr<Registry::IKey> OOCore::GetRootKey()
-{
-	ObjectPtr<Registry::IKey> ptrKey;
-	ptrKey.Attach(static_cast<Registry::IKey*>(OOCore::GetInterProcessService()->GetRegistry()));
-	return ptrKey;
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 {
 	if (key.Left(1) != L"\\")
 		OOCore::BadNameException::Throw(key,L"Omega::Registry::OpenKey");
 
+	ObjectPtr<Registry::IKey> ptrKey;
+	ptrKey.Attach(static_cast<Registry::IKey*>(OOCore::GetInterProcessService()->GetRegistry()));
+	
 	if (key == L"\\")
-		return OOCore::GetRootKey().AddRef();
+		return ptrKey.AddRef();
 	else
-		return OOCore::GetRootKey()->OpenSubKey(key.Mid(1),flags);
+		return ptrKey->OpenSubKey(key.Mid(1),flags);
 }
 
 string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_t,string_t>& mapSubsts)

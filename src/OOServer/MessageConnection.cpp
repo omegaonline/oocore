@@ -1281,68 +1281,32 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	}
 
 	// Find the destination channel
-	ACE_CDR::ULong actual_dest_channel_id = dest_channel_id;
+	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
+	
+	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
 		ACE_InputCDR input(mb);
-		return route_off(input,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request,seq_no);
+		if (!route_off(input,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request,seq_no))
+			return false;
 	}
 	else
 	{
 		// Send upstream
-		actual_dest_channel_id = m_uUpstreamChannel;
-	}
-
-	// Write the header info
-	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(header,Message_t::Request,seq_no,dest_channel_id,msg,mb))
-		return false;
-
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> dest_pipe;
-	try
-	{
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
-		if (i == m_mapChannelIds.end())
-		{
-			ACE_OS::last_error(ENOENT);
+		if (!send_message(Message_t::Request,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb))
 			return false;
-		}
-
-		dest_pipe = i->second;
 	}
-	catch (std::exception& e)
-	{
-		ACE_OS::last_error(EINVAL);
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),false);
-	}
-
-	// Check the timeout
-	if (msg.m_deadline != ACE_Time_Value::max_time && msg.m_deadline <= ACE_OS::gettimeofday())
-	{
-		ACE_OS::last_error(ETIMEDOUT);
-		return false;
-	}
-
-	size_t sent = 0;
-	if (dest_pipe->send(header.begin(),&sent) == -1)
-		return false;
-
-	if (sent != header.total_length())
-		return false;
-
+	
 	if (attribs & Message_t::asynchronous)
 		return true;
-	else
-		// Wait for response...
-		return wait_for_response(response,seq_no,msg.m_deadline != ACE_Time_Value::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
+	
+	// Wait for response...
+	return wait_for_response(response,seq_no,msg.m_deadline != ACE_Time_Value::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
 bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
@@ -1360,13 +1324,14 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 		msg.m_deadline = deadline;
 
 	// Find the destination channel
-	ACE_CDR::ULong actual_dest_channel_id = dest_channel_id;
+	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
+	
+	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
 		ACE_InputCDR input(mb);
@@ -1375,47 +1340,8 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	else
 	{
 		// Send upstream
-		actual_dest_channel_id = m_uUpstreamChannel;
-	}
-
-	// Write the header info
-	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(header,Message_t::Response,seq_no,dest_channel_id,msg,mb))
-		return false;
-
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> dest_pipe;
-	try
-	{
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
-		if (i == m_mapChannelIds.end())
-		{
-			ACE_OS::last_error(ENOENT);
-			return false;
-		}
-
-		dest_pipe = i->second;
-	}
-	catch (std::exception& e)
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
-		ACE_OS::last_error(EINVAL);
-		return false;
-	}
-
-	// Check the timeout
-	if (msg.m_deadline != ACE_Time_Value::max_time && msg.m_deadline <= ACE_OS::gettimeofday())
-	{
-		ACE_OS::last_error(ETIMEDOUT);
-		return false;
-	}
-
-	size_t sent = 0;
-	if (dest_pipe->send(header.begin(),&sent) == -1)
-		return false;
-
-	return (sent == header.total_length());
+		return send_message(Message_t::Response,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb);
+	}	
 }
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
@@ -1491,7 +1417,7 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 {
 	// Check the destination
 	bool bRoute = true;
-	ACE_CDR::ULong actual_dest_channel_id = dest_channel_id;
+	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
 	ACE_CDR::UShort dest_apartment_id = 0;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
@@ -1520,12 +1446,7 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 		ACE_InputCDR input(mb);
 		return route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
 	}
-	else
-	{
-		// Send upstream
-		actual_dest_channel_id = m_uUpstreamChannel;
-	}
-
+	
 	if (!bRoute)
 	{
 		// If its our message, process it
@@ -1582,6 +1503,11 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 	msg.m_attribs = attribs;
 	msg.m_deadline = deadline;
 
+	return send_message(flags,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb);
+}
+
+bool Root::MessageHandler::send_message(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong actual_dest_channel_id, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb)
+{
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(header,flags,seq_no,dest_channel_id,msg,mb))
@@ -1618,8 +1544,5 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 	if (dest_pipe->send(header.begin(),&sent) == -1)
 		return false;
 
-	if (sent != header.total_length())
-		return false;
-
-	return true;
+	return (sent == header.total_length());
 }

@@ -603,9 +603,9 @@ namespace Omega
 				}
 
 			private:
-				AtomicOp<uint32_t> m_refcount;
-				AtomicOp<uint32_t> m_pincount;
-				I_SafeStub         m_contained;
+				Threading::AtomicOp<uint32_t> m_refcount;
+				Threading::AtomicOp<uint32_t> m_pincount;
+				I_SafeStub                    m_contained;
 
 				SafeStubImpl(SafeStub* pStub, I* pI) : 
 					m_refcount(0), m_pincount(0), m_contained(pStub,pI)
@@ -712,8 +712,8 @@ namespace Omega
 					return pRet;
 				}
 			private:
-				AtomicOp<uint32_t> m_refcount;
-				I_SafeProxy        m_contained;
+				Threading::AtomicOp<uint32_t> m_refcount;
+				I_SafeProxy                   m_contained;
 
 				SafeProxyImpl(IObject* pOuter, typename interface_info<I>::safe_class* pS) : 
 					m_refcount(0), m_contained(pOuter,pS)
@@ -826,7 +826,7 @@ namespace Omega
 			struct SafeStubMap
 			{
 				bool                             m_bSafetyCheck;
-				ReaderWriterLock                 m_lock;
+				Threading::ReaderWriterLock      m_lock;
 				std::map<IObject*,IObject_Safe*> m_map;
 
 				SafeStubMap() : m_bSafetyCheck(true) {}
@@ -856,7 +856,7 @@ namespace Omega
 						SafeStubMap& stub_map = get_stub_map();
 						if (stub_map.m_bSafetyCheck)
 						{
-							WriteGuard guard(stub_map.m_lock);
+							Threading::WriteGuard guard(stub_map.m_lock);
 							stub_map.m_map.erase(m_pObj);
 						}
 						
@@ -922,9 +922,9 @@ namespace Omega
 				}
 				
 			private:
-				AtomicOp<uint32_t>                   m_refcount;
-				AtomicOp<uint32_t>                   m_pincount;
-				ReaderWriterLock                     m_lock;
+				Threading::AtomicOp<uint32_t>        m_refcount;
+				Threading::AtomicOp<uint32_t>        m_pincount;
+				Threading::ReaderWriterLock          m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				IObject*                             m_pObj;
 			};
@@ -932,7 +932,7 @@ namespace Omega
 			struct SafeProxyMap
 			{
 				bool                                m_bSafetyCheck;
-				ReaderWriterLock                    m_lock;
+				Threading::ReaderWriterLock         m_lock;
 				std::map<IObject_Safe*,ISafeProxy*> m_map;
 
 				SafeProxyMap() : m_bSafetyCheck(true) {}
@@ -983,8 +983,8 @@ namespace Omega
 				inline virtual IObject* ProxyQI(const guid_t& iid, bool bPartialAllowed);
 				
 			private:
-				AtomicOp<uint32_t>               m_refcount;
-				ReaderWriterLock                 m_lock;
+				Threading::AtomicOp<uint32_t>    m_refcount;
+				Threading::ReaderWriterLock      m_lock;
 				std::map<const guid_t,IObject*>  m_iid_map;
 				IObject_Safe*                    m_pS;
 				
@@ -994,7 +994,7 @@ namespace Omega
 					SafeProxyMap& proxy_map = get_proxy_map();
 					if (proxy_map.m_bSafetyCheck)
 					{
-						WriteGuard guard(proxy_map.m_lock);
+						Threading::WriteGuard guard(proxy_map.m_lock);
 						proxy_map.m_map.erase(m_pS);
 					}
 

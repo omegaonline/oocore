@@ -40,7 +40,6 @@ using namespace OTL;
 BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::WireProxyMarshalFactory)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManagerMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::OutputCDRMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::SystemExceptionMarshalFactoryImpl)

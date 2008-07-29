@@ -27,24 +27,6 @@ namespace OOCore
 	class WireStub;
 	class WireProxy;
 
-	// {3AC2D04F-A8C5-4214-AFE4-A64DB8DC992C}
-	OMEGA_DECLARE_OID(OID_StdObjectManagerMarshalFactory);
-
-	class StdObjectManagerMarshalFactory :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<StdObjectManagerMarshalFactory,&OID_StdObjectManagerMarshalFactory,Omega::Activation::InProcess>,
-		public Omega::Remoting::IMarshalFactory
-	{
-	public:
-		BEGIN_INTERFACE_MAP(StdObjectManagerMarshalFactory)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
-		END_INTERFACE_MAP()
-
-	// IMarshalFactory members
-	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
-	};
-
 	interface IStdObjectManager : public Omega::Remoting::IObjectManager
 	{
 		virtual void MarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
@@ -65,8 +47,7 @@ namespace OOCore
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
 		public IStdObjectManager,
 		public Omega::System::MetaInfo::IWireManager,
-		public Omega::System::MetaInfo::IWireManager_Safe,
-		public Omega::Remoting::IMarshal
+		public Omega::System::MetaInfo::IWireManager_Safe
 	{
 	public:
 		StdObjectManager();
@@ -76,7 +57,6 @@ namespace OOCore
 			INTERFACE_ENTRY(IStdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
 			INTERFACE_ENTRY(Omega::System::MetaInfo::IWireManager)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
 
 		void RemoveProxy(Omega::uint32_t proxy_id);
@@ -89,8 +69,7 @@ namespace OOCore
             OTL::ObjectBase(),
             IStdObjectManager(),
             Omega::System::MetaInfo::IWireManager(),
-            Omega::System::MetaInfo::IWireManager_Safe(),
-            Omega::Remoting::IMarshal()
+            Omega::System::MetaInfo::IWireManager_Safe()
         {}
 		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
 
@@ -138,12 +117,6 @@ namespace OOCore
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Disconnect();
 		void GetRemoteInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
-
-	// IMarshal members
-	public:
-		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 }
 

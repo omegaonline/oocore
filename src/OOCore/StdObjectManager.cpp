@@ -168,31 +168,6 @@ int OOCore::SEH::DoInvoke(System::MetaInfo::IWireStub_Safe* pStub, Remoting::IMe
 	return err;
 }
 
-void OOCore::StdObjectManagerMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
-{
-	IObject* pObj = 0;
-	pObjectManager->UnmarshalInterface(L"m_ptrChannel",pMessage,OMEGA_UUIDOF(IObject),pObj);
-
-	OTL::ObjectPtr<IObject> ptrObj;
-	ptrObj.Attach(pObj);
-
-	OTL::ObjectPtr<Remoting::IObjectManager> ptrOM(pObj);
-	if (!ptrOM)
-	{
-		OTL::ObjectPtr<Remoting::IChannel> ptrChannel(pObj);
-		if (ptrChannel)
-		{
-			ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
-			ptrOM->Connect(ptrChannel);
-		}
-	}
-
-	if (!ptrOM)
-		throw INoInterfaceException::Create(OMEGA_UUIDOF(Remoting::IChannel),OMEGA_SOURCE_INFO);
-
-	pObject = ptrOM->QueryInterface(iid);
-}
-
 uint32_t OOCore::StdCallContext::Timeout()
 {
 	ACE_Time_Value now = ACE_OS::gettimeofday();
@@ -964,21 +939,6 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::SendAndR
 	}
 }
 
-guid_t OOCore::StdObjectManager::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
-{
-	return OID_StdObjectManagerMarshalFactory;
-}
-
-void OOCore::StdObjectManager::MarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
-{
-	pObjectManager->MarshalInterface(L"m_ptrChannel",pMessage,OMEGA_UUIDOF(IObject),m_ptrChannel);
-}
-
-void OOCore::StdObjectManager::ReleaseMarshalData(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
-{
-	pObjectManager->ReleaseMarshalData(L"m_ptrChannel",pMessage,OMEGA_UUIDOF(IObject),m_ptrChannel);
-}
-
 void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pParamsOut)
 {
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is 
@@ -1033,6 +993,5 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_WireProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");
-OMEGA_DEFINE_OID(OOCore,OID_StdObjectManagerMarshalFactory,"{3AC2D04F-A8C5-4214-AFE4-A64DB8DC992C}");
 OMEGA_DEFINE_OID(Remoting,OID_StdObjectManager,"{63EB243E-6AE3-43bd-B073-764E096775F8}");
 OMEGA_DEFINE_OID(Remoting,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");

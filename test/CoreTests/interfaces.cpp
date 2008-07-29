@@ -167,46 +167,6 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 	return true;
 }
 
-static bool do_remote_test()
-{
-	OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(Omega::Remoting::OpenRemoteOM(L"http://localhost:8901/"));
-	if (!ptrOM)
-		return false;
-
-	// Create a Test object
-	Omega::IObject* pFactory = 0;
-	ptrOM->GetRemoteInstance(Omega::Activation::NameToOid(L"Test.Library.msvc"),Omega::Activation::Any,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pFactory);
-
-	OTL::ObjectPtr<Omega::Activation::IObjectFactory> ptrFac;
-	ptrFac.Attach(static_cast<Omega::Activation::IObjectFactory*>(pFactory));
-
-	Omega::IObject* pIFace = 0;
-	ptrFac->CreateInstance(0,OMEGA_UUIDOF(Test::Iface),pIFace);
-
-	OTL::ObjectPtr<Test::Iface> ptrTest;
-	ptrTest.Attach(static_cast<Test::Iface*>(pIFace));
-
-	do_interface_tests(ptrTest);
-
-	try
-	{
-		// Try something sneaky
-		Omega::IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(Omega::Remoting::OID_InterProcessService,Omega::Activation::InProcess | Omega::Activation::DontLaunch,OMEGA_UUIDOF(Omega::Remoting::IInterProcessService),pIPS);
-		pIPS->Release();
-		return false;
-	}
-	catch (Omega::Activation::IOidNotFoundException* pE)
-	{
-		// This should be the error
-		pE->Release();
-		TEST(true);
-	}
-
-	return true;
-}
-
 bool interface_tests()
 {
 #if defined(OMEGA_WIN32)

@@ -33,13 +33,9 @@ namespace Omega
 			virtual void GetObject(const string_t& strProcess, bool_t bSandbox, const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 			virtual IO::IStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
 			virtual bool_t HandleRequest(uint32_t timeout) = 0;
-
-			// TEMP TEMP TEMP!!
-			virtual IObjectManager* OpenRemoteObjectManager(const string_t& strEndpoint) = 0;
+			virtual void GetRemoteInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, const string_t& strEndpoint, IObject*& pObject) = 0;
 			virtual IChannelSink* OpenServerSink(const guid_t& message_oid, IChannelSink* pSink) = 0;
 		};
-
-		inline IObjectManager* OpenRemoteOM(const string_t& strEndpoint);
 
 		// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
 		OMEGA_DECLARE_OID(OID_InterProcessService);
@@ -55,16 +51,8 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(GetObject,5,((in),const string_t&,strProcess,(in),bool_t,bSandbox,(in),const guid_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,timeout))
-
-	// TEMP TEMP TEMP!!
-	OMEGA_METHOD(Remoting::IObjectManager*,OpenRemoteObjectManager,1,((in),const string_t&,strEndpoint))
+	OMEGA_METHOD_VOID(GetRemoteInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(in),const string_t&,strEndpoint,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 )
-
-OMEGA_EXPORTED_FUNCTION(Omega::Remoting::IObjectManager*,Remoting_OpenRemoteOM,1,((in),const Omega::string_t&,strEndpoint))
-Omega::Remoting::IObjectManager* Omega::Remoting::OpenRemoteOM(const Omega::string_t& strEndpoint)
-{
-	return Remoting_OpenRemoteOM(strEndpoint);
-}
 
 #endif // OOCORE_SERVER_H_INCLUDED_

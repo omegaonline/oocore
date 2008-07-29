@@ -1204,11 +1204,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,Omega_HandleRequest,1,((in),uint32_t,timeo
 		return OOCore::UserSession::handle_request(timeout);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IObjectManager*,Remoting_OpenRemoteOM,1,((in),const string_t&,strEndpoint))
-{
-	return OOCore::GetInterProcessService()->OpenRemoteObjectManager(strEndpoint);
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
 {
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);

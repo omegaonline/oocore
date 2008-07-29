@@ -776,8 +776,8 @@ namespace Omega
 				}
 
 			private:
-				System::AtomicOp<uint32_t> m_refcount;
-				IWireStubController_Safe*  m_pController;
+				Threading::AtomicOp<uint32_t> m_refcount;
+				IWireStubController_Safe*     m_pController;
 
 				IObject_WireStub(const IObject_WireStub&) {};
 				IObject_WireStub& operator =(const IObject_WireStub&) {};
@@ -857,8 +857,8 @@ namespace Omega
 				}
 
 			private:
-				AtomicOp<uint32_t> m_refcount;
-				I_WireProxy        m_contained;
+				Threading::AtomicOp<uint32_t> m_refcount;
+				I_WireProxy                   m_contained;
 
 				WireProxyImpl(IWireProxy_Safe* pProxy, IWireManager_Safe* pManager) :
 					m_refcount(1), m_contained(pProxy,pManager)

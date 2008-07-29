@@ -56,9 +56,7 @@ namespace User
 		void GetObject(const Omega::string_t& strProcess, Omega::bool_t bPublic, const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::IO::IStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);
 		Omega::bool_t HandleRequest(Omega::uint32_t timeout);
-
-		// TEMP TEMP TEMP
-		Omega::Remoting::IObjectManager* OpenRemoteObjectManager(const Omega::string_t& strEndpoint);
+		void GetRemoteInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, const Omega::string_t& strEndpoint, Omega::IObject*& pObject);
 		Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 	};
 }

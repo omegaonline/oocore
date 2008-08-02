@@ -211,7 +211,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe
 
 	// Unmarshal the channel
 	System::MetaInfo::IObject_Safe* pCh = 0;
-	pSE = m_pManager->UnmarshalInterface_Safe(L"m_ptrChannel",pParamsIn,&OMEGA_UUIDOF(Remoting::IChannelEx),&pCh);
+	pSE = m_pManager->UnmarshalInterface_Safe(L"m_ptrChannel",pParamsIn,&OMEGA_GUIDOF(Remoting::IChannelEx),&pCh);
 	if (pSE)
 		return pSE;
 	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IChannelEx>::safe_class> ptrChannel(static_cast<System::MetaInfo::interface_info<Remoting::IChannelEx>::safe_class*>(pCh));
@@ -260,7 +260,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe
 	if (pSE)
 		return pSE;
 		
-	pSE = m_pManager->MarshalInterface_Safe(L"pReflect",pParamsOut,&OMEGA_UUIDOF(Remoting::IMessage),ptrMessage);
+	pSE = m_pManager->MarshalInterface_Safe(L"pReflect",pParamsOut,&OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
 	if (pSE)
 	{
 		System::MetaInfo::IException_Safe* pSE2 = ptrManager->ReleaseMarshalData_Safe(L"stub",ptrMessage,&iid,m_pObjS);

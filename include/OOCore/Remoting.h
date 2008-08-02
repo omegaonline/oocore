@@ -30,11 +30,11 @@ namespace Omega
 	{
 		enum MarshalFlags
 		{
-			Same = 0,              // Objects are in the same context
-			Apartment = 1,         // Objects share address space, but not thread
-			InterProcess = 2,      // Objects share user id, but not address space
-			InterUser = 3,         // Objects share machine, but not user id or address space
-			RemoteMachine = 4      // Objects on separate machines and share nothing
+			Same = 0,              ///< Objects are in the same context
+			Apartment = 1,         ///< Objects share address space, but not thread
+			InterProcess = 2,      ///< Objects share user id, but not address space
+			InterUser = 3,         ///< Objects share machine, but not user id or address space
+			RemoteMachine = 4      ///< Objects on separate machines and share nothing
 		};
 		typedef uint16_t MarshalFlags_t;
 
@@ -102,10 +102,12 @@ namespace Omega
 			virtual IChannelSink* Open(const string_t& strEndpoint, IChannelSink* pSink) = 0;
 		};
 		
-		// {63EB243E-6AE3-43bd-B073-764E096775F8}
+		/// {63EB243E-6AE3-43BD-B073-764E096775F8}
 		OMEGA_DECLARE_OID(OID_StdObjectManager);
 	}
 }
+
+#if !defined(DOXYGEN)
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
@@ -190,9 +192,11 @@ Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
-Omega::Remoting::IChannelSink* Omega::Remoting::IChannelSink::OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink)
+Omega::Remoting::IChannelSink* Omega::Remoting::IChannelSink::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
 {
 	return Remoting_OpenServerSink(message_oid,pSink);
 }
+
+#endif // !defined(DOXYGEN)
 
 #endif // OOCORE_REMOTING_H_INCLUDED_

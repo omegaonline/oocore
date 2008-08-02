@@ -61,10 +61,18 @@ namespace Omega
 
 #if defined(OMEGA_HAS_UUIDOF)
 
-#define OMEGA_DEFINE_IID(n_space, type, guid) \
+#define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	interface __declspec(uuid(guid)) n_space::type;
 
-#define OMEGA_UUIDOF(n) Omega::guid_t::FromUuidof(__uuidof(n))
+#define OMEGA_GUIDOF(type) Omega::guid_t::FromUuidof(__uuidof(type))
+
+#elif defined(DOXYGEN)
+
+/// Associate a guid_t value with a type
+#define OMEGA_SET_GUIDOF(n_space, type, guid)
+
+/// Return the guid_t value associated with a type
+#define OMEGA_GUIDOF(type)
 
 #else
 
@@ -87,15 +95,16 @@ namespace Omega
 	}
 }
 
-#define OMEGA_DEFINE_IID(n_space, type, guid) \
+#define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid) ); return v; } }; \
 	} } }
 
-#define OMEGA_UUIDOF(n)	(Omega::System::MetaInfo::uid_traits<n>::GetUID())
+#define OMEGA_GUIDOF(type)	(Omega::System::MetaInfo::uid_traits<type>::GetUID())
 
 #endif
 
+#if !defined(DOXYGEN)
 #define OMEGA_EXPORT_OID(name) \
 	extern "C" OMEGA_EXPORT const Omega::guid_t name;
 
@@ -105,10 +114,20 @@ namespace Omega
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
 	extern "C" const Omega::guid_t n_space::name = Omega::guid_t::FromString(OMEGA_WIDEN_STRING(guid));
 
-OMEGA_DEFINE_IID(Omega, IObject, "{076DADE7-2D08-40f9-9AFA-AC883EB8BA9B}");
-OMEGA_DEFINE_IID(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
+#else // DOXYGEN
 
-#if !defined(OMEGA_FUNCNAME)
+#define OMEGA_DEFINE_OID(n_space, name, guid) \
+	const Omega::guid_t n_space::name = guid;
+
+#endif
+
+OMEGA_SET_GUIDOF(Omega, IObject, "{076DADE7-2D08-40f9-9AFA-AC883EB8BA9B}");
+OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
+
+#if defined(DOXYGEN)
+	/// Return the current source filename and line as a string_t
+	#define OMEGA_SOURCE_INFO
+#elif !defined(OMEGA_FUNCNAME)
 	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u)",__FILE__,__LINE__))
 #else
 	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u): %ls",__FILE__,__LINE__,Omega::string_t(OMEGA_FUNCNAME,false).c_str()))

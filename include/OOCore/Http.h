@@ -22,6 +22,8 @@
 #ifndef OOCORE_HTTP_H_INCLUDED_
 #define OOCORE_HTTP_H_INCLUDED_
 
+#include <OOCore/OOCore.h>
+
 namespace Omega
 {
 	namespace Net
@@ -85,6 +87,8 @@ namespace Omega
 	}
 }
 
+#if !defined(DOXYGEN)
+
 OMEGA_DEFINE_INTERFACE
 (
 	Omega::Net::Http, IRequestNotify, "{F47AB4ED-6C4C-4e9a-8502-850BA314A9CC}",
@@ -114,7 +118,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,WaitForResponse,1,((in),uint32_t,timeout))
 )
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_Net_Http_SplitURL,8,((in),const Omega::string_t&,strURL,(out),Omega::string_t&,strScheme,(out),Omega::string_t&,strHost,(out),Omega::string_t&,strPort,(out),Omega::string_t&,strUserName,(out),Omega::string_t&,strPassword,(out),Omega::string_t&,strResource,(out),Omega::string_t&,strQuery));
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_Net_Http_SplitURL,8,((in),const Omega::string_t&,strURL,(out),Omega::string_t&,strScheme,(out),Omega::string_t&,strHost,(out),Omega::string_t&,strPort,(out),Omega::string_t&,strUserName,(out),Omega::string_t&,strPassword,(out),Omega::string_t&,strResource,(out),Omega::string_t&,strQuery))
 void Omega::Net::Http::SplitURL(const Omega::string_t& strURL, Omega::string_t& strScheme, Omega::string_t& strHost, Omega::string_t& strPort, Omega::string_t& strUserName, Omega::string_t& strPassword, Omega::string_t& strResource, Omega::string_t& strQuery)
 {
 	Omega_Net_Http_SplitURL(strURL,strScheme,strHost,strPort,strUserName,strPassword,strResource,strQuery);
@@ -150,5 +154,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(Open,1,((in),const string_t&,strAbsURI))
 	OMEGA_METHOD_VOID(ProcessRequest,2,((in),Net::Http::Server::IRequest*,pRequest,(in),Net::Http::Server::IResponse*,pResponse))
 )
+
+#endif // !defined(DOXYGEN)
 
 #endif // OOCORE_HTTP_H_INCLUDED_

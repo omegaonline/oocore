@@ -52,8 +52,8 @@ namespace OOCore
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppS)
 		{
 			*ppS = 0;
-			if (*piid == OMEGA_UUIDOF(Omega::IObject) ||
-				*piid == OMEGA_UUIDOF(Omega::System::MetaInfo::IWireStubController))
+			if (*piid == OMEGA_GUIDOF(Omega::IObject) ||
+				*piid == OMEGA_GUIDOF(Omega::System::MetaInfo::IWireStubController))
 			{
 				*ppS = this;
 				(*ppS)->AddRef_Safe();

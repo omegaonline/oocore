@@ -156,8 +156,8 @@ bool guid_tests()
 	// Check to see if we can export OID's properly
 	TEST(Omega::Remoting::OID_StdObjectManager == L"{63EB243E-6AE3-43bd-B073-764E096775F8}");
 
-	// Check whether OMEGA_UUIDOF works...
-	TEST(OMEGA_UUIDOF(Omega::IObject) == OMEGA_UUIDOF(Omega::IObject*));
+	// Check whether OMEGA_GUIDOF works...
+	TEST(OMEGA_GUIDOF(Omega::IObject) == OMEGA_GUIDOF(Omega::IObject*));
 
 	return true;
 }

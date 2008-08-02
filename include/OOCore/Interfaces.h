@@ -198,8 +198,10 @@ namespace Omega
 	}
 
 	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, const wchar_t* pszEndpoint);
-	inline bool_t HandleRequest(uint32_t timeout = (uint32_t)0);
+	inline bool_t HandleRequest(uint32_t timeout = 0);
 }
+
+#if !defined(DOXYGEN)
 
 OMEGA_DEFINE_INTERFACE
 (
@@ -440,5 +442,7 @@ Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndpoint, Om
 {
 	return Omega_IO_OpenStream(strEndpoint,pNotify);
 }
+
+#endif // !defined(DOXYGEN)
 
 #endif // OOCORE_IFACES_H_INCLUDED_

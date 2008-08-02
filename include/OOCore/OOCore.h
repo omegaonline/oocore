@@ -32,7 +32,13 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#if !defined(OMEGA_EXPORTED_FUNCTION_VOID) && !defined(__DOXYGEN__)
+#if defined(DOXYGEN)
+
+#define OMEGA_DECLARE_OID(object_identifier) \
+	const Omega::guid_t object_identifier
+
+#elif !defined(OMEGA_EXPORTED_FUNCTION_VOID)
+
 #define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
 
@@ -64,18 +70,6 @@
 #include <OOCore/Wire.h>
 #include <OOCore/Interfaces.h>
 
-#if defined(__DOXYGEN__)
-#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
-	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
-
-#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
-	OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
-
-#define OMEGA_DECLARE_OID(n) \
-	OMEGA_IMPORT_OID(n)
-
-#endif
-
 namespace Omega
 {
 	inline IException* Initialize();
@@ -87,23 +81,27 @@ namespace Omega
 	}
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,());
+#if !defined(DOXYGEN)
+
+OMEGA_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,())
 Omega::string_t Omega::System::GetVersion()
 {
 	return Omega_GetVersion();
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,())
 Omega::IException* Omega::Initialize()
 {
 	return Omega_Initialize();
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,());
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 void Omega::Uninitialize()
 {
 	Omega_Uninitialize();
 }
+
+#endif // !defined(DOXYGEN)
 
 #include <OOCore/Types.inl>
 #include <OOCore/Threading.inl>

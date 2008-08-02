@@ -468,12 +468,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,o
 	IObject* pOF = 0;
 	if (!pszEndpoint)
 	{
-		pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_UUIDOF(Activation::IObjectFactory));
+		pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));
 	}
 	else
 	{
 		OTL::ObjectPtr<Omega::System::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		ptrIPS->GetRemoteInstance(oid,flags,OMEGA_UUIDOF(Omega::Activation::IObjectFactory),pszEndpoint,pOF);
+		ptrIPS->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pszEndpoint,pOF);
 	}
 
 	ObjectPtr<Activation::IObjectFactory> ptrOF;

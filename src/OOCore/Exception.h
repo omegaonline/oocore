@@ -45,7 +45,7 @@ namespace OOCore
 				OMEGA_THROW(EIO);
 
 			Omega::IObject* pE = 0;
-			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,OMEGA_UUIDOF(Omega::IException),pE);
+			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),pE);
 			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pE));
 		}
 
@@ -76,7 +76,7 @@ namespace OOCore
 		{
 			pMessage->WriteStrings(L"m_strDesc",1,&this->m_strDesc);
 			pMessage->WriteStrings(L"m_strSource",1,&this->m_strSource);
-			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
+			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
@@ -88,7 +88,7 @@ namespace OOCore
 			if (pMessage->ReadStrings(L"m_strSource",1,&s) != 1)
 				OMEGA_THROW(EIO);
 
-			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_UUIDOF(Omega::IException),this->m_ptrCause);
+			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
 	};
 

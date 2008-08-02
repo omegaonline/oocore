@@ -202,7 +202,7 @@ IException* OOCore::UserSession::bootstrap()
 		 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
 
 		ObjectPtr<System::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
@@ -1094,7 +1094,7 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 
 		// Unpack the payload
 		IObject* pPayload = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		ObjectPtr<Remoting::IMessage> ptrRequest;
 		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pPayload));
 
@@ -1119,12 +1119,12 @@ void OOCore::UserSession::process_request(const UserSession::Message* pMsg, cons
 		{
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
-			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_UUIDOF(Remoting::IMessage),ptrResult);
+			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
 			const ACE_Message_Block* mb = static_cast<const ACE_Message_Block*>(ptrResponse->GetMessageBlock());
 			if (!send_response(pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,mb,deadline))
-				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_UUIDOF(Remoting::IMessage),ptrResult);
+				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
 	}
 	catch (IException* pOuter)

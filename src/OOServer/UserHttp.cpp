@@ -131,7 +131,7 @@ User::HttpConnection::~HttpConnection()
 
 string_t User::HttpConnection::BaseURI()
 {
-	return ACE_TEXT_ALWAYS_WCHAR(m_strScheme.c_str()) + GetRequestHeader(L"Host").ToLower();
+	return string_t(m_strScheme.c_str(),false) + GetRequestHeader(L"Host").ToLower();
 }
 
 std::string User::HttpConnection::Trim(const std::string& str)

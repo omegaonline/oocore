@@ -37,7 +37,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the global interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
 		ObjectPtr<System::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 

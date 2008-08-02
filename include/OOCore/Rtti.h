@@ -303,7 +303,7 @@ namespace Omega
 			{
 			public:
 				iface_stub_functor_ref(typename interface_info<I>::safe_class* pS, const guid_t* piid = 0) : 
-				  iface_stub_functor<I>(pS,piid ? *piid : OMEGA_UUIDOF(I)), m_piid(piid ? piid : &OMEGA_UUIDOF(I))
+				  iface_stub_functor<I>(pS,piid ? *piid : OMEGA_GUIDOF(I)), m_piid(piid ? piid : &OMEGA_GUIDOF(I))
 				{
 				}
 
@@ -367,7 +367,7 @@ namespace Omega
 			class iface_proxy_functor_ref : public iface_proxy_functor<I>
 			{
 			public:
-				iface_proxy_functor_ref(I* pI, const guid_t& iid = OMEGA_UUIDOF(I)) :
+				iface_proxy_functor_ref(I* pI, const guid_t& iid = OMEGA_GUIDOF(I)) :
 					iface_proxy_functor<I>(pI,iid), m_piid(&iid)
 				{
 				}
@@ -398,14 +398,14 @@ namespace Omega
 				typedef iface_proxy_functor_ref<I> ref_safe_type;
 				typedef iface_stub_functor_ref<I> ref_type;
 
-				static iface_proxy_functor<I> coerce(I* val, const guid_t& iid = OMEGA_UUIDOF(I))
+				static iface_proxy_functor<I> coerce(I* val, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					return iface_proxy_functor<I>(val,iid);
 				}
 
 				static iface_stub_functor<I> coerce(type val, const guid_t* piid = 0)
 				{
-					return iface_stub_functor<I>(val,piid ? *piid : OMEGA_UUIDOF(I));
+					return iface_stub_functor<I>(val,piid ? *piid : OMEGA_GUIDOF(I));
 				}
 			};
 
@@ -542,9 +542,9 @@ namespace Omega
 			void SafeThrow(IException_Safe* pSE)
 			{
 				auto_iface_safe_ptr<IException_Safe> ptrSE(pSE);
-				I* pI = static_cast<I*>(marshal_info<IException*>::safe_type::coerce(pSE)->QueryInterface(OMEGA_UUIDOF(I)));
+				I* pI = static_cast<I*>(marshal_info<IException*>::safe_type::coerce(pSE)->QueryInterface(OMEGA_GUIDOF(I)));
 				if (!pI)
-					throw INoInterfaceException::Create(OMEGA_UUIDOF(I),OMEGA_SOURCE_INFO);
+					throw INoInterfaceException::Create(OMEGA_GUIDOF(I),OMEGA_SOURCE_INFO);
 				throw pI;
 			}
 
@@ -557,12 +557,12 @@ namespace Omega
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
 					++m_refcount;
-					//printf("%p (%ls) AddRef(%d)\n",this,lookup_iid(OMEGA_UUIDOF(I)).c_str(),m_refcount.value());
+					//printf("%p (%ls) AddRef(%d)\n",this,lookup_iid(OMEGA_GUIDOF(I)).c_str(),m_refcount.value());
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					//printf("%p (%ls) Release(%d)\n",this,lookup_iid(OMEGA_UUIDOF(I)).c_str(),m_refcount.value()-1);
+					//printf("%p (%ls) Release(%d)\n",this,lookup_iid(OMEGA_GUIDOF(I)).c_str(),m_refcount.value()-1);
 
 					if (--m_refcount==0)
 					{
@@ -575,7 +575,7 @@ namespace Omega
 
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
-					if (*piid == OMEGA_UUIDOF(IObject))
+					if (*piid == OMEGA_GUIDOF(IObject))
 					{
 						*ppS = this;
 						(*ppS)->AddRef_Safe();
@@ -697,7 +697,7 @@ namespace Omega
 
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
-					if (iid == OMEGA_UUIDOF(IObject))
+					if (iid == OMEGA_GUIDOF(IObject))
 					{
 						AddRef();
 						return this;
@@ -1027,6 +1027,6 @@ namespace Omega
 }
 
 // This IID is used to detect a SafeProxy - it has no other purpose
-OMEGA_DEFINE_IID(Omega::System::MetaInfo,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}");
+OMEGA_SET_GUIDOF(Omega::System::MetaInfo,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}")
 
 #endif // OOCORE_RTTI_H_INCLUDED_

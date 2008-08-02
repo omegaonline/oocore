@@ -306,26 +306,6 @@ Omega::string_t Omega::string_t::TrimRight(const wchar_t* sz) const
 	return Left(pos);
 }
 
-inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
-}
-
-inline Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
-}
-
-inline Omega::string_t operator + (const char* lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs,false) += rhs);
-}
-
-inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
-}
-
 bool Omega::guid_t::operator==(const Omega::string_t& str) const
 {
 	return str.CompareNoCase(ToString()) == 0;

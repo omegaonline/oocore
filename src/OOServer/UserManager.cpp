@@ -404,7 +404,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		// Unpack the payload
 		IObject* pPayload = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		ObjectPtr<Remoting::IMessage> ptrRequest;
 		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pPayload));
 
@@ -429,12 +429,12 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 		{
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
-			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_UUIDOF(Remoting::IMessage),ptrResult);
+			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
 			const ACE_Message_Block* mb = static_cast<const ACE_Message_Block*>(ptrResponse->GetMessageBlock());
 			if (!send_response(seq_no,src_channel_id,src_thread_id,mb,deadline,attribs))
-				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_UUIDOF(Remoting::IMessage),ptrResult);
+				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 		}
 	}
 	catch (IException* pOuter)

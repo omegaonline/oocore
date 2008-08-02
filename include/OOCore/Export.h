@@ -22,6 +22,8 @@
 #ifndef OOCORE_MACROS_H_INCLUDED_
 #define OOCORE_MACROS_H_INCLUDED_
 
+#if !defined(DOXYGEN)
+
 #include <OOCore/Preprocessor/sequence.h>
 #include <OOCore/Preprocessor/repeat.h>
 #include <OOCore/Preprocessor/comma.h>
@@ -45,7 +47,7 @@
 					SafeThrow<n_space::iface>, \
 					OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
 				}; \
-				register_rtti_info(OMEGA_UUIDOF(n_space::iface),&s_rtti); \
+				register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit_i); \
@@ -83,7 +85,7 @@
 			} \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 			{ \
-				RegisterWireFactories(OMEGA_UUIDOF(n_space::iface),(void*)&create_wire_proxy,(void*)&create_wire_stub); \
+				RegisterWireFactories(OMEGA_GUIDOF(n_space::iface),(void*)&create_wire_proxy,(void*)&create_wire_stub); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i); \
@@ -381,7 +383,7 @@
 		{ } \
 		virtual IException_Safe* Internal_QueryInterface_Safe(bool bRecurse, const guid_t* piid, IObject_Safe** ppObjS) \
 		{ \
-			if (*piid == OMEGA_UUIDOF(n_space::name)) \
+			if (*piid == OMEGA_GUIDOF(n_space::name)) \
 			{ \
 				*ppObjS = static_cast<interface_info<n_space::name>::safe_class*>(this); \
 				(*ppObjS)->AddRef_Safe(); \
@@ -401,7 +403,7 @@
 		{} \
 		virtual IException_Safe* OMEGA_CALL SupportsInterface_Safe(bool_t* pbSupports, const guid_t* piid) \
 		{ \
-			if (*piid == OMEGA_UUIDOF(n_space::name)) \
+			if (*piid == OMEGA_GUIDOF(n_space::name)) \
 			{ \
 				*pbSupports = true; \
 				return 0; \
@@ -619,7 +621,7 @@
 		{ } \
 		virtual IObject* Internal_QueryInterface(bool bRecurse, const guid_t& iid) \
 		{ \
-			if (iid == OMEGA_UUIDOF(n_space::name)) \
+			if (iid == OMEGA_GUIDOF(n_space::name)) \
 			{ \
 				this->AddRef(); \
 				return static_cast<n_space::name*>(this); \
@@ -641,7 +643,7 @@
 		{ } \
 		virtual IException_Safe* Internal_QueryInterface_Safe(bool bRecurse, const guid_t* piid, IObject_Safe** ppS) \
 		{ \
-			if (*piid == OMEGA_UUIDOF(n_space::name)) \
+			if (*piid == OMEGA_GUIDOF(n_space::name)) \
 			{ \
 				*ppS = static_cast<interface_info<n_space::name>::safe_class*>(this); \
 				(*ppS)->AddRef_Safe(); \
@@ -653,7 +655,7 @@
 	private: \
 		OMEGA_CONCAT_R(unique,_WireProxy)(const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
 		OMEGA_CONCAT_R(unique,_WireProxy)& operator = (const OMEGA_CONCAT_R(unique,_WireProxy)&) {}; \
-		const guid_t& this_iid() const { return OMEGA_UUIDOF(n_space::name); } \
+		const guid_t& this_iid() const { return OMEGA_GUIDOF(n_space::name); } \
 	};
 
 #define OMEGA_DEFINE_INTERNAL_INTERFACE(n_space,name,methods) \
@@ -667,7 +669,7 @@
 	OMEGA_WIRE_MAGIC(n_space,name)
 
 #define OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL(n_space,name,d_space,derived,guid,methods) \
-	OMEGA_DEFINE_IID(n_space,name,guid) \
+	OMEGA_SET_GUIDOF(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	OMEGA_DECLARE_FORWARDS(OMEGA_UNIQUE_NAME(name),n_space,name,d_space,derived) \
 	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,name,d_space,derived) \
@@ -680,7 +682,7 @@
 	OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL(n_space,name,Omega,IObject,guid,methods)
 
 #define OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,d_space,derived,guid,methods) \
-	OMEGA_DEFINE_IID(n_space,name,guid) \
+	OMEGA_SET_GUIDOF(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	OMEGA_DECLARE_FORWARDS(OMEGA_UNIQUE_NAME(name),n_space,name,d_space,derived) \
 	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,name,d_space,derived) \
@@ -774,5 +776,9 @@
 		} \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS(param_count,params))
+
+#else // defined(DOXYGEN)
+
+#endif // defined(DOXYGEN)
 
 #endif // OOCORE_MACROS_H_INCLUDED_

@@ -140,7 +140,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	if (ptrOMSB)
 	{
 		IObject* pIPS = 0;
-		ptrOMSB->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
+		ptrOMSB->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
 		m_ptrSBIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 	}
 
@@ -148,7 +148,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOMUser->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService),pIPS);
+		ptrOMUser->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
 		ObjectPtr<System::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 

@@ -38,13 +38,13 @@
 	public: static const OTL::ObjectBase::QIEntry* getQIEntries() {static const OTL::ObjectBase::QIEntry QIEntries[] = {
 
 #define INTERFACE_ENTRY(iface) \
-	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY_IID(iid,iface) \
 	{ &iid, &OTL::ObjectBase::QIDelegate<iface,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY2(iface,iface2) \
-	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY2_IID(iid,iface,iface2) \
 	{ &iid, &OTL::ObjectBase::QIDelegate2<iface,iface2,RootClass>, 0, 0 },
@@ -53,19 +53,19 @@
 	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIChain<baseClass,RootClass>, 0, 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE(iface,member_object) \
-	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
 
 #define INTERFACE_ENTRY_AGGREGATE_BLIND(member_object) \
 	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
 
 #define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
-	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
 	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, &pfn },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
-	{ &OMEGA_UUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },
 
 #define END_INTERFACE_MAP() \
 	{ 0,0,0,0 } }; return QIEntries; }
@@ -162,13 +162,13 @@ namespace OTL
 		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const wchar_t* pszEndpoint) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_UUIDOF(OBJECT),pszEndpoint));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
 		}
 
 		ObjectPtrBase(const Omega::string_t& object_name, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const wchar_t* pszEndpoint) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_UUIDOF(OBJECT),pszEndpoint));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
 		}
 
 		virtual ~ObjectPtrBase()
@@ -225,7 +225,7 @@ namespace OTL
 		template <class Q>
 		Q* QueryInterface()
 		{
-			return static_cast<Q*>(m_ptr.value()->QueryInterface(OMEGA_UUIDOF(Q)));
+			return static_cast<Q*>(m_ptr.value()->QueryInterface(OMEGA_GUIDOF(Q)));
 		}
 
 		OBJECT* const operator ->() const
@@ -254,7 +254,7 @@ namespace OTL
 		  ObjectPtrBase<OBJECT>(0)
 		{
 			if (pObject)
-				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(OMEGA_UUIDOF(OBJECT)));
+				this->m_ptr = static_cast<OBJECT*>(pObject->QueryInterface(OMEGA_GUIDOF(OBJECT)));
 		}
 
 		ObjectPtr(const ObjectPtr<OBJECT>& rhs) :
@@ -271,12 +271,12 @@ namespace OTL
 
 		void CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::InProcess | Omega::Activation::OutOfProcess, Omega::IObject* pOuter = 0, const wchar_t* pszEndpoint = 0)
 		{
-			this->m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_UUIDOF(OBJECT),pszEndpoint));
+			this->m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
 		}
 
 		void CreateInstance(const Omega::string_t& object_name, Omega::Activation::Flags_t flags = Omega::Activation::InProcess | Omega::Activation::OutOfProcess, Omega::IObject* pOuter = 0, const wchar_t* pszEndpoint = 0)
 		{
-			this->m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_UUIDOF(OBJECT),pszEndpoint));
+			this->m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
 		}
 	};
 
@@ -332,7 +332,7 @@ namespace OTL
 			{
 				if (*(pEntries[i].pGuid) == iid ||
 					*(pEntries[i].pGuid) == Omega::guid_t::Null() ||
-					iid == OMEGA_UUIDOF(Omega::IObject))
+					iid == OMEGA_GUIDOF(Omega::IObject))
 				{
 					return pEntries[i].pfnQI(iid,this,pEntries[i].offset,pEntries[i].pfnMemQI);
 				}
@@ -407,7 +407,7 @@ namespace OTL
 	public:
 		virtual Omega::guid_t ActualIID()
 		{
-			return OMEGA_UUIDOF(E);
+			return OMEGA_GUIDOF(E);
 		}
 		virtual Omega::IException* Cause()
 		{
@@ -644,7 +644,7 @@ namespace OTL
 
 		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			if (iid==OMEGA_UUIDOF(Omega::IObject))
+			if (iid==OMEGA_GUIDOF(Omega::IObject))
 			{
 				++m_refcount;
 				return this;

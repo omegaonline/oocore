@@ -215,7 +215,7 @@ void OTL::ProcessModule::RegisterObjectFactories()
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
 		ObjectPtr<Omega::Activation::IObjectFactory> ptrOF;
-		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_UUIDOF(Omega::Activation::IObjectFactory),Omega::Activation::InProcess)));
+		ptrOF.Attach(static_cast<Omega::Activation::IObjectFactory*>(g[i].pfnCreate(OMEGA_GUIDOF(Omega::Activation::IObjectFactory),Omega::Activation::InProcess)));
 
 		g[i].cookie = Omega::Activation::RegisterObject(*(g[i].pfnOid)(),ptrOF,(g[i].pfnActivationFlags)(),(g[i].pfnRegistrationFlags)());
 	}

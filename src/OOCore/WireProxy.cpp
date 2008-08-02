@@ -116,7 +116,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 		}
 
 		System::MetaInfo::IObject_Safe* pQI = 0;
-		if (iid == OMEGA_UUIDOF(IObject))
+		if (iid == OMEGA_GUIDOF(IObject))
 		{
 			pQI = static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
 			pQI->AddRef_Safe();
@@ -145,7 +145,7 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 	pParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
 	WriteUInt32(L"$stub_id",pParamsOut,m_proxy_id);
-	WriteGuid(L"$iid",pParamsOut,OMEGA_UUIDOF(IObject));
+	WriteGuid(L"$iid",pParamsOut,OMEGA_GUIDOF(IObject));
 	WriteUInt32(L"$method_id",pParamsOut,1);
 	WriteGuid(L"iid",pParamsOut,iid);
 
@@ -164,14 +164,14 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
-	if (*piid == OMEGA_UUIDOF(IObject) ||
-		*piid == OMEGA_UUIDOF(System::MetaInfo::IWireProxy))
+	if (*piid == OMEGA_GUIDOF(IObject) ||
+		*piid == OMEGA_GUIDOF(System::MetaInfo::IWireProxy))
 	{
 		*ppS = static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
 		(*ppS)->AddRef_Safe();
 		return 0;
 	}
-	else if (*piid == OMEGA_UUIDOF(Remoting::IMarshal))
+	else if (*piid == OMEGA_GUIDOF(Remoting::IMarshal))
 	{
 		*ppS = static_cast<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class*>(this);
 		(*ppS)->AddRef_Safe();
@@ -271,7 +271,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 	pParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
 	WriteUInt32(L"$stub_id",pParamsOut,m_proxy_id);
-	WriteGuid(L"$iid",pParamsOut,OMEGA_UUIDOF(IObject));
+	WriteGuid(L"$iid",pParamsOut,OMEGA_GUIDOF(IObject));
 	WriteUInt32(L"$method_id",pParamsOut,2);
 	WriteGuid(L"iid",pParamsOut,iid);
 
@@ -294,7 +294,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 		ReadGuid(L"$iid",pParamsOut);
 		ReadUInt32(L"$method_id",pParamsOut);
 		ReadGuid(L"iid",pParamsOut);
-		m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_UUIDOF(System::MetaInfo::IWireManager),pObjectManager);
+		m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::MetaInfo::IWireManager),pObjectManager);
 
 		throw ptrE.AddRef();
 	}
@@ -305,7 +305,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 		throw pE;
 
 	IObject* pReflect = 0;
-	m_pManager->UnmarshalInterface(L"pReflect",ptrParamsIn,OMEGA_UUIDOF(Remoting::IMessage),pReflect);
+	m_pManager->UnmarshalInterface(L"pReflect",ptrParamsIn,OMEGA_GUIDOF(Remoting::IMessage),pReflect);
 	return static_cast<Remoting::IMessage*>(pReflect);
 }
 
@@ -322,7 +322,7 @@ void OOCore::WireProxy::CallRemoteRelease()
 		pParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
 		WriteUInt32(L"$stub_id",pParamsOut,m_proxy_id);
-		WriteGuid(L"$iid",pParamsOut,OMEGA_UUIDOF(IObject));
+		WriteGuid(L"$iid",pParamsOut,OMEGA_GUIDOF(IObject));
 		WriteUInt32(L"$method_id",pParamsOut,0);
 		WriteUInt32(L"release_count",pParamsOut,m_marshal_count.value());
 
@@ -356,7 +356,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterfac
 	}
 	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IMessage_Safe> ptrReflect(pReflect);
 
-	return pObjectManager->MarshalInterface_Safe(L"pReflect",pMessage,&OMEGA_UUIDOF(Remoting::IMessage),ptrReflect);
+	return pObjectManager->MarshalInterface_Safe(L"pReflect",pMessage,&OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class*, System::MetaInfo::IMessage_Safe*, const guid_t*, Remoting::MarshalFlags_t)
@@ -370,13 +370,13 @@ void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManage
 
 	// Unmarshal the reflect package
 	IObject* pReflect = 0;
-	pObjectManager->UnmarshalInterface(L"pReflect",pMessage,OMEGA_UUIDOF(Remoting::IMessage),pReflect);
+	pObjectManager->UnmarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),pReflect);
 	ObjectPtr<Remoting::IMessage> ptrReflect;
 	ptrReflect.Attach(static_cast<Remoting::IMessage*>(pReflect));
 
 	// Unmarshal the manager
 	IObject* pChannel = 0;
-	pObjectManager->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_UUIDOF(Remoting::IChannelEx),pChannel);
+	pObjectManager->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_GUIDOF(Remoting::IChannelEx),pChannel);
 	ObjectPtr<Remoting::IChannelEx> ptrChannel;
 	ptrChannel.Attach(static_cast<Remoting::IChannelEx*>(pChannel));
 

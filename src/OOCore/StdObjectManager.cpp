@@ -483,7 +483,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_
 			{
 				// Unmarshal the exception
 				IObject* pE = 0;
-				UnmarshalInterface(L"exception",ptrRecv,OMEGA_UUIDOF(IException),pE);
+				UnmarshalInterface(L"exception",ptrRecv,OMEGA_GUIDOF(IException),pE);
 
 				if (!pE)
 					OMEGA_THROW(L"Null exception returned");
@@ -535,7 +535,7 @@ void OMEGA_CALL OOCore::StdObjectManager::Release_Safe()
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
 	*ppS = 0;
-	if (*piid == OMEGA_UUIDOF(IObject) || *piid == OMEGA_UUIDOF(System::MetaInfo::IWireManager))
+	if (*piid == OMEGA_GUIDOF(IObject) || *piid == OMEGA_GUIDOF(System::MetaInfo::IWireManager))
 	{
 		*ppS = static_cast<System::MetaInfo::IWireManager_Safe*>(this);
 		(*ppS)->AddRef_Safe();
@@ -564,7 +564,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 
 		// See if we have a stub already...
 		System::MetaInfo::IObject_Safe* pObjS = 0;
-		pSE = pObject->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
+		pSE = pObject->QueryInterface_Safe(&OMEGA_GUIDOF(IObject),&pObjS);
 		if (pSE)
 			return pSE;
 		System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
@@ -584,7 +584,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 		{
 			// See if pObject does custom marshalling...
 			System::MetaInfo::IObject_Safe* pMarshal = 0;
-			pSE = pObject->QueryInterface_Safe(&OMEGA_UUIDOF(Remoting::IMarshal),&pMarshal);
+			pSE = pObject->QueryInterface_Safe(&OMEGA_GUIDOF(Remoting::IMarshal),&pMarshal);
 			if (pSE)
 				return pSE;
 			System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class> ptrMarshal(static_cast<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class*>(pMarshal));
@@ -793,7 +793,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 			// Create an instance of Oid
 			ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
 			if (!ptrMarshalFactory)
-				throw INoInterfaceException::Create(OMEGA_UUIDOF(Remoting::IMarshalFactory),OMEGA_SOURCE_INFO);
+				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshalFactory),OMEGA_SOURCE_INFO);
 
 			ptrMarshalFactory->UnmarshalInterface(
 				this,
@@ -843,7 +843,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 				return pSE;
 
 			System::MetaInfo::IObject_Safe* pObjS = 0;
-			pSE = pObject->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
+			pSE = pObject->QueryInterface_Safe(&OMEGA_GUIDOF(IObject),&pObjS);
 			if (pSE)
 				return pSE;
 			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
@@ -883,7 +883,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 
 			// See if pObject does custom marshalling...
 			System::MetaInfo::IObject_Safe* pMarshal = 0;
-			pSE = pObject->QueryInterface_Safe(&OMEGA_UUIDOF(Remoting::IMarshal),&pMarshal);
+			pSE = pObject->QueryInterface_Safe(&OMEGA_GUIDOF(Remoting::IMarshal),&pMarshal);
 			if (pSE)
 				return pSE;
 
@@ -947,7 +947,7 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjec
 	
 	ObjectPtr<IStdObjectManager> ptrOM(pObjectManager);
 	if (!ptrOM)
-		throw INoInterfaceException::Create(OMEGA_UUIDOF(IStdObjectManager),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(IStdObjectManager),OMEGA_SOURCE_INFO);
 
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());	
 }
@@ -962,20 +962,20 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	{
 		ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
 		if (!ptrMarshal)
-			throw INoInterfaceException::Create(OMEGA_UUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
+			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
 
 		// The following format is the same as IObjectManager::UnmarshalInterface...
 		pMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
 		byte_t two = 2;
 		pMessage->WriteBytes(L"$marshal_type",1,&two);
 
-		guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_UUIDOF(Remoting::IChannelEx),flags);
+		guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_GUIDOF(Remoting::IChannelEx),flags);
 		if (oid == guid_t::Null())
 			OMEGA_THROW(L"Channels must support custom marshalling if they support reflection");
 
 		WriteGuid(L"$oid",pMessage,oid);
 
-		ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_UUIDOF(Remoting::IChannelEx),flags);
+		ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannelEx),flags);
 		
 		pMessage->WriteStructEnd(L"m_ptrChannel");		
 	}

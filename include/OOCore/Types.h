@@ -278,4 +278,19 @@ namespace Omega
 	}
 }
 
+inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
+{
+	return (Omega::string_t(lhs) += rhs);
+}
+
+inline Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs)
+{
+	return (Omega::string_t(lhs) += rhs);
+}
+
+inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs)
+{
+	return (Omega::string_t(lhs) += rhs);
+}
+
 #endif // OMEGA_TYPES_H_INCLUDED_

@@ -80,14 +80,14 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<OutputCDR> > ptrEnvelope = ObjectImpl<OutputCDR>::CreateInstancePtr();
-	m_ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+	m_ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	// QI pSend for our private interface
 	ObjectPtr<IMessageBlockHolder> ptrOutput;
-	ptrOutput.Attach(static_cast<IMessageBlockHolder*>(ptrEnvelope->QueryInterface(OMEGA_UUIDOF(IMessageBlockHolder))));
+	ptrOutput.Attach(static_cast<IMessageBlockHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(IMessageBlockHolder))));
 	if (!ptrOutput)
 	{
-		m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+		m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		OMEGA_THROW(EINVAL);
 	}
 
@@ -98,7 +98,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,request,response,timeout,attribs))
 	{
 		if (m_ptrOM)
-			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_UUIDOF(Remoting::IMessage),pSend);
+			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 		OMEGA_THROW(ACE_OS::last_error());
 	}
@@ -114,7 +114,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 
 			// Unwrap the payload...
 			IObject* pRet = 0;
-			m_ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_UUIDOF(Remoting::IMessage),pRet);
+			m_ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pRet);
 			pRecv = static_cast<Remoting::IMessage*>(pRet);
 		}
 	}

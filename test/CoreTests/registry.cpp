@@ -11,7 +11,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
 	while (pKey->IsValue(strTestValue))
 	{
-		strTestValue = "_" + strTestValue;
+		strTestValue = L"_" + strTestValue;
 	}
 
 	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
@@ -176,7 +176,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
 	while (pKey->IsSubKey(strTestKey))
 	{
-		strTestKey = "_" + strTestKey;
+		strTestKey = L"_" + strTestKey;
 	}
 
 	Omega::Registry::IKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create);
@@ -410,7 +410,7 @@ bool registry_tests_2()
 	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
 	while (ptrKey->IsSubKey(strTestKey))
 	{
-		strTestKey = "_" + strTestKey;
+		strTestKey = L"_" + strTestKey;
 	}
 
 	Omega::string_t strXML =
@@ -454,7 +454,7 @@ bool registry_tests_2()
 	strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
 	while (ptrKey->IsSubKey(strTestKey))
 	{
-		strTestKey = "_" + strTestKey;
+		strTestKey = L"_" + strTestKey;
 	}
 
 	strSubsts = L"  MODULE  =My Module;  TESTKEY=\\Local User\\" + strTestKey;

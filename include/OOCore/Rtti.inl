@@ -24,7 +24,7 @@
 
 Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 {
-	if (*piid==OMEGA_UUIDOF(IObject))
+	if (*piid==OMEGA_GUIDOF(IObject))
 	{
 		*retval = this;
 		(*retval)->AddRef_Safe();
@@ -122,8 +122,8 @@ Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::Sa
 
 Omega::IObject* Omega::System::MetaInfo::SafeProxy::ProxyQI(const guid_t& iid, bool bPartialAllowed)
 {
-	if (iid==OMEGA_UUIDOF(IObject) ||
-		iid==OMEGA_UUIDOF(ISafeProxy))
+	if (iid==OMEGA_GUIDOF(IObject) ||
+		iid==OMEGA_GUIDOF(ISafeProxy))
 	{
 		AddRef();
 		return this;
@@ -224,9 +224,9 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 
 	SafeStubMap& stub_map = get_stub_map();
 
-	auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(OMEGA_UUIDOF(IObject)));
+	auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(OMEGA_GUIDOF(IObject)));
 	if (!ptrObj)
-		throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(IObject),OMEGA_SOURCE_INFO);
 
 	auto_iface_safe_ptr<IObject_Safe> ptrStub;
 	try
@@ -244,7 +244,7 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 
 		if (!ptrStub)
 		{
-			auto_iface_ptr<ISafeProxy> ptrProxy(static_cast<ISafeProxy*>(ptrObj->QueryInterface(OMEGA_UUIDOF(ISafeProxy))));
+			auto_iface_ptr<ISafeProxy> ptrProxy(static_cast<ISafeProxy*>(ptrObj->QueryInterface(OMEGA_GUIDOF(ISafeProxy))));
 			if (ptrProxy)
 			{
 				ptrStub = ptrProxy->GetSafeStub();
@@ -298,11 +298,11 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 	SafeProxyMap& proxy_map = get_proxy_map();
 
 	IObject_Safe* pObjS = 0;
-	IException_Safe* pSE = pS->QueryInterface_Safe(&OMEGA_UUIDOF(IObject),&pObjS);
+	IException_Safe* pSE = pS->QueryInterface_Safe(&OMEGA_GUIDOF(IObject),&pObjS);
 	if (pSE)
 		throw_correct_exception(pSE);
 	if (!pObjS)
-		throw INoInterfaceException::Create(OMEGA_UUIDOF(IObject),OMEGA_SOURCE_INFO);
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(IObject),OMEGA_SOURCE_INFO);
 	auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 
 	auto_iface_ptr<ISafeProxy> ptrProxy;
@@ -394,7 +394,7 @@ bool Omega::System::PinObjectPointer(IObject* pObject)
 {
 	if (pObject)
 	{
-		Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::ISafeProxy))));
+		Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::MetaInfo::ISafeProxy))));
 		if (ptrProxy)
 		{
 			ptrProxy->Pin();
@@ -407,30 +407,30 @@ bool Omega::System::PinObjectPointer(IObject* pObject)
 
 void Omega::System::UnpinObjectPointer(IObject* pObject)
 {
-	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_UUIDOF(Omega::System::MetaInfo::ISafeProxy))));
+	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::MetaInfo::ISafeProxy))));
 	if (ptrProxy)
 		ptrProxy->Unpin();
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
-Omega::ISystemException* Omega::ISystemException::Create(Omega::uint32_t errno_val, const Omega::string_t& source)
+Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_val, const string_t& source)
 {
 	return ISystemException_Create_errno(errno_val,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source));
-Omega::ISystemException* Omega::ISystemException::Create(const std::exception& e, const Omega::string_t& source)
+OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source))
+Omega::ISystemException* Omega::ISystemException::Create(const std::exception& e, const string_t& source)
 {
 	return ISystemException_Create(string_t(e.what(),false),source);
 }
 
-Omega::ISystemException* Omega::ISystemException::Create(const string_t& desc, const Omega::string_t& source)
+Omega::ISystemException* Omega::ISystemException::Create(const string_t& desc, const string_t& source)
 {
 	return ISystemException_Create(desc,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source));
-Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const Omega::guid_t& iid, const string_t& source)
+OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source))
+Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const guid_t& iid, const string_t& source)
 {
 	return INoInterfaceException_Create(iid,source);
 }

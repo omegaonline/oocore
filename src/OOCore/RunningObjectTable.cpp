@@ -29,7 +29,7 @@ ObjectPtr<System::IInterProcessService> OOCore::GetInterProcessService()
 	try
 	{
 		ObjectPtr<System::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<System::IInterProcessService*>(Activation::GetRegisteredObject(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_UUIDOF(System::IInterProcessService))));
+		ptrIPS.Attach(static_cast<System::IInterProcessService*>(Activation::GetRegisteredObject(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService))));
 		return ptrIPS;
 	}
 	catch (IException* pE2)

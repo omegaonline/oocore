@@ -167,7 +167,7 @@ void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_
 			ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 			
 			IObject* pPayload = 0;
-			ptrOM->UnmarshalInterface(L"payload",ptrInput,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+			ptrOM->UnmarshalInterface(L"payload",ptrInput,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 			ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
 		}
 	}
@@ -207,7 +207,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 
 	// Get the source channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
-	ptrOM->MarshalInterface(L"payload",ptrMessage,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+	ptrOM->MarshalInterface(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 
 	try
 	{
@@ -242,7 +242,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 		ptrMessage->ReadUInt16s(L"src_thread_id",1,&src_thread_id);
 		ptrMessage->ReadUInt16s(L"flags",1,&flags);
 		ptrMessage->ReadUInt32s(L"seq_no",1,&seq_no);
-		ptrOM->ReleaseMarshalData(L"payload",ptrMessage,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+		ptrOM->ReleaseMarshalData(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		throw;
 	}
 }
@@ -311,7 +311,7 @@ void User::RemoteChannel::process_here_i(ACE_InputCDR& input)
 	}
 
 	IObject* pPayload = 0;
-	ptrOM->UnmarshalInterface(L"payload",ptrMsg,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+	ptrOM->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
 		
@@ -368,7 +368,7 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
 
 	IObject* pPayload = 0;
-	ptrOM->UnmarshalInterface(L"payload",pMsg,OMEGA_UUIDOF(Remoting::IMessage),pPayload);
+	ptrOM->UnmarshalInterface(L"payload",pMsg,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
 
@@ -442,11 +442,11 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 			if (!pOutput->good_bit())
 				OMEGA_THROW(ACE_OS::last_error());
 
-			ptrOM->MarshalInterface(L"payload",ptrMsg,OMEGA_UUIDOF(Remoting::IMessage),ptrPayload);
+			ptrOM->MarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 			
 			if (!m_pManager->call_async_function(process_here,this,static_cast<const ACE_Message_Block*>(ptrMsg->GetMessageBlock())))
 			{
-				ptrOM->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_UUIDOF(Remoting::IMessage),ptrPayload);
+				ptrOM->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 				OMEGA_THROW(L"Failed to queue message");
 			}
 		}
@@ -487,7 +487,7 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 		else
 		{
 			// Marshal the message onto the CDR message
-			ptrOM->MarshalInterface(L"payload",ptrOutput,OMEGA_UUIDOF(Remoting::IMessage),ptrPayload);
+			ptrOM->MarshalInterface(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 		}
 
 		// Translate channel ids
@@ -526,7 +526,7 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 		if (!m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,mb))
 		{
 			int err = ACE_OS::last_error();
-			ptrOM->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_UUIDOF(Remoting::IMessage),ptrPayload);
+			ptrOM->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 			OMEGA_THROW(err);
 		}
 	}

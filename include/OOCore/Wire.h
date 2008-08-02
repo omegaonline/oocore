@@ -100,11 +100,13 @@ namespace Omega
 	}
 }
 
-OMEGA_DEFINE_IID(Omega::Remoting, IMessage, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
-OMEGA_DEFINE_IID(Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
+#if !defined(DOXYGEN)
+
+OMEGA_SET_GUIDOF(Omega::Remoting, IMessage, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
+OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
+OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
+OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
+OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
 #define OMEGA_WIRE_DECLARE_WIRE_READWRITE(o_type,fn_type) \
 	inline IException_Safe* wire_read(const wchar_t* pszName, IMessage_Safe* pMessage, o_type& val) \
@@ -660,7 +662,7 @@ namespace Omega
 				static IException_Safe* read(const wchar_t* pszName, IWireManager_Safe* pManager, IMessage_Safe* pMessage, real_type& pI, const guid_t* piid = 0)
 				{
 					IObject_Safe* p = 0;
-					IException_Safe* pSE = pManager->UnmarshalInterface_Safe(pszName,pMessage,piid ? piid : &OMEGA_UUIDOF(I),&p);
+					IException_Safe* pSE = pManager->UnmarshalInterface_Safe(pszName,pMessage,piid ? piid : &OMEGA_GUIDOF(I),&p);
 					if (pSE)
 						return pSE;
 					pI = static_cast<real_type>(p);
@@ -669,12 +671,12 @@ namespace Omega
 
 				static IException_Safe* write(const wchar_t* pszName, IWireManager_Safe* pManager, IMessage_Safe* pMessage, real_type pI, const guid_t* piid = 0)
 				{
-					return pManager->MarshalInterface_Safe(pszName,pMessage,piid ? piid : &OMEGA_UUIDOF(I),pI);
+					return pManager->MarshalInterface_Safe(pszName,pMessage,piid ? piid : &OMEGA_GUIDOF(I),pI);
 				}
 
 				static IException_Safe* unpack(const wchar_t* pszName, IWireManager_Safe* pManager, IMessage_Safe* pMessage, real_type pI, const guid_t* piid = 0)
 				{
-					return pManager->ReleaseMarshalData_Safe(pszName,pMessage,piid ? piid : &OMEGA_UUIDOF(I),pI);
+					return pManager->ReleaseMarshalData_Safe(pszName,pMessage,piid ? piid : &OMEGA_GUIDOF(I),pI);
 				}
 
 				static IException_Safe* no_op(bool, const guid_t* = 0)
@@ -718,8 +720,8 @@ namespace Omega
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 				{
 					*retval = 0;
-					if (*piid == OMEGA_UUIDOF(IObject) ||
-						*piid == OMEGA_UUIDOF(IWireStub))
+					if (*piid == OMEGA_GUIDOF(IObject) ||
+						*piid == OMEGA_GUIDOF(IWireStub))
 					{
 						++m_refcount;
 						*retval = this;
@@ -830,7 +832,7 @@ namespace Omega
 
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
-					if (*piid == OMEGA_UUIDOF(IObject))
+					if (*piid == OMEGA_GUIDOF(IObject))
 					{
 						*ppS = this;
 						(*ppS)->AddRef_Safe();
@@ -984,5 +986,7 @@ void Omega::System::MetaInfo::RegisterWireFactories(const guid_t& iid, void* pfn
 {
 	Omega_RegisterWireFactories(iid,pfnProxy,pfnStub);
 }
+
+#endif // !defined(DOXYGEN)
 
 #endif // OOCORE_WIRE_H_INCLUDED_

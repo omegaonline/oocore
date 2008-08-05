@@ -45,6 +45,8 @@ namespace Omega
 			virtual size_t ReadUInt32s(const wchar_t* pszName, size_t count, uint32_t* arr) = 0;
 			virtual size_t ReadInt64s(const wchar_t* pszName, size_t count, int64_t* arr) = 0;
 			virtual size_t ReadUInt64s(const wchar_t* pszName, size_t count, uint64_t* arr) = 0;
+			virtual size_t ReadFloat4s(const wchar_t* pszName, size_t count, float4_t* arr) = 0;
+			virtual size_t ReadFloat8s(const wchar_t* pszName, size_t count, float8_t* arr) = 0;
 			virtual size_t ReadStrings(const wchar_t* pszName, size_t count, string_t* arr) = 0;
 			virtual size_t ReadGuids(const wchar_t* pszName, size_t count, guid_t* arr) = 0;
 			virtual void ReadStructStart(const wchar_t* pszName, const wchar_t* pszType) = 0;
@@ -58,6 +60,8 @@ namespace Omega
 			virtual void WriteUInt32s(const wchar_t* pszName, size_t count, const uint32_t* arr) = 0;
 			virtual void WriteInt64s(const wchar_t* pszName, size_t count, const int64_t* arr) = 0;
 			virtual void WriteUInt64s(const wchar_t* pszName, size_t count, const uint64_t* arr) = 0;
+			virtual void WriteFloat4s(const wchar_t* pszName, size_t count, const float4_t* arr) = 0;
+			virtual void WriteFloat8s(const wchar_t* pszName, size_t count, const float8_t* arr) = 0;
 			virtual void WriteStrings(const wchar_t* pszName, size_t count, const string_t* arr) = 0;
 			virtual void WriteGuids(const wchar_t* pszName, size_t count, const guid_t* arr) = 0;
 			virtual void WriteStructStart(const wchar_t* pszName, const wchar_t* pszType) = 0;
@@ -175,6 +179,8 @@ namespace Omega
 				OMEGA_METHOD(size_t,ReadUInt32s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),uint32_t*,arr))
 				OMEGA_METHOD(size_t,ReadInt64s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),int64_t*,arr))
 				OMEGA_METHOD(size_t,ReadUInt64s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),uint64_t*,arr))
+				OMEGA_METHOD(size_t,ReadFloat4s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),float4_t*,arr))
+				OMEGA_METHOD(size_t,ReadFloat8s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),float8_t*,arr))
 				OMEGA_METHOD(size_t,ReadStrings,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),string_t*,arr))
 				OMEGA_METHOD(size_t,ReadGuids,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),guid_t*,arr))
 				OMEGA_METHOD_VOID(ReadStructStart,2,((in),const wchar_t*,pszName,(in),const wchar_t*,pszType))
@@ -188,6 +194,8 @@ namespace Omega
 				OMEGA_METHOD_VOID(WriteUInt32s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const uint32_t*,arr))
 				OMEGA_METHOD_VOID(WriteInt64s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const int64_t*,arr))
 				OMEGA_METHOD_VOID(WriteUInt64s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const uint64_t*,arr))
+				OMEGA_METHOD_VOID(WriteFloat4s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const float4_t*,arr))
+				OMEGA_METHOD_VOID(WriteFloat8s,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const float8_t*,arr))
 				OMEGA_METHOD_VOID(WriteStrings,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const string_t*,arr))
 				OMEGA_METHOD_VOID(WriteGuids,3,((in),const wchar_t*,pszName,(in),size_t,count,(in)(size_is(count)),const guid_t*,arr))
 				OMEGA_METHOD_VOID(WriteStructStart,2,((in),const wchar_t*,pszName,(in),const wchar_t*,pszType))
@@ -243,6 +251,8 @@ namespace Omega
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(uint32_t,UInt32s)
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(int64_t,Int64s)
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(uint64_t,UInt64s)
+			OMEGA_WIRE_DECLARE_WIRE_READWRITE(float4_t,Float4s)
+			OMEGA_WIRE_DECLARE_WIRE_READWRITE(float8_t,Float8s)
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(guid_t,Guids)
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(string_t,Strings)
 
@@ -296,7 +306,7 @@ namespace Omega
 
 				static IException_Safe* init(type& val)
 				{
-					val = default_value<type>::value;
+					val = default_value<type>::value();
 					return 0;
 				}
 
@@ -327,10 +337,10 @@ namespace Omega
 			class std_wire_type<const T>
 			{
 			public:
-				typedef const typename marshal_info<T>::wire_type::type type;
-				typedef const typename marshal_info<T>::wire_type::type real_type;
+				typedef typename marshal_info<T>::wire_type::type type;
+				typedef typename marshal_info<T>::wire_type::type real_type;
 
-				static IException_Safe* read(const wchar_t* pszName, IWireManager_Safe* pManager, IMessage_Safe* pMessage, type& val)
+				static IException_Safe* read(const wchar_t* pszName, IWireManager_Safe* pManager, IMessage_Safe* pMessage, const type& val)
 				{
 					return marshal_info<T>::wire_type::read(pszName,pManager,pMessage,const_cast<typename marshal_info<T>::wire_type::type&>(val));
 				}

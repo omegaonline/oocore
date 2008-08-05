@@ -7,13 +7,60 @@
 BEGIN_PROCESS_OBJECT_MAP(L"CoreTests")
 END_PROCESS_OBJECT_MAP()
 
-static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
+static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 {
-	TEST(ptrTestLib->Hello() == L"Hello!");
+	TEST(ptrSimpleTest->BoolNot1(true) == false);
+	TEST(ptrSimpleTest->BoolNot1(false) == true);
+
+	{
+		Omega::bool_t r;
+		ptrSimpleTest->BoolNot2(true,r);
+		TEST(r == false);
+		ptrSimpleTest->BoolNot2(false,r);
+		TEST(r == true);
+
+		ptrSimpleTest->BoolNot3(true,r);
+		TEST(r == false);
+		ptrSimpleTest->BoolNot3(false,r);
+		TEST(r == true);
+
+		r = true;
+		ptrSimpleTest->BoolNot4(r);
+		TEST(r == false);
+		r = false;
+		ptrSimpleTest->BoolNot4(r);
+		TEST(r == true);
+	}
+
+	{
+		TEST(ptrSimpleTest->ByteInc1(23) == 24);
+		Omega::byte_t r;
+		ptrSimpleTest->ByteInc2(24,r);
+		TEST(r == 25);
+		ptrSimpleTest->ByteInc3(255,r);
+		TEST(r == 0);
+		r = 24;
+		ptrSimpleTest->ByteInc4(r);
+		TEST(r == 25);
+	}
+
+	{
+		TEST(ptrSimpleTest->Float4Mul31(23.0f) == 23.0f * 3);
+		Omega::float4_t r;
+		ptrSimpleTest->Float4Mul32(24.0f,r);
+		TEST(r == 24.0f * 3);
+		ptrSimpleTest->Float4Mul33(25.5f,r);
+		TEST(r == 25.5f * 3);
+		r = 26.8f;
+		ptrSimpleTest->Float4Mul34(r);
+		TEST(r == 26.8f * 3);
+	}
+
+	TEST(ptrSimpleTest->Hello() == L"Hello!");
 
 	try
 	{
-		ptrTestLib->Throw(EACCES);
+		ptrSimpleTest->Throw(EACCES);
 	}
 	catch (Omega::ISystemException* pE)
 	{
@@ -24,7 +71,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::Iface>& ptrTestLib)
 	// This is a test for channel closing
 	/*try
 	{
-		ptrTestLib->Abort();
+		ptrSimpleTest->Abort();
 	}
 	catch (Omega::IException* pE)
 	{
@@ -40,8 +87,8 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject,
 	if (err != 0)
 		return false;
 
-	OTL::ObjectPtr<Test::Iface> iface(pszObject,Omega::Activation::Any,0,pszEndpoint);
-	do_interface_tests(iface);
+	OTL::ObjectPtr<Test::ISimpleTest> ptrSimpleTest(pszObject,Omega::Activation::Any,0,pszEndpoint);
+	do_interface_tests(ptrSimpleTest);
 
 	Omega::string_t strXML =
 		L"<?xml version=\"1.0\" ?>"
@@ -58,13 +105,13 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject,
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
-	do_interface_tests(iface);
+	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
+	do_interface_tests(ptrSimpleTest);
 	
 	Omega::Registry::AddXML(strXML,false);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-	do_interface_tests(iface);
+	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+	do_interface_tests(ptrSimpleTest);
 
 	strXML =
 		L"<?xml version=\"1.0\" ?>"
@@ -78,13 +125,13 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszObject,
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
-	do_interface_tests(iface);
+	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
+	do_interface_tests(ptrSimpleTest);
 	
 	Omega::Registry::AddXML(strXML,false);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-	do_interface_tests(iface);
+	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+	do_interface_tests(ptrSimpleTest);
 	
 	TEST(system((Omega::string_t(L"OORegister -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
 
@@ -97,12 +144,12 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 	if (err != 0)
 		return false;
 
-	OTL::ObjectPtr<Test::Iface> iface;
+	OTL::ObjectPtr<Test::ISimpleTest> ptrSimpleTest;
 
 	if (!pszEndpoint)
 	{
-		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-		do_interface_tests(iface);
+		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(ptrSimpleTest);
 		
 		Omega::string_t strXML =
 			L"<?xml version=\"1.0\" ?>"
@@ -119,13 +166,13 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 
 		Omega::Registry::AddXML(strXML,true,strSubsts);
 		
-		iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
-		do_interface_tests(iface);
+		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(ptrSimpleTest);
 		
 		Omega::Registry::AddXML(strXML,false);
 		
-		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-		do_interface_tests(iface);
+		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(ptrSimpleTest);
 
 		strXML =
 			L"<?xml version=\"1.0\" ?>"
@@ -139,26 +186,26 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 
 		Omega::Registry::AddXML(strXML,true,strSubsts);
 
-		iface = OTL::ObjectPtr<Test::Iface>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
-		do_interface_tests(iface);
+		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest",Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(ptrSimpleTest);
 		
 		Omega::Registry::AddXML(strXML,false);
 
-		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-		do_interface_tests(iface);
+		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(ptrSimpleTest);
 
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
 		ptrReg->SetIntegerValue(L"Public",0);
 
-		iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-		do_interface_tests(iface);
+		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+		do_interface_tests(ptrSimpleTest);
 	}
 
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
 	ptrReg->SetIntegerValue(L"Public",1);
 
-	iface = OTL::ObjectPtr<Test::Iface>(pszObject,Omega::Activation::Any,0,pszEndpoint);
-	do_interface_tests(iface);
+	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(pszObject,Omega::Activation::Any,0,pszEndpoint);
+	do_interface_tests(ptrSimpleTest);
 
 	TEST(system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
 
@@ -168,8 +215,8 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 bool interface_tests()
 {
 #if defined(OMEGA_WIN32)
-	//do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",0);
-	//do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",0);
+	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",0);
+	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",0);
 #else
 	do_library_test(L"TestLibrary",L"Test.Library",0);
 #endif
@@ -185,7 +232,7 @@ bool interface_tests2()
 
 #if defined(OMEGA_WIN32)
 	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",host);
-	//do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
+	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
 #else
 	do_library_test(L"TestLibrary",L"Test.Library",host);
 #endif

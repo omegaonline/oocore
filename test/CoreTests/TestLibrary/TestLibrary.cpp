@@ -1,6 +1,6 @@
 #include <OTL/OTL.h>
 
-#include "../interfaces.h"
+#include "../SimpleTest.h"
 #include "./TestLibrary.h"
 
 #if defined(OMEGA_WIN32)
@@ -19,30 +19,19 @@ OMEGA_DEFINE_OID(Test, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}"
 class TestLibraryImpl :
 	public OTL::ObjectBase,
 	public OTL::AutoObjectFactory<TestLibraryImpl,&Test::OID_TestLibrary>,
-	public Test::Iface
+	public SimpleTestImpl
 {
 public:
 	TestLibraryImpl()
 	{ }
 
-	Omega::string_t Hello();
-	void Throw(Omega::uint32_t err);
 	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestLibraryImpl)
-		INTERFACE_ENTRY(Test::Iface)
+		INTERFACE_ENTRY(Test::ISimpleTest)
 	END_INTERFACE_MAP()
 };
 
-Omega::string_t TestLibraryImpl::Hello()
-{
-	return L"Hello!";
-}
-
-void TestLibraryImpl::Throw(Omega::uint32_t err)
-{
-	throw Omega::ISystemException::Create(err,L"TestLibraryImpl");
-}
 
 void TestLibraryImpl::Abort()
 {

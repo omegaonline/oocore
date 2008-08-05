@@ -70,6 +70,7 @@ namespace Rpc
 		Omega::string_t ReadString();
 		Omega::uint64_t ReadUInt();
 		Omega::int64_t ReadInt();
+		Omega::float8_t ReadDouble();
 		void ParseName(const wchar_t* pszName);
 		void SkipValue(bool bNamed);
 		void SkipCont(char term, bool bNamed);
@@ -99,6 +100,8 @@ namespace Rpc
 		size_t ReadUInt32s(const wchar_t* pszName, size_t count, Omega::uint32_t* arr);
 		size_t ReadInt64s(const wchar_t* pszName, size_t count, Omega::int64_t* arr);
 		size_t ReadUInt64s(const wchar_t* pszName, size_t count, Omega::uint64_t* arr);
+		size_t ReadFloat4s(const wchar_t* pszName, size_t count, Omega::float4_t* arr);
+		size_t ReadFloat8s(const wchar_t* pszName, size_t count, Omega::float8_t* arr);
 		size_t ReadStrings(const wchar_t* pszName, size_t count, Omega::string_t* arr);
 		size_t ReadGuids(const wchar_t* pszName, size_t count, Omega::guid_t* arr);
 		void ReadStructStart(const wchar_t* pszName, const wchar_t* pszType);
@@ -123,6 +126,7 @@ namespace Rpc
 		void WriteName(const Omega::string_t& strName);
 		void WriteInt(const Omega::int64_t& v);
 		void WriteUInt(const Omega::uint64_t& v);
+		void WriteDouble(const double& v);
 
 	// IHttpMsg
 	public:
@@ -138,6 +142,8 @@ namespace Rpc
 		void WriteUInt32s(const wchar_t* pszName, size_t count, const Omega::uint32_t* arr);
 		void WriteInt64s(const wchar_t* pszName, size_t count, const Omega::int64_t* arr);
 		void WriteUInt64s(const wchar_t* pszName, size_t count, const Omega::uint64_t* arr);
+		void WriteFloat4s(const wchar_t* pszName, size_t count, const Omega::float4_t* arr);
+		void WriteFloat8s(const wchar_t* pszName, size_t count, const Omega::float8_t* arr);
 		void WriteStrings(const wchar_t* pszName, size_t count, const Omega::string_t* arr);
 		void WriteGuids(const wchar_t* pszName, size_t count, const Omega::guid_t* arr);
 		void WriteStructStart(const wchar_t* pszName, const wchar_t* pszType);
@@ -182,6 +188,10 @@ namespace Rpc
 		void WriteInt64s(const wchar_t*, size_t, const Omega::int64_t*)
 			{ OMEGA_THROW(EACCES); }
 		void WriteUInt64s(const wchar_t*, size_t, const Omega::uint64_t*)
+			{ OMEGA_THROW(EACCES); }
+		void WriteFloat4s(const wchar_t*, size_t, const Omega::float4_t*)
+			{ OMEGA_THROW(EACCES); }
+		void WriteFloat8s(const wchar_t*, size_t, const Omega::float8_t*)
 			{ OMEGA_THROW(EACCES); }
 		void WriteStrings(const wchar_t*, size_t, const Omega::string_t*)
 			{ OMEGA_THROW(EACCES); }

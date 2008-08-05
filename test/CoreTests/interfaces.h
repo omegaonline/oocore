@@ -3,8 +3,23 @@
 
 namespace Test
 {
-	interface Iface : public Omega::IObject
+	interface ISimpleTest : public Omega::IObject
 	{
+		virtual Omega::bool_t BoolNot1(Omega::bool_t v) = 0;
+		virtual void BoolNot2(const Omega::bool_t v, Omega::bool_t& r) = 0;
+		virtual void BoolNot3(const Omega::bool_t& v, Omega::bool_t& r) = 0;
+		virtual void BoolNot4(Omega::bool_t& v) = 0;
+
+		virtual Omega::byte_t ByteInc1(Omega::byte_t v) = 0;
+		virtual void ByteInc2(const Omega::byte_t v, Omega::byte_t& r) = 0;
+		virtual void ByteInc3(const Omega::byte_t& v, Omega::byte_t& r) = 0;
+		virtual void ByteInc4(Omega::byte_t& v) = 0;
+
+		virtual Omega::float4_t Float4Mul31(Omega::float4_t v) = 0;
+		virtual void Float4Mul32(const Omega::float4_t v, Omega::float4_t& r) = 0;
+		virtual void Float4Mul33(const Omega::float4_t& v, Omega::float4_t& r) = 0;
+		virtual void Float4Mul34(Omega::float4_t& v) = 0;
+
 		virtual Omega::string_t Hello() = 0;
 
 		virtual void Throw(Omega::uint32_t err) = 0;
@@ -14,9 +29,24 @@ namespace Test
 
 OMEGA_DEFINE_INTERFACE
 (
-	Test, Iface, "{8488359E-C953-4e99-B7E5-ECA150C92F48}",
+	Test, ISimpleTest, "{8488359E-C953-4e99-B7E5-ECA150C92F48}",
 
 	// Methods
+	OMEGA_METHOD(Omega::bool_t,BoolNot1,1,((in),Omega::bool_t,v))
+	OMEGA_METHOD_VOID(BoolNot2,2,((in),const Omega::bool_t,v,(out),Omega::bool_t&,r))
+	OMEGA_METHOD_VOID(BoolNot3,2,((in),const Omega::bool_t&,v,(out),Omega::bool_t&,r))
+	OMEGA_METHOD_VOID(BoolNot4,1,((in_out),Omega::bool_t&,v))
+
+	OMEGA_METHOD(Omega::byte_t,ByteInc1,1,((in),Omega::byte_t,v))
+	OMEGA_METHOD_VOID(ByteInc2,2,((in),const Omega::byte_t,v,(out),Omega::byte_t&,r))
+	OMEGA_METHOD_VOID(ByteInc3,2,((in),const Omega::byte_t&,v,(out),Omega::byte_t&,r))
+	OMEGA_METHOD_VOID(ByteInc4,1,((in_out),Omega::byte_t&,v))
+
+	OMEGA_METHOD(Omega::float4_t,Float4Mul31,1,((in),Omega::float4_t,v))
+	OMEGA_METHOD_VOID(Float4Mul32,2,((in),const Omega::float4_t,v,(out),Omega::float4_t&,r))
+	OMEGA_METHOD_VOID(Float4Mul33,2,((in),const Omega::float4_t&,v,(out),Omega::float4_t&,r))
+	OMEGA_METHOD_VOID(Float4Mul34,1,((in_out),Omega::float4_t&,v))
+
 	OMEGA_METHOD(Omega::string_t,Hello,0,())
 
 	OMEGA_METHOD_VOID(Throw,1,((in),Omega::uint32_t,err))

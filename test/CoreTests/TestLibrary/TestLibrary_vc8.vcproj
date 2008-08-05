@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\SimpleTest.h"
+				>
+			</File>
+			<File
 				RelativePath=".\testlibrary.h"
 				>
 			</File>

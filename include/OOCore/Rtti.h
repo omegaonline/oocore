@@ -138,6 +138,7 @@ namespace Omega
 					typename marshal_info<T>::safe_type::ref_type m_val;
 					typename marshal_info<T>::safe_type::type* m_dest;
 				};
+
 				class ref_holder_safe
 				{
 				public:

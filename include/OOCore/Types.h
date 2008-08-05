@@ -102,13 +102,13 @@ namespace Omega
 #endif
 
 #if OMEGA_SIZEOF_FLOAT == 4
-	typedef float real4_t;
+	typedef float float4_t;
 #else  /* OMEGA_SIZEOF_FLOAT != 4 */
 	#error Have to add to the OMEGA_FLOAT type setting
 #endif /* OMEGA_SIZEOF_FLOAT != 4 */
 
 #if OMEGA_SIZEOF_DOUBLE == 8
-	typedef double real8_t;
+	typedef double float8_t;
 #else  /* OMEGA_SIZEOF_DOUBLE != 8 */
 	#error Have to add to the OMEGA_DOUBLE type setting
 #endif /* OMEGA_SIZEOF_DOUBLE != 8 */

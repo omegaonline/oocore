@@ -91,15 +91,21 @@ uint64_t Rpc::HttpMsgBase::ReadUInt()
 
 	uint64_t val = 0;
 	char* pEnd = m_mb->rd_ptr();
-	for (;pEnd < m_mb->wr_ptr();++pEnd)
+	for (int c=0;pEnd < m_mb->wr_ptr();++pEnd)
 	{
 		if (pEnd[0] >= '0' && pEnd[0] <= '9')
 		{
 			val *= 10;
 			val += (pEnd[0]-'0');
+			++c;
 		}
 		else
+		{
+			if (c==0)
+				OMEGA_THROW(L"Invalid format!");
+
 			break;
+		}
 	}
 
 	m_mb->rd_ptr(pEnd);
@@ -121,20 +127,76 @@ int64_t Rpc::HttpMsgBase::ReadInt()
 
 	int64_t val = 0;
 	char* pEnd = m_mb->rd_ptr();
-	for (;pEnd < m_mb->wr_ptr();++pEnd)
+	for (int c=0;pEnd < m_mb->wr_ptr();++pEnd)
 	{
 		if (pEnd[0] >= '0' && pEnd[0] <= '9')
 		{
 			val *= 10;
 			val += (pEnd[0]-'0');
+			++c;
 		}
 		else
+		{
+			if (c==0)
+				OMEGA_THROW(L"Invalid format!");
+
 			break;
+		}
 	}
 
 	m_mb->rd_ptr(pEnd);
 
 	return (bNeg ? -val : val);
+}
+
+float8_t Rpc::HttpMsgBase::ReadDouble()
+{
+	char* pEnd = 0;
+	double val = ACE_OS::strtod(m_mb->rd_ptr(),&pEnd);
+
+	m_mb->rd_ptr(pEnd);
+
+	return val;
+	
+	//// Parse digits before the decimal point
+	//float8_t val = static_cast<float8_t>(ReadInt());
+	//
+	//if (PeekNextChar() == '.')
+	//{
+	//	m_mb->rd_ptr(1);
+
+	//	float8_t frac = 0.0;
+	//	char* pEnd = m_mb->rd_ptr();
+	//	for (int dp = 0;pEnd < m_mb->wr_ptr();++pEnd)
+	//	{
+	//		if (pEnd[0] >= '0' && pEnd[0] <= '9')
+	//		{
+	//			frac += (pEnd[0]-'0')/(10.0*(++dp));
+	//		}
+	//		else
+	//		{
+	//			if (dp == 0)
+	//				OMEGA_THROW(L"Invalid format!");
+
+	//			break;
+	//		}
+	//	}
+
+	//	m_mb->rd_ptr(pEnd);
+
+	//	val += frac;
+	//}
+
+	//// Check exponent
+	//char next = PeekNextChar();
+	//if (next == 'E' || next == 'e')
+	//{
+	//	m_mb->rd_ptr(1);
+
+	//	val *= pow(10.0,static_cast<int>(ReadInt()));
+	//}
+
+	//return val;
 }
 
 string_t Rpc::HttpMsgBase::ReadString()
@@ -324,7 +386,7 @@ size_t Rpc::HttpMsgBase::ReadBytes(const wchar_t* pszName, size_t count, byte_t*
 		if (count != 0)
 		{
 			// Just read as a UInt
-			arr[0] = static_cast<Omega::byte_t>(ReadUInt());
+			arr[0] = static_cast<byte_t>(ReadUInt());
 		}
 		return 1;
 	}
@@ -593,6 +655,80 @@ size_t Rpc::HttpMsgBase::ReadUInt64s(const wchar_t* pszName, size_t count, uint6
 	return i;
 }
 
+size_t Rpc::HttpMsgBase::ReadFloat4s(const wchar_t* pszName, size_t count, float4_t* arr)
+{
+	// Read the name
+	ParseName(pszName);
+
+	bool bArray = (PeekNextChar() == '[');
+	if (bArray)
+	{
+		// array
+		m_mb->rd_ptr(1);
+		SkipWhitespace();
+	}
+
+	size_t i;
+	for (i=0;i<count;++i)
+	{
+		if (i > 0)
+		{
+			// Read trailing ,
+			CheckChar(',');
+			SkipWhitespace();
+		}
+
+		arr[i] = static_cast<float4_t>(ReadDouble());
+		
+		SkipWhitespace();
+
+		if (!bArray || PeekNextChar() == ']')
+		{
+			++i;
+			break;
+		}
+	}
+
+	return i;
+}
+
+size_t Rpc::HttpMsgBase::ReadFloat8s(const wchar_t* pszName, size_t count, float8_t* arr)
+{
+	// Read the name
+	ParseName(pszName);
+
+	bool bArray = (PeekNextChar() == '[');
+	if (bArray)
+	{
+		// array
+		m_mb->rd_ptr(1);
+		SkipWhitespace();
+	}
+
+	size_t i;
+	for (i=0;i<count;++i)
+	{
+		if (i > 0)
+		{
+			// Read trailing ,
+			CheckChar(',');
+			SkipWhitespace();
+		}
+
+		arr[i] = ReadDouble();
+		
+		SkipWhitespace();
+
+		if (!bArray || PeekNextChar() == ']')
+		{
+			++i;
+			break;
+		}
+	}
+
+	return i;
+}
+
 size_t Rpc::HttpMsgBase::ReadStrings(const wchar_t* pszName, size_t count, string_t* arr)
 {
 	// Read the name
@@ -778,7 +914,7 @@ void Rpc::HttpMsgBase::ReadSubObject(void* str)
 	*static_cast<std::string*>(str) = std::string(pStart,m_mb->rd_ptr() - pStart - 1);
 }
 
-void Rpc::HttpMsgBase::MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+void Rpc::HttpMsgBase::MarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	OTL::ObjectPtr<IHttpMsg> ptrHM(pMessage);
 	if (ptrHM)
@@ -793,7 +929,7 @@ void Rpc::HttpMsgBase::MarshalInterface(Omega::Remoting::IObjectManager*, Omega:
 	}
 }
 
-void Rpc::HttpMsgBase::ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+void Rpc::HttpMsgBase::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	OTL::ObjectPtr<IHttpMsg> ptrHM(pMessage);
 	if (ptrHM)
@@ -918,7 +1054,7 @@ void Rpc::HttpOutputMsg::WriteName(const string_t& strName)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
-void Rpc::HttpOutputMsg::WriteInt(const Omega::int64_t& v)
+void Rpc::HttpOutputMsg::WriteInt(const int64_t& v)
 {
 	char szBuf[64] = {0};
 	ACE_OS::snprintf(szBuf,63,"%lld",v);
@@ -929,7 +1065,7 @@ void Rpc::HttpOutputMsg::WriteInt(const Omega::int64_t& v)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
-void Rpc::HttpOutputMsg::WriteUInt(const Omega::uint64_t& v)
+void Rpc::HttpOutputMsg::WriteUInt(const uint64_t& v)
 {
 	char szBuf[64] = {0};
 	ACE_OS::snprintf(szBuf,63,"%llu",v);
@@ -940,7 +1076,18 @@ void Rpc::HttpOutputMsg::WriteUInt(const Omega::uint64_t& v)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
-void Rpc::HttpOutputMsg::WriteBooleans(const wchar_t* pszName, size_t count, const Omega::bool_t* arr)
+void Rpc::HttpOutputMsg::WriteDouble(const double& v)
+{
+	char szBuf[64] = {0};
+	ACE_OS::snprintf(szBuf,63,"%G",v);
+	std::string t = szBuf;
+
+	grow_mb(t.length());
+	if (m_mb->copy(t.c_str(),t.length()) == -1)
+		OMEGA_THROW(ACE_OS::last_error());
+}
+
+void Rpc::HttpOutputMsg::WriteBooleans(const wchar_t* pszName, size_t count, const bool_t* arr)
 {
 	WriteName(pszName);
 
@@ -991,7 +1138,7 @@ void Rpc::HttpOutputMsg::WriteBooleans(const wchar_t* pszName, size_t count, con
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteBytes(const wchar_t* pszName, size_t count, const Omega::byte_t* arr)
+void Rpc::HttpOutputMsg::WriteBytes(const wchar_t* pszName, size_t count, const byte_t* arr)
 {
 	WriteName(pszName);
 
@@ -1017,7 +1164,7 @@ void Rpc::HttpOutputMsg::WriteBytes(const wchar_t* pszName, size_t count, const 
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
-void Rpc::HttpOutputMsg::WriteInt16s(const wchar_t* pszName, size_t count, const Omega::int16_t* arr)
+void Rpc::HttpOutputMsg::WriteInt16s(const wchar_t* pszName, size_t count, const int16_t* arr)
 {
 	WriteName(pszName);
 
@@ -1057,7 +1204,7 @@ void Rpc::HttpOutputMsg::WriteInt16s(const wchar_t* pszName, size_t count, const
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteUInt16s(const wchar_t* pszName, size_t count, const Omega::uint16_t* arr)
+void Rpc::HttpOutputMsg::WriteUInt16s(const wchar_t* pszName, size_t count, const uint16_t* arr)
 {
 	WriteName(pszName);
 
@@ -1097,7 +1244,7 @@ void Rpc::HttpOutputMsg::WriteUInt16s(const wchar_t* pszName, size_t count, cons
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteInt32s(const wchar_t* pszName, size_t count, const Omega::int32_t* arr)
+void Rpc::HttpOutputMsg::WriteInt32s(const wchar_t* pszName, size_t count, const int32_t* arr)
 {
 	WriteName(pszName);
 
@@ -1137,7 +1284,7 @@ void Rpc::HttpOutputMsg::WriteInt32s(const wchar_t* pszName, size_t count, const
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteUInt32s(const wchar_t* pszName, size_t count, const Omega::uint32_t* arr)
+void Rpc::HttpOutputMsg::WriteUInt32s(const wchar_t* pszName, size_t count, const uint32_t* arr)
 {
 	WriteName(pszName);
 
@@ -1177,7 +1324,7 @@ void Rpc::HttpOutputMsg::WriteUInt32s(const wchar_t* pszName, size_t count, cons
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteInt64s(const wchar_t* pszName, size_t count, const Omega::int64_t* arr)
+void Rpc::HttpOutputMsg::WriteInt64s(const wchar_t* pszName, size_t count, const int64_t* arr)
 {
 	WriteName(pszName);
 
@@ -1217,7 +1364,7 @@ void Rpc::HttpOutputMsg::WriteInt64s(const wchar_t* pszName, size_t count, const
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteUInt64s(const wchar_t* pszName, size_t count, const Omega::uint64_t* arr)
+void Rpc::HttpOutputMsg::WriteUInt64s(const wchar_t* pszName, size_t count, const uint64_t* arr)
 {
 	WriteName(pszName);
 
@@ -1257,7 +1404,87 @@ void Rpc::HttpOutputMsg::WriteUInt64s(const wchar_t* pszName, size_t count, cons
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteStrings(const wchar_t* pszName, size_t count, const Omega::string_t* arr)
+void Rpc::HttpOutputMsg::WriteFloat4s(const wchar_t* pszName, size_t count, const float4_t* arr)
+{
+	WriteName(pszName);
+
+	if (count == 0)
+	{
+		grow_mb(2);
+		if (m_mb->copy("[]",2) == -1)
+			OMEGA_THROW(ACE_OS::last_error());
+
+		return;
+	}
+
+	if (count != 1)
+	{
+		grow_mb(1);
+		if (m_mb->copy("[",1) == -1)
+			OMEGA_THROW(ACE_OS::last_error());
+	}
+
+	for (size_t i=0;i<count;++i)
+	{
+		if (i != 0)
+		{
+			grow_mb(2);
+			if (m_mb->copy(", ",2) == -1)
+				OMEGA_THROW(ACE_OS::last_error());
+		}
+
+		WriteDouble(arr[i]);
+	}
+
+	if (count != 1)
+	{
+		grow_mb(1);
+		if (m_mb->copy("]",1) == -1)
+			OMEGA_THROW(ACE_OS::last_error());
+	}
+}
+
+void Rpc::HttpOutputMsg::WriteFloat8s(const wchar_t* pszName, size_t count, const float8_t* arr)
+{
+	WriteName(pszName);
+
+	if (count == 0)
+	{
+		grow_mb(2);
+		if (m_mb->copy("[]",2) == -1)
+			OMEGA_THROW(ACE_OS::last_error());
+
+		return;
+	}
+
+	if (count != 1)
+	{
+		grow_mb(1);
+		if (m_mb->copy("[",1) == -1)
+			OMEGA_THROW(ACE_OS::last_error());
+	}
+
+	for (size_t i=0;i<count;++i)
+	{
+		if (i != 0)
+		{
+			grow_mb(2);
+			if (m_mb->copy(", ",2) == -1)
+				OMEGA_THROW(ACE_OS::last_error());
+		}
+
+		WriteDouble(arr[i]);
+	}
+
+	if (count != 1)
+	{
+		grow_mb(1);
+		if (m_mb->copy("]",1) == -1)
+			OMEGA_THROW(ACE_OS::last_error());
+	}
+}
+
+void Rpc::HttpOutputMsg::WriteStrings(const wchar_t* pszName, size_t count, const string_t* arr)
 {
 	WriteName(pszName);
 
@@ -1297,7 +1524,7 @@ void Rpc::HttpOutputMsg::WriteStrings(const wchar_t* pszName, size_t count, cons
 	}
 }
 
-void Rpc::HttpOutputMsg::WriteGuids(const wchar_t* pszName, size_t count, const Omega::guid_t* arr)
+void Rpc::HttpOutputMsg::WriteGuids(const wchar_t* pszName, size_t count, const guid_t* arr)
 {
 	WriteName(pszName);
 
@@ -1400,7 +1627,7 @@ bool Rpc::HttpInputMsg::more_exists()
 	return (m_mb->length() != 0);
 }
 
-void Rpc::HttpOutputMsgMarshalFactory::UnmarshalInterface(Omega::Remoting::IObjectManager*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t, Omega::IObject*& pObject)
+void Rpc::HttpOutputMsgMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	std::string strUtf8;
 	OTL::ObjectPtr<IHttpMsg> ptrHM(pMessage);

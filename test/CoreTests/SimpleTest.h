@@ -1,0 +1,72 @@
+#ifndef SIMPLE_TEST_INCLUDED
+#define SIMPLE_TEST_INCLUDED
+
+#include "./interfaces.h"
+
+class SimpleTestImpl : 
+	public Test::ISimpleTest
+{
+public:
+	Omega::bool_t BoolNot1(Omega::bool_t v)
+	{
+		return !v;
+	}
+	void BoolNot2(const Omega::bool_t v, Omega::bool_t& r)
+	{
+		r = !v;
+	}
+	void BoolNot3(const Omega::bool_t& v, Omega::bool_t& r)
+	{
+		r = !v;
+	}
+	void BoolNot4(Omega::bool_t& v)
+	{
+		v = !v;
+	}
+
+	Omega::byte_t ByteInc1(Omega::byte_t v)
+	{
+		return v+1;
+	}
+	void ByteInc2(const Omega::byte_t v, Omega::byte_t& r)
+	{
+		r = v+1;
+	}
+	void ByteInc3(const Omega::byte_t& v, Omega::byte_t& r)
+	{
+		r = v+1;
+	}
+	void ByteInc4(Omega::byte_t& v)
+	{
+		++v;
+	}
+
+	Omega::float4_t Float4Mul31(Omega::float4_t v)
+	{
+		return v * 3;
+	}
+	void Float4Mul32(const Omega::float4_t v, Omega::float4_t& r)
+	{
+		r = v * 3;
+	}
+	void Float4Mul33(const Omega::float4_t& v, Omega::float4_t& r)
+	{
+		r = v * 3;
+	}
+	void Float4Mul34(Omega::float4_t& v)
+	{
+		v = v * 3;
+	}
+
+	Omega::string_t Hello()
+	{
+		return L"Hello!";
+	}
+
+	void Throw(Omega::uint32_t err)
+	{
+		throw Omega::ISystemException::Create(err,L"TestLibraryImpl");
+	}
+};
+
+#endif // SIMPLE_TEST_INCLUDED

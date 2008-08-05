@@ -280,6 +280,8 @@ namespace OOCore
 		OOCORE_DEFINE_MESSAGE_READ(get_input().,ReadUInt32s,uint32_t,ulong)
 		OOCORE_DEFINE_MESSAGE_READ(get_input().,ReadInt64s,int64_t,longlong)
 		OOCORE_DEFINE_MESSAGE_READ(get_input().,ReadUInt64s,uint64_t,ulonglong)
+		OOCORE_DEFINE_MESSAGE_READ(get_input().,ReadFloat4s,float4_t,float)
+		OOCORE_DEFINE_MESSAGE_READ(get_input().,ReadFloat8s,float8_t,double)
 		
 		size_t ReadStrings(const wchar_t*, size_t count, Omega::string_t* arr)
 		{ 
@@ -317,6 +319,8 @@ namespace OOCore
 		OOCORE_DEFINE_MESSAGE_WRITE(WriteUInt32s,uint32_t,ulong)
 		OOCORE_DEFINE_MESSAGE_WRITE(WriteInt64s,int64_t,longlong)
 		OOCORE_DEFINE_MESSAGE_WRITE(WriteUInt64s,uint64_t,ulonglong)
+		OOCORE_DEFINE_MESSAGE_WRITE(WriteFloat4s,float4_t,float)
+		OOCORE_DEFINE_MESSAGE_WRITE(WriteFloat8s,float8_t,double)
 
 		void WriteStrings(const wchar_t*, size_t count, const Omega::string_t* arr)
 		{ 
@@ -478,6 +482,8 @@ namespace OOCore
 		OOCORE_DEFINE_MESSAGE_READ(this->,ReadUInt32s,uint32_t,ulong)
 		OOCORE_DEFINE_MESSAGE_READ(this->,ReadInt64s,int64_t,longlong)
 		OOCORE_DEFINE_MESSAGE_READ(this->,ReadUInt64s,uint64_t,ulonglong)
+		OOCORE_DEFINE_MESSAGE_READ(this->,ReadFloat4s,float4_t,float)
+		OOCORE_DEFINE_MESSAGE_READ(this->,ReadFloat8s,float8_t,double)
 		
 		size_t ReadStrings(const wchar_t*, size_t count, Omega::string_t* arr)
 		{ 
@@ -522,6 +528,10 @@ namespace OOCore
 		void WriteInt64s(const wchar_t*, size_t, const Omega::int64_t*)
 			{ OMEGA_THROW(EACCES); }
 		void WriteUInt64s(const wchar_t*, size_t, const Omega::uint64_t*)
+			{ OMEGA_THROW(EACCES); }
+		void WriteFloat4s(const wchar_t*, size_t, const Omega::float4_t*)
+			{ OMEGA_THROW(EACCES); }
+		void WriteFloat8s(const wchar_t*, size_t, const Omega::float8_t*)
 			{ OMEGA_THROW(EACCES); }
 		void WriteStrings(const wchar_t*, size_t, const Omega::string_t*)
 			{ OMEGA_THROW(EACCES); }

@@ -1,6 +1,6 @@
 #include <OTL/OTL.h>
 
-#include "../interfaces.h"
+#include "../SimpleTest.h"
 #include "./TestProcess.h"
 
 OMEGA_DEFINE_OID(Test, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
@@ -8,30 +8,18 @@ OMEGA_DEFINE_OID(Test, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}"
 class TestProcessImpl :
 	public OTL::ObjectBase,
 	public OTL::AutoObjectFactory<TestProcessImpl,&Test::OID_TestProcess>,
-	public Test::Iface
+	public SimpleTestImpl
 {
 public:
 	TestProcessImpl()
 	{ }
 
-	Omega::string_t Hello();
-	void Throw(Omega::uint32_t err);
 	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestProcessImpl)
-		INTERFACE_ENTRY(Test::Iface)
+		INTERFACE_ENTRY(Test::ISimpleTest)
 	END_INTERFACE_MAP()
 };
-
-Omega::string_t TestProcessImpl::Hello()
-{
-	return L"Hello!";
-}
-
-void TestProcessImpl::Throw(Omega::uint32_t err)
-{
-	throw Omega::ISystemException::Create((int)err,L"TestProcessImpl");
-}
 
 void TestProcessImpl::Abort()
 {

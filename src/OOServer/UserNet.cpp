@@ -771,6 +771,8 @@ void User::Manager::close_all_remotes()
 
 bool User::Manager::route_off(ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no)
 {
+	void* TODO; // Add SEH handler here
+
 	try
 	{
 		ObjectPtr<ObjectImpl<RemoteChannel> > ptrRemoteChannel;

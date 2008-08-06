@@ -33,6 +33,19 @@ bool interface_tests();
 bool net_tests();
 bool interface_tests2();
 
+static void tests()
+{
+	RUN_TEST(string_tests);
+	RUN_TEST(guid_tests);
+	RUN_TEST(exception_tests);
+	RUN_TEST(otl_tests);
+	RUN_TEST(registry_tests);
+	RUN_TEST(registry_tests_2);
+	RUN_TEST(interface_tests);
+	//RUN_TEST(net_tests);
+	RUN_TEST(interface_tests2);
+}
+
 int main(int /*argc*/, char* /*argv*/[])
 {
 	printf("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
@@ -40,15 +53,9 @@ int main(int /*argc*/, char* /*argv*/[])
 
 	if (RUN_TEST(init_tests))
 	{
-		RUN_TEST(string_tests);
-		RUN_TEST(guid_tests);
-		RUN_TEST(exception_tests);
-		RUN_TEST(otl_tests);
-		RUN_TEST(registry_tests);
-		RUN_TEST(registry_tests_2);
-		RUN_TEST(interface_tests);
-		//RUN_TEST(net_tests);
-		RUN_TEST(interface_tests2);
+		printf("\nPerforming single threaded tests...\n\n");
+
+		tests();
 	}
 
 	return test_summary();

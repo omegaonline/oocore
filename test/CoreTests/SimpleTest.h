@@ -41,6 +41,23 @@ public:
 		++v;
 	}
 
+	Omega::int16_t Int16Inc1(Omega::int16_t v)
+	{
+		return v+1;
+	}
+	void Int16Inc2(const Omega::int16_t v, Omega::int16_t& r)
+	{
+		r = v+1;
+	}
+	void Int16Inc3(const Omega::int16_t& v, Omega::int16_t& r)
+	{
+		r = v+1;
+	}
+	void Int16Inc4(Omega::int16_t& v)
+	{
+		++v;
+	}
+
 	Omega::float4_t Float4Mul31(Omega::float4_t v)
 	{
 		return v * 3;
@@ -54,6 +71,23 @@ public:
 		r = v * 3;
 	}
 	void Float4Mul34(Omega::float4_t& v)
+	{
+		v = v * 3;
+	}
+
+	Omega::float8_t Float8Mul31(Omega::float8_t v)
+	{
+		return v * 3;
+	}
+	void Float8Mul32(const Omega::float8_t v, Omega::float8_t& r)
+	{
+		r = v * 3;
+	}
+	void Float8Mul33(const Omega::float8_t& v, Omega::float8_t& r)
+	{
+		r = v * 3;
+	}
+	void Float8Mul34(Omega::float8_t& v)
 	{
 		v = v * 3;
 	}

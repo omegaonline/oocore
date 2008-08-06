@@ -9,10 +9,10 @@ END_PROCESS_OBJECT_MAP()
 
 static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 {
-	TEST(ptrSimpleTest->BoolNot1(true) == false);
-	TEST(ptrSimpleTest->BoolNot1(false) == true);
-
 	{
+		TEST(ptrSimpleTest->BoolNot1(true) == false);
+		TEST(ptrSimpleTest->BoolNot1(false) == true);
+
 		Omega::bool_t r;
 		ptrSimpleTest->BoolNot2(true,r);
 		TEST(r == false);
@@ -45,6 +45,18 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 	}
 
 	{
+		TEST(ptrSimpleTest->Int16Inc1(1) == 2);
+		Omega::int16_t r;
+		ptrSimpleTest->Int16Inc2(-1,r);
+		TEST(r == 0);
+		ptrSimpleTest->Int16Inc3(0,r);
+		TEST(r == 1);
+		r = 32767;
+		ptrSimpleTest->Int16Inc4(r);
+		TEST(r == -32768);
+	}
+
+	{
 		TEST(ptrSimpleTest->Float4Mul31(23.0f) == 23.0f * 3);
 		Omega::float4_t r;
 		ptrSimpleTest->Float4Mul32(24.0f,r);
@@ -54,6 +66,18 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 		r = 26.8f;
 		ptrSimpleTest->Float4Mul34(r);
 		TEST(r == 26.8f * 3);
+	}
+
+	{
+		TEST(ptrSimpleTest->Float8Mul31(23.0) == 23.0 * 3);
+		Omega::float8_t r;
+		ptrSimpleTest->Float8Mul32(24.0,r);
+		TEST(r == 24.0 * 3);
+		ptrSimpleTest->Float8Mul33(25.5,r);
+		TEST(r == 25.5 * 3);
+		r = 26.8;
+		ptrSimpleTest->Float8Mul34(r);
+		TEST(r == 26.8 * 3);
 	}
 
 	TEST(ptrSimpleTest->Hello() == L"Hello!");
@@ -212,24 +236,8 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszObje
 	return true;
 }
 
-bool interface_tests()
+static bool interface_tests_i(const wchar_t* host)
 {
-#if defined(OMEGA_WIN32)
-	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",0);
-	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",0);
-#else
-	do_library_test(L"TestLibrary",L"Test.Library",0);
-#endif
-
-	do_process_test(L"TestProcess",L"Test.Process",0);
-
-	return true;
-}
-
-bool interface_tests2()
-{
-	const wchar_t host[] = L"http://localhost:8901";
-
 #if defined(OMEGA_WIN32)
 	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",host);
 	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
@@ -240,4 +248,14 @@ bool interface_tests2()
 	do_process_test(L"TestProcess",L"Test.Process",host);
 
 	return true;
+}
+
+bool interface_tests()
+{
+	return interface_tests_i(0);
+}
+
+bool interface_tests2()
+{
+	return interface_tests_i(L"http://localhost:8901");
 }

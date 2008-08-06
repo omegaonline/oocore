@@ -15,10 +15,20 @@ namespace Test
 		virtual void ByteInc3(const Omega::byte_t& v, Omega::byte_t& r) = 0;
 		virtual void ByteInc4(Omega::byte_t& v) = 0;
 
+		virtual Omega::int16_t Int16Inc1(Omega::int16_t v) = 0;
+		virtual void Int16Inc2(const Omega::int16_t v, Omega::int16_t& r) = 0;
+		virtual void Int16Inc3(const Omega::int16_t& v, Omega::int16_t& r) = 0;
+		virtual void Int16Inc4(Omega::int16_t& v) = 0;
+
 		virtual Omega::float4_t Float4Mul31(Omega::float4_t v) = 0;
 		virtual void Float4Mul32(const Omega::float4_t v, Omega::float4_t& r) = 0;
 		virtual void Float4Mul33(const Omega::float4_t& v, Omega::float4_t& r) = 0;
 		virtual void Float4Mul34(Omega::float4_t& v) = 0;
+
+		virtual Omega::float8_t Float8Mul31(Omega::float8_t v) = 0;
+		virtual void Float8Mul32(const Omega::float8_t v, Omega::float8_t& r) = 0;
+		virtual void Float8Mul33(const Omega::float8_t& v, Omega::float8_t& r) = 0;
+		virtual void Float8Mul34(Omega::float8_t& v) = 0;
 
 		virtual Omega::string_t Hello() = 0;
 
@@ -42,10 +52,20 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(ByteInc3,2,((in),const Omega::byte_t&,v,(out),Omega::byte_t&,r))
 	OMEGA_METHOD_VOID(ByteInc4,1,((in_out),Omega::byte_t&,v))
 
+	OMEGA_METHOD(Omega::int16_t,Int16Inc1,1,((in),Omega::int16_t,v))
+	OMEGA_METHOD_VOID(Int16Inc2,2,((in),const Omega::int16_t,v,(out),Omega::int16_t&,r))
+	OMEGA_METHOD_VOID(Int16Inc3,2,((in),const Omega::int16_t&,v,(out),Omega::int16_t&,r))
+	OMEGA_METHOD_VOID(Int16Inc4,1,((in_out),Omega::int16_t&,v))
+
 	OMEGA_METHOD(Omega::float4_t,Float4Mul31,1,((in),Omega::float4_t,v))
 	OMEGA_METHOD_VOID(Float4Mul32,2,((in),const Omega::float4_t,v,(out),Omega::float4_t&,r))
 	OMEGA_METHOD_VOID(Float4Mul33,2,((in),const Omega::float4_t&,v,(out),Omega::float4_t&,r))
 	OMEGA_METHOD_VOID(Float4Mul34,1,((in_out),Omega::float4_t&,v))
+
+	OMEGA_METHOD(Omega::float8_t,Float8Mul31,1,((in),Omega::float8_t,v))
+	OMEGA_METHOD_VOID(Float8Mul32,2,((in),const Omega::float8_t,v,(out),Omega::float8_t&,r))
+	OMEGA_METHOD_VOID(Float8Mul33,2,((in),const Omega::float8_t&,v,(out),Omega::float8_t&,r))
+	OMEGA_METHOD_VOID(Float8Mul34,1,((in_out),Omega::float8_t&,v))
 
 	OMEGA_METHOD(Omega::string_t,Hello,0,())
 

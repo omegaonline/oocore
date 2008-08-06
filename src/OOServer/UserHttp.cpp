@@ -1182,7 +1182,7 @@ void User::Manager::handle_http_request_i(HttpConnection* pConn, uint16_t conn_i
 		ObjectPtr<Registry::IKey> ptrKey(L"\\Server");
 		if (ptrKey->IsSubKey(strScheme))
 		{
-			ptrKey = ptrKey->OpenSubKey(strScheme);
+			ptrKey = ptrKey.OpenSubKey(strScheme);
 			if (ptrKey->IsValue(L"DefaultURI"))
 			{
 				strResource = ptrKey->GetStringValue(L"DefaultURI");

@@ -94,7 +94,7 @@ namespace Omega
 
 			void Lock()
 			{
-				m_lock.LockWrite();
+				m_lock.LockRead();
 				m_bLocked = true;
 			}
 

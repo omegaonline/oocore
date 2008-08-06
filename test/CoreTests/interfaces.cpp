@@ -82,7 +82,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 
 	TEST(ptrSimpleTest->Hello() == L"Hello!");
 
-	try
+	/*try
 	{
 		ptrSimpleTest->Throw(EACCES);
 	}
@@ -90,7 +90,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 	{
 		TEST(pE->ErrorCode() == EACCES);
 		pE->Release();
-	}
+	}*/
 
 	// This is a test for channel closing
 	/*try

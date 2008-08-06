@@ -228,12 +228,12 @@ namespace OTL
 			return static_cast<Q*>(m_ptr.value()->QueryInterface(OMEGA_GUIDOF(Q)));
 		}
 
-		OBJECT* const operator ->() const
+		OBJECT* operator ->() const
 		{
 			return m_ptr.value();
 		}
 
-		operator OBJECT* const () const
+		operator OBJECT* () const
 		{
 			return m_ptr.value();
 		}
@@ -246,7 +246,7 @@ namespace OTL
 	class ObjectPtr : public ObjectPtrBase<OBJECT>
 	{
 	public:
-		ObjectPtr(OBJECT* obj = 0) :
+		explicit ObjectPtr(OBJECT* obj = 0) :
 		  ObjectPtrBase<OBJECT>(obj)
 		{ }
 

@@ -526,7 +526,9 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 		if (!m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,mb))
 		{
 			int err = ACE_OS::last_error();
-			ptrOM->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+			if (!(ex_attribs & Root::Message_t::system_message))
+				ptrOM->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+
 			OMEGA_THROW(err);
 		}
 	}

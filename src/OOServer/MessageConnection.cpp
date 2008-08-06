@@ -521,7 +521,12 @@ bool Root::MessageHandler::route_message(MessageHandler::Message* msg)
 	if (msg->m_dest_thread_id != 0)
 	{
 		// Find the right queue to send it to...
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+		if (guard.locked () == 0) 
+		{
+			delete msg;
+			return false;
+		}
 
 		try
 		{
@@ -758,6 +763,7 @@ Root::MessageHandler::ThreadContext::~ThreadContext()
 	if (m_pHandler)
 		m_pHandler->remove_thread_context(this);
 
+	m_msg_queue->close();
 	delete m_msg_queue;
 }
 
@@ -1229,13 +1235,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,ACE_Input
 	}
 	msg->m_ptrPayload.reset(pI);
 
-	if (!route_message(msg))
-	{
-		delete msg;
-		return false;
-	}
-
-	return true;
+	return route_message(msg);
 }
 
 bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs)

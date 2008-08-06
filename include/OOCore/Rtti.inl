@@ -231,40 +231,36 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 	auto_iface_safe_ptr<IObject_Safe> ptrStub;
 	try
 	{
-		// Lookup first
+		for (;;)
 		{
-			Threading::ReadGuard guard(stub_map.m_lock);
-
-			std::map<IObject*,IObject_Safe*>::iterator i=stub_map.m_map.find(ptrObj);
-			if (i != stub_map.m_map.end())
+			// Lookup first
 			{
-				ptrStub = i->second;
-			}
-		}
+				Threading::ReadGuard guard(stub_map.m_lock);
 
-		if (!ptrStub)
-		{
+				std::map<IObject*,IObject_Safe*>::iterator i=stub_map.m_map.find(ptrObj);
+				if (i != stub_map.m_map.end())
+				{
+					ptrStub = i->second;
+					break;
+				}
+			}
+
 			auto_iface_ptr<ISafeProxy> ptrProxy(static_cast<ISafeProxy*>(ptrObj->QueryInterface(OMEGA_GUIDOF(ISafeProxy))));
 			if (ptrProxy)
 			{
 				ptrStub = ptrProxy->GetSafeStub();
+				break;
 			}
-			else
-			{
-				OMEGA_NEW(ptrStub,SafeStub(ptrObj));
+			
+			OMEGA_NEW(ptrStub,SafeStub(ptrObj));
 
-				Threading::WriteGuard guard(stub_map.m_lock);
+			Threading::WriteGuard guard(stub_map.m_lock);
 
-				std::pair<std::map<IObject*,IObject_Safe*>::iterator,bool> p = stub_map.m_map.insert(std::map<IObject*,IObject_Safe*>::value_type(ptrObj,ptrStub));
-				if (!p.second)
-				{
-					auto_iface_safe_ptr<IObject_Safe> p2 = p.first->second;
+			std::pair<std::map<IObject*,IObject_Safe*>::iterator,bool> p = stub_map.m_map.insert(std::map<IObject*,IObject_Safe*>::value_type(ptrObj,ptrStub));
+			if (p.second)
+				break;
 
-					guard.Unlock();
-
-					ptrStub = static_cast<IObject_Safe*>(p2);
-				}
-			}
+			// One has been created while we locked - loop
 		}
 	}
 	catch (std::exception& e)
@@ -308,32 +304,29 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 	auto_iface_ptr<ISafeProxy> ptrProxy;
 	try
 	{
-		// Lookup first
+		for (;;)
 		{
-			Threading::ReadGuard guard(proxy_map.m_lock);
-
-			std::map<IObject_Safe*,ISafeProxy*>::iterator i=proxy_map.m_map.find(ptrObjS);
-			if (i != proxy_map.m_map.end())
+			// Lookup first
 			{
-				ptrProxy = i->second;
-			}
-		}
+				Threading::ReadGuard guard(proxy_map.m_lock);
 
-		if (!ptrProxy)
-		{
+				std::map<IObject_Safe*,ISafeProxy*>::iterator i=proxy_map.m_map.find(ptrObjS);
+				if (i != proxy_map.m_map.end())
+				{
+					ptrProxy = i->second;
+					break;
+				}
+			}
+
 			OMEGA_NEW(ptrProxy,SafeProxy(pObjS));
 
 			Threading::WriteGuard guard(proxy_map.m_lock);
 
 			std::pair<std::map<IObject_Safe*,ISafeProxy*>::iterator,bool> p = proxy_map.m_map.insert(std::map<IObject_Safe*,ISafeProxy*>::value_type(pObjS,ptrProxy));
-			if (!p.second)
-			{
-				auto_iface_ptr<ISafeProxy> p2 = p.first->second;
+			if (p.second)
+				break;
 
-				guard.Unlock();
-
-				ptrProxy = static_cast<ISafeProxy*>(p2);
-			}
+			// One has been created while we locked - loop
 		}
 	}
 	catch (std::exception& e)

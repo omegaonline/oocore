@@ -37,7 +37,7 @@ static void tests()
 {
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);
-	RUN_TEST(exception_tests);
+	//RUN_TEST(exception_tests);
 	RUN_TEST(otl_tests);
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);

@@ -94,13 +94,13 @@ namespace OOCore
 				channel_reflect = 0x20000
 			};
 
-			ACE_CDR::UShort                                      m_dest_thread_id;
 			ACE_CDR::ULong                                       m_src_channel_id;
+			ACE_CDR::UShort                                      m_dest_thread_id;
 			ACE_CDR::UShort                                      m_src_thread_id;
-			ACE_Time_Value                                       m_deadline;
 			ACE_CDR::ULong                                       m_attribs;
-			ACE_CDR::UShort                                      m_type;
 			ACE_CDR::ULong                                       m_seq_no;
+			ACE_CDR::UShort                                      m_type;
+			ACE_Time_Value                                       m_deadline;
 			ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> m_ptrPayload;
 		};
 

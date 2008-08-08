@@ -69,6 +69,9 @@ void Rpc::HttpServerSink::handle_request(const Omega::string_t& strResource, Ome
 			mb->wr_ptr(static_cast<size_t>(cbSize));
 		}
 
+		std::string b(mb->rd_ptr(),mb->length());
+		printf("Server recv: %s\n\n",b.c_str());
+
 		// Respond with an OK...
 		pResponse->SetResponseHeader(L"Content-Length",L"0");
 		pResponse->SetResponseHeader(L"Cache-Control",L"no-cache");
@@ -89,7 +92,21 @@ void Rpc::HttpServerSink::handle_request(const Omega::string_t& strResource, Ome
 
 			// Send on the command
 			if (m_ptrSink)
-				m_ptrSink->Send(attribs,ptrInput,0);
+			{
+				try
+				{
+					m_ptrSink->Send(attribs,ptrInput,0);
+				}
+				catch (IException* pE)
+				{
+					pE->Release();
+					Close();
+				}
+				catch (...)
+				{
+					Close();
+				}
+			}
 
 			ptrInput->ReadStructEnd(0);
 		}
@@ -191,6 +208,8 @@ void Rpc::HttpServerSink::Send_i()
 
 				osChunk << strContent.length() << "\r\n" << strContent << "\r\n";
 				strContent = osChunk.str();
+
+				printf("Server send: %s\n\n",strContent.c_str());
 
 				// Send the whole damn thing!
 				m_ptrResponse->WriteBytes((uint32_t)strContent.length(),(const byte_t*)strContent.c_str());

@@ -1184,7 +1184,7 @@ void OOCore::HttpRequestAsync::ReadResponseChunked(unsigned int& notify_mask)
 		// Do a read
 		m_ptrStream->ReadBytes(cbRead,0);
 
-		if (m_mbResponse)
+		if (m_mbResponse->total_length() > 0)
 		{
 			// Notify the callback
 			notify_mask |= 2;

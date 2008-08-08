@@ -294,7 +294,9 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 		ReadGuid(L"$iid",pParamsOut);
 		ReadUInt32(L"$method_id",pParamsOut);
 		ReadGuid(L"iid",pParamsOut);
-		m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::MetaInfo::IWireManager),pObjectManager);
+
+		void* TODO; // Release marshal data for channel
+		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::MetaInfo::IWireManager),pObjectManager);
 
 		throw ptrE.AddRef();
 	}

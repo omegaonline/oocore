@@ -158,6 +158,7 @@ namespace Rpc
 		void init(const ACE_Message_Block* mb);
 		void init(const std::string& strText);
 
+		void skip_leader();
 		bool more_exists();
 		
 		BEGIN_INTERFACE_MAP(HttpInputMsg)

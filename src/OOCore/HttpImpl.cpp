@@ -37,15 +37,18 @@ namespace OOCore
 		HttpStream();
 		virtual ~HttpStream();
 
-		void init(const ACE_Message_Block* mb);
+		void init(ACE_Message_Block** mb, ACE_Thread_Mutex* lock);
 
 		BEGIN_INTERFACE_MAP(HttpStream)
 			INTERFACE_ENTRY(IO::IStream)
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex   m_lock;
-		ACE_Message_Block* m_mb;
+		HttpStream(const HttpStream&) : m_lock(0), m_mb(0) {}
+		HttpStream& operator =(const HttpStream&) { return *this; }
+
+		ACE_Thread_Mutex*   m_lock;
+		ACE_Message_Block** m_mb;
 
 	public:
 		void ReadBytes(uint64_t& cbBytes, byte_t* val);
@@ -96,6 +99,7 @@ namespace OOCore
 		public Net::Http::IRequest
 	{
 	public:
+		HttpRequestSync();
 		virtual ~HttpRequestSync();
 
 		BEGIN_INTERFACE_MAP(HttpRequestSync)
@@ -105,7 +109,7 @@ namespace OOCore
 	private:
 		ACE_Thread_Mutex                 m_lock;
 		ObjectPtr<IO::IStream>           m_ptrStream;
-		ACE_Message_Block                m_mb;
+		ACE_Message_Block*               m_mb;
 
 		void ReadResponse();
 		void Send_i(uint32_t cbBytes, const byte_t* pData, std::set<Omega::string_t>& setRedirects);
@@ -193,24 +197,24 @@ namespace OOCore
 }
 
 OOCore::HttpStream::HttpStream() :
+	m_lock(0),
 	m_mb(0)
 {
 }
 
 OOCore::HttpStream::~HttpStream()
 {
-	if (m_mb)
-		m_mb->release();
 }
 
-void OOCore::HttpStream::init(const ACE_Message_Block* mb)
+void OOCore::HttpStream::init(ACE_Message_Block** mb, ACE_Thread_Mutex* lock)
 {
-	m_mb = mb->duplicate();
+	m_lock = lock;
+	m_mb = mb;
 }
 
 void OOCore::HttpStream::ReadBytes(uint64_t& cbBytes, byte_t* val)
 {
-	OOCORE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	OOCORE_GUARD(ACE_Thread_Mutex,guard,*m_lock);
 
 	if (!m_mb)
 	{
@@ -220,30 +224,30 @@ void OOCore::HttpStream::ReadBytes(uint64_t& cbBytes, byte_t* val)
 
 	if (!val)
 	{
-		cbBytes = m_mb->total_length();
+		cbBytes = (*m_mb)->total_length();
 		return;
 	}
 
-	if (cbBytes > m_mb->total_length())
-		cbBytes = m_mb->total_length();
+	if (cbBytes > (*m_mb)->total_length())
+		cbBytes = (*m_mb)->total_length();
 
 	for (uint64_t cb = cbBytes; m_mb != 0 && cb != 0;)
 	{
-		size_t cb2 = m_mb->length();
+		size_t cb2 = (*m_mb)->length();
 		if (cb2 > cb)
 			cb2 = (size_t)cb;
 
-		ACE_OS::memcpy(val,m_mb->rd_ptr(),cb2);
+		ACE_OS::memcpy(val,(*m_mb)->rd_ptr(),cb2);
 		val += cb2;
 		cb -= cb2;
-		m_mb->rd_ptr(cb2);
+		(*m_mb)->rd_ptr(cb2);
 
-		if (m_mb->length() == 0)
+		if ((*m_mb)->length() == 0)
 		{
-			ACE_Message_Block* mbn = m_mb->cont();
-			m_mb->cont(0);
-			m_mb->release();
-			m_mb = mbn;
+			ACE_Message_Block* mbn = (*m_mb)->cont();
+			(*m_mb)->cont(0);
+			(*m_mb)->release();
+			*m_mb = mbn;
 		}
 	}
 }
@@ -571,10 +575,15 @@ uint64_t OOCore::HttpBase::ParseChunks(ACE_Message_Block*& pBuffer)
 	return 0;
 }
 
+OOCore::HttpRequestSync::HttpRequestSync() :
+	m_mb(0)
+{
+}
+
 OOCore::HttpRequestSync::~HttpRequestSync()
 {
-	if (m_mb.cont())
-		m_mb.cont()->release();
+	if (m_mb)
+		m_mb->release();
 }
 
 void OOCore::HttpRequestSync::Send(uint32_t cbBytes, const byte_t* pData)
@@ -623,14 +632,14 @@ void OOCore::HttpRequestSync::ResponseBody(uint32_t& cbBytes, byte_t* pBody)
 
 	if (!pBody)
 	{
-		cbBytes = (uint32_t)m_mb.total_length();
+		cbBytes = (uint32_t)m_mb->total_length();
 		return;
 	}
 
-	if (cbBytes > m_mb.total_length())
-		cbBytes = (uint32_t)m_mb.total_length();
+	if (cbBytes > m_mb->total_length())
+		cbBytes = (uint32_t)m_mb->total_length();
 
-	ACE_Message_Block* pCur = &m_mb;
+	ACE_Message_Block* pCur = m_mb;
 	for (uint32_t cb = cbBytes; cb && pCur;)
 	{
 		size_t cb2 = pCur->length();
@@ -650,7 +659,7 @@ IO::IStream* OOCore::HttpRequestSync::ResponseStream()
 	OOCORE_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
 	ObjectPtr<ObjectImpl<HttpStream> > ptrStream = ObjectImpl<HttpStream>::CreateInstancePtr();
-	ptrStream->init(&m_mb);
+	ptrStream->init(&m_mb,&m_lock);
 
 	return ptrStream.AddRef();
 }
@@ -676,46 +685,50 @@ void OOCore::HttpRequestSync::Send_i(uint32_t cbBytes, const byte_t* pData, std:
 		m_ptrStream.Attach(IO::OpenStream(m_strAddr));
 
 	// Reset the buffer
-	if (m_mb.cont())
+	if (!m_mb)
 	{
-		m_mb.cont()->release();
-		m_mb.cont(0);
+		OMEGA_NEW(m_mb,ACE_Message_Block(ACE_OS::getpagesize()));
 	}
-	m_mb.reset();
+	else if (m_mb->cont())
+	{
+		m_mb->cont()->release();
+		m_mb->cont(0);
+	}
+	m_mb->reset();
 
 	// Make sure we have room
-	grow_mb(&m_mb,strRequest.length() + cbBytes);
+	grow_mb(m_mb,strRequest.length() + cbBytes);
 
-	m_mb.copy(strRequest.c_str(),strRequest.length());
+	m_mb->copy(strRequest.c_str(),strRequest.length());
 	if (cbBytes && pData)
-		m_mb.copy((const char*)pData,cbBytes);
+		m_mb->copy((const char*)pData,cbBytes);
 
 	// Send the data
-	m_ptrStream->WriteBytes(m_mb.length(),(const byte_t*)m_mb.rd_ptr());
+	m_ptrStream->WriteBytes(m_mb->length(),(const byte_t*)m_mb->rd_ptr());
 
 	// Reset the buffer before reading
-	m_mb.reset();
+	m_mb->reset();
 
 	// Now loop, reading
 	uint64_t cbRead = ACE_OS::getpagesize();
 	while (cbRead)
 	{
 		// Make sure we have room
-		grow_mb(&m_mb,(size_t)cbRead);
+		grow_mb(m_mb,(size_t)cbRead);
 
 		// Read some bytes
-		m_ptrStream->ReadBytes(cbRead,(byte_t*)m_mb.wr_ptr());
-		m_mb.wr_ptr((size_t)cbRead);
+		m_ptrStream->ReadBytes(cbRead,(byte_t*)m_mb->wr_ptr());
+		m_mb->wr_ptr((size_t)cbRead);
 
 		// Try to parse the header...
-		cbRead = CheckHTTPHeader(&m_mb);
+		cbRead = CheckHTTPHeader(m_mb);
 		if (cbRead == (uint64_t)-1)
 			OMEGA_THROW(L"Failed to parse HTTP header");
 	}
 
 	// mb now contains a full response
-	ParseResponseStatus(&m_mb);
-	SplitHTTPHeader(&m_mb);
+	ParseResponseStatus(m_mb);
+	SplitHTTPHeader(m_mb);
 
 	// Check the status for redirects
 	if (m_uStatus == 302 || m_uStatus == 307)
@@ -747,7 +760,7 @@ void OOCore::HttpRequestSync::Send_i(uint32_t cbBytes, const byte_t* pData, std:
 	}
 
 	// Crunch up the buffer
-	m_mb.crunch();
+	m_mb->crunch();
 }
 
 void OOCore::HttpRequestSync::ReadResponse()
@@ -759,7 +772,7 @@ void OOCore::HttpRequestSync::ReadResponse()
 	if (!strC.IsEmpty())
 	{
 		content_length = ACE_OS::strtoul(strC.c_str(),0,10);
-		content_length -= (uint32_t)m_mb.length();
+		content_length -= (uint32_t)m_mb->length();
 	}
 	else
 	{
@@ -770,7 +783,7 @@ void OOCore::HttpRequestSync::ReadResponse()
 			content_length = 0;
 	}
 
-	ACE_Message_Block* pCurrMb = &m_mb;
+	ACE_Message_Block* pCurrMb = m_mb;
 
 	// Now loop, reading
 	uint64_t cbRead = content_length;
@@ -1344,7 +1357,7 @@ IO::IStream* OOCore::HttpRequestAsync::ResponseStream()
 		return 0;
 
 	ObjectPtr<ObjectImpl<HttpStream> > ptrStream = ObjectImpl<HttpStream>::CreateInstancePtr();
-	ptrStream->init(m_mbResponse);
+	ptrStream->init(&m_mbResponse,&m_lock);
 
 	return ptrStream.AddRef();
 }

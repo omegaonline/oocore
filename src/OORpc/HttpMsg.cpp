@@ -1622,6 +1622,16 @@ void Rpc::HttpInputMsg::init(const std::string& strText)
 	}
 }
 
+void Rpc::HttpInputMsg::skip_leader()
+{
+	SkipWhitespace();
+	if (PeekNextChar() == ',')
+	{
+		m_mb->rd_ptr(1);
+		SkipWhitespace();
+	}
+}
+
 bool Rpc::HttpInputMsg::more_exists()
 {
 	return (m_mb->length() != 0);

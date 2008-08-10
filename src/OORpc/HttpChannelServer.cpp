@@ -203,11 +203,13 @@ void Rpc::HttpServerSink::Send_i()
 				std::ostringstream osChunk;
 				osChunk.flags(std::ios::hex);
 
-				osChunk << strContent.length() << "\r\n" << strContent << "\r\n";
+				uint32_t len = static_cast<uint32_t>(strContent.length());
+
+				osChunk << len << "\r\n" << strContent << "\r\n";
 				strContent = osChunk.str();
 
 				// Send the whole damn thing!
-				m_ptrResponse->WriteBytes((uint32_t)strContent.length(),(const byte_t*)strContent.c_str());
+				m_ptrResponse->WriteBytes(len,(const byte_t*)strContent.c_str());
 			}
 
 			delete msg;

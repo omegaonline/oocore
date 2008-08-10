@@ -86,7 +86,7 @@ namespace OOCore
 			return m_dll_name;
 		}
 	};
-	
+
 	static IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
 
 	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid);
@@ -343,8 +343,8 @@ ObjectPtr<Omega::Registry::IKey> OOCore::FindOIDKey(const guid_t& oid)
 	// Lookup OID
 	string_t strOid = oid.ToString();
 
-	// This needs to use a local cached map, and register for update notifications from the 
-	// registry to refresh the map... This willr esult in a significant speedup.
+	// This needs to use a local cached map, and register for update notifications from the
+	// registry to refresh the map... This will result in a significant speedup.
 	void* TODO;
 
 	// Check Local User first

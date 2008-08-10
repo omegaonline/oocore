@@ -522,7 +522,7 @@ bool Root::MessageHandler::route_message(MessageHandler::Message* msg)
 	{
 		// Find the right queue to send it to...
 		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-		if (guard.locked () == 0) 
+		if (guard.locked () == 0)
 		{
 			delete msg;
 			return false;
@@ -1070,7 +1070,7 @@ int Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline, bool bOn
 				else
 					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Unrecognised system message\n")));
 			}
-			else 
+			else
 			{
 				try
 				{
@@ -1098,7 +1098,7 @@ int Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline, bool bOn
 		}
 		else
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Discarding response in message pump\n")));
-		
+
 		delete msg;
 
 	} while (!bOnce);
@@ -1287,7 +1287,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	
+
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
@@ -1301,10 +1301,10 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 		if (!send_message(Message_t::Request,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb))
 			return false;
 	}
-	
+
 	if (attribs & Message_t::asynchronous)
 		return true;
-	
+
 	// Wait for response...
 	return wait_for_response(response,seq_no,msg.m_deadline != ACE_Time_Value::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
@@ -1330,7 +1330,7 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 		// Clear off sub channel bits
 		actual_dest_channel_id = dest_channel_id & (m_uChannelMask | m_uChildMask);
 	}
-	
+
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
@@ -1341,7 +1341,7 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	{
 		// Send upstream
 		return send_message(Message_t::Response,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb);
-	}	
+	}
 }
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
@@ -1446,7 +1446,7 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 		ACE_InputCDR input(mb);
 		return route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
 	}
-	
+
 	if (!bRoute)
 	{
 		// If its our message, process it

@@ -31,7 +31,7 @@
 
 #if defined(_MSC_VER) && _MSC_VER >= 1300
 #if _MSC_VER == 1310
-#import "C:\Program Files\Common Files\Microsoft Shared\Office10\MSO.DLL" raw_interfaces_only
+#import "C:\Program Files\Common Files\Microsoft Shared\Office10\MSO.DLL" raw_interfaces_only  rename("RGB","dte_RGB")
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte.olb" raw_interfaces_only named_guids rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath")
 using namespace EnvDTE;
 #elif _MSC_VER >= 1400

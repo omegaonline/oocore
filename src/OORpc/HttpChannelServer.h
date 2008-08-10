@@ -73,15 +73,20 @@ namespace Rpc
 		public Omega::Net::Http::Server::IRequestHandler
 	{
 	public:
+		HttpChannelServer()
+		{ }
+
 		virtual ~HttpChannelServer()
-		{
-		}
+		{ }
 
 		BEGIN_INTERFACE_MAP(HttpChannelServer)
 			INTERFACE_ENTRY(Omega::Net::Http::Server::IRequestHandler)
 		END_INTERFACE_MAP()
 
 	private:
+		HttpChannelServer(const HttpChannelServer&) { }
+		HttpChannelServer& operator = (const HttpChannelServer&) { return *this; }
+
 		ACE_RW_Thread_Mutex m_lock;
 		Omega::string_t     m_strAbsURI;
 

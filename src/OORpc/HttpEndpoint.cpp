@@ -211,9 +211,11 @@ void Rpc::SendNotify::Send_i()
 
 			strContent = osContent.str();
 
-			osChunk << strContent.length() << "\r\n" << strContent << "\r\n";
+			uint32_t len = static_cast<uint32_t>(strContent.length());
 
-			cbTotal += strContent.length();
+			osChunk << len << "\r\n" << strContent << "\r\n";
+
+			cbTotal += len;
 		}
 
 		delete msg;

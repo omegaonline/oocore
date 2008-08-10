@@ -116,11 +116,11 @@ namespace Omega
 				class ref_holder
 				{
 				public:
-					ref_holder(typename marshal_info<T>::safe_type::type* val) : 
+					ref_holder(typename marshal_info<T>::safe_type::type* val) :
 						m_val(*val), m_dest(val)
 					{}
 
-					ref_holder(typename marshal_info<T>::safe_type::type* val, const guid_t* piid) : 
+					ref_holder(typename marshal_info<T>::safe_type::type* val, const guid_t* piid) :
 						m_val(*val,piid), m_dest(val)
 					{}
 
@@ -252,24 +252,24 @@ namespace Omega
 					typedef IObject_WireProxy<I> type;
 				};
 			};
-		
+
 			template <class I>
 			inline I* lookup_proxy(typename interface_info<I>::safe_class* pObjS, const guid_t& iid, bool bPartialAllowed);
-			
+
 			template <class I>
 			inline typename interface_info<I>::safe_class* lookup_stub(I* pObj, const guid_t& iid);
 
-			template <class I> 
+			template <class I>
 			class iface_stub_functor
 			{
 			public:
-				iface_stub_functor(typename interface_info<I>::safe_class* pS, const guid_t& iid) : 
+				iface_stub_functor(typename interface_info<I>::safe_class* pS, const guid_t& iid) :
 					m_pI(0)
 				{
 					m_pI = lookup_proxy<I>(pS,iid,false);
 				}
 
-				iface_stub_functor(const iface_stub_functor& rhs) : 
+				iface_stub_functor(const iface_stub_functor& rhs) :
 					m_pI(rhs.m_pI)
 				{
 					if (m_pI)
@@ -299,11 +299,11 @@ namespace Omega
 				iface_stub_functor& operator = (const iface_stub_functor&) {};
 			};
 
-			template <class I> 
+			template <class I>
 			class iface_stub_functor_ref : public iface_stub_functor<I>
 			{
 			public:
-				iface_stub_functor_ref(typename interface_info<I>::safe_class* pS, const guid_t* piid = 0) : 
+				iface_stub_functor_ref(typename interface_info<I>::safe_class* pS, const guid_t* piid = 0) :
 				  iface_stub_functor<I>(pS,piid ? *piid : OMEGA_GUIDOF(I)), m_piid(piid ? piid : &OMEGA_GUIDOF(I))
 				{
 				}
@@ -325,7 +325,7 @@ namespace Omega
 				const guid_t* m_piid;
 			};
 
-			template <class I> 
+			template <class I>
 			class iface_proxy_functor
 			{
 			public:
@@ -360,11 +360,11 @@ namespace Omega
 
 			protected:
 				typename interface_info<I>::safe_class* m_pS;
-				
+
 				iface_proxy_functor& operator = (const iface_proxy_functor&) {}
 			};
 
-			template <class I> 
+			template <class I>
 			class iface_proxy_functor_ref : public iface_proxy_functor<I>
 			{
 			public:
@@ -390,7 +390,7 @@ namespace Omega
 				const guid_t* m_piid;
 			};
 
-			template <class I> 
+			template <class I>
 			class iface_safe_type
 			{
 			public:
@@ -411,7 +411,7 @@ namespace Omega
 			};
 
 			template <class I> class iface_wire_type;
-			
+
 			template <> struct marshal_info<IObject*>
 			{
 				typedef iface_safe_type<IObject> safe_type;
@@ -423,7 +423,7 @@ namespace Omega
 			inline string_t lookup_iid(const guid_t& iid);
 
 			OMEGA_DECLARE_FORWARDS(IException,Omega,IException,Omega,IObject)
-			
+
 			template <class I> class auto_iface_ptr
 			{
 			public:
@@ -608,7 +608,7 @@ namespace Omega
 				Threading::AtomicOp<uint32_t> m_pincount;
 				I_SafeStub                    m_contained;
 
-				SafeStubImpl(SafeStub* pStub, I* pI) : 
+				SafeStubImpl(SafeStub* pStub, I* pI) :
 					m_refcount(0), m_pincount(0), m_contained(pStub,pI)
 				{ }
 
@@ -620,7 +620,7 @@ namespace Omega
 			class IObject_SafeStub : public Base
 			{
 			public:
-				IObject_SafeStub(SafeStub* pStub, I* pI) : 
+				IObject_SafeStub(SafeStub* pStub, I* pI) :
 					m_pI(pI), m_pStub(pStub)
 				{
 					this->m_pI->AddRef();
@@ -638,7 +638,7 @@ namespace Omega
 
 				virtual IException_Safe* OMEGA_CALL QueryInterface_Safe(const guid_t* piid, IObject_Safe** ppS)
 				{
-					return Internal_QueryInterface_Safe(true,piid,ppS);					
+					return Internal_QueryInterface_Safe(true,piid,ppS);
 				}
 
 				virtual void OMEGA_CALL Pin()
@@ -716,7 +716,7 @@ namespace Omega
 				Threading::AtomicOp<uint32_t> m_refcount;
 				I_SafeProxy                   m_contained;
 
-				SafeProxyImpl(IObject* pOuter, typename interface_info<I>::safe_class* pS) : 
+				SafeProxyImpl(IObject* pOuter, typename interface_info<I>::safe_class* pS) :
 					m_refcount(0), m_contained(pOuter,pS)
 				{ }
 
@@ -728,9 +728,9 @@ namespace Omega
 			class IObject_SafeProxy : public I
 			{
 			public:
-				IObject_SafeProxy(IObject* pOuter, typename interface_info<I>::safe_class* pS) :  
+				IObject_SafeProxy(IObject* pOuter, typename interface_info<I>::safe_class* pS) :
 					m_pS(pS), m_pOuter(pOuter)
-				{ 
+				{
 					m_pS->AddRef_Safe();
 				}
 
@@ -791,12 +791,12 @@ namespace Omega
 			{
 				static qi_holder& instance()
 				{
-					static qi_holder i;					
+					static qi_holder i;
 					return i;
 				}
 
 				std::map<guid_t,const qi_rtti*> map;
-			};		
+			};
 
 			inline void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
 			{
@@ -838,10 +838,14 @@ namespace Omega
 			class SafeStub : public IObject_Safe
 			{
 			public:
-				SafeStub(IObject* pObj) : 
+				SafeStub(IObject* pObj) :
 					m_refcount(0), m_pincount(0), m_pObj(pObj)
 				{
 					m_pObj->AddRef();
+				}
+
+				virtual ~SafeStub()
+				{
 				}
 
 				virtual void OMEGA_CALL AddRef_Safe()
@@ -860,7 +864,7 @@ namespace Omega
 							Threading::WriteGuard guard(stub_map.m_lock);
 							stub_map.m_map.erase(m_pObj);
 						}
-						
+
 						try
 						{
 							// Release all interfaces
@@ -870,11 +874,11 @@ namespace Omega
 							}
 						}
 						catch (std::exception& e)
-						{ 
+						{
 							OMEGA_THROW(e);
 						}
 
-						// If this blows up then you have failed to AddRef() an out parameter 
+						// If this blows up then you have failed to AddRef() an out parameter
 						// or a return value.  It gets me all the time!
 						m_pObj->Release();
 
@@ -898,7 +902,7 @@ namespace Omega
 						}
 					}
 					catch (std::exception& e)
-					{ 
+					{
 						OMEGA_THROW(e);
 					}
 				}
@@ -914,14 +918,14 @@ namespace Omega
 						}
 					}
 					catch (std::exception& e)
-					{ 
+					{
 						OMEGA_THROW(e);
 					}
 
 					if (--m_pincount==0 && m_refcount==0)
 						delete this;
 				}
-				
+
 			private:
 				Threading::AtomicOp<uint32_t>        m_refcount;
 				Threading::AtomicOp<uint32_t>        m_pincount;
@@ -944,7 +948,7 @@ namespace Omega
 			struct SafeProxy : public ISafeProxy
 			{
 			public:
-				SafeProxy(IObject_Safe* pObjS) : 
+				SafeProxy(IObject_Safe* pObjS) :
 					m_refcount(0), m_pS(pObjS)
 				{
 					m_pS->AddRef_Safe();
@@ -982,13 +986,13 @@ namespace Omega
 				}
 
 				inline virtual IObject* ProxyQI(const guid_t& iid, bool bPartialAllowed);
-				
+
 			private:
 				Threading::AtomicOp<uint32_t>    m_refcount;
 				Threading::ReaderWriterLock      m_lock;
 				std::map<const guid_t,IObject*>  m_iid_map;
 				IObject_Safe*                    m_pS;
-				
+
 				virtual ~SafeProxy()
 				{
 					// Remove ourselves from the proxy_map
@@ -1008,7 +1012,7 @@ namespace Omega
 						}
 					}
 					catch (std::exception& e)
-					{ 
+					{
 						OMEGA_THROW(e);
 					}
 

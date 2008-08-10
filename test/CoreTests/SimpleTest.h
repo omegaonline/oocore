@@ -3,7 +3,7 @@
 
 #include "./interfaces.h"
 
-class SimpleTestImpl : 
+class SimpleTestImpl :
 	public Test::ISimpleTest
 {
 public:

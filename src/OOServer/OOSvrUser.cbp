@@ -114,7 +114,6 @@
 		<Unit filename="UserROT.h" />
 		<Unit filename="UserRegistry.cpp" />
 		<Unit filename="UserRegistry.h" />
-		<Unit filename="resource.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

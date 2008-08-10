@@ -5,10 +5,14 @@
 		<Project filename="..\src\OOServer\OOServer.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OORpc\OORpc.cbp" />
+			<Depends filename="..\src\OOServer\OOSvrUser.cbp" />
 		</Project>
-		<Project filename="..\test\CoreTests\CoreTests.cbp">
+		<Project filename="..\test\CoreTests\CoreTests.cbp" active="1">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OOServer\OOServer.cbp" />
+			<Depends filename="..\test\CoreTests\TestLibrary\TestLibrary.cbp" />
+			<Depends filename="..\tools\OORegister\OORegister.cbp" />
+			<Depends filename="..\test\CoreTests\TestProcess\TestProcess.cbp" />
 		</Project>
 		<Project filename="..\test\CoreTests\TestLibrary\TestLibrary.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
@@ -20,15 +24,13 @@
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 		</Project>
 		<Project filename="..\tools\OORegEdit\OORegEdit.cbp">
-			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OOServer\OOServer.cbp" />
 		</Project>
 		<Project filename="..\src\OORpc\OORpc.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 		</Project>
-		<Project filename="..\src\OOServer\OOSvrUser_vc8.cbp" active="1">
+		<Project filename="..\src\OOServer\OOSvrUser.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
-			<Depends filename="..\src\OOServer\OOServer.cbp" />
 		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

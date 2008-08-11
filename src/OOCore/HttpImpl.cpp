@@ -1075,6 +1075,9 @@ bool OOCore::HttpRequestAsync::ReadResponseHeader(unsigned int& notify_mask)
 
 			m_setRedirects.insert(strLoc);
 
+			// Clear the buffer
+			m_mbBuffer->reset();
+
 			// Send the request again
 			Send_i();
 
@@ -1197,7 +1200,7 @@ void OOCore::HttpRequestAsync::ReadResponseChunked(unsigned int& notify_mask)
 		// Do a read
 		m_ptrStream->ReadBytes(cbRead,0);
 
-		if (m_mbResponse->total_length() > 0)
+		if (m_mbResponse && m_mbResponse->total_length() > 0)
 		{
 			// Notify the callback
 			notify_mask |= 2;

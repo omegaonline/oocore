@@ -93,14 +93,14 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 	}*/
 
 	// This is a test for channel closing
-	/*try
+	try
 	{
 		ptrSimpleTest->Abort();
 	}
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}*/
+	}
 
 	return true;
 }

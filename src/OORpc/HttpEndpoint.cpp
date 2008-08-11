@@ -232,8 +232,10 @@ void Rpc::SendNotify::Send_i()
 
 	std::string strSend = osChunk.str();
 
+	printf("Client send: %s\n\n",strSend.c_str());
+
 	// Send the whole damn thing!
-	m_ptrReq->Send((uint32_t)strSend.length(),(const byte_t*)strSend.c_str());
+	m_ptrReq->Send(static_cast<uint32_t>(strSend.length()),(const byte_t*)strSend.c_str());
 }
 
 void Rpc::SendNotify::OnResponseStart(uint16_t nCode, const string_t&)
@@ -339,6 +341,9 @@ void Rpc::RecvNotify::OnResponseDataAvailable()
 
 			mb->wr_ptr(static_cast<size_t>(cbSize));
 		}
+
+		std::string b(mb->rd_ptr(),mb->length());
+		printf("Client recv: %s\n\n",b.c_str());
 
 		// Wrap the message block
 		ObjectPtr<ObjectImpl<HttpInputMsg> > ptrInput = ObjectImpl<HttpInputMsg>::CreateInstancePtr();

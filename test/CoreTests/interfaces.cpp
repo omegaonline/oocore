@@ -240,7 +240,15 @@ static bool interface_tests_i(const wchar_t* host)
 {
 #if defined(OMEGA_WIN32)
 	do_library_test(L"TestLibrary_msvc",L"Test.Library.msvc",host);
-	do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
+
+	try
+	{
+		do_library_test(L"TestLibrary_mingw",L"Test.Library.mingw",host);
+	}
+	catch (Omega::Activation::IOidNotFoundException* pE)
+	{
+		pE->Release();
+	}
 #else
 	do_library_test(L"TestLibrary",L"Test.Library",host);
 #endif
@@ -257,6 +265,6 @@ bool interface_tests()
 
 bool interface_tests2()
 {
-	return interface_tests_i(L"http://localhost:8901");
-	//return interface_tests_i(L"http://laptop-01:8901");
+	return interface_tests_i(L"http://TSS04:8901");
+	//return interface_tests_i(L"http://localhost:8901");
 }

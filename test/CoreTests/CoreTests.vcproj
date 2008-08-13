@@ -126,6 +126,9 @@
 				RelativePath=".\main.cpp">
 			</File>
 			<File
+				RelativePath=".\net.cpp">
+			</File>
+			<File
 				RelativePath=".\registry.cpp">
 			</File>
 			<File

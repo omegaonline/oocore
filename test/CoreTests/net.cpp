@@ -62,7 +62,7 @@ void StreamNotify::OnRead(const Omega::uint64_t& cbBytes, const Omega::byte_t* p
 	if (cbBytes < len)
 		len = (size_t)cbBytes;
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1300)
+#if defined(_MSC_VER) && (_MSC_VER >= 1400)
 	strncpy_s(szBuf,(const char*)pData,len);
 #else
 	strncpy(szBuf,(const char*)pData,len);

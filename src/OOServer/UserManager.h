@@ -35,7 +35,7 @@ namespace User
 	public:
 		static int run(const ACE_CString& strPipe);
 
-		static Omega::Remoting::IObjectManager* open_remote_channel(const Omega::string_t& strEndpoint);
+		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 
 		static bool call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb = 0);
@@ -89,10 +89,10 @@ namespace User
 			Omega::string_t strEndpoint;
 			OTL::ObjectPtr<OTL::ObjectImpl<RemoteChannel> > ptrRemoteChannel;
 		};
-		std::map<Omega::uint32_t,RemoteChannelEntry>                               m_mapRemoteChannelIds;
-		std::map<Omega::string_t,OTL::ObjectPtr<Omega::Remoting::IObjectManager> > m_mapRemoteChannels;
+		std::map<Omega::uint32_t,RemoteChannelEntry>                         m_mapRemoteChannelIds;
+		std::map<Omega::string_t,OTL::ObjectPtr<Omega::Remoting::IChannel> > m_mapRemoteChannels;
 
-		Omega::Remoting::IObjectManager* open_remote_channel_i(const Omega::string_t& strEndpoint);
+		Omega::Remoting::IChannel* open_remote_channel_i(const Omega::string_t& strEndpoint);
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
 		void local_channel_closed(ACE_CDR::ULong channel_id);

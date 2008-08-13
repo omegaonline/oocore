@@ -472,8 +472,19 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,o
 	}
 	else
 	{
+		// Get IPS
 		OTL::ObjectPtr<Omega::System::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
-		ptrIPS->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pszEndpoint,pOF);
+
+		// Open a remote channel
+		OTL::ObjectPtr<Omega::Remoting::IChannel> ptrChannel;
+		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(pszEndpoint));
+
+		// Get the ObjectManager
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
+		ptrOM.Attach(ptrChannel->GetObjectManager());
+
+		// Get the remote instance
+		ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pOF);
 	}
 
 	ObjectPtr<Activation::IObjectFactory> ptrOF;

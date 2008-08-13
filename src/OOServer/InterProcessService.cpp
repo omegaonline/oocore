@@ -339,11 +339,9 @@ bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
 		return (ret == 0 ? false : true);
 }
 
-void User::InterProcessService::GetRemoteInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, const string_t& strEndpoint, IObject*& pObject)
+Remoting::IChannel* User::InterProcessService::OpenRemoteChannel(const string_t& strEndpoint)
 {
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(Manager::open_remote_channel(strEndpoint));
-	ptrOM->GetRemoteInstance(oid,flags,iid,pObject);
+	return Manager::open_remote_channel(strEndpoint);
 }
 
 Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)

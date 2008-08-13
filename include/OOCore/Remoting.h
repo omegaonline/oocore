@@ -38,7 +38,7 @@ namespace Omega
 		};
 		typedef uint16_t MarshalFlags_t;
 
-		interface IChannel : public IObject
+		interface IChannelBase : public IObject
 		{
 			virtual IMessage* CreateMessage() = 0;
 			virtual IException* SendAndReceive(MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
@@ -59,7 +59,7 @@ namespace Omega
 
 		interface IObjectManager : public IObject
 		{
-			virtual void Connect(IChannel* pChannel) = 0;
+			virtual void Connect(IChannelBase* pChannel) = 0;
 			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t timeout) = 0;
 			virtual void Disconnect() = 0;
 			virtual void GetRemoteInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
@@ -68,7 +68,7 @@ namespace Omega
 			virtual void UnmarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
 		};
 
-		interface IChannelEx : public IChannel
+		interface IChannel : public IChannelBase
 		{
 			virtual guid_t GetReflectUnmarshalFactoryOID() = 0;
 			virtual void ReflectMarshal(IMessage* pMessage) = 0;
@@ -111,7 +111,7 @@ namespace Omega
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
-	Omega::Remoting, IChannel, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
+	Omega::Remoting, IChannelBase, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
 
 	OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 	OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
@@ -134,7 +134,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IObjectManager, "{0A6F7B1B-26A0-403c-AC80-ADFADA83615D}",
 
-	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannel*,pChannel))
+	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannelBase*,pChannel))
 	OMEGA_METHOD(Remoting::IMessage*,Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Disconnect,0,())
 	OMEGA_METHOD_VOID(GetRemoteInstance,4,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
@@ -145,7 +145,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
-	Omega::Remoting, IChannelEx, Omega::Remoting, IChannel, "{1F6D79E8-94E2-46ef-BAB8-E46B9EAC6B84}",
+	Omega::Remoting, IChannel, Omega::Remoting, IChannelBase, "{1F6D79E8-94E2-46ef-BAB8-E46B9EAC6B84}",
 
 	OMEGA_METHOD(guid_t,GetReflectUnmarshalFactoryOID,0,())
 	OMEGA_METHOD_VOID(ReflectMarshal,1,((in),Remoting::IMessage*,pMessage))

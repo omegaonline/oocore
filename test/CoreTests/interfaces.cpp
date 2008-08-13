@@ -93,14 +93,14 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 	}*/
 
 	// This is a test for channel closing
-	try
+	/*try
 	{
 		ptrSimpleTest->Abort();
 	}
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-	}
+	}*/
 
 	return true;
 }
@@ -258,4 +258,5 @@ bool interface_tests()
 bool interface_tests2()
 {
 	return interface_tests_i(L"http://localhost:8901");
+	//return interface_tests_i(L"http://laptop-01:8901");
 }

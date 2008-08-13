@@ -33,7 +33,7 @@ User::RemoteChannel::RemoteChannel() :
 {
 }
 
-Remoting::IObjectManager* User::RemoteChannel::client_init(Manager* pManager, Remoting::IEndpoint* pEndpoint, const string_t& strEndpoint, uint32_t channel_id)
+ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::client_init(Manager* pManager, Remoting::IEndpoint* pEndpoint, const string_t& strEndpoint, uint32_t channel_id)
 {
 	m_pManager = pManager;
 	m_channel_id = channel_id;
@@ -46,7 +46,7 @@ Remoting::IObjectManager* User::RemoteChannel::client_init(Manager* pManager, Re
 	m_message_oid = pEndpoint->MessageOid();
 
 	// Create a local channel around the new id (the remote channel will do the actual routing)
-	return create_object_manager(0).AddRef();
+	return create_channel(0);
 }
 
 void User::RemoteChannel::server_init(Manager* pManager, Remoting::IChannelSink* pSink, const guid_t& message_oid, uint32_t channel_id)
@@ -57,10 +57,10 @@ void User::RemoteChannel::server_init(Manager* pManager, Remoting::IChannelSink*
 	m_message_oid = message_oid;
 
 	// Create a local channel around the new id (the remote channel will do the actual routing)
-	create_object_manager(0);
+	create_channel(0);
 }
 
-ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(ACE_CDR::ULong channel_id)
+ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(ACE_CDR::ULong channel_id)
 {
 	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
@@ -75,6 +75,13 @@ ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(A
 		
 		m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(channel_id,ptrChannel));
 	}
+
+	return ptrChannel;
+}
+
+ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(ACE_CDR::ULong channel_id)
+{
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(channel_id);
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());
@@ -627,12 +634,12 @@ void User::RemoteChannel::Close()
 		ptrUpstream->Close();
 }
 
-Remoting::IObjectManager* User::Manager::open_remote_channel(const string_t& strEndpoint)
+Remoting::IChannel* User::Manager::open_remote_channel(const string_t& strEndpoint)
 {
 	return USER_MANAGER::instance()->open_remote_channel_i(strEndpoint);
 }
 
-Remoting::IObjectManager* User::Manager::open_remote_channel_i(const string_t& strEndpoint)
+Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndpoint)
 {
 	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
@@ -683,7 +690,7 @@ Remoting::IObjectManager* User::Manager::open_remote_channel_i(const string_t& s
 
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
 
-		std::map<string_t,ObjectPtr<Remoting::IObjectManager> >::iterator i=m_mapRemoteChannels.find(strCanon);
+		std::map<string_t,ObjectPtr<Remoting::IChannel> >::iterator i=m_mapRemoteChannels.find(strCanon);
 		if (i != m_mapRemoteChannels.end())
 			return i->second.AddRef();
 	}
@@ -708,8 +715,7 @@ Remoting::IObjectManager* User::Manager::open_remote_channel_i(const string_t& s
 		}
 
 		// Init the sink
-		ObjectPtr<Remoting::IObjectManager> ptrOM;
-		ptrOM.Attach(ptrRemoteChannel->client_init(this,ptrEndpoint,strCanon,channel_id));
+		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ptrRemoteChannel->client_init(this,ptrEndpoint,strCanon,channel_id);
 
 		// Add to the maps
 		RemoteChannelEntry channel;
@@ -717,9 +723,9 @@ Remoting::IObjectManager* User::Manager::open_remote_channel_i(const string_t& s
 		channel.strEndpoint = strCanon;
 
 		m_mapRemoteChannelIds.insert(std::map<uint32_t,RemoteChannelEntry>::value_type(channel_id,channel));
-		m_mapRemoteChannels.insert(std::map<string_t,ObjectPtr<Remoting::IObjectManager> >::value_type(strCanon,ptrOM));
+		m_mapRemoteChannels.insert(std::map<string_t,ObjectPtr<Remoting::IChannel> >::value_type(strCanon,static_cast<Remoting::IChannel*>(ptrChannel)));
 
-		return ptrOM.AddRef();
+		return ptrChannel.AddRef();
 	}
 	catch (std::exception& e)
 	{

@@ -28,7 +28,7 @@ namespace OOCore
 {
 	class Channel :
 		public OTL::ObjectBase,
-		public Omega::Remoting::IChannelEx,
+		public Omega::Remoting::IChannel,
 		public Omega::Remoting::IMarshal
 	{
 	public:
@@ -38,8 +38,8 @@ namespace OOCore
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
+			INTERFACE_ENTRY(Omega::Remoting::IChannelBase)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
-			INTERFACE_ENTRY(Omega::Remoting::IChannelEx)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
 
@@ -49,10 +49,10 @@ namespace OOCore
 		Omega::guid_t                                   m_message_oid;
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
 
-		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannelEx(), Omega::Remoting::IMarshal() {}
+		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }
 
-	// IChannel members
+	// IChannelBase members
 	public:
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
@@ -60,7 +60,7 @@ namespace OOCore
 
 		Omega::uint32_t GetSource();
 
-	// IChannelEx members
+	// IChannel members
 	public:
 		Omega::guid_t GetReflectUnmarshalFactoryOID();
 		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);

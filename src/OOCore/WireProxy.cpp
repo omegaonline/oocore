@@ -378,9 +378,9 @@ void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManage
 
 	// Unmarshal the manager
 	IObject* pChannel = 0;
-	pObjectManager->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_GUIDOF(Remoting::IChannelEx),pChannel);
-	ObjectPtr<Remoting::IChannelEx> ptrChannel;
-	ptrChannel.Attach(static_cast<Remoting::IChannelEx*>(pChannel));
+	pObjectManager->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_GUIDOF(Remoting::IChannel),pChannel);
+	ObjectPtr<Remoting::IChannel> ptrChannel;
+	ptrChannel.Attach(static_cast<Remoting::IChannel*>(pChannel));
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());

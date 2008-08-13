@@ -33,7 +33,7 @@ namespace Omega
 			virtual void GetObject(const string_t& strProcess, bool_t bSandbox, const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
 			virtual IO::IStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
 			virtual bool_t HandleRequest(uint32_t timeout) = 0;
-			virtual void GetRemoteInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, const string_t& strEndpoint, IObject*& pObject) = 0;
+			virtual Remoting::IChannel* OpenRemoteChannel(const string_t& strEndpoint) = 0;
 			virtual Remoting::IChannelSink* OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink) = 0;
 		};
 
@@ -51,7 +51,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(GetObject,5,((in),const string_t&,strProcess,(in),bool_t,bSandbox,(in),const guid_t&,oid,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD(IO::IStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
 	OMEGA_METHOD(bool_t,HandleRequest,1,((in),uint32_t,timeout))
-	OMEGA_METHOD_VOID(GetRemoteInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(in),const string_t&,strEndpoint,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD(Remoting::IChannel*,OpenRemoteChannel,1,((in),const string_t&,strEndpoint))
 	OMEGA_METHOD(Remoting::IChannelSink*,OpenServerSink,2,((in),const guid_t&,message_oid,(in),Remoting::IChannelSink*,pSink))
 )
 

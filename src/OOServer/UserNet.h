@@ -33,7 +33,7 @@ namespace User
 	public:
 		RemoteChannel();
 
-		Omega::Remoting::IObjectManager* client_init(Manager* pManager, Omega::Remoting::IEndpoint* pEndpoint, const Omega::string_t& strEndpoint, Omega::uint32_t channel_id);
+		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > client_init(Manager* pManager, Omega::Remoting::IEndpoint* pEndpoint, const Omega::string_t& strEndpoint, Omega::uint32_t channel_id);
 		void server_init(Manager* pManager, Omega::Remoting::IChannelSink* pSink, const Omega::guid_t& message_oid, Omega::uint32_t channel_id);
 		void send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no);
 		void channel_closed(Omega::uint32_t channel_id);
@@ -52,6 +52,7 @@ namespace User
 		std::map<ACE_CDR::ULong,ACE_CDR::ULong>                             m_mapChannelIds;
 		std::map<ACE_CDR::ULong,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
+		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong channel_id);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong channel_id);
 		void process_here_i(ACE_InputCDR& input);
 		void send_away_i(Omega::Remoting::IMessage* pPayload, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no);

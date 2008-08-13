@@ -211,10 +211,10 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe
 
 	// Unmarshal the channel
 	System::MetaInfo::IObject_Safe* pCh = 0;
-	pSE = m_pManager->UnmarshalInterface_Safe(L"m_ptrChannel",pParamsIn,&OMEGA_GUIDOF(Remoting::IChannelEx),&pCh);
+	pSE = m_pManager->UnmarshalInterface_Safe(L"m_ptrChannel",pParamsIn,&OMEGA_GUIDOF(Remoting::IChannel),&pCh);
 	if (pSE)
 		return pSE;
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IChannelEx>::safe_class> ptrChannel(static_cast<System::MetaInfo::interface_info<Remoting::IChannelEx>::safe_class*>(pCh));
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IChannel>::safe_class> ptrChannel(static_cast<System::MetaInfo::interface_info<Remoting::IChannel>::safe_class*>(pCh));
 
 	// Create a new message
 	System::MetaInfo::IMessage_Safe* pMessage = 0;

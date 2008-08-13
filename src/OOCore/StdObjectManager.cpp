@@ -204,12 +204,14 @@ OOCore::StdObjectManager::~StdObjectManager()
 {
 }
 
-void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
+void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
 {
 	if (m_ptrChannel)
 		OMEGA_THROW(EALREADY);
 
 	m_ptrChannel = pChannel;
+	if (!m_ptrChannel)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IChannel),OMEGA_SOURCE_INFO);
 }
 
 void OOCore::StdObjectManager::Disconnect()
@@ -954,33 +956,24 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjec
 
 void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
-	// We need to QI for IChannelEx first, because the stub expects to use it...
-	// If we don't support it, then we need to do some magic...
+	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
+	if (!ptrMarshal)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
 
-	ObjectPtr<Remoting::IChannelEx> ptrChannel(m_ptrChannel);
-	if (ptrChannel)
-	{
-		ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
-		if (!ptrMarshal)
-			throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
+	// The following format is the same as IObjectManager::UnmarshalInterface...
+	pMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
+	byte_t two = 2;
+	pMessage->WriteBytes(L"$marshal_type",1,&two);
 
-		// The following format is the same as IObjectManager::UnmarshalInterface...
-		pMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
-		byte_t two = 2;
-		pMessage->WriteBytes(L"$marshal_type",1,&two);
+	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_GUIDOF(Remoting::IChannel),flags);
+	if (oid == guid_t::Null())
+		OMEGA_THROW(L"Channels must support custom marshalling if they support reflection");
 
-		guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_GUIDOF(Remoting::IChannelEx),flags);
-		if (oid == guid_t::Null())
-			OMEGA_THROW(L"Channels must support custom marshalling if they support reflection");
+	WriteGuid(L"$oid",pMessage,oid);
 
-		WriteGuid(L"$oid",pMessage,oid);
-
-		ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannelEx),flags);
-		
-		pMessage->WriteStructEnd(L"m_ptrChannel");		
-	}
-	else
-		OMEGA_THROW(L"We have no implementation for this yet!");
+	ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
+	
+	pMessage->WriteStructEnd(L"m_ptrChannel");		
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0,())

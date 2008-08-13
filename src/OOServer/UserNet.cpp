@@ -271,6 +271,8 @@ void User::RemoteChannel::process_here(void* pParams, ACE_InputCDR& input)
 	catch (...)
 	{
 	}
+
+	pThis->Release();
 }
 
 void User::RemoteChannel::process_here_i(ACE_InputCDR& input)
@@ -451,8 +453,10 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 
 			ptrOM->MarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 			
+			AddRef();
 			if (!m_pManager->call_async_function(process_here,this,static_cast<const ACE_Message_Block*>(ptrMsg->GetMessageBlock())))
 			{
+				Release();
 				ptrOM->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 				OMEGA_THROW(L"Failed to queue message");
 			}
@@ -548,7 +552,14 @@ void User::RemoteChannel::channel_closed(uint32_t channel_id)
 	output << channel_id;
 	
 	if (output.good_bit())
-		m_pManager->call_async_function(&do_channel_closed,this,output.begin());
+	{
+		AddRef();
+		if (!m_pManager->call_async_function(&do_channel_closed,this,output.begin()))
+		{
+			Release();
+			OMEGA_THROW(L"Failed to queue message");
+		}
+	}
 }
 
 void User::RemoteChannel::do_channel_closed(void* pParam, ACE_InputCDR& input)
@@ -574,6 +585,8 @@ void User::RemoteChannel::do_channel_closed(void* pParam, ACE_InputCDR& input)
 	catch (...)
 	{
 	}
+
+	pThis->Release();
 }
 
 void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)

@@ -177,12 +177,17 @@ User::TcpAsyncStream::TcpAsyncStream() :
 User::TcpAsyncStream::~TcpAsyncStream()
 {
 	if (m_pHandler)
+	{
 		m_pHandler->AsyncClose(m_stream_id);
+		m_pHandler->Release();
+		m_pHandler = 0;
+	}
 }
 
 void User::TcpAsyncStream::open(TcpProtocolHandler* pHandler, uint32_t stream_id)
 {
 	m_pHandler = pHandler;
+	m_pHandler->AddRef();
 	m_stream_id = stream_id;
 }
 
@@ -529,6 +534,10 @@ User::TcpProtocolHandler::TcpProtocolHandler() :
 }
 
 User::TcpProtocolHandler::~TcpProtocolHandler()
+{
+}
+
+void User::TcpProtocolHandler::Terminate()
 {
 	// Make a copy of the map
 	std::map<Omega::uint32_t,AsyncEntry> mapAsyncs = m_mapAsyncs;

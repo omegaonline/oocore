@@ -46,6 +46,9 @@ namespace User
 			INTERFACE_ENTRY(Omega::Net::IProtocolHandler)
 		END_INTERFACE_MAP()
 
+	protected:
+		void Terminate();
+
 	private:
 		TcpProtocolHandler(const TcpProtocolHandler&) {};
 		TcpProtocolHandler& operator = (const TcpProtocolHandler&) { return *this; }

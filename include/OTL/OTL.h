@@ -297,9 +297,12 @@ namespace OTL
 	{
 	protected:
 		ObjectBase() : m_refcount(0)
-		{ }
+		{}
 
 		virtual ~ObjectBase()
+		{}
+
+		virtual void Terminate()
 		{}
 
 		virtual void Internal_AddRef()
@@ -310,7 +313,10 @@ namespace OTL
 		virtual void Internal_Release()
 		{
 			if (--m_refcount==0)
+			{
+				Terminate();
 				delete this;
+			}
 		}
 
 		typedef Omega::IObject* (ObjectBase::*PFNMEMQI)(const Omega::guid_t& iid);
@@ -668,14 +674,14 @@ namespace OTL
 				if (!singleton)
 				{
 					OMEGA_NEW(singleton,Singleton<TYPE>());
-					GetModuleBase()->AddTermFunc(delete_this,singleton);
+					GetModuleBase()->AddTermFunc(terminator,0);
 				}
 			}
 
 			return &singleton->m_instance;
 		}
 
-	protected:
+	private:
 		TYPE m_instance;
 
 		Singleton() {}
@@ -689,10 +695,12 @@ namespace OTL
 			return singleton;
 		}
 
-		static void delete_this(void* pThis)
+		static void terminator(void*)
 		{
-			delete static_cast<Singleton<TYPE>*>(pThis);
-			instance_i() = 0;
+			Singleton<TYPE>*& i = instance_i();
+			i->m_instance.SingletonTerminate();
+			delete i;
+			i = 0;
 		}
 	};
 
@@ -723,6 +731,12 @@ namespace OTL
 
 		virtual ~SingletonObjectImpl()
 		{ }
+
+	private:
+		void SingletonTerminate()
+		{
+			Terminate();
+		}
 
 	// IObject members
 	public:

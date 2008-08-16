@@ -58,6 +58,7 @@ namespace User
 
 		ACE_RW_Thread_Mutex                                                 m_lock;
 		Omega::uint32_t                                                     m_nIPSCookie;
+		bool                                                                m_bIsSandbox;
 		Root::MessagePipeAsyncAcceptor<Manager>                             m_process_acceptor;
 		std::map<ACE_CDR::ULong,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > > m_mapChannels;
 
@@ -71,7 +72,7 @@ namespace User
 		int run_event_loop_i(const ACE_CString& strPipe);
 		bool init(const ACE_CString& strPipe);
 		bool bootstrap(ACE_CDR::ULong sandbox_channel);
-		void end_event_loop();
+		void end();
 
 		virtual void on_channel_closed(ACE_CDR::ULong channel);
 
@@ -96,6 +97,13 @@ namespace User
 		Omega::Remoting::IChannelSink* open_server_sink_i(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
 		void close_all_remotes();
 		void local_channel_closed(ACE_CDR::ULong channel_id);
+
+		std::map<Omega::string_t,OTL::ObjectPtr<Omega::System::IService> > m_mapServices;
+
+		bool start_service(const Omega::string_t& strName, const Omega::guid_t& oid);
+		void service_start_i();
+		void stop_services();
+		static void service_start(void* pParam, ACE_InputCDR&);
 
 		// HTTP handling (for sandbox only)
 		ACE_RW_Thread_Mutex                                                                  m_http_lock;

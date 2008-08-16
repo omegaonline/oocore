@@ -192,30 +192,27 @@ void Root::HttpAcceptor::close()
 
 	try
 	{
-		// Scope the lock
-		bool bOk = false;
+		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+		for (std::map<ACE_CDR::UShort,HttpConnection*>::iterator i=m_mapConnections.begin();i!=m_mapConnections.end();++i)
 		{
-			ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-			for (std::map<ACE_CDR::UShort,HttpConnection*>::iterator i=m_mapConnections.begin();i!=m_mapConnections.end();++i)
-			{
-				i->second->close();
-			}
-
-			if (m_mapConnections.empty())
-				bOk = true;
+			i->second->close();
 		}
 
+		guard.release();
+		
 		// Spin till everyone is gone
-		while (!bOk)
+		ACE_Time_Value wait(0,100);
+		for (size_t i=0;i<300;++i)
 		{
-			ACE_OS::sleep(ACE_Time_Value(0,1000));
+			guard.acquire();
 
-			{
-				ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+			if (m_mapConnections.empty())
+				break;
 
-				bOk = m_mapConnections.empty();
-			}
+			guard.release();
+
+			ACE_OS::sleep(wait);
 		}
 	}
 	catch (std::exception&)

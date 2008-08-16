@@ -205,6 +205,10 @@ namespace User
 
 User::HttpProtocolHandler::HttpProtocolHandler()
 {
+}
+
+void User::HttpProtocolHandler::Start()
+{
 	if (m_db.open(":memory:") == 0)
 	{
 		const char szSQL[] = 
@@ -221,6 +225,10 @@ User::HttpProtocolHandler::HttpProtocolHandler()
 				
 		m_db.exec(szSQL);
 	}
+}
+
+void User::HttpProtocolHandler::Stop()
+{
 }
 
 Net::IConnectedStream* User::HttpProtocolHandler::OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify)

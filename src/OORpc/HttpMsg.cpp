@@ -1057,33 +1057,46 @@ void Rpc::HttpOutputMsg::WriteName(const string_t& strName)
 void Rpc::HttpOutputMsg::WriteInt(const int64_t& v)
 {
 	char szBuf[64] = {0};
-	ACE_OS::snprintf(szBuf,63,"%lld",v);
-	std::string t = szBuf;
+	int r = ACE_OS::snprintf(szBuf,63,"%lld",v);
+	if (r == -1 || r >= 64)
+		OMEGA_THROW(ACE_OS::last_error());
 
-	grow_mb(t.length());
-	if (m_mb->copy(t.c_str(),t.length()) == -1)
+	grow_mb(r);
+	if (m_mb->copy(szBuf,r) == -1)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
 void Rpc::HttpOutputMsg::WriteUInt(const uint64_t& v)
 {
 	char szBuf[64] = {0};
-	ACE_OS::snprintf(szBuf,63,"%llu",v);
-	std::string t = szBuf;
+	int r = ACE_OS::snprintf(szBuf,63,"%llu",v);
+	if (r == -1 || r >= 64)
+		OMEGA_THROW(ACE_OS::last_error());
 
-	grow_mb(t.length());
-	if (m_mb->copy(t.c_str(),t.length()) == -1)
+	grow_mb(r);
+	if (m_mb->copy(szBuf,r) == -1)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
 void Rpc::HttpOutputMsg::WriteDouble(const double& v)
 {
 	char szBuf[64] = {0};
-	ACE_OS::snprintf(szBuf,63,"%G",v);
-	std::string t = szBuf;
+	int len = ACE_OS::snprintf(szBuf,63,"%#.50G",v);
+	if (len == -1 || len >= 64)
+		OMEGA_THROW(ACE_OS::last_error());
 
-	grow_mb(t.length());
-	if (m_mb->copy(t.c_str(),t.length()) == -1)
+	// Remove trailing 0's
+	--len;
+	for (;len>1;--len)
+	{
+		if (szBuf[len] != '0' || szBuf[len-1] == '.')
+			break;
+		
+		szBuf[len] = '\0';
+	}
+	
+	grow_mb(len+1);
+	if (m_mb->copy(szBuf,len+1) == -1)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 

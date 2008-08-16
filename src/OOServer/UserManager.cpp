@@ -82,6 +82,7 @@ const ACE_CDR::ULong User::Manager::m_root_channel = 0x80000000;
 
 User::Manager::Manager() :
 	m_nIPSCookie(0),
+	m_bIsSandbox(false),
 	m_nNextRemoteChannel(0)
 {
 }
@@ -105,14 +106,17 @@ int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 			// Wait for stop
 			ret = ACE_Reactor::instance()->run_reactor_event_loop();
 
-			// Close the user pipes
-			close();
+			// Stop the services
+			stop_services();
 
 			// Close all the sinks
 			close_all_remotes();
 
 			// Close all the http stuff
 			close_all_http();
+
+			// Close the user pipes
+			close();
 
 			// Unregister our object factories
 			GetModule()->UnregisterObjectFactories();
@@ -172,6 +176,9 @@ bool User::Manager::init(const ACE_CString& strPipe)
 		pipe->close();
 		return false;
 	}
+
+	// Set the sandbox flag
+	m_bIsSandbox = (sandbox_channel == 0);
 
 	// Invent a new pipe name..
 	ACE_CString strNewPipe = Root::MessagePipe::unique_name("oou");
@@ -234,6 +241,13 @@ bool User::Manager::init(const ACE_CString& strPipe)
 		return false;
 	}
 
+	// Now queue the service start function
+	if (!call_async_function_i(&service_start,this,0))
+	{
+		pipe->close();
+		return false;
+	}
+
 	return true;
 }
 
@@ -267,7 +281,91 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	return true;
 }
 
-void User::Manager::end_event_loop()
+void User::Manager::service_start(void* pParam, ACE_InputCDR&)
+{
+	Manager* pThis = static_cast<Manager*>(pParam);
+	try
+	{
+		pThis->service_start_i();
+	}
+	catch (IException* pE)
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+
+		pE->Release();
+	}	
+	catch (...)
+	{
+	}
+}
+
+bool User::Manager::start_service(const string_t& strName, const guid_t& oid)
+{
+	try
+	{
+		ObjectPtr<System::IService> ptrService(oid,Activation::InProcess);
+		ptrService->Start();
+
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		std::pair<std::map<string_t,ObjectPtr<System::IService> >::iterator,bool> p = m_mapServices.insert(std::map<string_t,ObjectPtr<System::IService> >::value_type(strName,ptrService));
+		if (!p.second)
+			OMEGA_THROW(L"Service with the same name already started!");
+	}
+	catch (IException* pE)
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception starting service %W: %W\n"),pE->Source().c_str(),strName.c_str(),pE->Description().c_str()));
+
+		pE->Release();
+
+		return false;
+	}
+
+	return true;
+}
+
+void User::Manager::service_start_i()
+{
+	// Start the builtin services
+	start_service(L"tcp",OID_TcpProtocolHandler);
+	start_service(L"http",OID_HttpProtocolHandler);
+}
+
+void User::Manager::stop_services()
+{
+	try
+	{
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		// Copy and clear the map
+		std::map<string_t,ObjectPtr<System::IService> > mapServices = m_mapServices;
+		m_mapServices.clear();
+
+		guard.release();
+
+		for (std::map<string_t,ObjectPtr<System::IService> >::iterator i=mapServices.begin();i!=mapServices.end();++i)
+		{
+			try
+			{
+				i->second->Stop();
+			}
+			catch (IException* pE)
+			{
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping service %W: %W\n"),pE->Source().c_str(),i->first.c_str(),pE->Description().c_str()));
+
+				pE->Release();
+			}
+		}
+	}
+	catch (IException* pE)
+	{
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping services: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+
+		pE->Release();
+	}
+}
+
+void User::Manager::end()
 {
 	// Stop accepting new clients
 	m_process_acceptor.stop();
@@ -347,7 +445,7 @@ void User::Manager::on_channel_closed(ACE_CDR::ULong channel)
 
 	// If the root closes, we should end!
 	if (channel == m_root_channel)
-		end_event_loop();
+		end();
 }
 
 void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)

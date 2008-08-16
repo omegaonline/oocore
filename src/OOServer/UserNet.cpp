@@ -264,7 +264,7 @@ void User::RemoteChannel::process_here(void* pParams, ACE_InputCDR& input)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 	}
@@ -578,7 +578,7 @@ void User::RemoteChannel::do_channel_closed(void* pParam, ACE_InputCDR& input)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 	}

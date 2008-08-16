@@ -85,6 +85,7 @@
 // Include OOCore/OTL components
 
 #include <OOCore/Remoting.h>
+#include <OOCore/Service.h>
 #include <OTL/OTL.h>
 
 // End of OOCore/OTL includes

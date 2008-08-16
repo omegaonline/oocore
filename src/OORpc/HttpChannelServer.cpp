@@ -74,9 +74,6 @@ void Rpc::HttpServerSink::handle_request(const Omega::string_t& strResource, Ome
 		pResponse->SetResponseHeader(L"Cache-Control",L"no-cache");
 		pResponse->Send(200,L"OK");
 
-		std::string b(mb->rd_ptr(),mb->length());
-		printf("Server recv: %s\n\n",b.c_str());
-
 		// Wrap the message block
 		ObjectPtr<ObjectImpl<HttpInputMsg> > ptrInput = ObjectImpl<HttpInputMsg>::CreateInstancePtr();
 		ptrInput->init(mb);
@@ -208,8 +205,6 @@ void Rpc::HttpServerSink::Send_i()
 
 				osChunk << static_cast<uint32_t>(strContent.length()) << "\r\n" << strContent << "\r\n";
 				strContent = osChunk.str();
-
-				printf("Server send: %s\n\n",strContent.c_str());
 
 				// Send the whole damn thing!
 				m_ptrResponse->WriteBytes(static_cast<uint32_t>(strContent.length()),(const byte_t*)strContent.c_str());

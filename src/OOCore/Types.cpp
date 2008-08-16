@@ -555,6 +555,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	if (!pStr)
 		OMEGA_THROW(ACE_OS::last_error());
 
+	void* DO_THIS_BETTER;
+
 	wchar_t szBuf[41];
 	ACE_OS::snprintf(szBuf,40,L"{%hs}",pStr->c_str());
 

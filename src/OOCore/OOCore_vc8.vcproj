@@ -421,6 +421,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\Service.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\Threading.h"
 				>
 			</File>

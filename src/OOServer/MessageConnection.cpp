@@ -39,7 +39,7 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 	ACE_Time_Value t = ACE_OS::gettimeofday();
 
 	char szBuf[64];
-	ACE_OS::snprintf(szBuf,64,"%lx%llx",ACE_OS::getpid(),t.usec());
+	ACE_OS::snprintf(szBuf,63,"%lx%llx",ACE_OS::getpid(),t.usec());
 
 #if defined(ACE_WIN32)
     // ACE Adds the "\\.\"...
@@ -825,6 +825,8 @@ void Root::MessageHandler::close()
 
 		if (m_mapChannelIds.empty())
 			break;
+
+		guard.release();
 
 		ACE_OS::sleep(wait);
 	}

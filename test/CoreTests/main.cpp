@@ -42,7 +42,7 @@ static void tests()
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_tests);
-	//RUN_TEST(net_tests);
+	RUN_TEST(net_tests);
 	RUN_TEST(interface_tests2);
 }
 

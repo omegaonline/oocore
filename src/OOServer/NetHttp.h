@@ -32,12 +32,14 @@ namespace User
 	class HttpProtocolHandler :
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactorySingleton<HttpProtocolHandler,&OID_HttpProtocolHandler,Omega::Activation::InProcess>,
+		public Omega::System::IService,
 		public Omega::Net::IProtocolHandler
 	{
 	public:
 		HttpProtocolHandler();
 
 		BEGIN_INTERFACE_MAP(HttpProtocolHandler)
+			INTERFACE_ENTRY(Omega::System::IService)
 			INTERFACE_ENTRY(Omega::Net::IProtocolHandler)
 		END_INTERFACE_MAP()
 
@@ -45,6 +47,11 @@ namespace User
 		Omega::string_t FindProxy(const Omega::string_t& strURL, const Omega::string_t& strProtocol);
 
 		Db::Database m_db;
+
+	// IService members
+	public:
+		void Start();
+		void Stop();
 
 	// IProtocolHandler members
 	public:

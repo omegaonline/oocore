@@ -105,7 +105,7 @@ static bool AttachVSDebugger(DWORD our_pid)
 static void PromptForDebugger(DWORD pid)
 {
 	wchar_t szBuf[256];
-	ACE_OS::snprintf(szBuf,256,L"Attach the debugger to process id %lu now if you want!",pid);
+	ACE_OS::snprintf(szBuf,255,L"Attach the debugger to process id %lu now if you want!",pid);
     MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 

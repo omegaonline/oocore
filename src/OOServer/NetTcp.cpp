@@ -176,18 +176,13 @@ User::TcpAsyncStream::TcpAsyncStream() :
 
 User::TcpAsyncStream::~TcpAsyncStream()
 {
-	if (m_pHandler)
-	{
+	if (m_pHandler && m_stream_id)
 		m_pHandler->AsyncClose(m_stream_id);
-		m_pHandler->Release();
-		m_pHandler = 0;
-	}
 }
 
 void User::TcpAsyncStream::open(TcpProtocolHandler* pHandler, uint32_t stream_id)
 {
 	m_pHandler = pHandler;
-	m_pHandler->AddRef();
 	m_stream_id = stream_id;
 }
 
@@ -264,7 +259,6 @@ void User::TcpProtocolHandler::TcpAsync::open(ACE_HANDLE new_handle, ACE_Message
 {
 	m_stream = ACE_SOCK_Stream(new_handle);
 
-	++m_refcount;
 	if (!m_pHandler->add_async(m_stream_id,this))
 	{
 		release();
@@ -278,8 +272,8 @@ void User::TcpProtocolHandler::TcpAsync::open(ACE_HANDLE new_handle, ACE_Message
 		++m_refcount;
 		if (!User::Manager::call_async_function(&open_stream_thunk,this))
 		{
-			release();
 			m_pHandler->remove_async(m_stream_id);
+			release();
 			return;
 		}
 
@@ -296,8 +290,8 @@ void User::TcpProtocolHandler::TcpAsync::open(ACE_HANDLE new_handle, ACE_Message
 		++m_refcount;
 		if (!output.good_bit() || !Manager::call_async_function(&error_thunk,this,output.begin()))
 		{
-			release();
 			m_pHandler->remove_async(m_stream_id);
+			release();
 		}
 	}
 }
@@ -417,7 +411,7 @@ void User::TcpProtocolHandler::TcpAsync::error_thunk(void* pParam, ACE_InputCDR&
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 	}	
@@ -437,7 +431,7 @@ void User::TcpProtocolHandler::TcpAsync::open_stream_thunk(void* pParam, ACE_Inp
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 		pThis->m_stream.close();
@@ -459,7 +453,7 @@ void User::TcpProtocolHandler::TcpAsync::handle_read_stream_thunk(void* pParam, 
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 		pThis->m_stream.close();
@@ -491,7 +485,7 @@ void User::TcpProtocolHandler::TcpAsync::handle_write_stream_thunk(void* pParam,
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 		pThis->m_stream.close();
@@ -525,28 +519,14 @@ bool User::TcpProtocolHandler::TcpAsync::write(ACE_Message_Block& mb)
 }
 
 User::TcpProtocolHandler::TcpProtocolHandler() :
-	m_nNextStream(1)
+	m_nNextStream(1),
+	m_bStarted(0)
 {
 	m_connector.m_pHandler = this;
-
-	if (m_connector.open() != 0)
-		OMEGA_THROW(ACE_OS::last_error());
 }
 
 User::TcpProtocolHandler::~TcpProtocolHandler()
 {
-}
-
-void User::TcpProtocolHandler::Terminate()
-{
-	// Make a copy of the map
-	std::map<Omega::uint32_t,AsyncEntry> mapAsyncs = m_mapAsyncs;
-
-	// Delete our map
-	m_mapAsyncs.clear();
-
-	// Clear the map copy, as the destructors attempt to remove themselves from m_mapAsyncs...
-	mapAsyncs.clear();
 }
 
 bool User::TcpProtocolHandler::add_async(uint32_t stream_id, TcpAsync* pAsync)
@@ -575,6 +555,8 @@ bool User::TcpProtocolHandler::add_async(uint32_t stream_id, TcpAsync* pAsync)
 
 void User::TcpProtocolHandler::remove_async(uint32_t stream_id)
 {
+	// This is called when a notification has failed - we just remove it...
+
 	try
 	{
 		// Find and remove from the map...
@@ -585,7 +567,10 @@ void User::TcpProtocolHandler::remove_async(uint32_t stream_id)
 		{
 			if (i->second.pAsync)
 				i->second.pAsync->release();
-			i->second.pAsync = 0;
+			
+			m_mapAsyncs.erase(i);
+
+			printf("remove_async removed tcp stream %lu\n",stream_id);
 		}
 	}
 	catch (...)
@@ -608,6 +593,8 @@ void User::TcpProtocolHandler::OnAsyncError(uint32_t stream_id, int err)
 			if (i->second.pAsync)
 				i->second.pAsync->release();
 
+			printf("OnAsyncError removed tcp stream %lu\n",stream_id);
+
 			m_mapAsyncs.erase(i);
 		}
 	}
@@ -623,7 +610,6 @@ void User::TcpProtocolHandler::OnAsyncError(uint32_t stream_id, int err)
 
 void User::TcpProtocolHandler::OnAsyncOpen(uint32_t stream_id)
 {
-	bool bRemove = false;
 	ObjectPtr<IO::IAsyncStreamNotify> ptrNotify;
 	{
 		// Find and remove from the map...
@@ -631,24 +617,15 @@ void User::TcpProtocolHandler::OnAsyncOpen(uint32_t stream_id)
 
 		std::map<uint32_t,AsyncEntry>::iterator i = m_mapAsyncs.find(stream_id);
 		if (i != m_mapAsyncs.end())
-		{
-			if (!i->second.pAsync)
-				bRemove = true;
-
 			ptrNotify = i->second.ptrNotify;
-		}
 	}
 
 	if (ptrNotify)
 		ptrNotify->OnOpened();
-
-	if (bRemove)
-		AsyncClose(stream_id);
 }
 
 void User::TcpProtocolHandler::OnAsyncRead(uint32_t stream_id, const ACE_Message_Block* mb)
 {
-	bool bRemove = false;
 	ObjectPtr<IO::IAsyncStreamNotify> ptrNotify;
 	{
 		// Find and remove from the map...
@@ -656,24 +633,15 @@ void User::TcpProtocolHandler::OnAsyncRead(uint32_t stream_id, const ACE_Message
 
 		std::map<uint32_t,AsyncEntry>::iterator i = m_mapAsyncs.find(stream_id);
 		if (i != m_mapAsyncs.end())
-		{
-			if (!i->second.pAsync)
-				bRemove = true;
-
 			ptrNotify = i->second.ptrNotify;
-		}
 	}
 
 	if (ptrNotify)
 		ptrNotify->OnRead(mb->total_length(),(const byte_t*)mb->rd_ptr());
-
-	if (bRemove)
-		AsyncClose(stream_id);
 }
 
 void User::TcpProtocolHandler::OnAsyncWrite(uint32_t stream_id, size_t len)
 {
-	bool bRemove = false;
 	ObjectPtr<IO::IAsyncStreamNotify> ptrNotify;
 	{
 		// Find and remove from the map...
@@ -681,24 +649,15 @@ void User::TcpProtocolHandler::OnAsyncWrite(uint32_t stream_id, size_t len)
 
 		std::map<uint32_t,AsyncEntry>::iterator i = m_mapAsyncs.find(stream_id);
 		if (i != m_mapAsyncs.end())
-		{
-			if (!i->second.pAsync)
-				bRemove = true;
-
 			ptrNotify = i->second.ptrNotify;
-		}
 	}
 
 	if (ptrNotify)
 		ptrNotify->OnWritten(len);
-
-	if (bRemove)
-		AsyncClose(stream_id);
 }
 
 void User::TcpProtocolHandler::AsyncRead(uint32_t stream_id, ACE_Message_Block* mb, size_t len)
 {
-	bool bRemove = false;
 	try
 	{
 		// Find in the map...
@@ -708,12 +667,9 @@ void User::TcpProtocolHandler::AsyncRead(uint32_t stream_id, ACE_Message_Block* 
 		if (i == m_mapAsyncs.end())
 			OMEGA_THROW(ENOTCONN);
 
-		// Check it hasn't been closed in the background
-		if (!i->second.pAsync)
-			bRemove = true;
-		else if (!i->second.pAsync->read(*mb,len))
+		// Start an async read
+		if (!i->second.pAsync->read(*mb,len))
 		{
-			// Start an async read
 			int err = ACE_OS::last_error();
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: read failed, code: %#x - %m\n"),err));
 			OMEGA_THROW(err);
@@ -723,15 +679,10 @@ void User::TcpProtocolHandler::AsyncRead(uint32_t stream_id, ACE_Message_Block* 
 	{
 		OMEGA_THROW(e);
 	}
-
-	if (bRemove)
-		AsyncClose(stream_id);
 }
 
 void User::TcpProtocolHandler::AsyncWrite(uint32_t stream_id, ACE_Message_Block* mb)
 {
-	bool bRemove = false;
-
 	try
 	{
 		// Find in the map...
@@ -741,12 +692,9 @@ void User::TcpProtocolHandler::AsyncWrite(uint32_t stream_id, ACE_Message_Block*
 		if (i == m_mapAsyncs.end())
 			OMEGA_THROW(ENOTCONN);
 
-		// Check it hasn't been closed in the background
-		if (!i->second.pAsync)
-			bRemove = true;
-		else if (!i->second.pAsync->write(*mb))
+		// Start an async write
+		if (!i->second.pAsync->write(*mb))
 		{
-			// Start an async write
 			int err = ACE_OS::last_error();
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: write failed, code: %#x - %m\n"),err));
 			OMEGA_THROW(err);
@@ -756,40 +704,15 @@ void User::TcpProtocolHandler::AsyncWrite(uint32_t stream_id, ACE_Message_Block*
 	{
 		OMEGA_THROW(e);
 	}
-
-	if (bRemove)
-		AsyncClose(stream_id);
 }
 
 void User::TcpProtocolHandler::AsyncClose(uint32_t stream_id)
 {
-	try
-	{
-		// Find and remove from the map...
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::map<uint32_t,AsyncEntry>::iterator i = m_mapAsyncs.find(stream_id);
-		if (i != m_mapAsyncs.end())
-		{
-			if (i->second.pAsync)
-			{
-				i->second.pAsync->close();
-				i->second.pAsync->release();
-			}
-
-			m_mapAsyncs.erase(i);
-		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	remove_async(stream_id);
 }
 
 string_t User::TcpProtocolHandler::LocalEndpoint(uint32_t stream_id)
 {
-	bool bRemove = false;
-
 	try
 	{
 		// Find in the map...
@@ -799,27 +722,16 @@ string_t User::TcpProtocolHandler::LocalEndpoint(uint32_t stream_id)
 		if (i == m_mapAsyncs.end())
 			OMEGA_THROW(ENOTCONN);
 
-		// Check it hasn't been closed in the background
-		if (!i->second.pAsync)
-			bRemove = true;
-		else
-			return i->second.pAsync->local_endpoint();
+		return i->second.pAsync->local_endpoint();
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e);
 	}
-
-	if (bRemove)
-		AsyncClose(stream_id);
-
-	OMEGA_THROW(ENOTCONN);
 }
 
 string_t User::TcpProtocolHandler::RemoteEndpoint(uint32_t stream_id)
 {
-	bool bRemove = false;
-
 	try
 	{
 		// Find in the map...
@@ -829,21 +741,12 @@ string_t User::TcpProtocolHandler::RemoteEndpoint(uint32_t stream_id)
 		if (i == m_mapAsyncs.end())
 			OMEGA_THROW(ENOTCONN);
 
-		// Check it hasn't been closed in the background
-		if (!i->second.pAsync)
-			bRemove = true;
-		else
-			return i->second.pAsync->remote_endpoint();
+		return i->second.pAsync->remote_endpoint();
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e);
 	}
-
-	if (bRemove)
-		AsyncClose(stream_id);
-
-	OMEGA_THROW(ENOTCONN);
 }
 
 void User::TcpProtocolHandler::AsyncConnector::call_error(void* pParam, ACE_InputCDR& input)
@@ -864,7 +767,7 @@ void User::TcpProtocolHandler::AsyncConnector::call_error(void* pParam, ACE_Inpu
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
 
 		pE->Release();
 	}
@@ -898,8 +801,60 @@ User::TcpProtocolHandler::TcpAsync* User::TcpProtocolHandler::AsyncConnector::ma
 	return handler;
 }
 
+void User::TcpProtocolHandler::Start()
+{
+	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	if (m_connector.open() != 0)
+		OMEGA_THROW(ACE_OS::last_error());
+
+	m_bStarted = true;
+}
+
+void User::TcpProtocolHandler::Stop()
+{
+	try
+	{
+		// Find and remove from the map...
+		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		for (std::map<uint32_t,AsyncEntry>::iterator i=m_mapAsyncs.begin();i!=m_mapAsyncs.end();++i)
+		{
+			if (i->second.pAsync)
+			{
+				i->second.pAsync->close();
+				i->second.pAsync->release();
+			}
+		}
+
+		m_mapAsyncs.clear();
+
+		m_bStarted = false;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+
+	ACE_Time_Value wait(0,100);
+	for (size_t i=0;i<300;++i)
+	{
+		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		if (m_mapAsyncs.empty())
+			break;
+
+		guard.release();
+
+		ACE_OS::sleep(wait);
+	}
+}
+
 Net::IConnectedStream* User::TcpProtocolHandler::OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify)
 {
+	if (!m_bStarted)
+		OMEGA_THROW(L"Service has been stopped!");
+
 	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
@@ -919,15 +874,17 @@ Net::IConnectedStream* User::TcpProtocolHandler::OpenStream(const string_t& strE
 			// Create new id and insert into map
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			stream_id = ++m_nNextStream;
-			while (m_nNextStream && m_mapAsyncs.find(stream_id) != m_mapAsyncs.end())
-				++m_nNextStream;
+			stream_id = m_nNextStream++;
+			while (!stream_id || m_mapAsyncs.find(stream_id) != m_mapAsyncs.end())
+				stream_id = m_nNextStream++;
 
 			AsyncEntry entry;
 			entry.pAsync = 0;
 			entry.ptrNotify = pNotify;
 
 			m_mapAsyncs.insert(std::map<uint32_t,AsyncEntry>::value_type(stream_id,entry));
+
+			printf("Added tcp stream %lu to %ls\n",stream_id,strEndpoint.c_str());
 		}
 		catch (std::exception& e)
 		{
@@ -950,6 +907,8 @@ Net::IConnectedStream* User::TcpProtocolHandler::OpenStream(const string_t& strE
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 			m_mapAsyncs.erase(stream_id);
+
+			printf("Open failure removed tcp stream %lu\n",stream_id);
 
 			throw;
 		}

@@ -216,21 +216,33 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
 
 void OOCore::StdObjectManager::Disconnect()
 {
-	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	std::list<WireStub*> listStubs;
+	std::list<WireProxy*> listProxies;
 
-	// clear the stub map
-	for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
 	{
-		i->second->second->Release_Safe();
-	}
-	m_mapStubIds.clear();
-	m_mapStubObjs.clear();
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-	// shutdown the proxys
-	for (std::map<uint32_t,WireProxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
-	{
-		j->second->Disconnect();
+		// Copy the stub map
+		for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
+			listStubs.push_back(i->second->second);
+		
+		m_mapStubIds.clear();
+		m_mapStubObjs.clear();
+
+		// Copy the proxys
+		for (std::map<uint32_t,WireProxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
+			listProxies.push_back(j->second);
+		
+		m_mapProxyIds.clear();
 	}
+
+	// Disconnect the proxies
+	for (std::list<WireProxy*>::iterator j=listProxies.begin();j!=listProxies.end();++j)
+		(*j)->Disconnect();
+
+	// Release the stubs
+	for (std::list<WireStub*>::iterator i=listStubs.begin();i!=listStubs.end();++i)
+		(*i)->Release_Safe();
 }
 
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)

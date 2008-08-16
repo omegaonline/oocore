@@ -30,6 +30,7 @@ namespace User
 	class TcpProtocolHandler :
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactorySingleton<TcpProtocolHandler,&OID_TcpProtocolHandler,Omega::Activation::InProcess>,
+		public Omega::System::IService,
 		public Omega::Net::IProtocolHandler
 	{
 	public:
@@ -43,11 +44,9 @@ namespace User
 		Omega::string_t LocalEndpoint(Omega::uint32_t stream_id);
 
 		BEGIN_INTERFACE_MAP(TcpProtocolHandler)
+			INTERFACE_ENTRY(Omega::System::IService)
 			INTERFACE_ENTRY(Omega::Net::IProtocolHandler)
 		END_INTERFACE_MAP()
-
-	protected:
-		void Terminate();
 
 	private:
 		TcpProtocolHandler(const TcpProtocolHandler&) {};
@@ -120,8 +119,9 @@ namespace User
 			OTL::ObjectPtr<Omega::IO::IAsyncStreamNotify> ptrNotify;
 			TcpAsync*                                     pAsync;
 		};
-		ACE_RW_Thread_Mutex    m_lock;
-		Omega::uint32_t        m_nNextStream;
+		ACE_RW_Thread_Mutex                  m_lock;
+		Omega::uint32_t                      m_nNextStream;
+		bool                                 m_bStarted;
 		std::map<Omega::uint32_t,AsyncEntry> m_mapAsyncs;
 
 		void OnAsyncOpen(Omega::uint32_t stream_id);
@@ -131,6 +131,11 @@ namespace User
 
 		bool add_async(Omega::uint32_t stream_id, TcpAsync* pAsync);
 		void remove_async(Omega::uint32_t stream_id);
+
+	// IService members
+	public:
+		void Start();
+		void Stop();
 	
 	// IProtocolHandler members
 	public:

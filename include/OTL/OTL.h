@@ -302,9 +302,6 @@ namespace OTL
 		virtual ~ObjectBase()
 		{}
 
-		virtual void Terminate()
-		{}
-
 		virtual void Internal_AddRef()
 		{
 			++m_refcount;
@@ -313,10 +310,7 @@ namespace OTL
 		virtual void Internal_Release()
 		{
 			if (--m_refcount==0)
-			{
-				Terminate();
 				delete this;
-			}
 		}
 
 		typedef Omega::IObject* (ObjectBase::*PFNMEMQI)(const Omega::guid_t& iid);
@@ -698,7 +692,6 @@ namespace OTL
 		static void terminator(void*)
 		{
 			Singleton<TYPE>*& i = instance_i();
-			i->m_instance.SingletonTerminate();
 			delete i;
 			i = 0;
 		}
@@ -731,12 +724,6 @@ namespace OTL
 
 		virtual ~SingletonObjectImpl()
 		{ }
-
-	private:
-		void SingletonTerminate()
-		{
-			Terminate();
-		}
 
 	// IObject members
 	public:

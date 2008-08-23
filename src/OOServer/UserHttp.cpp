@@ -1038,7 +1038,7 @@ void User::Manager::open_http(ACE_InputCDR& request, ACE_OutputCDR& response)
 			err = ENOMEM;
 		else
 		{
-			ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Null_Mutex> new_conn(pConn);
+			ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Thread_Mutex> new_conn(pConn);
 
 			// Insert into map
 			ACE_Write_Guard<ACE_RW_Thread_Mutex> guard(m_http_lock);
@@ -1049,7 +1049,7 @@ void User::Manager::open_http(ACE_InputCDR& request, ACE_OutputCDR& response)
 				try
 				{
 					// Okay, got a new HTTP connection
-					m_mapHttpConnections.insert(std::map<uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Null_Mutex> >::value_type(conn_id,new_conn));
+					m_mapHttpConnections.insert(std::map<uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Thread_Mutex> >::value_type(conn_id,new_conn));
 				}
 				catch (std::exception&)
 				{
@@ -1080,7 +1080,7 @@ void User::Manager::recv_http(ACE_InputCDR& request)
 	if (err == 0)
 	{
 		// Okay, got a HTTP message, who is it from?
-		ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Null_Mutex> conn;
+		ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Thread_Mutex> conn;
 
 		// Lookup connection
 		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_http_lock);
@@ -1089,7 +1089,7 @@ void User::Manager::recv_http(ACE_InputCDR& request)
 			try
 			{
 				// Okay, got a new HTTP connection
-				std::map<uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Null_Mutex> >::iterator i=m_mapHttpConnections.find(conn_id);
+				std::map<uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Thread_Mutex> >::iterator i=m_mapHttpConnections.find(conn_id);
 				if (i != m_mapHttpConnections.end())
 					conn = i->second;
 			}
@@ -1276,7 +1276,7 @@ void User::Manager::handle_http_request_i(HttpConnection* pConn, uint16_t conn_i
 
 void User::Manager::close_all_http()
 {
-	std::map<uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Null_Mutex> > conns;
+	std::map<uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Thread_Mutex> > conns;
 	std::map<string_t,ObjectPtr<Net::Http::Server::IRequestHandler> > handlers;
 
 	// Make a locked copy of the maps and clear them

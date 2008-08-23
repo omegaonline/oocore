@@ -46,7 +46,7 @@ namespace Root
 		MessageConnection(MessageHandler* pHandler);
 		virtual ~MessageConnection();
 
-		ACE_CDR::ULong open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id = 0, bool bStart = true);
+		ACE_CDR::ULong open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id = 0, bool bStart = true);
 		bool read(ACE_Message_Block* mb = 0);
 
 	private:
@@ -54,10 +54,10 @@ namespace Root
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
-		MessageHandler*                                     m_pHandler;
-		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> m_pipe;
-		size_t                                              m_chunk_size;
-		ACE_CDR::ULong                                      m_channel_id;
+		MessageHandler*                                       m_pHandler;
+		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> m_pipe;
+		size_t                                                m_chunk_size;
+		ACE_CDR::ULong                                        m_channel_id;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		ACE_Asynch_Read_File        m_reader;
@@ -102,13 +102,15 @@ namespace Root
 
 	public:
 		int pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
-		
-	protected:
+
+		void channel_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
+		bool forward_message(ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, const ACE_Message_Block* mb);
 		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs);
+				
+	protected:
 		bool send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		bool call_async_function_i(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb);
-		bool forward_message(ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, const ACE_Message_Block* mb);
-
+		
 		int start();
 		void close();
 		void stop();
@@ -121,8 +123,7 @@ namespace Root
 
 		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
 		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
-		void channel_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
-
+		
 	private:
 		friend class MessageConnection;
 		friend class MessagePipeAsyncAcceptor<MessageHandler>;
@@ -141,16 +142,16 @@ namespace Root
 		ACE_CDR::ULong       m_uNextChannelMask;
 		ACE_CDR::ULong       m_uNextChannelShift;
 
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> > m_mapChannelIds;
+		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> > m_mapChannelIds;
 
 		struct Message
 		{
-			ACE_CDR::UShort                                      m_dest_thread_id;
-			ACE_CDR::UShort                                      m_src_thread_id;
-			ACE_CDR::ULong                                       m_src_channel_id;
-			ACE_CDR::ULong                                       m_attribs;
-			ACE_Time_Value                                       m_deadline;
-			ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Null_Mutex> m_ptrPayload;
+			ACE_CDR::UShort                                        m_dest_thread_id;
+			ACE_CDR::UShort                                        m_src_thread_id;
+			ACE_CDR::ULong                                         m_src_channel_id;
+			ACE_CDR::ULong                                         m_attribs;
+			ACE_Time_Value                                         m_deadline;
+			ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> m_ptrPayload;
 		};
 
 		struct ThreadContext
@@ -190,7 +191,7 @@ namespace Root
 		void remove_thread_context(const ThreadContext* pContext);
 
 		// Accessors for MessageConnection
-		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id);
+		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id);
 
 		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
 		bool route_message(MessageHandler::Message* msg);

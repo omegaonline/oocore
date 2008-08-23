@@ -315,7 +315,7 @@ Net::IConnectedStream* User::HttpProtocolHandler::OpenStream(const string_t& str
 string_t User::HttpProtocolHandler::FindProxy(const string_t& strURL, const string_t& strProtocol)
 {
 	// Check our local db first
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db.prepare_statement("SELECT ProxyURL FROM Proxy WHERE URL = %Q;",strURL.ToUTF8().c_str());
 	
 	if (!ptrStmt.null() && ptrStmt->step() == SQLITE_ROW)

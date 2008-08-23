@@ -35,7 +35,7 @@
 #include "./RegistryHive.h"
 #include "./RootManager.h"
 
-Root::RegistryHive::RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex>& db) :
+Root::RegistryHive::RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex>& db) :
 	m_db(db)
 {
 }
@@ -90,7 +90,7 @@ int Root::RegistryHive::check_key_exists(const ACE_INT64& uKey, int& access_mask
 		return SQLITE_ROW;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Access FROM RegistryKeys WHERE Id = %lld;",uKey);
 	
 	int err = ptrStmt->step();
@@ -104,7 +104,7 @@ int Root::RegistryHive::find_key(ACE_INT64 uParent, const ACE_CString& strSubKey
 {
 	// Lock must be help first...
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Id, Access FROM RegistryKeys WHERE Name = %Q AND Parent = %lld;",strSubKey.c_str(),uParent);
 	
 	int err = ptrStmt->step();
@@ -178,7 +178,7 @@ int Root::RegistryHive::find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& a
 
 int Root::RegistryHive::insert_key(ACE_INT64& uKey, ACE_CString strSubKey, int access_mask)
 {
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%d);",strSubKey.c_str(),uKey,access_mask);
 	
 	int err = ptrStmt->step();
@@ -213,7 +213,7 @@ int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool 
 	if (err != 0 && err != ENOENT)
 		return err;
 
-	ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex> ptrTrans;
+	ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> ptrTrans;
 
 	if (err == ENOENT)
 	{
@@ -294,7 +294,7 @@ int Root::RegistryHive::delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong chann
 		return EACCES;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey);
 	
 	// Recurse down
@@ -341,7 +341,7 @@ int Root::RegistryHive::delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CD
 	if (err != 0)
 		return err;
 
-	ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex> ptrTrans = m_db->begin_transaction();
+	ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> ptrTrans = m_db->begin_transaction();
 	if (ptrTrans.null())
 		return EIO;
 	
@@ -349,7 +349,7 @@ int Root::RegistryHive::delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CD
 	if (err == 0)
 	{
 		// Do the delete of this key
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 			m_db->prepare_statement("DELETE FROM RegistryKeys WHERE Id = %lld;",uKey);
 	
 		err = ptrStmt->step();
@@ -384,7 +384,7 @@ int Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong chann
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Name FROM RegistryKeys WHERE Parent = %lld;",uKey);
 	
 	do
@@ -437,7 +437,7 @@ void Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong chan
 	if (!response.good_bit())
 		return;
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Name FROM RegistryKeys WHERE Parent = %lld;",uKey);
 	
 	do
@@ -486,7 +486,7 @@ int Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channe
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
 	
 	do
@@ -539,7 +539,7 @@ void Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong chann
 	if (!response.good_bit())
 		return;
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
 
 	do
@@ -588,7 +588,7 @@ int Root::RegistryHive::delete_value(const ACE_INT64& uKey, const ACE_CString& s
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("DELETE FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
@@ -618,7 +618,7 @@ int Root::RegistryHive::get_value_type(const ACE_INT64& uKey, const ACE_CString&
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
@@ -653,7 +653,7 @@ int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_CStrin
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
@@ -692,7 +692,7 @@ int Root::RegistryHive::get_integer_value(const ACE_INT64& uKey, const ACE_CStri
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
@@ -750,7 +750,7 @@ void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CStri
 	if (!response.good_bit())
 		return;
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
@@ -824,7 +824,7 @@ int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_CStrin
 	}
 
 	// See if we have a value already
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
@@ -842,7 +842,7 @@ int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_CStrin
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
 		
 		err = ptrStmt->step();
@@ -875,7 +875,7 @@ int Root::RegistryHive::set_integer_value(const ACE_INT64& uKey, const ACE_CStri
 	}
 
 	// See if we have a value already
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
@@ -893,7 +893,7 @@ int Root::RegistryHive::set_integer_value(const ACE_INT64& uKey, const ACE_CStri
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
 		
 		err = ptrStmt->step();
@@ -926,7 +926,7 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 	}
 
 	// See if we have a value already
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
@@ -948,7 +948,7 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
 			
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
@@ -984,7 +984,7 @@ int Root::RegistryHive::get_description(const ACE_INT64& uKey, ACE_CDR::ULong ch
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Description FROM RegistryKeys WHERE Id = %lld;",uKey);
 
 	err = ptrStmt->step();
@@ -1019,7 +1019,7 @@ int Root::RegistryHive::get_value_description(const ACE_INT64& uKey, const ACE_C
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("SELECT Description FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
@@ -1065,7 +1065,7 @@ int Root::RegistryHive::set_description(const ACE_INT64& uKey, ACE_CDR::ULong ch
 	}
 
 	// Insert the new value
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("UPDATE RegistryKeys SET Description = %Q WHERE Id = %lld;",val.c_str(),uKey);
 	
 	err = ptrStmt->step();
@@ -1096,7 +1096,7 @@ int Root::RegistryHive::set_value_description(const ACE_INT64& uKey, const ACE_C
 	}
 
 	// Insert the new value
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> ptrStmt = 
+	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
 		m_db->prepare_statement("UPDATE RegistryValues SET Description = %Q WHERE Name = %Q AND Parent = %lld;",val.c_str(),strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();

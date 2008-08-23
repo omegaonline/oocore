@@ -52,7 +52,7 @@ bool Root::Manager::install(int argc, ACE_TCHAR* argv[])
 		return false;
 
 	// Add the default keys
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive = ROOT_MANAGER::instance()->get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive = ROOT_MANAGER::instance()->get_registry();
 	ACE_INT64 key = 0;
 	ptrHive->create_key(key,"All Users",false,7,0);
 	ptrHive->set_description(key,0,"A common key for all users");
@@ -95,7 +95,7 @@ int Root::Manager::run(int argc, ACE_TCHAR* argv[])
 	return ROOT_MANAGER::instance()->run_event_loop_i(argc,argv);
 }
 
-ACE_Refcounted_Auto_Ptr<Root::RegistryHive,ACE_Null_Mutex> Root::Manager::get_registry()
+ACE_Refcounted_Auto_Ptr<Root::RegistryHive,ACE_Thread_Mutex> Root::Manager::get_registry()
 {
 	return ROOT_MANAGER::instance()->m_registry;
 }
@@ -150,7 +150,7 @@ bool Root::Manager::init()
 
 	// Spawn the sandbox
 	ACE_CString strPipe;
-	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),strPipe,ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>(0));
+	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),strPipe,ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>(0));
 	if (!m_sandbox_channel)
 		return false;
 
@@ -268,10 +268,10 @@ int Root::Manager::process_client_connects()
 }
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Null_Mutex>& pipe)
+int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Thread_Mutex>& pipe)
 {
 #else
-int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe)
+int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe)
 {
 #endif
 
@@ -314,7 +314,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_
 	return 0;
 }
 
-ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, SpawnedProcess* pSpawn, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry, ACE_CString& strPipe)
+ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, SpawnedProcess* pSpawn, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry, ACE_CString& strPipe)
 {
 	ACE_CDR::ULong nChannelId = 0;
 
@@ -324,7 +324,7 @@ ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, Spawne
 #else
 	ACE_Time_Value wait(30);
 #endif
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> pipe;
+	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> pipe;
 	if (acceptor.accept(pipe,&wait) != 0)
 		return 0;
 
@@ -391,7 +391,7 @@ ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, Spawne
 	return nChannelId;
 }
 
-ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry)
+ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry)
 {
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == static_cast<user_id_type>(0));
@@ -433,7 +433,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
                     ACE_NEW_NORETURN(pdb,Db::Database());
 					if (pdb)
 					{
-						ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> db(pdb);
+						ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex> db(pdb);
 						if (db->open(pSpawn->GetRegistryHive()) == 0)
 						{
 							RegistryHive* pReg = 0;
@@ -484,7 +484,7 @@ void Root::Manager::close_users()
 	}
 }
 
-ACE_CString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe)
+ACE_CString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe)
 {
 	if (pipe->send(&m_sandbox_channel,sizeof(m_sandbox_channel)) != sizeof(m_sandbox_channel))
 	{
@@ -519,7 +519,7 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_CString& strPipe)
 {
 	try
 	{
-		ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrRegistry;
+		ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry;
 
 		// See if we have a process already
 		{

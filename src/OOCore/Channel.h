@@ -26,6 +26,8 @@
 
 namespace OOCore
 {
+	class UserSession;
+
 	class Channel :
 		public OTL::ObjectBase,
 		public Omega::Remoting::IChannel,
@@ -34,7 +36,7 @@ namespace OOCore
 	public:
 		Channel();
 
-		void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
+		void init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
@@ -44,6 +46,8 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
+		UserSession*                                    m_pSession;
+		ACE_CDR::UShort                                 m_apt_id;
 		ACE_CDR::ULong	                                m_channel_id;
 		Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
 		Omega::guid_t                                   m_message_oid;
@@ -54,23 +58,58 @@ namespace OOCore
 
 	// IChannelBase members
 	public:
-		Omega::Remoting::IMessage* CreateMessage();
-		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
-		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
-
-		Omega::uint32_t GetSource();
+		virtual Omega::Remoting::IMessage* CreateMessage();
+		virtual Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		virtual Omega::Remoting::MarshalFlags_t GetMarshalFlags();
+		virtual Omega::uint32_t GetSource();
 
 	// IChannel members
 	public:
-		Omega::guid_t GetReflectUnmarshalFactoryOID();
-		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
-		Omega::Remoting::IObjectManager* GetObjectManager();
+		virtual Omega::guid_t GetReflectUnmarshalFactoryOID();
+		virtual void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
+		virtual Omega::Remoting::IObjectManager* GetObjectManager();
 
 	// IMarshal members
 	public:
-		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+	};
+
+	class AptChannel :
+		public Channel
+	{
+	public:
+		AptChannel() : Channel()
+		{}
+
+		//void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
+		//void disconnect();
+
+		BEGIN_INTERFACE_MAP(AptChannel)
+			INTERFACE_ENTRY_CHAIN(Channel)
+		END_INTERFACE_MAP()
+
+	private:
+		AptChannel(const AptChannel&) : Channel() {}
+		AptChannel& operator = (const AptChannel&) { return *this; }
+
+	//// IChannelBase members
+	//public:
+	//	virtual Omega::Remoting::IMessage* CreateMessage();
+	//	virtual Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+	
+	//// IChannel members
+	//public:
+	//	virtual Omega::guid_t GetReflectUnmarshalFactoryOID();
+	//	virtual void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
+	//	virtual Omega::Remoting::IObjectManager* GetObjectManager();
+
+	//// IMarshal members
+	//public:
+	//	virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+	//	virtual void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+	//	virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
 	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}

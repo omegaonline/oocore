@@ -43,7 +43,7 @@ Root::MessagePipe::MessagePipe() :
 {
 }
 
-int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_TString strPipe = ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str());
 
@@ -312,7 +312,7 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, HANDLE hToken)
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout)
+int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_Time_Value* timeout)
 {
 	MessagePipe* p = 0;
 	ACE_NEW_RETURN(p,MessagePipe,-1);

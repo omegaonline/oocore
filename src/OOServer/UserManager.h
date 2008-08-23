@@ -37,22 +37,21 @@ namespace User
 
 		static Omega::Remoting::IChannel* open_remote_channel(const Omega::string_t& strEndpoint);
 		static Omega::Remoting::IChannelSink* open_server_sink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);
+		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 
 		static bool call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb = 0);
-		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request, Omega::Remoting::MethodAttributes_t attribs);
 
+		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request, Omega::Remoting::MethodAttributes_t attribs);
 		void handle_http_request(HttpConnection* pConn, Omega::uint16_t conn_id);
 
 	private:
-		friend class Channel;
-		friend class RemoteChannel;
-		friend class ChannelMarshalFactory;
 		friend class ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex>;
 		friend class Root::MessagePipeAsyncAcceptor<Manager>;
 		typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> USER_MANAGER;
 
 		Manager();
 		virtual ~Manager();
+
 		Manager(const Manager&) : Root::MessageHandler() {}
 		Manager& operator = (const Manager&) { return *this; }
 
@@ -64,19 +63,18 @@ namespace User
 
 		static const ACE_CDR::ULong m_root_channel;
 
-		int on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex>& pipe);
+		int on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Thread_Mutex>& pipe);
 
 		virtual bool on_channel_open(ACE_CDR::ULong channel);
 		virtual bool route_off(ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no);
+		virtual void on_channel_closed(ACE_CDR::ULong channel);
 
 		int run_event_loop_i(const ACE_CString& strPipe);
 		bool init(const ACE_CString& strPipe);
 		bool bootstrap(ACE_CDR::ULong sandbox_channel);
 		void end();
 
-		virtual void on_channel_closed(ACE_CDR::ULong channel);
-
-		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
+		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
 		void process_user_request(const ACE_InputCDR& input, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
@@ -98,6 +96,7 @@ namespace User
 		void close_all_remotes();
 		void local_channel_closed(ACE_CDR::ULong channel_id);
 
+		// Services
 		std::map<Omega::string_t,OTL::ObjectPtr<Omega::System::IService> > m_mapServices;
 
 		bool start_service(const Omega::string_t& strName, const Omega::guid_t& oid);
@@ -107,7 +106,7 @@ namespace User
 
 		// HTTP handling (for sandbox only)
 		ACE_RW_Thread_Mutex                                                                  m_http_lock;
-		std::map<Omega::uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Null_Mutex> >    m_mapHttpConnections;
+		std::map<Omega::uint16_t,ACE_Refcounted_Auto_Ptr<HttpConnection,ACE_Thread_Mutex> >  m_mapHttpConnections;
 		std::map<Omega::string_t,OTL::ObjectPtr<Omega::Net::Http::Server::IRequestHandler> > m_mapHttpHandlers;
 		void close_all_http();
 

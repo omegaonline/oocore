@@ -127,7 +127,7 @@ sqlite3* Db::Database::database()
 	return m_db;
 }
 
-ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex> Db::Database::begin_transaction(const char* pszType)
+ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> Db::Database::begin_transaction(const char* pszType)
 {
 	int err = 0;
 	if (pszType)
@@ -135,7 +135,7 @@ ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex> Db::Database::begin_tran
 	else
 		err = sqlite3_exec(m_db,"BEGIN TRANSACTION;",NULL,0,NULL);
 	if (err != SQLITE_OK)
-		return ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex>(0);
+		return ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex>(0);
 
 	Transaction* pTrans = 0;
 	ACE_NEW_NORETURN(pTrans,Transaction(m_db));
@@ -145,10 +145,10 @@ ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Null_Mutex> Db::Database::begin_tran
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
 	}
 
-	return ACE_Refcounted_Auto_Ptr<Transaction,ACE_Null_Mutex>(pTrans);
+	return ACE_Refcounted_Auto_Ptr<Transaction,ACE_Thread_Mutex>(pTrans);
 }
 
-ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> Db::Database::prepare_statement(const char* pszStatement, ...)
+ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> Db::Database::prepare_statement(const char* pszStatement, ...)
 {
 	va_list ap;
 	va_start(ap,pszStatement);
@@ -158,7 +158,7 @@ ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> Db::Database::prepare_stat
 	if (!pszBuf)
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_vmprintf failed: %C\n"),sqlite3_errmsg(m_db)));
-		return ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex>();
+		return ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex>();
 	}
 
 	sqlite3_stmt* pStmt = 0;
@@ -168,7 +168,7 @@ ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> Db::Database::prepare_stat
 	if (err != SQLITE_OK)
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_prepare_v2 failed: %C\n"),sqlite3_errmsg(m_db)));
-		return ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex>();
+		return ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex>();
 	}
 
 	Statement* pSt = 0;
@@ -179,7 +179,7 @@ ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Null_Mutex> Db::Database::prepare_stat
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
 	}
 
-	return ACE_Refcounted_Auto_Ptr<Statement,ACE_Null_Mutex>(pSt);
+	return ACE_Refcounted_Auto_Ptr<Statement,ACE_Thread_Mutex>(pSt);
 }
 
 Db::Transaction::~Transaction()

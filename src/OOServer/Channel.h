@@ -26,6 +26,8 @@
 
 namespace User
 {
+	class Manager;
+
 	class Channel :
 		public OTL::ObjectBase,
 		public Omega::Remoting::IChannel,
@@ -34,7 +36,7 @@ namespace User
 	public:
 		Channel();
 
-		void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
+		void init(Manager* pManager, ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
@@ -44,6 +46,7 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
+		Manager*                                        m_pManager;
 		ACE_CDR::ULong	                                m_channel_id;
 		Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
 		Omega::guid_t                                   m_message_oid;
@@ -57,7 +60,6 @@ namespace User
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
-
 		Omega::uint32_t GetSource();
 
 	// IChannel members

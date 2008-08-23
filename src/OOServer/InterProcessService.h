@@ -47,7 +47,7 @@ namespace User
 		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 		Manager*                                              m_pManager;
 
-		std::map<Omega::string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> > m_mapInProgress;
+		std::map<Omega::string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> > m_mapInProgress;
 
 	// System::IInterProcessService members
 	public:

@@ -131,7 +131,8 @@ OOCore::UserSession::UserSession() :
 	m_thrd_grp_id(-1),
 	m_channel_id(0),
 	m_nIPSCookie(0),
-	m_consumers(0)
+	m_consumers(0),
+	m_next_apartment(0)
 {
 }
 
@@ -197,8 +198,25 @@ IException* OOCore::UserSession::bootstrap()
 {
 	try
 	{
-		// Create a new object manager for the user channel
-		ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(m_channel_id & 0xFF000000,guid_t::Null());
+		// Create the zero apartment
+		Apartment* pApt = 0;
+		OMEGA_NEW(pApt,Apartment(this,0));
+		m_ptrZeroApt.reset(pApt);
+
+		try
+		{
+			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			m_mapApartments.insert(std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::value_type(0,m_ptrZeroApt));
+		}
+		catch (std::exception& e)
+		{
+			m_ptrZeroApt.release();
+			OMEGA_THROW(e);
+		}
+						
+		// Create a new object manager for the user channel on the zero apartment
+		ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000,guid_t::Null());
 		 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
@@ -320,7 +338,7 @@ void OOCore::UserSession::term_i()
 	// Shut down the socket...
 	m_stream.close();
 
-	// Wait for all the proactor threads to finish
+	// Wait for the reader thread to finish
 	if (m_thrd_grp_id != -1)
 		ACE_Thread_Manager::instance()->wait_grp(m_thrd_grp_id);
 
@@ -333,12 +351,14 @@ void OOCore::UserSession::term_i()
 	// Stop the message queue
 	m_default_msg_queue.close();
 
-	// Close all open OM's
-	for (std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator j=m_mapChannels.begin();j!=m_mapChannels.end();++j)
+	// Close all apartments
+	for (std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator j=m_mapApartments.begin();j!=m_mapApartments.end();++j)
 	{
-		j->second->disconnect();
+		j->second->close();
 	}
-	m_mapChannels.clear();
+	
+	// Clean up the zero apartment
+	m_ptrZeroApt.release();
 }
 
 ACE_THR_FUNC_RETURN OOCore::UserSession::io_worker_fn(void* pParam)
@@ -463,31 +483,6 @@ int OOCore::UserSession::run_read_loop()
 		(*msg->m_ptrPayload) >> msg->m_attribs;
 		(*msg->m_ptrPayload) >> msg->m_dest_thread_id;
 		(*msg->m_ptrPayload) >> msg->m_src_thread_id;
-
-		// Did everything make sense?
-		if (!msg->m_ptrPayload->good_bit() || (dest_channel_id & 0xFFFFF000) != m_channel_id)
-		{
-			err = ACE_OS::last_error();
-			delete msg;
-			break;
-		}
-
-		// Now validate the apartment...
-		ACE_CDR::UShort dest_apartment_id = static_cast<ACE_CDR::UShort>(dest_channel_id & ~0xFFFFF000);
-		if (dest_apartment_id)
-		{
-			if (msg->m_dest_thread_id != 0 && msg->m_dest_thread_id != dest_apartment_id)
-			{
-				// Destination thread is not the destination apartment!
-				err = EACCES;
-				delete msg;
-				break;
-			}
-
-			// Route to the correct thread
-			msg->m_dest_thread_id = dest_apartment_id;
-		}
-
 		(*msg->m_ptrPayload) >> msg->m_seq_no;
 		(*msg->m_ptrPayload) >> msg->m_type;
 
@@ -498,13 +493,16 @@ int OOCore::UserSession::run_read_loop()
 		}
 
 		// Did everything make sense?
-		if (!msg->m_ptrPayload->good_bit())
+		if (!msg->m_ptrPayload->good_bit() || (dest_channel_id & 0xFFFFF000) != m_channel_id)
 		{
 			err = ACE_OS::last_error();
 			delete msg;
 			break;
 		}
 
+		// Unpack the apartment...
+		msg->m_apartment_id = static_cast<ACE_CDR::UShort>(dest_channel_id & 0x00000FFF);
+		
 		if ((msg->m_attribs & Message::system_message) && msg->m_type == Message::Request)
 		{
 			// Process system messages here... because the main message pump may not be running currently
@@ -526,7 +524,7 @@ int OOCore::UserSession::run_read_loop()
 				ACE_OutputCDR response;
 				response.write_ulong(msg->m_src_channel_id);
 
-				send_response(msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,response.current(),msg->m_deadline,Message::synchronous | Message::channel_reflect);
+				send_response(msg->m_apartment_id,msg->m_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,response.current(),msg->m_deadline,Message::synchronous | Message::channel_reflect);
 				delete msg;
 			}
 			else
@@ -660,37 +658,14 @@ int OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOnc
 
 void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id)
 {
-	// Close the corresponding Object Manager
+	// Pass on the message to the apartments
 	try
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		for (std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
+		for (std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator j=m_mapApartments.begin();j!=m_mapApartments.end();++j)
 		{
-			bool bErase = false;
-			if (i->first == closed_channel_id)
-			{
-				// Close if its an exact match
-				bErase = true;
-			}
-			else if ((i->first & 0xFFFFF000) == closed_channel_id)
-			{
-				// Close all apartment channels
-				bErase = true;
-			}
-			else if (closed_channel_id == m_channel_id && ((i->first & 0xFFFFF000) != m_channel_id))
-			{
-				// If the user channel closes, close all upstream OMs
-				bErase = true;
-			}
-
-			if (bErase)
-			{
-				i->second->disconnect();
-				m_mapChannels.erase(i++);
-			}
-			else
-				++i;
+			j->second->process_channel_close(closed_channel_id);
 		}
 	}
 	catch (std::exception&)
@@ -711,7 +686,7 @@ void OOCore::UserSession::process_channel_close(ACE_CDR::ULong closed_channel_id
 	{}
 }
 
-bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id)
+bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UShort apartment_id, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id)
 {
 	bool bRet = false;
 
@@ -726,20 +701,29 @@ bool OOCore::UserSession::wait_for_response(ACE_InputCDR*& response, ACE_CDR::UL
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
+		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
+		if (guard.locked() == 0)
+			break;
+
+		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;
+		std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator i=m_mapApartments.find(apartment_id);
+		if (i == m_mapApartments.end())
 		{
-			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-			if (guard.locked() == 0)
-				break;
-
-			std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(from_channel_id);
-			if (i == m_mapChannels.end())
-			{
-				// Channel has gone!
-				ACE_OS::last_error(ECONNRESET);
-				break;
-			}
+			// Apartment has gone!
+			ACE_OS::last_error(ECONNRESET);
+			break;
 		}
+		ptrApt = i->second;
 
+		guard.release();
+
+		if (!ptrApt->is_channel_open(from_channel_id))
+		{
+			// Channel has gone!
+			ACE_OS::last_error(ECONNRESET);
+			break;
+		}
+		
 		// Get the next message
 		Message* msg = 0;
 		if (pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline)) == -1)
@@ -819,12 +803,12 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 }
 
 OOCore::UserSession::ThreadContext::ThreadContext() :
-	m_bApartment(false),
 	m_thread_id(0),
 	m_msg_queue(0),
 	m_usage(0),
 	m_deadline(ACE_Time_Value::max_time),
-	m_seq_no(0)
+	m_seq_no(0),
+	m_current_apt(0)
 {
 }
 
@@ -865,21 +849,20 @@ void OOCore::UserSession::remove_thread_context(ACE_CDR::UShort thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-bool OOCore::UserSession::send_channel_close(ACE_CDR::ULong closed_channel_id)
+//bool OOCore::UserSession::send_channel_close(ACE_CDR::ULong closed_channel_id)
+//{
+//	ACE_OutputCDR msg;
+//	msg << closed_channel_id;
+//
+//	if (!msg.good_bit())
+//		return false;
+//
+//	ACE_InputCDR* null;
+//	return send_request(m_channel_id & 0xFF000000,msg.begin(),null,0,Message::asynchronous | Message::channel_close);
+//}
+
+bool OOCore::UserSession::send_request(ACE_CDR::UShort apartment_id, ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::ULong timeout, ACE_CDR::ULong attribs)
 {
-	ACE_OutputCDR msg;
-	msg << closed_channel_id;
-
-	if (!msg.good_bit())
-		return false;
-
-	ACE_InputCDR* null;
-	return send_request(m_channel_id & 0xFF000000,msg.begin(),null,0,Message::asynchronous | Message::channel_close);
-}
-
-bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_CDR::ULong timeout, ACE_CDR::ULong attribs)
-{
-	ACE_CDR::ULong src_channel_id = m_channel_id;
 	ACE_CDR::UShort src_thread_id = 0;
 	ACE_CDR::UShort dest_thread_id = 0;
 	ACE_Time_Value deadline = ACE_Time_Value::max_time;
@@ -906,10 +889,6 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		src_thread_id = pContext->m_thread_id;
 		deadline = pContext->m_deadline;
 
-		// Set apartment
-		if (pContext->m_bApartment)
-			src_channel_id |= src_thread_id;
-
 		while (!seq_no)
 		{
 			seq_no = ++pContext->m_seq_no;
@@ -925,13 +904,11 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(seq_no,src_channel_id,src_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,Message::Request,attribs))
+	if (!build_header(seq_no,m_channel_id | apartment_id,src_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,Message::Request,attribs))
 		return false;
 
 	// Scope lock...
 	{
-		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
-
 		// Send to the handle
 		ACE_Time_Value wait = deadline;
 		if (deadline != ACE_Time_Value::max_time)
@@ -958,24 +935,17 @@ bool OOCore::UserSession::send_request(ACE_CDR::ULong dest_channel_id, const ACE
 		return true;
 	else
 		// Wait for response...
-		return wait_for_response(response,seq_no,deadline != ACE_Time_Value::max_time ? &deadline : 0,dest_channel_id);
+		return wait_for_response(response,apartment_id,seq_no,deadline != ACE_Time_Value::max_time ? &deadline : 0,dest_channel_id);
 }
 
-bool OOCore::UserSession::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+bool OOCore::UserSession::send_response(ACE_CDR::UShort apartment_id, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance();
 	
-	// Set apartment
-	ACE_CDR::ULong src_channel_id = m_channel_id;
-	if (pContext->m_bApartment)
-		src_channel_id |= pContext->m_thread_id;
-
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(seq_no,src_channel_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,Message::Response,attribs))
+	if (!build_header(seq_no,m_channel_id | apartment_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,Message::Response,attribs))
 		return false;
-
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_send_lock,false);
 
 	ACE_Time_Value wait = deadline;
 	if (deadline != ACE_Time_Value::max_time)
@@ -1080,102 +1050,30 @@ Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(ACE_CDR::ULong ch
 	return mflags;
 }
 
-void OOCore::UserSession::process_request(const UserSession::Message* pMsg, const ACE_Time_Value& deadline)
+void OOCore::UserSession::process_request(const Message* pMsg, const ACE_Time_Value& deadline)
 {
 	try
 	{
-		// Find and/or create the object manager associated with src_channel_id
-		ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id,guid_t::Null());
-		
-		// Wrap up the request
-		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrEnvelope;
-		ptrEnvelope = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
-		ptrEnvelope->init(*pMsg->m_ptrPayload);
+		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	
+		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;
+		std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator i=m_mapApartments.find(pMsg->m_apartment_id);
+		if (i != m_mapApartments.end())
+			ptrApt = i->second;
 
-		// Unpack the payload
-		IObject* pPayload = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
-		ObjectPtr<Remoting::IMessage> ptrRequest;
-		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pPayload));
+		guard.release();
 
-		// Check timeout
-		uint32_t timeout = 0;
-		if (deadline != ACE_Time_Value::max_time)
-		{
-			ACE_Time_Value now = ACE_OS::gettimeofday();
-			if (deadline <= now)
-			{
-				ACE_OS::last_error(ETIMEDOUT);
-				return;
-			}
-			timeout = (deadline - now).msec();
-		}
-
-		// Make the call
-		ObjectPtr<Remoting::IMessage> ptrResult;
-		ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
-
-		if (!(pMsg->m_attribs & Remoting::Asynchronous))
-		{
-			// Wrap the response...
-			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
-			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
-
-			// Send it back...
-			const ACE_Message_Block* mb = static_cast<const ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			if (!send_response(pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,mb,deadline))
-				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
-		}
+		if (!ptrApt.null())
+			ptrApt->process_request(pMsg,deadline);
+	}
+	catch (std::exception&)
+	{
+		// Ignore
 	}
 	catch (IException* pOuter)
 	{
 		// Just drop the exception, and let it pass...
 		pOuter->Release();
-	}
-}
-
-ObjectPtr<Remoting::IObjectManager> OOCore::UserSession::get_channel_om(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
-{
-	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,message_oid);
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-	return ptrOM;
-}
-
-ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
-{
-	try
-	{
-		// Lookup existing..
-		{
-			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-			std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
-			if (i != m_mapChannels.end())
-				return i->second;
-		}
-
-		// Create a new channel
-		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		ptrChannel->init(src_channel_id,classify_channel(src_channel_id),message_oid);
-
-		// And add to the map
-		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::pair<std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
-		if (!p.second)
-		{
-			if (p.first->second->GetMarshalFlags() != ptrChannel->GetMarshalFlags())
-				OMEGA_THROW(EINVAL);
-
-			ptrChannel = p.first->second;
-		}
-
-		return ptrChannel;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
 	}
 }
 
@@ -1207,4 +1105,71 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,Omega_HandleRequest,1,((in),uint32_t,timeo
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
 {
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
+}
+
+ACE_Refcounted_Auto_Ptr<OOCore::Apartment,ACE_Thread_Mutex> OOCore::UserSession::create_apartment()
+{
+	return USER_SESSION::instance()->create_apartment_i();
+}
+
+ACE_Refcounted_Auto_Ptr<OOCore::Apartment,ACE_Thread_Mutex> OOCore::UserSession::create_apartment_i()
+{
+	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	ACE_CDR::UShort apt_id;
+	try
+	{
+		do
+		{
+			apt_id = ++m_next_apartment;
+			if (apt_id > 0xFFF)
+				apt_id = m_next_apartment = 1;
+			
+		} while (m_mapApartments.find(apt_id) != m_mapApartments.end());	
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+
+	Apartment* pApt;
+	OMEGA_NEW(pApt,Apartment(this,apt_id));
+	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt(pApt);
+
+	try
+	{
+		m_mapApartments.insert(std::map<ACE_CDR::UShort,Apartment*>::value_type(apt_id,pApt));
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+
+	return ptrApt;
+}
+
+ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid)
+{
+	return USER_SESSION::instance()->create_channel_i(src_channel_id,message_oid);
+}
+
+ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel_i(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+{
+	// Create a channel in the context of the current apartment
+	const ThreadContext* pContext = ThreadContext::instance();
+
+	OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;
+	std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator i=m_mapApartments.find(pContext->m_current_apt);
+	if (i == m_mapApartments.end())
+	{
+		// Apartment has gone!
+		OMEGA_THROW(ECONNRESET);
+	}
+	ptrApt = i->second;
+
+	guard.release();
+
+	return ptrApt->create_channel(src_channel_id,message_oid);
 }

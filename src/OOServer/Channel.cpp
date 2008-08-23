@@ -29,22 +29,24 @@ using namespace OTL;
 OMEGA_DEFINE_OID(User,OID_ChannelMarshalFactory,"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 
 User::Channel::Channel() :
+	m_pManager(0),
 	m_channel_id(0),
 	m_marshal_flags(0)
 {
 }
 
-void User::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
+void User::Channel::init(Manager* pManager, ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
 {
+	m_pManager = pManager;
+	m_channel_id = channel_id;
+	m_marshal_flags = marshal_flags;
+	m_message_oid = message_oid;
+
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 	// Associate it with the channel
 	m_ptrOM->Connect(this);
-
-	m_channel_id = channel_id;
-	m_marshal_flags = marshal_flags;
-	m_message_oid = message_oid;
 }
 
 void User::Channel::disconnect()
@@ -100,7 +102,7 @@ IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, 
 		deadline = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000,(timeout % 1000) * 1000);
 
 	ACE_InputCDR* response = 0;
-	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs))
+	if (!m_pManager->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs))
 	{
 		if (m_ptrOM)
 			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
@@ -159,7 +161,7 @@ void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 	ACE_InputCDR* response = 0;
 
-	if (!User::Manager::USER_MANAGER::instance()->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect))
+	if (!m_pManager->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect))
 		OMEGA_THROW(ACE_OS::last_error());
 
 	ACE_CDR::ULong other_end = 0;
@@ -215,5 +217,5 @@ void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, 
 		OMEGA_THROW(EIO);
 
 	// Create a new object manager (and channel)
-	pObject = Manager::USER_MANAGER::instance()->create_channel(channel_id,message_oid)->QueryInterface(iid);
+	pObject = Manager::create_channel(channel_id,message_oid)->QueryInterface(iid);
 }

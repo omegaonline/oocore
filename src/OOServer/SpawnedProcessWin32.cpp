@@ -977,7 +977,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
 {
 	// Get the local machine registry
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Get the user name and pwd...
 	ACE_INT64 key = 0;
@@ -1267,7 +1267,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	}
 
 	// Set the user name and pwd...
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	ACE_INT64 key = 0;
 	if (reg_root->create_key(key,"Server\\Sandbox",false,0,0) != 0)
@@ -1289,7 +1289,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 
 bool Root::SpawnedProcess::UninstallSandbox()
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Get the user name and pwd...
 	ACE_INT64 key = 0;
@@ -1527,7 +1527,7 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 
 bool Root::SpawnedProcess::unsafe_sandbox()
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Get the user name and pwd...
 	ACE_INT64 key = 0;

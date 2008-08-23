@@ -69,6 +69,7 @@
 				ProgramDatabaseFile="$(OutDir)/CoreTests.pdb"
 				SubSystem="1"
 				TargetMachine="1"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"

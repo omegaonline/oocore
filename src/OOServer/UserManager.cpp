@@ -164,7 +164,7 @@ bool User::Manager::init(const ACE_CString& strPipe)
 {
 	// Connect to the root
 	ACE_Time_Value wait(5);
-	ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex> pipe;
+	ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Thread_Mutex> pipe;
 	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::connect() failed")),false);
 
@@ -374,7 +374,7 @@ void User::Manager::end()
 	ACE_Reactor::instance()->end_reactor_event_loop();
 }
 
-int User::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Null_Mutex>& pipe)
+int User::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Thread_Mutex>& pipe)
 {
 	Root::MessageConnection* pMC = 0;
 	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),-1);
@@ -552,6 +552,11 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
 {
+	return USER_MANAGER::instance()->create_channel_i(src_channel_id,message_oid);
+}
+
+ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+{
 	try
 	{
 		// Lookup existing..
@@ -565,7 +570,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(ACE_CDR::ULo
 
 		// Create a new channel
 		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		ptrChannel->init(src_channel_id,classify_channel(src_channel_id),message_oid);
+		ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
 
 		// And add to the map
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);

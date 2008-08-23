@@ -837,7 +837,7 @@ void User::TcpProtocolHandler::Stop()
 	}
 
 	ACE_Time_Value wait(0,100);
-	for (size_t i=0;i<300;++i)
+	for (;;)
 	{
 		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 

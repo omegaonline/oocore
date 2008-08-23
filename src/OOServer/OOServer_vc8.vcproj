@@ -73,7 +73,7 @@
 				ProgramDatabaseFile="$(OutDir)/OOServer.pdb"
 				SubSystem="1"
 				TargetMachine="1"
-				FixedBaseAddress="0"
+				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"

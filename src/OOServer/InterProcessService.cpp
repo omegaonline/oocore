@@ -192,11 +192,11 @@ void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPu
 	if (bPublic && m_ptrSBIPS)
 		return m_ptrSBIPS->GetObject(strProcess,false,oid,iid,pObject);
 
-	ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> ptrProcess;
+	ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> ptrProcess;
 
 	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
-	std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> >::iterator i = m_mapInProgress.find(strProcess);
+	std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> >::iterator i = m_mapInProgress.find(strProcess);
 	if (i != m_mapInProgress.end())
 	{
 		ptrProcess = i->second;
@@ -217,7 +217,7 @@ void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPu
 		// Start it
 		User::ExecProcess(*ptrProcess,strProcess);
 
-		m_mapInProgress.insert(std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Null_Mutex> >::value_type(strProcess,ptrProcess));
+		m_mapInProgress.insert(std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> >::value_type(strProcess,ptrProcess));
 	}
 
 	guard.release();

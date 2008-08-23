@@ -56,7 +56,7 @@ int Root::Manager::registry_access_check(ACE_CDR::ULong channel_id)
 		return 0;
 }
 
-int Root::Manager::registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& channel_id, const ACE_CString& strSubKey, bool& bCurrent, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive)
+int Root::Manager::registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& channel_id, const ACE_CString& strSubKey, bool& bCurrent, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>& ptrHive)
 {
 	int err = 0;
 	if (uKey == 0)
@@ -97,7 +97,7 @@ int Root::Manager::registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& 
 	return err;
 }
 
-int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_INT64& uKey, bool& bCurrent)
+int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>& ptrHive, ACE_INT64& uKey, bool& bCurrent)
 {
 	// Read uKey
 	if (!request.read_longlong(uKey))
@@ -131,7 +131,7 @@ int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& 
 	return 0;
 }
 
-int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex>& ptrHive, ACE_INT64& uKey)
+int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>& ptrHive, ACE_INT64& uKey)
 {
 	bool bCurrent;
 	return registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
@@ -139,7 +139,7 @@ int Root::Manager::registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& 
 
 void Root::Manager::registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	bool bCurrent = false;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
@@ -161,7 +161,7 @@ void Root::Manager::registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR&
 
 void Root::Manager::registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey = 0;
 	bool bCurrent = false;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
@@ -211,7 +211,7 @@ void Root::Manager::registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 
 void Root::Manager::registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	bool bCurrent = false;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey,bCurrent);
@@ -233,7 +233,7 @@ void Root::Manager::registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR&
 
 void Root::Manager::registry_enum_subkeys(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -247,7 +247,7 @@ void Root::Manager::registry_value_type(ACE_CDR::ULong channel_id, ACE_InputCDR&
 {
 	ACE_CDR::Octet type = 0;
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -268,7 +268,7 @@ void Root::Manager::registry_get_string_value(ACE_CDR::ULong channel_id, ACE_Inp
 {
 	ACE_CString val;
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -289,7 +289,7 @@ void Root::Manager::registry_get_int_value(ACE_CDR::ULong channel_id, ACE_InputC
 {
 	ACE_CDR::LongLong val = 0;
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -308,7 +308,7 @@ void Root::Manager::registry_get_int_value(ACE_CDR::ULong channel_id, ACE_InputC
 
 void Root::Manager::registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -332,7 +332,7 @@ void Root::Manager::registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_Inp
 
 void Root::Manager::registry_set_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -355,7 +355,7 @@ void Root::Manager::registry_set_string_value(ACE_CDR::ULong channel_id, ACE_Inp
 
 void Root::Manager::registry_set_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -378,7 +378,7 @@ void Root::Manager::registry_set_int_value(ACE_CDR::ULong channel_id, ACE_InputC
 
 void Root::Manager::registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -395,7 +395,7 @@ void Root::Manager::registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_Inp
 
 void Root::Manager::registry_set_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -412,7 +412,7 @@ void Root::Manager::registry_set_description(ACE_CDR::ULong channel_id, ACE_Inpu
 
 void Root::Manager::registry_set_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -437,7 +437,7 @@ void Root::Manager::registry_get_description(ACE_CDR::ULong channel_id, ACE_Inpu
 {
 	ACE_CString val;
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -452,7 +452,7 @@ void Root::Manager::registry_get_value_description(ACE_CDR::ULong channel_id, AC
 {
 	ACE_CString val;
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -471,7 +471,7 @@ void Root::Manager::registry_get_value_description(ACE_CDR::ULong channel_id, AC
 
 void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)
@@ -483,7 +483,7 @@ void Root::Manager::registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR
 
 void Root::Manager::registry_delete_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response)
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> ptrHive;
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrHive;
 	ACE_INT64 uKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
 	if (err == 0)

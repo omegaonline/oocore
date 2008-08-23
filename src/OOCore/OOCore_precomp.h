@@ -95,7 +95,9 @@
 /////////////////////////////////////////////////
 // Include OOCore/OTL components
 
+#include <OOCore/OOCore.h>
 #include <OOCore/Remoting.h>
+#include <OOCore/Apartment.h>
 #include <OTL/OTL.h>
 #include "./Server.h"
 

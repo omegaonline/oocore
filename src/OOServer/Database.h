@@ -92,8 +92,8 @@ namespace Db
 
 		sqlite3* database();
 
-		ACE_Refcounted_Auto_Ptr<Transaction,ACE_Null_Mutex> begin_transaction(const char* pszType = 0);
-		ACE_Refcounted_Auto_Ptr<Statement,ACE_Null_Mutex> prepare_statement(const char* pszStatement, ...);
+		ACE_Refcounted_Auto_Ptr<Transaction,ACE_Thread_Mutex> begin_transaction(const char* pszType = 0);
+		ACE_Refcounted_Auto_Ptr<Statement,ACE_Thread_Mutex> prepare_statement(const char* pszStatement, ...);
 
 	private:
 		sqlite3* m_db;

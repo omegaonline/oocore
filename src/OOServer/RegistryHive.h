@@ -43,7 +43,7 @@ namespace Root
 class RegistryHive
 {
 public:
-	RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex>& db);
+	RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex>& db);
 
 	int open();
 
@@ -77,7 +77,7 @@ public:
 
 private:
 	ACE_Thread_Mutex m_lock;
-	ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Null_Mutex> m_db;
+	ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex> m_db;
 
 	RegistryHive(const RegistryHive&) {}
 	RegistryHive& operator = (const RegistryHive&) { return *this; }

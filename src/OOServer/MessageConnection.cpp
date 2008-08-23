@@ -72,7 +72,7 @@ Root::MessageConnection::~MessageConnection()
 	m_pipe->close();
 }
 
-ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id, bool bStart)
+ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id, bool bStart)
 {
 	if (m_channel_id)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Already open!")),0);
@@ -336,7 +336,7 @@ void Root::MessageHandler::set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong
 	}
 }
 
-ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_CDR::ULong channel_id)
+ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id)
 {
 	try
 	{
@@ -360,7 +360,7 @@ ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_
 				} while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
 			}
 
-			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::value_type(channel_id,pipe));
+			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::value_type(channel_id,pipe));
 		}
 
 		if (!on_channel_open(channel_id))
@@ -465,7 +465,7 @@ void Root::MessageHandler::channel_closed(ACE_CDR::ULong channel_id, ACE_CDR::UL
 		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
 		if (guard.locked())
 		{
-			for (std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+			for (std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
 			{
 				// Always route upstream, and/or follow routing rules
 				if (i->first != channel_id && i->first != src_channel_id &&
@@ -621,12 +621,10 @@ bool Root::MessageHandler::parse_message(ACE_InputCDR& input, const ACE_Message_
 
 	// Check the destination
 	bool bRoute = true;
-	ACE_CDR::UShort dest_apartment_id = 0;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		if (!(dest_channel_id & m_uChildMask))
 		{
-			dest_apartment_id = static_cast<ACE_CDR::UShort>(dest_channel_id & ~(m_uChannelMask | m_uChildMask));
 			bRoute = false;
 		}
 		else
@@ -676,20 +674,6 @@ bool Root::MessageHandler::parse_message(ACE_InputCDR& input, const ACE_Message_
 			ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Corrupt input\n"),false);
 		}
 
-		// Now validate the apartment...
-		if (dest_apartment_id)
-		{
-			if (msg->m_dest_thread_id != 0 && msg->m_dest_thread_id != dest_apartment_id)
-			{
-				// Destination thread is not the destination apartment!
-				delete msg;
-				ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Thread and apartment don't match\n"),false);
-			}
-
-			// Route to the correct thread
-			msg->m_dest_thread_id = dest_apartment_id;
-		}
-
 		ACE_InputCDR* pI = 0;
 		ACE_NEW_NORETURN(pI,ACE_InputCDR(input));
 		if (!pI)
@@ -705,12 +689,12 @@ bool Root::MessageHandler::parse_message(ACE_InputCDR& input, const ACE_Message_
 	}
 
 	// Find the correct channel
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> dest_pipe;
+	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> dest_pipe;
 	try
 	{
 		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.find(dest_channel_id);
+		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.find(dest_channel_id);
 		if (i == m_mapChannelIds.end())
 			return true;
 
@@ -806,7 +790,7 @@ void Root::MessageHandler::close()
 
 		try
 		{
-			for (std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+			for (std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
 			{
 				i->second->close();
 			}
@@ -819,7 +803,7 @@ void Root::MessageHandler::close()
 
 	// Now spin, waiting for all the channels to close...
 	ACE_Time_Value wait(0,100);
-	for (size_t i=0;i<300;++i)
+	for (;;)
 	{
 		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
@@ -893,7 +877,7 @@ bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::U
 			if (guard.locked() == 0)
 				break;
 
-			std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.find(from_channel_id);
+			std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.find(from_channel_id);
 			if (i == m_mapChannelIds.end())
 			{
 				// Channel has gone!
@@ -1420,12 +1404,10 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 	// Check the destination
 	bool bRoute = true;
 	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
-	ACE_CDR::UShort dest_apartment_id = 0;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		if (!(dest_channel_id & m_uChildMask))
 		{
-			dest_apartment_id = static_cast<ACE_CDR::UShort>(dest_channel_id & ~(m_uChannelMask | m_uChildMask));
 			bRoute = false;
 		}
 		else
@@ -1451,17 +1433,7 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 
 	if (!bRoute)
 	{
-		// If its our message, process it
-
-		// Validate the apartment...
-		if (dest_apartment_id)
-		{
-			if (dest_thread_id != 0 && dest_thread_id != dest_apartment_id)
-			{
-				// Destination thread is not the destination apartment!
-				ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Thread and apartment don't match\n"),false);
-			}
-		}
+		// If its our message, route it
 
 		// Build a message
 		ACE_OutputCDR output;
@@ -1515,12 +1487,12 @@ bool Root::MessageHandler::send_message(ACE_CDR::UShort flags, ACE_CDR::ULong se
 	if (!build_header(header,flags,seq_no,dest_channel_id,msg,mb))
 		return false;
 
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> dest_pipe;
+	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> dest_pipe;
 	try
 	{
 		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
 
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
+		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
 		if (i == m_mapChannelIds.end())
 		{
 			ACE_OS::last_error(ENOENT);

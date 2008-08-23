@@ -71,7 +71,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(ACE_CD
 	else
 	{
 		ptrChannel = ObjectImpl<User::Channel>::CreateInstancePtr();
-		ptrChannel->init(m_channel_id | channel_id,Remoting::RemoteMachine,m_message_oid);
+		ptrChannel->init(m_pManager,m_channel_id | channel_id,Remoting::RemoteMachine,m_message_oid);
 		
 		m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(channel_id,ptrChannel));
 	}

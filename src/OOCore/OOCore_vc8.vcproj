@@ -195,6 +195,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ApartmentImpl.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Channel.cpp"
 				>
 			</File>
@@ -299,6 +303,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ApartmentImpl.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CDRMessage.h"
 				>
 			</File>
@@ -372,6 +380,10 @@
 		<Filter
 			Name="OOCore"
 			>
+			<File
+				RelativePath="..\..\include\OOCore\Apartment.h"
+				>
+			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Base.h"
 				>

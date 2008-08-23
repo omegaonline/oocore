@@ -162,7 +162,7 @@ Root::HttpAcceptor::HttpAcceptor() :
 bool Root::HttpAcceptor::open(Manager* pManager)
 {
 	// Get the local machine registry
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Get the port
 	ACE_CString strAddr = "8901";
@@ -203,7 +203,7 @@ void Root::HttpAcceptor::close()
 		
 		// Spin till everyone is gone
 		ACE_Time_Value wait(0,100);
-		for (size_t i=0;i<300;++i)
+		for (;;)
 		{
 			guard.acquire();
 

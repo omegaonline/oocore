@@ -28,22 +28,25 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::Channel::Channel() :
+	m_pSession(0),
 	m_channel_id(0),
 	m_marshal_flags(0)
 {
 }
 
-void OOCore::Channel::init(ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
+void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
 {
+	m_pSession = pSession;
+	m_apt_id = apt_id;
+	m_channel_id = channel_id;
+	m_marshal_flags = marshal_flags;
+	m_message_oid = message_oid;
+
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
 
 	// Associate it with the channel
 	m_ptrOM->Connect(this);
-
-	m_channel_id = channel_id;
-	m_marshal_flags = marshal_flags;
-	m_message_oid = message_oid;
 }
 
 void OOCore::Channel::disconnect()
@@ -95,7 +98,7 @@ IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs
 	const ACE_Message_Block* request = static_cast<const ACE_Message_Block*>(ptrOutput->GetMessageBlock());
 
 	ACE_InputCDR* response = 0;
-	if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,request,response,timeout,attribs))
+	if (!m_pSession->send_request(m_apt_id,m_channel_id,request,response,timeout,attribs))
 	{
 		if (m_ptrOM)
 			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
@@ -153,7 +156,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		OMEGA_THROW(ECONNRESET);
 
 	ACE_InputCDR* response = 0;
-	if (!UserSession::USER_SESSION::instance()->send_request(m_channel_id,0,response,0,UserSession::Message::synchronous | UserSession::Message::channel_reflect))
+	if (!m_pSession->send_request(m_apt_id,m_channel_id,0,response,0,Message::synchronous | Message::channel_reflect))
 		OMEGA_THROW(ACE_OS::last_error());
 
 	ACE_CDR::ULong other_end = 0;
@@ -224,7 +227,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 			OMEGA_THROW(EIO);
 
 		// Create a new channel
-		pObject = UserSession::USER_SESSION::instance()->create_channel(channel_id,message_oid)->QueryInterface(iid);
+		pObject = UserSession::create_channel(channel_id,message_oid)->QueryInterface(iid);
 	}
 }
 

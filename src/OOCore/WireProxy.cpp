@@ -22,7 +22,6 @@
 #include "OOCore_precomp.h"
 
 #include "./WireProxy.h"
-#include "./WireImpl.h"
 #include "./StdObjectManager.h"
 
 using namespace Omega;
@@ -100,7 +99,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 		if (!ptrProxy)
 		{
 			// Create a new proxy for this interface
-			ptrProxy.attach(CreateWireProxy(wire_iid,this,m_pManager));
+			ptrProxy.attach(m_pManager->CreateWireProxy(wire_iid,this));
 			bAdd = true;
 		}
 
@@ -165,7 +164,7 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
 	if (*piid == OMEGA_GUIDOF(IObject) ||
-		*piid == OMEGA_GUIDOF(System::MetaInfo::IWireProxy))
+		*piid == OMEGA_GUIDOF(System::IWireProxy))
 	{
 		*ppS = static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
 		(*ppS)->AddRef_Safe();
@@ -222,7 +221,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_
 				return 0;
 
 			// Create a new proxy for this interface
-			ptrProxy.attach(CreateWireProxy(*piid,this,m_pManager));
+			ptrProxy.attach(m_pManager->CreateWireProxy(*piid,this));
 			bAdd = true;
 		}
 
@@ -296,7 +295,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 		ReadGuid(L"iid",pParamsOut);
 
 		void* TODO; // Release marshal data for channel
-		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::MetaInfo::IWireManager),pObjectManager);
+		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::IWireManager),pObjectManager);
 
 		throw ptrE.AddRef();
 	}

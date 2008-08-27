@@ -36,7 +36,7 @@ namespace Omega
 
 	interface IException : public IObject
 	{
-		virtual guid_t ActualIID() = 0;
+		virtual guid_t ThrownIID() = 0;
 		virtual IException* Cause() = 0;
 		virtual string_t Description() = 0;
 		virtual string_t Source() = 0;

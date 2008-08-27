@@ -110,7 +110,7 @@ namespace Rpc
 
 	class HttpOutputMsg :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactory<HttpOutputMsg,&OID_HttpOutputMsg,Omega::Activation::InProcess>,
+		public OTL::AutoObjectFactory<HttpOutputMsg,&OID_HttpOutputMsg,0,Omega::Activation::InProcess>,
 		public HttpMsgBase
 	{
 	public:
@@ -206,7 +206,7 @@ namespace Rpc
 
 	class HttpOutputMsgMarshalFactory :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<HttpOutputMsgMarshalFactory,&OID_HttpOutputMsgMarshalFactory,Omega::Activation::InProcess>,
+		public OTL::AutoObjectFactorySingleton<HttpOutputMsgMarshalFactory,&OID_HttpOutputMsgMarshalFactory,0,Omega::Activation::InProcess>,
 		public Omega::Remoting::IMarshalFactory
 	{
 	public:

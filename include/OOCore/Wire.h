@@ -71,46 +71,49 @@ namespace Omega
 
 	namespace System
 	{
-		namespace MetaInfo
+		interface IWireManager : public IObject
 		{
-			interface IWireManager : public IObject
-			{
-				virtual void MarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-				virtual void UnmarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
-				virtual void ReleaseMarshalData(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-				virtual Remoting::IMessage* CreateMessage() = 0;
-				virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0) = 0;
-			};
+			virtual void MarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
+			virtual void UnmarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void ReleaseMarshalData(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
+			virtual Remoting::IMessage* CreateMessage() = 0;
+			virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0) = 0;
+		};
 
-			interface IWireStub : public IObject
-			{
-				virtual void Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) = 0;
-				virtual bool_t SupportsInterface(const guid_t& iid) = 0;
-			};
+		interface IWireStub : public IObject
+		{
+			virtual void Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) = 0;
+			virtual bool_t SupportsInterface(const guid_t& iid) = 0;
+		};
 
-			interface IWireStubController : public IObject
-			{
-				virtual void RemoteRelease(uint32_t release_count) = 0;
-				virtual bool_t SupportsInterface(const guid_t& iid) = 0;
-				virtual void MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) = 0;
-			};
+		interface IWireStubController : public IObject
+		{
+			virtual void RemoteRelease(uint32_t release_count) = 0;
+			virtual bool_t SupportsInterface(const guid_t& iid) = 0;
+			virtual void MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) = 0;
+		};
 
-			interface IWireProxy : public IObject
-			{
-				virtual void WriteKey(Remoting::IMessage* pMessage) = 0;
-				virtual bool_t IsAlive() = 0;
-			};
-		}
+		interface IWireProxy : public IObject
+		{
+			virtual void WriteKey(Remoting::IMessage* pMessage) = 0;
+			virtual bool_t IsAlive() = 0;
+		};
+
+		interface IWireProxyStubFactory : public IObject
+		{
+			virtual void CreateWireProxy(const guid_t& iid, IWireProxy* pOuter, IWireManager* pManager, IObject*& pProxy) = 0;
+			virtual IWireStub* CreateWireStub(const guid_t& iid, IWireStubController* pController, IWireManager* pManager, IObject* pObject) = 0;
+		};
 	}
 }
 
 #if !defined(DOXYGEN)
 
 OMEGA_SET_GUIDOF(Omega::Remoting, IMessage, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
-OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
-OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
-OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
-OMEGA_SET_GUIDOF(Omega::System::MetaInfo, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
+OMEGA_SET_GUIDOF(Omega::System, IWireStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
+OMEGA_SET_GUIDOF(Omega::System, IWireStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
+OMEGA_SET_GUIDOF(Omega::System, IWireProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
+OMEGA_SET_GUIDOF(Omega::System, IWireManager, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
 #define OMEGA_WIRE_DECLARE_WIRE_READWRITE(o_type,fn_type) \
 	inline IException_Safe* wire_read(const wchar_t* pszName, IMessage_Safe* pMessage, o_type& val) \
@@ -162,10 +165,10 @@ namespace Omega
 		namespace MetaInfo
 		{
 			OMEGA_DECLARE_FORWARDS(IMessage,Omega::Remoting,IMessage,Omega,IObject)
-			OMEGA_DECLARE_FORWARDS(IWireStub,Omega::System::MetaInfo,IWireStub,Omega,IObject)
-			OMEGA_DECLARE_FORWARDS(IWireStubController,Omega::System::MetaInfo,IWireStubController,Omega,IObject)
-			OMEGA_DECLARE_FORWARDS(IWireProxy,Omega::System::MetaInfo,IWireProxy,Omega,IObject)
-			OMEGA_DECLARE_FORWARDS(IWireManager,Omega::System::MetaInfo,IWireManager,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(IWireStub,Omega::System,IWireStub,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(IWireStubController,Omega::System,IWireStubController,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(IWireProxy,Omega::System,IWireProxy,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(IWireManager,Omega::System,IWireManager,Omega,IObject)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
@@ -205,7 +208,7 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System::MetaInfo, IWireStub,
+				Omega::System, IWireStub,
 
 				OMEGA_METHOD_VOID(Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),Remoting::IMessage*,pParamsOut))
 				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
@@ -214,7 +217,7 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System::MetaInfo, IWireStubController,
+				Omega::System, IWireStubController,
 
 				OMEGA_METHOD_VOID(RemoteRelease,1,((in),uint32_t,release_count))
 				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
@@ -224,7 +227,7 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System::MetaInfo, IWireProxy,
+				Omega::System, IWireProxy,
 
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Remoting::IMessage*,pMessage))
 				OMEGA_METHOD(bool_t,IsAlive,0,())
@@ -233,7 +236,7 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System::MetaInfo, IWireManager,
+				Omega::System, IWireManager,
 
 				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
@@ -695,7 +698,10 @@ namespace Omega
 				}
 			};
 
-			inline void RegisterWireFactories(const guid_t& iid, void* pfnProxy, void* pfnStub);
+			typedef IException_Safe* (OMEGA_CALL *pfnCreateWireProxy)(IWireProxy_Safe* pProxy, IWireManager_Safe* pManager, IObject_Safe** ppProxy);
+			typedef IException_Safe* (OMEGA_CALL *pfnCreateWireStub)(IWireStubController_Safe* pController, IWireManager_Safe* pManager, IObject_Safe* pObject, IWireStub_Safe** ppStub);
+			
+			inline void RegisterWireFactories(const guid_t& iid, pfnCreateWireProxy pfnProxy, pfnCreateWireStub pfnStub);
 
 			template <class S>
 			IWireStub_Safe* CreateWireStub(IWireStubController_Safe* pController, IWireManager_Safe* pManager, IObject_Safe* pObject)
@@ -970,10 +976,10 @@ namespace Omega
 
 			OMEGA_QI_MAGIC(Omega::Remoting,IMessage)
 
-			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireStub)
-			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireStubController)
-			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireProxy)
-			OMEGA_QI_MAGIC(Omega::System::MetaInfo,IWireManager)
+			OMEGA_QI_MAGIC(Omega::System,IWireStub)
+			OMEGA_QI_MAGIC(Omega::System,IWireStubController)
+			OMEGA_QI_MAGIC(Omega::System,IWireProxy)
+			OMEGA_QI_MAGIC(Omega::System,IWireManager)
 
 			OMEGA_WIRE_MAGIC(Omega,IObject)
 
@@ -982,7 +988,7 @@ namespace Omega
 			(
 				Omega, IException,
 
-				OMEGA_METHOD(guid_t,ActualIID,0,())
+				OMEGA_METHOD(guid_t,ThrownIID,0,())
 				OMEGA_METHOD(IException*,Cause,0,())
 				OMEGA_METHOD(string_t,Description,0,())
 				OMEGA_METHOD(string_t,Source,0,())
@@ -991,8 +997,16 @@ namespace Omega
 	}
 }
 
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
+	Omega::System, IWireProxyStubFactory, "{947C53AF-63AF-489b-86BB-BB25CC4656E6}",
+
+	OMEGA_METHOD_VOID(CreateWireProxy,4,((in),const guid_t&,iid,(in),IWireProxy*,pOuter,(in),IWireManager*,pManager,(out)(iid_is(iid)),IObject*&,pProxy))
+	OMEGA_METHOD(IWireStub*,CreateWireStub,4,((in),const guid_t&,iid,(in),IWireStubController*,pController,(in),IWireManager*,pManager,(in),IObject*,pObject))
+)
+
 OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
-void Omega::System::MetaInfo::RegisterWireFactories(const guid_t& iid, void* pfnProxy, void* pfnStub)
+void Omega::System::MetaInfo::RegisterWireFactories(const guid_t& iid, pfnCreateWireProxy pfnProxy, pfnCreateWireStub pfnStub)
 {
 	Omega_RegisterWireFactories(iid,pfnProxy,pfnStub);
 }

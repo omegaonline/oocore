@@ -34,7 +34,7 @@ OOCore::Channel::Channel() :
 {
 }
 
-void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
+void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid, Remoting::IObjectManager* pOM)
 {
 	m_pSession = pSession;
 	m_apt_id = apt_id;
@@ -42,10 +42,8 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CD
 	m_marshal_flags = marshal_flags;
 	m_message_oid = message_oid;
 
-	// Create a new OM
-	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
-
-	// Associate it with the channel
+	// Connect the OM to us
+	m_ptrOM = pOM;
 	m_ptrOM->Connect(this);
 }
 
@@ -55,13 +53,11 @@ void OOCore::Channel::disconnect()
 	m_ptrOM.Release();
 
 	m_channel_id = 0;
+	m_pSession = 0;
 }
 
 Remoting::IMessage* OOCore::Channel::CreateMessage()
 {
-	if (!m_channel_id)
-		OMEGA_THROW(ECONNRESET);
-
 	if (m_message_oid == guid_t::Null())
 	{
 		// Create a fresh OutputCDR
@@ -78,7 +74,7 @@ Remoting::IMessage* OOCore::Channel::CreateMessage()
 
 IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv,  uint32_t timeout)
 {
-	if (!m_channel_id)
+	if (!m_pSession)
 		OMEGA_THROW(ECONNRESET);
 
 	// We need to wrap the message
@@ -152,7 +148,7 @@ guid_t OOCore::Channel::GetReflectUnmarshalFactoryOID()
 
 void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
-	if (!m_channel_id)
+	if (!m_pSession)
 		OMEGA_THROW(ECONNRESET);
 
 	ACE_InputCDR* response = 0;

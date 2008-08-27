@@ -28,16 +28,16 @@ namespace Omega
 	{
 		interface IObjectFactory : public IObject
 		{
-			virtual void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void CreateInstance(IObject* pOuter, guid_t& iid, IObject*& pObject) = 0;
 		};
 		
 		enum Flags
 		{
 			InProcess = 1,
 			OutOfProcess = 2,
+			Any = (InProcess | OutOfProcess),
 			RemoteServer = 4,
-			Any = 7,
-			DontLaunch = 0x10
+			DontLaunch = 8
 		};
 		typedef uint16_t Flags_t;
 
@@ -196,9 +196,6 @@ namespace Omega
 			virtual IConnectedStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
 		};
 	}
-
-	inline IObject* CreateInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, const wchar_t* pszEndpoint);
-	inline bool_t HandleRequest(uint32_t timeout = 0);
 }
 
 #if !defined(DOXYGEN)
@@ -208,7 +205,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in_out),guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -421,20 +418,6 @@ OMEGA_EXPORTED_FUNCTION(Omega::Registry::IKey*,IRegistryKey_OpenKey,2,((in),cons
 Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
 {
 	return IRegistryKey_OpenKey(key,flags);
-}
-
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(in),const wchar_t*,pszEndpoint,(out)(iid_is(iid)),Omega::IObject*&,pObject));
-Omega::IObject* Omega::CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid, const wchar_t* pszEndpoint)
-{
-	IObject* pObj = 0;
-	Omega_CreateInstance(oid,flags,pOuter,iid,pszEndpoint,pObj);
-	return pObj;
-}
-
-OMEGA_EXPORTED_FUNCTION(Omega::bool_t,Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
-Omega::bool_t Omega::HandleRequest(Omega::uint32_t timeout)
-{
-	return Omega_HandleRequest(timeout);
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify));

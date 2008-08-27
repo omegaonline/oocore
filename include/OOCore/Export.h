@@ -59,7 +59,19 @@
 		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) \
 		{ \
 		public: \
-			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(Omega::System::MetaInfo::IWireStub_Safe** ppStub OMEGA_DECLARE_PARAMS_SAFE(3,((in),Omega::System::MetaInfo::IWireStubController*,pController,(in),Omega::System::MetaInfo::IWireManager*,pManager,(in),Omega::IObject*,pObject))) \
+			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_proxy(Omega::System::MetaInfo::IWireProxy_Safe* pProxy, Omega::System::MetaInfo::IWireManager_Safe* pManager, Omega::System::MetaInfo::IObject_Safe** ppProxy) \
+			{ \
+				try \
+				{ \
+					*ppProxy = WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<interface_info<n_space::iface>::safe_class>::type>::Create(pProxy,pManager); \
+					return 0; \
+				} \
+				catch (Omega::IException* pE) \
+				{ \
+					return Omega::System::MetaInfo::return_safe_exception(pE); \
+				} \
+			} \
+			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(IWireStubController_Safe* pController, IWireManager_Safe* pManager, IObject_Safe* pObject, IWireStub_Safe** ppStub) \
 			{ \
 				try \
 				{ \
@@ -71,21 +83,9 @@
 					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
-			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_proxy(Omega::System::MetaInfo::IObject_Safe** ppRet OMEGA_DECLARE_PARAMS_SAFE(2,((in),Omega::System::MetaInfo::IWireProxy*,pProxy,(in),Omega::System::MetaInfo::IWireManager*,pManager))) \
-			{ \
-				try \
-				{ \
-					*ppRet = WireProxyImpl<interface_info<n_space::iface>::wire_proxy_factory<interface_info<n_space::iface>::safe_class>::type>::Create(pProxy,pManager); \
-					return 0; \
-				} \
-				catch (Omega::IException* pE) \
-				{ \
-					return Omega::System::MetaInfo::return_safe_exception(pE); \
-				} \
-			} \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 			{ \
-				RegisterWireFactories(OMEGA_GUIDOF(n_space::iface),(void*)&create_wire_proxy,(void*)&create_wire_stub); \
+				RegisterWireFactories(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i); \

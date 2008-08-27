@@ -66,12 +66,18 @@ namespace OOCore
 		static Omega::IException* init();
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
-		static ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> create_apartment();
-		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 
+		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 		Omega::Remoting::MarshalFlags_t classify_channel(ACE_CDR::ULong channel);
 		bool send_request(ACE_CDR::UShort apartment_id, ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::ULong timeout, ACE_CDR::ULong attribs);
 		bool send_response(ACE_CDR::UShort apt_id, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs = Message::synchronous);
+
+		static Omega::Apartment::IApartment* create_apartment(Omega::System::IWireProxyStubFactory* pPSFactory);
+		static ACE_CDR::UShort get_apartment();
+		static void remove_apartment(ACE_CDR::UShort id);
+		
+		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> get_apartment(ACE_CDR::UShort id);
+		ACE_CDR::UShort update_state(ACE_CDR::UShort apartment_id, Omega::uint32_t* pTimeout);
 				
 	private:
 		friend class ThreadContext;
@@ -159,7 +165,7 @@ namespace OOCore
 		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex>                            m_ptrZeroApt;
 		std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> > m_mapApartments;
 		
-		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> create_apartment_i();
+		Omega::Apartment::IApartment* create_apartment_i(Omega::System::IWireProxyStubFactory* pPSFactory);
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 	};
 }

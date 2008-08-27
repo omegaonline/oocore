@@ -24,6 +24,7 @@
 #include "./UserSession.h"
 #include "./Activation.h"
 #include "./StdObjectManager.h"
+#include "./ApartmentImpl.h"
 #include "./WireProxy.h"
 #include "./Channel.h"
 #include "./Exception.h"
@@ -39,6 +40,7 @@ using namespace OTL;
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
+	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ApartmentImpl)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::WireProxyMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ChannelMarshalFactory)
 	OBJECT_MAP_ENTRY_UNNAMED(OOCore::OutputCDRMarshalFactory)

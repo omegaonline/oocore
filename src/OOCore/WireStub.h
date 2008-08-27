@@ -53,7 +53,7 @@ namespace OOCore
 		{
 			*ppS = 0;
 			if (*piid == OMEGA_GUIDOF(Omega::IObject) ||
-				*piid == OMEGA_GUIDOF(Omega::System::MetaInfo::IWireStubController))
+				*piid == OMEGA_GUIDOF(Omega::System::IWireStubController))
 			{
 				*ppS = this;
 				(*ppS)->AddRef_Safe();
@@ -61,7 +61,7 @@ namespace OOCore
 			return 0;
 		}
 
-		// These will never be called
+		// These can/will not be called
 		void OMEGA_CALL Pin() {}
 		void OMEGA_CALL Unpin() {}
 

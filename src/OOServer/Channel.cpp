@@ -43,7 +43,7 @@ void User::Channel::init(Manager* pManager, ACE_CDR::ULong channel_id, Remoting:
 	m_message_oid = message_oid;
 
 	// Create a new OM
-	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess);
+	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess | Activation::DontLaunch);
 
 	// Associate it with the channel
 	m_ptrOM->Connect(this);
@@ -59,9 +59,6 @@ void User::Channel::disconnect()
 
 Remoting::IMessage* User::Channel::CreateMessage()
 {
-	if (!m_channel_id)
-		OMEGA_THROW(ECONNRESET);
-
 	if (m_message_oid == guid_t::Null())
 	{
 		// Create a fresh OutputCDR

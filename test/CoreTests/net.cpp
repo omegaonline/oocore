@@ -78,7 +78,7 @@ void StreamNotify::OnWritten(const Omega::uint64_t& cbBytes)
 
 void StreamNotify::OnError(Omega::IException* pE)
 {
-	printf_exception(pE);
+	output_exception(pE);
 	m_state = 4;
 }
 
@@ -134,7 +134,7 @@ static bool http_tests_sync()
 	ptrRequest->ResponseBody(cbBytes,pBuf);
 		
 	pBuf[cbBytes] = '\0';
-	//printf("\n\n%s\n\n",(const char*)pBuf);
+	//output("\n\n%s\n\n",(const char*)pBuf);
 
 	delete [] pBuf;
 
@@ -151,9 +151,9 @@ static bool http_tests_sync()
 			break;
 
 		szBuf[cbBytes] = '\0';
-		//printf("%s",(const char*)szBuf);
+		//output("%s",(const char*)szBuf);
 	}
-	//printf("\n\n");
+	//output("\n\n");
 
 	// This one will barf because it's https
 	ptrRequest->Open(L"GET",L"https://www.tropicalstormsoftware.com/exchange");
@@ -171,9 +171,9 @@ static bool http_tests_sync()
 			break;
 
 		szBuf[cbBytes] = '\0';
-		//printf("%s",(const char*)szBuf);
+		//output("%s",(const char*)szBuf);
 	}
-	//printf("\n\n");
+	//output("\n\n");
 
 	return true;
 }
@@ -192,7 +192,7 @@ void HttpNotify::OnResponseComplete()
 
 void HttpNotify::OnError(Omega::IException* pE)
 {
-	printf_exception(pE);
+	output_exception(pE);
 }
 
 static bool http_tests_async()
@@ -213,7 +213,7 @@ static bool http_tests_async()
 	ptrRequest->ResponseBody(cbBytes,pBuf);
 		
 	pBuf[cbBytes] = '\0';
-	//printf("\n\n%s\n\n",(const char*)pBuf);
+	//output("\n\n%s\n\n",(const char*)pBuf);
 
 	delete [] pBuf;
 
@@ -230,10 +230,10 @@ static bool http_tests_async()
 			break;
 
 		szBuf[cbBytes] = '\0';
-		//printf("%s",(const char*)szBuf);
+		//output("%s",(const char*)szBuf);
 	}
 
-	//printf("\n\n");
+	//output("\n\n");
 	
 	return true;
 }

@@ -159,16 +159,17 @@ namespace OTL
 				m_ptr.value()->AddRef();
 		}
 
-		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const wchar_t* pszEndpoint) :
+		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateLocalInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
 		}
 
-		ObjectPtrBase(const Omega::string_t& object_name, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const wchar_t* pszEndpoint) :
+		ObjectPtrBase(const Omega::string_t& strURI, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
+			Omega::guid_t iid = OMEGA_GUIDOF(OBJECT);
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(strURI,flags,pOuter,iid));
 		}
 
 		virtual ~ObjectPtrBase()
@@ -261,23 +262,13 @@ namespace OTL
 		  ObjectPtrBase<OBJECT>(rhs)
 		{ }
 
-		ObjectPtr(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::InProcess | Omega::Activation::OutOfProcess, Omega::IObject* pOuter = 0, const wchar_t* pszEndpoint = 0) :
-		  ObjectPtrBase<OBJECT>(oid,flags,pOuter,pszEndpoint)
+		ObjectPtr(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		  ObjectPtrBase<OBJECT>(oid,flags,pOuter)
 		{ }
 
-		ObjectPtr(const Omega::string_t& name, Omega::Activation::Flags_t flags = Omega::Activation::InProcess | Omega::Activation::OutOfProcess, Omega::IObject* pOuter = 0, const wchar_t* pszEndpoint = 0) :
-		  ObjectPtrBase<OBJECT>(name,flags,pOuter,pszEndpoint)
+		ObjectPtr(const Omega::string_t& name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		  ObjectPtrBase<OBJECT>(name,flags,pOuter)
 		{ }
-
-		void CreateInstance(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::InProcess | Omega::Activation::OutOfProcess, Omega::IObject* pOuter = 0, const wchar_t* pszEndpoint = 0)
-		{
-			this->m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(oid,flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
-		}
-
-		void CreateInstance(const Omega::string_t& object_name, Omega::Activation::Flags_t flags = Omega::Activation::InProcess | Omega::Activation::OutOfProcess, Omega::IObject* pOuter = 0, const wchar_t* pszEndpoint = 0)
-		{
-			this->m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(Omega::Activation::NameToOid(object_name),flags,pOuter,OMEGA_GUIDOF(OBJECT),pszEndpoint));
-		}
 	};
 
 	template <>
@@ -405,7 +396,7 @@ namespace OTL
 
 	// IException members
 	public:
-		virtual Omega::guid_t ActualIID()
+		virtual Omega::guid_t ThrownIID()
 		{
 			return OMEGA_GUIDOF(E);
 		}
@@ -851,7 +842,7 @@ namespace OTL
 		}
 	};
 
-	template <class T1, class T2>
+	template <class T1, class T2, class ROOT>
 	class ObjectFactoryImpl :
 		public ObjectBase,
 		public Omega::Activation::IObjectFactory
@@ -863,8 +854,11 @@ namespace OTL
 
 	// IObjectFactory members
 	public:
-		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject)
+		void CreateInstance(Omega::IObject* pOuter, Omega::guid_t& iid, Omega::IObject*& pObject)
 		{
+			if (iid == Omega::guid_t::Null())
+				iid = *(ROOT::getQIEntries()->pGuid);
+			
 			if (pOuter)
 				pObject = T1::CreateInstance(pOuter,iid);
 			else
@@ -876,7 +870,7 @@ namespace OTL
 	class AutoObjectFactory
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID>,ROOT> ObjectFactoryClass;
 
 		static const Omega::guid_t* GetOid()
 		{
@@ -898,14 +892,14 @@ namespace OTL
 	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID>,ROOT> ObjectFactoryClass;
 	};
 
 	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID>,ROOT> ObjectFactoryClass;
 	};
 
 	template <class EnumIFace, class EnumType>

@@ -22,14 +22,22 @@
 #include "OOCore_precomp.h"
 
 #include "./UserSession.h"
+#include "./StdObjectManager.h"
 
 using namespace Omega;
 using namespace OTL;
+
+OMEGA_DEFINE_OID(OOCore,OID_StdApartment,"{6654B003-44F1-497a-B539-80B5FCED73BC}");
 
 OOCore::Apartment::Apartment(UserSession* pSession, ACE_CDR::UShort id) :
 	m_pSession(pSession),
 	m_id(id)
 {
+}
+
+void OOCore::Apartment::init(System::IWireProxyStubFactory* pPSFactory)
+{
+	m_ptrPSFactory = pPSFactory;
 }
 
 void OOCore::Apartment::close()
@@ -44,6 +52,12 @@ void OOCore::Apartment::close()
 			j->second->disconnect();
 		}
 		m_mapChannels.clear();
+
+		for (std::map<ACE_CDR::UShort,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.begin();i!=m_mapApartments.end();++i)
+		{
+			i->second->disconnect();
+		}
+		m_mapApartments.clear();
 	}
 	catch (std::exception&)
 	{}
@@ -98,9 +112,9 @@ bool OOCore::Apartment::is_channel_open(ACE_CDR::ULong channel_id)
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(ACE_CDR::ULong src_channel_id)
 {
-	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,message_oid);
+	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,guid_t::Null());
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());
 	return ptrOM;
@@ -108,22 +122,31 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(ACE_CDR::U
 
 ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
 {
+	// Lookup existing..
 	try
 	{
-		// Lookup existing..
-		{
-			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
-			if (i != m_mapChannels.end())
-				return i->second;
-		}
+		std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+		if (i != m_mapChannels.end())
+			return i->second;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 
-		// Create a new channel
-		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		ptrChannel->init(m_pSession,m_id,src_channel_id,m_pSession->classify_channel(src_channel_id),message_oid);
+	// Create a new OM
+	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
+	ptrOM->SetProxyStubFactory(m_ptrPSFactory);
+	
+	// Create a new channel
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+	ptrChannel->init(m_pSession,m_id,src_channel_id,m_pSession->classify_channel(src_channel_id),message_oid,ptrOM);
 
-		// And add to the map
+	// And add to the map
+	try
+	{
 		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		std::pair<std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
@@ -134,19 +157,19 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(ACE_CD
 
 			ptrChannel = p.first->second;
 		}
-
-		return ptrChannel;
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e);
 	}
+
+	return ptrChannel;	
 }
 
 void OOCore::Apartment::process_request(const Message* pMsg, const ACE_Time_Value& deadline)
 {
 	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id,guid_t::Null());
+	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id);
 	
 	// Wrap up the request
 	ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrEnvelope;
@@ -189,49 +212,117 @@ void OOCore::Apartment::process_request(const Message* pMsg, const ACE_Time_Valu
 	}
 }
 
-namespace OOCore
+ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR::UShort apartment_id, System::IWireProxyStubFactory* pPSFactory)
 {
-	class ApartmentImpl :
-		public ObjectBase,
-		public Omega::Apartment::IApartment
+	// Lookup existing..
+	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
+	try
 	{
-	public:
-		ApartmentImpl();
+		OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		void init(const guid_t& om_oid);
+		std::map<ACE_CDR::UShort,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.find(apartment_id);
+		if (i != m_mapApartments.end())
+			ptrChannel = i->second;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 
-		BEGIN_INTERFACE_MAP(ApartmentImpl)
-			INTERFACE_ENTRY(Omega::Apartment::IApartment)
-		END_INTERFACE_MAP()
+	if (!ptrChannel)
+	{
+		// Create a new OM
+		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
+		ptrOM->SetProxyStubFactory(pPSFactory);
+		
+		// Create a new channel
+		ptrChannel = ObjectImpl<AptChannel>::CreateInstancePtr();
+		ptrChannel->init(m_id,m_pSession->get_apartment(apartment_id),ptrOM);
 
-	// IApartment members
-	public:
-		void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject);
-	};
+		// And add to the map
+		try
+		{
+			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+			std::pair<std::map<ACE_CDR::UShort,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator,bool> p = m_mapApartments.insert(std::map<ACE_CDR::UShort,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::value_type(apartment_id,ptrChannel));
+			if (!p.second)
+				ptrChannel = p.first->second;
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
+	}
+
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	ptrOM.Attach(ptrChannel->GetObjectManager());
+	return ptrOM;
 }
 
-OOCore::ApartmentImpl::ApartmentImpl()
+IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, Remoting::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
+	// Find and/or create the object manager associated with src_channel_id
+	ObjectPtr<Remoting::IObjectManager> ptrOM = get_apartment_om(apt_id,m_ptrPSFactory);
+
+	// Update session state and timeout
+	ACE_CDR::UShort old_id = m_pSession->update_state(apt_id,&timeout);
+	
+	// Make the call
+	IException* pE = 0;
+	try
+	{
+		pRecv = ptrOM->Invoke(pSend,timeout);
+	}
+	catch (IException* pE2)
+	{
+		pE = pE2;
+	}
+	catch (...)
+	{
+		// Reset state
+		m_pSession->update_state(old_id,0);
+		throw;
+	}
+
+	m_pSession->update_state(old_id,0);
+
+	return pE;
 }
 
-void OOCore::ApartmentImpl::init(const guid_t& om_oid)
-{
-	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt = UserSession::create_apartment();
-}
-
-void OOCore::ApartmentImpl::CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject)
-{
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,1,((in),const guid_t&,om_oid))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,1,((in),Omega::System::IWireProxyStubFactory*,pPSFactory))
 {
 	if (OOCore::HostedByOOServer())
 		OMEGA_THROW(L"Apartments are not supported in the OOSvrUser process!");
 
 	// Create a new apartment
-	ObjectPtr<ObjectImpl<OOCore::ApartmentImpl> > ptrApt = ObjectImpl<OOCore::ApartmentImpl>::CreateInstancePtr();
-	ptrApt->init(om_oid);
+	return OOCore::UserSession::create_apartment(pPSFactory);
+}
 
-	// Return it
-	return ptrApt.AddRef();
+void OOCore::AptChannel::init(ACE_CDR::UShort apt_id, ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt, Remoting::IObjectManager* pOM)
+{
+	Channel::init(0,apt_id,0,Remoting::Apartment,guid_t::Null(),pOM);
+
+	m_ptrApt = ptrApt;
+}
+
+IException* OOCore::AptChannel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+{
+	return m_ptrApt->apartment_message(m_apt_id,attribs,pSend,pRecv,timeout);
+}
+
+OOCore::ApartmentImpl::ApartmentImpl() : 
+	m_id(0)
+{
+	m_id = UserSession::get_apartment();
+}
+
+OOCore::ApartmentImpl::~ApartmentImpl()
+{
+	if (m_id)
+		UserSession::remove_apartment(m_id);
+}
+
+void OOCore::ApartmentImpl::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, guid_t& iid, IObject*& pObject)
+{
+	pObject = Omega::CreateInstance(strURI,flags,pOuter,iid);
 }

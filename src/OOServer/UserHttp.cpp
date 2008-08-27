@@ -1242,7 +1242,7 @@ void User::Manager::handle_http_request_i(HttpConnection* pConn, uint16_t conn_i
 		if (!ptrHandler)
 		{
 			// Create a new one and insert
-			ptrHandler.CreateInstance(oid);
+			ptrHandler = ObjectPtr<Net::Http::Server::IRequestHandler>(oid);
 
 			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_http_lock);
 

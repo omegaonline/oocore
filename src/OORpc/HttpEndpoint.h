@@ -29,7 +29,7 @@ namespace Rpc
 
 	class HttpEndpoint :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<HttpEndpoint,&OID_HttpEndpoint,Omega::Activation::InProcess>,
+		public OTL::AutoObjectFactorySingleton<HttpEndpoint,&OID_HttpEndpoint,0,Omega::Activation::InProcess>,
 		public Omega::Remoting::IEndpoint
 	{
 	public:

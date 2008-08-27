@@ -75,6 +75,10 @@ namespace Omega
 	inline IException* Initialize();
 	inline void Uninitialize();
 
+	inline IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	inline IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, guid_t& iid);
+	inline bool_t HandleRequest(uint32_t timeout = 0);
+
 	namespace System
 	{
 		inline string_t GetVersion();
@@ -82,12 +86,6 @@ namespace Omega
 }
 
 #if !defined(DOXYGEN)
-
-OMEGA_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,())
-Omega::string_t Omega::System::GetVersion()
-{
-	return Omega_GetVersion();
-}
 
 OMEGA_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,())
 Omega::IException* Omega::Initialize()
@@ -99,6 +97,34 @@ OMEGA_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 void Omega::Uninitialize()
 {
 	Omega_Uninitialize();
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+{
+	IObject* pObj = 0;
+	Omega_CreateLocalInstance(oid,flags,pOuter,iid,pObj);
+	return pObj;
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in_out),Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, guid_t& iid)
+{
+	IObject* pObj = 0;
+	Omega_CreateInstance(strURI,flags,pOuter,iid,pObj);
+	return pObj;
+}
+
+OMEGA_EXPORTED_FUNCTION(Omega::bool_t,Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
+Omega::bool_t Omega::HandleRequest(uint32_t timeout)
+{
+	return Omega_HandleRequest(timeout);
+}
+
+OMEGA_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,())
+Omega::string_t Omega::System::GetVersion()
+{
+	return Omega_GetVersion();
 }
 
 #endif // !defined(DOXYGEN)

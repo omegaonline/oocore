@@ -151,7 +151,7 @@ void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_
 				if (m_message_oid == guid_t::Null())
 					ptrPayload.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
 				else
-					ptrPayload.CreateInstance(m_message_oid,Activation::InProcess);
+					ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 
 				// Write the channel id
 				ptrPayload->WriteUInt32s(L"channel_id",1,&channel_id);
@@ -189,7 +189,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 	if (m_message_oid == guid_t::Null())
 		ptrMessage.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
 	else
-		ptrMessage.CreateInstance(m_message_oid,Activation::InProcess);
+		ptrMessage = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 
 	// Write the mesage struct
 	ptrMessage->WriteStructStart(L"message",L"$rpc_msg");
@@ -407,7 +407,7 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 					if (m_message_oid == guid_t::Null())
 						ptrResult.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
 					else
-						ptrResult.CreateInstance(m_message_oid,Activation::InProcess);
+						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 					
 					// Send back the src_channel_id
 					uint32_t ch = src_channel_id | m_channel_id;
@@ -601,7 +601,7 @@ void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
 		if (m_message_oid == guid_t::Null())
 			ptrMsg.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
 		else
-			ptrMsg.CreateInstance(m_message_oid,Activation::InProcess);
+			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 		
 		// Send back the src_channel_id
 		ptrMsg->WriteUInt32s(L"channel_id",1,&i->second);
@@ -654,14 +654,14 @@ Remoting::IChannel* User::Manager::open_remote_channel(const string_t& strEndpoi
 
 Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndpoint)
 {
-	// First try to determine the protocol...
+	// Get the protocol
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
 		OMEGA_THROW(L"No protocol specified!");
-
-	// Look up handler in registry
+	
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
 
+	// Look up handler in registry
 	string_t strHandler;
 	ObjectPtr<Registry::IKey> ptrKey(L"\\Local User");
 	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))

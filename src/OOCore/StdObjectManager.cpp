@@ -245,16 +245,27 @@ void OOCore::StdObjectManager::Disconnect()
 		(*i)->Release_Safe();
 }
 
+void OOCore::StdObjectManager::SetProxyStubFactory(Omega::System::IWireProxyStubFactory* pPSFactory)
+{
+	m_ptrPSFactory = pPSFactory;
+}
+
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the oid, iid and flags
-	guid_t oid = ReadGuid(L"oid",pParamsIn);
+	string_t strOID;
+	pParamsIn->ReadStrings(L"oid",1,&strOID);
 	guid_t iid = ReadGuid(L"iid",pParamsIn);
 	Activation::Flags_t act_flags = static_cast<Activation::Flags_t>(ReadUInt16(L"flags",pParamsIn));
 
 	// Check our permissions
 	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
 		act_flags |= Activation::RemoteServer;
+
+	// Work out the oid
+	guid_t oid = guid_t::FromString(strOID);
+	if (oid == guid_t::Null())
+		oid = Activation::NameToOid(strOID);
 
 	// Get the required object
 	ObjectPtr<IObject> ptrObject;
@@ -359,7 +370,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			ptrResponse->WriteBooleans(L"$throw",1,&v);
 
 			// Write the exception onto the wire
-			MarshalInterface(L"exception",ptrResponse,pE->ActualIID(),pE);
+			MarshalInterface(L"exception",ptrResponse,pE->ThrownIID(),pE);
 		}
 
 		// Close the struct block
@@ -378,7 +389,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 	}
 }
 
-void OOCore::StdObjectManager::GetRemoteInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
 {
 	pObject = 0;
 
@@ -389,7 +400,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const guid_t& oid, Activation::
 
 	WriteUInt32(L"$stub_id",ptrParamsOut,0);
 	WriteUInt16(L"$method_id",ptrParamsOut,0);
-	WriteGuid(L"oid",ptrParamsOut,oid);
+	ptrParamsOut->WriteStrings(L"oid",1,&strOID);
 	WriteGuid(L"iid",ptrParamsOut,iid);
 	WriteUInt16(L"flags",ptrParamsOut,flags);
 
@@ -549,7 +560,7 @@ void OMEGA_CALL OOCore::StdObjectManager::Release_Safe()
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
 	*ppS = 0;
-	if (*piid == OMEGA_GUIDOF(IObject) || *piid == OMEGA_GUIDOF(System::MetaInfo::IWireManager))
+	if (*piid == OMEGA_GUIDOF(IObject) || *piid == OMEGA_GUIDOF(System::IWireManager))
 	{
 		*ppS = static_cast<System::MetaInfo::IWireManager_Safe*>(this);
 		(*ppS)->AddRef_Safe();
@@ -986,6 +997,38 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 	
 	pMessage->WriteStructEnd(L"m_ptrChannel");		
+}
+
+System::MetaInfo::IObject_Safe* OOCore::StdObjectManager::CreateWireProxy(const guid_t& iid, System::MetaInfo::IWireProxy_Safe* pProxy)
+{
+	if (!m_ptrPSFactory)
+		return OOCore::CreateWireProxy(iid,pProxy,this);
+
+	// This needs testing!!!
+	DebugBreak();
+
+	System::MetaInfo::IObject_Safe* pObjS = 0;
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IWireProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateWireProxy_Safe(&iid,pProxy,this,&pObjS);
+	if (pSE)
+		System::MetaInfo::throw_correct_exception(pSE);
+
+	return pObjS;
+}
+
+System::MetaInfo::IWireStub_Safe* OOCore::StdObjectManager::CreateWireStub(const guid_t& iid, System::MetaInfo::IWireStubController_Safe* pController, System::MetaInfo::IObject_Safe* pObjS)
+{
+	if (!m_ptrPSFactory)
+		return OOCore::CreateWireStub(iid,pController,this,pObjS);
+
+	// This needs testing!!!
+	DebugBreak();
+
+	System::MetaInfo::IWireStub_Safe* pStub = 0;
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IWireProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateWireStub_Safe(&pStub,&iid,pController,this,pObjS);
+	if (pSE)
+		System::MetaInfo::throw_correct_exception(pSE);
+
+	return pStub;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0,())

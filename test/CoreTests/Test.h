@@ -5,7 +5,7 @@ bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();
 void add_success();
 void add_failure(const wchar_t* pszText);
-void printf_exception(Omega::IException* pE);
+void output_exception(Omega::IException* pE);
 
 typedef bool (*pfnTest)();
 bool run_test(pfnTest t, const char* pszName);
@@ -20,5 +20,7 @@ bool run_test(pfnTest t, const char* pszName);
 
 #define TEST_VOID(expr) \
 	(expr); add_success();
+
+void output(const char* sz, ...);
 
 #endif // TEST_H_INCLUDED_

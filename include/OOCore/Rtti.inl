@@ -343,7 +343,7 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 
 Omega::System::MetaInfo::IException_Safe* Omega::System::MetaInfo::return_safe_exception(IException* pE)
 {
-	guid_t iid = pE->ActualIID();
+	guid_t iid = pE->ThrownIID();
 
 	// Wrap with the correct _SafeStub wrapper by calling QI
 	auto_iface_ptr<IException> ptrE(pE);
@@ -360,7 +360,7 @@ Omega::System::MetaInfo::IException_Safe* Omega::System::MetaInfo::return_safe_e
 void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 {
 	guid_t iid;
-	IException_Safe* pSE2 = pSE->ActualIID_Safe(&iid);
+	IException_Safe* pSE2 = pSE->ThrownIID_Safe(&iid);
 	if (pSE2)
 		throw_correct_exception(pSE2);
 	else
@@ -373,12 +373,11 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	}
 }
 
-Omega::string_t Omega::System::MetaInfo::lookup_iid(const guid_t& iid)
+Omega::string_t Omega::System::IIDToName(const guid_t& iid)
 {
-	static const string_t strUnk = L"Unknown";
-	const qi_rtti* pRtti = get_qi_rtti_info(iid);
+	const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
 	if (!pRtti)
-		return strUnk;
+		return string_t();
 
 	return pRtti->strName;
 }

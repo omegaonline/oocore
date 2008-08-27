@@ -24,8 +24,8 @@
 
 namespace OOCore
 {
-	Omega::System::MetaInfo::IWireStub_Safe* CreateWireStub(const Omega::guid_t& iid, Omega::System::MetaInfo::IWireStubController_Safe* pController, Omega::System::MetaInfo::IWireManager_Safe* pManager, Omega::System::MetaInfo::IObject_Safe* pObject);
 	Omega::System::MetaInfo::IObject_Safe* CreateWireProxy(const Omega::guid_t& iid, Omega::System::MetaInfo::IWireProxy_Safe* pProxy, Omega::System::MetaInfo::IWireManager_Safe* pManager);
+	Omega::System::MetaInfo::IWireStub_Safe* CreateWireStub(const Omega::guid_t& iid, Omega::System::MetaInfo::IWireStubController_Safe* pController, Omega::System::MetaInfo::IWireManager_Safe* pManager, Omega::System::MetaInfo::IObject_Safe* pObject);
 }
 
 #endif // OOCORE_WIREIMPL_H_INCLUDED_

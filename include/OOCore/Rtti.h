@@ -29,6 +29,8 @@ namespace Omega
 		inline bool PinObjectPointer(IObject* pObject);
 		inline void UnpinObjectPointer(IObject* pObject);
 
+		inline string_t IIDToName(const guid_t& iid);
+
 		namespace MetaInfo
 		{
 			template <class T>
@@ -420,8 +422,7 @@ namespace Omega
 
 			inline void throw_correct_exception(IException_Safe* pE);
 			inline IException_Safe* return_safe_exception(IException* pE);
-			inline string_t lookup_iid(const guid_t& iid);
-
+			
 			OMEGA_DECLARE_FORWARDS(IException,Omega,IException,Omega,IObject)
 
 			template <class I> class auto_iface_ptr
@@ -558,13 +559,10 @@ namespace Omega
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
 					++m_refcount;
-					//printf("%p (%ls) AddRef(%d)\n",this,lookup_iid(OMEGA_GUIDOF(I)).c_str(),m_refcount.value());
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					//printf("%p (%ls) Release(%d)\n",this,lookup_iid(OMEGA_GUIDOF(I)).c_str(),m_refcount.value()-1);
-
 					if (--m_refcount==0)
 					{
 						m_contained.Release_Iface();
@@ -773,7 +771,7 @@ namespace Omega
 			(
 				Omega,IException,
 
-				OMEGA_METHOD(guid_t,ActualIID,0,())
+				OMEGA_METHOD(guid_t,ThrownIID,0,())
 				OMEGA_METHOD(IException*,Cause,0,())
 				OMEGA_METHOD(string_t,Description,0,())
 				OMEGA_METHOD(string_t,Source,0,())

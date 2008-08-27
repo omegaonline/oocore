@@ -30,26 +30,26 @@ namespace Omega
 	{
 		interface IApartment : public IObject
 		{
-			virtual void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
-
-			inline static IApartment* Create(const guid_t& om_oid);
+			virtual void CreateInstance(const string_t& strOID, Activation::Flags_t flags, IObject* pOuter, guid_t& iid, IObject*& pObject) = 0;
+			
+			inline static IApartment* Create(System::IWireProxyStubFactory* pPSFactory = 0);
 		};
 	}
 }
 
 #if !defined(DOXYGEN)
 
-OMEGA_DEFINE_INTERFACE_LOCAL
+OMEGA_DEFINE_INTERFACE
 (
 	Omega::Apartment, IApartment, "{9D92BFD7-631C-46dd-A123-E9CEB18A2285}",
 
-	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,5,((in),const string_t&,strURI,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in_out),guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
-OMEGA_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,IApartment_Create,1,((in),const Omega::guid_t&, om_oid));
-Omega::Apartment::IApartment* Omega::Apartment::IApartment::Create(const Omega::guid_t& om_oid)
+OMEGA_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,IApartment_Create,1,((in),Omega::System::IWireProxyStubFactory*,pPSFactory));
+Omega::Apartment::IApartment* Omega::Apartment::IApartment::Create(System::IWireProxyStubFactory* pPSFactory)
 {
-	return IApartment_Create(om_oid);
+	return IApartment_Create(pPSFactory);
 }
 
 #endif // !defined(DOXYGEN)

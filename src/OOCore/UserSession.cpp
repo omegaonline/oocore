@@ -23,6 +23,7 @@
 
 #include "./UserSession.h"
 #include "./Activation.h"
+#include "./StdObjectManager.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -143,7 +144,13 @@ OOCore::UserSession::~UserSession()
 IException* OOCore::UserSession::init()
 {
 	if (!USER_SESSION::instance()->init_i())
+	{
+		SERVICE_MANAGER::close();
+
+		USER_SESSION::close();
+
 		return ISystemException::Create(L"Failed to connect to server process, please check installation",L"Omega::Initialize");
+	}
 
 	IException* pE = USER_SESSION::instance()->bootstrap();
 	if (pE)
@@ -216,11 +223,11 @@ IException* OOCore::UserSession::bootstrap()
 		}
 						
 		// Create a new object manager for the user channel on the zero apartment
-		ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000,guid_t::Null());
+		ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000);
 		 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
 
 		ObjectPtr<System::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
@@ -356,6 +363,7 @@ void OOCore::UserSession::term_i()
 	{
 		j->second->close();
 	}
+	m_mapApartments.clear();
 	
 	// Clean up the zero apartment
 	m_ptrZeroApt.release();
@@ -617,13 +625,10 @@ int OOCore::UserSession::pump_requests(const ACE_Time_Value* deadline, bool bOnc
 		}
 
 		// Set deadline
+		// Dont confuse the wait deadline to the message processing deadline
 		ACE_Time_Value old_deadline = pContext->m_deadline;
 		pContext->m_deadline = msg->m_deadline;
-
-		// Dont confuse the wait deadline to the message processing deadline
-		//if (deadline && *deadline < pContext->m_deadline)
-		//	pContext->m_deadline = *deadline;
-
+		
 		try
 		{
 			// Set per channel thread id
@@ -1082,7 +1087,7 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 	ACE_Time_Value wait(timeout/1000,(timeout % 1000) * 1000);
 
 	ACE_Time_Value* wait2 = &wait;
-	if (timeout == (uint32_t)0)
+	if (timeout == 0)
 		wait2 = 0;
 	else
 		wait += ACE_OS::gettimeofday();
@@ -1107,45 +1112,131 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServe
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
 }
 
-ACE_Refcounted_Auto_Ptr<OOCore::Apartment,ACE_Thread_Mutex> OOCore::UserSession::create_apartment()
+Apartment::IApartment* OOCore::UserSession::create_apartment(System::IWireProxyStubFactory* pPSFactory)
 {
-	return USER_SESSION::instance()->create_apartment_i();
+	return USER_SESSION::instance()->create_apartment_i(pPSFactory);
 }
 
-ACE_Refcounted_Auto_Ptr<OOCore::Apartment,ACE_Thread_Mutex> OOCore::UserSession::create_apartment_i()
+Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IWireProxyStubFactory* pPSFactory)
 {
-	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-	ACE_CDR::UShort apt_id;
-	try
+	// Create a new Apartment object
+	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;
 	{
-		do
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+		// Select a new apartment id
+		ACE_CDR::UShort apt_id;
+		try
 		{
-			apt_id = ++m_next_apartment;
-			if (apt_id > 0xFFF)
-				apt_id = m_next_apartment = 1;
-			
-		} while (m_mapApartments.find(apt_id) != m_mapApartments.end());	
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+			do
+			{
+				apt_id = ++m_next_apartment;
+				if (apt_id > 0xFFF)
+					apt_id = m_next_apartment = 1;
+				
+			} while (m_mapApartments.find(apt_id) != m_mapApartments.end());	
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
+
+		// Create the new object
+		Apartment* pApt;
+		OMEGA_NEW(pApt,Apartment(this,apt_id));
+		ptrApt.reset(pApt);
+		ptrApt->init(pPSFactory);
+
+		// Add it to the map
+		try
+		{
+			m_mapApartments.insert(std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::value_type(apt_id,ptrApt));
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
 	}
 
-	Apartment* pApt;
-	OMEGA_NEW(pApt,Apartment(this,apt_id));
-	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt(pApt);
+	// Now a new OM for the new apartment connecting to the zero apt
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_apartment_om(0,0);
 
-	try
+	// Now get the new apartment OM to create an IApartment
+	IObject* pOF = 0;
+	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pOF);
+	ObjectPtr<Activation::IObjectFactory> ptrOF;
+	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
+
+	IObject* pObject = 0;
+	guid_t apt_iid = OMEGA_GUIDOF(Omega::Apartment::IApartment);
+	ptrOF->CreateInstance(0,apt_iid,pObject);
+
+	// Now set the factory
+	ptrOM->SetProxyStubFactory(pPSFactory);
+
+	return static_cast<Omega::Apartment::IApartment*>(pObject);
+}
+
+ACE_Refcounted_Auto_Ptr<OOCore::Apartment,ACE_Thread_Mutex> OOCore::UserSession::get_apartment(ACE_CDR::UShort id)
+{
+	OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+
+	std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator i = m_mapApartments.find(id);
+	if (i == m_mapApartments.end())
+		OMEGA_THROW(ENOENT);
+
+	return i->second;
+}
+
+ACE_CDR::UShort OOCore::UserSession::get_apartment()
+{
+	ThreadContext* pContext = ThreadContext::instance();
+
+	return pContext->m_current_apt;
+}
+
+void OOCore::UserSession::remove_apartment(ACE_CDR::UShort id)
+{
+	UserSession* pThis = USER_SESSION::instance();
+
+	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;
 	{
-		m_mapApartments.insert(std::map<ACE_CDR::UShort,Apartment*>::value_type(apt_id,pApt));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,pThis->m_lock);
+
+		std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> >::iterator i = pThis->m_mapApartments.find(id);
+		if (i == pThis->m_mapApartments.end())
+			return;
+
+		ptrApt = i->second;
+		pThis->m_mapApartments.erase(i);
 	}
 
-	return ptrApt;
+	ptrApt->close();
+}
+
+ACE_CDR::UShort OOCore::UserSession::update_state(ACE_CDR::UShort apartment_id, uint32_t* pTimeout)
+{
+	ThreadContext* pContext = ThreadContext::instance();
+
+	ACE_CDR::UShort old_id = pContext->m_current_apt;
+	pContext->m_current_apt = apartment_id;
+
+	if (pTimeout)
+	{
+		ACE_Time_Value now = ACE_OS::gettimeofday();
+		ACE_Time_Value deadline = pContext->m_deadline;
+		if (*pTimeout > 0)
+		{
+			ACE_Time_Value deadline2 = now + ACE_Time_Value(*pTimeout / 1000,(*pTimeout % 1000) * 1000);
+			if (deadline2 < deadline)
+				deadline = deadline2;
+		}
+		
+		if (deadline != ACE_Time_Value::max_time)
+			*pTimeout = (deadline - now).msec();
+	}
+	
+	return old_id;
 }
 
 ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid)

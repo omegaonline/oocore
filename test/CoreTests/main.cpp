@@ -9,6 +9,7 @@
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
+#pragma warning(disable : 4996)
 #endif
 
 #include <OOCore/OOCore.h>
@@ -48,12 +49,11 @@ static void tests()
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	printf("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
-	fflush(stdout);
-
+	output("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
+	
 	if (RUN_TEST(init_tests))
 	{
-		printf("\nPerforming single threaded tests...\n\n");
+		output("\nPerforming single threaded tests...\n\n");
 
 		tests();
 	}
@@ -63,6 +63,36 @@ int main(int /*argc*/, char* /*argv*/[])
 
 /////////////////////////////////////////////////////////////
 // The following are the functions that actually do the tests
+
+#if defined(OMEGA_WIN32)
+void output(const char* sz, ...)
+{
+	va_list argptr;
+	va_start(argptr, sz);
+
+	char szBuf[1024] = {0};
+	vsnprintf(szBuf,1023,sz,argptr);
+
+	printf(szBuf);
+	OutputDebugStringA(szBuf);	
+
+	va_end(argptr);
+
+	fflush(stdout);
+}
+#else
+void output(const char* sz, ...)
+{
+	va_list argptr;
+	va_start(argptr, sz);
+
+	vprintf(sz,argptr);
+
+	va_end(argptr);
+
+	fflush(stdout);
+}
+#endif
 
 static unsigned long exception_count = 0;
 static unsigned long pass_count = 0;
@@ -81,8 +111,7 @@ void add_success()
 
 void add_failure(const wchar_t* pszText)
 {
-	printf("[Failed]\n\n%ls",pszText);
-	fflush(stdout);
+	output("[Failed]\n\n%ls",pszText);
 	++fail_count;
 }
 
@@ -90,66 +119,64 @@ int test_summary()
 {
 	if (fail_count || exception_count)
 	{
-		printf("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
+		output("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
 		return -1;
 	}
 	else
 	{
-		printf("\nAll (%lu) tests passed.\n",pass_count);
+		output("\nAll (%lu) tests passed.\n",pass_count);
 		return 0;
 	}
 }
 
-static void recurse_printf_exception(Omega::IException* pE)
+static void recurse_output_exception(Omega::IException* pE)
 {
 	Omega::IException* pCause = pE->Cause();
 	if (pCause)
 	{
-		printf("Cause:\t%ls\nSource:\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
-		recurse_printf_exception(pCause);
+		output("Cause:\t%ls\nSource:\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
+		recurse_output_exception(pCause);
 		pCause->Release();
 	}
 }
 
-void printf_exception(Omega::IException* pE)
+void output_exception(Omega::IException* pE)
 {
-	printf("Desc:\t%ls\nSource:\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
-	recurse_printf_exception(pE);
+	output("Desc:\t%ls\nSource:\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
+	recurse_output_exception(pE);
 }
 
 bool run_test(pfnTest t, const char* pszName)
 {
-	printf("Running %-40s",pszName);
+	output("Running %-40s",pszName);
 
 	try
 	{
 		if ((*t)())
 		{
-			printf("[Ok]\n");
-			fflush(stdout);
+			output("[Ok]\n");
 			return true;
 		}
 	}
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		printf("[Unhandled Omega::IException]\n\n");
-		printf_exception(pE);
+		output("[Unhandled Omega::IException]\n\n");
+		output_exception(pE);
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		printf("[Unhandled std::exception]\n\nWhat:\t%s\n",e.what());
+		output("[Unhandled std::exception]\n\nWhat:\t%s\n",e.what());
 	}
 	catch (...)
 	{
 		++exception_count;
-		printf("[Unhandled C++ exception!]\n");
+		output("[Unhandled C++ exception!]\n");
 	}
 
-    fflush(stdout);
-	return false;
+    return false;
 }
 
 #if !defined(WIN32)

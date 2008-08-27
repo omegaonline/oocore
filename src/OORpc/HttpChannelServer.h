@@ -69,7 +69,7 @@ namespace Rpc
 
 	class HttpChannelServer :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<HttpChannelServer,&OID_HttpChannelServer,Omega::Activation::InProcess>,
+		public OTL::AutoObjectFactorySingleton<HttpChannelServer,&OID_HttpChannelServer,0,Omega::Activation::InProcess>,
 		public Omega::Net::Http::Server::IRequestHandler
 	{
 	public:

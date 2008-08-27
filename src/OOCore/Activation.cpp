@@ -362,10 +362,7 @@ ObjectPtr<Omega::Registry::IKey> OOCore::FindOIDKey(const guid_t& oid)
 ObjectPtr<Omega::Registry::IKey> OOCore::FindAppKey(const guid_t& oid)
 {
 	ObjectPtr<Omega::Registry::IKey> ptrOidKey = FindOIDKey(oid);
-	if (!ptrOidKey)
-		return 0;
-
-	if (!ptrOidKey->IsValue(L"Application"))
+	if (!ptrOidKey || !ptrOidKey->IsValue(L"Application"))
 		return 0;
 
 	string_t strAppName = ptrOidKey->GetStringValue(L"Application");
@@ -463,11 +460,39 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Activation_GetRegisteredObject,4,((in),const
 	OOCore::OidNotFoundException::Throw(oid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(in),const wchar_t*,pszEndpoint,(out)(iid_is(iid)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateLocalInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 {
-	IObject* pOF = 0;
-	if (!pszEndpoint)
+	ObjectPtr<Activation::IObjectFactory> ptrOF;
+
+	IObject* pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));
+	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
+
+	guid_t iid2 = iid;
+	ptrOF->CreateInstance(pOuter,iid2,pObject);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in_out),Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+{
+	// First try to determine the protocol...
+	string_t strObject = strURI;
+	string_t strEndpoint;
+	size_t pos = strURI.Find(L'@');
+	if (pos != string_t::npos)
 	{
+		strObject = strURI.Left(pos);
+		strEndpoint = strURI.Mid(pos+1).ToLower();
+		if (strEndpoint == L"local")
+			strEndpoint.Clear();
+	}
+
+	IObject* pOF = 0;
+	if (strEndpoint.IsEmpty())
+	{
+		// Do a quick registry lookup
+		guid_t oid = guid_t::FromString(strObject);
+		if (oid == guid_t::Null())
+			oid = Omega::Activation::NameToOid(strObject);
+
 		pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));
 	}
 	else
@@ -477,14 +502,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,6,((in),const guid_t&,o
 
 		// Open a remote channel
 		OTL::ObjectPtr<Omega::Remoting::IChannel> ptrChannel;
-		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(pszEndpoint));
+		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
 
 		// Get the ObjectManager
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOM;
 		ptrOM.Attach(ptrChannel->GetObjectManager());
 
 		// Get the remote instance
-		ptrOM->GetRemoteInstance(oid,flags,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pOF);
+		ptrOM->GetRemoteInstance(strObject,flags,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pOF);
 	}
 
 	ObjectPtr<Activation::IObjectFactory> ptrOF;

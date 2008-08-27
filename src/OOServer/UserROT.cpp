@@ -37,7 +37,7 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the global interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
 		ObjectPtr<System::IInterProcessService> ptrIPS;
 		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 
@@ -135,7 +135,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 			{
 				// QI for IWireProxy and check its still there!
 				bool bOk = true;
-				ObjectPtr<System::MetaInfo::IWireProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
+				ObjectPtr<System::IWireProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
 				if (ptrProxy != 0)
 				{
 					if (!ptrProxy->IsAlive())

@@ -30,21 +30,10 @@ namespace OOCore
 {
 	struct wire_holder
 	{
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireStub)(
-			System::MetaInfo::marshal_info<System::MetaInfo::IWireStub*&>::safe_type::type retval,
-			System::MetaInfo::marshal_info<System::MetaInfo::IWireStubController*>::safe_type::type pController, 
-			System::MetaInfo::marshal_info<System::MetaInfo::IWireManager*>::safe_type::type pManager,
-			System::MetaInfo::marshal_info<IObject*>::safe_type::type pObject);
-
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCreateWireProxy)(
-			System::MetaInfo::marshal_info<IObject*&>::safe_type::type retval,
-			System::MetaInfo::marshal_info<System::MetaInfo::IWireProxy*>::safe_type::type pProxy,
-			System::MetaInfo::marshal_info<System::MetaInfo::IWireManager*>::safe_type::type pManager);
-
 		struct pfns
 		{
-			wire_holder::pfnCreateWireProxy pfnProxy;
-			wire_holder::pfnCreateWireStub pfnStub;
+			System::MetaInfo::pfnCreateWireProxy pfnProxy;
+			System::MetaInfo::pfnCreateWireStub pfnStub;
 		};
 
 		static wire_holder& instance()
@@ -73,7 +62,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::CreateWireStub(const guid_t& iid, Syst
 	}
 
 	System::MetaInfo::IWireStub_Safe* pRet = 0;
-	System::MetaInfo::IException_Safe* pSE = p.pfnStub(&pRet,pController,pManager,pObjS);
+	System::MetaInfo::IException_Safe* pSE = p.pfnStub(pController,pManager,pObjS,&pRet);
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
@@ -97,7 +86,7 @@ System::MetaInfo::IObject_Safe* OOCore::CreateWireProxy(const guid_t& iid, Syste
 	}
 
 	System::MetaInfo::IObject_Safe* pRet = 0;
-	System::MetaInfo::IException_Safe* pSE = p.pfnProxy(&pRet,pProxy,pManager);
+	System::MetaInfo::IException_Safe* pSE = p.pfnProxy(pProxy,pManager,&pRet);
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
@@ -108,8 +97,8 @@ System::MetaInfo::IObject_Safe* OOCore::CreateWireProxy(const guid_t& iid, Syste
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
 	OOCore::wire_holder::pfns funcs;
-	funcs.pfnProxy = (OOCore::wire_holder::pfnCreateWireProxy)(pfnProxy);
-	funcs.pfnStub = (OOCore::wire_holder::pfnCreateWireStub)(pfnStub);
+	funcs.pfnProxy = (System::MetaInfo::pfnCreateWireProxy)(pfnProxy);
+	funcs.pfnStub = (System::MetaInfo::pfnCreateWireStub)(pfnStub);
 
 	try
 	{

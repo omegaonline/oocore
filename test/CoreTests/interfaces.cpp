@@ -88,7 +88,7 @@ static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
 	}
 	catch (Omega::ISystemException* pE)
 	{
-		TEST(pE->ErrorCode() == EACCES);
+		TEST(pE->GetErrorCode() == EACCES);
 		pE->Release();
 	}*/
 

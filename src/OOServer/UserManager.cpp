@@ -152,7 +152,7 @@ bool User::Manager::on_channel_open(ACE_CDR::ULong channel)
 		}
 		catch (IException* pE)
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W - %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W - %W\n"),pE->GetDescription().c_str(),pE->GetSource().c_str()));
 			pE->Release();
 			return false;
 		}
@@ -273,7 +273,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W\nAt: %W\n"),pE->Description().c_str(),pE->Source().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W\nAt: %W\n"),pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -290,7 +290,7 @@ void User::Manager::service_start(void* pParam, ACE_InputCDR&)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 	}	
@@ -314,7 +314,7 @@ bool User::Manager::start_service(const string_t& strName, const guid_t& oid)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception starting service %W: %W\n"),pE->Source().c_str(),strName.c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception starting service %W: %W\n"),pE->GetSource().c_str(),strName.c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 
@@ -351,7 +351,7 @@ void User::Manager::stop_services()
 			}
 			catch (IException* pE)
 			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping service %W: %W\n"),pE->Source().c_str(),i->first.c_str(),pE->Description().c_str()));
+				ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping service %W: %W\n"),pE->GetSource().c_str(),i->first.c_str(),pE->GetDescription().c_str()));
 
 				pE->Release();
 			}
@@ -359,7 +359,7 @@ void User::Manager::stop_services()
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping services: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping services: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 	}

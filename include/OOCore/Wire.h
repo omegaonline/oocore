@@ -982,10 +982,18 @@ namespace Omega
 			(
 				Omega, IException,
 
-				OMEGA_METHOD(guid_t,ThrownIID,0,())
-				OMEGA_METHOD(IException*,Cause,0,())
-				OMEGA_METHOD(string_t,Description,0,())
-				OMEGA_METHOD(string_t,Source,0,())
+				OMEGA_METHOD(guid_t,GetThrownIID,0,())
+				OMEGA_METHOD(IException*,GetCause,0,())
+				OMEGA_METHOD(string_t,GetDescription,0,())
+				OMEGA_METHOD(string_t,GetSource,0,())
+			)
+
+			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2
+			(
+				Omega::TypeInfo, ITypeInfo,
+
+				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
+				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
 			)
 		}
 	}

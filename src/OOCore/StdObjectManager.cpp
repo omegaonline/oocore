@@ -370,7 +370,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			ptrResponse->WriteBooleans(L"$throw",1,&v);
 
 			// Write the exception onto the wire
-			MarshalInterface(L"exception",ptrResponse,pE->ThrownIID(),pE);
+			MarshalInterface(L"exception",ptrResponse,pE->GetThrownIID(),pE);
 		}
 
 		// Close the struct block

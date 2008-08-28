@@ -312,7 +312,7 @@ void MainFrame::CreateChildWindows(void)
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 	}
 }
@@ -673,7 +673,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 		SetCursor(*wxSTANDARD_CURSOR);
 		evt.Veto();
@@ -737,7 +737,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 		evt.Veto();
 	}
@@ -780,7 +780,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 				}
 				catch (Omega::IException* pE)
 				{
-					wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+					wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 					pE->Release();
 				}
 			}
@@ -823,7 +823,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 				}
 				catch (Omega::IException* pE)
 				{
-					wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+					wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 					pE->Release();
 				}
 			}
@@ -864,7 +864,7 @@ void MainFrame::OnNewKey(wxCommandEvent& WXUNUSED(evt))
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 	}
 }
@@ -891,7 +891,7 @@ void MainFrame::OnNewString(wxCommandEvent& WXUNUSED(evt))
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 	}
 }
@@ -918,7 +918,7 @@ void MainFrame::OnNewUInt(wxCommandEvent& WXUNUSED(evt))
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 	}
 }
@@ -945,7 +945,7 @@ void MainFrame::OnNewBinary(wxCommandEvent& WXUNUSED(evt))
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 	}
 }
@@ -1015,7 +1015,7 @@ void MainFrame::OnModify(wxCommandEvent& WXUNUSED(evt))
 			}
 			catch (Omega::IException* pE)
 			{
-				wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+				wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 				pE->Release();
 			}
 		}
@@ -1195,7 +1195,7 @@ void MainFrame::OnListDblClk(wxListEvent& evt)
 	}
 	catch (Omega::IException* pE)
 	{
-		wxMessageBox(pE->Description().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
+		wxMessageBox(pE->GetDescription().c_str(),_("System Error"),wxOK|wxICON_ERROR,this);
 		pE->Release();
 	}
 }

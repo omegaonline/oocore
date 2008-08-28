@@ -152,7 +152,7 @@ namespace OOCore
 
 	// ISystemException memebers
 	public:
-		virtual Omega::uint32_t ErrorCode()
+		virtual Omega::uint32_t GetErrorCode()
 		{
 			return m_errno;
 		}

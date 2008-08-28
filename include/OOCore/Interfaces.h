@@ -186,8 +186,8 @@ namespace Omega
 	{
 		interface IConnectedStream : public IO::IStream
 		{
-			virtual string_t RemoteEndpoint() = 0;
-			virtual string_t LocalEndpoint() = 0;
+			virtual string_t GetRemoteEndpoint() = 0;
+			virtual string_t GetLocalEndpoint() = 0;
 		};
 
 		// This may well change!!  You have been warned
@@ -221,7 +221,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega, ISystemException, Omega, IException, "{A0E1EEDB-BA00-4078-B67B-D990D43D5E7C}",
 
-	OMEGA_METHOD(uint32_t,ErrorCode,0,())
+	OMEGA_METHOD(uint32_t,GetErrorCode,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -367,8 +367,8 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Net, IConnectedStream, Omega::IO, IStream, "{C5C3AB92-9127-4bb5-9AA8-AA0953843E5A}",
 	
 	// Methods
-	OMEGA_METHOD(string_t,RemoteEndpoint,0,())
-	OMEGA_METHOD(string_t,LocalEndpoint,0,())
+	OMEGA_METHOD(string_t,GetRemoteEndpoint,0,())
+	OMEGA_METHOD(string_t,GetLocalEndpoint,0,())
 )
 
 OMEGA_DEFINE_INTERFACE

@@ -52,8 +52,8 @@ namespace User
 
 	// IConnectedStream members
 	public:
-		string_t RemoteEndpoint();
-		string_t LocalEndpoint();
+		string_t GetRemoteEndpoint();
+		string_t GetLocalEndpoint();
 	};
 
 	class TcpAsyncStream :
@@ -82,8 +82,8 @@ namespace User
 
 	// IConnectedStream members
 	public:
-		string_t RemoteEndpoint();
-		string_t LocalEndpoint();
+		string_t GetRemoteEndpoint();
+		string_t GetLocalEndpoint();
 	};
 }
 
@@ -145,7 +145,7 @@ void User::TcpStream::WriteBytes(const uint64_t& cbBytes, const byte_t* val)
 		OMEGA_THROW(ACE_OS::last_error());
 }
 
-string_t User::TcpStream::RemoteEndpoint()
+string_t User::TcpStream::GetRemoteEndpoint()
 {
 	ACE_INET_Addr addr;
 	if (m_stream.get_remote_addr(addr) != 0)
@@ -157,7 +157,7 @@ string_t User::TcpStream::RemoteEndpoint()
 	return string_t(ACE_TEXT_ALWAYS_WCHAR(szBuf));
 }
 
-string_t User::TcpStream::LocalEndpoint()
+string_t User::TcpStream::GetLocalEndpoint()
 {
 	ACE_INET_Addr addr;
 	if (m_stream.get_local_addr(addr) != 0)
@@ -246,14 +246,14 @@ void User::TcpAsyncStream::WriteBytes(const uint64_t& cbBytes, const byte_t* val
 	}
 }
 
-string_t User::TcpAsyncStream::RemoteEndpoint()
+string_t User::TcpAsyncStream::GetRemoteEndpoint()
 {
-	return m_pHandler->RemoteEndpoint(m_stream_id);
+	return m_pHandler->GetRemoteEndpoint(m_stream_id);
 }
 
-string_t User::TcpAsyncStream::LocalEndpoint()
+string_t User::TcpAsyncStream::GetLocalEndpoint()
 {
-	return m_pHandler->LocalEndpoint(m_stream_id);
+	return m_pHandler->GetLocalEndpoint(m_stream_id);
 }
 
 void User::TcpHandler::TcpAsync::act(const void* pv)
@@ -417,7 +417,7 @@ void User::TcpHandler::TcpAsync::error_thunk(void* pParam, ACE_InputCDR& input)
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 	}	
@@ -437,7 +437,7 @@ void User::TcpHandler::TcpAsync::open_stream_thunk(void* pParam, ACE_InputCDR&)
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 		pThis->m_stream.close();
@@ -459,7 +459,7 @@ void User::TcpHandler::TcpAsync::handle_read_stream_thunk(void* pParam, ACE_Inpu
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 		pThis->m_stream.close();
@@ -491,7 +491,7 @@ void User::TcpHandler::TcpAsync::handle_write_stream_thunk(void* pParam, ACE_Inp
 	}
 	catch (Omega::IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 		pThis->m_stream.close();
@@ -709,7 +709,7 @@ void User::TcpHandler::AsyncClose(uint32_t stream_id)
 	remove_async(stream_id);
 }
 
-string_t User::TcpHandler::LocalEndpoint(uint32_t stream_id)
+string_t User::TcpHandler::GetLocalEndpoint(uint32_t stream_id)
 {
 	try
 	{
@@ -728,7 +728,7 @@ string_t User::TcpHandler::LocalEndpoint(uint32_t stream_id)
 	}
 }
 
-string_t User::TcpHandler::RemoteEndpoint(uint32_t stream_id)
+string_t User::TcpHandler::GetRemoteEndpoint(uint32_t stream_id)
 {
 	try
 	{
@@ -765,7 +765,7 @@ void User::TcpHandler::AsyncConnector::call_error(void* pParam, ACE_InputCDR& in
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->Source().c_str(),pE->Description().c_str()));
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
 	}

@@ -46,8 +46,8 @@ namespace User
 		void AsyncRead(Omega::uint32_t stream_id, ACE_Message_Block* mb, size_t len);
 		void AsyncWrite(Omega::uint32_t stream_id, ACE_Message_Block* mb);
 		void AsyncClose(Omega::uint32_t stream_id);
-		Omega::string_t RemoteEndpoint(Omega::uint32_t stream_id);
-		Omega::string_t LocalEndpoint(Omega::uint32_t stream_id);
+		Omega::string_t GetRemoteEndpoint(Omega::uint32_t stream_id);
+		Omega::string_t GetLocalEndpoint(Omega::uint32_t stream_id);
 
 		void Start();
 		void Stop();

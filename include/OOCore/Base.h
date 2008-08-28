@@ -36,15 +36,15 @@ namespace Omega
 
 	interface IException : public IObject
 	{
-		virtual guid_t ThrownIID() = 0;
-		virtual IException* Cause() = 0;
-		virtual string_t Description() = 0;
-		virtual string_t Source() = 0;
+		virtual guid_t GetThrownIID() = 0;
+		virtual IException* GetCause() = 0;
+		virtual string_t GetDescription() = 0;
+		virtual string_t GetSource() = 0;
 	};
 
 	interface ISystemException : public IException
 	{
-		virtual uint32_t ErrorCode() = 0;
+		virtual uint32_t GetErrorCode() = 0;
 
 		inline static ISystemException* Create(uint32_t errno_val, const string_t& source = L"");
 		inline static ISystemException* Create(const std::exception& e, const string_t& source = L"");
@@ -57,6 +57,15 @@ namespace Omega
 
 		inline static INoInterfaceException* Create(const guid_t& iid, const string_t& source = L"");
 	};
+
+	namespace TypeInfo
+	{
+		interface ITypeInfo : public IObject
+		{
+			virtual uint32_t GetMethodCount() = 0;
+			virtual ITypeInfo* GetBaseType() = 0;
+		};
+	}
 }
 
 #if defined(OMEGA_HAS_UUIDOF)
@@ -123,6 +132,7 @@ namespace Omega
 
 OMEGA_SET_GUIDOF(Omega, IObject, "{076DADE7-2D08-40f9-9AFA-AC883EB8BA9B}");
 OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
+OMEGA_SET_GUIDOF(Omega::TypeInfo, ITypeInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}");
 
 #if defined(DOXYGEN)
 	/// Return the current source filename and line as a string_t

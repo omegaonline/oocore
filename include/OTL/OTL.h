@@ -396,19 +396,19 @@ namespace OTL
 
 	// IException members
 	public:
-		virtual Omega::guid_t ThrownIID()
+		virtual Omega::guid_t GetThrownIID()
 		{
 			return OMEGA_GUIDOF(E);
 		}
-		virtual Omega::IException* Cause()
+		virtual Omega::IException* GetCause()
 		{
 			return m_ptrCause.AddRef();
 		}
-		virtual Omega::string_t Description()
+		virtual Omega::string_t GetDescription()
 		{
 			return m_strDesc;
 		}
-		virtual Omega::string_t Source()
+		virtual Omega::string_t GetSource()
 		{
 			return m_strSource;
 		}

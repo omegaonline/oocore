@@ -30,6 +30,7 @@ namespace Omega
 		inline void UnpinObjectPointer(IObject* pObject);
 
 		inline string_t IIDToName(const guid_t& iid);
+		inline guid_t NameToIID(const string_t& iid);
 
 		namespace MetaInfo
 		{
@@ -424,6 +425,7 @@ namespace Omega
 			inline IException_Safe* return_safe_exception(IException* pE);
 			
 			OMEGA_DECLARE_FORWARDS(IException,Omega,IException,Omega,IObject)
+			OMEGA_DECLARE_FORWARDS(ITypeInfo,Omega::TypeInfo,ITypeInfo,Omega,IObject);
 
 			template <class I> class auto_iface_ptr
 			{
@@ -767,14 +769,56 @@ namespace Omega
 				IObject* m_pOuter;
 			};
 
+			// Forward declare the TypeInfo_Impl class
+			template <class IFace> interface TypeInfo_Impl;
+
+			class TypeInfoBase : public TypeInfo::ITypeInfo
+			{
+			public:
+				virtual void AddRef() {}
+				virtual void Release() {}
+
+				virtual IObject* QueryInterface(const guid_t& iid)
+				{
+					if (iid == OMEGA_GUIDOF(IObject) ||
+						iid == OMEGA_GUIDOF(TypeInfo::ITypeInfo))
+					{
+						return this;
+					}
+					return 0;
+				}
+			};
+
+			// Manually implement for IObject
+			template <>
+			interface TypeInfo_Impl<Omega::IObject> : public TypeInfoBase
+			{
+				static TypeInfo::ITypeInfo* Create()
+				{
+					TypeInfo_Impl<Omega::IObject> instance;
+					return &instance;
+				}
+
+				virtual ITypeInfo* GetBaseType() { return 0; }
+				uint32_t GetMethodCount() { return 3; }
+			};
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega,IException,
+				Omega, IException,
 
-				OMEGA_METHOD(guid_t,ThrownIID,0,())
-				OMEGA_METHOD(IException*,Cause,0,())
-				OMEGA_METHOD(string_t,Description,0,())
-				OMEGA_METHOD(string_t,Source,0,())
+				OMEGA_METHOD(guid_t,GetThrownIID,0,())
+				OMEGA_METHOD(IException*,GetCause,0,())
+				OMEGA_METHOD(string_t,GetDescription,0,())
+				OMEGA_METHOD(string_t,GetSource,0,())
+			)
+
+			OMEGA_DEFINE_INTERNAL_INTERFACE
+			(
+				Omega::TypeInfo, ITypeInfo,
+
+				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
+				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
 			)
 
 			struct qi_rtti
@@ -782,6 +826,7 @@ namespace Omega
 				IObject_Safe* (*pfnCreateSafeStub)(SafeStub* pStub, IObject* pObj);
 				IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 				void (*pfnSafeThrow)(IException_Safe* pSE);
+				TypeInfo::ITypeInfo* (*pfnCreateTypeInfo)();
 				const wchar_t* strName;
 			};
 
@@ -793,14 +838,17 @@ namespace Omega
 					return i;
 				}
 
-				std::map<guid_t,const qi_rtti*> map;
+				std::map<guid_t,const qi_rtti*> iid_map;
+				std::map<const wchar_t*,std::map<guid_t,const qi_rtti*>::iterator> string_map;
 			};
 
 			inline void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
 			{
 				try
 				{
-					qi_holder::instance().map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
+					qi_holder& instance = qi_holder::instance();
+					std::pair<std::map<guid_t,const qi_rtti*>::iterator,bool> p = instance.iid_map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
+					instance.string_map.insert(std::map<const wchar_t*,std::map<guid_t,const qi_rtti*>::iterator>::value_type(pRtti->strName,p.first));
 				}
 				catch (...)
 				{}
@@ -810,16 +858,15 @@ namespace Omega
 			{
 				try
 				{
-					std::map<guid_t,const qi_rtti*>::const_iterator i=qi_holder::instance().map.find(iid);
-					if (i == qi_holder::instance().map.end())
-						return 0;
-					else
+					qi_holder& instance = qi_holder::instance();
+					std::map<guid_t,const qi_rtti*>::const_iterator i=instance.iid_map.find(iid);
+					if (i != instance.iid_map.end())
 						return i->second;
 				}
 				catch (...)
-				{
-					return 0;
-				}
+				{}
+				
+				return 0;
 			}
 
 			struct SafeStubMap
@@ -1025,6 +1072,7 @@ namespace Omega
 
 			OMEGA_QI_MAGIC(Omega,IObject)
 			OMEGA_QI_MAGIC(Omega,IException)
+			OMEGA_QI_MAGIC(Omega::TypeInfo,ITypeInfo)
 		}
 	}
 }

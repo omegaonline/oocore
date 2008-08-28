@@ -40,10 +40,10 @@ static bool complex_throw()
 		}
 		catch (Omega::INoInterfaceException* pE)
 		{
-			TEST(pE->ThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
+			TEST(pE->GetThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
 			TEST(pE->GetUnsupportedIID() == OMEGA_GUIDOF(Omega::IObject));
-			TEST(!pE->Cause());
-			TEST(pE->Source() == szFile);
+			TEST(!pE->GetCause());
+			TEST(pE->GetSource() == szFile);
 
 			Omega::IException* pE2 = Omega::IException::Create(szDesc,szFile,pE);
 			pE->Release();
@@ -52,12 +52,12 @@ static bool complex_throw()
 	}
 	catch (Omega::IException* pE)
 	{
-		TEST(pE->Description() == szDesc);
-		TEST(pE->Source() == szFile);
+		TEST(pE->GetDescription() == szDesc);
+		TEST(pE->GetSource() == szFile);
 
-		Omega::IException* pE2 = pE->Cause();
-		TEST(pE2->ThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
-		TEST(pE2->Source() == szFile);
+		Omega::IException* pE2 = pE->GetCause();
+		TEST(pE2->GetThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
+		TEST(pE2->GetSource() == szFile);
 
 		pE2->Release();
 		pE->Release();
@@ -77,9 +77,9 @@ bool exception_tests()
 	}
 	catch (Omega::IException* pE)
 	{
-		TEST(pE->Description() == szDesc);
-		TEST(!pE->Cause());
-		TEST(pE->Source() == szFile);
+		TEST(pE->GetDescription() == szDesc);
+		TEST(!pE->GetCause());
+		TEST(pE->GetSource() == szFile);
 		pE->Release();
 	}
 
@@ -90,10 +90,10 @@ bool exception_tests()
 	}
 	catch (Omega::INoInterfaceException* pE)
 	{
-		TEST(pE->ThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
+		TEST(pE->GetThrownIID() == OMEGA_GUIDOF(Omega::INoInterfaceException));
 		TEST(pE->GetUnsupportedIID() == OMEGA_GUIDOF(Omega::IObject));
-		TEST(!pE->Cause());
-		TEST(pE->Source() == szFile);
+		TEST(!pE->GetCause());
+		TEST(pE->GetSource() == szFile);
 		pE->Release();
 	}
 

@@ -45,6 +45,7 @@
 					SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeThrow<n_space::iface>, \
+					TypeInfo_Impl<n_space::iface>::Create, \
 					OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
 				}; \
 				register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
@@ -189,11 +190,30 @@
 #define OMEGA_DECLARE_SAFE_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_METHOD,methods,0)
 
-#define OMEGA_DECLARE_SAFE(unique,methods,name,d_space,derived) \
+#define OMEGA_DECLARE_SAFE(unique,methods,name) \
 	template <class Base> \
 	interface OMEGA_CONCAT_R(unique,_Impl_Safe) : public Base \
 	{ \
 		OMEGA_DECLARE_SAFE_METHODS(methods) \
+	};
+
+#define OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
+	template <> \
+	interface TypeInfo_Impl<n_space::name> : public TypeInfoBase \
+	{ \
+		static TypeInfo::ITypeInfo* Create() \
+		{ \
+			static TypeInfo_Impl<n_space::name> instance; \
+			return &instance; \
+		} \
+		uint32_t GetMethodCount() \
+		{ \
+			return OMEGA_SEQUENCE_SIZEOF(methods); \
+		} \
+		TypeInfo::ITypeInfo* GetBaseType() \
+		{ \
+			return TypeInfo_Impl<d_space::derived>::Create(); \
+		} \
 	};
 
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
@@ -659,7 +679,8 @@
 	};
 
 #define OMEGA_DEFINE_INTERNAL_INTERFACE(n_space,name,methods) \
-	OMEGA_DECLARE_SAFE(name,methods,name,d_space,derived) \
+	OMEGA_DECLARE_SAFE(name,methods,name) \
+	OMEGA_DECLARE_TYPE(name,n_space,methods,Omega,IObject) \
 	OMEGA_DECLARE_STUB(name,n_space,name,methods) \
 	OMEGA_DECLARE_PROXY(name,n_space,name,methods)
 	
@@ -672,7 +693,8 @@
 	OMEGA_SET_GUIDOF(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	OMEGA_DECLARE_FORWARDS(OMEGA_UNIQUE_NAME(name),n_space,name,d_space,derived) \
-	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,name,d_space,derived) \
+	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,name) \
+	OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
 	OMEGA_DECLARE_STUB(OMEGA_UNIQUE_NAME(name),n_space,name,methods) \
 	OMEGA_DECLARE_PROXY(OMEGA_UNIQUE_NAME(name),n_space,name,methods) \
 	OMEGA_QI_MAGIC(n_space,name) \
@@ -685,7 +707,8 @@
 	OMEGA_SET_GUIDOF(n_space,name,guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	OMEGA_DECLARE_FORWARDS(OMEGA_UNIQUE_NAME(name),n_space,name,d_space,derived) \
-	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,name,d_space,derived) \
+	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,name) \
+	OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
 	OMEGA_DECLARE_STUB(OMEGA_UNIQUE_NAME(name),n_space,name,methods) \
 	OMEGA_DECLARE_PROXY(OMEGA_UNIQUE_NAME(name),n_space,name,methods) \
 	OMEGA_QI_MAGIC(n_space,name) \

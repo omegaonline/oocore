@@ -131,10 +131,10 @@ int test_summary()
 
 static void recurse_output_exception(Omega::IException* pE)
 {
-	Omega::IException* pCause = pE->Cause();
+	Omega::IException* pCause = pE->GetCause();
 	if (pCause)
 	{
-		output("Cause:\t%ls\nSource:\t%ls\n",pCause->Description().c_str(),pCause->Source().c_str());
+		output("Cause:\t%ls\nSource:\t%ls\n",pCause->GetDescription().c_str(),pCause->GetSource().c_str());
 		recurse_output_exception(pCause);
 		pCause->Release();
 	}
@@ -142,7 +142,7 @@ static void recurse_output_exception(Omega::IException* pE)
 
 void output_exception(Omega::IException* pE)
 {
-	output("Desc:\t%ls\nSource:\t%ls\n",pE->Description().c_str(),pE->Source().c_str());
+	output("Desc:\t%ls\nSource:\t%ls\n",pE->GetDescription().c_str(),pE->GetSource().c_str());
 	recurse_output_exception(pE);
 }
 

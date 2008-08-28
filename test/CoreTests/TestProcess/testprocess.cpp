@@ -63,7 +63,7 @@ static int install(int argc, char* argv[])
 	}
 	catch (Omega::IException* pE)
 	{
-		fprintf(stderr,"%ls\n",pE->Description().c_str());
+		fprintf(stderr,"%ls\n",pE->GetDescription().c_str());
 		pE->Release();
 		return -1;
 	}

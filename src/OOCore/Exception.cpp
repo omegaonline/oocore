@@ -69,7 +69,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2
 	pExcept->m_errno = e;
 
 #if defined(OMEGA_WIN32)
-	// If errno is not set, then it isn't a std error
 	if (e >= 42)
 		pExcept->m_strDesc = Win32Msg(static_cast<DWORD>(e));
 #endif

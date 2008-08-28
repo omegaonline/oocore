@@ -26,15 +26,15 @@ namespace OOCore
 {
 	class StdObjectManager;
 
-	class WireStub : public Omega::System::MetaInfo::IWireStubController_Safe
+	class Stub : public Omega::System::MetaInfo::IStubController_Safe
 	{
 	public:
-		WireStub(Omega::System::MetaInfo::IObject_Safe* pObjS, Omega::uint32_t stub_id, StdObjectManager* pManager);
-		virtual ~WireStub();
+		Stub(Omega::System::MetaInfo::IObject_Safe* pObjS, Omega::uint32_t stub_id, StdObjectManager* pManager);
+		virtual ~Stub();
 
 		Omega::System::MetaInfo::IException_Safe* MarshalInterface(Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t& iid);
 		Omega::System::MetaInfo::IException_Safe* ReleaseMarshalData(Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t&);
-		Omega::System::MetaInfo::IWireStub_Safe* LookupStub(Omega::Remoting::IMessage* pMessage);
+		Omega::System::MetaInfo::IStub_Safe* LookupStub(Omega::Remoting::IMessage* pMessage);
 
 	// IObject_Safe methods
 	public:
@@ -53,7 +53,7 @@ namespace OOCore
 		{
 			*ppS = 0;
 			if (*piid == OMEGA_GUIDOF(Omega::IObject) ||
-				*piid == OMEGA_GUIDOF(Omega::System::IWireStubController))
+				*piid == OMEGA_GUIDOF(Omega::System::IStubController))
 			{
 				*ppS = this;
 				(*ppS)->AddRef_Safe();
@@ -65,15 +65,15 @@ namespace OOCore
 		void OMEGA_CALL Pin() {}
 		void OMEGA_CALL Unpin() {}
 
-	// IWireStubController members
+	// IStubController members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL RemoteRelease_Safe(Omega::uint32_t release_count);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SupportsInterface_Safe(Omega::bool_t* pbSupports, const Omega::guid_t* piid);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalStub_Safe(Omega::System::MetaInfo::IMessage_Safe* pParamsIn, Omega::System::MetaInfo::IMessage_Safe* pParamsOut);
 
 	private:
-		WireStub(const WireStub&) : Omega::System::MetaInfo::IWireStubController_Safe() {}
-		WireStub& operator = (const WireStub&) { return *this; }
+		Stub(const Stub&) : Omega::System::MetaInfo::IStubController_Safe() {}
+		Stub& operator = (const Stub&) { return *this; }
 
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_marshal_count;
@@ -82,9 +82,9 @@ namespace OOCore
 		Omega::System::MetaInfo::IObject_Safe*          m_pObjS;
 		StdObjectManager*                               m_pManager;
 
-		std::map<const Omega::guid_t,Omega::System::MetaInfo::IWireStub_Safe*> m_iid_map;
+		std::map<const Omega::guid_t,Omega::System::MetaInfo::IStub_Safe*> m_iid_map;
 
-		Omega::System::MetaInfo::IWireStub_Safe* FindStub(const Omega::guid_t& iid);
+		Omega::System::MetaInfo::IStub_Safe* FindStub(const Omega::guid_t& iid);
 	};
 }
 

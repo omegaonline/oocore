@@ -27,15 +27,15 @@ namespace OOCore
 	class StdObjectManager;
 
 	// {69099DD8-A628-458a-861F-009E016DB81B}
-	OMEGA_DECLARE_OID(OID_WireProxyMarshalFactory);
+	OMEGA_DECLARE_OID(OID_ProxyMarshalFactory);
 
-	class WireProxyMarshalFactory :
+	class ProxyMarshalFactory :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<WireProxyMarshalFactory,&OID_WireProxyMarshalFactory,Omega::Activation::InProcess>,
+		public OTL::AutoObjectFactorySingleton<ProxyMarshalFactory,&OID_ProxyMarshalFactory,Omega::Activation::InProcess>,
 		public Omega::Remoting::IMarshalFactory
 	{
 	public:
-		BEGIN_INTERFACE_MAP(WireProxyMarshalFactory)
+		BEGIN_INTERFACE_MAP(ProxyMarshalFactory)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
 		END_INTERFACE_MAP()
 
@@ -44,13 +44,13 @@ namespace OOCore
 		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
-	class WireProxy :
-		public Omega::System::MetaInfo::IWireProxy_Safe,
+	class Proxy :
+		public Omega::System::MetaInfo::IProxy_Safe,
 		public Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class
 	{
 	public:
-		WireProxy(Omega::uint32_t proxy_id, StdObjectManager* pManager);
-		virtual ~WireProxy();
+		Proxy(Omega::uint32_t proxy_id, StdObjectManager* pManager);
+		virtual ~Proxy();
 
 		void Disconnect();
 
@@ -83,7 +83,7 @@ namespace OOCore
 			void* TICKET_88;
 		}
 
-	// IWireProxy_Safe members
+	// IProxy_Safe members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL WriteKey_Safe(Omega::System::MetaInfo::IMessage_Safe* pMessage)
 		{
@@ -96,7 +96,7 @@ namespace OOCore
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::MarshalFlags_t)
 		{
-			*pRet = OID_WireProxyMarshalFactory;
+			*pRet = OID_ProxyMarshalFactory;
 			return 0;
 		}
 
@@ -104,8 +104,8 @@ namespace OOCore
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
 
 	private:
-		WireProxy(const WireProxy&) : Omega::System::MetaInfo::IWireProxy_Safe(), Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class() {}
-		WireProxy& operator = (const WireProxy&) { return *this; }
+		Proxy(const Proxy&) : Omega::System::MetaInfo::IProxy_Safe(), Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class() {}
+		Proxy& operator = (const Proxy&) { return *this; }
 
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
 		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_marshal_count;

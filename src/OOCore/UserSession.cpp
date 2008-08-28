@@ -1112,12 +1112,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServe
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment(System::IWireProxyStubFactory* pPSFactory)
+Apartment::IApartment* OOCore::UserSession::create_apartment(System::IProxyStubFactory* pPSFactory)
 {
 	return USER_SESSION::instance()->create_apartment_i(pPSFactory);
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IWireProxyStubFactory* pPSFactory)
+Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IProxyStubFactory* pPSFactory)
 {
 	// Create a new Apartment object
 	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;

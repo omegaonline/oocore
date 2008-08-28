@@ -27,26 +27,26 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::WireStub::WireStub(System::MetaInfo::IObject_Safe* pObjS, uint32_t stub_id, StdObjectManager* pManager) : 
+OOCore::Stub::Stub(System::MetaInfo::IObject_Safe* pObjS, uint32_t stub_id, StdObjectManager* pManager) : 
 	m_refcount(0), m_marshal_count(0), m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
 {
 	m_pObjS->AddRef_Safe();
 }
 
-OOCore::WireStub::~WireStub()
+OOCore::Stub::~Stub()
 {
-	for (std::map<const guid_t,System::MetaInfo::IWireStub_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+	for (std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 	{
 		i->second->Release_Safe();
 	}
 	m_pObjS->Release_Safe();
 }
 
-System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::MetaInfo::IMessage_Safe* pMessage, const guid_t& iid)
+System::MetaInfo::IException_Safe* OOCore::Stub::MarshalInterface(System::MetaInfo::IMessage_Safe* pMessage, const guid_t& iid)
 {
 	try
 	{
-		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IWireStub_Safe> ptrStub(FindStub(iid));
+		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IStub_Safe> ptrStub(FindStub(iid));
 	}
 	catch (IException* pE)
 	{
@@ -75,7 +75,7 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::MarshalInterface(System::Me
 	return pSE;
 }
 
-System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::MetaInfo::IMessage_Safe* pMessage, const guid_t&)
+System::MetaInfo::IException_Safe* OOCore::Stub::ReleaseMarshalData(System::MetaInfo::IMessage_Safe* pMessage, const guid_t&)
 {
 	uint32_t v;
 	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::wire_read(L"id",pMessage,v);
@@ -91,23 +91,23 @@ System::MetaInfo::IException_Safe* OOCore::WireStub::ReleaseMarshalData(System::
 	return pSE;
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::WireStub::LookupStub(Remoting::IMessage* pMessage)
+System::MetaInfo::IStub_Safe* OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
 {
 	return FindStub(ReadGuid(L"$iid",pMessage));
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
+System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
 {
 	try
 	{
-		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IWireStub_Safe> ptrStub;
+		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IStub_Safe> ptrStub;
 		bool bAdd = false;
 		
 		// See if we have a stub for this interface already...
 		{
 			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::map<const guid_t,System::MetaInfo::IWireStub_Safe*>::iterator i=m_iid_map.find(iid);
+			std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator i=m_iid_map.find(iid);
 			if (i != m_iid_map.end())
 				ptrStub = i->second;
 			
@@ -144,7 +144,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
 			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrQI(pQI);
 						
 			// Create a stub for this interface
-			ptrStub.attach(m_pManager->CreateWireStub(iid,this,ptrQI));
+			ptrStub.attach(m_pManager->CreateStub(iid,this,ptrQI));
 			if (!ptrStub)
 				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
@@ -155,7 +155,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
 		{
 			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 				
-			std::pair<std::map<const guid_t,System::MetaInfo::IWireStub_Safe*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,System::MetaInfo::IWireStub_Safe*>::value_type(iid,ptrStub));
+			std::pair<std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,System::MetaInfo::IStub_Safe*>::value_type(iid,ptrStub));
 			if (!p.second)
 				ptrStub = p.first->second;
 			else
@@ -171,7 +171,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::WireStub::FindStub(const guid_t& iid)
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::RemoteRelease_Safe(uint32_t release_count)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Stub::RemoteRelease_Safe(uint32_t release_count)
 {
 	m_marshal_count -= release_count;
 	if (m_marshal_count == 0)
@@ -189,7 +189,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::RemoteRelease_Sa
 	return 0;
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::SupportsInterface_Safe(bool_t* pbSupports, const guid_t* piid)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Stub::SupportsInterface_Safe(bool_t* pbSupports, const guid_t* piid)
 {
 	System::MetaInfo::IObject_Safe* p;
 	System::MetaInfo::IException_Safe* pSE = m_pObjS->QueryInterface_Safe(piid,&p);
@@ -201,7 +201,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::SupportsInterfac
 	return 0;
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireStub::MarshalStub_Safe(System::MetaInfo::IMessage_Safe* pParamsIn, System::MetaInfo::IMessage_Safe* pParamsOut)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Stub::MarshalStub_Safe(System::MetaInfo::IMessage_Safe* pParamsIn, System::MetaInfo::IMessage_Safe* pParamsOut)
 {
 	System::MetaInfo::marshal_info<guid_t>::wire_type::type iid;
 	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<guid_t>::wire_type::read(L"iid",m_pManager,pParamsIn,iid);

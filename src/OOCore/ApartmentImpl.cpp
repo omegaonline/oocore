@@ -35,7 +35,7 @@ OOCore::Apartment::Apartment(UserSession* pSession, ACE_CDR::UShort id) :
 {
 }
 
-void OOCore::Apartment::init(System::IWireProxyStubFactory* pPSFactory)
+void OOCore::Apartment::init(System::IProxyStubFactory* pPSFactory)
 {
 	m_ptrPSFactory = pPSFactory;
 }
@@ -212,7 +212,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const ACE_Time_Valu
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR::UShort apartment_id, System::IWireProxyStubFactory* pPSFactory)
+ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR::UShort apartment_id, System::IProxyStubFactory* pPSFactory)
 {
 	// Lookup existing..
 	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
@@ -289,7 +289,7 @@ IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, Remotin
 	return pE;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,1,((in),Omega::System::IWireProxyStubFactory*,pPSFactory))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,1,((in),Omega::System::IProxyStubFactory*,pPSFactory))
 {
 	if (OOCore::HostedByOOServer())
 		OMEGA_THROW(L"Apartments are not supported in the OOSvrUser process!");

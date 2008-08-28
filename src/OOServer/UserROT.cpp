@@ -133,9 +133,9 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 
 			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
 			{
-				// QI for IWireProxy and check its still there!
+				// QI for IProxy and check its still there!
 				bool bOk = true;
-				ObjectPtr<System::IWireProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
+				ObjectPtr<System::IProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
 				if (ptrProxy != 0)
 				{
 					if (!ptrProxy->IsAlive())

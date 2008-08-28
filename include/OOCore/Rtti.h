@@ -229,8 +229,8 @@ namespace Omega
 
 			template <class I, class Base> class IObject_SafeStub;
 			template <class I> class IObject_SafeProxy;
-			template <class I> class IObject_WireStub;
-			template <class I> class IObject_WireProxy;
+			template <class I> class IObject_Stub;
+			template <class I> class IObject_Proxy;
 
 			template <class I> struct interface_info;
 
@@ -247,11 +247,11 @@ namespace Omega
 				};
 				template <class I> struct wire_stub_factory
 				{
-					typedef IObject_WireStub<I> type;
+					typedef IObject_Stub<I> type;
 				};
 				template <class I> struct wire_proxy_factory
 				{
-					typedef IObject_WireProxy<I> type;
+					typedef IObject_Proxy<I> type;
 				};
 			};
 

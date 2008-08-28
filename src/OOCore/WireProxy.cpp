@@ -27,13 +27,13 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::WireProxy::WireProxy(uint32_t proxy_id, StdObjectManager* pManager) : 
+OOCore::Proxy::Proxy(uint32_t proxy_id, StdObjectManager* pManager) : 
 	m_refcount(0), m_marshal_count(0), m_proxy_id(proxy_id), m_pManager(pManager)
 {
 	m_pManager->AddRef_Safe();
 }
 
-OOCore::WireProxy::~WireProxy()
+OOCore::Proxy::~Proxy()
 {
 	CallRemoteRelease();
 
@@ -45,13 +45,13 @@ OOCore::WireProxy::~WireProxy()
 	m_pManager->Release_Safe();
 }
 
-void OOCore::WireProxy::Disconnect()
+void OOCore::Proxy::Disconnect()
 {
 	// Force our marshal count to 0, cos the other end has gone
 	m_marshal_count = 0;
 }
 
-System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::MetaInfo::IMessage_Safe* pMessage, const guid_t& iid)
+System::MetaInfo::IObject_Safe* OOCore::Proxy::UnmarshalInterface(System::MetaInfo::IMessage_Safe* pMessage, const guid_t& iid)
 {
 	try
 	{
@@ -99,7 +99,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 		if (!ptrProxy)
 		{
 			// Create a new proxy for this interface
-			ptrProxy.attach(m_pManager->CreateWireProxy(wire_iid,this));
+			ptrProxy.attach(m_pManager->CreateProxy(wire_iid,this));
 			bAdd = true;
 		}
 
@@ -117,7 +117,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 		System::MetaInfo::IObject_Safe* pQI = 0;
 		if (iid == OMEGA_GUIDOF(IObject))
 		{
-			pQI = static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
+			pQI = static_cast<System::MetaInfo::IProxy_Safe*>(this);
 			pQI->AddRef_Safe();
 		}
 		else
@@ -136,7 +136,7 @@ System::MetaInfo::IObject_Safe* OOCore::WireProxy::UnmarshalInterface(System::Me
 	}
 }
 
-bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
+bool OOCore::Proxy::CallRemoteQI(const guid_t& iid)
 {
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
@@ -161,12 +161,12 @@ bool OOCore::WireProxy::CallRemoteQI(const guid_t& iid)
 	return ReadBoolean(L"$retval",ptrParamsIn);
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
 	if (*piid == OMEGA_GUIDOF(IObject) ||
-		*piid == OMEGA_GUIDOF(System::IWireProxy))
+		*piid == OMEGA_GUIDOF(System::IProxy))
 	{
-		*ppS = static_cast<System::MetaInfo::IWireProxy_Safe*>(this);
+		*ppS = static_cast<System::MetaInfo::IProxy_Safe*>(this);
 		(*ppS)->AddRef_Safe();
 		return 0;
 	}
@@ -221,7 +221,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_
 				return 0;
 
 			// Create a new proxy for this interface
-			ptrProxy.attach(m_pManager->CreateWireProxy(*piid,this));
+			ptrProxy.attach(m_pManager->CreateProxy(*piid,this));
 			bAdd = true;
 		}
 
@@ -248,7 +248,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::QueryInterface_
 	return ptrProxy->QueryInterface_Safe(piid,ppS);
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::IsAlive_Safe(bool_t* pRet)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::IsAlive_Safe(bool_t* pRet)
 {
 	*pRet = false;
 	try
@@ -262,7 +262,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::IsAlive_Safe(bo
 	return 0;
 }
 
-Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)
+Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)
 {
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
@@ -295,7 +295,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 		ReadGuid(L"iid",pParamsOut);
 
 		void* TODO; // Release marshal data for channel
-		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::IWireManager),pObjectManager);
+		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::IMarshaller),pObjectManager);
 
 		throw ptrE.AddRef();
 	}
@@ -310,7 +310,7 @@ Remoting::IMessage* OOCore::WireProxy::CallRemoteStubMarshal(Remoting::IObjectMa
 	return static_cast<Remoting::IMessage*>(pReflect);
 }
 
-void OOCore::WireProxy::CallRemoteRelease()
+void OOCore::Proxy::CallRemoteRelease()
 {
 	if (m_marshal_count == 0)
 		return;
@@ -343,7 +343,7 @@ void OOCore::WireProxy::CallRemoteRelease()
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IMessage_Safe* pMessage, const guid_t* piid, Remoting::MarshalFlags_t)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::MarshalInterface_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pObjectManager, System::MetaInfo::IMessage_Safe* pMessage, const guid_t* piid, Remoting::MarshalFlags_t)
 {
 	// Tell the stub to expect incoming requests from a different channel...
 	System::MetaInfo::IMessage_Safe* pReflect = 0;
@@ -360,12 +360,12 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::MarshalInterfac
 	return pObjectManager->MarshalInterface_Safe(L"pReflect",pMessage,&OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::WireProxy::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class*, System::MetaInfo::IMessage_Safe*, const guid_t*, Remoting::MarshalFlags_t)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::ReleaseMarshalData_Safe(System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class*, System::MetaInfo::IMessage_Safe*, const guid_t*, Remoting::MarshalFlags_t)
 {
 	return System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(L"Cannot undo from here!"));
 }
 
-void OOCore::WireProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	pObject = 0;
 

@@ -32,8 +32,8 @@ namespace OOCore
 	{
 		struct pfns
 		{
-			System::MetaInfo::pfnCreateWireProxy pfnProxy;
-			System::MetaInfo::pfnCreateWireStub pfnStub;
+			System::MetaInfo::pfnCreateProxy pfnProxy;
+			System::MetaInfo::pfnCreateStub pfnStub;
 		};
 
 		static wire_holder& instance()
@@ -46,7 +46,7 @@ namespace OOCore
 	};
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::CreateWireStub(const guid_t& iid, System::MetaInfo::IWireStubController_Safe* pController, System::MetaInfo::IWireManager_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
+System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::MetaInfo::IStubController_Safe* pController, System::MetaInfo::IMarshaller_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
 {
 	wire_holder::pfns p;
 	try
@@ -61,7 +61,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::CreateWireStub(const guid_t& iid, Syst
 		OMEGA_THROW(e);
 	}
 
-	System::MetaInfo::IWireStub_Safe* pRet = 0;
+	System::MetaInfo::IStub_Safe* pRet = 0;
 	System::MetaInfo::IException_Safe* pSE = p.pfnStub(pController,pManager,pObjS,&pRet);
 
 	if (pSE)
@@ -70,7 +70,7 @@ System::MetaInfo::IWireStub_Safe* OOCore::CreateWireStub(const guid_t& iid, Syst
 	return pRet;
 }
 
-System::MetaInfo::IObject_Safe* OOCore::CreateWireProxy(const guid_t& iid, System::MetaInfo::IWireProxy_Safe* pProxy, System::MetaInfo::IWireManager_Safe* pManager)
+System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy, System::MetaInfo::IMarshaller_Safe* pManager)
 {
 	wire_holder::pfns p;
 	try
@@ -97,8 +97,8 @@ System::MetaInfo::IObject_Safe* OOCore::CreateWireProxy(const guid_t& iid, Syste
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
 	OOCore::wire_holder::pfns funcs;
-	funcs.pfnProxy = (System::MetaInfo::pfnCreateWireProxy)(pfnProxy);
-	funcs.pfnStub = (System::MetaInfo::pfnCreateWireStub)(pfnStub);
+	funcs.pfnProxy = (System::MetaInfo::pfnCreateProxy)(pfnProxy);
+	funcs.pfnStub = (System::MetaInfo::pfnCreateStub)(pfnStub);
 
 	try
 	{

@@ -196,6 +196,15 @@ namespace Omega
 			virtual IConnectedStream* OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify) = 0;
 		};
 	}
+
+	namespace System
+	{
+		interface IProxyStubFactory : public IObject
+		{
+			virtual void CreateProxy(const guid_t& iid, IProxy* pOuter, IMarshaller* pManager, IObject*& pProxy) = 0;
+			virtual IStub* CreateStub(const guid_t& iid, IStubController* pController, IMarshaller* pManager, IObject* pObject) = 0;
+		};
+	}
 }
 
 #if !defined(DOXYGEN)
@@ -368,6 +377,14 @@ OMEGA_DEFINE_INTERFACE
 	
 	// Methods
 	OMEGA_METHOD(Net::IConnectedStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
+)
+
+OMEGA_DEFINE_INTERFACE_LOCAL
+(
+	Omega::System, IProxyStubFactory, "{947C53AF-63AF-489b-86BB-BB25CC4656E6}",
+
+	OMEGA_METHOD_VOID(CreateProxy,4,((in),const guid_t&,iid,(in),IProxy*,pOuter,(in),IMarshaller*,pManager,(out)(iid_is(iid)),IObject*&,pProxy))
+	OMEGA_METHOD(IStub*,CreateStub,4,((in),const guid_t&,iid,(in),IStubController*,pController,(in),IMarshaller*,pManager,(in),IObject*,pObject))
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())

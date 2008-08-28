@@ -24,8 +24,8 @@
 
 namespace OOCore
 {
-	class WireStub;
-	class WireProxy;
+	class Stub;
+	class Proxy;
 
 	interface IStdObjectManager : public Omega::Remoting::IObjectManager
 	{
@@ -46,8 +46,8 @@ namespace OOCore
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
 		public IStdObjectManager,
-		public Omega::System::IWireManager,
-		public Omega::System::MetaInfo::IWireManager_Safe
+		public Omega::System::IMarshaller,
+		public Omega::System::MetaInfo::IMarshaller_Safe
 	{
 	public:
 		StdObjectManager();
@@ -56,7 +56,7 @@ namespace OOCore
 		BEGIN_INTERFACE_MAP(StdObjectManager)
 			INTERFACE_ENTRY(IStdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
-			INTERFACE_ENTRY(Omega::System::IWireManager)
+			INTERFACE_ENTRY(Omega::System::IMarshaller)
 		END_INTERFACE_MAP()
 
 		void RemoveProxy(Omega::uint32_t proxy_id);
@@ -64,26 +64,26 @@ namespace OOCore
 		bool IsAlive();
 		void DoMarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pParamsOut);
 
-		Omega::System::MetaInfo::IObject_Safe* CreateWireProxy(const Omega::guid_t& iid, Omega::System::MetaInfo::IWireProxy_Safe* pProxy);
-		Omega::System::MetaInfo::IWireStub_Safe* CreateWireStub(const Omega::guid_t& iid, Omega::System::MetaInfo::IWireStubController_Safe* pController, Omega::System::MetaInfo::IObject_Safe* pObjS);
+		Omega::System::MetaInfo::IObject_Safe* CreateProxy(const Omega::guid_t& iid, Omega::System::MetaInfo::IProxy_Safe* pProxy);
+		Omega::System::MetaInfo::IStub_Safe* CreateStub(const Omega::guid_t& iid, Omega::System::MetaInfo::IStubController_Safe* pController, Omega::System::MetaInfo::IObject_Safe* pObjS);
 
 	private:
 		StdObjectManager(const StdObjectManager&) :
             OTL::ObjectBase(),
             IStdObjectManager(),
-            Omega::System::IWireManager(),
-            Omega::System::MetaInfo::IWireManager_Safe()
+            Omega::System::IMarshaller(),
+            Omega::System::MetaInfo::IMarshaller_Safe()
         {}
 		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
 
 		ACE_RW_Thread_Mutex                                  m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel>            m_ptrChannel;
 		Omega::uint32_t                                      m_uNextStubId;
-		OTL::ObjectPtr<Omega::System::IWireProxyStubFactory> m_ptrPSFactory;
+		OTL::ObjectPtr<Omega::System::IProxyStubFactory> m_ptrPSFactory;
 		
-		std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>                                     m_mapStubObjs;
-		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,WireStub*>::iterator> m_mapStubIds;
-		std::map<Omega::uint32_t,WireProxy*>                                                           m_mapProxyIds;
+		std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>                                     m_mapStubObjs;
+		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>::iterator> m_mapStubIds;
+		std::map<Omega::uint32_t,Proxy*>                                                           m_mapProxyIds;
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 		
@@ -95,7 +95,7 @@ namespace OOCore
 		void OMEGA_CALL Pin() {}
 		void OMEGA_CALL Unpin() {}
 
-	// IWireManager members
+	// IMarshaller members
 	public:
 		void MarshalInterface(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
 		void ReleaseMarshalData(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
@@ -103,7 +103,7 @@ namespace OOCore
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout = 0);
 		
-	// IWireManager_Safe members
+	// IMarshaller_Safe members
 	public:
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
@@ -120,7 +120,7 @@ namespace OOCore
 		void Connect(Omega::Remoting::IChannelBase* pChannel);
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Disconnect();
-		void SetProxyStubFactory(Omega::System::IWireProxyStubFactory* pPSFactory);
+		void SetProxyStubFactory(Omega::System::IProxyStubFactory* pPSFactory);
 		void GetRemoteInstance(const Omega::string_t& strOID, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }

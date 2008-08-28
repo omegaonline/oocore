@@ -54,8 +54,8 @@ namespace OOCore
 		}
 #endif
 
-		void DoInvoke2(System::MetaInfo::IWireStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
-		int DoInvoke(System::MetaInfo::IWireStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
+		void DoInvoke2(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
+		int DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
 	}
 
 	struct CallContext
@@ -94,7 +94,7 @@ namespace OOCore
 	};
 }
 
-void OOCore::SEH::DoInvoke2(System::MetaInfo::IWireStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
+void OOCore::SEH::DoInvoke2(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 {
 	try
 	{
@@ -111,7 +111,7 @@ void OOCore::SEH::DoInvoke2(System::MetaInfo::IWireStub_Safe* pStub, Remoting::I
 	}
 }
 
-int OOCore::SEH::DoInvoke(System::MetaInfo::IWireStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
+int OOCore::SEH::DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 {
 	int err = 0;
 
@@ -216,36 +216,36 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
 
 void OOCore::StdObjectManager::Disconnect()
 {
-	std::list<WireStub*> listStubs;
-	std::list<WireProxy*> listProxies;
+	std::list<Stub*> listStubs;
+	std::list<Proxy*> listProxies;
 
 	{
 		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
 		// Copy the stub map
-		for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
+		for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
 			listStubs.push_back(i->second->second);
 		
 		m_mapStubIds.clear();
 		m_mapStubObjs.clear();
 
 		// Copy the proxys
-		for (std::map<uint32_t,WireProxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
+		for (std::map<uint32_t,Proxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
 			listProxies.push_back(j->second);
 		
 		m_mapProxyIds.clear();
 	}
 
 	// Disconnect the proxies
-	for (std::list<WireProxy*>::iterator j=listProxies.begin();j!=listProxies.end();++j)
+	for (std::list<Proxy*>::iterator j=listProxies.begin();j!=listProxies.end();++j)
 		(*j)->Disconnect();
 
 	// Release the stubs
-	for (std::list<WireStub*>::iterator i=listStubs.begin();i!=listStubs.end();++i)
+	for (std::list<Stub*>::iterator i=listStubs.begin();i!=listStubs.end();++i)
 		(*i)->Release_Safe();
 }
 
-void OOCore::StdObjectManager::SetProxyStubFactory(Omega::System::IWireProxyStubFactory* pPSFactory)
+void OOCore::StdObjectManager::SetProxyStubFactory(Omega::System::IProxyStubFactory* pPSFactory)
 {
 	m_ptrPSFactory = pPSFactory;
 }
@@ -328,14 +328,14 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			else
 			{
 				// It's a method call on a stub...
-				System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IWireStub_Safe> ptrStub;
+				System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IStub_Safe> ptrStub;
 
 				// Look up the stub
 				try
 				{
 					OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-					std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
+					std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
 					if (i==m_mapStubIds.end())
 						OMEGA_THROW(L"Bad stub id");
 
@@ -537,7 +537,7 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 {
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-	std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
+	std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
 	if (i==m_mapStubIds.end())
 		OMEGA_THROW(L"Bad stub id");
 
@@ -560,9 +560,9 @@ void OMEGA_CALL OOCore::StdObjectManager::Release_Safe()
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::QueryInterface_Safe(const guid_t* piid, System::MetaInfo::IObject_Safe** ppS)
 {
 	*ppS = 0;
-	if (*piid == OMEGA_GUIDOF(IObject) || *piid == OMEGA_GUIDOF(System::IWireManager))
+	if (*piid == OMEGA_GUIDOF(IObject) || *piid == OMEGA_GUIDOF(System::IMarshaller))
 	{
-		*ppS = static_cast<System::MetaInfo::IWireManager_Safe*>(this);
+		*ppS = static_cast<System::MetaInfo::IMarshaller_Safe*>(this);
 		(*ppS)->AddRef_Safe();
 	}
 	
@@ -594,11 +594,11 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 			return pSE;
 		System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 
-		System::MetaInfo::auto_iface_safe_ptr<WireStub> ptrStub;
+		System::MetaInfo::auto_iface_safe_ptr<Stub> ptrStub;
 		{
 			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-			std::map<IObject_Safe*,WireStub*>::const_iterator i=m_mapStubObjs.find(ptrObjS);
+			std::map<IObject_Safe*,Stub*>::const_iterator i=m_mapStubObjs.find(ptrObjS);
 			if (i != m_mapStubObjs.end())
 			{
 				ptrStub = i->second;
@@ -698,15 +698,15 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 				stub_id = m_uNextStubId++;
 			}
 
-			OMEGA_NEW(ptrStub,WireStub(ptrObjS,stub_id,this));
+			OMEGA_NEW(ptrStub,Stub(ptrObjS,stub_id,this));
 
 			// Add to the map...
-			std::pair<std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator,bool> p=m_mapStubObjs.insert(std::map<System::MetaInfo::IObject_Safe*,WireStub*>::value_type(ptrObjS,ptrStub));
+			std::pair<std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator,bool> p=m_mapStubObjs.insert(std::map<System::MetaInfo::IObject_Safe*,Stub*>::value_type(ptrObjS,ptrStub));
 			if (!p.second)
 				ptrStub = p.first->second;
 			else
 			{
-				m_mapStubIds.insert(std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,WireStub*>::iterator>::value_type(stub_id,p.first));
+				m_mapStubIds.insert(std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::value_type(stub_id,p.first));
 				ptrStub->AddRef_Safe();
 			}
 		}
@@ -786,22 +786,22 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 				return pSE;
 
 			// See if we have a proxy already...
-			System::MetaInfo::auto_iface_safe_ptr<WireProxy> ptrProxy;
+			System::MetaInfo::auto_iface_safe_ptr<Proxy> ptrProxy;
 			{
 				OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-				std::map<uint32_t,WireProxy*>::iterator i=m_mapProxyIds.find(proxy_id);
+				std::map<uint32_t,Proxy*>::iterator i=m_mapProxyIds.find(proxy_id);
 				if (i != m_mapProxyIds.end())
 					ptrProxy = i->second;
 			}
 
 			if (!ptrProxy)
 			{
-				OMEGA_NEW(ptrProxy,WireProxy(proxy_id,this));
+				OMEGA_NEW(ptrProxy,Proxy(proxy_id,this));
 
 				OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-				std::pair<std::map<uint32_t,WireProxy*>::iterator,bool> p = m_mapProxyIds.insert(std::map<uint32_t,WireProxy*>::value_type(proxy_id,ptrProxy));
+				std::pair<std::map<uint32_t,Proxy*>::iterator,bool> p = m_mapProxyIds.insert(std::map<uint32_t,Proxy*>::value_type(proxy_id,ptrProxy));
 				if (!p.second)
 					ptrProxy = p.first->second;
 			}
@@ -873,12 +873,12 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 				return pSE;
 			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 
-			System::MetaInfo::auto_iface_safe_ptr<WireStub> ptrStub;
+			System::MetaInfo::auto_iface_safe_ptr<Stub> ptrStub;
 			try
 			{
 				OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-				std::map<System::MetaInfo::IObject_Safe*,WireStub*>::const_iterator i=m_mapStubObjs.find(ptrObjS);
+				std::map<System::MetaInfo::IObject_Safe*,Stub*>::const_iterator i=m_mapStubObjs.find(ptrObjS);
 				if (i != m_mapStubObjs.end())
 				{
 					ptrStub = i->second;
@@ -999,32 +999,32 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	pMessage->WriteStructEnd(L"m_ptrChannel");		
 }
 
-System::MetaInfo::IObject_Safe* OOCore::StdObjectManager::CreateWireProxy(const guid_t& iid, System::MetaInfo::IWireProxy_Safe* pProxy)
+System::MetaInfo::IObject_Safe* OOCore::StdObjectManager::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy)
 {
 	if (!m_ptrPSFactory)
-		return OOCore::CreateWireProxy(iid,pProxy,this);
+		return OOCore::CreateProxy(iid,pProxy,this);
 
 	// This needs testing!!!
 	DebugBreak();
 
 	System::MetaInfo::IObject_Safe* pObjS = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IWireProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateWireProxy_Safe(&iid,pProxy,this,&pObjS);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateProxy_Safe(&iid,pProxy,this,&pObjS);
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
 
 	return pObjS;
 }
 
-System::MetaInfo::IWireStub_Safe* OOCore::StdObjectManager::CreateWireStub(const guid_t& iid, System::MetaInfo::IWireStubController_Safe* pController, System::MetaInfo::IObject_Safe* pObjS)
+System::MetaInfo::IStub_Safe* OOCore::StdObjectManager::CreateStub(const guid_t& iid, System::MetaInfo::IStubController_Safe* pController, System::MetaInfo::IObject_Safe* pObjS)
 {
 	if (!m_ptrPSFactory)
-		return OOCore::CreateWireStub(iid,pController,this,pObjS);
+		return OOCore::CreateStub(iid,pController,this,pObjS);
 
 	// This needs testing!!!
 	DebugBreak();
 
-	System::MetaInfo::IWireStub_Safe* pStub = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IWireProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateWireStub_Safe(&pStub,&iid,pController,this,pObjS);
+	System::MetaInfo::IStub_Safe* pStub = 0;
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateStub_Safe(&pStub,&iid,pController,this,pObjS);
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
 
@@ -1040,6 +1040,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0
 	return ptrCC.AddRef();
 }
 
-OMEGA_DEFINE_OID(OOCore,OID_WireProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");
+OMEGA_DEFINE_OID(OOCore,OID_ProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");
 OMEGA_DEFINE_OID(Remoting,OID_StdObjectManager,"{63EB243E-6AE3-43bd-B073-764E096775F8}");
 OMEGA_DEFINE_OID(System,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");

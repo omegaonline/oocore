@@ -72,7 +72,7 @@ namespace OOCore
 		bool send_request(ACE_CDR::UShort apartment_id, ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::ULong timeout, ACE_CDR::ULong attribs);
 		bool send_response(ACE_CDR::UShort apt_id, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs = Message::synchronous);
 
-		static Omega::Apartment::IApartment* create_apartment(Omega::System::IWireProxyStubFactory* pPSFactory);
+		static Omega::Apartment::IApartment* create_apartment(Omega::System::IProxyStubFactory* pPSFactory);
 		static ACE_CDR::UShort get_apartment();
 		static void remove_apartment(ACE_CDR::UShort id);
 		
@@ -165,7 +165,7 @@ namespace OOCore
 		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex>                            m_ptrZeroApt;
 		std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> > m_mapApartments;
 		
-		Omega::Apartment::IApartment* create_apartment_i(Omega::System::IWireProxyStubFactory* pPSFactory);
+		Omega::Apartment::IApartment* create_apartment_i(Omega::System::IProxyStubFactory* pPSFactory);
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 	};
 }

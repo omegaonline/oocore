@@ -693,9 +693,11 @@ namespace Omega
 			};
 
 			typedef IException_Safe* (OMEGA_CALL *pfnCreateProxy)(IProxy_Safe* pProxy, IMarshaller_Safe* pManager, IObject_Safe** ppProxy);
-			typedef IException_Safe* (OMEGA_CALL *pfnCreateStub)(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub);
-			
-			inline void RegisterWireFactories(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub);
+			typedef IException_Safe* (OMEGA_CALL *pfnCreateStub)(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub);	
+			inline void RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub);
+
+			typedef IException_Safe* (OMEGA_CALL *pfnCreateTypeInfo)(ITypeInfo_Safe** ppTypeInfo);
+			inline void RegisterAutoTypeInfo(const guid_t& iid, pfnCreateTypeInfo pfnTypeInfo);
 
 			template <class S>
 			IStub_Safe* CreateStub(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject)
@@ -994,15 +996,23 @@ namespace Omega
 
 				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
 				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
+				OMEGA_METHOD(guid_t,GetIID,0,())
+				OMEGA_METHOD(string_t,GetName,0,())
 			)
 		}
 	}
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
-void Omega::System::MetaInfo::RegisterWireFactories(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub)
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoProxyStubCreators,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
+void Omega::System::MetaInfo::RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub)
 {
-	Omega_RegisterWireFactories(iid,pfnProxy,pfnStub);
+	Omega_RegisterAutoProxyStubCreators(iid,pfnProxy,pfnStub);
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo));
+void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, pfnCreateTypeInfo pfnTypeInfo)
+{
+	Omega_RegisterAutoTypeInfo(iid,pfnTypeInfo);
 }
 
 #endif // !defined(DOXYGEN)

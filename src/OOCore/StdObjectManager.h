@@ -79,13 +79,15 @@ namespace OOCore
 		ACE_RW_Thread_Mutex                                  m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel>            m_ptrChannel;
 		Omega::uint32_t                                      m_uNextStubId;
-		OTL::ObjectPtr<Omega::System::IProxyStubFactory> m_ptrPSFactory;
+		OTL::ObjectPtr<Omega::System::IProxyStubFactory>     m_ptrPSFactory;
 		
 		std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>                                     m_mapStubObjs;
 		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>::iterator> m_mapStubIds;
 		std::map<Omega::uint32_t,Proxy*>                                                           m_mapProxyIds;
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
+
+		Omega::System::MetaInfo::ITypeInfo_Safe* get_typeinfo(const Omega::guid_t& iid, bool bAskOtherEnd);
 		
 	// IObject_Safe members
 	public:

@@ -201,8 +201,8 @@ namespace Omega
 	{
 		interface IProxyStubFactory : public IObject
 		{
-			virtual void CreateProxy(const guid_t& iid, IProxy* pOuter, IMarshaller* pManager, IObject*& pProxy) = 0;
-			virtual IStub* CreateStub(const guid_t& iid, IStubController* pController, IMarshaller* pManager, IObject* pObject) = 0;
+			virtual void CreateProxy(const guid_t& iid, TypeInfo::ITypeInfo* pTypeInfo, IProxy* pOuter, IMarshaller* pManager, IObject*& pProxy) = 0;
+			virtual IStub* CreateStub(const guid_t& iid, TypeInfo::ITypeInfo* pTypeInfo, IStubController* pController, IMarshaller* pManager, IObject* pObject) = 0;
 		};
 	}
 }
@@ -383,8 +383,8 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::System, IProxyStubFactory, "{947C53AF-63AF-489b-86BB-BB25CC4656E6}",
 
-	OMEGA_METHOD_VOID(CreateProxy,4,((in),const guid_t&,iid,(in),IProxy*,pOuter,(in),IMarshaller*,pManager,(out)(iid_is(iid)),IObject*&,pProxy))
-	OMEGA_METHOD(IStub*,CreateStub,4,((in),const guid_t&,iid,(in),IStubController*,pController,(in),IMarshaller*,pManager,(in),IObject*,pObject))
+	OMEGA_METHOD_VOID(CreateProxy,5,((in),const guid_t&,iid,(in),TypeInfo::ITypeInfo*,pTypeInfo,(in),IProxy*,pOuter,(in),IMarshaller*,pManager,(out)(iid_is(iid)),IObject*&,pProxy))
+	OMEGA_METHOD(IStub*,CreateStub,5,((in),const guid_t&,iid,(in),TypeInfo::ITypeInfo*,pTypeInfo,(in),IStubController*,pController,(in),IMarshaller*,pManager,(in),IObject*,pObject))
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())

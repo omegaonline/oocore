@@ -45,7 +45,6 @@
 					SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeThrow<n_space::iface>, \
-					TypeInfo_Impl<n_space::iface>::Create, \
 					OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
 				}; \
 				register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
@@ -84,9 +83,22 @@
 					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
+			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_type_info(ITypeInfo_Safe** ppTypeInfo) \
+			{ \
+				try \
+				{ \
+					static_cast<TypeInfo::ITypeInfo*&>(marshal_info<TypeInfo::ITypeInfo*&>::safe_type::coerce(ppTypeInfo)) = TypeInfo_Impl<n_space::iface>::Create(); \
+					return 0; \
+				} \
+				catch (Omega::IException* pE) \
+				{ \
+					return Omega::System::MetaInfo::return_safe_exception(pE); \
+				} \
+			} \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 			{ \
-				RegisterWireFactories(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
+				RegisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
+				RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),&create_type_info); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i); \
@@ -206,14 +218,10 @@
 			static TypeInfo_Impl<n_space::name> instance; \
 			return &instance; \
 		} \
-		uint32_t GetMethodCount() \
-		{ \
-			return OMEGA_SEQUENCE_SIZEOF(methods); \
-		} \
-		TypeInfo::ITypeInfo* GetBaseType() \
-		{ \
-			return TypeInfo_Impl<d_space::derived>::Create(); \
-		} \
+		uint32_t GetMethodCount() { return OMEGA_SEQUENCE_SIZEOF(methods); } \
+		TypeInfo::ITypeInfo* GetBaseType() { return TypeInfo_Impl<d_space::derived>::Create(); } \
+		guid_t GetIID() { return OMEGA_GUIDOF(n_space::name); } \
+		string_t GetName() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::name)); } \
 	};
 
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \

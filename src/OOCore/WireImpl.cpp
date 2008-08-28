@@ -42,7 +42,8 @@ namespace OOCore
 			return i;
 		}
 
-		std::map<guid_t,pfns> map;
+		std::map<guid_t,pfns> ps_map;
+		std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo> ti_map;
 	};
 }
 
@@ -51,8 +52,9 @@ System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::Meta
 	wire_holder::pfns p;
 	try
 	{
-		std::map<guid_t,wire_holder::pfns>::const_iterator i=wire_holder::instance().map.find(iid);
-		if (i == wire_holder::instance().map.end())
+		wire_holder& instance = wire_holder::instance();
+		std::map<guid_t,wire_holder::pfns>::const_iterator i=instance.ps_map.find(iid);
+		if (i == instance.ps_map.end())
 			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 		p = i->second;
 	}
@@ -75,8 +77,9 @@ System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::M
 	wire_holder::pfns p;
 	try
 	{
-		std::map<guid_t,wire_holder::pfns>::const_iterator i=wire_holder::instance().map.find(iid);
-		if (i == wire_holder::instance().map.end())
+		wire_holder& instance = wire_holder::instance();
+		std::map<guid_t,wire_holder::pfns>::const_iterator i=instance.ps_map.find(iid);
+		if (i == instance.ps_map.end())
 			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 		p = i->second;
 	}
@@ -94,7 +97,7 @@ System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::M
 	return pRet;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoProxyStubCreators,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
 	OOCore::wire_holder::pfns funcs;
 	funcs.pfnProxy = (System::MetaInfo::pfnCreateProxy)(pfnProxy);
@@ -102,8 +105,47 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterWireFactories,3,((in),const gu
 
 	try
 	{
-		OOCore::wire_holder::instance().map.insert(std::map<guid_t,OOCore::wire_holder::pfns>::value_type(iid,funcs));
+		OOCore::wire_holder::instance().ps_map.insert(std::map<guid_t,OOCore::wire_holder::pfns>::value_type(iid,funcs));
 	}
-	catch (...)
-	{}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+System::MetaInfo::ITypeInfo_Safe* OOCore::GetTypeInfo(const guid_t& iid)
+{
+	System::MetaInfo::pfnCreateTypeInfo t;
+	try
+	{
+		wire_holder& instance = wire_holder::instance();
+		std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo>::const_iterator i=instance.ti_map.find(iid);
+		if (i == instance.ti_map.end())
+			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+		t = i->second;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+
+	System::MetaInfo::ITypeInfo_Safe* pRet = 0;
+	System::MetaInfo::IException_Safe* pSE = t(&pRet);
+
+	if (pSE)
+		System::MetaInfo::throw_correct_exception(pSE);
+
+	return pRet;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo))
+{
+	try
+	{
+		OOCore::wire_holder::instance().ti_map.insert(std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo>::value_type(iid,(System::MetaInfo::pfnCreateTypeInfo)pfnTypeInfo));
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }

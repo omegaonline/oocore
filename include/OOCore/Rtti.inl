@@ -373,31 +373,6 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	}
 }
 
-Omega::string_t Omega::System::IIDToName(const guid_t& iid)
-{
-	const MetaInfo::qi_rtti* pRtti = MetaInfo::get_qi_rtti_info(iid);
-	if (!pRtti)
-		return string_t();
-
-	return pRtti->strName;
-}
-
-Omega::guid_t Omega::System::NameToIID(const string_t& name)
-{
-	try
-	{
-		MetaInfo::qi_holder& instance = MetaInfo::qi_holder::instance();
-
-		std::map<const wchar_t*,std::map<guid_t,const MetaInfo::qi_rtti*>::iterator>::const_iterator i = instance.string_map.find(name.c_str());
-		if (i != instance.string_map.end())
-			return i->second->first;
-	}
-	catch (...)
-	{}
-
-	return guid_t::Null();
-}
-
 bool Omega::System::PinObjectPointer(IObject* pObject)
 {
 	if (pObject)

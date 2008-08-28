@@ -29,9 +29,6 @@ namespace Omega
 		inline bool PinObjectPointer(IObject* pObject);
 		inline void UnpinObjectPointer(IObject* pObject);
 
-		inline string_t IIDToName(const guid_t& iid);
-		inline guid_t NameToIID(const string_t& iid);
-
 		namespace MetaInfo
 		{
 			template <class T>
@@ -772,6 +769,8 @@ namespace Omega
 			// Forward declare the TypeInfo_Impl class
 			template <class IFace> interface TypeInfo_Impl;
 
+			typedef ITypeInfo_Impl_Safe<IObject_Safe> ITypeInfo_Safe;
+
 			class TypeInfoBase : public TypeInfo::ITypeInfo
 			{
 			public:
@@ -801,6 +800,8 @@ namespace Omega
 
 				virtual ITypeInfo* GetBaseType() { return 0; }
 				uint32_t GetMethodCount() { return 3; }
+				guid_t GetIID() { return OMEGA_GUIDOF(IObject); }
+				string_t GetName() { return L"Omega::IObject"; }
 			};
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
@@ -819,6 +820,8 @@ namespace Omega
 
 				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
 				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
+				OMEGA_METHOD(guid_t,GetIID,0,())
+				OMEGA_METHOD(string_t,GetName,0,())
 			)
 
 			struct qi_rtti
@@ -826,8 +829,7 @@ namespace Omega
 				IObject_Safe* (*pfnCreateSafeStub)(SafeStub* pStub, IObject* pObj);
 				IObject* (*pfnCreateSafeProxy)(IObject* pOuter, IObject_Safe* pObjS);
 				void (*pfnSafeThrow)(IException_Safe* pSE);
-				TypeInfo::ITypeInfo* (*pfnCreateTypeInfo)();
-				const wchar_t* strName;
+				const wchar_t* pszName;
 			};
 
 			struct qi_holder
@@ -839,7 +841,6 @@ namespace Omega
 				}
 
 				std::map<guid_t,const qi_rtti*> iid_map;
-				std::map<const wchar_t*,std::map<guid_t,const qi_rtti*>::iterator> string_map;
 			};
 
 			inline void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
@@ -847,8 +848,7 @@ namespace Omega
 				try
 				{
 					qi_holder& instance = qi_holder::instance();
-					std::pair<std::map<guid_t,const qi_rtti*>::iterator,bool> p = instance.iid_map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
-					instance.string_map.insert(std::map<const wchar_t*,std::map<guid_t,const qi_rtti*>::iterator>::value_type(pRtti->strName,p.first));
+					instance.iid_map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
 				}
 				catch (...)
 				{}

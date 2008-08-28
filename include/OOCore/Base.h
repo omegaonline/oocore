@@ -64,6 +64,8 @@ namespace Omega
 		{
 			virtual uint32_t GetMethodCount() = 0;
 			virtual ITypeInfo* GetBaseType() = 0;
+			virtual guid_t GetIID() = 0;
+			virtual string_t GetName() = 0;
 		};
 	}
 }

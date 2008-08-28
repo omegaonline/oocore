@@ -999,18 +999,38 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	pMessage->WriteStructEnd(L"m_ptrChannel");		
 }
 
+System::MetaInfo::ITypeInfo_Safe* OOCore::StdObjectManager::get_typeinfo(const guid_t& iid, bool bAskOtherEnd)
+{
+	// Get the TypeInfo for the iid
+	ObjectPtr<TypeInfo::ITypeInfo> ptrTI;
+
+	// Check the auto registered stuff first
+	System::MetaInfo::ITypeInfo_Safe* pTIS = OOCore::GetTypeInfo(iid);
+
+	if (!pTIS && bAskOtherEnd)
+	{
+		// Ask the other end if it has a clue?
+		void* TODO;
+	}
+
+	return pTIS;
+}
+
 System::MetaInfo::IObject_Safe* OOCore::StdObjectManager::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy)
 {
 	if (!m_ptrPSFactory)
 		return OOCore::CreateProxy(iid,pProxy,this);
 
-	// This needs testing!!!
-	DebugBreak();
+	// Get the type info
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::ITypeInfo_Safe> ptrTI = get_typeinfo(iid,true);
 
 	System::MetaInfo::IObject_Safe* pObjS = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateProxy_Safe(&iid,pProxy,this,&pObjS);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateProxy_Safe(&iid,ptrTI,pProxy,this,&pObjS);
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
+
+	if (!pObjS)
+		OMEGA_THROW(L"Fatal error - Null proxy returned");
 
 	return pObjS;
 }
@@ -1020,13 +1040,16 @@ System::MetaInfo::IStub_Safe* OOCore::StdObjectManager::CreateStub(const guid_t&
 	if (!m_ptrPSFactory)
 		return OOCore::CreateStub(iid,pController,this,pObjS);
 
-	// This needs testing!!!
-	DebugBreak();
+	// Get the type info
+	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::ITypeInfo_Safe> ptrTI = get_typeinfo(iid,true);
 
 	System::MetaInfo::IStub_Safe* pStub = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateStub_Safe(&pStub,&iid,pController,this,pObjS);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateStub_Safe(&pStub,&iid,ptrTI,pController,this,pObjS);
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
+
+	if (!pStub)
+		OMEGA_THROW(L"Fatal error - Null stub returned");
 
 	return pStub;
 }

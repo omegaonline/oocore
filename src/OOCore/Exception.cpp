@@ -88,10 +88,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create,2,((in)
 OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
-	string_t strIID = Omega::System::IIDToName(iid);
-	if (strIID.IsEmpty())
-		strIID = L"Unknown";
 
+	string_t strIID = L"Unknown";
+
+	const Omega::System::MetaInfo::qi_rtti* pRtti = Omega::System::MetaInfo::get_qi_rtti_info(iid);
+	if (pRtti && pRtti->pszName)
+		strIID = pRtti->pszName;
+	
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;

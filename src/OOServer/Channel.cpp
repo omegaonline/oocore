@@ -42,6 +42,9 @@ void User::Channel::init(Manager* pManager, ACE_CDR::ULong channel_id, Remoting:
 	m_marshal_flags = marshal_flags;
 	m_message_oid = message_oid;
 
+	if (m_message_oid != guid_t::Null())
+		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
+		
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess | Activation::DontLaunch);
 
@@ -68,8 +71,10 @@ Remoting::IMessage* User::Channel::CreateMessage()
 	else
 	{
 		// Create a fresh one
-		ObjectPtr<Remoting::IMessage> ptrMessage(m_message_oid,Activation::InProcess);
-		return ptrMessage.AddRef();
+		IObject* pObject = 0;
+		guid_t iid = OMEGA_GUIDOF(Remoting::IMessage);
+		m_ptrOF->CreateInstance(0,iid,pObject);
+		return static_cast<Remoting::IMessage*>(pObject);
 	}
 }
 

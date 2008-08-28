@@ -46,11 +46,12 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		Manager*                                        m_pManager;
-		ACE_CDR::ULong	                                m_channel_id;
-		Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
-		Omega::guid_t                                   m_message_oid;
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
+		Manager*                                          m_pManager;
+		ACE_CDR::ULong	                                  m_channel_id;
+		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
+		Omega::guid_t                                     m_message_oid;
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
+		OTL::ObjectPtr<Omega::Activation::IObjectFactory> m_ptrOF;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }

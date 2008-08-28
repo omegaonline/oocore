@@ -42,6 +42,9 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CD
 	m_marshal_flags = marshal_flags;
 	m_message_oid = message_oid;
 
+	if (m_message_oid != guid_t::Null())
+		m_ptrOF.Attach(static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(m_message_oid,Activation::InProcess,OMEGA_GUIDOF(Activation::IObjectFactory))));
+	
 	// Connect the OM to us
 	m_ptrOM = pOM;
 	m_ptrOM->Connect(this);
@@ -67,8 +70,10 @@ Remoting::IMessage* OOCore::Channel::CreateMessage()
 	else
 	{
 		// Create a fresh one
-		ObjectPtr<Remoting::IMessage> ptrMessage(m_message_oid,Activation::InProcess);
-		return ptrMessage.AddRef();
+		IObject* pObject = 0;
+		guid_t iid = OMEGA_GUIDOF(Remoting::IMessage);
+		m_ptrOF->CreateInstance(0,iid,pObject);
+		return static_cast<Remoting::IMessage*>(pObject);
 	}
 }
 

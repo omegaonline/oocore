@@ -47,14 +47,15 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	protected:
-		ACE_CDR::UShort                                 m_apt_id;
+		ACE_CDR::UShort                                   m_apt_id;
 
 	private:
-		UserSession*                                    m_pSession;
-		ACE_CDR::ULong	                                m_channel_id;
-		Omega::Remoting::MarshalFlags_t                 m_marshal_flags;
-		Omega::guid_t                                   m_message_oid;
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> m_ptrOM;
+		UserSession*                                      m_pSession;
+		ACE_CDR::ULong	                                  m_channel_id;
+		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
+		Omega::guid_t                                     m_message_oid;
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
+		OTL::ObjectPtr<Omega::Activation::IObjectFactory> m_ptrOF;
 
 		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
 		Channel& operator = (const Channel&) { return *this; }

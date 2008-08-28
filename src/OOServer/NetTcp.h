@@ -27,15 +27,21 @@ namespace User
 	// {4924E463-06A4-483b-9DAD-8BFD83ADCBFC}
 	OMEGA_EXPORT_OID(OID_TcpProtocolHandler);
 
-	class TcpProtocolHandler :
-		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<TcpProtocolHandler,&OID_TcpProtocolHandler,Omega::Activation::InProcess>,
-		public Omega::System::IService,
-		public Omega::Net::IProtocolHandler
+	class TcpHandler
 	{
 	public:
-		TcpProtocolHandler();
-		virtual ~TcpProtocolHandler();
+		TcpHandler();
+
+		void AddRef()
+		{
+			++m_refcount;
+		}
+
+		void Release()
+		{
+			if (--m_refcount == 0)
+				delete this;
+		}
 
 		void AsyncRead(Omega::uint32_t stream_id, ACE_Message_Block* mb, size_t len);
 		void AsyncWrite(Omega::uint32_t stream_id, ACE_Message_Block* mb);
@@ -43,15 +49,12 @@ namespace User
 		Omega::string_t RemoteEndpoint(Omega::uint32_t stream_id);
 		Omega::string_t LocalEndpoint(Omega::uint32_t stream_id);
 
-		BEGIN_INTERFACE_MAP(TcpProtocolHandler)
-			INTERFACE_ENTRY(Omega::System::IService)
-			INTERFACE_ENTRY(Omega::Net::IProtocolHandler)
-		END_INTERFACE_MAP()
+		void Start();
+		void Stop();
+
+		Omega::Net::IConnectedStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);
 
 	private:
-		TcpProtocolHandler(const TcpProtocolHandler&) {};
-		TcpProtocolHandler& operator = (const TcpProtocolHandler&) { return *this; }
-
 		class TcpAsync :
 			public ACE_Service_Handler
 		{
@@ -60,7 +63,7 @@ namespace User
 				m_pHandler(0), m_stream_id(0), m_refcount(1)
 			{}
 
-			TcpAsync(TcpProtocolHandler* pHandler) : 
+			TcpAsync(TcpHandler* pHandler) : 
 				m_pHandler(pHandler), m_stream_id(0), m_refcount(1)
 			{}
 
@@ -79,7 +82,7 @@ namespace User
 			Omega::string_t remote_endpoint();
 
 		private:
-			TcpProtocolHandler*     m_pHandler;
+			TcpHandler*             m_pHandler;
 			Omega::uint32_t         m_stream_id;
 			ACE_SOCK_Stream         m_stream;
 			ACE_Asynch_Read_Stream  m_reader;
@@ -103,7 +106,7 @@ namespace User
 		class AsyncConnector : public ACE_Asynch_Connector<TcpAsync>
 		{
 		public:
-			TcpProtocolHandler* m_pHandler;
+			TcpHandler* m_pHandler;
 
 		protected:
 			virtual void handle_connect(const ACE_Asynch_Connect::Result& result);
@@ -121,8 +124,12 @@ namespace User
 		};
 		ACE_RW_Thread_Mutex                  m_lock;
 		Omega::uint32_t                      m_nNextStream;
-		bool                                 m_bStarted;
 		std::map<Omega::uint32_t,AsyncEntry> m_mapAsyncs;
+
+		// Control our lifetime...
+		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_refcount;
+
+		virtual ~TcpHandler() {};
 
 		void OnAsyncOpen(Omega::uint32_t stream_id);
 		void OnAsyncError(Omega::uint32_t stream_id, int err);
@@ -131,6 +138,29 @@ namespace User
 
 		bool add_async(Omega::uint32_t stream_id, TcpAsync* pAsync);
 		void remove_async(Omega::uint32_t stream_id);
+	};
+
+	class TcpProtocolHandler :
+		public OTL::ObjectBase,
+		public OTL::AutoObjectFactorySingleton<TcpProtocolHandler,&OID_TcpProtocolHandler,Omega::Activation::InProcess>,
+		public Omega::System::IService,
+		public Omega::Net::IProtocolHandler
+	{
+	public:
+		TcpProtocolHandler();
+		virtual ~TcpProtocolHandler();
+
+		BEGIN_INTERFACE_MAP(TcpProtocolHandler)
+			INTERFACE_ENTRY(Omega::System::IService)
+			INTERFACE_ENTRY(Omega::Net::IProtocolHandler)
+		END_INTERFACE_MAP()
+
+	private:
+		TcpProtocolHandler(const TcpProtocolHandler&) {};
+		TcpProtocolHandler& operator = (const TcpProtocolHandler&) { return *this; }
+
+		ACE_Thread_Mutex  m_lock;
+		TcpHandler*       m_pHandler;
 
 	// IService members
 	public:

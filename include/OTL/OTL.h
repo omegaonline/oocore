@@ -62,7 +62,7 @@
 	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, &pfn },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
 	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },

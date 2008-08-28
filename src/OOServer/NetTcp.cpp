@@ -811,19 +811,22 @@ void User::TcpHandler::Stop()
 {
 	try
 	{
-		// Find and remove from the map...
+		// Copy and clear the map
 		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
 
-		for (std::map<uint32_t,AsyncEntry>::iterator i=m_mapAsyncs.begin();i!=m_mapAsyncs.end();++i)
+		std::map<uint32_t,AsyncEntry> map(m_mapAsyncs);
+		m_mapAsyncs.clear();
+
+		guard.release();
+
+		for (std::map<uint32_t,AsyncEntry>::iterator i=map.begin();i!=map.end();++i)
 		{
 			if (i->second.pAsync)
 			{
 				i->second.pAsync->close();
 				i->second.pAsync->release();
 			}
-		}
-
-		m_mapAsyncs.clear();
+		}		
 	}
 	catch (std::exception& e)
 	{

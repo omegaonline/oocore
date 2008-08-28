@@ -65,7 +65,9 @@ namespace User
 
 			TcpAsync(TcpHandler* pHandler) : 
 				m_pHandler(pHandler), m_stream_id(0), m_refcount(1)
-			{}
+			{
+				m_pHandler->AddRef();
+			}
 
 			void release()
 			{
@@ -91,7 +93,11 @@ namespace User
 			// Control our lifetime...
 			ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_refcount;
 		
-			virtual ~TcpAsync() {};
+			virtual ~TcpAsync()
+			{
+				if (m_pHandler)
+					m_pHandler->Release();
+			}
 
 			void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
 			void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);

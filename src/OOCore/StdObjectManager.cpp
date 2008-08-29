@@ -526,6 +526,17 @@ IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_
 	return 0;
 }
 
+TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
+{
+	TypeInfo::ITypeInfo* pRet = 0;
+
+	System::MetaInfo::IException_Safe* pSE = GetTypeInfo_Safe(System::MetaInfo::marshal_info<TypeInfo::ITypeInfo*&>::safe_type::coerce(pRet),&iid);
+	if (pSE)
+		System::MetaInfo::throw_correct_exception(pSE);
+
+	return pRet;
+}
+
 void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
 {
 	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
@@ -964,6 +975,20 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::SendAndR
 	}
 }
 
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::GetTypeInfo_Safe(System::MetaInfo::ITypeInfo_Safe** ppTypeInfo, const guid_t* piid)
+{
+	// Check the auto registered stuff first
+	*ppTypeInfo = OOCore::GetTypeInfo(*piid);
+
+	if (!(*ppTypeInfo))
+	{
+		// Ask the other end if it has a clue?
+		void* TODO;
+	}
+
+	return 0;
+}
+
 void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pParamsOut)
 {
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is 
@@ -999,33 +1024,13 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	pMessage->WriteStructEnd(L"m_ptrChannel");		
 }
 
-System::MetaInfo::ITypeInfo_Safe* OOCore::StdObjectManager::get_typeinfo(const guid_t& iid, bool bAskOtherEnd)
-{
-	// Get the TypeInfo for the iid
-	ObjectPtr<TypeInfo::ITypeInfo> ptrTI;
-
-	// Check the auto registered stuff first
-	System::MetaInfo::ITypeInfo_Safe* pTIS = OOCore::GetTypeInfo(iid);
-
-	if (!pTIS && bAskOtherEnd)
-	{
-		// Ask the other end if it has a clue?
-		void* TODO;
-	}
-
-	return pTIS;
-}
-
 System::MetaInfo::IObject_Safe* OOCore::StdObjectManager::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy)
 {
 	if (!m_ptrPSFactory)
 		return OOCore::CreateProxy(iid,pProxy,this);
 
-	// Get the type info
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::ITypeInfo_Safe> ptrTI = get_typeinfo(iid,true);
-
 	System::MetaInfo::IObject_Safe* pObjS = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateProxy_Safe(&iid,ptrTI,pProxy,this,&pObjS);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateProxy_Safe(&iid,pProxy,this,&pObjS);
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
 
@@ -1040,11 +1045,8 @@ System::MetaInfo::IStub_Safe* OOCore::StdObjectManager::CreateStub(const guid_t&
 	if (!m_ptrPSFactory)
 		return OOCore::CreateStub(iid,pController,this,pObjS);
 
-	// Get the type info
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::ITypeInfo_Safe> ptrTI = get_typeinfo(iid,true);
-
 	System::MetaInfo::IStub_Safe* pStub = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateStub_Safe(&pStub,&iid,ptrTI,pController,this,pObjS);
+	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateStub_Safe(&pStub,&iid,pController,this,pObjS);
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
 

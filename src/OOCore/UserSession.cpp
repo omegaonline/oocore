@@ -1168,8 +1168,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IProxyStu
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
 
 	IObject* pObject = 0;
-	guid_t apt_iid = OMEGA_GUIDOF(Omega::Apartment::IApartment);
-	ptrOF->CreateInstance(0,apt_iid,pObject);
+	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
 
 	// Now set the factory
 	ptrOM->SetProxyStubFactory(pPSFactory);

@@ -168,8 +168,7 @@ namespace OTL
 		ObjectPtrBase(const Omega::string_t& strURI, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
 			m_ptr(0)
 		{
-			Omega::guid_t iid = OMEGA_GUIDOF(OBJECT);
-			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(strURI,flags,pOuter,iid));
+			m_ptr = static_cast<OBJECT*>(Omega::CreateInstance(strURI,flags,pOuter,OMEGA_GUIDOF(OBJECT)));
 		}
 
 		virtual ~ObjectPtrBase()
@@ -842,7 +841,7 @@ namespace OTL
 		}
 	};
 
-	template <class T1, class T2, class ROOT>
+	template <class T1, class T2>
 	class ObjectFactoryImpl :
 		public ObjectBase,
 		public Omega::Activation::IObjectFactory
@@ -854,11 +853,8 @@ namespace OTL
 
 	// IObjectFactory members
 	public:
-		void CreateInstance(Omega::IObject* pOuter, Omega::guid_t& iid, Omega::IObject*& pObject)
+		void CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject)
 		{
-			if (iid == Omega::guid_t::Null())
-				iid = *(ROOT::getQIEntries()->pGuid);
-			
 			if (pOuter)
 				pObject = T1::CreateInstance(pOuter,iid);
 			else
@@ -870,7 +866,7 @@ namespace OTL
 	class AutoObjectFactory
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID>,ROOT> ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<AggregatedObjectImpl<ROOT>,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 
 		static const Omega::guid_t* GetOid()
 		{
@@ -892,14 +888,14 @@ namespace OTL
 	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID>,ROOT> ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
 	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
-		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID>,ROOT> ObjectFactoryClass;
+		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
 	template <class EnumIFace, class EnumType>

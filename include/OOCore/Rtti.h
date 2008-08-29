@@ -794,7 +794,7 @@ namespace Omega
 			{
 				static TypeInfo::ITypeInfo* Create()
 				{
-					TypeInfo_Impl<Omega::IObject> instance;
+					static TypeInfo_Impl<Omega::IObject> instance;
 					return &instance;
 				}
 

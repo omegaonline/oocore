@@ -466,12 +466,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateLocalInstance,5,((in),const guid
 
 	IObject* pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
-
-	guid_t iid2 = iid;
-	ptrOF->CreateInstance(pOuter,iid2,pObject);
+	ptrOF->CreateInstance(pOuter,iid,pObject);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in_out),Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
 	// First try to determine the protocol...
 	string_t strObject = strURI;

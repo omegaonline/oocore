@@ -654,7 +654,7 @@ Remoting::IChannel* User::Manager::open_remote_channel(const string_t& strEndpoi
 
 Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndpoint)
 {
-	// Get the protocol
+	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
 		OMEGA_THROW(L"No protocol specified!");

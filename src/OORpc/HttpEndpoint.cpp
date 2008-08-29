@@ -460,8 +460,6 @@ string_t Rpc::HttpEndpoint::Canonicalise(const string_t& strEndpoint)
 	if (strResource == L"/")
 		strResource += OID_HttpChannelServer.ToString().Mid(1,36).ToLower() + L"/";
 
-	void* TODO;
-
 	// Reappend resource and query
 	strCanon += strResource;
 	if (!strQuery.IsEmpty())

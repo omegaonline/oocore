@@ -766,9 +766,6 @@ namespace Omega
 				IObject* m_pOuter;
 			};
 
-			// Forward declare the TypeInfo_Impl class
-			template <class IFace> interface TypeInfo_Impl;
-
 			typedef ITypeInfo_Impl_Safe<IObject_Safe> ITypeInfo_Safe;
 
 			class TypeInfoBase : public TypeInfo::ITypeInfo
@@ -786,7 +783,111 @@ namespace Omega
 					}
 					return 0;
 				}
+
+			protected:
+				struct ParamInfo
+				{
+					const wchar_t*              pszName;
+					TypeInfo::Types_t           type;
+					TypeInfo::ParamAttributes_t attribs;
+				};
+				struct MethodInfo
+				{
+					const wchar_t*               pszName;
+					TypeInfo::MethodAttributes_t attribs;
+					uint32_t                     timeout;
+					byte_t                       param_count;
+					TypeInfo::Types_t            return_type;
+					const ParamInfo*             params;
+				};
 			};
+
+			template <class T> interface type_kind
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeUnknown;
+			};
+
+			template <class T> interface type_kind<T*>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeArray | type_kind<T>::type;
+			};
+
+			template <class T> interface type_kind<T&>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeReference | type_kind<T>::type;
+			};
+
+			template <class T> interface type_kind<const T>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeConst | type_kind<T>::type;
+			};
+
+			template <> interface type_kind<void>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeVoid;
+			};
+
+			template <> interface type_kind<bool_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeBool;
+			};
+
+			template <> interface type_kind<byte_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeByte;
+			};
+
+			template <> interface type_kind<int16_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeInt16;
+			};
+
+			template <> interface type_kind<uint16_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeUInt16;
+			};
+
+			template <> interface type_kind<int32_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeInt32;
+			};
+
+			template <> interface type_kind<uint32_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeUInt32;
+			};
+
+			template <> interface type_kind<int64_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeInt64;
+			};
+
+			template <> interface type_kind<uint64_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeUInt64;
+			};
+
+			template <> interface type_kind<float4_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeFloat4;
+			};
+
+			template <> interface type_kind<float8_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeFloat8;
+			};
+
+			template <> interface type_kind<string_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeString;
+			};
+
+			template <> interface type_kind<guid_t>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeGuid;
+			};
+
+			template <class IFace> interface TypeInfo_Impl;
 
 			// Manually implement for IObject
 			template <>
@@ -798,10 +899,95 @@ namespace Omega
 					return &instance;
 				}
 
-				virtual ITypeInfo* GetBaseType() { return 0; }
-				uint32_t GetMethodCount() { return 3; }
-				guid_t GetIID() { return OMEGA_GUIDOF(IObject); }
-				string_t GetName() { return L"Omega::IObject"; }
+				virtual ITypeInfo* GetBaseType() 
+				{ 
+					return 0; 
+				}
+				uint32_t GetMethodCount() 
+				{ 
+					return 3; 
+				}
+				guid_t GetIID() 
+				{ 
+					return OMEGA_GUIDOF(IObject); 
+				}
+				string_t GetName() 
+				{ 
+					return L"Omega::IObject"; 
+				}
+				void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type)
+					{ get_method_info(method_idx,strName,attribs,timeout,param_count,return_type); }
+				void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs)
+					{ get_param_info(method_idx,param_idx,strName,type,attribs); }
+				byte_t GetAttributeRef(uint32_t /*method_idx*/, byte_t /*param_idx*/, TypeInfo::ParamAttributes_t /*attrib*/) 
+					{ OMEGA_THROW(EINVAL); }
+
+				static const uint32_t method_count = 3;
+
+				static void get_method_info(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type)
+				{
+					if (method_idx >= method_count)
+						OMEGA_THROW(EINVAL);
+
+					const MethodInfo& info = method_info()[method_idx];
+					strName = info.pszName;
+					attribs = info.attribs;
+					timeout = info.timeout;
+					param_count = info.param_count;
+					return_type = info.return_type;
+				}
+
+				static void get_param_info(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs)
+				{
+					if (method_idx >= method_count)
+						OMEGA_THROW(EINVAL);
+
+					if (param_idx >= method_info()[method_idx].param_count)
+						OMEGA_THROW(EINVAL);
+
+					const ParamInfo& info = method_info()[method_idx].params[param_idx];
+					strName = info.pszName;
+					type = info.type;
+					attribs = info.attribs;
+				}
+
+			private:
+				static const MethodInfo* method_info()
+				{
+					static const ParamInfo AddRef_params[] =
+					{
+						{ 0, 0, 0 }
+					};
+					static const ParamInfo Release_params[] =
+					{
+						{ 0, 0, 0 }
+					};
+					static const ParamInfo QueryInterface_params[] =
+					{
+						{ L"iid", TypeInfo::typeGuid | TypeInfo::typeConst | TypeInfo::typeReference, TypeInfo::attrIn },
+						{ 0, 0, 0 }
+					};
+
+					static const MethodInfo methods[] =
+					{
+						{ L"AddRef", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, AddRef_params },
+						{ L"Release", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, Release_params },
+						{ L"QueryInterface", TypeInfo::Synchronous, 0, 1, TypeInfo::typeObject, QueryInterface_params }
+					};
+					return methods;
+				}
+			};
+			template <> interface type_kind<IObject*>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeObject;
+			};
+			template <> interface type_kind<IException*>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeObject;
+			};
+			template <> interface type_kind<TypeInfo::ITypeInfo*>
+			{
+				static const TypeInfo::Types_t type = TypeInfo::typeObject;
 			};
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
@@ -818,10 +1004,13 @@ namespace Omega
 			(
 				Omega::TypeInfo, ITypeInfo,
 
-				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
-				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
-				OMEGA_METHOD(guid_t,GetIID,0,())
 				OMEGA_METHOD(string_t,GetName,0,())
+				OMEGA_METHOD(guid_t,GetIID,0,())
+				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
+				OMEGA_METHOD(uint32_t,GetMethodCount,0,())				
+				OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),TypeInfo::Types_t&,return_type))
+				OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),TypeInfo::Types_t&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
+				OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
 			)
 
 			struct qi_rtti

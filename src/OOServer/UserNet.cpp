@@ -233,7 +233,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 		if (!m_ptrUpstream)
 			OMEGA_THROW(ECONNRESET);
 
-		m_ptrUpstream->Send((Remoting::MethodAttributes_t)(attribs & 0xFFFF),ptrMessage,timeout);
+		m_ptrUpstream->Send((TypeInfo::MethodAttributes_t)(attribs & 0xFFFF),ptrMessage,timeout);
 	}
 	catch (...)
 	{
@@ -327,14 +327,14 @@ void User::RemoteChannel::process_here_i(ACE_InputCDR& input)
 	ObjectPtr<Remoting::IMessage> ptrResult;
 	ptrResult.Attach(ptrOM->Invoke(ptrPayload,timeout));
 
-	if (!(ex_attribs & Remoting::Asynchronous))
+	if (!(ex_attribs & TypeInfo::Asynchronous))
 	{
 		// Send it back...
 		send_away_i(ptrResult,0,src_channel_id,deadline,Root::Message_t::synchronous,src_thread_id,dest_thread_id,Root::Message_t::Response,seq_no);
 	}
 }
 
-void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage* pMsg, uint32_t timeout)
+void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage* pMsg, uint32_t timeout)
 {
 	// This is a message from the other end...
 
@@ -419,7 +419,7 @@ void User::RemoteChannel::Send(Remoting::MethodAttributes_t, Remoting::IMessage*
 				else
 					OMEGA_THROW(L"Bad system message!");
 
-				if (!(out_attribs & Remoting::Asynchronous))
+				if (!(out_attribs & TypeInfo::Asynchronous))
 				{
 					// Send it back...
 					send_away_i(ptrResult,dest_channel_id,src_channel_id,deadline,out_attribs,src_thread_id,dest_thread_id,Root::Message_t::Response,seq_no);

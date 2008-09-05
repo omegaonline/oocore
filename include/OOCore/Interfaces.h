@@ -357,9 +357,9 @@ OMEGA_DEFINE_INTERFACE
 	
 	// Methods
 	OMEGA_METHOD_VOID(OnOpened,0,())
-	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,OnRead,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
-	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,OnWritten,1,((in),const uint64_t&,cbBytes))
-	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,OnError,1,((in),IException*,pE))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnWritten,1,((in),const uint64_t&,cbBytes))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnError,1,((in),IException*,pE))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

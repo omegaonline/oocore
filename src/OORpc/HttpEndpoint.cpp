@@ -40,7 +40,7 @@ namespace Rpc
 	{
 	public:
 		void init(const string_t& strSessionId, const string_t& strEndpoint);
-		void send(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pMsg, const ACE_Time_Value& deadline);
+		void send(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pMsg, const ACE_Time_Value& deadline);
 		void close();
 
 		BEGIN_INTERFACE_MAP(SendNotify)
@@ -55,7 +55,7 @@ namespace Rpc
 
 		struct Msg
 		{
-			Remoting::MethodAttributes_t  attribs;
+			TypeInfo::MethodAttributes_t  attribs;
 			ObjectPtr<IHttpMsg>           ptrMsg;
 			ACE_Time_Value                deadline;
 		};
@@ -119,7 +119,7 @@ namespace Rpc
 
 	// IChannelSink members
 	public:
-		void Send(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout);
+		void Send(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout);
 		void Close();
 	};
 }
@@ -132,7 +132,7 @@ void Rpc::SendNotify::init(const string_t& strSessionId, const string_t& strEndp
 	m_ptrReq = ObjectPtr<Net::Http::IRequest>(Net::Http::OID_StdHttpRequest);
 }
 
-void Rpc::SendNotify::send(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pMsg, const ACE_Time_Value& deadline)
+void Rpc::SendNotify::send(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pMsg, const ACE_Time_Value& deadline)
 {
 	try
 	{
@@ -412,7 +412,7 @@ void Rpc::HttpChannelSink::init(const string_t& strSessionId, const string_t& st
 	m_ptrRecv->init(strSessionId,strEndpoint,pSink);
 }
 
-void Rpc::HttpChannelSink::Send(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout)
+void Rpc::HttpChannelSink::Send(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout)
 {
 	if (!m_ptrSend)
 		OMEGA_THROW(ENOTCONN);

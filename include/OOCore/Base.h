@@ -60,12 +60,58 @@ namespace Omega
 
 	namespace TypeInfo
 	{
-		interface ITypeInfo : public IObject
+		enum Types
 		{
+			typeUnknown = 0xFFFF,
+			typeVoid = 0,
+			typeBool,
+			typeByte,
+			typeInt16,
+			typeUInt16,
+			typeInt32,
+			typeUInt32,
+			typeInt64,
+			typeUInt64,
+			typeFloat4,
+			typeFloat8,
+			typeString,
+			typeGuid,
+			typeObject,
+
+			typeConst = 0x100,
+			typeArray = 0x200,
+			typeReference = 0x400,
+		};
+		typedef uint32_t Types_t;
+
+		enum MethodAttributes
+		{
+			Synchronous = 0,
+			Asynchronous = 1,
+			Unreliable = 2,
+			Encrypted = 4
+		};
+		typedef uint16_t MethodAttributes_t;
+
+		enum ParamAttributes
+		{
+			attrIn = 1,
+			attrOut = 2,
+			attrInOut = (attrIn | attrOut),
+			attrIid_is = 4,
+			attrSize_is = 8
+		};
+		typedef byte_t ParamAttributes_t;
+
+		interface ITypeInfo : public IObject
+		{	
+			virtual string_t GetName() = 0;
+			virtual guid_t GetIID() = 0;
 			virtual uint32_t GetMethodCount() = 0;
 			virtual ITypeInfo* GetBaseType() = 0;
-			virtual guid_t GetIID() = 0;
-			virtual string_t GetName() = 0;
+			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Types_t& return_type) = 0;
+			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Types_t& type, ParamAttributes_t& attribs) = 0;
+			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
 		};
 	}
 }

@@ -48,7 +48,7 @@ namespace Rpc
 	private:
 		struct Msg
 		{
-			Omega::Remoting::MethodAttributes_t  attribs;
+			Omega::TypeInfo::MethodAttributes_t  attribs;
 			OTL::ObjectPtr<IHttpMsg>             ptrMsg;
 			ACE_Time_Value                       deadline;
 		};
@@ -63,7 +63,7 @@ namespace Rpc
 		
 	// IChannelSink members
 	public:
-		void Send(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pMsg, Omega::uint32_t timeout);
+		void Send(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pMsg, Omega::uint32_t timeout);
 		void Close();
 	};
 

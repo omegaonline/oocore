@@ -484,7 +484,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong s
 		return;
 	}
 
-	if (!(attribs & Remoting::Asynchronous) && response.good_bit())
+	if (!(attribs & TypeInfo::Asynchronous) && response.good_bit())
 		send_response(seq_no,m_root_channel,src_thread_id,response.begin(),deadline,attribs);
 }
 
@@ -523,7 +523,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 		ObjectPtr<Remoting::IMessage> ptrResult;
 		ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
 
-		if (!(attribs & Remoting::Asynchronous))
+		if (!(attribs & TypeInfo::Asynchronous))
 		{
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
@@ -592,7 +592,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(ACE_CDR::U
 	}
 }
 
-ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request, Remoting::MethodAttributes_t attribs)
+ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request, TypeInfo::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
 	ACE_Time_Value wait = ACE_Time_Value::max_time;

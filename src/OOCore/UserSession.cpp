@@ -936,7 +936,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort apartment_id, ACE_CDR::UL
 			return false;
 	}
 
-	if (attribs & Remoting::Asynchronous)
+	if (attribs & TypeInfo::Asynchronous)
 		return true;
 	else
 		// Wait for response...

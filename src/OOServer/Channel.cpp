@@ -77,7 +77,7 @@ Remoting::IMessage* User::Channel::CreateMessage()
 	}
 }
 
-IException* User::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	if (!m_channel_id)
 		OMEGA_THROW(ECONNRESET);

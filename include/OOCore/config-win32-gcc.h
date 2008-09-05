@@ -24,8 +24,6 @@
 
 #include <OOCore/config-gcc.h>
 
-#define ACE_LACKS_SYSTEM
-
 #define OMEGA_IMPORT  __declspec(dllimport)
 #define OMEGA_EXPORT  __declspec(dllexport)
 #define OMEGA_PRIVATE

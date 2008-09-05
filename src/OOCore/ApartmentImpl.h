@@ -44,7 +44,7 @@ namespace OOCore
 		void process_request(const Message* pMsg, const ACE_Time_Value& deadline);
 
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(ACE_CDR::UShort apartment_id, Omega::System::IProxyStubFactory* pPSFactory);
-		Omega::IException* apartment_message(ACE_CDR::UShort apt_id, Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		Omega::IException* apartment_message(ACE_CDR::UShort apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		
 	private:
 		ACE_RW_Thread_Mutex m_lock;
@@ -78,7 +78,7 @@ namespace OOCore
 
 	// IChannelBase members
 	public:
-		virtual Omega::IException* SendAndReceive(Omega::Remoting::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		virtual Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	
 	//// IChannel members
 	//public:

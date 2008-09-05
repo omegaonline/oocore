@@ -41,7 +41,7 @@ namespace User
 
 		static bool call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb = 0);
 
-		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request, Omega::Remoting::MethodAttributes_t attribs);
+		ACE_InputCDR* sendrecv_root(const ACE_OutputCDR& request, Omega::TypeInfo::MethodAttributes_t attribs);
 		void handle_http_request(HttpConnection* pConn, Omega::uint16_t conn_id);
 
 	private:

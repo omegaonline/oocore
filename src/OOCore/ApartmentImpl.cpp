@@ -199,7 +199,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const ACE_Time_Valu
 	ObjectPtr<Remoting::IMessage> ptrResult;
 	ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));
 
-	if (!(pMsg->m_attribs & Remoting::Asynchronous))
+	if (!(pMsg->m_attribs & TypeInfo::Asynchronous))
 	{
 		// Wrap the response...
 		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
@@ -259,7 +259,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR:
 	return ptrOM;
 }
 
-IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, Remoting::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_apartment_om(apt_id,m_ptrPSFactory);
@@ -305,7 +305,7 @@ void OOCore::AptChannel::init(ACE_CDR::UShort apt_id, ACE_Refcounted_Auto_Ptr<Ap
 	m_ptrApt = ptrApt;
 }
 
-IException* OOCore::AptChannel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	return m_ptrApt->apartment_message(m_apt_id,attribs,pSend,pRecv,timeout);
 }

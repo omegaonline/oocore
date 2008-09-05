@@ -411,7 +411,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 
 	try
 	{
-		pERet = SendAndReceive(Remoting::Synchronous,ptrParamsOut,pParamsIn);
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,pParamsIn);
 	}
 	catch (IException*)
 	{
@@ -483,7 +483,7 @@ Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 	return m_ptrChannel->CreateMessage();
 }
 
-IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 	if (pE)
@@ -493,7 +493,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(Remoting::MethodAttributes_
 	ptrRecv.Attach(pRecv);
 	pRecv = 0;
 
-	if (!(attribs & Remoting::Asynchronous))
+	if (!(attribs & TypeInfo::Asynchronous))
 	{
 		try
 		{
@@ -962,7 +962,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::CreateMe
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::SendAndReceive_Safe(System::MetaInfo::IException_Safe** ppRet, Remoting::MethodAttributes_t attribs, System::MetaInfo::IMessage_Safe* pSend, System::MetaInfo::IMessage_Safe** ppRecv, uint32_t timeout)
+System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::SendAndReceive_Safe(System::MetaInfo::IException_Safe** ppRet, TypeInfo::MethodAttributes_t attribs, System::MetaInfo::IMessage_Safe* pSend, System::MetaInfo::IMessage_Safe** ppRecv, uint32_t timeout)
 {
 	try
 	{

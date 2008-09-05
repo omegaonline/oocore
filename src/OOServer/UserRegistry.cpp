@@ -223,7 +223,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -255,7 +255,7 @@ bool_t Key::IsValue(const string_t& strName)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -289,7 +289,7 @@ int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -355,7 +355,7 @@ string_t Key::GetStringValue(const string_t& strName)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -398,7 +398,7 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -443,7 +443,7 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -490,7 +490,7 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -521,7 +521,7 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -552,7 +552,7 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -579,7 +579,7 @@ string_t Key::GetDescription()
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -613,7 +613,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -647,7 +647,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -674,7 +674,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -706,7 +706,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -747,7 +747,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -796,7 +796,7 @@ Omega::IEnumString* Key::EnumValues()
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -848,7 +848,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 
@@ -878,7 +878,7 @@ void Key::DeleteValue(const string_t& strName)
 	if (!request.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,Remoting::Synchronous));
+	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (response.null())
 		OMEGA_THROW(EINVAL);
 

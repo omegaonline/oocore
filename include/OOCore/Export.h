@@ -177,8 +177,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_SAFE,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_PS_PARAM_in(p0,p1)
-#define OMEGA_PS_PARAM_in_out(p0,p1)
+#define OMEGA_PS_PARAM_in(t,name)
+#define OMEGA_PS_PARAM_in_out(t,name)
 #define OMEGA_PS_PARAM_out(t,name)
 #define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_II
@@ -209,7 +209,53 @@
 		OMEGA_DECLARE_SAFE_METHODS(methods) \
 	};
 
-#define OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
+// Add extra meta info types here
+#define OMEGA_DECLARE_TYPE_in(t,name)        TypeInfo::attrIn
+#define OMEGA_DECLARE_TYPE_in_out(t,name)    TypeInfo::attrInOut
+#define OMEGA_DECLARE_TYPE_out(t,name)       TypeInfo::attrOut
+#define OMEGA_DECLARE_TYPE_iid_is(iid)       | TypeInfo::attrIid_is OMEGA_DECLARE_TYPE_II
+#define OMEGA_DECLARE_TYPE_size_is(size)     | TypeInfo::attrSize_is OMEGA_DECLARE_TYPE_II
+#define OMEGA_DECLARE_TYPE_II(t,name)
+
+#define OMEGA_DECLARE_TYPE_PARAM_II(index,meta,d) \
+	OMEGA_CONCAT(OMEGA_DECLARE_TYPE_,meta) d
+
+#define OMEGA_DECLARE_TYPE_PARAM_I(meta,t,name) \
+	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),type_kind<t>::type, OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_II,meta,(t,name)) },
+
+#define OMEGA_DECLARE_TYPE_PARAM(index,params,d) \
+	OMEGA_DECLARE_TYPE_PARAM_I params
+
+#define OMEGA_DECLARE_TYPE_PARAMS(name,param_count,params) \
+	static const ParamInfo OMEGA_CONCAT(name,_params)[] = { \
+		OMEGA_TUPLE_FOR_EACH(param_count,OMEGA_DECLARE_TYPE_PARAM,OMEGA_SPLIT_3(param_count,params),0) \
+		{ 0, 0, 0 } };
+
+#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+	OMEGA_DECLARE_TYPE_PARAMS(name,param_count,params)
+
+#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+	OMEGA_DECLARE_TYPE_PARAMS(name,param_count,params)
+
+#define OMEGA_DECLARE_TYPE_METHOD_PARAM(index,method,d) \
+	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_PARAM_,method)
+
+#define OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
+	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD_PARAM,methods,0)
+
+#define OMEGA_DECLARE_TYPE_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
+	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),attribs,timeout,param_count,TypeInfo::typeVoid,OMEGA_CONCAT(name,_params) },
+
+#define OMEGA_DECLARE_TYPE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
+	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),attribs,timeout,param_count,type_kind<ret_type>::type,OMEGA_CONCAT(name,_params) },
+
+#define OMEGA_DECLARE_TYPE_METHOD(index,method,d) \
+	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_,method)
+
+#define OMEGA_DECLARE_TYPE_METHODS(methods) \
+	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD,methods,0)
+
+#define OMEGA_DECLARE_TYPE_PART1(name,n_space,methods,d_space,derived) \
 	template <> \
 	interface TypeInfo_Impl<n_space::name> : public TypeInfoBase \
 	{ \
@@ -218,11 +264,68 @@
 			static TypeInfo_Impl<n_space::name> instance; \
 			return &instance; \
 		} \
-		uint32_t GetMethodCount() { return OMEGA_SEQUENCE_SIZEOF(methods); } \
+		uint32_t GetMethodCount() { return method_count; } \
 		TypeInfo::ITypeInfo* GetBaseType() { return TypeInfo_Impl<d_space::derived>::Create(); } \
 		guid_t GetIID() { return OMEGA_GUIDOF(n_space::name); } \
 		string_t GetName() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::name)); } \
+		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type) \
+			{ return get_method_info(method_idx,strName,attribs,timeout,param_count,return_type); } \
+		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs) \
+			{ get_param_info(method_idx,param_idx,strName,type,attribs); } \
+		byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib) \
+			{ method_idx; param_idx; attrib; OMEGA_THROW(EINVAL); } \
+		static const uint32_t method_count = TypeInfo_Impl<d_space::derived>::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
+		static void get_method_info(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type) \
+		{ \
+			if (method_idx >= method_count) \
+				OMEGA_THROW(EINVAL); \
+			if (method_idx < TypeInfo_Impl<d_space::derived>::method_count) \
+				return TypeInfo_Impl<d_space::derived>::get_method_info(method_idx,strName,attribs,timeout,param_count,return_type); \
+			const MethodInfo& info = method_info()[method_idx - TypeInfo_Impl<d_space::derived>::method_count]; \
+			strName = info.pszName; \
+			attribs = info.attribs; \
+			timeout = info.timeout; \
+			param_count = info.param_count; \
+			return_type = info.return_type; \
+		}
+
+#define OMEGA_DECLARE_TYPE_PART2(name,n_space,methods,d_space,derived) \
+		static void get_param_info(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs) \
+		{ \
+			if (method_idx >= method_count) \
+				OMEGA_THROW(EINVAL); \
+			if (method_idx < TypeInfo_Impl<d_space::derived>::method_count) \
+				return TypeInfo_Impl<d_space::derived>::get_param_info(method_idx,param_idx,strName,type,attribs); \
+			method_idx -= TypeInfo_Impl<d_space::derived>::method_count; \
+			if (param_idx >= method_info()[method_idx].param_count) \
+				OMEGA_THROW(EINVAL); \
+			const ParamInfo& info = method_info()[method_idx].params[param_idx]; \
+			strName = info.pszName; \
+			type = info.type; \
+			attribs = info.attribs; \
+		} \
+	private: \
+		static const MethodInfo* method_info() \
+		{ \
+			OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
+			static const MethodInfo method_infos[] = \
+			{ \
+				OMEGA_DECLARE_TYPE_METHODS(methods) \
+				{ 0, 0, 0, 0 } \
+			}; \
+			return method_infos; \
+		} \
 	};
+
+#define OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
+	OMEGA_DECLARE_TYPE_PART1(name,n_space,methods,d_space,derived) \
+	OMEGA_DECLARE_TYPE_PART2(name,n_space,methods,d_space,derived)
+
+#define OMEGA_DECLARE_TYPEKIND(name,n_space) \
+	template <> interface type_kind<n_space::name*> \
+	{ \
+		static const TypeInfo::Types_t type = TypeInfo::typeObject; \
+	}; 
 
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params) ) \
@@ -729,16 +832,16 @@
 	OMEGA_DEFINE_INTERFACE_DERIVED(n_space,name,Omega,IObject,guid,methods)
 
 #define OMEGA_METHOD_VOID(name,param_count,params) \
-	(DECLARED_METHOD_VOID(Omega::Remoting::Synchronous,0,name,param_count,params))
+	(DECLARED_METHOD_VOID(TypeInfo::Synchronous,0,name,param_count,params))
 
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
-	(DECLARED_METHOD(Omega::Remoting::Synchronous,0,ret_type,name,param_count,params))
+	(DECLARED_METHOD(TypeInfo::Synchronous,0,ret_type,name,param_count,params))
 
 #define OMEGA_METHOD_EX_VOID(attribs,timeout,name,param_count,params) \
-	(DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params))
+	(DECLARED_METHOD_VOID(TypeInfo::attribs,timeout,name,param_count,params))
 
 #define OMEGA_METHOD_EX(attribs,timeout,ret_type,name,param_count,params) \
-	(DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params))
+	(DECLARED_METHOD(TypeInfo::attribs,timeout,ret_type,name,param_count,params))
 
 #define OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params) \
 	extern "C" OMEGA_IMPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \

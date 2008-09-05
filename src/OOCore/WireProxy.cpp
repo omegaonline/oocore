@@ -151,7 +151,7 @@ bool OOCore::Proxy::CallRemoteQI(const guid_t& iid)
 	pParamsOut->WriteStructEnd(L"ipc_request");
 
 	Remoting::IMessage* pParamsIn = 0;
-	IException* pE = m_pManager->SendAndReceive(Remoting::Synchronous,pParamsOut,pParamsIn);
+	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	if (pE)
 		throw pE;
 
@@ -282,7 +282,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 	IException* pE = 0;
 	try
 	{
-		pE = m_pManager->SendAndReceive(Remoting::Synchronous,pParamsOut,pParamsIn);
+		pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	}
 	catch (IException* pE2)
 	{
@@ -330,7 +330,7 @@ void OOCore::Proxy::CallRemoteRelease()
 		pParamsOut->WriteStructEnd(L"ipc_request");
 		
 		Remoting::IMessage* pParamsIn = 0;
-		IException* pE = m_pManager->SendAndReceive(Remoting::Synchronous,pParamsOut,pParamsIn);
+		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 		if (pE)
 			pE->Release();
 

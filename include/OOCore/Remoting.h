@@ -41,7 +41,7 @@ namespace Omega
 		interface IChannelBase : public IObject
 		{
 			virtual IMessage* CreateMessage() = 0;
-			virtual IException* SendAndReceive(MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
+			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
 			virtual MarshalFlags_t GetMarshalFlags() = 0;
 			virtual uint32_t GetSource() = 0;
 		};
@@ -89,7 +89,7 @@ namespace Omega
 
 		interface IChannelSink : public IObject
 		{
-			virtual void Send(MethodAttributes_t attribs, IMessage* pMsg, uint32_t timeout) = 0;
+			virtual void Send(TypeInfo::MethodAttributes_t attribs, IMessage* pMsg, uint32_t timeout) = 0;
 			virtual void Close() = 0;
 
 			inline static IChannelSink* OpenServerSink(const guid_t& message_oid, IChannelSink* pSink);
@@ -114,7 +114,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	Omega::Remoting, IChannelBase, "{F18430B0-8AC5-4b57-9B66-56B3BE867C24}",
 
 	OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
-	OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
+	OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
 	OMEGA_METHOD(Remoting::MarshalFlags_t,GetMarshalFlags,0,())
 	OMEGA_METHOD(uint32_t,GetSource,0,())
 )
@@ -172,7 +172,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Remoting, IChannelSink, "{C395066A-05D1-45f2-95C5-272319CF1394}",
 
-	OMEGA_METHOD_EX_VOID(Remoting::Asynchronous,0,Send,3,((in),Remoting::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pMsg,(in),uint32_t,timeout))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,Send,3,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pMsg,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Close,0,())
 )
 

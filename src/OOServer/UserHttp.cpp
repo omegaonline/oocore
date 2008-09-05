@@ -696,7 +696,7 @@ void User::HttpConnection::Close()
 
 	try
 	{
-		m_pManager->sendrecv_root(message,Remoting::Asynchronous);
+		m_pManager->sendrecv_root(message,TypeInfo::Asynchronous);
 	}
 	catch (IException* pE)
 	{
@@ -715,7 +715,7 @@ bool User::HttpConnection::SendToRoot(const ACE_Message_Block* mb)
 
 	try
 	{
-		m_pManager->sendrecv_root(message,Remoting::Asynchronous);
+		m_pManager->sendrecv_root(message,TypeInfo::Asynchronous);
 		return true;
 	}
 	catch (IException* pE)
@@ -892,7 +892,7 @@ User::ResponseStream::~ResponseStream()
 		message << static_cast<Root::RootOpCode_t>(Root::HttpClose);
 		message.write_ushort(m_conn_id);
 		if (message.good_bit())
-			m_pManager->sendrecv_root(message,Remoting::Asynchronous);
+			m_pManager->sendrecv_root(message,TypeInfo::Asynchronous);
 	}
 }
 
@@ -932,7 +932,7 @@ void User::ResponseStream::WriteBytes(const uint64_t& cbBytes, const byte_t* val
 	if (!message.good_bit())
 		OMEGA_THROW(ACE_OS::last_error());
 
-	m_pManager->sendrecv_root(message,Remoting::Asynchronous);
+	m_pManager->sendrecv_root(message,TypeInfo::Asynchronous);
 }
 
 User::HttpResponse::HttpResponse() :

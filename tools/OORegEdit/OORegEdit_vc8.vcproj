@@ -40,6 +40,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="-Zm110"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.7\include&quot;;&quot;..\..\extern\wxWidgets-2.8.7\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
@@ -123,6 +124,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="-Zm110"
 				Optimization="3"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"

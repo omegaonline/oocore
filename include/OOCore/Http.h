@@ -107,7 +107,7 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD_VOID(Open,3,((in),const string_t&,strMethod,(in),const string_t&,strURL,(in),Net::Http::IRequestNotify*,pAsyncNotify))
 	OMEGA_METHOD_VOID(SetRequestHeader,2,((in),const string_t&,strHeader,(in),const string_t&,strValue))
-	OMEGA_METHOD_EX_VOID(Remoting::Synchronous,30,Send,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
+	OMEGA_METHOD_EX_VOID(Synchronous,30,Send,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
 	OMEGA_METHOD(uint16_t,Status,0,())
 	OMEGA_METHOD(string_t,StatusText,0,())
 	OMEGA_METHOD(IEnumString*,GetAllResponseHeaders,0,())

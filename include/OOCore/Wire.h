@@ -26,15 +26,6 @@ namespace Omega
 {
 	namespace Remoting
 	{
-		enum MethodAttributes
-		{
-			Synchronous = 0,
-			Asynchronous = 1,
-			Unreliable = 2,
-			Encrypted = 4
-		};
-		typedef uint16_t MethodAttributes_t;
-
 		interface IMessage : public IObject
 		{
 			virtual size_t ReadBooleans(const wchar_t* pszName, size_t count, bool_t* arr) = 0;
@@ -77,7 +68,7 @@ namespace Omega
 			virtual void UnmarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
 			virtual void ReleaseMarshalData(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual Remoting::IMessage* CreateMessage() = 0;
-			virtual IException* SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0) = 0;
+			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0) = 0;
 			virtual TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid) = 0;
 		};
 
@@ -237,7 +228,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
-				OMEGA_METHOD(IException*,SendAndReceive,4,((in),Remoting::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
+				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
 				OMEGA_METHOD(TypeInfo::ITypeInfo*,GetTypeInfo,1,((in),const guid_t&,iid))
 			)
 			typedef IMarshaller_Impl_Safe<IObject_Safe> IMarshaller_Safe;
@@ -949,7 +940,7 @@ namespace Omega
 					return 0;
 				}
 
-				IException_Safe* SendAndReceive(IException_Safe*& pRet, Remoting::MethodAttributes_t attribs, IMessage_Safe* pParamsOut, auto_iface_safe_ptr<IMessage_Safe>& pParamsIn, uint32_t timeout = 0)
+				IException_Safe* SendAndReceive(IException_Safe*& pRet, TypeInfo::MethodAttributes_t attribs, IMessage_Safe* pParamsOut, auto_iface_safe_ptr<IMessage_Safe>& pParamsIn, uint32_t timeout = 0)
 				{
 					IMessage_Safe* p = 0;
 					IException_Safe* pSE = m_pManager->SendAndReceive_Safe(&pRet,attribs,pParamsOut,&p,timeout);
@@ -996,10 +987,13 @@ namespace Omega
 			(
 				Omega::TypeInfo, ITypeInfo,
 
-				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
-				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
-				OMEGA_METHOD(guid_t,GetIID,0,())
 				OMEGA_METHOD(string_t,GetName,0,())
+				OMEGA_METHOD(guid_t,GetIID,0,())
+				OMEGA_METHOD(Omega::TypeInfo::ITypeInfo*,GetBaseType,0,())
+				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
+				OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),TypeInfo::Types_t&,return_type))
+				OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),TypeInfo::Types_t&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
+				OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
 			)
 		}
 	}

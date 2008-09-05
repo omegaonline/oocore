@@ -76,7 +76,7 @@ Remoting::IMessage* OOCore::Channel::CreateMessage()
 	}
 }
 
-IException* OOCore::Channel::SendAndReceive(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv,  uint32_t timeout)
+IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv,  uint32_t timeout)
 {
 	if (!m_pSession)
 		OMEGA_THROW(ECONNRESET);

@@ -136,7 +136,7 @@ void Rpc::HttpServerSink::handle_request(const Omega::string_t& strResource, Ome
 	}
 }
 
-void Rpc::HttpServerSink::Send(Remoting::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout)
+void Rpc::HttpServerSink::Send(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pMsg, uint32_t timeout)
 {
 	// Forward the message...
 

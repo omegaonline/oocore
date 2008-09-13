@@ -36,8 +36,8 @@ using namespace OTL;
 BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(Rpc::HttpChannelServer,L"Omega.Rpc.HttpChannelServer")
 	OBJECT_MAP_ENTRY(Rpc::HttpEndpoint,L"Omega.Rpc.HttpEndpoint")
-	OBJECT_MAP_ENTRY_UNNAMED(Rpc::HttpOutputMsg)
-	OBJECT_MAP_ENTRY_UNNAMED(Rpc::HttpOutputMsgMarshalFactory)
+	OBJECT_MAP_ENTRY(Rpc::HttpOutputMsg,0)
+	OBJECT_MAP_ENTRY(Rpc::HttpOutputMsgMarshalFactory,0)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
@@ -70,7 +70,10 @@ extern "C" BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserve
 #endif
 
 // Install function
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_InstallLibrary,2,((in),Omega::bool_t,bInstall,(in),const Omega::string_t&,strSubsts))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_InstallLibrary,3,((in),Omega::bool_t,bInstall,(in),Omega::bool_t,bLocal,(in),const Omega::string_t&,strSubsts))
 {
+	if (bLocal)
+		OMEGA_THROW(L"OORpc will not install locally!");
+
 	Rpc::HttpEndpoint::install(bInstall,strSubsts);
 }

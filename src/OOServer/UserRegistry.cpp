@@ -763,7 +763,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ObjectPtr<ObjectImpl<EnumSTL<Omega::IEnumString,string_t> > > ptrEnum = ObjectImpl<EnumSTL<Omega::IEnumString,string_t> >::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
 		
 	try
 	{
@@ -812,7 +812,7 @@ Omega::IEnumString* Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ObjectPtr<ObjectImpl<EnumSTL<Omega::IEnumString,string_t> > > ptrEnum = ObjectImpl<EnumSTL<Omega::IEnumString,string_t> >::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
 		
 	try
 	{

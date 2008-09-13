@@ -1112,12 +1112,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServe
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment(System::IProxyStubFactory* pPSFactory)
+Apartment::IApartment* OOCore::UserSession::create_apartment()
 {
-	return USER_SESSION::instance()->create_apartment_i(pPSFactory);
+	return USER_SESSION::instance()->create_apartment_i();
 }
 
-Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IProxyStubFactory* pPSFactory)
+Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 {
 	// Create a new Apartment object
 	ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt;
@@ -1145,8 +1145,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IProxyStu
 		Apartment* pApt;
 		OMEGA_NEW(pApt,Apartment(this,apt_id));
 		ptrApt.reset(pApt);
-		ptrApt->init(pPSFactory);
-
+		
 		// Add it to the map
 		try
 		{
@@ -1159,7 +1158,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IProxyStu
 	}
 
 	// Now a new OM for the new apartment connecting to the zero apt
-	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_apartment_om(0,0);
+	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_apartment_om(0);
 
 	// Now get the new apartment OM to create an IApartment
 	IObject* pOF = 0;
@@ -1169,9 +1168,6 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i(System::IProxyStu
 
 	IObject* pObject = 0;
 	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
-
-	// Now set the factory
-	ptrOM->SetProxyStubFactory(pPSFactory);
 
 	return static_cast<Omega::Apartment::IApartment*>(pObject);
 }

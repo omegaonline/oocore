@@ -39,13 +39,13 @@ using namespace OTL;
 
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::StdObjectManager)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ApartmentImpl)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ProxyMarshalFactory)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::ChannelMarshalFactory)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::OutputCDRMarshalFactory)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::SystemExceptionMarshalFactoryImpl)
-	OBJECT_MAP_ENTRY_UNNAMED(OOCore::NoInterfaceExceptionMarshalFactoryImpl)
+	OBJECT_MAP_ENTRY(OOCore::StdObjectManager,0)
+	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::OutputCDRMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl,0)
 	OBJECT_MAP_ENTRY(OOCore::HttpRequest,L"Omega.Http.Request")
 END_LIBRARY_OBJECT_MAP()
 

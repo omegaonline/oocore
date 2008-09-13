@@ -245,11 +245,6 @@ void OOCore::StdObjectManager::Disconnect()
 		(*i)->Release_Safe();
 }
 
-void OOCore::StdObjectManager::SetProxyStubFactory(Omega::System::IProxyStubFactory* pPSFactory)
-{
-	m_ptrPSFactory = pPSFactory;
-}
-
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the oid, iid and flags
@@ -1022,38 +1017,6 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 	
 	pMessage->WriteStructEnd(L"m_ptrChannel");		
-}
-
-System::MetaInfo::IObject_Safe* OOCore::StdObjectManager::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy)
-{
-	if (!m_ptrPSFactory)
-		return OOCore::CreateProxy(iid,pProxy,this);
-
-	System::MetaInfo::IObject_Safe* pObjS = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateProxy_Safe(&iid,pProxy,this,&pObjS);
-	if (pSE)
-		System::MetaInfo::throw_correct_exception(pSE);
-
-	if (!pObjS)
-		OMEGA_THROW(L"Fatal error - Null proxy returned");
-
-	return pObjS;
-}
-
-System::MetaInfo::IStub_Safe* OOCore::StdObjectManager::CreateStub(const guid_t& iid, System::MetaInfo::IStubController_Safe* pController, System::MetaInfo::IObject_Safe* pObjS)
-{
-	if (!m_ptrPSFactory)
-		return OOCore::CreateStub(iid,pController,this,pObjS);
-
-	System::MetaInfo::IStub_Safe* pStub = 0;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<System::IProxyStubFactory*>::safe_type::coerce(m_ptrPSFactory)->CreateStub_Safe(&pStub,&iid,pController,this,pObjS);
-	if (pSE)
-		System::MetaInfo::throw_correct_exception(pSE);
-
-	if (!pStub)
-		OMEGA_THROW(L"Fatal error - Null stub returned");
-
-	return pStub;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0,())

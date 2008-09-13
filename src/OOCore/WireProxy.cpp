@@ -23,6 +23,7 @@
 
 #include "./WireProxy.h"
 #include "./StdObjectManager.h"
+#include "./WireImpl.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -99,7 +100,7 @@ System::MetaInfo::IObject_Safe* OOCore::Proxy::UnmarshalInterface(System::MetaIn
 		if (!ptrProxy)
 		{
 			// Create a new proxy for this interface
-			ptrProxy.attach(m_pManager->CreateProxy(wire_iid,this));
+			ptrProxy.attach(OOCore::CreateProxy(wire_iid,this,m_pManager));
 			bAdd = true;
 		}
 
@@ -221,7 +222,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::QueryInterface_Safe
 				return 0;
 
 			// Create a new proxy for this interface
-			ptrProxy.attach(m_pManager->CreateProxy(*piid,this));
+			ptrProxy.attach(OOCore::CreateProxy(*piid,this,m_pManager));
 			bAdd = true;
 		}
 

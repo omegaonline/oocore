@@ -4,7 +4,7 @@
 
 #include "Test.h"
 
-BEGIN_PROCESS_OBJECT_MAP(L"CoreTests")
+BEGIN_PROCESS_OBJECT_MAP(0)
 END_PROCESS_OBJECT_MAP()
 
 static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)

@@ -91,6 +91,14 @@ namespace Omega
 		virtual void Reset() = 0;
 		virtual IEnumString* Clone() = 0;
 	};
+
+	interface IEnumGuid : public IObject
+	{
+		virtual bool_t Next(uint32_t& count, guid_t* parrVals) = 0;
+		virtual bool_t Skip(uint32_t count) = 0;
+		virtual void Reset() = 0;
+		virtual IEnumGuid* Clone() = 0;
+	};
 	
 	namespace Registry
 	{
@@ -197,12 +205,11 @@ namespace Omega
 		};
 	}
 
-	namespace System
+	namespace TypeInfo
 	{
-		interface IProxyStubFactory : public IObject
+		interface IProvideObjectInfo : public IObject
 		{
-			virtual void CreateProxy(const guid_t& iid, IProxy* pOuter, IMarshaller* pManager, IObject*& pProxy) = 0;
-			virtual IStub* CreateStub(const guid_t& iid, IStubController* pController, IMarshaller* pManager, IObject* pObject) = 0;
+			virtual IEnumGuid* EnumInterfaces() = 0;
 		};
 	}
 }
@@ -274,6 +281,17 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,Skip,1,((in),uint32_t,count))
 	OMEGA_METHOD_VOID(Reset,0,())
 	OMEGA_METHOD(IEnumString*,Clone,0,())
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega, IEnumGuid, "{2EBA6C85-0577-43f9-8A8B-FBE1C9F933D5}",
+
+	// Methods
+	OMEGA_METHOD(bool_t,Next,2,((in_out),uint32_t&,count,(out)(size_is(count)),guid_t*,parrVals))
+	OMEGA_METHOD(bool_t,Skip,1,((in),uint32_t,count))
+	OMEGA_METHOD_VOID(Reset,0,())
+	OMEGA_METHOD(IEnumGuid*,Clone,0,())
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -379,12 +397,12 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Net::IConnectedStream*,OpenStream,2,((in),const string_t&,strEndpoint,(in),IO::IAsyncStreamNotify*,pNotify))
 )
 
-OMEGA_DEFINE_INTERFACE_LOCAL
+OMEGA_DEFINE_INTERFACE
 (
-	Omega::System, IProxyStubFactory, "{947C53AF-63AF-489b-86BB-BB25CC4656E6}",
-
-	OMEGA_METHOD_VOID(CreateProxy,4,((in),const guid_t&,iid,(in),IProxy*,pOuter,(in),IMarshaller*,pManager,(out)(iid_is(iid)),IObject*&,pProxy))
-	OMEGA_METHOD(IStub*,CreateStub,4,((in),const guid_t&,iid,(in),IStubController*,pController,(in),IMarshaller*,pManager,(in),IObject*,pObject))
+	Omega::TypeInfo, IProvideObjectInfo, "{F66A857D-C474-4c9e-B08B-68135AC8459E}",
+		
+	// Methods
+	OMEGA_METHOD(IEnumGuid*,EnumInterfaces,0,())
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,Activation_GetRunningObjectTable,0,())

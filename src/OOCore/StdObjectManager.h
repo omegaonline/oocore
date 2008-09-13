@@ -64,9 +64,6 @@ namespace OOCore
 		bool IsAlive();
 		void DoMarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pParamsOut);
 
-		Omega::System::MetaInfo::IObject_Safe* CreateProxy(const Omega::guid_t& iid, Omega::System::MetaInfo::IProxy_Safe* pProxy);
-		Omega::System::MetaInfo::IStub_Safe* CreateStub(const Omega::guid_t& iid, Omega::System::MetaInfo::IStubController_Safe* pController, Omega::System::MetaInfo::IObject_Safe* pObjS);
-
 	private:
 		StdObjectManager(const StdObjectManager&) :
             OTL::ObjectBase(),
@@ -79,8 +76,7 @@ namespace OOCore
 		ACE_RW_Thread_Mutex                                  m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel>            m_ptrChannel;
 		Omega::uint32_t                                      m_uNextStubId;
-		OTL::ObjectPtr<Omega::System::IProxyStubFactory>     m_ptrPSFactory;
-		
+				
 		std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>                                     m_mapStubObjs;
 		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>::iterator> m_mapStubIds;
 		std::map<Omega::uint32_t,Proxy*>                                                           m_mapProxyIds;
@@ -122,7 +118,6 @@ namespace OOCore
 		void Connect(Omega::Remoting::IChannelBase* pChannel);
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Disconnect();
-		void SetProxyStubFactory(Omega::System::IProxyStubFactory* pPSFactory);
 		void GetRemoteInstance(const Omega::string_t& strOID, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }

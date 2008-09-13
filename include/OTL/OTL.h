@@ -78,14 +78,16 @@
 // For dynamic link libraries:
 //
 // BEGIN_LIBRARY_OBJECT_MAP()
-//    OBJECT_MAP_ENTRY(something derived from AutoObjectFactory)
+//    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory, Object name)
 // END_LIBRARY_OBJECT_MAP()
 //
 // or, for Exe's
 //
-// BEGIN_PROCESS_OBJECT_MAP("app_name")
-//    OBJECT_MAP_ENTRY(something derived from AutoObjectFactory)
+// BEGIN_PROCESS_OBJECT_MAP(L"app_name")
+//    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory, Object name)
 // END_PROCESS_OBJECT_MAP()
+//
+// If "module_name" is NULL, then no type library will be generated
 //
 
 #define BEGIN_LIBRARY_OBJECT_MAP() \
@@ -94,18 +96,12 @@
 	class LibraryModuleImpl : public LibraryModule \
 	{ \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
-
+		
 #define OBJECT_MAP_ENTRY(obj,name) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, false, &Creator<obj::ObjectFactoryClass>::Create, 0 },
-
-#define OBJECT_MAP_ENTRY_LOCAL(obj,name) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, true, &Creator<obj::ObjectFactoryClass>::Create, 0 },
-
-#define OBJECT_MAP_ENTRY_UNNAMED(obj) \
-		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, 0, false, &Creator<obj::ObjectFactoryClass>::Create, 0 },
+		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
 #define END_LIBRARY_OBJECT_MAP() \
-		{ 0,0,0,0,false,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	OMEGA_PRIVATE LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
@@ -115,8 +111,8 @@
 	{ return (OTL::GetModuleBase()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
 	{ pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid); } \
-	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,2,((in),Omega::bool_t,bInstall,(in),const Omega::string_t&,strSubsts)) \
-	{ OTL::GetModule()->RegisterLibrary(bInstall,strSubsts); }
+	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,3,((in),Omega::bool_t,bInstall,(in),Omega::bool_t,bLocal,(in),const Omega::string_t&,strSubsts)) \
+	{ OTL::GetModule()->RegisterLibrary(bInstall,bLocal,strSubsts); }
 
 #define BEGIN_PROCESS_OBJECT_MAP(app_name) \
 	namespace OTL { \
@@ -130,7 +126,7 @@
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
-		{ 0,0,0,0,false,0,0 } }; return CreatorEntries; } \
+		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	OMEGA_PRIVATE ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
@@ -303,6 +299,7 @@ namespace OTL
 				delete this;
 		}
 
+	public:
 		typedef Omega::IObject* (ObjectBase::*PFNMEMQI)(const Omega::guid_t& iid);
 
 		struct QIEntry
@@ -313,9 +310,10 @@ namespace OTL
 			PFNMEMQI pfnMemQI;
 		};
 
-		#if defined(__BORLANDC__)
-		public:
-		#endif
+	#if !defined(__BORLANDC__)
+	protected:
+	#endif
+
 		virtual Omega::IObject* Internal_QueryInterface(const Omega::guid_t& iid, const QIEntry* pEntries)
 		{
 			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
@@ -330,10 +328,7 @@ namespace OTL
 
 			return 0;
 		}
-		#if defined(__BORLANDC__)
-		protected:
-		#endif
-
+	
 		template <class Interface, class Implementation>
 		static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
@@ -413,50 +408,7 @@ namespace OTL
 		}
 	};
 
-	class ModuleBase
-	{
-	public:
-		inline size_t GetLockCount() const;
-		inline void IncLockCount();
-		inline void DecLockCount();
-		inline Omega::Threading::CriticalSection& GetLock();
-
-		typedef void (*TERM_FUNC)(void* arg);
-		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
-
-	protected:
-		ModuleBase() :
-			m_lockCount(0)
-		{ }
-
-		inline virtual ~ModuleBase();
-
-		struct CreatorEntry
-		{
-			const Omega::guid_t* (*pfnOid)();
-			const Omega::Activation::Flags_t (*pfnActivationFlags)();
-			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
-			const wchar_t* pszName;
-			bool bLocal;
-			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
-			Omega::uint32_t cookie;
-		};
-
-		virtual CreatorEntry* getCreatorEntries() = 0;
-		inline void fini();
-
-	private:
-		Omega::Threading::CriticalSection           m_csMain;
-		Omega::Threading::AtomicOp<Omega::uint32_t> m_lockCount;
-
-		struct Term
-		{
-			TERM_FUNC	pfn;
-			void*		arg;
-		};
-		std::list<Term> m_listTerminators;
-	};
-
+	class ModuleBase;
 	ModuleBase* GetModuleBase();
 
 	template <class ROOT>
@@ -766,58 +718,6 @@ namespace OTL
 		}
 	};
 
-	class LibraryModule : public ModuleBase
-	{
-	public:
-		template <class T>
-		struct Creator
-		{
-			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
-			{
-				Omega::IObject* pObject = ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
-				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-				return pObject;
-			}
-		};
-
-		inline Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
-		inline void RegisterLibrary(Omega::bool_t bInstall, const Omega::string_t& strSubsts);
-
-	protected:
-		LibraryModule()
-		{}
-	};
-
-	class ProcessModule : public ModuleBase
-	{
-	public:
-		// Register and unregister with the ROT
-		inline void RegisterObjectFactories();
-		inline void UnregisterObjectFactories();
-
-		inline void Run();
-
-	protected:
-		template <class T>
-		struct Creator
-		{
-			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
-			{
-				Omega::IObject* pObject = NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
-				if (!pObject)
-					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-				return pObject;
-			}
-		};
-
-		ProcessModule()
-		{}
-
-		// Register and unregister with the OORegistry
-		inline void RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
-	};
-
 	template <class T, const Omega::guid_t* pOID>
 	class ObjectFactoryCallCreate
 	{
@@ -870,7 +770,7 @@ namespace OTL
 
 		static const Omega::guid_t* GetOid()
 		{
-			return pOID;
+			return (!pOID ? &Omega::guid_t::Null() : pOID);
 		}
 
 		static const Omega::Activation::Flags_t GetActivationFlags()
@@ -896,6 +796,101 @@ namespace OTL
 	{
 	public:
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreate<bool,pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+	};
+	
+	class ModuleBase
+	{
+	public:
+		inline size_t GetLockCount() const;
+		inline void IncLockCount();
+		inline void DecLockCount();
+		inline Omega::Threading::CriticalSection& GetLock();
+
+		typedef void (*TERM_FUNC)(void* arg);
+		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
+
+	protected:
+		ModuleBase() :
+			m_lockCount(0)
+		{ }
+
+		inline virtual ~ModuleBase();
+
+		struct CreatorEntry
+		{
+			const Omega::guid_t* (*pfnOid)();
+			const Omega::Activation::Flags_t (*pfnActivationFlags)();
+			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
+			const wchar_t* pszName;
+			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
+			Omega::uint32_t cookie;
+		};
+
+		virtual CreatorEntry* getCreatorEntries() = 0;
+		inline void fini();
+
+	private:
+		Omega::Threading::CriticalSection           m_csMain;
+		Omega::Threading::AtomicOp<Omega::uint32_t> m_lockCount;
+
+		struct Term
+		{
+			TERM_FUNC	pfn;
+			void*		arg;
+		};
+		std::list<Term> m_listTerminators;
+	};
+
+	class LibraryModule : public ModuleBase
+	{
+	public:
+		template <class T>
+		struct Creator
+		{
+			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
+			{
+				Omega::IObject* pObject = ObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
+				if (!pObject)
+					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				return pObject;
+			}
+		};
+
+		inline Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+		inline void RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts);
+
+	protected:
+		LibraryModule()
+		{}
+	};
+
+	class ProcessModule : public ModuleBase
+	{
+	public:
+		// Register and unregister with the ROT
+		inline void RegisterObjectFactories();
+		inline void UnregisterObjectFactories();
+
+		inline void Run();
+
+	protected:
+		template <class T>
+		struct Creator
+		{
+			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
+			{
+				Omega::IObject* pObject = NoLockObjectImpl<T>::CreateInstancePtr()->QueryInterface(iid);
+				if (!pObject)
+					throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				return pObject;
+			}
+		};
+
+		ProcessModule()
+		{}
+
+		// Register and unregister with the OORegistry
+		inline void RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
 	};
 
 	template <class EnumIFace, class EnumType>
@@ -925,6 +920,16 @@ namespace OTL
 			m_listItems.push_back(v);
 		}
 
+		bool Find(const EnumType& v)
+		{
+			for (std::list<EnumType>::const_iterator i=m_listItems.begin();i!=m_listItems.end();++i)
+			{
+				if (*i == v)
+					return true;
+			}
+			return false;
+		}
+
 	private:
 		BEGIN_INTERFACE_MAP(MyType)
 			INTERFACE_ENTRY(EnumIFace)
@@ -941,7 +946,7 @@ namespace OTL
 		{
 			Omega::Threading::Guard guard(m_cs);
 
-			uint32_t c = count;
+			Omega::uint32_t c = count;
 			count = 0;
 			while (m_pos!=m_listItems.end() && count < c)
 			{
@@ -985,6 +990,52 @@ namespace OTL
 	};
 
 	typedef EnumSTL<Omega::IEnumString,Omega::string_t>	EnumString;
+	typedef EnumSTL<Omega::IEnumGuid,Omega::guid_t>	EnumGuid;
+
+	template <typename ROOT>
+	class IProvideObjectInfoImpl :
+		public Omega::TypeInfo::IProvideObjectInfo
+	{
+	// IProvideObjectInfo members
+	public:
+		virtual Omega::IEnumGuid* EnumInterfaces()
+		{
+			ObjectPtr<ObjectImpl<EnumGuid> > ptrEnum = ObjectImpl<EnumGuid>::CreateInstancePtr();
+
+			const ObjectBase::QIEntry* pEntries = ROOT::getQIEntries();
+			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
+			{
+				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
+				{
+					if (*(pEntries[i].pGuid) != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
+						ptrEnum->Append(*(pEntries[i].pGuid));
+				}
+				else
+				{
+					ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
+					ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset,pEntries[i].pfnMemQI)));
+					if (ptrPOI)
+					{
+						// Add each entry in ptrPOI
+						for (;;)
+						{
+							Omega::uint32_t count = 1;
+							Omega::guid_t iid;
+							ptrEnum->Next(count,&iid);
+							if (count==0)
+								break;
+
+							if (!ptrEnum->Find(iid) && iid != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
+								ptrEnum->Append(iid);
+						}
+					}
+				}
+			}
+
+			ptrEnum->Init();
+			return ptrEnum.AddRef();
+		}
+	};
 }
 
 #include <OTL/OTL.inl>

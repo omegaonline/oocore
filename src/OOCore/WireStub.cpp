@@ -23,6 +23,7 @@
 
 #include "./WireStub.h"
 #include "./StdObjectManager.h"
+#include "./WireImpl.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -144,7 +145,7 @@ System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
 			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrQI(pQI);
 						
 			// Create a stub for this interface
-			ptrStub.attach(m_pManager->CreateStub(iid,this,ptrQI));
+			ptrStub.attach(OOCore::CreateStub(iid,this,m_pManager,ptrQI));
 			if (!ptrStub)
 				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 

@@ -33,7 +33,6 @@ namespace OOCore
 	public:
 		Apartment(UserSession* pSession, ACE_CDR::UShort id);
 		
-		void init(Omega::System::IProxyStubFactory* pPSFactory);
 		void close();
 		
 		void process_channel_close(ACE_CDR::ULong closed_channel_id);
@@ -43,7 +42,7 @@ namespace OOCore
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(const Message* pMsg, const ACE_Time_Value& deadline);
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(ACE_CDR::UShort apartment_id, Omega::System::IProxyStubFactory* pPSFactory);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(ACE_CDR::UShort apartment_id);
 		Omega::IException* apartment_message(ACE_CDR::UShort apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		
 	private:
@@ -51,7 +50,6 @@ namespace OOCore
 		UserSession*        m_pSession;
 		ACE_CDR::UShort     m_id;
 
-		OTL::ObjectPtr<Omega::System::IProxyStubFactory>                    m_ptrPSFactory;
 		std::map<ACE_CDR::ULong,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >     m_mapChannels;
 		std::map<ACE_CDR::UShort,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > > m_mapApartments;
 	};

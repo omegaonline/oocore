@@ -22,10 +22,10 @@
 #ifndef OOCORE_WIREPROXY_H_INCLUDED_
 #define OOCORE_WIREPROXY_H_INCLUDED_
 
+#include "./StdObjectManager.h"
+
 namespace OOCore
 {
-	class StdObjectManager;
-
 	// {69099DD8-A628-458a-861F-009E016DB81B}
 	OMEGA_DECLARE_OID(OID_ProxyMarshalFactory);
 
@@ -88,6 +88,13 @@ namespace OOCore
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL WriteKey_Safe(Omega::System::MetaInfo::IMessage_Safe* pMessage)
 		{
 			return wire_write(L"$stub_id",pMessage,m_proxy_id);
+		}
+
+		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetMarshaller_Safe(Omega::System::MetaInfo::IMarshaller_Safe** ppMarshaller)
+		{
+			*ppMarshaller = m_pManager;
+			(*ppMarshaller)->AddRef_Safe();
+			return 0;
 		}
 
 		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL IsAlive_Safe(Omega::bool_t* pRet);

@@ -8,6 +8,7 @@ OMEGA_DEFINE_OID(Test, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}"
 class TestProcessImpl :
 	public OTL::ObjectBase,
 	public OTL::AutoObjectFactory<TestProcessImpl,&Test::OID_TestProcess>,
+	public OTL::IProvideObjectInfoImpl<TestProcessImpl>,
 	public SimpleTestImpl
 {
 public:
@@ -18,6 +19,7 @@ public:
 
 	BEGIN_INTERFACE_MAP(TestProcessImpl)
 		INTERFACE_ENTRY(Test::ISimpleTest)
+		INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 	END_INTERFACE_MAP()
 };
 

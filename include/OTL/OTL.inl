@@ -103,7 +103,7 @@ Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, O
 	return 0;
 }
 
-void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::string_t& strSubsts)
+void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts)
 {
 	Omega::string_t strXML;
 
@@ -112,7 +112,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 	{
 		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
-		if (g[i].bLocal)
+		if (bLocal)
 			strXML += L"<key name=\"\\Local User\\Objects\">";
 		else
 			strXML += L"<key name=\"\\Objects\">";
@@ -120,14 +120,15 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, const Omega::st
 		if (g[i].pszName != 0)
 		{
 			Omega::string_t strName = g[i].pszName;
-		
+					
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
 					L"</key>";
 		}
 
-		strXML += 	L"<key name=\"OIDs\">"
+		strXML += 	
+					L"<key name=\"OIDs\">"
 						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
 							L"<value name=\"Library\">%LIB_PATH%</value>"
 						L"</key>"
@@ -170,7 +171,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 	{
 		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
-		if (g[i].bLocal)
+		if (bLocal)
 			strXML += L"<key name=\"\\Local User\\Objects\">";
 		else
 			strXML += L"<key name=\"\\Objects\">";
@@ -188,12 +189,8 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 		strXML +=
 				L"<key name=\"OIDs\">"
 					L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
-						L"<value name=\"Application\">" + strAppName + L"</value>";
-
-		//if (false)
-		//	strXML +=	L"<value name=\"Public\" type=\"Integer\">1</value>";
-
-		strXML +=	L"</key>"
+						L"<value name=\"Application\">" + strAppName + L"</value>"
+					L"</key>"
 				L"</key>"
 			L"</key>";
 	}

@@ -818,11 +818,12 @@ string_t User::HttpRequest::Resource()
 
 Omega::IEnumString* User::HttpRequest::GetAllRequestHeaders()
 {
-	ObjectPtr<ObjectImpl<EnumSTL<Omega::IEnumString,string_t> > > ptrEnum = ObjectImpl<EnumSTL<Omega::IEnumString,string_t> >::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
 
 	for (std::map<string_t,HttpConnection::Header>::const_iterator i = m_mapRequestHeaders.begin();i!=m_mapRequestHeaders.end();++i)
 		ptrEnum->Append(i->second.strHeader);
 
+	ptrEnum->Init();
 	return ptrEnum.AddRef();
 }
 

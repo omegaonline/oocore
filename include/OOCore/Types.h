@@ -203,8 +203,6 @@ namespace Omega
 		inline int Compare(const guid_t& rhs) const;
 
 		inline string_t ToString() const;
-		
-
 		inline static guid_t FromString(const wchar_t* sz);
 		inline static guid_t FromString(const string_t& str);
 		inline static guid_t Create();

@@ -343,11 +343,12 @@ string_t OOCore::HttpBase::GetResponseHeader(const string_t& strHeader)
 
 Omega::IEnumString* OOCore::HttpBase::GetAllResponseHeaders()
 {
-	ObjectPtr<ObjectImpl<EnumSTL<Omega::IEnumString,string_t> > > ptrEnum = ObjectImpl<EnumSTL<Omega::IEnumString,string_t> >::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
 
 	for (std::map<string_t,Header>::iterator i = m_mapResponseHeaders.begin();i!=m_mapResponseHeaders.end();++i)
 		ptrEnum->Append(i->second.strHeader);
 
+	ptrEnum->Init();
 	return ptrEnum.AddRef();
 }
 

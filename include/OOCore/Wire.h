@@ -88,6 +88,7 @@ namespace Omega
 		interface IProxy : public IObject
 		{
 			virtual void WriteKey(Remoting::IMessage* pMessage) = 0;
+			virtual IMarshaller* GetMarshaller() = 0;
 			virtual bool_t IsAlive() = 0;
 		};
 	}
@@ -216,6 +217,7 @@ namespace Omega
 				Omega::System, IProxy,
 
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Remoting::IMessage*,pMessage))
+				OMEGA_METHOD(IMarshaller*,GetMarshaller,0,())
 				OMEGA_METHOD(bool_t,IsAlive,0,())
 			)
 			typedef IProxy_Impl_Safe<IObject_Safe> IProxy_Safe;

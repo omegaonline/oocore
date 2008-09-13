@@ -35,11 +35,6 @@ OOCore::Apartment::Apartment(UserSession* pSession, ACE_CDR::UShort id) :
 {
 }
 
-void OOCore::Apartment::init(System::IProxyStubFactory* pPSFactory)
-{
-	m_ptrPSFactory = pPSFactory;
-}
-
 void OOCore::Apartment::close()
 {
 	// Close all open OM's
@@ -138,8 +133,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(ACE_CD
 
 	// Create a new OM
 	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
-	ptrOM->SetProxyStubFactory(m_ptrPSFactory);
-	
+		
 	// Create a new channel
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
 	ptrChannel->init(m_pSession,m_id,src_channel_id,m_pSession->classify_channel(src_channel_id),message_oid,ptrOM);
@@ -212,7 +206,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const ACE_Time_Valu
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR::UShort apartment_id, System::IProxyStubFactory* pPSFactory)
+ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR::UShort apartment_id)
 {
 	// Lookup existing..
 	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
@@ -233,7 +227,6 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR:
 	{
 		// Create a new OM
 		ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
-		ptrOM->SetProxyStubFactory(pPSFactory);
 		
 		// Create a new channel
 		ptrChannel = ObjectImpl<AptChannel>::CreateInstancePtr();
@@ -262,7 +255,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(ACE_CDR:
 IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	// Find and/or create the object manager associated with src_channel_id
-	ObjectPtr<Remoting::IObjectManager> ptrOM = get_apartment_om(apt_id,m_ptrPSFactory);
+	ObjectPtr<Remoting::IObjectManager> ptrOM = get_apartment_om(apt_id);
 
 	// Update session state and timeout
 	ACE_CDR::UShort old_id = m_pSession->update_state(apt_id,&timeout);
@@ -289,13 +282,13 @@ IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, TypeInf
 	return pE;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,1,((in),Omega::System::IProxyStubFactory*,pPSFactory))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,0,())
 {
 	if (OOCore::HostedByOOServer())
 		OMEGA_THROW(L"Apartments are not supported in the OOSvrUser process!");
 
 	// Create a new apartment
-	return OOCore::UserSession::create_apartment(pPSFactory);
+	return OOCore::UserSession::create_apartment();
 }
 
 void OOCore::AptChannel::init(ACE_CDR::UShort apt_id, ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt, Remoting::IObjectManager* pOM)

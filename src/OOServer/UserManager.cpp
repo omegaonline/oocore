@@ -30,10 +30,10 @@
 #include <vld.h>
 #endif
 
-// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
-
 namespace OTL 
 {
+	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
+	// We don't use the macro as we overide some behaviours
 	namespace 
 	{
 		class ProcessModuleImpl : public ProcessModule
@@ -50,10 +50,10 @@ namespace OTL
 			{ 
 				static ModuleBase::CreatorEntry CreatorEntries[] = 
 				{
-					OBJECT_MAP_ENTRY_UNNAMED(User::ChannelMarshalFactory)
-					OBJECT_MAP_ENTRY_UNNAMED(User::TcpProtocolHandler)
-					OBJECT_MAP_ENTRY_UNNAMED(User::HttpProtocolHandler)	
-					{ 0,0,0,0,false,0,0 } 
+					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory,0)
+					OBJECT_MAP_ENTRY(User::TcpProtocolHandler,0)
+					OBJECT_MAP_ENTRY(User::HttpProtocolHandler,0)	
+					{ 0,0,0,0,0,0 } 
 				}; 
 				return CreatorEntries; 
 			}

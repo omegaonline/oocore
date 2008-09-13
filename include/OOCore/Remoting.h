@@ -61,7 +61,6 @@ namespace Omega
 			virtual void Connect(IChannelBase* pChannel) = 0;
 			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t timeout) = 0;
 			virtual void Disconnect() = 0;
-			virtual void SetProxyStubFactory(System::IProxyStubFactory* pPSFactory) = 0;
 			virtual void GetRemoteInstance(const Omega::string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
 			virtual void MarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual void ReleaseMarshalData(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
@@ -136,7 +135,6 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannelBase*,pChannel))
 	OMEGA_METHOD(Remoting::IMessage*,Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Disconnect,0,())
-	OMEGA_METHOD_VOID(SetProxyStubFactory,1,((in),System::IProxyStubFactory*,pPSFactory))
 	OMEGA_METHOD_VOID(GetRemoteInstance,4,((in),const string_t&,strOID,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))

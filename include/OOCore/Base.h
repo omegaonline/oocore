@@ -62,7 +62,7 @@ namespace Omega
 	{
 		enum Types
 		{
-			typeUnknown = 0xFFFF,
+			typeUnknown = 0xFF,
 			typeVoid = 0,
 			typeBool,
 			typeByte,
@@ -78,6 +78,7 @@ namespace Omega
 			typeGuid,
 			typeObject,
 
+			typeMask = typeUnknown,
 			typeConst = 0x100,
 			typeArray = 0x200,
 			typeReference = 0x400,

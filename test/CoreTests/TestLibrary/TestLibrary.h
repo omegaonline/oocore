@@ -7,7 +7,10 @@
 #define TEST_DECLARE_OID(n) OMEGA_IMPORT_OID(n)
 #endif
 
-namespace Test
+namespace Omega
 {
-	TEST_DECLARE_OID(OID_TestLibrary)
+	namespace TestSuite
+	{
+		TEST_DECLARE_OID(OID_TestLibrary)
+	}
 }

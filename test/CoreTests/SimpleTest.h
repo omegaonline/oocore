@@ -4,7 +4,7 @@
 #include "./interfaces.h"
 
 class SimpleTestImpl :
-	public Test::ISimpleTest
+	public Omega::TestSuite::ISimpleTest
 {
 public:
 	Omega::bool_t BoolNot1(Omega::bool_t v)

@@ -1,13 +1,12 @@
 #include <OTL/OTL.h>
 
 #include "../SimpleTest.h"
-#include "./TestProcess.h"
 
-OMEGA_DEFINE_OID(Test, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
+extern const Omega::guid_t OID_TestProcess =  Omega::guid_t::FromString(L"{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
 
 class TestProcessImpl :
 	public OTL::ObjectBase,
-	public OTL::AutoObjectFactory<TestProcessImpl,&Test::OID_TestProcess>,
+	public OTL::AutoObjectFactory<TestProcessImpl,&OID_TestProcess>,
 	public OTL::IProvideObjectInfoImpl<TestProcessImpl>,
 	public SimpleTestImpl
 {
@@ -18,7 +17,7 @@ public:
 	void Abort();
 
 	BEGIN_INTERFACE_MAP(TestProcessImpl)
-		INTERFACE_ENTRY(Test::ISimpleTest)
+		INTERFACE_ENTRY(Omega::TestSuite::ISimpleTest)
 		INTERFACE_ENTRY(Omega::TypeInfo::IProvideObjectInfo)
 	END_INTERFACE_MAP()
 };

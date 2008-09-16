@@ -198,10 +198,6 @@
 				RelativePath="..\SimpleTest.h"
 				>
 			</File>
-			<File
-				RelativePath=".\testprocess.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

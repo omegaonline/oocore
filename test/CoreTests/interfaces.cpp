@@ -1,13 +1,13 @@
 #include <OTL/OTL.h>
 #include "./interfaces.h"
-#include "TestLibrary/TestLibrary.h"
+#include "./TestLibrary/TestLibrary.h"
 
 #include "Test.h"
 
 BEGIN_PROCESS_OBJECT_MAP(0)
 END_PROCESS_OBJECT_MAP()
 
-static bool do_interface_tests(OTL::ObjectPtr<Test::ISimpleTest>& ptrSimpleTest)
+static bool do_interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>& ptrSimpleTest)
 {
 	{
 		TEST(ptrSimpleTest->BoolNot1(true) == false);
@@ -102,13 +102,13 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 		return true;
 			
 	// Test the simplest case
-	OTL::ObjectPtr<Test::ISimpleTest> ptrSimpleTest(Test::OID_TestLibrary,Omega::Activation::InProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
 	do_interface_tests(ptrSimpleTest);
 
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(Test::OID_TestLibrary,Omega::Activation::OutOfProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary,Omega::Activation::OutOfProcess);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -117,19 +117,19 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	}
 
 	// Test for local activation
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(Test::OID_TestLibrary.ToString());
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary.ToString());
 	do_interface_tests(ptrSimpleTest);
 
 	// Test for local activation
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Library");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Library");
 	do_interface_tests(ptrSimpleTest);
 
 	// Test for local activation with '@local'
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Library@local");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Library@local");
 	do_interface_tests(ptrSimpleTest);
 
 	// Test for local activation with '@local'
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(Test::OID_TestLibrary.ToString() + L"@local");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary.ToString() + L"@local");
 	do_interface_tests(ptrSimpleTest);
 
 	// Test redirecting the registration
@@ -148,14 +148,14 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
 	do_interface_tests(ptrSimpleTest);
 	
 	// Test it has gone
 	Omega::Registry::AddXML(strXML,false);
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest");
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -176,14 +176,14 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest@local");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
 	do_interface_tests(ptrSimpleTest);
 	
 	// Test it has gone
 	Omega::Registry::AddXML(strXML,false);
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"MyLittleTest");
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -196,7 +196,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Library");
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Library");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -206,7 +206,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(Test::OID_TestLibrary);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -222,13 +222,13 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	TEST(system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Test the simplest case
-	OTL::ObjectPtr<Test::ISimpleTest> ptrSimpleTest(L"Test.Process",Omega::Activation::OutOfProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process",Omega::Activation::OutOfProcess);
 	do_interface_tests(ptrSimpleTest);
 
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Process",Omega::Activation::InProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process",Omega::Activation::InProcess);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -250,7 +250,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
 	ptrReg->SetIntegerValue(L"Public",0);
 
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Process");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
 	do_interface_tests(ptrSimpleTest);
 
 	// Kill the running version
@@ -265,7 +265,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	
 	ptrReg->SetIntegerValue(L"Public",1);
 
-	ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Process");
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
 	do_interface_tests(ptrSimpleTest);
 
 	// Kill the running version
@@ -283,7 +283,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	// Check its gone
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Test::ISimpleTest>(L"Test.Process");
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -313,7 +313,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	// Register the library ready for local loopback stuff
 	system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str());
 		
-	OTL::ObjectPtr<Test::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
 	do_interface_tests(ptrSimpleTest);
 	
 	return true;
@@ -323,7 +323,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 {
 	system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
 
-	OTL::ObjectPtr<Test::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
 	do_interface_tests(ptrSimpleTest);
 
 	return true;

@@ -192,21 +192,21 @@ bool Root::SpawnedProcess::CleanEnvironment()
 
 bool Root::SpawnedProcess::close_all_fds()
 {
-#ifdef LINUX 
+#ifdef LINUX
 	/* faster under linux as avoid untold syscalls */
 	return linux_close_all_fds();
 
 #elif defined(_POSIX_OPEN_MAX)
-	/* POSIX's way, needs testing on other unix systems particuarly solaris */
+	/* POSIX's way, needs testing on other unix systems particularly solaris */
 	#if (_POSIX_OPEN_MAX == -1)
 		/* value unsupported */
-		
+
 	#elif (_POSIX_OPEN_MAX == 0)
 		/* value only obtainable at runtime */
-		return_posix_close_all_fds(sysconf(_SC_OPEN_MAX));
+		return posix_close_all_fds(sysconf(_SC_OPEN_MAX));
 	#else
 		/* value statically defined */
-		return_posix_close_all_fds(onf(_POSIX_OPEN_MAX));
+		return posix_close_all_fds(_POSIX_OPEN_MAX);
 	#endif
 
 #else
@@ -222,7 +222,7 @@ bool Root::SpawnedProcess::posix_close_all_fds(long max_fd)
 	most of which were never opened */
 	if (max_fd <= 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Indeterminate limit passed in, pick a high limit and pass that to %s\n"),__func__),false);
-	
+
 	while(x <= max_fd)
 		close(x++);
 
@@ -233,13 +233,15 @@ bool Root::SpawnedProcess::posix_close_all_fds(long max_fd)
 bool Root::SpawnedProcess::linux_close_all_fds()
 {
 	/* should have nothing like this many file descriptors open */
-	const int MAX_N_FDS = 100
+	const int MAX_N_FDS = 100;
 	int fds[MAX_N_FDS] = {0};
-	str[1024] = {0};
-	int count=-1;
+
+	int count = -1;
 	DIR *pdir;
 	struct dirent *pfile;
-	snprintf(str,1024,"/proc/%u/fd/",getpid())
+
+	char str[1024] = {0};
+	snprintf(str,1024,"/proc/%u/fd/",getpid());
 
 again:
 	/* walk proc filesystem and close fds there */
@@ -247,7 +249,7 @@ again:
 	pdir = opendir(str);
 	if(!pdir)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("opendir() failed!")),false);
-		
+
 	while ((pfile = readdir(pdir)) != 0)
 	{
 		/* skip ./ and ../ entries */
@@ -267,11 +269,15 @@ again:
 			continue;
 
 		/* close all existing entries and restart loop */
+
+		void* FIXME_JAY;
+
+		/* Commented out becaus eit doesn't build
 		if (++count >= entries)
 		{
 			while(--count >= 0 )
 			{
-				/* FIXME add propper error handling */
+				// FIXME add proper error handling
 				close(fds[x++]);
 			}
 
@@ -279,14 +285,14 @@ again:
 			pdir  = NULL;
 			pfile = NULL;
 			goto again;
-		}
+		}*/
 		fds[count] = atoi(pfile->d_name);
 	}
 
 	void* TODO; // Check this!
 
 	closedir(pdir);
-	
+
 	return true;
 }
 
@@ -295,7 +301,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	void* TICKET_96; // Look at using PAM for this...
 
 	// Get the correct uid from the registry
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Get the uid...
 	ACE_INT64 key = 0;
@@ -514,7 +520,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	}
 	ACE_OS::endpwent();
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Set the sandbox uid
 	ACE_INT64 key = 0;

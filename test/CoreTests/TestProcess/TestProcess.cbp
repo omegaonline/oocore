@@ -70,10 +70,10 @@
 					<Add option="-O0" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../include" />
+					<Add directory="../../../include" />
 				</Compiler>
 				<Linker>
-					<Add library="../../bin/Debug/libOOCored.so" />
+					<Add library="../../../bin/Debug/libOOCored.so" />
 				</Linker>
 			</Target>
 			<Target title="Release Unix">
@@ -92,11 +92,11 @@
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DNDEBUG" />
-					<Add directory="../../include" />
+					<Add directory="../../../include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="../../bin/libOOCore.so" />
+					<Add library="../../../bin/libOOCore.so" />
 				</Linker>
 			</Target>
 		</Build>

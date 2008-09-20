@@ -7,15 +7,11 @@
 		</Project>
 		<Project filename="../test/CoreTests/CoreTests.cbp" active="1">
 			<Depends filename="../src/OOServer/OOServer.cbp" />
-			<Depends filename="../test/CoreTests/TestProcess/TestProcess.cbp" />
 			<Depends filename="../src/OOServer/OOSvrUser.cbp" />
 			<Depends filename="../src/OORpc/OORpc.cbp" />
 			<Depends filename="../test/CoreTests/TestLibrary/TestLibrary.cbp" />
-		</Project>
-		<Project filename="../test/CoreTests/TestProcess/TestProcess.cbp">
-			<Depends filename="../src/OOCore/OOCore.cbp" />
-			<Depends filename="../src/OOServer/OOServer.cbp" />
-			<Depends filename="../src/OOServer/OOSvrUser.cbp" />
+			<Depends filename="../tools/OORegister/OORegister.cbp" />
+			<Depends filename="../test/CoreTests/TestProcess/TestProcess.cbp" />
 		</Project>
 		<Project filename="../tools/OORegEdit/OORegEdit.cbp">
 			<Depends filename="../src/OOCore/OOCore.cbp" />
@@ -36,5 +32,10 @@
 			<Depends filename="../src/OOServer/OOSvrUser.cbp" />
 		</Project>
 		<Project filename="../tools/OORegister/OORegister.cbp" />
+		<Project filename="../test/CoreTests/TestProcess/TestProcess.cbp">
+			<Depends filename="../src/OOCore/OOCore.cbp" />
+			<Depends filename="../src/OOServer/OOServer.cbp" />
+			<Depends filename="../src/OOServer/OOSvrUser.cbp" />
+		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

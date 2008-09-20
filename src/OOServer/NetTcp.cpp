@@ -36,7 +36,7 @@ namespace User
 	{
 	public:
 		void open(const ACE_INET_Addr& addr);
-		
+
 		BEGIN_INTERFACE_MAP(TcpStream)
 			INTERFACE_ENTRY(IO::IStream)
 			INTERFACE_ENTRY(Net::IConnectedStream)
@@ -44,7 +44,7 @@ namespace User
 
 	private:
 		ACE_SOCK_Stream m_stream;
-				
+
 	// IStream members
 	public:
 		void ReadBytes(uint64_t& cbBytes, byte_t* val);
@@ -65,7 +65,7 @@ namespace User
 		virtual ~TcpAsyncStream();
 
 		void open(TcpHandler* pHandler, uint32_t stream_id);
-						
+
 		BEGIN_INTERFACE_MAP(TcpAsyncStream)
 			INTERFACE_ENTRY(IO::IStream)
 			INTERFACE_ENTRY(Net::IConnectedStream)
@@ -74,7 +74,7 @@ namespace User
 	private:
 		TcpHandler* m_pHandler;
 		uint32_t    m_stream_id;
-				
+
 	// IStream members
 	public:
 		void ReadBytes(uint64_t& cbBytes, byte_t* val);
@@ -205,7 +205,7 @@ void User::TcpAsyncStream::ReadBytes(uint64_t& cbBytes, byte_t* /*val*/)
 	// Create a new Message_Block
 	ACE_Message_Block* mb = 0;
 	OMEGA_NEW(mb,ACE_Message_Block(len));
-	
+
 	try
 	{
 		m_pHandler->AsyncRead(m_stream_id,mb,len);
@@ -270,7 +270,7 @@ void User::TcpHandler::TcpAsync::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 		release();
 		return;
 	}
-	
+
 	bool bOk = false;
 	if (m_reader.open(*this,new_handle) == 0 &&
 		m_writer.open(*this,new_handle) == 0)
@@ -289,10 +289,10 @@ void User::TcpHandler::TcpAsync::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 	if (!bOk)
 	{
 		int err = ACE_OS::last_error();
-		
+
 		ACE_OutputCDR output;
 		output << err;
-		
+
 		++m_refcount;
 		if (!output.good_bit() || !Manager::call_async_function(&error_thunk,this,output.begin()))
 		{
@@ -342,7 +342,7 @@ void User::TcpHandler::TcpAsync::handle_read_stream(const ACE_Asynch_Read_Stream
 			output << (int)result.error();
 		else
 			output << (int)ESHUTDOWN;
-		
+
 		++m_refcount;
 		if (!output.good_bit() || !Manager::call_async_function(&error_thunk,this,output.begin()))
 		{
@@ -371,7 +371,7 @@ void User::TcpHandler::TcpAsync::handle_write_stream(const ACE_Asynch_Write_Stre
 	{
 		ACE_OutputCDR output;
 		output << (int)result.error();
-		
+
 		++m_refcount;
 		if (!output.good_bit() || !Manager::call_async_function(&error_thunk,this,output.begin()))
 		{
@@ -420,7 +420,7 @@ void User::TcpHandler::TcpAsync::error_thunk(void* pParam, ACE_InputCDR& input)
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
-	}	
+	}
 	catch (...)
 	{
 	}
@@ -441,7 +441,7 @@ void User::TcpHandler::TcpAsync::open_stream_thunk(void* pParam, ACE_InputCDR&)
 
 		pE->Release();
 		pThis->m_stream.close();
-	}	
+	}
 	catch (...)
 	{
 		pThis->m_stream.close();
@@ -463,7 +463,7 @@ void User::TcpHandler::TcpAsync::handle_read_stream_thunk(void* pParam, ACE_Inpu
 
 		pE->Release();
 		pThis->m_stream.close();
-	}	
+	}
 	catch (...)
 	{
 		pThis->m_stream.close();
@@ -495,7 +495,7 @@ void User::TcpHandler::TcpAsync::handle_write_stream_thunk(void* pParam, ACE_Inp
 
 		pE->Release();
 		pThis->m_stream.close();
-	}	
+	}
 	catch (...)
 	{
 		pThis->m_stream.close();
@@ -569,7 +569,7 @@ void User::TcpHandler::remove_async(uint32_t stream_id)
 		{
 			if (i->second.pAsync)
 				i->second.pAsync->release();
-			
+
 			m_mapAsyncs.erase(i);
 		}
 	}
@@ -760,7 +760,7 @@ void User::TcpHandler::AsyncConnector::call_error(void* pParam, ACE_InputCDR& in
 
 		if (!input.good_bit())
 			OMEGA_THROW(ACE_OS::last_error());
-		
+
 		pThis->OnAsyncError(stream_id,err);
 	}
 	catch (IException* pE)
@@ -777,7 +777,7 @@ void User::TcpHandler::AsyncConnector::call_error(void* pParam, ACE_InputCDR& in
 void User::TcpHandler::AsyncConnector::handle_connect(const ACE_Asynch_Connect::Result& result)
 {
 	ACE_Asynch_Connector<TcpAsync>::handle_connect(result);
-	
+
 	if (!result.success())
 	{
 		uint32_t stream_id = (uint32_t)(size_t)result.act();
@@ -786,7 +786,7 @@ void User::TcpHandler::AsyncConnector::handle_connect(const ACE_Asynch_Connect::
 		output << stream_id;
 		int err = result.error();
 		output << err;
-				
+
 		if (!output.good_bit() || !Manager::call_async_function(&call_error,m_pHandler,output.begin()))
 			m_pHandler->remove_async(stream_id);
 	}
@@ -826,7 +826,7 @@ void User::TcpHandler::Stop()
 				i->second.pAsync->close();
 				i->second.pAsync->release();
 			}
-		}		
+		}
 	}
 	catch (std::exception& e)
 	{
@@ -890,7 +890,7 @@ Net::IConnectedStream* User::TcpHandler::OpenStream(const string_t& strEndpoint,
 
 			// Start an async connect
 			if (m_connector.connect(addr,(const ACE_INET_Addr&)ACE_Addr::sap_any,1,(const void*)(size_t)stream_id) != 0)
-				OMEGA_THROW(ACE_OS::last_error());	
+				OMEGA_THROW(ACE_OS::last_error());
 
 			return ptrStream.AddRef();
 		}
@@ -907,9 +907,9 @@ Net::IConnectedStream* User::TcpHandler::OpenStream(const string_t& strEndpoint,
 	{
 		ObjectPtr<ObjectImpl<TcpStream> > ptrStream = ObjectImpl<TcpStream>::CreateInstancePtr();
 		ptrStream->open(addr);
-				
+
 		return ptrStream.QueryInterface<Net::IConnectedStream>();
-	}	
+	}
 }
 
 User::TcpProtocolHandler::TcpProtocolHandler() :
@@ -927,7 +927,7 @@ void User::TcpProtocolHandler::Start()
 	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
 
 	if (m_pHandler)
-		OMEGA_THROW("Service already started");
+		OMEGA_THROW(L"Service already started");
 
 	OMEGA_NEW(m_pHandler,TcpHandler);
 

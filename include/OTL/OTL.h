@@ -96,7 +96,7 @@
 	class LibraryModuleImpl : public LibraryModule \
 	{ \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
-		
+
 #define OBJECT_MAP_ENTRY(obj,name) \
 		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
@@ -328,7 +328,7 @@ namespace OTL
 
 			return 0;
 		}
-	
+
 		template <class Interface, class Implementation>
 		static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
@@ -408,7 +408,48 @@ namespace OTL
 		}
 	};
 
-	class ModuleBase;
+	class ModuleBase
+	{
+	public:
+		inline size_t GetLockCount() const;
+		inline void IncLockCount();
+		inline void DecLockCount();
+		inline Omega::Threading::CriticalSection& GetLock();
+
+		typedef void (*TERM_FUNC)(void* arg);
+		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
+
+	protected:
+		ModuleBase() :
+			m_lockCount(0)
+		{ }
+
+		inline virtual ~ModuleBase();
+
+		struct CreatorEntry
+		{
+			const Omega::guid_t* (*pfnOid)();
+			const Omega::Activation::Flags_t (*pfnActivationFlags)();
+			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
+			const wchar_t* pszName;
+			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
+			Omega::uint32_t cookie;
+		};
+
+		virtual CreatorEntry* getCreatorEntries() = 0;
+		inline void fini();
+
+	private:
+		Omega::Threading::CriticalSection           m_csMain;
+		Omega::Threading::AtomicOp<Omega::uint32_t> m_lockCount;
+
+		struct Term
+		{
+			TERM_FUNC	pfn;
+			void*		arg;
+		};
+		std::list<Term> m_listTerminators;
+	};
 	ModuleBase* GetModuleBase();
 
 	template <class ROOT>
@@ -797,49 +838,6 @@ namespace OTL
 	public:
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
-	
-	class ModuleBase
-	{
-	public:
-		inline size_t GetLockCount() const;
-		inline void IncLockCount();
-		inline void DecLockCount();
-		inline Omega::Threading::CriticalSection& GetLock();
-
-		typedef void (*TERM_FUNC)(void* arg);
-		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
-
-	protected:
-		ModuleBase() :
-			m_lockCount(0)
-		{ }
-
-		inline virtual ~ModuleBase();
-
-		struct CreatorEntry
-		{
-			const Omega::guid_t* (*pfnOid)();
-			const Omega::Activation::Flags_t (*pfnActivationFlags)();
-			const Omega::Activation::RegisterFlags_t (*pfnRegistrationFlags)();
-			const wchar_t* pszName;
-			Omega::IObject* (*pfnCreate)(const Omega::guid_t& iid, Omega::Activation::Flags_t flags);
-			Omega::uint32_t cookie;
-		};
-
-		virtual CreatorEntry* getCreatorEntries() = 0;
-		inline void fini();
-
-	private:
-		Omega::Threading::CriticalSection           m_csMain;
-		Omega::Threading::AtomicOp<Omega::uint32_t> m_lockCount;
-
-		struct Term
-		{
-			TERM_FUNC	pfn;
-			void*		arg;
-		};
-		std::list<Term> m_listTerminators;
-	};
 
 	class LibraryModule : public ModuleBase
 	{
@@ -922,7 +920,7 @@ namespace OTL
 
 		bool Find(const EnumType& v)
 		{
-			for (std::list<EnumType>::const_iterator i=m_listItems.begin();i!=m_listItems.end();++i)
+			for (typename std::list<EnumType>::const_iterator i=m_listItems.begin();i!=m_listItems.end();++i)
 			{
 				if (*i == v)
 					return true;
@@ -930,7 +928,6 @@ namespace OTL
 			return false;
 		}
 
-	private:
 		BEGIN_INTERFACE_MAP(MyType)
 			INTERFACE_ENTRY(EnumIFace)
 		END_INTERFACE_MAP()

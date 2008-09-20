@@ -273,7 +273,7 @@
 		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs) \
 			{ get_param_info(method_idx,param_idx,strName,type,attribs); } \
 		byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib) \
-			{ method_idx; param_idx; attrib; OMEGA_THROW(EINVAL); } \
+			{ OMEGA_UNUSED_ARG(method_idx); OMEGA_UNUSED_ARG(param_idx); OMEGA_UNUSED_ARG(attrib); OMEGA_THROW(EINVAL); } \
 		static const uint32_t method_count = TypeInfo_Impl<d_space::derived>::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
 		static void get_method_info(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type) \
 		{ \
@@ -325,7 +325,7 @@
 	template <> interface type_kind<n_space::name*> \
 	{ \
 		static const TypeInfo::Types_t type = TypeInfo::typeObject; \
-	}; 
+	};
 
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params) ) \
@@ -418,7 +418,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_WRITE_STUB_PARAM_I,meta,(type,name))
 
 #define OMEGA_WRITE_PARAM_WIRE_STUB_I(meta,t,name) \
-	marshal_info<t>::wire_type:: OMEGA_WIRE_WRITE_STUB_PARAM(meta,t,name) 
+	marshal_info<t>::wire_type:: OMEGA_WIRE_WRITE_STUB_PARAM(meta,t,name)
 
 #define OMEGA_WRITE_PARAM_WIRE_STUB(index,param,d) \
 	__wire__pException = OMEGA_WRITE_PARAM_WIRE_STUB_I param ); if (__wire__pException) goto __wire_Cleanup; __wire_unpack_count = index + 1;
@@ -441,7 +441,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_UNPACK_STUB_PARAM_I,meta,(type,name))
 
 #define OMEGA_UNPACK_PARAM_WIRE_STUB_I(meta,t,name) \
-	marshal_info<t>::wire_type:: OMEGA_WIRE_UNPACK_STUB_PARAM(meta,t,name) 
+	marshal_info<t>::wire_type:: OMEGA_WIRE_UNPACK_STUB_PARAM(meta,t,name)
 
 #define OMEGA_UNPACK_PARAM_WIRE_STUB(index,param,d) \
 	if (__wire_unpack_count > index) { __wire__pException2 = OMEGA_UNPACK_PARAM_WIRE_STUB_I param ); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } }
@@ -660,7 +660,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_WIRE_UNPACK_PROXY_PARAM_I,meta,(type,name))
 
 #define OMEGA_UNPACK_PARAM_WIRE_PROXY_I(meta,t,name) \
-	marshal_info<t>::wire_type:: OMEGA_WIRE_UNPACK_PROXY_PARAM(meta,t,name) 
+	marshal_info<t>::wire_type:: OMEGA_WIRE_UNPACK_PROXY_PARAM(meta,t,name)
 
 #define OMEGA_UNPACK_PARAM_WIRE_PROXY(index,param,d) \
 	if (__wire_unpack_count > index) { __wire__pException2 = OMEGA_UNPACK_PARAM_WIRE_PROXY_I param ); if (__wire__pException2) { __wire__pException->Release_Safe(); return __wire__pException2; } }
@@ -794,7 +794,7 @@
 	OMEGA_DECLARE_TYPE(name,n_space,methods,Omega,IObject) \
 	OMEGA_DECLARE_STUB(name,n_space,name,methods) \
 	OMEGA_DECLARE_PROXY(name,n_space,name,methods)
-	
+
 #define OMEGA_DEFINE_INTERNAL_INTERFACE_PART2(n_space,name,methods) \
 	OMEGA_DECLARE_WIRE_STUB(name,n_space,name,methods) \
 	OMEGA_DECLARE_WIRE_PROXY(name,n_space,name,methods) \

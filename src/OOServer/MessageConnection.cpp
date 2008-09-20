@@ -564,7 +564,7 @@ bool Root::MessageHandler::route_message(MessageHandler::Message* msg)
 			deadline = now + ACE_Time_Value(1);
 
 		// Get the next thread from the queue
-		WorkerInfo* pInfo;
+		WorkerInfo* pInfo = 0;
 
 		for (;;)
 		{

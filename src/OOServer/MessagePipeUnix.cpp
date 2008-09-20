@@ -40,7 +40,7 @@ Root::MessagePipe::MessagePipe()
 {
 }
 
-int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
 
@@ -105,7 +105,7 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Null_Mutex>& pipe, ACE_Time_Value* timeout)
+int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_Time_Value* timeout)
 {
     ACE_NEW_RETURN(pipe,MessagePipe,-1);
 

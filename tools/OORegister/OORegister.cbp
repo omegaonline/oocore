@@ -7,8 +7,9 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug Win32">
-				<Option output="Debug\OORegister" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\bin\Debug" />
+				<Option platforms="Windows;" />
+				<Option output="../../bin/Debug/OORegister" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -22,24 +23,25 @@
 					<Add option="-DOMEGA_DEBUG" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_WIN32_WINNT=0x0500" />
-					<Add directory="..\..\extern\ACE_wrappers" />
-					<Add directory="..\..\include" />
+					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="../../include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\extern\ACE_wrappers" />
-					<Add directory="..\..\include" />
+					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="../../include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
-					<Add library="..\..\bin\debug\libOOCore.a" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
+					<Add library="../../bin/debug/libOOCore.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
 			<Target title="Release Win32">
-				<Option output="..\..\bin\OORegister" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\bin" />
+				<Option platforms="Windows;" />
+				<Option output="../../bin/OORegister" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -54,20 +56,67 @@
 					<Add option="-DNDEBUG" />
 					<Add option="-D_CONSOLE" />
 					<Add option="-D_WIN32_WINNT=0x0500" />
-					<Add directory="..\..\extern\ACE_wrappers" />
-					<Add directory="..\..\include" />
+					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="../../include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\extern\ACE_wrappers" />
-					<Add directory="..\..\include" />
+					<Add directory="../../extern/ACE_wrappers" />
+					<Add directory="../../include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-mthreads" />
-					<Add library="..\..\extern\ACE_wrappers\lib\libACE.a" />
-					<Add library="..\..\bin\libOOCore.a" />
+					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
+					<Add library="../../bin/libOOCore.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
+				</Linker>
+			</Target>
+			<Target title="Debug Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../bin/Debug/ooregister" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
+				<Option object_output="Debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-O0" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add library="ACE" />
+					<Add library="../../bin/Debug/libOOCored.so" />
+				</Linker>
+			</Target>
+			<Target title="Release Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../bin/ooregister" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
+				<Option object_output="Release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-pthread" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="-DNDEBUG" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="ACE" />
+					<Add library="../../bin/libOOCore.so" />
 				</Linker>
 			</Target>
 		</Build>

@@ -120,14 +120,14 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t b
 		if (g[i].pszName != 0)
 		{
 			Omega::string_t strName = g[i].pszName;
-					
+
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"
 					L"</key>";
 		}
 
-		strXML += 	
+		strXML +=
 					L"<key name=\"OIDs\">"
 						L"<key name=\"" + strOID + L"\" uninstall=\"Remove\">"
 							L"<value name=\"Library\">%LIB_PATH%</value>"
@@ -153,7 +153,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 		return;
 
 	Omega::string_t strXML;
-	
+
 	if (bLocal)
 		strXML = L"<key name=\"\\Local User\\Applications\">";
 	else
@@ -165,7 +165,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 					L"</key>"
 				L"</key>"
 			L"</key>";
-	
+
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
@@ -179,7 +179,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 		if (g[i].pszName != 0)
 		{
 			Omega::string_t strName = g[i].pszName;
-			
+
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
 						L"<value name=\"OID\">" + strOID + L"</value>"

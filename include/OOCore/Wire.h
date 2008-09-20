@@ -42,7 +42,7 @@ namespace Omega
 			virtual size_t ReadGuids(const wchar_t* pszName, size_t count, guid_t* arr) = 0;
 			virtual void ReadStructStart(const wchar_t* pszName, const wchar_t* pszType) = 0;
 			virtual void ReadStructEnd(const wchar_t* pszName) = 0;
-			
+
 			virtual void WriteBooleans(const wchar_t* pszName, size_t count, const bool_t* arr) = 0;
 			virtual void WriteBytes(const wchar_t* pszName, size_t count, const byte_t* arr) = 0;
 			virtual void WriteInt16s(const wchar_t* pszName, size_t count, const int16_t* arr) = 0;
@@ -253,14 +253,14 @@ namespace Omega
 			{
 				size_t cbSize = 0;
 				IException_Safe* pSE = pMessage->ReadArrayStart_Safe(&cbSize,pszName,marshal_info<T>::type_name());
-				if (pSE) 
+				if (pSE)
 					return pSE;
 
-				if (cbSize > cbMaxSize) 
+				if (cbSize > cbMaxSize)
 					return return_safe_exception(ISystemException::Create(E2BIG));
 
 				if (cbSize && pVals)
-				{	 
+				{
 					for (size_t i=0;i<cbSize;++i)
 					{
 						pSE = marshal_info<T>::wire_type::read(pszName,pManager,pMessage,pVals[i]);
@@ -271,7 +271,7 @@ namespace Omega
 
 				return pMessage->ReadArrayEnd_Safe(pszName);
 			}*/
-			
+
 			/*template <class T, class S>
 			inline IException_Safe* wire_write(const wchar_t* pszName, IMarshaller_Safe* pManager, IMessage_Safe* pMessage, const T* pVals, const S& cbSize)
 			{
@@ -532,7 +532,7 @@ namespace Omega
 					if (cbSize > val.m_alloc_size)
 						return wire_write(pszName,pManager,pMessage,val.m_pVals,val.m_alloc_size);
 					else
-						return wire_write(pszName,pManager,pMessage,val.m_pVals,cbSize);					
+						return wire_write(pszName,pManager,pMessage,val.m_pVals,cbSize);
 				}
 
 				static IException_Safe* write(const wchar_t* pszName, IMarshaller_Safe* pManager, IMessage_Safe* pMessage, const type& val, const uint64_t* cbSize)
@@ -688,7 +688,7 @@ namespace Omega
 			};
 
 			typedef IException_Safe* (OMEGA_CALL *pfnCreateProxy)(IProxy_Safe* pProxy, IMarshaller_Safe* pManager, IObject_Safe** ppProxy);
-			typedef IException_Safe* (OMEGA_CALL *pfnCreateStub)(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub);	
+			typedef IException_Safe* (OMEGA_CALL *pfnCreateStub)(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub);
 			inline void RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub);
 
 			typedef IException_Safe* (OMEGA_CALL *pfnCreateTypeInfo)(ITypeInfo_Safe** ppTypeInfo);
@@ -1004,13 +1004,13 @@ namespace Omega
 OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoProxyStubCreators,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
 void Omega::System::MetaInfo::RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub)
 {
-	Omega_RegisterAutoProxyStubCreators(iid,pfnProxy,pfnStub);
+	Omega_RegisterAutoProxyStubCreators(iid,(void*)(pfnProxy),(void*)(pfnStub));
 }
 
 OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo));
 void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, pfnCreateTypeInfo pfnTypeInfo)
 {
-	Omega_RegisterAutoTypeInfo(iid,pfnTypeInfo);
+	Omega_RegisterAutoTypeInfo(iid,(void*)pfnTypeInfo);
 }
 
 #endif // !defined(DOXYGEN)

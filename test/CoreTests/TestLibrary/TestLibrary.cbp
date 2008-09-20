@@ -7,8 +7,9 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug Win32">
-				<Option output="..\..\..\bin\debug\TestLibrary_mingw" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\..\bin\Debug" />
+				<Option platforms="Windows;" />
+				<Option output="../../../bin/Debug/TestLibrary_mingw" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -26,16 +27,17 @@
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DTEST_BUILD_LIBRARY" />
-					<Add directory="..\..\..\include" />
+					<Add directory="../../../include" />
 				</Compiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="..\..\..\bin\debug\libOOCore.a" />
+					<Add library="../../../bin/debug/libOOCore.a" />
 				</Linker>
 			</Target>
 			<Target title="Release Win32">
-				<Option output="..\..\..\bin\TestLibrary_mingw" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\..\bin" />
+				<Option platforms="Windows;" />
+				<Option output="../../../bin/TestLibrary_mingw" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../bin" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="gcc" />
@@ -53,16 +55,70 @@
 					<Add option="-D_WINDOWS" />
 					<Add option="-D_USRDLL" />
 					<Add option="-DTEST_BUILD_LIBRARY" />
-					<Add directory="..\..\..\include" />
+					<Add directory="../../../include" />
 				</Compiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="..\..\..\bin\libOOCore.a" />
+					<Add library="../../../bin/libOOCore.a" />
+				</Linker>
+			</Target>
+			<Target title="Debug Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../../bin/Debug/TestLibrary" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../bin/Debug" />
+				<Option object_output="Debug" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option host_application="coretests" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-fPIC" />
+					<Add option="-pthread" />
+					<Add option="-O0" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="-DOMEGA_DEBUG" />
+					<Add directory="../../../include" />
+				</Compiler>
+				<Linker>
+					<Add library="../../../bin/Debug/libOOCored.so" />
+				</Linker>
+			</Target>
+			<Target title="Release Unix">
+				<Option platforms="Unix;Mac;" />
+				<Option output="../../../bin/TestLibrary" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../bin" />
+				<Option object_output="Release" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+					<Add option="-Wall" />
+					<Add option="-fno-rtti" />
+					<Add option="-Wno-non-virtual-dtor" />
+					<Add option="-fPIC" />
+					<Add option="-pthread" />
+					<Add option="-fvisibility=hidden" />
+					<Add option="-DNDEBUG" />
+					<Add directory="../../../include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="../../../bin/libOOCore.so" />
 				</Linker>
 			</Target>
 		</Build>
-		<Unit filename="testlibrary.cpp" />
-		<Unit filename="testlibrary.h" />
+		<Unit filename="../SimpleTest.h" />
+		<Unit filename="TestLibrary.cpp" />
+		<Unit filename="TestLibrary.h" />
+		<Unit filename="../interfaces.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

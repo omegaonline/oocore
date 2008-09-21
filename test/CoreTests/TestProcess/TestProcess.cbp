@@ -101,7 +101,7 @@
 			</Target>
 		</Build>
 		<Unit filename="../SimpleTest.h" />
-		<Unit filename="testprocess.cpp" />
+		<Unit filename="TestProcess.cpp" />
 		<Unit filename="../interfaces.h" />
 		<Extensions>
 			<code_completion />

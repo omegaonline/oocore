@@ -90,8 +90,9 @@
 					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
-					<Add library="../../bin/Debug/libOOCored.so" />
-					<Add library="../../bin/Debug/TestLibrary.so" />
+					<Add library="OOCored" />
+					<Add library="TestLibrary" />
+					<Add directory="../../bin/Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Unix">
@@ -115,8 +116,9 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="../../bin/libOOCore.so" />
-					<Add library="../../bin/TestLibrary.so" />
+					<Add library="OOCore" />
+					<Add library="TestLibrary" />
+					<Add directory="../../bin" />
 				</Linker>
 			</Target>
 		</Build>

@@ -7,6 +7,14 @@
 BEGIN_PROCESS_OBJECT_MAP(0)
 END_PROCESS_OBJECT_MAP()
 
+#if defined(OMEGA_WIN32)
+#define OOREGISTER L"OORegister"
+#define TESTPROCESS L"TestProcess"
+#else
+#define OOREGISTER L"./ooregister"
+#define TESTPROCESS L"./testprocess"
+#endif
+
 static bool do_interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>& ptrSimpleTest)
 {
 	{
@@ -98,9 +106,9 @@ static bool do_interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>& pt
 static bool do_local_library_test(const wchar_t* pszLibName)
 {
 	// Register the library
-	if (system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
-		return true;
-			
+	if (system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
+    	return true;
+
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
 	do_interface_tests(ptrSimpleTest);
@@ -150,7 +158,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
 	do_interface_tests(ptrSimpleTest);
-	
+
 	// Test it has gone
 	Omega::Registry::AddXML(strXML,false);
 	try
@@ -178,7 +186,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
 	do_interface_tests(ptrSimpleTest);
-	
+
 	// Test it has gone
 	Omega::Registry::AddXML(strXML,false);
 	try
@@ -190,9 +198,9 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 		add_success();
 		pE->Release();
 	}
-	
+
 	// Test unregistering
-	TEST(system((Omega::string_t(L"OORegister -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
+	TEST(system((Omega::string_t(OOREGISTER L" -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
 
 	try
 	{
@@ -213,13 +221,13 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 		add_success();
 		pE->Release();
 	}
-	
+
 	return true;
 }
 
 static bool do_local_process_test(const wchar_t* pszModulePath)
 {
-	TEST(system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
+	TEST(system((Omega::string_t(TESTPROCESS L" -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process",Omega::Activation::OutOfProcess);
@@ -246,7 +254,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 		pE->Release();
 	}
 
-	// Try adjusting where it runs	
+	// Try adjusting where it runs
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
 	ptrReg->SetIntegerValue(L"Public",0);
 
@@ -262,7 +270,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	{
 		pE->Release();
 	}
-	
+
 	ptrReg->SetIntegerValue(L"Public",1);
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
@@ -277,8 +285,8 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	{
 		pE->Release();
 	}
-	
-	TEST(system((Omega::string_t(L"TestProcess -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
+
+	TEST(system((Omega::string_t(TESTPROCESS L" -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Check its gone
 	try
@@ -290,7 +298,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 		add_success();
 		pE->Release();
 	}
-	
+
 	return true;
 }
 
@@ -311,24 +319,24 @@ bool interface_tests()
 static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoint)
 {
 	// Register the library ready for local loopback stuff
-	system((Omega::string_t(L"OORegister -i -s ") + pszLibName).ToUTF8().c_str());
-		
+	system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str());
+
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
 	do_interface_tests(ptrSimpleTest);
-	
+
 	return true;
 }
 
 static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndpoint)
 {
-	system((Omega::string_t(L"TestProcess -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
+	system((Omega::string_t(TESTPROCESS L" -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
 	do_interface_tests(ptrSimpleTest);
 
 	return true;
 }
-	
+
 static bool interface_tests_i(const wchar_t* pszHost)
 {
 #if defined(OMEGA_WIN32)

@@ -9,7 +9,7 @@
 		<Build>
 			<Target title="Debug Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/Debug/OORegEdit" prefix_auto="1" extension_auto="1" />
+				<Option output="../../bin/Debug/ooregedit" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="0" />
@@ -33,7 +33,7 @@
 			</Target>
 			<Target title="Release Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/OORegEdit" prefix_auto="1" extension_auto="1" />
+				<Option output="../../bin/ooregedit" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
 				<Option type="0" />

@@ -97,8 +97,9 @@
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
-					<Add library="../../bin/Debug/libOOCored.so" />
+					<Add library="OOCored" />
 					<Add library="sqlite3" />
+					<Add directory="../../bin/Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Unix">
@@ -123,8 +124,9 @@
 				<Linker>
 					<Add option="-s" />
 					<Add library="ACE" />
-					<Add library="../../bin/libOOCore.so" />
+					<Add library="OOCore" />
 					<Add library="sqlite3" />
+					<Add directory="../../bin" />
 				</Linker>
 			</Target>
 		</Build>

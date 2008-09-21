@@ -64,7 +64,7 @@
 			</Target>
 			<Target title="Debug Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../../bin/Debug/TestLibrary" prefix_auto="1" extension_auto="1" />
+				<Option output="../../../bin/Debug/libTestLibrary" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="3" />
@@ -85,12 +85,13 @@
 					<Add directory="../../../include" />
 				</Compiler>
 				<Linker>
-					<Add library="../../../bin/Debug/libOOCored.so" />
+					<Add library="OOCored" />
+					<Add directory="../../../bin/Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../../bin/TestLibrary" prefix_auto="1" extension_auto="1" />
+				<Option output="../../../bin/libTestLibrary" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="../../../bin" />
 				<Option object_output="Release" />
 				<Option type="3" />
@@ -111,7 +112,8 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="../../../bin/libOOCore.so" />
+					<Add library="OOCore" />
+					<Add directory="../../../bin" />
 				</Linker>
 			</Target>
 		</Build>

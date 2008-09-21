@@ -23,7 +23,6 @@ public:
 	END_INTERFACE_MAP()
 };
 
-
 void TestLibraryImpl::Abort()
 {
 	// Do nothing

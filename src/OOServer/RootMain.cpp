@@ -38,7 +38,7 @@
 
 static int Install(int argc, ACE_TCHAR* argv[])
 {
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	if (!Root::NTService::install())
 		return -1;
 #endif
@@ -52,7 +52,7 @@ static int Install(int argc, ACE_TCHAR* argv[])
 
 static int Uninstall()
 {
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	if (!Root::NTService::uninstall())
 		return -1;
 #endif
@@ -77,7 +77,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	int skip_args = 1;
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	if (argc>=2 && ACE_OS::strcmp(argv[1],ACE_TEXT("--service"))==0)
 		skip_args = 2;
 #endif
@@ -119,7 +119,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		}
 	}
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	const ACE_TCHAR* pszAppName = ACE_TEXT("OOServer");
 
 	if (argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0)
@@ -137,12 +137,12 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
 
 	// Start any daemons or services
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 	if (!Root::NTService::open())
 		return -1;
 
-#else // ACE_WIN32
+#else // OMEGA_WIN32
 #if !defined(OMEGA_DEBUG)
     // Daemonize ourselves
 	ACE_TCHAR szCwd[PATH_MAX];
@@ -155,7 +155,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 	// TODO - Install signal handlers...
 
-#endif // ACE_WIN32
+#endif // OMEGA_WIN32
 
 #if defined(OMEGA_DEBUG)
 	Version();
@@ -164,7 +164,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// Run the RootManager
 	int ret = Root::Manager::run(argc - cmd_opts.opt_ind(),&argv[cmd_opts.opt_ind()]);
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	Root::NTService::stop();
 #endif
 

@@ -71,7 +71,7 @@ void StreamNotify::OnRead(const Omega::uint64_t& cbBytes, const Omega::byte_t* p
 	m_state = 2;
 }
 
-void StreamNotify::OnWritten(const Omega::uint64_t& cbBytes)
+void StreamNotify::OnWritten(const Omega::uint64_t& /*cbBytes*/)
 {
 	m_state = 3;
 }
@@ -178,7 +178,7 @@ static bool http_tests_sync()
 	return true;
 }
 
-void HttpNotify::OnResponseStart(Omega::uint16_t nCode, const Omega::string_t& strMsg)
+void HttpNotify::OnResponseStart(Omega::uint16_t /*nCode*/, const Omega::string_t& /*strMsg*/)
 {
 }
 

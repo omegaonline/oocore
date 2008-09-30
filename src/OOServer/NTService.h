@@ -34,7 +34,7 @@
 #ifndef OOSERVER_NT_SERVICE_H_INCLUDED_
 #define OOSERVER_NT_SERVICE_H_INCLUDED_
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 #define NTSERVICE_NAME		ACE_TEXT("OOServer")
 #define NTSERVICE_DESC		ACE_TEXT("Omega Online Network Gateway")
@@ -80,6 +80,6 @@ namespace Root
 	};
 }
 
-#endif // ACE_WIN32
+#endif // OMEGA_WIN32
 
 #endif // OOSERVER_NT_SERVICE_H_INCLUDED_

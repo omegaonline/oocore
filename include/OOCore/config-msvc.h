@@ -22,6 +22,23 @@
 #ifndef OOCORE_CONFIG_MSVC_H_INCLUDED_
 #define OOCORE_CONFIG_MSVC_H_INCLUDED_
 
+/////////////////////////////////////////////////////////
+//
+// This file sets up the build environment for 
+// Microsoft Visual Studio
+//
+/////////////////////////////////////////////////////////
+
+#if !defined(_MSC_VER)
+#error This is the MSVC build!
+#elif (_MSC_VER < 1310)
+#error Omega Online will not compile with a pre Visual C++ .NET 2003 compiler
+#endif
+
+#ifndef __cplusplus
+#error Omega Online uses C++
+#endif
+
 #ifndef _CPPUNWIND
 #error You must enable exception handling /GX
 #endif
@@ -43,9 +60,10 @@
 		if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
 	} while (0)
 
-#define OMEGA_IMPORT __declspec(dllimport)
-#define OMEGA_EXPORT __declspec(dllexport)
+#define OMEGA_IMPORT   __declspec(dllimport)
+#define OMEGA_EXPORT   __declspec(dllexport)
 #define OMEGA_PRIVATE
+#define OMEGA_CALL     __cdecl
 
 #define OMEGA_UNUSED_ARG(n)	(n)
 
@@ -62,9 +80,23 @@
 #pragma warning(disable : 4702)
 #endif
 
+// Check for 64-bit builds
+#if defined(_WIN64)
+#define OMEGA_64
+#endif
+
 #define OMEGA_COMPILER_STRING_III(n)  #n
 #define OMEGA_COMPILER_STRING_II(a,b) OMEGA_COMPILER_STRING_III(a b)
 #define OMEGA_COMPILER_STRING_I(a,b)  OMEGA_COMPILER_STRING_II(a,b)
 #define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I(MSVC,_MSC_VER)
+
+#if defined(_WIN32_WCE)
+#include <OOCore/config-wince.h>
+#elif defined(_WIN32)
+#include <OOCore/config-win32.h>
+#include <errno.h>
+#else
+#error What else can MSVC compile?
+#endif
 
 #endif // OOCORE_CONFIG_MSVC_H_INCLUDED_

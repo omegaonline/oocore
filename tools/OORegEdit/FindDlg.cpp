@@ -4,7 +4,7 @@
 #include "./FindDlg.h"
 
 
-FindDlg::FindDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long style):
+FindDlg::FindDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long /*style*/):
     wxDialog(parent, id, title, pos, size, wxDEFAULT_DIALOG_STYLE)
 {
     // begin wxGlade: FindDlg::FindDlg
@@ -84,7 +84,7 @@ void FindDlg::do_layout()
     // end wxGlade
 }
 
-void FindDlg::OnTextChanged(wxCommandEvent &event)
+void FindDlg::OnTextChanged(wxCommandEvent &/*event*/)
 {
 	m_btnFind->Enable(!m_txtFind->GetValue().IsEmpty());		
 }

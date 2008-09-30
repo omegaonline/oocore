@@ -34,7 +34,7 @@
 #include "./OOServer_Root.h"
 #include "./SpawnedProcess.h"
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 #include <userenv.h>
 #include <lm.h>
@@ -1547,4 +1547,4 @@ bool Root::SpawnedProcess::unsafe_sandbox()
 	return (v == 1);
 }
 
-#endif // ACE_WIN32
+#endif // OMEGA_WIN32

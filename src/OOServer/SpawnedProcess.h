@@ -58,7 +58,7 @@ namespace Root
 		static bool LogonSandboxUser(user_id_type& uid);
 		static void CloseSandboxLogon(user_id_type uid);
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	private:
 		HANDLE m_hToken;
 		HANDLE m_hProfile;
@@ -81,7 +81,7 @@ namespace Root
 
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
 
-#else // !ACE_WIN32
+#else // !OMEGA_WIN32
 		
 	private:
 		uid_t	m_uid;
@@ -92,7 +92,7 @@ namespace Root
 		bool linux_close_all_fds();
 		bool posix_close_all_fds(long max_fd);
 
-#endif // ACE_WIN32
+#endif // OMEGA_WIN32
 
 	private:
         bool   m_bSandbox;

@@ -159,7 +159,7 @@ bool Root::Manager::init()
 
 int Root::Manager::init_database()
 {
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 	char szBuf[MAX_PATH] = {0};
 	HRESULT hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);

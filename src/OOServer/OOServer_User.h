@@ -26,12 +26,10 @@
 
 #if defined(_MSC_VER)
 #pragma warning(push)
-
 #ifndef _DEBUG
 // Optimization sometimes re-orders things causing this error
 #pragma warning(disable : 4702)
 #endif
-
 #if _MSC_VER >= 1400
 #pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif

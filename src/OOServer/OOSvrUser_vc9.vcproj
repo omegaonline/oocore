@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="OOSvrUser"
 	ProjectGUID="{F19DB319-BB3B-4965-A4C2-26BCB674DF99}"
 	RootNamespace="OOHost"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -48,7 +49,6 @@
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="./OOServer_User.h"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -62,12 +62,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib ACEsd.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\extern\ACE_wrappers\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
-				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -86,9 +88,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -130,7 +129,6 @@
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="./OOServer_User.h"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -145,9 +143,12 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\extern\ACE_wrappers\lib"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -167,9 +168,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

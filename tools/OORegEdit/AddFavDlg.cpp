@@ -4,7 +4,7 @@
 #include "./AddFavDlg.h"
 
 
-AddFavDlg::AddFavDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long style):
+AddFavDlg::AddFavDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long /*style*/):
     wxDialog(parent, id, title, pos, size, wxDEFAULT_DIALOG_STYLE)
 {
     // begin wxGlade: AddFavDlg::AddFavDlg
@@ -32,7 +32,7 @@ BEGIN_EVENT_TABLE(AddFavDlg, wxDialog)
 END_EVENT_TABLE();
 
 
-void AddFavDlg::OnTextChanged(wxCommandEvent &event)
+void AddFavDlg::OnTextChanged(wxCommandEvent &/*event*/)
 {
 	wxWindow* pOK = FindWindow(wxID_OK);
 	if (pOK)

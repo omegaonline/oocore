@@ -35,11 +35,9 @@
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4355) // 'this' : used in base member initializer list
-
 #if _MSC_VER >= 1400
 #pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif
-
 #endif
 
 #include <ace/CDR_Stream.h>
@@ -66,7 +64,6 @@
 #if !defined(ACE_HAS_WCHAR)
 #error Omega Online requires has wchar_t support!
 #endif
-
 
 #if defined(ACE_WIN32)
 #if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))
@@ -106,11 +103,12 @@
 
 /////////////////////////////////////////////////
 // Include Windows components
+
 #ifdef OMEGA_WIN32
 #include <shlobj.h>
 #include <shlwapi.h>
-
 #endif
+
 // End of Windows includes
 /////////////////////////////////////////////////
 

@@ -27,9 +27,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(OMEGA_DEBUG) && defined(ACE_WIN32)
+#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
 
-#if defined(_MSC_VER) && _MSC_VER >= 1300
+#if defined(_MSC_VER)
+
 #if _MSC_VER == 1310
 #import "C:\Program Files\Common Files\Microsoft Shared\Office10\MSO.DLL" raw_interfaces_only  rename("RGB","dte_RGB")
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte.olb" raw_interfaces_only named_guids rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath")
@@ -37,10 +38,6 @@ using namespace EnvDTE;
 #elif _MSC_VER >= 1400
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80a.olb" raw_interfaces_only named_guids rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
 using namespace EnvDTE;
-#else
-#error We don't have a DTE...
-#endif
-#if _MSC_VER >= 1400
 #import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80.olb" raw_interfaces_only named_guids
 using namespace EnvDTE80;
 #endif
@@ -111,7 +108,7 @@ static void PromptForDebugger(DWORD pid)
 
 void AttachDebugger(pid_t pid)
 {
-#if defined(_MSC_VER) && _MSC_VER >= 1300
+#if defined(_MSC_VER)
 	if (AttachVSDebugger(pid))
 		return;
 #endif

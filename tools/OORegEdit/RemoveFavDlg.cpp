@@ -4,7 +4,7 @@
 #include "./RemoveFavDlg.h"
 
 
-RemoveFavDlg::RemoveFavDlg(wxWindow* parent, wxFileHistory* pHistory, const wxPoint& pos, const wxSize& size, long style):
+RemoveFavDlg::RemoveFavDlg(wxWindow* parent, wxFileHistory* pHistory, const wxPoint& pos, const wxSize& size, long /*style*/):
     wxDialog(parent, -1, wxT(""), pos, size, wxDEFAULT_DIALOG_STYLE)
 {
     // begin wxGlade: RemoveFavDlg::RemoveFavDlg
@@ -42,7 +42,7 @@ BEGIN_EVENT_TABLE(RemoveFavDlg, wxDialog)
 END_EVENT_TABLE();
 
 
-void RemoveFavDlg::OnListSelChanged(wxCommandEvent &event)
+void RemoveFavDlg::OnListSelChanged(wxCommandEvent &/*event*/)
 {
     wxWindow* pOK = FindWindow(wxID_OK);
 	if (pOK)

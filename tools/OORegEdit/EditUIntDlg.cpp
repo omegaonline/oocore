@@ -3,7 +3,7 @@
 #include "./EditUIntDlg.h"
 
 
-EditUIntDlg::EditUIntDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long style):
+EditUIntDlg::EditUIntDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long /*style*/):
     wxDialog(parent, id, title, pos, size, wxDEFAULT_DIALOG_STYLE)
 {
     // begin wxGlade: EditUIntDlg::EditUIntDlg
@@ -35,7 +35,7 @@ BEGIN_EVENT_TABLE(EditUIntDlg, wxDialog)
 END_EVENT_TABLE();
 
 
-void EditUIntDlg::OnBaseChanged(wxCommandEvent &event)
+void EditUIntDlg::OnBaseChanged(wxCommandEvent &/*event*/)
 {
 	if (m_rbxBase->GetSelection()==1)
 	{

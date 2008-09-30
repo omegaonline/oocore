@@ -33,7 +33,7 @@
 
 #include "./OOServer_Root.h"
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 #include "./NTService.h"
 #include "./RootManager.h"
@@ -207,4 +207,4 @@ int Root::NTService::fini()
 	return 0;
 }
 
-#endif // ACE_WIN32
+#endif // OMEGA_WIN32

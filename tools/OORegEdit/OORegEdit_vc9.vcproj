@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="OORegEdit"
 	ProjectGUID="{F58C0775-A7D3-4B50-8370-EFFCD4727AFA}"
 	RootNamespace="OORegEdit"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -40,9 +41,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="-Zm110"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Work\wxWidgets-2.8.5\include&quot;;&quot;C:\Work\wxWidgets-2.8.5\include\msvc&quot;;..\..\include"
+				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.7\include&quot;;&quot;..\..\extern\wxWidgets-2.8.7\include\msvc&quot;;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -51,7 +51,6 @@
 				BufferSecurityCheck="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -68,10 +67,12 @@
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Work\wxWidgets-2.8.5\lib\vc_lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.7\lib\vc_lib&quot;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OORegEdit.pdb"
 				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -91,9 +92,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -124,7 +122,6 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="-Zm110"
 				Optimization="3"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
@@ -135,7 +132,6 @@
 				BufferSecurityCheck="false"
 				UsePrecompiledHeader="2"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -156,6 +152,8 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -175,9 +173,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

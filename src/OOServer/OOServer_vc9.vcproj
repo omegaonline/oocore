@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
-	Name="OOSvrUser"
-	ProjectGUID="{F19DB319-BB3B-4965-A4C2-26BCB674DF99}"
-	RootNamespace="OOHost"
+	Version="9.00"
+	Name="OOServer"
+	ProjectGUID="{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}"
+	RootNamespace="OOServer"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -18,7 +19,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)_Host"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -45,11 +46,13 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				BufferSecurityCheck="true"
+				TreatWChar_tAsBuiltInType="true"
+				ForceConformanceInForLoopScope="true"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_User.h"
+				PrecompiledHeaderThrough="./OOServer_Root.h"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -62,12 +65,17 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib ACEsd.lib"
+				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\extern\ACE_wrappers\lib"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)/OOServer.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				FixedBaseAddress="0"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
-				FixedBaseAddress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -88,19 +96,15 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="$(ConfigurationName)_Host"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
-			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -122,15 +126,17 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="0"
+				TreatWChar_tAsBuiltInType="true"
+				ForceConformanceInForLoopScope="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_User.h"
+				PrecompiledHeaderThrough="./OOServer_Root.h"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -143,11 +149,16 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib"
+				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\extern\ACE_wrappers\lib"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				LinkTimeCodeGeneration="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -169,9 +180,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -181,93 +189,46 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\Channel.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Database.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\DebuggerWin32.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\InterProcessService.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\MessageConnection.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\MessagePipeWin32.cpp"
 				>
+			</File>
+			<File
+				RelativePath=".\NTService.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RegistryHive.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RootHttp.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RootMain.cpp"
+				>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
+						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -275,17 +236,20 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
+						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\NetHttp.cpp"
+				RelativePath=".\RootManager.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\NetTcp.cpp"
+				RelativePath=".\RootRegistry.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SpawnedProcessWin32.cpp"
 				>
 			</File>
 			<File
@@ -312,46 +276,6 @@
 					/>
 				</FileConfiguration>
 			</File>
-			<File
-				RelativePath=".\UserHttp.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserMain.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\UserManager.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserNet.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserRegistry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserROT.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -359,15 +283,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\Channel.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Database.h"
-				>
-			</File>
-			<File
-				RelativePath=".\InterProcessService.h"
 				>
 			</File>
 			<File
@@ -383,15 +299,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\NetHttp.h"
+				RelativePath=".\NTService.h"
 				>
 			</File>
 			<File
-				RelativePath=".\NetTcp.h"
-				>
-			</File>
-			<File
-				RelativePath=".\OOServer_User.h"
+				RelativePath=".\OOServer_Root.h"
 				>
 			</File>
 			<File
@@ -399,33 +311,33 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RegistryHive.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RootHttp.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RootManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SpawnedProcess.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\extern\sqlite\sqlite3.h"
 				>
 			</File>
 			<File
-				RelativePath=".\UserHttp.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserManager.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserNet.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserRegistry.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserROT.h"
+				RelativePath=".\Version.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
@@ -433,8 +345,32 @@
 				>
 			</File>
 			<File
-				RelativePath=".\OOSvrUser.rc"
+				RelativePath=".\OOServer.rc"
 				>
+			</File>
+			<File
+				RelativePath=".\OOServer_msgs.mc"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling messages..."
+						CommandLine="mc $(InputPath)&#x0D;&#x0A;"
+						Outputs=".\$(InputName).rc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Compiling messages..."
+						CommandLine="mc $(InputPath)&#x0D;&#x0A;"
+						Outputs=".\$(InputName).rc"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

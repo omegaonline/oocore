@@ -1221,7 +1221,7 @@ void MainFrame::MustHaveTreeSelection(wxUpdateUIEvent& evt)
 	evt.Enable(m_pTree->GetSelection());
 }
 
-void MainFrame::OnAddFav(wxCommandEvent& evt)
+void MainFrame::OnAddFav(wxCommandEvent& /*evt*/)
 {
 	wxTreeItemId tree_id = m_pTree->GetSelection();
 	if (!tree_id)
@@ -1238,7 +1238,7 @@ void MainFrame::OnAddFav(wxCommandEvent& evt)
 	}
 }
 
-void MainFrame::OnRemoveFav(wxCommandEvent& evt)
+void MainFrame::OnRemoveFav(wxCommandEvent& /*evt*/)
 {
 	RemoveFavDlg dialog(this,&m_fileHistory);
 

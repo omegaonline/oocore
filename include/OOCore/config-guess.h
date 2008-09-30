@@ -22,13 +22,40 @@
 #ifndef OOCORE_CONFIG_GUESS_H_INCLUDED_
 #define OOCORE_CONFIG_GUESS_H_INCLUDED_
 
-#if defined(WIN32) || defined(_WIN32) || defined (__WIN32) || defined(__WIN32__)
-#include <OOCore/config-win32.h>
-#elif defined(__unix) || defined(__unix__)
-#include <OOCore/config-unix.h>
-#else
-// We assume we are using some kind of automake...
+// Testing!
+//#define HAVE_CONFIG_H 1
+
+/////////////////////////////////////////////////////////
+//
+// This file tries to guess the build environment/IDE
+// you are using.
+//
+// It will error if it can't work it out
+// Please contact the omegaonline team if it happens
+//
+/////////////////////////////////////////////////////////
+
+#if defined(HAVE_CONFIG_H)
+// Autoconf
+#include <OOCore/config-autoconf.h>
+#elif defined(_MSC_VER)
+// MS Visual Studio
+#include <OOCore/config-msvc.h>
+#elif defined(CODEBLOCKS)
+// Code::Blocks
+#error Fix me!
+#elif defined(XCODE)
+// XCode
 #error TODO!
+#elif defined (__BORLANDC__)
+// Borland C++ Builder
+#include <OOCore/config-borland.h>
+#else
+#error Failed to guess your system.  Please contact the developers.
+#endif
+
+#if defined(__unix) || defined(__unix__)
+#include <OOCore/config-unix.h>
 #endif
 
 #endif // OOCORE_CONFIG_GUESS_H_INCLUDED_

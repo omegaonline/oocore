@@ -22,6 +22,8 @@
 #ifndef OOCORE_CONFIG_BORLAND_H_INCLUDED_
 #define OOCORE_CONFIG_BORLAND_H_INCLUDED_
 
+#error Borland C++ currently doesn't work - please have a go at fixing it?
+
 #define OMEGA_MAX_DEFINES     124
 
 #define OMEGA_FUNCNAME        __FUNC__

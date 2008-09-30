@@ -70,7 +70,7 @@ public:
 	int set_description(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, const ACE_CString& val);
 	int set_value_description(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CString& val);
 
-#ifdef ACE_WIN32
+#ifdef OMEGA_WIN32
 	int get_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, ACE_WString& val);
 	int set_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, const ACE_WString& val);
 #endif

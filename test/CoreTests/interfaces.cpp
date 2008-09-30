@@ -374,6 +374,4 @@ bool interface_tests2()
 {
 	//return interface_tests_i(L"http://TSS04:8901/");
 	return interface_tests_i(L"http://localhost:8901");
-
-	return true;
 }

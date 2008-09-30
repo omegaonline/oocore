@@ -1106,7 +1106,7 @@ int Root::RegistryHive::set_value_description(const ACE_INT64& uKey, const ACE_C
 	return 0;
 }
 
-#ifdef ACE_WIN32
+#ifdef OMEGA_WIN32
 int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, ACE_WString& val)
 {
 	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());

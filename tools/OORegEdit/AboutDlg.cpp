@@ -50,7 +50,7 @@ static char *image[] =
 
 
 
-AboutDlg::AboutDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long style):
+AboutDlg::AboutDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long /*style*/):
     wxDialog(parent, id, title, pos, size, wxDEFAULT_DIALOG_STYLE)
 {
 	wxString strVersion = Omega::System::GetVersion().c_str();

@@ -41,7 +41,7 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 	char szBuf[64];
 	ACE_OS::snprintf(szBuf,63,"%lx%llx",ACE_OS::getpid(),t.usec());
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
     // ACE Adds the "\\.\"...
 	return strPrefix + szBuf;
 #else
@@ -112,7 +112,7 @@ bool Root::MessageConnection::read(ACE_Message_Block* mb)
 	if (m_reader.read(*mb,mb->space()) != 0)
 	{
 		int err = ACE_OS::last_error();
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 		if (err == ERROR_BROKEN_PIPE)
 #else
 		if (err == ENOTSOCK)

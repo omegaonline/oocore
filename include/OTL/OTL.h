@@ -107,8 +107,6 @@
 	OMEGA_PRIVATE LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
 	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
 	} \
-	extern "C" OMEGA_EXPORT unsigned long OMEGA_CALL _get_dll_unload_policy() \
-	{ return (OTL::GetModuleBase()->GetLockCount()==0 ? /*ACE_DLL_UNLOAD_POLICY_DEFAULT*/ 1 : /*ACE_DLL_UNLOAD_POLICY_LAZY*/ 2); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
 	{ pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,3,((in),Omega::bool_t,bInstall,(in),Omega::bool_t,bLocal,(in),const Omega::string_t&,strSubsts)) \

@@ -33,42 +33,22 @@
 #define OOSERVER_ROOT_H_INCLUDED_
 
 //////////////////////////////////////////////
-// Version defines
+// Bring in the config guesser
 
-#if defined(WIN32)
-	#if !defined(_WIN32_WINNT)
-	#define _WIN32_WINNT 0x0500
-	#elif _WIN32_WINNT < 0x0500
-	#error OOServer requires _WIN32_WINNT >= 0x0500!
-	#endif
-
-	#ifndef WINVER
-	#define WINVER _WIN32_WINNT
-	#endif
-
-	#if !defined(_WIN32_IE)
-	#define _WIN32_IE 0x0500
-	#elif _WIN32_IE < 0x0500
-	#error OOCore requires _WIN32_IE >= 0x0500!
-	#endif
-
-#endif // WIN32
+#include <OOCore/config-guess.h>
 
 /////////////////////////////////////////////////
 // Include ACE components
 
 #if defined(_MSC_VER)
 #pragma warning(push)
-
 #ifndef _DEBUG
 // Optimization sometimes re-orders things causing this error
 #pragma warning(disable : 4702)
 #endif
-
 #if _MSC_VER >= 1400
 #pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif
-
 #endif
 
 #include <ace/ARGV.h>
@@ -123,7 +103,7 @@
 // End of STL includes
 //////////////////////////////////////////////
 
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 // For the Windows path functions
 #include <shlwapi.h>
@@ -131,12 +111,7 @@
 
 #endif
 
-#if defined(_MSC_VER)
-// Warning 4127 is rubbish!
-#pragma warning(disable : 4127)
-#endif
-
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 	typedef HANDLE user_id_type;
 #else
 	typedef uid_t user_id_type;
@@ -146,7 +121,7 @@
 void AttachDebugger(pid_t pid);
 #endif
 
-#if !defined(ACE_WIN32)
+#if !defined(OMEGA_WIN32)
 bool IsDebuggerPresent();
 #endif
 

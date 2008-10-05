@@ -44,7 +44,9 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mu
 {
 	ACE_UNIX_Addr addr(strAddr.c_str());
 
-	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+	MessagePipe* p = 0;
+	ACE_NEW_RETURN(p,MessagePipe,-1);
+	pipe.reset(p);
 
 	if (ACE_SOCK_Connector().connect(pipe->m_stream,addr,wait) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("connector.connect() failed")),-1);
@@ -107,7 +109,9 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, uid_t uid)
 
 int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_Time_Value* timeout)
 {
-    ACE_NEW_RETURN(pipe,MessagePipe,-1);
+    MessagePipe* p = 0;
+	ACE_NEW_RETURN(p,MessagePipe,-1);
+	pipe.reset(p);
 
 	if (m_acceptor.accept(pipe->m_stream,0,timeout) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.accept() failed")),-1);

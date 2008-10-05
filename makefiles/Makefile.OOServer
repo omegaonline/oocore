@@ -28,58 +28,28 @@
 # LDFLAGS	that differ from debug to release should be set inside 	ifndef RELEASE 
 # TARGET	that differ from debug to release should be set inside 	ifndef RELEASE 
 #
+include ./makefiles/env/makefile.env
+USE_LIB_OOCORE	:= 1
+EXTRA_LIBS	:= -lACE -lsqlite3
 TARGET		:= ooserverd
 SRC_DIR 	:= src/OOServer
-INSTALL_DIR  	:= /usr/bin
-#boilerplate definitions must be after local overrides to allow proper macro expansion
-include ./makefiles/Makefile.env
-
-# the much requested debug build option
-ifndef RELEASE
-LDFLAGS	:= -lOOCored -lACE -lsqlite3 
-else 
-LDFLAGS	:= -lOOCore -lACE -lsqlite3 
-endif
-
-# our sources
-SRCS	     := $(SRC_DIR)/Channel.cpp 			\
-		$(SRC_DIR)/Database.cpp			\
-		$(SRC_DIR)/EntryPoint.cpp		\
-		$(SRC_DIR)/InterProcessService.cpp	\
-		$(SRC_DIR)/DebuggerWin32.cpp		\
-		$(SRC_DIR)/MessageConnection.cpp	\
-		$(SRC_DIR)/MessagePipeUnix.cpp		\
-		$(SRC_DIR)/NTService.cpp		\
-		$(SRC_DIR)/NetHttp.cpp			\
-		$(SRC_DIR)/NetTcp.cpp			\
-		$(SRC_DIR)/RegistryHive.cpp		\
-		$(SRC_DIR)/RootManager.cpp		\
-		$(SRC_DIR)/RootRegistry.cpp		\
-		$(SRC_DIR)/SpawnedProcessUnix.cpp	\
-		$(SRC_DIR)/UserRegistry.cpp		\
-		$(SRC_DIR)/UserManager.cpp		\
-		$(SRC_DIR)/UserNet.cpp			\
-		$(SRC_DIR)/UserROT.cpp
-
-# our object files
-OBJS	     := $(OBJ_DIR)/Channel.o 			\
-		$(OBJ_DIR)/Database.o			\
-		$(OBJ_DIR)/EntryPoint.o			\
-		$(OBJ_DIR)/InterProcessService.o	\
-		$(OBJ_DIR)/DebuggerWin32.o		\
-		$(OBJ_DIR)/MessageConnection.o		\
-		$(OBJ_DIR)/MessagePipeUnix.o		\
-		$(OBJ_DIR)/NTService.o			\
-		$(OBJ_DIR)/NetHttp.o			\
-		$(OBJ_DIR)/NetTcp.o			\
-		$(OBJ_DIR)/RegistryHive.o		\
-		$(OBJ_DIR)/RootManager.o		\
-		$(OBJ_DIR)/RootRegistry.o		\
-		$(OBJ_DIR)/SpawnedProcessUnix.o		\
-		$(OBJ_DIR)/UserRegistry.o		\
-		$(OBJ_DIR)/UserManager.o		\
-		$(OBJ_DIR)/UserNet.o			\
-		$(OBJ_DIR)/UserROT.o
-
-#boilerplate targets
-include ./makefiles/Makefile.targets
+SRCS         	:= 	$(SRC_DIR)/Channel.cpp			\
+			$(SRC_DIR)/Database.cpp			\
+			$(SRC_DIR)/InterProcessService.cpp	\
+			$(SRC_DIR)/MessageConnection.cpp	\
+			$(SRC_DIR)/MessagePipeUnix.cpp		\
+			$(SRC_DIR)/NetHttp.cpp			\
+			$(SRC_DIR)/NetTcp.cpp			\
+			$(SRC_DIR)/NTService.cpp		\
+			$(SRC_DIR)/RegistryHive.cpp		\
+			$(SRC_DIR)/RootHttp.cpp			\
+			$(SRC_DIR)/RootMain.cpp			\
+			$(SRC_DIR)/RootManager.cpp		\
+			$(SRC_DIR)/RootRegistry.cpp		\
+			$(SRC_DIR)/SpawnedProcessUnix.cpp	\
+			$(SRC_DIR)/UserHttp.cpp			\
+			$(SRC_DIR)/UserManager.cpp		\
+			$(SRC_DIR)/UserNet.cpp			\
+			$(SRC_DIR)/UserRegistry.cpp		\
+			$(SRC_DIR)/UserROT.cpp
+include ./makefiles/env/makefile.targets

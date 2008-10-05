@@ -22,8 +22,8 @@
 // Hand generated resource script!
 //
 
-#include "afxres.h"
-#include "../../include/OOCore/Version.h"
+#include "winnt.h"
+#include "../Common/Version.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Neutral resources
@@ -40,8 +40,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION OMEGA_MAJOR_VERSION,OMEGA_MINOR_VERSION,OMEGA_BUILD_VERSION,0
- PRODUCTVERSION OMEGA_MAJOR_VERSION,OMEGA_MINOR_VERSION,OMEGA_BUILD_VERSION,0
+ FILEVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
+ PRODUCTVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
  FILEFLAGSMASK 0x17L
 #ifdef OMEGA_DEBUG
  FILEFLAGS 0x1L
@@ -58,11 +58,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "www.omegaonline.org.uk"
             VALUE "FileDescription", "OOCore Dynamic Link Library"
-            VALUE "FileVersion", OMEGA_VERSION
+            VALUE "FileVersion", OOCORE_VERSION
             VALUE "InternalName", "OOCore"
             VALUE "OriginalFilename", "OOCore.dll"
             VALUE "ProductName", "OOCore Dynamic Link Library"
-            VALUE "ProductVersion", OMEGA_VERSION
+            VALUE "ProductVersion", OOCORE_VERSION
         END
     END
     BLOCK "VarFileInfo"

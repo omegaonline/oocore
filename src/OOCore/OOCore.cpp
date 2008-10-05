@@ -86,9 +86,9 @@ namespace OOCore
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 {
 #if defined(OMEGA_DEBUG)
-	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 #else
-	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OMEGA_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 #endif
 }
 

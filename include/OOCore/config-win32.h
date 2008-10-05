@@ -45,7 +45,9 @@
 #error OOCore requires _WIN32_IE >= 0x0500!
 #endif
 
+#if !defined(OMEGA_WIN32)
 #define OMEGA_WIN32
+#endif
 
 #if defined(OMEGA_WIN64)
 #define OMEGA_PLATFORM_STRING "Win64"

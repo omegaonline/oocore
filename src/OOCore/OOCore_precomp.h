@@ -27,16 +27,23 @@
 #endif
 
 // Pre-include config...
-#include <OOCore/config-guess.h>
+#include "../Common/config-build.h"
 
 /////////////////////////////////////////////////
 // Include ACE components
 
+#if defined(OMEGA_WIN32) && !defined(WIN32)
+#define WIN32
+#endif
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4355) // 'this' : used in base member initializer list
-#if _MSC_VER >= 1400
-#pragma warning(disable : 4996) // 'function' was declared deprecated 
+#if (_MSC_VER == 1310)
+#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
+#endif
+#if (_MSC_VER >= 1400)
+#pragma warning(disable : 4996) // 'function' was declared deprecated
 #endif
 #endif
 
@@ -96,7 +103,8 @@
 #include <OOCore/Remoting.h>
 #include <OOCore/Apartment.h>
 #include <OTL/OTL.h>
-#include "./Server.h"
+#include "../Common/Server.h"
+#include "../Common/Version.h"
 
 // End of OOCore/OTL includes
 /////////////////////////////////////////////////

@@ -25,6 +25,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -41,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_DEBUG;OMEGA_HAVE_VLD"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -64,7 +66,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib ACEsd.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\extern\ACE_wrappers\lib"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
@@ -103,6 +105,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -121,8 +125,8 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
@@ -141,9 +145,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib ACEs.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\extern\ACE_wrappers\lib"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -287,7 +291,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\extern\sqlite\sqlite3.c"
+				RelativePath=".\SQLite3.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -397,7 +401,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\extern\sqlite\sqlite3.h"
+				RelativePath="..\Common\Server.h"
 				>
 			</File>
 			<File
@@ -418,6 +422,10 @@
 			</File>
 			<File
 				RelativePath=".\UserROT.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Common\Version.h"
 				>
 			</File>
 		</Filter>

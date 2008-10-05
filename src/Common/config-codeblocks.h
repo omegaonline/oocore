@@ -19,19 +19,15 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_UNIX_H_INCLUDED_
-#define OOCORE_CONFIG_UNIX_H_INCLUDED_
+#ifndef OOCORE_CONFIG_CODEBLOCKS_H_INCLUDED_
+#define OOCORE_CONFIG_CODEBLOCKS_H_INCLUDED_
 
-#if defined (__GNUC__)
-#include <OOCore/config-unix-gcc.h>
+#if defined(_MSC_VER)
+#include <OOCore/config-msvc.h>
+#elif defined (__GNUC__)
+#include <OOCore/config-gcc.h>
 #else
-#error Unsupported compiler!
+#error We don't support any other compilers
 #endif
 
-#define OMEGA_UNIX
-
-#define OMEGA_PLATFORM_STRING "Unix"
-
-#include <errno.h>
-
-#endif // OOCORE_CONFIG_UNIX_H_INCLUDED_
+#endif // OOCORE_CONFIG_CODEBLOCKS_H_INCLUDED_

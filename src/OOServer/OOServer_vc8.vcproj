@@ -24,6 +24,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -40,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_DEBUG;OMEGA_HAVE_VLD"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -65,10 +67,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib ACEsd.lib"
 				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OOServer.pdb"
 				SubSystem="1"
@@ -109,6 +111,8 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -128,8 +132,8 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="true"
@@ -151,10 +155,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib ACEs.lib"
 				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -256,7 +260,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\extern\sqlite\sqlite3.c"
+				RelativePath=".\SQLite3.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -334,7 +338,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Version.h"
+				RelativePath="..\Common\Version.h"
 				>
 			</File>
 		</Filter>
@@ -360,7 +364,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputPath)&#x0D;&#x0A;"
+						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
 						Outputs=".\$(InputName).rc"
 					/>
 				</FileConfiguration>
@@ -370,7 +374,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputPath)&#x0D;&#x0A;"
+						CommandLine="mc $(InputFileName)"
 						Outputs=".\$(InputName).rc"
 					/>
 				</FileConfiguration>

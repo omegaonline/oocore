@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor
+// Copyright (C) 2008 Rick Taylor
 //
 // This file is part of OOCore, the Omega Online Core library.
 //
@@ -19,19 +19,38 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_VERSION_H_INCLUDED_
-#define OOCORE_VERSION_H_INCLUDED_
+#ifndef OOCORE_CONFIG_BUILD_H_INCLUDED_
+#define OOCORE_CONFIG_BUILD_H_INCLUDED_
 
-//////////////////////////////////////////////
-// Version defines
+// Testing!
+//#define HAVE_CONFIG_H 1
 
-#define OMEGA_MAJOR_VERSION  0
-#define OMEGA_MINOR_VERSION  4
-#define OMEGA_BUILD_VERSION  3
+/////////////////////////////////////////////////////////
+//
+// This file tries to guess the build tool you are using.
+//
+// It will error if it can't work it out
+// Please contact the omegaonline team if it happens
+//
+/////////////////////////////////////////////////////////
 
-#define OMEGA_VERSION_III(n)        #n
-#define OMEGA_VERSION_II(a,b,c)     OMEGA_VERSION_III(a.b.c)
-#define OMEGA_VERSION_I(a,b,c)      OMEGA_VERSION_II(a,b,c)
-#define OMEGA_VERSION               OMEGA_VERSION_I(OMEGA_MAJOR_VERSION,OMEGA_MINOR_VERSION,OMEGA_BUILD_VERSION)
+#if defined(HAVE_CONFIG_H)
+// Autoconf
+#include "config-autoconf.h"
+#elif defined(_MSC_VER)
+// MS Visual Studio
+#include "config-vstudio.h"
+#elif defined(CODEBLOCKS)
+// Code::Blocks
+#include "config-codeblocks.h"
+#elif defined(XCODE)
+// XCode
+#error TODO!
+#elif defined (__BORLANDC__)
+// Borland C++ Builder
+#include <OOCore/config-borland.h>
+#else
+#error Failed to guess your system.  Please contact the developers.
+#endif
 
-#endif // OOCORE_VERSION_H_INCLUDED_
+#endif // OOCORE_CONFIG_BUILD_H_INCLUDED_

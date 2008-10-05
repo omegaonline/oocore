@@ -61,7 +61,6 @@
 // End of STL includes
 //////////////////////////////////////////////
 
-#include <OOCore/Version.h>
 #include <OOCore/Types.h>
 #include <OOCore/Threading.h>
 #include <OOCore/Base.h>

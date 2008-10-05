@@ -1,8 +1,37 @@
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2007 Rick Taylor
+//
+// This file is part of OORegister, the Omega Online registration tool
+//
+// OORegister is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// OORegister is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with OORegister.  If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+#include <OOCore/OOCore.h>
+
+#if defined(OMEGA_WIN32) && !defined(WIN32)
+#define WIN32
+#endif
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4355) // 'this' : used in base member initializer list
-
-#if _MSC_VER >= 1400
+#if (_MSC_VER == 1310)
+#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
+#endif
+#if (_MSC_VER >= 1400)
 #pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif
 #endif
@@ -15,8 +44,6 @@
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
-
-#include <OOCore/OOCore.h>
 
 static void print_help()
 {
@@ -50,7 +77,7 @@ static int do_install(bool bInstall, bool bLocal, bool bSilent, ACE_TCHAR* lib_p
 			return -1;
 		else
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
-	}
+	}	
 	
 	pfnInstallLib pfnInstall = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_InstallLibrary_Safe"));
 	

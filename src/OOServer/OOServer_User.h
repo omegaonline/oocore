@@ -19,7 +19,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include <OOCore/OOCore.h>
+#include "../Common/config-build.h"
+
+#if defined(OMEGA_WIN32) && !defined(WIN32)
+#define WIN32
+#endif
 
 /////////////////////////////////////////////////
 // Include ACE components
@@ -30,8 +34,11 @@
 // Optimization sometimes re-orders things causing this error
 #pragma warning(disable : 4702)
 #endif
-#if _MSC_VER >= 1400
-#pragma warning(disable : 4996) // 'function' was declared deprecated 
+#if (_MSC_VER == 1310)
+#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
+#endif
+#if (_MSC_VER >= 1400)
+#pragma warning(disable : 4996) // 'function' was declared deprecated
 #endif
 #endif
 
@@ -91,7 +98,7 @@
 
 /////////////////////////////////////////////////
 // Include Windows components
-#if defined(ACE_WIN32)
+#if defined(OMEGA_WIN32)
 
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -116,6 +123,6 @@
 void AttachDebugger(pid_t pid);
 #endif
 
-#if !defined(ACE_WIN32)
-bool IsDebuggerPresent();
+#if !defined(OMEGA_WIN32)
+int IsDebuggerPresent();
 #endif

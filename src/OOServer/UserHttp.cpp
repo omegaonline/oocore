@@ -21,7 +21,7 @@
 
 #include "./OOServer_User.h"
 #include "./UserManager.h"
-#include "./Version.h"
+#include "../Common/Version.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -357,7 +357,7 @@ bool User::HttpConnection::ReadRequestHeader(const ACE_Message_Block* mb)
 			// We always say "Carry on..."
 			ACE_CString strHeader =
 				"HTTP/1.1 100 Continue\r\n"
-				"Server: OOServer/" OOSERVER_VERSION "\r\n"
+				"Server: OOServer/" OOCORE_VERSION "\r\n"
 				"Content-Length: 0\r\n"
 				"\r\n";
 
@@ -597,7 +597,7 @@ void User::HttpConnection::HTTPRespondError(const char* pszMessage, int err, con
 
 	std::ostringstream osHeader;
 	osHeader << "HTTP/1.1 " << pszMessage << "\r\n";
-	osHeader << "Server: OOServer/" OOSERVER_VERSION "\r\n";
+	osHeader << "Server: OOServer/" OOCORE_VERSION "\r\n";
 	osHeader << "Connection: close\r\n";
 	osHeader << "Content-Type: text/html; charset=utf-8\r\n";
 	osHeader << "Content-Length: " << (uint64_t)strResponse.length() << "\r\n";
@@ -657,7 +657,7 @@ void User::HttpConnection::HTTPRedirect(string_t strResource, bool bWithContent,
 	std::ostringstream osHeader;
 	osHeader <<
 		"HTTP/1.1 302 Found\r\n"
-		"Server: OOServer/" OOSERVER_VERSION "\r\n"
+		"Server: OOServer/" OOCORE_VERSION "\r\n"
 		"Location: " << strResource.ToUTF8() << "\r\n";
 
 	if (bClose)
@@ -947,7 +947,7 @@ void User::HttpResponse::init(Manager* pManager, uint16_t conn_id)
 	m_pManager = pManager;
 	m_conn_id = conn_id;
 
-	SetResponseHeader(L"Server",L"OOServer/" + string_t(OOSERVER_VERSION,false));
+	SetResponseHeader(L"Server",L"OOServer/" + string_t(OOCORE_VERSION,false));
 }
 
 void User::HttpResponse::SetResponseHeader(const string_t& strHeader, const string_t& strValue)

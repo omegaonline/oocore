@@ -21,7 +21,7 @@
 
 #include "./OOServer_User.h"
 #include "./UserManager.h"
-#include "./Version.h"
+#include "../Common/Version.h"
 
 #include <sqlite3.h>
 
@@ -29,9 +29,9 @@ static int Version()
 {
 	ACE_OS::printf("OOSvrUser version information:\n");
 #if defined(OMEGA_DEBUG)
-	ACE_OS::printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	ACE_OS::printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\nACE %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 #else
-	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOSERVER_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
 #endif
 
 	ACE_OS::printf("\nOOCore version information:\n");

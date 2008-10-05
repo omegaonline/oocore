@@ -32,15 +32,33 @@
 #if defined(_MSC_VER)
 
 #if _MSC_VER == 1310
-#import "C:\Program Files\Common Files\Microsoft Shared\Office10\MSO.DLL" raw_interfaces_only  rename("RGB","dte_RGB")
-#import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte.olb" raw_interfaces_only named_guids rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath")
-using namespace EnvDTE;
-#elif _MSC_VER >= 1400
-#import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80a.olb" raw_interfaces_only named_guids rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
-using namespace EnvDTE;
-#import "C:\Program Files\Common Files\Microsoft Shared\MSEnv\dte80.olb" raw_interfaces_only named_guids
-using namespace EnvDTE80;
+//The following #import imports the command bar library based on its LIBID.
+#import "libid:2df8d04c-5bfa-101b-bde5-00aa0044de52" raw_interfaces_only rename("RGB","dte_RGB") rename("DocumentProperties","dte_DocumentProperties")
+
+//The following #import imports EnvDTE based on its LIBID.
+#import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("7.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
+
+#define DTE_VER "7.1"
+#elif _MSC_VER == 1400
+
+//The following #import imports EnvDTE based on its LIBID.
+#import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("8.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
+
+#define DTE_VER "8.0"
+#elif _MSC_VER == 1500
+
+//The following #import imports EnvDTE based on its LIBID.
+#import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("8.0") rename("GetObject","dte_GetObject") rename("SearchPath","dte_SearchPath") rename("FindText","dte_FindText") rename("ReplaceText","dte_ReplaceText")
+
+#define DTE_VER "9.0"
+#else
+
+// MSVC 10 isn't out as I write this...
+#error Fix me for the new release of Visual Studio!
+#define DTE_VER "10.0"
+
 #endif
+
 
 static bool AttachVSDebugger(DWORD our_pid)
 {
@@ -50,47 +68,29 @@ static bool AttachVSDebugger(DWORD our_pid)
 		return false;
 
 	// Scope for objects
+	try
 	{
-		IUnknownPtr pUnk;
-	#if _MSC_VER >= 1400
-		pUnk.GetActiveObject("VisualStudio.DTE.8.0");
-	#elif _MSC_VER == 1310
-		pUnk.GetActiveObject("VisualStudio.DTE.7.1");
-	#endif
-		_DTEPtr pDTE;
-		if (pUnk != NULL)
-			pDTE = pUnk;
-			
-		DebuggerPtr pDebugger;
-		if (pDTE)
-			pDTE->get_Debugger(&pDebugger);
-
-		ProcessesPtr pProcesses;
-		if (pDebugger)
-			pDebugger->get_LocalProcesses(&pProcesses);
-		
-		if (pProcesses)
+		IUnknownPtr ptrUnk;
+		ptrUnk.GetActiveObject("VisualStudio.DTE." DTE_VER);
+		if (ptrUnk != NULL)
 		{
-			long lCount = 0;
-			pProcesses->get_Count(&lCount);
-			for (long i=1;i<=lCount;++i)
+			EnvDTE::_DTEPtr ptrDTE = ptrUnk;
+			
+			EnvDTE::ProcessesPtr ptrProcesses = ptrDTE->Debugger->LocalProcesses;
+			for (long i = 1;i <= ptrProcesses->Count; ++i)
 			{
-				ProcessPtr pProcess;
-				if (SUCCEEDED(pProcesses->Item(variant_t(i),&pProcess)) && pProcess != NULL)
+				EnvDTE::ProcessPtr ptrProcess = ptrProcesses->Item(i);
+				if (ptrProcess->ProcessID == static_cast<long>(our_pid))
 				{
-					long pid = 0;
-					pProcess->get_ProcessID(&pid);
-					
-					if (static_cast<DWORD>(pid) == our_pid)
-					{
-						if SUCCEEDED(pProcess->Attach())
-							bRet = true;
-
-						break;
-					}
+					ptrProcess->Attach();
+					bRet = true;
+					break;
 				}
 			}
 		}
+	}
+	catch (_com_error&)
+	{
 	}
 
 	CoUninitialize();

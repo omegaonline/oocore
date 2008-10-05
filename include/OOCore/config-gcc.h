@@ -22,15 +22,15 @@
 #ifndef OOCORE_CONFIG_GCC_H_INCLUDED_
 #define OOCORE_CONFIG_GCC_H_INCLUDED_
 
-#define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
-
-#include <sys/types.h>
 #include <new>
 
 #define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 	do { POINTER = new CONSTRUCTOR; \
 		if (POINTER == 0) { OMEGA_THROW(L"Out of memory."); } \
 	} while (0)
+
+
+#include <sys/types.h>
 
 #define OMEGA_HAS_INT16_T
 #define OMEGA_HAS_UINT16_T
@@ -42,5 +42,51 @@
 #define OMEGA_UNUSED_ARG(n)    (void)(n)
 
 #define OMEGA_COMPILER_STRING  "gcc " __VERSION__
+
+#undef interface
+#define interface struct
+
+#define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
+
+/* stop lots of attributes warnings */
+#ifndef __x86_64__
+    #define OMEGA_CALL   __attribute__((__cdecl__))
+#else
+    #define OMEGA_CALL
+#endif /* ndef __x86_64__ */
+
+#ifdef __LP64__
+    #define OMEGA_64
+#endif
+
+#if defined(__ELF__)
+    #if __GNUC__ >= 4
+        #define OMEGA_EXPORT  __attribute__((visibility("default")))
+        #define OMEGA_IMPORT  __attribute__((visibility("default")))
+        #define OMEGA_PRIVATE __attribute__((visibility("hidden")))
+    #else
+        #error Need a version script!
+    #endif
+#elif defined(__MINGW32__) || defined(__CYGWIN__)
+    #define OMEGA_IMPORT  __attribute__((dllimport))
+    #define OMEGA_EXPORT  __attribute__((dllexport))
+    #define OMEGA_PRIVATE
+#else
+    #error No idea how to control export for this output!
+#endif
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__WIN32__)
+    #include <OOCore/config-win32.h>
+#elif defined(__unix)
+	// We assume we are some kind of unix
+	#include <unistd.h>
+	#define OMEGA_UNIX
+    #define OMEGA_PLATFORM_STRING "Unix"
+#else
+	#error What platform is this?
+#endif
+
+#include <errno.h>
+#include <stdarg.h>
 
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

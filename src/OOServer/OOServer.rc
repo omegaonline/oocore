@@ -22,8 +22,8 @@
 // Hand generated resource script!
 //
 
-#include "afxres.h"
-#include "Version.h"
+#include "winnt.h"
+#include "../Common/Version.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Neutral resources
@@ -54,8 +54,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION OOSERVER_MAJOR_VERSION,OOSERVER_MINOR_VERSION,OOSERVER_BUILD_VERSION,0
- PRODUCTVERSION OOSERVER_MAJOR_VERSION,OOSERVER_MINOR_VERSION,OOSERVER_BUILD_VERSION,0
+ FILEVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
+ PRODUCTVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
  FILEFLAGSMASK 0x17L
 #ifdef OMEGA_DEBUG
  FILEFLAGS 0x1L
@@ -72,11 +72,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "www.omegaonline.org.uk"
             VALUE "FileDescription", "Omega Online Network Gateway"
-            VALUE "FileVersion", OOSERVER_VERSION
+            VALUE "FileVersion", OOCORE_VERSION
             VALUE "InternalName", "OOServer"
             VALUE "OriginalFilename", "OOServer.exe"
             VALUE "ProductName", "Omega Online Network Gateway"
-            VALUE "ProductVersion", OOSERVER_VERSION
+            VALUE "ProductVersion", OOCORE_VERSION
         END
     END
     BLOCK "VarFileInfo"

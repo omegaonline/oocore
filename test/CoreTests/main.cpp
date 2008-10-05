@@ -71,7 +71,12 @@ void output(const char* sz, ...)
 	va_start(argptr, sz);
 
 	char szBuf[1024] = {0};
+
+#if defined(_MSC_VER) && (_MSC_VER == 1310)
+	_vsnprintf(szBuf,1023,sz,argptr);
+#else
 	vsnprintf(szBuf,1023,sz,argptr);
+#endif
 
 	printf(szBuf);
 	OutputDebugStringA(szBuf);	

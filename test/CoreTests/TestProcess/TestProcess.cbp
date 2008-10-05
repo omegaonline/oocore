@@ -16,10 +16,9 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-O0" />
-					<Add option="-DWIN32" />
-					<Add option="-D_DEBUG" />
-					<Add option="-D_CONSOLE" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
+					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="../../../include" />
 				</Compiler>
 				<ResourceCompiler>
@@ -40,9 +39,9 @@
 				<Compiler>
 					<Add option="-O3" />
 					<Add option="-Wall" />
-					<Add option="-DWIN32" />
+					<Add option="-fno-rtti" />
+					<Add option="-mthreads" />
 					<Add option="-DNDEBUG" />
-					<Add option="-D_CONSOLE" />
 					<Add directory="../../../include" />
 				</Compiler>
 				<ResourceCompiler>
@@ -67,7 +66,6 @@
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-pthread" />
-					<Add option="-O0" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
 					<Add directory="../../../include" />
@@ -102,12 +100,16 @@
 				</Linker>
 			</Target>
 		</Build>
+		<Compiler>
+			<Add option="-DCODEBLOCKS" />
+		</Compiler>
 		<Unit filename="../SimpleTest.h" />
 		<Unit filename="TestProcess.cpp" />
 		<Unit filename="../interfaces.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

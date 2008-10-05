@@ -19,8 +19,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.4\include&quot;;&quot;..\..\extern\wxWidgets-2.8.4\include\msvc&quot;;..\..\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;&quot;C:\Work\wxWidgets-2.8.4\include&quot;;&quot;C:\Work\wxWidgets-2.8.4\include\msvc&quot;"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				SmallerTypeCheck="FALSE"
@@ -37,7 +37,7 @@
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.4\lib\vc_lib&quot;"
+				AdditionalLibraryDirectories="C:\Work\wxWidgets-2.8.4\lib\vc_lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OORegEdit.pdb"
 				SubSystem="2"
@@ -47,7 +47,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -75,8 +77,8 @@
 				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.4\include&quot;;&quot;..\..\extern\wxWidgets-2.8.4\include\msvc&quot;;..\..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\wxWidgets-2.8.4\include;C:\Work\wxWidgets-2.8.4\include\msvc;C:\Work\wxWidgets-2.8.4\include\msvc;C:\Work\wxWidgets-2.8.4\include\msvc;C:\Work\wxWidgets-2.8.4\include\msvc"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="TRUE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
@@ -90,8 +92,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OORegEdit.exe"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.4\lib\vc_lib&quot;"
+				AdditionalLibraryDirectories="C:\Work\wxWidgets-2.8.4\lib\vc_lib"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -101,7 +102,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool

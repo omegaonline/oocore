@@ -22,40 +22,29 @@
 #ifndef OOCORE_CONFIG_GUESS_H_INCLUDED_
 #define OOCORE_CONFIG_GUESS_H_INCLUDED_
 
-// Testing!
-//#define HAVE_CONFIG_H 1
-
 /////////////////////////////////////////////////////////
 //
-// This file tries to guess the build environment/IDE
-// you are using.
+// This file tries to guess the compiler you are using.
 //
 // It will error if it can't work it out
 // Please contact the omegaonline team if it happens
 //
 /////////////////////////////////////////////////////////
 
-#if defined(HAVE_CONFIG_H)
-// Autoconf
-#include <OOCore/config-autoconf.h>
-#elif defined(_MSC_VER)
+#ifndef __cplusplus
+#error Omega Online insists on C++
+#endif
+
+#if defined(_MSC_VER)
 // MS Visual Studio
 #include <OOCore/config-msvc.h>
-#elif defined(CODEBLOCKS)
-// Code::Blocks
-#error Fix me!
-#elif defined(XCODE)
-// XCode
-#error TODO!
+#elif defined (__GNUC__)
+#include <OOCore/config-gcc.h>
 #elif defined (__BORLANDC__)
 // Borland C++ Builder
 #include <OOCore/config-borland.h>
 #else
-#error Failed to guess your system.  Please contact the developers.
-#endif
-
-#if defined(__unix) || defined(__unix__)
-#include <OOCore/config-unix.h>
+#error Failed to guess your compiler.  Please contact the developers.
 #endif
 
 #endif // OOCORE_CONFIG_GUESS_H_INCLUDED_

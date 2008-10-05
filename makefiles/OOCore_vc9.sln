@@ -6,12 +6,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOServer", "..\src\OOServer
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOCore", "..\src\OOCore\OOCore_vc9.vcproj", "{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5} = {42019A26-6AE8-432C-8ED8-922704B9BFF5}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreTests", "..\test\CoreTests\CoreTests_vc9.vcproj", "{F8DE7EC4-6360-4E27-A1D1-D1DC2290D1CA}"
 	ProjectSection(ProjectDependencies) = postProject
-		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A} = {43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}
-		{E1E124DB-9220-4148-9336-9F44912D6E41} = {E1E124DB-9220-4148-9336-9F44912D6E41}
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+		{E1E124DB-9220-4148-9336-9F44912D6E41} = {E1E124DB-9220-4148-9336-9F44912D6E41}
+		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A} = {43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestLibrary", "..\test\CoreTests\TestLibrary\TestLibrary_vc9.vcproj", "{E1E124DB-9220-4148-9336-9F44912D6E41}"
@@ -41,8 +44,17 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OORpc", "..\src\OORpc\OORpc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOSvrUser", "..\src\OOServer\OOSvrUser_vc9.vcproj", "{F19DB319-BB3B-4965-A4C2-26BCB674DF99}"
 	ProjectSection(ProjectDependencies) = postProject
-		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A} = {43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}
 		{B4FB5D7C-0441-426A-8457-A2E6F94D9A5B} = {B4FB5D7C-0441-426A-8457-A2E6F94D9A5B}
+		{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A} = {43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "msvc_conf", "msvc_conf\msvc_conf_vc9.vcproj", "{42019A26-6AE8-432C-8ED8-922704B9BFF5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3C92B3AE-56D2-436F-9DDE-3E446A7648EF}"
+	ProjectSection(SolutionItems) = preProject
+		..\src\Common\config-build.h = ..\src\Common\config-build.h
+		..\src\Common\config-vstudio.h = ..\src\Common\config-vstudio.h
+		msvc_conf.xml = msvc_conf.xml
 	EndProjectSection
 EndProject
 Global
@@ -165,6 +177,18 @@ Global
 		{F19DB319-BB3B-4965-A4C2-26BCB674DF99}.Release|Win32.ActiveCfg = Release|Win32
 		{F19DB319-BB3B-4965-A4C2-26BCB674DF99}.Release|Win32.Build.0 = Release|Win32
 		{F19DB319-BB3B-4965-A4C2-26BCB674DF99}.Release|x64.ActiveCfg = Release|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Debug|Win32.Build.0 = Debug|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Debug|x64.ActiveCfg = Debug|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Release|Any CPU.ActiveCfg = Release|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Release|Win32.ActiveCfg = Release|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Release|Win32.Build.0 = Release|Win32
+		{42019A26-6AE8-432C-8ED8-922704B9BFF5}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -19,8 +19,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OMEGA_HAVE_VLD"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -35,8 +35,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="ACEsd.lib"
 				OutputFile="$(OutDir)/OORpc.dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OORpc.pdb"
 				SubSystem="2"
@@ -47,7 +49,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -71,8 +75,8 @@
 			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
+				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
 				ForceConformanceInForLoopScope="TRUE"
@@ -84,9 +88,9 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="ACEs.lib"
 				OutputFile="$(OutDir)/OORpc.dll"
-				LinkIncremental="1"
-				GenerateDebugInformation="TRUE"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -97,7 +101,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool

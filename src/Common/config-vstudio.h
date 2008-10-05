@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor
+// Copyright (C) 2008 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -19,29 +19,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_UNIX_GCC_H_INCLUDED_
-#define OOCORE_CONFIG_UNIX_GCC_H_INCLUDED_
+#ifndef OOCORE_CONFIG_VSTUDIO_H_INCLUDED_
+#define OOCORE_CONFIG_VSTUDIO_H_INCLUDED_
 
-#include <OOCore/config-gcc.h>
+#include <OOCore/config-msvc.h>
 
-#undef interface
-#define interface struct
-
-/* stop lots of attributes warnings */
-#ifndef __x86_64__
-#define OMEGA_CALL   __attribute__((cdecl))
-#else
-#define OMEGA_CALL
-#endif /* ndef __x86_64__ */
-
-#ifdef __LP64__
-#define OMEGA_64
-#endif
-
-#define OMEGA_EXPORT  __attribute__((visibility("default")))
-#define OMEGA_IMPORT  __attribute__((visibility("default")))
-#define OMEGA_PRIVATE __attribute__((visibility("hidden")))
-
-#include <stdarg.h>
-
-#endif // OOCORE_CONFIG_UNIX_GCC_H_INCLUDED_
+#endif // OOCORE_CONFIG_VSTUDIO_H_INCLUDED_

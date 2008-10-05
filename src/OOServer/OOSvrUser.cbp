@@ -8,8 +8,8 @@
 		<Build>
 			<Target title="Debug Win32">
 				<Option platforms="Windows;" />
-				<Option output="../../bin/Debug/OOSvrUser" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin/Debug" />
+				<Option output="..\..\bin\Debug\OOSvrUser" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin\Debug" />
 				<Option object_output="Debug_Host" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -18,23 +18,20 @@
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
-					<Add option="-O0" />
-					<Add option="-DWIN32" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add option="-D_CONSOLE" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
-					<Add directory="../../extern/sqlite" />
+					<Add directory="..\..\include" />
+					<Add directory="C:\Work\ACE_wrappers" />
+					<Add directory="C:\Work\sqlite" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
-					<Add directory="../../extern/sqlite" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
-					<Add library="../../bin/debug/libOOCore.a" />
+					<Add library="C:\Work\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\bin\debug\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
@@ -43,8 +40,8 @@
 			</Target>
 			<Target title="Release Win32">
 				<Option platforms="Windows;" />
-				<Option output="../../bin/OOSvrUser" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin" />
+				<Option output="..\..\bin\OOSvrUser" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin" />
 				<Option object_output="Release_Host" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -54,22 +51,20 @@
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
-					<Add option="-DWIN32" />
 					<Add option="-DNDEBUG" />
-					<Add option="-D_CONSOLE" />
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
-					<Add directory="../../extern/sqlite" />
+					<Add directory="..\..\include" />
+					<Add directory="C:\Work\ACE_wrappers" />
+					<Add directory="C:\Work\sqlite" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../include" />
-					<Add directory="../../extern/ACE_wrappers" />
-					<Add directory="../../extern/sqlite" />
+					<Add directory="..\..\include" />
+					<Add directory="..\..\extern\ACE_wrappers" />
+					<Add directory="..\..\extern\sqlite" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="../../extern/ACE_wrappers/lib/libACE.a" />
-					<Add library="../../bin/libOOCore.a" />
+					<Add library="C:\Work\ACE_wrappers\lib\libACE.a" />
+					<Add library="..\..\bin\libOOCore.a" />
 					<Add library="shlwapi" />
 					<Add library="libws2_32" />
 					<Add library="libmswsock" />
@@ -78,10 +73,10 @@
 			</Target>
 			<Target title="Debug Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/Debug/oosvruserd" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin/Debug" />
+				<Option output="..\..\bin\Debug\oosvruserd" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin\Debug" />
 				<Option object_output="Debug_Host" />
-				<Option external_deps="../OOCore/debug/libOOCore.a;" />
+				<Option external_deps="..\OOCore\debug\libOOCore.a;" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -90,22 +85,21 @@
 					<Add option="-fno-rtti" />
 					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-pthread" />
-					<Add option="-O0" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</Compiler>
 				<Linker>
 					<Add library="ACE" />
 					<Add library="OOCored" />
 					<Add library="sqlite3" />
-					<Add directory="../../bin/Debug" />
+					<Add directory="..\..\bin\Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/oosvruser" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin" />
+				<Option output="..\..\bin\oosvruser" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="..\..\bin" />
 				<Option object_output="Release_Host" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -119,24 +113,24 @@
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DNDEBUG" />
-					<Add directory="../../include" />
+					<Add directory="..\..\include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
 					<Add library="ACE" />
 					<Add library="OOCore" />
 					<Add library="sqlite3" />
-					<Add directory="../../bin" />
+					<Add directory="..\..\bin" />
 				</Linker>
 			</Target>
 		</Build>
-		<Unit filename="../../extern/sqlite/sqlite3.c">
-			<Option compilerVar="CC" />
-			<Option compiler="gcc" use="1" buildCommand="$compiler -mthreads $includes -c $file -o $object" />
-			<Option target="Debug Win32" />
-			<Option target="Release Win32" />
-		</Unit>
-		<Unit filename="../../extern/sqlite/sqlite3.h" />
+		<Compiler>
+			<Add option="-DCODEBLOCKS" />
+		</Compiler>
+		<Unit filename="..\Common\Server.h" />
+		<Unit filename="..\Common\Version.h" />
+		<Unit filename="..\Common\config-build.h" />
+		<Unit filename="..\Common\config-codeblocks.h" />
 		<Unit filename="Channel.cpp" />
 		<Unit filename="Channel.h" />
 		<Unit filename="Database.cpp" />
@@ -170,6 +164,11 @@
 			<Option target="Release Win32" />
 		</Unit>
 		<Unit filename="Protocol.h" />
+		<Unit filename="SQLite3.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
 		<Unit filename="UserHttp.cpp" />
 		<Unit filename="UserHttp.h" />
 		<Unit filename="UserMain.cpp" />
@@ -184,6 +183,7 @@
 		<Extensions>
 			<code_completion />
 			<debugger />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

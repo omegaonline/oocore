@@ -31,8 +31,10 @@
 // Optimization sometimes re-orders things causing this error
 #pragma warning(disable : 4702)
 #endif
-
-#if _MSC_VER >= 1400
+#if (_MSC_VER == 1310)
+#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
+#endif
+#if (_MSC_VER >= 1400)
 #pragma warning(disable : 4996) // 'function' was declared deprecated 
 #endif
 #endif

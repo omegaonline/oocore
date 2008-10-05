@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOCore, the OmegaOnline Core library.
+// This file is part of OOCore, the Omega Online Core library.
 //
 // OOCore is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -19,13 +19,19 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOCORE_CONFIG_WIN32_GCC_H_INCLUDED_
-#define OOCORE_CONFIG_WIN32_GCC_H_INCLUDED_
+#ifndef OOCORE_VERSION_H_INCLUDED_
+#define OOCORE_VERSION_H_INCLUDED_
 
-#include <OOCore/config-gcc.h>
+//////////////////////////////////////////////
+// Version defines
 
-#define OMEGA_IMPORT  __declspec(dllimport)
-#define OMEGA_EXPORT  __declspec(dllexport)
-#define OMEGA_PRIVATE
+#define OOCORE_MAJOR_VERSION  0
+#define OOCORE_MINOR_VERSION  4
+#define OOCORE_PATCH_VERSION  1
 
-#endif // OOCORE_CONFIG_WIN32_GCC_H_INCLUDED_
+#define OOCORE_VERSION_III(n)        #n
+#define OOCORE_VERSION_II(a,b,c)     OOCORE_VERSION_III(a.b.c)
+#define OOCORE_VERSION_I(a,b,c)      OOCORE_VERSION_II(a,b,c)
+#define OOCORE_VERSION               OOCORE_VERSION_I(OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION)
+
+#endif // OOCORE_VERSION_H_INCLUDED_

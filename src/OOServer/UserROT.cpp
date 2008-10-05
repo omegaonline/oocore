@@ -22,7 +22,7 @@
 #include "./OOServer_User.h"
 #include "./UserROT.h"
 
-#include "../OOCore/Server.h"
+#include "../Common/Server.h"
 
 using namespace Omega;
 using namespace OTL;

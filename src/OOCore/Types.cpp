@@ -424,7 +424,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_mid,3,((in),const void*,s1,(in),si
 	const StringNode* s = static_cast<const StringNode*>(s1);
 	if (start == 0 && length == s->m_str.length())
 		return s->AddRef();
-		
+
 	StringNode* s2;
 	OMEGA_NEW(s2,StringNode(s->m_str.substr(start,length)));
 	return s2;
@@ -435,7 +435,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_right,2,((in),const void*,s1,(in),
 	const StringNode* s = static_cast<const StringNode*>(s1);
 	if (length == 0)
 		return s->AddRef();
-	
+
 	size_t start = s->m_str.length();
 	if (length >= start)
 		start = 0;
@@ -551,7 +551,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	}
 
 	ACE_Utils::UUID uuid;
-	ACE_Utils::UUID_GENERATOR::instance()->generateUUID(uuid);
+	ACE_Utils::UUID_GENERATOR::instance()->generate_UUID(uuid);
 
 	guid.Data1 = uuid.timeLow();
 	guid.Data2 = uuid.timeMid();

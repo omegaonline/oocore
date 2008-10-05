@@ -18,62 +18,17 @@
 #// along with this file.  If not, see <http://www.gnu.org/licenses/>.
 #//
 #///////////////////////////////////////////////////////////////////////////////////
-# TARGET	should be set to name of desired binary/lib
-# LDFLAGS	should be set to libs to build against
-# SRC_DIR 	should be set to relative path to source directory from trunk
-# INSTALL_DIR   should be set to absolute path of desired install directory
-#
-
-# LDFLAGS	that differ from debug to release should be set inside 	ifndef RELEASE 
-# TARGET	that differ from debug to release should be set inside 	ifndef RELEASE 
-#
+include ./makefiles/env/makefile.env
 SRC_DIR	     	:= src/OOCore
-INSTALL_DIR  	:= /usr/lib
-LDFLAGS		:= -lACE
-# comment out next line if not building shared object code
+TARGET		:= libOOCore.so
+EXTRA_LIBS	:= -lACE -lsqlite3 -lmd5
+
+# todo figure out how to infer this from the sources
+OOCORE_INSTALL	:= 1
+# todo figure out how to infer this from the target
 BUILDING_LIB	:= 1
-#boilerplate definitions must be after local overrides to allow proper macro expansion
-include ./makefiles/Makefile.env
 
-# the much requested debug build option
-ifndef RELEASE
-TARGET	:= libOOCored.so
-else 
-TARGET	:= libOOCore.so
-endif
-
-# our sources
-SRCS 	:=     $(SRC_DIR)/Registry.cpp     	\
-	       $(SRC_DIR)/RunningObjectTable.cpp\
-	       $(SRC_DIR)/StdObjectManager.cpp	\
-	       $(SRC_DIR)/Threading.cpp		\
-	       $(SRC_DIR)/Types.cpp		\
-	       $(SRC_DIR)/UserSession.cpp	\
-	       $(SRC_DIR)/WireImpl.cpp		\
-	       $(SRC_DIR)/WireProxy.cpp		\
-	       $(SRC_DIR)/WireStub.cpp		\
-	       $(SRC_DIR)/Xml.cpp		\
-	       $(SRC_DIR)/Activation.cpp	\
-	       $(SRC_DIR)/Channel.cpp		\
-	       $(SRC_DIR)/Exception.cpp		\
-	       $(SRC_DIR)/OOCore.cpp		\
-	       $(SRC_DIR)/OOCore_precomp.h
-
-# our object files
-OBJS	:=     $(OBJ_DIR)/Registry.o     	\
-	       $(OBJ_DIR)/RunningObjectTable.o 	\
-	       $(OBJ_DIR)/StdObjectManager.o	\
-	       $(OBJ_DIR)/Threading.o		\
-	       $(OBJ_DIR)/Types.o		\
-	       $(OBJ_DIR)/UserSession.o		\
-	       $(OBJ_DIR)/WireImpl.o		\
-	       $(OBJ_DIR)/WireProxy.o		\
-	       $(OBJ_DIR)/WireStub.o		\
-	       $(OBJ_DIR)/Xml.o			\
-	       $(OBJ_DIR)/Activation.o		\
-	       $(OBJ_DIR)/Channel.o		\
-	       $(OBJ_DIR)/Exception.o		\
-	       $(OBJ_DIR)/OOCore.o		\
-
+PRIVATE_HDRS	:= $(SRC_DIR)/OOCore_precomp.h
+SRCS	     	:= $(ALL_CPP_SRCS)
 #boilerplate targets
-include ./makefiles/Makefile.targets
+include ./makefiles/env/makefile.targets

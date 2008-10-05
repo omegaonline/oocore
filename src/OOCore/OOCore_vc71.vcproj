@@ -19,8 +19,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD;OOCORE_BUILD_DLL"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -35,10 +35,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib ACEsd.lib"
 				OutputFile="$(OutDir)/OOCore.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
 				SubSystem="2"
@@ -49,7 +49,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -78,8 +80,8 @@
 				GlobalOptimizations="TRUE"
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\include;&quot;..\..\extern\ACE_wrappers&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;OOCORE_BUILD_DLL"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
+				PreprocessorDefinitions="NDEBUG;OOCORE_BUILD_DLL"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -92,9 +94,9 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib ACEs.lib"
 				OutputFile="$(OutDir)/OOCore.dll"
-				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -105,7 +107,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -224,10 +228,16 @@
 				RelativePath=".\OOCore_precomp.h">
 			</File>
 			<File
+				RelativePath="..\Common\Server.h">
+			</File>
+			<File
 				RelativePath=".\StdObjectManager.h">
 			</File>
 			<File
 				RelativePath=".\UserSession.h">
+			</File>
+			<File
+				RelativePath="..\Common\Version.h">
 			</File>
 			<File
 				RelativePath=".\WireImpl.h">
@@ -300,9 +310,6 @@
 				RelativePath="..\..\include\OOCore\Rtti.inl">
 			</File>
 			<File
-				RelativePath=".\Server.h">
-			</File>
-			<File
 				RelativePath="..\..\include\OOCore\Threading.h">
 			</File>
 			<File
@@ -316,9 +323,6 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\TypeSizes.h">
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\Version.h">
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Wire.h">

@@ -25,7 +25,7 @@
 #include "./UserROT.h"
 #include "./UserRegistry.h"
 
-#include "../OOCore/Server.h"
+#include "../Common/Server.h"
 
 namespace User
 {

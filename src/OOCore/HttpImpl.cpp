@@ -259,7 +259,7 @@ void OOCore::HttpStream::WriteBytes(const uint64_t&, const byte_t*)
 
 OOCore::HttpBase::HttpBase()
 {
-	SetRequestHeader(L"User-Agent",L"OOCore " + string_t(OMEGA_VERSION,false));
+	SetRequestHeader(L"User-Agent",L"OOCore " + string_t(OOCORE_VERSION,false));
 }
 
 void OOCore::HttpBase::grow_mb(ACE_Message_Block* pBuffer, size_t cbBytes)

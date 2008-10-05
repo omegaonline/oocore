@@ -20,7 +20,6 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;..\..\extern\ACE_wrappers&quot;;..\..\include"
-				PreprocessorDefinitions="_WIN32_WINNT=0x0500;WIN32;_DEBUG;_CONSOLE;OMEGA_HAVE_VLD"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -70,7 +69,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;..\..\extern\ACE_wrappers&quot;;..\..\include"
-				PreprocessorDefinitions="_WIN32_WINNT=0x0500;WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
 				UsePrecompiledHeader="0"

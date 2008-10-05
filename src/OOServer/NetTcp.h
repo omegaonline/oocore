@@ -124,7 +124,7 @@ namespace User
 		AsyncConnector m_connector;
 		
 		struct AsyncEntry
-		{
+		{ 
 			OTL::ObjectPtr<Omega::IO::IAsyncStreamNotify> ptrNotify;
 			TcpAsync*                                     pAsync;
 		};
@@ -136,6 +136,8 @@ namespace User
 		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_refcount;
 
 		virtual ~TcpHandler() {};
+		TcpHandler(const TcpHandler&) {};
+		TcpHandler& operator = (const TcpHandler&) { return *this; };
 
 		void OnAsyncOpen(Omega::uint32_t stream_id);
 		void OnAsyncError(Omega::uint32_t stream_id, int err);

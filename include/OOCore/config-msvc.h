@@ -35,10 +35,6 @@
 #error Omega Online will not compile with a pre Visual C++ .NET 2003 compiler
 #endif
 
-#ifndef __cplusplus
-#error Omega Online uses C++
-#endif
-
 #ifndef _CPPUNWIND
 #error You must enable exception handling /GX
 #endif
@@ -94,9 +90,10 @@
 #include <OOCore/config-wince.h>
 #elif defined(_WIN32)
 #include <OOCore/config-win32.h>
-#include <errno.h>
 #else
 #error What else can MSVC compile?
 #endif
+
+#include <errno.h>
 
 #endif // OOCORE_CONFIG_MSVC_H_INCLUDED_

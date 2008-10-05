@@ -20,11 +20,12 @@
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -42,8 +43,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm110"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Work\wxWidgets-2.8.5\include&quot;;&quot;C:\Work\wxWidgets-2.8.5\include\msvc&quot;;..\..\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;&quot;C:\Work\wxWidgets-2.8.5\include&quot;;&quot;C:\Work\wxWidgets-2.8.5\include\msvc&quot;;C:\Work\wxWidgets-2.8.5\include\msvc"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				SmallerTypeCheck="false"
@@ -104,11 +105,12 @@
 			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -128,8 +130,8 @@
 				Optimization="3"
 				InlineFunctionExpansion="0"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="&quot;..\..\extern\wxWidgets-2.8.7\include&quot;;&quot;..\..\extern\wxWidgets-2.8.7\include\msvc&quot;;..\..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;&quot;C:\Work\wxWidgets-2.8.5\include&quot;;&quot;C:\Work\wxWidgets-2.8.5\include\msvc&quot;;C:\Work\wxWidgets-2.8.5\include\msvc"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -152,7 +154,7 @@
 				AdditionalDependencies="comctl32.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OORegEdit.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;..\..\extern\wxWidgets-2.8.7\lib\vc_lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Work\wxWidgets-2.8.5\lib\vc_lib&quot;"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

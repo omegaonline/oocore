@@ -19,8 +19,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OMEGA_HAVE_VLD;OMEGA_DEBUG"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -35,9 +35,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib ACEsd.lib"
 				OutputFile="$(OutDir)/OOSvrUser.exe"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/OOSvrUser.pdb"
 				SubSystem="1"
@@ -47,7 +48,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -76,8 +79,8 @@
 				GlobalOptimizations="TRUE"
 				EnableIntrinsicFunctions="TRUE"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\include;..\..\extern\ACE_wrappers;..\..\extern\sqlite"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="TRUE"
@@ -91,9 +94,9 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib ACEs.lib"
 				OutputFile="$(OutDir)/OOSvrUser.exe"
-				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -103,7 +106,9 @@
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCPreBuildEventTool"
+				Description="Configuring project settings..."
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"/>
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
@@ -208,14 +213,15 @@
 				RelativePath=".\NetTcp.cpp">
 			</File>
 			<File
-				RelativePath="..\..\extern\sqlite\sqlite3.c">
+				RelativePath=".\SQLite3.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
-						WarningLevel="0"/>
+						WarningLevel="0"
+						Detect64BitPortabilityProblems="FALSE"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release|Win32">
@@ -223,7 +229,8 @@
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
-						WarningLevel="0"/>
+						WarningLevel="0"
+						Detect64BitPortabilityProblems="FALSE"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -292,6 +299,9 @@
 				RelativePath=".\Protocol.h">
 			</File>
 			<File
+				RelativePath="..\Common\Server.h">
+			</File>
+			<File
 				RelativePath=".\UserHttp.h">
 			</File>
 			<File
@@ -305,6 +315,9 @@
 			</File>
 			<File
 				RelativePath=".\UserROT.h">
+			</File>
+			<File
+				RelativePath="..\Common\Version.h">
 			</File>
 		</Filter>
 		<Filter

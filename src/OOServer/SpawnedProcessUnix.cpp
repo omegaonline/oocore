@@ -39,10 +39,10 @@
 
 #include <grp.h>
 
-bool IsDebuggerPresent()
+int IsDebuggerPresent()
 {
 	void* TICKET_95;	// Do something clever here with ptrace()?
-	return false;
+	return 0;
 }
 
 #ifdef OMEGA_DEBUG
@@ -192,107 +192,42 @@ bool Root::SpawnedProcess::CleanEnvironment()
 
 bool Root::SpawnedProcess::close_all_fds()
 {
-#ifdef LINUX
-	/* faster under linux as avoid untold syscalls */
-	return linux_close_all_fds();
-
-#elif defined(_POSIX_OPEN_MAX)
-	/* POSIX's way, needs testing on other unix systems particularly solaris */
-	#if (_POSIX_OPEN_MAX == -1)
-		/* value unsupported */
-
-	#elif (_POSIX_OPEN_MAX == 0)
-		/* value only obtainable at runtime */
-		return posix_close_all_fds(sysconf(_SC_OPEN_MAX));
-	#else
-		/* value statically defined */
-		return posix_close_all_fds(_POSIX_OPEN_MAX);
-	#endif
-
-#else
-	#error Not linux and not POSIX compliant, enable a system specific way
-#endif /* def LINUX */
-}
-
-bool Root::SpawnedProcess::posix_close_all_fds(long max_fd)
-{
-	long x =3;
-
-	/* this is seriously slow as involves SC_OPEN_MAX close() syscalls
-	most of which were never opened */
-	if (max_fd <= 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Indeterminate limit passed in, pick a high limit and pass that to %s\n"),__func__),false);
-
-	while(x <= max_fd)
-		close(x++);
-
-	return true;
-}
-
-/* this might work for a mac too */
-bool Root::SpawnedProcess::linux_close_all_fds()
-{
-	/* should have nothing like this many file descriptors open */
-	const int MAX_N_FDS = 100;
-	int fds[MAX_N_FDS] = {0};
-
-	int count = -1;
+#if !defined(LINUX) && defined(_POSIX_OPEN_MAX) &&  (_POSIX_OPEN_MAX == 0)
+	/* value available at runtime only */
+	int mx = sysconf(_SC_OPEN_MAX);
+	for( int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
+		close(fd_i);
+#elif !defined(LINUX) && (defined(_POSIX_OPEN_MAX) && (_POSIX_OPEN_MAX == -1))
+	/* value undefined,paranoia approch close all possible */
+ 	int mx = INT_MAX;
+	for( int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
+		close(fd_i);
+#elif !defined(LINUX) && defined(_POSIX_OPEN_MAX)
+	/* value available at compile time */
+	int mx =_POSIX_OPEN_MAX;
+	for( int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
+		close(fd_i);
+#elif defined(LINUX)
+	/* based on lsof style walk of proc filesystem so should
+	 * work on anything with a proc filesystem i.e. a OSx/BSD */
+	/* walk proc, closing all descriptors from stderr onwards for our pid */
 	DIR *pdir;
-	struct dirent *pfile;
-
 	char str[1024] = {0};
-	snprintf(str,1024,"/proc/%u/fd/",getpid());
 
-again:
-	/* walk proc filesystem and close fds there */
-	errno = 0;
-	pdir = opendir(str);
-	if(!pdir)
+	ACE_OS::snprintf(str,sizeof(n)-1,"/proc/%u/fd/",ACE_OS::getpid());
+
+	if (!(pdir = ACE_OS::opendir(str)))
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("opendir() failed!")),false);
 
-	while ((pfile = readdir(pdir)) != 0)
-	{
-		/* skip ./ and ../ entries */
-		if ('.' == *pfile->d_name)
-			continue;
-
-		/* skip stdin */
-		if (!strcmp("0",pfile->d_name))
-			continue;
-
-		/* skip stderr */
-		if (!strcmp("1",pfile->d_name))
-			continue;
-
-		/* skip stdout */
-		if (!strcmp("2",pfile->d_name))
-			continue;
-
-		/* close all existing entries and restart loop */
-
-		void* FIXME_JAY;
-
-		/* Commented out becaus eit doesn't build
-		if (++count >= entries)
-		{
-			while(--count >= 0 )
-			{
-				// FIXME add proper error handling
-				close(fds[x++]);
-			}
-
-			closedir(pdir);
-			pdir  = NULL;
-			pfile = NULL;
-			goto again;
-		}*/
-		fds[count] = atoi(pfile->d_name);
-	}
-
-	void* TODO; // Check this!
-
-	closedir(pdir);
-
+	/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
+	for (int fd, struct dirent *pfile; (pfile = ACE_OS::readdir(pdir)); )
+		if ( ! ('.' == *pfile->d_name || (((fd = atoi(pfile->d_name)))<0 || fd<STDERR_FILENO+1) ))
+			close(fd);
+	ACE_OS::closedir(pdir);
+	return true;
+#else
+	#error "Not POSIX and not Linux, enable system specific way to close all files"
+#endif /* def LINUX */
 	return true;
 }
 

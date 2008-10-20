@@ -551,8 +551,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	}
 
 	ACE_Utils::UUID uuid;
+// They went and changed this in ACE!
+#if (ACE_MAJOR_VERSION < 5) || (ACE_MAJOR_VERSION == 5 && (ACE_MINOR_VERSION < 6 || (ACE_MINOR_VERSION == 6 && (ACE_BETA_VERSION < 2))))
+	ACE_Utils::UUID_GENERATOR::instance()->generateUUID(uuid);
+#else
 	ACE_Utils::UUID_GENERATOR::instance()->generate_UUID(uuid);
-
+#endif
+
 	guid.Data1 = uuid.timeLow();
 	guid.Data2 = uuid.timeMid();
 	guid.Data3 = uuid.timeHiAndVersion();

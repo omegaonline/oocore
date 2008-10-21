@@ -52,7 +52,7 @@ CFLAGS	     := $(CFLAGS) $(BUILD_DEFS)
 TEST_CFLAGS  := $(TEST_CFLAGS) -g $(TEST_DEFS)
 CPPFLAGS     := $(CPPFLAGS) $(BUILD_DEFS)
 TEST_CPPFLAGS:= $(TEST_CPPFLAGS) -g $(TEST_DEFS)
-LDFLAGS	     := -L$(OBJ_DIR) -L$(INSTALL_ROOT)/lib -L$(BUILD_DIR) $(EXTRA_LIBS) $(LDFLAGS)
+LDFLAGS	     := -L$(OBJ_DIR) -L$(INSTALL_ROOT)/lib -L$(BUILD_DIR) $(LDFLAGS)
 DEP_FLAGS    := BUILD_DIR=$(BUILD_DIR) RELEASE=1
 
 C_SRCS       := $(filter %.c,$(SRCS))
@@ -130,21 +130,45 @@ endif
 
 ifdef VERBOSE
 	@ $(ECHO) "Generating Dependencies for $(BUILD_DIR)/$(TARGET)"
+	@ $(ECHO) "TARGET=[$(TARGET)]"
 	@ $(ECHO) "LDFLAGS=[$(LDFLAGS)]"
 	@ $(ECHO) "TEST_LDFLAGS=[$(TEST_LDFLAGS)]"
 	@ $(ECHO) "CPPFLAGS=[$(CPPFLAGS)]"
 	@ $(ECHO) "CFLAGS=[$(CFLAGS)]"
 	@ $(ECHO) "SRC_DIR=[$(SRC_DIR)]"
-	@ $(ECHO) "SRCS=[$(SRCS)]"
-	@ $(ECHO) "C_SRCS=[$(C_SRCS)]"
-	@ $(ECHO) "CPP_SRCS=[$(CPP_SRCS)]"
-	@ $(ECHO) "OBJS=[$(OBJS)]"
-	@ $(ECHO) "DEPS=[$(DEPS)]"
 	@ $(ECHO) "BUILD_ROOT=[$(BUILD_ROOT)]"
 	@ $(ECHO) "BUILD_DIR=[$(BUILD_DIR)]"
 	@ $(ECHO) "OBJ_DIR=[$(OBJ_DIR)]"
-	@ $(ECHO) "TARGET=[$(TARGET)]"
-	@ $(ECHO) "TEST TARGETS=[$(TEST_TARGETS)]"
+	@ $(ECHO) "DEPS=[$(DEPS)]"
+
+	@ $(ECHO) "SRCS=[$(SRCS)]"
+	@ for f in $(SRCS) ; 			\
+	do					\
+		$(ECHO) "\t $$f \ " ;		\
+	done 
+
+	@ $(ECHO) "C_SRCS"
+	@ for f in $(C_SRCS) ; 			\
+	do					\
+		$(ECHO) "\t $$f \ " ;		\
+	done 
+	
+	@ $(ECHO) "CPP_SRCS"
+	@ for f in $(CPP_SRCS) ; 		\
+	do					\
+		$(ECHO) "\t $$f \ " ;		\
+	done 
+	
+	@ $(ECHO) "OBJS"
+	@ for f in $(OBJS) ; 			\
+	do					\
+		$(ECHO) "\t $$f \ " ;		\
+	done 
+	@ $(ECHO) "TEST TARGETS"
+	@ for f in $(TEST_TARGET) ; 		\
+	do					\
+		$(ECHO) "\t $$f \ " ;		\
+	done 
 endif
 	@- [ -d "$(BUILD_DIR)" ] || $(MKDIR) -p $(BUILD_DIR) && $(ECHO) "created $(BUILD_DIR)"
 	@- [ -d "$(OBJ_DIR)" ]   || $(MKDIR) $(OBJ_DIR) && $(ECHO) "created $(OBJ_DIR)"
@@ -172,7 +196,6 @@ ifdef BUILDING_LIB
 else
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET)
 endif
-	$(RM) $(DEPS)
 # INSTALL TARGET (requires root access)
 # 1) copy target to final destination
 # 2) chmod target to final permisions

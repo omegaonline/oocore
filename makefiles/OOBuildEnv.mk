@@ -111,5 +111,6 @@ endif
 ALL_C_SRCS	  = $(wildcard $(SRC_DIR)/*.c)
 ALL_CPP_SRCS	  = $(wildcard $(SRC_DIR)/*.cpp)
 ALL_TEST_C_SRCS   = $(wildcard $(TEST_DIR)/*.c)
-ALL_TEST_CPP_SRCS = $(wildcard $(TEST_DIR)/*.c)
+ALL_TEST_CPP_SRCS = $(wildcard $(TEST_DIR)/*.cpp)
 ALL_HEADERS	  = $(wildcard $(SRC_DIR)/*.h)
+ALL_TEST_HEADERS  = $(wildcard $(TEST_DIR)/*.h)

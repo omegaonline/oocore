@@ -18,37 +18,17 @@
 #// along with this file.  If not, see <http://www.gnu.org/licenses/>.
 #//
 #///////////////////////////////////////////////////////////////////////////////////
-# Makefile for shared libraries that link against libOOCore(d).so
-# TARGET	should be set to name of desired binary/lib
-# LDFLAGS	should be set to libs to build against
-# SRC_DIR 	should be set to relative path to source directory from trunk
-# INSTALL_DIR   should be set to absolute path of desired install directory
-#
+include makefiles/OOBuildEnv.mk
+SRC_DIR	     	:= src/OOCore
+TARGET		:= libOOCore.so
+EXTRA_LIBS	:= -lACE -lsqlite3 -lmd5
 
-# LDFLAGS	that differ from debug to release should be set inside 	ifndef RELEASE 
-# TARGET	that differ from debug to release should be set inside 	ifndef RELEASE 
-#
-TARGET		:= 
-SRC_DIR 	:= 
-INSTALL_DIR  	:= /usr/lib
+# todo figure out how to infer this from the sources
+OOCORE_INSTALL	:= 1
+# todo figure out how to infer this from the target
 BUILDING_LIB	:= 1
-#boilerplate definitions must be after local overrides to allow proper macro expansion
-include ./makefiles/Makefile.env
 
-# the much requested debug build option
-ifndef RELEASE
-LDFLAGS	:= -lOOCored
-else 
-LDFLAGS	:= -lOOCore
-endif
-
-# our sources
-SRCS 		:= $(SRC_DIR)/file1.cpp		\
-		   $(SRC_DIR)/file2.cpp
-
-# our object files
-OBJS 		:= $(OBJ_DIR)/file1.o		\
-		   $(OBJ_DIR)/file2.o
-
+PRIVATE_HDRS	:= $(SRC_DIR)/OOCore_precomp.h
+SRCS	     	:= $(ALL_CPP_SRCS)
 #boilerplate targets
-include ./makefiles/Makefile.targets
+include makefiles/OOBuildTargets.mk

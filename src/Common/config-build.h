@@ -49,8 +49,12 @@
 #elif defined (__BORLANDC__)
 // Borland C++ Builder
 #include <OOCore/config-borland.h>
+#elif defined (__linux__)
 #else
-#error Failed to guess your system.  Please contact the developers.
+
+#error "Failed to guess your system, please contact the developers".
+//  Something in the autoconf script to sniff `uname -s` will spot linux
+//
 #endif
 
 #endif // OOCORE_CONFIG_BUILD_H_INCLUDED_

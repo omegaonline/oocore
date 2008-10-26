@@ -334,10 +334,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\extern\sqlite\sqlite3.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Common\Version.h"
 				>
 			</File>
@@ -374,7 +370,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)"
+						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
 						Outputs=".\$(InputName).rc"
 					/>
 				</FileConfiguration>

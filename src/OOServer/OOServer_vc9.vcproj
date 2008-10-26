@@ -331,10 +331,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\extern\sqlite\sqlite3.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Common\Version.h"
 				>
 			</File>

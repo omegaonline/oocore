@@ -46,9 +46,16 @@
 #elif defined(XCODE)
 // XCode
 #error TODO!
-#elif defined (__BORLANDC__)
+#elif defined(__BORLANDC__)
 // Borland C++ Builder
-#include <OOCore/config-borland.h>
+#error Borland C++ support needs work.  Could you help?
+#elif defined(_JAY_MAKE_)
+	// This is a hack to get Jay's 0.4.2 make to work...
+	#if defined (__GNUC__)
+	#include <OOCore/config-gcc.h>
+	#else
+	#error We don't support any other compilers
+	#endif
 #elif defined (__linux__)
 #else
 

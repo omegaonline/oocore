@@ -1,5 +1,0 @@
-<address style="text-align: right;"><small>Generated on $datetime by&nbsp;
-<a href="http://www.doxygen.org/index.html">
-<img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> $doxygenversion </small></address>
-<script type="text/javascript">searchHighlight()</script>
-</div>

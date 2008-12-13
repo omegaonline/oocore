@@ -22,7 +22,7 @@ build: .phony $(BUILD_DIR)/$(TARGET)
 $(BUILD_DIR)/$(TARGET): depend $(OBJS)
 	@$(ECHO) "\nLinking " "$(shell basename $(TARGET))" ;
 ifdef BUILDING_LIB
-	@$(CC) -shared $(OBJS) -Wl $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET)
+	@$(CC) -shared $(OBJS) -Wl $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET) 2>> $(BUILD_LOG)
 else
-	@$(CC) $(OBJS) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET)
+	@$(CC) $(OBJS) $(LDFLAGS) -o $(BUILD_DIR)/$(TARGET) 2>> $(BUILD_LOG)
 endif

@@ -42,7 +42,7 @@ endif
 	@ $(ECHO) "Generating Dependencies for $(BUILD_DIR)/$(TARGET)"
 	@ $(RM) $(DEPS)
 	@ $(TOUCH) $(DEPS)
-	@ $(ifneq "" $(strip $(filter %.c, $(SRCS))) $(CC) -MM $(CFLAGS) $(C_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(C_TEST_SRCS) >> $(DEPS))
-	@ $(ifneq "" $(strip $(filter %.cpp, $(SRCS))) $(CXX) -MM $(CPPFLAGS) $(CPP_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(CPP_TEST_SRCS) >> $(DEPS) )
+	@ $(ifneq "" $(strip $(filter %.c, $(SRCS))) $(CC) -MM $(CFLAGS) $(C_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(C_TEST_SRCS) >> $(DEPS) 2>> $(BUILD_LOG))
+	@ $(ifneq "" $(strip $(filter %.cpp, $(SRCS))) $(CXX) -MM $(CPPFLAGS) $(CPP_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(CPP_TEST_SRCS) >> $(DEPS)  2>> $(BUILD_LOG))
 	@ $(ECHO) "leaving  depend\n"
 

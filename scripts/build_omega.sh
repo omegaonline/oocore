@@ -38,16 +38,16 @@ work_dir_set()
 
 make_oocore()
 {
-	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOCore.mk $ENV_DIR "$@"; }
+	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOCore.mk $ENV_DIR "$@"; 2>build/ErrorLog.txt ; }
 }
 
 make_ooserver()
 {
-	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOServer.mk $ENV_DIR "$@"; }
+	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOServer.mk $ENV_DIR "$@" 2>build/ErrorLog.txt ; }
 }
 make_oouser()
 {
-	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOSvrUsr.mk $ENV_DIR "$@" ; }
+	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOSvrUsr.mk $ENV_DIR "$@" 2>build/ErrorLog.txt ; }
 }
 
 # See how we were called.
@@ -63,16 +63,23 @@ case $1 in
 		;;
 	debug-all|all)
 		shift 1;
-		make_oocore   VERBOSE=1 $*
-		make_ooserver VERBOSE=1 $*
-		make_oouser   VERBOSE=1 $*
+		make_oocore   all VERBOSE=1 $*
+		make_ooserver all VERBOSE=1 $*
+		make_oouser   all VERBOSE=1 $*
 		exit $?;
 		;;
 	clean)
 		shift 1;
-		make_oocore    clean
+                make_oocore    clean
 		make_ooserver  clean
 		make_oouser  distclean
+		exit $?;
+		;;
+	tall)
+		shift 1;
+                make_oocore    tall
+		make_ooserver  tall
+		make_oouser    tall
 		exit $?;
 		;;
 	# build the core

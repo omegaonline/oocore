@@ -40,6 +40,7 @@ define check_for_internal_vars
 	@$(call die_unless_set,OBJ_DIR)
 	@$(call die_unless_set,TARGET)
 	@$(call die_unless_set,DEPS)
+	@$(call die_unless_set,BUILD_LOG)
 	@$(call die_unless_set,INSTALL_DIR)
 	@$(call die_unless_set,INSTALL_LIB_ROOT)
 	@$(call die_unless_set,INSTALL_HDR_ROOT)

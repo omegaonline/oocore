@@ -1,0 +1,46 @@
+#///////////////////////////////////////////////////////////////////////////////////
+#//
+#// Copyright (C) 2008 Jamal M. Natour
+#//
+#// This file is part of the OmegaOnline  package.
+#//
+#// It is free software: you can redistribute it and/or modify
+#// it under the terms of the GNU Lesser General Public License as published by
+#// the Free Software Foundation, either version 3 of the License, or
+#// (at your option) any later version.
+#//
+#//  is distributed in the hope that it will be useful,
+#// but WITHOUT ANY WARRANTY; without even the implied warranty of
+#// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#// GNU Lesser General Public License for more details.
+#//
+#// You should have received a copy of the GNU Lesser General Public License
+#// along with this file.  If not, see <http://www.gnu.org/licenses/>.
+#//
+#///////////////////////////////////////////////////////////////////////////////////
+
+# allow for the user to install to a directory root of their choice
+include $(ENV_DIR)/install_paths.mk
+
+# allow for the user to specify short cuts to common libs and have the DEBUG/RELEASE version selected ...
+# ... automatically based on the current build configuration
+include $(ENV_DIR)/use_flags.mk
+
+# Pull in the right build class for current build configuration
+ifdef BUILDING_LIB
+# building lib
+include $(ENV_DIR)/build_class/lib.mk
+else
+# building app
+include $(ENV_DIR)/build_class/app.mk
+endif
+
+# Top level targets - all builds start here
+include $(ENV_DIR)/build_targets.mk
+
+# allow compiler to resolve object paths correctly for DEBUG and RELEASE configurations
+include $(ENV_DIR)/pattern_rules.mk
+include $(ENV_DIR)/vpath.mk
+
+# auto generated dependencies
+-include $(DEPS)

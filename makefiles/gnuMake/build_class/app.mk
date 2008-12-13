@@ -22,6 +22,6 @@
 # building app
 INSTALL_DIR  := $(INSTALL_APP_ROOT)
 TEST_LDFLAGS := -L$(OBJ_DIR) -L$(BUILD_DIR) 
-CFLAGS := $(subst -fPIC,$(CFLAGS))
-CPPFLAGS := $(subst -fPIC,$(CPPFLAGS))
+CFLAGS := $(subst -fPIC,,$(CFLAGS))
+CPPFLAGS := $(subst -fPIC,,$(CPPFLAGS))
 

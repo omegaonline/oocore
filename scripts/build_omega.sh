@@ -26,22 +26,28 @@ work_dir_set()
 		echo "OMEGA_WORK_DIR is unset" ;
 		return `false`;
 	fi
+	if [ $ENV_DIR"" == "" ] ;
+	then
+		echo "ENV_DIR is unset" ;
+		return `false`;
+	fi
 	echo	"OMEGA_WORK_DIR=[$OMEGA_WORK_DIR]" ;
+	echo	"ENV_DIR=[$ENV_DIR]" ;
 	return `true`
 }
 
 make_oocore()
 {
-	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOCore.mk "$@"; }
+	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOCore.mk $ENV_DIR "$@"; }
 }
 
 make_ooserver()
 {
-	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOServer.mk "$@"; }
+	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOServer.mk $ENV_DIR "$@"; }
 }
 make_oouser()
 {
-	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOSvrUsr.mk "$@"; }
+	{ cd $OMEGA_WORK_DIR; make -f makefiles/OOSvrUsr.mk $ENV_DIR "$@" ; }
 }
 
 # See how we were called.

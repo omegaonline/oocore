@@ -223,6 +223,9 @@ namespace Omega
 
 				virtual void OMEGA_CALL Pin() = 0;
 				virtual void OMEGA_CALL Unpin() = 0;
+
+            protected:
+                virtual ~IObject_Safe() {}
 			};
 
 			template <class I, class Base> class IObject_SafeStub;
@@ -622,6 +625,9 @@ namespace Omega
 				{
 					this->m_pI->AddRef();
 				}
+
+				virtual ~IObject_SafeStub()
+				{ }
 
 				virtual void OMEGA_CALL AddRef_Safe()
 				{

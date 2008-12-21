@@ -35,7 +35,7 @@
 #error Omega Online will not compile with a pre Visual C++ .NET 2003 compiler
 #endif
 
-#ifndef _CPPUNWIND
+#if defined(__cplusplus) && !defined(_CPPUNWIND)
 #error You must enable exception handling /GX
 #endif
 
@@ -51,10 +51,13 @@
 
 #define OMEGA_FUNCNAME    __FUNCSIG__
 
-#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-	do { POINTER = new CONSTRUCTOR; \
-		if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
-	} while (0)
+#ifdef __cplusplus
+	#include <new>
+	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
+		do { POINTER = new (std::nothrow) CONSTRUCTOR; \
+			if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
+		} while (0)
+#endif
 
 #define OMEGA_IMPORT   __declspec(dllimport)
 #define OMEGA_EXPORT   __declspec(dllexport)

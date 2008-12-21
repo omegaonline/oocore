@@ -97,7 +97,12 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	// Set the process options 
 	ACE_Process_Options options(0);
 	options.avoid_zombies(0);
+
+#if (ACE_MAJOR_VERSION < 5) || (ACE_MAJOR_VERSION == 5 && (ACE_MINOR_VERSION < 6 || (ACE_MINOR_VERSION == 6 && (ACE_BETA_VERSION < 7))))
 	options.handle_inheritence(0);
+#else
+	options.handle_inheritance(0);
+#endif
 
 	// Do a ShellExecute style lookup for the actual thing to call..
 	ACE_WString strActualName = ShellParse(strExeName.c_str());

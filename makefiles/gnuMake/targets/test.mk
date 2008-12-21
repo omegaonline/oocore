@@ -30,7 +30,7 @@ test: .phony $(TEST_OBJS)
 	do										 \
 		obj_file=`$(ECHO) $$f | $(SED) "s:\$(OBJ_DIR):\$(BUILD_DIR):" ` ; 	 \
 		$(ECHO) "\tLinking [$$obj_file]" ;					 \
-		$(CC) $(TEST_CFLAGS) $$f.o $(TEST_LDFLAGS) -o $$obj_file  2> $(BUILD_LOG) ;		 \
+		$(CC) $(TEST_CFLAGS) $$f.o $(TEST_LDFLAGS) -o $$obj_file ;		 \
 	done 
 else
 # turn these targets into no-ops

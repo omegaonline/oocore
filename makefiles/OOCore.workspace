@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="OOCore">
-		<Project filename="..\src\OOCore\OOCore.cbp" />
-		<Project filename="..\src\OOServer\OOServer.cbp" active="1">
+		<Project filename="..\src\OOCore\OOCore.cbp" active="1" />
+		<Project filename="..\src\OOServer\OOServer.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 		</Project>
 		<Project filename="..\test\CoreTests\CoreTests.cbp">
@@ -10,7 +10,7 @@
 			<Depends filename="..\src\OOServer\OOSvrUser.cbp" />
 			<Depends filename="..\src\OORpc\OORpc.cbp" />
 			<Depends filename="..\test\CoreTests\TestLibrary\TestLibrary.cbp" />
-			<Depends filename="..\tools\OORegister\OORegister.cbp" />
+			<Depends filename="..\src\OORegister\OORegister.cbp" />
 			<Depends filename="..\test\CoreTests\TestProcess\TestProcess.cbp" />
 		</Project>
 		<Project filename="..\tools\OORegEdit\OORegEdit.cbp">
@@ -31,7 +31,9 @@
 			<Depends filename="..\src\OOServer\OOServer.cbp" />
 			<Depends filename="..\src\OOServer\OOSvrUser.cbp" />
 		</Project>
-		<Project filename="..\tools\OORegister\OORegister.cbp" />
+		<Project filename="..\src\OORegister\OORegister.cbp">
+			<Depends filename="..\src\OOCore\OOCore.cbp" />
+		</Project>
 		<Project filename="..\test\CoreTests\TestProcess\TestProcess.cbp">
 			<Depends filename="..\src\OOCore\OOCore.cbp" />
 			<Depends filename="..\src\OOServer\OOServer.cbp" />

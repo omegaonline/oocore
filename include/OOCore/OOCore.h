@@ -53,6 +53,7 @@
 //////////////////////////////////////////////
 // Include STL components
 
+#include <set>
 #include <list>
 #include <map>
 #include <vector>

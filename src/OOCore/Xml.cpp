@@ -109,43 +109,8 @@ void OOCore::Xml::ParseXMLProlog(const wchar_t*& rd_ptr)
 		OMEGA_THROW(L"Invalid or missing XML version attribute");
 
 	// Now we need to skip the extra stuff...
-	for (;;)
-	{	
-		bool bFoundOne = false;
-
-		// Skip comments
-		p = ACE_OS::strstr(rd_ptr,L"<!--");
-		if (p)
-		{
-			attribs.clear();
-			XMLSplitAttrs(rd_ptr,L"-->",3,attribs);
-				
-			bFoundOne = true;
-			rd_ptr = p;
-		}
-
-		// Skip processing instructions
-		p = ACE_OS::strstr(rd_ptr,L"<?");
-		if (p)
-		{
-			attribs.clear();
-			XMLSplitAttrs(rd_ptr,L"?>",2,attribs);
-
-			bFoundOne = true;
-			rd_ptr = p;
-		}
-
-		// Skip the starting whitespace
-		size_t ws = ACE_OS::strspn(rd_ptr,XML_WHITESPACE);
-		if (ws)
-		{
-			bFoundOne = true;
-			rd_ptr += ws;
-		}
-
-		if (!bFoundOne)
-			break;
-	}
+	string_t strCharData;
+	ParseXMLCharData(rd_ptr,strCharData);	
 }
 
 void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, bool& bHasContents, std::map<string_t,string_t>& attribs)
@@ -280,27 +245,33 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			// Skip comments
 			if (ACE_OS::strncmp(rd_ptr,L"<!--",4)==0)
 			{
-				attribs.clear();
-				XMLSplitAttrs(rd_ptr,L"-->",3,attribs);
-				
+				p = ACE_OS::strstr(rd_ptr+4,L"-->");
+				if (!p)
+					OMEGA_THROW(string_t::Format(L"Unmatched comment open: %s",string_t(rd_ptr,25).c_str()));
+
+				rd_ptr = p + 3;				
 				bFoundOne = true;
 			}
 
 			// Skip processing instructions
 			if (ACE_OS::strncmp(rd_ptr,L"<?",2)==0)
 			{
-				attribs.clear();
-				XMLSplitAttrs(rd_ptr,L"?>",2,attribs);
-					
+				p = ACE_OS::strstr(rd_ptr+2,L"?>");
+				if (!p)
+					OMEGA_THROW(string_t::Format(L"Unmatched processing instruction open: %s",string_t(rd_ptr,25).c_str()));
+
+				rd_ptr = p + 2;
 				bFoundOne = true;
 			}
 
 			// Skip CDATA
 			if (ACE_OS::strncmp(rd_ptr,L"<![CDATA[",9)==0)
 			{
-				attribs.clear();
-				XMLSplitAttrs(rd_ptr,L"]]>",3,attribs);
-					
+				p = ACE_OS::strstr(rd_ptr+9,L"]]>");
+				if (!p)
+					OMEGA_THROW(string_t::Format(L"Unmatched CDATA open: %s",string_t(rd_ptr,25).c_str()));
+
+				rd_ptr = p + 3;
 				bFoundOne = true;
 			}
 						

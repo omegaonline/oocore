@@ -22,13 +22,13 @@
 #ifndef OOCORE_CONFIG_GCC_H_INCLUDED_
 #define OOCORE_CONFIG_GCC_H_INCLUDED_
 
-#include <new>
-
-#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-	do { POINTER = new CONSTRUCTOR; \
-		if (POINTER == 0) { OMEGA_THROW(L"Out of memory."); } \
-	} while (0)
-
+#ifdef __cplusplus
+	#include <new>
+	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
+		do { POINTER = new (std::nothrow) CONSTRUCTOR; \
+			if (POINTER == 0) { OMEGA_THROW(L"Out of memory."); } \
+		} while (0)
+#endif
 
 #include <sys/types.h>
 

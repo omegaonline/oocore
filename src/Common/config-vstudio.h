@@ -22,6 +22,9 @@
 #ifndef OOCORE_CONFIG_VSTUDIO_H_INCLUDED_
 #define OOCORE_CONFIG_VSTUDIO_H_INCLUDED_
 
+// We use the amalgamated SQLite3
+#define OMEGA_HAVE_SQLITE3_AMALGAMATION
+
 #include <OOCore/config-msvc.h>
 
 #endif // OOCORE_CONFIG_VSTUDIO_H_INCLUDED_

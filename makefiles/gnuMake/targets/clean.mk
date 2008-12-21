@@ -24,7 +24,7 @@ distclean: .phony clean
 	@$(RM) -rf $(BUILD_ROOT)/build
 
 clean:	.phony $(CLEAN_TARGETS)
-	@-$(RM) -fv $(OBJS) 2>&1 >> $(BUILD_LOG)
+	@$(RM) -rf $(OBJ_DIR)
 
 
 

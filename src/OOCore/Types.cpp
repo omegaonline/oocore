@@ -533,7 +533,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 {
 	Omega::guid_t guid;
 
-#if defined(OMEGA_WIN32)
+#if defined(OMEGA_WIN32) && !defined(__MINGW32__)
 
 	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
 	UuidCreate(&uuid);

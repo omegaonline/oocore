@@ -21,7 +21,6 @@
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add option="-DOOCORE_BUILD_DLL" />
 					<Add directory="..\..\include" />
 					<Add directory="C:\Work\ACE_wrappers" />
 				</Compiler>
@@ -30,12 +29,13 @@
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="C:\Work\ACE_wrappers\lib\libACE.a" />
+					<Add library="ACE" />
 					<Add library="shlwapi" />
-					<Add library="libws2_32" />
-					<Add library="libmswsock" />
-					<Add library="librpcrt4" />
-					<Add library="libnetapi32" />
+					<Add library="ws2_32" />
+					<Add library="mswsock" />
+					<Add library="rpcrt4" />
+					<Add library="netapi32" />
+					<Add directory="C:\Work\ACE_wrappers\lib" />
 				</Linker>
 			</Target>
 			<Target title="Release Win32">
@@ -53,7 +53,6 @@
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
-					<Add option="-DOOCORE_BUILD_DLL" />
 					<Add option="-DNDEBUG" />
 					<Add directory="..\..\include" />
 					<Add directory="C:\Work\ACE_wrappers" />
@@ -64,12 +63,13 @@
 				<Linker>
 					<Add option="-s" />
 					<Add option="-mthreads" />
-					<Add library="C:\Work\ACE_wrappers\lib\libACE.a" />
+					<Add library="ACE" />
 					<Add library="shlwapi" />
-					<Add library="libws2_32" />
-					<Add library="libmswsock" />
-					<Add library="librpcrt4" />
-					<Add library="libnetapi32" />
+					<Add library="ws2_32" />
+					<Add library="mswsock" />
+					<Add library="rpcrt4" />
+					<Add library="netapi32" />
+					<Add directory="C:\Work\ACE_wrappers\lib" />
 				</Linker>
 			</Target>
 			<Target title="Debug Unix">

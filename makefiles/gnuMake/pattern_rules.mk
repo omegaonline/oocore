@@ -24,11 +24,11 @@
 # 
 $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
 	@ $(ECHO) "\tBuilding [$<]" ;
-	@ $(CC) -c $< $(CPPFLAGS) -o $@ 
+	@ $(CXX) -c $< $(CPPFLAGS) -o $@ 
 
 $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp
 	@ $(ECHO) "\tBuilding [$<]" ;
-	@ $(CC) -c $< $(TEST_CPPFLAGS) -o  $@ 
+	@ $(CXX) -c $< $(TEST_CPPFLAGS) -o  $@ 
 
 $(OBJ_DIR)/%.o : $(SRC_DIR)/%.c
 	@ $(ECHO) "\tBuilding [$<]" ;

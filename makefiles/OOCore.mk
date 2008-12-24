@@ -21,7 +21,7 @@
 include makefiles/OOBuildEnv.mk
 SRC_DIR	     	:= src/OOCore
 TARGET		:= libOOCore.so
-EXTRA_LIBS	:= -lACE -lsqlite3 -lmd5
+EXTRA_LIBS	:= -lACE -lsqlite3
 
 # todo figure out how to infer this from the sources
 OOCORE_INSTALL	:= 1
@@ -29,6 +29,6 @@ OOCORE_INSTALL	:= 1
 BUILDING_LIB	:= 1
 
 PRIVATE_HDRS	:= $(SRC_DIR)/OOCore_precomp.h
-SRCS	     	:= $(ALL_CPP_SRCS)
+SRCS	     	:= $(ALL_CPP_SRCS) $(ALL_C_SRCS)
 #boilerplate targets
 include makefiles/OOBuildTargets.mk

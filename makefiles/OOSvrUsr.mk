@@ -20,12 +20,9 @@
 #///////////////////////////////////////////////////////////////////////////////////
 include ./makefiles/OOBuildEnv.mk
 USE_LIB_OOCORE	:= 1
-EXTRA_LIBS	:=
 TARGET		:= OOSvrUser
 SRC_DIR 	:= src/OOServer
 
-#filthy hack to make OOUser build and let auto-dependency sort it out
-#SRCS         	:= $(filter-out RootMain.cpp ,$(ALL_CPP_SRCS))
 SRCS         	:= 	$(SRC_DIR)/Channel.cpp			\
 			$(SRC_DIR)/Database.cpp			\
 			$(SRC_DIR)/InterProcessService.cpp	\

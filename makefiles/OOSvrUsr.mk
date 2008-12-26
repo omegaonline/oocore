@@ -30,6 +30,7 @@ SRCS         	:= 	$(SRC_DIR)/Channel.cpp			\
 			$(SRC_DIR)/MessagePipeUnix.cpp		\
 			$(SRC_DIR)/NetHttp.cpp			\
 			$(SRC_DIR)/NetTcp.cpp			\
+			$(SRC_DIR)/SQLite3.c			\
 			$(SRC_DIR)/UserHttp.cpp			\
 			$(SRC_DIR)/UserMain.cpp			\
 			$(SRC_DIR)/UserManager.cpp		\

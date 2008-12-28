@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<OOMake version="0.1">
+					
+	<Project Name="OOCore" >
+		
+		<Option Name="OutputDirectory">../../lib/${Configuration.Name}</Option>
+		<Option Name="Multithreaded" />
+
+    <Tool Type="CCompiler">
+      <Include Directory="../../include" />
+
+      <Tool Name="gcc">
+        <Option Name="Visibility">hidden</Option>
+      </Tool>
+    </Tool>
+		
+		<Tool Type="C++Compiler">
+			<Option Name="Warnings">max</Option>
+			<Option Name="PrecompiledHeader">OOCore_precomp.h</Option>
+			<Option Name="UseRtti">false</Option>
+			
+			<Define>CODEBLOCKS</Define>
+			<Define>OOCORE_BUILD_DLL</Define>
+			
+			<Include Directory="../../include" />
+			<Include Find="ace/ACE.h" Directory="${Arg.with-ace}" />
+		
+      <Tool Name="gcc">
+        <Option Name="Visibility">hidden</Option>
+      </Tool>
+    </Tool>
+		
+		<Tool Type="Linker" >
+      <Library Name="ACE" Directory="${Arg.with-ace}/lib" />
+			
+			<Choice Of="${Target.Platform}" >
+				<Case Equals="mingw32" >
+          <Option Name="ExportLibrary">true</Option>
+					<Library Name="shlwapi" />
+					<Library Name="rpcrt4" />
+				</Case>
+				<Case Equals="win32" >
+          <Option Name="ExportLibrary">true</Option>
+					<Library Name="shlwapi" />
+					<Library Name="rpcrt4" />
+				</Case>
+			</Choice>
+				
+		  <Tool Name="gcc" >
+        <Choice Of="${Target.Platform}" >
+				  <Case Equals="mingw32" >
+					  <Library Name="ws2_32" />
+					  <Library Name="mswsock" />
+					  <Library Name="netapi32" />
+				  </Case>
+				  <Case Equals="win32" >
+					  <Library Name="ws2_32" />
+					  <Library Name="mswsock" />
+					  <Library Name="netapi32" />
+				  </Case>
+			  </Choice>
+		  </Tool>
+    </Tool>
+		
+		<Group Name="Sources">
+			<File Name="Activation.cpp" />
+			<File Name="Channel.cpp" />
+			<File Name="Exception.cpp" />
+			<File Name="HttpImpl.cpp" />
+			<File Name="OOCore.cpp" />
+			<File Name="Registry.cpp" />
+			<File Name="RunningObjectTable.cpp" />
+			<File Name="StdObjectManager.cpp" />
+			<File Name="Threading.cpp" />
+			<File Name="Types.cpp" />
+			<File Name="UserSession.cpp" />
+			<File Name="WireImpl.cpp" />
+			<File Name="WireProxy.cpp" />
+			<File Name="WireStub.cpp" />
+			<File Name="Xml.cpp" />
+			<File Name="md5.c">
+				<Tool Type="CCompiler">
+					<Option Name="Warnings">off</Option>
+					<Option Name="Optimise">max</Option>
+				</Tool>
+			</File>
+		</Group>
+
+    <Group Name="Resources">
+      <File Name="OOCore.rc" />
+    </Group>
+		
+		<Configuration Name="Release" Type="SharedLibrary" Default="true"> 
+			<Option Name="OutputDirectory">../../lib</Option>
+
+      <Tool Type="CCompiler">
+        <Define>NDEBUG</Define>
+      </Tool>
+
+			<Tool Type="C++Compiler">
+				<Option Name="Optimise">max</Option>
+        <Define>NDEBUG</Define>
+			</Tool>
+
+			<Action	Type="Make" Groups="Sources"/>
+
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+		</Configuration>
+
+    <Configuration Name="Release_Monolithic" Type="SharedLibrary">
+
+      <Tool Type="CCompiler">
+        <Define>NDEBUG</Define>
+      </Tool>
+      
+      <Tool Type="C++Compiler">
+        <Option Name="Optimise">max</Option>
+        <Define>ACE_AS_STATIC_LIBS</Define>
+        <Define>NDEBUG</Define>
+      </Tool>
+
+      <Tool Type="Linker" Name="gcc" >
+        <Option Name="StaticInputs">true</Option>
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>
+
+    <Configuration Name="Debug" Type="SharedLibrary" >
+      
+      <Tool Type="C++Compiler">
+        <Option Name="DebugSymbols">true</Option>
+
+        <Define>OMEGA_DEBUG</Define>
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>    
+  </Project>
+</OOMake>

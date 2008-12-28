@@ -1,0 +1,19 @@
+AC_INIT(OmegaOnline,0.4.2,www.omegaonline.org.uk)
+
+AC_CONFIG_SRCDIR([tools/OOMake/staged/autoconf.h.in])
+AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_HEADERS([tools/OOMake/staged/autoconf.h])
+AC_CONFIG_FILES([Makefile:OOMake.mk.in tools/OOMake/staged/Makefile])
+
+AC_PROG_CXX()
+AC_PROG_MKDIR_P()
+AC_PROG_MAKE_SET()
+
+AC_CANONICAL_BUILD()
+
+AC_SUBST([ac_configure_args])
+
+AC_DEFINE_UNQUOTED([OOMAKE_PLATFORM],["$build_os"],[Build platform])
+AC_DEFINE_UNQUOTED([OOMAKE_CPU],["$build_cpu"],[Build cpu])
+
+AC_OUTPUT()

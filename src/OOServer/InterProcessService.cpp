@@ -40,7 +40,7 @@ ACE_WString User::ShellParse(const wchar_t* pszFile)
 
 #if defined(OMEGA_WIN32)
 
-#if defined(__MINGW32__)
+/*#if defined(__MINGW32__)
 	// These are missing from mingGW
 	enum {
 		ASSOCF_INIT_NOREMAPCLSID           = 0x00000001,  //  do not remap clsids to progids
@@ -55,20 +55,21 @@ ACE_WString User::ShellParse(const wchar_t* pszFile)
 		ASSOCF_NOFIXUPS                    = 0x00000100,  //  attempt to fix errors if found
 		ASSOCF_IGNOREBASECLASS             = 0x00000200,  //  dont recurse into the baseclass
 	};
-#endif
+#endif*/
 		
 	const wchar_t* pszExt = PathFindExtensionW(pszFile);
 	if (pszExt && ACE_OS::strcasecmp(pszExt,L".exe")!=0)
 	{
 		DWORD dwLen = 1024;
-		wchar_t szBuf[1024];	
-		HRESULT hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
+		wchar_t szBuf[1024];
+		ASSOCF flags = (ASSOCF)(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL);
+		HRESULT hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,szBuf,&dwLen);
 		if (hRes == S_OK)
 			strRet = szBuf;
 		else if (hRes == E_POINTER)
 		{
 			wchar_t* pszBuf = new wchar_t[dwLen+1];
-			hRes = AssocQueryStringW(ASSOCF_NOTRUNCATE | ASSOCF_REMAPRUNDLL,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
+			hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
 			if (hRes==S_OK)
 				strRet = pszBuf;
 

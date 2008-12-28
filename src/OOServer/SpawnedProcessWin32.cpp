@@ -1106,7 +1106,7 @@ bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigne
 			(LPWSTR)&lpMsgBuf,
 			0,	NULL))
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%W:%u: %s\n"),pszFile,nLine,(LPWSTR)lpMsgBuf));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%W:%u: %W\n"),pszFile,nLine,(LPWSTR)lpMsgBuf));
 
 			// Free the buffer.
 			LocalFree(lpMsgBuf);

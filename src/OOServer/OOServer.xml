@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<OOMake version="0.1">
+
+	<Argument Name="with-sqlite3"/>
+					
+	<Project Name="OOServer" >
+		
+		<Option Name="OutputDirectory">../../bin/${Configuration.Name}</Option>
+		<Option Name="Multithreaded" />
+
+    <Tool Type="CCompiler">
+      <Include Directory="../../include" />
+
+      <Tool Name="gcc">
+        <Option Name="Visibility">hidden</Option>
+      </Tool>
+    </Tool>
+		
+		<Tool Type="C++Compiler">
+			<Option Name="Warnings">max</Option>
+			<Option Name="PrecompiledHeader">OOServer_Root.h</Option>
+			<Option Name="UseRtti">false</Option>
+			
+			<Define>CODEBLOCKS</Define>
+									
+			<Include Directory="../../include" />
+			<Include Find="ace/ACE.h" Directory="${Arg.with-ace}" />
+			<Include Find="sqlite3.h" Directory="${Arg.with-sqlite3}" />
+		
+      <Tool Name="gcc">
+        <Option Name="Visibility">hidden</Option>
+      </Tool>
+    </Tool>
+		
+		<Tool Type="Linker" >
+			<Library Name="ACE" Directory="${Arg.with-ace}/lib" />
+			<Library Name="sqlite3" Directory="${Arg.with-sqlite3}/lib" Optional="true" />
+			
+			<Choice Of="${Target.Platform}" >
+				<Case Equals="mingw32" >
+					<Library Name="shlwapi" />
+					<Library Name="userenv" />
+				</Case>
+				<Case Equals="win32" >
+					<Library Name="shlwapi" />
+					<Library Name="userenv" />
+				</Case>
+			</Choice>
+				
+		  <Tool Name="gcc" >
+			  <Choice Of="${Target.Platform}" >
+				  <Case Equals="mingw32" >
+					  <Library Name="ws2_32" />
+					  <Library Name="mswsock" />
+					  <Library Name="netapi32" />
+				  </Case>
+				  <Case Equals="win32" >
+					  <Library Name="ws2_32" />
+					  <Library Name="mswsock" />
+					  <Library Name="netapi32" />
+				  </Case>
+			  </Choice>
+		  </Tool>
+    </Tool>
+		
+		<Group Name="Sources">
+			<File Name="Database.cpp" />
+			<File Name="DebuggerWin32.cpp" />
+			<File Name="MessageConnection.cpp" />
+			<File Name="MessagePipeWin32.cpp" />
+			<File Name="MessagePipeUnix.cpp" />
+			<File Name="NTService.cpp" />
+			<File Name="RegistryHive.cpp" />
+			<File Name="RootHttp.cpp" />
+			<File Name="RootMain.cpp" />
+			<File Name="RootManager.cpp" />
+			<File Name="RootRegistry.cpp" />
+			<File Name="SpawnedProcessWin32.cpp" />
+			<File Name="SpawnedProcessUnix.cpp" />
+			<File Name="SQLite3.c">
+				<Tool Type="CCompiler">
+					<Option Name="Warnings">off</Option>
+					<Option Name="Optimise">max</Option>
+          <Define>CODEBLOCKS</Define>
+					<Include Find="sqlite3.c" Directory="${Arg.with-sqlite3}" Optional="true" >OMEGA_HAVE_SQLITE3_AMALGAMATION</Include>
+				</Tool>
+			</File>
+		</Group>
+
+    <Group Name="Resources">
+      <File Name="OOServer.rc" />
+    </Group>
+		
+		<Configuration Name="Release" Type="Program" Default="true"> 
+			<Option Name="OutputDirectory">../../bin</Option>
+
+      <Tool Type="CCompiler">
+        <Define>NDEBUG</Define>
+      </Tool>
+			
+			<Tool Type="C++Compiler">
+				<Option Name="Optimise">max</Option>
+
+        <Define>NDEBUG</Define>
+			</Tool>
+			
+			<Tool Type="Linker" >
+				<Library Name="OOCore" Directory="../../lib" />
+			</Tool>
+
+			<Action	Type="Make" Groups="Sources"/>
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+		</Configuration>
+
+    <Configuration Name="Release_Monolithic" Type="Program" >
+
+      <Tool Type="CCompiler">
+        <Define>NDEBUG</Define>
+      </Tool>
+      
+      <Tool Type="C++Compiler">
+        <Option Name="Optimise">max</Option>
+
+        <Define>NDEBUG</Define>
+        <Define>ACE_AS_STATIC_LIBS</Define>
+      </Tool>
+
+      <Tool Type="Linker" >
+        <Library Name="OOCore" Directory="../../lib/${Configuration.Name}" />
+      
+        <Tool Name="gcc" >
+          <Option Name="StaticInputs">true</Option>
+        </Tool>
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>
+
+    <Configuration Name="Debug" Type="Program">
+
+      <Tool Type="C++Compiler">
+        <Option Name="DebugSymbols">true</Option>
+
+        <Define>OMEGA_DEBUG</Define>
+      </Tool>
+
+      <Tool Type="Linker" >
+        <Library Name="OOCore" Directory="../../lib/${Configuration.Name}" />
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>
+	</Project>
+
+  <Project Name="OOSvrUser" >
+
+    <Option Name="OutputDirectory">../../bin/${Configuration.Name}</Option>
+    <Option Name="Multithreaded" />
+
+    <Tool Type="CCompiler">
+      <Include Directory="../../include" />
+    </Tool>
+
+    <Tool Type="C++Compiler">
+      <Option Name="Warnings">max</Option>
+      <Option Name="PrecompiledHeader">OOServer_User.h</Option>
+      <Option Name="UseRtti">false</Option>
+
+      <Define>CODEBLOCKS</Define>
+
+      <Include Directory="../../include" />
+      <Include Find="ace/ACE.h" Directory="${Arg.with-ace}" />
+      <Include Find="sqlite3.h" Directory="${Arg.with-sqlite3}" />
+    </Tool>
+
+    <Tool Type="Linker" >
+      <Library Name="ACE" Directory="${Arg.with-ace}/lib" />
+      <Library Name="sqlite3" Directory="${Arg.with-sqlite3}/lib" Optional="true" />
+
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Library Name="shlwapi" />
+          <Library Name="userenv" />
+        </Case>
+        <Case Equals="win32" >
+          <Library Name="shlwapi" />
+          <Library Name="userenv" />
+        </Case>
+      </Choice>
+    
+      <Tool Name="gcc" >
+        <Choice Of="${Target.Platform}" >
+          <Case Equals="mingw32" >
+            <Library Name="ws2_32" />
+            <Library Name="mswsock" />
+            <Library Name="netapi32" />
+          </Case>
+          <Case Equals="win32" >
+            <Library Name="ws2_32" />
+            <Library Name="mswsock" />
+            <Library Name="netapi32" />
+          </Case>
+        </Choice>
+      </Tool>
+    </Tool>
+
+    <Group Name="Sources">
+      <File Name="Channel.cpp" />
+      <File Name="Database.cpp" />
+      <File Name="DebuggerWin32.cpp" />
+      <File Name="InterProcessService.cpp" />
+      <File Name="MessageConnection.cpp" />
+      <File Name="MessagePipeWin32.cpp" />
+      <File Name="MessagePipeUnix.cpp" />
+      <File Name="NetHttp.cpp" />
+      <File Name="NetTcp.cpp" />
+      <File Name="UserHttp.cpp" />
+      <File Name="UserMain.cpp" />
+      <File Name="UserManager.cpp" />
+      <File Name="UserNet.cpp" />
+      <File Name="UserRegistry.cpp" />
+      <File Name="UserROT.cpp" />
+      <File Name="SQLite3.c">
+        <Tool Type="CCompiler">
+          <Option Name="Warnings">off</Option>
+          <Option Name="Optimise">max</Option>
+          <Define>CODEBLOCKS</Define>
+          <Include Find="sqlite3.c" Directory="${Arg.with-sqlite3}" Optional="true" >OMEGA_HAVE_SQLITE3_AMALGAMATION</Include>
+        </Tool>
+      </File>
+    </Group>
+
+    <Group Name="Resources">
+      <File Name="OOSvrUser.rc" />
+    </Group>
+
+    <Configuration Name="Release" Type="Program" Default="true">
+      <Option Name="OutputDirectory">../../bin</Option>
+
+      <Tool Type="CCompiler">
+        <Define>NDEBUG</Define>
+      </Tool>
+      
+      <Tool Type="C++Compiler">
+        <Option Name="Optimise">max</Option>
+        
+        <Define>NDEBUG</Define>
+      </Tool>
+
+      <Tool Type="Linker" >
+        <Library Name="OOCore" Directory="../../lib" />
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>
+
+    <Configuration Name="Release_Monolithic" Type="Program" >
+
+      <Tool Type="CCompiler">
+        <Define>NDEBUG</Define>
+      </Tool>
+      
+      <Tool Type="C++Compiler">
+        <Option Name="Optimise">max</Option>
+
+        <Define>NDEBUG</Define>
+        <Define>ACE_AS_STATIC_LIBS</Define>
+      </Tool>
+
+      <Tool Type="Linker" >
+        <Library Name="OOCore" Directory="../../lib/${Configuration.Name}" />
+      
+        <Tool Name="gcc" >
+          <Option Name="StaticInputs">true</Option>
+        </Tool>
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>
+
+    <Configuration Name="Debug" Type="Program">
+      
+      <Tool Type="C++Compiler">
+        <Option Name="DebugSymbols">true</Option>
+
+        <Define>OMEGA_DEBUG</Define>
+      </Tool>
+
+      <Tool Type="Linker" >
+        <Library Name="OOCore" Directory="../../lib/${Configuration.Name}" />
+      </Tool>
+
+      <Action	Type="Make" Groups="Sources"/>
+      <Choice Of="${Target.Platform}" >
+        <Case Equals="mingw32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+        <Case Equals="win32" >
+          <Action	Type="Make" Groups="Resources"/>
+        </Case>
+      </Choice>
+    </Configuration>
+  </Project>
+</OOMake>

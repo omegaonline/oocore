@@ -1,0 +1,6 @@
+
+/* Build cpu */
+#undef OOMAKE_CPU
+
+/* Build platform */
+#undef OOMAKE_PLATFORM

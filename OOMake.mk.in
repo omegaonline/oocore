@@ -1,0 +1,15 @@
+@SET_MAKE@
+
+OOMAKE_CMD = @builddir@/bin/OOMake-staged @ac_configure_args@ -f @srcdir@/makefiles/OOCore.xml
+
+all : OOMake
+	@ $(OOMAKE_CMD)
+
+OOMake : FORCE
+	@cd @builddir@/tools/OOMake/staged && $(MAKE)
+		
+clean :
+	@test ! -f @builddir@/bin/OOMake-staged || $(OOMAKE_CMD) --clean
+	@cd @builddir@/tools/OOMake/staged && $(MAKE) clean
+	
+FORCE :

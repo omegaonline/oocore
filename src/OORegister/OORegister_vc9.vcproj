@@ -130,7 +130,7 @@
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"

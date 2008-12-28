@@ -132,7 +132,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="NDEBUG;ACE_AS_STATIC_LIBS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="true"

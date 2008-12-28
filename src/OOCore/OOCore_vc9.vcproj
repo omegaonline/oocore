@@ -129,7 +129,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="NDEBUG;OOCORE_BUILD_DLL"
+				PreprocessorDefinitions="NDEBUG;OOCORE_BUILD_DLL;ACE_AS_STATIC_LIBS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"

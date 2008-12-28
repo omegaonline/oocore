@@ -21,7 +21,7 @@
 # INSTALL TARGET (requires root access)
 # 1) copy target to final destination
 # 2) chmod target to final permisions
-install: .phony build
+install: .phony
 	@ $(ECHO) "entering install"
 	! ( $(INSTALL) $(INSTALL_PERM) $(BUILD_DIR)/$(TARGET) $(INSTALL_DIR) ) || $(ECHO) "$(TARGET) is installed";
 ifdef BUILDING_LIB	

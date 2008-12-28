@@ -19,11 +19,11 @@
 #//
 #///////////////////////////////////////////////////////////////////////////////////
 #!/bin/sh
-export OMEGA_WORK_DIR=`pwd`
-export ENV_DIR="$OMEGA_WORK_DIR/makefiles/gnuMake"
-export PATH=$PATH:$OMEGA_WORK_DIR/scripts
+export TOP_SRC_DIR=`pwd`
+export ENV_DIR="$TOP_SRC_DIR/makefiles/gnuMake"
+export PATH=$PATH:$TOP_SRC_DIR/scripts
 
-echo "OMEGA_WORK_DIR=$OMEGA_WORK_DIR";
+echo "TOP_SRC_DIR=$TOP_SRC_DIR";
 echo "ENV_DIR=$ENV_DIR";
 
  echo -e  "\ttype 'build_omega.sh all' to build all modules."

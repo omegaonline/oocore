@@ -36,7 +36,30 @@ include $(ENV_DIR)/build_class/app.mk
 endif
 
 # Top level targets - all builds start here
-include $(ENV_DIR)/build_targets.mk
+# These flags are set here to be sure all substitutions take place before targets are evaluated
+CFLAGS	     := $(CFLAGS) $(BUILD_DEFS)
+CPPFLAG	     := $(CPPFLAGS) $(BUILD_DEFS)
+OBJS 	     := $(subst $(SRC_DIR), $(OBJ_DIR),$(subst .c,.o,$(subst .cpp,.o, $(SRCS))))
+TEST_OBJS    :=	$(subst $(TEST_DIR), $(OBJ_DIR),$(subst .c,.o, $(TEST_SRCS)))
+TEST_TARGETS :=	$(subst $(TEST_DIR), $(BUILD_DIR),$(subst .c,, $(TEST_SRCS)))
+TEST_CFLAGS  := $(TEST_CFLAGS) -g $(TEST_DEFS)
+TEST_CPPFLAGS:= $(TEST_CPPFLAGS) -g $(TEST_DEFS)
+LDFLAGS	     := -L$(OBJ_DIR) -L$(BUILD_DIR) -L$(INSTALL_LIB_ROOT) $(EXTRA_LIBS) $(LDFLAGS)
+DEP_FLAGS    := BUILD_DIR=$(BUILD_DIR) RELEASE=1
+
+# These is the target run when make is run without additional arguments
+first: depend build
+
+# These are composite targets to save on much typing
+all:	clean depend build test
+tall:	all run-test
+
+# useful functions shared by sub makefiles
+include $(ENV_DIR)/funcs.mk
+
+# Pull in all the sub targets under the make specific targets directory,
+# currently gnuMake/ but could be bsdMake or another make system.
+include  $(wildcard $(ENV_DIR)/targets/*.mk)
 
 # allow compiler to resolve object paths correctly for DEBUG and RELEASE configurations
 include $(ENV_DIR)/pattern_rules.mk

@@ -24,16 +24,16 @@
 # 
 $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cpp
 	@ $(ECHO) "\tBuilding [$<]" ;
-	@ $(CXX) -c $< $(CPPFLAGS) -o $@ 
+	@ $(CC) -c $< $(CPPFLAGS) -o $@ 2>> $(BUILD_LOG)
 
 $(OBJ_DIR)/%.o : $(TEST_DIR)/%.cpp
 	@ $(ECHO) "\tBuilding [$<]" ;
-	@ $(CXX) -c $< $(TEST_CPPFLAGS) -o  $@ 
+	@ $(CC) -c $< $(TEST_CPPFLAGS) -o  $@ 2>> $(BUILD_LOG)
 
 $(OBJ_DIR)/%.o : $(SRC_DIR)/%.c
 	@ $(ECHO) "\tBuilding [$<]" ;
-	@ $(CC) -c $< $(CFLAGS) -o $@ 
+	@ $(CC) -c $< $(CFLAGS) -o $@ 2>> $(BUILD_LOG)
 
 $(OBJ_DIR)/%.o : $(TEST_DIR)/%.c
 	@ $(ECHO) "\tBuilding [$<]" ;
-	@ $(CC) -c $< $(TEST_CFLAGS) -o  $@
+	@ $(CC) -c $< $(TEST_CFLAGS) -o  $@ 2>> $(BUILD_LOG)

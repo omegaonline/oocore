@@ -26,13 +26,12 @@
 uninstall: .phony
 	@ $(ECHO) "entering uninstall\n"
 	$(RM) $(INSTALL_DIR)/$(TARGET)
-ifdef BUILDING_LIB	
-	$(RM) $(INSTALL_HDR_ROOT)/$(HDRS)
-
 ifdef OOCORE_INSTALL
-	$(RM) -rvf $(INSTALL_HDR_DIR)/OOCore ) || $(ECHO) "OOCore headers removed"
-	$(RM) -rvf $(INSTALL_HDR_DIR)/OTL ) || $(ECHO) "OOCore headers removed"
+	$(RM) -rvf $(INSTALL_HDR_DIR)/OOCore || $(ECHO) "OOCore headers removed"
+	$(RM) -rvf $(INSTALL_HDR_DIR)/OTL || $(ECHO) "OOCore headers removed"
 endif
+ifdef BUILDING_LIB	
+	@ $(if $(strip $(HDRS)),$(RM) -v $(INSTALL_HDR_ROOT)/$(HDRS),)
 endif
 	@ $(ECHO) "leaving  uninstall\n"
 

@@ -40,6 +40,7 @@ define check_for_internal_vars
 	@$(call die_unless_set,OBJ_DIR)
 	@$(call die_unless_set,TARGET)
 	@$(call die_unless_set,DEPS)
+	@$(call die_unless_set,TOP_SRC_DIR)
 	@$(call die_unless_set,BUILD_LOG)
 	@$(call die_unless_set,INSTALL_DIR)
 	@$(call die_unless_set,INSTALL_LIB_ROOT)
@@ -47,11 +48,33 @@ define check_for_internal_vars
 	@$(call die_unless_set,LD_LIBRARY_PATH)
 	@$(call die_unless_set,BUILD_DIR)
 	@$(call die_unless_set,SRC_DIR)
+	@$(call die_unless_set,TARGET_DIR)
 endef
 
 define print_build_version
 	@ $(ECHO) "$(BUILD_TYPE) on :" $(shell $(DATE) +"%F  @ %T ")
 	@ $(ECHO) "Version: $(BUILD_DATE)" 
 	$(call make_dir BUILD_DIR)
+endef
+
+ 
+define top_level_target
+$(1): .PHONY
+       $($2) $($3) $(1) 
+endef
+  
+define target_with_targets
+$(1)_depend: .PHONY
+        $($2) $($3) $(1) depend 
+$(1)_build: .PHONY
+        $($2) $($3) $(1) build 
+$(1)_install: .PHONY
+        $($2) $($3) $(1) install 
+$(1)_clean: .PHONY
+        $($2) $($3) $(1) clean 
+$(1)_all: .PHONY
+        $($2) $($3) $(1) all
+$(1)_distclean: .PHONY
+        $($2) $($3) $(1) distclean 
 endef
 

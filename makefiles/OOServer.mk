@@ -19,10 +19,10 @@
 #//
 #///////////////////////////////////////////////////////////////////////////////////
 
-include ./makefiles/OOBuildEnv.mk
+include $(ENV_DIR)/makefile.env
 USE_LIB_OOCORE	:= 1
 TARGET		:= OOServerd
-SRC_DIR 	:= src/OOServer
+SRC_DIR 	:= $(SRC_DIR)/OOServer
 
 SRCS         	:= 	$(SRC_DIR)/Database.cpp			\
 			$(SRC_DIR)/MessageConnection.cpp	\
@@ -35,4 +35,4 @@ SRCS         	:= 	$(SRC_DIR)/Database.cpp			\
 			$(SRC_DIR)/RootRegistry.cpp		\
 			$(SRC_DIR)/SpawnedProcessUnix.cpp
 
-include ./makefiles/OOBuildTargets.mk
+include $(ENV_DIR)/makefile.targets

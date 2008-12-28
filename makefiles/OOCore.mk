@@ -18,8 +18,8 @@
 #// along with this file.  If not, see <http://www.gnu.org/licenses/>.
 #//
 #///////////////////////////////////////////////////////////////////////////////////
-include makefiles/OOBuildEnv.mk
-SRC_DIR	     	:= src/OOCore
+include $(ENV_DIR)/makefile.env
+SRC_DIR	     	:= $(SRC_DIR)/OOCore
 TARGET		:= libOOCore.so
 EXTRA_LIBS	:= -lACE -lsqlite3
 
@@ -30,4 +30,4 @@ BUILDING_LIB	:= 1
 
 PRIVATE_HDRS	:= $(SRC_DIR)/OOCore_precomp.h
 SRCS	     	:= $(ALL_CPP_SRCS) $(ALL_C_SRCS)
-include makefiles/OOBuildTargets.mk
+include $(ENV_DIR)/makefile.targets

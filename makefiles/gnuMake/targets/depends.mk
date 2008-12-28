@@ -29,6 +29,12 @@ endif
 	@$(call check_for_internal_vars)
 ifdef VERBOSE
 	@$(call print_srcs_list)
+	@$(call die_unless_list,ECHO)
+	@$(call die_unless_list,SED)
+	@$(call die_unless_list,MKDIR)
+	@$(call die_unless_list,RMDIR)
+	@$(call die_unless_list,SHELL)
+	@$(call die_unless_list,INSTALL)
 ifdef TEST_TARGET
 	@$(call die_unless_set,TEST_TARGET)
 endif
@@ -42,7 +48,8 @@ endif
 	@ $(ECHO) "Generating Dependencies for $(BUILD_DIR)/$(TARGET)"
 	@ $(RM) $(DEPS)
 	@ $(TOUCH) $(DEPS)
-	@ $(ifneq "" $(strip $(filter %.c, $(SRCS))) $(CC) -MM $(CFLAGS) $(C_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(C_TEST_SRCS) >> $(DEPS))
-	@ $(ifneq "" $(strip $(filter %.cpp, $(SRCS))) $(CXX) -MM $(CPPFLAGS) $(CPP_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(CPP_TEST_SRCS) >> $(DEPS) )
+	$(ifneq "" $(strip $(filter %.c, $(SRCS))) $(CC) -MM $(CFLAGS) $(C_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(C_TEST_SRCS) | tee -a $(DEPS) )
+	 $(ifneq "" $(strip $(filter %.cpp, $(SRCS))) $(CXX) -M $(CPPFLAGS) $(CPP_SRCS) $(PRIVATE_HDRS)  $(HDRS) $(CPP_TEST_SRCS) | tee -a $(DEPS))
+	@ $(RM) $(DEPS)
 	@ $(ECHO) "leaving  depend\n"
 

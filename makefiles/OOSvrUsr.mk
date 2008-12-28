@@ -18,10 +18,10 @@
 #// along with this file.  If not, see <http://www.gnu.org/licenses/>.
 #//
 #///////////////////////////////////////////////////////////////////////////////////
-include ./makefiles/OOBuildEnv.mk
+include $(ENV_DIR)/makefile.env
 USE_LIB_OOCORE	:= 1
 TARGET		:= OOSvrUser
-SRC_DIR 	:= src/OOServer
+SRC_DIR 	:= $(SRC_DIR)/OOServer
 
 SRCS         	:= 	$(SRC_DIR)/Channel.cpp			\
 			$(SRC_DIR)/Database.cpp			\
@@ -37,5 +37,4 @@ SRCS         	:= 	$(SRC_DIR)/Channel.cpp			\
 			$(SRC_DIR)/UserNet.cpp			\
 			$(SRC_DIR)/UserRegistry.cpp		\
 			$(SRC_DIR)/UserROT.cpp
-include ./makefiles/OOBuildTargets.mk
-
+include $(ENV_DIR)/makefile.targets

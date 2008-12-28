@@ -70,7 +70,7 @@ static void call_fn(pfnInstallLib pfn, Omega::bool_t bInstall, const Omega::stri
 static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 {
 	ACE_DLL dll;
-	if (dll.open(lib_path,RTLD_NOW)!=0)
+	if (dll.open(lib_path,ACE_DEFAULT_SHLIB_MODE,false)!=0)
 	{
 		if (bSilent)
 			return -1;

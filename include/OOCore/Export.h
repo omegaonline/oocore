@@ -59,7 +59,7 @@
 		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) \
 		{ \
 		public: \
-			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_proxy(Omega::System::MetaInfo::IProxy_Safe* pProxy, Omega::System::MetaInfo::IMarshaller_Safe* pManager, Omega::System::MetaInfo::IObject_Safe** ppProxy) \
+			static Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_proxy(Omega::System::MetaInfo::IProxy_Safe* pProxy, Omega::System::MetaInfo::IMarshaller_Safe* pManager, Omega::System::MetaInfo::IObject_Safe** ppProxy) \
 			{ \
 				try \
 				{ \
@@ -71,7 +71,7 @@
 					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
-			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub) \
+			static Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_wire_stub(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub) \
 			{ \
 				try \
 				{ \
@@ -83,7 +83,7 @@
 					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
-			static OMEGA_EXPORT Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_type_info(ITypeInfo_Safe** ppTypeInfo) \
+			static Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_type_info(ITypeInfo_Safe** ppTypeInfo) \
 			{ \
 				try \
 				{ \

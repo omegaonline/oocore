@@ -40,28 +40,28 @@ static int Install(int argc, ACE_TCHAR* argv[])
 {
 #if defined(OMEGA_WIN32)
 	if (!Root::NTService::install())
-		return -1;
+		return EXIT_FAILURE;
 #endif
 
 	if (!Root::Manager::install(argc,argv))
-		return -1;
+		return EXIT_FAILURE;
 
 	ACE_OS::printf("Installed successfully.\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static int Uninstall()
 {
 #if defined(OMEGA_WIN32)
 	if (!Root::NTService::uninstall())
-		return -1;
+		return EXIT_FAILURE;
 #endif
 
 	if (!Root::Manager::uninstall())
-		return -1;
+		return EXIT_FAILURE;
 
 	ACE_OS::printf("Uninstalled successfully.\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static int Version();
@@ -70,7 +70,7 @@ static int Help()
 {
 	ACE_OS::printf("OOServer - The Omega Online network deamon.\n\n");
 	ACE_OS::printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
@@ -89,7 +89,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0 ||
 		cmd_opts.long_option(ACE_TEXT("help"),ACE_TEXT('h'))!=0)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),EXIT_FAILURE);
 	}
 
 	int option;
@@ -123,7 +123,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	const ACE_TCHAR* pszAppName = ACE_TEXT("OOServer");
 
 	if (argc<2 || ACE_OS::strcmp(argv[1],ACE_TEXT("--service")) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a Win32 service.\n")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a Win32 service.\n")),EXIT_FAILURE);
 
 #else
 	const ACE_TCHAR* pszAppName = ACE_TEXT("ooserverd");
@@ -134,13 +134,13 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(pszAppName,ACE_Log_Msg::STDERR,pszAppName) != 0)
 #endif
 	if (ACE_LOG_MSG->open(pszAppName,ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG,pszAppName) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),EXIT_FAILURE);
 
 	// Start any daemons or services
 #if defined(OMEGA_WIN32)
 
 	if (!Root::NTService::open())
-		return -1;
+		return EXIT_FAILURE;
 
 #else // OMEGA_WIN32
 #if !defined(OMEGA_DEBUG)
@@ -149,7 +149,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	ACE_OS::getcwd(szCwd,PATH_MAX);
 
 	if (ACE::daemonize(szCwd,1,pszAppName) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error daemonizing")),EXIT_FAILURE);
 
 #endif // OMEGA_DEBUG
 
@@ -202,5 +202,5 @@ static int Version()
 	ACE_OS::printf("SQLite version: %s\n",SQLITE_VERSION);
 
 	ACE_OS::printf("\n");
-	return 0;
+	return EXIT_SUCCESS;
 }

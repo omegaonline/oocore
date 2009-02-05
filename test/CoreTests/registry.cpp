@@ -1,7 +1,7 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
-#if !defined(WIN32)
+#if !defined(OMEGA_WIN32)
 pid_t GetCurrentProcessId();
 #endif
 

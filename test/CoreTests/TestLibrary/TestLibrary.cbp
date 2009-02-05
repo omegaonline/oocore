@@ -22,7 +22,6 @@
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add option="-DTEST_BUILD_LIBRARY" />
 					<Add directory="../../../include" />
 				</Compiler>
 				<Linker>
@@ -46,7 +45,6 @@
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
-					<Add option="-DTEST_BUILD_LIBRARY" />
 					<Add option="-DNDEBUG" />
 					<Add directory="../../../include" />
 				</Compiler>
@@ -69,7 +67,6 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
-					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-fPIC" />
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
@@ -95,7 +92,6 @@
 					<Add option="-O3" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
-					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-fPIC" />
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />

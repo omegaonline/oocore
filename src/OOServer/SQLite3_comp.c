@@ -5,8 +5,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "../Common/config-build.h"
-
 #ifdef OMEGA_HAVE_SQLITE3_AMALGAMATION
 #include <sqlite3.c>
 #endif

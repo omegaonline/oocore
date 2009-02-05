@@ -1,6 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2007 Rick Taylor
+// Portions Copyright (c) 1996-2009, PostgreSQL Global Development Group
+// Portions Copyright (c) 1994, Regents of the University of California
 //
 // This file is part of OOServer, the Omega Online Server application.
 //
@@ -109,7 +111,7 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 {
 	// Start the handler
 	int ret = start();
-	if (ret != -1)
+	if (ret != EXIT_FAILURE)
 	{
 		if (init())
 		{
@@ -117,9 +119,10 @@ int Root::Manager::run_event_loop_i(int /*argc*/, ACE_TCHAR* /*argv*/[])
 			HttpAcceptor http_acceptor;
 			m_http_acceptor = &http_acceptor;
 			bool bHttp = http_acceptor.open(this);
-				
+
 			// Now just process client requests
-			ret = process_client_connects();
+			if (process_client_connects() != 0)
+                ret = EXIT_FAILURE;
 
 			// Stop the http acceptor
 			if (bHttp)
@@ -150,7 +153,7 @@ bool Root::Manager::init()
 
 	// Spawn the sandbox
 	ACE_CString strPipe;
-	m_sandbox_channel = spawn_user(static_cast<user_id_type>(0),strPipe,ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>(0));
+	m_sandbox_channel = spawn_user((user_id_type)(-1),strPipe,ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>(0));
 	if (!m_sandbox_channel)
 		return false;
 
@@ -275,28 +278,122 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 {
 #endif
 
-	user_id_type uid = 0;
-
-	// Read the uid - we must read even for Windows
-	if (pipe->recv(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("recv() failed")),-1);
+	user_id_type uid = (user_id_type)(-1);
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
+	/* Win32 style:  */
+
+	// Read one byte - This forces credential passing
+	char c = 0;
+	if (pipe->recv(&c,1) != 1)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("recv() failed")),-1);
+
 	if (!ImpersonateNamedPipeClient(pipe->get_handle()))
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: ImpersonateNamedPipeClient failed: %#x\n"),GetLastError()),-1);
 
-	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
+	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,(HANDLE*)&uid);
 	if (!RevertToSelf())
 	{
+		// This is critical and FATAL!
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: RevertToSelf failed: %#x\n"),GetLastError()));
-		CloseHandle(uid);
-		ACE_OS::exit(-1);
+		CloseHandle((HANDLE)uid);
+		ACE_OS::exit(EXIT_FAILURE);
 	}
+	
 	if (!bRes)
 	{
-		CloseHandle(uid);
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: OpenThreadToken failed: %#x\n"),GetLastError()));
+		CloseHandle((HANDLE)uid);
 		return -1;
 	}
+
+#elif defined(HAVE_GETPEEREID)
+	/* OpenBSD style:  */
+	gid_t gid;
+	if (getpeereid(sock, &uid, &gid) != 0)
+	{
+		/* We didn't get a valid credentials struct. */
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+	}
+
+#elif defined(SO_PEERCRED)
+	/* Linux style: use getsockopt(SO_PEERCRED) */
+	struct ucred peercred;
+	//socklen_t so_len = sizeof(peercred);
+	ACCEPT_TYPE_ARG3 so_len = sizeof(peercred);
+	
+	if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
+	{
+		/* We didn't get a valid credentials struct. */
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+	}
+
+#elif defined(HAVE_GETPEERUCRED)
+	/* Solaris > 10 */
+	ucred_t* ucred = NULL; /* must be initialized to NULL */
+	if (getpeerucred(sock, &ucred) == -1)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+
+	if ((uid = ucred_geteuid(ucred)) == -1)
+	{
+		ucred_free(ucred);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get effective UID from peer credentials")),-1);
+	}
+
+#elif defined(HAVE_STRUCT_CMSGCRED) || defined(HAVE_STRUCT_FCRED) || (defined(HAVE_STRUCT_SOCKCRED) && defined(LOCAL_CREDS))
+
+	/*
+	* Receive credentials on next message receipt, BSD/OS,
+	* NetBSD. We need to set this before the client sends the
+	* next packet.
+	*/
+	int on = 1;
+	if (setsockopt(pipe->get_handle(), 0, LOCAL_CREDS, &on, sizeof(on)) < 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not enable credential reception")),-1);
+
+	/* Credentials structure */
+#if defined(HAVE_STRUCT_CMSGCRED)
+	typedef struct cmsgcred Cred;
+	#define cruid cmcred_uid
+#elif defined(HAVE_STRUCT_FCRED)
+	typedef struct fcred Cred;
+	#define cruid fc_uid
+#elif defined(HAVE_STRUCT_SOCKCRED)
+	typedef struct sockcred Cred;
+	#define cruid sc_uid
+#endif
+	/* Compute size without padding */
+	char cmsgmem[ALIGN(sizeof(struct cmsghdr)) + ALIGN(sizeof(Cred))];   /* for NetBSD */
+
+	/* Point to start of first structure */
+	struct cmsghdr* cmsg = (struct cmsghdr*)cmsgmem;
+	struct iovec iov;
+	
+	msghdr msg;
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = (char *) cmsg;
+	msg.msg_controllen = sizeof(cmsgmem);
+	memset(cmsg, 0, sizeof(cmsgmem));
+
+	/*
+	 * The one character which is received here is not meaningful; its
+	 * purposes is only to make sure that recvmsg() blocks long enough for the
+	 * other side to send its credentials.
+	 */
+	char buf;
+	iov.iov_base = &buf;
+	iov.iov_len = 1;
+
+	if (recvmsg(sock, &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+
+	Cred* cred = (Cred*)CMSG_DATA(cmsg);
+	uid = cred->cruid;
+#else
+	// We can't handle this situation
+	#error OOServer will not function correctly when built - Aborting
 #endif
 
 	ACE_CString strPipe;
@@ -308,7 +405,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 	}
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	CloseHandle(uid);
+	CloseHandle((HANDLE)uid);
 #endif
 
 	return 0;
@@ -387,14 +484,36 @@ ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, Spawne
 
 	if (!nChannelId)
 		pipe->close();
-	
+
 	return nChannelId;
+}
+
+bool Root::Manager::unsafe_sandbox()
+{
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = get_registry();
+
+	// Get the user name and pwd...
+	ACE_INT64 key = 0;
+	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
+		return false;
+
+	ACE_CDR::LongLong v = 0;
+	if (reg_root->get_integer_value(key,"Unsafe",0,v) != 0)
+	{
+#if defined(OMEGA_DEBUG)
+		return IsDebuggerPresent() ? true : false;
+#else
+		return false;
+#endif
+	}
+
+	return (v == 1);
 }
 
 ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry)
 {
 	// Stash the sandbox flag because we adjust uid...
-	bool bSandbox = (uid == static_cast<user_id_type>(0));
+	bool bSandbox = (uid == (user_id_type)(-1));
 
 	// Alloc a new SpawnedProcess
 	SpawnedProcess* pSpawn = 0;
@@ -409,10 +528,10 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 	ACE_CDR::ULong nChannelId = 0;
 
 	MessagePipeAcceptor acceptor;
-	ACE_CString strNewPipe = MessagePipe::unique_name("oor");
+	ACE_CString strNewPipe = MessagePipe::unique_name("oor",uid);
 	if (strNewPipe.empty())
-        ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Failed to create unique domain socket name")));
-	else if (acceptor.open(strNewPipe,uid) != 0)
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Failed to create unique domain socket name")));
+	else if (acceptor.open(strNewPipe,(HANDLE)uid) != 0)
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")));
 	else
 	{
@@ -428,9 +547,9 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 				ACE_CString strDb = pSpawn->GetRegistryHive();
 				if (!strDb.empty())
 				{
-                    // Create a new database
+					// Create a new database
 					Db::Database* pdb = 0;
-                    ACE_NEW_NORETURN(pdb,Db::Database());
+					ACE_NEW_NORETURN(pdb,Db::Database());
 					if (pdb)
 					{
 						ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex> db(pdb);
@@ -440,7 +559,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 							ACE_NEW_NORETURN(pReg,RegistryHive(db));
 							if (pReg)
 							{
-								ptrRegistry.reset(pReg); 
+								ptrRegistry.reset(pReg);
 								bOk = (ptrRegistry->open()==0);
 							}
 						}
@@ -491,14 +610,14 @@ ACE_CString Root::Manager::bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessageP
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")));
 		return "";
 	}
-	
+
 	size_t uLen = 0;
 	if (pipe->recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.recv() failed")));
 		return "";
 	}
-		
+
 	char* buf;
 	ACE_NEW_RETURN(buf,char[uLen],"");
 
@@ -529,12 +648,12 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_CString& strPipe)
 			{
 				if (i->second.pSpawn->Compare(uid))
 				{
-					strPipe = i->second.strPipe;
+				    strPipe = i->second.strPipe;
 					return true;
 				}
 				else if (i->second.pSpawn->IsSameUser(uid))
 				{
-					ptrRegistry = i->second.ptrRegistry;
+				    ptrRegistry = i->second.ptrRegistry;
 				}
 			}
 		}
@@ -545,6 +664,16 @@ bool Root::Manager::connect_client(user_id_type uid, ACE_CString& strPipe)
 	{
 		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),false);
 	}
+}
+
+bool Root::Manager::sendrecv_sandbox(const ACE_OutputCDR& request, ACE_CDR::ULong attribs, ACE_InputCDR*& response)
+{
+	return send_request(m_sandbox_channel,request.begin(),response,0,attribs);
+}
+
+bool Root::Manager::call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb)
+{
+	return ROOT_MANAGER::instance()->call_async_function_i(pfnCall,pParam,mb);
 }
 
 void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
@@ -647,14 +776,4 @@ void Root::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no
 
 	if (response.good_bit() && !(attribs & 1))
 		send_response(seq_no,src_channel_id,src_thread_id,response.begin(),deadline,attribs);
-}
-
-bool Root::Manager::sendrecv_sandbox(const ACE_OutputCDR& request, ACE_CDR::ULong attribs, ACE_InputCDR*& response)
-{
-	return send_request(m_sandbox_channel,request.begin(),response,0,attribs);
-}
-
-bool Root::Manager::call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb)
-{
-	return ROOT_MANAGER::instance()->call_async_function_i(pfnCall,pParam,mb);
 }

@@ -50,7 +50,7 @@ static void tests()
 int main(int /*argc*/, char* /*argv*/[])
 {
 	output("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
-	
+
 	if (RUN_TEST(init_tests))
 	{
 		output("\nPerforming single threaded tests...\n\n");
@@ -79,7 +79,7 @@ void output(const char* sz, ...)
 #endif
 
 	printf(szBuf);
-	OutputDebugStringA(szBuf);	
+	OutputDebugStringA(szBuf);
 
 	va_end(argptr);
 
@@ -184,7 +184,7 @@ bool run_test(pfnTest t, const char* pszName)
     return false;
 }
 
-#if !defined(WIN32)
+#if !defined(OMEGA_WIN32)
 pid_t GetCurrentProcessId()
 {
     return getpid();

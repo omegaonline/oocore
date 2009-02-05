@@ -99,7 +99,7 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	ACE_Process_Options options(0);
 	options.avoid_zombies(0);
 
-#if (ACE_MAJOR_VERSION < 5) || (ACE_MAJOR_VERSION == 5 && (ACE_MINOR_VERSION < 6 || (ACE_MINOR_VERSION == 6 && (ACE_BETA_VERSION < 7))))
+#if OMEGA_ACE_VERSION_CURRENT() < OMEGA_ACE_VERSION(5,6,7)
 	options.handle_inheritence(0);
 #else
 	options.handle_inheritance(0);

@@ -48,25 +48,25 @@ static int install(int argc, char* argv[])
 	#endif
 
 			OTL::GetModule()->RegisterObjects(true,false,strSubsts);
-			return 0;
+			return EXIT_SUCCESS;
 		}
 		else if (strcmp(argv[1],"-u") == 0 || strcmp(argv[1],"--uninstall") == 0)
 		{
 			OTL::GetModule()->RegisterObjects(false,false,strSubsts);
-			return 0;
+			return EXIT_SUCCESS;
 		}
 		else
 		{
 			// Invalid argument
 			fprintf(stderr,"Invalid argument -%s\n",argv[1]);
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 	catch (Omega::IException* pE)
 	{
 		fprintf(stderr,"%ls\n",pE->GetDescription().c_str());
 		pE->Release();
-		return -1;
+		return EXIT_FAILURE;
 	}
 }
 
@@ -76,10 +76,10 @@ int main(int argc, char* argv[])
 	if (pE)
 	{
 		pE->Release();
-		return -1;
+		return EXIT_FAILURE;
 	}
 
-	int ret = 0;
+	int ret = EXIT_SUCCESS;
 	try
 	{
 		if (argc > 1)
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 	catch (Omega::IException* pE)
 	{
 		pE->Release();
-		ret = -1;
+		ret = EXIT_FAILURE;
 	}
 
 	Omega::Uninitialize();

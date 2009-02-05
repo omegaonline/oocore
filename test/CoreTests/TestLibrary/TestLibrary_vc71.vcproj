@@ -132,9 +132,6 @@
 			<File
 				RelativePath="..\SimpleTest.h">
 			</File>
-			<File
-				RelativePath=".\testlibrary.h">
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

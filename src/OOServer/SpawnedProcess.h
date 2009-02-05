@@ -65,7 +65,6 @@ namespace Root
 		HANDLE m_hProcess;
 
 		static DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-		DWORD SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox);
 		static void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
 		static bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
 		static bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);
@@ -78,8 +77,9 @@ namespace Root
 		static DWORD SetTokenDefaultDACL(HANDLE hToken);
 		static bool RestrictToken(HANDLE& hToken);
 		static void EnableUserAccessToFile(LPWSTR pszPath, TOKEN_USER* pUser);
-
 		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
+
+		DWORD SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox);
 
 #else // !OMEGA_WIN32
 		
@@ -96,8 +96,6 @@ namespace Root
 
 	private:
         bool   m_bSandbox;
-
-		static bool unsafe_sandbox();
 	};
 }
 

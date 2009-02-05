@@ -318,7 +318,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\SQLite3.c">
+				RelativePath=".\SQLite3_comp.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool

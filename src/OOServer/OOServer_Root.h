@@ -35,14 +35,19 @@
 //////////////////////////////////////////////
 // Bring in the config guesser
 
-#include "../Common/config-build.h"
+#if defined(HAVE_CONFIG_H)
+// Autoconf
+#include "config-autoconf.h"
+#endif
+
+#include <OOCore/config-guess.h>
+
+/////////////////////////////////////////////////
+// Include ACE components
 
 #if defined(OMEGA_WIN32) && !defined(WIN32)
 #define WIN32
 #endif
-
-/////////////////////////////////////////////////
-// Include ACE components
 
 #if defined(_MSC_VER)
 #pragma warning(push)
@@ -93,6 +98,12 @@
 #endif
 #endif
 
+// Define a macro to hold the ACE version
+#define OMEGA_ACE_VERSION(x,y,z) \
+	((x * 10000) + (y * 100) + z)
+
+#define OMEGA_ACE_VERSION_CURRENT() OMEGA_ACE_VERSION(ACE_MAJOR_VERSION,ACE_MINOR_VERSION,ACE_BETA_VERSION)
+
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
@@ -116,12 +127,6 @@
 #include <shlwapi.h>
 #include <shlobj.h>
 
-#endif
-
-#if defined(OMEGA_WIN32)
-	typedef HANDLE user_id_type;
-#else
-	typedef uid_t user_id_type;
 #endif
 
 #ifdef OMEGA_DEBUG

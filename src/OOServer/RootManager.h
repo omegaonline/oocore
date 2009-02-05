@@ -53,6 +53,7 @@ namespace Root
 		static bool install(int argc, ACE_TCHAR* argv[]);
 		static bool uninstall();
 		static int registry_access_check(ACE_CDR::ULong channel_id);
+		static bool unsafe_sandbox();
 
 		static bool call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb = 0);
 

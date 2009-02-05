@@ -356,11 +356,11 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		if (!close_all_fds())
 			ACE_OS::exit(errno);
 
-		// Clean up environment...
+        // Clean up environment...
 		if (!CleanEnvironment())
 			ACE_OS::exit(errno);
 
-		// This all needs sorting out badly!
+        // This all needs sorting out badly!
         void* TODO;
 
 		// mount and chroot into our own FUSE dir
@@ -369,11 +369,15 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		// Exec the user process
 		char* cmd_line[] =
 		{
-		    "oosvruser", //  argv[0] = Process name
-		    0,           //  argv[1] = Pipe name
+		    "./oosvruser", //  argv[0] = Process name
+		    0,             //  argv[1] = Pipe name
 		    0
 		};
 		cmd_line[1] = const_cast<char*>(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
+
+#if defined(OMEGA_DEBUG)
+		printf("\nStarting new oosvruser process as uid:%u\n",uid);
+#endif
 
 		int err = ACE_OS::execv("./oosvruser",cmd_line);
 
@@ -519,26 +523,6 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 	}
 
 	return strDir + "/user.regdb";
-}
-
-bool Root::SpawnedProcess::unsafe_sandbox()
-{
-	// Get the user name and pwd...
-	ACE_INT64 key = 0;
-	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
-		return false;
-
-	ACE_CDR::LongLong v = 0;
-	if (Manager::get_registry()->get_integer_value(key,"Unsafe",0,v) != 0)
-	{
-#if defined(OMEGA_DEBUG)
-		return true;
-#else
-		return false;
-#endif
-	}
-
-	return (v == 1);
 }
 
 #endif // !ACE_WIN32

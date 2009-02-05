@@ -759,6 +759,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
 	ACE_WString strTitle;
+	bool bPrivError = false;
 
 	// Load up the users profile
 	HANDLE hProfile = NULL;
@@ -844,6 +845,8 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,szCwd,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
+			bPrivError = true;
 
 		if (hDebugEvent)
 			CloseHandle(hDebugEvent);
@@ -912,7 +915,7 @@ Cleanup:
 	if (hProfile)
 		UnloadUserProfile(hToken,hProfile);
 
-	if (dwRes != ERROR_SUCCESS)
+	if (dwRes != ERROR_SUCCESS && !bPrivError)
 		LOG_FAILURE(dwRes);
 
 	return dwRes;
@@ -925,10 +928,12 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && unsafe_sandbox())
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && Manager::unsafe_sandbox())
 		{
 			HANDLE hToken2;
-			if (OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
+			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
+				LOG_FAILURE(GetLastError());
+			else
 			{
 				// Get the names associated with the user SID
 				ACE_WString strUserName;
@@ -956,7 +961,11 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 							dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 							if (dwRes == ERROR_SUCCESS)
 							{
+#if !defined(OMEGA_DEBUG)
 								ACE_ERROR((LM_WARNING,L"%W",szBuf));
+#else
+								ACE_OS::printf(L"%s",szBuf);
+#endif
 								ACE_OS::printf("\n\nYou chose to continue... on your head be it!\n\n");
 
 								CloseHandle(m_hToken);
@@ -968,6 +977,12 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 
 				CloseHandle(hToken2);
 			}
+		}
+
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
+		{
+			// We really need to bitch about this now...
+			LOG_FAILURE(dwRes);
 		}
 	}
 
@@ -1523,28 +1538,6 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 	}
 
 	return strRegistry;
-}
-
-bool Root::SpawnedProcess::unsafe_sandbox()
-{
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
-
-	// Get the user name and pwd...
-	ACE_INT64 key = 0;
-	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
-		return false;
-
-	ACE_CDR::LongLong v = 0;
-	if (reg_root->get_integer_value(key,"Unsafe",0,v) != 0)
-	{
-#if defined(OMEGA_DEBUG)
-		return IsDebuggerPresent() ? true : false;
-#else
-		return false;
-#endif
-	}
-
-	return (v == 1);
 }
 
 #endif // OMEGA_WIN32

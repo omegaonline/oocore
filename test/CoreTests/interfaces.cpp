@@ -1,6 +1,12 @@
 #include <OTL/OTL.h>
 #include "./interfaces.h"
-#include "./TestLibrary/TestLibrary.h"
+
+namespace Test
+{
+	extern "C" const Omega::guid_t OID_TestLibrary;
+}
+
+OMEGA_DEFINE_OID(Test, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
 
 #include "Test.h"
 
@@ -9,10 +15,8 @@ END_PROCESS_OBJECT_MAP()
 
 #if defined(OMEGA_WIN32)
 #define OOREGISTER L"OORegister"
-#define TESTPROCESS L"TestProcess"
 #else
 #define OOREGISTER L"./ooregister"
-#define TESTPROCESS L"./testprocess"
 #endif
 
 static bool do_interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>& ptrSimpleTest)
@@ -227,7 +231,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 static bool do_local_process_test(const wchar_t* pszModulePath)
 {
-	TEST(system((Omega::string_t(TESTPROCESS L" -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
+	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process",Omega::Activation::OutOfProcess);
@@ -286,7 +290,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 		pE->Release();
 	}
 
-	TEST(system((Omega::string_t(TESTPROCESS L" -u MODULE_PATH=") + pszModulePath).ToUTF8().c_str()) == 0);
+	TEST(system((Omega::string_t(pszModulePath) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Check its gone
 	try
@@ -308,10 +312,14 @@ bool interface_tests()
 	do_local_library_test(L"TestLibrary_msvc");
 	do_local_library_test(L"TestLibrary_mingw");
 #else
-	do_local_library_test(L"TestLibrary");
+	do_local_library_test(L"./libTestLibrary.so");
 #endif
 
+#if defined(OMEGA_WIN32)
 	do_local_process_test(L"TestProcess");
+#else
+    do_local_process_test(L"./testprocess");
+#endif
 
 	return true;
 }
@@ -329,7 +337,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 
 static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndpoint)
 {
-	system((Omega::string_t(TESTPROCESS L" -i MODULE_PATH=") + pszModulePath).ToUTF8().c_str());
+	system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
 	do_interface_tests(ptrSimpleTest);

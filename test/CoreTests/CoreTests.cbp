@@ -8,8 +8,8 @@
 		<Build>
 			<Target title="Debug Win32">
 				<Option platforms="Windows;" />
-				<Option output="..\..\bin\Debug\CoreTests_mingw" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\bin\Debug" />
+				<Option output="../../bin/Debug/CoreTests_mingw" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -19,22 +19,22 @@
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-mthreads" />
-					<Add library="..\..\bin\debug\libOOCore.a" />
+					<Add library="../../bin/debug/libOOCore.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
 			<Target title="Release Win32">
 				<Option platforms="Windows;" />
-				<Option output="..\..\bin\CoreTests_mingw" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\bin" />
+				<Option output="../../bin/CoreTests_mingw" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -47,23 +47,23 @@
 					<Add option="-fno-rtti" />
 					<Add option="-mthreads" />
 					<Add option="-DNDEBUG" />
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
 					<Add option="-mthreads" />
-					<Add library="..\..\bin\libOOCore.a" />
+					<Add library="../../bin/libOOCore.a" />
 					<Add library="libws2_32" />
 					<Add library="libnetapi32" />
 				</Linker>
 			</Target>
 			<Target title="Debug Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="..\..\bin\Debug\coretests" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\bin\Debug" />
+				<Option output="../../bin/Debug/coretests" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin/Debug" />
 				<Option object_output="Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -71,22 +71,20 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
-					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
 					<Add library="OOCored" />
-					<Add library="TestLibrary" />
-					<Add directory="..\..\bin\Debug" />
+					<Add directory="../../bin/Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Unix">
 				<Option platforms="Unix;Mac;" />
-				<Option output="..\..\bin\coretests" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="..\..\bin" />
+				<Option output="../../bin/coretests" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../bin" />
 				<Option object_output="Release" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -96,17 +94,15 @@
 					<Add option="-O3" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
-					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DNDEBUG" />
-					<Add directory="..\..\include" />
+					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
 					<Add library="OOCore" />
-					<Add library="TestLibrary" />
-					<Add directory="..\..\bin" />
+					<Add directory="../../bin" />
 				</Linker>
 			</Target>
 		</Build>

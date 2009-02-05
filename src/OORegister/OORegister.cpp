@@ -32,7 +32,7 @@
 #pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
 #endif
 #if (_MSC_VER >= 1400)
-#pragma warning(disable : 4996) // 'function' was declared deprecated 
+#pragma warning(disable : 4996) // 'function' was declared deprecated
 #endif
 #endif
 
@@ -73,20 +73,20 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 	if (dll.open(lib_path,ACE_DEFAULT_SHLIB_MODE,false)!=0)
 	{
 		if (bSilent)
-			return -1;
+			return EXIT_FAILURE;
 		else
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),-1);
-	}	
-	
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),EXIT_FAILURE);
+	}
+
 	pfnInstallLib pfnInstall = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_InstallLibrary_Safe"));
-	
+
 	pfnInstallLib pfnRegister = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
 	if (pfnRegister == 0)
 	{
 		if (bSilent)
-			return -1;
+			return EXIT_FAILURE;
 		else
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'Omega_RegisterLibrary_Safe' function.\n\n"),lib_path),-1);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'Omega_RegisterLibrary_Safe' function.\n\n"),lib_path),EXIT_FAILURE);
 	}
 
 	try
@@ -97,7 +97,7 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 		// Call install if found
 		if (pfnInstall)
 			call_fn(pfnInstall,bInstall,strSubsts);
-		
+
 		// Call register
 		call_fn(pfnRegister,bInstall,strSubsts);
 	}
@@ -107,14 +107,14 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->Description().c_str()));
 
 		pE->Release();
-		return -1;
+		return EXIT_FAILURE;
 	}
 	catch (...)
 	{
 		if (bSilent)
-			return -1;
+			return EXIT_FAILURE;
 		else
-			ACE_ERROR_RETURN((LM_ERROR,"Function failed with an unknown C++ exception.\n\n"),-1);
+			ACE_ERROR_RETURN((LM_ERROR,"Function failed with an unknown C++ exception.\n\n"),EXIT_FAILURE);
 	}
 
 	if (!bSilent)
@@ -125,7 +125,7 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 			ACE_OS::fprintf(stdout,ACE_TEXT("Unregistration of '%s' successful.\n\n"),lib_path);
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
@@ -152,20 +152,20 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 		case ACE_TEXT(':'):
 			if (bSilent)
-				return -1;
+				return EXIT_FAILURE;
 			else
 			{
 				print_help();
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n\n"),cmd_opts.opt_opt()),-1);
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n\n"),cmd_opts.opt_opt()),EXIT_FAILURE);
 			}
 
 		default:
 			if (bSilent)
-				return -1;
+				return EXIT_FAILURE;
 			else
 			{
 				print_help();
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument -%c.\n\n"),cmd_opts.opt_opt()),-1);
+				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument -%c.\n\n"),cmd_opts.opt_opt()),EXIT_FAILURE);
 			}
 		}
 	}
@@ -173,22 +173,22 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (cmd_opts.opt_ind()==1)
 	{
 		if (bSilent)
-			return -1;
+			return EXIT_FAILURE;
 		else
 		{
 			print_help();
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument.\n\n")),-1);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument.\n\n")),EXIT_FAILURE);
 		}
 	}
 
 	if (cmd_opts.opt_ind()!=(argc-1))
 	{
 		if (bSilent)
-			return -1;
+			return EXIT_FAILURE;
 		else
 		{
 			print_help();
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid number of parameters.\n\n")),-1);
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid number of parameters.\n\n")),EXIT_FAILURE);
 		}
 	}
 
@@ -202,7 +202,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->Description().c_str()));
 
 		pE->Release();
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	int res = do_install(bInstall,bSilent,argv[argc-1]);

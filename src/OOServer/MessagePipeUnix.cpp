@@ -56,6 +56,7 @@ int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mu
 
 void Root::MessagePipe::close()
 {
+    m_stream.close_reader();
 	m_stream.close_writer();
 	m_stream.close();
 }

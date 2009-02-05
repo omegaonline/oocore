@@ -112,7 +112,9 @@ int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const ACE_CStri
 
 void OOCore::UserSession::MessagePipe::close()
 {
-	m_stream.close_writer();
+    m_stream.close_writer();
+	m_stream.close_reader();
+	m_stream.close_reader();
 	m_stream.close();
 }
 
@@ -224,7 +226,7 @@ IException* OOCore::UserSession::bootstrap()
 						
 		// Create a new object manager for the user channel on the zero apartment
 		ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000);
-		 
+
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
 		ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
@@ -249,13 +251,11 @@ bool OOCore::UserSession::launch_server()
 	ACE_NT_Service service(ACE_TEXT("OOServer"));
 	ACE_Time_Value wait(30);
 	return (service.start_svc(&wait) == 0);
-
 #else
-
-    // No point trying to start ooserverd, because we don't want it setuid(0)
-    // and it can't run if its not!
-    return false;
-
+	// No point trying to start ooserverd, because we don't want it setuid(0)
+	// and it can't run if its not!
+	ACE_OS::fprintf(stderr,"The OOServer daemon is not running or has halted.\n");
+	return false;
 #endif
 }
 
@@ -292,16 +292,16 @@ bool OOCore::UserSession::discover_server_port(ACE_CString& strPipe)
 			return false;
 	}
 
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
+#if defined(ACE_HAS_WIN32_NAMED_PIPES) || \
+	(!defined(HAVE_GETPEEREID) && !defined(SO_PEERCRED) && !defined(HAVE_GETPEERUCRED) && \
+	(defined(HAVE_STRUCT_CMSGCRED) || defined(HAVE_STRUCT_FCRED) || (defined(HAVE_STRUCT_SOCKCRED) && defined(LOCAL_CREDS))))
+	
 	// Send nothing, but we must send...
-	HANDLE uid = 0;
-#else
-	// Send our uid
-	uid_t uid = ACE_OS::getuid();
-#endif
-	if (peer.send(&uid,sizeof(uid)) != static_cast<ssize_t>(sizeof(uid)))
+	char c = 0;
+	if (peer.send(&c,1) != 1)
 		return false;
 
+#endif
 	// Read the string length
 	size_t uLen = 0;
 	if (peer.recv(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)))
@@ -335,10 +335,10 @@ void OOCore::UserSession::term()
 
 void OOCore::UserSession::term_i()
 {
-	// Unregister InterProcessService
+    // Unregister InterProcessService
 	if (m_nIPSCookie)
 	{
-		Activation::RevokeObject(m_nIPSCookie);
+	    Activation::RevokeObject(m_nIPSCookie);
 		m_nIPSCookie = 0;
 	}
 
@@ -349,7 +349,8 @@ void OOCore::UserSession::term_i()
 	if (m_thrd_grp_id != -1)
 		ACE_Thread_Manager::instance()->wait_grp(m_thrd_grp_id);
 
-	// Tell all worker threads that we are done with them...
+
+    // Tell all worker threads that we are done with them...
 	for (std::map<ACE_CDR::UShort,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 	{
 		i->second->m_thread_id = 0;
@@ -459,7 +460,7 @@ int OOCore::UserSession::run_read_loop()
 
 		ACE_InputCDR* pI = 0;
 		ACE_NEW_NORETURN(pI,ACE_InputCDR(mb));
-		
+
 		// Done with mb now
 		mb->release();
 
@@ -946,7 +947,7 @@ bool OOCore::UserSession::send_request(ACE_CDR::UShort apartment_id, ACE_CDR::UL
 bool OOCore::UserSession::send_response(ACE_CDR::UShort apartment_id, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance();
-	
+
 	// Write the header info
 	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
 	if (!build_header(seq_no,m_channel_id | apartment_id,pContext->m_thread_id,dest_channel_id,dest_thread_id,header,mb,deadline,Message::Response,attribs))
@@ -975,7 +976,7 @@ namespace OOCore
 
 bool OOCore::ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 {
-#if ACE_MAJOR_VERSION < 5 || (ACE_MAJOR_VERSION == 5 && (ACE_MINOR_VERSION < 5 || (ACE_MINOR_VERSION == 5 && ACE_BETA_VERSION == 0)))
+#if OMEGA_ACE_VERSION_CURRENT() < OMEGA_ACE_VERSION(5,5,1)
 
 	ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
 

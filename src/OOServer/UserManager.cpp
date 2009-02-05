@@ -30,7 +30,7 @@
 #include <vld.h>
 #endif
 
-namespace OTL 
+namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
 	// We don't use the macro as we overide some behaviours
@@ -44,11 +44,11 @@ namespace OTL
 
 			void Term()
 				{ fini(); }
-		
+
 		private:
-			ModuleBase::CreatorEntry* getCreatorEntries() 
-			{ 
-				static ModuleBase::CreatorEntry CreatorEntries[] = 
+			ModuleBase::CreatorEntry* getCreatorEntries()
+			{
+				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory,0)
 					OBJECT_MAP_ENTRY(User::TcpProtocolHandler,0)
@@ -59,18 +59,18 @@ namespace OTL
 			}
 		};
 	}
-	ProcessModuleImpl& UserGetModule() 
-	{ 
+	ProcessModuleImpl& UserGetModule()
+	{
 		static ProcessModuleImpl i;
 		return i;
 	}
 
-	OMEGA_PRIVATE ProcessModuleImpl* GetModule() 
-	{ 
+	OMEGA_PRIVATE ProcessModuleImpl* GetModule()
+	{
 		return &(UserGetModule());
 	}
-	
-	OMEGA_PRIVATE ModuleBase* GetModuleBase() 
+
+	OMEGA_PRIVATE ModuleBase* GetModuleBase()
 		{ return GetModule(); }
 }
 
@@ -99,12 +99,13 @@ int User::Manager::run(const ACE_CString& strPipe)
 int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
 {
 	int ret = start();
-	if (ret != -1)
+	if (ret != EXIT_FAILURE)
 	{
 		if (init(strPipe))
 		{
 			// Wait for stop
-			ret = ACE_Reactor::instance()->run_reactor_event_loop();
+			if (ACE_Reactor::instance()->run_reactor_event_loop() != 0)
+                ret = EXIT_FAILURE;
 
 			// Stop the services
 			stop_services();
@@ -180,7 +181,7 @@ bool User::Manager::init(const ACE_CString& strPipe)
 	// Set the sandbox flag
 	m_bIsSandbox = (sandbox_channel == 0);
 
-	// Invent a new pipe name..
+	// Invent a new pipe name...
 	ACE_CString strNewPipe = Root::MessagePipe::unique_name("oou");
 	if (strNewPipe.empty())
 	{
@@ -293,7 +294,7 @@ void User::Manager::service_start(void* pParam, ACE_InputCDR&)
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
 
 		pE->Release();
-	}	
+	}
 	catch (...)
 	{
 	}
@@ -477,7 +478,7 @@ void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong s
 	case Root::HttpRecv:
 		recv_http(request);
 		break;
-		
+
 	case 0:
 	default:
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Bad request op_code: %u\n"),op_code));
@@ -517,8 +518,8 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 				return;
 			}
 			timeout = (deadline - now).msec();
-		}		
-		
+		}
+
 		// Make the call
 		ObjectPtr<Remoting::IMessage> ptrResult;
 		ptrResult.Attach(ptrOM->Invoke(ptrRequest,timeout));

@@ -64,7 +64,6 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-fno-rtti" />
-					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DOMEGA_DEBUG" />
@@ -87,7 +86,6 @@
 					<Add option="-O3" />
 					<Add option="-Wall" />
 					<Add option="-fno-rtti" />
-					<Add option="-Wno-non-virtual-dtor" />
 					<Add option="-pthread" />
 					<Add option="-fvisibility=hidden" />
 					<Add option="-DNDEBUG" />

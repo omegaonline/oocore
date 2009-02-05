@@ -34,6 +34,12 @@
 #ifndef OOSERVER_MSG_PIPE_H_INCLUDED_
 #define OOSERVER_MSG_PIPE_H_INCLUDED_
 
+#if defined(OMEGA_WIN32)
+	typedef HANDLE user_id_type;
+#else
+	typedef uid_t user_id_type;
+#endif
+
 namespace Root
 {
 	class MessagePipe
@@ -45,6 +51,7 @@ namespace Root
 
 		static ACE_CString unique_name(const ACE_CString& strPrefix);
 		static int connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
+		static ACE_CString unique_name(const ACE_CString& strPrefix, user_id_type uid);
 		void close();
 
 		ACE_HANDLE get_read_handle() const;

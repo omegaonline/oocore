@@ -34,29 +34,87 @@
 #include "./OOServer_Root.h"
 #include "./MessageConnection.h"
 
+#if defined(OMEGA_WIN32)
+#include <sddl.h>
+#endif
+
 ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 {
-	ACE_Time_Value t = ACE_OS::gettimeofday();
-
-	char szBuf[64];
-	ACE_OS::snprintf(szBuf,63,"%lx%llx",ACE_OS::getpid(),t.usec());
-
 #if defined(OMEGA_WIN32)
-    // ACE Adds the "\\.\"...
-	return strPrefix + szBuf;
+	ACE_CString strRet;
+	HANDLE hProcessToken;
+	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+		strRet = strPrefix + "-XXXX";
+	else
+	{
+		strRet = unique_name(strPrefix,hProcessToken);
+		CloseHandle(hProcessToken);
+	}
+	return strRet;
+#else
+	return unique_name(strPrefix,ACE_OS::geteuid());
+#endif
+}
+
+ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix, user_id_type uid)
+{
+#if defined(OMEGA_WIN32)
+
+	ACE_CString strSid = "XXXX";
+
+	DWORD dwLen = 0;
+	GetTokenInformation(uid,TokenUser,NULL,0,&dwLen);
+	if (dwLen != 0)
+	{
+		TOKEN_USER* pSIDProcess = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
+		if (pSIDProcess)
+		{
+			if (GetTokenInformation(uid,TokenUser,pSIDProcess,dwLen,&dwLen))
+			{
+				LPSTR pszSid = 0;
+				if (ConvertSidToStringSidA(pSIDProcess->User.Sid,&pszSid))
+				{
+					strSid = pszSid;
+					LocalFree(pszSid);
+				}
+			}
+
+			ACE_OS::free(pSIDProcess);
+		}
+	}
+
+#if defined(OMEGA_DEBUG)
+	char szBuf[64];
+	ACE_OS::snprintf(szBuf,63,"-%lx",uid,ACE_OS::getpid());
+	strSid += szBuf;
+#endif
+
+	// ACE Adds the "\\.\"...
+	return strPrefix + strSid;
+
 #else
 
-    if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+	char szBuf[64];
+#if defined(OMEGA_DEBUG)
+	ACE_OS::snprintf(szBuf,63,"%lx-%lx",uid,ACE_OS::getpid());
+#else
+	ACE_OS::snprintf(szBuf,63,"%lx",uid);
+#endif
+
+	if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
 	{
 		int err = ACE_OS::last_error();
 		if (err != EEXIST)
 			return "";
 	}
 
-    // Try to make it public
+	// Try to make it public
 	chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
 
-    return "/tmp/omegaonline/" + strPrefix + szBuf;
+	// Attempt to remove anything already there
+	unlink("/tmp/omegaonline/" + strPrefix + szBuf);
+
+	return "/tmp/omegaonline/" + strPrefix + szBuf;
 #endif
 }
 
@@ -280,7 +338,7 @@ int Root::MessageHandler::start()
 	// Spawn off the request threads
 	m_req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
 	if (m_req_thrd_grp_id == -1)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")),-1);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")),EXIT_FAILURE);
 	else
 	{
 		// Spawn off the proactor threads
@@ -292,7 +350,7 @@ int Root::MessageHandler::start()
 			// Stop the MessageHandler
 			stop();
 
-			return -1;
+			return EXIT_FAILURE;
 		}
 		else
 		{
@@ -301,7 +359,7 @@ int Root::MessageHandler::start()
 		}
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 ACE_THR_FUNC_RETURN Root::MessageHandler::proactor_worker_fn(void* pParam)
@@ -1332,7 +1390,7 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 
 static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
 {
-#if ACE_MAJOR_VERSION < 5 || (ACE_MAJOR_VERSION == 5 && (ACE_MINOR_VERSION < 5 || (ACE_MINOR_VERSION == 5 && ACE_BETA_VERSION == 0)))
+#if OMEGA_ACE_VERSION_CURRENT() < OMEGA_ACE_VERSION(5,5,1)
 
 	ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
 

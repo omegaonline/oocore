@@ -50,13 +50,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OOSvrUser", "..\src\OOServe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "msvc_conf", "msvc_conf\msvc_conf_vc9.vcproj", "{42019A26-6AE8-432C-8ED8-922704B9BFF5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3C92B3AE-56D2-436F-9DDE-3E446A7648EF}"
-	ProjectSection(SolutionItems) = preProject
-		..\src\Common\config-build.h = ..\src\Common\config-build.h
-		..\src\Common\config-vstudio.h = ..\src\Common\config-vstudio.h
-		msvc_conf.xml = msvc_conf.xml
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

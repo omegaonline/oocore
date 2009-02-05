@@ -40,7 +40,7 @@ static int Version()
 	ACE_OS::printf("SQLite version: %s\n",SQLITE_VERSION);
 
 	ACE_OS::printf("\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static int Help()
@@ -48,7 +48,7 @@ static int Help()
 	ACE_OS::printf("OOSvrUser - The Omega Online user gateway.\n\n");
 	ACE_OS::printf("This program can not be run directly by the user.\n\n");
 	ACE_OS::printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
@@ -56,8 +56,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	// Check command line options
 	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":vh"),1);
 	if (cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),-1);
-	
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),EXIT_FAILURE);
+
 	int option;
 	while ((option = cmd_opts()) != EOF)
 	{
@@ -102,16 +102,16 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #endif
 
 	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),options,ACE_TEXT("OOServer")) != 0)
-        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
+        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),EXIT_FAILURE);
 
 #else // OMEGA_WIN32
 
     if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG) != 0)
-        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),-1);
+        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),EXIT_FAILURE);
 
 #endif
 
-#if defined(OMEGA_DEBUG)
+#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
 	Version();
 #endif
 

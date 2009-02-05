@@ -533,7 +533,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 {
 	Omega::guid_t guid;
 
-#if defined(OMEGA_WIN32) && !defined(__MINGW32__)
+#if defined(OMEGA_WIN32) //&& !defined(__MINGW32__)
+
 
 	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
 	UuidCreate(&uuid);
@@ -553,12 +554,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	ACE_Utils::UUID uuid;
 
 // They went and changed this in ACE!
-#if (ACE_MAJOR_VERSION < 5) || (ACE_MAJOR_VERSION == 5 && (ACE_MINOR_VERSION < 6 || (ACE_MINOR_VERSION == 6 && (ACE_BETA_VERSION < 2))))
+#if OMEGA_ACE_VERSION_CURRENT() < OMEGA_ACE_VERSION(5,6,2)
 	ACE_Utils::UUID_GENERATOR::instance()->generateUUID(uuid);
-#else
-	ACE_Utils::UUID_GENERATOR::instance()->generate_UUID(uuid);
-#endif
-
+
 	guid.Data1 = uuid.timeLow();
 	guid.Data2 = uuid.timeMid();
 	guid.Data3 = uuid.timeHiAndVersion();
@@ -570,6 +568,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	guid.Data4[5] = (uuid.node()->nodeID())[3];
 	guid.Data4[6] = (uuid.node()->nodeID())[4];
 	guid.Data4[7] = (uuid.node()->nodeID())[5];
+#else
+	ACE_Utils::UUID_GENERATOR::instance()->generate_UUID(uuid);
+
+	guid.Data1 = uuid.time_low();
+	guid.Data2 = uuid.time_mid();
+	guid.Data3 = uuid.time_hi_and_version();
+	guid.Data4[0] = uuid.clock_seq_hi_and_reserved();
+	guid.Data4[1] = uuid.clock_seq_low();
+	guid.Data4[2] = (uuid.node()->node_ID())[0];
+	guid.Data4[3] = (uuid.node()->node_ID())[1];
+	guid.Data4[4] = (uuid.node()->node_ID())[2];
+	guid.Data4[5] = (uuid.node()->node_ID())[3];
+	guid.Data4[6] = (uuid.node()->node_ID())[4];
+	guid.Data4[7] = (uuid.node()->node_ID())[5];
+#endif
 
 	// MD5 hash the result... it hides the MAC address
 	MD5Context ctx;

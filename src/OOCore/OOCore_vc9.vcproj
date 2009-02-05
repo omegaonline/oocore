@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;OMEGA_HAVE_VLD;OOCORE_BUILD_DLL"
+				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -129,7 +129,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="NDEBUG;OOCORE_BUILD_DLL;ACE_AS_STATIC_LIBS"
+				PreprocessorDefinitions="NDEBUG;ACE_AS_STATIC_LIBS"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
@@ -341,11 +341,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Version.h"
+				RelativePath="..\..\include\OOCore\Version.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Version.h"
+				RelativePath="..\Common\Version.h"
 				>
 			</File>
 			<File

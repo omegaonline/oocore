@@ -299,7 +299,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 		CloseHandle((HANDLE)uid);
 		ACE_OS::exit(EXIT_FAILURE);
 	}
-	
+
 	if (!bRes)
 	{
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: OpenThreadToken failed: %#x\n"),GetLastError()));
@@ -310,7 +310,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 #elif defined(HAVE_GETPEEREID)
 	/* OpenBSD style:  */
 	gid_t gid;
-	if (getpeereid(sock, &uid, &gid) != 0)
+	if (getpeereid(pipe->get_read_handle(), &uid, &gid) != 0)
 	{
 		/* We didn't get a valid credentials struct. */
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
@@ -320,9 +320,9 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 	/* Linux style: use getsockopt(SO_PEERCRED) */
 	struct ucred peercred;
 	//socklen_t so_len = sizeof(peercred);
-	ACCEPT_TYPE_ARG3 so_len = sizeof(peercred);
-	
-	if (getsockopt(sock, SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
+	size_t so_len = sizeof(peercred);
+
+	if (getsockopt(pipe->get_read_handle(), SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
 	{
 		/* We didn't get a valid credentials struct. */
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
@@ -331,7 +331,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 #elif defined(HAVE_GETPEERUCRED)
 	/* Solaris > 10 */
 	ucred_t* ucred = NULL; /* must be initialized to NULL */
-	if (getpeerucred(sock, &ucred) == -1)
+	if (getpeerucred(pipe->get_read_handle(), &ucred) == -1)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
 
 	if ((uid = ucred_geteuid(ucred)) == -1)
@@ -348,7 +348,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 	* next packet.
 	*/
 	int on = 1;
-	if (setsockopt(pipe->get_handle(), 0, LOCAL_CREDS, &on, sizeof(on)) < 0)
+	if (setsockopt(pipe->get_read_handle(), 0, LOCAL_CREDS, &on, sizeof(on)) < 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not enable credential reception")),-1);
 
 	/* Credentials structure */
@@ -368,7 +368,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 	/* Point to start of first structure */
 	struct cmsghdr* cmsg = (struct cmsghdr*)cmsgmem;
 	struct iovec iov;
-	
+
 	msghdr msg;
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = &iov;
@@ -386,7 +386,7 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 	iov.iov_base = &buf;
 	iov.iov_len = 1;
 
-	if (recvmsg(sock, &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
+	if (recvmsg(pipe->get_read_handle(), &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
 
 	Cred* cred = (Cred*)CMSG_DATA(cmsg);
@@ -490,7 +490,7 @@ ACE_CDR::ULong Root::Manager::connect_user(MessagePipeAcceptor& acceptor, Spawne
 
 bool Root::Manager::unsafe_sandbox()
 {
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Null_Mutex> reg_root = get_registry();
+	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = get_registry();
 
 	// Get the user name and pwd...
 	ACE_INT64 key = 0;
@@ -531,7 +531,7 @@ ACE_CDR::ULong Root::Manager::spawn_user(user_id_type uid, ACE_CString& strPipe,
 	ACE_CString strNewPipe = MessagePipe::unique_name("oor",uid);
 	if (strNewPipe.empty())
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Failed to create unique domain socket name")));
-	else if (acceptor.open(strNewPipe,(HANDLE)uid) != 0)
+	else if (acceptor.open(strNewPipe,uid) != 0)
 		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")));
 	else
 	{

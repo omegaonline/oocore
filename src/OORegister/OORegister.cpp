@@ -104,7 +104,7 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 	catch (Omega::IException* pE)
 	{
 		if (!bSilent)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->Description().c_str()));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->GetDescription().c_str()));
 
 		pE->Release();
 		return EXIT_FAILURE;
@@ -199,7 +199,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 	if (pE)
 	{
 		if (!bSilent)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->Description().c_str()));
+			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->GetDescription().c_str()));
 
 		pE->Release();
 		return EXIT_FAILURE;

@@ -265,7 +265,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 	uid_t our_uid = ACE_OS::getuid();
 	if (our_uid != 0)
 	{
-		if (!unsafe_sandbox())
+		if (!Manager::unsafe_sandbox())
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a root.\n")),false);
 		else if (our_uid == uid)
 			bUnsafeStart = true;

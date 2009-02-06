@@ -112,7 +112,7 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix, user_id
 	chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
 
 	// Attempt to remove anything already there
-	unlink("/tmp/omegaonline/" + strPrefix + szBuf);
+	ACE_OS::unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
 
 	return "/tmp/omegaonline/" + strPrefix + szBuf;
 #endif

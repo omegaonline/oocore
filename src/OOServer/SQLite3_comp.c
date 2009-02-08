@@ -5,6 +5,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#if defined(HAVE_CONFIG_H)
+// Autoconf
+#include "config-autoconf.h"
+#endif
+
 #ifdef OMEGA_HAVE_SQLITE3_AMALGAMATION
 #include <sqlite3.c>
 #endif

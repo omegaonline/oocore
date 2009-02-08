@@ -11,7 +11,7 @@
   </Project>
   <Project Name="OOServer">
     <Include Name="ace/ACE.h" />
-    <Include Name="sqlite3.h" />
+    <Include Name="sqlite3.h" Define="OMEGA_HAVE_SQLITE3_AMALGAMATION" />
     <Configuration Name="Debug">
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="OMEGA_HAVE_VLD" />
@@ -21,7 +21,7 @@
   </Project>
   <Project Name="OOSvrUser">
     <Include Name="ace/ACE.h" />
-    <Include Name="sqlite3.h" />
+    <Include Name="sqlite3.h" Define="OMEGA_HAVE_SQLITE3_AMALGAMATION"/>
     <Configuration Name="Debug">
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="OMEGA_HAVE_VLD" />

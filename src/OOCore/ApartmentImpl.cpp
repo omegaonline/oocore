@@ -258,7 +258,8 @@ IException* OOCore::Apartment::apartment_message(ACE_CDR::UShort apt_id, TypeInf
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_apartment_om(apt_id);
 
 	// Update session state and timeout
-	ACE_CDR::UShort old_id = m_pSession->update_state(apt_id,&timeout);
+	ACE_CDR::UShort old_id = 0;
+	old_id = m_pSession->update_state(apt_id,&timeout);
 	
 	// Make the call
 	IException* pE = 0;

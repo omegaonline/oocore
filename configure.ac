@@ -6,15 +6,15 @@ AC_CONFIG_HEADER([src/Common/config.h])
 AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_FILES(
-	[Makefile]
-	[include/Makefile]
-	[include/OOCore/Makefile]
-	[include/OTL/Makefile]
-	[src/Makefile]
-	[src/OOCore/Makefile]
-	[src/OOServer/Makefile]
-)
+AC_CONFIG_FILES([
+	Makefile
+	include/Makefile
+	include/OOCore/Makefile
+	include/OTL/Makefile
+	src/Makefile
+	src/OOCore/Makefile
+	src/OOServer/Makefile
+])
 
 AM_INIT_AUTOMAKE([foreign 1.10])
 AM_MAINTAINER_MODE

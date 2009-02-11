@@ -73,7 +73,7 @@ LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
 # Find sqlite3
-AX_LIB_SQLITE3
+AX_LIB_SQLITE3([3.5.0])
 
 # Find ACE
 OO_LIB_ACE

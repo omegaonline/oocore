@@ -328,6 +328,8 @@ int Root::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Threa
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
 	}
 
+	uid = peercred.uid;
+
 #elif defined(HAVE_GETPEERUCRED)
 	/* Solaris > 10 */
 	ucred_t* ucred = NULL; /* must be initialized to NULL */
@@ -499,13 +501,7 @@ bool Root::Manager::unsafe_sandbox()
 
 	ACE_CDR::LongLong v = 0;
 	if (reg_root->get_integer_value(key,"Unsafe",0,v) != 0)
-	{
-#if defined(OMEGA_DEBUG)
-		return IsDebuggerPresent() ? true : false;
-#else
 		return false;
-#endif
-	}
 
 	return (v == 1);
 }

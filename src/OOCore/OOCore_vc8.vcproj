@@ -346,11 +346,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Version.h"
+				RelativePath="..\..\include\OOCore\Version.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Version.h"
+				RelativePath="..\Common\Version.h"
 				>
 			</File>
 			<File
@@ -376,7 +376,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\OOCore.rc"
+				RelativePath=".\OOCore_res.rc"
 				>
 			</File>
 		</Filter>

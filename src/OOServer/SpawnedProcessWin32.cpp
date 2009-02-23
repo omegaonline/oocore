@@ -43,6 +43,8 @@
 #include <aclapi.h>
 #include <shlwapi.h>
 
+void AttachDebugger(pid_t pid);
+
 #if defined(__MINGW32__)
 
 typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
@@ -928,7 +930,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && Manager::unsafe_sandbox())
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (Manager::unsafe_sandbox() || IsDebuggerPresent()))
 		{
 			HANDLE hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -966,7 +968,7 @@ bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe
 #else
 								ACE_OS::printf(L"%s",szBuf);
 #endif
-								ACE_OS::printf("\n\nYou chose to continue... on your head be it!\n\n");
+								ACE_OS::printf("\nYou chose to continue... on your head be it!\n\n");
 
 								CloseHandle(m_hToken);
 								DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);

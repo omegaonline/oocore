@@ -34,13 +34,13 @@
 #include "./OOServer_Root.h"
 #include "./MessageConnection.h"
 
-#if defined(OMEGA_WIN32)
+#if defined(ACE_WIN32)
 #include <sddl.h>
 #endif
 
 ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 {
-#if defined(OMEGA_WIN32)
+#if defined(ACE_WIN32)
 	ACE_CString strRet;
 	HANDLE hProcessToken;
 	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
@@ -58,7 +58,7 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
 
 ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix, user_id_type uid)
 {
-#if defined(OMEGA_WIN32)
+#if defined(ACE_WIN32)
 
 	ACE_CString strSid = "XXXX";
 
@@ -85,7 +85,8 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix, user_id
 
 #if defined(OMEGA_DEBUG)
 	char szBuf[64];
-	ACE_OS::snprintf(szBuf,63,"-%lx",uid,ACE_OS::getpid());
+	ACE_Time_Value now = ACE_OS::gettimeofday();
+	ACE_OS::snprintf(szBuf,63,"-%lx",now.usec());
 	strSid += szBuf;
 #endif
 
@@ -96,7 +97,8 @@ ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix, user_id
 
 	char szBuf[64];
 #if defined(OMEGA_DEBUG)
-	ACE_OS::snprintf(szBuf,63,"%lx-%lx",uid,ACE_OS::getpid());
+    ACE_Time_Value now = ACE_OS::gettimeofday();
+	ACE_OS::snprintf(szBuf,63,"%lx-%lx",uid,now.usec());
 #else
 	ACE_OS::snprintf(szBuf,63,"%lx",uid);
 #endif
@@ -123,11 +125,20 @@ Root::MessageConnection::MessageConnection(MessageHandler* pHandler)  :
 	m_chunk_size(256),
 	m_channel_id(0)
 {
+#if !defined(ACE_HAS_WIN32_NAMED_PIPES)
+	m_mb = 0;
+#endif
 }
 
 Root::MessageConnection::~MessageConnection()
 {
-	m_pipe->close();
+	if (!m_pipe.null())
+		m_pipe->close();
+
+#if !defined(ACE_HAS_WIN32_NAMED_PIPES)
+	if (m_mb)
+		m_mb->release();
+#endif
 }
 
 ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id, bool bStart)
@@ -137,12 +148,11 @@ ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<Messa
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (m_reader.open(*this,pipe->get_read_handle()) != 0 && GetLastError() != ERROR_MORE_DATA)
-#else
-	if (m_reader.open(*this,pipe->get_read_handle()) != 0)
-#endif
-	{
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("reader.open() failed")),0);
-	}
+#else
+	if (ACE_Reactor::instance()->register_handler(pipe->get_read_handle(),this,ACE_Event_Handler::READ_MASK) != 0)
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("register_handler() failed")),0);
+#endif
 
 	m_channel_id = m_pHandler->register_channel(pipe,channel_id);
 	if (m_channel_id == 0)
@@ -158,6 +168,7 @@ ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<Messa
 
 bool Root::MessageConnection::read(ACE_Message_Block* mb)
 {
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	bool bCreated = false;
 	if (!mb)
 	{
@@ -170,11 +181,7 @@ bool Root::MessageConnection::read(ACE_Message_Block* mb)
 	if (m_reader.read(*mb,mb->space()) != 0)
 	{
 		int err = ACE_OS::last_error();
-#if defined(OMEGA_WIN32)
 		if (err == ERROR_BROKEN_PIPE)
-#else
-		if (err == ENOTSOCK)
-#endif
 			err = 0;
 
 		if (err)
@@ -185,135 +192,171 @@ bool Root::MessageConnection::read(ACE_Message_Block* mb)
 
 		return false;
 	}
+#endif
 
 	return true;
 }
 
+bool Root::MessageConnection::process_read(ACE_Message_Block* mb)
+{
+	// Loop while we can still parse
+	bool bSuccess = false;
+	size_t read_more = 0;
+	for (;;)
+	{
+		// Try to work out if we need to read more...
+		if (mb->length() < ACE_CDR::LONG_SIZE * 2)
+		{
+			// We need to read more...
+			bSuccess = true;
+			read_more = m_chunk_size - (ACE_CDR::LONG_SIZE * 2);
+			break;
+		}
+
+		ACE_InputCDR input(mb);
+
+		// Read the payload specific data
+		ACE_CDR::Octet byte_order;
+		input.read_octet(byte_order);
+		ACE_CDR::Octet version;
+		input.read_octet(version);
+
+		// Set the read for the right endianess
+		input.reset_byte_order(byte_order);
+
+		// Read the length
+		ACE_CDR::ULong read_len = 0;
+		input >> read_len;
+		if (!input.good_bit())
+			ACE_ERROR_BREAK((LM_ERROR,ACE_TEXT("%N:%l: Corrupt header\n")));
+
+		// Update average chunk size
+		m_chunk_size = (m_chunk_size * 3 + read_len) / 4;
+
+		// Check whether we need more
+		if (mb->length() < read_len)
+		{
+			// We need to read more...
+			bSuccess = true;
+			read_more = ((size_t)read_len - mb->length());
+			break;
+		}
+
+		// Create a shallow copy of the block
+		ACE_Message_Block* mb_short = mb->duplicate();
+		mb_short->wr_ptr(mb_short->rd_ptr() + read_len);
+
+		// Try to parse
+		if (!m_pHandler->parse_message(input,mb_short))
+		{
+			mb_short->release();
+			break;
+		}
+		mb_short->release();
+
+		// Update the pointers
+		mb->rd_ptr(read_len);
+		if (mb->length() == 0)
+		{
+			bSuccess = true;
+			read_more = m_chunk_size;
+			//mb->reset();
+			ACE_CDR::mb_align(mb);
+			break;
+		}
+
+		// Create a new Message Block
+		size_t sz = mb->length();
+		if (sz < m_chunk_size)
+			sz = m_chunk_size;
+
+		ACE_Message_Block* mb_new = 0;
+		ACE_NEW_NORETURN(mb_new,ACE_Message_Block(sz + ACE_CDR::MAX_ALIGNMENT));
+		if (!mb_new)
+			break;
+
+		// Align and copy to rest of the message - this is the same as a clone, but maintains alignment
+		ACE_CDR::mb_align(mb_new);
+		mb_new->copy(mb->rd_ptr(),mb->length());
+		mb->release();
+		mb = mb_new;
+	}
+
+	if (bSuccess)
+	{
+		if (mb->space() < read_more)
+			mb->size(mb->size() + read_more);
+	}
+
+	return bSuccess;
+}
+
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 void Root::MessageConnection::handle_read_file(const ACE_Asynch_Read_File::Result& result)
-#else
-void Root::MessageConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Result& result)
-#endif
 {
 	ACE_Message_Block* mb = &result.message_block();
 
 	bool bSuccess = false;
 
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (result.success() || result.error() == ERROR_MORE_DATA)
-#else
-	if (result.success())
-#endif
 	{
-		// Loop while we can still parse
-		size_t read_more = 0;
-		for (;;)
-		{
-			// Try to work out if we need to read more...
-			if (mb->length() < ACE_CDR::LONG_SIZE * 2)
-			{
-				// We need to read more...
-				bSuccess = true;
-				read_more = m_chunk_size - (ACE_CDR::LONG_SIZE * 2);
-				break;
-			}
-
-			ACE_InputCDR input(mb);
-
-			// Read the payload specific data
-			ACE_CDR::Octet byte_order;
-			input.read_octet(byte_order);
-			ACE_CDR::Octet version;
-			input.read_octet(version);
-
-			// Set the read for the right endianess
-			input.reset_byte_order(byte_order);
-
-			// Read the length
-			ACE_CDR::ULong read_len = 0;
-			input >> read_len;
-			if (!input.good_bit())
-				ACE_ERROR_BREAK((LM_ERROR,ACE_TEXT("%N:%l: Corrupt header\n")));
-
-			// Update average chunk size
-			m_chunk_size = (m_chunk_size * 3 + read_len) / 4;
-
-			// Check whether we need more
-			if (mb->length() < read_len)
-			{
-				// We need to read more...
-				bSuccess = true;
-				read_more = ((size_t)read_len - mb->length());
-				break;
-			}
-
-			// Create a shallow copy of the block
-			ACE_Message_Block* mb_short = mb->duplicate();
-			mb_short->wr_ptr(mb_short->rd_ptr() + read_len);
-
-			// Try to parse
-			if (!m_pHandler->parse_message(input,mb_short))
-			{
-				mb_short->release();
-				break;
-			}
-			mb_short->release();
-
-			// Update the pointers
-			mb->rd_ptr(read_len);
-			if (mb->length() == 0)
-			{
-				bSuccess = true;
-				read_more = m_chunk_size;
-				ACE_CDR::mb_align(mb);
-				break;
-			}
-
-			// Create a new Message Block
-			size_t sz = mb->length();
-			if (sz < m_chunk_size)
-				sz = m_chunk_size;
-
-			ACE_Message_Block* mb_new = 0;
-			ACE_NEW_NORETURN(mb_new,ACE_Message_Block(sz + ACE_CDR::MAX_ALIGNMENT));
-			if (!mb_new)
-				break;
-
-			// Align and copy to rest of the message - this is the same as a clone, but maintains alignment
-			ACE_CDR::mb_align(mb_new);
-			mb_new->copy(mb->rd_ptr(),mb->length());
-			mb->release();
-			mb = mb_new;
-		}
-
+		bSuccess = process_read(mb);
 		if (bSuccess)
-		{
-			if (mb->space() < read_more)
-				mb->size(mb->size() + read_more);
-
 			bSuccess = read(mb);
-		}
 	}
 
 	if (!bSuccess)
 	{
 		int err = result.error();
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		if (err != 0 && err != ERROR_BROKEN_PIPE)
-#else
-		if (err != 0 && err != ENOTSOCK)
-#endif
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: handle_read_*() failed %C"),ACE_OS::strerror(err)));
-		}
+		if (err == ERROR_BROKEN_PIPE)
+			err = 0;
 
-		m_pHandler->channel_closed(m_channel_id,0);
-		m_pipe->close();
+		if (err != 0)
+			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: handle_read_*() failed %C"),ACE_OS::strerror(err)));
+
+        m_pHandler->channel_closed(m_channel_id,0);
 		delete this;
 
 		mb->release();
 	}
 }
+
+#else
+
+int Root::MessageConnection::handle_input(ACE_HANDLE)
+{
+	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,0);
+
+	if (!m_mb)
+	{
+		ACE_NEW_RETURN(m_mb,ACE_Message_Block(m_chunk_size),false);
+		ACE_CDR::mb_align(m_mb);
+	}
+
+	ssize_t r = m_pipe->recv(m_mb->wr_ptr(),m_mb->size());
+	if (r < 0)
+		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: recv() failed %p")));
+
+	bool bSuccess = false;
+	if (r > 0)
+	{
+		m_mb->wr_ptr(r);
+
+		bSuccess = process_read(m_mb);
+	}
+
+	return (bSuccess ? 0 : -1);
+}
+
+int Root::MessageConnection::handle_close(ACE_HANDLE, ACE_Reactor_Mask)
+{
+	m_pHandler->channel_closed(m_channel_id,0);
+	delete this;
+
+	return 0;
+}
+
+#endif
 
 Root::MessageHandler::MessageHandler() :
 	m_req_thrd_grp_id(-1),
@@ -330,6 +373,30 @@ Root::MessageHandler::MessageHandler() :
 
 int Root::MessageHandler::start()
 {
+	// Make sure we use the correct ACE Reactor - this logic is lifted from Reactor.cpp
+#if !defined (ACE_WIN32) || !defined (ACE_HAS_WINSOCK2) || (ACE_HAS_WINSOCK2 == 0)
+
+	ACE_Reactor_Impl* impl = 0;
+
+	#if defined(ACE_HAS_EVENT_POLL) || defined(ACE_HAS_DEV_POLL)
+		ACE_NEW_NORETURN(impl,ACE_Dev_Poll_Reactor);
+	#else
+		ACE_NEW_NORETURN(impl,ACE_TP_Reactor);
+	#endif /* defined(ACE_HAS_EVENT_POLL) || defined(ACE_HAS_DEV_POLL) */
+
+	if (impl)
+	{
+		ACE_Reactor* r = 0;
+		ACE_NEW_NORETURN(r,ACE_Reactor(impl,true));
+
+		if (r)
+			ACE_Reactor::instance(r,true);
+		else
+			delete impl;
+	}
+
+#endif /* !defined (ACE_WIN32) || !defined (ACE_HAS_WINSOCK2) || (ACE_HAS_WINSOCK2 == 0) */
+
 	// Determine default threads from processor count
 	int threads = ACE_OS::num_processors();
 	if (threads < 1)
@@ -366,7 +433,12 @@ ACE_THR_FUNC_RETURN Root::MessageHandler::proactor_worker_fn(void* pParam)
 {
     ThreadContext::instance(static_cast<MessageHandler*>(pParam))->m_bPrivate = true;
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	ACE_Proactor::instance()->proactor_run_event_loop();
+#else
+	ACE_Reactor::instance()->run_reactor_event_loop();
+#endif
+
 	return 0;
 }
 
@@ -873,8 +945,10 @@ void Root::MessageHandler::close()
 		ACE_OS::sleep(wait);
 	}
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	// Stop the proactor
 	ACE_Proactor::instance()->proactor_end_event_loop();
+#endif
 
 	// Wait for all the proactor threads to finish
 	ACE_Thread_Manager::instance()->wait_grp(m_pro_thrd_grp_id);

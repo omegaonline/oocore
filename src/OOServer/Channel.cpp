@@ -107,7 +107,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	{
 		if (m_ptrOM)
 			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
-	
+
 		OMEGA_THROW(ACE_OS::last_error());
 	}
 

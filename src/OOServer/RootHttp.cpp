@@ -50,6 +50,17 @@ void Root::HttpConnection::release()
 		delete this;
 }
 
+#if defined(ACE_WIN32)
+
+void Root::HttpConnection::addresses(const ACE_INET_Addr& remote_address, const ACE_INET_Addr&)
+{
+	// Get the addresses
+	ACE_TCHAR szBuf[1024];
+	remote_address.addr_to_string(szBuf,1024,0);
+	szBuf[1023] = '\0';
+	m_strRemoteAddr = ACE_TEXT_ALWAYS_CHAR(szBuf);
+}
+
 void Root::HttpConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 {
 	m_stream = ACE_SOCK_Stream(new_handle);
@@ -67,15 +78,6 @@ void Root::HttpConnection::open(ACE_HANDLE new_handle, ACE_Message_Block&)
 		release();
 	else if (!read())
 		m_pAcceptor->close_connection(m_conn_id);
-}
-
-void Root::HttpConnection::addresses(const ACE_INET_Addr& remote_address, const ACE_INET_Addr&)
-{
-	// Get the addresses
-	ACE_TCHAR szBuf[1024];
-	remote_address.addr_to_string(szBuf,1024,0);
-	szBuf[1023] = '\0';
-	m_strRemoteAddr = ACE_TEXT_ALWAYS_CHAR(szBuf);
 }
 
 void Root::HttpConnection::close()
@@ -131,6 +133,58 @@ void Root::HttpConnection::handle_read_stream(const ACE_Asynch_Read_Stream::Resu
 	release();
 }
 
+#else
+
+int Root::HttpConnection::open(void*)
+{
+	++m_refcount;
+	m_conn_id = m_pAcceptor->add_connection(this);
+	if (!m_conn_id)
+	{
+		release();
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+int Root::HttpConnection::handle_input(ACE_HANDLE)
+{
+	unsigned char szBuf[4196];
+	ssize_t r = peer().recv(szBuf,sizeof(szBuf));
+	if (r < 0)
+		send_error(ACE_OS::last_error());
+
+	bool bSuccess = false;
+	if (r > 0)
+	{
+		ACE_OutputCDR request;
+		request << static_cast<Root::RootOpCode_t>(Root::HttpRecv);
+		request.write_ushort(static_cast<ACE_CDR::UShort>(m_conn_id));
+		request << (int)0;
+		request.write_ulong(m_seq_no++);
+
+		request.write_octet_array(szBuf,r);
+
+		if (!request.good_bit() || !m_pAcceptor->sendrecv_sandbox(request))
+			m_pAcceptor->close_connection(m_conn_id);
+		else
+			bSuccess = true;
+	}
+
+	return (bSuccess ? 0 : -1);
+}
+
+int Root::HttpConnection::handle_close(ACE_HANDLE, ACE_Reactor_Mask)
+{
+	release();
+	return 0;
+}
+
+#endif
+
 void Root::HttpConnection::send_error(int err)
 {
 	if (err == 0)
@@ -149,11 +203,19 @@ void Root::HttpConnection::send_error(int err)
 
 void Root::HttpConnection::send(const ACE_Message_Block* mb)
 {
+#if defined(ACE_WIN32)
 	m_stream.send_n(mb);
+#else
+	peer().send_n(mb);
+#endif
 }
 
 Root::HttpAcceptor::HttpAcceptor() :
+#if defined(ACE_WIN32)
 	ACE_Asynch_Acceptor<HttpConnection>(),
+#else
+	ACE_Acceptor<HttpConnection,ACE_SOCK_ACCEPTOR>(),
+#endif
 	m_pManager(0),
 	m_nNextConnection(0)
 {
@@ -179,20 +241,28 @@ bool Root::HttpAcceptor::open(Manager* pManager)
 	m_pManager = pManager;
 
 	// Open the async connector
+#if defined(ACE_WIN32)
 	if (ACE_Asynch_Acceptor<HttpConnection>::open(addr,0,1) != 0)
+#else
+	if (ACE_Acceptor<HttpConnection,ACE_SOCK_ACCEPTOR>::open(addr) != 0)
+#endif
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("failed to open socket")),false);
 
 	return true;
 }
 
-void Root::HttpAcceptor::close()
+int Root::HttpAcceptor::close()
 {
 	// Stop accepting anything more
+#if defined(ACE_WIN32)
 	cancel();
+#else
+	close();
+#endif
 
 	try
 	{
-		ACE_GUARD(ACE_Thread_Mutex,guard,m_lock);
+		ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,-1);
 
 		for (std::map<ACE_CDR::UShort,HttpConnection*>::iterator i=m_mapConnections.begin();i!=m_mapConnections.end();++i)
 		{
@@ -200,7 +270,7 @@ void Root::HttpAcceptor::close()
 		}
 
 		guard.release();
-		
+
 		// Spin till everyone is gone
 		ACE_Time_Value wait(0,100);
 		for (;;)
@@ -218,14 +288,26 @@ void Root::HttpAcceptor::close()
 	catch (std::exception&)
 	{
 	}
+
+	return 0;
 }
 
+#if defined(ACE_WIN32)
 Root::HttpConnection* Root::HttpAcceptor::make_handler()
 {
 	HttpConnection* handler = 0;
 	ACE_NEW_RETURN(handler,HttpConnection(this),0);
 	return handler;
 }
+#else
+int Root::HttpAcceptor::make_svc_handler(Root::HttpConnection*& handler)
+{
+	if (!handler)
+		ACE_NEW_RETURN(handler,HttpConnection(this),-1);
+
+	return 0;
+}
+#endif
 
 ACE_CDR::UShort Root::HttpAcceptor::add_connection(HttpConnection* pHC)
 {

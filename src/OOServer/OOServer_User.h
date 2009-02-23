@@ -47,22 +47,28 @@
 #endif
 #endif
 
-#include <ace/Asynch_Connector.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Connector.h>
 #include <ace/Countdown_Time.h>
+#include <ace/Dev_Poll_Reactor.h>
 #include <ace/Event.h>
 #include <ace/Get_Opt.h>
 #include <ace/Message_Queue.h>
 #include <ace/OS.h>
-#include <ace/Proactor.h>
 #include <ace/Process.h>
+#include <ace/Refcounted_Auto_Ptr.h>
 #include <ace/SOCK_Connector.h>
-
 #include <ace/SOCK_Acceptor.h>
 #include <ace/SPIPE_Acceptor.h>
 #include <ace/SPIPE_Connector.h>
+#include <ace/Svc_Handler.h>
+#include <ace/Thread_Manager.h>
 #include <ace/UNIX_Addr.h>
+
+#if defined(ACE_WIN32)
+#include <ace/Proactor.h>
+#include <ace/Asynch_Connector.h>
+#endif
 
 #if !defined(ACE_HAS_WCHAR)
 #error Omega Online requires ACE_HAS_WCHAR support!

@@ -56,7 +56,7 @@ ACE_WString User::ShellParse(const wchar_t* pszFile)
 		ASSOCF_IGNOREBASECLASS             = 0x00000200,  //  dont recurse into the baseclass
 	};
 #endif*/
-		
+
 	const wchar_t* pszExt = PathFindExtensionW(pszFile);
 	if (pszExt && ACE_OS::strcasecmp(pszExt,L".exe")!=0)
 	{
@@ -95,7 +95,7 @@ ACE_WString User::ShellParse(const wchar_t* pszFile)
 
 void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 {
-	// Set the process options 
+	// Set the process options
 	ACE_Process_Options options(0);
 	options.avoid_zombies(0);
 
@@ -131,7 +131,7 @@ void User::ExecProcess(ACE_Process& process, const string_t& strExeName)
 	if (hDebugEvent)
 	{
 		AttachDebugger(process.getpid());
-		
+
 		SetEvent(hDebugEvent);
 		CloseHandle(hDebugEvent);
 	}
@@ -166,7 +166,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
 		ptrKey->Init(m_pManager,L"",0);
-		
+
 		m_ptrReg = static_cast<Omega::Registry::IKey*>(ptrKey);
 	}
 
@@ -198,36 +198,6 @@ void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPu
 	if (bPublic && m_ptrSBIPS)
 		return m_ptrSBIPS->GetObject(strProcess,false,oid,iid,pObject);
 
-	ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> ptrProcess;
-
-	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
-
-	std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> >::iterator i = m_mapInProgress.find(strProcess);
-	if (i != m_mapInProgress.end())
-	{
-		ptrProcess = i->second;
-		if (!ptrProcess->running())
-		{
-			m_mapInProgress.erase(strProcess);
-			ptrProcess.reset(0);
-		}
-	}
-
-	if (ptrProcess.null())
-	{
-		// Create a new process
-		ACE_Process* pProcess = 0;
-		OMEGA_NEW(pProcess,ACE_Process());
-		ptrProcess.reset(pProcess);
-		
-		// Start it
-		User::ExecProcess(*ptrProcess,strProcess);
-
-		m_mapInProgress.insert(std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> >::value_type(strProcess,ptrProcess));
-	}
-
-	guard.release();
-
 	// The timeout needs to be related to the request timeout...
 	ACE_Time_Value wait(15);
 	ObjectPtr<Remoting::ICallContext> ptrCC;
@@ -238,37 +208,76 @@ void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPu
 		if (msecs != (uint32_t)-1)
 			wait = ACE_Time_Value(msecs / 1000,(msecs % 1000) * 1000);
 	}
-	
-	// Wait for the process to start and register its parts...
-	ACE_Countdown_Time timeout(&wait);
-	while (wait != ACE_Time_Value::zero)
+
+	ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> ptrProcess;
+
+	bool bStarted = false;
+	do
 	{
-		ObjectPtr<IObject> ptrObject;
-		ptrObject.Attach(m_ptrROT->GetObject(oid));
-		if (ptrObject)
+		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+
+		std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> >::iterator i = m_mapInProgress.find(strProcess);
+		if (i != m_mapInProgress.end())
 		{
-			pObject = ptrObject->QueryInterface(iid);
-			if (!pObject)
-				throw INoInterfaceException::Create(iid);
-			return;
+			ptrProcess = i->second;
+
+			if (!ptrProcess->running())
+			{
+				m_mapInProgress.erase(strProcess);
+				ptrProcess.reset(0);
+			}
 		}
 
-		// Check the process is still alive
-		if (!ptrProcess->running())
+		if (ptrProcess.null())
 		{
-			guard.acquire();
+			// Create a new process
+			ACE_Process* pProcess = 0;
+			OMEGA_NEW(pProcess,ACE_Process());
+			ptrProcess.reset(pProcess);
 
-			m_mapInProgress.erase(strProcess);
+			// Start it
+			User::ExecProcess(*ptrProcess,strProcess);
 
-			break;
+			m_mapInProgress.insert(std::map<string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> >::value_type(strProcess,ptrProcess));
+
+			bStarted = true;
 		}
 
-		// Sleep for a brief moment - it will take a moment for the process to start
-		ACE_OS::sleep(ACE_Time_Value(0,100000));
+		guard.release();
 
-		// Update our countdown
-		timeout.update();
-	}
+		// Wait for the process to start and register its parts...
+		ACE_Countdown_Time timeout(&wait);
+		while (wait != ACE_Time_Value::zero)
+		{
+			ObjectPtr<IObject> ptrObject;
+			ptrObject.Attach(m_ptrROT->GetObject(oid));
+			if (ptrObject)
+			{
+				pObject = ptrObject->QueryInterface(iid);
+				if (!pObject)
+					throw INoInterfaceException::Create(iid);
+				return;
+			}
+
+			// Check the process is still alive
+			ACE_exitcode ec = 0;
+			if (ptrProcess->wait(ACE_Time_Value(0,100000),&ec) != 0)
+				break;
+
+			// Update our countdown
+			timeout.update();
+		}
+
+		if (wait == ACE_Time_Value::zero)
+			OMEGA_THROW(ETIMEDOUT);
+
+		// Remove from the map
+		guard.acquire();
+		m_mapInProgress.erase(strProcess);
+		ptrProcess.reset(0);
+		guard.release();
+
+	} while (!bStarted);
 
 	OMEGA_THROW(ENOENT);
 }
@@ -282,7 +291,7 @@ IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndpoint, 
 
 	// Look up handler in registry
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
-		
+
 	string_t strHandler;
 	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
 	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
@@ -291,7 +300,7 @@ IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndpoint, 
 		if (ptrKey->IsValue(L"Handler"))
 			strHandler = ptrKey->GetStringValue(L"Handler");
 	}
-	
+
 	if (strHandler.IsEmpty())
 	{
 		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\");
@@ -319,9 +328,9 @@ IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndpoint, 
 		else if (strProtocol == L"http" || strProtocol == L"https")
 			oid = OID_HttpProtocolHandler;
 		else
-			OMEGA_THROW(L"No handler for protocol " + strProtocol);		
+			OMEGA_THROW(L"No handler for protocol " + strProtocol);
 	}
-	
+
 	// Create the handler...
 	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
 
@@ -352,5 +361,5 @@ Remoting::IChannel* User::InterProcessService::OpenRemoteChannel(const string_t&
 
 Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
 {
-	return Manager::open_server_sink(message_oid,pSink);	
+	return Manager::open_server_sink(message_oid,pSink);
 }

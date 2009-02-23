@@ -295,7 +295,7 @@ bool OOCore::UserSession::discover_server_port(ACE_CString& strPipe)
 #if defined(ACE_HAS_WIN32_NAMED_PIPES) || \
 	(!defined(HAVE_GETPEEREID) && !defined(SO_PEERCRED) && !defined(HAVE_GETPEERUCRED) && \
 	(defined(HAVE_STRUCT_CMSGCRED) || defined(HAVE_STRUCT_FCRED) || (defined(HAVE_STRUCT_SOCKCRED) && defined(LOCAL_CREDS))))
-	
+
 	// Send nothing, but we must send...
 	char c = 0;
 	if (peer.send(&c,1) != 1)
@@ -388,15 +388,7 @@ int OOCore::UserSession::run_read_loop()
 		ssize_t nRead = m_stream.recv(pBuffer,s_initial_read);
 		if (nRead != s_initial_read)
 		{
-			int err = ACE_OS::last_error();
-#if defined(OMEGA_WIN32)
-			if (err == ERROR_BROKEN_PIPE)
-#else
-			if (err == ENOTSOCK)
-#endif
-			{
-				err = 0;
-			}
+			err = ACE_OS::last_error();
 			break;
 		}
 

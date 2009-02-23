@@ -43,8 +43,11 @@ static void tests()
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_tests);
+
+#if defined(OMEGA_WIN32)
 	RUN_TEST(net_tests);
 	RUN_TEST(interface_tests2);
+#endif
 }
 
 int main(int /*argc*/, char* /*argv*/[])
@@ -56,6 +59,8 @@ int main(int /*argc*/, char* /*argv*/[])
 		output("\nPerforming single threaded tests...\n\n");
 
 		tests();
+
+		Omega::Uninitialize();
 	}
 
 	return test_summary();

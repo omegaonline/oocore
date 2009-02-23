@@ -3,26 +3,11 @@
 
 bool init_tests()
 {
-	static struct AutoUninit
-	{
-		AutoUninit() : bInitCalled(false)
-		{}
-
-		~AutoUninit()
-		{
-			if (bInitCalled)
-				Omega::Uninitialize();
-		}
-
-		bool bInitCalled;
-	} auto_uninit;
-
 	// Call Omega::Initialze and remember we have...
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 		throw pE;
 
-	auto_uninit.bInitCalled = true;
 	return true;
 }
 

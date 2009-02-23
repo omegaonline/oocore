@@ -1,12 +1,15 @@
 #include <OTL/OTL.h>
 #include "./interfaces.h"
 
-namespace Test
+namespace Omega {
+namespace TestSuite
 {
 	extern "C" const Omega::guid_t OID_TestLibrary;
-}
+	extern "C" const Omega::guid_t OID_TestProcess;
+} }
 
-OMEGA_DEFINE_OID(Test, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
 
 #include "Test.h"
 
@@ -234,13 +237,13 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process",Omega::Activation::OutOfProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
 	do_interface_tests(ptrSimpleTest);
 
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process",Omega::Activation::InProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::InProcess);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -258,10 +261,6 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 		pE->Release();
 	}
 
-	// Try adjusting where it runs
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
-	ptrReg->SetIntegerValue(L"Public",0);
-
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
 	do_interface_tests(ptrSimpleTest);
 
@@ -275,6 +274,8 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 		pE->Release();
 	}
 
+	// Try adjusting where it runs
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
 	ptrReg->SetIntegerValue(L"Public",1);
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");

@@ -64,25 +64,31 @@
 #endif
 
 #include <ace/ARGV.h>
-#include <ace/Asynch_Acceptor.h>
+#include <ace/Acceptor.h>
 #include <ace/CDR_Stream.h>
 #include <ace/Condition_Thread_Mutex.h>
 #include <ace/Countdown_Time.h>
+#include <ace/Dev_Poll_Reactor.h>
 #include <ace/Event.h>
 #include <ace/Get_Opt.h>
 #include <ace/Log_Msg.h>
 #include <ace/Message_Queue.h>
 #include <ace/NT_Service.h>
 #include <ace/OS.h>
-#include <ace/Proactor.h>
+#include <ace/Reactor.h>
+#include <ace/Refcounted_Auto_Ptr.h>
 #include <ace/Singleton.h>
 #include <ace/SOCK_Acceptor.h>
 #include <ace/SOCK_Connector.h>
-
-#include <ace/Reactor.h>
 #include <ace/SPIPE_Acceptor.h>
 #include <ace/SPIPE_Connector.h>
+#include <ace/Thread_Manager.h>
 #include <ace/UNIX_Addr.h>
+
+#if defined(ACE_WIN32)
+#include <ace/Proactor.h>
+#include <ace/Asynch_Acceptor.h>
+#endif
 
 #if defined(ACE_NLOGGING)
 #error You must not define ACE_NLOGGING, we use it!
@@ -129,12 +135,8 @@
 
 #endif
 
-#ifdef OMEGA_DEBUG
-void AttachDebugger(pid_t pid);
-#endif
-
 #if !defined(OMEGA_WIN32)
-int IsDebuggerPresent();
+#define IsDebuggerPresent() 0
 #endif
 
 #endif // OOSERVER_ROOT_H_INCLUDED_

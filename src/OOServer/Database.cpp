@@ -109,7 +109,7 @@ int Db::Database::open(const ACE_CString& strDb)
 
 	int err = sqlite3_open(strDb.c_str(),&m_db);
 	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: database open() failed: %C\n",sqlite3_errmsg(m_db)),-1);
+		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: database open() failed: %C, %s\n",sqlite3_errmsg(m_db),strDb.c_str()),-1);
 
 	return 0;
 }

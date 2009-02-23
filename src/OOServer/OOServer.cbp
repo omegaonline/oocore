@@ -192,7 +192,6 @@
 			<code_completion />
 			<envvars />
 			<debugger>
-				<search_path add="..\..\extern\ACE_Wrappers\ace" />
 				<search_path add="/usr/include/ace" />
 			</debugger>
 		</Extensions>

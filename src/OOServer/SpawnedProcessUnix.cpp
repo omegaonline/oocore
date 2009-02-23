@@ -39,19 +39,6 @@
 
 #include <grp.h>
 
-int IsDebuggerPresent()
-{
-	void* TICKET_95;	// Do something clever here with ptrace()?
-	return 0;
-}
-
-#ifdef OMEGA_DEBUG
-void AttachDebugger(pid_t pid)
-{
-	kill(pid,SIGTRAP);
-}
-#endif
-
 // Helper for the recusive getpwuid_r fns()
 namespace Root
 {
@@ -256,6 +243,32 @@ void Root::SpawnedProcess::CloseSandboxLogon(user_id_type /*uid*/)
 {
 }
 
+static bool y_or_n_p(const char* question)
+{
+	ACE_OS::fputs(question,stdout);
+	while (1)
+	{
+		// Write a space
+		ACE_OS::fputc(' ',stdout);
+
+		// Read first char of line
+		int c = ACE_OS::ace_tolower(ACE_OS::fgetc(stdin));
+		int answer = c;
+
+		// Discard rest of line
+		while (c != '\n' && c != EOF)
+			c = ACE_OS::fgetc(stdin);
+
+		if (answer == 'y')
+			return true;
+		else if (answer == 'n')
+			return false;
+
+		// Invalid answer
+		ACE_OS::fputs("Please answer y or n:",stdout);
+	}
+}
+
 bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
@@ -265,9 +278,12 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 	uid_t our_uid = ACE_OS::getuid();
 	if (our_uid != 0)
 	{
+#if !defined(OMEGA_DEBUG)
 		if (!Manager::unsafe_sandbox())
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as a root.\n")),false);
-		else if (our_uid == uid)
+			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as root.\n")),false);
+		else
+#endif
+		if (our_uid == uid)
 			bUnsafeStart = true;
 		else
 		{
@@ -276,7 +292,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
 
 			const char msg[] =
-				"OOServer is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
+				"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
 				"Because the 'Unsafe' value is set in the registry, the new user process will be started under the user account '%s'\n\n"
 				"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
@@ -285,28 +301,14 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 
 			// Prompt for continue...
 			ACE_ERROR((LM_WARNING,L"%s",szBuf));
-#if defined(OMEGA_DEBUG)
-			ACE_OS::printf("\n\nDo you want to allow this? [Y/N/D(ebug)]: ");
-#else
-			ACE_OS::printf("\n\nDo you want to allow this? [Y/N]: ");
-#endif
-			ACE_OS::fflush(stdout);
 
-			char szIn[2];
-			ACE_OS::fgets(szIn,2,stdin);
+			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
+				return false;
 
-#if defined(OMEGA_DEBUG)
-			if (szIn[0] == 'D' || szIn[0] == 'd')
-				AttachDebugger(ACE_OS::getpid());
-			else
-#endif
-				if (szIn[0] != 'Y' && szIn[0] != 'y')
-					return false;
-
-			ACE_OS::printf("\nYou chose to continue... on your head be it!\n\n");
-			ACE_OS::fflush(stdout);
+			ACE_OS::printf("\nYou chose to continue... on your head be it!\n");
 
 			bUnsafeStart = true;
+
 		}
 	}
 
@@ -375,10 +377,6 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		};
 		cmd_line[1] = const_cast<char*>(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
 
-#if defined(OMEGA_DEBUG)
-		printf("\nStarting new oosvruser process as uid:%u\n",uid);
-#endif
-
 		int err = ACE_OS::execv("./oosvruser",cmd_line);
 
 		ACE_ERROR((LM_WARNING,ACE_TEXT("Child process exiting with code: %d\n"),err));
@@ -390,6 +388,10 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		// We are the parent...
 		m_uid = uid;
 		m_pid = child_id;
+
+#if defined(OMEGA_DEBUG)
+		printf("\nStarting new oosvruser process as uid:%u pid:%u\n",uid,child_id);
+#endif
 	}
 
 	return true;

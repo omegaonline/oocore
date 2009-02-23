@@ -55,15 +55,18 @@ namespace User
 		Omega::Net::IConnectedStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);
 
 	private:
-		class TcpAsync :
-			public ACE_Service_Handler
+#if defined(ACE_WIN32)
+		class TcpAsync : public ACE_Service_Handler
+#else
+		class TcpAsync : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_MT_SYNCH>
+#endif
 		{
 		public:
-			TcpAsync() : 
+			TcpAsync() :
 				m_pHandler(0), m_stream_id(0), m_refcount(1)
 			{}
 
-			TcpAsync(TcpHandler* pHandler) : 
+			TcpAsync(TcpHandler* pHandler) :
 				m_pHandler(pHandler), m_stream_id(0), m_refcount(1)
 			{
 				m_pHandler->AddRef();
@@ -75,32 +78,40 @@ namespace User
 					delete this;
 			}
 
-			void act(const void* pv);
-			void open(ACE_HANDLE new_handle, ACE_Message_Block&);
 			bool read(ACE_Message_Block& mb, size_t len);
 			bool write(ACE_Message_Block& mb);
-			void close();
 			Omega::string_t local_endpoint();
 			Omega::string_t remote_endpoint();
 
+#if defined(ACE_WIN32)
+			void act(const void* pv);
+			void open(ACE_HANDLE new_handle, ACE_Message_Block&);
+			void close();
+#else
+			int open(void* act = 0);
+#endif
+
 		private:
 			TcpHandler*             m_pHandler;
-			Omega::uint32_t         m_stream_id;
+			Omega::uint32_t        m_stream_id;
+
+#if defined(ACE_WIN32)
 			ACE_SOCK_Stream         m_stream;
 			ACE_Asynch_Read_Stream  m_reader;
-			ACE_Asynch_Write_Stream m_writer;		
+			ACE_Asynch_Write_Stream m_writer;
+
+			void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
+			void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);
+#endif
 
 			// Control our lifetime...
 			ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_refcount;
-		
+
 			virtual ~TcpAsync()
 			{
 				if (m_pHandler)
 					m_pHandler->Release();
 			}
-
-			void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
-			void handle_write_stream(const ACE_Asynch_Write_Stream::Result& result);
 
 			static void error_thunk(void* pParam, ACE_InputCDR& input);
 			static void open_stream_thunk(void* pParam, ACE_InputCDR& input);
@@ -109,26 +120,36 @@ namespace User
 		};
 		friend class TcpAsync;
 
+#if defined(ACE_WIN32)
 		class AsyncConnector : public ACE_Asynch_Connector<TcpAsync>
+#else
+		class AsyncConnector : public ACE_Connector<TcpAsync,ACE_SOCK_CONNECTOR>
+#endif
 		{
 		public:
 			TcpHandler* m_pHandler;
 
+			bool connect(const ACE_INET_Addr& addr, Omega::uint32_t stream_id);
+
 		protected:
-			virtual void handle_connect(const ACE_Asynch_Connect::Result& result);
-			virtual TcpAsync* make_handler();	
+#if defined(ACE_WIN32)
+			void handle_connect(const ACE_Asynch_Connect::Result& result);
+			TcpAsync* make_handler();
+#else
+			int make_svc_handler(TcpAsync*& handler);
+#endif
 
 		private:
 			static void call_error(void* pParam, ACE_InputCDR& input);
 		};
 		AsyncConnector m_connector;
-		
+
 		struct AsyncEntry
-		{ 
+		{
 			OTL::ObjectPtr<Omega::IO::IAsyncStreamNotify> ptrNotify;
 			TcpAsync*                                     pAsync;
 		};
-		ACE_RW_Thread_Mutex                  m_lock;
+		ACE_RW_Thread_Mutex                   m_lock;
 		Omega::uint32_t                      m_nNextStream;
 		std::map<Omega::uint32_t,AsyncEntry> m_mapAsyncs;
 
@@ -174,7 +195,7 @@ namespace User
 	public:
 		void Start();
 		void Stop();
-	
+
 	// IProtocolHandler members
 	public:
 		Omega::Net::IConnectedStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);

@@ -130,18 +130,17 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 #endif
 
 	// Start the logger
-#if defined(OMEGA_DEBUG)
-	if (!IsDebuggerPresent() || ACE_LOG_MSG->open(pszAppName,ACE_Log_Msg::STDERR,pszAppName) != 0)
+	int flags = ACE_Log_Msg::STDERR;
+#if !defined(OMEGA_DEBUG)
+	flags |= ACE_Log_Msg::SYSLOG;
 #endif
-	if (ACE_LOG_MSG->open(pszAppName,ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG,pszAppName) != 0)
+	if (ACE_LOG_MSG->open(pszAppName,flags,pszAppName) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error opening logger")),EXIT_FAILURE);
 
 	// Start any daemons or services
 #if defined(OMEGA_WIN32)
-
 	if (!Root::NTService::open())
 		return EXIT_FAILURE;
-
 #else // OMEGA_WIN32
 #if !defined(OMEGA_DEBUG)
     // Daemonize ourselves
@@ -153,7 +152,8 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 #endif // OMEGA_DEBUG
 
-	// TODO - Install signal handlers...
+	// Install signal handlers...
+	void* TODO;
 
 #endif // OMEGA_WIN32
 

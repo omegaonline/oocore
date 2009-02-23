@@ -40,7 +40,11 @@ namespace Root
 {
 	class MessageHandler;
 
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	class MessageConnection : public ACE_Service_Handler
+#else
+	class MessageConnection : public ACE_Event_Handler
+#endif
 	{
 	public:
 		MessageConnection(MessageHandler* pHandler);
@@ -50,8 +54,13 @@ namespace Root
 		bool read(ACE_Message_Block* mb = 0);
 
 	private:
+#if defined(ACE_HAS_WIN32_NAMED_PIPES)
 		MessageConnection() : ACE_Service_Handler() {}
 		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
+#else
+		MessageConnection() : ACE_Event_Handler() {}
+		MessageConnection(const MessageConnection&) : ACE_Event_Handler() {}
+#endif
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
 		MessageHandler*                                       m_pHandler;
@@ -59,12 +68,18 @@ namespace Root
 		size_t                                                m_chunk_size;
 		ACE_CDR::ULong                                        m_channel_id;
 
+		bool process_read(ACE_Message_Block* mb);
+
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		ACE_Asynch_Read_File        m_reader;
+		ACE_Asynch_Read_File m_reader;
+
 		void handle_read_file(const ACE_Asynch_Read_File::Result& result);
 #else
-		ACE_Asynch_Read_Stream      m_reader;
-		void handle_read_stream(const ACE_Asynch_Read_Stream::Result& result);
+		ACE_Thread_Mutex   m_lock;
+		ACE_Message_Block* m_mb;
+
+		int handle_input(ACE_HANDLE);
+		int handle_close(ACE_HANDLE, ACE_Reactor_Mask);
 #endif
 	};
 

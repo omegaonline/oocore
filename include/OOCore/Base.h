@@ -22,7 +22,7 @@
 #ifndef OOCORE_BASE_H_INCLUDED_
 #define OOCORE_BASE_H_INCLUDED_
 
-#include <OOCore/Preprocessor/base.h>
+#include "Preprocessor/base.h"
 
 namespace Omega
 {
@@ -59,6 +59,11 @@ namespace Omega
 		virtual guid_t GetUnsupportedIID() = 0;
 
 		inline static INoInterfaceException* Create(const guid_t& iid, const string_t& source = L"");
+	};
+
+	interface ITimeoutException : public IException
+	{
+		inline static ITimeoutException* Create();
 	};
 
 	namespace TypeInfo

@@ -22,7 +22,7 @@
 #ifndef OOCORE_CHANNEL_H_INCLUDED_
 #define OOCORE_CHANNEL_H_INCLUDED_
 
-#include "./CDRMessage.h"
+#include "CDRMessage.h"
 
 namespace OOCore
 {
@@ -37,7 +37,7 @@ namespace OOCore
 		Channel();
 		virtual ~Channel() {}
 
-		void init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid, Omega::Remoting::IObjectManager* pOM);
+		void init(UserSession* pSession, Omega::uint16_t apt_id, Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid, Omega::Remoting::IObjectManager* pOM);
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
@@ -47,11 +47,12 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	protected:
-		ACE_CDR::UShort                                   m_apt_id;
+		Omega::uint16_t                                   m_apt_id;
 
 	private:
+		OOBase::SpinLock                                  m_lock;
 		UserSession*                                      m_pSession;
-		ACE_CDR::ULong	                                  m_channel_id;
+		Omega::uint32_t	                                  m_channel_id;
 		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
 		Omega::guid_t                                     m_message_oid;
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
@@ -98,13 +99,13 @@ namespace OOCore
 		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
-	class OutputCDRMarshalFactory :
+	class CDRMessageMarshalFactory :
 		public OTL::ObjectBase,
-		public OTL::AutoObjectFactorySingleton<OutputCDRMarshalFactory,&OID_OutputCDRMarshalFactory,Omega::Activation::InProcess>,
+		public OTL::AutoObjectFactorySingleton<CDRMessageMarshalFactory,&OID_CDRMessageMarshalFactory,Omega::Activation::InProcess>,
 		public Omega::Remoting::IMarshalFactory
 	{
 	public:
-		BEGIN_INTERFACE_MAP(OutputCDRMarshalFactory)
+		BEGIN_INTERFACE_MAP(CDRMessageMarshalFactory)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
 		END_INTERFACE_MAP()
 

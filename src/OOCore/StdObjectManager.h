@@ -73,9 +73,9 @@ namespace OOCore
         {}
 		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
 
-		ACE_RW_Thread_Mutex                                  m_lock;
-		OTL::ObjectPtr<Omega::Remoting::IChannel>            m_ptrChannel;
-		Omega::uint32_t                                      m_uNextStubId;
+		OOBase::RWMutex                           m_lock;
+		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
+		Omega::uint32_t                           m_uNextStubId;
 				
 		std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>                                     m_mapStubObjs;
 		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>::iterator> m_mapStubIds;
@@ -117,7 +117,7 @@ namespace OOCore
 	public:
 		void Connect(Omega::Remoting::IChannelBase* pChannel);
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
-		void Disconnect();
+		void Shutdown();
 		void GetRemoteInstance(const Omega::string_t& strOID, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }

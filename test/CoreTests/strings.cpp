@@ -46,9 +46,9 @@ static bool string_tests_wchar()
 	TEST(s1.Find(L'A',1,true) == 10);
 
 	TEST(s1.ReverseFind(L'a') == 10);
-	TEST(s1.ReverseFind(L'a',10) == 0);
+	TEST(s1.ReverseFind(L'a',9) == 0);
 	TEST(s1.ReverseFind(L'A',Omega::string_t::npos,true) == 10);
-	TEST(s1.ReverseFind(L'A',10,true) == 0);
+	TEST(s1.ReverseFind(L'A',9,true) == 0);
 
 	s2 = sz1;
 	TEST(s1.Find(s2) == 0);

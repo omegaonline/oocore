@@ -51,14 +51,6 @@
 
 #define OMEGA_FUNCNAME    __FUNCSIG__
 
-#ifdef __cplusplus
-	#include <new>
-	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		do { POINTER = new (std::nothrow) CONSTRUCTOR; \
-			if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
-		} while (0)
-#endif
-
 #define OMEGA_IMPORT   __declspec(dllimport)
 #define OMEGA_EXPORT   __declspec(dllexport)
 #define OMEGA_PRIVATE
@@ -67,9 +59,6 @@
 #define OMEGA_UNUSED_ARG(n)	(n)
 
 #define OMEGA_HAS_UUIDOF
-
-// conditional expression is constant
-#pragma warning(disable : 4127)
 
 // 'function' : unreferenced local function has been removed
 #pragma warning(disable : 4505)
@@ -80,7 +69,7 @@
 #endif
 
 // Check for 64-bit builds
-#if defined(_WIN64)
+#if defined(_M_IA64) || defined(_M_X64)
 #define OMEGA_64
 #endif
 
@@ -90,13 +79,36 @@
 #define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I(MSVC,_MSC_VER)
 
 #if defined(_WIN32_WCE)
-#include <OOCore/config-wince.h>
+#include "config-wince.h"
 #elif defined(_WIN32)
-#include <OOCore/config-win32.h>
+#include "config-win32.h"
 #else
 #error What else can MSVC compile?
 #endif
 
+#ifdef __cplusplus
+	#include <new>
+
+#if defined(_WIN32)
+	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
+		do { \
+			POINTER = new (std::nothrow) CONSTRUCTOR; \
+			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
+		} while (!POINTER)
+#else
+	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
+		do { \
+			POINTER = new (std::nothrow) CONSTRUCTOR; \
+			if (!POINTER) OMEGA_THROW(ENOMEM); \
+		} while (!POINTER)
+#endif
+
+#endif
+
 #include <errno.h>
+
+#if !defined(EINVAL)
+#define EINVAL 22
+#endif
 
 #endif // OOCORE_CONFIG_MSVC_H_INCLUDED_

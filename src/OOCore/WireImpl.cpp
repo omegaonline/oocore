@@ -21,7 +21,7 @@
 
 #include "OOCore_precomp.h"
 
-#include "./WireImpl.h"
+#include "WireImpl.h"
 
 using namespace Omega;
 using namespace OTL;

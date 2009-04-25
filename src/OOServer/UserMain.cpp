@@ -19,113 +19,55 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_User.h"
-#include "./UserManager.h"
+#include "OOServer_User.h"
+#include "UserManager.h"
 #include "../Common/Version.h"
 
 #include <sqlite3.h>
 
-static int Version()
-{
-	ACE_OS::printf("OOSvrUser version information:\n");
-#if defined(OMEGA_DEBUG)
-	ACE_OS::printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\nACE %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
-#else
-	ACE_OS::printf("Version: %s\nPlatform: %s\nCompiler: %s\nACE %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+#ifdef OMEGA_HAVE_VLD
+#include <vld.h>
 #endif
 
-	ACE_OS::printf("\nOOCore version information:\n");
-	ACE_OS::printf("%ls\n\n",Omega::System::GetVersion().c_str());
-
-	ACE_OS::printf("SQLite version: %s\n",SQLITE_VERSION);
-
-	ACE_OS::printf("\n");
-	return EXIT_SUCCESS;
-}
-
-static int Help()
+int main(int argc, char* argv[])
 {
-	ACE_OS::printf("OOSvrUser - The Omega Online user gateway.\n\n");
-	ACE_OS::printf("This program can not be run directly by the user.\n\n");
-	ACE_OS::printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
-	return EXIT_SUCCESS;
-}
+	// Start the logger - use OOServer again...
+	OOSvrBase::Logger::open("OOServer");
 
-int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
-{
-	// Check command line options
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":vh"),1);
-	if (cmd_opts.long_option(ACE_TEXT("version"),ACE_TEXT('v'))!=0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("Error parsing cmdline")),EXIT_FAILURE);
-
-	int option;
-	while ((option = cmd_opts()) != EOF)
+	// We do the most basic command line parsing...
+	// Check to see if we have been spawned
+	if (argc != 2)
+		return EXIT_FAILURE;
+	
+#if defined(_WIN32) && defined(OMEGA_DEBUG)
+	// If this event exists, then we are being debugged
+	// Scope it...
 	{
-		switch (option)
+		OOBase::Win32::SmartHandle hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		if (hDebugEvent)
 		{
-		case ACE_TEXT('v'):
-			return Version();
-
-		case ACE_TEXT(':'):
-			ACE_OS::fprintf(stdout,ACE_TEXT("Missing argument for %s.\n\n"),cmd_opts.last_option());
-			return Help();
-
-		default:
-			ACE_OS::fprintf(stdout,ACE_TEXT("Invalid argument '%s'.\n\n"),cmd_opts.last_option());
-			return Help();
+			// Wait for a bit, letting the caller attach a debugger
+			WaitForSingleObject(hDebugEvent,60000);
 		}
 	}
 
-	// Check to see if we have been spawned
-	if (argc!=2)
-	{
-		ACE_OS::fprintf(stdout,ACE_TEXT("Invalid or missing arguments.\n\n"));
-		return Help();
-	}
-
-#if defined(OMEGA_WIN32)
-	u_long options = ACE_Log_Msg::SYSLOG;
-
-#if defined(OMEGA_DEBUG)
-	options |= ACE_Log_Msg::STDERR;
-
-	// If this event exists, then we are being debugged
-	HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-	if (hDebugEvent)
-	{
-		options = ACE_Log_Msg::STDERR;
-
-		// Wait for a bit, letting the caller attach a debugger
-		WaitForSingleObject(hDebugEvent,60000);
-		CloseHandle(hDebugEvent);
-	}
 #endif
 
-	if (ACE_LOG_MSG->open(ACE_TEXT("OOServer"),options,ACE_TEXT("OOServer")) != 0)
-        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),EXIT_FAILURE);
+	// Run the UserManager
+	int ret = User::Manager::run(argv[1]);
 
-#else // OMEGA_WIN32
+	// Make sure all the singletons etc have been destroyed
+	OOBase::Destructor::call_destructors();
 
-    if (ACE_LOG_MSG->open(ACE_TEXT("ooserverd"),ACE_Log_Msg::STDERR | ACE_Log_Msg::SYSLOG) != 0)
-        ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Error opening logger")),EXIT_FAILURE);
-
-#endif
-
-#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
-	Version();
-#endif
-
-	return User::Manager::run(ACE_TEXT_ALWAYS_CHAR(argv[1]));
+	return ret;
 }
 
-#if defined(ACE_WIN32) && defined(ACE_USES_WCHAR) && defined(__MINGW32__)
-#include <shellapi.h>
-int main(int argc, char* /*argv*/[])
+namespace OOBase
 {
-	// MinGW doesn't understand wmain, so...
-	wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(),&argc);
-
-	ACE_Main m;
-	return ace_os_wmain_i (m, argc, wargv);   /* what the user calls "main" */
+	// This is the critical failure hook
+	void CriticalFailure(const char* msg)
+	{
+		printf(msg);
+		printf("\n\nAborting\n");
+	}
 }
-#endif

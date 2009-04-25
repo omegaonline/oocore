@@ -34,68 +34,24 @@
 #ifndef OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 #define OOSERVER_SPAWNED_PROCESS_H_INCLUDED_
 
-#include "./RootManager.h"
-
 namespace Root
 {
 	class SpawnedProcess
 	{
 	public:
-		SpawnedProcess();
-		~SpawnedProcess();
+		virtual ~SpawnedProcess() {}
 
-		bool Spawn(user_id_type id, const ACE_CString& strPipe, bool bSandbox);
-		bool CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed);
+		virtual bool CheckAccess(const char* pszFName, int mode, bool& bAllowed) = 0;
+		virtual bool Compare(OOBase::LocalSocket::uid_t uid) = 0;
+		virtual bool IsSameUser(OOBase::LocalSocket::uid_t uid) = 0;
+		virtual std::string GetRegistryHive() = 0;
 
-		static bool InstallSandbox(int argc, ACE_TCHAR* argv[]);
-		static bool UninstallSandbox();
-		static bool SecureFile(const ACE_CString& strFilename);
-
-		bool Compare(user_id_type uid);
-		bool IsSameUser(user_id_type uid);
-		ACE_CString GetRegistryHive();
-
-		static bool LogonSandboxUser(user_id_type& uid);
-		static void CloseSandboxLogon(user_id_type uid);
-
-#if defined(OMEGA_WIN32)
-	private:
-		HANDLE m_hToken;
-		HANDLE m_hProfile;
-		HANDLE m_hProcess;
-
-		static DWORD LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile);
-		static void* GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls);
-		static bool MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2);
-		static bool MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2);
-		static DWORD GetNameFromToken(HANDLE hToken, ACE_WString& strUserName, ACE_WString& strDomainName);
-		static DWORD GetLogonSID(HANDLE hToken, PSID& pSIDLogon);
-		static DWORD OpenCorrectWindowStation(HANDLE hToken, ACE_WString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop);
-		static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD);
-		static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD);
-		static DWORD CreateSD(PACL pACL, void*& pSD);
-		static DWORD SetTokenDefaultDACL(HANDLE hToken);
-		static bool RestrictToken(HANDLE& hToken);
-		static void EnableUserAccessToFile(LPWSTR pszPath, TOKEN_USER* pUser);
-		static bool LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine);
-
-		DWORD SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox);
-
-#else // !OMEGA_WIN32
-		
-	private:
-		uid_t	m_uid;
-		pid_t	m_pid;
-
-		bool CleanEnvironment();
-		bool close_all_fds();
-		bool linux_close_all_fds();
-		bool posix_close_all_fds(long max_fd);
-
-#endif // OMEGA_WIN32
+	protected:
+		SpawnedProcess() {}
 
 	private:
-        bool   m_bSandbox;
+		SpawnedProcess(const SpawnedProcess&) {}
+		SpawnedProcess& operator = (const SpawnedProcess&) { return *this; }
 	};
 }
 

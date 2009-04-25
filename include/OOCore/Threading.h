@@ -26,39 +26,20 @@ namespace Omega
 {
 	namespace Threading
 	{
-		class CriticalSection
+		class Mutex
 		{
 		public:
-			inline CriticalSection();
-			inline ~CriticalSection();
+			inline Mutex();
+			inline ~Mutex();
 
-			inline void Lock();
-			inline void Unlock();
+			inline void Acquire();
+			inline void Release();
 
 		private:
 			struct handle_t
 			{
 				int unused;
 			}* m_handle;
-		};
-
-		class Guard
-		{
-		public:
-			Guard(CriticalSection& lock) : m_cs(lock)
-			{
-				m_cs.Lock();
-			}
-
-			~Guard()
-			{
-				m_cs.Unlock();
-			}
-
-		private:
-			Guard& operator = (const Guard&) { return *this; }
-
-			CriticalSection& m_cs;
 		};
 
 		class ReaderWriterLock
@@ -67,9 +48,10 @@ namespace Omega
 			inline ReaderWriterLock();
 			inline ~ReaderWriterLock();
 
-			inline void LockRead();
-			inline void LockWrite();
-			inline void Unlock();
+			inline void AcquireRead();
+			inline void Acquire();
+			inline void ReleaseRead();
+			inline void Release();
 
 		private:
 			struct handle_t
@@ -78,90 +60,101 @@ namespace Omega
 			}* m_handle;
 		};
 
+		template <typename MUTEX>
+		class Guard
+		{
+		public:
+			Guard(MUTEX& mutex, bool acq = true) :
+			  m_acquired(false),
+			  m_mutex(mutex)
+			{
+				if (acq)
+					Acquire();
+			}
+
+			/*Guard(MUTEX& mutex, const timeval_t& wait) :
+			  m_acquired(false),
+			  m_mutex(mutex)
+			{
+				Acquire(&wait);
+			}*/
+
+			~Guard()
+			{
+				if (m_acquired)
+					Release();
+			}
+
+			void Acquire()
+			{
+				m_mutex.Acquire();
+
+				m_acquired = true;
+			}
+
+			/*void Acquire(const timeval_t& wait)
+			{
+				m_acquired = true;
+
+				m_mutex.Acquire(&wait);
+			}*/
+
+			void Release()
+			{
+				m_acquired = false;
+
+				m_mutex.Release();
+			}
+
+		private:
+			Guard(const Guard&) {}
+			Guard& operator = (const Guard&) { return *this; }
+
+			bool   m_acquired;
+			MUTEX& m_mutex;
+		};
+
+		template <typename MUTEX>
 		class ReadGuard
 		{
 		public:
-			ReadGuard(ReaderWriterLock& lock) : m_lock(lock), m_bLocked(false)
+			ReadGuard(MUTEX& mutex, bool acq = true) :
+			  m_acquired(false),
+			  m_mutex(mutex)
 			{
-				Lock();
+				if (acq)
+					Acquire();
 			}
 
 			~ReadGuard()
 			{
-				if (m_bLocked)
-					Unlock();
+				if (m_acquired)
+					Release();
 			}
 
-			void Lock()
+			void Acquire()
 			{
-				m_lock.LockRead();
-				m_bLocked = true;
+				m_mutex.AcquireRead();
+
+				m_acquired = true;
 			}
 
-			void Unlock()
+			void Release()
 			{
-				try
-				{
-					m_bLocked = false;
-					m_lock.Unlock();
-				}
-				catch (...)
-				{
-					// Still locked
-					m_bLocked = true;
-					throw;
-				}
+				m_acquired = false;
+
+				m_mutex.ReleaseRead();
 			}
 
 		private:
+			ReadGuard(const ReadGuard&) {}
 			ReadGuard& operator = (const ReadGuard&) { return *this; }
 
-			ReaderWriterLock& m_lock;
-			bool              m_bLocked;
+			bool   m_acquired;
+			MUTEX& m_mutex;
 		};
 
-		class WriteGuard
-		{
-		public:
-			WriteGuard(ReaderWriterLock& lock) : m_lock(lock), m_bLocked(false)
-			{
-				Lock();
-			}
-
-			~WriteGuard()
-			{
-				if (m_bLocked)
-					Unlock();
-			}
-
-			void Lock()
-			{
-				m_lock.LockWrite();
-				m_bLocked = true;
-			}
-
-			void Unlock()
-			{
-				try
-				{
-					m_bLocked = false;
-					m_lock.Unlock();
-				}
-				catch (...)
-				{
-					// Still locked
-					m_bLocked = true;
-					throw;
-				}
-			}
-
-		private:
-			WriteGuard& operator = (const WriteGuard&) { return *this; }
-
-			ReaderWriterLock& m_lock;
-			bool              m_bLocked;
-		};
-
+		// Replace this all with a simple unsigned long class
 		template <class T> class AtomicOp
 		{
 		public:
@@ -185,8 +178,8 @@ namespace Omega
 			inline T exchange(const T& v);
 
 		private:
-			mutable CriticalSection m_cs;
-			T                       m_value;
+			mutable Mutex m_cs;
+			T             m_value;
 		};
 
 #ifdef OMEGA_HAS_ATOMIC_OP_32

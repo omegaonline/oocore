@@ -22,8 +22,9 @@
 #ifndef OOSERVER_INTER_PROCESS_SERVICE_H_INCLUDED_
 #define OOSERVER_INTER_PROCESS_SERVICE_H_INCLUDED_
 
-#include "./UserROT.h"
-#include "./UserRegistry.h"
+#include "UserROT.h"
+#include "UserRegistry.h"
+#include "UserProcess.h"
 
 #include "../Common/Server.h"
 
@@ -41,13 +42,13 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex                                      m_lock;
-		OTL::ObjectPtr<Omega::System::IInterProcessService> m_ptrSBIPS;
+		OOBase::Mutex                                         m_lock;
+		OTL::ObjectPtr<Omega::System::IInterProcessService>   m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
 		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 		Manager*                                              m_pManager;
 
-		std::map<Omega::string_t,ACE_Refcounted_Auto_Ptr<ACE_Process,ACE_Thread_Mutex> > m_mapInProgress;
+		std::map<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
 
 	// System::IInterProcessService members
 	public:

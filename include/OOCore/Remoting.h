@@ -22,7 +22,7 @@
 #ifndef OOCORE_REMOTING_H_INCLUDED_
 #define OOCORE_REMOTING_H_INCLUDED_
 
-#include <OOCore/OOCore.h>
+#include "OOCore.h"
 
 namespace Omega
 {
@@ -60,7 +60,7 @@ namespace Omega
 		{
 			virtual void Connect(IChannelBase* pChannel) = 0;
 			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t timeout) = 0;
-			virtual void Disconnect() = 0;
+			virtual void Shutdown() = 0;
 			virtual void GetRemoteInstance(const Omega::string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
 			virtual void MarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual void ReleaseMarshalData(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
@@ -72,6 +72,11 @@ namespace Omega
 			virtual guid_t GetReflectUnmarshalFactoryOID() = 0;
 			virtual void ReflectMarshal(IMessage* pMessage) = 0;
 			virtual IObjectManager* GetObjectManager() = 0;
+		};
+
+		interface IChannelClosedException : public IException
+		{
+			inline static IChannelClosedException* Create();
 		};
 
 		interface IMarshal : public IObject
@@ -134,7 +139,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 
 	OMEGA_METHOD_VOID(Connect,1,((in),Remoting::IChannelBase*,pChannel))
 	OMEGA_METHOD(Remoting::IMessage*,Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),uint32_t,timeout))
-	OMEGA_METHOD_VOID(Disconnect,0,())
+	OMEGA_METHOD_VOID(Shutdown,0,())
 	OMEGA_METHOD_VOID(GetRemoteInstance,4,((in),const string_t&,strOID,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 	OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
 	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
@@ -149,6 +154,13 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 	OMEGA_METHOD_VOID(ReflectMarshal,1,((in),Remoting::IMessage*,pMessage))
 	OMEGA_METHOD(Remoting::IObjectManager*,GetObjectManager,0,())
 )
+
+OMEGA_DEFINE_INTERFACE_DERIVED
+(
+	Omega::Remoting, IChannelClosedException, Omega, IException, "{E0BB01D1-CF43-4da0-97E0-E40B66A2CFE7}",
+
+	OMEGA_NO_METHODS()
+	)
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
@@ -182,6 +194,12 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(guid_t,MessageOid,0,())
 	OMEGA_METHOD(Remoting::IChannelSink*,Open,2,((in),const string_t&,strEndpoint,(in),Remoting::IChannelSink*,pSink))
 )
+
+OMEGA_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,Remoting_IChannelClosedException_Create,0,())
+Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create()
+{
+	return Remoting_IChannelClosedException_Create();
+}
 
 OMEGA_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,Remoting_GetCallContext,0,())
 Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()

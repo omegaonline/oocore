@@ -23,9 +23,9 @@
 #define OOCORE_H_INCLUDED_
 
 //////////////////////////////////////////////
-#include <OOCore/config-guess.h>
+#include "config-guess.h"
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 // MS define interface as well...
 #include <objbase.h>
 #endif
@@ -62,13 +62,13 @@
 // End of STL includes
 //////////////////////////////////////////////
 
-#include <OOCore/Types.h>
-#include <OOCore/Threading.h>
-#include <OOCore/Base.h>
-#include <OOCore/Export.h>
-#include <OOCore/Rtti.h>
-#include <OOCore/Wire.h>
-#include <OOCore/Interfaces.h>
+#include "Types.h"
+#include "Threading.h"
+#include "Base.h"
+#include "Export.h"
+#include "Rtti.h"
+#include "Wire.h"
+#include "Interfaces.h"
 
 namespace Omega
 {
@@ -129,8 +129,8 @@ Omega::string_t Omega::System::GetVersion()
 
 #endif // !defined(DOXYGEN)
 
-#include <OOCore/Types.inl>
-#include <OOCore/Threading.inl>
-#include <OOCore/Rtti.inl>
+#include "Types.inl"
+#include "Threading.inl"
+#include "Rtti.inl"
 
 #endif // OOCORE_H_INCLUDED_

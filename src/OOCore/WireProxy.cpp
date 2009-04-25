@@ -21,9 +21,9 @@
 
 #include "OOCore_precomp.h"
 
-#include "./WireProxy.h"
-#include "./StdObjectManager.h"
-#include "./WireImpl.h"
+#include "WireProxy.h"
+#include "StdObjectManager.h"
+#include "WireImpl.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -70,7 +70,7 @@ System::MetaInfo::IObject_Safe* OOCore::Proxy::UnmarshalInterface(System::MetaIn
 		
 		// See if we have a proxy for this interface already...
 		{
-			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator i=m_iid_map.find(wire_iid);
 			if (i != m_iid_map.end())
@@ -106,7 +106,7 @@ System::MetaInfo::IObject_Safe* OOCore::Proxy::UnmarshalInterface(System::MetaIn
 
 		if (bAdd)
 		{
-			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 				
 			std::pair<std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,System::MetaInfo::IObject_Safe*>::value_type(wire_iid,ptrProxy));
 			if (!p.second)
@@ -188,7 +188,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::QueryInterface_Safe
 
 		// See if we have a proxy for this interface already...
 		{
-			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator i=m_iid_map.find(*piid);
 			if (i != m_iid_map.end())
@@ -228,7 +228,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Proxy::QueryInterface_Safe
 
 		if (bAdd)
 		{
-			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 				
 			std::pair<std::map<const guid_t,System::MetaInfo::IObject_Safe*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,System::MetaInfo::IObject_Safe*>::value_type(*piid,ptrProxy));
 			if (!p.second)

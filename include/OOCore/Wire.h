@@ -589,12 +589,12 @@ namespace Omega
 
 				static IException_Safe* read(const wchar_t*, IMarshaller_Safe*, IMessage_Safe*, type&)
 				{
-					return return_safe_exception(ISystemException::Create(EINVAL));
+					return return_safe_exception(ISystemException::Create(L"Cannot marshal void*"));
 				}
 
 				static IException_Safe* write(const wchar_t*, IMarshaller_Safe*, IMessage_Safe*, const type&)
 				{
-					return return_safe_exception(ISystemException::Create(EINVAL));
+					return return_safe_exception(ISystemException::Create(L"Cannot marshal void*"));
 				}
 			};
 
@@ -771,7 +771,7 @@ namespace Omega
 					if (method_id < MethodCount)
 						return MethodTable[method_id](this,pParamsIn,pParamsOut);
 					else
-						return return_safe_exception(ISystemException::Create(EINVAL));
+						return return_safe_exception(ISystemException::Create(L"Invoke called on invalid method index"));
 				}
 				static const uint32_t MethodCount = 3; // This must match IObject_Proxy
 

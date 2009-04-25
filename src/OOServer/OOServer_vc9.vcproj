@@ -52,7 +52,7 @@
 				TreatWChar_tAsBuiltInType="true"
 				ForceConformanceInForLoopScope="true"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_Root.h"
+				PrecompiledHeaderThrough="OOServer_Root.h"
 				WarningLevel="4"
 				DebugInformationFormat="4"
 			/>
@@ -139,7 +139,7 @@
 				ForceConformanceInForLoopScope="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_Root.h"
+				PrecompiledHeaderThrough="OOServer_Root.h"
 				WarningLevel="4"
 			/>
 			<Tool
@@ -218,10 +218,6 @@
 			</File>
 			<File
 				RelativePath=".\RegistryHive.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RootHttp.cpp"
 				>
 			</File>
 			<File
@@ -315,10 +311,6 @@
 			</File>
 			<File
 				RelativePath=".\RegistryHive.h"
-				>
-			</File>
-			<File
-				RelativePath=".\RootHttp.h"
 				>
 			</File>
 			<File

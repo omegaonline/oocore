@@ -18,6 +18,9 @@ bool run_test(pfnTest t, const char* pszName);
 	else \
 		add_success(); \
 
+#define TEST_FAIL(expr) \
+	return print_result(#expr,__FILE__,__LINE__); \
+	
 #define TEST_VOID(expr) \
 	(expr); add_success();
 

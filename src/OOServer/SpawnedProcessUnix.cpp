@@ -31,17 +31,69 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
+#include "OOServer_Root.h"
 
-#if !defined(ACE_WIN32)
+#if !defined(_WIN32)
 
 #include "./SpawnedProcess.h"
 
 #include <grp.h>
 
+
+
+// Will need this!
+
+	char szBuf[64];
+#if defined(OMEGA_DEBUG)
+    OOBase::timeval_t now = OOBase::gettimeofday();
+	snprintf(szBuf,63,"%lx-%lx",uid,now.tv_usec);
+#else
+	snprintf(szBuf,63,"%lx",uid);
+#endif
+
+	if (mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+	{
+		int err = last_error();
+		if (err != EEXIST)
+			return "";
+	}
+
+	// Try to make it public
+	chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
+
+	// Attempt to remove anything already there
+	unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
+
+	return "/tmp/omegaonline/" + strPrefix + szBuf;
+
+
 // Helper for the recusive getpwuid_r fns()
-namespace Root
+namespace
 {
+	class SpawnedProcessUnix
+	{
+	public:
+		SpawnedProcessUnix();
+		virtual ~SpawnedProcessUnix();
+
+		bool Spawn(OOBase::LocalSocket::uid_t id, const std::string& strPipe, bool bSandbox);
+		bool CheckAccess(const char* pszFName, Omega::uint32_t mode, bool& bAllowed);
+
+		bool Compare(OOBase::LocalSocket::uid_t uid);
+		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
+		std::string GetRegistryHive();
+	
+	private:
+		bool    m_bSandbox;
+		uid_t	m_uid;
+		pid_t	m_pid;
+
+		bool CleanEnvironment();
+		bool close_all_fds();
+		bool linux_close_all_fds();
+		bool posix_close_all_fds(long max_fd);
+	};
+
 	class pw_info
 	{
 	public:
@@ -84,11 +136,11 @@ m_pwd(0), m_pBuffer(0), m_buf_len(1024)
 	m_pBuffer = new char[m_buf_len];
 	if (m_pBuffer)
 	{
-		ACE_OS::setpwent();
+		setpwent();
 		if (::getpwuid_r(uid,&m_pwd2,m_pBuffer,m_buf_len,&m_pwd) != 0)
 			m_pwd = 0;
 
-		ACE_OS::endpwent();
+		endpwent();
 	}
 }
 
@@ -110,16 +162,16 @@ Root::SpawnedProcess::~SpawnedProcess()
 		for (int i=0;i<10;++i)
 		{
 			ACE_exitcode ec;
-			retv = ACE_OS::wait(m_pid,&ec,WNOHANG);
+			retv = wait(m_pid,&ec,WNOHANG);
 			if (retv != 0)
 				break;
 
-			ACE_OS::sleep(1);
+			sleep(1);
 			retv = 0;
 		}
 
 		if (retv == 0)
-			ACE_OS::kill(m_pid,SIGKILL);
+			kill(m_pid,SIGKILL);
 
 		m_pid = ACE_INVALID_PID;
 	}
@@ -141,18 +193,18 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	};
 
 	static const size_t env_max = 256;
-	char** cleanenv = static_cast<char**>(ACE_OS::calloc(env_max,sizeof(char*)));
+	char** cleanenv = static_cast<char**>(calloc(env_max,sizeof(char*)));
 	if (!cleanenv)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("ACE_OS::calloc() failed!")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("calloc() failed!")),false);
 
 	char pathbuf[PATH_MAX + 6];
-	ACE_OS::snprintf(pathbuf,PATH_MAX + 6,"PATH=%s",SAFE_PATH);
-	cleanenv[0] = ACE_OS::strdup(pathbuf);
+	snprintf(pathbuf,PATH_MAX + 6,"PATH=%s",SAFE_PATH);
+	cleanenv[0] = strdup(pathbuf);
 
 	size_t cidx = 1;
 	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
 	{
-		if (!ACE_OS::strncmp(*ep,"OMEGA_",6)==0)
+		if (!strncmp(*ep,"OMEGA_",6)==0)
 		{
 			cleanenv[cidx] = *ep;
 			cidx++;
@@ -161,7 +213,7 @@ bool Root::SpawnedProcess::CleanEnvironment()
 		{
 			for (size_t idx = 0; safe_env_lst[idx]; idx++)
 			{
-				if (ACE_OS::strncmp(*ep,safe_env_lst[idx],ACE_OS::strlen(safe_env_lst[idx]))==0)
+				if (strncmp(*ep,safe_env_lst[idx],strlen(safe_env_lst[idx]))==0)
 				{
 					cleanenv[cidx] = *ep;
 					cidx++;
@@ -201,16 +253,16 @@ bool Root::SpawnedProcess::close_all_fds()
 	DIR *pdir;
 	char str[1024] = {0};
 
-	ACE_OS::snprintf(str,sizeof(n)-1,"/proc/%u/fd/",ACE_OS::getpid());
+	snprintf(str,sizeof(n)-1,"/proc/%u/fd/",getpid());
 
-	if (!(pdir = ACE_OS::opendir(str)))
+	if (!(pdir = opendir(str)))
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("opendir() failed!")),false);
 
 	/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
-	for (int fd, struct dirent *pfile; (pfile = ACE_OS::readdir(pdir)); )
+	for (int fd, struct dirent *pfile; (pfile = readdir(pdir)); )
 		if ( ! ('.' == *pfile->d_name || (((fd = atoi(pfile->d_name)))<0 || fd<STDERR_FILENO+1) ))
 			close(fd);
-	ACE_OS::closedir(pdir);
+	closedir(pdir);
 	return true;
 #else
 	#error "Not POSIX and not Linux, enable system specific way to close all files"
@@ -218,7 +270,7 @@ bool Root::SpawnedProcess::close_all_fds()
 	return true;
 }
 
-bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
+bool Root::SpawnedProcess::LogonSandboxUser(uid_t& uid)
 {
 	void* TICKET_96; // Look at using PAM for this...
 
@@ -233,31 +285,31 @@ bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& uid)
 	ACE_CDR::LongLong sb_uid = (ACE_CDR::ULong)-1;
 	int err = reg_root->get_integer_value(key,"Uid",0,sb_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to get sandbox uid from registry: %C"),ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to get sandbox uid from registry: %C"),strerror(err)),false);
 
 	uid = static_cast<uid_t>(sb_uid);
 	return true;
 }
 
-void Root::SpawnedProcess::CloseSandboxLogon(user_id_type /*uid*/)
+void Root::SpawnedProcess::CloseSandboxLogon(uid_t /*uid*/)
 {
 }
 
 static bool y_or_n_p(const char* question)
 {
-	ACE_OS::fputs(question,stdout);
+	fputs(question,stdout);
 	while (1)
 	{
 		// Write a space
-		ACE_OS::fputc(' ',stdout);
+		fputc(' ',stdout);
 
 		// Read first char of line
-		int c = ACE_OS::ace_tolower(ACE_OS::fgetc(stdin));
+		int c = ace_tolower(fgetc(stdin));
 		int answer = c;
 
 		// Discard rest of line
 		while (c != '\n' && c != EOF)
-			c = ACE_OS::fgetc(stdin);
+			c = fgetc(stdin);
 
 		if (answer == 'y')
 			return true;
@@ -265,17 +317,17 @@ static bool y_or_n_p(const char* question)
 			return false;
 
 		// Invalid answer
-		ACE_OS::fputs("Please answer y or n:",stdout);
+		fputs("Please answer y or n:",stdout);
 	}
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSandbox)
+bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
 	// Check our uid
 	bool bUnsafeStart = false;
-	uid_t our_uid = ACE_OS::getuid();
+	uid_t our_uid = getuid();
 	if (our_uid != 0)
 	{
 #if !defined(OMEGA_DEBUG)
@@ -297,7 +349,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 				"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
 			char szBuf[1024];
-			ACE_OS::snprintf(szBuf,1024,msg,pw->pw_name);
+			snprintf(szBuf,1024,msg,pw->pw_name);
 
 			// Prompt for continue...
 			ACE_ERROR((LM_WARNING,L"%s",szBuf));
@@ -305,18 +357,18 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
 				return false;
 
-			ACE_OS::printf("\nYou chose to continue... on your head be it!\n");
+			printf("\nYou chose to continue... on your head be it!\n");
 
 			bUnsafeStart = true;
 
 		}
 	}
 
-	pid_t child_id = ACE_OS::fork();
+	pid_t child_id = fork();
 	if (child_id == -1)
 	{
 		// Error
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("ACE_OS::fork() failed!")),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("fork() failed!")),false);
 	}
 	else if (child_id == 0)
 	{
@@ -327,40 +379,40 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		if (!pw)
 		{
 			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")));
-			ACE_OS::exit(errno);
+			exit(errno);
 		}
 
 		if (!bUnsafeStart)
 		{
 			// Set our gid...
-			if (ACE_OS::setgid(pw->pw_gid) != 0)
+			if (setgid(pw->pw_gid) != 0)
 			{
 				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setgid() failed!")));
-				ACE_OS::exit(errno);
+				exit(errno);
 			}
 
 			// Init our groups...
 			if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 			{
 				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
-				ACE_OS::exit(errno);
+				exit(errno);
 			}
 
 			// Stop being priviledged!
-			if (ACE_OS::setuid(uid) != 0)
+			if (setuid(uid) != 0)
 			{
 				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
-				ACE_OS::exit(errno);
+				exit(errno);
 			}
 		}
 
 		// Close all open handles
 		if (!close_all_fds())
-			ACE_OS::exit(errno);
+			exit(errno);
 
         // Clean up environment...
 		if (!CleanEnvironment())
-			ACE_OS::exit(errno);
+			exit(errno);
 
         // This all needs sorting out badly!
         void* TODO;
@@ -377,11 +429,11 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 		};
 		cmd_line[1] = const_cast<char*>(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
 
-		int err = ACE_OS::execv("./oosvruser",cmd_line);
+		int err = execv("./oosvruser",cmd_line);
 
 		ACE_ERROR((LM_WARNING,ACE_TEXT("Child process exiting with code: %d\n"),err));
 
-		ACE_OS::exit(err);
+		exit(err);
 	}
 	else
 	{
@@ -397,13 +449,13 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const ACE_CString& strPipe, bool bSa
 	return true;
 }
 
-bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const char* pszFName, Omega::uint32_t mode, bool& bAllowed)
 {
 	bAllowed = false;
 
 	// Get file info
 	ACE_stat sb;
-	if (ACE_OS::stat(pszFName,&sb) != 0)
+	if (stat(pszFName,&sb) != 0)
 		return false;
 
 	if (mode==O_RDONLY && (sb.st_mode & S_IROTH))
@@ -446,12 +498,12 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 
 bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 {
-	ACE_CString strUName = "omega_sandbox";
+	std::string strUName = "omega_sandbox";
 	if (argc>=1)
 		strUName = ACE_TEXT_ALWAYS_CHAR(argv[0]);
 
-	ACE_OS::setpwent();
-	passwd* pw = ACE_OS::getpwnam(strUName.c_str());
+	setpwent();
+	passwd* pw = getpwnam(strUName.c_str());
 	if (!pw)
 	{
 		if (errno)
@@ -459,7 +511,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 		else
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("You must add a user account for 'omega_sandbox' or supply a valid user name on the command line\n")),false);
 	}
-	ACE_OS::endpwent();
+	endpwent();
 
 	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
@@ -470,7 +522,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 
 	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);
 	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to set sandbox uid in registry: %C"),ACE_OS::strerror(err)),false);
+		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to set sandbox uid in registry: %C"),strerror(err)),false);
 
 	return true;
 }
@@ -480,7 +532,7 @@ bool Root::SpawnedProcess::UninstallSandbox()
 	return true;
 }
 
-bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
+bool Root::SpawnedProcess::SecureFile(const std::string& strFilename)
 {
 	// Make sure the file is owned by root (0)
 	if (chown(strFilename.c_str(),0,(gid_t)-1) != 0)
@@ -492,19 +544,19 @@ bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
 	return true;
 }
 
-bool Root::SpawnedProcess::Compare(user_id_type uid)
+bool Root::SpawnedProcess::Compare(uid_t uid)
 {
 	return (m_uid == uid);
 }
 
-bool Root::SpawnedProcess::IsSameUser(user_id_type uid)
+bool Root::SpawnedProcess::IsSameUser(uid_t uid)
 {
 	return Compare(uid);
 }
 
-ACE_CString Root::SpawnedProcess::GetRegistryHive()
+std::string Root::SpawnedProcess::GetRegistryHive()
 {
-	ACE_CString strDir;
+	std::string strDir;
 	if (m_bSandbox)
 		strDir = "/var/lib/omegaonline";
 	else
@@ -517,9 +569,9 @@ ACE_CString Root::SpawnedProcess::GetRegistryHive()
 		strDir += "/.omegaonline";
 	}
 
-	if (ACE_OS::mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
 	{
-		int err = ACE_OS::last_error();
+		int err = last_error();
 		if (err != EEXIST)
 			return "";
 	}

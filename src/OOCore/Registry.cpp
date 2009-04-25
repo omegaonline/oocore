@@ -21,13 +21,13 @@
 
 #include "OOCore_precomp.h"
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 // For the Windows path functions
 #include <shlwapi.h>
 #include <shlobj.h>
 #endif
 
-#include "./Xml.h"
+#include "Xml.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -94,7 +94,7 @@ string_t OOCore::SubstituteNames(const string_t& strName, const std::map<string_
 		const wchar_t* p1 = strRes1.c_str();
 		for (;;)
 		{
-			const wchar_t* p2 = ACE_OS::strstr(p1,i->first.c_str());
+			const wchar_t* p2 = wcsstr(p1,i->first.c_str());
 			if (!p2)
 			{
 				strRes2 += string_t(p1);
@@ -153,7 +153,7 @@ ObjectPtr<Registry::IKey> OOCore::ProcessXmlKeyAttribs(const std::map<string_t,s
 
 int64_t OOCore::ProcessXmlInteger(const wchar_t* p)
 {
-	p += ACE_OS::strspn(p,L" ");
+	p += wcsspn(p,L" ");
 
 	bool bNeg = false;
 	int base = 10;
@@ -272,7 +272,7 @@ void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey
 			Xml::ParseXMLCharData(rd_ptr,strGuff);	
 			
 			// Read key contents...
-			while (ACE_OS::strncmp(rd_ptr,L"</",2) != 0)
+			while (wcsncmp(rd_ptr,L"</",2) != 0)
 			{
 				ReadXmlKeyContents(rd_ptr,ptrSubKey,namespaces2,bAdd,mapSubsts);
 
@@ -331,7 +331,7 @@ void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey
 		Xml::ParseXMLCharData(rd_ptr,strGuff);	
 
 		// Read key contents...
-		while (ACE_OS::strncmp(rd_ptr,L"</",2) != 0)
+		while (wcsncmp(rd_ptr,L"</",2) != 0)
 		{
 			ReadXmlKeyContents(rd_ptr,ptrSubKey,namespaces2,bAdd,mapSubsts);
 
@@ -352,23 +352,23 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strX
 	for (;;)
 	{
 		// Skip the starting whitespace
-		rd_ptr += ACE_OS::strspn(rd_ptr,L" ");
+		rd_ptr += wcsspn(rd_ptr,L" ");
 
 		// Find the next whitespace or terminator
-		const wchar_t* p = ACE_OS::strpbrk(rd_ptr,L"=; ");
+		const wchar_t* p = wcspbrk(rd_ptr,L"=; ");
 		if (!p)
 			break;
 		
 		string_t strName = L"%" + string_t(rd_ptr,p - rd_ptr) + L"%";
 		
 		if (p[0] != L'=' && p[0] != L';')
-			p += ACE_OS::strspn(p,L" ");
+			p += wcsspn(p,L" ");
 
 		if (p[0] != L'=')
 			OMEGA_THROW(L"Invalid substitution string format");
 
 		rd_ptr = p + 1;
-		p = ACE_OS::strchr(rd_ptr,L';');
+		p = wcschr(rd_ptr,L';');
 
 		string_t strVal;
 		if (p)
@@ -417,7 +417,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strX
 	string_t strGuff;
 	OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
 
-	if (ACE_OS::strncmp(rd_ptr,L"</",2) == 0)
+	if (wcsncmp(rd_ptr,L"</",2) == 0)
 		OMEGA_THROW(L"Unexpected empty root element");
 
 	// Read keys...
@@ -428,7 +428,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strX
 		// Skip any guff...
 		OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);
 
-	} while (ACE_OS::strncmp(rd_ptr,L"</",2) != 0);
+	} while (wcsncmp(rd_ptr,L"</",2) != 0);
 
 	// End of root element
 	OOCore::Xml::ParseXMLEndElement(rd_ptr,strName);

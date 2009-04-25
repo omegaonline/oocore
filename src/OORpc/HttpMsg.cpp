@@ -21,7 +21,7 @@
 
 #include "OORpc.h"
 
-#include "./HttpMsg.h"
+#include "HttpMsg.h"
 
 using namespace Omega;
 using namespace OTL;

@@ -19,127 +19,38 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(HAVE_CONFIG_H)
-// Autoconf
-#include "config-autoconf.h"
-#endif
-
-#include <OOCore/config-guess.h>
-
-/////////////////////////////////////////////////
-// Include ACE components
-
-#if defined(OMEGA_WIN32) && !defined(WIN32)
-#define WIN32
-#endif
-
-#if defined(_MSC_VER)
-#pragma warning(push)
-#ifndef _DEBUG
-// Optimization sometimes re-orders things causing this error
-#pragma warning(disable : 4702)
-#endif
-#if (_MSC_VER == 1310)
-#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
-#endif
-#if (_MSC_VER >= 1400)
-#pragma warning(disable : 4996) // 'function' was declared deprecated
-#endif
-#endif
-
-#include <ace/CDR_Stream.h>
-#include <ace/Connector.h>
-#include <ace/Countdown_Time.h>
-#include <ace/Dev_Poll_Reactor.h>
-#include <ace/Event.h>
-#include <ace/Get_Opt.h>
-#include <ace/Message_Queue.h>
-#include <ace/OS.h>
-#include <ace/Process.h>
-#include <ace/Refcounted_Auto_Ptr.h>
-#include <ace/SOCK_Connector.h>
-#include <ace/SOCK_Acceptor.h>
-#include <ace/SPIPE_Acceptor.h>
-#include <ace/SPIPE_Connector.h>
-#include <ace/Svc_Handler.h>
-#include <ace/Thread_Manager.h>
-#include <ace/UNIX_Addr.h>
-
-#if defined(ACE_WIN32)
-#include <ace/Proactor.h>
-#include <ace/Asynch_Connector.h>
-#endif
-
-#if !defined(ACE_HAS_WCHAR)
-#error Omega Online requires ACE_HAS_WCHAR support!
-#endif
-
-#if defined(ACE_WIN32)
-#if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))
-#error You cannot mix and match UNICODE and ACE_USES_WCHAR!
-#endif
-#endif
-
-// Define a macro to hold the ACE version
-#define OMEGA_ACE_VERSION(x,y,z) \
-	((x * 10000) + (y * 100) + z)
-
-#define OMEGA_ACE_VERSION_CURRENT() OMEGA_ACE_VERSION(ACE_MAJOR_VERSION,ACE_MINOR_VERSION,ACE_BETA_VERSION)
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-
-#endif
-
-// End of ACE includes
-/////////////////////////////////////////////////
+#ifndef OOSERVER_USER_H_INCLUDED_
+#define OOSERVER_USER_H_INCLUDED_
 
 //////////////////////////////////////////////
-// Include STL components
+
+#include "../OOBase/Singleton.h"
+#include "../OOBase/SmartPtr.h"
+#include "../OOBase/TLSSingleton.h"
+#include "../OOBase/CDRStream.h"
+#include "../OOBase/Queue.h"
+#include "../OOBase/Thread.h"
+
+//////////////////////////////////////////////
+
+#include "../OOBase/Proactor.h"
+#include "../OOBase/Logger.h"
+
+//////////////////////////////////////////////
+
+#include <OOCore/BaseTypes.h>
+
+//////////////////////////////////////////////
 
 #include <set>
 #include <sstream>
 
-// End of STL includes
-//////////////////////////////////////////////
-
 /////////////////////////////////////////////////
-// Include OOCore/OTL components
 
 #include <OOCore/Remoting.h>
 #include <OOCore/Service.h>
 #include <OTL/OTL.h>
 
-// End of OOCore/OTL includes
 /////////////////////////////////////////////////
 
-/////////////////////////////////////////////////
-// Include Windows components
-#if defined(OMEGA_WIN32)
-
-#include <shlobj.h>
-#include <shlwapi.h>
-
-#endif
-// End of Windows includes
-/////////////////////////////////////////////////
-
-#define OOSERVER_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#define OOSERVER_READ_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Read_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#define OOSERVER_WRITE_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#ifdef OMEGA_DEBUG
-void AttachDebugger(pid_t pid);
-#endif
-
-#if !defined(OMEGA_WIN32)
-int IsDebuggerPresent();
-#endif
+#endif // OOSERVER_USER_H_INCLUDED_

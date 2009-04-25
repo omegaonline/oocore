@@ -22,8 +22,8 @@
 #ifndef OORPC_HTTP_CHANNEL_H_INCLUDED_
 #define OORPC_HTTP_CHANNEL_H_INCLUDED_
 
-#include <OOCore/Http.h>
-#include "./HttpMsg.h"
+#include <OONet/Http.h>
+#include "HttpMsg.h"
 
 namespace Rpc
 {
@@ -53,7 +53,7 @@ namespace Rpc
 			ACE_Time_Value                       deadline;
 		};
 
-		ACE_Thread_Mutex                              m_busy_lock;
+		OOBase::Mutex                                 m_busy_lock;
 		ACE_Message_Queue_Ex<Msg,ACE_MT_SYNCH>        m_msg_queue;
 		OTL::ObjectPtr<Omega::IO::IStream>            m_ptrResponse;
 		OTL::ObjectPtr<Omega::Remoting::IChannelSink> m_ptrSink;
@@ -87,8 +87,8 @@ namespace Rpc
 		HttpChannelServer(const HttpChannelServer&) { }
 		HttpChannelServer& operator = (const HttpChannelServer&) { return *this; }
 
-		ACE_RW_Thread_Mutex m_lock;
-		Omega::string_t     m_strAbsURI;
+		OOBase::RWMutex m_lock;
+		Omega::string_t m_strAbsURI;
 
 		std::map<Omega::guid_t,OTL::ObjectPtr<OTL::ObjectImpl<HttpServerSink> > > m_mapSinks;
 

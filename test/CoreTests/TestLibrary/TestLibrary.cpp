@@ -1,7 +1,7 @@
 #include <OTL/OTL.h>
 
 #include "../SimpleTest.h"
-#include "./TestLibrary.h"
+#include "TestLibrary.h"
 
 OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1DCA3FADB9A6}");
 

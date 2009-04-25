@@ -1,5 +1,5 @@
 #include <OTL/OTL.h>
-#include "./interfaces.h"
+#include "interfaces.h"
 
 namespace Omega {
 namespace TestSuite
@@ -16,7 +16,7 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 BEGIN_PROCESS_OBJECT_MAP(0)
 END_PROCESS_OBJECT_MAP()
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 #define OOREGISTER L"OORegister"
 #else
 #define OOREGISTER L"./ooregister"
@@ -309,14 +309,14 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 
 bool interface_tests()
 {
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 	do_local_library_test(L"TestLibrary_msvc");
 	do_local_library_test(L"TestLibrary_mingw");
 #else
 	do_local_library_test(L"./libTestLibrary.so");
 #endif
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 	do_local_process_test(L"TestProcess");
 #else
     do_local_process_test(L"./testprocess");
@@ -348,7 +348,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 
 static bool interface_tests_i(const wchar_t* pszHost)
 {
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 	int c = 0;
 	try
 	{

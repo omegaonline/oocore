@@ -19,7 +19,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
+#include "OOServer_Root.h"
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
@@ -27,7 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
+#if defined(OMEGA_DEBUG) && defined(_WIN32)
 
 #if defined(_MSC_VER)
 
@@ -67,7 +67,6 @@ static bool AttachVSDebugger(DWORD our_pid)
 	if FAILED(hr)
 		return false;
 
-	// Scope for objects
 	try
 	{
 		IUnknownPtr ptrUnk;
@@ -101,12 +100,12 @@ static bool AttachVSDebugger(DWORD our_pid)
 
 static void PromptForDebugger(DWORD pid)
 {
-	wchar_t szBuf[256];
-	ACE_OS::snprintf(szBuf,255,L"Attach the debugger to process id %lu now if you want!",pid);
-    MessageBoxW(NULL,szBuf,L"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
+	char szBuf[256];
+	sprintf_s(szBuf,sizeof(szBuf),"Attach the debugger to process id %lu now if you want!",pid);
+    MessageBoxA(NULL,szBuf,"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
-void AttachDebugger(pid_t pid)
+void AttachDebugger(DWORD pid)
 {
 #if defined(_MSC_VER)
 	if (AttachVSDebugger(pid))
@@ -116,4 +115,4 @@ void AttachDebugger(pid_t pid)
 	PromptForDebugger(pid);
 }
 
-#endif // OMEGA_DEBUG && OMEGA_WIN32
+#endif // OMEGA_DEBUG && _WIN32

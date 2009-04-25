@@ -50,7 +50,7 @@ namespace Root
 		MessagePipe();
 
 		static ACE_CString unique_name(const ACE_CString& strPrefix);
-		static int connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
+		static int connect(OOBase::SmartPtr<MessagePipe>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
 		static ACE_CString unique_name(const ACE_CString& strPrefix, user_id_type uid);
 		void close();
 
@@ -81,7 +81,7 @@ namespace Root
 		int open(const ACE_CString& strAddr, uid_t uid);
 #endif
 
-		int accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_Time_Value* timeout = 0);
+		int accept(OOBase::SmartPtr<MessagePipe>& pipe, ACE_Time_Value* timeout = 0);
 		ACE_HANDLE get_handle();
 		void close();
 
@@ -154,6 +154,6 @@ namespace Root
 #endif
 }
 
-#include "./MessagePipe.inl"
+#include "MessagePipe.inl"
 
 #endif // OOSERVER_MSG_PIPE_H_INCLUDED_

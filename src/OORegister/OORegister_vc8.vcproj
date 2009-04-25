@@ -128,7 +128,7 @@
 				Optimization="3"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
+				AdditionalIncludeDirectories="..\..\include"
 				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"

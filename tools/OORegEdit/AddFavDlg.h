@@ -2,7 +2,7 @@
 
 #include <wx/wx.h>
 #include <wx/image.h>
-#include "./wxGladeAssist.h"
+#include "wxGladeAssist.h"
 
 #ifndef ADDFAVDLG_H
 #define ADDFAVDLG_H

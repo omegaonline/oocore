@@ -37,7 +37,7 @@ void OTL::ModuleBase::DecLockCount()
 	--m_lockCount;
 }
 
-Omega::Threading::CriticalSection& OTL::ModuleBase::GetLock()
+Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
 {
 	return m_csMain;
 }
@@ -46,7 +46,7 @@ void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 {
 	try
 	{
-		Omega::Threading::Guard lock(m_csMain);
+		Omega::Threading::Guard<Omega::Threading::Mutex> lock(m_csMain);
 
 		Term term = { pfnTerm, arg };
 
@@ -67,7 +67,7 @@ void OTL::ModuleBase::fini()
 {
 	try
 	{
-		Omega::Threading::Guard lock(m_csMain);
+		Omega::Threading::Guard<Omega::Threading::Mutex> lock(m_csMain);
 
 		for (std::list<Term>::iterator i=m_listTerminators.begin(); i!=m_listTerminators.end(); ++i)
 		{

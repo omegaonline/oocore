@@ -34,7 +34,7 @@
 #ifndef OOSERVER_DATABASE_H_INCLUDED_
 #define OOSERVER_DATABASE_H_INCLUDED_
 
-#include "./OOServer_Root.h"
+#include "OOServer_Root.h"
 
 #include <sqlite3.h>
 
@@ -87,13 +87,13 @@ namespace Db
 		Database();
 		~Database();
 
-		int open(const ACE_CString& strDb);
-		int exec(const char* szSQL);
+		bool open(const char* pszDb);
+		int exec(const char* pszSQL);
 
 		sqlite3* database();
 
-		ACE_Refcounted_Auto_Ptr<Transaction,ACE_Thread_Mutex> begin_transaction(const char* pszType = 0);
-		ACE_Refcounted_Auto_Ptr<Statement,ACE_Thread_Mutex> prepare_statement(const char* pszStatement, ...);
+		OOBase::SmartPtr<Transaction> begin_transaction(const char* pszType = 0);
+		OOBase::SmartPtr<Statement> prepare_statement(const char* pszStatement, ...);
 
 	private:
 		sqlite3* m_db;

@@ -34,61 +34,57 @@
 #ifndef OOSERVER_REGISTRY_HIVE_H_INCLUDED_
 #define OOSERVER_REGISTRY_HIVE_H_INCLUDED_
 
-#include "./OOServer_Root.h"
-#include "./Database.h"
+#include "OOServer_Root.h"
+#include "Database.h"
 
 namespace Root
 {
+	class Manager;
 
-class RegistryHive
-{
-public:
-	RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex>& db);
+	class RegistryHive
+	{
+	public:
+		RegistryHive(Manager* pManager, OOBase::SmartPtr<Db::Database>& db);
 
-	int open();
+		bool open();
 
-	int open_key(ACE_INT64& uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id);
-	int create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool bFailIfThere, int access, ACE_CDR::ULong channel_id);
-	int delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id);
-	int enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, std::list<ACE_CString>& listSubKeys);
-	void enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
-	int enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, std::list<ACE_CString>& listValues);
-	void enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
-	int delete_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id);
+		int open_key(Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id);
+		int create_key(Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, int access, Omega::uint32_t channel_id);
+		int delete_key(Omega::int64_t uKey, std::string strSubKey, Omega::uint32_t channel_id);
+		int enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys);
+		void enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
+		int enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listValues);
+		void enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
+		int delete_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id);
 
-	int get_value_type(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::Octet& type);
-	int get_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CString& val);
-	int get_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::LongLong& val);
-	void get_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong cbLen, ACE_CDR::ULong channel_id, ACE_OutputCDR& response);
+		int get_value_type(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::byte_t& type);
+		int get_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val);
+		int get_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::int64_t& val);
+		void get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t cbLen, Omega::uint32_t channel_id, OOBase::CDRStream& response);
 
-	int set_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const char* val);
-	int set_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CDR::LongLong& val);
-	int set_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_InputCDR& request);
+		int set_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val);
+		int set_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const Omega::int64_t& val);
+		int set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const OOBase::CDRStream& request);
 
-	int get_description(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_CString& val);
-	int get_value_description(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CString& val);
-	int set_description(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, const ACE_CString& val);
-	int set_value_description(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CString& val);
+		int get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val);
+		int get_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val);
+		int set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val);
+		int set_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const std::string& val);
 
-#ifdef OMEGA_WIN32
-	int get_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, ACE_WString& val);
-	int set_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, const ACE_WString& val);
-#endif
+	private:
+		Manager*                       m_pManager;
+		OOBase::Mutex                  m_lock;
+		OOBase::SmartPtr<Db::Database> m_db;
 
-private:
-	ACE_Thread_Mutex m_lock;
-	ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex> m_db;
+		RegistryHive(const RegistryHive&) {}
+		RegistryHive& operator = (const RegistryHive&) { return *this; }
 
-	RegistryHive(const RegistryHive&) {}
-	RegistryHive& operator = (const RegistryHive&) { return *this; }
-
-	int find_key(ACE_INT64 uParent, const ACE_CString& strSubKey, ACE_INT64& uKey, int& access_mask);
-	int find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& access_mask, ACE_CDR::ULong channel_id);
-	int insert_key(ACE_INT64& uKey, ACE_CString strSubKey, int access_mask);
-	int check_key_exists(const ACE_INT64& uKey, int& access_mask);
-	int delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong channel_id);
-};
-
+		int find_key(Omega::int64_t uParent, const std::string& strSubKey, Omega::int64_t& uKey, int& access_mask);
+		int find_key(Omega::int64_t& uKey, std::string& strSubKey, int& access_mask, Omega::uint32_t channel_id);
+		int insert_key(Omega::int64_t& uKey, std::string strSubKey, int access_mask);
+		int check_key_exists(const Omega::int64_t& uKey, int& access_mask);
+		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
+	};
 }
 
 #endif // OOSERVER_REGISTRY_HIVE_H_INCLUDED_

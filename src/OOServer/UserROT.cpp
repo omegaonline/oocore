@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_User.h"
-#include "./UserROT.h"
+#include "OOServer_User.h"
+#include "UserROT.h"
 
 #include "../Common/Server.h"
 
@@ -63,7 +63,7 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 		if (ptrCC != 0)
 			src_id = ptrCC->SourceId();
 
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		// Create a new cookie
 		Info info;
@@ -77,9 +77,8 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 		}
 
 		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
-		if (!p.second)
-			OMEGA_THROW(EALREADY);
-
+		assert(p.second);
+			
 		m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
 
 		return nCookie;
@@ -100,7 +99,7 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 		if (ptrCC != 0)
 			src_id = ptrCC->SourceId();
 
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
 		if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
@@ -129,7 +128,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 		ObjectPtr<IObject> ptrRet;
 		std::list<uint32_t> listDeadEntries;
 		{
-			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
 			{
@@ -153,7 +152,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 		if (!listDeadEntries.empty())
 		{
 			// We found at least one dead proxy
-			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			for (std::list<uint32_t>::iterator i=listDeadEntries.begin();i!=listDeadEntries.end();++i)
 			{

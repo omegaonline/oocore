@@ -33,14 +33,14 @@ namespace OOCore
 		void RevokeObject(Omega::uint32_t cookie);
 
 	private:
-		friend class ACE_Singleton<ServiceManager, ACE_Recursive_Thread_Mutex>;
+		friend class OOBase::Singleton<ServiceManager>;
 		
 		ServiceManager();
 		ServiceManager(const ServiceManager&) {}
 		ServiceManager& operator = (const ServiceManager&) { return *this; }
 
-		ACE_RW_Thread_Mutex m_lock;
-		Omega::uint32_t     m_nNextCookie;
+		OOBase::RWMutex m_lock;
+		Omega::uint32_t m_nNextCookie;
 
 		struct Info
 		{
@@ -53,7 +53,7 @@ namespace OOCore
 		std::map<Omega::uint32_t,Info>                                        m_mapServicesByCookie;
 		std::multimap<Omega::guid_t,std::map<Omega::uint32_t,Info>::iterator> m_mapServicesByOid;
 	};
-	typedef ACE_Unmanaged_Singleton<ServiceManager, ACE_Recursive_Thread_Mutex> SERVICE_MANAGER;
+	typedef OOBase::Singleton<ServiceManager> SERVICE_MANAGER;
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

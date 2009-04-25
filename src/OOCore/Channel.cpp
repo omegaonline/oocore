@@ -21,8 +21,8 @@
 
 #include "OOCore_precomp.h"
 
-#include "./Channel.h"
-#include "./UserSession.h"
+#include "Channel.h"
+#include "UserSession.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -34,8 +34,10 @@ OOCore::Channel::Channel() :
 {
 }
 
-void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid, Remoting::IObjectManager* pOM)
+void OOCore::Channel::init(UserSession* pSession, uint16_t apt_id, uint32_t channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid, Remoting::IObjectManager* pOM)
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
 	m_pSession = pSession;
 	m_apt_id = apt_id;
 	m_channel_id = channel_id;
@@ -52,19 +54,21 @@ void OOCore::Channel::init(UserSession* pSession, ACE_CDR::UShort apt_id, ACE_CD
 
 void OOCore::Channel::disconnect()
 {
-	m_ptrOM->Disconnect();
-	m_ptrOM.Release();
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	m_channel_id = 0;
-	m_pSession = 0;
+	if (m_ptrOM)
+	{
+		m_ptrOM->Shutdown();
+		m_ptrOM.Release();
+	}
 }
 
 Remoting::IMessage* OOCore::Channel::CreateMessage()
 {
 	if (m_message_oid == guid_t::Null())
 	{
-		// Create a fresh OutputCDR
-		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrOutput = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+		// Create a fresh CDRMessage
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 		return ptrOutput.QueryInterface<Remoting::IMessage>();
 	}
 	else
@@ -78,60 +82,52 @@ Remoting::IMessage* OOCore::Channel::CreateMessage()
 
 IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv,  uint32_t timeout)
 {
-	if (!m_pSession)
-		OMEGA_THROW(ECONNRESET);
+	// Get the object manager
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	if (!m_ptrOM)
+		throw Omega::Remoting::IChannelClosedException::Create();
+	
+	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrOM;
+	guard.release();
 
 	// We need to wrap the message
-	ObjectPtr<ObjectImpl<OutputCDR> > ptrEnvelope = ObjectImpl<OutputCDR>::CreateInstancePtr();
-	m_ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
+	ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	// QI pSend for our private interface
-	ObjectPtr<IMessageBlockHolder> ptrOutput;
-	ptrOutput.Attach(static_cast<IMessageBlockHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(IMessageBlockHolder))));
-	if (!ptrOutput)
-	{
-		m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
-		OMEGA_THROW(EINVAL);
-	}
+	ObjectPtr<ICDRStreamHolder> ptrOutput;
+	ptrOutput.Attach(static_cast<ICDRStreamHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(ICDRStreamHolder))));
+	assert(ptrOutput);
+	
+	// Get the buffer
+	const OOBase::CDRStream* request = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
 
-	// Get the message block
-	const ACE_Message_Block* request = static_cast<const ACE_Message_Block*>(ptrOutput->GetMessageBlock());
-
-	ACE_InputCDR* response = 0;
-	if (!m_pSession->send_request(m_apt_id,m_channel_id,request,response,timeout,attribs))
-	{
-		if (m_ptrOM)
-			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
-
-		OMEGA_THROW(ACE_OS::last_error());
-	}
-
+	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	try
 	{
-		if (response)
-		{
-			// Wrap the response
-			ObjectPtr<ObjectImpl<InputCDR> > ptrRecv = ObjectImpl<InputCDR>::CreateInstancePtr();
-			ptrRecv->init(*response);
-			delete response;
-
-			// Unwrap the payload...
-			IObject* pRet = 0;
-			m_ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pRet);
-			pRecv = static_cast<Remoting::IMessage*>(pRet);
-		}
-	}
-	catch (IException* pE)
-	{
-		delete response;
-		return pE;
+		response = m_pSession->send_request(m_apt_id,m_channel_id,request,timeout,attribs);
 	}
 	catch (...)
 	{
-		delete response;
+		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+
+		// Disconnect ourselves on failure
+		disconnect();
 		throw;
 	}
 
+	if (response)
+	{
+		// Wrap the response
+		ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
+		ptrRecv->init(*response);
+		
+		// Unwrap the payload...
+		IObject* pRet = 0;
+		ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pRet);
+		pRecv = static_cast<Remoting::IMessage*>(pRet);
+	}
+	
 	return 0;
 }
 
@@ -152,21 +148,23 @@ guid_t OOCore::Channel::GetReflectUnmarshalFactoryOID()
 
 void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
-	if (!m_pSession)
-		OMEGA_THROW(ECONNRESET);
-
-	ACE_InputCDR* response = 0;
-	if (!m_pSession->send_request(m_apt_id,m_channel_id,0,response,0,Message::synchronous | Message::channel_reflect))
-		OMEGA_THROW(ACE_OS::last_error());
-
-	ACE_CDR::ULong other_end = 0;
-	bool bOk = response->read_ulong(other_end);
-
-	delete response;
-
-	if (!bOk)
-		OMEGA_THROW(ACE_OS::last_error());
-
+	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+	
+	try
+	{
+		response = m_pSession->send_request(m_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
+	}
+	catch (...)
+	{
+		// Disconnect ourselves on failure
+		disconnect();
+		throw;
+	}
+	
+	uint32_t other_end = 0;
+	if (response && !response->read(other_end))
+		OMEGA_THROW(EIO);
+	
 	// Return in the same format as we marshal
 	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
 	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
@@ -174,6 +172,9 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 
 Remoting::IObjectManager* OOCore::Channel::GetObjectManager()
 {
+	// Get the object manager
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	
 	return m_ptrOM.AddRef();
 }
 
@@ -218,7 +219,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 		// If we get here, then we are loaded into a different exe from OOServer,
 		// therefore we do simple unmarshalling
 	
-		ACE_CDR::ULong channel_id;
+		uint32_t channel_id;
 		if (pMessage->ReadUInt32s(L"m_channel_id",1,&channel_id) != 1)
 			OMEGA_THROW(EIO);
 
@@ -231,40 +232,23 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 	}
 }
 
-OMEGA_DEFINE_OID(OOCore,OID_OutputCDRMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");
+OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");
 
-void OOCore::OutputCDRMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
-	ACE_Message_Block* mb = 0;
+	Omega::uint64_t sz;
+	pMessage->ReadUInt64s(L"length",1,&sz);
 
-	ObjectPtr<IMessageBlockHolder> ptrMB(pMessage);
-	if (ptrMB)
-	{
-		ACE_InputCDR* pInput = static_cast<ACE_InputCDR*>(ptrMB->GetInputCDR());
+	if (sz > (size_t)-1)
+		OMEGA_THROW(E2BIG);
+	size_t len = static_cast<size_t>(sz);
 
-		ACE_CDR::ULong len = 0;
-		pInput->read_ulong(len);
-
-		pInput->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-		mb = pInput->start()->duplicate();
-		mb->wr_ptr(mb->rd_ptr() + len);
-		pInput->skip_bytes((ACE_CDR::ULong)len);
-	}
-	else
-	{
-		Omega::uint64_t sz;
-		pMessage->ReadUInt64s(L"length",1,&sz);
-
-		OMEGA_NEW(mb,ACE_Message_Block(static_cast<size_t>(sz)));
-		pMessage->ReadBytes(L"data",static_cast<size_t>(sz),(Omega::byte_t*)mb->wr_ptr());
-		mb->wr_ptr(static_cast<size_t>(sz));
-	}
-
-	ObjectPtr<ObjectImpl<InputCDR> > ptrInput = ObjectImpl<InputCDR>::CreateInstancePtr();
-	ACE_InputCDR input(mb);
-	mb->release();
-
+	OOBase::CDRStream input(len);
+	pMessage->ReadBytes(L"data",len,(Omega::byte_t*)input.buffer()->wr_ptr());
+	input.buffer()->wr_ptr(len);
+	
+	ObjectPtr<ObjectImpl<CDRMessage> > ptrInput = ObjectImpl<CDRMessage>::CreateInstancePtr();
 	ptrInput->init(input);
+
 	pObject = ptrInput->QueryInterface(iid);
 }

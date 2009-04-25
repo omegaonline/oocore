@@ -36,7 +36,7 @@ namespace User
 	public:
 		Channel();
 
-		void init(Manager* pManager, ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
+		void init(Manager* pManager, Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
 		BEGIN_INTERFACE_MAP(Channel)
@@ -47,7 +47,7 @@ namespace User
 
 	private:
 		Manager*                                          m_pManager;
-		ACE_CDR::ULong	                                  m_channel_id;
+		Omega::uint32_t	                                  m_channel_id;
 		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
 		Omega::guid_t                                     m_message_oid;
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;

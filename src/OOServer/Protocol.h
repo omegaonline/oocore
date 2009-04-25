@@ -26,10 +26,8 @@ namespace Root
 {
 	enum RootOpCode
 	{
-		// Root -> Sandbox
-		HttpOpen = 0x10,
-		HttpRecv,
-		
+		// Root -> User
+				
 		// User -> Root
 		KeyExists = 0x80,
 		CreateKey,
@@ -47,12 +45,9 @@ namespace Root
 		SetDescription,
 		SetValueDescription,
 		EnumValues,
-		DeleteValue,
-
-		HttpSend = 0x100,
-		HttpClose
+		DeleteValue
 	};
-	typedef ACE_CDR::UShort RootOpCode_t;
+	typedef Omega::uint16_t RootOpCode_t;
 }
 
 #endif // OOSERVER_PROTOCOL_H_INCLUDED_

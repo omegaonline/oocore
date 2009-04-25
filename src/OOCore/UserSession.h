@@ -22,13 +22,16 @@
 #ifndef OOCORE_USER_SESSION_H_INCLUDED_
 #define OOCORE_USER_SESSION_H_INCLUDED_
 
-#include "./Channel.h"
-#include "./ApartmentImpl.h"
+#include "Channel.h"
+#include "ApartmentImpl.h"
 
 namespace OOCore
 {
 	struct Message
 	{
+		Message(size_t len) : m_payload(len)
+		{}
+
 		enum Type
 		{
 			Response = 0,
@@ -49,15 +52,15 @@ namespace OOCore
 			channel_reflect = 0x20000
 		};
 
-		ACE_CDR::ULong                                         m_src_channel_id;
-		ACE_CDR::UShort                                        m_dest_thread_id;
-		ACE_CDR::UShort                                        m_src_thread_id;
-		ACE_CDR::ULong                                         m_attribs;
-		ACE_CDR::ULong                                         m_seq_no;
-		ACE_CDR::UShort                                        m_type;
-		ACE_CDR::UShort                                        m_apartment_id;
-		ACE_Time_Value                                         m_deadline;
-		ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> m_ptrPayload;
+		Omega::uint32_t                m_src_channel_id;
+		Omega::uint16_t                m_dest_thread_id;
+		Omega::uint16_t                m_src_thread_id;
+		Omega::uint32_t                m_attribs;
+		Omega::uint32_t                m_seq_no;
+		Omega::uint16_t                m_type;
+		Omega::uint16_t                m_apartment_id;
+		OOBase::timeval_t              m_deadline;
+		OOBase::CDRStream              m_payload;
 	};
 
 	class UserSession
@@ -67,106 +70,86 @@ namespace OOCore
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
 
-		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
-		Omega::Remoting::MarshalFlags_t classify_channel(ACE_CDR::ULong channel);
-		bool send_request(ACE_CDR::UShort apartment_id, ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* request, ACE_InputCDR*& response, ACE_CDR::ULong timeout, ACE_CDR::ULong attribs);
-		bool send_response(ACE_CDR::UShort apt_id, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* response, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs = Message::synchronous);
+		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
+		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
+		OOBase::CDRStream* send_request(Omega::uint16_t apartment_id, Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, Omega::uint32_t timeout, Omega::uint32_t attribs);
+		void send_response(Omega::uint16_t apt_id, Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs = Message::synchronous);
 
 		static Omega::Apartment::IApartment* create_apartment();
-		static ACE_CDR::UShort get_apartment();
-		static void remove_apartment(ACE_CDR::UShort id);
+		static Omega::uint16_t get_current_apartment();
+		static void remove_apartment(Omega::uint16_t id);
 		
-		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> get_apartment(ACE_CDR::UShort id);
-		ACE_CDR::UShort update_state(ACE_CDR::UShort apartment_id, Omega::uint32_t* pTimeout);
+		OOBase::SmartPtr<Apartment> get_apartment(Omega::uint16_t id);
+		Omega::uint16_t update_state(Omega::uint16_t apartment_id, Omega::uint32_t* pTimeout);
 				
 	private:
 		friend class ThreadContext;
-		friend class ACE_Singleton<UserSession, ACE_Recursive_Thread_Mutex>;
-		typedef ACE_Unmanaged_Singleton<UserSession, ACE_Recursive_Thread_Mutex> USER_SESSION;
-
-		class MessagePipe
-		{
-		public:
-			static int connect(MessagePipe& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait = 0);
-			void close();
-
-			ssize_t send(const ACE_Message_Block* mb, ACE_Time_Value* timeout = 0, size_t* sent = 0);
-			ssize_t recv(void* buf, size_t len);
-
-		private:
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-			ACE_HANDLE m_hRead;
-			ACE_HANDLE m_hWrite;
-#else
-			ACE_SOCK_Stream m_stream;
-#endif
-		};
+		friend class OOBase::Singleton<UserSession>;
+		typedef OOBase::Singleton<UserSession> USER_SESSION;
 
 		UserSession();
 		~UserSession();
 		UserSession(const UserSession&) {}
 		UserSession& operator = (const UserSession&) { return *this; }
 
-		ACE_RW_Thread_Mutex m_lock;
-		int                 m_thrd_grp_id;
-		MessagePipe         m_stream;
-		ACE_CDR::ULong      m_channel_id;
-		Omega::uint32_t     m_nIPSCookie;
+		OOBase::RWMutex                  m_lock;
+		OOBase::Thread                   m_worker_thread;
+		//OOBase::SmartPtr<OOBase::Socket> m_stream;
+		Omega::uint32_t                  m_channel_id;
+		Omega::uint32_t                  m_nIPSCookie;
 
 		struct ThreadContext
 		{
-			ACE_CDR::UShort                             m_thread_id;
-			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
+			Omega::uint16_t                             m_thread_id;
+			OOBase::BoundedQueue<Message*>              m_msg_queue;
 
 			// Transient data
 			size_t                                      m_usage;
-			std::map<ACE_CDR::ULong,ACE_CDR::UShort>    m_mapChannelThreads;
-			ACE_Time_Value                              m_deadline;
-			ACE_CDR::ULong                              m_seq_no;
-			ACE_CDR::UShort                             m_current_apt;
+			std::map<Omega::uint32_t,Omega::uint16_t>   m_mapChannelThreads;
+			OOBase::timeval_t                           m_deadline;
+			Omega::uint32_t                             m_seq_no;
+			Omega::uint16_t                             m_current_apt;
 
 			static ThreadContext* instance();
 
 		private:
-			friend class ACE_TSS_Singleton<ThreadContext,ACE_Recursive_Thread_Mutex>;
-			friend class ACE_TSS<ThreadContext>;
-
+			friend class OOBase::TLSSingleton<ThreadContext>;
+			
 			ThreadContext();
 			~ThreadContext();
 		};
 
-		ACE_Atomic_Op<ACE_Thread_Mutex,unsigned long> m_consumers;
-		std::map<ACE_CDR::UShort,ThreadContext*>      m_mapThreadContexts;
-		ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>    m_default_msg_queue;
+		OOBase::AtomicInt<unsigned long>         m_consumers;
+		std::map<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
+		OOBase::BoundedQueue<Message*>           m_default_msg_queue;
 
 		// Accessors for ThreadContext
-		ACE_CDR::UShort insert_thread_context(ThreadContext* pContext);
-		void remove_thread_context(ACE_CDR::UShort thread_id);
+		Omega::uint16_t insert_thread_context(ThreadContext* pContext);
+		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		bool init_i();
+		void init_i();
 		void term_i();
-		Omega::IException* bootstrap();
-		bool discover_server_port(ACE_CString& uPort);
-		bool launch_server();
-
-		int run_read_loop();
-		int pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
-		void process_request(const Message* pMsg, const ACE_Time_Value& deadline);
-		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::UShort apartment_id, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
-		bool build_header(ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, ACE_OutputCDR& header, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::UShort flags, ACE_CDR::ULong attribs);
-		//bool send_channel_close(ACE_CDR::ULong closed_channel_id);
-		void process_channel_close(ACE_CDR::ULong closed_channel_id);
+		void bootstrap();
+		std::string discover_server_port(OOBase::timeval_t& wait);
 		
-		static ACE_THR_FUNC_RETURN io_worker_fn(void* pParam);
+		int run_read_loop();
+		bool pump_requests(const OOBase::timeval_t* deadline = 0, bool bOnce = false);
+		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
+		OOBase::CDRStream* wait_for_response(Omega::uint16_t apartment_id, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
+		//bool send_channel_close(Omega::uint32_t closed_channel_id);
+		void process_channel_close(Omega::uint32_t closed_channel_id);
+		
+		static int io_worker_fn(void* pParam);
 
 		// Apartment members
-		ACE_CDR::UShort                                                                m_next_apartment;
-		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex>                            m_ptrZeroApt;
-		std::map<ACE_CDR::UShort,ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> > m_mapApartments;
+		Omega::uint16_t                                        m_next_apartment;
+		OOBase::SmartPtr<Apartment>                            m_ptrZeroApt;
+		std::map<Omega::uint16_t,OOBase::SmartPtr<Apartment> > m_mapApartments;
 		
 		Omega::Apartment::IApartment* create_apartment_i();
-		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
+		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 	};
 }
 

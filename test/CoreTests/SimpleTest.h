@@ -1,7 +1,7 @@
 #ifndef SIMPLE_TEST_INCLUDED
 #define SIMPLE_TEST_INCLUDED
 
-#include "./interfaces.h"
+#include "interfaces.h"
 
 class SimpleTestImpl :
 	public Omega::TestSuite::ISimpleTest

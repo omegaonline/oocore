@@ -22,7 +22,7 @@
 #ifndef OOCORE_APARTMENT_H_INCLUDED_
 #define OOCORE_APARTMENT_H_INCLUDED_
 
-#include <OOCore/Remoting.h>
+#include "Remoting.h"
 
 namespace Omega
 {

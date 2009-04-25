@@ -22,77 +22,16 @@
 #ifndef OOCORE_LOCAL_MACROS_H_INCLUDED_
 #define OOCORE_LOCAL_MACROS_H_INCLUDED_
 
-//////////////////////////////////////////////
-// Bring in the config guesser
-
-#if defined(HAVE_CONFIG_H)
-// Autoconf
-#include "config-autoconf.h"
-#endif
-
-#include <OOCore/config-guess.h>
-
-/////////////////////////////////////////////////
-// Include ACE components
-
-#if defined(OMEGA_WIN32) && !defined(WIN32)
-#define WIN32
-#endif
-
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4355) // 'this' : used in base member initializer list
-#if (_MSC_VER == 1310)
-#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
-#endif
-#if (_MSC_VER >= 1400)
-#pragma warning(disable : 4996) // 'function' was declared deprecated
-#endif
-#endif
-
-#include <ace/CDR_Stream.h>
-#include <ace/Countdown_Time.h>
-#include <ace/DLL.h>
-#include <ace/DLL_Manager.h>
-#include <ace/Event.h>
-#include <ace/Message_Queue.h>
-#include <ace/NT_Service.h>
-#include <ace/OS.h>
-#include <ace/Proactor.h>
-#include <ace/Process.h>
-#include <ace/Recursive_Thread_Mutex.h>
-#include <ace/RW_Thread_Mutex.h>
-#include <ace/Singleton.h>
-#include <ace/SOCK_Connector.h>
-#include <ace/SString.h>
-#include <ace/TSS_T.h>
-#include <ace/UUID.h>
-
-#include <ace/SPIPE_Connector.h>
-#include <ace/UNIX_Addr.h>
-
-#if !defined(ACE_HAS_WCHAR)
-#error Omega Online requires has wchar_t support!
-#endif
-
-#if defined(ACE_WIN32)
-#if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))
-#error You cannot mix and match UNICODE and ACE_USES_WCHAR!
-#endif
-#endif
-
-// Define a macro to hold the ACE version
-#define OMEGA_ACE_VERSION(x,y,z) \
-	((x * 10000) + (y * 100) + z)
-
-#define OMEGA_ACE_VERSION_CURRENT() OMEGA_ACE_VERSION(ACE_MAJOR_VERSION,ACE_MINOR_VERSION,ACE_BETA_VERSION)
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-
-// End of ACE includes
-/////////////////////////////////////////////////
+#include "../OOBase/Singleton.h"
+#include "../OOBase/TLSSingleton.h"
+#include "../OOBase/SmartPtr.h"
+#include "../OOBase/CDRStream.h"
+#include "../OOBase/TimeVal.h"
+#include "../OOBase/Thread.h"
+#include "../OOBase/Socket.h"
+#include "../OOBase/Queue.h"
+#include "../OOBase/DLL.h"
+#include "../OOBase/Win32.h"
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
@@ -113,40 +52,20 @@
 #include <OOCore/Apartment.h>
 #include <OTL/OTL.h>
 #include "../Common/Server.h"
+
 #include "../Common/Version.h"
 
 // End of OOCore/OTL includes
 /////////////////////////////////////////////////
 
 /////////////////////////////////////////////////
-// Include Windows components
-
-#ifdef OMEGA_WIN32
-#include <shlobj.h>
-#include <shlwapi.h>
-#endif
-
-// End of Windows includes
-/////////////////////////////////////////////////
-
-#define OOCORE_GUARD(MUTEX, OBJ, LOCK) \
-	ACE_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#define OOCORE_READ_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Read_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#define OOCORE_WRITE_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
+// Some helpers and globals
 
 namespace OOCore
 {
 	OTL::ObjectPtr<Omega::System::IInterProcessService> GetInterProcessService();
 	bool HostedByOOServer();
 
-	// Some helpers
 	inline Omega::bool_t ReadBoolean(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
 	{
 		Omega::bool_t val;

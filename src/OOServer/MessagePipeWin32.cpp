@@ -31,8 +31,8 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
-#include "./MessagePipe.h"
+#include "OOServer_Root.h"
+#include "MessagePipe.h"
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 
@@ -43,14 +43,12 @@ Root::MessagePipe::MessagePipe() :
 {
 }
 
-int Root::MessagePipe::connect(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
+int Root::MessagePipe::connect(OOBase::SmartPtr<MessagePipe>& pipe, const ACE_CString& strAddr, ACE_Time_Value* wait)
 {
 	ACE_TString strPipe = ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str());
 
-	MessagePipe* p = 0;
-	ACE_NEW_RETURN(p,MessagePipe,-1);
-	pipe.reset(p);
-
+	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+	
 	ACE_Time_Value val(30);
 	if (!wait)
 		wait = &val;
@@ -299,11 +297,11 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, HANDLE hToken)
 
 	ACE_SPIPE_Addr addr;
 	addr.string_to_addr((strPipe + ACE_TEXT("\\up")).c_str());
-	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
+	if (m_acceptor_up.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa,PIPE_READMODE_BYTE) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")),-1);
 
 	addr.string_to_addr((strPipe + ACE_TEXT("\\down")).c_str());
-	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa) != 0)
+	if (m_acceptor_down.open(addr,1,ACE_DEFAULT_FILE_PERMS,&m_sa,PIPE_READMODE_BYTE) != 0)
 	{
 		m_acceptor_up.close();
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("acceptor.open() failed")),-1);
@@ -312,12 +310,10 @@ int Root::MessagePipeAcceptor::open(const ACE_CString& strAddr, HANDLE hToken)
 	return 0;
 }
 
-int Root::MessagePipeAcceptor::accept(ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_Time_Value* timeout)
+int Root::MessagePipeAcceptor::accept(OOBase::SmartPtr<MessagePipe>& pipe, ACE_Time_Value* timeout)
 {
-	MessagePipe* p = 0;
-	ACE_NEW_RETURN(p,MessagePipe,-1);
-	pipe.reset(p);
-
+	ACE_NEW_RETURN(pipe,MessagePipe,-1);
+	
 	ACE_Time_Value val(30);
 	if (!timeout)
 		timeout = &val;

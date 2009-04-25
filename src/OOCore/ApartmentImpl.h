@@ -31,27 +31,27 @@ namespace OOCore
 	class Apartment
 	{
 	public:
-		Apartment(UserSession* pSession, ACE_CDR::UShort id);
+		Apartment(UserSession* pSession, Omega::uint16_t id);
 		
 		void close();
 		
-		void process_channel_close(ACE_CDR::ULong closed_channel_id);
-		bool is_channel_open(ACE_CDR::ULong channel_id);
+		void process_channel_close(Omega::uint32_t closed_channel_id);
+		bool is_channel_open(Omega::uint32_t channel_id);
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_channel_om(ACE_CDR::ULong src_channel_id);
-		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(ACE_CDR::ULong src_channel_id, const Omega::guid_t& message_oid);
-		void process_request(const Message* pMsg, const ACE_Time_Value& deadline);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_channel_om(Omega::uint32_t src_channel_id);
+		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
+		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(ACE_CDR::UShort apartment_id);
-		Omega::IException* apartment_message(ACE_CDR::UShort apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(Omega::uint16_t apartment_id);
+		Omega::IException* apartment_message(Omega::uint16_t apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		
 	private:
-		ACE_RW_Thread_Mutex m_lock;
-		UserSession*        m_pSession;
-		ACE_CDR::UShort     m_id;
+		OOBase::RWMutex m_lock;
+		UserSession*    m_pSession;
+		Omega::uint16_t m_id;
 
-		std::map<ACE_CDR::ULong,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >     m_mapChannels;
-		std::map<ACE_CDR::UShort,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > > m_mapApartments;
+		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >    m_mapChannels;
+		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > > m_mapApartments;
 	};
 
 	class AptChannel :
@@ -60,8 +60,8 @@ namespace OOCore
 	public:
 		AptChannel() : Channel() {}
 
-		void init(ACE_CDR::UShort apt_id, ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> ptrApt, Omega::Remoting::IObjectManager* pOM);
-		//void init(ACE_CDR::ULong channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
+		void init(Omega::uint16_t apt_id, OOBase::SmartPtr<Apartment> ptrApt, Omega::Remoting::IObjectManager* pOM);
+		//void init(uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		//void disconnect();
 
 		BEGIN_INTERFACE_MAP(AptChannel)
@@ -72,7 +72,7 @@ namespace OOCore
 		AptChannel(const AptChannel&) : Channel() {}
 		AptChannel& operator = (const AptChannel&) { return *this; }
 
-		ACE_Refcounted_Auto_Ptr<Apartment,ACE_Thread_Mutex> m_ptrApt;
+		OOBase::SmartPtr<Apartment> m_ptrApt;
 
 	// IChannelBase members
 	public:
@@ -107,7 +107,7 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_CDR::UShort m_id;
+		Omega::uint16_t m_id;
 
 	// IApartment members
 	public:

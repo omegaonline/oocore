@@ -47,21 +47,21 @@ namespace OTL
 		ObjectPtr<Omega::Registry::IKey> OpenSubKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting)
 		{
 			ObjectPtr<Omega::Registry::IKey> sub_key;
-			sub_key.Attach(m_ptr.value()->OpenSubKey(key,flags));
+			sub_key.Attach(m_ptr->OpenSubKey(key,flags));
 			return sub_key;
 		}
 
 		ObjectPtr<Omega::IEnumString> EnumSubKeys()
 		{
 			ObjectPtr<Omega::IEnumString> en;
-			en.Attach(m_ptr.value()->EnumSubKeys());
+			en.Attach(m_ptr->EnumSubKeys());
 			return en;
 		}
 
 		ObjectPtr<Omega::IEnumString> EnumValues()
 		{
 			ObjectPtr<Omega::IEnumString> en;
-			en.Attach(m_ptr.value()->EnumValues());
+			en.Attach(m_ptr->EnumValues());
 			return en;
 		}
 	};

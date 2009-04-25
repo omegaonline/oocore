@@ -926,14 +926,14 @@ namespace Omega
 				void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs)
 					{ get_param_info(method_idx,param_idx,strName,type,attribs); }
 				byte_t GetAttributeRef(uint32_t /*method_idx*/, byte_t /*param_idx*/, TypeInfo::ParamAttributes_t /*attrib*/) 
-					{ OMEGA_THROW(EINVAL); }
+					{ OMEGA_THROW(L"Not implemented"); }
 
 				static const uint32_t method_count = 3;
 
 				static void get_method_info(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type)
 				{
 					if (method_idx >= method_count)
-						OMEGA_THROW(EINVAL);
+						OMEGA_THROW(L"get_method_info() called with a method index out of range");
 
 					const MethodInfo& info = method_info()[method_idx];
 					strName = info.pszName;
@@ -946,10 +946,10 @@ namespace Omega
 				static void get_param_info(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs)
 				{
 					if (method_idx >= method_count)
-						OMEGA_THROW(EINVAL);
+						OMEGA_THROW(L"get_param_info() called with a method index out of range");
 
 					if (param_idx >= method_info()[method_idx].param_count)
-						OMEGA_THROW(EINVAL);
+						OMEGA_THROW(L"get_param_info() called with a parameter index out of range"); \
 
 					const ParamInfo& info = method_info()[method_idx].params[param_idx];
 					strName = info.pszName;
@@ -1101,7 +1101,7 @@ namespace Omega
 						SafeStubMap& stub_map = get_stub_map();
 						if (stub_map.m_bSafetyCheck)
 						{
-							Threading::WriteGuard guard(stub_map.m_lock);
+							Threading::Guard<Threading::ReaderWriterLock> guard(stub_map.m_lock);
 							stub_map.m_map.erase(m_pObj);
 						}
 
@@ -1239,7 +1239,7 @@ namespace Omega
 					SafeProxyMap& proxy_map = get_proxy_map();
 					if (proxy_map.m_bSafetyCheck)
 					{
-						Threading::WriteGuard guard(proxy_map.m_lock);
+						Threading::Guard<Threading::ReaderWriterLock> guard(proxy_map.m_lock);
 						proxy_map.m_map.erase(m_pS);
 					}
 

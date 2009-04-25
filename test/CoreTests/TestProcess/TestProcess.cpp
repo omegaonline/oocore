@@ -43,7 +43,7 @@ static int install(int argc, char* argv[])
 
 		if (strcmp(argv[1],"-i") == 0 || strcmp(argv[1],"--install") == 0)
 		{
-	#if !defined(OMEGA_WIN32)
+	#if !defined(_WIN32)
 			if (argc != 3) return -1;
 	#endif
 

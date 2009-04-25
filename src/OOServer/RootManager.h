@@ -34,102 +34,95 @@
 #ifndef OOSERVER_ROOT_MANAGER_H_INCLUDED_
 #define OOSERVER_ROOT_MANAGER_H_INCLUDED_
 
-#include "./OOServer_Root.h"
-#include "./MessageConnection.h"
-#include "./RootHttp.h"
-#include "./RegistryHive.h"
+#include "OOServer_Root.h"
+#include "MessageConnection.h"
+#include "ClientAcceptor.h"
+#include "RegistryHive.h"
+#include "SpawnedProcess.h"
 
 namespace Root
 {
-	class SpawnedProcess;
+	typedef OOBase::Singleton<OOSvrBase::Proactor> Proactor;
 
 	class Manager :
 		public MessageHandler
 	{
 	public:
-		static int run(int argc, ACE_TCHAR* argv[]);
-		static void end();
-		static ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> get_registry();
-		static bool install(int argc, ACE_TCHAR* argv[]);
-		static bool uninstall();
-		static int registry_access_check(ACE_CDR::ULong channel_id);
-		static bool unsafe_sandbox();
+		Manager();
+		virtual ~Manager();
 
-		static bool call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb = 0);
+		bool install(int argc, char* argv[]);
+		bool uninstall();
+		int run(int argc, char* argv[]);
+
+		int registry_access_check(Omega::uint32_t channel_id);
+		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
 	private:
-		friend class HttpAcceptor;
-		friend class MessagePipeSingleAsyncAcceptor<Manager>;
-		friend class ACE_Singleton<Manager,ACE_Recursive_Thread_Mutex>;
-		typedef ACE_Singleton<Manager, ACE_Recursive_Thread_Mutex> ROOT_MANAGER;
-
-		Manager();
 		Manager(const Manager&) : MessageHandler() {}
-		virtual ~Manager();
 		Manager& operator = (const Manager&) { return *this; }
 
-		ACE_RW_Thread_Mutex  m_lock;
-
-		int run_event_loop_i(int argc, ACE_TCHAR* argv[]);
+		// Init and run members
 		bool init();
-		int init_database();
-		void end_event_loop_i();
+		bool get_db_fname();
+		bool init_database();
+		void wait_for_quit();
+		
+		// Installation members
+		bool platform_install(int argc, char* argv[]);
+		bool platform_uninstall();
+		bool install_sandbox(int argc, char* argv[]);
+		bool uninstall_sandbox();
+		bool secure_file(const std::string& strFilename);
 
+		// I/O members
+		OOBase::RWMutex m_lock;
+		Omega::uint32_t m_sandbox_channel;
+		ClientAcceptor  m_client_acceptor;
+
+		// Spawned process members
 		struct UserProcess
 		{
-			ACE_CString                                          strPipe;
-			SpawnedProcess*                                      pSpawn;
-			ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry;
+			std::string                      strPipe;
+			OOBase::SmartPtr<SpawnedProcess> ptrSpawn;
+			OOBase::SmartPtr<RegistryHive>   ptrRegistry;
 		};
-		std::map<ACE_CDR::ULong,UserProcess>    m_mapUserProcesses;
-		MessagePipeSingleAsyncAcceptor<Manager> m_client_acceptor;
-		ACE_CDR::ULong                          m_sandbox_channel;
+		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
+		
+		Omega::uint32_t spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<RegistryHive> ptrRegistry, std::string& strPipe);
+		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC);
+		Omega::uint32_t bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<MessageConnection>& ptrMC, std::string& strPipe);
 
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		int on_accept(const ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Thread_Mutex>& pipe);
-#else
-		int on_accept(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe);
-#endif
+		// Message handling members
+		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
+		virtual void on_channel_closed(Omega::uint32_t channel);
+		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 
-		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
-		virtual void on_channel_closed(ACE_CDR::ULong channel);
+		// Registry members
+		OOBase::SmartPtr<Db::Database> m_db;
+		OOBase::SmartPtr<RegistryHive> m_registry;
+		std::string                    m_strRegistry;
 
-		int process_client_connects();
-		ACE_CDR::ULong spawn_user(user_id_type uid, ACE_CString& strPipe, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry);
-		ACE_CString bootstrap_user(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe);
-		bool connect_client(user_id_type uid, ACE_CString& strPipe);
-		void close_users();
-		ACE_CDR::ULong connect_user(MessagePipeAcceptor& acceptor, SpawnedProcess* pSpawn, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> ptrRegistry, ACE_CString& strPipe);
-
-		void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-
-		ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex> m_db;
-		ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> m_registry;
-		ACE_CString                                            m_strRegistry;
-
-		int registry_parse_subkey(const ACE_INT64& uKey, ACE_CDR::ULong& channel_id, const ACE_CString& strSubKey, bool& bCurrent, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>& ptrHive);
-		int registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>& ptrHive, ACE_INT64& uKey);
-		int registry_open_hive(ACE_CDR::ULong& channel_id, ACE_InputCDR& request, ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex>& ptrHive, ACE_INT64& uKey, bool& bCurrent);
-		void registry_key_exists(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_create_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_delete_key(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_enum_subkeys(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_value_type(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_string_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_int_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_binary_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_set_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_get_value_description(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_enum_values(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-		void registry_delete_value(ACE_CDR::ULong channel_id, ACE_InputCDR& request, ACE_OutputCDR& response);
-
-		HttpAcceptor* m_http_acceptor;
-		bool sendrecv_sandbox(const ACE_OutputCDR& request, ACE_CDR::ULong attribs, ACE_InputCDR*& response);
+		int registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, const std::string& strSubKey, bool& bCurrent, OOBase::SmartPtr<RegistryHive>& ptrHive);
+		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<RegistryHive>& ptrHive, Omega::int64_t& uKey);
+		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<RegistryHive>& ptrHive, Omega::int64_t& uKey, bool& bCurrent);
+		void registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_create_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_value_type(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_string_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_int_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_binary_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_string_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_int_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_binary_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_set_value_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_get_value_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 	};
 }
 

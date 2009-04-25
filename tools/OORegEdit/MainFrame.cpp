@@ -1,13 +1,13 @@
 #include "stdafx.h"
-#include "./OORegEdit.h"
-#include "./MainFrame.h"
-#include "./TreeItemData.h"
-#include "./AboutDlg.h"
-#include "./FindDlg.h"
-#include "./AddFavDlg.h"
-#include "./RemoveFavDlg.h"
-#include "./EditKeyDescDlg.h"
-#include "./EditValueDescDlg.h"
+#include "OORegEdit.h"
+#include "MainFrame.h"
+#include "TreeItemData.h"
+#include "AboutDlg.h"
+#include "FindDlg.h"
+#include "AddFavDlg.h"
+#include "RemoveFavDlg.h"
+#include "EditKeyDescDlg.h"
+#include "EditValueDescDlg.h"
 
 /* XPM */
 static char* imagelist[] = 

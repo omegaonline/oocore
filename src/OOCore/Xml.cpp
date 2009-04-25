@@ -21,7 +21,7 @@
 
 #include "OOCore_precomp.h"
 
-#include "./Xml.h"
+#include "Xml.h"
 
 using namespace Omega;
 
@@ -65,12 +65,12 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 	szTerm[0] = *pszTerm;
 
 	// Skip the starting whitespace
-	rd_ptr += ACE_OS::strspn(rd_ptr,XML_WHITESPACE);
+	rd_ptr += wcsspn(rd_ptr,XML_WHITESPACE);
 	
 	for (;;)
 	{
 		// Find the next whitespace or terminator
-		const wchar_t* p = ACE_OS::strpbrk(rd_ptr,szTerm);
+		const wchar_t* p = wcspbrk(rd_ptr,szTerm);
 		if (!p)
 			OMEGA_THROW(string_t::Format(L"Incomplete XML text %ls",string_t(rd_ptr,25).c_str()));
 
@@ -80,9 +80,9 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 		rd_ptr = p;
 		
 		// Skip the rest of the whitespace
-		rd_ptr += ACE_OS::strspn(rd_ptr,XML_WHITESPACE);
+		rd_ptr += wcsspn(rd_ptr,XML_WHITESPACE);
 
-		if (ACE_OS::strncmp(rd_ptr,pszTerm,cbTerm)==0)
+		if (wcsncmp(rd_ptr,pszTerm,cbTerm)==0)
 		{
 			rd_ptr += cbTerm;
 			break;
@@ -95,7 +95,7 @@ void OOCore::Xml::ParseXMLProlog(const wchar_t*& rd_ptr)
 	// prolog    ::=    XMLDecl? Misc* (doctypedecl Misc*)? 
 
 	// Check for prolog
-	const wchar_t* p = ACE_OS::strstr(rd_ptr,L"<?xml");
+	const wchar_t* p = wcsstr(rd_ptr,L"<?xml");
 	if (!p)
 		OMEGA_THROW(L"Text is not XML");
 
@@ -120,7 +120,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		OMEGA_THROW(L"ParseXMLElement called inappropriately");
 
 	++p;
-	size_t len = ACE_OS::strcspn(p,L"/>" XML_WHITESPACE);
+	size_t len = wcscspn(p,L"/>" XML_WHITESPACE);
 	if (!len)
 		OMEGA_THROW(string_t::Format(L"Unterminated XML element: %ls",string_t(rd_ptr,25).c_str()));
 
@@ -128,7 +128,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 	rd_ptr += len+1;
 	
 	// Skip the starting whitespace
-	rd_ptr += ACE_OS::strspn(rd_ptr,XML_WHITESPACE);
+	rd_ptr += wcsspn(rd_ptr,XML_WHITESPACE);
 	
 	bHasContents = false;
 	for (;;)
@@ -137,13 +137,13 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		p = rd_ptr;
 		for (;;)
 		{
-			p = ACE_OS::strpbrk(p,L"'\"/>" XML_WHITESPACE);
+			p = wcspbrk(p,L"'\"/>" XML_WHITESPACE);
 			if (!p)
 				OMEGA_THROW(string_t::Format(L"Unterminated XML element: %ls",string_t(rd_ptr,25).c_str()));
 
 			if (p[0]==L'"' || p[0]==L'\'')
 			{
-				p = ACE_OS::strchr(p+1,p[0]);
+				p = wcschr(p+1,p[0]);
 				if (!p)
 					OMEGA_THROW(string_t::Format(L"Mismatched quote: %ls",string_t(rd_ptr,25).c_str()));
 				++p;
@@ -162,7 +162,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr),attribs);
 		
 		// Skip the rest of the whitespace
-		p += ACE_OS::strspn(p,XML_WHITESPACE);
+		p += wcsspn(p,XML_WHITESPACE);
 
 		if (p[0] == L'/' && p[1] == L'>')
 		{
@@ -186,7 +186,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 	for (;;)
 	{
 		// Find the next whitespace or terminator
-		const wchar_t* p = ACE_OS::strpbrk(rd_ptr,L"<&");
+		const wchar_t* p = wcspbrk(rd_ptr,L"<&");
 		if (!p)
 		{
 			strData += rd_ptr;
@@ -194,31 +194,31 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 		}
 		else if (p[0] == L'&')
 		{
-			if (ACE_OS::strncmp(p,L"&amp;",5)==0)
+			if (wcsncmp(p,L"&amp;",5)==0)
 			{
 				strData += string_t(rd_ptr,p - rd_ptr);
 				strData += L"&";
 				rd_ptr = p + 5;
 			}
-			else if (ACE_OS::strncmp(p,L"&lt;",4)==0)
+			else if (wcsncmp(p,L"&lt;",4)==0)
 			{
 				strData += string_t(rd_ptr,p - rd_ptr);
 				strData += L"<";
 				rd_ptr = p + 4;
 			}
-			else if (ACE_OS::strncmp(p,L"&gt;",4)==0)
+			else if (wcsncmp(p,L"&gt;",4)==0)
 			{
 				strData += string_t(rd_ptr,p - rd_ptr);
 				strData += L">";
 				rd_ptr = p + 4;
 			}
-			else if (ACE_OS::strncmp(p,L"&apos;",6)==0)
+			else if (wcsncmp(p,L"&apos;",6)==0)
 			{
 				strData += string_t(rd_ptr,p - rd_ptr);
 				strData += L"'";
 				rd_ptr = p + 6;
 			}
-			else if (ACE_OS::strncmp(p,L"&quot;",6)==0)
+			else if (wcsncmp(p,L"&quot;",6)==0)
 			{
 				strData += string_t(rd_ptr,p - rd_ptr);
 				strData += L"\"";
@@ -243,9 +243,9 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			bool bFoundOne = false;
 
 			// Skip comments
-			if (ACE_OS::strncmp(rd_ptr,L"<!--",4)==0)
+			if (wcsncmp(rd_ptr,L"<!--",4)==0)
 			{
-				p = ACE_OS::strstr(rd_ptr+4,L"-->");
+				p = wcsstr(rd_ptr+4,L"-->");
 				if (!p)
 					OMEGA_THROW(string_t::Format(L"Unmatched comment open: %s",string_t(rd_ptr,25).c_str()));
 
@@ -254,9 +254,9 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			}
 
 			// Skip processing instructions
-			if (ACE_OS::strncmp(rd_ptr,L"<?",2)==0)
+			if (wcsncmp(rd_ptr,L"<?",2)==0)
 			{
-				p = ACE_OS::strstr(rd_ptr+2,L"?>");
+				p = wcsstr(rd_ptr+2,L"?>");
 				if (!p)
 					OMEGA_THROW(string_t::Format(L"Unmatched processing instruction open: %s",string_t(rd_ptr,25).c_str()));
 
@@ -265,9 +265,9 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			}
 
 			// Skip CDATA
-			if (ACE_OS::strncmp(rd_ptr,L"<![CDATA[",9)==0)
+			if (wcsncmp(rd_ptr,L"<![CDATA[",9)==0)
 			{
-				p = ACE_OS::strstr(rd_ptr+9,L"]]>");
+				p = wcsstr(rd_ptr+9,L"]]>");
 				if (!p)
 					OMEGA_THROW(string_t::Format(L"Unmatched CDATA open: %s",string_t(rd_ptr,25).c_str()));
 
@@ -285,12 +285,12 @@ void OOCore::Xml::ParseXMLEndElement(const wchar_t*& rd_ptr, const string_t& str
 {
 	const wchar_t* p = rd_ptr;
 
-	if (ACE_OS::strncmp(p,L"</",2)!=0 || ACE_OS::strncmp(p+2,strName.c_str(),strName.Length())!=0)
+	if (wcsncmp(p,L"</",2)!=0 || wcsncmp(p+2,strName.c_str(),strName.Length())!=0)
 		OMEGA_THROW(string_t::Format(L"Invalid element end tag: %ls",string_t(rd_ptr,25).c_str()));
 
 	// Skip whistepace
 	p += strName.Length()+2;
-	p += ACE_OS::strspn(p,XML_WHITESPACE);
+	p += wcsspn(p,XML_WHITESPACE);
 	
 	if (p[0] != L'>')
 		OMEGA_THROW(string_t::Format(L"Invalid element end tag: %ls",string_t(rd_ptr,25).c_str()));

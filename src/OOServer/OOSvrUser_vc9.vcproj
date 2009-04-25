@@ -49,7 +49,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_User.h"
+				PrecompiledHeaderThrough="OOServer_User.h"
 				WarningLevel="4"
 				DebugInformationFormat="3"
 			/>
@@ -131,7 +131,7 @@
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_User.h"
+				PrecompiledHeaderThrough="OOServer_User.h"
 				WarningLevel="4"
 			/>
 			<Tool
@@ -283,14 +283,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\NetHttp.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\NetTcp.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SQLite3_comp.c"
 				>
 				<FileConfiguration
@@ -312,10 +304,6 @@
 						WarningLevel="0"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\UserHttp.cpp"
-				>
 			</File>
 			<File
 				RelativePath=".\UserMain.cpp"
@@ -384,14 +372,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\NetHttp.h"
-				>
-			</File>
-			<File
-				RelativePath=".\NetTcp.h"
-				>
-			</File>
-			<File
 				RelativePath=".\OOServer_User.h"
 				>
 			</File>
@@ -401,10 +381,6 @@
 			</File>
 			<File
 				RelativePath="..\Common\Server.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserHttp.h"
 				>
 			</File>
 			<File

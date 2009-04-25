@@ -30,14 +30,9 @@
 		} while (0)
 #endif
 
-#include <sys/types.h>
-
-#define OMEGA_HAS_INT16_T
-#define OMEGA_HAS_UINT16_T
-#define OMEGA_HAS_INT32_T
-#define OMEGA_HAS_UINT32_T
-#define OMEGA_HAS_INT64_T
-#define OMEGA_HAS_UINT64_T
+#if !defined(HAVE_STDINT_H)
+#define HAVE_STDINT_H 1
+#endif
 
 #define OMEGA_UNUSED_ARG(n)    (void)(n)
 
@@ -75,12 +70,11 @@
     #error No idea how to control export for this output!
 #endif
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__WIN32__)
+#if defined(__MINGW32__)
+	// We assume win32 for MinGW
     #include <OOCore/config-win32.h>
 #elif defined(__unix)
 	// We assume we are some kind of unix
-	#include <unistd.h>
-	#define OMEGA_UNIX
     #define OMEGA_PLATFORM_STRING "Unix"
 #else
 	#error What platform is this?

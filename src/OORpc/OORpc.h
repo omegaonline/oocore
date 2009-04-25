@@ -19,10 +19,14 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include "../OOBase/Mutex.h"
+
 #include <OOCore/OOCore.h>
 
 /////////////////////////////////////////////////
 // Include ACE components
+
+#if 1
 
 #if defined(_MSC_VER)
 #pragma warning(push)
@@ -62,6 +66,8 @@
 #pragma warning(pop)
 #endif
 
+#endif
+
 // End of ACE includes
 /////////////////////////////////////////////////
 
@@ -82,15 +88,3 @@
 
 // End of OOCore/OTL includes
 /////////////////////////////////////////////////
-
-#define OORPC_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#define OORPC_READ_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Read_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());
-
-#define OORPC_WRITE_GUARD(MUTEX,OBJ,LOCK) \
-	ACE_Write_Guard< MUTEX > OBJ (LOCK); \
-	if (OBJ.locked () == 0) OMEGA_THROW(ACE_OS::last_error());

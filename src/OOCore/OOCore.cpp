@@ -21,14 +21,13 @@
 
 #include "OOCore_precomp.h"
 
-#include "./UserSession.h"
-#include "./Activation.h"
-#include "./StdObjectManager.h"
-#include "./ApartmentImpl.h"
-#include "./WireProxy.h"
-#include "./Channel.h"
-#include "./Exception.h"
-#include "./HttpImpl.h"
+#include "UserSession.h"
+#include "Activation.h"
+#include "StdObjectManager.h"
+#include "ApartmentImpl.h"
+#include "WireProxy.h"
+#include "Channel.h"
+#include "Exception.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -43,36 +42,27 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl,0)
 	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory,0)
 	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::OutputCDRMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory,0)
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl,0)
 	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::HttpRequest,L"Omega.Http.Request")
+	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl,0)
 END_LIBRARY_OBJECT_MAP()
 
-#if defined(OMEGA_WIN32)
-extern "C" BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserved*/)
+#if defined(_WIN32)
+
+extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpreserved*/)
 {
-#if !defined(ACE_HAS_DLL) || (ACE_HAS_DLL != 1)
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-		// Call ACE::init() first
-		ACE::init();
-
-		// If ACE is linked statically we need to do this...
-		ACE_OS::set_win32_resource_module((HINSTANCE)instance);
 	}
 	else if (reason == DLL_THREAD_DETACH)
 	{
-		ACE_OS::cleanup_tss(0);
+		OOBase::TLS::ThreadExit();
 	}
 	else if (reason == DLL_PROCESS_DETACH)
 	{
-		ACE::fini();
+		//OOBase::Destructor::call_destructors();
 	}
-#else
-	OMEGA_UNUSED_ARG(instance);
-	OMEGA_UNUSED_ARG(reason);
-#endif
 
 	return TRUE;
 }
@@ -80,15 +70,15 @@ extern "C" BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserve
 
 namespace OOCore
 {
-	static ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> s_initcount = 0;
+	static OOBase::AtomicInt<unsigned long> s_initcount = 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 {
 #if defined(OMEGA_DEBUG)
-	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
 #else
-	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs\nACE: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING,ACE_VERSION);
+	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
 #endif
 }
 
@@ -99,18 +89,15 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 	{
 		bStart = true;
 
-#if defined(OMEGA_DEBUG) && defined(OMEGA_WIN32)
+#if defined(OMEGA_DEBUG) && defined(_WIN32)
 		// If this event exists, then we are being debugged
-		HANDLE hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
 		if (hDebugEvent)
 		{
 			// Wait for a bit, letting the caller attach a debugger
 			WaitForSingleObject(hDebugEvent,60000);
-			CloseHandle(hDebugEvent);
 		}
 #endif
-		// Turn off all ACE logging
-		ACE_Log_Msg::instance()->priority_mask(0,ACE_Log_Msg::PROCESS);
 	}
 
 	if (bStart)

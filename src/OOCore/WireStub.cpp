@@ -21,9 +21,9 @@
 
 #include "OOCore_precomp.h"
 
-#include "./WireStub.h"
-#include "./StdObjectManager.h"
-#include "./WireImpl.h"
+#include "WireStub.h"
+#include "StdObjectManager.h"
+#include "WireImpl.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -106,7 +106,7 @@ System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
 		
 		// See if we have a stub for this interface already...
 		{
-			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator i=m_iid_map.find(iid);
 			if (i != m_iid_map.end())
@@ -154,7 +154,7 @@ System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
 
 		if (bAdd)
 		{
-			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 				
 			std::pair<std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,System::MetaInfo::IStub_Safe*>::value_type(iid,ptrStub));
 			if (!p.second)

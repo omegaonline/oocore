@@ -75,12 +75,12 @@ namespace OOCore
 		Stub(const Stub&) : Omega::System::MetaInfo::IStubController_Safe() {}
 		Stub& operator = (const Stub&) { return *this; }
 
-		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
-		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_marshal_count;
-		ACE_RW_Thread_Mutex                             m_lock;
-		Omega::uint32_t                                 m_stub_id;
-		Omega::System::MetaInfo::IObject_Safe*          m_pObjS;
-		StdObjectManager*                               m_pManager;
+		OOBase::AtomicInt<unsigned long>       m_refcount;
+		OOBase::AtomicInt<unsigned long>       m_marshal_count;
+		OOBase::RWMutex                        m_lock;
+		Omega::uint32_t                        m_stub_id;
+		Omega::System::MetaInfo::IObject_Safe* m_pObjS;
+		StdObjectManager*                      m_pManager;
 
 		std::map<const Omega::guid_t,Omega::System::MetaInfo::IStub_Safe*> m_iid_map;
 

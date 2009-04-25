@@ -142,15 +142,15 @@ namespace OTL
 		explicit ObjectPtrBase(OBJECT* obj) :
 			m_ptr(obj)
 		{
-			if (m_ptr.value())
-				m_ptr.value()->AddRef();
+			if (m_ptr)
+				m_ptr->AddRef();
 		}
 
 		ObjectPtrBase(const ObjectPtrBase& rhs) :
 			m_ptr(rhs.m_ptr)
 		{
-			if (m_ptr.value())
-				m_ptr.value()->AddRef();
+			if (m_ptr)
+				m_ptr->AddRef();
 		}
 
 		ObjectPtrBase(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter) :
@@ -172,17 +172,21 @@ namespace OTL
 
 		ObjectPtrBase& operator = (const ObjectPtrBase& rhs)
 		{
+			if (this == &rhs)
+				return *this;
+
 			return this->operator = (static_cast<OBJECT*>(rhs));
 		}
 
 		ObjectPtrBase& operator = (OBJECT* ptr)
 		{
-			if (ptr != m_ptr.value())
+			if (ptr != m_ptr)
 			{
 				if (ptr)
 					ptr->AddRef();
 
-				OBJECT* old = m_ptr.exchange(ptr);
+				OBJECT* old = m_ptr;
+				m_ptr = ptr;
 
 				if (old)
 					old->Release();
@@ -193,22 +197,23 @@ namespace OTL
 
 		void Attach(OBJECT* obj)
 		{
-			OBJECT* old = m_ptr.exchange(obj);
+			OBJECT* old = m_ptr;
+			m_ptr = obj;
 			if (old)
 				old->Release();
 		}
 
 		void Detach()
 		{
-			m_ptr.exchange(0);
+			m_ptr = 0;
 		}
 
 		OBJECT* AddRef()
 		{
-			if (m_ptr.value())
-				m_ptr.value()->AddRef();
+			if (m_ptr)
+				m_ptr->AddRef();
 
-			return m_ptr.value();
+			return m_ptr;
 		}
 
 		void Release()
@@ -219,21 +224,21 @@ namespace OTL
 		template <class Q>
 		Q* QueryInterface()
 		{
-			return static_cast<Q*>(m_ptr.value()->QueryInterface(OMEGA_GUIDOF(Q)));
+			return static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q)));
 		}
 
 		OBJECT* operator ->() const
 		{
-			return m_ptr.value();
+			return m_ptr;
 		}
 
 		operator OBJECT* () const
 		{
-			return m_ptr.value();
+			return m_ptr;
 		}
 
 	protected:
-		Omega::Threading::AtomicOp<OBJECT*> m_ptr;
+		OBJECT* m_ptr;
 	};
 
 	template <class OBJECT>
@@ -412,7 +417,7 @@ namespace OTL
 		inline size_t GetLockCount() const;
 		inline void IncLockCount();
 		inline void DecLockCount();
-		inline Omega::Threading::CriticalSection& GetLock();
+		inline Omega::Threading::Mutex& GetLock();
 
 		typedef void (*TERM_FUNC)(void* arg);
 		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
@@ -438,7 +443,7 @@ namespace OTL
 		inline void fini();
 
 	private:
-		Omega::Threading::CriticalSection           m_csMain;
+		Omega::Threading::Mutex                     m_csMain;
 		Omega::Threading::AtomicOp<Omega::uint32_t> m_lockCount;
 
 		struct Term
@@ -645,7 +650,7 @@ namespace OTL
 			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
 			if (!singleton)
 			{
-				Omega::Threading::Guard guard(GetModuleBase()->GetLock());
+				Omega::Threading::Guard<Omega::Threading::Mutex> guard(GetModuleBase()->GetLock());
 				if (!singleton)
 				{
 					OMEGA_NEW(singleton,Singleton<TYPE>());
@@ -933,13 +938,13 @@ namespace OTL
 	private:
 		std::list<EnumType>                    m_listItems;
 		typename std::list<EnumType>::iterator m_pos;
-		Omega::Threading::CriticalSection      m_cs;
+		Omega::Threading::Mutex                m_cs;
 
 	// IEnumString members
 	public:
 		bool Next(Omega::uint32_t& count, EnumType* parrVals)
 		{
-			Omega::Threading::Guard guard(m_cs);
+			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
 			Omega::uint32_t c = count;
 			count = 0;
@@ -955,7 +960,7 @@ namespace OTL
 
 		bool Skip(Omega::uint32_t count)
 		{
-			Omega::Threading::Guard guard(m_cs);
+			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
 			while (count > 0 && m_pos!=m_listItems.end())
 			{
@@ -968,14 +973,14 @@ namespace OTL
 
 		void Reset()
 		{
-			Omega::Threading::Guard guard(m_cs);
+			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
 			m_pos = m_listItems.begin();
 		}
 
 		EnumIFace* Clone()
 		{
-			Omega::Threading::Guard guard(m_cs);
+			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
 			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateInstancePtr();
 			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());

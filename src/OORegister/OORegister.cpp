@@ -21,7 +21,7 @@
 
 #include <OOCore/OOCore.h>
 
-#if defined(OMEGA_WIN32) && !defined(WIN32)
+#if defined(_WIN32) && !defined(WIN32)
 #define WIN32
 #endif
 
@@ -55,19 +55,20 @@ static void print_help()
 	ACE_OS::printf("\n");
 }
 
-typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnInstallLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
+typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bLocal, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
 
-static void call_fn(pfnInstallLib pfn, Omega::bool_t bInstall, const Omega::string_t& strSubsts)
+static void call_fn(pfnRegisterLib pfn, Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts)
 {
 	Omega::System::MetaInfo::IException_Safe* pSE = pfn(
 		Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
+		Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bLocal),
 		Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
 
 	if (pSE)
 		Omega::System::MetaInfo::throw_correct_exception(pSE);
 }
 
-static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
+static int do_install(bool bInstall, bool bLocal, bool bSilent, ACE_TCHAR* lib_path)
 {
 	ACE_DLL dll;
 	if (dll.open(lib_path,ACE_DEFAULT_SHLIB_MODE,false)!=0)
@@ -78,9 +79,7 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),EXIT_FAILURE);
 	}
 
-	pfnInstallLib pfnInstall = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_InstallLibrary_Safe"));
-
-	pfnInstallLib pfnRegister = (pfnInstallLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
+	pfnRegisterLib pfnRegister = (pfnRegisterLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
 	if (pfnRegister == 0)
 	{
 		if (bSilent)
@@ -94,12 +93,8 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 		Omega::string_t strSubsts = L"LIB_PATH=";
 		strSubsts += ACE_TEXT_ALWAYS_WCHAR(lib_path);
 
-		// Call install if found
-		if (pfnInstall)
-			call_fn(pfnInstall,bInstall,strSubsts);
-
 		// Call register
-		call_fn(pfnRegister,bInstall,strSubsts);
+		call_fn(pfnRegister,bInstall,bLocal,strSubsts);
 	}
 	catch (Omega::IException* pE)
 	{
@@ -131,9 +126,10 @@ static int do_install(bool bInstall, bool bSilent, ACE_TCHAR* lib_path)
 int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 {
 	// Parse cmd line first
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":ius"));
+	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iusl"));
 	int option;
 	bool bInstall = true;
+	bool bLocal = false;
 	bool bSilent = false;
 	while ((option = cmd_opts()) != EOF)
 	{
@@ -144,6 +140,10 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 
 		case ACE_TEXT('u'):
 			bInstall = false;
+			break;
+
+		case ACE_TEXT('l'):
+			bLocal = true;
 			break;
 
 		case ACE_TEXT('s'):
@@ -205,7 +205,7 @@ int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
 		return EXIT_FAILURE;
 	}
 
-	int res = do_install(bInstall,bSilent,argv[argc-1]);
+	int res = do_install(bInstall,bLocal,bSilent,argv[argc-1]);
 
 	Omega::Uninitialize();
 

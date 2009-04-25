@@ -23,15 +23,12 @@
 
 namespace OOCore
 {
-	static ACE_WString from_utf8(const char* sz);
-	static ACE_CString to_utf8(const wchar_t* wsz);
-
 	struct StringNode
 	{
 		StringNode() : m_refcount(1)
 		{}
 
-		StringNode(const char* sz) : m_str(from_utf8(sz)), m_refcount(1)
+		StringNode(const char* sz) : m_str(OOBase::from_utf8(sz)), m_refcount(1)
 		{}
 
 		StringNode(const wchar_t* sz) : m_str(sz), m_refcount(1)
@@ -40,7 +37,7 @@ namespace OOCore
 		StringNode(const wchar_t* sz, size_t length) : m_str(sz,length), m_refcount(1)
 		{}
 
-		StringNode(const ACE_WString& s) : m_str(s), m_refcount(1)
+		StringNode(const std::wstring& s) : m_str(s), m_refcount(1)
 		{}
 
 		void* AddRef() const
@@ -55,10 +52,10 @@ namespace OOCore
 				delete this;
 		}
 
-		ACE_WString	m_str;
+		std::wstring m_str;
 
 	private:
-		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
+		OOBase::AtomicInt<unsigned long> m_refcount;
 	};
 }
 
@@ -71,146 +68,6 @@ extern "C"
 	void MD5Init(MD5Context *pCtx);
 	void MD5Update(MD5Context *pCtx, const unsigned char *buf, unsigned int len);
 	void MD5Final(unsigned char digest[16], MD5Context *pCtx);
-}
-
-ACE_WString OOCore::from_utf8(const char* sz)
-{
-    if (!sz || *sz=='\0')
-        return L"";
-
-	static const int trailingBytesForUTF8[256] =
-	{
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x00 - 0x1F
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x20 - 0x3F
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x40 - 0x5F
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x60 - 0x7F
-		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,	// 0x80 - 0x9F
-		9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, 9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,	// 0xA0 - 0xBF
-		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,	// 0xC0 - 0xDF
-		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,11,11,11,4,4,4,4,5,5,6,7	// 0xE0 - 0xFF
-	};
-
-	ACE_WString strRet;
-	strRet.fast_resize(ACE_OS::strlen(sz));
-	for (const char* p=sz;*p!='\0';)
-	{
-		unsigned int c;
-		unsigned char v = *p++;
-		int trailers = trailingBytesForUTF8[v];
-		switch (trailers)
-		{
-		case 0:
-			c = v;
-			break;
-
-		case 1:
-			c = v & 0x1f;
-			break;
-
-		case 2:
-			c = v & 0xf;
-			break;
-
-		case 3:
-			c = v & 0x7;
-			break;
-
-		default:
-			trailers &= 7;
-			c = L'\xFFFD';
-		}
-
-		for (int i=0;i<trailers;++i,++p)
-		{
-			if (*p == '\0')
-			{
-				c = L'\xFFFD';
-				break;
-			}
-
-			if (c != L'\xFFFD')
-			{
-				c <<= 6;
-				c += (*p & 0x3f);
-			}
-		}
-
-		if (sizeof(wchar_t)==2)
-		{
-			if (c & 0xFFFF0000)
-			{
-				// Oh god.. we're big!
-				c -= 0x10000;
-
-#if (OMEGA_BYTE_ORDER == OMEGA_BIG_ENDIAN)
-				strRet += static_cast<wchar_t>((c >> 10) | 0xD800);
-				strRet += static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
-#else
-				strRet += static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
-				strRet += static_cast<wchar_t>((c >> 10) | 0xD800);
-#endif
-				continue;
-			}
-		}
-
-		strRet += static_cast<wchar_t>(c);
-	}
-
-	return strRet;
-}
-
-ACE_CString OOCore::to_utf8(const wchar_t* wsz)
-{
-    if (!wsz || *wsz==L'\0')
-        return "";
-
-	ACE_CString strRet;
-	strRet.fast_resize(ACE_OS::strlen(wsz)*2);
-	for (const wchar_t* p=wsz;*p!=0;)
-	{
-		char c;
-		unsigned int v = *p++;
-
-		if (v <= 0x7f)
-			strRet += static_cast<char>(v);
-		else if (v <= 0x7FF)
-		{
-			c = static_cast<char>(v >> 6) | 0xc0;
-			strRet += c;
-			c = static_cast<char>(v & 0x3f) | 0x80;
-			strRet += c;
-		}
-		else if (v <= 0xFFFF)
-		{
-			// Invalid range
-			if (v > 0xD7FF && v < 0xE00)
-				strRet += "\xEF\xBF\xBD";
-			else
-			{
-				c = static_cast<char>(v >> 12) | 0xe0;
-				strRet += c;
-				c = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
-				strRet += c;
-				c = static_cast<char>(v & 0x3f) | 0x80;
-				strRet += c;
-			}
-		}
-		else if (v <= 0x10FFFF)
-		{
-			c = static_cast<char>(v >> 18) | 0xf0;
-			strRet += c;
-			c = static_cast<char>((v & 0x3f000) >> 12) | 0x80;
-			strRet += c;
-			c = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
-			strRet += c;
-			c = static_cast<char>(v & 0x3f) | 0x80;
-			strRet += c;
-		}
-		else
-			strRet += "\xEF\xBF\xBD";
-	}
-
-	return strRet;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor1,0,())
@@ -226,7 +83,24 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t__ctor2,2,((in),const char*,sz,(in)
 	if (bUTF8)
 		OMEGA_NEW(pNode,StringNode(sz));
 	else
-		OMEGA_NEW(pNode,StringNode(ACE_Ascii_To_Wide(sz).wchar_rep()));
+	{
+		size_t len = strlen(sz) + 1;
+
+		size_t buf_size = 0;
+		int err = mbstowcs_s(&buf_size,0,0,sz,len);
+		if (err)
+			OMEGA_THROW(err);
+
+		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf = 0;
+		OMEGA_NEW(buf,wchar_t[buf_size]);
+
+		err = mbstowcs_s(NULL,buf.value(),buf_size,sz,len);
+		if (err)
+			OMEGA_THROW(err);
+		
+		OMEGA_NEW(pNode,StringNode(buf.value()));
+	}
+
 	return pNode;
 }
 
@@ -272,16 +146,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(const wchar_t*,string_t_cast,1,((in),const void*,
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size))
 {
-	ACE_CString str = to_utf8(static_cast<const StringNode*>(h)->m_str.c_str());
-	if (size < str.length()+1)
-	{
-		ACE_OS::strncpy(sz,str.c_str(),size-1);
-		sz[size-1] = '\0';
-	}
-	else
-	{
-		ACE_OS::strcpy(sz,str.c_str());
-	}
+	std::string str = OOBase::to_utf8(static_cast<const StringNode*>(h)->m_str.c_str());
+
+	strcpy_s(sz,size,str.c_str());
+	
 	return str.length() + 1;
 }
 
@@ -313,22 +181,22 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_add3,2,((in),void*,s1,(in),const w
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp1,2,((in),const void*,s1,(in),const void*,s2))
 {
-	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
+	return static_cast<const StringNode*>(s1)->m_str.compare(static_cast<const StringNode*>(s2)->m_str);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cmp3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
-	return ACE_OS::strcmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
+	return static_cast<const StringNode*>(s1)->m_str.compare(wsz);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc1,2,((in),const void*,s1,(in),const void*,s2))
 {
-	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
+	return wcsicmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,string_t_cnc3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
-	return ACE_OS::strcasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
+	return wcsicmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_isempty,1,((in),const void*,s1))
@@ -338,53 +206,27 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,string_t_isempty,1,((in),const void*,s1))
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_tolower,1,((in),const void*,s1))
 {
-	wchar_t* pszNew = ACE_OS::strdup(static_cast<const StringNode*>(s1)->m_str.c_str());
-	if (!pszNew)
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<wchar_t> > ptrNew = wcsdup(static_cast<const StringNode*>(s1)->m_str.c_str());
+	if (!ptrNew)
 		return 0;
 
-	for (wchar_t* p=pszNew;*p!=L'\0';++p)
-	{
-		*p = static_cast<wchar_t>(ACE_OS::ace_towlower(*p));
-	}
+	wcslwr(ptrNew.value());
 
-	StringNode* s2;
-	try
-	{
-		OMEGA_NEW(s2,StringNode(pszNew));
-	}
-	catch (...)
-	{
-		ACE_OS::free(pszNew);
-		throw;
-	}
-
-	ACE_OS::free(pszNew);
+	StringNode* s2 = 0;
+	OMEGA_NEW(s2,StringNode(ptrNew.value()));
 	return s2;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_toupper,1,((in),const void*,s1))
 {
-	wchar_t* pszNew = ACE_OS::strdup(static_cast<const StringNode*>(s1)->m_str.c_str());
-	if (!pszNew)
+	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<wchar_t> > ptrNew = wcsdup(static_cast<const StringNode*>(s1)->m_str.c_str());
+	if (!ptrNew)
 		return 0;
 
-	for (wchar_t* p=pszNew;*p!=L'\0';++p)
-	{
-		*p = static_cast<wchar_t>(ACE_OS::ace_towupper(*p));
-	}
+	wcsupr(ptrNew.value());
 
-	StringNode* s2;
-	try
-	{
-		OMEGA_NEW(s2,StringNode(pszNew));
-	}
-	catch (...)
-	{
-		ACE_OS::free(pszNew);
-		throw;
-	}
-
-	ACE_OS::free(pszNew);
+	StringNode* s2 = 0;
+	OMEGA_NEW(s2,StringNode(ptrNew.value()));
 	return s2;
 }
 
@@ -395,12 +237,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find1,3,((in),const void*,s1,(in)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_find3,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
-	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
+	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase ? static_cast<wchar_t>(tolower(c)) : c,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_rfind2,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),bool,bIgnoreCase))
 {
-	return static_cast<const StringNode*>(s1)->m_str.rfind(bIgnoreCase ? static_cast<wchar_t>(ACE_OS::ace_towlower(c)) : c,pos);
+	return static_cast<const StringNode*>(s1)->m_str.rfind(bIgnoreCase ? static_cast<wchar_t>(tolower(c)) : c,pos);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(size_t,string_t_len,1,((in),const void*,s1))
@@ -451,20 +293,16 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(void*,string_t_format,2,((in),const wchar_t*,sz,(
 {
 	for (size_t len=256;len<=(size_t)-1 / sizeof(wchar_t);)
 	{
-		wchar_t* buf = 0;
+		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf = 0;
 		OMEGA_NEW(buf,wchar_t[len]);
 
-		int len2 = ACE_OS::vsnprintf(buf,len,sz,*ap);
+		int len2 = vswprintf_s(buf.value(),len,sz,*ap);
 		if (len2 > -1 && static_cast<size_t>(len2) < len)
 		{
 			StringNode* s1;
-			OMEGA_NEW(s1,StringNode(ACE_WString(buf,len2)));
-
-			delete [] buf;
+			OMEGA_NEW(s1,StringNode(std::wstring(buf.value(),len2)));
 			return s1;
 		}
-
-		delete [] buf;
 
 		if (len2 > -1)
 			len = len2 + 1;
@@ -492,11 +330,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wc
 	long data0 = 0;
 	int data[11] = { 0 };
 
-#if defined (ACE_HAS_TR24731_2005_CRT)
 	if (swscanf_s(sz,
-#else
-	if (swscanf(sz,
-#endif
 		L"{%8lx-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x}",
 		&data0,
 		&data[0],
@@ -531,15 +365,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_from_string,1,((in),const wc
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 {
-	Omega::guid_t guid;
-
-#if defined(OMEGA_WIN32) //&& !defined(__MINGW32__)
-
+#if defined(_WIN32)
 
 	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
 	UuidCreate(&uuid);
 
-	guid = *(Omega::guid_t*)(&uuid);
+	return *(Omega::guid_t*)(&uuid);
 
 #else
 
@@ -592,8 +423,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,guid_t_create,0,())
 	unsigned char digest[16];
 	MD5Final(digest,&ctx);
 
-	guid = *(Omega::guid_t*)(digest);
-#endif
+	return *(Omega::guid_t*)(digest);
 
-	return guid;
+#endif
 }

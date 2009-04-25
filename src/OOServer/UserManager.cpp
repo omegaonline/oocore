@@ -19,16 +19,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_User.h"
-#include "./UserManager.h"
-#include "./InterProcessService.h"
-#include "./Channel.h"
-#include "./NetTcp.h"
-#include "./NetHttp.h"
-
-#ifdef OMEGA_HAVE_VLD
-#include <vld.h>
-#endif
+#include "OOServer_User.h"
+#include "UserManager.h"
+#include "InterProcessService.h"
+#include "Channel.h"
 
 namespace OTL
 {
@@ -51,8 +45,6 @@ namespace OTL
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory,0)
-					OBJECT_MAP_ENTRY(User::TcpProtocolHandler,0)
-					OBJECT_MAP_ENTRY(User::HttpProtocolHandler,0)	
 					{ 0,0,0,0,0,0 } 
 				}; 
 				return CreatorEntries; 
@@ -78,8 +70,6 @@ using namespace Omega;
 using namespace OTL;
 
 // UserManager
-const ACE_CDR::ULong User::Manager::m_root_channel = 0x80000000;
-
 User::Manager::Manager() :
 	m_nIPSCookie(0),
 	m_bIsSandbox(false),
@@ -91,59 +81,52 @@ User::Manager::~Manager()
 {
 }
 
-int User::Manager::run(const ACE_CString& strPipe)
+int User::Manager::run(const std::string& strPipe)
 {
-	return USER_MANAGER::instance()->run_event_loop_i(strPipe);
+	return USER_MANAGER::instance()->run_i(strPipe);
 }
 
-int User::Manager::run_event_loop_i(const ACE_CString& strPipe)
+int User::Manager::run_i(const std::string& strPipe)
 {
-	int ret = start();
-	if (ret != EXIT_FAILURE)
+	// Start the handler and init ourselves
+	if (!start() || !init(strPipe))
+		return EXIT_FAILURE;
+
+	// Wait for stop
+	wait_for_quit();
+
+	// Stop accepting new clients
+	m_acceptor.stop();
+
+	// Close all the sinks
+	close_all_remotes();
+
+	// Close the user pipes
+	close();
+
+	// Unregister our object factories
+	GetModule()->UnregisterObjectFactories();
+
+	// Unregister InterProcessService
+	if (m_nIPSCookie)
 	{
-		if (init(strPipe))
-		{
-			// Wait for stop
-			if (ACE_Reactor::instance()->run_reactor_event_loop() != 0)
-                ret = EXIT_FAILURE;
-
-			// Stop the services
-			stop_services();
-
-			// Close all the sinks
-			close_all_remotes();
-
-			// Close all the http stuff
-			close_all_http();
-
-			// Close the user pipes
-			close();
-
-			// Unregister our object factories
-			GetModule()->UnregisterObjectFactories();
-
-			// Unregister InterProcessService
-			if (m_nIPSCookie)
-			{
-				Activation::RevokeObject(m_nIPSCookie);
-				m_nIPSCookie = 0;
-			}
-
-			// Close the OOCore
-			Omega::Uninitialize();
-		}
-
-		// Delete our OTL module
-		UserGetModule().Term();
-
-		// Stop the MessageHandler
-		stop();
+		Activation::RevokeObject(m_nIPSCookie);
+		m_nIPSCookie = 0;
 	}
 
-	return ret;
+	// Close the OOCore
+	Omega::Uninitialize();
+	
+	// Delete our OTL module
+	UserGetModule().Term();
+
+	// Stop the MessageHandler
+	stop();
+	
+	return EXIT_SUCCESS;
 }
 
-bool User::Manager::on_channel_open(ACE_CDR::ULong channel)
+bool User::Manager::on_channel_open(Omega::uint32_t channel)
 {
 	if (channel != m_root_channel)
 	{
@@ -153,7 +136,7 @@ bool User::Manager::on_channel_open(ACE_CDR::ULong channel)
 		}
 		catch (IException* pE)
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W - %W\n"),pE->GetDescription().c_str(),pE->GetSource().c_str()));
+			LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 			pE->Release();
 			return false;
 		}
@@ -161,98 +144,93 @@ bool User::Manager::on_channel_open(ACE_CDR::ULong channel)
 	return true;
 }
 
-bool User::Manager::init(const ACE_CString& strPipe)
+bool User::Manager::init(const std::string& strPipe)
 {
 	// Connect to the root
-	ACE_Time_Value wait(5);
-	ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Thread_Mutex> pipe;
-	if (Root::MessagePipe::connect(pipe,strPipe,&wait) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::connect() failed")),false);
+
+#if defined(_WIN32)
+	// Use a named pipe
+	int err = 0;
+	OOBase::timeval_t wait(5);
+	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+#else
+
+	// strPipe is actually a file descriptor
+
+#error Fix me!
+
+#endif
 
 	// Read the sandbox channel
-	ACE_CDR::ULong sandbox_channel = 0;
-	if (pipe->recv(&sandbox_channel,sizeof(sandbox_channel)) != static_cast<ssize_t>(sizeof(sandbox_channel)))
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::recv() failed")));
-		pipe->close();
-		return false;
-	}
+	Omega::uint32_t sandbox_channel = 0;
+	err = local_socket->recv(sandbox_channel);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
 	// Set the sandbox flag
 	m_bIsSandbox = (sandbox_channel == 0);
 
 	// Invent a new pipe name...
-	ACE_CString strNewPipe = Root::MessagePipe::unique_name("oou");
+	std::string strNewPipe = Acceptor::unique_name();
 	if (strNewPipe.empty())
-	{
-        ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Failed to create unique domain socket name")));
-        pipe->close();
 		return false;
-	}
 
+	// Now start accepting user connections
+	if (!m_acceptor.start(this,strNewPipe))
+		return false;
+	
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
-	if (pipe->send(&uLen,sizeof(uLen)) != static_cast<ssize_t>(sizeof(uLen)) ||
-		pipe->send(strNewPipe.c_str(),uLen) != static_cast<ssize_t>(uLen))
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("pipe.send() failed")));
-		pipe->close();
-		return false;
-	}
+	err = local_socket->send(uLen);
+	if (err == 0)
+		err = local_socket->send(strNewPipe.c_str(),uLen);
 
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+	
 	// Read our channel id
-	ACE_CDR::ULong our_channel = 0;
-	if (pipe->recv(&our_channel,sizeof(our_channel)) != static_cast<ssize_t>(sizeof(our_channel)))
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Root::MessagePipe::recv() failed")));
-		pipe->close();
-		return false;
-	}
+	Omega::uint32_t our_channel = 0;
+	err = local_socket->recv(our_channel);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
-	// Create a new MessageConnection
-	Root::MessageConnection* pMC = 0;
-	ACE_NEW_NORETURN(pMC,Root::MessageConnection(this));
-	if (!pMC)
-	{
-	    pipe->close();
-		return false;
-	}
-
-	// Open the root connection
-	if (pMC->open(pipe,m_root_channel) == 0)
-	{
-	    pipe->close();
-		return false;
-	}
-
-	// Init the handler
+	// Init our channel id
 	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
 
+	// Create a new MessageConnection
+	OOBase::SmartPtr<Root::MessageConnection> ptrMC;
+	OOBASE_NEW(ptrMC,Root::MessageConnection(this));
+	if (!ptrMC)
+		LOG_ERROR_RETURN(("Out of memory"),false);
+
+	// Attach it to ourselves
+	if (register_channel(ptrMC,m_root_channel) == 0)
+		return false;
+
+	CREATE_IPC_SOCKET_HERE!
+
+	// Open the root connection
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,ptrSock.value()));
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to convert sync to async socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+
+	// Start I/O with root
+	if (!ptrMC->read())
+	{
+		ptrMC->close();
+		return false;
+	}
+	
 	// Now bootstrap
 	if (!bootstrap(sandbox_channel))
-	{
-		pipe->close();
 		return false;
-	}
-
-	// Now start accepting client connections
-	if (m_process_acceptor.start(this,strNewPipe) != 0)
-	{
-		pipe->close();
-		return false;
-	}
-
-	// Now queue the service start function
-	if (!call_async_function_i(&service_start,this,0))
-	{
-		pipe->close();
-		return false;
-	}
-
+		
 	return true;
 }
 
-bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
+bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 {
 	// Register our service
 	try
@@ -274,7 +252,7 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Exception thrown: %W\nAt: %W\n"),pE->GetDescription().c_str(),pE->GetSource().c_str()));
+		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
 		return false;
 	}
@@ -282,174 +260,86 @@ bool User::Manager::bootstrap(ACE_CDR::ULong sandbox_channel)
 	return true;
 }
 
-void User::Manager::service_start(void* pParam, ACE_InputCDR&)
+bool User::Manager::on_accept(OOBase::Socket* sock)
 {
-	Manager* pThis = static_cast<Manager*>(pParam);
-	try
-	{
-		pThis->service_start_i();
-	}
-	catch (IException* pE)
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
+	// Create a new MessageConnection
+	OOBase::SmartPtr<Root::MessageConnection> ptrMC;
+	OOBASE_NEW(ptrMC,Root::MessageConnection(this));
+	if (!ptrMC)
+		LOG_ERROR_RETURN(("Out of memory"),false);
 
-		pE->Release();
-	}
-	catch (...)
-	{
-	}
-}
-
-bool User::Manager::start_service(const string_t& strName, const guid_t& oid)
-{
-	try
-	{
-		ObjectPtr<System::IService> ptrService(oid,Activation::InProcess);
-		ptrService->Start();
-
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		std::pair<std::map<string_t,ObjectPtr<System::IService> >::iterator,bool> p = m_mapServices.insert(std::map<string_t,ObjectPtr<System::IService> >::value_type(strName,ptrService));
-		if (!p.second)
-			OMEGA_THROW(L"Service with the same name already started!");
-	}
-	catch (IException* pE)
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception starting service %W: %W\n"),pE->GetSource().c_str(),strName.c_str(),pE->GetDescription().c_str()));
-
-		pE->Release();
-
-		return false;
-	}
-
-	return true;
-}
-
-void User::Manager::service_start_i()
-{
-	// Start the builtin services
-	start_service(L"tcp",OID_TcpProtocolHandler);
-	start_service(L"http",OID_HttpProtocolHandler);
-}
-
-void User::Manager::stop_services()
-{
-	try
-	{
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-
-		// Copy and clear the map
-		std::map<string_t,ObjectPtr<System::IService> > mapServices = m_mapServices;
-		m_mapServices.clear();
-
-		guard.release();
-
-		for (std::map<string_t,ObjectPtr<System::IService> >::iterator i=mapServices.begin();i!=mapServices.end();++i)
-		{
-			try
-			{
-				i->second->Stop();
-			}
-			catch (IException* pE)
-			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping service %W: %W\n"),pE->GetSource().c_str(),i->first.c_str(),pE->GetDescription().c_str()));
-
-				pE->Release();
-			}
-		}
-	}
-	catch (IException* pE)
-	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception stopping services: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
-
-		pE->Release();
-	}
-}
-
-void User::Manager::end()
-{
-	// Stop accepting new clients
-	m_process_acceptor.stop();
-
-	// Stop the reactor
-	ACE_Reactor::instance()->end_reactor_event_loop();
-}
-
-int User::Manager::on_accept(const ACE_Refcounted_Auto_Ptr<Root::MessagePipe,ACE_Thread_Mutex>& pipe)
-{
-	Root::MessageConnection* pMC = 0;
-	ACE_NEW_RETURN(pMC,Root::MessageConnection(this),-1);
-
-	ACE_CDR::ULong channel_id = pMC->open(pipe,0,false);
+	// Attach it to ourselves
+	uint32_t channel_id = register_channel(ptrMC,0);
 	if (channel_id == 0)
+		return false;
+
+	// Send the channel id...
+	int err = sock->send(channel_id);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+	
+	// Attach the connection
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,sock));
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to convert sync to async socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		
+	// Start I/O
+	if (!ptrMC->read())
 	{
-		delete pMC;
-		return -1;
+		ptrMC->close();
+		return false;
 	}
 
-	if (pipe->send(&channel_id,sizeof(channel_id)) != sizeof(channel_id))
-	{
-		delete pMC;
-		return -1;
-	}
-
-	if (!pMC->read())
-	{
-		delete pMC;
-		return -1;
-	}
-
-	return 0;
+	return true;
 }
 
-void User::Manager::on_channel_closed(ACE_CDR::ULong channel)
+void User::Manager::on_channel_closed(Omega::uint32_t channel)
 {
 	// Close the corresponding Object Manager
+	try
 	{
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
-		try
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
 		{
-			for (std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
+			bool bErase = false;
+			if (i->first == channel)
 			{
-				bool bErase = false;
-				if (i->first == channel)
-				{
-					// Close if its an exact match
-					bErase = true;
-				}
-				else if ((i->first & 0xFFFFF000) == channel)
-				{
-					// Close all subchannels
-					bErase = true;
-				}
-				else if (channel == m_root_channel && classify_channel(i->first) > 2)
-				{
-					// If the root channel closes, close all upstream OMs
-					bErase = true;
-				}
-
-				if (bErase)
-				{
-					i->second->disconnect();
-					m_mapChannels.erase(i++);
-				}
-				else
-					++i;
+				// Close if its an exact match
+				bErase = true;
 			}
-		}
-		catch (...)
-		{}
-	}
+			else if ((i->first & 0xFFFFF000) == channel)
+			{
+				// Close all subchannels
+				bErase = true;
+			}
+			else if (channel == m_root_channel && classify_channel(i->first) > 2)
+			{
+				// If the root channel closes, close all upstream OMs
+				bErase = true;
+			}
 
+			if (bErase)
+			{
+				i->second->disconnect();
+				m_mapChannels.erase(i++);
+			}
+			else
+				++i;
+		}
+	}
+	catch (...)
+	{}
+	
 	// Give the remote layer a chance to close channels
 	local_channel_closed(channel);
 
 	// If the root closes, we should end!
 	if (channel == m_root_channel)
-		end();
+		quit();
 }
 
-void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+void User::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	if (src_channel_id == m_root_channel)
 		process_root_request(request,seq_no,src_thread_id,deadline,attribs);
@@ -457,50 +347,46 @@ void User::Manager::process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no
 		process_user_request(request,seq_no,src_channel_id,src_thread_id,deadline,attribs);
 }
 
-void User::Manager::process_root_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	Root::RootOpCode_t op_code;
-	request >> op_code;
-
-	if (!request.good_bit())
+	if (!request.read(op_code))
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("Bad request")));
+		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::strerror(request.last_error()).c_str()));
 		return;
 	}
 
-	ACE_OutputCDR response;
+	OOBase::CDRStream response;
 	switch (op_code)
 	{
-	case Root::HttpOpen:
-		open_http(request,response);
-		break;
-
-	case Root::HttpRecv:
-		recv_http(request);
-		break;
-
-	case 0:
 	default:
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Bad request op_code: %u\n"),op_code));
-		return;
+		response.write((int)EINVAL);
+		LOG_ERROR(("Bad request op_code: %u",op_code));
+		break;
 	}
 
-	if (!(attribs & TypeInfo::Asynchronous) && response.good_bit())
-		send_response(seq_no,m_root_channel,src_thread_id,response.begin(),deadline,attribs);
+	if (!(attribs & TypeInfo::Asynchronous) && response.last_error()==0)
+	{
+		Root::MessageHandler::io_result::type res = send_response(seq_no,m_root_channel,src_thread_id,response,deadline,attribs);
+		if (res == Root::MessageHandler::io_result::failed)
+			LOG_ERROR(("Root response sending failed"));
+	}
 }
 
-void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	try
 	{
 		// Find and/or create the object manager associated with src_channel_id
 		ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id,guid_t::Null());
+		if (!ptrOM)
+			return;
 
 		// Wrap up the request
-		ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrEnvelope;
-		ptrEnvelope = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
+		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 		ptrEnvelope->init(request);
-
+		
 		// Unpack the payload
 		IObject* pPayload = 0;
 		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
@@ -509,14 +395,12 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		// Check timeout
 		uint32_t timeout = 0;
-		if (deadline != ACE_Time_Value::max_time)
+		if (deadline != OOBase::timeval_t::max_time)
 		{
-			ACE_Time_Value now = ACE_OS::gettimeofday();
+			OOBase::timeval_t now = OOBase::gettimeofday();
 			if (deadline <= now)
-			{
-				ACE_OS::last_error(ETIMEDOUT);
 				return;
-			}
+			
 			timeout = (deadline - now).msec();
 		}
 
@@ -526,14 +410,26 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 
 		if (!(attribs & TypeInfo::Asynchronous))
 		{
+			if (deadline != OOBase::timeval_t::max_time)
+			{
+				if (deadline <= OOBase::gettimeofday())
+					return;
+			}
+
 			// Wrap the response...
-			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrResponse = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
-			const ACE_Message_Block* mb = static_cast<const ACE_Message_Block*>(ptrResponse->GetMessageBlock());
-			if (!send_response(seq_no,src_channel_id,src_thread_id,mb,deadline,attribs))
+			const OOBase::CDRStream* buffer = static_cast<const OOBase::CDRStream*>(ptrResponse->GetCDRStream());
+			Root::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*buffer,deadline,attribs);
+			if (res != Root::MessageHandler::io_result::success)
+			{
 				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+
+				if (res == Root::MessageHandler::io_result::failed)
+					LOG_ERROR(("Response sending failed"));
+			}
 		}
 	}
 	catch (IException* pOuter)
@@ -543,7 +439,7 @@ void User::Manager::process_user_request(const ACE_InputCDR& request, ACE_CDR::U
 	}
 }
 
-ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(src_channel_id,message_oid);
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
@@ -551,20 +447,20 @@ ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(ACE_CDR
 	return ptrOM;
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
 	return USER_MANAGER::instance()->create_channel_i(src_channel_id,message_oid);
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(ACE_CDR::ULong src_channel_id, const guid_t& message_oid)
+ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
 	try
 	{
 		// Lookup existing..
 		{
-			OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+			std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
 			if (i != m_mapChannels.end())
 				return i->second;
 		}
@@ -574,17 +470,12 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(ACE_CDR::U
 		ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
 
 		// And add to the map
-		OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::pair<std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
+		std::pair<std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
 		if (!p.second)
-		{
-			if (p.first->second->GetMarshalFlags() != ptrChannel->GetMarshalFlags())
-				OMEGA_THROW(EINVAL);
-
 			ptrChannel = p.first->second;
-		}
-
+		
 		return ptrChannel;
 	}
 	catch (std::exception& e)
@@ -593,27 +484,83 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(ACE_CDR::U
 	}
 }
 
-ACE_InputCDR* User::Manager::sendrecv_root(const ACE_OutputCDR& request, TypeInfo::MethodAttributes_t attribs)
+OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::CDRStream& request, TypeInfo::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
-	ACE_Time_Value wait = ACE_Time_Value::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
 	ObjectPtr<Remoting::ICallContext> ptrCC;
 	ptrCC.Attach(Remoting::GetCallContext());
 	if (ptrCC)
 	{
 		uint32_t msecs = ptrCC->Timeout();
 		if (msecs != (uint32_t)-1)
-			wait = ACE_OS::gettimeofday() + ACE_Time_Value(msecs / 1000,(msecs % 1000) * 1000);
+			deadline = OOBase::timeval_t::deadline(msecs);
 	}
 
-	ACE_InputCDR* response = 0;
-	if (!send_request(m_root_channel,request.begin(),response,wait == ACE_Time_Value::max_time ? 0 : &wait,attribs))
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
+	Root::MessageHandler::io_result::type res = send_request(m_root_channel,&request,response,deadline == OOBase::timeval_t::max_time ? 0 : &deadline,attribs);
+	if (res != Root::MessageHandler::io_result::success)
+	{
+		if (res == Root::MessageHandler::io_result::timedout)
+			throw Omega::ITimeoutException::Create();
+		else if (res == Root::MessageHandler::io_result::channel_closed)
+			throw Omega::Remoting::IChannelClosedException::Create();
+		else
+			OMEGA_THROW(L"Internal server exception");
+	}
 
 	return response;
 }
 
-bool User::Manager::call_async_function(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb)
+#if defined(_WIN32)
+
+namespace
 {
-	return USER_MANAGER::instance()->call_async_function_i(pfnCall,pParam,mb);
+	static HANDLE s_hEvent = NULL;
+
+	static BOOL WINAPI control_c(DWORD)
+	{
+		// Just stop!
+		if (s_hEvent && !SetEvent(s_hEvent))
+			OOBase_CallCriticalFailure(GetLastError());
+
+		return TRUE;
+	}
 }
+
+void User::Manager::wait_for_quit()
+{
+	// Create the wait event
+	s_hEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
+	if (!s_hEvent)
+	{
+		LOG_ERROR(("CreateEventW failed: %s",OOBase::Win32::FormatMessage().c_str()));
+		return;
+	}
+
+	if (!SetConsoleCtrlHandler(control_c,TRUE))
+		LOG_ERROR(("SetConsoleCtrlHandler failed: %s",OOBase::Win32::FormatMessage().c_str()));
+	else
+	{
+		// Wait for the event to be signalled
+		DWORD dwWait = WaitForSingleObject(s_hEvent,INFINITE);
+		if (dwWait != WAIT_OBJECT_0)
+			LOG_ERROR(("WaitForSingleObject failed: %s",OOBase::Win32::FormatMessage().c_str()));
+	}
+
+	CloseHandle(s_hEvent);
+	s_hEvent = NULL;
+}
+
+void User::Manager::quit()
+{
+	// Just stop!
+	if (s_hEvent && !SetEvent(s_hEvent))
+		OOBase_CallCriticalFailure(GetLastError());
+}
+
+#else
+
+#error Fix me!
+
+#endif

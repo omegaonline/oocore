@@ -19,10 +19,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_User.h"
-#include "./UserRegistry.h"
-#include "./UserManager.h"
-#include "./SpawnedProcess.h"
+#include "OOServer_User.h"
+#include "UserRegistry.h"
+#include "UserManager.h"
+#include "SpawnedProcess.h"
 
 using namespace Omega;
 using namespace Omega::Registry;
@@ -205,7 +205,7 @@ namespace Registry
 using namespace User;
 using namespace User::Registry;
 
-void Key::Init(Manager* pManager, const Omega::string_t& strKey, const ACE_INT64& key)
+void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key)
 {
 	m_pManager = pManager;
 	m_strKey = strKey;
@@ -216,26 +216,23 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::IsSubKey");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::KeyExists);
-	request.write_longlong(m_key);
-	request.write_string(strSubKey.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::KeyExists));
+	request.write(m_key);
+	request.write(strSubKey.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
 
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		return false;
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsSubKey");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsSubKey");
 	else if (err != 0)
@@ -248,62 +245,58 @@ bool_t Key::IsValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::IsValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::ValueType));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
-
-	ACE_CDR::Octet value_type;
-	if (err==0 && !response->read_octet(value_type))
-		err = ACE_OS::last_error();
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err==ENOENT)
 		return false;
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::IsValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
+
+	Omega::byte_t value_type;
+	if (!response->read(value_type))
+		OMEGA_THROW(response->last_error());
 
 	return true;
 }
 
 int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 {
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::ValueType);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::ValueType));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err != 0)
 		return err;
 
-	ACE_CDR::Octet value_type = 0;
-	if (!response->read_octet(value_type))
-		OMEGA_THROW(ACE_OS::last_error());
+	Omega::byte_t value_type = 0;
+	if (!response->read(value_type))
+		OMEGA_THROW(response->last_error());
 
 	switch (value_type)
 	{
@@ -320,7 +313,7 @@ int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 		break;
 
 	default:
-		OMEGA_THROW(EINVAL);
+		OMEGA_THROW(L"Registry value has invalid value type in the database");
 	}
 
 	return 0;
@@ -334,8 +327,6 @@ ValueType_t Key::GetValueType(const string_t& strName)
 	int err = GetValueType_i(strName,vtype);
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueType");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueType");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueType");
 	else if (err != 0)
@@ -348,21 +339,20 @@ string_t Key::GetStringValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetStringValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::GetStringValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::GetStringValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetStringValue");
@@ -373,16 +363,14 @@ string_t Key::GetStringValue(const string_t& strName)
 		if (err == 0)
 			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetStringValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ACE_CString strValue;
-	if (!response->read_string(strValue))
-		OMEGA_THROW(ACE_OS::last_error());
+	std::string strValue;
+	if (!response->read(strValue))
+		OMEGA_THROW(response->last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -391,21 +379,20 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::GetIntegerValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::GetIntegerValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetIntegerValue");
@@ -416,16 +403,14 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 		if (err == 0)
 			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ACE_CDR::LongLong uValue = 0;
-	if (!response->read_longlong(uValue))
-		OMEGA_THROW(ACE_OS::last_error());
+	Omega::int64_t uValue = 0;
+	if (!response->read(uValue))
+		OMEGA_THROW(response->last_error());
 
 	return uValue;
 }
@@ -434,23 +419,22 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::GetBinaryValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	request.write_ulong(cbLen);
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::GetBinaryValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	request.write(cbLen);
 	bool bNoDataBack = (cbLen == 0);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetBinaryValue");
@@ -461,20 +445,18 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 		if (err == 0)
 			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
 	}
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	if (!response->read_ulong(cbLen))
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(cbLen))
+		OMEGA_THROW(response->last_error());
 
 	if (!bNoDataBack)
 	{
-		if (!response->read_octet_array(pBuffer,cbLen))
-			OMEGA_THROW(ACE_OS::last_error());
+		if (!response->read_bytes(pBuffer,cbLen))
+			OMEGA_THROW(response->last_error());
 	}
 }
 
@@ -482,27 +464,24 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetStringValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::SetStringValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	request.write_string(strValue.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::SetStringValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	request.write(strValue.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetStringValue");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetStringValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetStringValue");
 	else if (err != 0)
@@ -513,27 +492,24 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::SetIntegerValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	request.write_longlong(value);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::SetIntegerValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	request.write(value);
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetIntegerValue");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetIntegerValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetIntegerValue");
 	else if (err != 0)
@@ -544,27 +520,24 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::SetBinaryValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	request.write_octet_array(val,cbLen);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::SetBinaryValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	request.write_bytes(val,cbLen);
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::SetBinaryValue");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetBinaryValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetBinaryValue");
 	else if (err != 0)
@@ -573,31 +546,30 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 
 string_t Key::GetDescription()
 {
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::GetDescription);
-	request.write_longlong(m_key);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::GetDescription));
+	request.write(m_key);
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
-	if (err==EEXIST)
+	if (err==ENOENT)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetDescription");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetDescription");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ACE_CString strValue;
-	if (!response->read_string(strValue))
-		OMEGA_THROW(ACE_OS::last_error());
+	std::string strValue;
+	if (!response->read(strValue))
+		OMEGA_THROW(response->last_error());
 
 	return string_t(strValue.c_str(),true);
 }
@@ -606,57 +578,53 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::GetValueDescription");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::GetValueDescription);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::GetValueDescription));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::GetValueDescription");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueDescription");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetValueDescription");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ACE_CString strValue;
-	if (!response->read_string(strValue))
-		OMEGA_THROW(ACE_OS::last_error());
+	std::string strValue;
+	if (!response->read(strValue))
+		OMEGA_THROW(response->last_error());
 
 	return string_t(strValue.c_str(),true);
 }
 
 void Key::SetDescription(const Omega::string_t& strDesc)
 {
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::SetDescription);
-	request.write_longlong(m_key);
-	request.write_string(strDesc.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::SetDescription));
+	request.write(m_key);
+	request.write(strDesc.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
-	if (err == EEXIST)
+	if (err == ENOENT)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetDescription");
@@ -666,27 +634,24 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 
 void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::string_t& strDesc)
 {
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::SetValueDescription);
-	request.write_longlong(m_key);
-	request.write_string(strValue.ToUTF8().c_str());
-	request.write_string(strDesc.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::SetValueDescription));
+	request.write(m_key);
+	request.write(strValue.ToUTF8().c_str());
+	request.write(strDesc.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strValue,L"Omega::Registry::IRegistry::SetValueDescription");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetValueDescription");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::SetValueDescription");
 	else if (err != 0)
@@ -697,39 +662,35 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::CreateKey);
-	request.write_longlong(m_key);
-	request.write_string(strSubKey.ToUTF8().c_str());
-	request.write_boolean((flags & IKey::Create) ? true : false);
-	request.write_boolean((flags & IKey::FailIfThere) ? true : false);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::CreateKey));
+	request.write(m_key);
+	request.write(strSubKey.ToUTF8().c_str());
+	request.write((flags & IKey::Create) ? true : false);
+	request.write((flags & IKey::FailIfThere) ? true : false);
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 	
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::OpenSubKey");
-	else if (err==EALREADY)
 		AlreadyExistsException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err==ENOENT)
 		NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ACE_INT64 key = 0;
-	*response >> key;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());	
+	Omega::int64_t key = 0;
+	if (!response->read(key))
+		OMEGA_THROW(response->last_error());	
 	
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
@@ -741,24 +702,23 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 Omega::IEnumString* Key::EnumSubKeys()
 {
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::EnumSubKeys);
-	request.write_longlong(m_key);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::EnumSubKeys));
+	request.write(m_key);
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 	
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
-	else if (err==EEXIST)
+	else if (err==ENOENT)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumSubKeys");
 	else if (err != 0)
 		OMEGA_THROW(err);
@@ -769,9 +729,9 @@ Omega::IEnumString* Key::EnumSubKeys()
 	{
 		for (;;)
 		{
-			ACE_CString strName;
-			if (!response->read_string(strName))
-				OMEGA_THROW(ACE_OS::last_error());
+			std::string strName;
+			if (!response->read(strName))
+				OMEGA_THROW(response->last_error());
 
 			if (strName.empty())
 				break;
@@ -790,24 +750,23 @@ Omega::IEnumString* Key::EnumSubKeys()
 
 Omega::IEnumString* Key::EnumValues()
 {
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::EnumValues);
-	request.write_longlong(m_key);
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::EnumValues));
+	request.write(m_key);
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
-	else if (err==EEXIST)
+	else if (err==ENOENT)
 		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::EnumValues");
 	else if (err != 0)
 		OMEGA_THROW(err);
@@ -818,9 +777,9 @@ Omega::IEnumString* Key::EnumValues()
 	{
 		for (;;)
 		{
-			ACE_CString strName;
-			if (!response->read_string(strName))
-				OMEGA_THROW(ACE_OS::last_error());
+			std::string strName;
+			if (!response->read(strName))
+				OMEGA_THROW(response->last_error());
 
 			if (strName.empty())
 				break;
@@ -841,26 +800,23 @@ void Key::DeleteKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::DeleteKey);
-	request.write_longlong(m_key);
-	request.write_string(strSubKey.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteKey));
+	request.write(m_key);
+	request.write(strSubKey.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteKey");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
 	else if (err != 0)
@@ -871,26 +827,23 @@ void Key::DeleteValue(const string_t& strName)
 {
 	BadNameException::ValidateValue(strName,L"Omega::Registry::IRegistry::DeleteValue");
 
-	ACE_OutputCDR request;
-	request << static_cast<Root::RootOpCode_t>(Root::DeleteValue);
-	request.write_longlong(m_key);
-	request.write_string(strName.ToUTF8().c_str());
-	if (!request.good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	OOBase::CDRStream request;
+	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteValue));
+	request.write(m_key);
+	request.write(strName.ToUTF8().c_str());
+	if (request.last_error() != 0)
+		OMEGA_THROW(request.last_error());
 
-	ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
-	if (response.null())
-		OMEGA_THROW(EINVAL);
-
+	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+	if (!response)
+		OMEGA_THROW("No response from root");
+	
 	int err = 0;
-	*response >> err;
-	if (!response->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response->read(err))
+		OMEGA_THROW(response->last_error());
 
 	if (err == ENOENT)
 		NotFoundException::Throw(strName,L"Omega::Registry::IRegistry::DeleteValue");
-	else if (err==EEXIST)
-		NotFoundException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteValue");
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::DeleteValue");
 	else if (err != 0)

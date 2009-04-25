@@ -42,7 +42,7 @@ AC_DEFUN([OO_LIB_ACE],
                                    \+ $ace_version_req_micro`
 
         AC_MSG_CHECKING([for ACE library >= $ace_version_req])
-
+        
         if test "$ac_ace_path" != ""; then
             ac_ace_ldflags="-L$ac_ace_path/lib"
             ac_ace_header_path="$ac_ace_path"
@@ -67,7 +67,7 @@ AC_DEFUN([OO_LIB_ACE],
         AC_LANG_PUSH(C++)
         AC_COMPILE_IFELSE(
             [
-            AC_LANG_PROGRAM([[@%:@include <ace/ACE.h>]],
+            AC_LANG_PROGRAM([[@%:@include <ace/Version.h>]],
                 [[
 #define TEST_ACE_VERSION(x,y,z) ((x * 10000) + (y * 100) + z)
 #define TEST_ACE_VERSION_CURRENT TEST_ACE_VERSION(ACE_MAJOR_VERSION,ACE_MINOR_VERSION,ACE_BETA_VERSION)

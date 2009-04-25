@@ -133,11 +133,11 @@ AC_DEFUN([AX_LIB_SQLITE3],
             [
             AC_LANG_PROGRAM([[@%:@include <sqlite3.h>]],
                 [[
-#if (SQLITE_VERSION_NUMBER >= $sqlite3_version_req_number)
-// Everything is okay
-#else
-#  error SQLite version is too old
-#endif
+					#if (SQLITE_VERSION_NUMBER >= $sqlite3_version_req_number)
+					// Everything is okay
+					#else
+					#  error SQLite version is too old
+					#endif
                 ]]
             )
             ],
@@ -174,10 +174,10 @@ AC_DEFUN([AX_LIB_SQLITE3],
             AC_SUBST(SQLITE3_CPPFLAGS)
             AC_SUBST(SQLITE3_LDFLAGS)
             AC_SUBST(SQLITE3_VERSION)
-            AC_DEFINE([HAVE_SQLITE3], [1], [Have the SQLite3 library])
+            AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have the SQLite3 library])
             
             if test "x$ac_sqlite3_amalgamation" = "xyes"; then
-                AC_DEFINE([HAVE_SQLITE3_AMALGAMATION], [1], [Have the SQLite3 amalgamated sources])
+                AC_DEFINE([HAVE_SQLITE3_AMALGAMATION], [1], [Define to 1 if you have the SQLite3 amalgamated sources])
             fi
         fi
     fi

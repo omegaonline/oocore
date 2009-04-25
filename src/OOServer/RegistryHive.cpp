@@ -31,16 +31,17 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
-#include "./RegistryHive.h"
-#include "./RootManager.h"
+#include "OOServer_Root.h"
+#include "RegistryHive.h"
+#include "RootManager.h"
 
-Root::RegistryHive::RegistryHive(ACE_Refcounted_Auto_Ptr<Db::Database,ACE_Thread_Mutex>& db) :
+Root::RegistryHive::RegistryHive(Manager* pManager, OOBase::SmartPtr<Db::Database>& db) :
+	m_pManager(pManager),
 	m_db(db)
 {
 }
 
-int Root::RegistryHive::open()
+bool Root::RegistryHive::open()
 {
 	// Check that the tables we require exist, and create if they don't
 	const char szSQL[] = 
@@ -74,14 +75,10 @@ int Root::RegistryHive::open()
 		"ANALYZE RegistryValues;"
 		"COMMIT;";
 			
-	int err = m_db->exec(szSQL);
-	if (err != SQLITE_OK)
-		return -1;
-
-	return 0;
+	return (m_db->exec(szSQL) == SQLITE_OK);
 }
 
-int Root::RegistryHive::check_key_exists(const ACE_INT64& uKey, int& access_mask)
+int Root::RegistryHive::check_key_exists(const Omega::int64_t& uKey, int& access_mask)
 {
 	// Lock must be help first...
 	if (uKey == 0)
@@ -90,8 +87,7 @@ int Root::RegistryHive::check_key_exists(const ACE_INT64& uKey, int& access_mask
 		return SQLITE_ROW;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Access FROM RegistryKeys WHERE Id = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Access FROM RegistryKeys WHERE Id = %lld;",uKey);
 	
 	int err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -100,12 +96,11 @@ int Root::RegistryHive::check_key_exists(const ACE_INT64& uKey, int& access_mask
 	return err;
 }
 
-int Root::RegistryHive::find_key(ACE_INT64 uParent, const ACE_CString& strSubKey, ACE_INT64& uKey, int& access_mask)
+int Root::RegistryHive::find_key(Omega::int64_t uParent, const std::string& strSubKey, Omega::int64_t& uKey, int& access_mask)
 {
 	// Lock must be help first...
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Id, Access FROM RegistryKeys WHERE Name = %Q AND Parent = %lld;",strSubKey.c_str(),uParent);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Id, Access FROM RegistryKeys WHERE Name = %Q AND Parent = %lld;",strSubKey.c_str(),uParent);
 	
 	int err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -117,19 +112,19 @@ int Root::RegistryHive::find_key(ACE_INT64 uParent, const ACE_CString& strSubKey
 	return err;
 }
 
-int Root::RegistryHive::find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& access_mask, ACE_CDR::ULong channel_id)
+int Root::RegistryHive::find_key(Omega::int64_t& uKey, std::string& strSubKey, int& access_mask, Omega::uint32_t channel_id)
 {
 	// Check if the key still exists
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
@@ -138,7 +133,7 @@ int Root::RegistryHive::find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& a
 	for (;;)
 	{
 		size_t pos = strSubKey.find('\\');
-		if (pos == ACE_CString::npos)
+		if (pos == std::string::npos)
 			break;
 
 		err = find_key(uKey,strSubKey.substr(0,pos),uKey,access_mask);
@@ -150,7 +145,7 @@ int Root::RegistryHive::find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& a
 		if (!(access_mask & 1) && channel_id != 0)
 		{
 			// Read not allowed - check access!
-			int acc = Root::Manager::registry_access_check(channel_id);
+			int acc = m_pManager->registry_access_check(channel_id);
 			if (acc != 0)
 				return acc;
 		}
@@ -167,7 +162,7 @@ int Root::RegistryHive::find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& a
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
@@ -176,10 +171,9 @@ int Root::RegistryHive::find_key(ACE_INT64& uKey, ACE_CString& strSubKey, int& a
 	return 0;
 }
 
-int Root::RegistryHive::insert_key(ACE_INT64& uKey, ACE_CString strSubKey, int access_mask)
+int Root::RegistryHive::insert_key(Omega::int64_t& uKey, std::string strSubKey, int access_mask)
 {
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%d);",strSubKey.c_str(),uKey,access_mask);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%d);",strSubKey.c_str(),uKey,access_mask);
 	
 	int err = ptrStmt->step();
 	if (err == SQLITE_DONE)
@@ -188,24 +182,24 @@ int Root::RegistryHive::insert_key(ACE_INT64& uKey, ACE_CString strSubKey, int a
 	return err;
 }
 
-int Root::RegistryHive::open_key(ACE_INT64& uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id)
+int Root::RegistryHive::open_key(Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
 	if (uKey==0 && strSubKey.empty())
 		return 0;
 
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
-
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+	
 	// Find the key
 	int access_mask = 0;
 	return find_key(uKey,strSubKey,access_mask,channel_id);
 }
 
-int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool bFailIfThere, int access, ACE_CDR::ULong channel_id)
+int Root::RegistryHive::create_key(Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, int access, Omega::uint32_t channel_id)
 {
 	if (uKey==0 && strSubKey.empty())
-		return bFailIfThere ? EALREADY : 0;
+		return bFailIfThere ? EEXIST : 0;
 
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 3;
@@ -213,22 +207,21 @@ int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool 
 	if (err != 0 && err != ENOENT)
 		return err;
 
-	ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> ptrTrans;
-
+	OOBase::SmartPtr<Db::Transaction> ptrTrans;
 	if (err == ENOENT)
 	{
 		// Need to add more...				
 		if (!(access_mask & 2) && channel_id != 0)
 		{
 			// Write not allowed - check access!
-			int acc = Root::Manager::registry_access_check(channel_id);
+			int acc = m_pManager->registry_access_check(channel_id);
 			if (acc != 0)
 				return acc;
 		}
 
 		// Start a transaction..
 		ptrTrans = m_db->begin_transaction();
-		if (ptrTrans.null())
+		if (!ptrTrans)
 			return EIO;
 
 		// Mask the access mask
@@ -239,7 +232,7 @@ int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool 
 		for (;;)
 		{
 			size_t pos = strSubKey.find('\\');
-			if (pos == ACE_CString::npos)
+			if (pos == std::string::npos)
 				err = insert_key(uKey,strSubKey,access);
 			else
 				err = insert_key(uKey,strSubKey.substr(0,pos),access);
@@ -247,7 +240,7 @@ int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool 
 			if (err != SQLITE_DONE)
 				return EIO;
 
-			if (pos == ACE_CString::npos)
+			if (pos == std::string::npos)
 				break;
 			
 			strSubKey = strSubKey.substr(pos+1);
@@ -255,10 +248,10 @@ int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool 
 	}
 	else if (bFailIfThere)
 	{
-		return EALREADY;
+		return EEXIST;
 	}
 	
-	if (!ptrTrans.null())
+	if (ptrTrans)
 	{
 		err = ptrTrans->commit();
 		if (err != SQLITE_OK)
@@ -268,7 +261,7 @@ int Root::RegistryHive::create_key(ACE_INT64& uKey, ACE_CString strSubKey, bool 
 	return 0;
 }
 
-int Root::RegistryHive::delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong channel_id)
+int Root::RegistryHive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
 {
 	// This one is recursive, within a transaction and a lock...
 	
@@ -283,7 +276,7 @@ int Root::RegistryHive::delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong chann
 	if (!(access_mask & 2) && channel_id != 0)
 	{
 		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
@@ -294,8 +287,7 @@ int Root::RegistryHive::delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong chann
 		return EACCES;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey);
 	
 	// Recurse down
 	bool bFound = false;
@@ -331,9 +323,9 @@ int Root::RegistryHive::delete_key_i(const ACE_INT64& uKey, ACE_CDR::ULong chann
 	return 0;
 }
 
-int Root::RegistryHive::delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CDR::ULong channel_id)
+int Root::RegistryHive::delete_key(Omega::int64_t uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
@@ -341,16 +333,15 @@ int Root::RegistryHive::delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CD
 	if (err != 0)
 		return err;
 
-	ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> ptrTrans = m_db->begin_transaction();
-	if (ptrTrans.null())
+	OOBase::SmartPtr<Db::Transaction> ptrTrans = m_db->begin_transaction();
+	if (!ptrTrans)
 		return EIO;
 	
 	err = delete_key_i(uKey,channel_id);
 	if (err == 0)
 	{
 		// Do the delete of this key
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-			m_db->prepare_statement("DELETE FROM RegistryKeys WHERE Id = %lld;",uKey);
+		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("DELETE FROM RegistryKeys WHERE Id = %lld;",uKey);
 	
 		err = ptrStmt->step();
 		if (err != SQLITE_DONE)
@@ -364,91 +355,117 @@ int Root::RegistryHive::delete_key(ACE_INT64 uKey, ACE_CString strSubKey, ACE_CD
 	return err;
 }
 
-int Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, std::list<ACE_CString>& listSubKeys)
+int Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
+
+	// Do the access check up front...
+	int acc = m_pManager->registry_access_check(channel_id);
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Name FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
 	
 	do
 	{
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
-			listSubKeys.push_back(ptrStmt->column_text(0));
+		{
+			std::string strSubKey;
+			const char* v = ptrStmt->column_text(0);
+			if (v)
+				strSubKey = v;
+			
+			access_mask = ptrStmt->column_int(1);
+			if (!(access_mask & 1) && channel_id != 0)
+			{
+				// Read not allowed - check access!
+				if (acc != 0)
+					strSubKey.clear();
+			}
+			
+			if (!strSubKey.empty())
+				listSubKeys.push_back(strSubKey);
+		}
 
 	} while (err == SQLITE_ROW);
 
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
 
-void Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response)
+void Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-	if (guard.locked() == 0)
-	{
-		response << ACE_OS::last_error();
-		return;
-	}
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
-		response << EEXIST;
+		response.write((int)ENOENT);
 		return;
 	}
 	else if (err != SQLITE_ROW)
 	{
-		response << EIO;
+		response.write((int)EIO);
 		return;
-	}	
+	}
+
+	// Do the access check up front...
+	int acc = m_pManager->registry_access_check(channel_id);
 		
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
 		if (acc != 0)
 		{
-			response << acc;
+			response.write(acc);
 			return;
 		}
 	}
 
 	// Write out success first
-	response << (int)0;
-	if (!response.good_bit())
+	response.write((int)0);
+	if (response.last_error() != 0)
 		return;
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Name FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
 	
 	do
 	{
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			if (!response.write_string(ptrStmt->column_text(0)))
+			std::string strSubKey;
+			const char* v = ptrStmt->column_text(0);
+			if (v)
+				strSubKey = v;
+
+			access_mask = ptrStmt->column_int(1);
+			if (!(access_mask & 1) && channel_id != 0)
+			{
+				// Read not allowed - check access!
+				if (acc != 0)
+					strSubKey.clear();
+			}
+			
+			if (!strSubKey.empty() && !response.write(strSubKey))
 			{
 				response.reset();
-				response << ACE_OS::last_error();
+				response.write((int)EIO);
 				return;
 			}
 		}
@@ -457,100 +474,102 @@ void Root::RegistryHive::enum_subkeys(const ACE_INT64& uKey, ACE_CDR::ULong chan
 	if (err == SQLITE_DONE)
 	{
 		// Write terminating null
-		response.write_string(0);
+		response.write(std::string());
 	}
 	else
 	{
 		response.reset();
-		response << EIO;
+		response.write((int)EIO);
 	}
 }
 
-int Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, std::list<ACE_CString>& listValues)
+int Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listValues)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
 	
 	do
 	{
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
-			listValues.push_back(ptrStmt->column_text(0));
+		{
+			const char* v = ptrStmt->column_text(0);
+			if (v)
+				listValues.push_back(v);
+		}
 
 	} while (err == SQLITE_ROW);
 
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
 
-void Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_OutputCDR& response)
+void Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-	if (guard.locked() == 0)
-	{
-		response << ACE_OS::last_error();
-		return;
-	}
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
-		response << EEXIST;
+		response.write((int)ENOENT);
 		return;
 	}
 	else if (err != SQLITE_ROW)
 	{
-		response << EIO;
+		response.write((int)EIO);
 		return;
 	}
 		
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 		{
-			response << acc;
+			response.write(acc);
 			return;
 		}
 	}
 
 	// Write out success first
-	response << (int)0;
-	if (!response.good_bit())
+	response.write((int)0);
+	if (response.last_error() != 0)
 		return;
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
 
 	do
 	{
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 		{
-			if (!response.write_string(ptrStmt->column_text(0)))
+			std::string str;
+			const char* v = ptrStmt->column_text(0);
+			if (v)
+				str = v;
+
+			if (!response.write(str))
 			{
 				response.reset();
-				response << ACE_OS::last_error();
+				response.write((int)EIO);
 				return;
 			}
 		}
@@ -559,37 +578,36 @@ void Root::RegistryHive::enum_values(const ACE_INT64& uKey, ACE_CDR::ULong chann
 	if (err == SQLITE_DONE)
 	{
 		// Write terminating null
-		response.write_string(0);
+		response.write(std::string());
 	}
 	else
 	{
 		response.reset();
-		response << EIO;
+		response.write((int)EIO);
 	}
 }
 
-int Root::RegistryHive::delete_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id)
+int Root::RegistryHive::delete_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 2) && channel_id != 0)
 	{
 		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("DELETE FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("DELETE FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
 	if (err != SQLITE_DONE)
@@ -598,33 +616,32 @@ int Root::RegistryHive::delete_value(const ACE_INT64& uKey, const ACE_CString& s
 	return 0;
 }
 
-int Root::RegistryHive::get_value_type(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::Octet& type)
+int Root::RegistryHive::get_value_type(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::byte_t& type)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
-		type = static_cast<ACE_CDR::Octet>(ptrStmt->column_int(0));
+		type = static_cast<Omega::byte_t>(ptrStmt->column_int(0));
 		return 0;
 	}
 	else if (err == SQLITE_DONE)
@@ -633,28 +650,27 @@ int Root::RegistryHive::get_value_type(const ACE_INT64& uKey, const ACE_CString&
 		return EIO;
 }
 
-int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CString& val)
+int Root::RegistryHive::get_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -663,7 +679,10 @@ int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_CStrin
 		if (type != 0)
 			return EINVAL;
 
-		val = ptrStmt->column_text(1);
+		const char* v = ptrStmt->column_text(1);
+		if (v)
+			val = v;
+		
 		return 0;
 	}
 	else if (err == SQLITE_DONE)
@@ -672,28 +691,27 @@ int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_CStrin
 		return EIO;
 }
 
-int Root::RegistryHive::get_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CDR::LongLong& val)
+int Root::RegistryHive::get_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::int64_t& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -711,47 +729,41 @@ int Root::RegistryHive::get_integer_value(const ACE_INT64& uKey, const ACE_CStri
 		return EIO;
 }
 
-void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong cbLen, ACE_CDR::ULong channel_id, ACE_OutputCDR& response)
+void Root::RegistryHive::get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t cbLen, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
-	ACE_Guard<ACE_Thread_Mutex> guard(m_lock);
-	if (guard.locked() == 0)
-	{
-		response << ACE_OS::last_error();
-		return;
-	}
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
-		response << EEXIST;
+		response.write((int)ENOENT);
 		return;
 	}
 	else if (err != SQLITE_ROW)
 	{
-		response << EIO;
+		response.write((int)EIO);
 		return;
 	}
 		
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 		{
-			response << acc;
+			response.write(acc);
 			return;
 		}
 	}
 
 	// Write out success first
-	response << (int)0;
-	if (!response.good_bit())
+	response.write((int)0);
+	if (response.last_error() != 0)
 		return;
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -760,7 +772,7 @@ void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CStri
 		if (type != 2)
 		{
 			response.reset();
-			response << EINVAL;
+			response.write((int)EINVAL);
 		}
 		else
 		{
@@ -771,22 +783,23 @@ void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CStri
 			if (cbLen)
 			{
 				bData = true;
-				cbLen = std::min(static_cast<ACE_CDR::ULong>(len),cbLen);
+				if (static_cast<Omega::uint32_t>(len) < cbLen)
+					cbLen = static_cast<Omega::uint32_t>(len);
 			}
 			else
-				cbLen = static_cast<ACE_CDR::ULong>(len);
+				cbLen = static_cast<Omega::uint32_t>(len);
 
-			if (!response.write_ulong(cbLen))
+			if (!response.write(cbLen))
 			{
 				response.reset();
-				response << ACE_OS::last_error();
+				response.write((int)EIO);
 			}
 			else if (bData)
 			{
-				if (!response.write_octet_array(static_cast<const ACE_CDR::Octet*>(pData),cbLen))
+				if (!response.write_bytes(static_cast<const Omega::byte_t*>(pData),cbLen))
 				{
 					response.reset();
-					response << ACE_OS::last_error();
+					response.write((int)EIO);
 				}
 			}
 		}
@@ -800,32 +813,31 @@ void Root::RegistryHive::get_binary_value(const ACE_INT64& uKey, const ACE_CStri
 		err = EIO;
 
 	response.reset();
-	response << err;
+	response.write(err);
 }
 
-int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const char* val)
+int Root::RegistryHive::set_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 2) && channel_id != 0)
 	{
 		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
 	// See if we have a value already
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -842,8 +854,7 @@ int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_CStrin
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
+		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
 		
 		err = ptrStmt->step();
 	}
@@ -854,29 +865,28 @@ int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_CStrin
 	return 0;
 }
 
-int Root::RegistryHive::set_integer_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CDR::LongLong& val)
+int Root::RegistryHive::set_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const Omega::int64_t& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 2) && channel_id != 0)
 	{
 		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
 	// See if we have a value already
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -893,8 +903,7 @@ int Root::RegistryHive::set_integer_value(const ACE_INT64& uKey, const ACE_CStri
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
+		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
 		
 		err = ptrStmt->step();
 	}
@@ -905,29 +914,28 @@ int Root::RegistryHive::set_integer_value(const ACE_INT64& uKey, const ACE_CStri
 	return 0;
 }
 
-int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_InputCDR& request)
+int Root::RegistryHive::set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const OOBase::CDRStream& request)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 2) && channel_id != 0)
 	{
 		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
 	// See if we have a value already
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -939,21 +947,20 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 		// We have an entry already
 		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 	
-		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
+		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.buffer()->rd_ptr(),static_cast<int>(request.buffer()->length()),SQLITE_STATIC);
 		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_blob failed: %C\n"),sqlite3_errmsg(m_db->database())));
+			LOG_ERROR(("sqlite3_bind_blob failed: %s",sqlite3_errmsg(m_db->database())));
 		else
 			err = ptrStmt->step();
 	}
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-			m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
+		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
 			
-		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.start()->rd_ptr(),static_cast<int>(request.length()),SQLITE_STATIC);
+		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.buffer()->rd_ptr(),static_cast<int>(request.buffer()->length()),SQLITE_STATIC);
 		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_blob failed: %C\n"),sqlite3_errmsg(m_db->database())));
+			LOG_ERROR(("sqlite3_bind_blob failed: %s",sqlite3_errmsg(m_db->database())));
 		else
 			err = ptrStmt->step();
 	}
@@ -964,33 +971,35 @@ int Root::RegistryHive::set_binary_value(const ACE_INT64& uKey, const ACE_CStrin
 	return 0;
 }
 
-int Root::RegistryHive::get_description(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, ACE_CString& val)
+int Root::RegistryHive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Description FROM RegistryKeys WHERE Id = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Description FROM RegistryKeys WHERE Id = %lld;",uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
-		val = ptrStmt->column_text(0);
+		const char* v = ptrStmt->column_text(0);
+		if (v)
+			val = v;
+
 		return 0;
 	}
 	else if (err == SQLITE_DONE)
@@ -999,33 +1008,35 @@ int Root::RegistryHive::get_description(const ACE_INT64& uKey, ACE_CDR::ULong ch
 		return EIO;
 }
 
-int Root::RegistryHive::get_value_description(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, ACE_CString& val)
+int Root::RegistryHive::get_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
 	if (!(access_mask & 1) && channel_id != 0)
 	{
 		// Read not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(channel_id);
 		if (acc != 0)
 			return acc;
 	}
 
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("SELECT Description FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Description FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
-		val = ptrStmt->column_text(0);
+		const char* v = ptrStmt->column_text(0);
+		if (v)
+			val = v;
+
 		return 0;
 	}
 	else if (err == SQLITE_DONE)
@@ -1044,154 +1055,62 @@ int Root::RegistryHive::get_value_description(const ACE_INT64& uKey, const ACE_C
 		return EIO;
 }
 
-int Root::RegistryHive::set_description(const ACE_INT64& uKey, ACE_CDR::ULong channel_id, const ACE_CString& val)
+int Root::RegistryHive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return EEXIST;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (!(access_mask & 2) && channel_id != 0)
-	{
-		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
-		if (acc != 0)
-			return acc;
-	}
-
-	// Insert the new value
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("UPDATE RegistryKeys SET Description = %Q WHERE Id = %lld;",val.c_str(),uKey);
-	
-	err = ptrStmt->step();
-	if (err != SQLITE_DONE)
-		return EIO;
-	
-	return 0;
-}
-
-int Root::RegistryHive::set_value_description(const ACE_INT64& uKey, const ACE_CString& strValue, ACE_CDR::ULong channel_id, const ACE_CString& val)
-{
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
-
-	// Check if the key still exists
-	int access_mask = 0;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return EEXIST;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	if (!(access_mask & 2) && channel_id != 0)
-	{
-		// Write not allowed - check access!
-		int acc = Root::Manager::registry_access_check(channel_id);
-		if (acc != 0)
-			return acc;
-	}
-
-	// Insert the new value
-	ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> ptrStmt = 
-		m_db->prepare_statement("UPDATE RegistryValues SET Description = %Q WHERE Name = %Q AND Parent = %lld;",val.c_str(),strValue.c_str(),uKey);
-	
-	err = ptrStmt->step();
-	if (err != SQLITE_DONE)
-		return EIO;
-	
-	return 0;
-}
-
-#ifdef OMEGA_WIN32
-int Root::RegistryHive::get_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, ACE_WString& val)
-{
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
-
-	// Check if the key still exists
-	int access_mask = 0;
-	int err = check_key_exists(uKey,access_mask);
-	if (err == SQLITE_DONE)
-		return EEXIST;
-	else if (err != SQLITE_ROW)
-		return EIO;
-
-	sqlite3_stmt* pStmt;
-	err = sqlite3_prepare16_v2(m_db->database(),L"SELECT Value FROM RegistryValues WHERE Name = ? AND Parent = ? AND Type=0;",-1,&pStmt,NULL);
-	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %C\n",sqlite3_errmsg(m_db->database())),EIO);
-
-	err = sqlite3_bind_text16(pStmt,1,strValue.c_str(),-1,SQLITE_STATIC);
-	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_text failed: %C\n"),sqlite3_errmsg(m_db->database())));
-	else
-	{
-		err = sqlite3_bind_int64(pStmt,2,static_cast<sqlite3_int64>(uKey));
-		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_int64 failed: %C\n"),sqlite3_errmsg(m_db->database())));
-		else
-		{
-			err = sqlite3_step(pStmt);
-			if (err == SQLITE_ROW)
-				val = static_cast<const wchar_t*>(sqlite3_column_text16(pStmt,0));
-			else if (err != SQLITE_DONE)
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_step failed: %C\n"),sqlite3_errmsg(m_db->database())));
-		}
-	}
-	
-	sqlite3_finalize(pStmt);
-
 	if (err == SQLITE_DONE)
 		return ENOENT;
-	else
-		return (err == SQLITE_ROW ? 0 : EIO);
+	else if (err != SQLITE_ROW)
+		return EIO;
+
+	if (!(access_mask & 2) && channel_id != 0)
+	{
+		// Write not allowed - check access!
+		int acc = m_pManager->registry_access_check(channel_id);
+		if (acc != 0)
+			return acc;
+	}
+
+	// Insert the new value
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("UPDATE RegistryKeys SET Description = %Q WHERE Id = %lld;",val.c_str(),uKey);
+	
+	err = ptrStmt->step();
+	if (err != SQLITE_DONE)
+		return EIO;
+	
+	return 0;
 }
 
-int Root::RegistryHive::set_string_value(const ACE_INT64& uKey, const ACE_WString& strValue, const ACE_WString& val)
+int Root::RegistryHive::set_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const std::string& val)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,ACE_OS::last_error());
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	int access_mask = 0;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
-		return EEXIST;
+		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	// Insert the new key
-	sqlite3_stmt* pStmt;
-	err = sqlite3_prepare16_v2(m_db->database(),L"INSERT OR REPLACE INTO RegistryValues (Name,Parent,Type,Value) VALUES (?,?,0,?);",-1,&pStmt,NULL);
-	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: sqlite3_prepare_v2 failed: %C\n",sqlite3_errmsg(m_db->database())),EIO);
-	
-	err = sqlite3_bind_text16(pStmt,1,strValue.c_str(),-1,SQLITE_STATIC);
-	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_text failed: %C\n"),sqlite3_errmsg(m_db->database())));
-	else
+	if (!(access_mask & 2) && channel_id != 0)
 	{
-		err = sqlite3_bind_int64(pStmt,2,static_cast<sqlite3_int64>(uKey));
-		if (err != SQLITE_OK)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_int64 failed: %C\n"),sqlite3_errmsg(m_db->database())));
-		else
-		{
-			err = sqlite3_bind_text16(pStmt,3,val.c_str(),-1,SQLITE_STATIC);
-			if (err != SQLITE_OK)
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_bind_text failed: %C\n"),sqlite3_errmsg(m_db->database())));
-			else
-			{
-				err = sqlite3_step(pStmt);
-				if (err != SQLITE_DONE)
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_step failed: %C\n"),sqlite3_errmsg(m_db->database())));
-			}
-		}
+		// Write not allowed - check access!
+		int acc = m_pManager->registry_access_check(channel_id);
+		if (acc != 0)
+			return acc;
 	}
-	
-	sqlite3_finalize(pStmt);
 
-	return (err == SQLITE_DONE) ? 0 : EIO;
+	// Insert the new value
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Description = %Q WHERE Name = %Q AND Parent = %lld;",val.c_str(),strValue.c_str(),uKey);
+	
+	err = ptrStmt->step();
+	if (err != SQLITE_DONE)
+		return EIO;
+	
+	return 0;
 }
-#endif

@@ -19,9 +19,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_User.h"
-#include "./UserManager.h"
-#include "./MessageConnection.h"
+#include "OOServer_User.h"
+#include "UserManager.h"
+#include "MessageConnection.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -60,12 +60,12 @@ void User::RemoteChannel::server_init(Manager* pManager, Remoting::IChannelSink*
 	create_channel(0);
 }
 
-ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(ACE_CDR::ULong channel_id)
+ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(Omega::uint32_t channel_id)
 {
-	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel;
-	std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i = m_mapChannels.find(channel_id);
+	std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i = m_mapChannels.find(channel_id);
 	if (i != m_mapChannels.end())
 		ptrChannel = i->second;
 	else
@@ -73,13 +73,13 @@ ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::create_channel(ACE_CD
 		ptrChannel = ObjectImpl<User::Channel>::CreateInstancePtr();
 		ptrChannel->init(m_pManager,m_channel_id | channel_id,Remoting::RemoteMachine,m_message_oid);
 		
-		m_mapChannels.insert(std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::value_type(channel_id,ptrChannel));
+		m_mapChannels.insert(std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(channel_id,ptrChannel));
 	}
 
 	return ptrChannel;
 }
 
-ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(ACE_CDR::ULong channel_id)
+ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(Omega::uint32_t channel_id)
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(channel_id);
 
@@ -88,19 +88,19 @@ ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(A
 	return ptrOM;
 }
 
-void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no)
+void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
 {
 	// Make sure we have the source in the map...
 	if (src_channel_id != 0)
 	{
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 	
-		std::map<ACE_CDR::ULong,ACE_CDR::ULong>::iterator i = m_mapChannelIds.find(src_channel_id);
+		std::map<Omega::uint32_t,Omega::uint32_t>::iterator i = m_mapChannelIds.find(src_channel_id);
 		if (i != m_mapChannelIds.end())
 			src_channel_id = i->second;
 		else
 		{
-			ACE_CDR::ULong channel_id = 0;
+			Omega::uint32_t channel_id = 0;
 			do
 			{
 				channel_id = ++m_nNextChannelId;
@@ -111,8 +111,8 @@ void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_
 				}
 			} while (!channel_id && m_mapChannelIds.find(channel_id) != m_mapChannelIds.end());
 
-			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_CDR::ULong>::value_type(src_channel_id,channel_id));
-			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_CDR::ULong>::value_type(channel_id,src_channel_id));
+			m_mapChannelIds.insert(std::map<Omega::uint32_t,Omega::uint32_t>::value_type(src_channel_id,channel_id));
+			m_mapChannelIds.insert(std::map<Omega::uint32_t,Omega::uint32_t>::value_type(channel_id,src_channel_id));
 
 			// Add our channel id to the source
 			src_channel_id = channel_id;
@@ -141,15 +141,15 @@ void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_
 			if ((attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
 			{
 				// Unpack the channel_id
-				ACE_InputCDR input(msg);
-				ACE_CDR::ULong channel_id;
-				input >> channel_id;
-				if (!input.good_bit())
-					OMEGA_THROW(ACE_OS::last_error());
+				OOBase::CDRStream input(msg);
+				Omega::uint32_t channel_id;
+				input.read(channel_id);
+				if (input.last_error() != 0)
+					OMEGA_THROW(input.last_error());
 
 				// Create a new message of the right format...
 				if (m_message_oid == guid_t::Null())
-					ptrPayload.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
+					ptrPayload.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 				else
 					ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 
@@ -165,12 +165,12 @@ void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_
 	else
 	{
 		// Unmarshal the payload
-		if (msg.length() > 0)
+		if (msg.buffer()->length() > 0)
 		{
 			// Wrap the message block
-			ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrInput = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrInput = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 			ptrInput->init(msg);
-
+			
 			ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 			
 			IObject* pPayload = 0;
@@ -182,12 +182,12 @@ void User::RemoteChannel::send_away(const ACE_InputCDR& msg, ACE_CDR::ULong src_
 	send_away_i(ptrPayload,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
 }
 
-void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no)
+void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
 {
 	// Create a new message of the right format...
 	ObjectPtr<Remoting::IMessage> ptrMessage;
 	if (m_message_oid == guid_t::Null())
-		ptrMessage.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
+		ptrMessage.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 	else
 		ptrMessage = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 
@@ -197,14 +197,14 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 	ptrMessage->WriteUInt32s(L"dest_channel_id",1,&dest_channel_id);
 	
 	// Fiddle with remote deadline value...
-	uint64_t secs = 0;
+	int64_t secs = 0;
 	int32_t usecs = 0;
-	if (deadline != ACE_Time_Value::max_time)
+	if (deadline != OOBase::timeval_t::max_time)
 	{
-		secs = deadline.sec();
-		usecs = deadline.usec();
+		secs = deadline.tv_sec;
+		usecs = deadline.tv_usec;
 	}
-	ptrMessage->WriteUInt64s(L"deadline_secs",1,&secs);
+	ptrMessage->WriteInt64s(L"deadline_secs",1,&secs);
 	ptrMessage->WriteInt32s(L"deadline_usecs",1,&usecs);
 	ptrMessage->WriteUInt32s(L"attribs",1,&attribs);
 	ptrMessage->WriteUInt16s(L"dest_thread_id",1,&dest_thread_id);
@@ -221,17 +221,17 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 		ptrMessage->WriteStructEnd(L"message");
 
 		uint32_t timeout = 0;
-		if (deadline != ACE_Time_Value::max_time)
+		if (deadline != OOBase::timeval_t::max_time)
 		{
-			ACE_Time_Value now = ACE_OS::gettimeofday();
+			OOBase::timeval_t now = OOBase::gettimeofday();
 			if (deadline <= now)
-				OMEGA_THROW(ETIMEDOUT);
+				throw ITimeoutException::Create();
 
 			timeout = (deadline - now).msec();
 		}
 
 		if (!m_ptrUpstream)
-			OMEGA_THROW(ECONNRESET);
+			throw Remoting::IChannelClosedException::Create();
 
 		m_ptrUpstream->Send((TypeInfo::MethodAttributes_t)(attribs & 0xFFFF),ptrMessage,timeout);
 	}
@@ -240,9 +240,9 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 		ptrMessage->ReadStructStart(L"message",L"$rpc_msg");
 		ptrMessage->ReadUInt32s(L"src_channel_id",1,&src_channel_id);
 		ptrMessage->ReadUInt32s(L"dest_channel_id",1,&dest_channel_id);
-		uint64_t secs;
+		int64_t secs;
 		int32_t usecs;
-		ptrMessage->ReadUInt64s(L"deadline_secs",1,&secs);
+		ptrMessage->ReadInt64s(L"deadline_secs",1,&secs);
 		ptrMessage->ReadInt32s(L"deadline_usecs",1,&usecs);
 		ptrMessage->ReadUInt32s(L"attribs",1,&attribs);
 		ptrMessage->ReadUInt16s(L"dest_thread_id",1,&dest_thread_id);
@@ -254,7 +254,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, ACE_CDR::ULo
 	}
 }
 
-void User::RemoteChannel::process_here(void* pParams, ACE_InputCDR& input)
+void User::RemoteChannel::process_here(void* pParams, OOBase::CDRStream& input)
 {
 	RemoteChannel* pThis = static_cast<RemoteChannel*>(pParams);
 
@@ -264,71 +264,74 @@ void User::RemoteChannel::process_here(void* pParams, ACE_InputCDR& input)
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
-
+		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
 	}
 	catch (...)
 	{
+		LOG_ERROR(("Unknown exception thrown"));
 	}
 
 	pThis->Release();
 }
 
-void User::RemoteChannel::process_here_i(ACE_InputCDR& input)
+void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 {
-	ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrMsg = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
-	ptrMsg->init(input);
-
-	ACE_InputCDR* pInput = static_cast<ACE_InputCDR*>(ptrMsg->GetInputCDR());
-
+	// Read the header
 	uint32_t src_channel_id;
-	(*pInput) >> src_channel_id;
-	uint64_t secs = 0;
-	(*pInput) >> secs;
+	input.read(src_channel_id);
+	int64_t secs = 0;
+	input.read(secs);
 	int32_t usecs = 0;
-	(*pInput) >> usecs;
+	input.read(usecs);
 	
-	ACE_Time_Value deadline = ACE_Time_Value::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
 	if (secs != 0 && usecs != 0)
-		deadline = ACE_Time_Value((time_t)secs,usecs);
+		deadline = OOBase::timeval_t((time_t)secs,usecs);
 
 	uint32_t ex_attribs = 0;
-	(*pInput) >> ex_attribs;
+	input.read(ex_attribs);
 	uint16_t dest_thread_id;
-	(*pInput) >> dest_thread_id;
+	input.read(dest_thread_id);
 	uint16_t src_thread_id;
-	(*pInput) >> src_thread_id;
+	input.read(src_thread_id);
 	uint32_t seq_no;
-	(*pInput) >> seq_no;
-	if (!pInput->good_bit())
-		OMEGA_THROW(ACE_OS::last_error());
+	input.read(seq_no);
+	if (input.last_error() != 0)
+		OMEGA_THROW(input.last_error());
+
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+	ptrMsg->init(input);
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
-
-	// Check timeout
-	uint32_t timeout = 0;
-	if (deadline != ACE_Time_Value::max_time)
-	{
-		ACE_Time_Value now = ACE_OS::gettimeofday();
-		if (deadline <= now)
-		{
-			ACE_OS::last_error(ETIMEDOUT);
-			return;
-		}
-		timeout = (deadline - now).msec();
-	}
 
 	IObject* pPayload = 0;
 	ptrOM->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
 		
+	// Check timeout
+	uint32_t timeout = 0;
+	if (deadline != OOBase::timeval_t::max_time)
+	{
+		OOBase::timeval_t now = OOBase::gettimeofday();
+		if (deadline <= now)
+			return;
+		
+		timeout = (deadline - now).msec();
+	}
+
 	ObjectPtr<Remoting::IMessage> ptrResult;
 	ptrResult.Attach(ptrOM->Invoke(ptrPayload,timeout));
 
 	if (!(ex_attribs & TypeInfo::Asynchronous))
 	{
+		if (deadline != OOBase::timeval_t::max_time)
+		{
+			if (deadline <= OOBase::gettimeofday())
+				return;
+		}
+
 		// Send it back...
 		send_away_i(ptrResult,0,src_channel_id,deadline,Root::Message_t::synchronous,src_thread_id,dest_thread_id,Root::Message_t::Response,seq_no);
 	}
@@ -344,20 +347,20 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	pMsg->ReadUInt32s(L"src_channel_id",1,&src_channel_id);
 	uint32_t dest_channel_id;
 	pMsg->ReadUInt32s(L"dest_channel_id",1,&dest_channel_id);
-	uint64_t secs = 0;
-	pMsg->ReadUInt64s(L"deadline_secs",1,&secs);
+	int64_t secs = 0;
+	pMsg->ReadInt64s(L"deadline_secs",1,&secs);
 	int32_t usecs = 0;
 	pMsg->ReadInt32s(L"deadline_usecs",1,&usecs);
 	uint32_t ex_attribs = 0;
 	pMsg->ReadUInt32s(L"attribs",1,&ex_attribs);
 
-	ACE_Time_Value deadline = ACE_Time_Value::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
 	if (secs != 0 && usecs != 0)
-		deadline = ACE_Time_Value((time_t)secs,usecs);
+		deadline = OOBase::timeval_t((time_t)secs,usecs);
 
 	if (timeout != 0)
 	{
-		ACE_Time_Value tdeadline = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000,(timeout % 1000) * 1000);
+		OOBase::timeval_t tdeadline = OOBase::timeval_t::deadline(timeout);
 		if (tdeadline < deadline)
 			deadline = tdeadline;
 	}
@@ -405,7 +408,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				{
 					// Create a new message of the right format...
 					if (m_message_oid == guid_t::Null())
-						ptrResult.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
+						ptrResult.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 					else
 						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 					
@@ -431,32 +434,35 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		else
 		{
 			// Need to queue this as an async func...
-			ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrMsg = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
-			ACE_OutputCDR* pOutput = static_cast<ACE_OutputCDR*>(ptrMsg->GetOutputCDR());
-
-			(*pOutput) << src_channel_id;
-			uint64_t secs = 0;
+			OOBase::CDRStream output;
+			output.write(src_channel_id);
+			int64_t secs = 0;
 			int32_t usecs = 0;
-			if (deadline != ACE_Time_Value::max_time)
+			if (deadline != OOBase::timeval_t::max_time)
 			{
-				secs = deadline.sec();
-				usecs = deadline.usec();
+				secs = deadline.tv_sec;
+				usecs = deadline.tv_usec;
 			}
-			(*pOutput) << secs;
-			(*pOutput) << usecs;
-			(*pOutput) << ex_attribs;
-			(*pOutput) << dest_thread_id;
-			(*pOutput) << src_thread_id;
-			(*pOutput) << seq_no;
-			if (!pOutput->good_bit())
-				OMEGA_THROW(ACE_OS::last_error());
+			output.write(secs);
+			output.write(usecs);
+			output.write(ex_attribs);
+			output.write(dest_thread_id);
+			output.write(src_thread_id);
+			output.write(seq_no);
+			if (output.last_error() != 0)
+				OMEGA_THROW(output.last_error());
+
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
+			ptrMsg->init(output);
 
 			ptrOM->MarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 			
 			AddRef();
-			if (!m_pManager->call_async_function(process_here,this,static_cast<const ACE_Message_Block*>(ptrMsg->GetMessageBlock())))
+
+			if (!m_pManager->call_async_function_i(&process_here,this,&output))
 			{
 				Release();
+
 				ptrOM->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 				OMEGA_THROW(L"Failed to queue message");
 			}
@@ -464,7 +470,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	}
 	else
 	{
-		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrOutput = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 
 		if (ex_attribs & Root::Message_t::system_message)
 		{
@@ -502,14 +508,14 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		}
 
 		// Translate channel ids
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 	
-		std::map<ACE_CDR::ULong,ACE_CDR::ULong>::iterator i = m_mapChannelIds.find(dest_channel_id);
+		std::map<Omega::uint32_t,Omega::uint32_t>::iterator i = m_mapChannelIds.find(dest_channel_id);
 		if (i != m_mapChannelIds.end())
 			dest_channel_id = i->second;
 		else
 		{
-			ACE_CDR::ULong channel_id = 0;
+			Omega::uint32_t channel_id = 0;
 			do
 			{
 				channel_id = ++m_nNextChannelId;
@@ -520,8 +526,8 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				}
 			} while (!channel_id && m_mapChannelIds.find(channel_id) != m_mapChannelIds.end());
 
-			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_CDR::ULong>::value_type(dest_channel_id,channel_id));
-			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_CDR::ULong>::value_type(channel_id,dest_channel_id));
+			m_mapChannelIds.insert(std::map<Omega::uint32_t,Omega::uint32_t>::value_type(dest_channel_id,channel_id));
+			m_mapChannelIds.insert(std::map<Omega::uint32_t,Omega::uint32_t>::value_type(channel_id,dest_channel_id));
 
 			// Add our channel id to the source
 			dest_channel_id = channel_id;
@@ -533,14 +539,19 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 	
 		// Forward through the network...
-		const ACE_Message_Block* mb = static_cast<const ACE_Message_Block*>(ptrOutput->GetMessageBlock());
-		if (!m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,mb))
+		const OOBase::CDRStream* output = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
+		Root::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,*output);
+		if (res != Root::MessageHandler::io_result::success)
 		{
-			int err = ACE_OS::last_error();
 			if (!(ex_attribs & Root::Message_t::system_message))
 				ptrOM->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
-			OMEGA_THROW(err);
+			if (res == Root::MessageHandler::io_result::timedout)
+				throw Omega::ITimeoutException::Create();
+			else if (res == Root::MessageHandler::io_result::channel_closed)
+				throw Omega::Remoting::IChannelClosedException::Create();
+			else
+				OMEGA_THROW(L"Internal server exception");
 		}
 	}
 }
@@ -548,42 +559,38 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 void User::RemoteChannel::channel_closed(uint32_t channel_id)
 {
 	// Do this async
-	ACE_OutputCDR output;
-	output << channel_id;
-	
-	if (output.good_bit())
+	OOBase::CDRStream output;
+	output.write(channel_id);
+	if (output.last_error() == 0)
 	{
 		AddRef();
-		if (!m_pManager->call_async_function(&do_channel_closed,this,output.begin()))
-		{
+		if (!m_pManager->call_async_function_i(&do_channel_closed,this,&output))
 			Release();
-			OMEGA_THROW(L"Failed to queue message");
-		}
 	}
 }
 
-void User::RemoteChannel::do_channel_closed(void* pParam, ACE_InputCDR& input)
+void User::RemoteChannel::do_channel_closed(void* pParam, OOBase::CDRStream& input)
 {
 	User::RemoteChannel* pThis = (User::RemoteChannel*)pParam;
 
 	try
 	{
 		uint32_t channel_id = 0;
-		input >> channel_id;
+		input.read(channel_id);
 		
-		if (!input.good_bit())
-			OMEGA_THROW(ACE_OS::last_error());
+		if (input.last_error() != 0)
+			OMEGA_THROW(input.last_error());
 		
 		pThis->do_channel_closed_i(channel_id);
 	}
 	catch (IException* pE)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%W: Unhandled exception: %W\n"),pE->GetSource().c_str(),pE->GetDescription().c_str()));
-
+		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
 	}
 	catch (...)
 	{
+		LOG_ERROR(("Unknown exception thrown"));
 	}
 
 	pThis->Release();
@@ -591,15 +598,15 @@ void User::RemoteChannel::do_channel_closed(void* pParam, ACE_InputCDR& input)
 
 void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
 {
-	OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-	std::map<ACE_CDR::ULong,ACE_CDR::ULong>::iterator i=m_mapChannelIds.find(channel_id);
+	std::map<Omega::uint32_t,Omega::uint32_t>::iterator i=m_mapChannelIds.find(channel_id);
 	if (i != m_mapChannelIds.end())
 	{
 		// Create a new message of the right format...
 		ObjectPtr<Remoting::IMessage> ptrMsg;
 		if (m_message_oid == guid_t::Null())
-			ptrMsg.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::OutputCDR>::CreateInstance()));
+			ptrMsg.Attach(static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance()));
 		else
 			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 		
@@ -609,7 +616,7 @@ void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
 		guard.release();
 
 		// Send a sys message
-		send_away_i(ptrMsg,0,0,ACE_Time_Value::max_time,Root::Message_t::asynchronous | Root::Message_t::channel_close,0,0,Root::Message_t::Request,0);
+		send_away_i(ptrMsg,0,0,OOBase::timeval_t::max_time,Root::Message_t::asynchronous | Root::Message_t::channel_close,0,0,Root::Message_t::Request,0);
 	}
 }
 
@@ -617,9 +624,9 @@ void User::RemoteChannel::Close()
 {
 	OTL::ObjectPtr<Omega::Remoting::IChannelSink> ptrUpstream;
 	{
-		OOSERVER_GUARD(ACE_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		for (std::map<ACE_CDR::ULong,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();++i)
+		for (std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();++i)
 		{
 			i->second->disconnect();
 		}
@@ -631,7 +638,7 @@ void User::RemoteChannel::Close()
 			m_ptrUpstream.Release();
 
 			// Tell the manager that channels have closed
-			for (std::map<ACE_CDR::ULong,ACE_CDR::ULong>::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+			for (std::map<Omega::uint32_t,Omega::uint32_t>::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
 			{
 				if (i->first >= m_channel_id)
 					break;
@@ -701,8 +708,8 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	{
 		void* TICKET_100;
 
-		OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
-
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
+		
 		std::map<string_t,ObjectPtr<Remoting::IChannel> >::iterator i=m_mapRemoteChannels.find(strCanon);
 		if (i != m_mapRemoteChannels.end())
 			return i->second.AddRef();
@@ -712,7 +719,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	ObjectPtr<ObjectImpl<RemoteChannel> > ptrRemoteChannel = ObjectImpl<RemoteChannel>::CreateInstancePtr();
 
 	// Lock from here on...
-	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
 
 	// Create a new unique, upstream channel...
 	uint32_t channel_id = 0;
@@ -770,7 +777,7 @@ void User::Manager::close_all_remotes()
 
 		// Make a locked copy of the maps and clear them
 		{
-			ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
 
 			channels = m_mapRemoteChannelIds;
 			m_mapRemoteChannels.clear();
@@ -790,15 +797,13 @@ void User::Manager::close_all_remotes()
 	{}
 }
 
-bool User::Manager::route_off(ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no)
+Root::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)
 {
-	void* TODO; // Add SEH handler here
-
 	try
 	{
 		ObjectPtr<ObjectImpl<RemoteChannel> > ptrRemoteChannel;
 		{
-			OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
 
 			std::map<uint32_t,RemoteChannelEntry>::iterator i = m_mapRemoteChannelIds.find(dest_channel_id & 0xFFF00000);
 			if (i == m_mapRemoteChannelIds.end())
@@ -809,12 +814,24 @@ bool User::Manager::route_off(ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, 
 
 		// Send it on...
 		ptrRemoteChannel->send_away(msg,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
-		return true;
+
+		return Root::MessageHandler::io_result::success;
+	}
+	catch (ITimeoutException* pE)
+	{
+		pE->Release();
+		return Root::MessageHandler::io_result::timedout;
+	}
+	catch (Remoting::IChannelClosedException* pE)
+	{
+		pE->Release();
+		return Root::MessageHandler::io_result::channel_closed;
 	}
 	catch (IException* pE)
 	{
+		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
-		return false;
+		return Root::MessageHandler::io_result::failed;
 	}
 }
 
@@ -829,7 +846,7 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	ObjectPtr<ObjectImpl<RemoteChannel> > ptrRemoteChannel = ObjectImpl<RemoteChannel>::CreateInstancePtr();
 
 	// Lock from here on...
-	OOSERVER_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
 
 	// Create a new unique, upstream channel...
 	uint32_t channel_id = 0;
@@ -875,10 +892,10 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 	}
 }
 
-void User::Manager::local_channel_closed(ACE_CDR::ULong channel_id)
+void User::Manager::local_channel_closed(Omega::uint32_t channel_id)
 {
 	// Local end has closed
-	OOSERVER_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_remote_lock);
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 
 	for (std::map<uint32_t,RemoteChannelEntry>::iterator i=m_mapRemoteChannelIds.begin();i!=m_mapRemoteChannelIds.end();++i)
 	{

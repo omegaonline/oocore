@@ -72,6 +72,12 @@ namespace Omega
 		{
 			virtual string_t GetLibraryName() = 0;
 		};
+
+		// WARNING - THIS IS GOING TO CHANGE!!!
+		interface IDuplicateRegistrationException : public IException
+		{
+			virtual guid_t GetObject() = 0;
+		};
 		
 		// WARNING - THIS IS GOING TO CHANGE!!!
 		interface IRunningObjectTable : public IObject
@@ -240,6 +246,13 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
+	Omega, ITimeoutException, Omega, IException, "{63E8BFDE-D7AA-4675-B628-A1579B5AD8C7}",
+
+	OMEGA_NO_METHODS()
+)
+
+OMEGA_DEFINE_INTERFACE_DERIVED
+(
 	Omega::Activation, IOidNotFoundException, Omega, IException, "{162BBEBD-770B-4925-A8E7-48DEC7224ABE}",
 
 	// Methods
@@ -260,6 +273,14 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 
 	// Methods
 	OMEGA_METHOD(string_t,GetLibraryName,0,())
+)
+
+OMEGA_DEFINE_INTERFACE_DERIVED
+(
+	Omega::Activation, IDuplicateRegistrationException, Omega, IException, "{35495CBA-13B0-4d56-BAA4-3DF328A3F1EE}",
+
+	// Methods
+	OMEGA_METHOD(guid_t,GetObject,0,())
 )
 
 OMEGA_DEFINE_INTERFACE

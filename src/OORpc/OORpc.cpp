@@ -21,9 +21,9 @@
 
 #include "OORpc.h"
 
-#include "./HttpChannelServer.h"
-#include "./HttpEndpoint.h"
-#include "./HttpMsg.h"
+#include "HttpChannelServer.h"
+#include "HttpEndpoint.h"
+#include "HttpMsg.h"
 
 #ifdef OMEGA_HAVE_VLD
 #include <vld.h>
@@ -67,6 +67,15 @@ extern "C" BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID /*lpreserve
 
 	return TRUE;
 }
+
+namespace OOBase
+{
+	// This is the critical failure hook
+	void CriticalFailure(const char* /*msg*/)
+	{
+	}
+}
+
 #endif
 
 // Install function

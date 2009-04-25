@@ -25,7 +25,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)&#x0D;&#x0A;"
+				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -43,9 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;OMEGA_HAVE_VLD;OOCORE_BUILD_DLL"
-				MinimalRebuild="true"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions="OMEGA_HAVE_VLD;OOCORE_BUILD_DLL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -65,10 +64,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib ACEsd.lib"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OOCore.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
 				SubSystem="2"
@@ -131,8 +130,8 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;NDEBUG;OOCORE_BUILD_DLL"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions="NDEBUG;OOCORE_BUILD_DLL"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
@@ -152,10 +151,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib rpcrt4.lib ACEs.lib"
+				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
 				OutputFile="$(OutDir)/OOCore.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -211,10 +210,6 @@
 			</File>
 			<File
 				RelativePath=".\Exception.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\HttpImpl.cpp"
 				>
 			</File>
 			<File
@@ -326,10 +321,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\HttpImpl.h"
-				>
-			</File>
-			<File
 				RelativePath=".\OOCore_precomp.h"
 				>
 			</File>
@@ -343,10 +334,6 @@
 			</File>
 			<File
 				RelativePath=".\UserSession.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\Version.h"
 				>
 			</File>
 			<File
@@ -408,6 +395,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\BaseTypes.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\config-guess.h"
 				>
 			</File>
@@ -421,10 +412,6 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Export.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\Http.h"
 				>
 			</File>
 			<File
@@ -465,10 +452,6 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Types.inl"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\TypeSizes.h"
 				>
 			</File>
 			<File

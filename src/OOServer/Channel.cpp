@@ -19,9 +19,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#include "./OOServer_User.h"
-#include "./Channel.h"
-#include "./UserManager.h"
+#include "OOServer_User.h"
+#include "Channel.h"
+#include "UserManager.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -33,9 +33,11 @@ User::Channel::Channel() :
 	m_channel_id(0),
 	m_marshal_flags(0)
 {
+	// We need locking in this class...
+	void* THREAD_SAFETY;
 }
 
-void User::Channel::init(Manager* pManager, ACE_CDR::ULong channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
+void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting::MarshalFlags_t marshal_flags, const guid_t& message_oid)
 {
 	m_pManager = pManager;
 	m_channel_id = channel_id;
@@ -54,7 +56,7 @@ void User::Channel::init(Manager* pManager, ACE_CDR::ULong channel_id, Remoting:
 
 void User::Channel::disconnect()
 {
-	m_ptrOM->Disconnect();
+	m_ptrOM->Shutdown();
 	m_ptrOM.Release();
 
 	m_channel_id = 0;
@@ -64,8 +66,8 @@ Remoting::IMessage* User::Channel::CreateMessage()
 {
 	if (m_message_oid == guid_t::Null())
 	{
-		// Create a fresh OutputCDR
-		ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrOutput = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+		// Create a fresh CDRMessage
+		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 		return ptrOutput.QueryInterface<Remoting::IMessage>();
 	}
 	else
@@ -80,35 +82,37 @@ Remoting::IMessage* User::Channel::CreateMessage()
 IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	if (!m_channel_id)
-		OMEGA_THROW(ECONNRESET);
+		throw Omega::Remoting::IChannelClosedException::Create();
 
 	// We need to wrap the message
-	ObjectPtr<ObjectImpl<OOCore::OutputCDR> > ptrEnvelope = ObjectImpl<OOCore::OutputCDR>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 	m_ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	// QI pSend for our private interface
-	ObjectPtr<OOCore::IMessageBlockHolder> ptrOutput;
-	ptrOutput.Attach(static_cast<OOCore::IMessageBlockHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(OOCore::IMessageBlockHolder))));
-	if (!ptrOutput)
-	{
-		m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
-		OMEGA_THROW(EINVAL);
-	}
-
+	ObjectPtr<OOCore::ICDRStreamHolder> ptrOutput;
+	ptrOutput.Attach(static_cast<OOCore::ICDRStreamHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(OOCore::ICDRStreamHolder))));
+	assert(ptrOutput);
+	
 	// Get the message block
-	const ACE_Message_Block* request = static_cast<const ACE_Message_Block*>(ptrOutput->GetMessageBlock());
+	const OOBase::CDRStream* request = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
 
-	ACE_Time_Value deadline;
+	OOBase::timeval_t deadline;
 	if (timeout > 0)
-		deadline = ACE_OS::gettimeofday() + ACE_Time_Value(timeout/1000,(timeout % 1000) * 1000);
+		deadline = OOBase::timeval_t::deadline(timeout);
 
-	ACE_InputCDR* response = 0;
-	if (!m_pManager->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs))
+	OOBase::SmartPtr<OOBase::CDRStream> response;
+	Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs);
+	if (res != Root::MessageHandler::io_result::success)
 	{
 		if (m_ptrOM)
 			m_ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
-		OMEGA_THROW(ACE_OS::last_error());
+		if (res == Root::MessageHandler::io_result::timedout)
+			throw Omega::ITimeoutException::Create();
+		else if (res == Root::MessageHandler::io_result::channel_closed)
+			throw Omega::Remoting::IChannelClosedException::Create();
+		else
+			OMEGA_THROW(L"Internal server exception");
 	}
 
 	try
@@ -116,10 +120,9 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		if (response)
 		{
 			// Wrap the response
-			ObjectPtr<ObjectImpl<OOCore::InputCDR> > ptrRecv = ObjectImpl<OOCore::InputCDR>::CreateInstancePtr();
+			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrRecv = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 			ptrRecv->init(*response);
-			delete response;
-
+					
 			// Unwrap the payload...
 			IObject* pRet = 0;
 			m_ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pRet);
@@ -128,15 +131,9 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	}
 	catch (IException* pE)
 	{
-		delete response;
 		return pE;
 	}
-	catch (...)
-	{
-		delete response;
-		throw;
-	}
-
+	
 	return 0;
 }
 
@@ -158,20 +155,26 @@ guid_t User::Channel::GetReflectUnmarshalFactoryOID()
 void User::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 {
 	if (!m_channel_id)
-		OMEGA_THROW(ECONNRESET);
+		throw Remoting::IChannelClosedException::Create();
 
-	ACE_InputCDR* response = 0;
+	OOBase::SmartPtr<OOBase::CDRStream> response;
+	Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect);
+	if (res != Root::MessageHandler::io_result::success)
+	{
+		if (res == Root::MessageHandler::io_result::timedout)
+			throw Omega::ITimeoutException::Create();
+		else if (res == Root::MessageHandler::io_result::channel_closed)
+			throw Omega::Remoting::IChannelClosedException::Create();
+		else
+			OMEGA_THROW(L"Internal server exception");
+	}
 
-	if (!m_pManager->send_request(m_channel_id,0,response,0,Root::Message_t::synchronous | Root::Message_t::channel_reflect))
-		OMEGA_THROW(ACE_OS::last_error());
-
-	ACE_CDR::ULong other_end = 0;
-	bool bOk = response->read_ulong(other_end);
-
-	delete response;
-
-	if (!bOk)
-		OMEGA_THROW(ACE_OS::last_error());
+	if (!response)
+		OMEGA_THROW(L"No response received");
+	
+	Omega::uint32_t other_end = 0;
+	if (!response->read(other_end))
+		OMEGA_THROW(response->last_error());
 
 	// Return in the same format as we marshal
 	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
@@ -209,7 +212,7 @@ void User::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMes
 
 void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
-	ACE_CDR::ULong channel_id;
+	Omega::uint32_t channel_id;
 	if (pMessage->ReadUInt32s(L"m_channel_id",1,&channel_id) != 1)
 		OMEGA_THROW(EIO);
 

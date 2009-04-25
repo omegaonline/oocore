@@ -34,53 +34,34 @@
 #ifndef OOSERVER_MSG_CONNECTION_H_INCLUDED_
 #define OOSERVER_MSG_CONNECTION_H_INCLUDED_
 
-#include "./MessagePipe.h"
-
 namespace Root
 {
 	class MessageHandler;
 
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	class MessageConnection : public ACE_Service_Handler
-#else
-	class MessageConnection : public ACE_Event_Handler
-#endif
+	class MessageConnection : public OOSvrBase::IOHandler
 	{
 	public:
 		MessageConnection(MessageHandler* pHandler);
 		virtual ~MessageConnection();
 
-		ACE_CDR::ULong open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id = 0, bool bStart = true);
-		bool read(ACE_Message_Block* mb = 0);
+		void attach(OOSvrBase::AsyncSocket* pSocket);
+		void set_channel_id(Omega::uint32_t channel_id);
+
+		void close();
+		bool read();
+		bool send(OOBase::Buffer* pBuffer);
 
 	private:
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		MessageConnection() : ACE_Service_Handler() {}
-		MessageConnection(const MessageConnection&) : ACE_Service_Handler() {}
-#else
-		MessageConnection() : ACE_Event_Handler() {}
-		MessageConnection(const MessageConnection&) : ACE_Event_Handler() {}
-#endif
+		MessageConnection(const MessageConnection&) {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
-		MessageHandler*                                       m_pHandler;
-		ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> m_pipe;
-		size_t                                                m_chunk_size;
-		ACE_CDR::ULong                                        m_channel_id;
+		MessageHandler*         m_pHandler;
+		OOSvrBase::AsyncSocket* m_pSocket;
+		Omega::uint32_t         m_channel_id;
 
-		bool process_read(ACE_Message_Block* mb);
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-		ACE_Asynch_Read_File m_reader;
-
-		void handle_read_file(const ACE_Asynch_Read_File::Result& result);
-#else
-		ACE_Thread_Mutex   m_lock;
-		ACE_Message_Block* m_mb;
-
-		int handle_input(ACE_HANDLE);
-		int handle_close(ACE_HANDLE, ACE_Reactor_Mask);
-#endif
+		virtual void on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
+		virtual void on_write(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
+		virtual void on_closed(OOSvrBase::AsyncSocket* pSocket);
 	};
 
 	struct Message_t
@@ -116,112 +97,116 @@ namespace Root
 		virtual ~MessageHandler() {}
 
 	public:
-		int pump_requests(const ACE_Time_Value* deadline = 0, bool bOnce = false);
+		int pump_requests(const OOBase::timeval_t* wait = 0, bool bOnce = false);
+		bool parse_message(OOBase::CDRStream& input, size_t mark_rd);
+		bool call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream);
 
-		void channel_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id);
-		bool forward_message(ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, const ACE_Message_Block* mb);
-		bool send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs);
+		struct io_result
+		{
+			enum type
+			{
+				success,
+				channel_closed,
+				timedout,
+				failed
+			};
+		};
+
+		io_result::type forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, const OOBase::CDRStream& message);
+		io_result::type send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, OOBase::timeval_t* deadline, Omega::uint32_t attribs);
+
+		void channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id);
 				
 	protected:
-		bool send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs);
-		bool call_async_function_i(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb);
-		
-		int start();
+		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
+				
+		bool start();
 		void close();
 		void stop();
 
-		virtual void process_request(ACE_InputCDR& request, ACE_CDR::ULong seq_no, ACE_CDR::ULong src_channel_id, ACE_CDR::UShort src_thread_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs) = 0;
-		virtual bool can_route(ACE_CDR::ULong src_channel, ACE_CDR::ULong dest_channel);
-		virtual bool on_channel_open(ACE_CDR::ULong channel);
-		virtual void on_channel_closed(ACE_CDR::ULong channel) = 0;
-		virtual bool route_off(ACE_InputCDR& msg, ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no);
+		Omega::uint32_t register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
+		
+		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs) = 0;
+		virtual bool can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel);
+		virtual bool on_channel_open(Omega::uint32_t channel);
+		virtual void on_channel_closed(Omega::uint32_t channel) = 0;
+		virtual io_result::type route_off(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no);
 
-		void set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask_id, ACE_CDR::ULong child_mask_id, ACE_CDR::ULong upstream_id);
-		ACE_CDR::UShort classify_channel(ACE_CDR::ULong channel_id);
+		void set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask_id, Omega::uint32_t child_mask_id, Omega::uint32_t upstream_id);
+		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
 		
 	private:
-		friend class MessageConnection;
-		friend class MessagePipeAsyncAcceptor<MessageHandler>;
-
 		MessageHandler(const MessageHandler&) {}
 		MessageHandler& operator = (const MessageHandler&) { return *this; }
 
-		ACE_RW_Thread_Mutex  m_lock;
-		int                  m_req_thrd_grp_id;
-		int                  m_pro_thrd_grp_id;
-		ACE_CDR::ULong       m_uChannelId;
-		ACE_CDR::ULong       m_uChannelMask;
-		ACE_CDR::ULong       m_uChildMask;
-		ACE_CDR::ULong       m_uUpstreamChannel;
-		ACE_CDR::ULong       m_uNextChannelId;
-		ACE_CDR::ULong       m_uNextChannelMask;
-		ACE_CDR::ULong       m_uNextChannelShift;
+		OOBase::RWMutex      m_lock;
+		Omega::uint32_t      m_uChannelId;
+		Omega::uint32_t      m_uChannelMask;
+		Omega::uint32_t      m_uChildMask;
+		Omega::uint32_t      m_uUpstreamChannel;
+		Omega::uint32_t      m_uNextChannelId;
+		Omega::uint32_t      m_uNextChannelMask;
+		Omega::uint32_t      m_uNextChannelShift;
 
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> > m_mapChannelIds;
+		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > m_mapChannelIds;
 
 		struct Message
 		{
-			ACE_CDR::UShort                                        m_dest_thread_id;
-			ACE_CDR::UShort                                        m_src_thread_id;
-			ACE_CDR::ULong                                         m_src_channel_id;
-			ACE_CDR::ULong                                         m_attribs;
-			ACE_Time_Value                                         m_deadline;
-			ACE_Refcounted_Auto_Ptr<ACE_InputCDR,ACE_Thread_Mutex> m_ptrPayload;
+			Omega::uint16_t   m_dest_thread_id;
+			Omega::uint16_t   m_src_thread_id;
+			Omega::uint32_t   m_src_channel_id;
+			Omega::uint32_t   m_attribs;
+			OOBase::timeval_t m_deadline;
+			OOBase::CDRStream m_payload;
 		};
+
+		// Pooled queued members
+		OOBase::AtomicInt<Omega::uint32_t>               m_usage_count;
+		std::list<OOBase::Thread*>                       m_threads;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
+
+		bool start_thread();
+		static int request_worker_fn(void* pParam);
 
 		struct ThreadContext
 		{
-			bool                                        m_bPrivate;
-			ACE_CDR::UShort                             m_thread_id;
-			ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>* m_msg_queue;
-			MessageHandler*                             m_pHandler;
+			Omega::uint16_t                                  m_thread_id;
+			OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_msg_queue;
+			MessageHandler*                                  m_pHandler;
 
 			// Transient data
-			size_t                                      m_usage_count;
-			std::map<ACE_CDR::ULong,ACE_CDR::UShort>    m_mapChannelThreads;
-			ACE_Time_Value                              m_deadline;
-			ACE_CDR::ULong                              m_seq_no;
+			size_t                                    m_usage_count;
+			std::map<Omega::uint32_t,Omega::uint16_t> m_mapChannelThreads;
+			OOBase::timeval_t                         m_deadline;
+			Omega::uint32_t                           m_seq_no;
 
-			static ThreadContext* instance(Root::MessageHandler* pHandler);
+			static ThreadContext* instance(MessageHandler* pHandler);
 
 		private:
-			friend class ACE_TSS_Singleton<ThreadContext,ACE_Recursive_Thread_Mutex>;
-			friend class ACE_TSS<ThreadContext>;
-
+			friend class OOBase::TLSSingleton<ThreadContext>;
+			
 			ThreadContext();
 			~ThreadContext();
-		};
 
-		std::map<ACE_CDR::UShort,const ThreadContext*>  m_mapThreadContexts;
-
-		struct WorkerInfo
-		{
-			ACE_Event  m_Event;
-			Message*   m_msg;
+			ThreadContext(const ThreadContext&) {}
+			ThreadContext& operator = (const ThreadContext&) { return *this; }
 		};
-		ACE_Message_Queue_Ex<WorkerInfo,ACE_MT_SYNCH>  m_thread_queue;
+		friend struct ThreadContext;
+		std::map<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
 
 		// Accessors for ThreadContext
-		ACE_CDR::UShort insert_thread_context(const ThreadContext* pContext);
-		void remove_thread_context(const ThreadContext* pContext);
+		Omega::uint16_t insert_thread_context(ThreadContext* pContext);
+		void remove_thread_context(ThreadContext* pContext);
 
-		// Accessors for MessageConnection
-		ACE_CDR::ULong register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id);
+		void send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id);
+		io_result::type queue_message(OOBase::SmartPtr<Message>& msg);
+		io_result::type wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
+		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg);
 
-		bool send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id);
-		bool route_message(MessageHandler::Message* msg);
-		bool parse_message(ACE_InputCDR& input, const ACE_Message_Block* mb);
-		bool build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
-		bool wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id);
-		bool send_message(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong actual_dest_channel_id, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb);
+		void process_channel_close(const OOBase::SmartPtr<Message>& msg);
+		void process_async_function(const OOBase::SmartPtr<Message>& msg);
 
-		void process_channel_close(Message* msg);
-		void process_async_function(Message* msg);
-
-		static ACE_THR_FUNC_RETURN proactor_worker_fn(void*);
-		static ACE_THR_FUNC_RETURN request_worker_fn(void* pParam);
-
-		static void do_route_off(void* pParam, ACE_InputCDR& input);
+		static void do_route_off(void* pParam, OOBase::CDRStream& input);
 	};
 }
 

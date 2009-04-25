@@ -31,8 +31,8 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
-#include "./Database.h"
+#include "OOServer_Root.h"
+#include "Database.h"
 
 Db::Statement::~Statement()
 {
@@ -44,7 +44,7 @@ int Db::Statement::step()
 {
 	int err = sqlite3_step(m_pStmt);
 	if (err != SQLITE_ROW && err != SQLITE_DONE)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_step failed: %C\n"),sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
+		LOG_ERROR(("sqlite3_step failed: %s",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
 	return err;
 }
 
@@ -96,29 +96,28 @@ Db::Database::Database() :
 Db::Database::~Database()
 {
 	if (sqlite3_close(m_db) != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: database open() failed: %C\n"),sqlite3_errmsg(m_db)));
+		LOG_ERROR(("sqlite3_close failed: %s",sqlite3_errmsg(m_db)));
 }
 
-int Db::Database::open(const ACE_CString& strDb)
+bool Db::Database::open(const char* pszDb)
 {
 	if (!sqlite3_threadsafe())
-		ACE_ERROR_RETURN((LM_ERROR,"Sqlite is not built threadsafe!\n"),-1);
+		LOG_ERROR_RETURN(("SQLite is not built threadsafe"),false);
 
-    if (m_db)
-		ACE_ERROR_RETURN((LM_ERROR,"Database already open!\n"),-1);
-
-	int err = sqlite3_open(strDb.c_str(),&m_db);
+    assert(!m_db);
+		
+	int err = sqlite3_open(pszDb,&m_db);
 	if (err != SQLITE_OK)
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: database open() failed: %C, %s\n",sqlite3_errmsg(m_db),strDb.c_str()),-1);
+		LOG_ERROR_RETURN(("sqlite3_open(%s) failed: %s",pszDb,sqlite3_errmsg(m_db)),false);
 
-	return 0;
+	return true;
 }
 
 int Db::Database::exec(const char* szSQL)
 {
 	int err = sqlite3_exec(m_db,szSQL,NULL,0,NULL);
 	if (err != SQLITE_OK)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_exec failed: %C\n"),sqlite3_errmsg(m_db)));
+		LOG_ERROR(("sqlite3_exec failed: %s",sqlite3_errmsg(m_db)));
 	return err;
 }
 
@@ -127,7 +126,7 @@ sqlite3* Db::Database::database()
 	return m_db;
 }
 
-ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> Db::Database::begin_transaction(const char* pszType)
+OOBase::SmartPtr<Db::Transaction> Db::Database::begin_transaction(const char* pszType)
 {
 	int err = 0;
 	if (pszType)
@@ -135,20 +134,20 @@ ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex> Db::Database::begin_tr
 	else
 		err = sqlite3_exec(m_db,"BEGIN TRANSACTION;",NULL,0,NULL);
 	if (err != SQLITE_OK)
-		return ACE_Refcounted_Auto_Ptr<Db::Transaction,ACE_Thread_Mutex>(0);
+		return OOBase::SmartPtr<Db::Transaction>(0);
 
 	Transaction* pTrans = 0;
-	ACE_NEW_NORETURN(pTrans,Transaction(m_db));
+	OOBASE_NEW(pTrans,Transaction(m_db));
 	if (!pTrans)
 	{
 		sqlite3_exec(m_db,"ROLLBACK;",NULL,0,NULL);
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
+		LOG_ERROR(("Out of memory"));
 	}
 
-	return ACE_Refcounted_Auto_Ptr<Transaction,ACE_Thread_Mutex>(pTrans);
+	return OOBase::SmartPtr<Transaction>(pTrans);
 }
 
-ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> Db::Database::prepare_statement(const char* pszStatement, ...)
+OOBase::SmartPtr<Db::Statement> Db::Database::prepare_statement(const char* pszStatement, ...)
 {
 	va_list ap;
 	va_start(ap,pszStatement);
@@ -157,8 +156,8 @@ ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> Db::Database::prepare_st
 
 	if (!pszBuf)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_vmprintf failed: %C\n"),sqlite3_errmsg(m_db)));
-		return ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex>();
+		LOG_ERROR(("sqlite3_vmprintf failed: %s",sqlite3_errmsg(m_db)));
+		return OOBase::SmartPtr<Db::Statement>();
 	}
 
 	sqlite3_stmt* pStmt = 0;
@@ -167,19 +166,19 @@ ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex> Db::Database::prepare_st
 
 	if (err != SQLITE_OK)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: sqlite3_prepare_v2 failed: %C\n"),sqlite3_errmsg(m_db)));
-		return ACE_Refcounted_Auto_Ptr<Db::Statement,ACE_Thread_Mutex>();
+		LOG_ERROR(("sqlite3_prepare_v2 failed: %s",sqlite3_errmsg(m_db)));
+		return OOBase::SmartPtr<Db::Statement>();
 	}
 
 	Statement* pSt = 0;
-	ACE_NEW_NORETURN(pSt,Statement(pStmt));
+	OOBASE_NEW(pSt,Statement(pStmt));
 	if (!pSt)
 	{
 		sqlite3_finalize(pStmt);
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
+		LOG_ERROR(("Out of memory"));
 	}
 
-	return ACE_Refcounted_Auto_Ptr<Statement,ACE_Thread_Mutex>(pSt);
+	return OOBase::SmartPtr<Statement>(pSt);
 }
 
 Db::Transaction::~Transaction()

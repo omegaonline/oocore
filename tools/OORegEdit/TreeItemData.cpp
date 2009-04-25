@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "./TreeItemData.h"
-#include "./EditUIntDlg.h"
-#include "./EditStringDlg.h"
+#include "TreeItemData.h"
+#include "EditUIntDlg.h"
+#include "EditStringDlg.h"
 
 TreeItemData::TreeItemData(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey, size_t nDepth) :
 	m_ptrKey(ptrKey), m_nDepth(nDepth)

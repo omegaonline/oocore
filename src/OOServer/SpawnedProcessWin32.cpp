@@ -31,79 +31,412 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
-#include "./SpawnedProcess.h"
+#include "OOServer_Root.h"
+#include "RootManager.h"
+#include "SpawnedProcess.h"
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 
-#include <userenv.h>
-#include <lm.h>
+#include "../OOBase/SecurityWin32.h"
+#include "../OOBase/Win32Socket.h"
+#include "../OOBase/SmartPtr.h"
+
 #include <sddl.h>
-#include <ntsecapi.h>
-#include <aclapi.h>
 #include <shlwapi.h>
+#include <shlobj.h>
 
-void AttachDebugger(pid_t pid);
+void AttachDebugger(DWORD pid);
 
-#if defined(__MINGW32__)
+namespace
+{
+	class SpawnedProcessWin32 : public Root::SpawnedProcess
+	{
+	public:
+		SpawnedProcessWin32();
+		virtual ~SpawnedProcessWin32();
 
-typedef struct _TOKEN_GROUPS_AND_PRIVILEGES {
-    DWORD SidCount;
-    DWORD SidLength;
-    PSID_AND_ATTRIBUTES Sids;
-    DWORD RestrictedSidCount;
-    DWORD RestrictedSidLength;
-    PSID_AND_ATTRIBUTES RestrictedSids;
-    DWORD PrivilegeCount;
-    DWORD PrivilegeLength;
-    PLUID_AND_ATTRIBUTES Privileges;
-    LUID AuthenticationId;
-} TOKEN_GROUPS_AND_PRIVILEGES;
+		bool Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool CheckAccess(const char* pszFName, int mode, bool& bAllowed);
+		bool Compare(OOBase::LocalSocket::uid_t uid);
+		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
+		std::string GetRegistryHive();
 
-extern "C"
-WINADVAPI
-BOOL
-APIENTRY
-CreateRestrictedToken(
-    HANDLE ExistingTokenHandle,
-    DWORD Flags,
-    DWORD DisableSidCount,
-    PSID_AND_ATTRIBUTES SidsToDisable,
-    DWORD DeletePrivilegeCount,
-    PLUID_AND_ATTRIBUTES PrivilegesToDelete,
-    DWORD RestrictedSidCount,
-    PSID_AND_ATTRIBUTES SidsToRestrict,
-    PHANDLE NewTokenHandle
-    );
+		static Root::SpawnedProcess* Spawn(OOBase::LocalSocket::uid_t uid);
+				
+	private:
+		bool                       m_bSandbox;
+		OOBase::Win32::SmartHandle m_hToken;
+		OOBase::Win32::SmartHandle m_hProcess;
+		HANDLE                     m_hProfile;
 
-#define DISABLE_MAX_PRIVILEGE   0x1
-#define SANDBOX_INERT           0x2
+		DWORD SpawnFromToken(HANDLE hToken, const std::string& strPipe, bool bSandbox);
+	};
+}
 
-#else
-// Not available under MinGW
-#include <WinSafer.h>
-#endif
+namespace
+{
+	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe)
+	{
+		// Create a new unique pipe
+		strPipe = "OOR";
 
-#if !defined(OMEGA_WIDEN_STRING)
-#define OMEGA_WIDEN_STRING_II(STRING) L ## STRING
-#define OMEGA_WIDEN_STRING_I(STRING)  OMEGA_WIDEN_STRING_II(STRING)
-#define OMEGA_WIDEN_STRING(STRING)    OMEGA_WIDEN_STRING_I(STRING)
-#endif
+		// Get the logon SID of the Token
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
+		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
+		if (dwRes != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
+		
+		char* pszSid;
+		if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
+		{
+			strPipe += pszSid;
+			LocalFree(pszSid);
+		}
+				
+		char szBuf[64];
+		OOBase::timeval_t now = OOBase::gettimeofday();
+		sprintf_s(szBuf,sizeof(szBuf),"-%lx",now.tv_usec);
+		strPipe += szBuf;
 
-#define LOG_FAILURE(err) LogFailure((err),OMEGA_WIDEN_STRING(__FILE__),__LINE__)
+		// Get the current processes user SID
+		OOBase::Win32::SmartHandle hProcessToken;
+		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
+			
+		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrSIDProcess = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+		if (!ptrSIDProcess)
+			LOG_ERROR_RETURN(("GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
+					
+		// Create security descriptor
+		static const int NUM_ACES = 2;
+		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+		
+		// Set full control for the calling process SID
+		ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDProcess->User.Sid;
+		
+		// Set full control for Specific user.
+		ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+		ea[1].grfAccessMode = SET_ACCESS;
+		ea[1].grfInheritance = NO_INHERITANCE;
+		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
 
-#ifndef PROTECTED_DACL_SECURITY_INFORMATION
-#define PROTECTED_DACL_SECURITY_INFORMATION	 (0x80000000L)
-#endif
+		OOSvrBase::Win32::sec_descript_t sd;
+		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+		if (dwRes != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
 
-Root::SpawnedProcess::SpawnedProcess() :
+		// Create security attribute
+		SECURITY_ATTRIBUTES sa;
+		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		sa.bInheritHandle = FALSE;
+		sa.lpSecurityDescriptor = sd.descriptor();
+
+		// Create the named pipe instance
+		HANDLE hPipe = CreateNamedPipeA(("\\\\.\\pipe\\" + strPipe).c_str(),
+			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
+			PIPE_TYPE_BYTE |
+			PIPE_READMODE_BYTE |
+			PIPE_WAIT,
+			1,
+			0,
+			0,
+			0,
+			&sa);
+
+		if (hPipe == INVALID_HANDLE_VALUE)
+			LOG_ERROR(("CreateNamedPipeA failed: %s",OOBase::Win32::FormatMessage().c_str()));
+			
+		return hPipe;
+	}
+
+	static bool WaitForConnect(HANDLE hPipe)
+	{
+		OVERLAPPED ov = {0};
+		ov.hEvent = CreateEventW(NULL,TRUE,TRUE,NULL);
+		if (!ov.hEvent)
+			OOBase_CallCriticalFailure(GetLastError());
+
+		// Control handle lifetime
+		OOBase::Win32::SmartHandle ev(ov.hEvent);
+
+		DWORD dwErr = 0;
+		if (ConnectNamedPipe(hPipe,&ov))
+			dwErr = ERROR_PIPE_CONNECTED;
+		else
+		{
+			dwErr = GetLastError();
+			if (dwErr == ERROR_IO_PENDING)
+				dwErr = 0;
+		}
+
+		if (dwErr == ERROR_PIPE_CONNECTED)
+		{
+			dwErr = 0;
+			if (!SetEvent(ov.hEvent))
+				OOBase_CallCriticalFailure(GetLastError());
+		}
+
+		if (dwErr != 0)
+			LOG_ERROR(("ConnectNamedPipe failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+		else
+		{
+			DWORD dw = 0;
+			if (!GetOverlappedResult(hPipe,&ov,&dw,TRUE))
+			{
+				dwErr = GetLastError();
+				LOG_ERROR(("GetOverlappedResult failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+			}
+		}
+
+		return (dwErr == 0);
+	}
+
+	static bool LogonSandboxUser(const std::wstring& strUName, const std::wstring& strPwd, HANDLE& hToken)
+	{
+		if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
+			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+		
+		// Control handle lifetime
+		OOBase::Win32::SmartHandle tok(hToken);
+
+		// Restrict the Token
+		DWORD dwErr = OOSvrBase::Win32::RestrictToken(hToken);
+		if (dwErr != 0)
+			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+
+		// This might be needed for retricted tokens...
+		dwErr = OOSvrBase::Win32::SetTokenDefaultDACL(hToken);
+		if (dwErr != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("SetTokenDefaultDACL failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+
+		tok.detach();
+		return true;
+	}
+
+	static DWORD CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	{
+		const int NUM_ACES = 3;
+		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+		
+		// Set minimum access for the calling process SID
+		ea[0].grfAccessPermissions = WINSTA_CREATEDESKTOP;
+		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
+
+		// Set default access for Specific logon.
+		ea[1].grfAccessPermissions =
+			WINSTA_ACCESSCLIPBOARD |
+			WINSTA_ACCESSGLOBALATOMS |
+			WINSTA_CREATEDESKTOP |
+			WINSTA_EXITWINDOWS |
+			WINSTA_READATTRIBUTES |
+			STANDARD_RIGHTS_REQUIRED;
+
+		ea[1].grfAccessMode = SET_ACCESS;
+		ea[1].grfInheritance = NO_INHERITANCE;
+		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+		// Set generic all access for Specific logon for everything below...
+		ea[2].grfAccessPermissions = STANDARD_RIGHTS_REQUIRED | GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL;
+		ea[2].grfAccessMode = SET_ACCESS;
+		ea[2].grfInheritance = CONTAINER_INHERIT_ACE | INHERIT_ONLY_ACE | OBJECT_INHERIT_ACE;
+		ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[2].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[2].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+	}
+
+	static DWORD CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, OOSvrBase::Win32::sec_descript_t& sd)
+	{
+		const int NUM_ACES = 2;
+		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
+		
+		// Set minimum access for the calling process SID
+		ea[0].grfAccessPermissions = DESKTOP_CREATEWINDOW;
+		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
+
+		// Set full access for Specific logon.
+		ea[1].grfAccessPermissions =
+			DESKTOP_CREATEMENU |
+			DESKTOP_CREATEWINDOW |
+			DESKTOP_ENUMERATE |
+			DESKTOP_HOOKCONTROL |
+			DESKTOP_READOBJECTS |
+			DESKTOP_WRITEOBJECTS |
+			STANDARD_RIGHTS_REQUIRED;
+
+		ea[1].grfAccessMode = SET_ACCESS;
+		ea[1].grfInheritance = NO_INHERITANCE;
+		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
+		ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
+
+		return sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
+	}
+
+	static DWORD OpenCorrectWindowStation(HANDLE hToken, std::wstring& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
+	{
+		// Service window stations are created with the name "Service-0xZ1-Z2$",
+		// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
+		// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
+
+		// Get the logon SID of the Token
+		OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
+		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
+		if (dwRes != ERROR_SUCCESS)
+			return dwRes;
+
+		wchar_t* pszSid = 0;
+		if (!ConvertSidToStringSidW(ptrSIDLogon.value(),&pszSid))
+			return GetLastError();
+			
+		strWindowStation = pszSid;
+		LocalFree(pszSid);
+		
+		// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
+		if (wcsncmp(strWindowStation.c_str(),L"S-1-5-5-",8) != 0)
+			return ERROR_INVALID_SID;
+		
+		// Crack out the last two parts - there is probably an easier way... but this works
+		strWindowStation = strWindowStation.substr(8);
+		const wchar_t* p = strWindowStation.c_str();
+		wchar_t* pEnd = 0;
+		DWORD dwParts[2];
+		dwParts[0] = wcstoul(p,&pEnd,10);
+		if (*pEnd != L'-')
+			return ERROR_INVALID_SID;
+		
+		dwParts[1] = wcstoul(pEnd+1,&pEnd,10);
+		if (*pEnd != L'\0')
+			return ERROR_INVALID_SID;
+		
+		wchar_t szBuf[256];
+		swprintf_s(szBuf,sizeof(szBuf),L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
+	
+		strWindowStation = szBuf;
+
+		// Get the current processes user SID
+		OOBase::Win32::SmartHandle hProcessToken;
+		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+			return GetLastError();
+			
+		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+		if (!ptrProcessUser)
+			return GetLastError();
+
+		// Open or create the new window station and desktop
+		// Now confirm the Window Station exists...
+		hWinsta = OpenWindowStationW((LPWSTR)strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
+		if (!hWinsta)
+		{
+			// See if just doesn't exist yet...
+			dwRes = GetLastError();
+			if (dwRes != ERROR_FILE_NOT_FOUND)
+				return dwRes;
+			
+			OOSvrBase::Win32::sec_descript_t sd;
+			dwRes = CreateWindowStationSD(ptrProcessUser.value(),ptrSIDLogon.value(),sd);
+			if (dwRes != ERROR_SUCCESS)
+				return dwRes;
+
+			SECURITY_ATTRIBUTES sa;
+			sa.nLength = sizeof(sa);
+			sa.bInheritHandle = FALSE;
+			sa.lpSecurityDescriptor = sd.descriptor();
+			
+			hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,&sa);
+			if (!hWinsta)
+				return GetLastError();
+		}
+
+		// Stash our old
+		HWINSTA hOldWinsta = GetProcessWindowStation();
+		if (!hOldWinsta)
+		{
+			dwRes = GetLastError();
+			CloseWindowStation(hWinsta);
+			return dwRes;
+		}
+
+		// Swap our Window Station
+		if (!SetProcessWindowStation(hWinsta))
+		{
+			dwRes = GetLastError();
+			CloseWindowStation(hWinsta);
+			return dwRes;
+		}
+
+		// Try for the desktop
+		hDesktop = OpenDesktopW(L"default",0,FALSE,DESKTOP_CREATEWINDOW);
+		if (!hDesktop)
+		{
+			// See if just doesn't exist yet...
+			dwRes = GetLastError();
+			if (dwRes != ERROR_FILE_NOT_FOUND)
+			{
+				SetProcessWindowStation(hOldWinsta);
+				CloseWindowStation(hWinsta);
+				return dwRes;
+			}
+
+			OOSvrBase::Win32::sec_descript_t sd;
+			dwRes = CreateDesktopSD(ptrProcessUser.value(),ptrSIDLogon.value(),sd);
+			if (dwRes != ERROR_SUCCESS)
+			{
+				SetProcessWindowStation(hOldWinsta);
+				CloseWindowStation(hWinsta);
+				return dwRes;
+			}
+
+			SECURITY_ATTRIBUTES sa;
+			sa.nLength = sizeof(sa);
+			sa.bInheritHandle = FALSE;
+			sa.lpSecurityDescriptor = sd.descriptor();
+
+			hDesktop = CreateDesktopW(L"default",0,0,0,DESKTOP_CREATEWINDOW,&sa);
+			if (!hDesktop)
+			{
+				dwRes = GetLastError();
+				SetProcessWindowStation(hOldWinsta);
+				CloseWindowStation(hWinsta);
+				return dwRes;
+			}
+		}
+
+		// Revert our Window Station
+		SetProcessWindowStation(hOldWinsta);
+
+		strWindowStation += L"\\default";
+
+		return ERROR_SUCCESS;
+	}
+}
+
+SpawnedProcessWin32::SpawnedProcessWin32() :
 	m_hToken(NULL),
-	m_hProfile(NULL),
-	m_hProcess(NULL)
+	m_hProcess(NULL),
+	m_hProfile(NULL)	
 {
 }
 
-Root::SpawnedProcess::~SpawnedProcess()
+SpawnedProcessWin32::~SpawnedProcessWin32()
 {
 	if (m_hProcess)
 	{
@@ -115,652 +448,40 @@ Root::SpawnedProcess::~SpawnedProcess()
 			if (dwRes != WAIT_OBJECT_0)
 				TerminateProcess(m_hProcess,UINT(-1));
 		}
-
-		CloseHandle(m_hProcess);
 	}
 
 	if (m_hProfile)
 		UnloadUserProfile(m_hToken,m_hProfile);
-
-	if (m_hToken)
-		CloseHandle(m_hToken);
 }
 
-DWORD Root::SpawnedProcess::GetNameFromToken(HANDLE hToken, ACE_WString& strUserName, ACE_WString& strDomainName)
-{
-	DWORD err = 0;
-
-	// Find out all about the user associated with hToken
-	TOKEN_USER* pUserInfo = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
-	if (!pUserInfo)
-	{
-		err = GetLastError();
-		LOG_FAILURE(err);
-		return err;
-	}
-
-	SID_NAME_USE name_use;
-	DWORD dwUNameSize = 0;
-	DWORD dwDNameSize = 0;
-	LookupAccountSidW(NULL,pUserInfo->User.Sid,NULL,&dwUNameSize,NULL,&dwDNameSize,&name_use);
-	if (dwUNameSize == 0)
-	{
-		err = GetLastError();
-		LOG_FAILURE(err);
-	}
-	else
-	{
-		LPWSTR pszUserName = 0;
-		ACE_NEW_NORETURN(pszUserName,wchar_t[dwUNameSize]);
-		if (!pszUserName)
-		{
-			err = ERROR_OUTOFMEMORY;
-			LOG_FAILURE(err);
-		}
-		else
-		{
-			LPWSTR pszDomainName = NULL;
-			if (dwDNameSize)
-			{
-				ACE_NEW_NORETURN(pszDomainName,wchar_t[dwDNameSize]);
-				if (!pszDomainName)
-				{
-					err = ERROR_OUTOFMEMORY;
-					LOG_FAILURE(err);
-				}
-			}
-
-			if (err == 0)
-			{
-				if (!LookupAccountSidW(NULL,pUserInfo->User.Sid,pszUserName,&dwUNameSize,pszDomainName,&dwDNameSize,&name_use))
-				{
-					err = GetLastError();
-					LOG_FAILURE(err);
-				}
-				else
-				{
-					strUserName = pszUserName;
-					strDomainName = pszDomainName;
-				}
-			}
-			delete [] pszDomainName;
-			delete [] pszUserName;
-		}
-	}
-
-	// Done with user info
-	ACE_OS::free(pUserInfo);
-
-	return err;
-}
-
-DWORD Root::SpawnedProcess::LoadUserProfileFromToken(HANDLE hToken, HANDLE& hProfile)
-{
-	// Get the names associated with the user SID
-	ACE_WString strUserName;
-	ACE_WString strDomainName;
-
-	DWORD err = GetNameFromToken(hToken,strUserName,strDomainName);
-	if (err != ERROR_SUCCESS)
-		return err;
-
-	// Lookup a DC for pszDomain
-	ACE_WString strDCName;
-	LPWSTR pszDCName = NULL;
-	if (NetGetAnyDCName(NULL,strDomainName.is_empty() ? NULL : strDomainName.c_str(),(LPBYTE*)&pszDCName) == NERR_Success)
-	{
-		strDCName = pszDCName;
-		NetApiBufferFree(pszDCName);
-	}
-
-	// Try to find the user's profile path...
-	ACE_WString strProfilePath;
-	USER_INFO_3* pInfo = NULL;
-	if (NetUserGetInfo(strDCName.is_empty() ? NULL : strDCName.c_str(),strUserName.c_str(),3,(LPBYTE*)&pInfo) == NERR_Success)
-	{
-		if (pInfo->usri3_profile)
-			strProfilePath = pInfo->usri3_profile;
-
-		NetApiBufferFree(pInfo);
-	}
-
-	// Load the Users Profile
-	PROFILEINFOW profile_info;
-	ACE_OS::memset(&profile_info,0,sizeof(profile_info));
-	profile_info.dwSize = sizeof(PROFILEINFOW);
-	profile_info.dwFlags = PI_NOUI;
-	profile_info.lpUserName = (WCHAR*)strUserName.c_str();
-	if (!strProfilePath.empty())
-		profile_info.lpProfilePath = (WCHAR*)strProfilePath.c_str();
-	if (!strDCName.empty())
-		profile_info.lpServerName = (WCHAR*)strDCName.c_str();
-
-	BOOL bSuccess = LoadUserProfileW(hToken,&profile_info);
-
-	if (!bSuccess)
-	{
-		DWORD dwErr = GetLastError();
-		LOG_FAILURE(dwErr);
-		return dwErr;
-	}
-
-	hProfile = profile_info.hProfile;
-	return ERROR_SUCCESS;
-}
-
-DWORD Root::SpawnedProcess::GetLogonSID(HANDLE hToken, PSID& pSIDLogon)
-{
-	// Get the logon SID of the Token
-	TOKEN_GROUPS* pGroups = static_cast<TOKEN_GROUPS*>(GetTokenInfo(hToken,TokenGroups));
-	if (!pGroups)
-		return GetLastError();
-
-	DWORD dwRes = ERROR_INVALID_SID;
-
-	// Loop through the groups to find the logon SID
-	for (DWORD dwIndex = 0; dwIndex < pGroups->GroupCount; dwIndex++)
-	{
-		if ((pGroups->Groups[dwIndex].Attributes & SE_GROUP_LOGON_ID) ==  SE_GROUP_LOGON_ID)
-		{
-			// Found the logon SID...
-			DWORD dwLen = GetLengthSid(pGroups->Groups[dwIndex].Sid);
-			pSIDLogon = static_cast<PSID>(ACE_OS::malloc(dwLen));
-			if (!pSIDLogon)
-				dwRes = ERROR_OUTOFMEMORY;
-			else
-			{
-				if (!CopySid(dwLen,pSIDLogon,pGroups->Groups[dwIndex].Sid))
-					dwRes = GetLastError();
-				else
-					dwRes = ERROR_SUCCESS;
-			}
-			break;
-		}
-	}
-
-	ACE_OS::free(pGroups);
-
-	return dwRes;
-}
-
-DWORD Root::SpawnedProcess::CreateSD(PACL pACL, void*& pSD)
-{
-	// Create a new security descriptor
-	pSD = LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
-	if (pSD == NULL)
-		return GetLastError();
-
-	DWORD dwRes = ERROR_SUCCESS;
-
-	// Initialize a security descriptor.
-	if (!InitializeSecurityDescriptor(static_cast<PSECURITY_DESCRIPTOR>(pSD),SECURITY_DESCRIPTOR_REVISION))
-	{
-		dwRes = GetLastError();
-		LocalFree(pSD);
-		return dwRes;
-	}
-
-	// Add the ACL to the SD
-	if (!SetSecurityDescriptorDacl(static_cast<PSECURITY_DESCRIPTOR>(pSD),TRUE,pACL,FALSE))
-	{
-		dwRes = GetLastError();
-		LocalFree(pSD);
-		return dwRes;
-	}
-
-	return ERROR_SUCCESS;
-}
-
-DWORD Root::SpawnedProcess::CreateWindowStationSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD)
-{
-	const int NUM_ACES = 3;
-	EXPLICIT_ACCESSW ea[NUM_ACES];
-	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
-
-	// Set minimum access for the calling process SID
-	ea[0].grfAccessPermissions = WINSTA_CREATEDESKTOP;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = NO_INHERITANCE;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
-
-	// Set default access for Specific logon.
-	ea[1].grfAccessPermissions =
-		WINSTA_ACCESSCLIPBOARD |
-		WINSTA_ACCESSGLOBALATOMS |
-		WINSTA_CREATEDESKTOP |
-		WINSTA_EXITWINDOWS |
-		WINSTA_READATTRIBUTES |
-		STANDARD_RIGHTS_REQUIRED;
-
-	ea[1].grfAccessMode = SET_ACCESS;
-	ea[1].grfInheritance = NO_INHERITANCE;
-	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
-
-	// Set generic all access for Specific logon for everything below...
-	ea[2].grfAccessPermissions = STANDARD_RIGHTS_REQUIRED | GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL;
-	ea[2].grfAccessMode = SET_ACCESS;
-	ea[2].grfInheritance = CONTAINER_INHERIT_ACE | INHERIT_ONLY_ACE | OBJECT_INHERIT_ACE;
-	ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[2].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[2].Trustee.ptstrName = (LPWSTR)pSIDLogon;
-
-	DWORD dwRes = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
-	if (dwRes != ERROR_SUCCESS)
-		return dwRes;
-
-	dwRes = CreateSD(pACL,pSD);
-	if (dwRes != ERROR_SUCCESS)
-		LocalFree(pACL);
-
-	return dwRes;
-}
-
-DWORD Root::SpawnedProcess::CreateDesktopSD(TOKEN_USER* pProcessUser, PSID pSIDLogon, PACL& pACL, void*& pSD)
-{
-	const int NUM_ACES = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES];
-	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
-
-	// Set minimum access for the calling process SID
-	ea[0].grfAccessPermissions = DESKTOP_CREATEWINDOW;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = NO_INHERITANCE;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)pProcessUser->User.Sid;
-
-	// Set full access for Specific logon.
-	ea[1].grfAccessPermissions =
-		DESKTOP_CREATEMENU |
-		DESKTOP_CREATEWINDOW |
-		DESKTOP_ENUMERATE |
-		DESKTOP_HOOKCONTROL |
-		DESKTOP_READOBJECTS |
-		DESKTOP_WRITEOBJECTS |
-		STANDARD_RIGHTS_REQUIRED;
-
-	ea[1].grfAccessMode = SET_ACCESS;
-	ea[1].grfInheritance = NO_INHERITANCE;
-	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDLogon;
-
-	DWORD dwRes = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
-	if (dwRes != ERROR_SUCCESS)
-		return dwRes;
-
-	dwRes = CreateSD(pACL,pSD);
-	if (dwRes != ERROR_SUCCESS)
-		LocalFree(pACL);
-
-	return dwRes;
-}
-
-DWORD Root::SpawnedProcess::OpenCorrectWindowStation(HANDLE hToken, ACE_WString& strWindowStation, HWINSTA& hWinsta, HDESK& hDesktop)
-{
-	// Service window stations are created with the name "Service-0xZ1-Z2$",
-	// where Z1 is the high part of the logon SID and Z2 is the low part of the logon SID
-	// see http://msdn2.microsoft.com/en-us/library/ms687105.aspx for details
-
-	// Get the logon SID of the Token
-	PSID pSIDLogon = 0;
-	DWORD dwRes = GetLogonSID(hToken,pSIDLogon);
-	if (dwRes != ERROR_SUCCESS)
-		return dwRes;
-
-	LPWSTR pszSid = 0;
-	if (!ConvertSidToStringSidW(pSIDLogon,&pszSid))
-	{
-		dwRes = GetLastError();
-		ACE_OS::free(pSIDLogon);
-		return dwRes;
-	}
-	strWindowStation = pszSid;
-	LocalFree(pszSid);
-
-	// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
-	if (ACE_OS::strncmp(strWindowStation.c_str(),L"S-1-5-5-",8) != 0)
-	{
-		ACE_OS::free(pSIDLogon);
-		return ERROR_INVALID_SID;
-	}
-
-	// Crack out the last two parts - there is probably an easier way... but this works
-	strWindowStation = strWindowStation.substr(8);
-	const wchar_t* p = strWindowStation.c_str();
-	wchar_t* pEnd = 0;
-	DWORD dwParts[2];
-	dwParts[0] = ACE_OS::strtoul(p,&pEnd,10);
-	if (*pEnd != L'-')
-	{
-		ACE_OS::free(pSIDLogon);
-		return ERROR_INVALID_SID;
-	}
-	dwParts[1] = ACE_OS::strtoul(pEnd+1,&pEnd,10);
-	if (*pEnd != L'\0')
-	{
-		ACE_OS::free(pSIDLogon);
-		return ERROR_INVALID_SID;
-	}
-
-	wchar_t szBuf[256];
-	ACE_OS::snprintf(szBuf,255,L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
-	strWindowStation = szBuf;
-
-	// Get the current processes user SID
-	HANDLE hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-	{
-		dwRes = GetLastError();
-		ACE_OS::free(pSIDLogon);
-		return dwRes;
-	}
-
-	TOKEN_USER* pProcessUser = static_cast<TOKEN_USER*>(GetTokenInfo(hProcessToken,TokenUser));
-	if (!pProcessUser)
-	{
-		dwRes = GetLastError();
-		ACE_OS::free(pSIDLogon);
-		CloseHandle(hProcessToken);
-		return dwRes;
-	}
-
-	CloseHandle(hProcessToken);
-
-	// Open or create the new window station and desktop
-	// Now confirm the Window Station exists...
-	hWinsta = OpenWindowStationW((LPWSTR)strWindowStation.c_str(),FALSE,WINSTA_CREATEDESKTOP);
-	if (!hWinsta)
-	{
-		// See if just doesn't exist yet...
-		dwRes = GetLastError();
-		if (dwRes != ERROR_FILE_NOT_FOUND)
-		{
-			ACE_OS::free(pSIDLogon);
-			ACE_OS::free(pProcessUser);
-			return dwRes;
-		}
-
-		SECURITY_ATTRIBUTES sa;
-		sa.nLength = sizeof(sa);
-		sa.bInheritHandle = FALSE;
-		sa.lpSecurityDescriptor = 0;
-		PACL pACL = 0;
-
-		dwRes = CreateWindowStationSD(pProcessUser,pSIDLogon,pACL,sa.lpSecurityDescriptor);
-		if (dwRes != ERROR_SUCCESS)
-		{
-			ACE_OS::free(pSIDLogon);
-			ACE_OS::free(pProcessUser);
-			return dwRes;
-		}
-
-		hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,&sa);
-		if (!hWinsta)
-			dwRes = GetLastError();
-
-		LocalFree(pACL);
-		LocalFree(sa.lpSecurityDescriptor);
-
-		if (!hWinsta)
-		{
-			ACE_OS::free(pSIDLogon);
-			ACE_OS::free(pProcessUser);
-			return GetLastError();
-		}
-	}
-
-	// Stash our old
-	HWINSTA hOldWinsta = GetProcessWindowStation();
-	if (!hOldWinsta)
-	{
-		dwRes = GetLastError();
-		ACE_OS::free(pSIDLogon);
-		ACE_OS::free(pProcessUser);
-		CloseHandle(hWinsta);
-		return dwRes;
-	}
-
-	// Swap our Window Station
-	if (!SetProcessWindowStation(hWinsta))
-	{
-		dwRes = GetLastError();
-		ACE_OS::free(pSIDLogon);
-		ACE_OS::free(pProcessUser);
-		CloseHandle(hWinsta);
-		return dwRes;
-	}
-
-	// Try for the desktop
-	hDesktop = OpenDesktopW(L"default",0,FALSE,DESKTOP_CREATEWINDOW);
-	if (!hDesktop)
-	{
-		// See if just doesn't exist yet...
-		dwRes = GetLastError();
-		if (dwRes != ERROR_FILE_NOT_FOUND)
-		{
-			ACE_OS::free(pSIDLogon);
-			ACE_OS::free(pProcessUser);
-			SetProcessWindowStation(hOldWinsta);
-			CloseHandle(hWinsta);
-			return dwRes;
-		}
-
-		SECURITY_ATTRIBUTES sa;
-		sa.nLength = sizeof(sa);
-		sa.bInheritHandle = FALSE;
-		sa.lpSecurityDescriptor = 0;
-		PACL pACL = 0;
-
-		dwRes = CreateDesktopSD(pProcessUser,pSIDLogon,pACL,sa.lpSecurityDescriptor);
-		if (dwRes != ERROR_SUCCESS)
-		{
-			ACE_OS::free(pSIDLogon);
-			ACE_OS::free(pProcessUser);
-			return dwRes;
-		}
-
-		hDesktop = CreateDesktopW(L"default",0,0,0,DESKTOP_CREATEWINDOW,&sa);
-		if (!hDesktop)
-			dwRes = GetLastError();
-
-		LocalFree(pACL);
-		LocalFree(sa.lpSecurityDescriptor);
-
-		if (!hDesktop)
-		{
-			ACE_OS::free(pSIDLogon);
-			ACE_OS::free(pProcessUser);
-			SetProcessWindowStation(hOldWinsta);
-			CloseHandle(hWinsta);
-			return dwRes;
-		}
-	}
-
-	// Revert our Window Station
-	SetProcessWindowStation(hOldWinsta);
-
-	ACE_OS::free(pSIDLogon);
-	ACE_OS::free(pProcessUser);
-
-	strWindowStation += L"\\default";
-
-	return dwRes;
-}
-
-DWORD Root::SpawnedProcess::SetTokenDefaultDACL(HANDLE hToken)
-{
-	// Get the current Default DACL
-	TOKEN_DEFAULT_DACL* pDef_dacl = static_cast<TOKEN_DEFAULT_DACL*>(GetTokenInfo(hToken,TokenDefaultDacl));
-	if (!pDef_dacl)
-		return ERROR_OUTOFMEMORY;
-
-	// Get the logon SID of the Token
-	PSID pSIDLogon = 0;
-	DWORD dwRes = GetLogonSID(hToken,pSIDLogon);
-	if (dwRes != ERROR_SUCCESS)
-	{
-		ACE_OS::free(pDef_dacl);
-		return dwRes;
-	}
-
-	const int NUM_ACES = 1;
-	EXPLICIT_ACCESSW ea[NUM_ACES];
-	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
-
-	// Set maximum access for the logon SID
-	ea[0].grfAccessPermissions = GENERIC_ALL;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)pSIDLogon;
-
-	TOKEN_DEFAULT_DACL def_dacl = {0};
-	dwRes = SetEntriesInAclW(NUM_ACES,ea,pDef_dacl->DefaultDacl,&def_dacl.DefaultDacl);
-
-	ACE_OS::free(pSIDLogon);
-	ACE_OS::free(pDef_dacl);
-
-	if (dwRes != ERROR_SUCCESS)
-		return dwRes;
-
-	// Now set the token default DACL
-	if (!SetTokenInformation(hToken,TokenDefaultDacl,&def_dacl,sizeof(def_dacl)))
-	{
-		dwRes = GetLastError();
-		LocalFree(def_dacl.DefaultDacl);
-	}
-
-	return dwRes;
-}
-
-void Root::SpawnedProcess::EnableUserAccessToFile(LPWSTR pszPath, TOKEN_USER* pUser)
-{
-	PathRemoveFileSpecW(pszPath);
-
-	PACL pACL = 0;
-	PSECURITY_DESCRIPTOR pSD = 0;
-	DWORD dwRes = GetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,&pACL,NULL,&pSD);
-	if (dwRes != ERROR_SUCCESS)
-		return;
-
-	const int NUM_ACES = 1;
-	EXPLICIT_ACCESSW ea[NUM_ACES];
-	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
-
-	// Set maximum access for the logon SID
-	ea[0].grfAccessPermissions = GENERIC_ALL;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = OBJECT_INHERIT_ACE;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)pUser->User.Sid;
-
-	PACL pACLNew = {0};
-	dwRes = SetEntriesInAclW(NUM_ACES,ea,pACL,&pACLNew);
-
-	LocalFree(pSD);
-
-	if (dwRes != ERROR_SUCCESS)
-		return;
-
-	dwRes = SetNamedSecurityInfoW(pszPath,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,NULL,NULL,pACLNew,NULL);
-}
-
-bool Root::SpawnedProcess::RestrictToken(HANDLE& hToken)
-{
-	// Work out what version of windows we are running on...
-	OSVERSIONINFO os = {0};
-	os.dwOSVersionInfoSize = sizeof(os);
-	GetVersionEx(&os);
-
-#if !defined(OMEGA_DEBUG)
-	if ((os.dwMajorVersion == 5 && os.dwMinorVersion > 0) || os.dwMajorVersion >= 5)
-	{
-		//// Use SAFER API
-		//SAFER_LEVEL_HANDLE hAuthzLevel = NULL;
-		//if (!SaferCreateLevel(SAFER_SCOPEID_MACHINE,SAFER_LEVELID_UNTRUSTED,SAFER_LEVEL_OPEN,&hAuthzLevel,NULL))
-		//	return false;
-
-		//// Generate the restricted token we will use.
-		//bool bOk = false;
-		//HANDLE hNewToken = NULL;
-		//if (SaferComputeTokenFromLevel(
-		//	hAuthzLevel,    // SAFER Level handle
-		//	hToken,         // Source token
-		//	&hNewToken,     // Target token
-		//	0,              // No flags
-		//	NULL))          // Reserved
-		//{
-		//	// Swap the tokens
-		//	CloseHandle(hToken);
-		//	hToken = hNewToken;
-		//	bOk = true;
-		//}
-
-		//SaferCloseLevel(hAuthzLevel);
-		//
-		//if (!bOk)
-		//	return false;
-	}
-#endif
-
-	if (os.dwMajorVersion >= 5)
-	{
-		// Create a restricted token...
-		HANDLE hNewToken = NULL;
-		if (!CreateRestrictedToken(hToken,DISABLE_MAX_PRIVILEGE | SANDBOX_INERT,0,NULL,0,NULL,0,NULL,&hNewToken))
-			return false;
-
-		CloseHandle(hToken);
-		hToken = hNewToken;
-	}
-
-	if (os.dwMajorVersion > 5)
-	{
-		// Vista - use UAC as well...
-	}
-
-	return true;
-}
-
-DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& strPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
 	// Get our module name
 	wchar_t szPath[MAX_PATH];
 	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
-	{
-		DWORD dwErr = GetLastError();
-		LOG_FAILURE(dwErr);
-		return dwErr;
-	}
-
+		return GetLastError();
+	
 	// Strip off our name, and add OOSvrUser.exe
-	PathRemoveFileSpecW(szPath);
+	if (!PathRemoveFileSpecW(szPath))
+		return GetLastError();
 
-	wchar_t szCwd[MAX_PATH];
-	ACE_OS::strncpy(szCwd,szPath,MAX_PATH-1);
+	if (!PathAppendW(szPath,L"OOSvrUser.exe"))
+		return GetLastError();
 
-	PathAppendW(szPath,L"OOSvrUser.exe");
-
-	ACE_WString strCmdLine = L"\"";
+	std::wstring strCmdLine = L"\"";
 	strCmdLine += szPath;
 	strCmdLine += L"\" ";
-	strCmdLine += ACE_Ascii_To_Wide(strPipe.c_str()).wchar_rep();
+	strCmdLine += OOBase::from_native(strPipe.c_str());
 
 	// Forward declare these because of goto's
-	ACE_WString strWindowStation;
+	STARTUPINFOW startup_info = {0};
+	std::wstring strWindowStation;
 	HWINSTA hWinsta = 0;
 	HDESK hDesktop = 0;
 	DWORD dwFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP;
 	HANDLE hDebugEvent = NULL;
 	HANDLE hPriToken = 0;
-	ACE_WString strTitle;
+	std::wstring strTitle;
 	bool bPrivError = false;
 
 	// Load up the users profile
@@ -768,12 +489,12 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	DWORD dwRes = 0;
 	if (!bSandbox)
 	{
-		dwRes = LoadUserProfileFromToken(hToken,hProfile);
+		dwRes = OOSvrBase::Win32::LoadUserProfileFromToken(hToken,hProfile);
 		if (dwRes != ERROR_SUCCESS)
 			return dwRes;
 	}
 
-	// Load the Users Environment vars
+	// Load the users environment vars
 	LPVOID lpEnv = NULL;
 	if (!CreateEnvironmentBlock(&lpEnv,hToken,FALSE))
 	{
@@ -789,8 +510,6 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	}
 
 	// Init our startup info
-	STARTUPINFOW startup_info;
-	ACE_OS::memset(&startup_info,0,sizeof(startup_info));
 	startup_info.cb = sizeof(STARTUPINFOW);
 	startup_info.dwFlags = STARTF_USESHOWWINDOW;
 	startup_info.wShowWindow = SW_MINIMIZE;
@@ -799,17 +518,15 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	if (IsDebuggerPresent())
 	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-		if (!hDebugEvent && GetLastError()==ERROR_ALREADY_EXISTS)
-			hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-
+		
 		dwFlags |= CREATE_NEW_CONSOLE;
 
 		strTitle = szPath;
 
 		// Get the names associated with the user SID
-        ACE_WString strUserName;
-        ACE_WString strDomainName;
-        if (GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
+        std::wstring strUserName;
+        std::wstring strDomainName;
+        if (OOSvrBase::Win32::GetNameFromToken(hPriToken,strUserName,strDomainName) == ERROR_SUCCESS)
         {
             strTitle += L" - ";
             strTitle += strDomainName;
@@ -844,7 +561,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,szCwd,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
@@ -874,9 +591,7 @@ DWORD Root::SpawnedProcess::SpawnFromToken(HANDLE hToken, const ACE_CString& str
 	if (dwWait != WAIT_TIMEOUT)
 	{
 		// Process aborted very quickly... this can happen if we have security issues
-		GetExitCodeProcess(process_info.hProcess,&dwRes);
-		if (dwRes == ERROR_SUCCESS)
-			dwRes = ERROR_INTERNAL_ERROR;
+		dwRes = ERROR_INTERNAL_ERROR;
 
 		CloseHandle(process_info.hProcess);
 		CloseHandle(process_info.hThread);
@@ -917,164 +632,94 @@ Cleanup:
 	if (hProfile)
 		UnloadUserProfile(hToken,hProfile);
 
-	if (dwRes != ERROR_SUCCESS && !bPrivError)
-		LOG_FAILURE(dwRes);
-
 	return dwRes;
 }
 
-bool Root::SpawnedProcess::Spawn(user_id_type hToken, const ACE_CString& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (Manager::unsafe_sandbox() || IsDebuggerPresent()))
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
 		{
-			HANDLE hToken2;
+			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
-				LOG_FAILURE(GetLastError());
+				OOBase_CallCriticalFailure(GetLastError());
 			else
 			{
 				// Get the names associated with the user SID
-				ACE_WString strUserName;
-				ACE_WString strDomainName;
+				std::wstring strUserName;
+				std::wstring strDomainName;
 
-				if (GetNameFromToken(hToken2,strUserName,strDomainName) == ERROR_SUCCESS)
+				if (OOSvrBase::Win32::GetNameFromToken(hToken2,strUserName,strDomainName) == ERROR_SUCCESS)
 				{
-					const wchar_t msg[] =
+					std::wstring strMsg =
 						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '%s\\%s'\n\n"
-						L"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '";
+					
+					strMsg += strDomainName;
+					strMsg += L"\\";
+					strMsg += strUserName;
+					strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
-					wchar_t szBuf[1024];
-					ACE_OS::snprintf(szBuf,1023,msg,strDomainName.c_str(),strUserName.c_str());
-					wchar_t szBuf2[1024];
-					ACE_OS::snprintf(szBuf2,1023,L"%s\n\nDo you want to allow this?",szBuf);
+					std::wstring strMsg2 = strMsg;
+					strMsg2 += L"\n\nDo you want to allow this?";
 
-					if (MessageBoxW(NULL,szBuf2,L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
+					if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
 					{
 						// Restrict the Token
-						if (!RestrictToken(hToken2))
-							dwRes = GetLastError();
-						else
+						dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
+						if (dwRes == ERROR_SUCCESS)
 						{
 							dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 							if (dwRes == ERROR_SUCCESS)
 							{
-#if !defined(OMEGA_DEBUG)
-								ACE_ERROR((LM_WARNING,L"%W",szBuf));
-#else
-								ACE_OS::printf(L"%s",szBuf);
-#endif
-								ACE_OS::printf("\nYou chose to continue... on your head be it!\n\n");
-
+								OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
+								
 								CloseHandle(m_hToken);
 								DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);
 							}
 						}
 					}
 				}
-
-				CloseHandle(hToken2);
 			}
 		}
 
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
+		if (dwRes != ERROR_SUCCESS)
 		{
 			// We really need to bitch about this now...
-			LOG_FAILURE(dwRes);
+			LOG_ERROR(("SpawnFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()));
 		}
 	}
 
 	return (dwRes == ERROR_SUCCESS);
 }
 
-bool Root::SpawnedProcess::LogonSandboxUser(user_id_type& hToken)
+bool SpawnedProcessWin32::CheckAccess(const char* pszFName, int mode, bool& bAllowed)
 {
-	// Get the local machine registry
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
+	bAllowed = false;
 
-	// Get the user name and pwd...
-	ACE_INT64 key = 0;
-	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
-		return false;
-
-	ACE_WString strUName;
-	ACE_WString strPwd;
-	int err = reg_root->get_string_value(key,L"UserName",strUName);
-	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to read sandbox username from registry: %C"),ACE_OS::strerror(err)),false);
-
-	reg_root->get_string_value(key,L"Password",strPwd);
-
-	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
-	{
-		LOG_FAILURE(GetLastError());
-		return false;
-	}
-
-	// Restrict the Token
-	if (!RestrictToken(hToken))
-	{
-		CloseHandle(hToken);
-		LOG_FAILURE(GetLastError());
-		return false;
-	}
-
-	// This might be needed for retricted tokens...
-	DWORD dwRes = SetTokenDefaultDACL(hToken);
-	if (dwRes != ERROR_SUCCESS)
-	{
-		CloseHandle(hToken);
-		return false;
-	}
-
-	return true;
-}
-
-void Root::SpawnedProcess::CloseSandboxLogon(user_id_type hToken)
-{
-	CloseHandle(hToken);
-}
-
-bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bool& bAllowed)
-{
-	PSECURITY_DESCRIPTOR pSD = NULL;
+	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSD = 0;
 	DWORD cbNeeded = 0;
-	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
-	{
-		DWORD err = GetLastError();
-		ACE_OS::last_error(err);
-		ACE_OS::set_errno_to_last_error();
-		return LOG_FAILURE(err);
-	}
-
-	pSD = static_cast<PSECURITY_DESCRIPTOR>(ACE_OS::malloc(cbNeeded));
+	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
+		LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	
+	pSD = malloc(cbNeeded);
 	if (!pSD)
-	{
-		DWORD err = ERROR_OUTOFMEMORY;
-		ACE_OS::last_error(err);
-		ACE_OS::set_errno_to_last_error();
-		return LOG_FAILURE(err);
-	}
+		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,pSD,cbNeeded,&cbNeeded))
-	{
-		DWORD err = GetLastError();
-		ACE_OS::last_error(err);
-		ACE_OS::set_errno_to_last_error();
-		return LOG_FAILURE(err);
-	}
+	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),cbNeeded,&cbNeeded))
+		LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	// Map the generic access rights
 	DWORD dwAccessDesired = 0;
-	if (mode & O_RDONLY)
+	if (mode & _O_RDONLY)
 		dwAccessDesired = FILE_GENERIC_READ;
-	else if (mode & O_WRONLY)
+	else if (mode & _O_WRONLY)
 		dwAccessDesired = FILE_GENERIC_WRITE;
-	else if (mode & O_RDWR)
+	else if (mode & _O_RDWR)
 		dwAccessDesired = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
 
 	GENERIC_MAPPING generic =
@@ -1092,454 +737,163 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, ACE_UINT32 mode, bo
 	DWORD dwPrivSetSize = sizeof(privilege_set);
 	DWORD dwAccessGranted = 0;
 	BOOL bAllowedVal = FALSE;
-	BOOL bRes = ::AccessCheck(pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
+	BOOL bRes = ::AccessCheck((PSECURITY_DESCRIPTOR)pSD.value(),m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 	DWORD err = GetLastError();
-	ACE_OS::free(pSD);
-
+	
 	if (!bRes && err != ERROR_SUCCESS)
-	{
-		ACE_OS::last_error(err);
-		ACE_OS::set_errno_to_last_error();
-		return LOG_FAILURE(err);
-	}
-
-	bAllowed = (bAllowedVal ? true : false);
-
+		LOG_ERROR_RETURN(("AccessCheck failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
+	
+	bAllowed = (bAllowedVal == TRUE);
 	return true;
 }
 
-bool Root::SpawnedProcess::LogFailure(DWORD err, const wchar_t* pszFile, unsigned int nLine)
-{
-	if (err != (DWORD)-1)
-	{
-		LPVOID lpMsgBuf = 0;
-		if (FormatMessageW(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER |
-			FORMAT_MESSAGE_FROM_SYSTEM |
-			FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL,
-			err,
-			0,
-			(LPWSTR)&lpMsgBuf,
-			0,	NULL))
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%W:%u: %W\n"),pszFile,nLine,(LPWSTR)lpMsgBuf));
-
-			// Free the buffer.
-			LocalFree(lpMsgBuf);
-		}
-		else
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%W:%u: Unknown system err %#x\n"),pszFile,nLine,err));
-		}
-	}
-
-	return false;
-}
-
-bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
-{
-	ACE_WString strUName = L"_OMEGA_SANDBOX_USER_";
-	ACE_WString strPwd = L"4th_(*%LGe895y^$N|2";
-
-	if (argc>=1)
-		strUName = ACE_TEXT_ALWAYS_WCHAR(argv[0]);
-	if (argc>=2)
-		strPwd = ACE_TEXT_ALWAYS_WCHAR(argv[1]);
-
-	USER_INFO_2	info =
-	{
-		(LPWSTR)strUName.c_str(),  // usri2_name;
-		(LPWSTR)strPwd.c_str(),    // usri2_password;
-		0,                         // usri2_password_age;
-		USER_PRIV_USER,            // usri2_priv;
-		NULL,                      // usri2_home_dir;
-		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_comment;
-		UF_SCRIPT | UF_PASSWD_CANT_CHANGE | UF_DONT_EXPIRE_PASSWD | UF_NORMAL_ACCOUNT, // usri2_flags;
-		NULL,                      // usri2_script_path;
-		0,                         // usri2_auth_flags;
-		L"Omega Online sandbox user account",   // usri2_full_name;
-		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_usr_comment;
-		0,                         // usri2_parms;
-		NULL,                      // usri2_workstations;
-		0,                         // usri2_last_logon;
-		0,                         // usri2_last_logoff;
-		TIMEQ_FOREVER,             // usri2_acct_expires;
-		USER_MAXSTORAGE_UNLIMITED, // usri2_max_storage;
-		0,                         // usri2_units_per_week;
-		NULL,                      // usri2_logon_hours;
-		(DWORD)-1,                 // usri2_bad_pw_count;
-		(DWORD)-1,                 // usri2_num_logons;
-		NULL,                      // usri2_logon_server;
-		0,                         // usri2_country_code;
-		0,                         // usri2_code_page;
-	};
-	bool bAddedUser = true;
-	NET_API_STATUS err = NetUserAdd(NULL,2,(LPBYTE)&info,NULL);
-	if (err == NERR_UserExists)
-		bAddedUser = false;
-	else if (err != NERR_Success)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to add sandbox user: %#x\n"),err),false);
-
-	// Now we have to add the SE_BATCH_LOGON_NAME priviledge and remove all the others
-
-	// Lookup the account SID
-	DWORD dwSidSize = 0;
-	DWORD dwDnSize = 0;
-	SID_NAME_USE use;
-	LookupAccountNameW(NULL,info.usri2_name,NULL,&dwSidSize,NULL,&dwDnSize,&use);
-	if (dwSidSize==0)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to lookup account SID\n")),false);
-	}
-
-	PSID pSid = static_cast<PSID>(ACE_OS::malloc(dwSidSize));
-	if (!pSid)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		return false;
-	}
-	wchar_t* pszDName;
-	ACE_NEW_NORETURN(pszDName,wchar_t[dwDnSize]);
-	if (!pszDName)
-	{
-		ACE_OS::free(pSid);
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		return false;
-	}
-	if (!LookupAccountNameW(NULL,info.usri2_name,pSid,&dwSidSize,pszDName,&dwDnSize,&use))
-	{
-		err = GetLastError();
-		ACE_OS::free(pSid);
-		delete [] pszDName;
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to lookup account SID\n")),false);
-	}
-	delete [] pszDName;
-
-	if (use != SidTypeUser)
-	{
-		ACE_OS::free(pSid);
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Bad username\n")),false);
-	}
-
-	// Open the local account policy...
-	LSA_HANDLE hPolicy;
-	LSA_OBJECT_ATTRIBUTES oa;
-	memset(&oa,0,sizeof(oa));
-	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
-	if (err2 != 0)
-	{
-		ACE_OS::free(pSid);
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to access policy elements\n")),false);
-	}
-
-	LSA_UNICODE_STRING szName;
-	szName.Buffer = L"SeBatchLogonRight";
-	size_t len = ACE_OS::strlen(szName.Buffer);
-	szName.Length = static_cast<USHORT>(len * sizeof(WCHAR));
-	szName.MaximumLength = static_cast<USHORT>((len+1) * sizeof(WCHAR));
-
-	err2 = LsaAddAccountRights(hPolicy,pSid,&szName,1);
-	if (err2 == 0)
-	{
-		// Remove all other priviledges
-		LSA_UNICODE_STRING* pRightsList;
-		ULONG ulRightsCount = 0;
-		err2 = LsaEnumerateAccountRights(hPolicy,pSid,&pRightsList,&ulRightsCount);
-		if (err2 == 0)
-		{
-			for (ULONG i=0;i<ulRightsCount;i++)
-			{
-				if (ACE_OS::strcmp(pRightsList[i].Buffer,L"SeBatchLogonRight") != 0)
-				{
-					err2 = LsaRemoveAccountRights(hPolicy,pSid,FALSE,&pRightsList[i],1);
-					if (err2 != 0)
-						break;
-				}
-			}
-		}
-	}
-
-	// Done with pSid
-	ACE_OS::free(pSid);
-
-	// Done with policy handle
-	LsaClose(hPolicy);
-
-	if (err2 != 0)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to modify account priviledges\n")),false);
-	}
-
-	// Set the user name and pwd...
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
-
-	ACE_INT64 key = 0;
-	if (reg_root->create_key(key,"Server\\Sandbox",false,0,0) != 0)
-		return false;
-
-	err = reg_root->set_string_value(key,L"UserName",info.usri2_name);
-	if (err != 0)
-		return false;
-
-	err = reg_root->set_string_value(key,L"Password",info.usri2_password);
-	if (err != 0)
-		return false;
-
-	if (bAddedUser)
-		reg_root->set_integer_value(key,"AutoAdded",0,1);
-
-	return true;
-}
-
-bool Root::SpawnedProcess::UninstallSandbox()
-{
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
-
-	// Get the user name and pwd...
-	ACE_INT64 key = 0;
-	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
-		return true;
-
-	ACE_WString strUName;
-	if (reg_root->get_string_value(key,L"UserName",strUName) == 0)
-	{
-		ACE_CDR::LongLong bUserAdded = 0;
-		reg_root->get_integer_value(key,"AutoAdded",0,bUserAdded);
-		if (bUserAdded == 1)
-			NetUserDel(NULL,strUName.c_str());
-	}
-
-	return true;
-}
-
-bool Root::SpawnedProcess::SecureFile(const ACE_CString& strFilename)
-{
-	// Specify the DACL to use.
-
-	// Create a SID for the BUILTIN\Users group.
-	PSID pSIDUsers = NULL;
-	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
-	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
-		SECURITY_BUILTIN_DOMAIN_RID,
-		DOMAIN_ALIAS_RID_USERS,
-		0, 0, 0, 0, 0, 0,
-		&pSIDUsers))
-	{
-		return false;
-	}
-
-	// Create a SID for the BUILTIN\Administrators group.
-	PSID pSIDAdmin = NULL;
-
-	if (!AllocateAndInitializeSid(&SIDAuthNT, 2,
-		SECURITY_BUILTIN_DOMAIN_RID,
-		DOMAIN_ALIAS_RID_ADMINS,
-		0, 0, 0, 0, 0, 0,
-		&pSIDAdmin))
-	{
-		FreeSid(pSIDUsers);
-		return false;
-	}
-
-	const int NUM_ACES  = 2;
-	EXPLICIT_ACCESSW ea[NUM_ACES];
-	ZeroMemory(&ea, NUM_ACES * sizeof(EXPLICIT_ACCESS));
-
-	// Set read access for Users.
-	ea[0].grfAccessPermissions = GENERIC_READ;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = NO_INHERITANCE;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[0].Trustee.ptstrName = (LPWSTR) pSIDUsers;
-
-	// Set full control for Administrators.
-	ea[1].grfAccessPermissions = GENERIC_ALL;
-	ea[1].grfAccessMode = SET_ACCESS;
-	ea[1].grfInheritance = NO_INHERITANCE;
-	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[1].Trustee.ptstrName = (LPWSTR) pSIDAdmin;
-
-	PACL pACL = NULL;
-	if (ERROR_SUCCESS != SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL))
-	{
-		FreeSid(pSIDAdmin);
-		FreeSid(pSIDUsers);
-		return false;
-	}
-
-	FreeSid(pSIDAdmin);
-	FreeSid(pSIDUsers);
-
-	// Try to modify the object's DACL.
-	DWORD dwRes = SetNamedSecurityInfoA(
-		const_cast<LPSTR>(strFilename.c_str()), // name of the object
-		SE_FILE_OBJECT,                          // type of object
-		DACL_SECURITY_INFORMATION |              // change only the object's DACL
-		PROTECTED_DACL_SECURITY_INFORMATION,     // And don't inherit!
-		NULL, NULL,                              // don't change owner or group
-		pACL,                                    // DACL specified
-		NULL);                                   // don't change SACL
-
-	LocalFree(pACL);
-
-	return (ERROR_SUCCESS == dwRes);
-}
-
-void* Root::SpawnedProcess::GetTokenInfo(HANDLE hToken, TOKEN_INFORMATION_CLASS cls)
-{
-	DWORD dwLen = 0;
-	if (!GetTokenInformation(hToken,cls,NULL,0,&dwLen) && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-		return 0;
-
-	void* pBuffer = ACE_OS::malloc(dwLen);
-	if (!pBuffer)
-	{
-		SetLastError(ERROR_OUTOFMEMORY);
-		return 0;
-	}
-
-	if (!GetTokenInformation(hToken,cls,pBuffer,dwLen,&dwLen))
-	{
-		ACE_OS::free(pBuffer);
-		return 0;
-	}
-
-	return pBuffer;
-}
-
-bool Root::SpawnedProcess::MatchSids(ULONG count, PSID_AND_ATTRIBUTES pSids1, PSID_AND_ATTRIBUTES pSids2)
-{
-	for (ULONG i=0;i<count;++i)
-	{
-		bool bFound = false;
-		for (ULONG j=0;j<count;++j)
-		{
-			if (EqualSid(pSids1[i].Sid,pSids2[j].Sid) &&
-				pSids1[i].Attributes == pSids2[j].Attributes)
-			{
-				bFound = true;
-				break;
-			}
-		}
-
-		if (!bFound)
-			return false;
-	}
-
-	return true;
-}
-
-bool Root::SpawnedProcess::MatchPrivileges(ULONG count, PLUID_AND_ATTRIBUTES Privs1, PLUID_AND_ATTRIBUTES Privs2)
-{
-	for (ULONG i=0;i<count;++i)
-	{
-		bool bFound = false;
-		for (ULONG j=0;j<count;++j)
-		{
-			if (Privs1[i].Luid.LowPart == Privs2[j].Luid.LowPart &&
-				Privs1[i].Luid.HighPart == Privs2[j].Luid.HighPart &&
-				Privs1[i].Attributes == Privs2[j].Attributes)
-			{
-				bFound = true;
-				break;
-			}
-		}
-
-		if (!bFound)
-			return false;
-	}
-
-	return true;
-}
-
-bool Root::SpawnedProcess::Compare(user_id_type hToken)
+bool SpawnedProcessWin32::Compare(HANDLE hToken)
 {
 	// Check the SIDs and priviledges are the same...
-	TOKEN_GROUPS_AND_PRIVILEGES* pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats1 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenGroupsAndPrivileges));
 	if (!pStats1)
 		return false;
 
-	TOKEN_GROUPS_AND_PRIVILEGES* pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
+	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
 	if (!pStats2)
-	{
-		ACE_OS::free(pStats1);
 		return false;
-	}
-
-	bool bSame = (pStats1->SidCount==pStats2->SidCount &&
+	
+	return (pStats1->SidCount==pStats2->SidCount &&
 		pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
 		pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
-		MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
-		MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
-		MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
-
-	ACE_OS::free(pStats1);
-	ACE_OS::free(pStats2);
-
-	return bSame;
+		OOSvrBase::Win32::MatchSids(pStats1->SidCount,pStats1->Sids,pStats2->Sids) &&
+		OOSvrBase::Win32::MatchSids(pStats1->RestrictedSidCount,pStats1->RestrictedSids,pStats2->RestrictedSids) &&
+		OOSvrBase::Win32::MatchPrivileges(pStats1->PrivilegeCount,pStats1->Privileges,pStats2->Privileges));
 }
 
-bool Root::SpawnedProcess::IsSameUser(user_id_type hToken)
+bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
 {
-	TOKEN_USER* pUserInfo1 = static_cast<TOKEN_USER*>(GetTokenInfo(hToken,TokenUser));
-	if (!pUserInfo1)
+	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
+	if (!ptrUserInfo1)
 		return false;
 
-	TOKEN_USER* pUserInfo2 = static_cast<TOKEN_USER*>(GetTokenInfo(m_hToken,TokenUser));
-	if (!pUserInfo2)
-	{
-		ACE_OS::free(pUserInfo1);
+	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
+	if (!ptrUserInfo2)
 		return false;
-	}
-
-	bool bSame = (EqualSid(pUserInfo1->User.Sid,pUserInfo2->User.Sid) == TRUE);
-
-	ACE_OS::free(pUserInfo1);
-	ACE_OS::free(pUserInfo2);
-
-	return bSame;
+	
+	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-ACE_CString Root::SpawnedProcess::GetRegistryHive()
+std::string SpawnedProcessWin32::GetRegistryHive()
 {
-	ACE_CString strRegistry;
-
-	char szBuf[MAX_PATH] = {0};
+	wchar_t szBuf[MAX_PATH] = {0};
 	HRESULT hr;
 	if (m_bSandbox)
-		hr = SHGetFolderPathA(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+		hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	else
-		hr = SHGetFolderPathA(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
+		hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
 
 	if SUCCEEDED(hr)
 	{
-		char szBuf2[MAX_PATH] = {0};
-		if (PathCombineA(szBuf2,szBuf,"Omega Online"))
+		wchar_t szBuf2[MAX_PATH] = {0};
+		if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
 		{
-			if (PathFileExistsA(szBuf2) || ACE_OS::mkdir(szBuf2) == 0)
+			if (PathFileExistsW(szBuf2) || CreateDirectoryW(szBuf2,NULL) == 0)
 			{
-				if (PathCombineA(szBuf,szBuf2,"user.regdb"))
-					strRegistry = szBuf;
+				if (PathCombineW(szBuf,szBuf2,L"user.regdb"))
+					return OOBase::to_utf8(szBuf);
 			}
 		}
 	}
 
-	return strRegistry;
+	return std::string();
 }
 
-#endif // OMEGA_WIN32
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC)
+{
+	// Stash the sandbox flag because we adjust uid...
+	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
+	OOBase::Win32::SmartHandle sandbox_uid;
+	if (bSandbox)
+	{
+		// Get the user name and pwd...
+		Omega::int64_t key = 0;
+		if (m_registry->open_key(key,"Server\\Sandbox",0) != 0)
+			return 0;
+
+		std::string strUName;
+		std::string strPwd;
+		int err = m_registry->get_string_value(key,"UserName",0,strUName);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::strerror(err).c_str()),(SpawnedProcess*)0);
+
+		m_registry->get_string_value(key,"Password",0,strPwd);
+		
+		if (!LogonSandboxUser(OOBase::from_utf8(strUName.c_str()),OOBase::from_utf8(strPwd.c_str()),uid))
+			return 0;
+
+		// Make sure it's closed
+		sandbox_uid = uid;
+	}
+
+	// Work out if we are running in unsafe mode
+	Omega::int64_t key = 0;
+	Omega::int64_t v = 0;
+	if (bSandbox && m_registry->open_key(key,"Server\\Sandbox",0) == 0)
+		m_registry->get_integer_value(key,"Unsafe",0,v);
+
+	bool bUnsafe = (v == 1);
+
+	// Alloc a new SpawnedProcess
+	SpawnedProcessWin32* pSpawn32 = 0;
+	OOBASE_NEW(pSpawn32,SpawnedProcessWin32);
+	if (!pSpawn32)
+		return 0;
+
+	// Create the named pipe
+	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strPipe));
+	if (hPipe == INVALID_HANDLE_VALUE)
+	{
+		delete pSpawn32;
+		return 0;
+	}
+		
+	// Spawn the process
+	if (!pSpawn32->Spawn(bUnsafe,uid,strPipe,bSandbox))
+	{
+		delete pSpawn32;
+		return 0;
+	}
+
+	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
+	
+	// Wait for the connect attempt
+	if (!WaitForConnect(hPipe))
+		return 0;
+	
+	// Now wrap the handle in a local socket
+	OOBase::Win32::SmartHandle hReadEvent(CreateEventW(NULL,TRUE,FALSE,NULL));
+	if (!hReadEvent)
+		return 0;
+		
+	OOBase::Win32::SmartHandle hWriteEvent(CreateEventW(NULL,TRUE,FALSE,NULL));
+	if (!hWriteEvent)
+		return 0;
+		
+	OOBase::Win32::Socket sock(hPipe.detach(),hReadEvent.detach(),hWriteEvent.detach());
+
+	// Bootstrap the user process...
+	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
+	if (!channel_id)
+		return 0;
+
+	CREATE_IPC_SOCKET_HERE!
+	
+	// Create an async socket wrapper
+	int err = 0;
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,(OOBase::Win32::Socket*)&sock);
+	if (err != 0)
+		return 0;
+
+	// Attach the async socket to the message connection
+	ptrMC->attach(pAsync);
+
+	return pSpawn;
+}
+
+#endif // _WIN32

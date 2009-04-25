@@ -21,21 +21,19 @@
 
 #include "OOCore_precomp.h"
 
-#include "./StdObjectManager.h"
-#include "./WireProxy.h"
-#include "./WireStub.h"
-#include "./WireImpl.h"
+#include "StdObjectManager.h"
+#include "WireProxy.h"
+#include "WireStub.h"
+#include "WireImpl.h"
+
+// This is all the SEH guff - needs to go into the surrogate project
+#if 0
 
 #if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
 #include <setjmp.h>
 #endif
 
-using namespace Omega;
-using namespace OTL;
-
-namespace OOCore
-{
-	namespace SEH
+namespace SEH
 	{
 
 #if defined(ACE_WIN32) && !defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS) && defined (__GNUC__)
@@ -58,42 +56,6 @@ namespace OOCore
 		int DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
 	}
 
-	struct CallContext
-	{
-		CallContext() :
-			m_deadline(ACE_Time_Value::max_time),
-			m_src_id(0),
-			m_flags(0)
-		{}
-
-		virtual ~CallContext()
-		{
-		}
-
-		ACE_Time_Value           m_deadline;
-		uint32_t                 m_src_id;
-		Remoting::MarshalFlags_t m_flags;
-	};
-
-	class StdCallContext :
-		public ObjectBase,
-		public Remoting::ICallContext
-	{
-		BEGIN_INTERFACE_MAP(StdCallContext)
-			INTERFACE_ENTRY(Remoting::ICallContext)
-		END_INTERFACE_MAP()
-
-	public:
-		uint32_t Timeout();
-		bool_t HasTimedOut();
-		uint32_t SourceId();
-		Remoting::MarshalFlags_t SourceType();
-
-	public:
-		CallContext m_cc;
-	};
-}
-
 void OOCore::SEH::DoInvoke2(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 {
 	try
@@ -115,7 +77,7 @@ int OOCore::SEH::DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessag
 {
 	int err = 0;
 
-#if defined(ACE_WIN32)
+#if defined(_WIN32)
 	#if defined(ACE_HAS_WIN32_STRUCTURAL_EXCEPTIONS)
 		LPEXCEPTION_POINTERS ex = 0;
 		ACE_SEH_TRY
@@ -126,7 +88,7 @@ int OOCore::SEH::DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessag
 		{
 			err = ex->ExceptionRecord->ExceptionCode;
 		}
-	#elif defined (__GNUC__) && !defined(ACE_WIN64)
+	#elif defined (__GNUC__) && !defined(OMEGA_WIN64)
 
 		// This is hideous scary stuff... but it taps into the Win32 SEH stuff
 		jmp_buf jmpb;
@@ -168,13 +130,56 @@ int OOCore::SEH::DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessag
 	return err;
 }
 
+#endif
+
+using namespace Omega;
+using namespace OTL;
+
+namespace OOCore
+{
+	struct CallContext
+	{
+		CallContext() :
+			m_deadline(OOBase::timeval_t::max_time),
+			m_src_id(0),
+			m_flags(0)
+		{}
+
+		virtual ~CallContext()
+		{
+		}
+
+		OOBase::timeval_t           m_deadline;
+		uint32_t                 m_src_id;
+		Remoting::MarshalFlags_t m_flags;
+	};
+
+	class StdCallContext :
+		public ObjectBase,
+		public Remoting::ICallContext
+	{
+		BEGIN_INTERFACE_MAP(StdCallContext)
+			INTERFACE_ENTRY(Remoting::ICallContext)
+		END_INTERFACE_MAP()
+
+	public:
+		uint32_t Timeout();
+		bool_t HasTimedOut();
+		uint32_t SourceId();
+		Remoting::MarshalFlags_t SourceType();
+
+	public:
+		CallContext m_cc;
+	};
+}
+
 uint32_t OOCore::StdCallContext::Timeout()
 {
-	ACE_Time_Value now = ACE_OS::gettimeofday();
+	OOBase::timeval_t now = OOBase::gettimeofday();
 	if (m_cc.m_deadline <= now)
 		return 0;
 
-	if (m_cc.m_deadline == ACE_Time_Value::max_time)
+	if (m_cc.m_deadline == OOBase::timeval_t::max_time)
 		return (uint32_t)-1;
 
 	return (m_cc.m_deadline - now).msec();
@@ -182,7 +187,7 @@ uint32_t OOCore::StdCallContext::Timeout()
 
 bool_t OOCore::StdCallContext::HasTimedOut()
 {
-	return (m_cc.m_deadline <= ACE_OS::gettimeofday());
+	return (m_cc.m_deadline <= OOBase::gettimeofday());
 }
 
 uint32_t OOCore::StdCallContext::SourceId()
@@ -206,35 +211,37 @@ OOCore::StdObjectManager::~StdObjectManager()
 
 void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
 {
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
 	if (m_ptrChannel)
-		OMEGA_THROW(EALREADY);
+		OMEGA_THROW(L"ObjectManager already connected to a Channel");
 
 	m_ptrChannel = pChannel;
 	if (!m_ptrChannel)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IChannel),OMEGA_SOURCE_INFO);
 }
 
-void OOCore::StdObjectManager::Disconnect()
+void OOCore::StdObjectManager::Shutdown()
 {
 	std::list<Stub*> listStubs;
 	std::list<Proxy*> listProxies;
 
-	{
-		OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		// Copy the stub map
-		for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
-			listStubs.push_back(i->second->second);
-		
-		m_mapStubIds.clear();
-		m_mapStubObjs.clear();
+	// Copy the stub map
+	for (std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.begin();i!=m_mapStubIds.end();++i)
+		listStubs.push_back(i->second->second);
+	
+	m_mapStubIds.clear();
+	m_mapStubObjs.clear();
 
-		// Copy the proxys
-		for (std::map<uint32_t,Proxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
-			listProxies.push_back(j->second);
-		
-		m_mapProxyIds.clear();
-	}
+	// Copy the proxys
+	for (std::map<uint32_t,Proxy*>::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
+		listProxies.push_back(j->second);
+	
+	m_mapProxyIds.clear();
+	
+	guard.release();
 
 	// Disconnect the proxies
 	for (std::list<Proxy*>::iterator j=listProxies.begin();j!=listProxies.end();++j)
@@ -273,11 +280,14 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParamsIn, uint32_t timeout)
 {
 	if (!pParamsIn)
-		OMEGA_THROW(EINVAL);
+		OMEGA_THROW(L"Invoke called with no message");
+		
+	if (!m_ptrChannel)
+		OMEGA_THROW(L"ObjectManager already connected to a Channel");
 
 	// Stash call context
 	CallContext* pCC = 0;
-	pCC = ACE_TSS_Singleton<CallContext,ACE_Recursive_Thread_Mutex>::instance();
+	pCC = OOBase::TLSSingleton<CallContext>::instance();
 	CallContext old_context;
 	if (pCC)
         old_context = *pCC;
@@ -285,9 +295,9 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 	try
 	{
 		if (timeout)
-			pCC->m_deadline = ACE_OS::gettimeofday() + ACE_Time_Value(timeout / 1000,(timeout % 1000) * 1000);
+			pCC->m_deadline = OOBase::timeval_t::deadline(timeout);
 		else
-			pCC->m_deadline = ACE_Time_Value::max_time;
+			pCC->m_deadline = OOBase::timeval_t::max_time;
 
 		pCC->m_src_id = m_ptrChannel->GetSource();
 		pCC->m_flags = m_ptrChannel->GetMarshalFlags();
@@ -328,7 +338,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				// Look up the stub
 				try
 				{
-					OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+					OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 					std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
 					if (i==m_mapStubIds.end())
@@ -342,13 +352,12 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				}
 
 				// Ask the stub to make the call
-				IException* pE = 0;
-				int err = SEH::DoInvoke(ptrStub,pParamsIn,ptrResponse,pE);
+				System::MetaInfo::IException_Safe* pSE = ptrStub->Invoke_Safe(
+					System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsIn),
+					System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(ptrResponse));
 
-				if (pE)
-					throw pE;
-				else if (err != 0)
-					OMEGA_THROW(err);
+				if (pSE)
+					throw_correct_exception(pSE);
 			}
 		}
 		catch (IException* pE)
@@ -470,16 +479,25 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 
 bool OOCore::StdObjectManager::IsAlive()
 {
+	if (!m_ptrChannel)
+		return false;
+
 	return (m_ptrChannel->GetSource() != 0);
 }
 
 Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 {
+	if (!m_ptrChannel)
+		OMEGA_THROW(L"ObjectManager is not connected");
+
 	return m_ptrChannel->CreateMessage();
 }
 
 IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
+	if (!m_ptrChannel)
+		OMEGA_THROW(L"ObjectManager is not connected");
+
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 	if (pE)
 		return pE;
@@ -490,11 +508,10 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 
 	if (!(attribs & TypeInfo::Asynchronous))
 	{
+		assert(ptrRecv);
+
 		try
 		{
-			if (!ptrRecv)
-				OMEGA_THROW(L"No response received");
-
 			// Read the header
 			ptrRecv->ReadStructStart(L"ipc_response",L"$ipc_response_type");
 
@@ -534,14 +551,14 @@ TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
 
 void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
 {
-	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	m_mapProxyIds.erase(proxy_id);
 }
 
 void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 {
-	OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	std::map<uint32_t,std::map<System::MetaInfo::IObject_Safe*,Stub*>::iterator>::iterator i=m_mapStubIds.find(stub_id);
 	if (i==m_mapStubIds.end())
@@ -579,6 +596,9 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 {
 	try
 	{
+		if (!m_ptrChannel)
+			OMEGA_THROW(L"ObjectManager is not connected");
+
 		// Write a header
 		System::MetaInfo::IException_Safe* pSE = pMessage->WriteStructStart_Safe(pszName,L"$iface_marshal");
 		if (pSE)
@@ -602,7 +622,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 
 		System::MetaInfo::auto_iface_safe_ptr<Stub> ptrStub;
 		{
-			OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 			std::map<IObject_Safe*,Stub*>::const_iterator i=m_mapStubObjs.find(ptrObjS);
 			if (i != m_mapStubObjs.end())
@@ -696,7 +716,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::MarshalI
 			}
 
 			// Create a new stub and stub id
-			OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			uint32_t stub_id = m_uNextStubId++;
 			while (stub_id==0 || m_mapStubIds.find(stub_id)!=m_mapStubIds.end())
@@ -770,6 +790,9 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 {
 	try
 	{
+		if (!m_ptrChannel)
+			OMEGA_THROW(L"ObjectManager is not connected");
+
 		// Read the header
 		System::MetaInfo::IException_Safe* pSE = pMessage->ReadStructStart_Safe(pszName,L"$iface_marshal");
 		if (pSE)
@@ -794,7 +817,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 			// See if we have a proxy already...
 			System::MetaInfo::auto_iface_safe_ptr<Proxy> ptrProxy;
 			{
-				OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 				std::map<uint32_t,Proxy*>::iterator i=m_mapProxyIds.find(proxy_id);
 				if (i != m_mapProxyIds.end())
@@ -805,7 +828,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 			{
 				OMEGA_NEW(ptrProxy,Proxy(proxy_id,this));
 
-				OOCORE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 				std::pair<std::map<uint32_t,Proxy*>::iterator,bool> p = m_mapProxyIds.insert(std::map<uint32_t,Proxy*>::value_type(proxy_id,ptrProxy));
 				if (!p.second)
@@ -833,7 +856,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::Unmarsha
 				System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(ppObjS,piid));
 		}
 		else
-			OMEGA_THROW(EINVAL);
+			OMEGA_THROW(L"Invalid marshal flag");
 
 		return pMessage->ReadStructEnd_Safe(pszName);
 	}
@@ -851,6 +874,9 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 {
 	try
 	{
+		if (!m_ptrChannel)
+			OMEGA_THROW(L"ObjectManager is not connected");
+
 		// Read the header
 		System::MetaInfo::IException_Safe* pSE = pMessage->ReadStructStart_Safe(pszName,L"$iface_marshal");
 		if (pSE)
@@ -877,12 +903,13 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 			pSE = pObject->QueryInterface_Safe(&OMEGA_GUIDOF(IObject),&pObjS);
 			if (pSE)
 				return pSE;
+
 			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrObjS(pObjS);
 
 			System::MetaInfo::auto_iface_safe_ptr<Stub> ptrStub;
 			try
 			{
-				OOCORE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 				std::map<System::MetaInfo::IObject_Safe*,Stub*>::const_iterator i=m_mapStubObjs.find(ptrObjS);
 				if (i != m_mapStubObjs.end())
@@ -897,7 +924,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 
 			// If there is no stub... what are we unmarshalling?
 			if (ptrStub)
-				OMEGA_THROW(EINVAL);
+				OMEGA_THROW(L"No stub to unmarshal");
 
 			// Read the data
 			pSE = ptrStub->ReleaseMarshalData(pMessage,*piid);
@@ -919,7 +946,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 				return pSE;
 
 			if (!pMarshal)
-				OMEGA_THROW(EINVAL);
+				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
 
 			System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class> ptrMarshal(static_cast<System::MetaInfo::interface_info<Remoting::IMarshal>::safe_class*>(pMarshal));
 
@@ -929,7 +956,7 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::ReleaseM
 		}
 		else
 		{
-			OMEGA_THROW(EINVAL);
+			OMEGA_THROW(L"Invalid marshal flag");
 		}
 
 		return pMessage->ReadStructEnd_Safe(pszName);
@@ -986,14 +1013,15 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::GetTypeI
 
 void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pParamsOut)
 {
+	if (!m_ptrChannel)
+		OMEGA_THROW(L"ObjectManager is not connected");
+
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is 
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
-	
 	ObjectPtr<IStdObjectManager> ptrOM(pObjectManager);
-	if (!ptrOM)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(IStdObjectManager),OMEGA_SOURCE_INFO);
-
+	assert(ptrOM);
+	
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());	
 }
 
@@ -1023,7 +1051,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0
 {
 	ObjectPtr<ObjectImpl<OOCore::StdCallContext> > ptrCC = ObjectImpl<OOCore::StdCallContext>::CreateInstancePtr();
 
-	ptrCC->m_cc = *ACE_TSS_Singleton<OOCore::CallContext,ACE_Recursive_Thread_Mutex>::instance();
+	ptrCC->m_cc = *OOBase::TLSSingleton<OOCore::CallContext>::instance();
 
 	return ptrCC.AddRef();
 }

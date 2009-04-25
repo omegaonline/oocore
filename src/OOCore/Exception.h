@@ -115,9 +115,6 @@ namespace OOCore
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
 	OMEGA_DECLARE_OID(OID_SystemExceptionMarshalFactory);
 
-	// {1E127359-1542-4329-8E30-FED8FF810960}
-	OMEGA_DECLARE_OID(OID_NoInterfaceExceptionMarshalFactory);
-
 	class SystemException :
 		public ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
 	{
@@ -164,6 +161,9 @@ namespace OOCore
 	{
 	};
 
+	// {1E127359-1542-4329-8E30-FED8FF810960}
+	OMEGA_DECLARE_OID(OID_NoInterfaceExceptionMarshalFactory);
+
 	class NoInterfaceException :
 		public ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
 	{
@@ -207,6 +207,44 @@ namespace OOCore
 	class NoInterfaceExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::InProcess>,
 		public ExceptionMarshalFactoryImpl<NoInterfaceException>
+	{
+	};
+
+	// {8FA37F2C-8252-437e-9C54-F07C13152E94}
+	OMEGA_DECLARE_OID(OID_TimeoutExceptionMarshalFactory);
+
+	class TimeoutException :
+		public ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
+	{
+		typedef ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory> baseClass;
+	public:
+		BEGIN_INTERFACE_MAP(TimeoutException)
+			INTERFACE_ENTRY_CHAIN(baseClass)
+		END_INTERFACE_MAP()
+	};
+
+	class TimeoutExceptionMarshalFactoryImpl :
+		public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::InProcess>,
+		public ExceptionMarshalFactoryImpl<TimeoutException>
+	{
+	};
+
+	// {029B38C5-CC76-4d13-98A4-83A65D40710A}
+	OMEGA_DECLARE_OID(OID_ChannelClosedExceptionMarshalFactory);
+
+	class ChannelClosedException :
+		public ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>
+	{
+		typedef ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory> baseClass;
+	public:
+		BEGIN_INTERFACE_MAP(ChannelClosedException)
+			INTERFACE_ENTRY_CHAIN(baseClass)
+		END_INTERFACE_MAP()
+	};
+
+	class ChannelClosedExceptionMarshalFactoryImpl :
+		public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::InProcess>,
+		public ExceptionMarshalFactoryImpl<ChannelClosedException>
 	{
 	};
 }

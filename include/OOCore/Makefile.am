@@ -8,13 +8,13 @@ nobase_include_HEADERS = \
 	Preprocessor/tuple.h \
 	Apartment.h \
 	Base.h \
+	BaseTypes.h \
 	config-borland.h \
 	config-gcc.h \
 	config-guess.h \
 	config-msvc.h \
 	config-win32.h \
 	Export.h \
-	Http.h \
 	Interfaces.h \
 	OOCore.h \
 	Remoting.h \
@@ -25,5 +25,4 @@ nobase_include_HEADERS = \
 	Threading.inl \
 	Types.h \
 	Types.inl \
-	TypeSizes.h \
 	Wire.h

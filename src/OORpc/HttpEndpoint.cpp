@@ -21,11 +21,11 @@
 
 #include "OORpc.h"
 
-#include <OOCore/Http.h>
+#include <OONet/Http.h>
 
-#include "./HttpEndpoint.h"
-#include "./HttpChannelServer.h"
-#include "./HttpMsg.h"
+#include "HttpEndpoint.h"
+#include "HttpChannelServer.h"
+#include "HttpMsg.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -48,7 +48,7 @@ namespace Rpc
 		END_INTERFACE_MAP()
 
 	private:
-		ACE_Thread_Mutex                    m_busy_lock;
+		OOBase::Mutex                       m_busy_lock;
 		string_t                            m_strSessionId;
 		string_t                            m_strEndpoint;
 		ObjectPtr<Net::Http::IRequest>      m_ptrReq;
@@ -151,7 +151,7 @@ void Rpc::SendNotify::send(TypeInfo::MethodAttributes_t attribs, Remoting::IMess
 			OMEGA_THROW(ACE_OS::last_error());
 
 		// If we aren't busy, start a new POST
-		if (m_busy_lock.tryacquire() == 0)
+		if (m_busy_lock.tryacquire())
 			Send_i();
 	}
 	catch (IException* pE)

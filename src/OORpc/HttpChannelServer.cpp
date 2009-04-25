@@ -21,8 +21,8 @@
 
 #include "OORpc.h"
 
-#include "./HttpChannelServer.h"
-#include "./HttpMsg.h"
+#include "HttpChannelServer.h"
+#include "HttpMsg.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -118,7 +118,7 @@ void Rpc::HttpServerSink::handle_request(const Omega::string_t& strResource, Ome
 		m_ptrResponse.Attach(pResponse->Send(200,L"OK"));
 
 		// If we aren't busy, start responding
-		if (m_busy_lock.acquire() == 0)
+		if (m_busy_lock.tryacquire())
 		{
 			m_bFirst = true;
 
@@ -321,7 +321,7 @@ void Rpc::HttpChannelServer::ProcessRequest(Net::Http::Server::IRequest* pReques
 	ObjectPtr<ObjectImpl<HttpServerSink> > ptrSink;
 	try
 	{
-		OORPC_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		std::map<guid_t,ObjectPtr<ObjectImpl<HttpServerSink> > >::iterator i = m_mapSinks.find(oosid);
 		if (i == m_mapSinks.end())
@@ -357,7 +357,7 @@ void Rpc::HttpChannelServer::CreateNewConnection(Net::Http::Server::IResponse* p
 	// Add it to the map
 	try
 	{
-		OORPC_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		std::pair<std::map<guid_t,ObjectPtr<ObjectImpl<HttpServerSink> > >::iterator,bool> p = m_mapSinks.insert(std::map<guid_t,ObjectPtr<ObjectImpl<HttpServerSink> > >::value_type(oosid,ptrSink));
 		if (!p.second)

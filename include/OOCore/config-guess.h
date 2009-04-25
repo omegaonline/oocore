@@ -37,14 +37,14 @@
 
 #if defined(_MSC_VER)
 // MS Visual Studio
-#include <OOCore/config-msvc.h>
+#include "config-msvc.h"
 #elif defined (__GNUC__)
-#include <OOCore/config-gcc.h>
+#include "config-gcc.h"
 #elif defined (__BORLANDC__)
 // Borland C++ Builder
-#include <OOCore/config-borland.h>
+#include "config-borland.h"
 #else
-#error Failed to guess your compiler.  Please contact the developers.
+#error Failed to guess your compiler.  Please contact the omegaonline developers.
 #endif
 
 #endif // OOCORE_CONFIG_GUESS_H_INCLUDED_

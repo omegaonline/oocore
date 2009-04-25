@@ -22,97 +22,10 @@
 #ifndef OMEGA_TYPES_H_INCLUDED_
 #define OMEGA_TYPES_H_INCLUDED_
 
-#include <OOCore/TypeSizes.h>
+#include "BaseTypes.h"
 
 namespace Omega
 {
-	typedef bool bool_t;
-	typedef unsigned char byte_t;
-
-#if defined(OMEGA_INT16_TYPE)
-	typedef OMEGA_INT16_TYPE      int16_t;
-#elif defined(OMEGA_HAS_INT16_T)
-	using                       ::int16_t;
-#elif OMEGA_SIZEOF_SHORT == 2
-	typedef short                 int16_t;
-#elif OMEGA_SIZEOF_INT == 2
-	typedef int                   int16_t;
-#else
-#error Have to add to the OMEGA_INT16 type setting
-#endif  /* defined(OMEGA_INT16_TYPE) */
-
-#if defined(OMEGA_UINT16_TYPE)
-	typedef OMEGA_UINT16_TYPE     uint16_t;
-#elif defined(OMEGA_HAS_UINT16_T)
-	using                       ::uint16_t;
-#elif OMEGA_SIZEOF_SHORT == 2
-	typedef unsigned short        uint16_t;
-#elif OMEGA_SIZEOF_INT == 2
-	typedef unsigned int          uint16_t;
-#else
-#error Have to add to the OMEGA_UINT16 type setting
-#endif /* defined(OMEGA_UINT16_TYPE) */
-
-#if defined(OMEGA_INT32_TYPE)
-	typedef OMEGA_INT32_TYPE      int32_t;
-#elif defined(OMEGA_HAS_INT32_T)
-	using                       ::int32_t;
-#elif OMEGA_SIZEOF_INT == 4
-	typedef int                   int32_t;
-#elif OMEGA_SIZEOF_LONG == 4
-	typedef long                  int32_t;
-#else
-#error Have to add to the OMEGA_INT32 type setting
-#endif /* defined(OMEGA_INT32_TYPE) */
-
-#if defined(OMEGA_UINT32_TYPE)
-	typedef OMEGA_UINT32_TYPE     uint32_t;
-#elif defined(OMEGA_HAS_UINT32_T)
-	using                       ::uint32_t;
-#elif OMEGA_SIZEOF_INT == 4
-	typedef unsigned int          uint32_t;
-#elif OMEGA_SIZEOF_LONG == 4
-	typedef unsigned long         uint32_t;
-#else
-#error Have to add to the OMEGA_UINT32 type setting
-#endif /* defined(OMEGA_UINT32_TYPE) */
-
-#if defined(OMEGA_INT64_TYPE)
-	typedef OMEGA_INT64_TYPE      int64_t;
-#elif defined(OMEGA_HAS_INT64_T)
-	using                       ::int64_t;
-#elif OMEGA_SIZEOF_LONG == 8
-	typedef long                  int64_t;
-#elif OMEGA_SIZEOF_LONG_LONG == 8
-	typedef long long             int64_t;
-#else  /* no native 64 bit integer type */
-#error Have to add to the OMEGA_INT64 type setting
-#endif
-
-#if defined(OMEGA_UINT64_TYPE)
-	typedef OMEGA_UINT64_TYPE     uint64_t;
-#elif defined(OMEGA_HAS_UINT64_T)
-	using                       ::uint64_t;
-#elif OMEGA_SIZEOF_LONG == 8
-	typedef unsigned long         uint64_t;
-#elif OMEGA_SIZEOF_LONG_LONG == 8
-	typedef unsigned long long    uint64_t;
-#else  /* no native 64 bit integer type */
-	#error Have to add to the OMEGA_UINT64 type setting
-#endif
-
-#if OMEGA_SIZEOF_FLOAT == 4
-	typedef float float4_t;
-#else  /* OMEGA_SIZEOF_FLOAT != 4 */
-	#error Have to add to the OMEGA_FLOAT type setting
-#endif /* OMEGA_SIZEOF_FLOAT != 4 */
-
-#if OMEGA_SIZEOF_DOUBLE == 8
-	typedef double float8_t;
-#else  /* OMEGA_SIZEOF_DOUBLE != 8 */
-	#error Have to add to the OMEGA_DOUBLE type setting
-#endif /* OMEGA_SIZEOF_DOUBLE != 8 */
-
 	class string_t
 	{
 	public:

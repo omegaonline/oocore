@@ -31,336 +31,221 @@
 //
 /////////////////////////////////////////////////////////////
 
-#include "./OOServer_Root.h"
-#include "./MessageConnection.h"
+#include "OOServer_Root.h"
+#include "MessageConnection.h"
 
-#if defined(ACE_WIN32)
-#include <sddl.h>
-#endif
-
-ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix)
-{
-#if defined(ACE_WIN32)
-	ACE_CString strRet;
-	HANDLE hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-		strRet = strPrefix + "-XXXX";
-	else
-	{
-		strRet = unique_name(strPrefix,hProcessToken);
-		CloseHandle(hProcessToken);
-	}
-	return strRet;
-#else
-	return unique_name(strPrefix,ACE_OS::geteuid());
-#endif
-}
-
-ACE_CString Root::MessagePipe::unique_name(const ACE_CString& strPrefix, user_id_type uid)
-{
-#if defined(ACE_WIN32)
-
-	ACE_CString strSid = "XXXX";
-
-	DWORD dwLen = 0;
-	GetTokenInformation(uid,TokenUser,NULL,0,&dwLen);
-	if (dwLen != 0)
-	{
-		TOKEN_USER* pSIDProcess = static_cast<TOKEN_USER*>(ACE_OS::malloc(dwLen));
-		if (pSIDProcess)
-		{
-			if (GetTokenInformation(uid,TokenUser,pSIDProcess,dwLen,&dwLen))
-			{
-				LPSTR pszSid = 0;
-				if (ConvertSidToStringSidA(pSIDProcess->User.Sid,&pszSid))
-				{
-					strSid = pszSid;
-					LocalFree(pszSid);
-				}
-			}
-
-			ACE_OS::free(pSIDProcess);
-		}
-	}
-
-#if defined(OMEGA_DEBUG)
-	char szBuf[64];
-	ACE_Time_Value now = ACE_OS::gettimeofday();
-	ACE_OS::snprintf(szBuf,63,"-%lx",now.usec());
-	strSid += szBuf;
-#endif
-
-	// ACE Adds the "\\.\"...
-	return strPrefix + strSid;
-
-#else
-
-	char szBuf[64];
-#if defined(OMEGA_DEBUG)
-    ACE_Time_Value now = ACE_OS::gettimeofday();
-	ACE_OS::snprintf(szBuf,63,"%lx-%lx",uid,now.usec());
-#else
-	ACE_OS::snprintf(szBuf,63,"%lx",uid);
-#endif
-
-	if (ACE_OS::mkdir("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO) != 0)
-	{
-		int err = ACE_OS::last_error();
-		if (err != EEXIST)
-			return "";
-	}
-
-	// Try to make it public
-	chmod("/tmp/omegaonline",S_IRWXU | S_IRWXG | S_IRWXO);
-
-	// Attempt to remove anything already there
-	ACE_OS::unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
-
-	return "/tmp/omegaonline/" + strPrefix + szBuf;
-#endif
-}
-
-Root::MessageConnection::MessageConnection(MessageHandler* pHandler)  :
+Root::MessageConnection::MessageConnection(MessageHandler* pHandler) :
 	m_pHandler(pHandler),
-	m_chunk_size(256),
+	m_pSocket(0),
 	m_channel_id(0)
 {
-#if !defined(ACE_HAS_WIN32_NAMED_PIPES)
-	m_mb = 0;
-#endif
 }
 
 Root::MessageConnection::~MessageConnection()
 {
-	if (!m_pipe.null())
-		m_pipe->close();
-
-#if !defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (m_mb)
-		m_mb->release();
-#endif
+	if (m_pSocket)
+		m_pSocket->release();
 }
 
-ACE_CDR::ULong Root::MessageConnection::open(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id, bool bStart)
+void Root::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
 {
-	if (m_channel_id)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Already open!")),0);
+	if (m_pSocket)
+		m_pSocket->release();
 
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	if (m_reader.open(*this,pipe->get_read_handle()) != 0 && GetLastError() != ERROR_MORE_DATA)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("reader.open() failed")),0);
-#else
-	if (ACE_Reactor::instance()->register_handler(pipe->get_read_handle(),this,ACE_Event_Handler::READ_MASK) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("register_handler() failed")),0);
-#endif
-
-	m_channel_id = m_pHandler->register_channel(pipe,channel_id);
-	if (m_channel_id == 0)
-		return 0;
-
-	if (bStart && !read())
-		return 0;
-
-	m_pipe = pipe;
-
-	return m_channel_id;
+	m_pSocket = pSocket;
 }
 
-bool Root::MessageConnection::read(ACE_Message_Block* mb)
+void Root::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 {
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	bool bCreated = false;
-	if (!mb)
+	m_channel_id = channel_id;
+}
+
+void Root::MessageConnection::close()
+{
+	m_pSocket->close();
+}
+
+bool Root::MessageConnection::read()
+{
+	OOBase::Buffer* pBuffer = 0;
+	OOBASE_NEW(pBuffer,OOBase::Buffer(2048));
+	if (!pBuffer)
+		LOG_ERROR_RETURN(("Out of memory"),false);
+	
+	// Swap out the buffer
+	int err = pBuffer->reset(OOBase::CDRStream::MaxAlignment);
+	if (err != 0)
 	{
-		ACE_NEW_RETURN(mb,ACE_Message_Block(m_chunk_size),false);
-		ACE_CDR::mb_align(mb);
-		bCreated = true;
+		pBuffer->release();
+		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 	}
+	
+	err = m_pSocket->read(pBuffer);
 
-	// Start an async read
-	if (m_reader.read(*mb,mb->space()) != 0)
-	{
-		int err = ACE_OS::last_error();
-		if (err == ERROR_BROKEN_PIPE)
-			err = 0;
+	pBuffer->release();
 
-		if (err)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: read failed, code: %#x - %m\n"),err));
-
-		if (bCreated)
-			mb->release();
-
-		return false;
-	}
-#endif
-
+	if (err != 0)
+		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+	
 	return true;
 }
 
-bool Root::MessageConnection::process_read(ACE_Message_Block* mb)
+void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* buffer, int err)
 {
-	// Loop while we can still parse
-	bool bSuccess = false;
+	if (err != 0)
+	{
+		LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		close();
+		if (m_channel_id)
+			m_pHandler->channel_closed(m_channel_id,0);
+		return;
+	}
+
+	// Mark the read point
+	size_t mark_rd = buffer->mark_rd_ptr();
+	const char* mark_rd_ptr = buffer->rd_ptr();
+	
 	size_t read_more = 0;
+	bool bSuccess = false;
+
+	// Loop reading
 	for (;;)
 	{
-		// Try to work out if we need to read more...
-		if (mb->length() < ACE_CDR::LONG_SIZE * 2)
+		// See if we have enough to work out the header...
+		if (buffer->length() < 2 * sizeof(Omega::uint32_t))
 		{
-			// We need to read more...
+			read_more = buffer->space();
 			bSuccess = true;
-			read_more = m_chunk_size - (ACE_CDR::LONG_SIZE * 2);
 			break;
 		}
 
-		ACE_InputCDR input(mb);
+		OOBase::CDRStream header(buffer);
 
 		// Read the payload specific data
-		ACE_CDR::Octet byte_order;
-		input.read_octet(byte_order);
-		ACE_CDR::Octet version;
-		input.read_octet(version);
-
+		bool big_endian;
+		header.read(big_endian);
+	
 		// Set the read for the right endianess
-		input.reset_byte_order(byte_order);
+		header.big_endian(big_endian);
+
+		// Read the version byte
+		Omega::byte_t version;
+		header.read(version);
+		if (version != 1)
+		{
+			LOG_ERROR(("Invalid protocol version"));
+			break;
+		}
+		
+		// Room for 2 bytes here!
 
 		// Read the length
-		ACE_CDR::ULong read_len = 0;
-		input >> read_len;
-		if (!input.good_bit())
-			ACE_ERROR_BREAK((LM_ERROR,ACE_TEXT("%N:%l: Corrupt header\n")));
+		Omega::uint32_t read_len = 0;
+		header.read(read_len);
 
-		// Update average chunk size
-		m_chunk_size = (m_chunk_size * 3 + read_len) / 4;
+		// If we add anything extra here to the header, 
+		// it must be padded to 8 bytes.
 
-		// Check whether we need more
-		if (mb->length() < read_len)
+		err = header.last_error();
+		if (err != 0)
 		{
-			// We need to read more...
+			LOG_ERROR(("Corrupt header: %s",OOSvrBase::Logger::strerror(err).c_str()));
+			break;
+		}
+
+		// Subtract what we have already read
+		size_t header_len = (buffer->mark_rd_ptr() - mark_rd);
+
+		// Try to work out if we need to read more...
+		if (buffer->length() < (read_len - header_len))
+		{
+			read_more = (read_len - header_len) - buffer->length();
 			bSuccess = true;
-			read_more = ((size_t)read_len - mb->length());
 			break;
 		}
 
-		// Create a shallow copy of the block
-		ACE_Message_Block* mb_short = mb->duplicate();
-		mb_short->wr_ptr(mb_short->rd_ptr() + read_len);
+		// We now have at least 1 complete message
 
-		// Try to parse
-		if (!m_pHandler->parse_message(input,mb_short))
+		// Create new stream and copy the contents
+		OOBase::CDRStream input(read_len);
+		memcpy(input.buffer()->wr_ptr(),mark_rd_ptr,read_len);
+		input.buffer()->wr_ptr(read_len);
+		input.buffer()->rd_ptr(header_len);
+		input.big_endian(header.big_endian());
+		
+		// Give the handler a chance to process the message
+		if (!m_pHandler->parse_message(input,mark_rd))
+			break;
+
+		// Move the current rd_ptr
+		buffer->rd_ptr(read_len - header_len);
+		
+		// Shuffle the rest of the buffer up to the top
+		if (buffer->length() > 0)
 		{
-			mb_short->release();
-			break;
+			size_t len = buffer->length();
+			memmove(const_cast<char*>(mark_rd_ptr),buffer->rd_ptr(),len);
+			buffer->mark_rd_ptr(mark_rd);
+			buffer->mark_wr_ptr(mark_rd + len);
 		}
-		mb_short->release();
-
-		// Update the pointers
-		mb->rd_ptr(read_len);
-		if (mb->length() == 0)
-		{
-			bSuccess = true;
-			read_more = m_chunk_size;
-			//mb->reset();
-			ACE_CDR::mb_align(mb);
-			break;
-		}
-
-		// Create a new Message Block
-		size_t sz = mb->length();
-		if (sz < m_chunk_size)
-			sz = m_chunk_size;
-
-		ACE_Message_Block* mb_new = 0;
-		ACE_NEW_NORETURN(mb_new,ACE_Message_Block(sz + ACE_CDR::MAX_ALIGNMENT));
-		if (!mb_new)
-			break;
-
-		// Align and copy to rest of the message - this is the same as a clone, but maintains alignment
-		ACE_CDR::mb_align(mb_new);
-		mb_new->copy(mb->rd_ptr(),mb->length());
-		mb->release();
-		mb = mb_new;
+		else
+			buffer->reset(OOBase::CDRStream::MaxAlignment);
 	}
 
 	if (bSuccess)
 	{
-		if (mb->space() < read_more)
-			mb->size(mb->size() + read_more);
-	}
-
-	return bSuccess;
-}
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-void Root::MessageConnection::handle_read_file(const ACE_Asynch_Read_File::Result& result)
-{
-	ACE_Message_Block* mb = &result.message_block();
-
-	bool bSuccess = false;
-
-	if (result.success() || result.error() == ERROR_MORE_DATA)
-	{
-		bSuccess = process_read(mb);
-		if (bSuccess)
-			bSuccess = read(mb);
+		err = buffer->space(read_more);
+		if (err != 0)
+		{
+			bSuccess = false;
+			LOG_ERROR(("Out of buffer space: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		}
+		else
+		{
+			err = m_pSocket->read(buffer);
+			if (err != 0)
+			{
+				bSuccess = false;
+				LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+			}
+		}
 	}
 
 	if (!bSuccess)
 	{
-		int err = result.error();
-		if (err == ERROR_BROKEN_PIPE)
-			err = 0;
-
-		if (err != 0)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: handle_read_*() failed %C"),ACE_OS::strerror(err)));
-
-        m_pHandler->channel_closed(m_channel_id,0);
-		delete this;
-
-		mb->release();
+		close();
+		if (m_channel_id)
+			m_pHandler->channel_closed(m_channel_id,0);
 	}
 }
 
-#else
-
-int Root::MessageConnection::handle_input(ACE_HANDLE)
+bool Root::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
-	ACE_GUARD_RETURN(ACE_Thread_Mutex,guard,m_lock,0);
+	int err = m_pSocket->write(pBuffer);
+	if (err != 0)
+		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
-	if (!m_mb)
-	{
-		ACE_NEW_RETURN(m_mb,ACE_Message_Block(m_chunk_size),false);
-		ACE_CDR::mb_align(m_mb);
-	}
-
-	ssize_t r = m_pipe->recv(m_mb->wr_ptr(),m_mb->size());
-	if (r < 0)
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: recv() failed %p")));
-
-	bool bSuccess = false;
-	if (r > 0)
-	{
-		m_mb->wr_ptr(r);
-
-		bSuccess = process_read(m_mb);
-	}
-
-	return (bSuccess ? 0 : -1);
+	return true;
 }
 
-int Root::MessageConnection::handle_close(ACE_HANDLE, ACE_Reactor_Mask)
+void Root::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* /*buffer*/, int err)
 {
-	m_pHandler->channel_closed(m_channel_id,0);
-	delete this;
-
-	return 0;
+	if (err != 0)
+	{
+		LOG_ERROR(("AsyncSocket write failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		close();
+		if (m_channel_id)
+			m_pHandler->channel_closed(m_channel_id,0);
+	}
 }
 
-#endif
+void Root::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
+{
+	if (m_channel_id)
+		m_pHandler->channel_closed(m_channel_id,0);
+}
 
 Root::MessageHandler::MessageHandler() :
-	m_req_thrd_grp_id(-1),
-	m_pro_thrd_grp_id(-1),
 	m_uChannelId(0),
 	m_uChannelMask(0),
 	m_uChildMask(0),
@@ -371,84 +256,307 @@ Root::MessageHandler::MessageHandler() :
 {
 }
 
-int Root::MessageHandler::start()
+bool Root::MessageHandler::start()
 {
-	// Make sure we use the correct ACE Reactor - this logic is lifted from Reactor.cpp
-#if !defined (ACE_WIN32) || !defined (ACE_HAS_WINSOCK2) || (ACE_HAS_WINSOCK2 == 0)
-
-	ACE_Reactor_Impl* impl = 0;
-
-	#if defined(ACE_HAS_EVENT_POLL) || defined(ACE_HAS_DEV_POLL)
-		ACE_NEW_NORETURN(impl,ACE_Dev_Poll_Reactor);
-	#else
-		ACE_NEW_NORETURN(impl,ACE_TP_Reactor);
-	#endif /* defined(ACE_HAS_EVENT_POLL) || defined(ACE_HAS_DEV_POLL) */
-
-	if (impl)
+	// Create 2 request threads
+	if (!start_thread())
+		return false;
+	else if (!start_thread())
 	{
-		ACE_Reactor* r = 0;
-		ACE_NEW_NORETURN(r,ACE_Reactor(impl,true));
-
-		if (r)
-			ACE_Reactor::instance(r,true);
-		else
-			delete impl;
+		stop();
+		return false;
 	}
 
-#endif /* !defined (ACE_WIN32) || !defined (ACE_HAS_WINSOCK2) || (ACE_HAS_WINSOCK2 == 0) */
+	return true;
+}
 
-	// Determine default threads from processor count
-	int threads = ACE_OS::num_processors();
-	if (threads < 1)
-		threads = 1;
+bool Root::MessageHandler::start_thread()
+{
+	OOBase::Thread* pThread = 0;
+	OOBASE_NEW(pThread,OOBase::Thread());
+	if (!pThread)
+		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	// Spawn off the request threads
-	m_req_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,request_worker_fn,this);
-	if (m_req_thrd_grp_id == -1)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")),EXIT_FAILURE);
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		m_threads.push_back(pThread);
+	}
+	catch (std::exception& e)
+	{
+		delete pThread;
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+	}
+
+	pThread->run(request_worker_fn,this);
+	return true;
+}
+
+int Root::MessageHandler::request_worker_fn(void* pParam)
+{
+    return static_cast<MessageHandler*>(pParam)->pump_requests();
+}
+
+bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_rd)
+{
+	// Read the destination
+	Omega::uint32_t dest_channel_id = 0;
+	input.read(dest_channel_id);
+
+	// Read the source
+	Omega::uint32_t src_channel_id = 0;
+	input.read(src_channel_id);
+
+	// Read the deadline
+	Omega::int64_t req_dline_secs;
+	input.read(req_dline_secs);
+	Omega::int32_t req_dline_usecs;
+	input.read(req_dline_usecs);
+	OOBase::timeval_t deadline = OOBase::timeval_t(static_cast<time_t>(req_dline_secs),req_dline_usecs);
+
+	// Did everything make sense?
+	int err = input.last_error();
+	if (err != 0)
+		LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+
+	// Check the destination
+	bool bRoute = true;
+	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
+	{
+		if (!(dest_channel_id & m_uChildMask))
+		{
+			bRoute = false;
+		}
+		else
+		{
+			// See if we are routing from a local source
+			if ((src_channel_id & m_uChannelMask) == m_uChannelId)
+			{
+				// Check we can route from src to dest
+				if (!can_route(src_channel_id & (m_uChannelMask | m_uChildMask),dest_channel_id & (m_uChannelMask | m_uChildMask)))
+					LOG_ERROR_RETURN(("Attempting to route via illegal path"),false);
+			}
+
+			// Clear off sub channel bits
+			dest_channel_id &= (m_uChannelMask | m_uChildMask);
+		}
+	}
+	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
+	{
+		// Reset the rd_ptr to the start...
+		input.buffer()->mark_rd_ptr(mark_rd);
+
+		// Ignore the return
+		call_async_function_i(&do_route_off,this,&input);
+	}
 	else
 	{
-		// Spawn off the proactor threads
-		m_pro_thrd_grp_id = ACE_Thread_Manager::instance()->spawn_n(threads+1,proactor_worker_fn,this);
-		if (m_pro_thrd_grp_id == -1)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("spawn() failed")));
-
-			// Stop the MessageHandler
-			stop();
-
-			return EXIT_FAILURE;
-		}
-		else
-		{
-			m_thread_queue.high_water_mark(sizeof(WorkerInfo) * (threads+1));
-			m_thread_queue.low_water_mark(m_thread_queue.high_water_mark());
-		}
+		// Send upstream
+		dest_channel_id = m_uUpstreamChannel;
 	}
 
-	return EXIT_SUCCESS;
+	if (!bRoute)
+	{
+		// If its our message, process it
+
+		// Read in the message info
+		OOBase::SmartPtr<MessageHandler::Message> msg;
+		OOBASE_NEW(msg,MessageHandler::Message);
+		if (!msg)
+			LOG_ERROR_RETURN(("Out of memory"),false);
+
+		msg->m_deadline = deadline;
+		msg->m_src_channel_id = src_channel_id;
+
+		// Read the rest of the message
+		input.read(msg->m_attribs);
+		input.read(msg->m_dest_thread_id);
+		input.read(msg->m_src_thread_id);
+
+		// Did everything make sense?
+		err = input.last_error();
+		if (err != 0)
+			LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+
+		// Attach input
+		msg->m_payload = input;
+		
+		// Route it correctly...
+		io_result::type res = queue_message(msg);
+		if (res == io_result::success || res == io_result::timedout)
+			return true;
+		else
+			return false;
+	}
+	else
+	{
+		// Find the correct channel
+		OOBase::SmartPtr<MessageConnection> ptrMC;
+		try
+		{
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(dest_channel_id);
+			if (i == m_mapChannelIds.end())
+				return true;
+
+			ptrMC = i->second;
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+		}
+
+		if (deadline <= OOBase::gettimeofday())
+			return true;
+
+		// Reset the buffer all the way to the start
+		input.buffer()->mark_rd_ptr(mark_rd);
+
+		return ptrMC->send(input.buffer());
+	}
 }
 
-ACE_THR_FUNC_RETURN Root::MessageHandler::proactor_worker_fn(void* pParam)
+int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnce)
 {
-    ThreadContext::instance(static_cast<MessageHandler*>(pParam))->m_bPrivate = true;
+	ThreadContext* pContext = ThreadContext::instance(this);
+	
+	do
+	{
+		// Wait up to 15 secs
+		OOBase::timeval_t wait2 = OOBase::timeval_t(15);
+		if (wait)
+			wait2 = *wait;
 
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	ACE_Proactor::instance()->proactor_run_event_loop();
-#else
-	ACE_Reactor::instance()->run_reactor_event_loop();
-#endif
+		// Inc usage count
+		++m_usage_count;
 
-	return 0;
+		// Get the next message
+		OOBase::SmartPtr<Message> msg;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = m_default_msg_queue.pop(msg,&wait2);
+		
+		// Dec usage count
+		--m_usage_count;
+
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		{
+			try
+			{
+				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+				// Check to see which threads are still alive
+				for (std::list<OOBase::Thread*>::iterator i=m_threads.begin();i!=m_threads.end();)
+				{
+					if (!(*i)->is_running())
+					{
+						delete (*i);
+						m_threads.erase(i++);
+					}
+					else
+						++i;
+				}
+
+				// If we have too many threads running, exit this thread
+				if (m_threads.size() > 2 && !bOnce)
+					return 0;
+			}
+			catch (std::exception& e)
+			{
+				LOG_ERROR(("std::exception thrown %s",e.what()));
+			}
+
+			// If we were waiting, exit
+			if (wait)
+				return 0;
+
+			// Wait again...
+			continue;
+		}
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+		{
+			return 0;
+		}
+		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		{
+			LOG_ERROR_RETURN(("Bounded queue popped unusually"),-1);
+		}
+
+		// Read remaining message members
+		Omega::uint32_t seq_no = 0;
+		msg->m_payload.read(seq_no);
+
+		Omega::uint16_t type = 0;
+		msg->m_payload.read(type);
+
+		// Align to the next boundary
+		if (msg->m_payload.buffer()->length() > 0)
+		{
+			// 6 Bytes padding here!
+			msg->m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+		}
+
+		// Did everything make sense?
+		int err = msg->m_payload.last_error();
+		if (err != 0)
+			LOG_ERROR(("Corrupt message: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		else if (type == Message_t::Request)
+		{
+			// Set deadline
+			OOBase::timeval_t old_deadline = pContext->m_deadline;
+			pContext->m_deadline = msg->m_deadline;
+
+			if (msg->m_attribs & Message_t::system_message)
+			{
+				if ((msg->m_attribs & Message_t::system_message) == Message_t::async_function)
+					process_async_function(msg);
+				else if ((msg->m_attribs & Message_t::system_message) == Message_t::channel_close)
+					process_channel_close(msg);
+				else if ((msg->m_attribs & Message_t::system_message) == Message_t::channel_reflect)
+				{
+					// Send back the src_channel_id
+					OOBase::CDRStream response;
+					response.write(msg->m_src_channel_id);
+
+					send_response(seq_no,msg->m_src_channel_id,msg->m_src_thread_id,response,pContext->m_deadline,Message_t::synchronous | Message_t::channel_reflect);
+				}
+				else
+					LOG_ERROR(("Unrecognised system message"));
+			}
+			else
+			{
+				try
+				{
+					// Set per channel thread id
+					pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
+				}
+				catch (std::exception& e)
+				{
+					// This shouldn't ever occur, but that means it will ;)
+					LOG_ERROR(("std::exception thrown %s",e.what()));
+					pContext->m_deadline = old_deadline;
+					continue;
+				}
+
+				// Process the message...
+				process_request(msg->m_payload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+
+				// Clear the channel/threads map
+				pContext->m_mapChannelThreads.clear();
+			}
+
+			// Reset deadline
+			pContext->m_deadline = old_deadline;
+		}
+		else
+			LOG_ERROR(("Discarding response in message pump"));
+
+	} while (!bOnce);
+
+	return 1;
 }
 
-ACE_THR_FUNC_RETURN Root::MessageHandler::request_worker_fn(void* pParam)
-{
-    static_cast<MessageHandler*>(pParam)->pump_requests();
-	return 0;
-}
-
-void Root::MessageHandler::set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong mask, ACE_CDR::ULong child_mask, ACE_CDR::ULong upstream_id)
+void Root::MessageHandler::set_channel(Omega::uint32_t channel_id, Omega::uint32_t mask, Omega::uint32_t child_mask, Omega::uint32_t upstream_id)
 {
 	assert(!(channel_id & ~mask));
 	assert(!(channel_id & child_mask));
@@ -466,21 +574,22 @@ void Root::MessageHandler::set_channel(ACE_CDR::ULong channel_id, ACE_CDR::ULong
 	}
 }
 
-ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex>& pipe, ACE_CDR::ULong channel_id)
+Omega::uint32_t Root::MessageHandler::register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id)
 {
 	try
 	{
+		// Scope the lock
 		{
-			ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			if (channel_id != 0)
 			{
 				if (m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end())
-					ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Duplicate fixed channel registered\n")),0);
+					LOG_ERROR_RETURN(("Duplicate fixed channel registered"),0);
 			}
 			else if (m_mapChannelIds.size() >= m_uNextChannelMask - 0xF)
 			{
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Out of free channels\n")),0);
+				LOG_ERROR_RETURN(("Out of free channels"),0);
 			}
 			else
 			{
@@ -490,12 +599,12 @@ ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_
 				} while (channel_id==m_uChannelId || m_mapChannelIds.find(channel_id)!=m_mapChannelIds.end());
 			}
 
-			m_mapChannelIds.insert(std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::value_type(channel_id,pipe));
+			m_mapChannelIds.insert(std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::value_type(channel_id,ptrMC));
 		}
 
 		if (!on_channel_open(channel_id))
 		{
-			ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 			m_mapChannelIds.erase(channel_id);
 			return 0;
@@ -503,135 +612,139 @@ ACE_CDR::ULong Root::MessageHandler::register_channel(const ACE_Refcounted_Auto_
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),0);
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),0);
 	}
 
+	ptrMC->set_channel_id(channel_id);
 	return channel_id;
 }
 
-bool Root::MessageHandler::can_route(ACE_CDR::ULong, ACE_CDR::ULong)
+bool Root::MessageHandler::can_route(Omega::uint32_t, Omega::uint32_t)
 {
 	// Do nothing, used in derived classes
 	return true;
 }
 
-bool Root::MessageHandler::on_channel_open(ACE_CDR::ULong)
+bool Root::MessageHandler::on_channel_open(Omega::uint32_t)
 {
 	// Do nothing, used in derived classes
 	return true;
 }
 
-void Root::MessageHandler::do_route_off(void* pParam, ACE_InputCDR& input)
+void Root::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
 {
 	MessageHandler* pThis = static_cast<MessageHandler*>(pParam);
 
 	// Read the payload specific data
-	ACE_CDR::Octet byte_order;
-	input.read_octet(byte_order);
-	ACE_CDR::Octet version;
-	input.read_octet(version);
-
+	bool big_endian;
+	input.read(big_endian);
+	
 	// Set the read for the right endianess
-	input.reset_byte_order(byte_order);
+	input.big_endian(big_endian);
 
+	// Read the version byte
+	Omega::byte_t version;
+	input.read(version);
+			
 	// Read the length
-	ACE_CDR::ULong read_len = 0;
-	input >> read_len;
+	Omega::uint32_t read_len = 0;
+	input.read(read_len);
 
 	// Read the destination
-	ACE_CDR::ULong dest_channel_id = 0;
-	input >> dest_channel_id;
+	Omega::uint32_t dest_channel_id = 0;
+	input.read(dest_channel_id);
 
 	// Read the source
-	ACE_CDR::ULong src_channel_id = 0;
-	input >> src_channel_id;
+	Omega::uint32_t src_channel_id = 0;
+	input.read(src_channel_id);
 
 	// Read the deadline
-	ACE_CDR::ULongLong req_dline_secs;
-	input >> req_dline_secs;
-	ACE_CDR::Long req_dline_usecs;
-	input >> req_dline_usecs;
-	ACE_Time_Value deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
+	Omega::int64_t req_dline_secs;
+	input.read(req_dline_secs);
+	Omega::int32_t req_dline_usecs;
+	input.read(req_dline_usecs);
+	OOBase::timeval_t deadline = OOBase::timeval_t(static_cast<time_t>(req_dline_secs),req_dline_usecs);
 
-	ACE_CDR::ULong attribs = 0;
-	input >> attribs;
+	Omega::uint32_t attribs = 0;
+	input.read(attribs);
 
-	ACE_CDR::UShort dest_thread_id;
-	input >> dest_thread_id;
+	Omega::uint16_t dest_thread_id;
+	input.read(dest_thread_id);
 
-	ACE_CDR::UShort src_thread_id;
-	input >> src_thread_id;
+	Omega::uint16_t src_thread_id;
+	input.read(src_thread_id);
 
-	ACE_CDR::ULong seq_no;
-	input >> seq_no;
+	Omega::uint32_t seq_no;
+	input.read(seq_no);
 
-	ACE_CDR::UShort flags;
-	input >> flags;
+	Omega::uint16_t flags;
+	input.read(flags);
 
-	if (input.good_bit())
+	// Did everything make sense?
+	int err = input.last_error();
+	if (err != 0)
+		LOG_ERROR(("Corrupt input: %s",OOSvrBase::Logger::strerror(err).c_str()));
+	else
 	{
-		if (input.length() > 0)
-			input.align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
+		if (input.buffer()->length() > 0)
+			input.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
 		pThis->route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
 	}
 }
 
-bool Root::MessageHandler::route_off(ACE_InputCDR&, ACE_CDR::ULong, ACE_CDR::ULong, const ACE_Time_Value&, ACE_CDR::ULong, ACE_CDR::UShort, ACE_CDR::UShort, ACE_CDR::UShort, ACE_CDR::ULong)
+Root::MessageHandler::io_result::type Root::MessageHandler::route_off(const OOBase::CDRStream&, Omega::uint32_t, Omega::uint32_t, const OOBase::timeval_t&, Omega::uint32_t, Omega::uint16_t, Omega::uint16_t, Omega::uint16_t, Omega::uint32_t)
 {
 	// We have nowhere to route!
-	ACE_OS::last_error(ENOENT);
-	return false;
+	return io_result::channel_closed;
 }
 
-void Root::MessageHandler::channel_closed(ACE_CDR::ULong channel_id, ACE_CDR::ULong src_channel_id)
+void Root::MessageHandler::channel_closed(Omega::uint32_t channel_id, Omega::uint32_t src_channel_id)
 {
-	// Inform derived classes that the pipe has gone...
+	// Inform derived classes that the channel has gone...
 	on_channel_closed(channel_id);
 
 	// Propogate the message to all user processes...
 	try
 	{
-		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-		if (guard.locked())
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
 		{
-			for (std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+			// Always route upstream, and/or follow routing rules
+			if (i->first != channel_id && i->first != src_channel_id &&
+				(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
 			{
-				// Always route upstream, and/or follow routing rules
-				if (i->first != channel_id && i->first != src_channel_id &&
-					(i->first == m_uUpstreamChannel || can_route(channel_id & (m_uChannelMask | m_uChildMask),i->first & (m_uChannelMask | m_uChildMask))))
-				{
-					send_channel_close(i->first,channel_id);
-				}
+				send_channel_close(i->first,channel_id);
 			}
 		}
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 
 	try
 	{
-		// Remove the pipe
-		ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		// Remove the channel
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 		m_mapChannelIds.erase(channel_id);
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 }
 
-ACE_CDR::UShort Root::MessageHandler::classify_channel(ACE_CDR::ULong channel_id)
+Omega::uint16_t Root::MessageHandler::classify_channel(Omega::uint32_t channel_id)
 {
 	// The response codes must match Remoting::MarshalFlags values
 	if ((channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		if (!(channel_id & m_uChildMask))
 		{
-			ACE_CDR::UShort apartment_id = static_cast<ACE_CDR::UShort>(channel_id & ~(m_uChannelMask | m_uChildMask));
+			Omega::uint16_t apartment_id = static_cast<Omega::uint16_t>(channel_id & ~(m_uChannelMask | m_uChildMask));
 			if (apartment_id == 0)
 				return 0; // same
 			else
@@ -646,211 +759,49 @@ ACE_CDR::UShort Root::MessageHandler::classify_channel(ACE_CDR::ULong channel_id
 		return 4; // another_machine
 }
 
-bool Root::MessageHandler::route_message(MessageHandler::Message* msg)
+Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase::SmartPtr<Message>& msg)
 {
+	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed;
+
 	if (msg->m_dest_thread_id != 0)
 	{
 		// Find the right queue to send it to...
-		ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-		if (guard.locked () == 0)
-		{
-			delete msg;
-			return false;
-		}
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		try
 		{
-			std::map<ACE_CDR::UShort,const ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
-			if (i == m_mapThreadContexts.end())
-			{
-				// Bad destination thread, or thread has died...
-				delete msg;
-			}
-			else if (i->second->m_msg_queue->enqueue_tail(msg,msg->m_deadline==ACE_Time_Value::max_time ? 0 : &msg->m_deadline) == -1)
-			{
-				delete msg;
-			}
+			std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
+			if (i != m_mapThreadContexts.end())
+				res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
 		}
 		catch (std::exception& e)
 		{
-			delete msg;
-			ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),false);
+			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),io_result::failed);
 		}
 	}
 	else
 	{
-		// Sort out the timeout
-		ACE_Time_Value deadline = msg->m_deadline;
-		ACE_Time_Value now = ACE_OS::gettimeofday();
+		res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
 
-		if (deadline <= now)
-		{
-			// Timeout
-			delete msg;
-			return true;
-		}
-
-		if (deadline - now > ACE_Time_Value(1))
-			deadline = now + ACE_Time_Value(1);
-
-		// Get the next thread from the queue
-		WorkerInfo* pInfo = 0;
-
-		for (;;)
-		{
-			if (m_thread_queue.dequeue_head(pInfo,&deadline) == -1)
-			{
-				if (ACE_OS::last_error() == EWOULDBLOCK)
-				{
-					// Spawn off an extra thread
-					if (ACE_Thread_Manager::instance()->spawn(request_worker_fn,this,THR_NEW_LWP | THR_JOINABLE,0,0,0,m_req_thrd_grp_id) == -1)
-					{
-						delete msg;
-						ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Failed to spawn extra worker thread\n"),false);
-					}
-
-					// Sleep to let the new thread have a chance to start..
-					ACE_OS::sleep(ACE_Time_Value(0,100000));
-					continue;
-				}
-
-				delete msg;
-			}
-			break;
-		}
-
-		// Set the message and signal
-		pInfo->m_msg = msg;
-		if (pInfo->m_Event.signal() != 0)
-			delete msg;
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success && m_usage_count.value() <= 1)
+			start_thread();
 	}
 
-	return true;
-}
-
-bool Root::MessageHandler::parse_message(ACE_InputCDR& input, const ACE_Message_Block* mb)
-{
-	// Read the destination
-	ACE_CDR::ULong dest_channel_id = 0;
-	input >> dest_channel_id;
-
-	// Read the source
-	ACE_CDR::ULong src_channel_id = 0;
-	input >> src_channel_id;
-
-	// Read the deadline
-	ACE_CDR::ULongLong req_dline_secs;
-	input >> req_dline_secs;
-	ACE_CDR::Long req_dline_usecs;
-	input >> req_dline_usecs;
-	ACE_Time_Value deadline = ACE_Time_Value(static_cast<time_t>(req_dline_secs), static_cast<suseconds_t>(req_dline_usecs));
-
-	// Did everything make sense?
-	if (!input.good_bit())
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Corrupt input\n"),false);
-
-	// Check the destination
-	bool bRoute = true;
-	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
-	{
-		if (!(dest_channel_id & m_uChildMask))
-		{
-			bRoute = false;
-		}
-		else
-		{
-			// See if we are routing from a local source
-			if ((src_channel_id & m_uChannelMask) == m_uChannelId)
-			{
-				// Check we can route from src to dest
-				if (!can_route(src_channel_id & (m_uChannelMask | m_uChildMask),dest_channel_id & (m_uChannelMask | m_uChildMask)))
-					ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Attempting to route via illegal path\n"),false);
-			}
-
-			// Clear off sub channel bits
-			dest_channel_id &= (m_uChannelMask | m_uChildMask);
-		}
-	}
-	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
-	{
-		return call_async_function_i(&do_route_off,this,mb);
-	}
+	if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
+		return io_result::timedout;
+	else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed)
+		return io_result::channel_closed;
+	else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+		return io_result::failed;
 	else
-	{
-		// Send upstream
-		dest_channel_id = m_uUpstreamChannel;
-	}
-
-	if (!bRoute)
-	{
-		// If its our message, process it
-
-		// Read in the message info
-		MessageHandler::Message* msg = 0;
-		ACE_NEW_RETURN(msg,MessageHandler::Message,false);
-
-		msg->m_deadline = deadline;
-		msg->m_src_channel_id = src_channel_id;
-
-		// Read the rest of the message
-		input >> msg->m_attribs;
-		input >> msg->m_dest_thread_id;
-		input >> msg->m_src_thread_id;
-
-		// Did everything make sense?
-		if (!input.good_bit())
-		{
-			delete msg;
-			ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Corrupt input\n"),false);
-		}
-
-		ACE_InputCDR* pI = 0;
-		ACE_NEW_NORETURN(pI,ACE_InputCDR(input));
-		if (!pI)
-		{
-			// We are running out of memory!
-			delete msg;
-			return false;
-		}
-		msg->m_ptrPayload.reset(pI);
-
-		// Route it correctly...
-		return route_message(msg);
-	}
-
-	// Find the correct channel
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> dest_pipe;
-	try
-	{
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
-
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.find(dest_channel_id);
-		if (i == m_mapChannelIds.end())
-			return true;
-
-		dest_pipe = i->second;
-	}
-	catch (std::exception& e)
-	{
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),0);
-	}
-
-	if (deadline != ACE_Time_Value::max_time && deadline <= ACE_OS::gettimeofday())
-		return true;
-
-	size_t sent = 0;
-	if (dest_pipe->send(mb,&sent) == -1)
-		return false;
-
-	return (sent == mb->total_length());
+		return io_result::success;
 }
 
 Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instance(Root::MessageHandler* pHandler)
 {
-	ThreadContext* pThis = ACE_TSS_Singleton<ThreadContext,ACE_Recursive_Thread_Mutex>::instance();
+	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext>::instance();
 	if (pThis->m_thread_id == 0)
 	{
-		ACE_NEW_RETURN(pThis->m_msg_queue,(ACE_Message_Queue_Ex<Message,ACE_MT_SYNCH>),0);
 		pThis->m_thread_id = pHandler->insert_thread_context(pThis);
 		pThis->m_pHandler = pHandler;
 	}
@@ -862,12 +813,10 @@ Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instan
 }
 
 Root::MessageHandler::ThreadContext::ThreadContext() :
-	m_bPrivate(false),
 	m_thread_id(0),
-	m_msg_queue(0),
 	m_pHandler(0),
 	m_usage_count(0),
-	m_deadline(ACE_Time_Value::max_time),
+	m_deadline(OOBase::timeval_t::max_time),
 	m_seq_no(0)
 {
 }
@@ -876,23 +825,20 @@ Root::MessageHandler::ThreadContext::~ThreadContext()
 {
 	if (m_pHandler)
 		m_pHandler->remove_thread_context(this);
-
-	m_msg_queue->close();
-	delete m_msg_queue;
 }
 
 // Accessors for ThreadContext
-ACE_CDR::UShort Root::MessageHandler::insert_thread_context(const Root::MessageHandler::ThreadContext* pContext)
+Omega::uint16_t Root::MessageHandler::insert_thread_context(Root::MessageHandler::ThreadContext* pContext)
 {
-	ACE_WRITE_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,0);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	try
 	{
-		for (ACE_CDR::UShort i=1;i<=0xFFF;++i)
+		for (Omega::uint16_t i=1;i<=0xFFF;++i)
 		{
 			if (m_mapThreadContexts.find(i) == m_mapThreadContexts.end())
 			{
-				m_mapThreadContexts.insert(std::map<ACE_CDR::UShort,const ThreadContext*>::value_type(i,pContext));
+				m_mapThreadContexts.insert(std::map<Omega::uint16_t,ThreadContext*>::value_type(i,pContext));
 				return i;
 			}
 		}
@@ -901,492 +847,368 @@ ACE_CDR::UShort Root::MessageHandler::insert_thread_context(const Root::MessageH
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),0);
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),0);
 	}
 }
 
-void Root::MessageHandler::remove_thread_context(const Root::MessageHandler::ThreadContext* pContext)
+void Root::MessageHandler::remove_thread_context(Root::MessageHandler::ThreadContext* pContext)
 {
-	ACE_WRITE_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
 void Root::MessageHandler::close()
 {
-	// Close all the pipes...
-	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+	// Close all the channels...
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		try
+	try
+	{
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
 		{
-			for (std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
-			{
-				i->second->close();
-			}
-		}
-		catch (std::exception& e)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+			i->second->close();
 		}
 	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("std::exception thrown %s",e.what()));
+	}
+	
+	guard.release();
 
 	// Now spin, waiting for all the channels to close...
-	ACE_Time_Value wait(0,100);
 	for (;;)
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		guard.acquire();
 
 		if (m_mapChannelIds.empty())
 			break;
 
 		guard.release();
 
-		ACE_OS::sleep(wait);
+		OOBase::sleep(OOBase::timeval_t(0,100000));
 	}
-
-#if defined(ACE_HAS_WIN32_NAMED_PIPES)
-	// Stop the proactor
-	ACE_Proactor::instance()->proactor_end_event_loop();
-#endif
-
-	// Wait for all the proactor threads to finish
-	ACE_Thread_Manager::instance()->wait_grp(m_pro_thrd_grp_id);
 }
 
 void Root::MessageHandler::stop()
 {
 	try
 	{
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
 			if (i->second->m_usage_count)
-				i->second->m_msg_queue->pulse();
+				i->second->m_msg_queue.pulse();
 		}
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 
-	// Close all waiting threads
-	while (!m_thread_queue.is_empty())
-	{
-		// Dequeue each waiter
-		WorkerInfo* pInfo;
-		if (m_thread_queue.dequeue_head(pInfo,0) == -1)
-			break;
-
-		// Set the message and signal
-		pInfo->m_msg = 0;
-		pInfo->m_Event.signal();
-	}
-	m_thread_queue.close();
+	m_default_msg_queue.close();
 
 	// Wait for all the request threads to finish
-	ACE_Thread_Manager::instance()->wait_grp(m_req_thrd_grp_id);
+	for (;;)
+	{
+		OOBase::Thread* pThread = 0;
+
+		try
+		{
+			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+			if (m_threads.size() == 0)
+				break;
+
+			pThread = m_threads.front();
+			m_threads.pop_front();
+		}
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("std::exception thrown %s",e.what()));
+		}
+
+		pThread->join();
+		delete pThread;
+	}
 }
 
-bool Root::MessageHandler::wait_for_response(ACE_InputCDR*& response, ACE_CDR::ULong seq_no, const ACE_Time_Value* deadline, ACE_CDR::ULong from_channel_id)
+Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id)
 {
-	bool bRet = false;
-
-	ThreadContext* pContext = 0;
-	pContext = ThreadContext::instance(this);
-	if (!pContext)
-        return false;
-
+	ThreadContext* pContext = ThreadContext::instance(this);
+	
 	// Up the usage count on the context
 	++pContext->m_usage_count;
 
+	io_result::type ret = io_result::failed;
 	for (;;)
 	{
 		// Check if the channel we are waiting on is still valid...
+		try
 		{
-			ACE_Read_Guard<ACE_RW_Thread_Mutex> guard(m_lock);
-			if (guard.locked() == 0)
-				break;
+			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.find(from_channel_id);
+			std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(from_channel_id);
 			if (i == m_mapChannelIds.end())
 			{
 				// Channel has gone!
-				ACE_OS::last_error(ECONNRESET);
+				ret = io_result::channel_closed;
 				break;
 			}
 		}
-
+		catch (std::exception& e)
+		{
+			LOG_ERROR(("std::exception thrown %s",e.what()));
+			break;
+		}
+		
 		// Get the next message
-		Message* msg = 0;
-		if (pContext->m_msg_queue->dequeue_head(msg,const_cast<ACE_Time_Value*>(deadline)) == -1)
+		OOBase::SmartPtr<Message> msg;
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = pContext->m_msg_queue.pop(msg,deadline);
+
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::pulsed)
+			continue;
+		else if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
 		{
-			if (pContext->m_msg_queue->state() != ACE_Message_Queue_Base::PULSED)
-				break;
+			ret = io_result::timedout;
+			break;
 		}
-		else
+		else if (res != OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success)
+			break;
+		
+		Omega::uint32_t recv_seq_no = 0;
+		msg->m_payload.read(recv_seq_no);
+
+		Omega::uint16_t type = 0;
+		msg->m_payload.read(type);
+
+		if (msg->m_payload.buffer()->length() > 0)
 		{
-			ACE_CDR::ULong recv_seq_no = 0;
-			(*msg->m_ptrPayload) >> recv_seq_no;
+			// 6 Bytes of padding here
+			msg->m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
+		}
 
-			ACE_CDR::UShort type = 0;
-			(*msg->m_ptrPayload) >> type;
-
-			if (msg->m_ptrPayload->length() > 0)
+		int err = msg->m_payload.last_error();
+		if (err != 0)
+			LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		else	
+		{
+			if (type == Message_t::Request)
 			{
-				// 6 Bytes of padding here
-				msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-			}
+				// Update deadline
+				OOBase::timeval_t old_deadline = pContext->m_deadline;
+				pContext->m_deadline = msg->m_deadline;
+				if (deadline && *deadline < pContext->m_deadline)
+					pContext->m_deadline = *deadline;
 
-			if (msg->m_ptrPayload->good_bit())
-			{
-				if (type == Message_t::Request)
+				try
 				{
-					// Update deadline
-					ACE_Time_Value old_deadline = pContext->m_deadline;
-					pContext->m_deadline = msg->m_deadline;
-					if (deadline && *deadline < pContext->m_deadline)
-						pContext->m_deadline = *deadline;
+					Omega::uint16_t old_thread_id = 0;
 
 					// Set per channel thread id
-					std::map<ACE_CDR::ULong,ACE_CDR::UShort>::iterator i;
-					try
-					{
-						i=pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
-						if (i == pContext->m_mapChannelThreads.end())
-							i = pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,0)).first;
-					}
-					catch (std::exception& e)
-					{
-						// This shouldn't ever occur, but that means it will ;)
-						ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
-						pContext->m_deadline = old_deadline;
-						delete msg;
-						continue;
-					}
+					std::map<Omega::uint32_t,Omega::uint16_t>::iterator i = pContext->m_mapChannelThreads.find(msg->m_src_channel_id);
+					if (i == pContext->m_mapChannelThreads.end())
+						i = pContext->m_mapChannelThreads.insert(std::map<Omega::uint32_t,Omega::uint16_t>::value_type(msg->m_src_channel_id,0)).first;
 
-					ACE_CDR::UShort old_thread_id = i->second;
+					old_thread_id = i->second;
 					i->second = msg->m_src_thread_id;
 
-					// Process the message...
-					process_request(*msg->m_ptrPayload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					try
+					{
+						// Process the message...
+						process_request(msg->m_payload,recv_seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
+					}
+					catch (...)
+					{
+						// Restore old per channel thread id
+						i->second = old_thread_id;
+						pContext->m_deadline = old_deadline;
+						throw;
+					}
 
 					// Restore old per channel thread id
 					i->second = old_thread_id;
-
 					pContext->m_deadline = old_deadline;
 				}
-				else if (type == Message_t::Response && recv_seq_no == seq_no)
+				catch (std::exception& e)
 				{
-					ACE_NEW_NORETURN(response,ACE_InputCDR(*msg->m_ptrPayload));
-					if (!response)
-						ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %m\n")));
-					else
-						bRet = true;
-
-					delete msg;
+					LOG_ERROR(("std::exception thrown %s",e.what()));
+					pContext->m_deadline = old_deadline;
 					break;
 				}
-				else
-				{
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Duff message\n")));
-				}
 			}
+			else if (type == Message_t::Response && recv_seq_no == seq_no)
+			{
+				OOBASE_NEW(response,OOBase::CDRStream(msg->m_payload));
+				if (!response)
+					LOG_ERROR(("Out of memory"));
+				else
+					ret = io_result::success;
 
-			delete msg;
+				break;
+			}
+			else
+			{
+				LOG_ERROR(("Invalid message type"));
+			}
 		}
 	}
 
 	// Dec the usage count on the context
 	--pContext->m_usage_count;
 
-	return bRet;
+	return ret;
 }
 
-int Root::MessageHandler::pump_requests(const ACE_Time_Value* deadline, bool bOnce)
+void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>& msg)
 {
-	ThreadContext* pContext = 0;
-	pContext = ThreadContext::instance(this);
-	if (!pContext)
-        return -1;
+	Omega::uint32_t closed_channel_id;
+	msg->m_payload.read(closed_channel_id);
 
-	WorkerInfo info;
-	info.m_msg = 0;
-
-	do
+	int err = msg->m_payload.last_error();
+	if (err != 0)
 	{
-		ACE_Time_Value deadline2 = ACE_Time_Value(15) + ACE_OS::gettimeofday();
-		if (deadline)
-			deadline2 = *deadline;
-
-		// Enqueue ourselves to the worker pool
-		if (m_thread_queue.enqueue_tail(&info,&deadline2) == -1)
-		{
-			if (ACE_OS::last_error() == EWOULDBLOCK)
-				return 1;
-			else
-				return -1;
-		}
-
-		// Wait for our signal
-		if (deadline)
-		{
-			if (info.m_Event.wait(deadline) != 0)
-			{
-				if (ACE_OS::last_error() == ETIME)
-					return 1;
-				else
-					return -1;
-			}
-		}
-		else if (info.m_Event.wait() != 0)
-			return -1;
-
-		// Check for close
-		if (!info.m_msg)
-			return -1;
-
-		// Get the next message
-		Message* msg = 0;
-		msg = info.m_msg;
-
-		ACE_CDR::ULong seq_no = 0;
-		(*msg->m_ptrPayload) >> seq_no;
-
-		ACE_CDR::UShort type = 0;
-		(*msg->m_ptrPayload) >> type;
-
-		if (msg->m_ptrPayload->length() > 0)
-		{
-			// 6 Bytes of padding here
-			msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-		}
-
-		if (!msg->m_ptrPayload->good_bit())
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Corrupt message\n")));
-		else if (type == Message_t::Request)
-		{
-			// Set deadline
-			ACE_Time_Value old_deadline = pContext->m_deadline;
-			pContext->m_deadline = msg->m_deadline;
-
-			if (msg->m_attribs & Message_t::system_message)
-			{
-				if ((msg->m_attribs & Message_t::system_message) == Message_t::async_function)
-					process_async_function(msg);
-				else if ((msg->m_attribs & Message_t::system_message) == Message_t::channel_close)
-					process_channel_close(msg);
-				else if ((msg->m_attribs & Message_t::system_message) == Message_t::channel_reflect)
-				{
-					// Send back the src_channel_id
-					ACE_OutputCDR response;
-					response.write_ulong(msg->m_src_channel_id);
-
-					send_response(seq_no,msg->m_src_channel_id,msg->m_src_thread_id,response.current(),pContext->m_deadline,Message_t::synchronous | Message_t::channel_reflect);
-				}
-				else
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Unrecognised system message\n")));
-			}
-			else
-			{
-				try
-				{
-					// Set per channel thread id
-					pContext->m_mapChannelThreads.insert(std::map<ACE_CDR::ULong,ACE_CDR::UShort>::value_type(msg->m_src_channel_id,msg->m_src_thread_id));
-				}
-				catch (std::exception& e)
-				{
-					// This shouldn't ever occur, but that means it will ;)
-					ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
-					pContext->m_deadline = old_deadline;
-					delete msg;
-					continue;
-				}
-
-				// Process the message...
-				process_request(*msg->m_ptrPayload,seq_no,msg->m_src_channel_id,msg->m_src_thread_id,pContext->m_deadline,msg->m_attribs);
-
-				// Clear the channel/threads map
-				pContext->m_mapChannelThreads.clear();
-			}
-
-			// Reset deadline
-			pContext->m_deadline = old_deadline;
-		}
-		else
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Discarding response in message pump\n")));
-
-		delete msg;
-
-	} while (!bOnce);
-
-	return 0;
-}
-
-void Root::MessageHandler::process_channel_close(Message* msg)
-{
-	ACE_CDR::ULong closed_channel_id;
-	(*msg->m_ptrPayload) >> closed_channel_id;
-
-	if (!msg->m_ptrPayload->good_bit())
+		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
 		return;
+	}
 
-	// Close the pipe
+	// Close the channel
 	channel_closed(closed_channel_id,msg->m_src_channel_id);
 
 	try
 	{
 		// Unblock all waiting threads
-		ACE_READ_GUARD(ACE_RW_Thread_Mutex,guard,m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::map<ACE_CDR::UShort,const ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
 			if (i->second->m_usage_count)
-				i->second->m_msg_queue->pulse();
+				i->second->m_msg_queue.pulse();
 		}
 	}
 	catch (std::exception& e)
 	{
-		ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: std::exception thrown %C\n"),e.what()));
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 }
 
-void Root::MessageHandler::process_async_function(Message* msg)
+void Root::MessageHandler::process_async_function(const OOBase::SmartPtr<Message>& msg)
 {
-	void (*pfnCall)(void*,ACE_InputCDR&);
+	void (*pfnCall)(void*,OOBase::CDRStream&);
+	msg->m_payload.read(pfnCall);
+
 	void* pParam = 0;
+	msg->m_payload.read(pParam);
 
-#ifdef OMEGA_64
-	ACE_CDR::ULongLong v;
-	msg->m_ptrPayload->read_ulonglong(v);
-	pfnCall = (void (*)(void*,ACE_InputCDR&))v;
-	msg->m_ptrPayload->read_ulonglong(v);
-	pParam = (void*)v;
-#else
-	ACE_CDR::ULong v;
-	msg->m_ptrPayload->read_ulong(v);
-	pfnCall = (void (*)(void*,ACE_InputCDR&))(size_t)v;
-	msg->m_ptrPayload->read_ulong(v);
-	pParam = (void*)(size_t)v;
-#endif
+	if (msg->m_payload.buffer()->length() > 0)
+		msg->m_payload.buffer()->align_rd_ptr(OOBase::CDRStream::MaxAlignment);
 
-	if (msg->m_ptrPayload->length() > 0)
-		msg->m_ptrPayload->align_read_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-	if (msg->m_ptrPayload->good_bit())
+	int err = msg->m_payload.last_error();
+	if (err != 0)
 	{
-		try
-		{
-			// Make the call...
-			(*pfnCall)(pParam,*msg->m_ptrPayload);
-		}
-		catch (std::exception& e)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Unhandled std::exception: %C\n"),e.what()));
-		}
-		catch (...)
-		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: Unhandled exception!\n")));
-		}
+		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		return;
+	}
+
+	try
+	{
+		// Make the call...
+		(*pfnCall)(pParam,msg->m_payload);
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("Unhandled std::exception: %s",e.what()));
+	}
+	catch (...)
+	{
+		LOG_ERROR(("Unhandled exception"));
 	}
 }
 
-bool Root::MessageHandler::send_channel_close(ACE_CDR::ULong dest_channel_id, ACE_CDR::ULong closed_channel_id)
+void Root::MessageHandler::send_channel_close(Omega::uint32_t dest_channel_id, Omega::uint32_t closed_channel_id)
 {
-	ACE_OutputCDR msg;
-	msg << closed_channel_id;
-	if (!msg.good_bit())
-		return false;
-
-	ACE_InputCDR* null;
-	return send_request(dest_channel_id,msg.begin(),null,0,Message_t::asynchronous | Message_t::channel_close);
+	OOBase::CDRStream msg;
+	if (msg.write(closed_channel_id))
+	{
+		OOBase::SmartPtr<OOBase::CDRStream> response;
+		send_request(dest_channel_id,&msg,response,0,Message_t::asynchronous | Message_t::channel_close);
+	}
 }
 
-bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,ACE_InputCDR&), void* pParam, const ACE_Message_Block* mb)
+bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::CDRStream&), void* pParam, const OOBase::CDRStream* stream)
 {
+	assert(pfnCall);
 	if (!pfnCall)
 		return false;
-
-	ACE_OutputCDR output;
-
-	ACE_CDR::ULong seq_no = 0;
-	output << seq_no;
-
-	ACE_CDR::UShort type = Message_t::Request;
-	output << type;
-
-	// 6 Bytes of padding here
-	output.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-#ifdef OMEGA_64
-	output << (ACE_CDR::ULongLong)(size_t)pfnCall;
-	output << (ACE_CDR::ULongLong)(size_t)pParam;
-#else
-	output << (ACE_CDR::ULong)(size_t)pfnCall;
-	output << (ACE_CDR::ULong)(size_t)pParam;
-#endif
-
-	if (mb)
-	{
-		output.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-		output.write_octet_array_mb(mb);
-	}
-
+	
 	// Create a new message
-	MessageHandler::Message* msg = 0;
-	ACE_NEW_RETURN(msg,MessageHandler::Message,false);
+	OOBase::SmartPtr<MessageHandler::Message> msg;
+	OOBASE_NEW(msg,MessageHandler::Message);
+	if (!msg)
+		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	msg->m_deadline = ACE_Time_Value::max_time;
+	msg->m_deadline = OOBase::timeval_t::max_time;
 	msg->m_src_channel_id = m_uChannelId;
 	msg->m_dest_thread_id = 0;
 	msg->m_src_thread_id = 0;
 	msg->m_attribs = Message_t::asynchronous | Message_t::async_function;
 
-	ACE_InputCDR* pI = 0;
-	ACE_NEW_NORETURN(pI,ACE_InputCDR(output));
-	if (!pI)
-	{
-		// We are running out of memory!
-		delete msg;
-		return false;
-	}
-	msg->m_ptrPayload.reset(pI);
+	Omega::uint32_t seq_no = 0;
+	msg->m_payload.write(seq_no);
 
-	return route_message(msg);
+	Omega::uint16_t type = Message_t::Request;
+	msg->m_payload.write(type);
+
+	// 6 Bytes of padding here
+	msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+
+	msg->m_payload.write(pfnCall);
+	msg->m_payload.write(pParam);
+
+	if (stream)
+	{
+		msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+		msg->m_payload.write_buffer(stream->buffer());
+	}
+
+	int err = msg->m_payload.last_error();
+	if (err != 0)
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+	
+	return (queue_message(msg) == io_result::success);
 }
 
-bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const ACE_Message_Block* mb, ACE_InputCDR*& response, ACE_Time_Value* deadline, ACE_CDR::ULong attribs)
+Root::MessageHandler::io_result::type Root::MessageHandler::send_request(Omega::uint32_t dest_channel_id, const OOBase::CDRStream* request, OOBase::SmartPtr<OOBase::CDRStream>& response, OOBase::timeval_t* deadline, Omega::uint32_t attribs)
 {
 	// Build a header
 	Message msg;
 	msg.m_dest_thread_id = 0;
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_src_thread_id = 0;
-	msg.m_deadline = deadline ? *deadline : ACE_Time_Value::max_time;
+	msg.m_deadline = deadline ? *deadline : OOBase::timeval_t::max_time;
 	msg.m_attribs = attribs;
 
-	ACE_CDR::ULong seq_no = 0;
+	if (request)
+		msg.m_payload = *request;
+
+	Omega::uint32_t seq_no = 0;
 
 	// Only use thread context if we are a synchronous call
 	if (!(attribs & Message_t::asynchronous))
 	{
 		ThreadContext* pContext = ThreadContext::instance(this);
-		if (pContext->m_bPrivate && m_uUpstreamChannel)
-		{
-		    ACE_OS::last_error(EACCES);
-			ACE_ERROR_RETURN((LM_ERROR,"Attempting Omega method call in private thread\n"),false);
-		}
-
+		
 		try
 		{
-			std::map<ACE_CDR::ULong,ACE_CDR::UShort>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
+			std::map<Omega::uint32_t,Omega::uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
 			if (i != pContext->m_mapChannelThreads.end())
 				msg.m_dest_thread_id = i->second;
 		}
 		catch (std::exception& e)
 		{
-			ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),false);
+			LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),io_result::failed);
 		}
 
 		msg.m_src_thread_id = pContext->m_thread_id;
@@ -1399,7 +1221,7 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	}
 
 	// Find the destination channel
-	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
+	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		// Clear off sub channel bits
@@ -1409,25 +1231,26 @@ bool Root::MessageHandler::send_request(ACE_CDR::ULong dest_channel_id, const AC
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		ACE_InputCDR input(mb);
-		if (!route_off(input,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request,seq_no))
-			return false;
+		io_result::type res = route_off(msg.m_payload,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Request,seq_no);
+		if (res != io_result::success)
+			return res;
 	}
 	else
 	{
 		// Send upstream
-		if (!send_message(Message_t::Request,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb))
-			return false;
+		io_result::type res = send_message(Message_t::Request,seq_no,actual_dest_channel_id,dest_channel_id,msg);
+		if (res != io_result::success)
+			return res;
 	}
 
 	if (attribs & Message_t::asynchronous)
-		return true;
+		return io_result::success;
 
 	// Wait for response...
-	return wait_for_response(response,seq_no,msg.m_deadline != ACE_Time_Value::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
+	return wait_for_response(response,seq_no,msg.m_deadline != OOBase::timeval_t::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
-bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, ACE_CDR::UShort dest_thread_id, const ACE_Message_Block* mb, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs)
+Root::MessageHandler::io_result::type Root::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
 {
 	const ThreadContext* pContext = ThreadContext::instance(this);
 
@@ -1441,8 +1264,10 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	if (deadline < msg.m_deadline)
 		msg.m_deadline = deadline;
 
+	msg.m_payload = response;
+
 	// Find the destination channel
-	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
+	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		// Clear off sub channel bits
@@ -1452,90 +1277,20 @@ bool Root::MessageHandler::send_response(ACE_CDR::ULong seq_no, ACE_CDR::ULong d
 	if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		ACE_InputCDR input(mb);
-		return route_off(input,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response,seq_no);
+		return route_off(response,msg.m_src_channel_id,dest_channel_id,msg.m_deadline,attribs,msg.m_dest_thread_id,msg.m_src_thread_id,Message_t::Response,seq_no);
 	}
 	else
 	{
 		// Send upstream
-		return send_message(Message_t::Response,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb);
+		return send_message(Message_t::Response,seq_no,actual_dest_channel_id,dest_channel_id,msg);
 	}
 }
 
-static bool ACE_OutputCDR_replace(ACE_OutputCDR& stream, char* msg_len_point)
-{
-#if OMEGA_ACE_VERSION_CURRENT() < OMEGA_ACE_VERSION(5,5,1)
-
-	ACE_CDR::Long len = static_cast<ACE_CDR::Long>(stream.total_length());
-
-#if !defined (ACE_ENABLE_SWAP_ON_WRITE)
-	*reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
-#else
-	if (!stream.do_byte_swap())
-		*reinterpret_cast<ACE_CDR::Long*>(msg_len_point) = len;
-	else
-		ACE_CDR::swap_4(reinterpret_cast<const char*>(len),msg_len_point);
-#endif
-
-	return true;
-#else
-	return stream.replace(static_cast<ACE_CDR::Long>(stream.total_length()),msg_len_point);
-#endif
-}
-
-bool Root::MessageHandler::build_header(ACE_OutputCDR& header, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb)
-{
-	// Check the size
-	if (mb && mb->total_length() > ACE_INT32_MAX - 128)
-	{
-		ACE_OS::last_error(E2BIG);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Message too big!\n")),false);
-	}
-
-	header.write_octet(static_cast<ACE_CDR::Octet>(header.byte_order()));
-	header.write_octet(1);	 // version
-
-	// Write out the header length and remember where we wrote it
-	header.write_ulong(0);
-	char* msg_len_point = header.current()->wr_ptr() - ACE_CDR::LONG_SIZE;
-
-	header << dest_channel_id;
-	header << msg.m_src_channel_id;
-
-	header.write_ulonglong(msg.m_deadline.sec());
-	header.write_long(msg.m_deadline.usec());
-
-	header << msg.m_attribs;
-	header << msg.m_dest_thread_id;
-	header << msg.m_src_thread_id;
-	header << seq_no;
-	header << flags;
-
-	if (!header.good_bit())
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
-
-	if (mb)
-	{
-		header.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-
-		// Write the request stream
-		header.write_octet_array_mb(mb);
-		if (!header.good_bit())
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR write() failed")),false);
-	}
-
-	// Update the total length
-	if (!ACE_OutputCDR_replace(header,msg_len_point))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("CDR replace() failed")),false);
-
-	return true;
-}
-
-bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CDR::ULong dest_channel_id, const ACE_Time_Value& deadline, ACE_CDR::ULong attribs, ACE_CDR::UShort dest_thread_id, ACE_CDR::UShort src_thread_id, ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, const ACE_Message_Block* mb)
+Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no, const OOBase::CDRStream& message)
 {
 	// Check the destination
 	bool bRoute = true;
-	ACE_CDR::ULong actual_dest_channel_id = m_uUpstreamChannel;
+	Omega::uint32_t actual_dest_channel_id = m_uUpstreamChannel;
 	if ((dest_channel_id & m_uChannelMask) == m_uChannelId)
 	{
 		if (!(dest_channel_id & m_uChildMask))
@@ -1549,7 +1304,7 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 			{
 				// Check we can route from src to dest
 				if (!can_route(src_channel_id & (m_uChannelMask | m_uChildMask),dest_channel_id & (m_uChannelMask | m_uChildMask)))
-					ACE_ERROR_RETURN((LM_ERROR,"%N:%l: Attempting to route via illegal path\n"),false);
+					LOG_ERROR_RETURN(("Attempting to route via illegal path"),io_result::failed);
 			}
 
 			// Clear off sub channel bits
@@ -1559,27 +1314,17 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 	else if (m_uUpstreamChannel && !(dest_channel_id & m_uUpstreamChannel))
 	{
 		// Send off-machine
-		ACE_InputCDR input(mb);
-		return route_off(input,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
+		return route_off(message,src_channel_id,dest_channel_id,deadline,attribs,dest_thread_id,src_thread_id,flags,seq_no);
 	}
 
 	if (!bRoute)
 	{
 		// If its our message, route it
 
-		// Build a message
-		ACE_OutputCDR output;
-		output << seq_no;
-		output << flags;
-
-		// 6 Bytes of padding here
-		output.align_write_ptr(ACE_CDR::MAX_ALIGNMENT);
-		output.write_octet_array_mb(mb);
-		if (!output.good_bit())
-			return false;
-
-		MessageHandler::Message* msg = 0;
-		ACE_NEW_RETURN(msg,MessageHandler::Message,false);
+		OOBase::SmartPtr<MessageHandler::Message> msg;
+		OOBASE_NEW(msg,MessageHandler::Message);
+		if (!msg)
+			LOG_ERROR_RETURN(("Out of memory"),io_result::failed);
 
 		msg->m_dest_thread_id = dest_thread_id;
 		msg->m_src_channel_id = src_channel_id;
@@ -1587,68 +1332,97 @@ bool Root::MessageHandler::forward_message(ACE_CDR::ULong src_channel_id, ACE_CD
 		msg->m_attribs = attribs;
 		msg->m_deadline = deadline;
 
-		ACE_InputCDR* pI = 0;
-		ACE_NEW_NORETURN(pI,ACE_InputCDR(output));
-		if (!pI)
-		{
-			// We are running out of memory!
-			delete msg;
-			return false;
-		}
-		msg->m_ptrPayload.reset(pI);
+		// Build a message
+		msg->m_payload.write(seq_no);
+		msg->m_payload.write(flags);
 
+		// 6 Bytes of padding here
+		msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+		msg->m_payload.write_buffer(message.buffer());
+
+		int err = msg->m_payload.last_error();
+		if (err != 0)
+			LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::strerror(err).c_str()),io_result::failed);
+			
 		// Route it correctly...
-		return route_message(msg);
+		return queue_message(msg);
 	}
+	else
+	{
+		// Build a header
+		Message msg;
+		msg.m_dest_thread_id = dest_thread_id;
+		msg.m_src_channel_id = src_channel_id;
+		msg.m_src_thread_id = src_thread_id;
+		msg.m_attribs = attribs;
+		msg.m_deadline = deadline;
+		msg.m_payload = message;
 
-	// Build a header
-	Message msg;
-	msg.m_dest_thread_id = dest_thread_id;
-	msg.m_src_channel_id = src_channel_id;
-	msg.m_src_thread_id = src_thread_id;
-	msg.m_attribs = attribs;
-	msg.m_deadline = deadline;
-
-	return send_message(flags,seq_no,actual_dest_channel_id,dest_channel_id,msg,mb);
+		return send_message(flags,seq_no,actual_dest_channel_id,dest_channel_id,msg);
+	}
 }
 
-bool Root::MessageHandler::send_message(ACE_CDR::UShort flags, ACE_CDR::ULong seq_no, ACE_CDR::ULong actual_dest_channel_id, ACE_CDR::ULong dest_channel_id, const Message& msg, const ACE_Message_Block* mb)
+Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg)
 {
 	// Write the header info
-	ACE_OutputCDR header(ACE_DEFAULT_CDR_MEMCPY_TRADEOFF);
-	if (!build_header(header,flags,seq_no,dest_channel_id,msg,mb))
-		return false;
+	OOBase::CDRStream header;
+	header.write(header.big_endian());
+	header.write(Omega::byte_t(1));	 // version
 
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> dest_pipe;
+	// Write out the header length and remember where we wrote it
+	header.write(Omega::uint32_t(0));
+	size_t msg_len_point = header.buffer()->mark_wr_ptr() - sizeof(Omega::uint32_t);
+
+	header.write(dest_channel_id);
+	header.write(msg.m_src_channel_id);
+
+	header.write(static_cast<Omega::int64_t>(msg.m_deadline.tv_sec));
+	header.write(static_cast<Omega::int32_t>(msg.m_deadline.tv_usec));
+
+	header.write(msg.m_attribs);
+	header.write(msg.m_dest_thread_id);
+	header.write(msg.m_src_thread_id);
+	header.write(seq_no);
+	header.write(flags);
+
+	if (msg.m_payload.buffer()->length() > 0)
+	{
+		header.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
+
+		// Check the size
+		if (msg.m_payload.buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
+			LOG_ERROR_RETURN(("Message too big"),io_result::failed);
+
+		// Write the payload stream
+		header.write_buffer(msg.m_payload.buffer());
+	}
+
+	int err = header.last_error();
+	if (err != 0)
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::strerror(err).c_str()),io_result::failed);
+
+	// Update the total length
+	header.replace(header.buffer()->length(),msg_len_point);
+
+	OOBase::SmartPtr<MessageConnection> ptrMC;
 	try
 	{
-		ACE_READ_GUARD_RETURN(ACE_RW_Thread_Mutex,guard,m_lock,false);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::map<ACE_CDR::ULong,ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
+		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.find(actual_dest_channel_id);
 		if (i == m_mapChannelIds.end())
-		{
-			ACE_OS::last_error(ENOENT);
-			return false;
-		}
-
-		dest_pipe = i->second;
+			return io_result::channel_closed;
+		
+		ptrMC = i->second;
 	}
 	catch (std::exception& e)
 	{
-		ACE_OS::last_error(EINVAL);
-		ACE_ERROR_RETURN((LM_ERROR,"%N:%l: std::exception thrown %C\n",e.what()),false);
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),io_result::failed);
 	}
 
 	// Check the timeout
-	if (msg.m_deadline != ACE_Time_Value::max_time && msg.m_deadline <= ACE_OS::gettimeofday())
-	{
-		ACE_OS::last_error(ETIMEDOUT);
-		return false;
-	}
-
-	size_t sent = 0;
-	if (dest_pipe->send(header.begin(),&sent) == -1)
-		return false;
-
-	return (sent == header.total_length());
+	if (msg.m_deadline <= OOBase::gettimeofday())
+		return io_result::timedout;
+	
+	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);
 }

@@ -20,57 +20,42 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOCore_precomp.h"
-#include "./Exception.h"
+#include "Exception.h"
 
 using namespace Omega;
 using namespace OTL;
 
-// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
 OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
-
-// {1E127359-1542-4329-8E30-FED8FF810960}
 OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
+OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
+OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
 
-#if defined(OMEGA_WIN32)
-static string_t Win32Msg(DWORD dwErr)
+#if defined(_WIN32)
+
+namespace OOBase
 {
-	string_t strRet;
-
-	LPVOID lpMsgBuf = 0;
-	if (FormatMessageW(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		FORMAT_MESSAGE_FROM_SYSTEM |
-		FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		dwErr,
-		0,
-		(LPWSTR)&lpMsgBuf,
-		0,	NULL))
+	// This is the critical failure hook
+	void CriticalFailure(const char* msg)
 	{
-		strRet = (LPCWSTR)lpMsgBuf;
-
-		// Free the buffer.
-		LocalFree(lpMsgBuf);
+		throw ISystemException_Create(string_t(msg,false),0);
 	}
-	else
-	{
-		strRet = string_t::Format(L"Unknown system err %#x\n",dwErr);
-	}
-
-	return strRet;
 }
+
 #endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strSource = source;
-	pExcept->m_strDesc = string_t(ACE_OS::strerror(e),false);
+
+	char szBuf[1024];
+	strerror_s(szBuf,sizeof(szBuf),e);
+	pExcept->m_strDesc = string_t(szBuf,false);
 	pExcept->m_errno = e;
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 	if (e >= 42)
-		pExcept->m_strDesc = Win32Msg(static_cast<DWORD>(e));
+		pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
 #endif
 
 	return pExcept;
@@ -98,5 +83,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Crea
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;
+	return pExcept;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,ITimeoutException_Create,0,())
+{
+	ObjectImpl<OOCore::TimeoutException>* pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
+	
+	pExcept->m_strDesc = L"The operation timed out";
+	return pExcept;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,Remoting_IChannelClosedException_Create,0,())
+{
+	ObjectImpl<OOCore::ChannelClosedException>* pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
+	
+	pExcept->m_strDesc = L"The remoting channel has closed";
 	return pExcept;
 }

@@ -1,16 +1,7 @@
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4267)
-#endif
+#include <OOBase/config-base.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#pragma warning(disable : 4996)
-#endif
 
 #include <OOCore/OOCore.h>
 #include "Test.h"
@@ -44,9 +35,9 @@ static void tests()
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_tests);
 
-#if defined(OMEGA_WIN32)
-	RUN_TEST(net_tests);
-	RUN_TEST(interface_tests2);
+#if defined(_WIN32)
+	//RUN_TEST(net_tests);
+	//RUN_TEST(interface_tests2);
 #endif
 }
 
@@ -69,19 +60,14 @@ int main(int /*argc*/, char* /*argv*/[])
 /////////////////////////////////////////////////////////////
 // The following are the functions that actually do the tests
 
-#if defined(OMEGA_WIN32)
+#if defined(_WIN32)
 void output(const char* sz, ...)
 {
 	va_list argptr;
 	va_start(argptr, sz);
 
-	char szBuf[1024] = {0};
-
-#if defined(_MSC_VER) && (_MSC_VER == 1310)
-	_vsnprintf(szBuf,1023,sz,argptr);
-#else
-	vsnprintf(szBuf,1023,sz,argptr);
-#endif
+	char szBuf[4096] = {0};
+	vsnprintf_s(szBuf,sizeof(szBuf),sz,argptr);
 
 	printf(szBuf);
 	OutputDebugStringA(szBuf);
@@ -130,12 +116,12 @@ int test_summary()
 	if (fail_count || exception_count)
 	{
 		output("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
-		return -1;
+		return EXIT_FAILURE;
 	}
 	else
 	{
 		output("\nAll (%lu) tests passed.\n",pass_count);
-		return 0;
+		return EXIT_SUCCESS;
 	}
 }
 
@@ -188,10 +174,3 @@ bool run_test(pfnTest t, const char* pszName)
 
     return false;
 }
-
-#if !defined(OMEGA_WIN32)
-pid_t GetCurrentProcessId()
-{
-    return getpid();
-}
-#endif

@@ -18,7 +18,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)_Host"
+			IntermediateDirectory="$(ConfigurationName)_User"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -42,13 +42,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;OMEGA_HAVE_SQLITE3_AMALGAMATION;OMEGA_HAVE_VLD"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite"
+				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_User.h"
+				PrecompiledHeaderThrough="OOServer_User.h"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -64,9 +64,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib ACEsd.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -100,7 +100,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="$(ConfigurationName)_Host"
+			IntermediateDirectory="$(ConfigurationName)_User"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -128,12 +128,12 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;NDEBUG"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="./OOServer_User.h"
+				PrecompiledHeaderThrough="OOServer_User.h"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
 			/>
@@ -148,9 +148,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib ACEs.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -265,36 +265,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\MessagePipeWin32.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\NetHttp.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\NetTcp.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SQLite3_comp.c"
 				>
 				<FileConfiguration
@@ -319,7 +289,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UserHttp.cpp"
+				RelativePath=".\UserAcceptor.cpp"
 				>
 			</File>
 			<File
@@ -348,6 +318,10 @@
 			</File>
 			<File
 				RelativePath=".\UserNet.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UserProcessWin32.cpp"
 				>
 			</File>
 			<File
@@ -381,22 +355,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\MessagePipe.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MessagePipe.inl"
-				>
-			</File>
-			<File
-				RelativePath=".\NetHttp.h"
-				>
-			</File>
-			<File
-				RelativePath=".\NetTcp.h"
-				>
-			</File>
-			<File
 				RelativePath=".\OOServer_User.h"
 				>
 			</File>
@@ -409,7 +367,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\UserHttp.h"
+				RelativePath=".\UserAcceptor.h"
 				>
 			</File>
 			<File
@@ -418,6 +376,10 @@
 			</File>
 			<File
 				RelativePath=".\UserNet.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserProcess.h"
 				>
 			</File>
 			<File

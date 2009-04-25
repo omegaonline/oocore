@@ -2,7 +2,7 @@
 
 #include <wx/wx.h>
 #include <wx/image.h>
-#include "./wxGladeAssist.h"
+#include "wxGladeAssist.h"
 
 #ifndef EDITKEYDESC_H
 #define EDITKEYDESC_H

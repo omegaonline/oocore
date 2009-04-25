@@ -4,8 +4,8 @@
 #include <vld.h>
 #endif
 
-#include "./OORegEdit.h"
-#include "./MainFrame.h"
+#include "OORegEdit.h"
+#include "MainFrame.h"
 
 IMPLEMENT_APP(OORegEditApp)
 

@@ -22,34 +22,45 @@
 #ifndef OOCORE_CONFIG_WIN32_H_INCLUDED_
 #define OOCORE_CONFIG_WIN32_H_INCLUDED_
 
-// Check for obsolete windows versions
-#if defined (_WIN32_WINDOWS)
-#error You cannot build Omega Online for Windows 95/98/Me!
-#endif
+// Prevent inclusion of old winsock
+#define _WINSOCKAPI_
 
+// Reduce the amount of windows we include
+#define WIN32_LEAN_AND_MEAN
+#define STRICT
+
+// We support Vista API's
 #if !defined(_WIN32_WINNT)
-#define _WIN32_WINNT 0x0500
+#define _WIN32_WINNT 0x0600
 #elif _WIN32_WINNT < 0x0500
 #error OOCore requires _WIN32_WINNT >= 0x0500!
 #endif
 
-// Set WINVER to _WIN32_WINNT
-#ifdef WINVER
-#undef WINVER
-#endif
-#define WINVER _WIN32_WINNT
-
+// We require IE 5 or later
 #if !defined(_WIN32_IE)
 #define _WIN32_IE 0x0500
 #elif _WIN32_IE < 0x0500
 #error OOCore requires _WIN32_IE >= 0x0500!
 #endif
 
-#if !defined(OMEGA_WIN32)
-#define OMEGA_WIN32
+#include <windows.h>
+
+// Check for obsolete windows versions
+#if defined(_WIN32_WINDOWS)
+#error You cannot build Omega Online for Windows 95/98/Me!
 #endif
 
-#if defined(OMEGA_WIN64)
+#if !defined(WINVER)
+#error No WINVER?!?
+#elif (WINVER < 0x0500)
+#error OOCore requires WINVER >= 0x0500!
+#endif
+
+#if !defined(_WIN32)
+#error No _WIN32?!?
+#endif
+
+#if defined(_WIN64)
 #define OMEGA_PLATFORM_STRING "Win64"
 #else
 #define OMEGA_PLATFORM_STRING "Win32"
@@ -64,8 +75,5 @@
 
 #define OMEGA_ATOMIC_OP_DECREMENT_32(p) \
 	InterlockedDecrement((LPLONG)p)
-
-// Prevent inclusion of old winsock
-#define _WINSOCKAPI_
 
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_

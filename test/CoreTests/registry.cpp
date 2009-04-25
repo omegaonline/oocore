@@ -1,7 +1,7 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
-#if !defined(OMEGA_WIN32)
+#if !defined(_WIN32)
 pid_t GetCurrentProcessId();
 #endif
 
@@ -76,7 +76,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	try
 	{
 		pKey->GetStringValue(strTestValue);
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -88,7 +88,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	try
 	{
 		pKey->GetStringValue(strTestValue);
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IWrongValueTypeException* pE)
 	{
@@ -103,7 +103,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	try
 	{
 		pKey->SetStringValue(L"",L"Invalid name");
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -113,7 +113,7 @@ static bool test_values(Omega::Registry::IKey* pKey)
 	try
 	{
 		pKey->SetIntegerValue(L"\\",0);
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -199,7 +199,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	{
 		pSubKey = pKey->OpenSubKey(L"",Omega::Registry::IKey::Create);
 		pSubKey->Release();
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -210,7 +210,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	{
 		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::Create);
 		pSubKey->Release();
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
@@ -242,7 +242,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	try
 	{
 		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
@@ -256,7 +256,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	try
 	{
 		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::OpenExisting);
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
@@ -313,7 +313,7 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 	try
 	{
 		pKey->DeleteKey(strSubKey);
-		TEST(!"No exception thrown!");
+		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{

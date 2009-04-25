@@ -61,7 +61,7 @@ int Root::MessagePipeAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucontext_t
 int Root::MessagePipeAsyncAcceptor<T>::handle_input(ACE_HANDLE)
 #endif
 {
-	ACE_Refcounted_Auto_Ptr<MessagePipe,ACE_Thread_Mutex> pipe;
+	OOBase::SmartPtr<MessagePipe> pipe;
 
 #if defined(ACE_HAS_WIN32_NAMED_PIPES)
 	if (m_acceptor.accept(pipe) != 0 && GetLastError() != ERROR_MORE_DATA)
@@ -148,7 +148,7 @@ int Root::MessagePipeSingleAsyncAcceptor<T>::handle_signal(int, siginfo_t*, ucon
 		return -1;
 	}
 	
-	return m_pHandler->on_accept(ACE_Refcounted_Auto_Ptr<ACE_SPIPE_Stream,ACE_Thread_Mutex>(pStream));
+	return m_pHandler->on_accept(OOBase::SmartPtr<ACE_SPIPE_Stream>(pStream));
 }
 #endif
 

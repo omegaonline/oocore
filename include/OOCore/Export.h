@@ -24,10 +24,10 @@
 
 #if !defined(DOXYGEN)
 
-#include <OOCore/Preprocessor/sequence.h>
-#include <OOCore/Preprocessor/repeat.h>
-#include <OOCore/Preprocessor/comma.h>
-#include <OOCore/Preprocessor/split.h>
+#include "Preprocessor/sequence.h"
+#include "Preprocessor/repeat.h"
+#include "Preprocessor/comma.h"
+#include "Preprocessor/split.h"
 
 #define OMEGA_UNIQUE_NAME(name) \
 	OMEGA_CONCAT(name,__LINE__)
@@ -196,6 +196,8 @@
 #define OMEGA_DECLARE_SAFE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	virtual IException_Safe* OMEGA_CALL OMEGA_CONCAT(name,_Safe) (marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) = 0;
 
+#define OMEGA_DECLARE_SAFE_DECLARED_NO_METHODS()
+
 #define OMEGA_DECLARE_SAFE_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_SAFE_,method)
 
@@ -237,6 +239,8 @@
 #define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	OMEGA_DECLARE_TYPE_PARAMS(name,param_count,params)
 
+#define OMEGA_DECLARE_TYPE_PARAM_DECLARED_NO_METHODS()
+
 #define OMEGA_DECLARE_TYPE_METHOD_PARAM(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_PARAM_,method)
 
@@ -248,6 +252,8 @@
 
 #define OMEGA_DECLARE_TYPE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),attribs,timeout,param_count,type_kind<ret_type>::type,OMEGA_CONCAT(name,_params) },
+
+#define OMEGA_DECLARE_TYPE_DECLARED_NO_METHODS()
 
 #define OMEGA_DECLARE_TYPE_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_,method)
@@ -278,7 +284,7 @@
 		static void get_method_info(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type) \
 		{ \
 			if (method_idx >= method_count) \
-				OMEGA_THROW(EINVAL); \
+				OMEGA_THROW(L"get_method_info() called with a method index out of range"); \
 			if (method_idx < TypeInfo_Impl<d_space::derived>::method_count) \
 				return TypeInfo_Impl<d_space::derived>::get_method_info(method_idx,strName,attribs,timeout,param_count,return_type); \
 			const MethodInfo& info = method_info()[method_idx - TypeInfo_Impl<d_space::derived>::method_count]; \
@@ -293,12 +299,12 @@
 		static void get_param_info(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs) \
 		{ \
 			if (method_idx >= method_count) \
-				OMEGA_THROW(EINVAL); \
+				OMEGA_THROW(L"get_param_info() called with a method index out of range"); \
 			if (method_idx < TypeInfo_Impl<d_space::derived>::method_count) \
 				return TypeInfo_Impl<d_space::derived>::get_param_info(method_idx,param_idx,strName,type,attribs); \
 			method_idx -= TypeInfo_Impl<d_space::derived>::method_count; \
 			if (param_idx >= method_info()[method_idx].param_count) \
-				OMEGA_THROW(EINVAL); \
+				OMEGA_THROW(L"get_param_info() called with a parameter index out of range"); \
 			const ParamInfo& info = method_info()[method_idx].params[param_idx]; \
 			strName = info.pszName; \
 			type = info.type; \
@@ -354,6 +360,8 @@
 			return return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
 		} \
 	}
+
+#define OMEGA_DECLARE_SAFE_STUB_DECLARED_NO_METHODS()
 
 #define OMEGA_DECLARE_PARAM_SAFE_STUB_I(meta,t,name) \
 	Omega::System::MetaInfo::marshal_info<t>::safe_type::coerce(name OMEGA_PS_PARAM(meta,t,name) )
@@ -455,6 +463,9 @@
 #define OMEGA_DECLARE_WIRE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	OMEGA_CONCAT(name,_Wire)
 
+#define OMEGA_DECLARE_WIRE_STUB_DECLARED_NO_METHODS() \
+	0 	
+
 #define OMEGA_DECLARE_WIRE_STUB_METHOD(index,method,d) \
 	OMEGA_COMMA_NOT_FIRST(index) OMEGA_CONCAT_R(OMEGA_DECLARE_WIRE_STUB_,method)
 
@@ -498,6 +509,8 @@
 		OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) \
 		return __wire__pException; \
 	}
+
+#define OMEGA_DEFINE_WIRE_STUB_DECLARED_NO_METHODS()
 
 #define OMEGA_DEFINE_WIRE_STUB_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DEFINE_WIRE_STUB_,method)
@@ -592,6 +605,8 @@
 		if (OMEGA_CONCAT(name,_Exception)) throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
+
+#define OMEGA_DECLARE_SAFE_PROXY_DECLARED_NO_METHODS()
 
 #define OMEGA_DECLARE_SAFE_PROXY_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_SAFE_PROXY_,method)
@@ -736,6 +751,9 @@
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +
 
+#define OMEGA_DECLARE_WIRE_PROXY_DECLARED_NO_METHODS() \
+	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount +
+
 #define OMEGA_DECLARE_WIRE_PROXY_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_WIRE_PROXY_,method) index;
 
@@ -836,6 +854,9 @@
 
 #define OMEGA_METHOD(ret_type,name,param_count,params) \
 	(DECLARED_METHOD(TypeInfo::Synchronous,0,ret_type,name,param_count,params))
+
+#define OMEGA_NO_METHODS() \
+	(DECLARED_NO_METHODS())
 
 #define OMEGA_METHOD_EX_VOID(attribs,timeout,name,param_count,params) \
 	(DECLARED_METHOD_VOID(TypeInfo::attribs,timeout,name,param_count,params))

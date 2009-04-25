@@ -1,9 +1,10 @@
 AC_PREREQ(2.61)
 
-AC_INIT(omegaonline,0.4.3)
+AC_INIT(omegaonline,0.5.0)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
-AC_CONFIG_HEADER([src/Common/autoheader_dummy.h src/Common/config.h])
-AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])
+AC_CONFIG_HEADER([src/OOBase/config-autoconf.h])
+# AC_CONFIG_HEADER([src/Common/autoheader_dummy.h src/Common/config.h])
+# AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
@@ -12,6 +13,7 @@ AC_CONFIG_FILES([
 	include/OOCore/Makefile
 	include/OTL/Makefile
 	src/Makefile
+	src/OOBase/Makefile
 	src/OOCore/Makefile
 	src/OOServer/Makefile
 ])
@@ -69,6 +71,16 @@ fi
 # Check the multi-threading flags
 OO_MULTI_THREAD
 
+# Check for the builtin intrinsics functions we use
+OO_C_BUILTINS
+
+# Check for C++ new functionality
+OO_NEW_NOTHROW
+
+# Check for the headers we use
+AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h])
+
+# Add windows resource support to libtool
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
@@ -82,7 +94,7 @@ OO_LIB_ACE
 # If the host is Cygwin, error
 case $host_os in
 	*cygwin*)
-		AC_MSG_ERROR([Don't build for cygwin, use a native Win32 port such as mingw]) ;;
+		AC_MSG_ERROR([Don't build for cygwin, use a native Win32 port such as MinGW]) ;;
 	*mingw*)
 		win32=true ;;
 esac

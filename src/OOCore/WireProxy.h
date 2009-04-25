@@ -22,7 +22,7 @@
 #ifndef OOCORE_WIREPROXY_H_INCLUDED_
 #define OOCORE_WIREPROXY_H_INCLUDED_
 
-#include "./StdObjectManager.h"
+#include "StdObjectManager.h"
 
 namespace OOCore
 {
@@ -114,11 +114,11 @@ namespace OOCore
 		Proxy(const Proxy&) : Omega::System::MetaInfo::IProxy_Safe(), Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class() {}
 		Proxy& operator = (const Proxy&) { return *this; }
 
-		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_refcount;
-		ACE_Atomic_Op<ACE_Thread_Mutex,Omega::uint32_t> m_marshal_count;
-		ACE_RW_Thread_Mutex                             m_lock;
-		Omega::uint32_t                                 m_proxy_id;
-		StdObjectManager*                               m_pManager;
+		OOBase::AtomicInt<unsigned long> m_refcount;
+		OOBase::AtomicInt<unsigned long> m_marshal_count;
+		OOBase::RWMutex                  m_lock;
+		Omega::uint32_t                  m_proxy_id;
+		StdObjectManager*                m_pManager;
 
 		std::map<const Omega::guid_t,Omega::System::MetaInfo::IObject_Safe*> m_iid_map;
 

@@ -1,6 +1,6 @@
 AC_PREREQ(2.61)
 
-AC_INIT(omegaonline,0.4.4)
+AC_INIT(omegaonline,0.4.3)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
 AC_CONFIG_HEADER([src/Common/autoheader_dummy.h src/Common/config.h])
 AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])

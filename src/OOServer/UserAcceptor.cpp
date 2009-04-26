@@ -111,7 +111,12 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept received failure: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
-	if (!m_pManager->on_accept(pSocket))
+	SECURITY_ATTRIBUTES* psa = 0;
+#if defined(_WIN32)
+	psa = &m_sa;
+#endif
+
+	if (!m_pManager->on_accept(pSocket,m_pipe_name,psa))
 		pSocket->close();
 
 	// Keep accepting, whatever...

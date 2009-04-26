@@ -147,11 +147,12 @@ bool User::Manager::on_channel_open(Omega::uint32_t channel)
 bool User::Manager::init(const std::string& strPipe)
 {
 	// Connect to the root
+	OOBase::timeval_t wait(20);
+	OOBase::Countdown countdown(&wait);
 
 #if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
-	OOBase::timeval_t wait(5);
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
@@ -163,9 +164,11 @@ bool User::Manager::init(const std::string& strPipe)
 
 #endif
 
+	countdown.update();
+
 	// Read the sandbox channel
 	Omega::uint32_t sandbox_channel = 0;
-	err = local_socket->recv(sandbox_channel);
+	err = local_socket->recv(sandbox_channel,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
@@ -180,10 +183,12 @@ bool User::Manager::init(const std::string& strPipe)
 	// Now start accepting user connections
 	if (!m_acceptor.start(this,strNewPipe))
 		return false;
+
+	countdown.update();
 	
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
-	err = local_socket->send(uLen);
+	err = local_socket->send(uLen,&wait);
 	if (err == 0)
 		err = local_socket->send(strNewPipe.c_str(),uLen);
 
@@ -209,10 +214,10 @@ bool User::Manager::init(const std::string& strPipe)
 	if (register_channel(ptrMC,m_root_channel) == 0)
 		return false;
 
-	CREATE_IPC_SOCKET_HERE!
+	countdown.update();
 
 	// Open the root connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,ptrSock.value()));
+	ptrMC->attach(Proactor::instance()->connect_shared_mem_socket(ptrMC.value(),&err,local_socket.value(),&wait));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to convert sync to async socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
@@ -260,7 +265,7 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 	return true;
 }
 
-bool User::Manager::on_accept(OOBase::Socket* sock)
+bool User::Manager::on_accept(OOBase::Socket* sock, const std::string& pipe_name, SECURITY_ATTRIBUTES* psa)
 {
 	// Create a new MessageConnection
 	OOBase::SmartPtr<Root::MessageConnection> ptrMC;
@@ -279,7 +284,7 @@ bool User::Manager::on_accept(OOBase::Socket* sock)
 		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 	
 	// Attach the connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,sock));
+	ptrMC->attach(Proactor::instance()->accept_shared_mem_socket(pipe_name,ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock),psa));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to convert sync to async socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 		

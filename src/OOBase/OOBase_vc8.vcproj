@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Win32ShmSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Win32Socket.cpp"
 				>
 			</File>
@@ -292,6 +296,10 @@
 			</File>
 			<File
 				RelativePath=".\Win32.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Win32ShmSocket.h"
 				>
 			</File>
 			<File

@@ -98,6 +98,13 @@ void OOCore::UserSession::init_i()
 	err = local_socket->recv(m_channel_id);
 	if (err != 0)
 		OMEGA_THROW(err);
+
+	countdown.update();	
+
+	// Now create a shm-based stream
+	m_stream = OOBase::LocalSocket::connect_shared_mem(local_socket.value(),&err,&wait);
+	if (!m_stream)
+		OMEGA_THROW(err);
 	
 	// Spawn off the io worker thread
 	m_worker_thread.run(io_worker_fn,this);
@@ -159,6 +166,8 @@ std::string OOCore::UserSession::discover_server_port(OOBase::timeval_t& wait)
 	if (!local_socket)
 		OMEGA_THROW(err);
 
+	countdown.update();
+
 	// Send nothing, but we must send...
 	uint32_t duff = 0;
 	err = local_socket->send(duff,&wait);
@@ -174,6 +183,8 @@ std::string OOCore::UserSession::discover_server_port(OOBase::timeval_t& wait)
 	// Read the string
 	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
 	OMEGA_NEW(buf,char[uLen]);
+
+	countdown.update();
 
 	local_socket->recv(buf.value(),uLen,&err,&wait);
 	if (err)

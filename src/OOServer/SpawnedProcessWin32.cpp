@@ -846,7 +846,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		return 0;
 
 	// Create the named pipe
-	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strPipe));
+	std::string strRootPipe;
+	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
 	if (hPipe == INVALID_HANDLE_VALUE)
 	{
 		delete pSpawn32;
@@ -854,7 +855,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	}
 		
 	// Spawn the process
-	if (!pSpawn32->Spawn(bUnsafe,uid,strPipe,bSandbox))
+	if (!pSpawn32->Spawn(bUnsafe,uid,strRootPipe,bSandbox))
 	{
 		delete pSpawn32;
 		return 0;
@@ -875,18 +876,17 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	if (!hWriteEvent)
 		return 0;
 		
-	OOBase::Win32::Socket sock(hPipe.detach(),hReadEvent.detach(),hWriteEvent.detach());
+	OOBase::Win32::LocalSocket sock(hPipe.detach(),hReadEvent.detach(),hWriteEvent.detach());
 
 	// Bootstrap the user process...
 	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
 	if (!channel_id)
 		return 0;
 
-	CREATE_IPC_SOCKET_HERE!
-	
 	// Create an async socket wrapper
 	int err = 0;
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,(OOBase::Win32::Socket*)&sock);
+	OOBase::timeval_t wait(10);
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->accept_shared_mem_socket(strRootPipe,ptrMC.value(),&err,&sock,psa,&wait);
 	if (err != 0)
 		return 0;
 

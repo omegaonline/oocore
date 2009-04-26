@@ -101,6 +101,9 @@ namespace OOSvrBase
 
 		OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa = 0);
 
+		AsyncSocket* accept_shared_mem_socket(const std::string& strName, IOHandler* handler, int* perr, OOBase::LocalSocket* via, SECURITY_ATTRIBUTES* psa, OOBase::timeval_t* timeout = 0);
+		AsyncSocket* connect_shared_mem_socket(IOHandler* handler, int* perr, OOBase::LocalSocket* via, OOBase::timeval_t* timeout = 0);
+
 	private:
 		Proactor(const Proactor&) {}
 		Proactor& operator = (const Proactor&) { return *this; }

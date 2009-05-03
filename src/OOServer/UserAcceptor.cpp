@@ -89,6 +89,8 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 	if (!init_security(pipe_name))
 		return false;
 
+	m_pipe_name = pipe_name;
+
 	int err = 0;
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)

@@ -22,19 +22,19 @@
 #ifndef OTL_BASE_INL_INCLUDED_
 #define OTL_BASE_INL_INCLUDED_
 
-size_t OTL::ModuleBase::GetLockCount() const
+bool OTL::ModuleBase::HaveLocks() const
 {
-	return static_cast<size_t>(m_lockCount.value());
+	return !m_lockCount.IsZero();
 }
 
 void OTL::ModuleBase::IncLockCount()
 {
-	++m_lockCount;
+	m_lockCount.AddRef();
 }
 
 void OTL::ModuleBase::DecLockCount()
 {
-	--m_lockCount;
+	m_lockCount.Release();
 }
 
 Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
@@ -234,7 +234,7 @@ void OTL::ProcessModule::Run()
 
 	try
 	{
-		while (!Omega::HandleRequest(30000) || GetLockCount() > 0)
+		while (!Omega::HandleRequest(30000) || HaveLocks())
 		{}
 	}
 	catch (...)

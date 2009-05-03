@@ -21,56 +21,83 @@
 
 #include "OOCore_precomp.h"
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,cs__ctor,0,())
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
 	OOBase::Mutex* pm = 0;
 	OMEGA_NEW(pm,OOBase::Mutex);
 	return pm;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,m1))
 {
 	delete static_cast<OOBase::Mutex*>(m1);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,m1))
 {
 	static_cast<OOBase::Mutex*>(m1)->acquire();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,m1))
 {
 	static_cast<OOBase::Mutex*>(m1)->release();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,())
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,())
 {
 	OOBase::RWMutex* pm = 0;
 	OMEGA_NEW(pm,OOBase::RWMutex);
 	return pm;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,m1))
 {
 	delete static_cast<OOBase::RWMutex*>(m1);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_lockread,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,m1))
 {
 	static_cast<OOBase::RWMutex*>(m1)->acquire_read();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_lockwrite,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockwrite,1,((in),void*,m1))
 {
 	static_cast<OOBase::RWMutex*>(m1)->acquire();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_unlockread,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockread,1,((in),void*,m1))
 {
 	static_cast<OOBase::RWMutex*>(m1)->release_read();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(rw_lock_unlockwrite,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*,m1))
 {
 	static_cast<OOBase::RWMutex*>(m1)->release();
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,())
+{
+	OOBase::AtomicInt<size_t>* pm = 0;
+	OMEGA_NEW(pm,OOBase::AtomicInt<size_t>);
+	return pm;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,m1))
+{
+	delete static_cast<OOBase::AtomicInt<size_t>*>(m1);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),void*,m1))
+{
+	++ *static_cast<OOBase::AtomicInt<size_t>*>(m1);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(bool,OOCore_atomic_release,1,((in),void*,m1))
+{
+	return (-- *static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(bool,OOCore_atomic_iszero,1,((in),void*,m1))
+{
+	return (*static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0);
 }

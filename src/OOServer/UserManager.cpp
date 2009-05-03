@@ -83,47 +83,58 @@ User::Manager::~Manager()
 
 int User::Manager::run(const std::string& strPipe)
 {
-	return USER_MANAGER::instance()->run_i(strPipe);
+	int ret = USER_MANAGER::instance()->run_i(strPipe);
+
+	USER_MANAGER::close();
+
+	return ret;
 }
 
 int User::Manager::run_i(const std::string& strPipe)
 {
 	// Start the handler and init ourselves
-	if (!start() || !init(strPipe))
+	if (!start())
 		return EXIT_FAILURE;
 
-	// Wait for stop
-	wait_for_quit();
-
-	// Stop accepting new clients
-	m_acceptor.stop();
-
-	// Close all the sinks
-	close_all_remotes();
-
-	// Close the user pipes
-	close();
-
-	// Unregister our object factories
-	GetModule()->UnregisterObjectFactories();
-
-	// Unregister InterProcessService
-	if (m_nIPSCookie)
+	int res = EXIT_FAILURE;
+	if (init(strPipe))
 	{
-		Activation::RevokeObject(m_nIPSCookie);
-		m_nIPSCookie = 0;
+		// Wait for stop
+		wait_for_quit();
+
+		// Stop accepting new clients
+		m_acceptor.stop();
+
+		// Close all the sinks
+		close_all_remotes();
+	
+		// Close the user pipes
+		close();
+
+		// Unregister our object factories
+		GetModule()->UnregisterObjectFactories();
+
+		// Unregister InterProcessService
+		if (m_nIPSCookie)
+		{
+			Activation::RevokeObject(m_nIPSCookie);
+			m_nIPSCookie = 0;
+		}
+
+		// Close the OOCore
+		Omega::Uninitialize();
+		
+		// Delete our OTL module
+		UserGetModule().Term();
 	}
 
-	// Close the OOCore
-	Omega::Uninitialize();
-	
-	// Delete our OTL module
-	UserGetModule().Term();
+	// Close the proactor
+	Proactor::close();
 
 	// Stop the MessageHandler
 	stop();
 	
-	return EXIT_SUCCESS;
+	return res;
 }
 
 bool User::Manager::on_channel_open(Omega::uint32_t channel)
@@ -180,10 +191,6 @@ bool User::Manager::init(const std::string& strPipe)
 	if (strNewPipe.empty())
 		return false;
 
-	// Now start accepting user connections
-	if (!m_acceptor.start(this,strNewPipe))
-		return false;
-
 	countdown.update();
 	
 	// Then send back our port name
@@ -219,7 +226,7 @@ bool User::Manager::init(const std::string& strPipe)
 	// Open the root connection
 	ptrMC->attach(Proactor::instance()->connect_shared_mem_socket(ptrMC.value(),&err,local_socket.value(),&wait));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to convert sync to async socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to create shared mem socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
 	// Start I/O with root
 	if (!ptrMC->read())
@@ -227,13 +234,42 @@ bool User::Manager::init(const std::string& strPipe)
 		ptrMC->close();
 		return false;
 	}
-	
+
 	// Now bootstrap
-	if (!bootstrap(sandbox_channel))
+	OOBase::CDRStream bs;
+	bs.write(sandbox_channel);
+	bs.write(strNewPipe);
+	if (bs.last_error() != 0)
+		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOSvrBase::Logger::strerror(bs.last_error()).c_str()),false);
+
+	if (!call_async_function_i(&do_bootstrap,this,&bs))
 		return false;
 		
 	return true;
 }
+
+void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
+{
+	Omega::uint32_t sandbox_channel = 0;
+	input.read(sandbox_channel);
+	std::string strNewPipe;
+	input.read(strNewPipe);
+	if (input.last_error() != 0)
+	{
+		LOG_ERROR(("Failed to read bootstrap data: %s",OOSvrBase::Logger::strerror(input.last_error()).c_str()));
+		quit();
+	}
+	else
+	{
+		Manager* pThis = static_cast<Manager*>(pParams);
+
+		if (!pThis->bootstrap(sandbox_channel) ||
+			!pThis->m_acceptor.start(pThis,strNewPipe))
+		{
+			quit();
+		}
+	}
+}	
 
 bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 {
@@ -254,15 +290,16 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 
 		// Now we have a ROT, register everything else
 		GetModule()->RegisterObjectFactories();
+
+		return true;
 	}
 	catch (IException* pE)
 	{
 		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
+
 		return false;
 	}
-
-	return true;
 }
 
 bool User::Manager::on_accept(OOBase::Socket* sock, const std::string& pipe_name, SECURITY_ATTRIBUTES* psa)
@@ -284,9 +321,9 @@ bool User::Manager::on_accept(OOBase::Socket* sock, const std::string& pipe_name
 		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 	
 	// Attach the connection
-	ptrMC->attach(Proactor::instance()->accept_shared_mem_socket(pipe_name,ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock),psa));
+	ptrMC->attach(Proactor::instance()->accept_shared_mem_socket("Local\\" + pipe_name,ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock),0,psa));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to convert sync to async socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to accept shared mem socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 		
 	// Start I/O
 	if (!ptrMC->read())
@@ -446,7 +483,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 
 ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
-	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(src_channel_id,message_oid);
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel_i(src_channel_id,message_oid);
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());
 	return ptrOM;
@@ -526,10 +563,7 @@ namespace
 	static BOOL WINAPI control_c(DWORD)
 	{
 		// Just stop!
-		if (s_hEvent && !SetEvent(s_hEvent))
-			OOBase_CallCriticalFailure(GetLastError());
-
-		return TRUE;
+		exit(EXIT_FAILURE);
 	}
 }
 

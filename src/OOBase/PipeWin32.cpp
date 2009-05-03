@@ -62,6 +62,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hClosed;
 		std::string                m_pipe_name;
 		LPSECURITY_ATTRIBUTES      m_psa;
+		HANDLE                     m_hWait;
 		
 		static VOID CALLBACK accept_named_pipe2(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/);
 		void do_accept();
@@ -72,10 +73,9 @@ PipeAcceptor::PipeAcceptor(OOSvrBase::ProactorImpl* pProactor, const std::string
 	m_pProactor(pProactor),
 	m_closed(false),
 	m_sync_handler(0),
-	m_hPipe(INVALID_HANDLE_VALUE),
-	m_hClosed(NULL),
 	m_pipe_name(pipe_name),
-	m_psa(psa)
+	m_psa(psa),
+	m_hWait(0)
 {
 	ZeroMemory(&m_ov,sizeof(OVERLAPPED));
 }
@@ -118,7 +118,7 @@ void PipeAcceptor::close()
 	if (m_ov.hEvent)
 		SetEvent(m_ov.hEvent);
 
-	bool wait = (m_hPipe != INVALID_HANDLE_VALUE);
+	bool wait = m_hPipe.is_valid();
 
 	guard.release();
 
@@ -139,7 +139,7 @@ int PipeAcceptor::accept_named_pipe()
 		0,
 		m_psa);
 
-	if (m_hPipe == INVALID_HANDLE_VALUE)
+	if (!m_hPipe.is_valid())
 		return GetLastError();
 	
 	DWORD dwErr = 0;
@@ -162,9 +162,12 @@ int PipeAcceptor::accept_named_pipe()
 	{
 		++m_pProactor->m_outstanding;
 
-		HANDLE hWait;
-		if (!RegisterWaitForSingleObject(&hWait,m_ov.hEvent,accept_named_pipe2,this,INFINITE,WT_EXECUTEONLYONCE))
+		if (m_hWait)
+			UnregisterWaitEx(m_hWait,NULL);
+
+		if (!RegisterWaitForSingleObject(&m_hWait,m_ov.hEvent,accept_named_pipe2,this,INFINITE,WT_EXECUTEONLYONCE | WT_EXECUTELONGFUNCTION))
 		{
+			m_hWait = 0;
 			dwErr = GetLastError();
 			--m_pProactor->m_outstanding;
 		}
@@ -193,7 +196,7 @@ void PipeAcceptor::do_accept()
 	{
 		SetEvent(m_hClosed);
 
-		if (m_hPipe && m_hPipe != INVALID_HANDLE_VALUE)
+		if (m_hPipe.is_valid())
 		{
 			CancelIo(m_hPipe);
 			CloseHandle(m_hPipe.detach());
@@ -209,29 +212,11 @@ void PipeAcceptor::do_accept()
 	OOBase::Win32::LocalSocket* pSocket = 0;
 	if (dwErr == 0)
 	{
-		HANDLE hReadEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
-		if (!hReadEvent)
-			dwErr = GetLastError();
+		OOBASE_NEW(pSocket,OOBase::Win32::LocalSocket(m_hPipe));
+		if (!pSocket)
+			dwErr = ERROR_OUTOFMEMORY;
 		else
-		{
-			HANDLE hWriteEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
-			if (!hWriteEvent)
-				dwErr = GetLastError();
-			else
-			{
-				OOBASE_NEW(pSocket,OOBase::Win32::LocalSocket(m_hPipe,hReadEvent,hWriteEvent));
-				if (!pSocket)
-				{
-					dwErr = ERROR_OUTOFMEMORY;
-					CloseHandle(hWriteEvent);
-				}
-				else
-					m_hPipe.detach();
-			}
-			
-			if (dwErr != 0)
-				CloseHandle(hReadEvent);
-		}
+			m_hPipe.detach();
 	}
 	
 	// Call the acceptor
@@ -243,6 +228,13 @@ void PipeAcceptor::do_accept()
 		dwErr = accept_named_pipe();
 		if (dwErr != 0)
 			m_sync_handler->on_accept(0,dwErr);
+	}
+	else
+	{
+		// Unregister ourselves
+		if (m_hWait)
+			UnregisterWaitEx(m_hWait,NULL);
+		m_hWait = 0;
 	}
 }
 

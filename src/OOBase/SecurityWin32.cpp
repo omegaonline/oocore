@@ -154,7 +154,7 @@ DWORD OOSvrBase::Win32::GetLogonSID(HANDLE hToken, OOBase::SmartPtr<void,OOBase:
 		return GetLastError();
 
 	// Loop through the groups to find the logon SID
-	for (DWORD dwIndex = 0; dwIndex < ptrGroups->GroupCount; dwIndex++)
+	for (DWORD dwIndex = 0; dwIndex < ptrGroups->GroupCount; ++dwIndex)
 	{
 		if ((ptrGroups->Groups[dwIndex].Attributes & SE_GROUP_LOGON_ID) == SE_GROUP_LOGON_ID)
 		{
@@ -215,11 +215,11 @@ DWORD OOSvrBase::Win32::SetTokenDefaultDACL(HANDLE hToken)
 	return dwRes;
 }
 
-DWORD OOSvrBase::Win32::EnableUserAccessToFile(const wchar_t* pszPath, const TOKEN_USER* pUser)
+DWORD OOSvrBase::Win32::EnableUserAccessToDir(const wchar_t* pszPath, const TOKEN_USER* pUser)
 {
 	wchar_t szPath[MAX_PATH] = {0};
-	wcscpy_s(szPath,sizeof(szPath),pszPath);
-	PathRemoveFileSpecW(szPath);
+	PathCanonicalizeW(szPath,pszPath);
+    PathRemoveFileSpecW(szPath);
 
 	PACL pACL = 0;
 	PSECURITY_DESCRIPTOR pSD = 0;

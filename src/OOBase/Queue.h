@@ -42,6 +42,7 @@ namespace OOBase
 
 		BoundedQueue(size_t bound = 10) :
 			m_bound(bound),
+			m_waiters(0),
 			m_closed(false),
 			m_pulsed(false)
 		{}
@@ -53,29 +54,27 @@ namespace OOBase
 				wait2 = *wait;
 			Countdown countdown(&wait2);
 
-			m_lock.acquire();
+			OOBase::Guard<Condition::Mutex> guard(m_lock);
 
-			if (m_closed)
-			{
-				m_lock.release();
-				return closed;
-			}
-			
-			while (m_queue.size() >= m_bound)
+			++m_waiters;
+
+			while (!m_closed && m_queue.size() >= m_bound)
 			{
 				if (!m_space.wait(m_lock,(wait ? &wait2 : 0)))
-					return timedout;
-
-				if (m_closed)
 				{
-					m_lock.release();
-					return closed;
+					--m_waiters;
+					return timedout;
 				}
 			}
 
+			--m_waiters;
+
+			if (m_closed)
+				return closed;
+
 			m_queue.push(val);
 
-			m_lock.release();
+			guard.release();
 
 			m_available.signal(); //broadcast();
 
@@ -89,40 +88,38 @@ namespace OOBase
 				wait2 = *wait;
 			Countdown countdown(&wait2);
 
-			m_lock.acquire();
+			OOBase::Guard<Condition::Mutex> guard(m_lock);
+
+			++m_waiters;
+
+			while (!m_pulsed && !m_closed && m_queue.empty())
+			{
+				if (!m_available.wait(m_lock,(wait ? &wait2 : 0)))
+				{
+					--m_waiters;
+					return timedout;
+				}
+			}
+
+			--m_waiters;
 
 			if (m_pulsed)
-			{
-				m_lock.release();
 				return pulsed;
-			}
-
-			while (m_queue.empty())
+			
+			if (!m_queue.empty())
 			{
-				if (m_closed)
-				{
-					m_lock.release();
-					return closed;
-				}
+				val=m_queue.front();
+				m_queue.pop();
 				
-				if (!m_available.wait(m_lock,(wait ? &wait2 : 0)))
-					return timedout;
+				guard.release();
 
-				if (m_pulsed)
-				{
-					m_lock.release();
-					return pulsed;
-				}
+				m_space.broadcast();
+
+				return success;
 			}
-			
-			val=m_queue.front();
-			m_queue.pop();
-			
-			m_lock.release();
 
-			m_space.broadcast();
-
-			return success;
+			// Must be closed
+			return closed;
 		}
 
 		void close()
@@ -145,13 +142,23 @@ namespace OOBase
 			m_available.broadcast();
 			m_space.broadcast();
 
-			guard.acquire();
+			for (;;)
+			{
+				guard.acquire();
 
-			m_pulsed = false;
+				if (m_waiters==0)
+				{
+					m_pulsed = false;
+					return;
+				}
+
+				guard.release();
+			}
 		}
 
 	private:
 		size_t           m_bound;
+		size_t           m_waiters;
 		bool             m_closed;
 		bool             m_pulsed;
 		Condition::Mutex m_lock;

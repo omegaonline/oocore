@@ -25,7 +25,7 @@
 
 #include <sqlite3.h>
 
-#ifdef OMEGA_HAVE_VLD
+#ifdef HAVE_VLD_H
 #include <vld.h>
 #endif
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 	// If this event exists, then we are being debugged
 	// Scope it...
 	{
-		OOBase::Win32::SmartHandle hDebugEvent = OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
+		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX"));
 		if (hDebugEvent)
 		{
 			// Wait for a bit, letting the caller attach a debugger
@@ -54,12 +54,7 @@ int main(int argc, char* argv[])
 #endif
 
 	// Run the UserManager
-	int ret = User::Manager::run(argv[1]);
-
-	// Make sure all the singletons etc have been destroyed
-	OOBase::Destructor::call_destructors();
-
-	return ret;
+	return User::Manager::run(argv[1]);
 }
 
 namespace OOBase

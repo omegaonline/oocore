@@ -35,7 +35,7 @@
 #include "RootManager.h"
 #include "../Common/Version.h"
 
-#ifdef OMEGA_HAVE_VLD
+#ifdef HAVE_VLD_H
 #include <vld.h>
 #endif
 
@@ -86,13 +86,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Run the RootManager
-	int ret = EXIT_FAILURE;
-	ret = root_manager.run(argc,argv);
-
-	// Make sure all the singletons etc have been destroyed
-	OOBase::Destructor::call_destructors();
-
-	return ret;
+	return root_manager.run(argc,argv);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

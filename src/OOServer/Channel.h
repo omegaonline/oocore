@@ -46,6 +46,7 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
+		OOBase::SpinLock                                  m_lock;
 		Manager*                                          m_pManager;
 		Omega::uint32_t	                                  m_channel_id;
 		Omega::Remoting::MarshalFlags_t                   m_marshal_flags;
@@ -77,7 +78,7 @@ namespace User
 	};
 
 	// {1A7672C5-8478-4e5a-9D8B-D5D019E25D15}
-	OMEGA_EXPORT_OID(OID_ChannelMarshalFactory);
+	extern const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :
 		public OTL::ObjectBase,

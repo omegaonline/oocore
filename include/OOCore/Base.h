@@ -171,11 +171,17 @@ namespace Omega
 #endif
 
 #if !defined(DOXYGEN)
+
 #define OMEGA_EXPORT_OID(name) \
 	extern "C" OMEGA_EXPORT const Omega::guid_t name;
 
 #define OMEGA_IMPORT_OID(name) \
 	extern "C" OMEGA_IMPORT const Omega::guid_t name;
+
+#if !defined(OMEGA_DECLARE_OID)
+#define OMEGA_DECLARE_OID(name) \
+	OMEGA_IMPORT_OID(name)
+#endif
 
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
 	extern "C" const Omega::guid_t n_space::name = Omega::guid_t::FromString(OMEGA_WIDEN_STRING(guid));

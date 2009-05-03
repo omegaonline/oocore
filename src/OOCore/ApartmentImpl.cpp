@@ -282,7 +282,7 @@ IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::Meth
 	return pE;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,IApartment_Create,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0,())
 {
 	// Apartments are not supported in the OOSvrUser process!
 	assert(!OOCore::HostedByOOServer());

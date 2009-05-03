@@ -42,7 +42,7 @@
 
 namespace Root
 {
-	typedef OOBase::Singleton<OOSvrBase::Proactor> Proactor;
+	typedef OOBase::SingletonNoDestroy<OOSvrBase::Proactor> Proactor;
 
 	class Manager :
 		public MessageHandler

@@ -53,10 +53,7 @@ int swprintf_s(wchar_t* s, size_t n, const wchar_t* format, ...);
 int strerror_s(char *s, size_t maxsize, int errnum);
 int mbstowcs_s(size_t* retval, wchar_t* dst, size_t dstmax, const char* src, size_t len);
 int vsnprintf_s(char* s, size_t n, const char* format, va_list arg);
-int wcscpy_s(wchar_t* s1, size_t s1max, const wchar_t* s2);
-int strcpy_s(char* s1, size_t s1max, const char* s2);
 int vswprintf_s(wchar_t* s, size_t n, const wchar_t* format, va_list arg);
-int swscanf_s(const wchar_t* s, const wchar_t* format, ...);
 
 #endif
 

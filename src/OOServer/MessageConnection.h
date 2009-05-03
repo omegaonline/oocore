@@ -55,9 +55,12 @@ namespace Root
 		MessageConnection(const MessageConnection&) {}
 		MessageConnection& operator = (const MessageConnection&) { return *this; }
 
+		OOBase::SpinLock        m_lock;
 		MessageHandler*         m_pHandler;
 		OOSvrBase::AsyncSocket* m_pSocket;
 		Omega::uint32_t         m_channel_id;
+
+		static const size_t     m_default_buffer_size = 8000;
 
 		virtual void on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
 		virtual void on_write(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err);
@@ -94,7 +97,7 @@ namespace Root
 	{
 	protected:
 		MessageHandler();
-		virtual ~MessageHandler() {}
+		virtual ~MessageHandler();
 
 	public:
 		int pump_requests(const OOBase::timeval_t* wait = 0, bool bOnce = false);
@@ -161,7 +164,7 @@ namespace Root
 		};
 
 		// Pooled queued members
-		OOBase::AtomicInt<Omega::uint32_t>               m_usage_count;
+		OOBase::AtomicInt<size_t>                        m_waiting_threads;
 		std::list<OOBase::Thread*>                       m_threads;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> > m_default_msg_queue;
 
@@ -175,7 +178,7 @@ namespace Root
 			MessageHandler*                                  m_pHandler;
 
 			// Transient data
-			size_t                                    m_usage_count;
+			OOBase::AtomicInt<size_t>                 m_usage_count;
 			std::map<Omega::uint32_t,Omega::uint16_t> m_mapChannelThreads;
 			OOBase::timeval_t                         m_deadline;
 			Omega::uint32_t                           m_seq_no;

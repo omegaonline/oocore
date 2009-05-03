@@ -118,10 +118,10 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,WaitForResponse,1,((in),uint32_t,timeout))
 )
 
-/*OMEGA_EXPORTED_FUNCTION_VOID(Omega_Net_Http_SplitURL,8,((in),const Omega::string_t&,strURL,(out),Omega::string_t&,strScheme,(out),Omega::string_t&,strHost,(out),Omega::string_t&,strPort,(out),Omega::string_t&,strUserName,(out),Omega::string_t&,strPassword,(out),Omega::string_t&,strResource,(out),Omega::string_t&,strQuery))
+/*OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Net_Http_SplitURL,8,((in),const Omega::string_t&,strURL,(out),Omega::string_t&,strScheme,(out),Omega::string_t&,strHost,(out),Omega::string_t&,strPort,(out),Omega::string_t&,strUserName,(out),Omega::string_t&,strPassword,(out),Omega::string_t&,strResource,(out),Omega::string_t&,strQuery))
 void Omega::Net::Http::SplitURL(const Omega::string_t& strURL, Omega::string_t& strScheme, Omega::string_t& strHost, Omega::string_t& strPort, Omega::string_t& strUserName, Omega::string_t& strPassword, Omega::string_t& strResource, Omega::string_t& strQuery)
 {
-	Omega_Net_Http_SplitURL(strURL,strScheme,strHost,strPort,strUserName,strPassword,strResource,strQuery);
+	OOCore_Net_Http_SplitURL(strURL,strScheme,strHost,strPort,strUserName,strPassword,strResource,strQuery);
 }*/
 
 OMEGA_DEFINE_INTERFACE

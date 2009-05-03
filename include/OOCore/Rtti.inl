@@ -22,6 +22,59 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
+template <class K, class V>
+bool Omega::System::MetaInfo::PSMap<K,V>::load(K key, V& value)
+{
+	try
+	{
+		Threading::ReadGuard<Threading::ReaderWriterLock> guard(m_lock);
+
+		typename map_type::const_iterator i = m_map.find(key);
+		if (i != m_map.end())
+		{
+			value = i->second;
+			return true;
+		}
+		
+		return false;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+template <class K, class V>
+bool Omega::System::MetaInfo::PSMap<K,V>::store(K key, V value)
+{
+	try
+	{
+		Threading::Guard<Threading::ReaderWriterLock> guard(m_lock);
+
+		std::pair<typename map_type::iterator,bool> p = m_map.insert(typename map_type::value_type(key,value));
+		return p.second;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+template <class K, class V>
+void Omega::System::MetaInfo::PSMap<K,V>::erase(K key)
+{
+	try
+	{
+		Threading::Guard<Threading::ReaderWriterLock> guard(m_lock);
+
+		m_map.erase(key);
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
 Omega::System::MetaInfo::IException_Safe* OMEGA_CALL Omega::System::MetaInfo::SafeStub::QueryInterface_Safe(const guid_t* piid, IObject_Safe** retval)
 {
 	if (*piid==OMEGA_GUIDOF(IObject))
@@ -210,19 +263,11 @@ Omega::IObject* Omega::System::MetaInfo::SafeProxy::ProxyQI(const guid_t& iid, b
 	}
 }
 
-Omega::System::MetaInfo::SafeStubMap& Omega::System::MetaInfo::get_stub_map()
-{
-	static SafeStubMap stub_map;
-	return stub_map;
-}
-
 template <class I>
 typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::MetaInfo::lookup_stub(I* pI, const guid_t& iid)
 {
 	if (!pI)
 		return 0;
-
-	SafeStubMap& stub_map = get_stub_map();
 
 	auto_iface_ptr<IObject> ptrObj(pI->QueryInterface(OMEGA_GUIDOF(IObject)));
 	if (!ptrObj)
@@ -234,17 +279,9 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 		for (;;)
 		{
 			// Lookup first
-			{
-				Threading::ReadGuard<Threading::ReaderWriterLock> guard(stub_map.m_lock);
-
-				std::map<IObject*,IObject_Safe*>::iterator i=stub_map.m_map.find(ptrObj);
-				if (i != stub_map.m_map.end())
-				{
-					ptrStub = i->second;
-					break;
-				}
-			}
-
+			if (stub_map_load(ptrObj,ptrStub))
+				break;
+			
 			auto_iface_ptr<ISafeProxy> ptrProxy(static_cast<ISafeProxy*>(ptrObj->QueryInterface(OMEGA_GUIDOF(ISafeProxy))));
 			if (ptrProxy)
 			{
@@ -254,10 +291,7 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 			
 			OMEGA_NEW(ptrStub,SafeStub(ptrObj));
 
-			Threading::Guard<Threading::ReaderWriterLock> guard(stub_map.m_lock);
-
-			std::pair<std::map<IObject*,IObject_Safe*>::iterator,bool> p = stub_map.m_map.insert(std::map<IObject*,IObject_Safe*>::value_type(ptrObj,ptrStub));
-			if (p.second)
+			if (stub_map_store(ptrObj,ptrStub))
 				break;
 
 			// One has been created while we locked - loop
@@ -279,19 +313,11 @@ typename Omega::System::MetaInfo::interface_info<I>::safe_class* Omega::System::
 	return static_cast<typename interface_info<I>::safe_class*>(pRet);
 }
 
-Omega::System::MetaInfo::SafeProxyMap& Omega::System::MetaInfo::get_proxy_map()
-{
-	static SafeProxyMap proxy_map;
-	return proxy_map;
-}
-
 template <class I>
 I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class* pS, const guid_t& iid, bool bPartialAllowed)
 {
 	if (!pS)
 		return 0;
-
-	SafeProxyMap& proxy_map = get_proxy_map();
 
 	IObject_Safe* pObjS = 0;
 	IException_Safe* pSE = pS->QueryInterface_Safe(&OMEGA_GUIDOF(IObject),&pObjS);
@@ -307,23 +333,12 @@ I* Omega::System::MetaInfo::lookup_proxy(typename interface_info<I>::safe_class*
 		for (;;)
 		{
 			// Lookup first
-			{
-				Threading::ReadGuard<Threading::ReaderWriterLock> guard(proxy_map.m_lock);
-
-				std::map<IObject_Safe*,ISafeProxy*>::iterator i=proxy_map.m_map.find(ptrObjS);
-				if (i != proxy_map.m_map.end())
-				{
-					ptrProxy = i->second;
-					break;
-				}
-			}
-
+			if (proxy_map_load(ptrObjS,ptrProxy))
+				break;
+			
 			OMEGA_NEW(ptrProxy,SafeProxy(pObjS));
 
-			Threading::Guard<Threading::ReaderWriterLock> guard(proxy_map.m_lock);
-
-			std::pair<std::map<IObject_Safe*,ISafeProxy*>::iterator,bool> p = proxy_map.m_map.insert(std::map<IObject_Safe*,ISafeProxy*>::value_type(pObjS,ptrProxy));
-			if (p.second)
+			if (proxy_map_store(pObjS,ptrProxy))
 				break;
 
 			// One has been created while we locked - loop
@@ -395,33 +410,33 @@ void Omega::System::UnpinObjectPointer(IObject* pObject)
 		ptrProxy->Unpin();
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
+OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
 Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_val, const string_t& source)
 {
-	return ISystemException_Create_errno(errno_val,source);
+	return OOCore_ISystemException_Create_errno(errno_val,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source))
+OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source))
 Omega::ISystemException* Omega::ISystemException::Create(const std::exception& e, const string_t& source)
 {
-	return ISystemException_Create(string_t(e.what(),false),source);
+	return OOCore_ISystemException_Create(string_t(e.what(),false),source);
 }
 
 Omega::ISystemException* Omega::ISystemException::Create(const string_t& desc, const string_t& source)
 {
-	return ISystemException_Create(desc,source);
+	return OOCore_ISystemException_Create(desc,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source))
+OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,OOCore_INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source))
 Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const guid_t& iid, const string_t& source)
 {
-	return INoInterfaceException_Create(iid,source);
+	return OOCore_INoInterfaceException_Create(iid,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ITimeoutException*,ITimeoutException_Create,0,())
+OMEGA_EXPORTED_FUNCTION(Omega::ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 Omega::ITimeoutException* Omega::ITimeoutException::Create()
 {
-	return ITimeoutException_Create();
+	return OOCore_ITimeoutException_Create();
 }
 
 #endif // OOCORE_RTTI_INL_INCLUDED_

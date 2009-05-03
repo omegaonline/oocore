@@ -434,9 +434,7 @@ namespace
 	static BOOL WINAPI control_c(DWORD)
 	{
 		// Just stop!
-		if (!SetEvent(s_hEvent))
-			OOBase_CallCriticalFailure(GetLastError());
-
+		SetEvent(s_hEvent);
 		return TRUE;
 	}
 

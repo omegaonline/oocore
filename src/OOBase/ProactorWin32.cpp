@@ -36,6 +36,18 @@ OOSvrBase::ProactorImpl::ProactorImpl()
 
 OOSvrBase::ProactorImpl::~ProactorImpl()
 {
+	// Spin while we have outstanding requests...
+	OOBase::timeval_t wait(10);
+	OOBase::Countdown countdown(&wait);
+	while (wait != OOBase::timeval_t::zero && m_outstanding.value() != 0)
+	{
+		OOBase::sleep(OOBase::timeval_t(0,100000));
+
+		countdown.update();
+	}
+
+	// We should have halted here
+	assert(m_outstanding == 0);
 }
 
 OOSvrBase::HandleSocket::HandleSocket(OOSvrBase::ProactorImpl* pProactor, HANDLE handle) :
@@ -237,7 +249,7 @@ void OOSvrBase::HandleSocket::handle_write(DWORD dwErrorCode, DWORD dwNumberOfBy
 
 void OOSvrBase::HandleSocket::close()
 {
-	if (m_handle && m_handle != INVALID_HANDLE_VALUE)
+	if (m_handle.is_valid())
 	{
 		CancelIo(m_handle);
 		CloseHandle(m_handle.detach());

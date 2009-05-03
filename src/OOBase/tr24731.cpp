@@ -53,7 +53,10 @@ int strerror_s(char *s, size_t maxsize, int errnum)
 
 int mbstowcs_s(size_t* retval, wchar_t* dst, size_t dstmax, const char* src, size_t len)
 {
-	*retval = mbstowcs(dst,src,len);
+	size_t r = mbstowcs(dst,src,len);
+	if (retval)
+		*retval = r;
+
 	return 0;
 }
 
@@ -64,32 +67,9 @@ int vsnprintf_s(char* s, size_t n, const char* format, va_list arg)
 	return r;
 }
 
-int wcscpy_s(wchar_t* s1, size_t s1max, const wchar_t* s2)
-{
-	wcsncpy(s1,s2,s1max-1);
-	s1[s1max-1] = L'\0';
-	return 0;
-}
-
-int strcpy_s(char* s1, size_t s1max, const char* s2)
-{
-	strncpy(s1,s2,s1max-1);
-	s1[s1max-1] = '\0';
-	return 0;
-}
-
 int vswprintf_s(wchar_t* s, size_t n, const wchar_t* format, va_list arg)
 {
 	return vswprintf(s,format,arg);
-}
-
-int swscanf_s(const wchar_t* s, const wchar_t* format, ...)
-{
-	va_list list;
-	va_start(list,format);
-	int r = swscanf(s,format,list);
-	va_end(list);
-	return r;
 }
 
 #endif

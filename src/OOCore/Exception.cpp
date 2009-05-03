@@ -37,13 +37,13 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw ISystemException_Create(string_t(msg,false),0);
+		throw OOCore_ISystemException_Create(string_t(msg,false),0);
 	}
 }
 
 #endif
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
+OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strSource = source;
@@ -61,7 +61,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create_errno,2
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create,2,((in),const string_t&,desc,(in),const string_t&,source))
+OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create,2,((in),const string_t&,desc,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strDesc = desc;
@@ -70,7 +70,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,ISystemException_Create,2,((in)
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const string_t&,source))
+OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceException_Create,2,((in),const guid_t&,iid,(in),const string_t&,source))
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
@@ -86,7 +86,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,INoInterfaceException_Crea
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,ITimeoutException_Create,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
 	ObjectImpl<OOCore::TimeoutException>* pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
 	
@@ -94,7 +94,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,ITimeoutException_Create,0,())
 	return pExcept;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,Remoting_IChannelClosedException_Create,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,0,())
 {
 	ObjectImpl<OOCore::ChannelClosedException>* pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
 	

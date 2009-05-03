@@ -85,7 +85,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 	if (!m_ptrOM)
-		throw Omega::Remoting::IChannelClosedException::Create();
+		throw Remoting::IChannelClosedException::Create();
 	
 	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrOM;
 	guard.release();
@@ -94,25 +94,28 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
 	ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
-	// QI pSend for our private interface
-	ObjectPtr<ICDRStreamHolder> ptrOutput;
-	ptrOutput.Attach(static_cast<ICDRStreamHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(ICDRStreamHolder))));
-	assert(ptrOutput);
-	
-	// Get the buffer
-	const OOBase::CDRStream* request = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
-
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	try
 	{
+		// QI pSend for our private interface
+		ObjectPtr<ICDRStreamHolder> ptrOutput;
+		ptrOutput.Attach(static_cast<ICDRStreamHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(ICDRStreamHolder))));
+		assert(ptrOutput);
+		
+		// Get the buffer
+		const OOBase::CDRStream* request = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
+
 		response = m_pSession->send_request(m_apt_id,m_channel_id,request,timeout,attribs);
+	}
+	catch (Remoting::IChannelClosedException* pE)
+	{
+		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+		disconnect();
+		throw pE;
 	}
 	catch (...)
 	{
 		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
-
-		// Disconnect ourselves on failure
-		disconnect();
 		throw;
 	}
 
@@ -236,7 +239,7 @@ OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-2
 
 void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
-	Omega::uint64_t sz;
+	uint64_t sz;
 	pMessage->ReadUInt64s(L"length",1,&sz);
 
 	if (sz > (size_t)-1)
@@ -244,7 +247,7 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManag
 	size_t len = static_cast<size_t>(sz);
 
 	OOBase::CDRStream input(len);
-	pMessage->ReadBytes(L"data",len,(Omega::byte_t*)input.buffer()->wr_ptr());
+	pMessage->ReadBytes(L"data",len,(byte_t*)input.buffer()->wr_ptr());
 	input.buffer()->wr_ptr(len);
 	
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrInput = ObjectImpl<CDRMessage>::CreateInstancePtr();

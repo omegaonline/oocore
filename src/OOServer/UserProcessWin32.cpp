@@ -35,8 +35,7 @@ namespace
 	class UserProcessWin32 : public User::Process
 	{
 	public:
-		UserProcessWin32()
-		{}
+		virtual ~UserProcessWin32() {}
 
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
@@ -105,13 +104,13 @@ User::Process* User::Process::exec(const std::wstring& strExeName)
 void UserProcessWin32::exec(const std::wstring& strExeName)
 {
 #if defined(OMEGA_DEBUG)
-	OOBase::Win32::SmartHandle hDebugEvent = NULL;
+	OOBase::Win32::SmartHandle hDebugEvent;
 	if (IsDebuggerPresent())
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Local\\OOCORE_DEBUG_MUTEX");
 
 #endif // OMEGA_DEBUG
 
-	STARTUPINFO si = {0};
+	STARTUPINFOW si = {0};
 	si.cb = sizeof(STARTUPINFOW);
 
 	// Spawn the process
@@ -133,7 +132,7 @@ void UserProcessWin32::exec(const std::wstring& strExeName)
 
 bool UserProcessWin32::running()
 {
-	if (!m_hProcess || m_hProcess == INVALID_HANDLE_VALUE)
+	if (!m_hProcess.is_valid())
 		return false;
 
 	DWORD dwWait = WaitForSingleObject(m_hProcess,0);
@@ -148,7 +147,7 @@ bool UserProcessWin32::running()
 
 bool UserProcessWin32::wait_for_exit(const OOBase::timeval_t* wait, int* exit_code)
 {
-	if (!m_hProcess || m_hProcess == INVALID_HANDLE_VALUE)
+	if (!m_hProcess.is_valid())
 		return true;
 
 	DWORD dwWait = WaitForSingleObject(m_hProcess,(wait ? wait->msec() : INFINITE));

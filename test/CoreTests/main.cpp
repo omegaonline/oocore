@@ -6,7 +6,7 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
-#ifdef OMEGA_HAVE_VLD
+#ifdef HAVE_VLD_H
 #include <vld.h>
 #endif
 
@@ -34,11 +34,8 @@ static void tests()
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_tests);
-
-#if defined(_WIN32)
 	//RUN_TEST(net_tests);
 	//RUN_TEST(interface_tests2);
-#endif
 }
 
 int main(int /*argc*/, char* /*argv*/[])

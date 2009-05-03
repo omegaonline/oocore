@@ -33,21 +33,30 @@ namespace OOBase
 	{
 		class ShmSocketImpl
 		{
+		public:
+			bool init_server(const std::string& strName, OOBase::LocalSocket* via, int* perr, const OOBase::timeval_t* timeout, SECURITY_ATTRIBUTES* psa);
+			bool init_client(OOBase::LocalSocket* via, int* perr, const OOBase::timeval_t* timeout);
+			
 		protected:
 			ShmSocketImpl() {}
-			virtual ~ShmSocketImpl() {}
+			virtual ~ShmSocketImpl();
 
-			bool init_server(const std::string& strName, OOBase::LocalSocket* via, int* perr, const OOBase::timeval_t* timeout);
-			bool init_client(OOBase::LocalSocket* via, int* perr, const OOBase::timeval_t* timeout);
-					
-			OOBase::Win32::SmartHandle m_hMapping;
-			bool                       m_bServer;
+			OOBase::Win32::SmartHandle   m_hMapping;
+			bool                         m_bServer;
+			OOBase::Win32::SmartHandle   m_hPipe;
+			OOBase::Win32::SmartHandle   m_close_event;
 
+			struct OV : public OVERLAPPED
+			{
+				char buf;
+			};
+			OOBase::SmartPtr<OV> m_ptrOv;
+			
 			struct Fifo
 			{
 				struct SharedInfo
 				{
-					static const int buffer_size = 4096 - 2*sizeof(size_t);
+					static const size_t buffer_size = 8192 - (2*sizeof(size_t));
 
 					volatile size_t m_read_pos;
 					volatile size_t m_write_pos;
@@ -57,25 +66,22 @@ namespace OOBase
 				Fifo() : m_shared(0)
 				{}
 
-				~Fifo()
-				{
-					if (m_shared)
-						UnmapViewOfFile(m_shared);
-				}
-
-				OOBase::Mutex              m_lock;
 				SharedInfo*                m_shared;
 				OOBase::Win32::SmartHandle m_read_event;
 				OOBase::Win32::SmartHandle m_write_event;
 
-				size_t write_space();
-				size_t read_space();
+				size_t recv_i(char*& data, size_t& len, int* perr);
+				int send_i(const char*& data, size_t& len);
+
+				inline bool is_full();
+				inline bool is_empty();
 			};
 
 			Fifo m_fifos[2];
-			bool create_fifo(size_t index, int* perr, const char* name);
+			bool create_fifos(int* perr, const char* name);
+			int bind_socket(OOBase::LocalSocket* via);
 
-			
+			void close();
 		};
 	}
 }

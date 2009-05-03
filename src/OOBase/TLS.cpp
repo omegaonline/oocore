@@ -219,4 +219,8 @@ void TLSMap::destroy(void* pThis)
 	}
 
 	delete inst;
+
+	// Now set 0 back in place...
+	if (!TlsSetValue(s_tls_cons.m_key,0))
+		OOBase_CallCriticalFailure(GetLastError());
 }

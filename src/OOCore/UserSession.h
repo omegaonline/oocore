@@ -84,8 +84,8 @@ namespace OOCore
 				
 	private:
 		friend class ThreadContext;
-		friend class OOBase::Singleton<UserSession>;
-		typedef OOBase::Singleton<UserSession> USER_SESSION;
+		friend class OOBase::SingletonNoDestroy<UserSession>;
+		typedef OOBase::SingletonNoDestroy<UserSession> USER_SESSION;
 
 		UserSession();
 		~UserSession();
@@ -104,7 +104,7 @@ namespace OOCore
 			OOBase::BoundedQueue<Message*>              m_msg_queue;
 
 			// Transient data
-			size_t                                      m_usage;
+			OOBase::AtomicInt<size_t>                   m_usage_count;
 			std::map<Omega::uint32_t,Omega::uint16_t>   m_mapChannelThreads;
 			OOBase::timeval_t                           m_deadline;
 			Omega::uint32_t                             m_seq_no;
@@ -119,7 +119,7 @@ namespace OOCore
 			~ThreadContext();
 		};
 
-		OOBase::AtomicInt<unsigned long>         m_consumers;
+		OOBase::AtomicInt<size_t>                m_usage_count;
 		std::map<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;
 		OOBase::BoundedQueue<Message*>           m_default_msg_queue;
 

@@ -27,7 +27,7 @@
 namespace OOCore
 {
 	// {69099DD8-A628-458a-861F-009E016DB81B}
-	OMEGA_DECLARE_OID(OID_ProxyMarshalFactory);
+	extern const Omega::guid_t OID_ProxyMarshalFactory;
 
 	class ProxyMarshalFactory :
 		public OTL::ObjectBase,
@@ -114,11 +114,11 @@ namespace OOCore
 		Proxy(const Proxy&) : Omega::System::MetaInfo::IProxy_Safe(), Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class() {}
 		Proxy& operator = (const Proxy&) { return *this; }
 
-		OOBase::AtomicInt<unsigned long> m_refcount;
-		OOBase::AtomicInt<unsigned long> m_marshal_count;
-		OOBase::RWMutex                  m_lock;
-		Omega::uint32_t                  m_proxy_id;
-		StdObjectManager*                m_pManager;
+		OOBase::AtomicInt<size_t>          m_refcount;
+		OOBase::AtomicInt<Omega::uint32_t> m_marshal_count;
+		OOBase::RWMutex                    m_lock;
+		Omega::uint32_t                    m_proxy_id;
+		StdObjectManager*                  m_pManager;
 
 		std::map<const Omega::guid_t,Omega::System::MetaInfo::IObject_Safe*> m_iid_map;
 

@@ -414,8 +414,10 @@ OOBase::Win32::condition_mutex_t::condition_mutex_t()
 		if (!m_mutex)
 			OOBase_CallCriticalFailure(GetLastError());
 	}
-	else if (!InitializeCriticalSectionAndSpinCount(&m_cs,4001))
-		OOBase_CallCriticalFailure(GetLastError());
+	else
+	{
+		InitializeCriticalSection(&m_cs);
+	}
 }
 
 OOBase::Win32::condition_mutex_t::~condition_mutex_t()

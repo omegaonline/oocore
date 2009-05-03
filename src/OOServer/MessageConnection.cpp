@@ -49,6 +49,8 @@ Root::MessageConnection::~MessageConnection()
 
 void Root::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
 	if (m_pSocket)
 		m_pSocket->release();
 
@@ -57,18 +59,40 @@ void Root::MessageConnection::attach(OOSvrBase::AsyncSocket* pSocket)
 
 void Root::MessageConnection::set_channel_id(Omega::uint32_t channel_id)
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+		
 	m_channel_id = channel_id;
 }
 
 void Root::MessageConnection::close()
 {
-	m_pSocket->close();
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	if (m_pSocket)
+	{
+		m_pSocket->close();
+		m_pSocket->release();
+	}
+	m_pSocket = 0;
+
+	Omega::uint32_t prev_channel = m_channel_id;
+	m_channel_id = 0;
+
+	guard.release();
+
+	if (prev_channel)
+		m_pHandler->channel_closed(prev_channel,0);
 }
 
 bool Root::MessageConnection::read()
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	
+	if (!m_pSocket)
+		return false;
+
 	OOBase::Buffer* pBuffer = 0;
-	OOBASE_NEW(pBuffer,OOBase::Buffer(2048));
+	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
 	if (!pBuffer)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 	
@@ -96,8 +120,6 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 	{
 		LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
 		close();
-		if (m_channel_id)
-			m_pHandler->channel_closed(m_channel_id,0);
 		return;
 	}
 
@@ -107,6 +129,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 	
 	size_t read_more = 0;
 	bool bSuccess = false;
+	bool bRelease = false;
 
 	// Loop reading
 	for (;;)
@@ -160,6 +183,9 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 		if (buffer->length() < (read_len - header_len))
 		{
 			read_more = (read_len - header_len) - buffer->length();
+
+			// Reset buffer to the start
+			buffer->mark_rd_ptr(mark_rd);
 			bSuccess = true;
 			break;
 		}
@@ -189,7 +215,24 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 			buffer->mark_wr_ptr(mark_rd + len);
 		}
 		else
+		{
 			buffer->reset(OOBase::CDRStream::MaxAlignment);
+
+			// Don't keep oversize buffers alive
+			if (buffer->space() > m_default_buffer_size)
+			{
+				OOBase::Buffer* new_buffer = 0;
+				OOBASE_NEW(new_buffer,OOBase::Buffer(m_default_buffer_size));
+				if (new_buffer)
+				{
+					new_buffer->reset(OOBase::CDRStream::MaxAlignment);
+					
+					// Just replace the buffer...
+					buffer = new_buffer;
+					bRelease = true;
+				}
+			}
+		}
 	}
 
 	if (bSuccess)
@@ -202,25 +245,32 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 		}
 		else
 		{
-			err = m_pSocket->read(buffer);
-			if (err != 0)
+			OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+			if (m_pSocket)
 			{
-				bSuccess = false;
-				LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+				err = m_pSocket->read(buffer);
+				if (err != 0)
+				{
+					bSuccess = false;
+					LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+				}
 			}
+
+			if (bRelease)
+				buffer->release();				
 		}
 	}
 
 	if (!bSuccess)
-	{
 		close();
-		if (m_channel_id)
-			m_pHandler->channel_closed(m_channel_id,0);
-	}
 }
 
 bool Root::MessageConnection::send(OOBase::Buffer* pBuffer)
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	if (!m_pSocket)
+		return false;
+
 	int err = m_pSocket->write(pBuffer);
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
@@ -234,15 +284,12 @@ void Root::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBa
 	{
 		LOG_ERROR(("AsyncSocket write failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
 		close();
-		if (m_channel_id)
-			m_pHandler->channel_closed(m_channel_id,0);
 	}
 }
 
 void Root::MessageConnection::on_closed(OOSvrBase::AsyncSocket* /*pSocket*/)
 {
-	if (m_channel_id)
-		m_pHandler->channel_closed(m_channel_id,0);
+	close();
 }
 
 Root::MessageHandler::MessageHandler() :
@@ -254,6 +301,22 @@ Root::MessageHandler::MessageHandler() :
 	m_uNextChannelMask(0),
 	m_uNextChannelShift(0)
 {
+}
+
+Root::MessageHandler::~MessageHandler()
+{
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	try
+	{
+		// Tell every thread context that we have gone...
+		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+		{
+			i->second->m_pHandler = 0;
+		}
+	}
+	catch (...)
+	{}
 }
 
 bool Root::MessageHandler::start()
@@ -430,14 +493,14 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 			wait2 = *wait;
 
 		// Inc usage count
-		++m_usage_count;
+		++m_waiting_threads;
 
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
 		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = m_default_msg_queue.pop(msg,&wait2);
 		
 		// Dec usage count
-		--m_usage_count;
+		--m_waiting_threads;
 
 		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::timedout)
 		{
@@ -781,9 +844,11 @@ Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase
 	}
 	else
 	{
+		size_t waiting = m_waiting_threads.value();
+
 		res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
 
-		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success && m_usage_count.value() <= 1)
+		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success && waiting <= 1)
 			start_thread();
 	}
 
@@ -815,7 +880,6 @@ Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instan
 Root::MessageHandler::ThreadContext::ThreadContext() :
 	m_thread_id(0),
 	m_pHandler(0),
-	m_usage_count(0),
 	m_deadline(OOBase::timeval_t::max_time),
 	m_seq_no(0)
 {
@@ -860,12 +924,17 @@ void Root::MessageHandler::remove_thread_context(Root::MessageHandler::ThreadCon
 
 void Root::MessageHandler::close()
 {
-	// Close all the channels...
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
+	// Copy all the channels away and then close them
 	try
 	{
-		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=m_mapChannelIds.begin();i!=m_mapChannelIds.end();++i)
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > map_copy(m_mapChannelIds);
+		m_mapChannelIds.clear();
+
+		guard.release();
+
+		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=map_copy.begin();i!=map_copy.end();++i)
 		{
 			i->second->close();
 		}
@@ -875,12 +944,12 @@ void Root::MessageHandler::close()
 		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 	
-	guard.release();
-
 	// Now spin, waiting for all the channels to close...
-	for (;;)
+	OOBase::timeval_t wait(10);
+	OOBase::Countdown countdown(&wait);
+	while (wait != OOBase::timeval_t::zero)
 	{
-		guard.acquire();
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		if (m_mapChannelIds.empty())
 			break;
@@ -888,6 +957,8 @@ void Root::MessageHandler::close()
 		guard.release();
 
 		OOBase::sleep(OOBase::timeval_t(0,100000));
+
+		countdown.update();
 	}
 }
 
@@ -899,7 +970,7 @@ void Root::MessageHandler::stop()
 
 		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
-			if (i->second->m_usage_count)
+			if (i->second->m_usage_count.value() > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}
@@ -911,7 +982,9 @@ void Root::MessageHandler::stop()
 	m_default_msg_queue.close();
 
 	// Wait for all the request threads to finish
-	for (;;)
+	OOBase::timeval_t wait(30);
+	OOBase::Countdown countdown(&wait);
+	while (wait != OOBase::timeval_t::zero)
 	{
 		OOBase::Thread* pThread = 0;
 
@@ -932,6 +1005,8 @@ void Root::MessageHandler::stop()
 
 		pThread->join();
 		delete pThread;
+
+		countdown.update();
 	}
 }
 
@@ -1084,7 +1159,7 @@ void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>
 
 		for (std::map<Omega::uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
-			if (i->second->m_usage_count)
+			if (i->second->m_usage_count.value() > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}

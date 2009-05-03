@@ -29,7 +29,7 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::Stub::Stub(System::MetaInfo::IObject_Safe* pObjS, uint32_t stub_id, StdObjectManager* pManager) : 
-	m_refcount(0), m_marshal_count(0), m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
+	m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
 {
 	m_pObjS->AddRef_Safe();
 }

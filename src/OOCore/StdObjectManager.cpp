@@ -1047,7 +1047,7 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	pMessage->WriteStructEnd(L"m_ptrChannel");		
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,Remoting_GetCallContext,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
 {
 	ObjectPtr<ObjectImpl<OOCore::StdCallContext> > ptrCC = ObjectImpl<OOCore::StdCallContext>::CreateInstancePtr();
 

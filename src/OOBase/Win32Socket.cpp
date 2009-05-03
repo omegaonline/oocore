@@ -23,15 +23,33 @@
 
 #if defined(_WIN32)
 
-OOBase::Win32::SocketImpl::SocketImpl(HANDLE hSocket, HANDLE hReadEvent, HANDLE hWriteEvent) :
+OOBase::Win32::SocketImpl::SocketImpl(HANDLE hSocket) :
 	m_hSocket(hSocket),
-	m_hReadEvent(hReadEvent),
-	m_hWriteEvent(hWriteEvent)
+	m_hReadEvent(NULL),
+	m_hWriteEvent(NULL)
 {
+}
+
+OOBase::Win32::SocketImpl::~SocketImpl()
+{
+	close();
+
+	if (m_hReadEvent)
+		CloseHandle(m_hReadEvent);
+
+	if (m_hWriteEvent)
+		CloseHandle(m_hWriteEvent);
 }
 
 int OOBase::Win32::SocketImpl::send(const void* buf, size_t len, const OOBase::timeval_t* timeout)
 {
+	if (!m_hWriteEvent)
+	{
+		m_hWriteEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
+		if (!m_hWriteEvent)
+			return GetLastError();
+	}
+
 	OVERLAPPED ov = {0};
 	ov.hEvent = m_hWriteEvent;
 	
@@ -87,6 +105,16 @@ size_t OOBase::Win32::SocketImpl::recv(void* buf, size_t len, int* perr, const O
 	assert(perr);
 	*perr = 0;
 
+	if (!m_hReadEvent)
+	{
+		m_hReadEvent = CreateEventW(NULL,TRUE,FALSE,NULL);
+		if (!m_hReadEvent)
+		{
+			*perr = GetLastError();
+			return 0;
+		}
+	}
+
 	OVERLAPPED ov = {0};
 	ov.hEvent = m_hReadEvent;
 	
@@ -98,7 +126,10 @@ size_t OOBase::Win32::SocketImpl::recv(void* buf, size_t len, int* perr, const O
 		if (ReadFile(m_hSocket,cbuf,static_cast<DWORD>(total),&dwRead,&ov))
 		{
 			if (!SetEvent(m_hReadEvent))
-				return GetLastError();
+			{
+				*perr = GetLastError();
+				return 0;
+			}
 		}
 		else
 		{
@@ -147,7 +178,7 @@ size_t OOBase::Win32::SocketImpl::recv(void* buf, size_t len, int* perr, const O
 
 void OOBase::Win32::SocketImpl::close()
 {
-	if (m_hSocket != INVALID_HANDLE_VALUE)
+	if (m_hSocket.is_valid())
 		CloseHandle(m_hSocket.detach());
 }
 
@@ -171,6 +202,11 @@ OOBase::LocalSocket::uid_t OOBase::Win32::LocalSocket::get_uid()
 	}
 
 	return uid.detach();
+}
+
+HANDLE OOBase::Win32::LocalSocket::swap_out_handle()
+{
+	return m_hSocket.detach();
 }
 
 OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path, int* perr, const timeval_t* wait)
@@ -213,29 +249,13 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 	}
 	
 	LocalSocket* pSocket = 0;
-	Win32::SmartHandle hReadEvent(CreateEventW(NULL,TRUE,FALSE,NULL));
-	if (!hReadEvent)
-	{
-		*perr = GetLastError();
-		return 0;
-	}
-
-	Win32::SmartHandle hWriteEvent(CreateEventW(NULL,TRUE,FALSE,NULL));
-	if (!hWriteEvent)
-	{
-		*perr = GetLastError();
-		return 0;
-	}
-	
-	OOBASE_NEW(pSocket,Win32::LocalSocket(hPipe,hReadEvent,hWriteEvent));
+	OOBASE_NEW(pSocket,Win32::LocalSocket(hPipe));
 	if (!pSocket)
 	{
 		*perr = ERROR_OUTOFMEMORY;
 		return 0;
 	}
 	
-	hReadEvent.detach();
-	hWriteEvent.detach();
 	hPipe.detach();
 	
 	return pSocket;

@@ -22,271 +22,94 @@
 #ifndef OMEGA_THREADING_INL_INCLUDED_
 #define OMEGA_THREADING_INL_INCLUDED_
 
-template <class T>
-Omega::Threading::AtomicOp<T>::AtomicOp(const T& v) :
-	m_value(v)
-{
-}
-
-template <class T>
-Omega::Threading::AtomicOp<T>::AtomicOp(const AtomicOp& rhs) :
-	m_value(rhs.value())
-{
-}
-
-template <class T>
-T Omega::Threading::AtomicOp<T>::operator ++()
-{
-	Guard<Mutex> guard(m_cs);
-	return ++m_value;
-}
-
-template <class T>
-T Omega::Threading::AtomicOp<T>::operator ++(int)
-{
-	return ++*this - 1;
-}
-
-template <class T>
-T Omega::Threading::AtomicOp<T>::operator --()
-{
-	Guard<Mutex> guard(m_cs);
-	return --m_value;
-}
-
-template <class T>
-T Omega::Threading::AtomicOp<T>::operator --(int)
-{
-	return --*this + 1;
-}
-
-template <class T>
-volatile T* Omega::Threading::AtomicOp<T>::operator &()
-{
-	return &m_value;
-}
-
-template <class T>
-Omega::Threading::AtomicOp<T>& Omega::Threading::AtomicOp<T>::operator = (const AtomicOp& rhs)
-{
-	if (&rhs != this)
-	{
-		Guard<Mutex> guard(m_cs);
-		m_value = rhs.value();
-	}
-	return *this;
-}
-
-template <class T>
-Omega::Threading::AtomicOp<T>& Omega::Threading::AtomicOp<T>::operator = (const T& rhs)
-{
-	Guard<Mutex> guard(m_cs);
-	m_value = rhs;
-	return *this;
-}
-
-template <class T>
-bool Omega::Threading::AtomicOp<T>::operator == (const AtomicOp& rhs)
-{
-	Guard<Mutex> guard(m_cs);
-	return m_value == rhs.value();
-}
-
-template <class T>
-bool Omega::Threading::AtomicOp<T>::operator == (const T& rhs)
-{
-	Guard<Mutex> guard(m_cs);
-	return m_value == rhs;
-}
-
-template <class T>
-T Omega::Threading::AtomicOp<T>::value() const
-{
-	Guard<Mutex> guard(m_cs);
-	return m_value;
-}
-
-template <class T>
-T Omega::Threading::AtomicOp<T>::exchange(const T& v)
-{
-	Guard<Mutex> guard(m_cs);
-	T ret = m_value;
-	m_value = v;
-	return ret;
-}
-
-#ifdef OMEGA_HAS_ATOMIC_OP_32
-
-Omega::Threading::AtomicOp<Omega::int32_t>::AtomicOp(int32_t v) :
-	m_value(v)
-{
-}
-
-Omega::Threading::AtomicOp<Omega::int32_t>::AtomicOp(const AtomicOp& rhs) :
-	m_value(rhs.m_value)
-{
-}
-
-Omega::Threading::AtomicOp<Omega::int32_t>& Omega::Threading::AtomicOp<Omega::int32_t>::operator = (const AtomicOp& rhs)
-{
-	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs.m_value);
-	return *this;
-}
-
-Omega::Threading::AtomicOp<Omega::int32_t>& Omega::Threading::AtomicOp<Omega::int32_t>::operator = (int32_t rhs)
-{
-	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs);
-	return *this;
-}
-
-Omega::int32_t Omega::Threading::AtomicOp<Omega::int32_t>::operator ++()
-{
-	return OMEGA_ATOMIC_OP_INCREMENT_32(&m_value);
-}
-
-Omega::int32_t Omega::Threading::AtomicOp<Omega::int32_t>::operator --()
-{
-	return OMEGA_ATOMIC_OP_DECREMENT_32(&m_value);
-}
-
-Omega::int32_t Omega::Threading::AtomicOp<Omega::int32_t>::exchange(int32_t v)
-{
-	return static_cast<int32_t>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
-}
-
-Omega::Threading::AtomicOp<Omega::uint32_t>::AtomicOp(uint32_t v) :
-	m_value(v)
-{
-}
-
-Omega::Threading::AtomicOp<Omega::uint32_t>::AtomicOp(const AtomicOp& rhs) :
-	m_value(rhs.m_value)
-{
-}
-
-Omega::Threading::AtomicOp<Omega::uint32_t>& Omega::Threading::AtomicOp<Omega::uint32_t>::operator = (const AtomicOp& rhs)
-{
-	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs.m_value);
-	return *this;
-}
-
-Omega::Threading::AtomicOp<Omega::uint32_t>& Omega::Threading::AtomicOp<Omega::uint32_t>::operator = (uint32_t rhs)
-{
-	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs);
-	return *this;
-}
-
-Omega::uint32_t Omega::Threading::AtomicOp<Omega::uint32_t>::operator ++()
-{
-	return OMEGA_ATOMIC_OP_INCREMENT_32(&m_value);
-}
-
-Omega::uint32_t Omega::Threading::AtomicOp<Omega::uint32_t>::operator --()
-{
-	return OMEGA_ATOMIC_OP_DECREMENT_32(&m_value);
-}
-
-Omega::uint32_t Omega::Threading::AtomicOp<Omega::uint32_t>::exchange(uint32_t v)
-{
-	return static_cast<uint32_t>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
-}
-
-#if !defined(OMEGA_64)
-
-template <class T>
-Omega::Threading::AtomicOp<T*>::AtomicOp(T* v) :
-	m_value(v)
-{
-}
-
-template <class T>
-Omega::Threading::AtomicOp<T*>::AtomicOp(const AtomicOp& rhs) :
-	m_value(rhs.m_value)
-{
-}
-
-template <class T>
-Omega::Threading::AtomicOp<T*>& Omega::Threading::AtomicOp<T*>::operator = (const AtomicOp& rhs)
-{
-	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs.m_value);
-	return *this;
-}
-
-template <class T>
-Omega::Threading::AtomicOp<T*>& Omega::Threading::AtomicOp<T*>::operator = (T* rhs)
-{
-	OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,rhs);
-	return *this;
-}
-
-template <class T>
-T* Omega::Threading::AtomicOp<T*>::exchange(T* v)
-{
-	return reinterpret_cast<T*>(OMEGA_ATOMIC_OP_EXCHANGE_32(&m_value,v));
-}
-#endif // !defined(OMEGA_64)
-
-#endif // OMEGA_HAS_ATOMIC_OP_32
-
-OMEGA_EXPORTED_FUNCTION(void*,cs__ctor,0,());
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,());
 Omega::Threading::Mutex::Mutex() :
-	m_handle(static_cast<handle_t*>(cs__ctor()))
+	m_handle(static_cast<handle_t*>(OOCore_cs__ctor()))
 {
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(cs__dctor,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,h));
 Omega::Threading::Mutex::~Mutex()
 {
-	cs__dctor(m_handle);
+	OOCore_cs__dctor(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(cs_lock,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,h));
 void Omega::Threading::Mutex::Acquire()
 {
-	cs_lock(m_handle);
+	OOCore_cs_lock(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(cs_unlock,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,h));
 void Omega::Threading::Mutex::Release()
 {
-	cs_unlock(m_handle);
+	OOCore_cs_unlock(m_handle);
 }
 
-
-OMEGA_EXPORTED_FUNCTION(void*,rw_lock__ctor,0,());
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,());
 Omega::Threading::ReaderWriterLock::ReaderWriterLock() :
-	m_handle(static_cast<handle_t*>(rw_lock__ctor()))
+	m_handle(static_cast<handle_t*>(OOCore_rw_lock__ctor()))
 {	
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(rw_lock__dctor,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,h));
 Omega::Threading::ReaderWriterLock::~ReaderWriterLock()
 {
-	rw_lock__dctor(m_handle);
+	OOCore_rw_lock__dctor(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_lockread,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::AcquireRead()
 {
-	rw_lock_lockread(m_handle);
+	OOCore_rw_lock_lockread(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_lockwrite,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockwrite,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::Acquire()
 {
-	rw_lock_lockwrite(m_handle);
+	OOCore_rw_lock_lockwrite(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_unlockread,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockread,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::ReleaseRead()
 {
-	rw_lock_unlockread(m_handle);
+	OOCore_rw_lock_unlockread(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(rw_lock_unlockwrite,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::Release()
 {
-	rw_lock_unlockwrite(m_handle);
+	OOCore_rw_lock_unlockwrite(m_handle);
+}
+
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,());
+Omega::Threading::AtomicRefCount::AtomicRefCount() :
+	m_handle(static_cast<handle_t*>(OOCore_atomic__ctor()))
+{
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,h));
+Omega::Threading::AtomicRefCount::~AtomicRefCount()
+{
+	OOCore_atomic__dctor(m_handle);
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),void*,h));
+void Omega::Threading::AtomicRefCount::AddRef()
+{
+	OOCore_atomic_addref(m_handle);
+}
+
+OMEGA_EXPORTED_FUNCTION(bool,OOCore_atomic_release,1,((in),void*,h));
+bool Omega::Threading::AtomicRefCount::Release()
+{
+	return OOCore_atomic_release(m_handle);
+}
+
+OMEGA_EXPORTED_FUNCTION(bool,OOCore_atomic_iszero,1,((in),void*,h));
+bool Omega::Threading::AtomicRefCount::IsZero() const
+{
+	return OOCore_atomic_iszero(m_handle);
 }
 
 #endif // OMEGA_THREADING_INL_INCLUDED_

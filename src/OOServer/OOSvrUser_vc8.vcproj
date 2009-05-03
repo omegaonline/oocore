@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite"
-				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;OMEGA_HAVE_VLD"
+				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"

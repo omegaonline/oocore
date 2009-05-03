@@ -225,7 +225,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 
 	int err = 0;
 	if (!response->read(err))
@@ -254,7 +254,7 @@ bool_t Key::IsValue(const string_t& strName)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -285,7 +285,7 @@ int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -348,7 +348,7 @@ string_t Key::GetStringValue(const string_t& strName)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -388,7 +388,7 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -430,7 +430,7 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -474,7 +474,7 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -502,7 +502,7 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -530,7 +530,7 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -554,7 +554,7 @@ string_t Key::GetDescription()
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -587,7 +587,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -618,7 +618,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -644,7 +644,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -673,7 +673,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -710,7 +710,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -758,7 +758,7 @@ Omega::IEnumString* Key::EnumValues()
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -809,7 +809,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))
@@ -836,7 +836,7 @@ void Key::DeleteValue(const string_t& strName)
 
 	OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
 	if (!response)
-		OMEGA_THROW("No response from root");
+		OMEGA_THROW(L"No response from root");
 	
 	int err = 0;
 	if (!response->read(err))

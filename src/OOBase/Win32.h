@@ -66,6 +66,11 @@ namespace OOBase
 				return h;
 			}
 
+			bool is_valid() const
+			{
+				return (m_handle != 0 && m_handle != INVALID_HANDLE_VALUE);
+			}
+
 			HANDLE* operator &()
 			{
 				return &m_handle;

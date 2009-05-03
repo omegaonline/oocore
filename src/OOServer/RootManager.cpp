@@ -97,21 +97,30 @@ bool Root::Manager::uninstall()
 int Root::Manager::run(int /*argc*/, char* /*argv*/[])
 {
 	// Start the handler
-	if (!start() || !init())
+	if (!start())
 		return EXIT_FAILURE;
-	
-	wait_for_quit();
 
-	// Stop accepting new clients
-	m_client_acceptor.stop();
-	
-	// Close all pipes
-	close();
+	int res = EXIT_FAILURE;
+	if (init())
+	{
+		res = EXIT_SUCCESS;
+
+		wait_for_quit();
+
+		// Stop accepting new clients
+		m_client_acceptor.stop();
+		
+		// Close all pipes
+		close();
+	}
+
+	// Close the proactor
+	Proactor::close();
 
 	// Stop the MessageHandler
 	stop();
 	
-	return EXIT_SUCCESS;
+	return res;
 }
 
 bool Root::Manager::init()

@@ -560,16 +560,16 @@ namespace Omega
 			public:
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
-					++m_refcount;
+					m_refcount.AddRef();
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					if (--m_refcount==0)
+					if (m_refcount.Release())
 					{
 						m_contained.Release_Iface();
 
-						if (m_pincount == 0)
+						if (m_pincount.IsZero())
 							delete this;
 					}
 				}
@@ -587,12 +587,12 @@ namespace Omega
 
 				virtual void OMEGA_CALL Pin()
 				{
-					++m_pincount;
+					m_pincount.AddRef();
 				}
 
 				virtual void OMEGA_CALL Unpin()
 				{
-					if (--m_pincount==0 && m_refcount==0)
+					if (m_pincount.Release() && m_refcount.IsZero())
 						delete this;
 				}
 
@@ -604,12 +604,11 @@ namespace Omega
 				}
 
 			private:
-				Threading::AtomicOp<uint32_t> m_refcount;
-				Threading::AtomicOp<uint32_t> m_pincount;
-				I_SafeStub                    m_contained;
+				Threading::AtomicRefCount m_refcount;
+				Threading::AtomicRefCount m_pincount;
+				I_SafeStub                m_contained;
 
-				SafeStubImpl(SafeStub* pStub, I* pI) :
-					m_refcount(0), m_pincount(0), m_contained(pStub,pI)
+				SafeStubImpl(SafeStub* pStub, I* pI) : m_contained(pStub,pI)
 				{ }
 
 				virtual ~SafeStubImpl()
@@ -690,12 +689,12 @@ namespace Omega
 			public:
 				virtual void AddRef()
 				{
-					++m_refcount;
+					m_refcount.AddRef();
 				}
 
 				virtual void Release()
 				{
-					if (--m_refcount==0)
+					if (m_refcount.Release())
 						delete this;
 				}
 
@@ -716,11 +715,11 @@ namespace Omega
 					return pRet;
 				}
 			private:
-				Threading::AtomicOp<uint32_t> m_refcount;
-				I_SafeProxy                   m_contained;
+				Threading::AtomicRefCount m_refcount;
+				I_SafeProxy               m_contained;
 
 				SafeProxyImpl(IObject* pOuter, typename interface_info<I>::safe_class* pS) :
-					m_refcount(0), m_contained(pOuter,pS)
+					m_contained(pOuter,pS)
 				{ }
 
 				virtual ~SafeProxyImpl()
@@ -1031,6 +1030,8 @@ namespace Omega
 			{
 				static qi_holder& instance()
 				{
+					// This is a 'cheap' singleton as we only use it to read
+					// after the dll/so is init'ed
 					static qi_holder i;
 					return i;
 				}
@@ -1038,18 +1039,19 @@ namespace Omega
 				std::map<guid_t,const qi_rtti*> iid_map;
 			};
 
-			inline void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
+			inline static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
 			{
 				try
 				{
-					qi_holder& instance = qi_holder::instance();
-					instance.iid_map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
+					qi_holder::instance().iid_map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
 				}
-				catch (...)
-				{}
+				catch (std::exception& e)
+				{
+					OMEGA_THROW(e);
+				}
 			}
 
-			inline const qi_rtti* get_qi_rtti_info(const guid_t& iid)
+			inline static const qi_rtti* get_qi_rtti_info(const guid_t& iid)
 			{
 				try
 				{
@@ -1063,23 +1065,51 @@ namespace Omega
 				
 				return 0;
 			}
-
-			struct SafeStubMap
+		
+			template <class K, class V>
+			class PSMap
 			{
-				bool                             m_bSafetyCheck;
-				Threading::ReaderWriterLock      m_lock;
-				std::map<IObject*,IObject_Safe*> m_map;
+				typedef std::map<K,V> map_type;
+				
+			public:
+				static PSMap& instance()
+				{
+					static PSMap map;
+					return map;
+				}
 
-				SafeStubMap() : m_bSafetyCheck(true) {}
-				~SafeStubMap() { m_bSafetyCheck = false; }
+				bool load(K key, V& val);
+				bool store(K key, V val);
+				void erase(K key);
+
+			private:
+				std::map<K,V>               m_map;
+				Threading::ReaderWriterLock m_lock;
 			};
-			inline SafeStubMap& get_stub_map();
 
+			inline static bool stub_map_load(IObject* key, auto_iface_safe_ptr<IObject_Safe>& ptrStub)
+			{
+				IObject_Safe* val = 0;
+				bool ret = PSMap<IObject*,IObject_Safe*>::instance().load(key,val);
+				if (ret)
+					ptrStub = val;
+				return ret;
+			}
+
+			inline static bool stub_map_store(IObject* key, IObject_Safe* val)
+			{
+				return PSMap<IObject*,IObject_Safe*>::instance().store(key,val);
+			}
+
+			inline static void stub_map_erase(IObject* key)
+			{
+				PSMap<IObject*,IObject_Safe*>::instance().erase(key);
+			}
+			
 			class SafeStub : public IObject_Safe
 			{
 			public:
-				SafeStub(IObject* pObj) :
-					m_refcount(0), m_pincount(0), m_pObj(pObj)
+				SafeStub(IObject* pObj) : m_pObj(pObj)
 				{
 					m_pObj->AddRef();
 				}
@@ -1090,21 +1120,16 @@ namespace Omega
 
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
-					++m_refcount;
+					m_refcount.AddRef();
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					if (--m_refcount==0)
+					if (m_refcount.Release())
 					{
 						// Remove ourselves from the stub_map
-						SafeStubMap& stub_map = get_stub_map();
-						if (stub_map.m_bSafetyCheck)
-						{
-							Threading::Guard<Threading::ReaderWriterLock> guard(stub_map.m_lock);
-							stub_map.m_map.erase(m_pObj);
-						}
-
+						stub_map_erase(m_pObj);
+						
 						try
 						{
 							// Release all interfaces
@@ -1122,7 +1147,7 @@ namespace Omega
 						// or a return value.  It gets me all the time!
 						m_pObj->Release();
 
-						if (m_pincount == 0)
+						if (m_pincount.IsZero())
 							delete this;
 					}
 				}
@@ -1131,7 +1156,7 @@ namespace Omega
 
 				virtual void OMEGA_CALL Pin()
 				{
-					++m_pincount;
+					m_pincount.AddRef();
 
 					try
 					{
@@ -1162,46 +1187,53 @@ namespace Omega
 						OMEGA_THROW(e);
 					}
 
-					if (--m_pincount==0 && m_refcount==0)
+					if (m_pincount.Release() && m_refcount.IsZero())
 						delete this;
 				}
 
 			private:
-				Threading::AtomicOp<uint32_t>        m_refcount;
-				Threading::AtomicOp<uint32_t>        m_pincount;
+				Threading::AtomicRefCount            m_refcount;
+				Threading::AtomicRefCount            m_pincount;
 				Threading::ReaderWriterLock          m_lock;
 				std::map<const guid_t,IObject_Safe*> m_iid_map;
 				IObject*                             m_pObj;
 			};
 
-			struct SafeProxyMap
+			inline static bool proxy_map_load(IObject_Safe* key, auto_iface_ptr<ISafeProxy>& ptrProxy)
 			{
-				bool                                m_bSafetyCheck;
-				Threading::ReaderWriterLock         m_lock;
-				std::map<IObject_Safe*,ISafeProxy*> m_map;
+				ISafeProxy* val = 0;
+				bool ret = PSMap<IObject_Safe*,ISafeProxy*>::instance().load(key,val);
+				if (ret)
+					ptrProxy = val;
+				return ret;
+			}
 
-				SafeProxyMap() : m_bSafetyCheck(true) {}
-				~SafeProxyMap() { m_bSafetyCheck = false; }
-			};
-			inline SafeProxyMap& get_proxy_map();
+			inline static bool proxy_map_store(IObject_Safe* key, ISafeProxy* val)
+			{
+				return PSMap<IObject_Safe*,ISafeProxy*>::instance().store(key,val);
+			}
+
+			inline static void proxy_map_erase(IObject_Safe* key)
+			{
+				PSMap<IObject_Safe*,ISafeProxy*>::instance().erase(key);
+			}
 
 			struct SafeProxy : public ISafeProxy
 			{
 			public:
-				SafeProxy(IObject_Safe* pObjS) :
-					m_refcount(0), m_pS(pObjS)
+				SafeProxy(IObject_Safe* pObjS) : m_pS(pObjS)
 				{
 					m_pS->AddRef_Safe();
 				}
 
 				virtual void AddRef()
 				{
-					++m_refcount;
+					m_refcount.AddRef();
 				}
 
 				virtual void Release()
 				{
-					if (--m_refcount==0)
+					if (m_refcount.Release())
 						delete this;
 				}
 
@@ -1228,7 +1260,7 @@ namespace Omega
 				inline virtual IObject* ProxyQI(const guid_t& iid, bool bPartialAllowed);
 
 			private:
-				Threading::AtomicOp<uint32_t>    m_refcount;
+				Threading::AtomicRefCount        m_refcount;
 				Threading::ReaderWriterLock      m_lock;
 				std::map<const guid_t,IObject*>  m_iid_map;
 				IObject_Safe*                    m_pS;
@@ -1236,13 +1268,8 @@ namespace Omega
 				virtual ~SafeProxy()
 				{
 					// Remove ourselves from the proxy_map
-					SafeProxyMap& proxy_map = get_proxy_map();
-					if (proxy_map.m_bSafetyCheck)
-					{
-						Threading::Guard<Threading::ReaderWriterLock> guard(proxy_map.m_lock);
-						proxy_map.m_map.erase(m_pS);
-					}
-
+					proxy_map_erase(m_pS);
+					
 					try
 					{
 						// Release all interfaces

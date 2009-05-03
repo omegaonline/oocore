@@ -30,7 +30,7 @@ namespace OOCore
 	};
 
 	// {1455FCD0-A49B-4f2a-94A5-222949957123}
-	OMEGA_DECLARE_OID(OID_CDRMessageMarshalFactory);
+	extern const Omega::guid_t OID_CDRMessageMarshalFactory;
 }
 
 OMEGA_DEFINE_INTERFACE_LOCAL

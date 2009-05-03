@@ -70,7 +70,7 @@ namespace OOCore
 	static const wchar_t xmlns[] = L"http://www.omegaonline.org.uk/schemas/registry.xsd";
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
 {
 	if (key.Left(1) != L"\\")
 		OOCore::BadNameException::Throw(key,L"Omega::Registry::OpenKey");
@@ -343,7 +343,7 @@ void OOCore::ReadXmlKey(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey> ptrKey
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Registry_AddXML,3,((in),const string_t&,strXML,(in),bool_t,bAdd,(in),const string_t&,strSubstitutions))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_t&,strXML,(in),bool_t,bAdd,(in),const string_t&,strSubstitutions))
 {
 	// Parse the substitution map
 	std::map<string_t,string_t> mapSubsts;

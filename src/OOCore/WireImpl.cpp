@@ -97,7 +97,7 @@ System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::M
 	return pRet;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoProxyStubCreators,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoProxyStubCreators,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
 	OOCore::wire_holder::pfns funcs;
 	funcs.pfnProxy = (System::MetaInfo::pfnCreateProxy)(pfnProxy);
@@ -138,7 +138,7 @@ System::MetaInfo::ITypeInfo_Safe* OOCore::GetTypeInfo(const guid_t& iid)
 	return pRet;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo))
 {
 	try
 	{

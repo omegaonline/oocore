@@ -97,15 +97,15 @@ static bool do_interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>& pt
 
 	TEST(ptrSimpleTest->Hello() == L"Hello!");
 
-	/*try
+	try
 	{
-		ptrSimpleTest->Throw(EACCES);
+		ptrSimpleTest->Throw(2);
 	}
 	catch (Omega::ISystemException* pE)
 	{
-		TEST(pE->GetErrorCode() == EACCES);
+		TEST(pE->GetErrorCode() == 2);
 		pE->Release();
-	}*/
+	}
 
 	return true;
 }

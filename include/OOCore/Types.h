@@ -31,7 +31,7 @@ namespace Omega
 	public:
 		inline string_t();
 		inline string_t(const string_t& s);
-		inline string_t(const char* sz, bool_t bUTF8);
+		inline string_t(const char* sz, bool bUTF8);
 		inline string_t(const wchar_t* wsz, size_t length = npos);
 		inline ~string_t();
 

@@ -24,7 +24,7 @@ ooserverd_LDADD = ../OOCore/libOOCore.la
 ooserverd_LDFLAGS = $(PTHREAD_LIBS) $(SQLITE3_LDFLAGS) -L. -loosvrcmn -L../OOBase -loobase -loosvrbase 
 
 if WIN32
-ooserverd_LDFLAGS += -lmswsock -lnetapi32 -luserenv -lshlwapi
+ooserverd_LDFLAGS += -lnetapi32 -luserenv -lshlwapi
 endif
 
 ooserverd_SOURCES = \
@@ -49,11 +49,11 @@ endif
 oosvruser_CPPFLAGS = -I$(top_srcdir)/include $(SQLITE3_CPPFLAGS)
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_LDADD = ../OOBase/liboobase.a ../OOBase/liboosvrbase.a liboosvrcmn.a ../OOCore/libOOCore.la
-oosvruser_LDFLAGS = $(PTHREAD_LIBS) $(SQLITE3_LDFLAGS)
+oosvruser_LDADD = ../OOCore/libOOCore.la
+oosvruser_LDFLAGS = $(PTHREAD_LIBS) $(SQLITE3_LDFLAGS) -L. -loosvrcmn -L../OOBase -loobase -loosvrbase 
 
 if WIN32
-oosvruser_LDFLAGS += -lshlwapi
+oosvruser_LDFLAGS += -lshlwapi -lnetapi32 -luserenv
 endif
 
 oosvruser_SOURCES = \

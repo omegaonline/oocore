@@ -707,20 +707,22 @@ namespace Omega
 			{
 			public:
 				IObject_Stub(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObj) :
-					m_pManager(pManager), m_refcount(1), m_pController(pController)
+					m_pManager(pManager), m_pController(pController)
 				{
+					m_refcount.AddRef();
+
 					m_pS = static_cast<I*>(pObj);
 					m_pS->AddRef_Safe();
 				}
 
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
-					++m_refcount;
+					m_refcount.AddRef();
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					if (--m_refcount==0)
+					if (m_refcount.Release())
 						delete this;
 				}
 
@@ -730,7 +732,7 @@ namespace Omega
 					if (*piid == OMEGA_GUIDOF(IObject) ||
 						*piid == OMEGA_GUIDOF(IStub))
 					{
-						++m_refcount;
+						m_refcount.AddRef();
 						*retval = this;
 					}
 					return 0;
@@ -785,8 +787,8 @@ namespace Omega
 				}
 
 			private:
-				Threading::AtomicOp<uint32_t> m_refcount;
-				IStubController_Safe*         m_pController;
+				Threading::AtomicRefCount m_refcount;
+				IStubController_Safe*     m_pController;
 
 				IObject_Stub(const IObject_Stub&) {};
 				IObject_Stub& operator =(const IObject_Stub&) {};
@@ -828,12 +830,12 @@ namespace Omega
 			public:
 				virtual void OMEGA_CALL AddRef_Safe()
 				{
-					++m_refcount;
+					m_refcount.AddRef();
 				}
 
 				virtual void OMEGA_CALL Release_Safe()
 				{
-					if (--m_refcount==0)
+					if (m_refcount.Release())
 						delete this;
 				}
 
@@ -866,12 +868,14 @@ namespace Omega
 				}
 
 			private:
-				Threading::AtomicOp<uint32_t> m_refcount;
-				I_Proxy                       m_contained;
+				Threading::AtomicRefCount m_refcount;
+				I_Proxy                   m_contained;
 
 				ProxyImpl(IProxy_Safe* pProxy, IMarshaller_Safe* pManager) :
-					m_refcount(1), m_contained(pProxy,pManager)
-				{ }
+					m_contained(pProxy,pManager)
+				{ 
+					m_refcount.AddRef();
+				}
 
 				virtual ~ProxyImpl()
 				{ }
@@ -1001,16 +1005,16 @@ namespace Omega
 	}
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoProxyStubCreators,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoProxyStubCreators,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
 void Omega::System::MetaInfo::RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub)
 {
-	Omega_RegisterAutoProxyStubCreators(iid,(void*)(pfnProxy),(void*)(pfnStub));
+	OOCore_RegisterAutoProxyStubCreators(iid,(void*)(pfnProxy),(void*)(pfnStub));
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo));
 void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, pfnCreateTypeInfo pfnTypeInfo)
 {
-	Omega_RegisterAutoTypeInfo(iid,(void*)pfnTypeInfo);
+	OOCore_RegisterAutoTypeInfo(iid,(void*)pfnTypeInfo);
 }
 
 #endif // !defined(DOXYGEN)

@@ -55,7 +55,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool Spawn(bool& bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, int mode, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
@@ -75,7 +75,7 @@ namespace
 
 namespace
 {
-	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe)
+	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		// Create a new unique pipe
 		strPipe = "OOR";
@@ -127,7 +127,6 @@ namespace
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
 		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
 
-		OOSvrBase::Win32::sec_descript_t sd;
 		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
@@ -635,14 +634,17 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
+	bool bAskedUnsafe = bUnsafe;
+	bUnsafe = false;
+
 	m_bSandbox = bSandbox;
 
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bAskedUnsafe || IsDebuggerPresent()))
 		{
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -678,8 +680,10 @@ bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& 
 							{
 								OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
 								
-								CloseHandle(m_hToken);
-								DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);
+								//CloseHandle(m_hToken);
+								//DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);
+
+								bUnsafe = true;
 							}
 						}
 					}
@@ -846,9 +850,10 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		return 0;
 
 	// Create the named pipe
+	OOSvrBase::Win32::sec_descript_t sd;
 	std::string strRootPipe;
-	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
-	if (hPipe == INVALID_HANDLE_VALUE)
+	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe,sd));
+	if (!hPipe.is_valid())
 	{
 		delete pSpawn32;
 		return 0;
@@ -867,29 +872,26 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	if (!WaitForConnect(hPipe))
 		return 0;
 	
-	// Now wrap the handle in a local socket
-	OOBase::Win32::SmartHandle hReadEvent(CreateEventW(NULL,TRUE,FALSE,NULL));
-	if (!hReadEvent)
-		return 0;
-		
-	OOBase::Win32::SmartHandle hWriteEvent(CreateEventW(NULL,TRUE,FALSE,NULL));
-	if (!hWriteEvent)
-		return 0;
-		
-	OOBase::Win32::LocalSocket sock(hPipe.detach(),hReadEvent.detach(),hWriteEvent.detach());
-
 	// Bootstrap the user process...
+	OOBase::Win32::LocalSocket sock(hPipe.detach());
 	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
 	if (!channel_id)
 		return 0;
 
+	// Create security attribute
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.bInheritHandle = FALSE;
+	sa.lpSecurityDescriptor = sd.descriptor();
+
 	// Create an async socket wrapper
 	int err = 0;
 	OOBase::timeval_t wait(10);
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->accept_shared_mem_socket(strRootPipe,ptrMC.value(),&err,&sock,psa,&wait);
-	if (err != 0)
-		return 0;
 
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->accept_shared_mem_socket("Global\\" + strRootPipe,ptrMC.value(),&err,&sock,&wait,(bUnsafe ? NULL : &sa));
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to accept shared memory socket: %s",OOSvrBase::Logger::strerror(err).c_str()),(SpawnedProcess*)0);
+	
 	// Attach the async socket to the message connection
 	ptrMC->attach(pAsync);
 

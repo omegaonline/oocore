@@ -32,12 +32,7 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#if defined(DOXYGEN)
-
-#define OMEGA_DECLARE_OID(object_identifier) \
-	const Omega::guid_t object_identifier
-
-#elif !defined(OMEGA_EXPORTED_FUNCTION_VOID)
+#if !defined(OMEGA_EXPORTED_FUNCTION_VOID)
 
 #define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
@@ -45,8 +40,8 @@
 #define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
 
-#define OMEGA_DECLARE_OID(n) \
-	OMEGA_IMPORT_OID(n)
+#define OMEGA_INTERNAL \
+	OMEGA_IMPORT
 
 #endif
 
@@ -87,44 +82,44 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,Omega_Initialize,0,())
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,0,())
 Omega::IException* Omega::Initialize()
 {
-	return Omega_Initialize();
+	return OOCore_Omega_Initialize();
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 void Omega::Uninitialize()
 {
-	Omega_Uninitialize();
+	OOCore_Omega_Uninitialize();
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	IObject* pObj = 0;
-	Omega_CreateLocalInstance(oid,flags,pOuter,iid,pObj);
+	OOCore_Omega_CreateLocalInstance(oid,flags,pOuter,iid,pObj);
 	return pObj;
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	IObject* pObj = 0;
-	Omega_CreateInstance(strURI,flags,pOuter,iid,pObj);
+	OOCore_Omega_CreateInstance(strURI,flags,pOuter,iid,pObj);
 	return pObj;
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::bool_t,Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
+OMEGA_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
 Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 {
-	return Omega_HandleRequest(timeout);
+	return OOCore_Omega_HandleRequest(timeout);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::string_t,Omega_GetVersion,0,())
+OMEGA_EXPORTED_FUNCTION(Omega::string_t,OOCore_GetVersion,0,())
 Omega::string_t Omega::System::GetVersion()
 {
-	return Omega_GetVersion();
+	return OOCore_GetVersion();
 }
 
 #endif // !defined(DOXYGEN)

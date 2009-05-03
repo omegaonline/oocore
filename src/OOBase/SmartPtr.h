@@ -98,8 +98,8 @@ namespace OOBase
 					Destructor::destroy(m_data);	
 				}
 
-				T*                       m_data;
-				AtomicInt<unsigned long> m_refcount;
+				T*                m_data;
+				AtomicInt<size_t> m_refcount;
 			};
 
 		public:

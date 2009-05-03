@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#ifdef OMEGA_HAVE_VLD
+#ifdef HAVE_VLD_H
 #include <vld.h>
 #endif
 

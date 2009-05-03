@@ -29,7 +29,7 @@
 #include "Channel.h"
 #include "Exception.h"
 
-#ifdef OMEGA_HAVE_VLD
+#ifdef HAVE_VLD_H
 #include <vld.h>
 #endif
 
@@ -59,10 +59,11 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 	{
 		OOBase::TLS::ThreadExit();
 	}
-	else if (reason == DLL_PROCESS_DETACH)
+	/*else if (reason == DLL_PROCESS_DETACH)
 	{
-		//OOBase::Destructor::call_destructors();
-	}
+		// Clean up all our singletons...
+		OOBase::Destructor::call_destructors();
+	}*/
 
 	return TRUE;
 }
@@ -70,10 +71,10 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 namespace OOCore
 {
-	static OOBase::AtomicInt<unsigned long> s_initcount = 0;
+	static OOBase::AtomicInt<size_t> s_initcount = 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_GetVersion,0,())
 {
 #if defined(OMEGA_DEBUG)
 	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
@@ -82,7 +83,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,Omega_GetVersion,0,())
 #endif
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,0,())
 {
 	bool bStart = false;
 	if (++OOCore::s_initcount==1)
@@ -110,7 +111,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,Omega_Initialize,0,())
 	return 0;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 {
 	if (OOCore::HostedByOOServer())
 	{
@@ -123,7 +124,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_Uninitialize,0,())
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,Omega_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify))
 {
 	// Ask the IPS to open the stream...
 	return OOCore::GetInterProcessService()->OpenStream(strEndpoint,pNotify);

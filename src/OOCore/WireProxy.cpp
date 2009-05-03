@@ -29,7 +29,7 @@ using namespace Omega;
 using namespace OTL;
 
 OOCore::Proxy::Proxy(uint32_t proxy_id, StdObjectManager* pManager) : 
-	m_refcount(0), m_marshal_count(0), m_proxy_id(proxy_id), m_pManager(pManager)
+	m_proxy_id(proxy_id), m_pManager(pManager)
 {
 	m_pManager->AddRef_Safe();
 }
@@ -326,7 +326,7 @@ void OOCore::Proxy::CallRemoteRelease()
 		WriteUInt32(L"$stub_id",pParamsOut,m_proxy_id);
 		WriteGuid(L"$iid",pParamsOut,OMEGA_GUIDOF(IObject));
 		WriteUInt32(L"$method_id",pParamsOut,0);
-		WriteUInt32(L"release_count",pParamsOut,m_marshal_count.value());
+		WriteUInt32(L"release_count",pParamsOut,static_cast<Omega::uint32_t>(m_marshal_count.value()));
 
 		pParamsOut->WriteStructEnd(L"ipc_request");
 		

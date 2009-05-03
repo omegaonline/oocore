@@ -285,7 +285,7 @@ namespace OTL
 	class ObjectBase
 	{
 	protected:
-		ObjectBase() : m_refcount(0)
+		ObjectBase()
 		{}
 
 		virtual ~ObjectBase()
@@ -293,12 +293,12 @@ namespace OTL
 
 		virtual void Internal_AddRef()
 		{
-			++m_refcount;
+			m_refcount.AddRef();
 		}
 
 		virtual void Internal_Release()
 		{
-			if (--m_refcount==0)
+			if (m_refcount.Release())
 				delete this;
 		}
 
@@ -373,7 +373,7 @@ namespace OTL
 		}
 
 	protected:
-		Omega::Threading::AtomicOp<Omega::uint32_t> m_refcount;
+		Omega::Threading::AtomicRefCount m_refcount;
 	};
 
 	template <typename E>
@@ -414,7 +414,7 @@ namespace OTL
 	class ModuleBase
 	{
 	public:
-		inline size_t GetLockCount() const;
+		inline bool HaveLocks() const;
 		inline void IncLockCount();
 		inline void DecLockCount();
 		inline Omega::Threading::Mutex& GetLock();
@@ -423,9 +423,7 @@ namespace OTL
 		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
 
 	protected:
-		ModuleBase() :
-			m_lockCount(0)
-		{ }
+		ModuleBase() {}
 
 		inline virtual ~ModuleBase();
 
@@ -443,8 +441,8 @@ namespace OTL
 		inline void fini();
 
 	private:
-		Omega::Threading::Mutex                     m_csMain;
-		Omega::Threading::AtomicOp<Omega::uint32_t> m_lockCount;
+		Omega::Threading::Mutex          m_csMain;
+		Omega::Threading::AtomicRefCount m_lockCount;
 
 		struct Term
 		{
@@ -576,8 +574,9 @@ namespace OTL
 	template <class ROOT>
 	class AggregatedObjectImpl : public Omega::IObject
 	{
-		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter), m_refcount(1)
+		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter)
 		{
+			m_refcount.AddRef();
 			GetModuleBase()->IncLockCount();
 		}
 
@@ -589,8 +588,8 @@ namespace OTL
 		// If the line below is flagged as the source of a compiler warning then
 		// you have missed out at least one virtual function in an interface that
 		// <ROOT> derives from
-		ContainedObjectImpl<ROOT>                   m_contained;
-		Omega::Threading::AtomicOp<Omega::uint32_t> m_refcount;
+		ContainedObjectImpl<ROOT>        m_contained;
+		Omega::Threading::AtomicRefCount m_refcount;
 
 	public:
 		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
@@ -619,12 +618,12 @@ namespace OTL
 	public:
 		virtual void AddRef()
 		{
-			++m_refcount;
+			m_refcount.AddRef();
 		}
 
 		virtual void Release()
 		{
-			if (--m_refcount==0)
+			if (m_refcount.Release())
 				delete this;
 		}
 
@@ -632,7 +631,7 @@ namespace OTL
 		{
 			if (iid==OMEGA_GUIDOF(Omega::IObject))
 			{
-				++m_refcount;
+				m_refcount.AddRef();
 				return this;
 			}
 			else
@@ -647,6 +646,7 @@ namespace OTL
 		// Global access point to the Singleton.
 		static TYPE *instance(void)
 		{
+			void* DODGY_SINGLETON;
 			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
 			if (!singleton)
 			{

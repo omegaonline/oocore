@@ -39,7 +39,7 @@ OOBase::Thread::~Thread()
 
 bool OOBase::Thread::is_running()
 {
-	if (!m_hThread || m_hThread == INVALID_HANDLE_VALUE)
+	if (!m_hThread.is_valid())
 		return false;
 
 	DWORD dwWait = WaitForSingleObject(m_hThread,0);
@@ -59,7 +59,7 @@ void OOBase::Thread::run(int (*thread_fn)(void*), void* param)
 	assert(!is_running());
 
 	// Close any open handles, this allows restarting
-	if (m_hThread && m_hThread != INVALID_HANDLE_VALUE)
+	if (m_hThread.is_valid())
 		CloseHandle(m_hThread.detach());
 
 	wrapper wrap;
@@ -88,7 +88,7 @@ void OOBase::Thread::run(int (*thread_fn)(void*), void* param)
 
 bool OOBase::Thread::join(const timeval_t* wait)
 {
-	if (!m_hThread || m_hThread == INVALID_HANDLE_VALUE)
+	if (!m_hThread.is_valid())
 		return true;
 
 	DWORD dwWait = WaitForSingleObject(m_hThread,(wait ? wait->msec() : INFINITE));

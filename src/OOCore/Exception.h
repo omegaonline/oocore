@@ -113,7 +113,7 @@ namespace OOCore
 	};
 
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
-	OMEGA_DECLARE_OID(OID_SystemExceptionMarshalFactory);
+	extern const Omega::guid_t OID_SystemExceptionMarshalFactory;
 
 	class SystemException :
 		public ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
@@ -162,7 +162,7 @@ namespace OOCore
 	};
 
 	// {1E127359-1542-4329-8E30-FED8FF810960}
-	OMEGA_DECLARE_OID(OID_NoInterfaceExceptionMarshalFactory);
+	extern const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
 
 	class NoInterfaceException :
 		public ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
@@ -211,7 +211,7 @@ namespace OOCore
 	};
 
 	// {8FA37F2C-8252-437e-9C54-F07C13152E94}
-	OMEGA_DECLARE_OID(OID_TimeoutExceptionMarshalFactory);
+	extern const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 
 	class TimeoutException :
 		public ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
@@ -230,7 +230,7 @@ namespace OOCore
 	};
 
 	// {029B38C5-CC76-4d13-98A4-83A65D40710A}
-	OMEGA_DECLARE_OID(OID_ChannelClosedExceptionMarshalFactory);
+	extern const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
 
 	class ChannelClosedException :
 		public ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>

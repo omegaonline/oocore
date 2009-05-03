@@ -2,7 +2,7 @@
 
 #include "../SimpleTest.h"
 
-extern const Omega::guid_t OID_TestProcess =  Omega::guid_t::FromString(L"{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
+extern const Omega::guid_t OID_TestProcess = Omega::guid_t::FromString(L"{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
 
 class TestProcessImpl :
 	public OTL::ObjectBase,
@@ -24,7 +24,7 @@ public:
 
 void TestProcessImpl::Abort()
 {
-	exit(-1);
+	exit(EXIT_FAILURE);
 }
 
 BEGIN_PROCESS_OBJECT_MAP(L"TestProcess")

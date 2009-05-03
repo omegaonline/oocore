@@ -30,7 +30,7 @@
 
 namespace User
 {
-	typedef OOBase::Singleton<OOSvrBase::Proactor> Proactor;
+	typedef OOBase::SingletonNoDestroy<OOSvrBase::Proactor> Proactor;
 
 	class Manager : public Root::MessageHandler
 	{
@@ -46,8 +46,8 @@ namespace User
 		bool on_accept(OOBase::Socket* sock, const std::string& pipe_name, SECURITY_ATTRIBUTES* psa);
 
 	private:
-		friend class OOBase::Singleton<Manager>;
-		typedef OOBase::Singleton<Manager> USER_MANAGER;
+		friend class OOBase::SingletonNoDestroy<Manager>;
+		typedef OOBase::SingletonNoDestroy<Manager> USER_MANAGER;
 
 		static const Omega::uint32_t m_root_channel = 0x80000000;
 
@@ -69,9 +69,11 @@ namespace User
 
 		int run_i(const std::string& strPipe);
 		bool init(const std::string& strPipe);
-		bool bootstrap(Omega::uint32_t sandbox_channel);
 		static void wait_for_quit();
 		static void quit();
+
+		static void do_bootstrap(void* pParams, OOBase::CDRStream& input);
+		bool bootstrap(Omega::uint32_t sandbox_channel);
 
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel_i(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> create_object_manager(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);

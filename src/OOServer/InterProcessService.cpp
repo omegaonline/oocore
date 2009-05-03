@@ -110,7 +110,10 @@ void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPu
 			ptrProcess = i->second;
 
 			if (!ptrProcess->running())
+			{
 				m_mapInProgress.erase(strProcess);
+				ptrProcess = 0;
+			}			
 		}
 
 		if (!ptrProcess)
@@ -223,7 +226,7 @@ bool_t User::InterProcessService::HandleRequest(uint32_t timeout)
 	
 	int ret = m_pManager->pump_requests((timeout ? &wait : 0),true);
 	if (ret == -1)
-		OMEGA_THROW("Request processing failed");
+		OMEGA_THROW(L"Request processing failed");
 	else
 		return (ret == 0 ? false : true);
 }
@@ -237,3 +240,5 @@ Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& 
 {
 	return Manager::open_server_sink(message_oid,pSink);
 }
+
+OMEGA_DEFINE_OID(System,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");

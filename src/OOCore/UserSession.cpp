@@ -31,7 +31,6 @@ using namespace OTL;
 OOCore::UserSession::UserSession() :
 	m_channel_id(0),
 	m_nIPSCookie(0),
-	m_consumers(0),
 	m_next_apartment(0)
 {
 }
@@ -343,7 +342,7 @@ int OOCore::UserSession::run_read_loop()
 			if ((msg->m_attribs & Message::system_message)==Message::channel_close)
 			{
 				uint32_t closed_channel_id;
-				if (msg->m_payload.read(closed_channel_id))
+				if (!msg->m_payload.read(closed_channel_id))
 					err = msg->m_payload.last_error();
 				else
 					process_channel_close(closed_channel_id);
@@ -370,12 +369,14 @@ int OOCore::UserSession::run_read_loop()
 					err = EACCES;
 				else
 				{
+					size_t waiting = i->second->m_usage_count.value();
+
 					OOBase::BoundedQueue<Message*>::result_t res = i->second->m_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
 					if (res == OOBase::BoundedQueue<Message*>::success)
 					{
 						msg.detach();
 
-						if (i->second->m_usage == 0)
+						if (waiting == 0)
 						{
 							// This incoming request may not be processed for some time...
 							void* TICKET_91;	// Alert!
@@ -393,12 +394,14 @@ int OOCore::UserSession::run_read_loop()
 			// Cannot have a response to 0 thread!
 			if (msg->m_type == Message::Request)
 			{
+				size_t waiting = m_usage_count.value();
+
 				OOBase::BoundedQueue<Message*>::result_t res = m_default_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<Message*>::success)
 				{
 					msg.detach();
 
-					if (m_consumers == 0)
+					if (waiting == 0)
 					{
 						// This incoming request may not be processed for some time...
 						void* TICKET_91;	// Alert!
@@ -418,7 +421,7 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 	bool timedout = false;
 
 	// Increment the consumers...
-	++m_consumers;
+	++m_usage_count;
 
 	ThreadContext* pContext = ThreadContext::instance();
 	
@@ -464,7 +467,7 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 	} while (!bOnce);
 
 	// Decrement the consumers...
-	--m_consumers;
+	--m_usage_count;
 
 	return timedout;
 }
@@ -491,7 +494,7 @@ void OOCore::UserSession::process_channel_close(uint32_t closed_channel_id)
 
 		for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
 		{
-			if (i->second->m_usage > 0)
+			if (i->second->m_usage_count.value() > 0)
 				i->second->m_msg_queue.pulse();
 		}
 	}
@@ -505,7 +508,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 	ThreadContext* pContext = ThreadContext::instance();
 	
 	// Increment the usage count
-	++pContext->m_usage;
+	++pContext->m_usage_count;
 
 	try
 	{
@@ -584,13 +587,13 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 	catch (...)
 	{
 		// Decrement the usage count
-		--pContext->m_usage;
+		--pContext->m_usage_count;
 
 		throw;
 	}
 
 	// Decrement the usage count
-	--pContext->m_usage;
+	--pContext->m_usage_count;
 
 	return response;
 }
@@ -606,7 +609,6 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 
 OOCore::UserSession::ThreadContext::ThreadContext() :
 	m_thread_id(0),
-	m_usage(0),
 	m_deadline(OOBase::timeval_t::max_time),
 	m_seq_no(0),
 	m_current_apt(0)
@@ -820,7 +822,7 @@ void OOCore::UserSession::process_request(const Message* pMsg, const OOBase::tim
 
 		guard.release();
 
-		if (!ptrApt)
+		if (ptrApt)
 			ptrApt->process_request(pMsg,deadline);
 	}
 	catch (std::exception&)
@@ -838,10 +840,10 @@ bool OOCore::UserSession::handle_request(uint32_t timeout)
 {
 	OOBase::timeval_t wait(timeout/1000,(timeout % 1000) * 1000);
 
-	return USER_SESSION::instance()->pump_requests((timeout ? &wait : 0),true);
+	return USER_SESSION::instance()->pump_requests((timeout ? &wait : 0),false);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,Omega_HandleRequest,1,((in),uint32_t,timeout))
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Omega_HandleRequest,1,((in),uint32_t,timeout))
 {
 	if (OOCore::HostedByOOServer())
 		return OOCore::GetInterProcessService()->HandleRequest(timeout);
@@ -849,7 +851,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,Omega_HandleRequest,1,((in),uint32_t,timeo
 		return OOCore::UserSession::handle_request(timeout);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
 {
 	return OOCore::GetInterProcessService()->OpenServerSink(message_oid,pSink);
 }

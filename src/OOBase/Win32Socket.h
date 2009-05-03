@@ -33,12 +33,8 @@ namespace OOBase
 		class SocketImpl
 		{
 		public:
-			SocketImpl(HANDLE hSocket, HANDLE hReadEvent, HANDLE hWriteEvent);
-	
-			virtual ~SocketImpl()
-			{
-				close();
-			}
+			SocketImpl(HANDLE hSocket);
+			virtual ~SocketImpl();
 
 			virtual int send(const void* buf, size_t len, const OOBase::timeval_t* timeout = 0);
 			virtual size_t recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* timeout = 0);
@@ -48,8 +44,8 @@ namespace OOBase
 			SmartHandle m_hSocket;
 
 		private:
-			SmartHandle m_hReadEvent;
-			SmartHandle m_hWriteEvent;
+			HANDLE m_hReadEvent;
+			HANDLE m_hWriteEvent;
 		};
 
 		template <class Base>
@@ -58,8 +54,8 @@ namespace OOBase
 			public SocketImpl
 		{
 		public:
-			SocketTempl(HANDLE hSocket, HANDLE hReadEvent, HANDLE hWriteEvent) :
-				SocketImpl(hSocket,hReadEvent,hWriteEvent)
+			SocketTempl(HANDLE hSocket) :
+				SocketImpl(hSocket)
 			{}
 
 			virtual ~SocketTempl()
@@ -89,8 +85,8 @@ namespace OOBase
 		public SocketTempl<OOBase::Socket>
 		{
 		public:
-			Socket(HANDLE hSocket, HANDLE hReadEvent, HANDLE hWriteEvent) :
-				SocketTempl<OOBase::Socket>(hSocket,hReadEvent,hWriteEvent)
+			Socket(HANDLE hSocket) :
+				SocketTempl<OOBase::Socket>(hSocket)
 			{}
 		};
 
@@ -98,11 +94,13 @@ namespace OOBase
 		public SocketTempl<OOBase::LocalSocket>
 		{
 		public:
-			LocalSocket(HANDLE hSocket, HANDLE hReadEvent, HANDLE hWriteEvent) :
-				SocketTempl<OOBase::LocalSocket>(hSocket,hReadEvent,hWriteEvent)
+			LocalSocket(HANDLE hSocket) :
+				SocketTempl<OOBase::LocalSocket>(hSocket)
 			{}
 
 			virtual OOBase::LocalSocket::uid_t get_uid();
+
+			HANDLE swap_out_handle();
 		};
 	}
 }

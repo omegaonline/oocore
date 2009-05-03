@@ -36,6 +36,9 @@ namespace Omega
 			inline void Release();
 
 		private:
+			Mutex(const Mutex&) {}
+			Mutex& operator = (const Mutex&) { return *this; }
+
 			struct handle_t
 			{
 				int unused;
@@ -54,6 +57,9 @@ namespace Omega
 			inline void Release();
 
 		private:
+			ReaderWriterLock(const ReaderWriterLock&) {}
+			ReaderWriterLock& operator = (const ReaderWriterLock&) { return *this; }
+
 			struct handle_t
 			{
 				int unused;
@@ -72,13 +78,6 @@ namespace Omega
 					Acquire();
 			}
 
-			/*Guard(MUTEX& mutex, const timeval_t& wait) :
-			  m_acquired(false),
-			  m_mutex(mutex)
-			{
-				Acquire(&wait);
-			}*/
-
 			~Guard()
 			{
 				if (m_acquired)
@@ -91,13 +90,6 @@ namespace Omega
 
 				m_acquired = true;
 			}
-
-			/*void Acquire(const timeval_t& wait)
-			{
-				m_acquired = true;
-
-				m_mutex.Acquire(&wait);
-			}*/
 
 			void Release()
 			{
@@ -154,129 +146,22 @@ namespace Omega
 			MUTEX& m_mutex;
 		};
 
-		// Replace this all with a simple unsigned long class
-		template <class T> class AtomicOp
+		class AtomicRefCount
 		{
 		public:
-			AtomicOp() {};
-			inline AtomicOp(const T& v);
-			inline AtomicOp(const AtomicOp& rhs);
+			inline AtomicRefCount();
+			inline ~AtomicRefCount();
 
-			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (const T& rhs);
-
-			inline bool operator == (const AtomicOp& rhs);
-			inline bool operator == (const T& rhs);
-
-			inline T operator ++();
-			inline T operator ++(int);
-			inline T operator --();
-			inline T operator --(int);
-			inline volatile T* operator &();
-
-			inline T value() const;
-			inline T exchange(const T& v);
+			inline void AddRef();
+			inline bool Release();
+			inline bool IsZero() const;
 
 		private:
-			mutable Mutex m_cs;
-			T             m_value;
+			struct handle_t
+			{
+				int unused;
+			}* m_handle;
 		};
-
-#ifdef OMEGA_HAS_ATOMIC_OP_32
-
-		template <> class AtomicOp<int32_t>
-		{
-		public:
-			AtomicOp() {}
-			inline AtomicOp(int32_t v);
-			inline AtomicOp(const AtomicOp& rhs);
-
-			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (int32_t rhs);
-
-			bool operator == (const AtomicOp& rhs)
-			{
-				return m_value == rhs.m_value;
-			}
-			bool operator == (int32_t rhs)
-			{
-				return m_value == rhs;
-			}
-
-			inline int32_t operator ++();
-			inline int32_t operator ++(int) { return ++*this - 1; }
-			inline int32_t operator --();
-			inline int32_t operator --(int) { return --*this + 1; }
-			inline volatile int32_t* operator &() { return &m_value; }
-
-			inline int32_t value() const { return m_value; }
-			inline int32_t exchange(int32_t v);
-
-		private:
-			int32_t m_value;
-		};
-
-		template <> class AtomicOp<uint32_t>
-		{
-		public:
-			AtomicOp() {};
-			inline AtomicOp(uint32_t v);
-			inline AtomicOp(const AtomicOp& rhs);
-
-			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (uint32_t rhs);
-
-			bool operator == (const AtomicOp& rhs)
-			{
-				return m_value == rhs.m_value;
-			}
-			bool operator == (uint32_t rhs)
-			{
-				return m_value == rhs;
-			}
-
-			inline uint32_t operator ++();
-			inline uint32_t operator ++(int) { return ++*this - 1; }
-			inline uint32_t operator --();
-			inline uint32_t operator --(int) { return --*this + 1; }
-			inline volatile uint32_t* operator &()  { return &m_value; }
-
-			inline uint32_t value() const  { return m_value; }
-			inline uint32_t exchange(uint32_t v);
-
-		private:
-			uint32_t	m_value;
-		};
-
-#if !defined(OMEGA_64)
-		template <class T> class AtomicOp<T*>
-		{
-		public:
-			AtomicOp() {};
-			inline AtomicOp(T* v);
-			inline AtomicOp(const AtomicOp& rhs);
-
-			inline AtomicOp& operator = (const AtomicOp& rhs);
-			inline AtomicOp& operator = (T* rhs);
-
-			bool operator == (const AtomicOp& rhs)
-			{
-				return m_value == rhs.m_value;
-			}
-			bool operator == (T* rhs)
-			{
-				return m_value == rhs;
-			}
-
-			inline T* value() const  { return m_value; }
-			inline T* exchange(T* v);
-
-		private:
-			T*	m_value;
-		};
-#endif
-
-#endif // OMEGA_HAS_ATOMIC_OP_32
 	}
 }
 

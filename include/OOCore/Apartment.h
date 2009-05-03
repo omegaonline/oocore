@@ -46,10 +46,10 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(CreateInstance,5,((in),const string_t&,strURI,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
-OMEGA_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,IApartment_Create,0,());
+OMEGA_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,OOCore_IApartment_Create,0,());
 Omega::Apartment::IApartment* Omega::Apartment::IApartment::Create()
 {
-	return IApartment_Create();
+	return OOCore_IApartment_Create();
 }
 
 #endif // !defined(DOXYGEN)

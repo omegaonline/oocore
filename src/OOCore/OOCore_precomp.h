@@ -41,8 +41,11 @@
 #define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
 
-#define OMEGA_DECLARE_OID(n) \
-	OMEGA_EXPORT_OID(n)
+#define OMEGA_INTERNAL \
+	OMEGA_EXPORT
+
+#define OMEGA_DECLARE_OID(name) \
+	OMEGA_EXPORT_OID(name)
 
 /////////////////////////////////////////////////
 // Include OOCore/OTL components

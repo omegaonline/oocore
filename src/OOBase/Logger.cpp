@@ -91,12 +91,12 @@ void LoggerImpl::open(const char* name)
 		return;
 
 	// Create the relevant registry keys if they don't already exist
-	char szBuf[MAX_PATH] = {0};
-	sprintf_s(szBuf,sizeof(szBuf),"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\%s",name);
-	
+	std::string strName = "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\";
+	strName += name;
+		
 	HKEY hk;
 	DWORD dwDisp;
-	if (RegCreateKeyExA(HKEY_LOCAL_MACHINE,szBuf,0,NULL,REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hk,&dwDisp) == ERROR_SUCCESS) 
+	if (RegCreateKeyExA(HKEY_LOCAL_MACHINE,strName.c_str(),0,NULL,REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hk,&dwDisp) == ERROR_SUCCESS) 
 	{
 		RegSetValueExW(hk,L"EventMessageFile",0,REG_EXPAND_SZ,(LPBYTE)szPath,(DWORD)wcslen(szPath)+1);
 

@@ -46,6 +46,7 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl,0)
 	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl,0)
 	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl,0)
 END_LIBRARY_OBJECT_MAP()
 
 #if defined(_WIN32)

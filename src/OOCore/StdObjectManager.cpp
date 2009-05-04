@@ -482,7 +482,7 @@ bool OOCore::StdObjectManager::IsAlive()
 	if (!m_ptrChannel)
 		return false;
 
-	return (m_ptrChannel->GetSource() != 0);
+	return m_ptrChannel->IsConnected();
 }
 
 Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()

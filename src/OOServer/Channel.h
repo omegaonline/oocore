@@ -63,6 +63,7 @@ namespace User
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
 		Omega::uint32_t GetSource();
+		Omega::bool_t IsConnected();
 
 	// IChannel members
 	public:

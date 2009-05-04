@@ -144,6 +144,13 @@ uint32_t OOCore::Channel::GetSource()
 	return m_channel_id;
 }
 
+bool_t OOCore::Channel::IsConnected()
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	
+	return (!m_ptrOM ? false : true);
+}
+
 guid_t OOCore::Channel::GetReflectUnmarshalFactoryOID()
 {
 	return OID_ChannelMarshalFactory;

@@ -44,6 +44,7 @@ namespace Omega
 			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
 			virtual MarshalFlags_t GetMarshalFlags() = 0;
 			virtual uint32_t GetSource() = 0;
+			virtual bool_t IsConnected() = 0;
 		};
 
 		interface ICallContext : public IObject
@@ -121,6 +122,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
 	OMEGA_METHOD(Remoting::MarshalFlags_t,GetMarshalFlags,0,())
 	OMEGA_METHOD(uint32_t,GetSource,0,())
+	OMEGA_METHOD(bool_t,IsConnected,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL

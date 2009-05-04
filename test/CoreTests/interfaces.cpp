@@ -348,7 +348,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 
 static bool interface_tests_i(const wchar_t* pszHost)
 {
-#if defined(_WIN32)
+#if defined(_WIN32) && 0
 	int c = 0;
 	try
 	{

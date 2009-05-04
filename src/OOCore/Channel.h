@@ -67,6 +67,7 @@ namespace OOCore
 		virtual Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		virtual Omega::Remoting::MarshalFlags_t GetMarshalFlags();
 		virtual Omega::uint32_t GetSource();
+		virtual Omega::bool_t IsConnected();
 
 	// IChannel members
 	public:

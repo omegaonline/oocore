@@ -945,7 +945,7 @@ void Root::MessageHandler::close()
 	}
 	
 	// Now spin, waiting for all the channels to close...
-	OOBase::timeval_t wait(10);
+	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
 	while (wait != OOBase::timeval_t::zero)
 	{
@@ -956,10 +956,12 @@ void Root::MessageHandler::close()
 
 		guard.release();
 
-		OOBase::sleep(OOBase::timeval_t(0,100000));
+		OOBase::sleep(OOBase::timeval_t(0,50000));
 
 		countdown.update();
 	}
+
+	assert(m_mapChannelIds.empty());
 }
 
 void Root::MessageHandler::stop()

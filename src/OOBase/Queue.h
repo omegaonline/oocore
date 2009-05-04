@@ -130,6 +130,7 @@ namespace OOBase
 			guard.release();
 
 			m_available.broadcast();
+			m_space.broadcast();
 		}
 
 		void pulse()

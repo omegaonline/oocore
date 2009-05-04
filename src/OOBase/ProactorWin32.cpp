@@ -37,11 +37,11 @@ OOSvrBase::ProactorImpl::ProactorImpl()
 OOSvrBase::ProactorImpl::~ProactorImpl()
 {
 	// Spin while we have outstanding requests...
-	OOBase::timeval_t wait(10);
+	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
 	while (wait != OOBase::timeval_t::zero && m_outstanding.value() != 0)
 	{
-		OOBase::sleep(OOBase::timeval_t(0,100000));
+		OOBase::sleep(OOBase::timeval_t(0,50000));
 
 		countdown.update();
 	}

@@ -99,6 +99,8 @@ int User::Manager::run_i(const std::string& strPipe)
 	int res = EXIT_FAILURE;
 	if (init(strPipe))
 	{
+		res = EXIT_SUCCESS;
+
 		// Wait for stop
 		wait_for_quit();
 

@@ -48,16 +48,23 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 	ObjectImpl<OOCore::SystemException>* pExcept = ObjectImpl<OOCore::SystemException>::CreateInstance();
 	pExcept->m_strSource = source;
 
-	char szBuf[1024];
+#if defined(_WIN32)
+
+	pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
+
+#elif defined(HAVE_TR_24731)
+
+	char szBuf[1024] = {0};
 	strerror_s(szBuf,sizeof(szBuf),e);
 	pExcept->m_strDesc = string_t(szBuf,false);
-	pExcept->m_errno = e;
 
-#if defined(_WIN32)
-	if (e >= 42)
-		pExcept->m_strDesc = string_t(OOBase::Win32::FormatMessage(static_cast<DWORD>(e)).c_str(),false);
+#else
+
+	pExcept->m_strDesc = string_t(strerror(e),false);
+
 #endif
-
+	
+	pExcept->m_errno = e;
 	return pExcept;
 }
 

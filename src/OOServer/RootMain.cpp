@@ -43,8 +43,8 @@ static int Version();
 
 static int Help()
 {
-	printf("OOServer - The Omega Online network deamon.\n\n");
-	printf("Please consult the documentation at http://www.omegaonline.org.uk for further information.\n\n");
+	std::cout << "OOServer - The Omega Online network deamon." << std::endl << std::endl;
+	std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl << std::endl;
 	return EXIT_SUCCESS;
 }
 
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 			if (!root_manager.install(argc-2,&argv[2]))
 				return EXIT_FAILURE;
 
-			printf("Installed successfully.\n");
+			std::cout << "Installed successfully." << std::endl;
 			return EXIT_SUCCESS;
 		}
 		else if (strcmp(argv[1],"--uninstall")==0)
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 			if (!root_manager.uninstall())
 				return EXIT_FAILURE;
 
-			printf("Uninstalled successfully.\n");
+			std::cout << "Uninstalled successfully." << std::endl;
 			return EXIT_SUCCESS;
 		}
 		else if (strcmp(argv[1],"--helpstring")==0 || strcmp(argv[1],"/?")==0)
@@ -91,19 +91,20 @@ int main(int argc, char* argv[])
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last because we includes a lot of headers, which might be dangerous!
-#include <OOCore/OOCore.h>
+
 #include <sqlite3.h>
+
 static int Version()
 {
 	printf("OOServer version information:\n");
 #if defined(OMEGA_DEBUG)
-	printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
+	//printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
 #else
-	printf("Version: %s\nPlatform: %s\nCompiler: %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
+	//printf("Version: %s\nPlatform: %s\nCompiler: %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
 #endif
 
-	printf("\nOOCore version information:\n");
-	printf("%ls\n\n",Omega::System::GetVersion().c_str());
+	//printf("\nOOCore version information:\n");
+	//printf("%ls\n\n",Omega::System::GetVersion().c_str());
 
 	printf("SQLite version: %s\n",SQLITE_VERSION);
 

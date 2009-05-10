@@ -21,6 +21,28 @@
 
 #include "OOCore_precomp.h"
 
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),void*,pfn_init,(in),void*,pfn_term))
+{
+	typedef bool (*init_function)();
+	typedef void (*term_function)(void*);
+
+	// Do a double lock...
+	if (!*val)
+	{
+		// This singleton should be race start safe...
+		OOBase::Guard<OOBase::SpinLock> guard(*OOBase::Singleton<OOBase::SpinLock>::instance());
+
+		if (!*val)
+		{
+			// Call the init function
+			if (!(*(init_function)(pfn_init))())
+			{
+				OOBase::Destructor::add_destructor((term_function)(pfn_term),0);
+			}
+		}
+	}
+}
+
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,())
 {
 	OOBase::Mutex* pm = 0;

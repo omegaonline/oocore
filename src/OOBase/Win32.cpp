@@ -144,7 +144,7 @@ void Win32Thunk::init_low_frag_heap()
 	if (pfn)
 	{
 		ULONG ulEnableLFH = 2;
-		(*pfn)((HANDLE)_get_heap_handle(),HeapCompatibilityInformation,&ulEnableLFH, sizeof(ulEnableLFH));
+		//(*pfn)((HANDLE)_get_heap_handle(),HeapCompatibilityInformation,&ulEnableLFH, sizeof(ulEnableLFH));
 	}
 #endif
 }
@@ -154,7 +154,7 @@ namespace
 	static HANDLE get_mutex(void* v)
 	{
 		wchar_t buf[256] = {0};
-		wsprintfW(buf,L"OOBase__Win32Thunk__Once__Mutex__%lu__%p",GetCurrentProcessId(),v);
+		wsprintfW(buf,L"Local\\OOBase__Win32Thunk__Once__Mutex__%lu__%p",GetCurrentProcessId(),v);
 		HANDLE h = CreateMutexW(NULL,FALSE,buf);
 		if (!h)
 			OOBase_CallCriticalFailure(GetLastError());
@@ -533,6 +533,10 @@ bool OOBase::Win32::condition_variable_t::wait(HANDLE hMutex, DWORD dwMillisecon
 	// semaphore until <signal> or <broadcast>
 	// are called by another thread.
 	DWORD dwWait = SignalObjectAndWait(hMutex,m_sema,(dwMilliseconds != INFINITE ? wait.msec() : INFINITE),FALSE);
+	if (dwWait != WAIT_OBJECT_0 && dwWait != WAIT_TIMEOUT)
+		OOBase_CallCriticalFailure(GetLastError());
+
+	bool ret = (dwWait == WAIT_OBJECT_0);
 	
 	// Reacquire lock to avoid race conditions.
 	EnterCriticalSection(&m_waiters_lock);
@@ -545,31 +549,23 @@ bool OOBase::Win32::condition_variable_t::wait(HANDLE hMutex, DWORD dwMillisecon
 
 	LeaveCriticalSection(&m_waiters_lock);
 
-	// Check if we timed out
-	if (dwWait == WAIT_OBJECT_0)
+	// If we're the last waiter thread during this particular broadcast
+	// then let all the other threads proceed.
+	if (last_waiter)
 	{
-		countdown.update();
-		
-		// If we're the last waiter thread during this particular broadcast
-		// then let all the other threads proceed.
-		if (last_waiter)
-		{
-			// This call atomically signals the <m_waiters_done> event and waits until
-			// it can acquire the <hMutex>.  This is required to ensure fairness. 
-			dwWait = SignalObjectAndWait(m_waiters_done,hMutex,(dwMilliseconds != INFINITE ? wait.msec() : INFINITE),FALSE);
-		}
-		else
-		{
-			// Always regain the external mutex since that's the guarantee we
-			// give to our callers. 
-			dwWait = WaitForSingleObject(hMutex,(dwMilliseconds != INFINITE ? wait.msec() : INFINITE));
-		}
+		// This call atomically signals the <m_waiters_done> event and waits until
+		// it can acquire the <hMutex>.  This is required to ensure fairness. 
+		dwWait = SignalObjectAndWait(m_waiters_done,hMutex,INFINITE,FALSE);
 	}
-		
+	else
+	{
+		// Always regain the external mutex since that's the guarantee we
+		// give to our callers. 
+		dwWait = WaitForSingleObject(hMutex,INFINITE);
+	}
+			
 	// Return the correct code
-	if (dwWait == WAIT_OBJECT_0)
-		return true;
-	else if (dwWait != WAIT_TIMEOUT)
+	if (dwWait != WAIT_OBJECT_0)
 		OOBase_CallCriticalFailure(GetLastError());
 
 	if (last_waiter)
@@ -578,7 +574,7 @@ bool OOBase::Win32::condition_variable_t::wait(HANDLE hMutex, DWORD dwMillisecon
 			OOBase_CallCriticalFailure(GetLastError());
 	}
 
-	return false;
+	return ret;
 }
 
 void OOBase::Win32::condition_variable_t::signal()
@@ -635,32 +631,48 @@ void OOBase::Win32::condition_variable_t::broadcast()
 		LeaveCriticalSection(&m_waiters_lock);
 }
 
+namespace
+{
+	std::string format_msg(DWORD dwErr, HMODULE hModule)
+	{
+		DWORD dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS;
+		if (hModule)
+			dwFlags |= FORMAT_MESSAGE_FROM_HMODULE;
+		else
+			dwFlags |= FORMAT_MESSAGE_FROM_SYSTEM;
+
+		LPVOID lpBuf;
+		if (::FormatMessageA(
+			dwFlags,
+			hModule,
+			dwErr,
+			0,
+			(LPSTR)&lpBuf,
+			0,	NULL))
+		{
+			OOBase::SmartPtr<void,OOBase::Win32::LocalAllocDestructor<void> > lpMsgBuf = lpBuf;
+			return std::string((LPCSTR)lpMsgBuf.value());
+		}
+		else
+		{
+			return "Unknown error";
+		}
+	}
+}
+
 std::string OOBase::Win32::FormatMessage(DWORD dwErr)
 {
-	std::string ret = "Unknown system error";
+	std::stringstream ret;
+	ret.setf(std::ios_base::hex);
+	ret << "(0x" << dwErr << ") ";
 
-	HMODULE hNT = GetModuleHandleW(L"NTDLL.DLL");
-	LPVOID lpBuf;
-	if (::FormatMessageA(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		FORMAT_MESSAGE_FROM_SYSTEM |
-		FORMAT_MESSAGE_FROM_HMODULE |
-		FORMAT_MESSAGE_IGNORE_INSERTS,
-		hNT,
-		dwErr,
-		0,
-		(LPSTR)&lpBuf,
-		0,	NULL))
-	{
-		OOBase::SmartPtr<void,OOBase::Win32::LocalAllocDestructor<void> > lpMsgBuf = lpBuf;
-		ret = (LPCSTR)lpMsgBuf.value();
-	}
-
-	// Printf the code
-	char szBuf[64];
-	wsprintfA(szBuf,"(%#x) ",dwErr);
-	
-	return szBuf + ret;
+	std::string msg;
+	if (!(dwErr & 0xC0000000))
+		ret << format_msg(dwErr,NULL);
+	else
+		ret << format_msg(dwErr,GetModuleHandleW(L"NTDLL.DLL"));
+		
+	return ret.str();
 }
 
 #endif // _WIN32

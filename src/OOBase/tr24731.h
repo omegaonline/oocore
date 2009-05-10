@@ -48,10 +48,6 @@ inline int vsnprintf_s_fixed(char* s, rsize_t n, const char* format, va_list arg
 
 #if !defined(HAVE_TR_24731)
 
-int sprintf_s(char* s, size_t n, const char* format, ...);
-int swprintf_s(wchar_t* s, size_t n, const wchar_t* format, ...);
-int strerror_s(char *s, size_t maxsize, int errnum);
-int mbstowcs_s(size_t* retval, wchar_t* dst, size_t dstmax, const char* src, size_t len);
 int vsnprintf_s(char* s, size_t n, const char* format, va_list arg);
 int vswprintf_s(wchar_t* s, size_t n, const wchar_t* format, va_list arg);
 

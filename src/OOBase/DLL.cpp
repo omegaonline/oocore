@@ -33,9 +33,9 @@ OOBase::DLL::~DLL()
 	unload();
 }
 
-int OOBase::DLL::load(const wchar_t* full_path)
+int OOBase::DLL::load(const char* full_path)
 {
-	m_module = LoadLibraryW(full_path);
+	m_module = LoadLibraryA(full_path);
 	if (!m_module)
 		return GetLastError();
 

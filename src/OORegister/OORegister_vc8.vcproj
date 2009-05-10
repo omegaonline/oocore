@@ -42,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;HAVE_VLD_H"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions="HAVE_VLD_H"
 				MinimalRebuild="true"
 				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
@@ -52,7 +52,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -65,10 +65,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEsd.lib"
 				OutputFile="$(OutDir)/OORegister.exe"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OORegister.pdb"
 				SubSystem="1"
@@ -126,10 +124,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\include"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;NDEBUG"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				ExceptionHandling="1"
 				RuntimeLibrary="0"
@@ -138,7 +135,6 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -151,10 +147,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEs.lib"
 				OutputFile="$(OutDir)/OORegister.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"

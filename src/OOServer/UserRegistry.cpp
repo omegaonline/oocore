@@ -205,11 +205,12 @@ namespace Registry
 using namespace User;
 using namespace User::Registry;
 
-void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key)
+void Key::Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type)
 {
 	m_pManager = pManager;
 	m_strKey = strKey;
 	m_key = key;
+	m_type = type;
 }
 
 bool_t Key::IsSubKey(const string_t& strSubKey)
@@ -219,6 +220,7 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::KeyExists));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -248,6 +250,7 @@ bool_t Key::IsValue(const string_t& strName)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::ValueType));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -279,6 +282,7 @@ int Key::GetValueType_i(const string_t& strName, ValueType_t& vtype)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::ValueType));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -342,6 +346,7 @@ string_t Key::GetStringValue(const string_t& strName)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::GetStringValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -382,6 +387,7 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::GetIntegerValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -422,6 +428,7 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::GetBinaryValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	request.write(cbLen);
 	bool bNoDataBack = (cbLen == 0);
@@ -467,6 +474,7 @@ void Key::SetStringValue(const string_t& strName, const string_t& strValue)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::SetStringValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	request.write(strValue.ToUTF8().c_str());
 	if (request.last_error() != 0)
@@ -495,6 +503,7 @@ void Key::SetIntegerValue(const string_t& strName, const int64_t& value)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::SetIntegerValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	request.write(value);
 	if (request.last_error() != 0)
@@ -523,6 +532,7 @@ void Key::SetBinaryValue(const Omega::string_t& strName, Omega::uint32_t cbLen, 
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::SetBinaryValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	request.write_bytes(val,cbLen);
 	if (request.last_error() != 0)
@@ -549,6 +559,7 @@ string_t Key::GetDescription()
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::GetDescription));
 	request.write(m_key);
+	request.write(m_type);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -581,6 +592,7 @@ string_t Key::GetValueDescription(const Omega::string_t& strName)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::GetValueDescription));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -612,6 +624,7 @@ void Key::SetDescription(const Omega::string_t& strDesc)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::SetDescription));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strDesc.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -637,6 +650,7 @@ void Key::SetValueDescription(const Omega::string_t& strValue, const Omega::stri
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::SetValueDescription));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strValue.ToUTF8().c_str());
 	request.write(strDesc.ToUTF8().c_str());
 	if (request.last_error() != 0)
@@ -665,6 +679,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::CreateKey));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
 	request.write((flags & IKey::Create) ? true : false);
 	request.write((flags & IKey::FailIfThere) ? true : false);
@@ -689,13 +704,14 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 		OMEGA_THROW(err);
 
 	Omega::int64_t key = 0;
-	if (!response->read(key))
+	Omega::byte_t type = 255;
+	if (!response->read(key) || !response->read(type))
 		OMEGA_THROW(response->last_error());	
 	
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
 
-	ptrNew->Init(m_pManager,m_strKey + L"\\" + strSubKey,key);
+	ptrNew->Init(m_pManager,m_strKey + L"\\" + strSubKey,key,type);
 
 	return ptrNew.AddRef();
 }
@@ -705,6 +721,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::EnumSubKeys));
 	request.write(m_key);
+	request.write(m_type);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -753,6 +770,7 @@ Omega::IEnumString* Key::EnumValues()
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::EnumValues));
 	request.write(m_key);
+	request.write(m_type);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -803,6 +821,7 @@ void Key::DeleteKey(const string_t& strSubKey)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteKey));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
@@ -830,6 +849,7 @@ void Key::DeleteValue(const string_t& strName)
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteValue));
 	request.write(m_key);
+	request.write(m_type);
 	request.write(strName.ToUTF8().c_str());
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());

@@ -155,6 +155,9 @@ namespace Root
 
 		struct Message
 		{
+			Message() {}
+			Message(size_t len) : m_payload(len) {}
+				
 			Omega::uint16_t   m_dest_thread_id;
 			Omega::uint16_t   m_src_thread_id;
 			Omega::uint32_t   m_src_channel_id;

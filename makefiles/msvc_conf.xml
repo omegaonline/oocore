@@ -18,7 +18,6 @@
     </Configuration>
   </Project>
   <Project Name="OOSvrUser">
-    <Include Name="sqlite3.c" Define="HAVE_SQLITE3_AMALGAMATION"/>
     <Configuration Name="Debug">
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
@@ -36,7 +35,6 @@
     </Configuration>
   </Project>
   <Project Name="OORpc">
-    <Include Name="ace/ACE.h" />
     <Configuration Name="Debug">
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
@@ -45,7 +43,6 @@
     </Configuration>
   </Project>
   <Project Name="OORegister">
-    <Include Name="ace/ACE.h" />
     <Configuration Name="Debug">
       <Platform Name="Win32">
         <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />

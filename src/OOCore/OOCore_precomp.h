@@ -73,7 +73,7 @@ namespace OOCore
 	{
 		Omega::bool_t val;
 		if (pMsg->ReadBooleans(name,1,&val) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 		return val;
 	}
 
@@ -81,7 +81,7 @@ namespace OOCore
 	{
 		Omega::byte_t val;
 		if (pMsg->ReadBytes(name,1,&val) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 		return val;
 	}
 
@@ -89,7 +89,7 @@ namespace OOCore
 	{
 		Omega::uint16_t val;
 		if (pMsg->ReadUInt16s(name,1,&val) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 		return val;
 	}
 
@@ -97,7 +97,7 @@ namespace OOCore
 	{
 		Omega::uint32_t val;
 		if (pMsg->ReadUInt32s(name,1,&val) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 		return val;
 	}
 
@@ -105,7 +105,7 @@ namespace OOCore
 	{
 		Omega::guid_t val;
 		if (pMsg->ReadGuids(name,1,&val) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 		return val;
 	}
 

@@ -309,7 +309,7 @@ void OOCore::Xml::ParseXMLNamespaces(const std::map<string_t,string_t>& attribs,
 		else if (i->first==L"xmlns")
 		{
 			if (namespaces.find(L"") != namespaces.end())
-				OMEGA_THROW(L"Duplicate undecorated namespace attribute!");
+				OMEGA_THROW(L"Duplicate undecorated namespace attribute");
 
 			namespaces.insert(std::map<string_t,string_t>::value_type(L"",i->second));
 		}

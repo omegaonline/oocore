@@ -151,7 +151,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	Omega::string_t strXML =
 		L"<?xml version=\"1.0\" ?>"
 		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
-			L"<key name=\"\\Objects\">"
+			L"<key name=\"\\All Users\\Objects\">"
 				L"<key name=\"MyLittleTest\" uninstall=\"Remove\">"
 					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
 				L"</key>"
@@ -260,23 +260,6 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	{
 		pE->Release();
 	}
-
-	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
-	do_interface_tests(ptrSimpleTest);
-
-	// Kill the running version
-	try
-	{
-		ptrSimpleTest->Abort();
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-
-	// Try adjusting where it runs
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrReg(L"\\Applications\\TestProcess");
-	ptrReg->SetIntegerValue(L"Public",1);
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
 	do_interface_tests(ptrSimpleTest);

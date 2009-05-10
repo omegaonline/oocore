@@ -23,8 +23,6 @@
 #include "UserManager.h"
 #include "../Common/Version.h"
 
-#include <sqlite3.h>
-
 #ifdef HAVE_VLD_H
 #include <vld.h>
 #endif
@@ -62,7 +60,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		printf(msg);
-		printf("\n\nAborting\n");
+		std::cerr << msg << std::endl << std::endl;
+		std::cerr << "Aborting!"  << std::endl;
 	}
 }

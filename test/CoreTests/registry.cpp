@@ -246,7 +246,10 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
-		TEST(pE->GetKeyName() == strKey + L"\\" + strTestKey);
+		if (strKey != L"\\")
+			TEST(pE->GetKeyName() == strKey + L"\\" + strTestKey);
+		else
+			TEST(pE->GetKeyName() == strKey + strTestKey);
 		pE->Release();
 	}
 
@@ -260,7 +263,10 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	catch (Omega::Registry::INotFoundException* pE)
 	{
-		TEST(pE->GetName() == strKey + L"\\" + strTestKey);
+		if (strKey != L"\\")
+			TEST(pE->GetName() == strKey + L"\\" + strTestKey);
+		else
+			TEST(pE->GetName() == strKey + strTestKey);
 		pE->Release();
 	}
 
@@ -328,7 +334,6 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 {
 	TEST(pKey->IsSubKey(L"All Users"));
 	TEST(pKey->IsSubKey(L"Server"));
-	TEST(pKey->IsSubKey(L"Server\\Sandbox"));
 	TEST(pKey->IsSubKey(L"Local User"));
 
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
@@ -355,12 +360,17 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 
 		if (!test_values(pKey))
 			return false;
+
+		if (!test_key2(pKey,L"\\"))
+			return false;
 	}
 
 	// Test the private root keys
 	test_privates(pKey,L"All Users");
-	test_privates(pKey,L"Objects");
-	test_privates(pKey,L"Objects\\OIDs");
+	test_privates(pKey,L"All Users\\Applications");
+	test_privates(pKey,L"All Users\\Objects");
+	test_privates(pKey,L"All Users\\Objects\\OIDs");
+	test_privates(pKey,L"Local User");
 	test_privates(pKey,L"Server");
 	test_privates(pKey,L"Server\\Sandbox");
 

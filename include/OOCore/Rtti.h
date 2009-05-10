@@ -1074,6 +1074,10 @@ namespace Omega
 			public:
 				static PSMap& instance()
 				{
+					// This singleton is only safe because it is created during
+					// Omega::Initialise, and that is protected...
+					// Or via a DLL call to Omega_GetObject
+
 					static PSMap map;
 					return map;
 				}

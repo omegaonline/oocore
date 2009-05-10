@@ -19,40 +19,20 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include "../OOBase/DLL.h"
+
 #include <OOCore/OOCore.h>
 
-#if defined(_WIN32) && !defined(WIN32)
-#define WIN32
-#endif
-
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4355) // 'this' : used in base member initializer list
-#if (_MSC_VER == 1310)
-#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
-#endif
-#if (_MSC_VER >= 1400)
-#pragma warning(disable : 4996) // 'function' was declared deprecated
-#endif
-#endif
-
-#include <ace/Get_Opt.h>
-#include <ace/OS_NS_stdio.h>
-#include <ace/DLL_Manager.h>
-#include <ace/DLL.h>
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
+#include <iostream>
 
 static void print_help()
 {
-	ACE_OS::printf("OORegister - Registers a library with Omega Online.\n\n");
-	ACE_OS::printf("Usage: OORegister [-i] [-u] library_name\n");
-	ACE_OS::printf("-i\tInstall the library\n");
-	ACE_OS::printf("-u\tUninstall the library\n");
-	ACE_OS::printf("-s\tSilent, do not output anything\n");
-	ACE_OS::printf("\n");
+	std::cout << "OORegister - Registers a library with Omega Online." << std::endl << std::endl;
+	std::cout << "Usage: OORegister [-i|u] [-s] library_name" << std::endl;
+	std::cout << "--install (-i)\tInstall the library" << std::endl;
+	std::cout << "--uninstall (-u)\tUninstall the library"  << std::endl;
+	std::cout << "--silent (-s)\tSilent, do not output anything" << std::endl << std::endl;
+	std::cout << "--current (-c)\tInstall for current user only" << std::endl << std::endl;
 }
 
 typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bLocal, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
@@ -68,158 +48,155 @@ static void call_fn(pfnRegisterLib pfn, Omega::bool_t bInstall, Omega::bool_t bL
 		Omega::System::MetaInfo::throw_correct_exception(pSE);
 }
 
-static int do_install(bool bInstall, bool bLocal, bool bSilent, ACE_TCHAR* lib_path)
+static int do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_path)
 {
-	ACE_DLL dll;
-	if (dll.open(lib_path,ACE_DEFAULT_SHLIB_MODE,false)!=0)
+	OOBase::DLL dll;
+	int err = dll.load(lib_path);
+	if (err != 0)
 	{
-		if (bSilent)
-			return EXIT_FAILURE;
-		else
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Failed to load library '%s': %m\n\n"),lib_path),EXIT_FAILURE);
+		if (!bSilent)
+			std::cerr << "Failed to load library '" << lib_path << "', error code: " << err << std::endl;
+
+		return EXIT_FAILURE;
 	}
 
-	pfnRegisterLib pfnRegister = (pfnRegisterLib)dll.symbol(ACE_TEXT("Omega_RegisterLibrary_Safe"));
+	pfnRegisterLib pfnRegister = (pfnRegisterLib)dll.symbol("Omega_RegisterLibrary_Safe");
 	if (pfnRegister == 0)
 	{
-		if (bSilent)
-			return EXIT_FAILURE;
-		else
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Library missing 'Omega_RegisterLibrary_Safe' function.\n\n"),lib_path),EXIT_FAILURE);
+		if (!bSilent)
+			std::cerr << "Library missing 'Omega_RegisterLibrary_Safe' function" << err << std::endl;
+
+		return EXIT_FAILURE;
 	}
 
 	try
 	{
-		Omega::string_t strSubsts = L"LIB_PATH=";
-		strSubsts += ACE_TEXT_ALWAYS_WCHAR(lib_path);
-
 		// Call register
-		call_fn(pfnRegister,bInstall,bLocal,strSubsts);
+		call_fn(pfnRegister,bInstall,bLocal,L"LIB_PATH=" + Omega::string_t(lib_path,false));
 	}
 	catch (Omega::IException* pE)
 	{
 		if (!bSilent)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->GetDescription().c_str()));
+			std::cerr << "Function failed: " << pE->GetDescription().ToUTF8().c_str() << std::endl;
 
 		pE->Release();
 		return EXIT_FAILURE;
 	}
 	catch (...)
 	{
-		if (bSilent)
-			return EXIT_FAILURE;
-		else
-			ACE_ERROR_RETURN((LM_ERROR,"Function failed with an unknown C++ exception.\n\n"),EXIT_FAILURE);
+		if (!bSilent)
+			std::cerr << "Function failed with an unknown C++ exception" << std::endl;
+
+		return EXIT_FAILURE;
 	}
 
 	if (!bSilent)
 	{
 		if (bInstall)
-			ACE_OS::fprintf(stdout,ACE_TEXT("Registration of '%s' successful.\n\n"),lib_path);
+			std::cout << "Registration of '" << lib_path << "' successful" << std::endl << std::endl;
 		else
-			ACE_OS::fprintf(stdout,ACE_TEXT("Unregistration of '%s' successful.\n\n"),lib_path);
+			std::cout << "Unregistration of '" << lib_path << "' successful" << std::endl << std::endl;
 	}
 
 	return EXIT_SUCCESS;
 }
 
-int ACE_TMAIN(int argc, ACE_TCHAR* argv[])
+int main(int argc, char* argv[])
 {
 	// Parse cmd line first
-	ACE_Get_Opt cmd_opts(argc,argv,ACE_TEXT(":iusl"));
-	int option;
-	bool bInstall = true;
-	bool bLocal = false;
+	if (argc < 3)
+	{
+		std::cerr << "Invalid arguments" << std::endl << std::endl;
+		print_help();
+		return EXIT_FAILURE;
+	}
+
+	int nInstall = -1;
+	bool bCurrent = false;
 	bool bSilent = false;
-	while ((option = cmd_opts()) != EOF)
+	const char* pszLib = 0;
+	for (int i=1;i<argc;++i)
 	{
-		switch (option)
+		if (strcmp(argv[i],"-i")==0 || strcmp(argv[i],"--install")==0)
 		{
-		case ACE_TEXT('i'):
-			break;
+			if (nInstall == 0)
+			{
+				if (!bSilent)
+				{
+					std::cerr << "Do not mix --install and --uninstall" << std::endl << std::endl;
+					print_help();
+				}
 
-		case ACE_TEXT('u'):
-			bInstall = false;
-			break;
+				return EXIT_FAILURE;
+			}
+			nInstall = 1;
+		}
+		else if (strcmp(argv[i],"-u")==0 || strcmp(argv[i],"--uninstall")==0)
+		{
+			if (nInstall == 1)
+			{
+				if (!bSilent)
+				{
+					std::cerr << "Do not mix --uninstall and --install" << std::endl << std::endl;
+					print_help();
+				}
 
-		case ACE_TEXT('l'):
-			bLocal = true;
-			break;
-
-		case ACE_TEXT('s'):
+				return EXIT_FAILURE;
+			}
+			nInstall = 0;
+		}
+		else if (strcmp(argv[i],"-s")==0 || strcmp(argv[i],"--silent")==0)
+		{
 			bSilent = true;
+		}
+		else if (strcmp(argv[i],"-c")==0 || strcmp(argv[i],"--current")==0)
+		{
+			bCurrent = true;
+		}
+		else
+		{
+			if (i != argc-1 && !bSilent)
+				std::cout << "Warning: Only the first library on the command line will be registered" << std::endl;
+			
+			pszLib = argv[i];
 			break;
-
-		case ACE_TEXT(':'):
-			if (bSilent)
-				return EXIT_FAILURE;
-			else
-			{
-				print_help();
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument for -%c.\n\n"),cmd_opts.opt_opt()),EXIT_FAILURE);
-			}
-
-		default:
-			if (bSilent)
-				return EXIT_FAILURE;
-			else
-			{
-				print_help();
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid argument -%c.\n\n"),cmd_opts.opt_opt()),EXIT_FAILURE);
-			}
 		}
 	}
 
-	if (cmd_opts.opt_ind()==1)
+	if (!pszLib)
 	{
-		if (bSilent)
-			return EXIT_FAILURE;
-		else
+		if (!bSilent)
 		{
+			std::cerr << "No library filename supplied" << std::endl << std::endl;
 			print_help();
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Missing argument.\n\n")),EXIT_FAILURE);
 		}
-	}
 
-	if (cmd_opts.opt_ind()!=(argc-1))
+		return EXIT_FAILURE;
+	}
+	else if (nInstall == -1)
 	{
-		if (bSilent)
-			return EXIT_FAILURE;
-		else
+		if (!bSilent)
 		{
+			std::cerr << "You must supply either --install or --uninstall" << std::endl << std::endl;
 			print_help();
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("Invalid number of parameters.\n\n")),EXIT_FAILURE);
 		}
-	}
 
-	// This gives a small leak, but allows ACE based DLL's a chance to unload correctly
-	ACE_DLL_Manager::instance()->unload_policy(ACE_DLL_UNLOAD_POLICY_LAZY);
+		return EXIT_FAILURE;
+	}
 
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 	{
 		if (!bSilent)
-			ACE_ERROR((LM_ERROR,ACE_TEXT("Function failed: %W.\n\n"),pE->GetDescription().c_str()));
+			std::cerr << "Omega::Initialize failed: " << pE->GetDescription().ToUTF8().c_str() << std::endl << std::endl;
 
 		pE->Release();
 		return EXIT_FAILURE;
 	}
 
-	int res = do_install(bInstall,bLocal,bSilent,argv[argc-1]);
+	int res = do_install((nInstall == 1),bCurrent,bSilent,pszLib);
 
 	Omega::Uninitialize();
 
 	return res;
 }
-
-#if defined(ACE_WIN32) && defined(ACE_USES_WCHAR) && defined(__MINGW32__)
-#include <shellapi.h>
-int main(int argc, char* /*argv*/[])
-{
-	// MinGW doesn't understand wmain, so...
-	wchar_t** wargv = CommandLineToArgvW(GetCommandLineW(),&argc);
-
-	ACE_Main m;
-	return ace_os_wmain_i (m, argc, wargv);   /* what the user calls "main" */
-}
-#endif

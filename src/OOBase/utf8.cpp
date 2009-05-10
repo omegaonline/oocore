@@ -65,6 +65,26 @@ std::string OOBase::to_utf8(const wchar_t* wsz)
 	return ptrBuf.value();
 }
 
+std::wstring OOBase::from_native(const char* sz)
+{
+	if (!sz || sz[0]=='\0')
+		return std::wstring();
+
+	int len = MultiByteToWideChar(CP_THREAD_ACP,0,sz,-1,NULL,0);
+	if (!len)
+		OOBase_CallCriticalFailure(GetLastError());
+
+	SmartPtr<wchar_t,ArrayDestructor<wchar_t> > ptrBuf;
+	OOBASE_NEW(ptrBuf,wchar_t[len+1]);
+	if (!ptrBuf)
+		OOBase_OutOfMemory();
+
+	if (!MultiByteToWideChar(CP_THREAD_ACP,0,sz,-1,ptrBuf.value(),len))
+		OOBase_CallCriticalFailure(GetLastError());
+
+	return ptrBuf.value();
+}
+
 #else
 
 std::wstring OOBase::from_utf8(const char* sz)
@@ -204,27 +224,28 @@ std::string OOBase::to_utf8(const wchar_t* wsz)
 	return strRet;
 }
 
-#endif
-
 std::wstring OOBase::from_native(const char* sz)
 {
 	if (!sz || sz[0]=='\0')
 		return std::wstring();
 
-	size_t len = strlen(sz) + 1;
-	size_t buf_size = 0;
-	int err = mbstowcs_s(&buf_size,0,0,sz,len);
-	if (err)
-		OOBase_CallCriticalFailureErrno(err);
+	size_t in_len = strlen(sz) + 1;
+	size_t out_len = mbstowcs(NULL,sz,in_len);
+	if (out_len == (size_t)-1)
+		OOBase_CallCriticalFailureErrno(errno);
+
+	// Always allow room for the NULL terminator
+	++out_len;
 
 	SmartPtr<wchar_t,ArrayDestructor<wchar_t> > buf;
-	OOBASE_NEW(buf,wchar_t[buf_size]);
+	OOBASE_NEW(buf,wchar_t[out_len]);
 	if (!buf)
 		OOBase_OutOfMemory();
 
-	err = mbstowcs_s(NULL,buf.value(),buf_size,sz,len);
-	if (err)
-		OOBase_CallCriticalFailureErrno(err);
+	if (mbstowcs(buf.value(),sz,in_len) == (size_t)-1)
+		OOBase_CallCriticalFailureErrno(errno);
 
 	return buf.value();
 }
+
+#endif

@@ -265,8 +265,8 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 		act_flags |= Activation::RemoteServer;
 
 	// Work out the oid
-	guid_t oid = guid_t::FromString(strOID);
-	if (oid == guid_t::Null())
+	guid_t oid;
+	if (!guid_t::FromString(strOID,oid))
 		oid = Activation::NameToOid(strOID);
 
 	// Get the required object
@@ -283,7 +283,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		OMEGA_THROW(L"Invoke called with no message");
 		
 	if (!m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager already connected to a Channel");
+		OMEGA_THROW(L"ObjectManager already connected to a channel");
 
 	// Stash call context
 	CallContext* pCC = 0;

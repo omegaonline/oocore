@@ -20,71 +20,17 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "../OOBase/Mutex.h"
-
-#include <OOCore/OOCore.h>
-
-/////////////////////////////////////////////////
-// Include ACE components
-
-#if 1
-
-#if defined(_MSC_VER)
-#pragma warning(push)
-
-#ifndef _DEBUG
-// Optimization sometimes re-orders things causing this error
-#pragma warning(disable : 4702)
-#endif
-#if (_MSC_VER == 1310)
-#pragma warning(disable : 4244) // 'argument' : conversion from 't1' to 't2', possible loss of data
-#endif
-#if (_MSC_VER >= 1400)
-#pragma warning(disable : 4996) // 'function' was declared deprecated 
-#endif
-#endif
-
-#include <ace/Codecs.h>
-#include <ace/Condition_Thread_Mutex.h>
-#include <ace/Event.h>
-#include <ace/Init_ACE.h>
-#include <ace/Message_Queue.h>
-#include <ace/OS.h>
-#include <ace/Recursive_Thread_Mutex.h>
-#include <ace/RW_Thread_Mutex.h>
-
-#if !defined(ACE_HAS_WCHAR)
-#error Omega Online requires ACE_HAS_WCHAR support!
-#endif
-
-#if defined(ACE_WIN32)
-#if ((defined(UNICODE) || defined(_UNICODE)) && !defined(ACE_USES_WCHAR)) || (!defined(UNICODE) && !defined(_UNICODE) && defined(ACE_USES_WCHAR))
-#error You cannot mix and match UNICODE and ACE_USES_WCHAR!
-#endif
-#endif
-
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-
-#endif
-
-// End of ACE includes
-/////////////////////////////////////////////////
+#include "../OOBase/Buffer.h"
 
 //////////////////////////////////////////////
-// Include STL components
 
 #include <set>
 #include <sstream>
 
-// End of STL includes
-//////////////////////////////////////////////
-
 /////////////////////////////////////////////////
-// Include OOCore/OTL components
 
+#include <OOCore/OOCore.h>
 #include <OOCore/Remoting.h>
 #include <OTL/OTL.h>
 
-// End of OOCore/OTL includes
 /////////////////////////////////////////////////

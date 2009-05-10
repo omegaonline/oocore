@@ -8,7 +8,7 @@ libOOCore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
 libOOCore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
 
 if WIN32
-libOOCore_la_LDFLAGS += -no-undefined -Wl,'-lrpcrt4'
+libOOCore_la_LDFLAGS += -avoid-version -no-undefined -Wl,'-lrpcrt4'
 endif
 
 libOOCore_la_SOURCES = \

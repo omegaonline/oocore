@@ -32,7 +32,7 @@ static bool string_tests_wchar()
 	TEST(wcscmp(s3.c_str(),sz2) == 0);
 
 	s3.Clear();
-	TEST(s3.IsEmpty())
+	TEST(s3.IsEmpty());
 
 	s3 = sz1_2;
 	TEST(s1.CompareNoCase(s3) == 0);
@@ -135,6 +135,8 @@ bool guid_tests()
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
 	TEST(guid2 == sz);
+
+	TEST(Omega::guid_t::FromString(sz,guid2));
 
 	// Create a load of unique guid_t's
 	Omega::guid_t arr[100];

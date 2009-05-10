@@ -56,7 +56,7 @@ namespace
 		virtual ~SpawnedProcessWin32();
 
 		bool Spawn(bool& bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
-		bool CheckAccess(const char* pszFName, int mode, bool& bAllowed);
+		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
 		std::string GetRegistryHive();
@@ -78,7 +78,9 @@ namespace
 	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe, OOSvrBase::Win32::sec_descript_t& sd)
 	{
 		// Create a new unique pipe
-		strPipe = "OOR";
+		std::stringstream ssPipe;
+		ssPipe.setf(std::ios_base::hex);
+		ssPipe << "OOR";
 
 		// Get the logon SID of the Token
 		OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > ptrSIDLogon = 0;
@@ -89,15 +91,14 @@ namespace
 		char* pszSid;
 		if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
 		{
-			strPipe += pszSid;
+			ssPipe << pszSid;
 			LocalFree(pszSid);
 		}
 				
-		char szBuf[64];
 		OOBase::timeval_t now = OOBase::gettimeofday();
-		sprintf_s(szBuf,sizeof(szBuf),"-%lx",now.tv_usec);
-		strPipe += szBuf;
-
+		ssPipe << "-" << now.tv_usec;
+		strPipe = ssPipe.str();
+		
 		// Get the current processes user SID
 		OOBase::Win32::SmartHandle hProcessToken;
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
@@ -226,7 +227,7 @@ namespace
 		
 		// Set minimum access for the calling process SID
 		ea[0].grfAccessPermissions = WINSTA_CREATEDESKTOP;
-		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfAccessMode = GRANT_ACCESS;
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -241,7 +242,7 @@ namespace
 			WINSTA_READATTRIBUTES |
 			STANDARD_RIGHTS_REQUIRED;
 
-		ea[1].grfAccessMode = SET_ACCESS;
+		ea[1].grfAccessMode = GRANT_ACCESS;
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -249,7 +250,7 @@ namespace
 
 		// Set generic all access for Specific logon for everything below...
 		ea[2].grfAccessPermissions = STANDARD_RIGHTS_REQUIRED | GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL;
-		ea[2].grfAccessMode = SET_ACCESS;
+		ea[2].grfAccessMode = GRANT_ACCESS;
 		ea[2].grfInheritance = CONTAINER_INHERIT_ACE | INHERIT_ONLY_ACE | OBJECT_INHERIT_ACE;
 		ea[2].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[2].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -265,7 +266,7 @@ namespace
 		
 		// Set minimum access for the calling process SID
 		ea[0].grfAccessPermissions = DESKTOP_CREATEWINDOW;
-		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfAccessMode = GRANT_ACCESS;
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -281,7 +282,7 @@ namespace
 			DESKTOP_WRITEOBJECTS |
 			STANDARD_RIGHTS_REQUIRED;
 
-		ea[1].grfAccessMode = SET_ACCESS;
+		ea[1].grfAccessMode = GRANT_ACCESS;
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -326,9 +327,8 @@ namespace
 		if (*pEnd != L'\0')
 			return ERROR_INVALID_SID;
 		
-		wchar_t szBuf[256];
-		swprintf_s(szBuf,sizeof(szBuf),L"Service-0x%lx-%lx$",dwParts[0],dwParts[1]);
-	
+		wchar_t szBuf[128] = {0};
+		wsprintfW(szBuf,L"Service-0x%lu-%lu$",dwParts[0],dwParts[1]);
 		strWindowStation = szBuf;
 
 		// Get the current processes user SID
@@ -636,7 +636,7 @@ Cleanup:
 
 bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
-	bool bAskedUnsafe = bUnsafe;
+	bool bAskUnsafe = bUnsafe;
 	bUnsafe = false;
 
 	m_bSandbox = bSandbox;
@@ -644,7 +644,7 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bAskedUnsafe || IsDebuggerPresent()))
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bAskUnsafe || IsDebuggerPresent()))
 		{
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -701,7 +701,7 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 	return (dwRes == ERROR_SUCCESS);
 }
 
-bool SpawnedProcessWin32::CheckAccess(const char* pszFName, int mode, bool& bAllowed)
+bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
 {
 	bAllowed = false;
 
@@ -719,13 +719,12 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, int mode, bool& bAll
 
 	// Map the generic access rights
 	DWORD dwAccessDesired = 0;
-	if (mode & _O_RDONLY)
-		dwAccessDesired = FILE_GENERIC_READ;
-	else if (mode & _O_WRONLY)
-		dwAccessDesired = FILE_GENERIC_WRITE;
-	else if (mode & _O_RDWR)
-		dwAccessDesired = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
-
+	if (bRead)
+		dwAccessDesired |= FILE_GENERIC_READ;
+	
+	if (bWrite)
+		dwAccessDesired |= FILE_GENERIC_WRITE;
+	
 	GENERIC_MAPPING generic =
 	{
 		FILE_GENERIC_READ,

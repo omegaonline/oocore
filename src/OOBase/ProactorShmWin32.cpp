@@ -236,13 +236,15 @@ void ShmSocket::on_read_i()
 
 	for (;;)
 	{
-		// Release and acquire lock each time so we allow reads to add to queue
-		OOBase::Guard<OOBase::SpinLock> guard(m_read_lock);
-
 		try
 		{
+			// Release and acquire lock each time so we allow reads to add to queue
+			OOBase::Guard<OOBase::SpinLock> guard(m_read_lock);
+
 			if (m_read_list.empty())
 			{
+				guard.release();
+
 				// Nothing more to do... stop waiting
 				UnregisterWaitEx(m_hReadWait,NULL);
 				m_hReadWait = 0;
@@ -379,6 +381,9 @@ int ShmSocket::write(OOBase::Buffer* buffer)
 		if (!RegisterWaitForSingleObject(&m_hWriteWait,fifo.m_write_event,&on_write,this,INFINITE,WT_EXECUTEONLYONCE | WT_EXECUTELONGFUNCTION))
 		{
 			DWORD err = GetLastError();
+
+			guard.release();
+
 			m_handler->on_write(this,buffer,err);
 			--m_proactor->m_outstanding;
 			release();
@@ -400,13 +405,15 @@ void ShmSocket::on_write_i()
 
 	for (;;)
 	{
-		// Release and acquire lock each time so we allow writes to add to queue
-		OOBase::Guard<OOBase::SpinLock> guard(m_write_lock);
-
 		try
 		{
+			// Release and acquire lock each time so we allow writes to add to queue
+			OOBase::Guard<OOBase::SpinLock> guard(m_write_lock);
+
 			if (m_write_list.empty())
 			{
+				guard.release();
+
 				// Nothing more to do... stop waiting
 				UnregisterWaitEx(m_hWriteWait,NULL);
 				m_hWriteWait = 0;

@@ -42,105 +42,127 @@ OOCore::UserSession::~UserSession()
 		i->second->m_thread_id = 0;
 }
 
-IException* OOCore::UserSession::init()
+IException* OOCore::UserSession::init(bool bStandalone)
 {
+	UserSession* pThis = USER_SESSION::instance();
+
+	// Don't double init...
+	if (pThis->m_initcount++ != 0)
+		return 0;
+
+#if defined(OMEGA_DEBUG) && defined(_WIN32)
+	// If this event exists, then we are being debugged
+	OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
+	if (hDebugEvent)
+	{
+		// Wait for a bit, letting the caller attach a debugger
+		WaitForSingleObject(hDebugEvent,60000);
+	}
+#endif
+
 	try
 	{
-		USER_SESSION::instance()->init_i();
+		pThis->init_i(bStandalone);
 	}
 	catch (IException* pE)
 	{
-		SERVICE_MANAGER::close();
 		USER_SESSION::close();
-
 		return pE;
 	}
 
 	try
 	{
-		USER_SESSION::instance()->bootstrap();
-		return 0;
+		pThis->bootstrap();
 	}
 	catch (IException* pE)
 	{
 		term();
 		return pE;
 	}
+
+	return 0;
 }
 
-void OOCore::UserSession::init_i()
+void OOCore::UserSession::init_i(bool bStandalone)
 {
-	// Connect to the root - we should loop here, it might take a while
-	// for the accept socket to be created...
-	OOBase::timeval_t wait(20);
-	std::string strPipe = discover_server_port(wait);
-	OOBase::SmartPtr<OOBase::LocalSocket> local_socket;
-
-	OOBase::Countdown countdown(&wait);
-	int err = 0;
-	do
+	std::string strPipe = discover_server_port(bStandalone);
+	if (strPipe.empty())
+		bStandalone = true;
+	
+	if (!bStandalone)
 	{
-		local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
-		if (local_socket)
-			break;
+		// Connect up to the root process...
+		OOBase::SmartPtr<OOBase::LocalSocket> local_socket;
+		OOBase::timeval_t wait(20);
+		OOBase::Countdown countdown(&wait);
+		int err = 0;
+		do
+		{
+			local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
+			if (local_socket)
+				break;
 
-		// We ignore the error, and try again until we timeout
-		OOBase::sleep(OOBase::timeval_t(0,100000));
+			// We ignore the error, and try again until we timeout
+			OOBase::sleep(OOBase::timeval_t(0,100000));
+
+			countdown.update();	
+		} while (wait != OOBase::timeval_t::zero);
+
+		if (!local_socket)
+			OMEGA_THROW(err);
+
+		// Read our channel id
+		err = local_socket->recv(m_channel_id);
+		if (err != 0)
+			OMEGA_THROW(err);
 
 		countdown.update();	
-	} while (wait != OOBase::timeval_t::zero);
 
-	if (!local_socket)
-		OMEGA_THROW(err);
-
-	// Read our channel id
-	err = local_socket->recv(m_channel_id);
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	countdown.update();	
-
-	// Now create a shm-based stream
-	m_stream = OOBase::LocalSocket::connect_shared_mem(local_socket.value(),&err,&wait);
-	if (!m_stream)
-		OMEGA_THROW(err);
-	
-	// Spawn off the io worker thread
-	m_worker_thread.run(io_worker_fn,this);
+		// Now create a shm-based stream
+		m_stream = OOBase::LocalSocket::connect_shared_mem(local_socket.value(),&err,&wait);
+		if (!m_stream)
+			OMEGA_THROW(err);
+		
+		// Spawn off the io worker thread
+		m_worker_thread.run(io_worker_fn,this);
+	}
 }
 
 void OOCore::UserSession::bootstrap()
 {
 	// Create the zero apartment
-	OMEGA_NEW(m_ptrZeroApt,Apartment(this,0));
+	OOBase::SmartPtr<Apartment> ptrZeroApt;
+	OMEGA_NEW(ptrZeroApt,Apartment(this,0));
 	
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 		
-		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,m_ptrZeroApt));
+		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,ptrZeroApt));
 	}
 	catch (std::exception& e)
 	{
-		m_ptrZeroApt = 0;
 		OMEGA_THROW(e);
 	}
-					
-	// Create a new object manager for the user channel on the zero apartment
-	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000);
-
-	// Create a proxy to the server interface
-	IObject* pIPS = 0;
-	ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
-
+		
 	ObjectPtr<System::IInterProcessService> ptrIPS;
-	ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
+	if (m_channel_id != 0)
+	{
+		// Create a new object manager for the user channel on the zero apartment
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000);
+
+		// Create a proxy to the server interface
+		IObject* pIPS = 0;
+		ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
+
+		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
+	}
 
 	// Register locally...
 	m_nIPSCookie = Activation::RegisterObject(System::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 }
 
-std::string OOCore::UserSession::discover_server_port(OOBase::timeval_t& wait)
+std::string OOCore::UserSession::discover_server_port(bool bStandalone)
 {
 #if defined(_WIN32)
 	const char* name = "OOServer";
@@ -149,12 +171,13 @@ std::string OOCore::UserSession::discover_server_port(OOBase::timeval_t& wait)
 #endif
 
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket;
+	OOBase::timeval_t wait(5);
 	OOBase::Countdown countdown(&wait);
 	int err = 0;
 	while (wait != OOBase::timeval_t::zero)
 	{
 		local_socket = OOBase::LocalSocket::connect_local(name,&err,&wait);
-		if (local_socket)
+		if (local_socket || bStandalone)
 			break;
 
 		// We ignore the error, and try again until we timeout
@@ -163,7 +186,7 @@ std::string OOCore::UserSession::discover_server_port(OOBase::timeval_t& wait)
 		countdown.update();	
 	}
 	if (!local_socket)
-		OMEGA_THROW(err);
+		return std::string();
 
 	countdown.update();
 
@@ -194,11 +217,17 @@ std::string OOCore::UserSession::discover_server_port(OOBase::timeval_t& wait)
 
 void OOCore::UserSession::term()
 {
-	USER_SESSION::instance()->term_i();
+	UserSession* pThis = USER_SESSION::instance();
+	if (--pThis->m_initcount == 0)
+	{
+		pThis->term_i();
 
-	SERVICE_MANAGER::close();
+		// Close the service manager
+		SERVICE_MANAGER::close();
 
-	USER_SESSION::close();
+		// Close ourselves
+		USER_SESSION::close();
+	}
 }
 
 void OOCore::UserSession::term_i()
@@ -211,7 +240,8 @@ void OOCore::UserSession::term_i()
 	}
 
 	// Shut down the socket...
-	m_stream->close();
+	if (m_stream)
+		m_stream->close();
 
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();
@@ -231,9 +261,6 @@ void OOCore::UserSession::term_i()
 		j->second->close();
 	}
 	m_mapApartments.clear();
-	
-	// Clean up the zero apartment
-	m_ptrZeroApt = 0;
 }
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
@@ -753,7 +780,7 @@ void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, 
 
 OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t src_channel_id, uint16_t src_thread_id, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, uint16_t flags, uint32_t attribs)
 {
-	OOBase::CDRStream header;
+	OOBase::CDRStream header(48 + (msg ? msg->buffer()->length() : 0));
 	header.write(header.big_endian());
 	header.write(byte_t(1));	 // version
 
@@ -782,7 +809,7 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 
 		// Check the size
 		if (msg->buffer()->length() - header.buffer()->length() > 0xFFFFFFFF)
-			OMEGA_THROW(E2BIG);
+			OMEGA_THROW(L"Message too big");
 
 		// Write the request stream
 		header.write_buffer(msg->buffer());

@@ -173,7 +173,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	
 	uint32_t other_end = 0;
 	if (response && !response->read(other_end))
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 	
 	// Return in the same format as we marshal
 	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
@@ -203,11 +203,11 @@ void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IM
 {
 	uint32_t c;
 	if (pMessage->ReadUInt32s(L"m_channel_id",1,&c) != 1)
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 
 	guid_t g;
 	if (pMessage->ReadGuids(L"m_message_oid",1,&g) != 1)
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
@@ -231,11 +231,11 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 	
 		uint32_t channel_id;
 		if (pMessage->ReadUInt32s(L"m_channel_id",1,&channel_id) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 
 		guid_t message_oid;
 		if (pMessage->ReadGuids(L"m_message_oid",1,&message_oid) != 1)
-			OMEGA_THROW(EIO);
+			OMEGA_THROW(L"Unexpected end of message");
 
 		// Create a new channel
 		pObject = UserSession::create_channel(channel_id,message_oid)->QueryInterface(iid);
@@ -250,7 +250,8 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManag
 	pMessage->ReadUInt64s(L"length",1,&sz);
 
 	if (sz > (size_t)-1)
-		OMEGA_THROW(E2BIG);
+		OMEGA_THROW(L"Message too long to unmarshal");
+
 	size_t len = static_cast<size_t>(sz);
 
 	OOBase::CDRStream input(len);

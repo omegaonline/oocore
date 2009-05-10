@@ -67,7 +67,7 @@
 
 namespace Omega
 {
-	inline IException* Initialize();
+	inline IException* Initialize(bool bStandalone = false);
 	inline void Uninitialize();
 
 	inline IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
@@ -82,10 +82,10 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,0,())
-Omega::IException* Omega::Initialize()
+OMEGA_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
+Omega::IException* Omega::Initialize(bool bStandalone)
 {
-	return OOCore_Omega_Initialize();
+	return OOCore_Omega_Initialize(bStandalone);
 }
 
 OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())

@@ -43,6 +43,7 @@ namespace Db
 	class Statement
 	{
 		friend class Database;
+
 	public:
 		~Statement();
 
@@ -97,6 +98,9 @@ namespace Db
 
 	private:
 		sqlite3* m_db;
+
+		Database(const Database&) {}
+		Database& operator = (const Database&) { return *this; }
 	};
 }
 

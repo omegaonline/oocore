@@ -42,11 +42,11 @@ User::Acceptor::~Acceptor()
 std::string User::Acceptor::unique_name()
 {
 	// Create a new unique pipe
-	std::string strPipe;
-	char szBuf[64];
+	std::stringstream ssPipe;
+	ssPipe.setf(std::ios_base::hex);
 
 #if defined(_WIN32)
-	strPipe = "OOU";
+	ssPipe << "OOU";
 
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
@@ -62,23 +62,20 @@ std::string User::Acceptor::unique_name()
 	char* pszSid;
 	if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
 	{
-		strPipe += pszSid;
+		ssPipe << pszSid;
 		LocalFree(pszSid);
 	}
 #else
 
-	strPipe = "/tmp/omegaonline/oou";
-	sprintf_s(szBuf,sizeof(szBuf),"%lx",getuid());
-	strPipe += szBuf;
-
+	ssPipe << "/tmp/omegaonline/oou" << getuid();
+	
 #endif
 
 	// Add the current time...
 	OOBase::timeval_t now = OOBase::gettimeofday();
-	sprintf_s(szBuf,sizeof(szBuf),"-%lx",now.tv_usec);
-	strPipe += szBuf;
-
-	return strPipe;
+	ssPipe << "-" << now.tv_usec;
+	
+	return ssPipe.str();
 }
 
 bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
@@ -129,7 +126,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 {
 #if defined(_WIN32)
 
-	assert(!pipe_name.empty());
+	OMEGA_UNUSED_ARG(pipe_name);
 
 	// Get the current user's Logon SID
 	OOBase::Win32::SmartHandle hProcessToken;
@@ -164,6 +161,8 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
 	
 #else
+
+	assert(!pipe_name.empty());
 
 #error set security on pipe_name
 

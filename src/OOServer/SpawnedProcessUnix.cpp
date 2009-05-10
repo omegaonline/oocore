@@ -77,7 +77,7 @@ namespace
 		virtual ~SpawnedProcessUnix();
 
 		bool Spawn(OOBase::LocalSocket::uid_t id, const std::string& strPipe, bool bSandbox);
-		bool CheckAccess(const char* pszFName, Omega::uint32_t mode, bool& bAllowed);
+		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
@@ -275,7 +275,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(uid_t& uid)
 	void* TICKET_96; // Look at using PAM for this...
 
 	// Get the correct uid from the registry
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<Registry::Hive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Get the uid...
 	ACE_INT64 key = 0;
@@ -449,7 +449,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 	return true;
 }
 
-bool Root::SpawnedProcess::CheckAccess(const char* pszFName, Omega::uint32_t mode, bool& bAllowed)
+bool Root::SpawnedProcess::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
 {
 	bAllowed = false;
 
@@ -513,11 +513,11 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	}
 	endpwent();
 
-	ACE_Refcounted_Auto_Ptr<RegistryHive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
+	ACE_Refcounted_Auto_Ptr<Registry::Hive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
 
 	// Set the sandbox uid
 	ACE_INT64 key = 0;
-	if (Manager::get_registry()->create_key(key,"Server\\Sandbox",false,0,0) != 0)
+	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
 		return false;
 
 	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);

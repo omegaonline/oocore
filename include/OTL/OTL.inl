@@ -115,7 +115,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t b
 		if (bLocal)
 			strXML += L"<key name=\"\\Local User\\Objects\">";
 		else
-			strXML += L"<key name=\"\\Objects\">";
+			strXML += L"<key name=\"\\All Users\\Objects\">";
 
 		if (g[i].pszName != 0)
 		{
@@ -157,7 +157,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 	if (bLocal)
 		strXML = L"<key name=\"\\Local User\\Applications\">";
 	else
-		strXML = L"<key name=\"\\Applications\">";
+		strXML = L"<key name=\"\\All Users\\Applications\">";
 
 	strXML += 	L"<key name=\"" + strAppName + L"\" uninstall=\"Remove\">"
 					L"<key name=\"Activation\">"
@@ -174,7 +174,7 @@ void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool
 		if (bLocal)
 			strXML += L"<key name=\"\\Local User\\Objects\">";
 		else
-			strXML += L"<key name=\"\\Objects\">";
+			strXML += L"<key name=\"\\All Users\\Objects\">";
 
 		if (g[i].pszName != 0)
 		{

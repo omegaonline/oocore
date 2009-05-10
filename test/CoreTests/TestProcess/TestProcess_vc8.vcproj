@@ -47,7 +47,7 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -61,7 +61,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/TestProcess.exe"
-				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/TestProcess.pdb"
 				SubSystem="1"

@@ -45,8 +45,7 @@ namespace Omega
 		{
 			MultipleUse = 0,
 			SingleUse = 1,              // Auto Revoke after 1st GetObject
-			MultipleRegistration = 2,   // Allow multiple calls to Register with different flags
-			Suspended = 4
+			MultipleRegistration = 2   // Allow multiple calls to Register with different flags
 		};
 		typedef uint16_t RegisterFlags_t;
 

@@ -26,6 +26,27 @@ namespace Omega
 {
 	namespace Threading
 	{
+		template <class T>
+		class Singleton
+		{
+		public:
+			static T* instance();
+
+		private:
+			static void* s_instance;
+
+			static bool do_init()
+			{
+				s_instance = new T();
+				return static_cast<T*>(s_instance)->register_destructor();
+			}
+
+			static void do_term(void*)
+			{
+				delete static_cast<T*>(s_instance);
+			}
+		};
+
 		class Mutex
 		{
 		public:

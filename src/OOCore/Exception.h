@@ -39,10 +39,10 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
 		{
 			if (pMessage->ReadStrings(L"m_strDesc",1,&this->m_strDesc) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 
 			if (pMessage->ReadStrings(L"m_strSource",1,&this->m_strSource) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 
 			Omega::IObject* pE = 0;
 			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),pE);
@@ -83,10 +83,10 @@ namespace OOCore
 		{
 			Omega::string_t s;
 			if (pMessage->ReadStrings(L"m_strDesc",1,&s) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 
 			if (pMessage->ReadStrings(L"m_strSource",1,&s) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 
 			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
@@ -130,7 +130,7 @@ namespace OOCore
 		{
 			baseClass::UnmarshalInterface(pObjectManager,pMessage,flags);
 			if (pMessage->ReadUInt32s(L"m_errno",1,&m_errno) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
@@ -144,7 +144,7 @@ namespace OOCore
 			baseClass::ReleaseMarshalData(pManager,pMessage,iid,flags);
 			Omega::uint32_t e;
 			if (pMessage->ReadUInt32s(L"m_errno",1,&e) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 		}
 
 	// ISystemException memebers
@@ -179,7 +179,7 @@ namespace OOCore
 		{
 			baseClass::UnmarshalInterface(pObjectManager,pMessage,flags);
 			if (pMessage->ReadGuids(L"m_iid",1,&m_iid) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
@@ -193,7 +193,7 @@ namespace OOCore
 			baseClass::ReleaseMarshalData(pManager,pMessage,iid,flags);
 			Omega::guid_t g;
 			if (pMessage->ReadGuids(L"m_iid",1,&g) != 1)
-				OMEGA_THROW(EIO);
+				OMEGA_THROW(L"Unexpected end of message");
 		}
 
 	// INoInterfaceException members

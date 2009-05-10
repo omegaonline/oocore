@@ -138,8 +138,10 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 	}
 
 #if !defined(OMEGA_DEBUG)
+	const char* arrBufs[2] = { szBuf, 0 };
+
 	if (priority != OOSvrBase::Logger::Debug)
-		ReportEventA(m_hLog,wType,0,0,NULL,1,0,(LPCSTR*)&szBuf,NULL);
+		ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
 #endif
 
 	OutputDebugStringA(szBuf);
@@ -210,13 +212,10 @@ void OOSvrBase::Logger::filenum_t::log(const char* fmt, ...)
 	va_list args;
 	va_start(args,fmt);
 
-	std::string str = m_pszFilename;
-	char szBuf[64] = {0};
-	sprintf_s(szBuf,sizeof(szBuf),"(%lu): ",m_nLine);
-	str += szBuf;
-	str += fmt;
+	std::stringstream out;
+	out << m_pszFilename << "(" << m_nLine << "): " << fmt;
 	
-	LOGGER::instance()->log(m_priority,str.c_str(),args);
+	LOGGER::instance()->log(m_priority,out.str().c_str(),args);
 
 	va_end(args);
 }

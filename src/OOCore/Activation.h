@@ -32,6 +32,8 @@ namespace OOCore
 		Omega::IObject* GetObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 		void RevokeObject(Omega::uint32_t cookie);
 
+		static Omega::IObject* LoadLibraryObject(const Omega::string_t& dll_name, const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+
 	private:
 		friend class OOBase::SingletonNoDestroy<ServiceManager>;
 		

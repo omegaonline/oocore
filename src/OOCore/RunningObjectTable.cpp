@@ -107,8 +107,10 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 	{
 		// Register in ROT
 		ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-		rot_cookie = ptrROT->Register(oid,pObject);
+		if (ptrROT)
+		{
+			rot_cookie = ptrROT->Register(oid,pObject);
+		}
 	}
 
 	try
@@ -150,7 +152,7 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 	}
 	catch (std::exception& e)
 	{
-		if (rot_cookie)
+		if (rot_cookie && ptrROT)
 			ptrROT->Revoke(rot_cookie);
 
 		OMEGA_THROW(e);
@@ -228,7 +230,8 @@ void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 				ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
 
-				ptrROT->Revoke(rot_cookie);
+				if (ptrROT)
+					ptrROT->Revoke(rot_cookie);
 			}
 		}
 	}

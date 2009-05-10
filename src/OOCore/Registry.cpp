@@ -278,7 +278,7 @@ void OOCore::ReadXmlKeyContents(const wchar_t*& rd_ptr, ObjectPtr<Registry::IKey
 
 				// Skip any guff...
 				Xml::ParseXMLCharData(rd_ptr,strGuff);
-			} 
+			}
 
 			Xml::ParseXMLEndElement(rd_ptr,strName);
 		}

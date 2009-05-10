@@ -41,7 +41,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::RemoteChannel::client_init(Manager* 
 	// Open the remote endpoint and attach ourselves as the sink...
 	m_ptrUpstream.Attach(pEndpoint->Open(strEndpoint,this));
 	if (!m_ptrUpstream)
-		OMEGA_THROW(L"IEndpoint::Open returned null sink!");
+		OMEGA_THROW(L"IEndpoint::Open returned null sink");
 
 	m_message_oid = pEndpoint->MessageOid();
 
@@ -134,7 +134,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 				// Do nothing
 			}
 			else
-				OMEGA_THROW(L"Invalid system message!");
+				OMEGA_THROW(L"Invalid system message");
 		}
 		else if (flags == Root::Message_t::Response)
 		{
@@ -157,10 +157,10 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 				ptrPayload->WriteUInt32s(L"channel_id",1,&channel_id);
 			}
 			else
-				OMEGA_THROW(L"Invalid system message!");
+				OMEGA_THROW(L"Invalid system message");
 		}
 		else
-			OMEGA_THROW(L"Invalid system message!");
+			OMEGA_THROW(L"Invalid system message");
 	}
 	else
 	{
@@ -420,7 +420,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					out_attribs = Root::Message_t::synchronous | Root::Message_t::channel_reflect;
 				}
 				else
-					OMEGA_THROW(L"Bad system message!");
+					OMEGA_THROW(L"Invalid system message");
 
 				if (!(out_attribs & TypeInfo::Asynchronous))
 				{
@@ -429,7 +429,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				}
 			}
 			else
-				OMEGA_THROW(L"Bad system message!");
+				OMEGA_THROW(L"Invalid system message");
 		}
 		else
 		{
@@ -482,7 +482,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					// Pass on.. there is no payload to filter
 				}
 				else
-					OMEGA_THROW(L"Bad system message!");
+					OMEGA_THROW(L"Invalid system message");
 			}
 			else if (flags == Root::Message_t::Response)
 			{
@@ -496,10 +496,10 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 					ptrOutput->WriteUInt32s(L"channel_id",1,&ch);
 				}
 				else
-					OMEGA_THROW(L"Bad system message!");
+					OMEGA_THROW(L"Invalid system message");
 			}
 			else
-				OMEGA_THROW(L"Bad system message!");
+				OMEGA_THROW(L"Invalid system message");
 		}
 		else
 		{
@@ -664,7 +664,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	// First try to determine the protocol...
 	size_t pos = strEndpoint.Find(L':');
 	if (pos == string_t::npos)
-		OMEGA_THROW(L"No protocol specified!");
+		OMEGA_THROW(L"No protocol specified");
 	
 	string_t strProtocol = strEndpoint.Left(pos).ToLower();
 
@@ -680,7 +680,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Registry::IKey>(L"\\");
+		ptrKey = ObjectPtr<Registry::IKey>(L"\\All Users");
 		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
@@ -692,8 +692,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 	guid_t oid = guid_t::Null();
 	if (!strHandler.IsEmpty())
 	{
-		oid = guid_t::FromString(strHandler);
-		if (oid == guid_t::Null())
+		if (!guid_t::FromString(strHandler,oid))
 			oid = Activation::NameToOid(strHandler);
 	}
 
@@ -771,30 +770,48 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 void User::Manager::close_all_remotes()
 {
+	// Make a locked copy of the maps and close them
 	try
 	{
-		std::map<uint32_t,RemoteChannelEntry> channels;
+		OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
 
-		// Make a locked copy of the maps and clear them
-		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_remote_lock);
-
-			channels = m_mapRemoteChannelIds;
-			m_mapRemoteChannels.clear();
-			m_mapRemoteChannelIds.clear();
-		}
+		std::map<uint32_t,RemoteChannelEntry> channels(m_mapRemoteChannelIds);
+			
+		guard.release();
 
 		for (std::map<uint32_t,RemoteChannelEntry>::iterator i = channels.begin();i!=channels.end();++i)
 			i->second.ptrRemoteChannel->Close();
-
-		channels.clear();
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR(("std::exception thrown %s",e.what()));
 	}
 	catch (IException* pE)
 	{
+		LOG_ERROR(("IException thrown: %ls - %ls",pE->GetDescription().c_str(),pE->GetSource().c_str()));
 		pE->Release();
 	}
 	catch (...)
 	{}
+
+	// Now spin, waiting for all the channels to close...
+	OOBase::timeval_t wait(30);
+	OOBase::Countdown countdown(&wait);
+	while (wait != OOBase::timeval_t::zero)
+	{
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
+
+		if (m_mapRemoteChannelIds.empty())
+			break;
+
+		guard.release();
+
+		OOBase::sleep(OOBase::timeval_t(0,50000));
+
+		countdown.update();
+	}
+
+	assert(m_mapRemoteChannelIds.empty());
 }
 
 Root::MessageHandler::io_result::type User::Manager::route_off(OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)

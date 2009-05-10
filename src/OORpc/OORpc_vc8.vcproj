@@ -42,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;D:\ACE_wrappers"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions=""
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -124,7 +124,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;NDEBUG"
+				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OORpc.h"
@@ -145,7 +145,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="ACEs.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
+				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

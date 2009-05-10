@@ -639,7 +639,7 @@ namespace OTL
 		}
 	};
 
-	template <class TYPE>
+	/*template <class TYPE>
 	class Singleton
 	{
 	public:
@@ -681,18 +681,17 @@ namespace OTL
 			delete i;
 			i = 0;
 		}
-	};
+	};*/
 
 	template <class ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
-		friend class Singleton<SingletonObjectImpl<ROOT> >;
-		typedef Singleton<SingletonObjectImpl<ROOT> > singleton;
-
+		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT> >;
+		
 	public:
 		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* = 0)
 		{
-			SingletonObjectImpl<ROOT>* pObject = singleton::instance();
+			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT> >::instance();
 			pObject->AddRef();
 			return pObject;
 		}
@@ -723,6 +722,17 @@ namespace OTL
 	private:
 		SingletonObjectImpl(const SingletonObjectImpl&) {}
 		SingletonObjectImpl& operator = (const SingletonObjectImpl&) { return *this; }
+
+		bool register_destructor()
+		{
+			GetModuleBase()->AddTermFunc(terminator,this);
+			return true;
+		}
+
+		static void terminator(void* p)
+		{
+			delete static_cast<SingletonObjectImpl*>(p);
+		}
 	};
 
 	template <class ROOT>

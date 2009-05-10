@@ -54,8 +54,7 @@ namespace User
 	public:
 		Omega::Registry::IKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();
-		void GetObject(const Omega::string_t& strProcess, Omega::bool_t bPublic, const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
-		Omega::IO::IStream* OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify);
+		void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::bool_t HandleRequest(Omega::uint32_t timeout);
 		Omega::Remoting::IChannel* OpenRemoteChannel(const Omega::string_t& strEndpoint);
 		Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink);

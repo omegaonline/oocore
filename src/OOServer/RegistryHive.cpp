@@ -33,16 +33,23 @@
 
 #include "OOServer_Root.h"
 #include "RegistryHive.h"
-#include "RootManager.h"
 
-Root::RegistryHive::RegistryHive(Manager* pManager, OOBase::SmartPtr<Db::Database>& db) :
+Registry::Hive::Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions) :
 	m_pManager(pManager),
-	m_db(db)
+	m_strdb(strdb),
+	m_default_permissions(default_permissions)
 {
 }
 
-bool Root::RegistryHive::open()
+bool Registry::Hive::open()
 {
+	OOBASE_NEW(m_db,Db::Database());
+	if (!m_db)
+		LOG_ERROR_RETURN(("Out of memory"),false);
+	
+	if (!m_db->open(m_strdb.c_str()))
+		return false;
+
 	// Check that the tables we require exist, and create if they don't
 	const char szSQL[] = 
 		"BEGIN TRANSACTION; "
@@ -78,12 +85,12 @@ bool Root::RegistryHive::open()
 	return (m_db->exec(szSQL) == SQLITE_OK);
 }
 
-int Root::RegistryHive::check_key_exists(const Omega::int64_t& uKey, int& access_mask)
+int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
 {
-	// Lock must be help first...
+	// Lock must be held first...
 	if (uKey == 0)
 	{
-		access_mask = 5;
+		access_mask = static_cast<access_rights_t>(Hive::never_delete | m_default_permissions);
 		return SQLITE_ROW;
 	}
 
@@ -91,12 +98,12 @@ int Root::RegistryHive::check_key_exists(const Omega::int64_t& uKey, int& access
 	
 	int err = ptrStmt->step();
 	if (err == SQLITE_ROW)
-		access_mask = ptrStmt->column_int(0);
+		access_mask = static_cast<access_rights_t>(ptrStmt->column_int(0));
 	
 	return err;
 }
 
-int Root::RegistryHive::find_key(Omega::int64_t uParent, const std::string& strSubKey, Omega::int64_t& uKey, int& access_mask)
+int Registry::Hive::find_key(Omega::int64_t uParent, const std::string& strSubKey, Omega::int64_t& uKey, access_rights_t& access_mask)
 {
 	// Lock must be help first...
 
@@ -106,13 +113,13 @@ int Root::RegistryHive::find_key(Omega::int64_t uParent, const std::string& strS
 	if (err == SQLITE_ROW)
 	{
 		uKey = ptrStmt->column_int64(0);
-		access_mask = ptrStmt->column_int(1);
+		access_mask = static_cast<access_rights_t>(ptrStmt->column_int(1));
 	}
 		
 	return err;
 }
 
-int Root::RegistryHive::find_key(Omega::int64_t& uKey, std::string& strSubKey, int& access_mask, Omega::uint32_t channel_id)
+int Registry::Hive::find_key(Omega::int64_t& uKey, std::string& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id)
 {
 	// Check if the key still exists
 	int err = check_key_exists(uKey,access_mask);
@@ -121,10 +128,10 @@ int Root::RegistryHive::find_key(Omega::int64_t& uKey, std::string& strSubKey, i
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -142,10 +149,10 @@ int Root::RegistryHive::find_key(Omega::int64_t& uKey, std::string& strSubKey, i
 		else if (err != SQLITE_ROW)
 			return EIO;
 
-		if (!(access_mask & 1) && channel_id != 0)
+		if (access_mask & Hive::read_check)
 		{
 			// Read not allowed - check access!
-			int acc = m_pManager->registry_access_check(channel_id);
+			int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 			if (acc != 0)
 				return acc;
 		}
@@ -159,10 +166,10 @@ int Root::RegistryHive::find_key(Omega::int64_t& uKey, std::string& strSubKey, i
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -171,9 +178,9 @@ int Root::RegistryHive::find_key(Omega::int64_t& uKey, std::string& strSubKey, i
 	return 0;
 }
 
-int Root::RegistryHive::insert_key(Omega::int64_t& uKey, std::string strSubKey, int access_mask)
+int Registry::Hive::insert_key(Omega::int64_t& uKey, std::string strSubKey, access_rights_t access_mask)
 {
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%d);",strSubKey.c_str(),uKey,access_mask);
+	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%u);",strSubKey.c_str(),uKey,access_mask);
 	
 	int err = ptrStmt->step();
 	if (err == SQLITE_DONE)
@@ -182,7 +189,7 @@ int Root::RegistryHive::insert_key(Omega::int64_t& uKey, std::string strSubKey, 
 	return err;
 }
 
-int Root::RegistryHive::open_key(Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
+int Registry::Hive::open_key(Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
 	if (uKey==0 && strSubKey.empty())
 		return 0;
@@ -190,11 +197,11 @@ int Root::RegistryHive::open_key(Omega::int64_t& uKey, std::string strSubKey, Om
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 	
 	// Find the key
-	int access_mask = 0;
+	access_rights_t access_mask;
 	return find_key(uKey,strSubKey,access_mask,channel_id);
 }
 
-int Root::RegistryHive::create_key(Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, int access, Omega::uint32_t channel_id)
+int Registry::Hive::create_key(Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, access_rights_t access, Omega::uint32_t channel_id)
 {
 	if (uKey==0 && strSubKey.empty())
 		return bFailIfThere ? EEXIST : 0;
@@ -202,7 +209,7 @@ int Root::RegistryHive::create_key(Omega::int64_t& uKey, std::string strSubKey, 
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 3;
+	access_rights_t access_mask;
 	int err = find_key(uKey,strSubKey,access_mask,channel_id);
 	if (err != 0 && err != ENOENT)
 		return err;
@@ -211,10 +218,10 @@ int Root::RegistryHive::create_key(Omega::int64_t& uKey, std::string strSubKey, 
 	if (err == ENOENT)
 	{
 		// Need to add more...				
-		if (!(access_mask & 2) && channel_id != 0)
+		if (access_mask & Hive::write_check)
 		{
 			// Write not allowed - check access!
-			int acc = m_pManager->registry_access_check(channel_id);
+			int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 			if (acc != 0)
 				return acc;
 		}
@@ -225,8 +232,11 @@ int Root::RegistryHive::create_key(Omega::int64_t& uKey, std::string strSubKey, 
 			return EIO;
 
 		// Mask the access mask
-		if (access & 8)
-			access = (access_mask & ~4);
+		if (access & Hive::inherit_checks)
+		{
+			// Remove the inherit flag and the never_delete flag
+			access = (access_mask & ~(Hive::inherit_checks | Hive::never_delete));
+		}
 
 		// Drill down creating keys...
 		for (;;)
@@ -261,27 +271,27 @@ int Root::RegistryHive::create_key(Omega::int64_t& uKey, std::string strSubKey, 
 	return 0;
 }
 
-int Root::RegistryHive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
+int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id)
 {
 	// This one is recursive, within a transaction and a lock...
 	
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return 0;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
 
-	if (access_mask & 4)
+	if (access_mask & Hive::never_delete)
 	{
 		// Never allowed to delete!
 		return EACCES;
@@ -323,12 +333,15 @@ int Root::RegistryHive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t
 	return 0;
 }
 
-int Root::RegistryHive::delete_key(Omega::int64_t uKey, std::string strSubKey, Omega::uint32_t channel_id)
+int Registry::Hive::delete_key(Omega::int64_t uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
+	if (uKey==0 && strSubKey.empty())
+		return EACCES;
+
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = find_key(uKey,strSubKey,access_mask,channel_id);
 	if (err != 0)
 		return err;
@@ -355,12 +368,12 @@ int Root::RegistryHive::delete_key(Omega::int64_t uKey, std::string strSubKey, O
 	return err;
 }
 
-int Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys)
+int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
@@ -368,9 +381,9 @@ int Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t
 		return EIO;
 
 	// Do the access check up front...
-	int acc = m_pManager->registry_access_check(channel_id);
+	int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
 		if (acc != 0)
@@ -389,8 +402,8 @@ int Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t
 			if (v)
 				strSubKey = v;
 			
-			access_mask = ptrStmt->column_int(1);
-			if (!(access_mask & 1) && channel_id != 0)
+			access_mask = static_cast<access_rights_t>(ptrStmt->column_int(1));
+			if (access_mask & Hive::read_check)
 			{
 				// Read not allowed - check access!
 				if (acc != 0)
@@ -406,12 +419,12 @@ int Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
 
-void Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
@@ -425,9 +438,9 @@ void Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_
 	}
 
 	// Do the access check up front...
-	int acc = m_pManager->registry_access_check(channel_id);
+	int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
 		if (acc != 0)
@@ -454,8 +467,8 @@ void Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_
 			if (v)
 				strSubKey = v;
 
-			access_mask = ptrStmt->column_int(1);
-			if (!(access_mask & 1) && channel_id != 0)
+			access_mask = static_cast<access_rights_t>(ptrStmt->column_int(1));
+			if (access_mask & Hive::read_check)
 			{
 				// Read not allowed - check access!
 				if (acc != 0)
@@ -483,22 +496,22 @@ void Root::RegistryHive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_
 	}
 }
 
-int Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listValues)
+int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listValues)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -520,12 +533,12 @@ int Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t 
 	return (err == SQLITE_DONE ? 0 : EIO);
 }
 
-void Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
@@ -538,10 +551,10 @@ void Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t
 		return;
 	}
 		
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 		{
 			response.write(acc);
@@ -587,22 +600,22 @@ void Root::RegistryHive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t
 	}
 }
 
-int Root::RegistryHive::delete_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id)
+int Registry::Hive::delete_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -616,22 +629,22 @@ int Root::RegistryHive::delete_value(const Omega::int64_t& uKey, const std::stri
 	return 0;
 }
 
-int Root::RegistryHive::get_value_type(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::byte_t& type)
+int Registry::Hive::get_value_type(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::byte_t& type)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -650,22 +663,22 @@ int Root::RegistryHive::get_value_type(const Omega::int64_t& uKey, const std::st
 		return EIO;
 }
 
-int Root::RegistryHive::get_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -691,22 +704,22 @@ int Root::RegistryHive::get_string_value(const Omega::int64_t& uKey, const std::
 		return EIO;
 }
 
-int Root::RegistryHive::get_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::int64_t& val)
+int Registry::Hive::get_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, Omega::int64_t& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -729,12 +742,12 @@ int Root::RegistryHive::get_integer_value(const Omega::int64_t& uKey, const std:
 		return EIO;
 }
 
-void Root::RegistryHive::get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t cbLen, Omega::uint32_t channel_id, OOBase::CDRStream& response)
+void Registry::Hive::get_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t cbLen, Omega::uint32_t channel_id, OOBase::CDRStream& response)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 	{
@@ -747,10 +760,10 @@ void Root::RegistryHive::get_binary_value(const Omega::int64_t& uKey, const std:
 		return;
 	}
 		
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 		{
 			response.write(acc);
@@ -816,22 +829,22 @@ void Root::RegistryHive::get_binary_value(const Omega::int64_t& uKey, const std:
 	response.write(err);
 }
 
-int Root::RegistryHive::set_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val)
+int Registry::Hive::set_string_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const char* val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -865,22 +878,22 @@ int Root::RegistryHive::set_string_value(const Omega::int64_t& uKey, const std::
 	return 0;
 }
 
-int Root::RegistryHive::set_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const Omega::int64_t& val)
+int Registry::Hive::set_integer_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const Omega::int64_t& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -914,22 +927,22 @@ int Root::RegistryHive::set_integer_value(const Omega::int64_t& uKey, const std:
 	return 0;
 }
 
-int Root::RegistryHive::set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const OOBase::CDRStream& request)
+int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const OOBase::CDRStream& request)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -971,22 +984,22 @@ int Root::RegistryHive::set_binary_value(const Omega::int64_t& uKey, const std::
 	return 0;
 }
 
-int Root::RegistryHive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -1008,22 +1021,22 @@ int Root::RegistryHive::get_description(const Omega::int64_t& uKey, Omega::uint3
 		return EIO;
 }
 
-int Root::RegistryHive::get_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
+int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, std::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 1) && channel_id != 0)
+	if (access_mask & Hive::read_check)
 	{
 		// Read not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -1055,22 +1068,22 @@ int Root::RegistryHive::get_value_description(const Omega::int64_t& uKey, const 
 		return EIO;
 }
 
-int Root::RegistryHive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val)
+int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t channel_id, const std::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}
@@ -1085,22 +1098,22 @@ int Root::RegistryHive::set_description(const Omega::int64_t& uKey, Omega::uint3
 	return 0;
 }
 
-int Root::RegistryHive::set_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const std::string& val)
+int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const std::string& strValue, Omega::uint32_t channel_id, const std::string& val)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
-	int access_mask = 0;
+	access_rights_t access_mask;
 	int err = check_key_exists(uKey,access_mask);
 	if (err == SQLITE_DONE)
 		return ENOENT;
 	else if (err != SQLITE_ROW)
 		return EIO;
 
-	if (!(access_mask & 2) && channel_id != 0)
+	if (access_mask & Hive::write_check)
 	{
 		// Write not allowed - check access!
-		int acc = m_pManager->registry_access_check(channel_id);
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
 		if (acc != 0)
 			return acc;
 	}

@@ -195,7 +195,7 @@ DWORD OOSvrBase::Win32::SetTokenDefaultDACL(HANDLE hToken)
 	
 	// Set maximum access for the logon SID
 	ea[0].grfAccessPermissions = GENERIC_ALL;
-	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfAccessMode = GRANT_ACCESS;
 	ea[0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -234,7 +234,7 @@ DWORD OOSvrBase::Win32::EnableUserAccessToDir(const wchar_t* pszPath, const TOKE
 	
 	// Set maximum access for the logon SID
 	ea[0].grfAccessPermissions = GENERIC_ALL;
-	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfAccessMode = GRANT_ACCESS;
 	ea[0].grfInheritance = OBJECT_INHERIT_ACE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;

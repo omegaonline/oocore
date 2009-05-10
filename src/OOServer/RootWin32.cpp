@@ -123,7 +123,7 @@ bool Root::Manager::platform_uninstall()
 	{
 		CloseServiceHandle(schSCManager);
 		CloseServiceHandle(schService);
-		printf("You must stop the OOServer service before uninstalling.\n");
+		std::cerr << "You must stop the OOServer service before uninstalling." << std::endl;
 		return false;
 	}
 	
@@ -288,7 +288,7 @@ bool Root::Manager::install_sandbox(int argc, char* argv[])
 
 	// Set the user name and pwd...
 	Omega::int64_t key = 0;
-	int err3 = m_registry->create_key(key,"Server\\Sandbox",false,0,0);
+	int err3 = m_registry->open_key(key,"Server\\Sandbox",0);
 	if (err3 != 0)
 		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOBase::strerror(err3).c_str()),false);
 
@@ -332,7 +332,7 @@ bool Root::Manager::uninstall_sandbox()
 	return true;
 }
 
-bool Root::Manager::secure_file(const std::string& strFile)
+bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
 	std::wstring strFilename = OOBase::from_utf8(strFile.c_str());
 
@@ -363,17 +363,29 @@ bool Root::Manager::secure_file(const std::string& strFile)
 	const int NUM_ACES  = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
 	
-	// Set read access for Users.
-	ea[0].grfAccessPermissions = GENERIC_READ;
-	ea[0].grfAccessMode = SET_ACCESS;
-	ea[0].grfInheritance = NO_INHERITANCE;
-	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-	ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
+	if (bPublicRead)
+	{
+		// Set read access for Users.
+		ea[0].grfAccessPermissions = GENERIC_READ;
+		ea[0].grfAccessMode = SET_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
+	}
+	else
+	{
+		ea[0].grfAccessPermissions = 0;//GENERIC_READ;
+		ea[0].grfAccessMode = REVOKE_ACCESS;
+		ea[0].grfInheritance = NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
+	}
 
 	// Set full control for Administrators.
 	ea[1].grfAccessPermissions = GENERIC_ALL;
-	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfAccessMode = GRANT_ACCESS;
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
@@ -402,27 +414,26 @@ bool Root::Manager::secure_file(const std::string& strFile)
 	return true;
 }
 
-bool Root::Manager::get_db_fname()
+bool Root::Manager::get_db_directory(std::string& dir)
 {
 	wchar_t szBuf[MAX_PATH] = {0};
 	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
 		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	
-	wchar_t szBuf2[MAX_PATH] = {0};
-	if (!PathCombineW(szBuf2,szBuf,L"Omega Online"))
-		LOG_ERROR_RETURN(("PathCombineW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	if (!PathAppendW(szBuf,L"Omega Online"))
+		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	
-	if (!PathFileExistsW(szBuf2))
+	if (!PathFileExistsW(szBuf))
 	{
-		if (!CreateDirectoryW(szBuf2,NULL))
+		if (!CreateDirectoryW(szBuf,NULL))
 			LOG_ERROR_RETURN(("CreateDirectoryW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	}
 
-	if (!PathCombineW(szBuf,szBuf2,L"system.regdb"))
-		LOG_ERROR_RETURN(("PathCombineW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	
-	m_strRegistry = OOBase::to_utf8(szBuf);
+	dir = OOBase::to_utf8(szBuf);
+	if (*dir.rbegin() != '\\')
+		dir += '\\';
+
 	return true;
 }
 

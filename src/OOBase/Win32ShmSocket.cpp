@@ -194,6 +194,9 @@ OOBase::Win32::ShmSocketImpl::~ShmSocketImpl()
 
 	if (m_fifos[0].m_shared)
 		UnmapViewOfFile(m_fifos[0].m_shared);
+
+	m_fifos[0].m_shared = 0;
+	m_fifos[1].m_shared = 0;
 }
 
 bool OOBase::Win32::ShmSocketImpl::init_server(const std::string& strName, OOBase::LocalSocket* via, int* perr, const OOBase::timeval_t* timeout, SECURITY_ATTRIBUTES* psa)
@@ -205,9 +208,9 @@ bool OOBase::Win32::ShmSocketImpl::init_server(const std::string& strName, OOBas
 	m_bServer = true;
 
 	// Create a new name...
-	char szBuf[128] = {0};
-	sprintf_s(szBuf,sizeof(szBuf),"_%p",this);
-	std::string strNewName = strName + "_SHM" + szBuf;
+	std::stringstream out;
+	out << strName << "_SHM_" << this;
+	std::string strNewName = out.str();
 	
 	// Create the shared memory
 	m_hMapping = CreateFileMappingA(INVALID_HANDLE_VALUE,psa,PAGE_READWRITE,0,2*sizeof(Fifo::SharedInfo),strNewName.c_str());
@@ -289,13 +292,13 @@ bool OOBase::Win32::ShmSocketImpl::create_fifos(int* perr, const char* name)
 
 	for (size_t index=0;index<2;++index)
 	{
-		char szBuf[MAX_PATH] = {0};
-		sprintf_s(szBuf,sizeof(szBuf),"%s_R%u",name,index);
-
+		std::stringstream out;
+		out << name << "_M" << index;
+		
 		if (m_bServer)
-			m_fifos[index].m_read_event = CreateEventA(NULL,FALSE,FALSE,szBuf);
+			m_fifos[index].m_read_event = CreateEventA(NULL,FALSE,FALSE,out.str().c_str());
 		else
-			m_fifos[index].m_read_event = OpenEventA(EVENT_ALL_ACCESS,FALSE,szBuf);
+			m_fifos[index].m_read_event = OpenEventA(EVENT_ALL_ACCESS,FALSE,out.str().c_str());
 
 		if (!m_fifos[index].m_read_event || (m_bServer && GetLastError() == ERROR_ALREADY_EXISTS))
 		{
@@ -303,12 +306,11 @@ bool OOBase::Win32::ShmSocketImpl::create_fifos(int* perr, const char* name)
 			return false;
 		}
 
-		sprintf_s(szBuf,sizeof(szBuf),"%s_W%u",name,index);
-
+		out << "W";
 		if (m_bServer)
-			m_fifos[index].m_write_event = CreateEventA(NULL,FALSE,FALSE,szBuf);
+			m_fifos[index].m_write_event = CreateEventA(NULL,FALSE,FALSE,out.str().c_str());
 		else
-			m_fifos[index].m_write_event = OpenEventA(EVENT_ALL_ACCESS,FALSE,szBuf);
+			m_fifos[index].m_write_event = OpenEventA(EVENT_ALL_ACCESS,FALSE,out.str().c_str());
 
 		if (!m_fifos[index].m_write_event || (m_bServer && GetLastError() == ERROR_ALREADY_EXISTS))
 		{

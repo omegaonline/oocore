@@ -129,7 +129,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	
 	// Set full control for the calling process SID
 	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
-	ea[0].grfAccessMode = SET_ACCESS;
+	ea[0].grfAccessMode = GRANT_ACCESS;
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
@@ -150,7 +150,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 
 	// Set read/write access
 	ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
-	ea[1].grfAccessMode = SET_ACCESS;
+	ea[1].grfAccessMode = GRANT_ACCESS;
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;

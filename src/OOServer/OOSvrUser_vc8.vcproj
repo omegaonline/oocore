@@ -42,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite"
-				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions="HAVE_VLD_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -65,7 +65,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
-				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -126,8 +125,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
+				AdditionalIncludeDirectories="..\..\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -195,28 +193,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Database.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath=".\DebuggerWin32.cpp"
 				>
 				<FileConfiguration
@@ -261,30 +237,6 @@
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\SQLite3_comp.c"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-						WarningLevel="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-						WarningLevel="0"
 					/>
 				</FileConfiguration>
 			</File>
@@ -340,10 +292,6 @@
 			>
 			<File
 				RelativePath=".\Channel.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Database.h"
 				>
 			</File>
 			<File

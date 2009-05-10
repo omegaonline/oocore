@@ -87,39 +87,54 @@ namespace
 		}
 	};
 
+	class DLLImpl : public OOBase::DLL
+	{
+	public:
+		DLLImpl() : m_first_time(true)
+		{}
+
+		OOBase::SpinLock& get_lock()
+		{
+			return m_lock;
+		}
+
+		bool m_first_time;
+
+	private:
+		OOBase::SpinLock m_lock;
+	};
+
 	class DLLManagerImpl
 	{
 	public:
 		DLLManagerImpl() {}
 		~DLLManagerImpl();
 
-		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
+		OOBase::SmartPtr<DLLImpl> load_dll(const string_t& name);
 		void unload_unused();
 		
 	private:
 		DLLManagerImpl(const DLLManagerImpl&) {}
 		DLLManagerImpl& operator = (const DLLManagerImpl&) { return *this; }
 
-		OOBase::Mutex                                     m_lock;
-		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
+		OOBase::Mutex                                 m_lock;
+		std::map<string_t,OOBase::SmartPtr<DLLImpl> > m_dll_map;
 	};
 	typedef OOBase::Singleton<DLLManagerImpl> DLLManager;
-
-	static IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
 }
 
 DLLManagerImpl::~DLLManagerImpl()
 {
 }
 
-OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
+OOBase::SmartPtr<DLLImpl> DLLManagerImpl::load_dll(const string_t& name)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// See if we have it already
 	try
 	{
-		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
+		std::map<string_t,OOBase::SmartPtr<DLLImpl> >::iterator i=m_dll_map.find(name);
 		if (i != m_dll_map.end())
 			return i->second;
 	}
@@ -131,18 +146,18 @@ OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 	// Try to unload any unused dlls
 	unload_unused();
 
-	OOBase::SmartPtr<OOBase::DLL> dll;
-	OMEGA_NEW(dll,OOBase::DLL());
+	OOBase::SmartPtr<DLLImpl> dll;
+	OMEGA_NEW(dll,DLLImpl());
 
 	// Load the new DLL
-	int err = dll->load(name.c_str());
+	int err = dll->load(name.ToUTF8().c_str());
 	if (err != 0)
 		OMEGA_THROW(err);
 
 	// Add to the map
 	try
 	{
-		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
+		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<DLLImpl> >::value_type(name,dll));
 	}
 	catch (std::exception& e)
 	{
@@ -160,18 +175,20 @@ void DLLManagerImpl::unload_unused()
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		for (std::map<string_t,OOBase::SmartPtr<DLLImpl> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
 		{
 			bool_t erase = false;
 			try
 			{
 				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
+				if (pfn)
+				{
+					System::MetaInfo::IException_Safe* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
 
-				System::MetaInfo::IException_Safe* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
-
-				// Ignore exceptions
-				if (CanUnloadLibrary_Exception)
-					CanUnloadLibrary_Exception->Release_Safe();
+					// Ignore exceptions
+					if (CanUnloadLibrary_Exception)
+						CanUnloadLibrary_Exception->Release_Safe();
+				}
 			}
 			catch (IException* pE)
 			{
@@ -222,6 +239,9 @@ void LibraryNotFoundException::Throw(const string_t& strName, const string_t& st
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
 {
+	if (!pObject)
+		OMEGA_THROW(L"Do not register NULL object pointers");
+
 	uint32_t ret = OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
 
 	// This forces the detection, so cleanup succeeds
@@ -238,36 +258,44 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega
 // External declaration of our version of this entry point
 void Omega_GetLibraryObject_Impl(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
 
-namespace
+IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	static IObject* LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
+	typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
+	pfnGetLibraryObject pfn = 0;
+	OOBase::SmartPtr<DLLImpl> dll;
+	
+	try
 	{
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
-		pfnGetLibraryObject pfn = 0;
-		OOBase::SmartPtr<OOBase::DLL> dll;
-		
-		try
-		{
-			dll = DLLManager::instance()->load_dll(dll_name.c_str());
-			pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
-		}
-		catch (IException* pE)
-		{
-			LibraryNotFoundException::Throw(dll_name,L"Omega::Activation::GetRegisteredObject",pE);
-		}
-
-		IObject* pObj = 0;
-		System::MetaInfo::IException_Safe* GetLibraryObject_Exception = pfn(
-			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
-			System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags),
-			System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
-			System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
-
-		if (GetLibraryObject_Exception)
-			System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
-		
-		return pObj;
+		dll = DLLManager::instance()->load_dll(dll_name.c_str());
+		pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
 	}
+	catch (IException* pE)
+	{
+		LibraryNotFoundException::Throw(dll_name,L"Omega::Activation::GetRegisteredObject",pE);
+	}
+
+	// Lock access to the function the first time it is called
+	// This tries to prevent static initialisers having races
+	if (dll->m_first_time)
+		dll->get_lock().acquire();
+
+	IObject* pObj = 0;
+	System::MetaInfo::IException_Safe* GetLibraryObject_Exception = pfn(
+		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
+		System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags),
+		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
+		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
+
+	if (dll->m_first_time)
+	{
+		dll->m_first_time = false;
+		dll->get_lock().release();
+	}
+
+	if (GetLibraryObject_Exception)
+		System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
+	
+	return pObj;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const string_t&,strObjectName))
@@ -279,7 +307,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 		if (ptrOidKey->IsSubKey(L"Objects\\" + strCurName))
 			ptrOidKey = ptrOidKey.OpenSubKey(L"Objects\\" + strCurName);
 		else
-			ptrOidKey = ObjectPtr<Registry::IKey>(L"\\Objects\\" + strCurName);
+			ptrOidKey = ObjectPtr<Registry::IKey>(L"\\All Users\\Objects\\" + strCurName);
 
 		if (ptrOidKey->IsValue(L"CurrentVersion"))
 		{
@@ -307,29 +335,9 @@ namespace
 		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
 			return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
 
-		ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\Objects\\OIDs");
+		ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
 		if (ptrOidsKey->IsSubKey(strOid))
 			return ptrOidsKey.OpenSubKey(strOid);
-
-		return 0;
-	}
-
-	static ObjectPtr<Omega::Registry::IKey> FindAppKey(const guid_t& oid)
-	{
-		ObjectPtr<Omega::Registry::IKey> ptrOidKey = FindOIDKey(oid);
-		if (!ptrOidKey || !ptrOidKey->IsValue(L"Application"))
-			return 0;
-
-		string_t strAppName = ptrOidKey->GetStringValue(L"Application");
-
-		// Find the name of the executeable to run
-		ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User");
-		if (ptrServer->IsSubKey(L"Applications\\" + strAppName + L"\\Activation"))
-			return ptrServer.OpenSubKey(L"Applications\\" + strAppName + L"\\Activation");
-
-		ptrServer = ObjectPtr<Omega::Registry::IKey>(L"\\Applications");
-		if (ptrServer->IsSubKey(strAppName + L"\\Activation"))
-			return ptrServer.OpenSubKey(strAppName + L"\\Activation");
 
 		return 0;
 	}
@@ -362,7 +370,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 			{
 				void* TICKET_89; // Surrogates here?!?
 
-				pObject = LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
+				pObject = OOCore::ServiceManager::LoadLibraryObject(ptrOidKey->GetStringValue(L"Library"),oid,flags,iid);
 				if (pObject)
 					return;
 			}
@@ -374,6 +382,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 			// Try RunningObjectTable first
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+			if (!ptrROT)
+			{
+				// We are running solo!
+				throw ISystemException::Create(L"Not connected to the network daemon",L"Omega::Activation::GetRegisteredObject");
+			}
 
 			// Change this to use monikers
 			void* TICKET_90;
@@ -390,18 +404,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 
 			if (!(flags & Activation::DontLaunch))
 			{
-				// Lookup OID
-				ObjectPtr<Omega::Registry::IKey> ptrServer = FindAppKey(oid);
-				if (ptrServer)
-				{
-					string_t strProcess = ptrServer->GetStringValue(L"Path");
-					bool_t bPublic = false;
-					if (ptrServer->IsValue(L"Public"))
-						bPublic = (ptrServer->GetIntegerValue(L"Public") == 1);
-
-					// Ask the IPS to run it...
-					return OOCore::GetInterProcessService()->GetObject(strProcess,bPublic,oid,iid,pObject);
-				}
+				// Ask the IPS to run it...
+				OOCore::GetInterProcessService()->LaunchObjectApp(oid,iid,pObject);
+				if (pObject)
+					return;
 			}
 		}
 	}
@@ -443,21 +449,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Om
 	if (strEndpoint.IsEmpty())
 	{
 		// Do a quick registry lookup
-		guid_t oid = guid_t::Null();
-		
-		if (strObject[0] == L'{' && strObject.Length()==38)
-		{
-			try
-			{
-				oid = guid_t::FromString(strObject);
-			}
-			catch (IException* pE)
-			{
-				pE->Release();
-			}
-		}
-
-		if (oid == guid_t::Null())
+		guid_t oid;
+		if (!guid_t::FromString(strObject,oid))
 			oid = Omega::Activation::NameToOid(strObject);
 
 		pOF = Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));

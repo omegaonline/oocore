@@ -1,18 +1,24 @@
 include $(top_srcdir)/build-aux/ltrc.inc
 
-noinst_LIBRARIES = liboosvrcmn.a
+noinst_LIBRARIES = liboosvrcmn.a liboosvrdb.a
 
-liboosvrcmn_a_CPPFLAGS = -I@top_srcdir@/include $(SQLITE3_CPPFLAGS)
+liboosvrcmn_a_CPPFLAGS = -I@top_srcdir@/include
 liboosvrcmn_a_CFLAGS = $(PTHREAD_CFLAGS)
 liboosvrcmn_a_CXXFLAGS = $(PTHREAD_CFLAGS)
 
 liboosvrcmn_a_SOURCES = \
-	Database.h \
-	Database.cpp \
 	DebuggerWin32.cpp \
 	MessageConnection.h \
 	MessageConnection.cpp \
-	Protocol.h \
+	Protocol.h
+	
+liboosvrdb_a_CPPFLAGS = -I@top_srcdir@/include $(SQLITE3_CPPFLAGS)
+liboosvrdb_a_CFLAGS = $(PTHREAD_CFLAGS)
+liboosvrdb_a_CXXFLAGS = $(PTHREAD_CFLAGS)
+
+liboosvrdb_a_SOURCES = \
+	Database.h \
+	Database.cpp \
 	SQLite3_comp.c
 		
 bin_PROGRAMS = ooserverd oosvruser
@@ -20,8 +26,7 @@ bin_PROGRAMS = ooserverd oosvruser
 ooserverd_CPPFLAGS = -I$(top_srcdir)/include $(SQLITE3_CPPFLAGS)
 ooserverd_CFLAGS = $(PTHREAD_CFLAGS)
 ooserverd_CXXFLAGS = $(PTHREAD_CFLAGS)
-ooserverd_LDADD = ../OOCore/libOOCore.la
-ooserverd_LDFLAGS = $(PTHREAD_LIBS) $(SQLITE3_LDFLAGS) -L. -loosvrcmn -L../OOBase -loobase -loosvrbase 
+ooserverd_LDFLAGS = -L. -loosvrcmn -loosvrdb $(SQLITE3_LDFLAGS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS) 
 
 if WIN32
 ooserverd_LDFLAGS += -lnetapi32 -luserenv -lshlwapi
@@ -46,11 +51,11 @@ if WIN32
 ooserverd_SOURCES += OOServer.rc
 endif
 		
-oosvruser_CPPFLAGS = -I$(top_srcdir)/include $(SQLITE3_CPPFLAGS)
+oosvruser_CPPFLAGS = -I$(top_srcdir)/include
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_LDADD = ../OOCore/libOOCore.la
-oosvruser_LDFLAGS = $(PTHREAD_LIBS) $(SQLITE3_LDFLAGS) -L. -loosvrcmn -L../OOBase -loobase -loosvrbase 
+oosvruser_LDFLAGS = -L. -loosvrcmn -L../OOBase  -loosvrbase -loobase $(PTHREAD_LIBS) 
 
 if WIN32
 oosvruser_LDFLAGS += -lshlwapi -lnetapi32 -luserenv

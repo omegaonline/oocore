@@ -226,22 +226,22 @@ void User::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMes
 {
 	uint32_t c;
 	if (pMessage->ReadUInt32s(L"m_channel_id",1,&c) != 1)
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 
 	guid_t g;
 	if (pMessage->ReadGuids(L"m_message_oid",1,&g) != 1)
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 }
 
 void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	Omega::uint32_t channel_id;
 	if (pMessage->ReadUInt32s(L"m_channel_id",1,&channel_id) != 1)
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 
 	guid_t message_oid;
 	if (pMessage->ReadGuids(L"m_message_oid",1,&message_oid) != 1)
-		OMEGA_THROW(EIO);
+		OMEGA_THROW(L"Unexpected end of message");
 
 	// Create a new object manager (and channel)
 	pObject = Manager::create_channel(channel_id,message_oid)->QueryInterface(iid);

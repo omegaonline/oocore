@@ -86,7 +86,6 @@ namespace OOBase
 		virtual uid_t get_uid() = 0;
 
 		static LocalSocket* connect_local(const std::string& path, int* perr, const timeval_t* wait = 0);
-
 		static Socket* connect_shared_mem(LocalSocket* via, int* perr, const timeval_t* wait = 0);
 
 	protected:

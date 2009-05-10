@@ -37,19 +37,28 @@
 #include "OOServer_Root.h"
 #include "Database.h"
 
-namespace Root
+namespace Registry
 {
 	class Manager;
-
-	class RegistryHive
+	
+	class Hive
 	{
 	public:
-		RegistryHive(Manager* pManager, OOBase::SmartPtr<Db::Database>& db);
+		enum access_rights
+		{
+			read_check = 1,
+			write_check = 2,
+			never_delete = 4,
+			inherit_checks = 8
+		};
+		typedef Omega::uint16_t access_rights_t;
+
+		Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions);
 
 		bool open();
 
 		int open_key(Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id);
-		int create_key(Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, int access, Omega::uint32_t channel_id);
+		int create_key(Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, access_rights_t access, Omega::uint32_t channel_id);
 		int delete_key(Omega::int64_t uKey, std::string strSubKey, Omega::uint32_t channel_id);
 		int enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys);
 		void enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, OOBase::CDRStream& response);
@@ -74,16 +83,24 @@ namespace Root
 	private:
 		Manager*                       m_pManager;
 		OOBase::Mutex                  m_lock;
+		std::string                    m_strdb;
 		OOBase::SmartPtr<Db::Database> m_db;
+		access_rights_t                m_default_permissions;
 
-		RegistryHive(const RegistryHive&) {}
-		RegistryHive& operator = (const RegistryHive&) { return *this; }
+		Hive(const Hive&) {}
+		Hive& operator = (const Hive&) { return *this; }
 
-		int find_key(Omega::int64_t uParent, const std::string& strSubKey, Omega::int64_t& uKey, int& access_mask);
-		int find_key(Omega::int64_t& uKey, std::string& strSubKey, int& access_mask, Omega::uint32_t channel_id);
-		int insert_key(Omega::int64_t& uKey, std::string strSubKey, int access_mask);
-		int check_key_exists(const Omega::int64_t& uKey, int& access_mask);
+		int find_key(Omega::int64_t uParent, const std::string& strSubKey, Omega::int64_t& uKey, access_rights_t& access_mask);
+		int find_key(Omega::int64_t& uKey, std::string& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id);
+		int insert_key(Omega::int64_t& uKey, std::string strSubKey, access_rights_t access_mask);
+		int check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask);
 		int delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t channel_id);
+	};
+
+	class Manager
+	{
+	public:
+		virtual int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, Hive::access_rights_t access_mask) = 0;
 	};
 }
 

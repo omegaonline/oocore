@@ -53,7 +53,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	{
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
-		ptrKey->Init(m_pManager,L"",0);
+		ptrKey->Init(m_pManager,L"",0,0);
 
 		m_ptrReg = static_cast<Omega::Registry::IKey*>(ptrKey);
 	}
@@ -81,11 +81,52 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
-void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPublic, const guid_t& oid, const guid_t& iid, IObject*& pObject)
+namespace
 {
-	if (bPublic && m_ptrSBIPS)
-		return m_ptrSBIPS->GetObject(strProcess,false,oid,iid,pObject);
+	static ObjectPtr<Omega::Registry::IKey> FindAppKey(const guid_t& oid)
+	{
+		// Lookup OID
+		string_t strOid = oid.ToString();
 
+		// Find the OID key... Check Local User first
+		ObjectPtr<Omega::Registry::IKey> ptrOidKey;
+		ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
+		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
+			ptrOidKey = ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
+		else
+		{
+			ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
+			if (ptrOidsKey->IsSubKey(strOid))
+				ptrOidKey = ptrOidsKey.OpenSubKey(strOid);
+		}
+
+		if (!ptrOidKey || !ptrOidKey->IsValue(L"Application"))
+			return 0;
+
+		string_t strAppName = ptrOidKey->GetStringValue(L"Application");
+
+		// Find the name of the executable to run...
+		ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User");
+		if (ptrServer->IsSubKey(L"Applications\\" + strAppName + L"\\Activation"))
+			return ptrServer.OpenSubKey(L"Applications\\" + strAppName + L"\\Activation");
+
+		ptrServer = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Applications");
+		if (ptrServer->IsSubKey(strAppName + L"\\Activation"))
+			return ptrServer.OpenSubKey(strAppName + L"\\Activation");
+
+		return 0;
+	}
+}
+
+void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, IObject*& pObject)
+{
+	// Lookup OID
+	ObjectPtr<Omega::Registry::IKey> ptrServer = FindAppKey(oid);
+	if (!ptrServer)
+		OMEGA_THROW(ENOENT);
+
+	string_t strProcess = ptrServer->GetStringValue(L"Path");
+	
 	// The timeout needs to be related to the request timeout...
 	OOBase::timeval_t wait(15);
 	ObjectPtr<Remoting::ICallContext> ptrCC;
@@ -162,62 +203,6 @@ void User::InterProcessService::GetObject(const string_t& strProcess, bool_t bPu
 	} while (!bStarted);
 
 	OMEGA_THROW(ENOENT);
-}
-
-IO::IStream* User::InterProcessService::OpenStream(const string_t& strEndpoint, IO::IAsyncStreamNotify* pNotify)
-{
-	// First try to determine the protocol...
-	size_t pos = strEndpoint.Find(L':');
-	if (pos == string_t::npos)
-		OMEGA_THROW(L"No protocol specified!");
-
-	// Look up handler in registry
-	string_t strProtocol = strEndpoint.Left(pos).ToLower();
-
-	string_t strHandler;
-	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
-	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
-	{
-		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
-		if (ptrKey->IsValue(L"Handler"))
-			strHandler = ptrKey->GetStringValue(L"Handler");
-	}
-
-	if (strHandler.IsEmpty())
-	{
-		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\");
-		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
-		{
-			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
-			if (ptrKey->IsValue(L"Handler"))
-				strHandler = ptrKey->GetStringValue(L"Handler");
-		}
-	}
-
-	guid_t oid = guid_t::Null();
-	if (!strHandler.IsEmpty())
-	{
-		oid = guid_t::FromString(strHandler);
-		if (oid == guid_t::Null())
-			oid = Activation::NameToOid(strHandler);
-	}
-
-	if (oid == guid_t::Null())
-	{
-		// We have some built-ins
-/*		if (strProtocol == L"tcp")
-			oid = OID_TcpProtocolHandler;
-		else if (strProtocol == L"http" || strProtocol == L"https")
-			oid = OID_HttpProtocolHandler;
-		else*/
-			OMEGA_THROW(L"No handler for protocol " + strProtocol);
-	}
-
-	// Create the handler...
-	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
-
-	// Open the stream...
-	return ptrHandler->OpenStream(strEndpoint,pNotify);
 }
 
 bool_t User::InterProcessService::HandleRequest(uint32_t timeout)

@@ -57,27 +57,34 @@ bool Root::Manager::install(int argc, char* argv[])
 
 	// Add the default keys
 	Omega::int64_t key = 0;
-	m_registry->create_key(key,"All Users",false,7,0);
+	m_registry->create_key(key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
 	m_registry->set_description(key,0,"A common key for all users");
 	key = 0;
-	m_registry->create_key(key,"Local User",false,7,0);
+	m_registry->create_key(key,"Local User",false,Registry::Hive::never_delete,0);
 	m_registry->set_description(key,0,"A key unique to each user of the local computer");
 	key = 0;
-	m_registry->create_key(key,"Applications",false,5,0);
-	m_registry->set_description(key,0,"Applications store their configuration beneath this key");
-	key = 0;
-	m_registry->create_key(key,"Objects",false,5,0);
-	m_registry->create_key(key,"OIDs",false,5,0);
-	key = 0;
-	m_registry->create_key(key,"Server",false,5,0);
-	m_registry->create_key(key,"Sandbox",false,4,0);
+	m_registry->create_key(key,"Server",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
+	m_registry->create_key(key,"Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
 
+	key = 0;
+	m_registry->create_key(key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
+	key = 0;
+	m_registry_all_users->create_key(key,"Applications",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
+	m_registry_all_users->set_description(key,0,"Applications store their configuration beneath this key");
+	key = 0;
+	m_registry_all_users->create_key(key,"Objects",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
+	m_registry_all_users->create_key(key,"OIDs",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
+	
 	// Set up the sandbox user
 	if (!install_sandbox(argc,argv))
 		return false;
 	
 	// Now secure the files we will use...
-	if (!secure_file(m_strRegistry))
+	std::string dir;
+	if (!get_db_directory(dir))
+		return false;
+
+	if (!secure_file(dir + "system.regdb",false) || !secure_file(dir + "all_users.regdb",true))
 		return false;
 	
 	return true;
@@ -164,22 +171,24 @@ bool Root::Manager::init_database()
 
 #endif
 
-	if (!get_db_fname())
+	std::string dir;
+	if (!get_db_directory(dir))
 		return false;
 
-	// Create a new database
-	OOBASE_NEW(m_db,Db::Database());
-	if (!m_db)
-		LOG_ERROR_RETURN(("Out of memory"),false);
-		
-	if (!m_db->open(m_strRegistry.c_str()))
-		return false;
-
-	OOBASE_NEW(m_registry,RegistryHive(this,m_db));
+	// Create a new system database
+	OOBASE_NEW(m_registry,Registry::Hive(this,dir + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	return m_registry->open();
+	if (!m_registry->open())
+		return false;
+
+	// Create a new all users database
+	OOBASE_NEW(m_registry_all_users,Registry::Hive(this,dir + "all_users.regdb",Registry::Hive::write_check));
+	if (!m_registry_all_users)
+		LOG_ERROR_RETURN(("Out of memory"),false);
+
+	return m_registry_all_users->open();
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
@@ -207,7 +216,7 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 {
 	try
 	{
-		OOBase::SmartPtr<RegistryHive> ptrRegistry;
+		OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 
 		try
 		{
@@ -244,7 +253,7 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 	}
 }
 
-Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<RegistryHive> ptrRegistry, std::string& strPipe)
+Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe)
 {
 	// Do a platform specific spawn
 	Omega::uint32_t channel_id = 0;
@@ -268,14 +277,9 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 		if (!strDb.empty())
 		{
 			// Create a new database
-			OOBase::SmartPtr<Db::Database> db = 0;
-			OOBASE_NEW(db,Db::Database());
-			if (db && db->open(strDb.c_str()))
-			{
-				OOBASE_NEW(process.ptrRegistry,RegistryHive(this,db));
-				if (process.ptrRegistry)
-					bOk = process.ptrRegistry->open();
-			}
+			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strDb,0));
+			if (process.ptrRegistry)
+				bOk = process.ptrRegistry->open();
 		}
 	}
 

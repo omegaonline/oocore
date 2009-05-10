@@ -45,7 +45,8 @@ namespace Root
 	typedef OOBase::SingletonNoDestroy<OOSvrBase::Proactor> Proactor;
 
 	class Manager :
-		public MessageHandler
+		public MessageHandler,
+		public Registry::Manager
 	{
 	public:
 		Manager();
@@ -55,7 +56,6 @@ namespace Root
 		bool uninstall();
 		int run(int argc, char* argv[]);
 
-		int registry_access_check(Omega::uint32_t channel_id);
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
 	private:
@@ -64,7 +64,7 @@ namespace Root
 
 		// Init and run members
 		bool init();
-		bool get_db_fname();
+		bool get_db_directory(std::string& dir);
 		bool init_database();
 		void wait_for_quit();
 		
@@ -73,7 +73,7 @@ namespace Root
 		bool platform_uninstall();
 		bool install_sandbox(int argc, char* argv[]);
 		bool uninstall_sandbox();
-		bool secure_file(const std::string& strFilename);
+		bool secure_file(const std::string& strFilename, bool bPublicRead);
 
 		// I/O members
 		OOBase::RWMutex m_lock;
@@ -85,11 +85,11 @@ namespace Root
 		{
 			std::string                      strPipe;
 			OOBase::SmartPtr<SpawnedProcess> ptrSpawn;
-			OOBase::SmartPtr<RegistryHive>   ptrRegistry;
+			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
 		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
 		
-		Omega::uint32_t spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<RegistryHive> ptrRegistry, std::string& strPipe);
+		Omega::uint32_t spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe);
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC);
 		Omega::uint32_t bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<MessageConnection>& ptrMC, std::string& strPipe);
 
@@ -99,13 +99,14 @@ namespace Root
 		virtual void process_request(OOBase::CDRStream& request, Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 
 		// Registry members
-		OOBase::SmartPtr<Db::Database> m_db;
-		OOBase::SmartPtr<RegistryHive> m_registry;
-		std::string                    m_strRegistry;
+		OOBase::SmartPtr<Registry::Hive> m_registry;
+		OOBase::SmartPtr<Registry::Hive> m_registry_all_users;
+		
+		int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask);
 
-		int registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, const std::string& strSubKey, bool& bCurrent, OOBase::SmartPtr<RegistryHive>& ptrHive);
-		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<RegistryHive>& ptrHive, Omega::int64_t& uKey);
-		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<RegistryHive>& ptrHive, Omega::int64_t& uKey, bool& bCurrent);
+		int registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, std::string& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Registry::Hive>& ptrHive);
+		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey);
+		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
 		void registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_create_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);

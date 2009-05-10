@@ -19,6 +19,18 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////
+//
+//	***** THIS IS A SECURE MODULE *****
+//
+//	It can be run as Administrator/setuid root
+//
+//	Therefore it needs to be SAFE AS HOUSES!
+//
+//	Do not include anything unecessary
+//
+/////////////////////////////////////////////////////////////
+
 #include "OOServer_Root.h"
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -100,9 +112,9 @@ static bool AttachVSDebugger(DWORD our_pid)
 
 static void PromptForDebugger(DWORD pid)
 {
-	char szBuf[256];
-	sprintf_s(szBuf,sizeof(szBuf),"Attach the debugger to process id %lu now if you want!",pid);
-    MessageBoxA(NULL,szBuf,"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
+	std::stringstream out;
+	out << "Attach the debugger to process id " << pid << " now if you want!";
+	MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }
 
 void AttachDebugger(DWORD pid)

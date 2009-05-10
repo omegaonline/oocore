@@ -449,7 +449,7 @@ namespace Omega
 						{
 #if !defined(OMEGA_64)
 							if (cbSize > (size_t)-1 / sizeof(typename marshal_info<typename remove_const<T>::type>::wire_type::type))
-								OMEGA_THROW(E2BIG);
+								OMEGA_THROW(L"Attempt to marshal too many array items");
 #endif
 
 							m_alloc_size = cbSize;

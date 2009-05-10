@@ -22,6 +22,17 @@
 #ifndef OMEGA_THREADING_INL_INCLUDED_
 #define OMEGA_THREADING_INL_INCLUDED_
 
+template <typename T>
+void* Omega::Threading::Singleton<T>::s_instance = 0;
+
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),void*,pfn_init,(in),void*,pfn_term));
+template <typename T>
+T* Omega::Threading::Singleton<T>::instance()
+{
+	OOCore_sngtn_once(&s_instance,(void*)&do_init,(void*)&do_term);
+	return static_cast<T*>(s_instance);
+}
+
 OMEGA_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,());
 Omega::Threading::Mutex::Mutex() :
 	m_handle(static_cast<handle_t*>(OOCore_cs__ctor()))

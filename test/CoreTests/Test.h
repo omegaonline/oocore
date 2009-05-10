@@ -13,10 +13,13 @@ bool run_test(pfnTest t, const char* pszName);
 #define RUN_TEST(test)		run_test(test,#test)
 
 #define TEST(expr) \
-	if (!(expr)) \
-		return print_result(#expr,__FILE__,__LINE__); \
-	else \
-		add_success(); \
+	do \
+	{ \
+		if (!(expr)) \
+			return print_result(#expr,__FILE__,__LINE__); \
+		else \
+			add_success(); \
+	} while (!(expr))
 
 #define TEST_FAIL(expr) \
 	return print_result(#expr,__FILE__,__LINE__); \

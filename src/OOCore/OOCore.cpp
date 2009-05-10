@@ -70,11 +70,6 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 }
 #endif
 
-namespace OOCore
-{
-	static OOBase::AtomicInt<size_t> s_initcount = 0;
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_GetVersion,0,())
 {
 #if defined(OMEGA_DEBUG)
@@ -84,49 +79,77 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_GetVersion,0,())
 #endif
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
 {
-	bool bStart = false;
-	if (++OOCore::s_initcount==1)
-	{
-		bStart = true;
-
-#if defined(OMEGA_DEBUG) && defined(_WIN32)
-		// If this event exists, then we are being debugged
-		OOBase::Win32::SmartHandle hDebugEvent(OpenEventW(EVENT_ALL_ACCESS,FALSE,L"Local\\OOCORE_DEBUG_MUTEX"));
-		if (hDebugEvent)
-		{
-			// Wait for a bit, letting the caller attach a debugger
-			WaitForSingleObject(hDebugEvent,60000);
-		}
-#endif
-	}
-
-	if (bStart)
-	{
-		IException* pE = OOCore::UserSession::init();
-		if (pE)
-			return pE;
-	}
-
-	return 0;
+	return OOCore::UserSession::init(bStandalone);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 {
-	if (OOCore::HostedByOOServer())
+	try
 	{
-		// This is a short-cut close for use by the OOServer
-		OOCore::SERVICE_MANAGER::close();
+		if (OOCore::HostedByOOServer())
+		{
+			// This is a short-cut close for use by the OOServer
+			OOCore::SERVICE_MANAGER::close();
+		}
+		else
+		{
+			OOCore::UserSession::term();
+		}
 	}
-	else if (--OOCore::s_initcount==0)
+	catch (Omega::IException* pE)
 	{
-		OOCore::UserSession::term();
+		pE->Release();
+	}
+	catch (...)
+	{
 	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify))
 {
-	// Ask the IPS to open the stream...
-	return OOCore::GetInterProcessService()->OpenStream(strEndpoint,pNotify);
+	// First try to determine the protocol...
+	size_t pos = strEndpoint.Find(L':');
+	if (pos == string_t::npos)
+		throw ISystemException::Create(L"No protocol specified",L"Omega::IO::OpenStream");
+
+	// Look up handler in registry
+	string_t strProtocol = strEndpoint.Left(pos).ToLower();
+
+	string_t strHandler;
+	ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User");
+	if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+	{
+		ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+		if (ptrKey->IsValue(L"Handler"))
+			strHandler = ptrKey->GetStringValue(L"Handler");
+	}
+
+	if (strHandler.IsEmpty())
+	{
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users");
+		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
+		{
+			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);
+			if (ptrKey->IsValue(L"Handler"))
+				strHandler = ptrKey->GetStringValue(L"Handler");
+		}
+	}
+
+	guid_t oid = guid_t::Null();
+	if (!strHandler.IsEmpty())
+	{
+		if (!guid_t::FromString(strHandler,oid))
+			oid = Activation::NameToOid(strHandler);
+	}
+
+	if (oid == guid_t::Null())
+		throw ISystemException::Create(L"No handler for protocol " + strProtocol,L"Omega::IO::OpenStream");
+	
+	// Create the handler...
+	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
+
+	// Open the stream...
+	return ptrHandler->OpenStream(strEndpoint,pNotify);
 }

@@ -3,15 +3,15 @@ AC_PREREQ(2.61)
 AC_INIT(omegaonline,0.5.0)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
 AC_CONFIG_HEADER([src/OOBase/config-autoconf.h])
+
 # AC_CONFIG_HEADER([src/Common/autoheader_dummy.h src/Common/config.h])
 # AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])
+
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
 	Makefile
 	include/Makefile
-	include/OOCore/Makefile
-	include/OTL/Makefile
 	src/Makefile
 	src/OOBase/Makefile
 	src/OOCore/Makefile
@@ -86,9 +86,6 @@ LT_LANG([Windows Resource])
 
 # Find sqlite3
 AX_LIB_SQLITE3([3.5.0])
-
-# Find ACE
-OO_LIB_ACE
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error

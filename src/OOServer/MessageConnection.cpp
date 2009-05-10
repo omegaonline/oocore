@@ -930,8 +930,7 @@ void Root::MessageHandler::close()
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> > map_copy(m_mapChannelIds);
-		m_mapChannelIds.clear();
-
+		
 		guard.release();
 
 		for (std::map<Omega::uint32_t,OOBase::SmartPtr<MessageConnection> >::iterator i=map_copy.begin();i!=map_copy.end();++i)
@@ -1222,7 +1221,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 	
 	// Create a new message
 	OOBase::SmartPtr<MessageHandler::Message> msg;
-	OOBASE_NEW(msg,MessageHandler::Message);
+	OOBASE_NEW(msg,MessageHandler::Message(24 + (stream ? stream->buffer()->length() : 0)));
 	if (!msg)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
@@ -1238,7 +1237,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 	Omega::uint16_t type = Message_t::Request;
 	msg->m_payload.write(type);
 
-	// 6 Bytes of padding here
+	// 2 Bytes of padding here
 	msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 
 	msg->m_payload.write(pfnCall);
@@ -1399,7 +1398,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omeg
 		// If its our message, route it
 
 		OOBase::SmartPtr<MessageHandler::Message> msg;
-		OOBASE_NEW(msg,MessageHandler::Message);
+		OOBASE_NEW(msg,MessageHandler::Message(8 + message.buffer()->length()));
 		if (!msg)
 			LOG_ERROR_RETURN(("Out of memory"),io_result::failed);
 
@@ -1413,7 +1412,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omeg
 		msg->m_payload.write(seq_no);
 		msg->m_payload.write(flags);
 
-		// 6 Bytes of padding here
+		// 2 Bytes of padding here
 		msg->m_payload.buffer()->align_wr_ptr(OOBase::CDRStream::MaxAlignment);
 		msg->m_payload.write_buffer(message.buffer());
 

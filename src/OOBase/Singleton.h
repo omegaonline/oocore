@@ -35,15 +35,14 @@ namespace OOBase
 		static T* instance()
 		{
 			static Once::once_t key = ONCE_T_INIT;
-			
 			Once::Run(&key,init);
-
 			return s_instance;
 		}
 
 		static void close()
 		{
-			destroy();
+			delete s_instance;
+			//s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
 		}
 
 	protected:
@@ -62,19 +61,6 @@ namespace OOBase
 			if (!s_instance)
 				OOBase_OutOfMemory();
 		}
-
-		static void destroy(void* = 0)
-		{
-			static Once::once_t key = ONCE_T_INIT;
-
-			Once::Run(&key,destroy_i);
-		}
-
-		static void destroy_i()
-		{
-			delete s_instance;
-			s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
-		}
 	};
 
 	template <typename T, typename DLL = int>
@@ -84,16 +70,13 @@ namespace OOBase
 		static T* instance()
 		{
 			static Once::once_t key = ONCE_T_INIT;
-			
 			Once::Run(&key,init);
-
 			return SingletonNoDestroy<T,DLL>::s_instance;
 		}
 
 		static void close()
 		{
 			DLLDestructor<DLL>::remove_destructor(&destroy,0);
-			
 			destroy();
 		}
 
@@ -118,15 +101,8 @@ namespace OOBase
 
 		static void destroy(void* = 0)
 		{
-			static Once::once_t key = ONCE_T_INIT;
-
-			Once::Run(&key,destroy_i);
-		}
-
-		static void destroy_i()
-		{
 			delete SingletonNoDestroy<T,DLL>::s_instance;
-			SingletonNoDestroy<T,DLL>::s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
+			//SingletonNoDestroy<T,DLL>::s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
 		}
 	};
 

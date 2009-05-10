@@ -60,7 +60,7 @@ namespace Rpc
 		virtual ~HttpMsgBase();
 
 	protected:
-		ACE_Message_Block* m_mb;
+		OOBase::Buffer* m_mb;
 		bool               m_bFirstItem;
 
 		bool IsWhitespace(char c);

@@ -393,15 +393,28 @@ Omega::string_t Omega::guid_t::ToString() const
 		Data4[7]);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_from_string,1,((in),const wchar_t*,sz));
+OMEGA_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,guid));
+bool Omega::guid_t::FromString(const wchar_t* sz, Omega::guid_t& guid)
+{
+	return OOCore_guid_t_from_string(sz,guid);
+}
+
+bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
+{
+	return OOCore_guid_t_from_string(str.c_str(),guid);
+}
+
 Omega::guid_t Omega::guid_t::FromString(const wchar_t* sz)
 {
-	return OOCore_guid_t_from_string(sz);
+	guid_t ret;
+	if (!FromString(sz,ret))
+		OMEGA_THROW(L"Invalid guid_t format string");
+	return ret;
 }
 
 Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
-	return OOCore_guid_t_from_string(str.c_str());
+	return FromString(str.c_str());
 }
 
 OMEGA_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());

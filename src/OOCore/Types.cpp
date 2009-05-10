@@ -83,24 +83,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const ch
 	if (bUTF8)
 		OMEGA_NEW(pNode,StringNode(sz));
 	else
-	{
-		size_t len = strlen(sz) + 1;
-
-		size_t buf_size = 0;
-		int err = mbstowcs_s(&buf_size,0,0,sz,len);
-		if (err)
-			OMEGA_THROW(err);
-
-		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf = 0;
-		OMEGA_NEW(buf,wchar_t[buf_size]);
-
-		err = mbstowcs_s(NULL,buf.value(),buf_size,sz,len);
-		if (err)
-			OMEGA_THROW(err);
-		
-		OMEGA_NEW(pNode,StringNode(buf.value()));
-	}
-
+		OMEGA_NEW(pNode,StringNode(OOBase::from_native(sz).c_str()));
+	
 	return pNode;
 }
 
@@ -329,77 +313,87 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_clear,1,((in),void*,s1)
 	return s;
 }
 
-static unsigned int parse(wchar_t c)
+namespace
 {
-	if (c >= L'0' && c <= L'9')
-		return (c-L'0');
-	else if (c >= L'A' && c <= L'F')
-		return (c-L'A'+10);
-	else if (c >= L'a' && c <= L'f')
-		return (c-L'a'+10);
-	else
-		OMEGA_THROW(L"Invalid guid_t format string");
+	static unsigned int parse(wchar_t c)
+	{
+		if (c >= L'0' && c <= L'9')
+			return (c-L'0');
+		else if (c >= L'A' && c <= L'F')
+			return (c-L'A'+10);
+		else if (c >= L'a' && c <= L'f')
+			return (c-L'a'+10);
+		else
+			throw int(0);
+	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_from_string,1,((in),const wchar_t*,sz))
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,result))
 {
 	// Do this manually...
-	Omega::guid_t result;
 	result.Data1 = 0;
 	result.Data2 = 0;
 	result.Data3 = 0;
+	memset(result.Data4,sizeof(result.Data4),0);
 	
 	if (sz[0] != L'{')
-		OMEGA_THROW(L"Invalid guid_t format string");
+		return false;
 
-	unsigned int v = (parse(sz[1]) << 28);
-	v += (parse(sz[2]) << 24);
-	v += (parse(sz[3]) << 20);
-	v += (parse(sz[4]) << 16);
-	v += (parse(sz[5]) << 12);
-	v += (parse(sz[6]) << 8);
-	v += (parse(sz[7]) << 4);
-	v += parse(sz[8]);
-	result.Data1 = static_cast<Omega::uint32_t>(v);
+	try
+	{
+		unsigned int v = (parse(sz[1]) << 28);
+		v += (parse(sz[2]) << 24);
+		v += (parse(sz[3]) << 20);
+		v += (parse(sz[4]) << 16);
+		v += (parse(sz[5]) << 12);
+		v += (parse(sz[6]) << 8);
+		v += (parse(sz[7]) << 4);
+		v += parse(sz[8]);
+		result.Data1 = static_cast<Omega::uint32_t>(v);
 
-	if (sz[9] != L'-')
-		OMEGA_THROW(L"Invalid guid_t format string");
-	
-	v = (parse(sz[10]) << 12);
-	v += (parse(sz[11]) << 8);
-	v += (parse(sz[12]) << 4);
-	v += parse(sz[13]);
-	result.Data2 = static_cast<Omega::uint16_t>(v);
+		if (sz[9] != L'-')
+			return false;
+		
+		v = (parse(sz[10]) << 12);
+		v += (parse(sz[11]) << 8);
+		v += (parse(sz[12]) << 4);
+		v += parse(sz[13]);
+		result.Data2 = static_cast<Omega::uint16_t>(v);
 
-	if (sz[14] != L'-')
-		OMEGA_THROW(L"Invalid guid_t format string");
+		if (sz[14] != L'-')
+			return false;
 
-	v = (parse(sz[15]) << 12);
-	v += (parse(sz[16]) << 8);
-	v += (parse(sz[17]) << 4);
-	v += parse(sz[18]);
-	result.Data3 = static_cast<Omega::uint16_t>(v);
+		v = (parse(sz[15]) << 12);
+		v += (parse(sz[16]) << 8);
+		v += (parse(sz[17]) << 4);
+		v += parse(sz[18]);
+		result.Data3 = static_cast<Omega::uint16_t>(v);
 
-	if (sz[19] != L'-')
-		OMEGA_THROW(L"Invalid guid_t format string");
+		if (sz[19] != L'-')
+			return false;
 
-	result.Data4[0] = static_cast<Omega::byte_t>((parse(sz[20]) << 4) + parse(sz[21]));
-	result.Data4[1] = static_cast<Omega::byte_t>((parse(sz[22]) << 4) + parse(sz[23]));
-	
-	if (sz[24] != L'-')
-		OMEGA_THROW(L"Invalid guid_t format string");
+		result.Data4[0] = static_cast<Omega::byte_t>((parse(sz[20]) << 4) + parse(sz[21]));
+		result.Data4[1] = static_cast<Omega::byte_t>((parse(sz[22]) << 4) + parse(sz[23]));
+		
+		if (sz[24] != L'-')
+			return false;
 
-	result.Data4[2] = static_cast<Omega::byte_t>((parse(sz[25]) << 4) + parse(sz[26]));
-	result.Data4[3] = static_cast<Omega::byte_t>((parse(sz[27]) << 4) + parse(sz[28]));
-	result.Data4[4] = static_cast<Omega::byte_t>((parse(sz[29]) << 4) + parse(sz[30]));
-	result.Data4[5] = static_cast<Omega::byte_t>((parse(sz[31]) << 4) + parse(sz[32]));
-	result.Data4[6] = static_cast<Omega::byte_t>((parse(sz[33]) << 4) + parse(sz[34]));
-	result.Data4[7] = static_cast<Omega::byte_t>((parse(sz[35]) << 4) + parse(sz[36]));
-	
-	if (sz[37] != L'}' || sz[38] != L'\0')
-		OMEGA_THROW(L"Invalid guid_t format string");
+		result.Data4[2] = static_cast<Omega::byte_t>((parse(sz[25]) << 4) + parse(sz[26]));
+		result.Data4[3] = static_cast<Omega::byte_t>((parse(sz[27]) << 4) + parse(sz[28]));
+		result.Data4[4] = static_cast<Omega::byte_t>((parse(sz[29]) << 4) + parse(sz[30]));
+		result.Data4[5] = static_cast<Omega::byte_t>((parse(sz[31]) << 4) + parse(sz[32]));
+		result.Data4[6] = static_cast<Omega::byte_t>((parse(sz[33]) << 4) + parse(sz[34]));
+		result.Data4[7] = static_cast<Omega::byte_t>((parse(sz[35]) << 4) + parse(sz[36]));
+		
+		if (sz[37] != L'}' || sz[38] != L'\0')
+			return false;
 
-	return result;
+		return true;
+	}
+	catch (int)
+	{
+		return false;
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,())

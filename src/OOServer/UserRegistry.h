@@ -33,7 +33,7 @@ namespace User
 			public Omega::Registry::IKey
 		{
 		public:
-			void Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key);
+			void Init(Manager* pManager, const Omega::string_t& strKey, const Omega::int64_t& key, Omega::byte_t type);
 			
 			BEGIN_INTERFACE_MAP(Key)
 				INTERFACE_ENTRY(Omega::Registry::IKey)
@@ -43,6 +43,7 @@ namespace User
 			Manager*        m_pManager;
 			Omega::string_t m_strKey;
 			Omega::int64_t  m_key;
+			Omega::byte_t   m_type;
 
 			int GetValueType_i(const Omega::string_t& strName, Omega::Registry::ValueType_t& vtype);
 

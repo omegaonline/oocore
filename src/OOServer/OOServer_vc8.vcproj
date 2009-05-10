@@ -54,7 +54,7 @@
 				PrecompiledHeaderThrough="OOServer_Root.h"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -69,7 +69,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				OutputFile="$(OutDir)/OOServer.exe"
-				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/OOServer.pdb"
@@ -130,10 +129,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite"
-				PreprocessorDefinitions="NDEBUG"
+				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
+				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				TreatWChar_tAsBuiltInType="true"
@@ -269,7 +267,8 @@
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
-						WarningLevel="0"
+						WarningLevel="3"
+						Detect64BitPortabilityProblems="false"
 					/>
 				</FileConfiguration>
 				<FileConfiguration

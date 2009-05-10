@@ -66,7 +66,7 @@ namespace OOCore
 	class UserSession
 	{
 	public:
-		static Omega::IException* init();
+		static Omega::IException* init(bool bStandalone);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
 
@@ -93,6 +93,7 @@ namespace OOCore
 		UserSession& operator = (const UserSession&) { return *this; }
 
 		OOBase::RWMutex                  m_lock;
+		OOBase::AtomicInt<size_t>        m_initcount;
 		OOBase::Thread                   m_worker_thread;
 		OOBase::SmartPtr<OOBase::Socket> m_stream;
 		Omega::uint32_t                  m_channel_id;
@@ -128,10 +129,10 @@ namespace OOCore
 		void remove_thread_context(Omega::uint16_t thread_id);
 
 		// Proper private members
-		void init_i();
+		void init_i(bool bStandalone);
 		void term_i();
 		void bootstrap();
-		std::string discover_server_port(OOBase::timeval_t& wait);
+		std::string discover_server_port(bool bStandalone);
 		
 		int run_read_loop();
 		bool pump_requests(const OOBase::timeval_t* deadline = 0, bool bOnce = false);
@@ -145,7 +146,6 @@ namespace OOCore
 
 		// Apartment members
 		Omega::uint16_t                                        m_next_apartment;
-		OOBase::SmartPtr<Apartment>                            m_ptrZeroApt;
 		std::map<Omega::uint16_t,OOBase::SmartPtr<Apartment> > m_mapApartments;
 		
 		Omega::Apartment::IApartment* create_apartment_i();

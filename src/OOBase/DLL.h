@@ -32,7 +32,7 @@ namespace OOBase
 		DLL();
 		~DLL();
 
-		int load(const wchar_t* full_path);
+		int load(const char* full_path);
 		bool unload();
 		void* symbol(const char* sym_name);
 

@@ -29,16 +29,18 @@ namespace OOBase
 
 std::string OOBase::strerror(int err)
 {
-	char szBuf[1024] = {0};
-	sprintf_s(szBuf,sizeof(szBuf),"(%d) ",err);
-	std::string str = szBuf;
-
-	if (strerror_s(szBuf,sizeof(szBuf),err) == 0)
-		str += szBuf;
-	else
-		str += "No message";
+	std::stringstream out;
+	out << "(" << err << ") ";
 	
-	return str;
+#if defined(HAVE_TR_24731)
+	char szBuf[256] = {0};
+	strerror_s(szBuf,sizeof(szBuf),err);
+	out << szBuf;
+#else
+	out << ::strerror(err);
+#endif
+
+	return out.str();
 }
 
 void OOBase::CallCriticalFailureE(const char* pszFile, unsigned int nLine, int err)
@@ -74,12 +76,7 @@ void OOBase::CallCriticalFailureMem(const char* pszFile, unsigned int nLine)
 
 void OOBase::CallCriticalFailureX(const char* pszFile, unsigned int nLine, const char* msg)
 {
-	char szBuf[64] = {0};
-	sprintf_s(szBuf,sizeof(szBuf),"(%lu): ",nLine);
-
-	std::string str = pszFile;
-	str += szBuf;
-	str += msg;
-
-	CriticalFailure(str.c_str());
+	std::stringstream out;
+	out << pszFile << "(" << nLine << "): " << msg;
+	CriticalFailure(out.str().c_str());
 }

@@ -46,22 +46,17 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 #define OOCORE_DEFINE_MESSAGE_READ(name,type) \
 	size_t name(const wchar_t*,size_t count, Omega::type* arr) \
 	{ \
-		if (count > (size_t)-1 / sizeof(Omega::type)) \
-			OMEGA_THROW(L"Overflow"); \
-		size_t i; \
-		for (i=0;i<count;++i) \
+		for (size_t i=0;i<count;++i) \
 		{ \
 			if (!m_stream.read(arr[i])) \
-				break; \
+				OMEGA_THROW(m_stream.last_error()); \
 		} \
-		return i; \
+		return count; \
 	}
 
 #define OOCORE_DEFINE_MESSAGE_WRITE(name,type) \
 	void name(const wchar_t*,size_t count, const Omega::type* arr) \
 	{ \
-		if (count > (size_t)-1 / sizeof(Omega::type)) \
-			OMEGA_THROW(L"Overflow"); \
 		for (size_t i=0;i<count;++i) \
 		{ \
 			if (!m_stream.write(arr[i])) \
@@ -200,7 +195,7 @@ namespace OOCore
 			Omega::uint64_t sz;
 			pMessage->ReadUInt64s(L"length",1,&sz);
 			if (sz > (size_t)-1)
-				OMEGA_THROW(L"Overflow"); \
+				OMEGA_THROW(L"Message too long to unmarshal");
 			size_t len = static_cast<size_t>(sz);
 			OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
 			OMEGA_NEW(szBuf,Omega::byte_t[len]);
@@ -222,9 +217,6 @@ namespace OOCore
 		
 		size_t ReadStrings(const wchar_t*, size_t count, Omega::string_t* arr)
 		{ 
-			if (count > (size_t)-1 / sizeof(Omega::string_t))
-				OMEGA_THROW(L"Overflow"); \
-			
 			for (size_t i=0;i<count;++i)
 				arr[i] = ReadString();
 
@@ -233,9 +225,6 @@ namespace OOCore
 
 		size_t ReadGuids(const wchar_t*, size_t count, Omega::guid_t* arr)
 		{
-			if (count > (size_t)-1 / sizeof(Omega::guid_t))
-				OMEGA_THROW(L"Overflow"); \
-			
 			for (size_t i=0;i<count;++i)
 				arr[i] = ReadGuid();
 

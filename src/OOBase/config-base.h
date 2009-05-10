@@ -149,6 +149,7 @@
 #ifdef __cplusplus
 
 #include <string>
+#include <sstream>
 
 namespace OOBase
 {

@@ -22,6 +22,8 @@
 #ifndef OOCORE_EXCEPTION_H_INCLUDED_
 #define OOCORE_EXCEPTION_H_INCLUDED_
 
+#include <OTL/Exception.h>
+
 namespace OOCore
 {
 	template <typename E, const Omega::guid_t* pOID>

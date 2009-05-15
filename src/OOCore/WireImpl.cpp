@@ -26,7 +26,7 @@
 using namespace Omega;
 using namespace OTL;
 
-namespace OOCore
+namespace 
 {
 	struct wire_holder
 	{
@@ -36,25 +36,25 @@ namespace OOCore
 			System::MetaInfo::pfnCreateStub pfnStub;
 		};
 
-		static wire_holder& instance()
-		{
-			static wire_holder i;
-			return i;
-		}
-
-		std::map<guid_t,pfns> ps_map;
-		std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo> ti_map;
+		OOBase::RWMutex            m_lock;
+		std::multimap<guid_t,pfns> m_ps_map;
+		//std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo> m_ti_map;
 	};
+
+	typedef OOBase::Singleton<wire_holder> WIRE_HOLDER;
 }
 
 System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::MetaInfo::IStubController_Safe* pController, System::MetaInfo::IMarshaller_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
 {
-	wire_holder::pfns p;
+	wire_holder::pfns p = {0,0};
 	try
 	{
-		wire_holder& instance = wire_holder::instance();
-		std::map<guid_t,wire_holder::pfns>::const_iterator i=instance.ps_map.find(iid);
-		if (i == instance.ps_map.end())
+		wire_holder* instance = WIRE_HOLDER::instance();
+
+		OOBase::ReadGuard<OOBase::RWMutex> guard(instance->m_lock);
+
+		std::multimap<guid_t,wire_holder::pfns>::const_iterator i=instance->m_ps_map.find(iid);
+		if (i == instance->m_ps_map.end())
 			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 		p = i->second;
 	}
@@ -74,12 +74,15 @@ System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::Meta
 
 System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy, System::MetaInfo::IMarshaller_Safe* pManager)
 {
-	wire_holder::pfns p;
+	wire_holder::pfns p = {0,0};
 	try
 	{
-		wire_holder& instance = wire_holder::instance();
-		std::map<guid_t,wire_holder::pfns>::const_iterator i=instance.ps_map.find(iid);
-		if (i == instance.ps_map.end())
+		wire_holder* instance = WIRE_HOLDER::instance();
+
+		OOBase::ReadGuard<OOBase::RWMutex> guard(instance->m_lock);
+
+		std::multimap<guid_t,wire_holder::pfns>::const_iterator i=instance->m_ps_map.find(iid);
+		if (i == instance->m_ps_map.end())
 			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 		p = i->second;
 	}
@@ -99,13 +102,17 @@ System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::M
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoProxyStubCreators,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
-	OOCore::wire_holder::pfns funcs;
-	funcs.pfnProxy = (System::MetaInfo::pfnCreateProxy)(pfnProxy);
-	funcs.pfnStub = (System::MetaInfo::pfnCreateStub)(pfnStub);
-
 	try
 	{
-		OOCore::wire_holder::instance().ps_map.insert(std::map<guid_t,OOCore::wire_holder::pfns>::value_type(iid,funcs));
+		wire_holder::pfns funcs;
+		funcs.pfnProxy = (System::MetaInfo::pfnCreateProxy)(pfnProxy);
+		funcs.pfnStub = (System::MetaInfo::pfnCreateStub)(pfnStub);
+
+		wire_holder* instance = WIRE_HOLDER::instance();
+
+		OOBase::Guard<OOBase::RWMutex> guard(instance->m_lock);
+
+		instance->m_ps_map.insert(std::multimap<guid_t,wire_holder::pfns>::value_type(iid,funcs));
 	}
 	catch (std::exception& e)
 	{
@@ -113,36 +120,26 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoProxyStubCreators,3,((in)
 	}
 }
 
-System::MetaInfo::ITypeInfo_Safe* OOCore::GetTypeInfo(const guid_t& iid)
-{
-	System::MetaInfo::pfnCreateTypeInfo t;
-	try
-	{
-		wire_holder& instance = wire_holder::instance();
-		std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo>::const_iterator i=instance.ti_map.find(iid);
-		if (i == instance.ti_map.end())
-			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-		t = i->second;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
-	System::MetaInfo::ITypeInfo_Safe* pRet = 0;
-	System::MetaInfo::IException_Safe* pSE = t(&pRet);
-
-	if (pSE)
-		System::MetaInfo::throw_correct_exception(pSE);
-
-	return pRet;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoProxyStubCreators,3,((in),const guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub))
 {
 	try
 	{
-		OOCore::wire_holder::instance().ti_map.insert(std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo>::value_type(iid,(System::MetaInfo::pfnCreateTypeInfo)pfnTypeInfo));
+		wire_holder* instance = WIRE_HOLDER::instance();
+
+		OOBase::Guard<OOBase::RWMutex> guard(instance->m_lock);
+
+		for (std::multimap<guid_t,wire_holder::pfns>::iterator i=instance->m_ps_map.find(iid);i!=instance->m_ps_map.end() && i->first==iid;)
+		{
+			if (i->second.pfnProxy == (System::MetaInfo::pfnCreateProxy)(pfnProxy) &&
+				i->second.pfnStub == (System::MetaInfo::pfnCreateStub)(pfnStub))
+			{
+				instance->m_ps_map.erase(i++);
+			}
+			else
+			{
+				++i;
+			}
+		}
 	}
 	catch (std::exception& e)
 	{

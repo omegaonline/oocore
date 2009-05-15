@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="OOSvrUser"
-	ProjectGUID="{F19DB319-BB3B-4965-A4C2-26BCB674DF99}"
-	RootNamespace="OOHost"
+	Name="OOSvrLite"
+	ProjectGUID="{27040171-332D-4AFD-AD95-B6A9A25925C2}"
+	RootNamespace="OOSvrLite"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -18,8 +18,8 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)_User"
-			ConfigurationType="1"
+			IntermediateDirectory="$(ConfigurationName)_Lite"
+			ConfigurationType="2"
 			CharacterSet="1"
 			>
 			<Tool
@@ -42,11 +42,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include"
-				PreprocessorDefinitions=""
+				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
+				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="OOServer_User.h"
+				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
@@ -62,9 +63,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
+				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -94,8 +96,8 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="$(ConfigurationName)_User"
-			ConfigurationType="1"
+			IntermediateDirectory="$(ConfigurationName)_Lite"
+			ConfigurationType="2"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -120,13 +122,14 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="OOServer_User.h"
+				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
 			/>
 			<Tool
@@ -140,10 +143,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
+				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -180,11 +184,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\Channel.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\DebuggerWin32.cpp"
+				RelativePath=".\Database.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -206,37 +206,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\InterProcessService.cpp"
+				RelativePath=".\IPSLite.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\MessageConnection.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\UserAcceptor.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserMain.cpp"
+				RelativePath=".\OOSvrLite.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -256,24 +230,51 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UserManager.cpp"
+				RelativePath=".\RegistryHive.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UserNet.cpp"
+				RelativePath=".\SQLite3_comp.c"
 				>
-			</File>
-			<File
-				RelativePath=".\UserProcessWin32.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserRegistry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UserROT.cpp"
-				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+						WarningLevel="3"
+						Detect64BitPortabilityProblems="false"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+						WarningLevel="0"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -282,23 +283,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\Channel.h"
+				RelativePath=".\Database.h"
 				>
 			</File>
 			<File
-				RelativePath=".\InterProcessService.h"
+				RelativePath=".\IPSLite.h"
 				>
 			</File>
 			<File
-				RelativePath=".\MessageConnection.h"
-				>
-			</File>
-			<File
-				RelativePath=".\OOServer_User.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Protocol.h"
+				RelativePath=".\OOServer_Lite.h"
 				>
 			</File>
 			<File
@@ -306,35 +299,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Server.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserAcceptor.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserManager.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserNet.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserProcess.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserRegistry.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserROT.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\Version.h"
+				RelativePath=".\RegistryHive.h"
 				>
 			</File>
 		</Filter>
@@ -344,11 +309,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\logo.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\OOSvrUser.rc"
+				RelativePath=".\OOSvrLite_res.rc"
 				>
 			</File>
 		</Filter>

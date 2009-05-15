@@ -21,13 +21,10 @@
 
 #include "OOCore_precomp.h"
 
+#include <OTL/Registry.h>
+
 #include "UserSession.h"
 #include "Activation.h"
-#include "StdObjectManager.h"
-#include "ApartmentImpl.h"
-#include "WireProxy.h"
-#include "Channel.h"
-#include "Exception.h"
 
 #ifdef HAVE_VLD_H
 #include <vld.h>
@@ -35,19 +32,6 @@
 
 using namespace Omega;
 using namespace OTL;
-
-// Our library map
-BEGIN_LIBRARY_OBJECT_MAP()
-	OBJECT_MAP_ENTRY(OOCore::StdObjectManager,0)
-	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory,0)
-	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl,0)
-	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl,0)
-END_LIBRARY_OBJECT_MAP()
 
 #if defined(_WIN32)
 
@@ -68,6 +52,7 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 	return TRUE;
 }
+
 #endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_GetVersion,0,())
@@ -91,7 +76,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 		if (OOCore::HostedByOOServer())
 		{
 			// This is a short-cut close for use by the OOServer
-			OOCore::SERVICE_MANAGER::close();
+			OOCore::SERVICE_MANAGER::instance()->close();
 		}
 		else
 		{

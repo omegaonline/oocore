@@ -243,11 +243,11 @@ void ShmSocket::on_read_i()
 
 			if (m_read_list.empty())
 			{
-				guard.release();
-
 				// Nothing more to do... stop waiting
 				UnregisterWaitEx(m_hReadWait,NULL);
 				m_hReadWait = 0;
+
+				guard.release();
 		
 				// Release ourselves as we have no more outstanding asyncs
 				--m_proactor->m_outstanding;
@@ -287,11 +287,11 @@ void ShmSocket::on_read_i()
 			IOBuf head = rd;
 			m_read_list.pop_front();
 
-			// Release the lock before calling handlers
-			guard.release();
-
 			if (err || total)
 			{
+				// Release the lock before calling handlers
+				guard.release();
+
 				// Notify the handler
 				m_handler->on_read(this,head.buf,err);
 			}
@@ -303,8 +303,12 @@ void ShmSocket::on_read_i()
 		{
 			LOG_ERROR(("std::exception thrown: %s",e.what()));
 
+			OOBase::Guard<OOBase::SpinLock> guard(m_read_lock);
+
 			UnregisterWaitEx(m_hReadWait,NULL);
 			m_hReadWait = 0;
+
+			guard.release();
 
 			// Release ourselves as we have no more outstanding asyncs
 			--m_proactor->m_outstanding;
@@ -412,11 +416,11 @@ void ShmSocket::on_write_i()
 
 			if (m_write_list.empty())
 			{
-				guard.release();
-
 				// Nothing more to do... stop waiting
 				UnregisterWaitEx(m_hWriteWait,NULL);
 				m_hWriteWait = 0;
+
+				guard.release();
 
 				// Release ourselves as we have no more outstanding asyncs
 				--m_proactor->m_outstanding;
@@ -453,11 +457,11 @@ void ShmSocket::on_write_i()
 			IOBuf head = wr;
 			m_write_list.pop_front();
 
-			// Release the lock before calling handlers
-			guard.release();
-
 			if (m_hCloseWait != 0)
 			{
+				// Release the lock before calling handlers
+				guard.release();
+
 				// Notify the handler
 				m_handler->on_write(this,head.buf,err);
 			}
@@ -469,8 +473,12 @@ void ShmSocket::on_write_i()
 		{
 			LOG_ERROR(("std::exception thrown: %s",e.what()));
 
+			OOBase::Guard<OOBase::SpinLock> guard(m_write_lock);
+
 			UnregisterWaitEx(m_hWriteWait,NULL);
 			m_hWriteWait = 0;
+
+			guard.release();
 
 			// Release ourselves as we have no more outstanding asyncs
 			--m_proactor->m_outstanding;

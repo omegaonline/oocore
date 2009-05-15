@@ -43,14 +43,18 @@
 #if !defined(OMEGA_CONCAT)
 #define OMEGA_CONCAT(a,b)       OMEGA_CONCAT_I(a,b)
 #define OMEGA_CONCAT_R(a,b)     OMEGA_CONCAT_R_I(a,b)
+#define OMEGA_CONCAT_R2(a,b)    OMEGA_CONCAT_R2_I(a,b)
 #ifdef _MSC_VER
 #define OMEGA_CONCAT_I(a,b)     OMEGA_CONCAT_II(a ## b)
 #define OMEGA_CONCAT_II(p0)     p0
 #define OMEGA_CONCAT_R_I(a,b)   OMEGA_CONCAT_R_II(a ## b)
 #define OMEGA_CONCAT_R_II(p0)   p0
+#define OMEGA_CONCAT_R2_I(a,b)  OMEGA_CONCAT_R2_II(a ## b)
+#define OMEGA_CONCAT_R2_II(p0)  p0
 #else
 #define OMEGA_CONCAT_I(a,b)     a ## b
 #define OMEGA_CONCAT_R_I(a,b)   a ## b
+#define OMEGA_CONCAT_R2_I(a,b)  a ## b
 #endif
 #endif 
 

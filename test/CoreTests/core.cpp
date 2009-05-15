@@ -1,9 +1,17 @@
 #include <OOCore/OOCore.h>
 #include "Test.h"
 
-bool init_tests()
+bool init_standalone_tests()
 {
-	// Call Omega::Initialze and remember we have...
+	Omega::IException* pE = Omega::Initialize(true);
+	if (pE)
+		throw pE;
+
+	return true;
+}
+
+bool init_server_tests()
+{
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
 		throw pE;

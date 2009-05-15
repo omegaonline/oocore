@@ -22,6 +22,8 @@
 #ifndef OOSERVER_RUNNING_OBJECT_TABLE_H_INCLUDED_
 #define OOSERVER_RUNNING_OBJECT_TABLE_H_INCLUDED_
 
+#include <OOCore/Remoting.h>
+
 namespace User
 {
 	class RunningObjectTable :

@@ -279,7 +279,7 @@ bool Root::SpawnedProcess::LogonSandboxUser(uid_t& uid)
 
 	// Get the uid...
 	ACE_INT64 key = 0;
-	if (reg_root->open_key(key,"Server\\Sandbox",0) != 0)
+	if (reg_root->open_key(key,"System\\Server\\Sandbox",0) != 0)
 		return true;
 
 	ACE_CDR::LongLong sb_uid = (ACE_CDR::ULong)-1;
@@ -517,7 +517,7 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 
 	// Set the sandbox uid
 	ACE_INT64 key = 0;
-	if (Manager::get_registry()->open_key(key,"Server\\Sandbox",0) != 0)
+	if (Manager::get_registry()->open_key(key,"System\\Server\\Sandbox",0) != 0)
 		return false;
 
 	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);

@@ -56,25 +56,12 @@ bool Root::Manager::install(int argc, char* argv[])
 		return false;
 
 	// Add the default keys
-	Omega::int64_t key = 0;
-	m_registry->create_key(key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	m_registry->set_description(key,0,"A common key for all users");
-	key = 0;
-	m_registry->create_key(key,"Local User",false,Registry::Hive::never_delete,0);
-	m_registry->set_description(key,0,"A key unique to each user of the local computer");
-	key = 0;
-	m_registry->create_key(key,"Server",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
-	m_registry->create_key(key,"Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
+	if (Registry::Hive::init_system_defaults(m_registry.value()) != 0)
+		return false;
 
-	key = 0;
-	m_registry->create_key(key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	key = 0;
-	m_registry_all_users->create_key(key,"Applications",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	m_registry_all_users->set_description(key,0,"Applications store their configuration beneath this key");
-	key = 0;
-	m_registry_all_users->create_key(key,"Objects",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	m_registry_all_users->create_key(key,"OIDs",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	
+	if (Registry::Hive::init_allusers_defaults(m_registry_all_users.value()) != 0)
+		return false;
+
 	// Set up the sandbox user
 	if (!install_sandbox(argc,argv))
 		return false;

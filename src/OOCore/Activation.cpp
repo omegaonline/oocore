@@ -21,7 +21,29 @@
 
 #include "OOCore_precomp.h"
 
+#include <OTL/Exception.h>
+#include <OTL/Registry.h>
+
+#include "StdObjectManager.h"
+#include "ApartmentImpl.h"
+#include "WireProxy.h"
+#include "Channel.h"
+#include "Exception.h"
 #include "Activation.h"
+#include "IPS.h"
+
+// Our library map
+BEGIN_LIBRARY_OBJECT_MAP()
+	OBJECT_MAP_ENTRY(OOCore::StdObjectManager,0)
+	OBJECT_MAP_ENTRY(OOCore::ApartmentImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::ProxyMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::ChannelMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::CDRMessageMarshalFactory,0)
+	OBJECT_MAP_ENTRY(OOCore::SystemExceptionMarshalFactoryImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::NoInterfaceExceptionMarshalFactoryImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl,0)
+	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl,0)
+END_LIBRARY_OBJECT_MAP_NO_REGISTRATION()
 
 using namespace Omega;
 using namespace OTL;
@@ -121,6 +143,27 @@ namespace
 		std::map<string_t,OOBase::SmartPtr<DLLImpl> > m_dll_map;
 	};
 	typedef OOBase::Singleton<DLLManagerImpl> DLLManager;
+
+	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
+	{
+		// Lookup OID
+		string_t strOid = oid.ToString();
+
+		// This needs to use a local cached map, and register for update notifications from the
+		// registry to refresh the map... This will result in a significant speedup.
+		void* TODO;
+
+		// Check Local User first
+		ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
+		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
+			return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
+
+		ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
+		if (ptrOidsKey->IsSubKey(strOid))
+			return ptrOidsKey.OpenSubKey(strOid);
+
+		return 0;
+	}
 }
 
 DLLManagerImpl::~DLLManagerImpl()
@@ -255,9 +298,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega
 	OOCore::SERVICE_MANAGER::instance()->RevokeObject(cookie);
 }
 
-// External declaration of our version of this entry point
-void Omega_GetLibraryObject_Impl(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject);
-
 IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
@@ -281,9 +321,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 
 	IObject* pObj = 0;
 	System::MetaInfo::IException_Safe* GetLibraryObject_Exception = pfn(
-		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid),
-		System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::coerce(flags),
-		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
+		&oid,flags,&iid,
 		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
 
 	if (dll->m_first_time)
@@ -319,30 +357,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 	}
 }
 
-namespace 
-{
-	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
-	{
-		// Lookup OID
-		string_t strOid = oid.ToString();
-
-		// This needs to use a local cached map, and register for update notifications from the
-		// registry to refresh the map... This will result in a significant speedup.
-		void* TODO;
-
-		// Check Local User first
-		ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
-		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
-			return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
-
-		ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
-		if (ptrOidsKey->IsSubKey(strOid))
-			return ptrOidsKey.OpenSubKey(strOid);
-
-		return 0;
-	}
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
 {
 	pObject = 0;
@@ -351,7 +365,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
-			Omega_GetLibraryObject_Impl(oid,flags,iid,pObject);
+			pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid);
 			if (pObject)
 				return;
 		}
@@ -382,13 +396,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 			// Try RunningObjectTable first
 			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
 			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-			if (!ptrROT)
-			{
-				// We are running solo!
-				throw ISystemException::Create(L"Not connected to the network daemon",L"Omega::Activation::GetRegisteredObject");
-			}
-
+			
 			// Change this to use monikers
 			void* TICKET_90;
 

@@ -21,7 +21,7 @@
 
 #include "OOCore_precomp.h"
 
-namespace OOCore
+namespace
 {
 	struct StringNode
 	{
@@ -58,8 +58,6 @@ namespace OOCore
 		OOBase::AtomicInt<size_t> m_refcount;
 	};
 }
-
-using namespace OOCore;
 
 // Forward declare the md5 stuff
 extern "C"

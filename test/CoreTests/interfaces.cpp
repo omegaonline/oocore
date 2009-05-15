@@ -1,4 +1,5 @@
 #include <OTL/OTL.h>
+#include <OOCore/Remoting.h>
 #include "interfaces.h"
 
 namespace Omega {
@@ -12,9 +13,6 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestLibrary, "{16C07AEA-242F-48f5-A10E-1D
 OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
 
 #include "Test.h"
-
-BEGIN_PROCESS_OBJECT_MAP(0)
-END_PROCESS_OBJECT_MAP()
 
 #if defined(_WIN32)
 #define OOREGISTER L"OORegister"
@@ -237,7 +235,9 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
+	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+	
 	do_interface_tests(ptrSimpleTest);
 
 	// Now check for activation rules
@@ -290,7 +290,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	return true;
 }
 
-bool interface_tests()
+bool interface_dll_tests()
 {
 #if defined(_WIN32)
 	do_local_library_test(L"TestLibrary_msvc");
@@ -299,6 +299,11 @@ bool interface_tests()
 	do_local_library_test(L"./libTestLibrary.so");
 #endif
 
+	return true;
+}
+
+bool interface_tests()
+{
 #if defined(_WIN32)
 	do_local_process_test(L"TestProcess");
 #else
@@ -331,7 +336,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 
 static bool interface_tests_i(const wchar_t* pszHost)
 {
-#if defined(_WIN32) && 0
+#if defined(_WIN32)
 	int c = 0;
 	try
 	{

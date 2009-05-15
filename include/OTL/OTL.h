@@ -87,7 +87,9 @@
 //    OBJECT_MAP_ENTRY(class derived from AutoObjectFactory, Object name)
 // END_PROCESS_OBJECT_MAP()
 //
-// If "module_name" is NULL, then no type library will be generated
+// If "Object name" is NULL, then the object will not be registered
+//
+// If "module_name" is NULL, then no objects will be registered
 //
 
 #define BEGIN_LIBRARY_OBJECT_MAP() \
@@ -100,13 +102,16 @@
 #define OBJECT_MAP_ENTRY(obj,name) \
 		{ &obj::GetOid, &obj::GetActivationFlags, &obj::GetRegistrationFlags, name, &Creator<obj::ObjectFactoryClass>::Create, 0 },
 
-#define END_LIBRARY_OBJECT_MAP() \
+#define END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
 	} \
 	OMEGA_PRIVATE LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
 	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
-	} \
+	}
+
+#define END_LIBRARY_OBJECT_MAP() \
+	END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
 	{ pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,3,((in),Omega::bool_t,bInstall,(in),Omega::bool_t,bLocal,(in),const Omega::string_t&,strSubsts)) \
@@ -131,7 +136,7 @@
 	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
-#include <OOCore/Remoting.h>
+#include <OOCore/OOCore.h>
 
 namespace OTL
 {
@@ -282,6 +287,10 @@ namespace OTL
 		{ }
 	};
 
+	// If the compiler moans here, then you need to #include <OTL/Registry.h>
+	template <>
+	class ObjectPtr<Omega::Registry::IKey>;
+
 	class ObjectBase
 	{
 	protected:
@@ -335,8 +344,13 @@ namespace OTL
 		template <class Interface, class Implementation>
 		static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
-			// If you get compiler errors here, make sure you have derived from each class
-			// you have included in your interface map!
+			/*******************************************
+			*
+			* If you get compiler errors here, make sure 
+			* you have derived from each class you have 
+			* included in your interface map!
+			*
+			********************************************/
 			Interface* pI = static_cast<Interface*>(static_cast<Implementation*>(pThis));
 			pI->AddRef();
 			return pI;
@@ -374,41 +388,6 @@ namespace OTL
 
 	protected:
 		Omega::Threading::AtomicRefCount m_refcount;
-	};
-
-	template <typename E>
-	class ExceptionImpl :
-		public ObjectBase,
-		public E
-	{
-	public:
-		ObjectPtr<Omega::IException>	m_ptrCause;
-		Omega::string_t					m_strDesc;
-		Omega::string_t					m_strSource;
-
-		BEGIN_INTERFACE_MAP(ExceptionImpl)
-			INTERFACE_ENTRY(Omega::IException)
-			INTERFACE_ENTRY(E)
-		END_INTERFACE_MAP()
-
-	// IException members
-	public:
-		virtual Omega::guid_t GetThrownIID()
-		{
-			return OMEGA_GUIDOF(E);
-		}
-		virtual Omega::IException* GetCause()
-		{
-			return m_ptrCause.AddRef();
-		}
-		virtual Omega::string_t GetDescription()
-		{
-			return m_strDesc;
-		}
-		virtual Omega::string_t GetSource()
-		{
-			return m_strSource;
-		}
 	};
 
 	class ModuleBase
@@ -639,50 +618,6 @@ namespace OTL
 		}
 	};
 
-	/*template <class TYPE>
-	class Singleton
-	{
-	public:
-		// Global access point to the Singleton.
-		static TYPE *instance(void)
-		{
-			void* DODGY_SINGLETON;
-			Singleton<TYPE>*& singleton = Singleton<TYPE>::instance_i();
-			if (!singleton)
-			{
-				Omega::Threading::Guard<Omega::Threading::Mutex> guard(GetModuleBase()->GetLock());
-				if (!singleton)
-				{
-					OMEGA_NEW(singleton,Singleton<TYPE>());
-					GetModuleBase()->AddTermFunc(terminator,0);
-				}
-			}
-
-			return &singleton->m_instance;
-		}
-
-	private:
-		TYPE m_instance;
-
-		Singleton() {}
-		virtual ~Singleton() {}
-		Singleton(const Singleton&) {}
-		Singleton& operator = (const Singleton&) {}
-
-		static Singleton<TYPE>*& instance_i()
-		{
-			static Singleton<TYPE>* singleton = 0;
-			return singleton;
-		}
-
-		static void terminator(void*)
-		{
-			Singleton<TYPE>*& i = instance_i();
-			delete i;
-			i = 0;
-		}
-	};*/
-
 	template <class ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
@@ -723,9 +658,10 @@ namespace OTL
 		SingletonObjectImpl(const SingletonObjectImpl&) {}
 		SingletonObjectImpl& operator = (const SingletonObjectImpl&) { return *this; }
 
-		bool register_destructor()
+		bool singleton_init()
 		{
 			GetModuleBase()->AddTermFunc(terminator,this);
+			ROOT::Init();
 			return true;
 		}
 
@@ -749,26 +685,6 @@ namespace OTL
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
-		}
-	};
-
-	template <class E>
-	class ExceptionMarshalFactoryImpl :
-		public ObjectBase,
-		public Omega::Remoting::IMarshalFactory
-	{
-	public:
-		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
-		END_INTERFACE_MAP()
-
-	// IMarshalFactory members
-	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
-		{
-			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
-			ptrE->UnmarshalInterface(pObjectManager,pMessage,flags);
-			pObject = ptrE->QueryInterface(iid);
 		}
 	};
 
@@ -850,6 +766,9 @@ namespace OTL
 	{
 	public:
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<SingletonObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
+
+	protected:
+		virtual void Init() {}
 	};
 
 	class LibraryModule : public ModuleBase
@@ -913,32 +832,60 @@ namespace OTL
 
 	public:
 		template <class InputIterator>
-		static EnumIFace* Create(InputIterator first, InputIterator last)
+		static EnumIFace* Create(InputIterator begin, InputIterator end)
 		{
-			ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateInstancePtr();
-			ptrThis->m_listItems.assign(first,last);
-			ptrThis->m_pos = ptrThis->m_listItems.begin();
-			return ptrThis.AddRef();
+			try
+			{
+				ObjectPtr<ObjectImpl<MyType> > ptrThis = ObjectImpl<MyType>::CreateInstancePtr();
+				ptrThis->m_listItems.assign(begin,end);
+				ptrThis->m_pos = ptrThis->m_listItems.begin();
+				return ptrThis.AddRef();
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		void Init()
 		{
-			m_pos = m_listItems.begin();
+			try
+			{
+				m_pos = m_listItems.begin();
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		void Append(const EnumType& v)
 		{
-			m_listItems.push_back(v);
+			try
+			{
+				m_listItems.push_back(v);
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		bool Find(const EnumType& v)
 		{
-			for (typename std::list<EnumType>::const_iterator i=m_listItems.begin();i!=m_listItems.end();++i)
+			try
 			{
-				if (*i == v)
-					return true;
+				for (typename std::list<EnumType>::const_iterator i=m_listItems.begin();i!=m_listItems.end();++i)
+				{
+					if (*i == v)
+						return true;
+				}
+				return false;
 			}
-			return false;
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		BEGIN_INTERFACE_MAP(MyType)
@@ -954,48 +901,76 @@ namespace OTL
 	public:
 		bool Next(Omega::uint32_t& count, EnumType* parrVals)
 		{
-			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
-
-			Omega::uint32_t c = count;
-			count = 0;
-			while (m_pos!=m_listItems.end() && count < c)
+			try
 			{
-				parrVals[count] = *m_pos;
-				++count;
-				++m_pos;
-			}
+				Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
-			return (m_pos!=m_listItems.end());
+				Omega::uint32_t c = count;
+				count = 0;
+				while (m_pos!=m_listItems.end() && count < c)
+				{
+					parrVals[count] = *m_pos;
+					++count;
+					++m_pos;
+				}
+
+				return (m_pos!=m_listItems.end());
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		bool Skip(Omega::uint32_t count)
 		{
-			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
-
-			while (count > 0 && m_pos!=m_listItems.end())
+			try
 			{
-				++m_pos;
-				--count;
-			}
+				Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
-			return (m_pos!=m_listItems.end());
+				while (count > 0 && m_pos!=m_listItems.end())
+				{
+					++m_pos;
+					--count;
+				}
+
+				return (m_pos!=m_listItems.end());
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		void Reset()
 		{
-			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
+			try
+			{
+				Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
-			m_pos = m_listItems.begin();
+				m_pos = m_listItems.begin();
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 
 		EnumIFace* Clone()
 		{
-			Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
+			try
+			{
+				Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_cs);
 
-			ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateInstancePtr();
-			ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());
-			ptrNew->m_pos = ptrNew->m_listItems.begin();
-			return ptrNew.AddRef();
+				ObjectPtr<ObjectImpl<MyType> > ptrNew = ObjectImpl<MyType>::CreateInstancePtr();
+				ptrNew->m_listItems.assign(m_listItems.begin(),m_listItems.end());
+				ptrNew->m_pos = ptrNew->m_listItems.begin();
+				return ptrNew.AddRef();
+			}
+			catch (std::exception& e)
+			{
+				OMEGA_THROW(e);
+			}
 		}
 	};
 
@@ -1049,8 +1024,5 @@ namespace OTL
 }
 
 #include <OTL/OTL.inl>
-
-// Specialisations
-#include <OTL/OTL_special.h>
 
 #endif // OTL_OTL_H_INCLUDED_

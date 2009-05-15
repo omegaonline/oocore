@@ -140,7 +140,7 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 #if !defined(OMEGA_DEBUG)
 	const char* arrBufs[2] = { szBuf, 0 };
 
-	if (priority != OOSvrBase::Logger::Debug)
+	if (m_hLog && priority != OOSvrBase::Logger::Debug)
 		ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
 #endif
 

@@ -38,6 +38,7 @@
 		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) \
 		{ \
 		public: \
+			static const wchar_t* get_name() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)); } \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 			{ \
 				static const qi_rtti s_rtti = \
@@ -45,9 +46,14 @@
 					SafeStubImpl<interface_info<n_space::iface>::safe_stub_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeProxyImpl<interface_info<n_space::iface>::safe_proxy_factory<n_space::iface>::type,n_space::iface>::Create, \
 					SafeThrow<n_space::iface>, \
-					OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)) \
+					get_name() \
 				}; \
 				register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
+				RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),get_name(),interface_info<n_space::iface>::type_info_factory::get_type_info()); \
+			} \
+			OMEGA_CONCAT_R(~,OMEGA_CONCAT_R2(OMEGA_UNIQUE_NAME(iface),_RttiInit))() \
+			{ \
+				UnregisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),interface_info<n_space::iface>::type_info_factory::get_type_info()); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit_i); \
@@ -83,22 +89,13 @@
 					return Omega::System::MetaInfo::return_safe_exception(pE); \
 				} \
 			} \
-			static Omega::System::MetaInfo::IException_Safe* OMEGA_CALL create_type_info(ITypeInfo_Safe** ppTypeInfo) \
-			{ \
-				try \
-				{ \
-					static_cast<TypeInfo::ITypeInfo*&>(marshal_info<TypeInfo::ITypeInfo*&>::safe_type::coerce(ppTypeInfo)) = TypeInfo_Impl<n_space::iface>::Create(); \
-					return 0; \
-				} \
-				catch (Omega::IException* pE) \
-				{ \
-					return Omega::System::MetaInfo::return_safe_exception(pE); \
-				} \
-			} \
 			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 			{ \
 				RegisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
-				RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),&create_type_info); \
+			} \
+			OMEGA_CONCAT_R(~,OMEGA_CONCAT_R2(OMEGA_UNIQUE_NAME(iface),_WireInit))() \
+			{ \
+				UnregisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
 			} \
 		}; \
 		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i); \
@@ -130,11 +127,16 @@
 		{ \
 			typedef OMEGA_CONCAT_R(unique,_Proxy)<typename interface_info<d_space::derived>::wire_proxy_factory<I>::type> type; \
 		}; \
+		typedef TypeInfo_Holder<n_space::name> type_info_factory; \
 	}; \
 	template <> struct marshal_info<n_space::name*> \
 	{ \
 		typedef iface_safe_type<n_space::name> safe_type; \
 		typedef iface_wire_type<n_space::name> wire_type; \
+	}; \
+	template <> interface type_kind<n_space::name*> \
+	{ \
+		static const TypeInfo::Types_t type = TypeInfo::typeObject; \
 	};
 
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
@@ -228,16 +230,32 @@
 #define OMEGA_DECLARE_TYPE_PARAM_II(index,meta,d) \
 	OMEGA_CONCAT(OMEGA_DECLARE_TYPE_,meta) d
 
+// Add extra meta info types here
+#define OMEGA_DECLARE_TYPE_ATTR_in(t,name)        L""
+#define OMEGA_DECLARE_TYPE_ATTR_in_out(t,name)    L""
+#define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       L""
+#define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(iid)) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(size)) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_II(t,name)
+
+#define OMEGA_DECLARE_TYPE_PARAM_III(index,meta,d) \
+	OMEGA_CONCAT(OMEGA_DECLARE_TYPE_ATTR_,meta) d
+
 #define OMEGA_DECLARE_TYPE_PARAM_I(meta,t,name) \
-	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),type_kind<t>::type, OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_II,meta,(t,name)) },
+	{ \
+		OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),type_kind<t>::type, \
+		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_II,meta,(t,name)), \
+		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_III,meta,(t,name)), \
+		typeinfo_rtti::has_guid_t<type_kind<t>::type==TypeInfo::typeObject,t>::guid() \
+	},
 
 #define OMEGA_DECLARE_TYPE_PARAM(index,params,d) \
 	OMEGA_DECLARE_TYPE_PARAM_I params
 
 #define OMEGA_DECLARE_TYPE_PARAMS(name,param_count,params) \
-	static const ParamInfo OMEGA_CONCAT(name,_params)[] = { \
+	static const typeinfo_rtti::ParamInfo OMEGA_CONCAT(name,_params)[] = { \
 		OMEGA_TUPLE_FOR_EACH(param_count,OMEGA_DECLARE_TYPE_PARAM,OMEGA_SPLIT_3(param_count,params),0) \
-		{ 0, 0, 0 } };
+		{ 0, 0, 0, L"", 0 } };
 
 #define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	OMEGA_DECLARE_TYPE_PARAMS(name,param_count,params)
@@ -267,76 +285,27 @@
 #define OMEGA_DECLARE_TYPE_METHODS(methods) \
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD,methods,0)
 
-#define OMEGA_DECLARE_TYPE_PART1(name,n_space,methods,d_space,derived) \
-	template <> \
-	interface TypeInfo_Impl<n_space::name> : public TypeInfoBase \
+#define OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
+	template <> class TypeInfo_Holder<n_space::name> \
 	{ \
-		static TypeInfo::ITypeInfo* Create() \
+	public: \
+		static const typeinfo_rtti* get_type_info() \
 		{ \
-			static TypeInfo_Impl<n_space::name> instance; \
-			return &instance; \
-		} \
-		uint32_t GetMethodCount() { return method_count; } \
-		TypeInfo::ITypeInfo* GetBaseType() { return TypeInfo_Impl<d_space::derived>::Create(); } \
-		guid_t GetIID() { return OMEGA_GUIDOF(n_space::name); } \
-		string_t GetName() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::name)); } \
-		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type) \
-			{ return get_method_info(method_idx,strName,attribs,timeout,param_count,return_type); } \
-		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs) \
-			{ get_param_info(method_idx,param_idx,strName,type,attribs); } \
-		byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib) \
-			{ OMEGA_UNUSED_ARG(method_idx); OMEGA_UNUSED_ARG(param_idx); OMEGA_UNUSED_ARG(attrib); OMEGA_THROW(EINVAL); } \
-		static const uint32_t method_count = TypeInfo_Impl<d_space::derived>::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
-		static void get_method_info(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type) \
-		{ \
-			if (method_idx >= method_count) \
-				OMEGA_THROW(L"get_method_info() called with a method index out of range"); \
-			if (method_idx < TypeInfo_Impl<d_space::derived>::method_count) \
-				return TypeInfo_Impl<d_space::derived>::get_method_info(method_idx,strName,attribs,timeout,param_count,return_type); \
-			const MethodInfo& info = method_info()[method_idx - TypeInfo_Impl<d_space::derived>::method_count]; \
-			strName = info.pszName; \
-			attribs = info.attribs; \
-			timeout = info.timeout; \
-			param_count = info.param_count; \
-			return_type = info.return_type; \
-		}
-
-#define OMEGA_DECLARE_TYPE_PART2(name,n_space,methods,d_space,derived) \
-		static void get_param_info(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs) \
-		{ \
-			if (method_idx >= method_count) \
-				OMEGA_THROW(L"get_param_info() called with a method index out of range"); \
-			if (method_idx < TypeInfo_Impl<d_space::derived>::method_count) \
-				return TypeInfo_Impl<d_space::derived>::get_param_info(method_idx,param_idx,strName,type,attribs); \
-			method_idx -= TypeInfo_Impl<d_space::derived>::method_count; \
-			if (param_idx >= method_info()[method_idx].param_count) \
-				OMEGA_THROW(L"get_param_info() called with a parameter index out of range"); \
-			const ParamInfo& info = method_info()[method_idx].params[param_idx]; \
-			strName = info.pszName; \
-			type = info.type; \
-			attribs = info.attribs; \
-		} \
+			static const typeinfo_rtti ti = { &method_info, method_count, &OMEGA_GUIDOF(d_space::derived) }; \
+			return &ti; \
+		}; \
+		static const uint32_t method_count = TypeInfo_Holder<d_space::derived>::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \
-		static const MethodInfo* method_info() \
+		static const typeinfo_rtti::MethodInfo* method_info() \
 		{ \
 			OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
-			static const MethodInfo method_infos[] = \
+			static const typeinfo_rtti::MethodInfo method_infos[] = \
 			{ \
 				OMEGA_DECLARE_TYPE_METHODS(methods) \
-				{ 0, 0, 0, 0 } \
+				{ 0, 0, 0, 0, 0, 0 } \
 			}; \
 			return method_infos; \
 		} \
-	};
-
-#define OMEGA_DECLARE_TYPE(name,n_space,methods,d_space,derived) \
-	OMEGA_DECLARE_TYPE_PART1(name,n_space,methods,d_space,derived) \
-	OMEGA_DECLARE_TYPE_PART2(name,n_space,methods,d_space,derived)
-
-#define OMEGA_DECLARE_TYPEKIND(name,n_space) \
-	template <> interface type_kind<n_space::name*> \
-	{ \
-		static const TypeInfo::Types_t type = TypeInfo::typeObject; \
 	};
 
 #define OMEGA_DECLARE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \

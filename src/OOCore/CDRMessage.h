@@ -22,6 +22,8 @@
 #ifndef OOCORE_CDR_MESSAGE_H_INCLUDED_
 #define OOCORE_CDR_MESSAGE_H_INCLUDED_
 
+#include <OOCore/Remoting.h>
+
 namespace OOCore
 {
 	interface ICDRStreamHolder : public Omega::IObject

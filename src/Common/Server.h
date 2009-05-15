@@ -22,6 +22,8 @@
 #ifndef OOCORE_SERVER_H_INCLUDED_
 #define OOCORE_SERVER_H_INCLUDED_
 
+#include <OOCore/Remoting.h>
+
 namespace Omega
 {
 	namespace System

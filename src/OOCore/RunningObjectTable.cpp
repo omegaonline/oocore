@@ -21,7 +21,10 @@
 
 #include "OOCore_precomp.h"
 
+#include <OTL/Exception.h>
+
 #include "Activation.h"
+#include "IPS.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -99,6 +102,36 @@ OOCore::ServiceManager::ServiceManager() : m_nNextCookie(1)
 {
 }
 
+void OOCore::ServiceManager::close()
+{
+	try
+	{
+		std::list<uint32_t> listCookies;
+
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (std::map<uint32_t,Info>::iterator i=m_mapServicesByCookie.begin();i!=m_mapServicesByCookie.end();++i)
+		{
+			listCookies.push_back(i->first);
+		}
+
+		guard.release();
+
+		for (std::list<uint32_t>::iterator i=listCookies.begin();i!=listCookies.end();++i)
+		{
+			RevokeObject(*i);
+		}
+	}
+	catch (...)
+	{
+	}
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	assert(m_mapServicesByCookie.empty());
+	assert(m_mapServicesByOid.empty());
+}
+
 uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags)
 {
 	ObjectPtr<Activation::IRunningObjectTable> ptrROT;
@@ -117,8 +150,8 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		// Remove any flags we don't store...
-		flags &= ~(Activation::DontLaunch);
+		// Remove any flags we don't care about...
+		flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
 
 		// Check if we have someone registered already
 		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
@@ -171,23 +204,14 @@ IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_
 	try
 	{
 		// Remove any flags we don't care about...
-		flags &= ~(Activation::DontLaunch);
+		flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
 
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
 		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
 		{
-			if (i->second->second.m_flags & flags)
-			{
-				if (flags & Activation::RemoteServer)
-				{
-					// Check RemoteServer flag is allowed
-					if (i->second->second.m_flags & Activation::RemoteServer)
-						return i->second->second.m_ptrObject->QueryInterface(iid);
-				}
-				else
-					return i->second->second.m_ptrObject->QueryInterface(iid);
-			}
+			if ((i->second->second.m_flags & flags) == i->second->second.m_flags)
+				return i->second->second.m_ptrObject->QueryInterface(iid);
 		}
 
 		// No, didn't find it

@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 		if (hDebugEvent)
 		{
 			// Wait for a bit, letting the caller attach a debugger
-			WaitForSingleObject(hDebugEvent,60000);
+			WaitForSingleObject(hDebugEvent,5000);
 		}
 	}
 

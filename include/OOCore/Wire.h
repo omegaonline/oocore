@@ -690,9 +690,7 @@ namespace Omega
 			typedef IException_Safe* (OMEGA_CALL *pfnCreateProxy)(IProxy_Safe* pProxy, IMarshaller_Safe* pManager, IObject_Safe** ppProxy);
 			typedef IException_Safe* (OMEGA_CALL *pfnCreateStub)(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject, IStub_Safe** ppStub);
 			inline void RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub);
-
-			typedef IException_Safe* (OMEGA_CALL *pfnCreateTypeInfo)(ITypeInfo_Safe** ppTypeInfo);
-			inline void RegisterAutoTypeInfo(const guid_t& iid, pfnCreateTypeInfo pfnTypeInfo);
+			inline void UnregisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub);
 
 			template <class S>
 			IStub_Safe* CreateStub(IStubController_Safe* pController, IMarshaller_Safe* pManager, IObject_Safe* pObject)
@@ -1000,6 +998,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),TypeInfo::Types_t&,return_type))
 				OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),TypeInfo::Types_t&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
 				OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
+				OMEGA_METHOD(guid_t,GetParamIid,2,((in),uint32_t,method_idx,(in),byte_t,param_idx))
 			)
 		}
 	}
@@ -1011,10 +1010,10 @@ void Omega::System::MetaInfo::RegisterAutoProxyStubCreators(const guid_t& iid, p
 	OOCore_RegisterAutoProxyStubCreators(iid,(void*)(pfnProxy),(void*)(pfnStub));
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),void*,pfnTypeInfo));
-void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, pfnCreateTypeInfo pfnTypeInfo)
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoProxyStubCreators,3,((in),const Omega::guid_t&,iid,(in),void*,pfnProxy,(in),void*,pfnStub));
+void Omega::System::MetaInfo::UnregisterAutoProxyStubCreators(const guid_t& iid, pfnCreateProxy pfnProxy, pfnCreateStub pfnStub)
 {
-	OOCore_RegisterAutoTypeInfo(iid,(void*)pfnTypeInfo);
+	OOCore_UnregisterAutoProxyStubCreators(iid,(void*)(pfnProxy),(void*)(pfnStub));
 }
 
 #endif // !defined(DOXYGEN)

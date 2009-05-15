@@ -388,6 +388,18 @@ void Omega::System::MetaInfo::throw_correct_exception(IException_Safe* pSE)
 	}
 }
 
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
+void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
+{
+	OOCore_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
+void Omega::System::MetaInfo::UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info)
+{
+	OOCore_UnregisterAutoTypeInfo(iid,(const void*)type_info);
+}
+
 bool Omega::System::PinObjectPointer(IObject* pObject)
 {
 	if (pObject)

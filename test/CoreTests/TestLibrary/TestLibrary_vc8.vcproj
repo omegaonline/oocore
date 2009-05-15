@@ -41,11 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\include"
-				PreprocessorDefinitions="TEST_BUILD_LIBRARY"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				TreatWChar_tAsBuiltInType="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
@@ -65,10 +61,7 @@
 				OutputFile="$(OutDir)/TestLibrary_msvc.dll"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/TestLibrary.pdb"
-				SubSystem="2"
-				ImportLibrary="$(OutDir)/TestLibrary.lib"
-				TargetMachine="1"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -119,14 +112,15 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="3"
+				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\..\include"
-				PreprocessorDefinitions="NDEBUG;TEST_BUILD_LIBRARY"
+				PreprocessorDefinitions="NDEBUG"
 				RuntimeLibrary="0"
-				TreatWChar_tAsBuiltInType="true"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -140,14 +134,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)/TestLibrary_msvc.dll"
-				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
-				GenerateDebugInformation="false"
-				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ImportLibrary="$(OutDir)/TestLibrary.lib"
-				TargetMachine="1"
+				LinkTimeCodeGeneration="1"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

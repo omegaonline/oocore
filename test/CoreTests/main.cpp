@@ -14,18 +14,22 @@
 // List the test entry points here rather than using header files...
 // cos I'm lazy ;)
 
+bool init_standalone_tests();
+bool init_server_tests();
 bool string_tests();
 bool guid_tests();
-bool init_tests();
 bool exception_tests();
 bool otl_tests();
 bool registry_tests();
 bool registry_tests_2();
 bool interface_tests();
+bool interface_dll_tests();
+bool apartment_tests();
+bool apartment_dll_tests();
 bool net_tests();
 bool interface_tests2();
 
-static void tests()
+static void tests(bool bStandalone)
 {
 	RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);
@@ -33,7 +37,12 @@ static void tests()
 	RUN_TEST(otl_tests);
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
-	RUN_TEST(interface_tests);
+	RUN_TEST(interface_dll_tests);
+	if (!bStandalone)
+		RUN_TEST(interface_tests);
+	RUN_TEST(apartment_dll_tests);
+	if (!bStandalone)
+		RUN_TEST(apartment_tests);
 	//RUN_TEST(net_tests);
 	//RUN_TEST(interface_tests2);
 }
@@ -42,11 +51,18 @@ int main(int /*argc*/, char* /*argv*/[])
 {
 	output("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
 
-	if (RUN_TEST(init_tests))
+	output("\nPerforming standalone tests...\n\n");
+	if (RUN_TEST(init_standalone_tests))
 	{
-		output("\nPerforming single threaded tests...\n\n");
+		tests(true);
 
-		tests();
+		Omega::Uninitialize();
+	}
+
+	output("\nPerforming server tests...\n\n");
+	if (RUN_TEST(init_server_tests))
+	{
+		tests(false);
 
 		Omega::Uninitialize();
 	}

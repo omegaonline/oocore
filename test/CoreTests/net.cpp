@@ -2,6 +2,9 @@
 #include <OONet/Http.h>
 #include "Test.h"
 
+BEGIN_PROCESS_OBJECT_MAP(0)
+END_PROCESS_OBJECT_MAP()
+
 class StreamNotify :
 	public OTL::ObjectBase,
 	public Omega::IO::IAsyncStreamNotify

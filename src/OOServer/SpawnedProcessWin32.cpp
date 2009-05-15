@@ -704,18 +704,19 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
 {
 	bAllowed = false;
+	std::wstring strFName = OOBase::from_utf8(pszFName);
 
 	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSD = 0;
 	DWORD cbNeeded = 0;
-	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
-		LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
+		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 	
 	pSD = malloc(cbNeeded);
 	if (!pSD)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!GetFileSecurityA(pszFName,DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),cbNeeded,&cbNeeded))
-		LOG_ERROR_RETURN(("GetFileSecurityA failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),cbNeeded,&cbNeeded))
+		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	// Map the generic access rights
 	DWORD dwAccessDesired = 0;
@@ -816,7 +817,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	{
 		// Get the user name and pwd...
 		Omega::int64_t key = 0;
-		if (m_registry->open_key(key,"Server\\Sandbox",0) != 0)
+		if (m_registry->open_key(0,key,"System\\Server\\Sandbox",0) != 0)
 			return 0;
 
 		std::string strUName;
@@ -837,7 +838,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	// Work out if we are running in unsafe mode
 	Omega::int64_t key = 0;
 	Omega::int64_t v = 0;
-	if (bSandbox && m_registry->open_key(key,"Server\\Sandbox",0) == 0)
+	if (bSandbox && m_registry->open_key(0,key,"System\\Server\\Sandbox",0) == 0)
 		m_registry->get_integer_value(key,"Unsafe",0,v);
 
 	bool bUnsafe = (v == 1);

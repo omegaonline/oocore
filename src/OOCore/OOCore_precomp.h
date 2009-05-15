@@ -50,11 +50,7 @@
 /////////////////////////////////////////////////
 // Include OOCore/OTL components
 
-#include <OOCore/OOCore.h>
-#include <OOCore/Remoting.h>
-#include <OOCore/Apartment.h>
 #include <OTL/OTL.h>
-#include "../Common/Server.h"
 
 #include "../Common/Version.h"
 
@@ -66,73 +62,7 @@
 
 namespace OOCore
 {
-	OTL::ObjectPtr<Omega::System::IInterProcessService> GetInterProcessService();
 	bool HostedByOOServer();
-
-	inline Omega::bool_t ReadBoolean(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::bool_t val;
-		if (pMsg->ReadBooleans(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::byte_t ReadByte(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::byte_t val;
-		if (pMsg->ReadBytes(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::uint16_t ReadUInt16(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::uint16_t val;
-		if (pMsg->ReadUInt16s(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::uint32_t ReadUInt32(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::uint32_t val;
-		if (pMsg->ReadUInt32s(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::guid_t ReadGuid(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::guid_t val;
-		if (pMsg->ReadGuids(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline void WriteBoolean(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::bool_t val)
-	{
-		pMsg->WriteBooleans(name,1,&val);
-	}
-
-	inline void WriteByte(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::byte_t val)
-	{
-		pMsg->WriteBytes(name,1,&val);
-	}
-
-	inline void WriteUInt16(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::uint16_t val)
-	{
-		pMsg->WriteUInt16s(name,1,&val);
-	}
-
-	inline void WriteUInt32(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::uint32_t val)
-	{
-		pMsg->WriteUInt32s(name,1,&val);
-	}
-
-	inline void WriteGuid(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::guid_t val)
-	{
-		pMsg->WriteGuids(name,1,&val);
-	}
 }
 
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_

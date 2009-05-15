@@ -29,7 +29,6 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine=""
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -44,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include"
-				PreprocessorDefinitions="HAVE_VLD_H;OOCORE_BUILD_DLL"
+				PreprocessorDefinitions=""
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -65,12 +64,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				OutputFile="$(OutDir)/OOCore.dll"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/OOCore.pdb"
-				SubSystem="2"
-				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -129,14 +124,13 @@
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include"
-				PreprocessorDefinitions="NDEBUG;OOCORE_BUILD_DLL"
+				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOCore_precomp.h"
 				WarningLevel="4"
-				Detect64BitPortabilityProblems="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -150,14 +144,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				OutputFile="$(OutDir)/OOCore.dll"
 				AdditionalLibraryDirectories=""
-				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				LinkTimeCodeGeneration="1"
-				ImportLibrary="$(OutDir)/OOCore.lib"
-				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -246,6 +235,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\TypeInfo.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Types.cpp"
 				>
 			</File>
@@ -293,6 +286,10 @@
 			</File>
 			<File
 				RelativePath=".\Exception.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IPS.h"
 				>
 			</File>
 			<File
@@ -346,6 +343,10 @@
 			Name="OTL"
 			>
 			<File
+				RelativePath="..\..\include\OTL\Exception.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\Otl\OTL.h"
 				>
 			</File>
@@ -354,7 +355,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\Otl\OTL_special.h"
+				RelativePath="..\..\include\OTL\Registry.h"
 				>
 			</File>
 		</Filter>

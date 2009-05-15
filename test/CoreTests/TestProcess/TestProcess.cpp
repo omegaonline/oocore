@@ -2,11 +2,17 @@
 
 #include "../SimpleTest.h"
 
-extern const Omega::guid_t OID_TestProcess = Omega::guid_t::FromString(L"{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}");
+namespace Omega {
+namespace TestSuite
+{
+	extern "C" const Omega::guid_t OID_TestProcess;
+} }
+
+OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39C7C306FC69}" );
 
 class TestProcessImpl :
 	public OTL::ObjectBase,
-	public OTL::AutoObjectFactory<TestProcessImpl,&OID_TestProcess>,
+	public OTL::AutoObjectFactory<TestProcessImpl,&Omega::TestSuite::OID_TestProcess>,
 	public OTL::IProvideObjectInfoImpl<TestProcessImpl>,
 	public SimpleTestImpl
 {

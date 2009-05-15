@@ -26,6 +26,8 @@
 #include "UserRegistry.h"
 #include "UserProcess.h"
 
+#include <OTL/Registry.h>
+
 #include "../Common/Server.h"
 
 namespace User

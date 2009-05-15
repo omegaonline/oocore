@@ -24,6 +24,7 @@
 #include "UserSession.h"
 #include "Activation.h"
 #include "StdObjectManager.h"
+#include "IPS.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -56,23 +57,13 @@ IException* OOCore::UserSession::init(bool bStandalone)
 	if (hDebugEvent)
 	{
 		// Wait for a bit, letting the caller attach a debugger
-		WaitForSingleObject(hDebugEvent,60000);
+		WaitForSingleObject(hDebugEvent,5000);
 	}
 #endif
 
 	try
 	{
 		pThis->init_i(bStandalone);
-	}
-	catch (IException* pE)
-	{
-		USER_SESSION::close();
-		return pE;
-	}
-
-	try
-	{
-		pThis->bootstrap();
 	}
 	catch (IException* pE)
 	{
@@ -86,9 +77,6 @@ IException* OOCore::UserSession::init(bool bStandalone)
 void OOCore::UserSession::init_i(bool bStandalone)
 {
 	std::string strPipe = discover_server_port(bStandalone);
-	if (strPipe.empty())
-		bStandalone = true;
-	
 	if (!bStandalone)
 	{
 		// Connect up to the root process...
@@ -126,10 +114,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		// Spawn off the io worker thread
 		m_worker_thread.run(io_worker_fn,this);
 	}
-}
 
-void OOCore::UserSession::bootstrap()
-{
 	// Create the zero apartment
 	OOBase::SmartPtr<Apartment> ptrZeroApt;
 	OMEGA_NEW(ptrZeroApt,Apartment(this,0));
@@ -157,12 +142,32 @@ void OOCore::UserSession::bootstrap()
 
 		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
 	}
+	else
+	{
+		// Load up OOSvrLite and get the IPS from there...
+		int err = m_lite_dll.load("OOSvrLite");
+		if (err != 0)
+			OMEGA_THROW(err);
+
+		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::MetaInfo::marshal_info<System::IInterProcessService*&>::safe_type::type retval);
+
+		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
+		if (!pfn)
+			OMEGA_THROW(L"Corrupt OOSvrLite");
+
+		System::IInterProcessService* pIPS = 0;
+		System::MetaInfo::IException_Safe* pSE = (*pfn)(System::MetaInfo::marshal_info<System::IInterProcessService*&>::safe_type::coerce(pIPS));
+		if (pSE)
+			Omega::System::MetaInfo::throw_correct_exception(pSE);
+
+		ptrIPS.Attach(pIPS);
+	}
 
 	// Register locally...
 	m_nIPSCookie = Activation::RegisterObject(System::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 }
 
-std::string OOCore::UserSession::discover_server_port(bool bStandalone)
+std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 {
 #if defined(_WIN32)
 	const char* name = "OOServer";
@@ -186,7 +191,13 @@ std::string OOCore::UserSession::discover_server_port(bool bStandalone)
 		countdown.update();	
 	}
 	if (!local_socket)
-		return std::string();
+	{
+		if (bStandalone)
+			return std::string();
+		else
+			throw Omega::ISystemException::Create(L"Failed to discover network daemon",L"Omega::Initialize");
+	}
+	bStandalone = false;
 
 	countdown.update();
 
@@ -223,10 +234,7 @@ void OOCore::UserSession::term()
 		pThis->term_i();
 
 		// Close the service manager
-		SERVICE_MANAGER::close();
-
-		// Close ourselves
-		USER_SESSION::close();
+		SERVICE_MANAGER::instance()->close();
 	}
 }
 
@@ -679,18 +687,6 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 
 	m_mapThreadContexts.erase(thread_id);
 }
-
-//bool OOCore::UserSession::send_channel_close(uint32_t closed_channel_id)
-//{
-//	ACE_OutputCDR msg;
-//	msg << closed_channel_id;
-//
-//	if (!msg.good_bit())
-//		return false;
-//
-//	ACE_InputCDR* null;
-//	return send_request(m_channel_id & 0xFF000000,msg.begin(),null,0,Message::asynchronous | Message::channel_close);
-//}
 
 OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
 {

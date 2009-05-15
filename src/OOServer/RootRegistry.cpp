@@ -167,7 +167,10 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 		{
 			err = registry_parse_subkey(uKey,channel_id,strSubKey,nType,ptrHive);
 			if (err == 0)
-				err = ptrHive->open_key(uKey,strSubKey,channel_id);
+			{
+				Omega::int64_t uSubKey;
+				err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
+			}
 		}
 	}
 
@@ -179,6 +182,7 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey = 0;
 	Omega::byte_t nType;
+	Omega::int64_t uSubKey;
 	int err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err == 0)
 	{
@@ -201,9 +205,9 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 					else
 					{
 						if (bCreate)
-							err = ptrHive->create_key(uKey,strSubKey,bFailIfThere,Registry::Hive::inherit_checks,channel_id);
+							err = ptrHive->create_key(uKey,uSubKey,strSubKey,bFailIfThere,Registry::Hive::inherit_checks,channel_id);
 						else
-							err = ptrHive->open_key(uKey,strSubKey,channel_id);
+							err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
 					}
 				}
 			}
@@ -213,7 +217,7 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 	response.write(err);
 	if (err == 0 && response.last_error() == 0)
 	{
-		response.write(uKey);
+		response.write(uSubKey);
 		response.write(nType);
 	}
 }
@@ -331,7 +335,7 @@ void Root::Manager::registry_get_binary_value(Omega::uint32_t channel_id, OOBase
 			if (!request.read(cbLen))
 				err = EIO;
 			else
-				ptrHive->get_binary_value(uKey,strValue,cbLen,channel_id,response);
+				ptrHive->get_binary_value(uKey,strValue,channel_id,cbLen,response);
 		}
 	}
 

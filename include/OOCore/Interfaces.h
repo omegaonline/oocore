@@ -33,11 +33,16 @@ namespace Omega
 		
 		enum Flags
 		{
-			InProcess = 1,
-			OutOfProcess = 2,
+			InProcess = 1,                         ///< Use dll/so if available
+			OutOfProcess = 2,                      ///< Use exe if available
 			Any = (InProcess | OutOfProcess),
-			RemoteServer = 4,
-			DontLaunch = 8
+			RemoteActivation = 4,                  ///< Request is from a remote machine
+			DontLaunch = 8,                        ///< Do not launch exe/dll/so is not already running
+			Surrogate = 0x10,                      ///< Launch dll/so in a surrogate wrapper
+			PrivateSurrogate = (0x20 | Surrogate), ///< Launch dll/so in its own surrogate wrapper
+			Sandbox = (0x40 | Surrogate),          ///< Launch as the sandbox user - implies surrogate if dll/so
+			Jailed = (0x80 | Sandbox),             ///< Launch in a jailed process as the sandbox user - implies surrogate if dll/so
+			VM = (0x100 | Surrogate),              ///< Launch in the virtual machine - implies surrogate if dll/so
 		};
 		typedef uint16_t Flags_t;
 

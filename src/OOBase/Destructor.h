@@ -38,8 +38,8 @@ namespace OOBase
 		{
 			try
 			{
-				Guard<SpinLock> guard(s_instance.m_lock);
-				s_instance.m_list.push_front(std::pair<pfn_destructor,void*>(pfn,p));
+				Guard<SpinLock> guard(instance().m_lock);
+				instance().m_list.push_front(std::pair<pfn_destructor,void*>(pfn,p));
 			}
 			catch (std::exception& e)
 			{
@@ -51,8 +51,8 @@ namespace OOBase
 		{
 			try
 			{
-				Guard<SpinLock> guard(s_instance.m_lock);
-				s_instance.m_list.remove(std::pair<pfn_destructor,void*>(pfn,p));
+				Guard<SpinLock> guard(instance().m_lock);
+				instance().m_list.remove(std::pair<pfn_destructor,void*>(pfn,p));
 			}
 			catch (std::exception& e)
 			{
@@ -62,8 +62,8 @@ namespace OOBase
 
 		static void call_destructors()
 		{
-			Guard<SpinLock> guard(s_instance.m_lock);
-			s_instance.destruct();
+			Guard<SpinLock> guard(instance().m_lock);
+			instance().destruct();
 		}
 
 	private:
@@ -95,12 +95,12 @@ namespace OOBase
 		SpinLock m_lock;
 		std::list<std::pair<pfn_destructor,void*> > m_list;
 
-		static DLLDestructor s_instance;
+		static DLLDestructor& instance()
+		{
+			static DLLDestructor inst;
+			return inst;
+		}			
 	};
-
-	// The one and only destructor (per DLL)
-	template <typename DLL>
-	DLLDestructor<DLL> DLLDestructor<DLL>::s_instance;
 
 	typedef DLLDestructor<int> Destructor;
 }

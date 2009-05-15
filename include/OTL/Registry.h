@@ -19,10 +19,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OTL_OTL_SPECIAL_H_INCLUDED_
-#define OTL_OTL_SPECIAL_H_INCLUDED_
+#ifndef OTL_REGISTRY_H_INCLUDED_
+#define OTL_REGISTRY_H_INCLUDED_
 
-// Specialisations of ObjectPtr
+// Specialisations of ObjectPtr for registry access
+#include "OTL.h"
 
 namespace OTL
 {
@@ -67,4 +68,4 @@ namespace OTL
 	};
 }
 
-#endif // OTL_OTL_SPECIAL_H_INCLUDED_
+#endif // OTL_REGISTRY_H_INCLUDED_

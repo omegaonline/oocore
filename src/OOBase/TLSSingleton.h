@@ -63,7 +63,7 @@ namespace OOBase
 		TLSSingleton& operator == (const TLSSingleton&) { return *this; }
 		~TLSSingleton() {}
 
-		static const int s_sentinal = 0;
+		static const size_t s_sentinal = 0;
 
 		static void* init()
 		{
@@ -85,8 +85,7 @@ namespace OOBase
 	};
 
 	template <typename T, typename DLL>
-	const int TLSSingleton<T,DLL>::s_sentinal;
-
+	const size_t TLSSingleton<T,DLL>::s_sentinal = 0;
 }
 
 #endif // OOBASE_TLS_SINGLETON_H_INCLUDED_

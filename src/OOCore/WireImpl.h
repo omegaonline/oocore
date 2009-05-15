@@ -26,8 +26,6 @@ namespace OOCore
 {
 	Omega::System::MetaInfo::IObject_Safe* CreateProxy(const Omega::guid_t& iid, Omega::System::MetaInfo::IProxy_Safe* pProxy, Omega::System::MetaInfo::IMarshaller_Safe* pManager);
 	Omega::System::MetaInfo::IStub_Safe* CreateStub(const Omega::guid_t& iid, Omega::System::MetaInfo::IStubController_Safe* pController, Omega::System::MetaInfo::IMarshaller_Safe* pManager, Omega::System::MetaInfo::IObject_Safe* pObject);
-
-	Omega::System::MetaInfo::ITypeInfo_Safe* GetTypeInfo(const Omega::guid_t& iid);
 }
 
 #endif // OOCORE_WIREIMPL_H_INCLUDED_

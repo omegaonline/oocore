@@ -84,8 +84,8 @@ namespace OOCore
 				
 	private:
 		friend class ThreadContext;
-		friend class OOBase::SingletonNoDestroy<UserSession>;
-		typedef OOBase::SingletonNoDestroy<UserSession> USER_SESSION;
+		friend class OOBase::Singleton<UserSession>;
+		typedef OOBase::Singleton<UserSession> USER_SESSION;
 
 		UserSession();
 		~UserSession();
@@ -98,6 +98,7 @@ namespace OOCore
 		OOBase::SmartPtr<OOBase::Socket> m_stream;
 		Omega::uint32_t                  m_channel_id;
 		Omega::uint32_t                  m_nIPSCookie;
+		OOBase::DLL                      m_lite_dll;
 
 		struct ThreadContext
 		{
@@ -131,15 +132,13 @@ namespace OOCore
 		// Proper private members
 		void init_i(bool bStandalone);
 		void term_i();
-		void bootstrap();
-		std::string discover_server_port(bool bStandalone);
+		std::string discover_server_port(bool& bStandalone);
 		
 		int run_read_loop();
 		bool pump_requests(const OOBase::timeval_t* deadline = 0, bool bOnce = false);
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 		OOBase::CDRStream* wait_for_response(Omega::uint16_t apartment_id, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		OOBase::CDRStream build_header(Omega::uint32_t seq_no, Omega::uint32_t src_channel_id, Omega::uint16_t src_thread_id, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream* msg, const OOBase::timeval_t& deadline, Omega::uint16_t flags, Omega::uint32_t attribs);
-		//bool send_channel_close(Omega::uint32_t closed_channel_id);
 		void process_channel_close(Omega::uint32_t closed_channel_id);
 		
 		static int io_worker_fn(void* pParam);

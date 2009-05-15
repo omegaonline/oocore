@@ -38,7 +38,7 @@ namespace Omega
 			static bool do_init()
 			{
 				s_instance = new T();
-				return static_cast<T*>(s_instance)->register_destructor();
+				return static_cast<T*>(s_instance)->singleton_init();
 			}
 
 			static void do_term(void*)

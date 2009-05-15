@@ -19,7 +19,7 @@ bool run_test(pfnTest t, const char* pszName);
 			return print_result(#expr,__FILE__,__LINE__); \
 		else \
 			add_success(); \
-	} while (!(expr))
+	} while (0)
 
 #define TEST_FAIL(expr) \
 	return print_result(#expr,__FILE__,__LINE__); \

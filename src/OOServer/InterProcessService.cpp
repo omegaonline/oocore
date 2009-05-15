@@ -20,6 +20,9 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_User.h"
+
+#include <OTL/Registry.h>
+
 #include "InterProcessService.h"
 #include "UserManager.h"
 

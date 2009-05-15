@@ -34,8 +34,10 @@ namespace OOCore
 
 		static Omega::IObject* LoadLibraryObject(const Omega::string_t& dll_name, const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
 
+		void close();
+
 	private:
-		friend class OOBase::SingletonNoDestroy<ServiceManager>;
+		friend class OOBase::Singleton<ServiceManager>;
 		
 		ServiceManager();
 		ServiceManager(const ServiceManager&) {}
@@ -55,7 +57,7 @@ namespace OOCore
 		std::map<Omega::uint32_t,Info>                                        m_mapServicesByCookie;
 		std::multimap<Omega::guid_t,std::map<Omega::uint32_t,Info>::iterator> m_mapServicesByOid;
 	};
-	typedef OOBase::SingletonNoDestroy<ServiceManager> SERVICE_MANAGER;
+	typedef OOBase::Singleton<ServiceManager> SERVICE_MANAGER;
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

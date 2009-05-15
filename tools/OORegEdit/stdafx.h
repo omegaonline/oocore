@@ -1,5 +1,5 @@
 
-#include <OTL/OTL.h>
+#include <OTL/Registry.h>
 
 #include <map>
 

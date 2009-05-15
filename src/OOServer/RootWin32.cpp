@@ -288,7 +288,7 @@ bool Root::Manager::install_sandbox(int argc, char* argv[])
 
 	// Set the user name and pwd...
 	Omega::int64_t key = 0;
-	int err3 = m_registry->open_key(key,"Server\\Sandbox",0);
+	int err3 = m_registry->create_key(0,key,"System\\Server\\Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
 	if (err3 != 0)
 		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOBase::strerror(err3).c_str()),false);
 
@@ -301,7 +301,12 @@ bool Root::Manager::install_sandbox(int argc, char* argv[])
 		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOBase::strerror(err3).c_str()),false);
 
 	if (bAddedUser)
-		m_registry->set_integer_value(key,"AutoAdded",0,1);
+	{
+		key = 0;
+		err3 = m_registry->create_key(0,key,"System\\Installation",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
+		if (err3 == 0)
+			m_registry->set_integer_value(key,"AddedSandboxUser",0,1);
+	}
 
 	return true;
 }
@@ -311,17 +316,20 @@ bool Root::Manager::uninstall_sandbox()
 	if (!init_database())
 		return false;
 
-	// Get the user name and pwd...
+	Omega::int64_t bUserAdded = 0;
 	Omega::int64_t key = 0;
-	if (m_registry->open_key(key,"Server\\Sandbox",0) != 0)
-		return true;
+	if (m_registry->open_key(0,key,"System\\Installation",0) == 0)
+		m_registry->get_integer_value(key,"AddedSandboxUser",0,bUserAdded);
 
-	std::string strUName;
-	if (m_registry->get_string_value(key,"UserName",0,strUName) == 0)
+	if (bUserAdded == 1)
 	{
-		Omega::int64_t bUserAdded = 0;
-		m_registry->get_integer_value(key,"AutoAdded",0,bUserAdded);
-		if (bUserAdded == 1)
+		// Get the user name and pwd...
+		key = 0;
+		if (m_registry->open_key(0,key,"System\\Server\\Sandbox",0) != 0)
+			return true;
+
+		std::string strUName;
+		if (m_registry->get_string_value(key,"UserName",0,strUName) == 0)
 		{
 			NET_API_STATUS err = NetUserDel(NULL,OOBase::from_utf8(strUName.c_str()).c_str());
 			if (err != NERR_Success)

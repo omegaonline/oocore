@@ -333,8 +333,8 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 static bool test_root_key(Omega::Registry::IKey* pKey)
 {
 	TEST(pKey->IsSubKey(L"All Users"));
-	TEST(pKey->IsSubKey(L"Server"));
 	TEST(pKey->IsSubKey(L"Local User"));
+	TEST(pKey->IsSubKey(L"System"));
 
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
 	while (pKey->IsValue(strTestValue))
@@ -358,9 +358,6 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	{
 		TEST_VOID(pKey->DeleteValue(strTestValue));
 
-		if (!test_values(pKey))
-			return false;
-
 		if (!test_key2(pKey,L"\\"))
 			return false;
 	}
@@ -371,8 +368,9 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	test_privates(pKey,L"All Users\\Objects");
 	test_privates(pKey,L"All Users\\Objects\\OIDs");
 	test_privates(pKey,L"Local User");
-	test_privates(pKey,L"Server");
-	test_privates(pKey,L"Server\\Sandbox");
+	test_privates(pKey,L"System");
+	test_privates(pKey,L"System\\Server");
+	test_privates(pKey,L"System\\Server\\Sandbox");
 
 	return true;
 }
@@ -405,7 +403,7 @@ bool registry_tests()
 	return true;
 }
 
-#include <OTL/OTL.h>
+#include <OTL/Registry.h>
 
 bool registry_tests_2()
 {

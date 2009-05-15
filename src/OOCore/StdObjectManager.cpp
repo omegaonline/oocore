@@ -25,6 +25,7 @@
 #include "WireProxy.h"
 #include "WireStub.h"
 #include "WireImpl.h"
+#include "IPS.h"
 
 // This is all the SEH guff - needs to go into the surrogate project
 #if 0
@@ -135,7 +136,7 @@ int OOCore::SEH::DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessag
 using namespace Omega;
 using namespace OTL;
 
-namespace OOCore
+namespace
 {
 	struct CallContext
 	{
@@ -173,7 +174,7 @@ namespace OOCore
 	};
 }
 
-uint32_t OOCore::StdCallContext::Timeout()
+uint32_t StdCallContext::Timeout()
 {
 	OOBase::timeval_t now = OOBase::gettimeofday();
 	if (m_cc.m_deadline <= now)
@@ -185,17 +186,17 @@ uint32_t OOCore::StdCallContext::Timeout()
 	return (m_cc.m_deadline - now).msec();
 }
 
-bool_t OOCore::StdCallContext::HasTimedOut()
+bool_t StdCallContext::HasTimedOut()
 {
 	return (m_cc.m_deadline <= OOBase::gettimeofday());
 }
 
-uint32_t OOCore::StdCallContext::SourceId()
+uint32_t StdCallContext::SourceId()
 {
 	return m_cc.m_src_id;
 }
 
-Remoting::MarshalFlags_t OOCore::StdCallContext::SourceType()
+Remoting::MarshalFlags_t StdCallContext::SourceType()
 {
 	return m_cc.m_flags;
 }
@@ -262,7 +263,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 
 	// Check our permissions
 	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
-		act_flags |= Activation::RemoteServer;
+		act_flags |= Activation::RemoteActivation;
 
 	// Work out the oid
 	guid_t oid;
@@ -540,11 +541,13 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 
 TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
 {
-	TypeInfo::ITypeInfo* pRet = 0;
-
-	System::MetaInfo::IException_Safe* pSE = GetTypeInfo_Safe(System::MetaInfo::marshal_info<TypeInfo::ITypeInfo*&>::safe_type::coerce(pRet),&iid);
-	if (pSE)
-		System::MetaInfo::throw_correct_exception(pSE);
+	// Check the auto registered stuff first
+	TypeInfo::ITypeInfo* pRet = OOCore::GetTypeInfo(iid);
+	if (!pRet)
+	{
+		// Ask the other end if it has a clue?
+		void* TODO;
+	}
 
 	return pRet;
 }
@@ -999,16 +1002,15 @@ System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::SendAndR
 
 System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::StdObjectManager::GetTypeInfo_Safe(System::MetaInfo::ITypeInfo_Safe** ppTypeInfo, const guid_t* piid)
 {
-	// Check the auto registered stuff first
-	*ppTypeInfo = OOCore::GetTypeInfo(*piid);
-
-	if (!(*ppTypeInfo))
+	try
 	{
-		// Ask the other end if it has a clue?
-		void* TODO;
+		static_cast<TypeInfo::ITypeInfo*&>(System::MetaInfo::marshal_info<TypeInfo::ITypeInfo*&>::safe_type::coerce(ppTypeInfo)) = GetTypeInfo(System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(piid));
+		return 0;
 	}
-
-	return 0;
+	catch (IException* pE)
+	{
+		return System::MetaInfo::return_safe_exception(pE);
+	}
 }
 
 void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pParamsOut)
@@ -1049,9 +1051,9 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
 {
-	ObjectPtr<ObjectImpl<OOCore::StdCallContext> > ptrCC = ObjectImpl<OOCore::StdCallContext>::CreateInstancePtr();
+	ObjectPtr<ObjectImpl<StdCallContext> > ptrCC = ObjectImpl<StdCallContext>::CreateInstancePtr();
 
-	ptrCC->m_cc = *OOBase::TLSSingleton<OOCore::CallContext>::instance();
+	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext>::instance();
 
 	return ptrCC.AddRef();
 }

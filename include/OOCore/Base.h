@@ -121,6 +121,7 @@ namespace Omega
 			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Types_t& return_type) = 0;
 			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Types_t& type, ParamAttributes_t& attribs) = 0;
 			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
+			virtual guid_t GetParamIid(uint32_t method_idx, byte_t param_idx) = 0;
 		};
 	}
 }

@@ -1,0 +1,111 @@
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2009 Rick Taylor
+//
+// This file is part of OOSvrLite, the Omega Online Standalone plugin.
+//
+// OOSvrLite is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// OOSvrLite is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with OOSvrLite.  If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+// Hand generated resource script!
+//
+
+#include "winnt.h"
+#include "../Common/Version.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
+ PRODUCTVERSION OOCORE_MAJOR_VERSION,OOCORE_MINOR_VERSION,OOCORE_PATCH_VERSION,0
+ FILEFLAGSMASK 0x17L
+#ifdef OMEGA_DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080004b0"
+        BEGIN
+            VALUE "CompanyName", "www.omegaonline.org.uk"
+            VALUE "FileDescription", "OOSvrLite Dynamic Link Library"
+            VALUE "FileVersion", OOCORE_VERSION
+            VALUE "InternalName", "OOSvrLite"
+            VALUE "OriginalFilename", "OOSvrLite.dll"
+            VALUE "ProductName", "OOSvrLite Dynamic Link Library"
+            VALUE "ProductVersion", OOCORE_VERSION
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x800, 1200
+    END
+END
+
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE
+BEGIN
+    "\0"
+END
+
+2 TEXTINCLUDE
+BEGIN
+    "\0"
+END
+
+3 TEXTINCLUDE
+BEGIN
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////

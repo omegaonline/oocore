@@ -254,21 +254,24 @@ void OOCore::UserSession::term_i()
 	// Wait for the io worker thread to finish
 	m_worker_thread.join();
 
-    // Tell all worker threads that we are done with them...
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
-	{
-		i->second->m_msg_queue.close();
-	}
-
-	// Stop the message queue
-	m_default_msg_queue.close();
-
 	// Close all apartments
 	for (std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator j=m_mapApartments.begin();j!=m_mapApartments.end();++j)
 	{
 		j->second->close();
 	}
 	m_mapApartments.clear();
+
+    // Tell all worker threads that we are done with them...
+	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+	{
+		i->second->m_msg_queue.pulse();
+	}
+
+	// Stop the message queue
+	m_default_msg_queue.pulse();
+
+	// Reset channel id
+	m_channel_id = 0;
 }
 
 int OOCore::UserSession::io_worker_fn(void* pParam)

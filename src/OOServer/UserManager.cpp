@@ -321,9 +321,14 @@ bool User::Manager::on_accept(OOBase::Socket* sock, const std::string& pipe_name
 	int err = sock->send(channel_id);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
-	
+
+	// Add the current time...
+	std::stringstream ssPipe;
+	ssPipe.setf(std::ios_base::hex);
+	ssPipe << "Local\\" << pipe_name << "-" << channel_id;
+		
 	// Attach the connection
-	ptrMC->attach(Proactor::instance()->accept_shared_mem_socket("Local\\" + pipe_name,ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock),0,psa));
+	ptrMC->attach(Proactor::instance()->accept_shared_mem_socket(ssPipe.str(),ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock),0,psa));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to accept shared mem socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 		

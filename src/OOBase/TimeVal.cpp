@@ -36,20 +36,20 @@ OOBase::timeval_t OOBase::gettimeofday()
 
 #if defined(_WIN32)
 
-	static const unsigned __int64 epoch = 116444736000000000LL;
+	static const ULONGLONG epoch = 116444736000000000LL;
 
 	FILETIME file_time;
-	SYSTEMTIME system_time;
-	GetSystemTime(&system_time);
-	if (!SystemTimeToFileTime(&system_time,&file_time))
-		OOBase_CallCriticalFailure(GetLastError());
-
+	GetSystemTimeAsFileTime(&file_time);
+	
 	ULARGE_INTEGER ularge;
 	ularge.LowPart = file_time.dwLowDateTime;
 	ularge.HighPart = file_time.dwHighDateTime;
 
-	ret.tv_sec = static_cast<time_t>((ularge.QuadPart - epoch) / 10000000L);
-	ret.tv_usec = static_cast<long>(system_time.wMilliseconds * 1000);
+	// Move to epoch
+	ULONGLONG q = (ularge.QuadPart - epoch);
+
+	ret.tv_sec = static_cast<time_t>(q / 10000000LL);
+	ret.tv_usec = static_cast<long>((q / 10L) % 1000000L);
 
 #elif defined(HAVE_SYS_TIME_H) && (HAVE_SYS_TIME_H == 1)
 	
@@ -131,9 +131,13 @@ OOBase::Countdown::Countdown(timeval_t* wait) :
 
 void OOBase::Countdown::update()
 {
-	timeval_t diff = (gettimeofday() - m_start);
+	timeval_t now = gettimeofday();
+	timeval_t diff = (now - m_start);
 	if (diff >= *m_wait)
 		*m_wait = timeval_t::zero;
 	else
+	{
+		m_start = now;
 		*m_wait -= diff;
+	}
 }

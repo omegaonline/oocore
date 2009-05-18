@@ -40,6 +40,7 @@ namespace OOCore
 		friend class OOBase::Singleton<ServiceManager>;
 		
 		ServiceManager();
+		~ServiceManager();
 		ServiceManager(const ServiceManager&) {}
 		ServiceManager& operator = (const ServiceManager&) { return *this; }
 

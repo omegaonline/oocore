@@ -125,35 +125,45 @@ namespace OOBase
 		void close()
 		{
 			Guard<Condition::Mutex> guard(m_lock);
+
+			bool bSignal = !m_closed;
 			m_closed = true;
 
 			guard.release();
 
-			m_available.broadcast();
-			m_space.broadcast();
+			if (bSignal)
+			{
+				m_available.broadcast();
+				m_space.broadcast();
+			}
 		}
 
 		void pulse()
 		{
 			Guard<Condition::Mutex> guard(m_lock);
+
+			bool bSignal = !m_pulsed;
 			m_pulsed = true;
 
 			guard.release();
 
-			m_available.broadcast();
-			m_space.broadcast();
-
-			for (;;)
+			if (bSignal)
 			{
-				guard.acquire();
+				m_available.broadcast();
+				m_space.broadcast();
 
-				if (m_waiters==0)
+				for (;;)
 				{
-					m_pulsed = false;
-					return;
-				}
+					guard.acquire();
 
-				guard.release();
+					if (m_waiters==0)
+					{
+						m_pulsed = false;
+						return;
+					}
+
+					guard.release();
+				}
 			}
 		}
 

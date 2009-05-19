@@ -28,4 +28,5 @@ nobase_include_HEADERS = \
 	OOCore/Wire.h \
 	OTL/OTL.h \
 	OTL/OTL.inl \
-	OTL/OTL_special.h
+	OTL/Exception.h \
+	OTL/Registry.h

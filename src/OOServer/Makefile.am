@@ -19,6 +19,8 @@ liboosvrdb_a_CXXFLAGS = $(PTHREAD_CFLAGS)
 liboosvrdb_a_SOURCES = \
 	Database.h \
 	Database.cpp \
+	RegistryHive.h \
+	RegistryHive.cpp \
 	SQLite3_comp.c
 		
 bin_PROGRAMS = ooserverd oosvruser
@@ -36,8 +38,6 @@ ooserverd_SOURCES = \
 	OOServer_Root.h \
 	ClientAcceptor.h \
 	ClientAcceptor.cpp \
-	RegistryHive.h \
-	RegistryHive.cpp \
 	RootMain.cpp \
 	RootManager.h \
 	RootManager.cpp \
@@ -45,7 +45,8 @@ ooserverd_SOURCES = \
 	RootWin32.cpp \
 	SpawnedProcess.h \
 	SpawnedProcessUnix.cpp \
-	SpawnedProcessWin32.cpp
+	SpawnedProcessWin32.cpp \
+	..\Common\Version.h
 	
 if WIN32
 ooserverd_SOURCES += OOServer.rc
@@ -54,7 +55,7 @@ endif
 oosvruser_CPPFLAGS = -I$(top_srcdir)/include
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_LDADD = ../OOCore/libOOCore.la
+oosvruser_LDADD = ../OOCore/liboocore.la
 oosvruser_LDFLAGS = -L. -loosvrcmn -L../OOBase  -loosvrbase -loobase $(PTHREAD_LIBS) 
 
 if WIN32
@@ -62,11 +63,13 @@ oosvruser_LDFLAGS += -lshlwapi -lnetapi32 -luserenv
 endif
 
 oosvruser_SOURCES = \
+	OOServer_User.h \
 	Channel.h \
 	Channel.cpp \
 	InterProcessService.h \
 	InterProcessService.cpp \
-	OOServer_User.h \
+	Server.h \
+	RegistryCmn.h \
 	UserAcceptor.h \
 	UserAcceptor.cpp \
 	UserMain.cpp \
@@ -74,14 +77,40 @@ oosvruser_SOURCES = \
 	UserManager.cpp \
 	UserNet.h \
 	UserNet.cpp \
+	UserProcess.h \
 	UserProcessWin32.cpp \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \
-	UserROT.cpp
+	UserROT.cpp \
+	..\Common\Version.h
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc
+endif
+
+lib_LTLIBRARIES = oosvrlite.la
+
+oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include $(SQLITE3_CPPFLAGS)
+oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS)
+oosvrlite_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+oosvrlite_la_LIBADD = ../OOCore/liboocore.la
+oosvrlite_la_LDFLAGS = -module -L. -loosvrdb $(SQLITE3_LDFLAGS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS) -lshlwapi 
+
+if WIN32
+oosvrlite_la_LDFLAGS += -avoid-version -no-undefined
+endif
+
+oosvrlite_la_SOURCES = \
+	OOServer_Lite.h \
+	RegistryCmn.h \
+	IPSLite.h \
+	IPSLite.cpp \
+	OOSvrLite.cpp \
+	..\Common\Version.h
+	
+if WIN32
+oosvrlite_la_SOURCES += OOSvrLite_res.rc
 endif
 
 EXTRA_DIST = \

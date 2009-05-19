@@ -1,0 +1,53 @@
+/* src/OOBase/config-autoconf.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if you have the <asl.h> header file. */
+#undef HAVE_ASL_H
+
+/* Define to 1 if you have the <assert.h> header file. */
+#undef HAVE_ASSERT_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have new (std::nothrow) support */
+#undef HAVE_NEW_NOTHROW
+
+/* Define if you have POSIX threads libraries and header files. */
+#undef HAVE_PTHREAD
+
+/* Define to 1 if you have the SQLite3 library */
+#undef HAVE_SQLITE3
+
+/* Define to 1 if you have the SQLite3 amalgamated sources */
+#undef HAVE_SQLITE3_AMALGAMATION
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <syslog.h> header file. */
+#undef HAVE_SYSLOG_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <windows.h> header file. */
+#undef HAVE_WINDOWS_H
+
+/* Define to 1 if you have the __builtin_bswap32 compiler intrinsic */
+#undef HAVE___BUILTIN_BSWAP32
+
+/* Define to 1 if you have the __builtin_bswap64 compiler intrinsic */
+#undef HAVE___BUILTIN_BSWAP64
+
+/* Define to 1 if you have the __sync_add_and_fetch compiler intrinsic */
+#undef HAVE___SYNC_ADD_AND_FETCH
+
+/* Define to 1 if you have the __sync_lock_test_and_set compiler intrinsic */
+#undef HAVE___SYNC_TEST_AND_SET
+
+/* Define to necessary symbol if this constant uses a non-standard name on
+   your system. */
+#undef PTHREAD_CREATE_JOINABLE

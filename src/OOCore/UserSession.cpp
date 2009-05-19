@@ -139,7 +139,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	else
 	{
 		// Load up OOSvrLite and get the IPS from there...
-		int err = m_lite_dll.load("OOSvrLite");
+		int err = m_lite_dll.load("oosvrlite");
 		if (err != 0)
 			OMEGA_THROW(err);
 

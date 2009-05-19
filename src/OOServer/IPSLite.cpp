@@ -95,9 +95,9 @@ namespace
 		END_INTERFACE_MAP()
 
 	private:
-		OOBase::SmartPtr<::Registry::Hive> m_system_hive;
-		OOBase::SmartPtr<::Registry::Hive> m_allusers_hive;
-		OOBase::SmartPtr<::Registry::Hive> m_localuser_hive;
+		OOBase::SmartPtr< ::Registry::Hive> m_system_hive;
+		OOBase::SmartPtr< ::Registry::Hive> m_allusers_hive;
+		OOBase::SmartPtr< ::Registry::Hive> m_localuser_hive;
 
 		ObjectPtr<IKey> m_ptrSystemKey;
 		ObjectPtr<IKey> m_ptrAllUsersKey;

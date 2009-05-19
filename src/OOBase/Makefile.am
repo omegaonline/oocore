@@ -33,8 +33,6 @@ liboobase_a_SOURCES = \
 	UnixSocket.cpp \
 	Win32.cpp \
 	Win32.h \
-	Win32ShmSocket.cpp \
-	Win32ShmSocket.h \
 	Win32Socket.cpp \
 	Win32Socket.h \
 	config-base.h \
@@ -57,6 +55,5 @@ liboosvrbase_a_SOURCES = \
 	Proactor.h \
 	ProactorWin32.cpp \
 	ProactorWin32.h \
-	ProactorShmWin32.cpp \
 	SecurityWin32.cpp \
 	SecurityWin32.h

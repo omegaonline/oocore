@@ -51,7 +51,7 @@
 				register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 				RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),get_name(),interface_info<n_space::iface>::type_info_factory::get_type_info()); \
 			} \
-			OMEGA_CONCAT_R(~,OMEGA_CONCAT_R2(OMEGA_UNIQUE_NAME(iface),_RttiInit))() \
+			~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 			{ \
 				UnregisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),interface_info<n_space::iface>::type_info_factory::get_type_info()); \
 			} \
@@ -93,7 +93,7 @@
 			{ \
 				RegisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
 			} \
-			OMEGA_CONCAT_R(~,OMEGA_CONCAT_R2(OMEGA_UNIQUE_NAME(iface),_WireInit))() \
+			~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 			{ \
 				UnregisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy,&create_wire_stub); \
 			} \

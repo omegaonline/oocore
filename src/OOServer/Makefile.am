@@ -1,4 +1,4 @@
-include $(top_srcdir)/build-aux/ltrc.inc
+include $(top_srcdir)/m4/ltrc.inc
 
 noinst_LIBRARIES = liboosvrcmn.a liboosvrdb.a
 

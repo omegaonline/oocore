@@ -158,10 +158,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ProactorShmWin32.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\ProactorWin32.cpp"
 				>
 			</File>

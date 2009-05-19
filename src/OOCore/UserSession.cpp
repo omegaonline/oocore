@@ -80,14 +80,13 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	if (!bStandalone)
 	{
 		// Connect up to the root process...
-		OOBase::SmartPtr<OOBase::LocalSocket> local_socket;
 		OOBase::timeval_t wait(20);
 		OOBase::Countdown countdown(&wait);
 		int err = 0;
 		do
 		{
-			local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
-			if (local_socket)
+			m_stream = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
+			if (m_stream)
 				break;
 
 			// We ignore the error, and try again until we timeout
@@ -96,21 +95,16 @@ void OOCore::UserSession::init_i(bool bStandalone)
 			countdown.update();	
 		} while (wait != OOBase::timeval_t::zero);
 
-		if (!local_socket)
+		if (!m_stream)
 			OMEGA_THROW(err);
 
 		// Read our channel id
-		err = local_socket->recv(m_channel_id);
+		err = m_stream->recv(m_channel_id);
 		if (err != 0)
 			OMEGA_THROW(err);
 
 		countdown.update();	
 
-		// Now create a shm-based stream
-		m_stream = OOBase::LocalSocket::connect_shared_mem(local_socket.value(),&err,&wait);
-		if (!m_stream)
-			OMEGA_THROW(err);
-		
 		// Spawn off the io worker thread
 		m_worker_thread.run(io_worker_fn,this);
 	}
@@ -260,15 +254,6 @@ void OOCore::UserSession::term_i()
 		j->second->close();
 	}
 	m_mapApartments.clear();
-
-    // Tell all worker threads that we are done with them...
-	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
-	{
-		i->second->m_msg_queue.pulse();
-	}
-
-	// Stop the message queue
-	m_default_msg_queue.pulse();
 
 	// Reset channel id
 	m_channel_id = 0;
@@ -451,12 +436,32 @@ int OOCore::UserSession::run_read_loop()
 
 	m_stream->close();
 
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	m_stream = 0;
+
+	// Tell all worker threads that we are done with them...
+	for (std::map<uint16_t,ThreadContext*>::iterator i=m_mapThreadContexts.begin();i!=m_mapThreadContexts.end();++i)
+	{
+		i->second->m_msg_queue.pulse();
+	}
+
+	// Stop the message queue
+	m_default_msg_queue.pulse();
+
 	return err;
 }
 
 bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnce)
 {
 	bool timedout = false;
+
+	// Check we still have a receiving stream
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	if (!m_stream)
+		throw Remoting::IChannelClosedException::Create();
+	
+	guard.release();	
 
 	// Increment the consumers...
 	++m_usage_count;
@@ -554,6 +559,13 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 		{
 			// Check if the channel we are waiting on is still valid...
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+			// Check we still have a receiving stream
+			if (!m_stream)
+			{
+				// Apartment has gone!
+				throw Remoting::IChannelClosedException::Create();
+			}
 
 			OOBase::SmartPtr<Apartment> ptrApt;
 			std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(apartment_id);
@@ -746,9 +758,16 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 		wait = deadline - now;
 	}
 
+	// Check we still have a receiving stream
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	if (!m_stream)
+		throw Remoting::IChannelClosedException::Create();
+	
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::max_time ? &wait : 0);
 	if (err != 0)
 		OMEGA_THROW(err);
+
+	guard.release();
 	
 	if (attribs & TypeInfo::Asynchronous)
 		return 0;
@@ -772,6 +791,11 @@ void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, 
 		wait = deadline - now;
 	}
 
+	// Check we still have a receiving stream
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	if (!m_stream)
+		throw Remoting::IChannelClosedException::Create();
+	
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::max_time ? &wait : 0);
 	if (err != 0)
 		OMEGA_THROW(err);

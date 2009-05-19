@@ -325,7 +325,7 @@ bool OOBase::Win32::ShmSocketImpl::create_fifos(int* perr, const char* name)
 int OOBase::Win32::ShmSocketImpl::bind_socket(OOBase::LocalSocket* via)
 {
 	// Duplicate the pipe handle... we use this to detect close
-	m_hPipe = static_cast<Win32::LocalSocket*>(via)->swap_out_handle();
+	m_hPipe = static_cast<Win32::LocalSocket*>(via)->detach_handle();
 	if (!m_hPipe)
 		return GetLastError();
 

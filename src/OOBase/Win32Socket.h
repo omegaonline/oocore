@@ -39,6 +39,16 @@ namespace OOBase
 			virtual int send(const void* buf, size_t len, const OOBase::timeval_t* timeout = 0);
 			virtual size_t recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* timeout = 0);
 			virtual void close();
+
+			HANDLE peek_handle()
+			{
+				return m_hSocket;
+			}
+
+			HANDLE detach_handle()
+			{
+				return m_hSocket.detach();
+			}
 		
 		protected:
 			SmartHandle m_hSocket;
@@ -82,7 +92,7 @@ namespace OOBase
 		};
 
 		class Socket : 
-		public SocketTempl<OOBase::Socket>
+			public SocketTempl<OOBase::Socket>
 		{
 		public:
 			Socket(HANDLE hSocket) :
@@ -91,7 +101,7 @@ namespace OOBase
 		};
 
 		class LocalSocket : 
-		public SocketTempl<OOBase::LocalSocket>
+			public SocketTempl<OOBase::LocalSocket>
 		{
 		public:
 			LocalSocket(HANDLE hSocket) :
@@ -99,8 +109,6 @@ namespace OOBase
 			{}
 
 			virtual OOBase::LocalSocket::uid_t get_uid();
-
-			HANDLE swap_out_handle();
 		};
 	}
 }

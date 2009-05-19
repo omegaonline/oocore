@@ -59,6 +59,7 @@ namespace OOSvrBase
 	}
 }
 
+#define LOG_DEBUG(expr) OOSvrBase::Logger::filenum_t(OOSvrBase::Logger::Debug,__FILE__,__LINE__).log expr
 #define LOG_ERROR(expr) OOSvrBase::Logger::filenum_t(OOSvrBase::Logger::Error,__FILE__,__LINE__).log expr
 #define LOG_ERROR_RETURN(expr,ret_val) return (LOG_ERROR(expr),ret_val)
 

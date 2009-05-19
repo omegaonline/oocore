@@ -72,7 +72,7 @@ std::string User::Acceptor::unique_name()
 #endif
 
 	// Add the current time...
-	//ssPipe << "-" << OOBase::gettimeofday().tv_usec;
+	ssPipe << "-" << OOBase::gettimeofday().tv_usec;
 	
 	return ssPipe.str();
 }
@@ -84,8 +84,6 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 
 	if (!init_security(pipe_name))
 		return false;
-
-	m_pipe_name = pipe_name;
 
 	int err = 0;
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
@@ -109,12 +107,7 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	if (err != 0)
 		LOG_ERROR_RETURN(("User::Acceptor::on_accept received failure: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
-	SECURITY_ATTRIBUTES* psa = 0;
-#if defined(_WIN32)
-	psa = &m_sa;
-#endif
-
-	if (!m_pManager->on_accept(pSocket,m_pipe_name,psa))
+	if (!m_pManager->on_accept(pSocket))
 		pSocket->close();
 
 	// Keep accepting, whatever...

@@ -49,8 +49,7 @@ namespace User
 
 		Manager*        m_pManager;
 		OOBase::Socket* m_pSocket;
-		std::string     m_pipe_name;
-
+		
 		bool init_security(const std::string& pipe_name);
 
 #if defined(_WIN32)

@@ -43,7 +43,7 @@ namespace User
 
 		OOBase::SmartPtr<OOBase::CDRStream> sendrecv_root(const OOBase::CDRStream& request, Omega::TypeInfo::MethodAttributes_t attribs);
 
-		bool on_accept(OOBase::Socket* sock, const std::string& pipe_name, SECURITY_ATTRIBUTES* psa);
+		bool on_accept(OOBase::Socket* sock);
 
 	private:
 		friend class OOBase::SingletonNoDestroy<Manager>;

@@ -75,7 +75,7 @@ namespace
 
 namespace
 {
-	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe, OOSvrBase::Win32::sec_descript_t& sd)
+	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe)
 	{
 		// Create a new unique pipe
 		std::stringstream ssPipe;
@@ -128,6 +128,7 @@ namespace
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
 		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
 
+		OOSvrBase::Win32::sec_descript_t sd;
 		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("SetEntriesInAcl failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
@@ -850,9 +851,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		return 0;
 
 	// Create the named pipe
-	OOSvrBase::Win32::sec_descript_t sd;
 	std::string strRootPipe;
-	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe,sd));
+	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
 	if (!hPipe.is_valid())
 	{
 		delete pSpawn32;
@@ -879,18 +879,16 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		return 0;
 
 	// Create security attribute
-	SECURITY_ATTRIBUTES sa;
+	/*SECURITY_ATTRIBUTES sa;
 	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 	sa.bInheritHandle = FALSE;
-	sa.lpSecurityDescriptor = sd.descriptor();
+	sa.lpSecurityDescriptor = sd.descriptor();*/
 
 	// Create an async socket wrapper
 	int err = 0;
-	OOBase::timeval_t wait(10);
-
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->accept_shared_mem_socket("Global\\" + strRootPipe,ptrMC.value(),&err,&sock,&wait,(bUnsafe ? NULL : &sa));
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,&sock);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to accept shared memory socket: %s",OOSvrBase::Logger::strerror(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::strerror(err).c_str()),(SpawnedProcess*)0);
 	
 	// Attach the async socket to the message connection
 	ptrMC->attach(pAsync);

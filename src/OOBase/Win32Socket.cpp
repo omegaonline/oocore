@@ -204,11 +204,6 @@ OOBase::LocalSocket::uid_t OOBase::Win32::LocalSocket::get_uid()
 	return uid.detach();
 }
 
-HANDLE OOBase::Win32::LocalSocket::swap_out_handle()
-{
-	return m_hSocket.detach();
-}
-
 OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path, int* perr, const timeval_t* wait)
 {
 	assert(perr);

@@ -45,12 +45,7 @@ OOBase::Socket* OOSvrBase::Proactor::accept_local(Acceptor* handler, const std::
 	return m_impl->accept_local(handler,path,perr,psa);
 }
 
-OOSvrBase::AsyncSocket* OOSvrBase::Proactor::accept_shared_mem_socket(const std::string& strName, IOHandler* handler, int* perr, OOBase::LocalSocket* via, OOBase::timeval_t* timeout, SECURITY_ATTRIBUTES* psa)
+OOSvrBase::AsyncSocket* OOSvrBase::Proactor::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
 {
-	return m_impl->accept_shared_mem_socket(strName,handler,perr,via,timeout,psa);
-}
-
-OOSvrBase::AsyncSocket* OOSvrBase::Proactor::connect_shared_mem_socket(IOHandler* handler, int* perr, OOBase::LocalSocket* via, OOBase::timeval_t* timeout)
-{
-	return m_impl->connect_shared_mem_socket(handler,perr,via,timeout);
+	return m_impl->attach_socket(handler,perr,sock);
 }

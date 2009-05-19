@@ -497,7 +497,7 @@ void ShmSocket::close()
 	OOBase::Win32::ShmSocketImpl::close();
 }
 
-OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::accept_shared_mem_socket(const std::string& strName, IOHandler* handler, int* perr, OOBase::LocalSocket* via, OOBase::timeval_t* timeout, SECURITY_ATTRIBUTES* psa)
+/*OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::accept_shared_mem_socket(const std::string& strName, IOHandler* handler, int* perr, OOBase::LocalSocket* via, OOBase::timeval_t* timeout, SECURITY_ATTRIBUTES* psa)
 {
 	assert(perr);
 
@@ -553,6 +553,6 @@ OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::connect_shared_mem_socket(IOHan
 	}
 	
 	return pSock;
-}
+}*/
 
 #endif // _WIN32

@@ -162,6 +162,8 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		if (!ptrProcess)
 		{
+			LOG_DEBUG(("Executing process %ls",strProcess.c_str()));
+
 			// Create a new process
 			ptrProcess = User::Process::exec(strProcess.c_str());
 						
@@ -179,6 +181,11 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			ptrObject.Attach(m_ptrROT->GetObject(oid));
 			if (ptrObject)
 			{
+				// The process has started - remove it from the starting list
+				guard.acquire();
+				m_mapInProgress.erase(strProcess);
+				guard.release();
+
 				pObject = ptrObject->QueryInterface(iid);
 				if (!pObject)
 					throw INoInterfaceException::Create(iid);

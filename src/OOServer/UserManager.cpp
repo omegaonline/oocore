@@ -163,19 +163,11 @@ bool User::Manager::init(const std::string& strPipe)
 	OOBase::timeval_t wait(20);
 	OOBase::Countdown countdown(&wait);
 
-#if defined(_WIN32)
 	// Use a named pipe
 	int err = 0;
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
-#else
-
-	// strPipe is actually a file descriptor
-
-#error Fix me!
-
-#endif
 
 	countdown.update();
 
@@ -226,9 +218,9 @@ bool User::Manager::init(const std::string& strPipe)
 	countdown.update();
 
 	// Open the root connection
-	ptrMC->attach(Proactor::instance()->connect_shared_mem_socket(ptrMC.value(),&err,local_socket.value(),&wait));
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,local_socket.value()));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to create shared mem socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
 	// Start I/O with root
 	if (!ptrMC->read())
@@ -304,7 +296,7 @@ bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 	}
 }
 
-bool User::Manager::on_accept(OOBase::Socket* sock, const std::string& pipe_name, SECURITY_ATTRIBUTES* psa)
+bool User::Manager::on_accept(OOBase::Socket* sock)
 {
 	// Create a new MessageConnection
 	OOBase::SmartPtr<Root::MessageConnection> ptrMC;
@@ -322,15 +314,10 @@ bool User::Manager::on_accept(OOBase::Socket* sock, const std::string& pipe_name
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 
-	// Add the current time...
-	std::stringstream ssPipe;
-	ssPipe.setf(std::ios_base::hex);
-	ssPipe << "Local\\" << pipe_name << "-" << channel_id;
-		
 	// Attach the connection
-	ptrMC->attach(Proactor::instance()->accept_shared_mem_socket(ssPipe.str(),ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock),0,psa));
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock)));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to accept shared mem socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
 		
 	// Start I/O
 	if (!ptrMC->read())

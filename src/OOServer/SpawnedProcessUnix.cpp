@@ -441,9 +441,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 		m_uid = uid;
 		m_pid = child_id;
 
-#if defined(OMEGA_DEBUG)
-		printf("\nStarting new oosvruser process as uid:%u pid:%u\n",uid,child_id);
-#endif
+		LOG_DEBUG(("Starting new oosvruser process as uid:%u pid:%u",uid,child_id));
 	}
 
 	return true;

@@ -155,6 +155,12 @@ DWORD OOSvrBase::HandleSocket::do_read(Completion* pInfo, DWORD dwToRead)
 		DWORD ret = GetLastError();
 		if (ret != ERROR_IO_PENDING)
 		{
+			if (ret == ERROR_BROKEN_PIPE)
+			{
+				m_handler->on_closed(this);
+				ret = 0;
+			}
+
 			--m_pProactor->m_outstanding;
 			release();
 			return ret;
@@ -254,6 +260,36 @@ void OOSvrBase::HandleSocket::close()
 		CancelIo(m_handle);
 		CloseHandle(m_handle.detach());
 	}
+}
+
+OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
+{
+	assert(perr);
+	assert(sock);
+
+	// Cast to our known base
+	OOBase::Win32::Socket* pOrigSock = static_cast<OOBase::Win32::Socket*>(sock);
+
+	// Alloc a ShmSocket
+	HandleSocket* pSock;
+	OOBASE_NEW(pSock,HandleSocket(this,pOrigSock->peek_handle()));
+	if (!pSock)
+	{
+		*perr = ERROR_OUTOFMEMORY;
+		return 0;
+	}
+
+	*perr = pSock->init(handler);
+	if (*perr != 0)
+	{
+		pSock->release();
+		return 0;
+	}
+
+	// Now swap out the handle
+	pOrigSock->detach_handle();	
+
+	return pSock;
 }
 
 #endif // _WIN32

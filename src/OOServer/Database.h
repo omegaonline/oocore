@@ -93,8 +93,8 @@ namespace Db
 
 		sqlite3* database();
 
-		OOBase::SmartPtr<Transaction> begin_transaction(const char* pszType = 0);
-		OOBase::SmartPtr<Statement> prepare_statement(const char* pszStatement, ...);
+		int begin_transaction(OOBase::SmartPtr<Transaction>& ptrTrans, const char* pszType = 0);
+		int prepare_statement(OOBase::SmartPtr<Statement>& ptrStmt, const char* pszStatement, ...);
 
 	private:
 		sqlite3* m_db;

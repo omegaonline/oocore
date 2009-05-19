@@ -542,81 +542,10 @@ void RootKey::Init()
 	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
 }
 
-int RootKey::registry_access_check(const std::string& strdb, Omega::uint32_t /*channel_id*/, ::Registry::Hive::access_rights_t access_mask)
+int RootKey::registry_access_check(const std::string& /*strdb*/, Omega::uint32_t /*channel_id*/, ::Registry::Hive::access_rights_t /*access_mask*/)
 {
-	bool bRead = (access_mask & ::Registry::Hive::read_check) == ::Registry::Hive::read_check;
-	bool bWrite = (access_mask & ::Registry::Hive::write_check) == ::Registry::Hive::write_check;
-
-#if defined(_WIN32)
-	
-	/*std::wstring strFName = OOBase::from_utf8(strdb.c_str());
-
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSD = 0;
-	DWORD cbNeeded = 0;
-	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
-	{
-		int err = GetLastError();
-		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage(err).c_str()),err);
-	}
-	
-	pSD = malloc(cbNeeded);
-	if (!pSD)
-		LOG_ERROR_RETURN(("Out of memory"),ERROR_OUTOFMEMORY);
-
-	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),cbNeeded,&cbNeeded))
-	{
-		int err = GetLastError();
-		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage(err).c_str()),err);
-	}
-
-	// Map the generic access rights
-	DWORD dwAccessDesired = 0;
-	if (bRead)
-		dwAccessDesired |= FILE_GENERIC_READ;
-	
-	if (bWrite)
-		dwAccessDesired |= FILE_GENERIC_WRITE;
-	
-	GENERIC_MAPPING generic =
-	{
-		FILE_GENERIC_READ,
-		FILE_GENERIC_WRITE,
-		FILE_GENERIC_EXECUTE,
-		FILE_ALL_ACCESS
-	};
-
-	MapGenericMask(&dwAccessDesired,&generic);
-
-	// Get the current process toekn
-	OOBase::Win32::SmartHandle hProcessToken;
-	if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
-	{
-		int err = GetLastError();
-		LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage(err).c_str()),err);
-	}
-
-	// Do the access check
-	PRIVILEGE_SET privilege_set;
-	DWORD dwPrivSetSize = sizeof(privilege_set);
-	DWORD dwAccessGranted = 0;
-	BOOL bAllowedVal = FALSE;
-	BOOL bRes = ::AccessCheck((PSECURITY_DESCRIPTOR)pSD.value(),hProcessToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
-	int err = GetLastError();
-	
-	if (!bRes && err != ERROR_SUCCESS)
-		return err;	
-	else if (!bAllowedVal)
-		return EACCES;
-	else
-		return 0;*/
-
+	// Allow sqlite's underlying protection mechanism to sort it out
 	return 0;
-
-#else
-
-#error Fix me!
-
-#endif
 }
 
 string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey)
@@ -658,6 +587,9 @@ bool_t RootKey::IsSubKey(const string_t& strSubKey)
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
 	if (strSubKey2.IsEmpty())
 		return true;
+
+	if (!ptrKey)
+		::Registry::NotFoundException::Throw(L"\\" + strSubKey,L"Omega::Registry::IRegistry::IsSubKey");
 
 	return ptrKey->IsSubKey(strSubKey2);
 }
@@ -731,6 +663,9 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	if (strSubKey2.IsEmpty())
 		return ptrKey.AddRef();
 
+	if (!ptrKey)
+		::Registry::NotFoundException::Throw(L"\\" + strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
+
 	return ptrKey->OpenSubKey(strSubKey2,flags);
 }
 
@@ -750,6 +685,9 @@ void RootKey::DeleteKey(const string_t& strSubKey)
 	string_t strSubKey2 = parse_subkey(strSubKey,ptrKey);
 	if (strSubKey2.IsEmpty())
 		::Registry::AccessDeniedException::Throw(L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
+
+	if (!ptrKey)
+		::Registry::NotFoundException::Throw(L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
 
 	return ptrKey->DeleteKey(strSubKey2);
 }

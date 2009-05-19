@@ -43,7 +43,7 @@ Db::Statement::~Statement()
 int Db::Statement::step()
 {
 	int err = sqlite3_step(m_pStmt);
-	if (err != SQLITE_ROW && err != SQLITE_DONE)
+	if (err != SQLITE_ROW && err != SQLITE_DONE && err != SQLITE_READONLY)
 		LOG_ERROR(("sqlite3_step failed: %s",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
 	return err;
 }
@@ -116,7 +116,7 @@ bool Db::Database::open(const char* pszDb)
 int Db::Database::exec(const char* szSQL)
 {
 	int err = sqlite3_exec(m_db,szSQL,NULL,0,NULL);
-	if (err != SQLITE_OK)
+	if (err != SQLITE_OK && err != SQLITE_READONLY)
 		LOG_ERROR(("sqlite3_exec failed: %s",sqlite3_errmsg(m_db)));
 	return err;
 }
@@ -126,28 +126,28 @@ sqlite3* Db::Database::database()
 	return m_db;
 }
 
-OOBase::SmartPtr<Db::Transaction> Db::Database::begin_transaction(const char* pszType)
+int Db::Database::begin_transaction(OOBase::SmartPtr<Transaction>& ptrTrans, const char* pszType)
 {
 	int err = 0;
 	if (pszType)
 		err = sqlite3_exec(m_db,pszType,NULL,0,NULL);
 	else
 		err = sqlite3_exec(m_db,"BEGIN TRANSACTION;",NULL,0,NULL);
-	if (err != SQLITE_OK)
-		return OOBase::SmartPtr<Db::Transaction>(0);
 
-	Transaction* pTrans = 0;
-	OOBASE_NEW(pTrans,Transaction(m_db));
-	if (!pTrans)
+	if (err != SQLITE_OK)
+		return err;
+
+	OOBASE_NEW(ptrTrans,Transaction(m_db));
+	if (!ptrTrans)
 	{
 		sqlite3_exec(m_db,"ROLLBACK;",NULL,0,NULL);
-		LOG_ERROR(("Out of memory"));
+		LOG_ERROR_RETURN(("Out of memory"),SQLITE_NOMEM);
 	}
 
-	return OOBase::SmartPtr<Transaction>(pTrans);
+	return 0;
 }
 
-OOBase::SmartPtr<Db::Statement> Db::Database::prepare_statement(const char* pszStatement, ...)
+int Db::Database::prepare_statement(OOBase::SmartPtr<Db::Statement>& ptrStmt, const char* pszStatement, ...)
 {
 	va_list ap;
 	va_start(ap,pszStatement);
@@ -155,30 +155,23 @@ OOBase::SmartPtr<Db::Statement> Db::Database::prepare_statement(const char* pszS
 	va_end(ap);
 
 	if (!pszBuf)
-	{
-		LOG_ERROR(("sqlite3_vmprintf failed: %s",sqlite3_errmsg(m_db)));
-		return OOBase::SmartPtr<Db::Statement>();
-	}
-
+		LOG_ERROR_RETURN(("sqlite3_vmprintf failed: %s",sqlite3_errmsg(m_db)),sqlite3_errcode(m_db));
+	
 	sqlite3_stmt* pStmt = 0;
 	int err = sqlite3_prepare_v2(m_db,pszBuf,-1,&pStmt,NULL);
 	sqlite3_free(pszBuf);
 
 	if (err != SQLITE_OK)
-	{
-		LOG_ERROR(("sqlite3_prepare_v2 failed: %s",sqlite3_errmsg(m_db)));
-		return OOBase::SmartPtr<Db::Statement>();
-	}
-
-	Statement* pSt = 0;
-	OOBASE_NEW(pSt,Statement(pStmt));
-	if (!pSt)
+		LOG_ERROR_RETURN(("sqlite3_prepare_v2 failed: %s",sqlite3_errmsg(m_db)),err);
+	
+	OOBASE_NEW(ptrStmt,Statement(pStmt));
+	if (!ptrStmt)
 	{
 		sqlite3_finalize(pStmt);
-		LOG_ERROR(("Out of memory"));
+		LOG_ERROR_RETURN(("Out of memory"),SQLITE_NOMEM);
 	}
 
-	return OOBase::SmartPtr<Statement>(pSt);
+	return 0;
 }
 
 Db::Transaction::~Transaction()

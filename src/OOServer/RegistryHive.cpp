@@ -118,7 +118,8 @@ bool Registry::Hive::open()
 		"ANALYZE RegistryValues;"
 		"COMMIT;";
 			
-	return (m_db->exec(szSQL) == SQLITE_OK);
+	int err = m_db->exec(szSQL);
+	return (err == SQLITE_OK || err == SQLITE_READONLY);
 }
 
 int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
@@ -130,9 +131,12 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 		return SQLITE_ROW;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Access FROM RegistryKeys WHERE Id = %lld;",uKey);
-	
-	int err = ptrStmt->step();
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	int err = m_db->prepare_statement(ptrStmt,"SELECT Access FROM RegistryKeys WHERE Id = %lld;",uKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 		access_mask = static_cast<access_rights_t>(ptrStmt->column_int(0));
 	
@@ -143,9 +147,12 @@ int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& 
 {
 	// Lock must be help first...
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Id, Access FROM RegistryKeys WHERE Name = %Q AND Parent = %lld;",strSubKey.c_str(),uParent);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	int err = m_db->prepare_statement(ptrStmt,"SELECT Id, Access FROM RegistryKeys WHERE Name = %Q AND Parent = %lld;",strSubKey.c_str(),uParent);
+	if (err != SQLITE_OK)
+		return err;
 	
-	int err = ptrStmt->step();
+	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
 	{
 		uKey = ptrStmt->column_int64(0);
@@ -209,9 +216,12 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 
 int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, const std::string& strSubKey, access_rights_t access_mask)
 {
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%u);",strSubKey.c_str(),uParent,access_mask);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	int err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryKeys (Name,Parent,Access) VALUES (%Q,%lld,%u);",strSubKey.c_str(),uParent,access_mask);
+	if (err != SQLITE_OK)
+		return err;
 	
-	int err = ptrStmt->step();
+	err = ptrStmt->step();
 	if (err == SQLITE_DONE)
 		uKey = sqlite3_last_insert_rowid(m_db->database());
 	
@@ -262,8 +272,13 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 		}
 
 		// Start a transaction..
-		ptrTrans = m_db->begin_transaction();
-		if (!ptrTrans)
+		err = m_db->begin_transaction(ptrTrans);
+		if (err == SQLITE_ERROR)
+		{
+			// This is returned if the database is readonly
+			return EACCES;
+		}
+		else if (err != SQLITE_OK)
 			return EIO;
 
 		// Mask the access mask
@@ -334,7 +349,10 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 		return EACCES;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	// Recurse down
 	bool bFound = false;
@@ -360,7 +378,9 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	if (bFound)
 	{
 		// Do the delete
-		ptrStmt = m_db->prepare_statement("DELETE FROM RegistryKeys WHERE Parent = %lld;",uKey);
+		err = m_db->prepare_statement(ptrStmt,"DELETE FROM RegistryKeys WHERE Parent = %lld;",uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 	
 		err = ptrStmt->step();
 		if (err != SQLITE_DONE)
@@ -384,15 +404,24 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 	if (err != 0)
 		return err;
 
-	OOBase::SmartPtr<Db::Transaction> ptrTrans = m_db->begin_transaction();
-	if (!ptrTrans)
+	OOBase::SmartPtr<Db::Transaction> ptrTrans;
+	err = m_db->begin_transaction(ptrTrans);
+	if (err == SQLITE_ERROR)
+	{
+		// This is returned if the database is readonly
+		return EACCES;
+	}
+	else if (err != SQLITE_OK)
 		return EIO;
 	
 	err = delete_key_i(uKey,channel_id);
 	if (err == 0)
 	{
 		// Do the delete of this key
-		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("DELETE FROM RegistryKeys WHERE Id = %lld;",uKey);
+		OOBase::SmartPtr<Db::Statement> ptrStmt;
+		err = m_db->prepare_statement(ptrStmt,"DELETE FROM RegistryKeys WHERE Id = %lld;",uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 	
 		err = ptrStmt->step();
 		if (err != SQLITE_DONE)
@@ -428,7 +457,10 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	do
 	{
@@ -493,7 +525,13 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	if (response.last_error() != 0)
 		return;
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	if (err != SQLITE_OK)
+	{
+		response.write((int)EIO);
+		return;
+	}
 	
 	do
 	{
@@ -554,7 +592,10 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	do
 	{
@@ -605,7 +646,13 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 	if (response.last_error() != 0)
 		return;
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	if (err != SQLITE_OK)
+	{
+		response.write((int)EIO);
+		return;
+	}
 
 	do
 	{
@@ -658,10 +705,15 @@ int Registry::Hive::delete_value(const Omega::int64_t& uKey, const std::string& 
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("DELETE FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"DELETE FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;
@@ -687,7 +739,10 @@ int Registry::Hive::get_value_type(const Omega::int64_t& uKey, const std::string
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -721,7 +776,10 @@ int Registry::Hive::get_string_value(const Omega::int64_t& uKey, const std::stri
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -762,7 +820,10 @@ int Registry::Hive::get_integer_value(const Omega::int64_t& uKey, const std::str
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -814,7 +875,13 @@ void Registry::Hive::get_binary_value(const Omega::int64_t& uKey, const std::str
 	if (response.last_error() != 0)
 		return;
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+	{
+		response.write((int)EIO);
+		return;
+	}
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -887,7 +954,10 @@ int Registry::Hive::get_binary_value(const Omega::int64_t& uKey, const std::stri
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type,Value FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -938,7 +1008,10 @@ int Registry::Hive::set_string_value(const Omega::int64_t& uKey, const std::stri
 	}
 
 	// See if we have a value already
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -948,19 +1021,25 @@ int Registry::Hive::set_string_value(const Omega::int64_t& uKey, const std::stri
 			return EINVAL;
 
 		// We have an entry already
-		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = %Q WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = %Q WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 	
 		err = ptrStmt->step();
 	}
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
+		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,0,%Q);",strValue.c_str(),uKey,val);
+		if (err != SQLITE_OK)
+			return EIO;
 		
 		err = ptrStmt->step();
 	}
 
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;
@@ -987,7 +1066,10 @@ int Registry::Hive::set_integer_value(const Omega::int64_t& uKey, const std::str
 	}
 
 	// See if we have a value already
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -997,19 +1079,25 @@ int Registry::Hive::set_integer_value(const Omega::int64_t& uKey, const std::str
 			return EINVAL;
 
 		// We have an entry already
-		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = %lld WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = %lld WHERE Name = %Q AND Parent = %lld;",val,strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 	
 		err = ptrStmt->step();
 	}
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
+		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,1,%lld);",strValue.c_str(),uKey,val);
+		if (err != SQLITE_OK)
+			return EIO;
 		
 		err = ptrStmt->step();
 	}
 
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;
@@ -1036,7 +1124,10 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 	}
 
 	// See if we have a value already
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -1046,7 +1137,9 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 			return EINVAL;
 
 		// We have an entry already
-		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 	
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.buffer()->rd_ptr(),static_cast<int>(request.buffer()->length()),SQLITE_STATIC);
 		if (err != SQLITE_OK)
@@ -1057,7 +1150,9 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 			
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,request.buffer()->rd_ptr(),static_cast<int>(request.buffer()->length()),SQLITE_STATIC);
 		if (err != SQLITE_OK)
@@ -1066,7 +1161,9 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 			err = ptrStmt->step();
 	}
 	
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;
@@ -1093,7 +1190,10 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 	}
 
 	// See if we have a value already
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -1103,7 +1203,9 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 			return EINVAL;
 
 		// We have an entry already
-		ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Value = ? WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 	
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,buf,static_cast<int>(cbLen),SQLITE_STATIC);
 		if (err != SQLITE_OK)
@@ -1114,7 +1216,9 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 	else if (err == SQLITE_DONE)
 	{
 		// Insert the new value
-		OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"INSERT INTO RegistryValues (Name,Parent,Type,Value) VALUES (%Q,%lld,2,?);",strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
 			
 		err = sqlite3_bind_blob(ptrStmt->statement(),1,buf,static_cast<int>(cbLen),SQLITE_STATIC);
 		if (err != SQLITE_OK)
@@ -1123,7 +1227,9 @@ int Registry::Hive::set_binary_value(const Omega::int64_t& uKey, const std::stri
 			err = ptrStmt->step();
 	}
 	
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;
@@ -1149,7 +1255,10 @@ int Registry::Hive::get_description(const Omega::int64_t& uKey, Omega::uint32_t 
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Description FROM RegistryKeys WHERE Id = %lld;",uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Description FROM RegistryKeys WHERE Id = %lld;",uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -1186,7 +1295,10 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std:
 			return acc;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("SELECT Description FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"SELECT Description FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 
 	err = ptrStmt->step();
 	if (err == SQLITE_ROW)
@@ -1200,7 +1312,10 @@ int Registry::Hive::get_value_description(const Omega::int64_t& uKey, const std:
 	else if (err == SQLITE_DONE)
 	{
 		// See if the value exists at all...
-		ptrStmt = m_db->prepare_statement("SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+		err = m_db->prepare_statement(ptrStmt,"SELECT Type FROM RegistryValues WHERE Name = %Q AND Parent = %lld;",strValue.c_str(),uKey);
+		if (err != SQLITE_OK)
+			return EIO;
+
 		err = ptrStmt->step();
 		if (err == SQLITE_ROW)
 			return 0;
@@ -1234,10 +1349,15 @@ int Registry::Hive::set_description(const Omega::int64_t& uKey, Omega::uint32_t 
 	}
 
 	// Insert the new value
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("UPDATE RegistryKeys SET Description = %Q WHERE Id = %lld;",val.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryKeys SET Description = %Q WHERE Id = %lld;",val.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;
@@ -1264,10 +1384,15 @@ int Registry::Hive::set_value_description(const Omega::int64_t& uKey, const std:
 	}
 
 	// Insert the new value
-	OOBase::SmartPtr<Db::Statement> ptrStmt = m_db->prepare_statement("UPDATE RegistryValues SET Description = %Q WHERE Name = %Q AND Parent = %lld;",val.c_str(),strValue.c_str(),uKey);
+	OOBase::SmartPtr<Db::Statement> ptrStmt;
+	err = m_db->prepare_statement(ptrStmt,"UPDATE RegistryValues SET Description = %Q WHERE Name = %Q AND Parent = %lld;",val.c_str(),strValue.c_str(),uKey);
+	if (err != SQLITE_OK)
+		return EIO;
 	
 	err = ptrStmt->step();
-	if (err != SQLITE_DONE)
+	if (err == SQLITE_READONLY)
+		return EACCES;
+	else if (err != SQLITE_DONE)
 		return EIO;
 	
 	return 0;

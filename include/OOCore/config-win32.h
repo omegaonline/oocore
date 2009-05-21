@@ -53,7 +53,13 @@
 #if !defined(WINVER)
 #error No WINVER?!?
 #elif (WINVER < 0x0500)
+#if defined(__MINGW32__)
+// MinGW gets WINVER wrong...
+#undef WINVER
+#define WINVER 0x0500
+#else
 #error OOCore requires WINVER >= 0x0500!
+#endif
 #endif
 
 #if !defined(_WIN32)

@@ -1,5 +1,3 @@
-#include <OOBase/config-base.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -80,7 +78,7 @@ void output(const char* sz, ...)
 	va_start(argptr, sz);
 
 	char szBuf[4096] = {0};
-	vsnprintf_s(szBuf,sizeof(szBuf),sz,argptr);
+	vsnprintf(szBuf,sizeof(szBuf),sz,argptr);
 
 	printf(szBuf);
 	OutputDebugStringA(szBuf);

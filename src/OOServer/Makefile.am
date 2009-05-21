@@ -89,7 +89,8 @@ if WIN32
 oosvruser_SOURCES += OOSvrUser.rc
 endif
 
-lib_LTLIBRARIES = oosvrlite.la
+oolibexecdir = $(libexecdir)/omegaonline
+oolibexec_LTLIBRARIES = oosvrlite.la
 
 oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include $(SQLITE3_CPPFLAGS)
 oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS)

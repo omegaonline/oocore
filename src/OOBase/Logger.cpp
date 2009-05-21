@@ -213,7 +213,7 @@ void OOSvrBase::Logger::filenum_t::log(const char* fmt, ...)
 	va_start(args,fmt);
 
 	std::stringstream out;
-	out << m_pszFilename << "(" << m_nLine << "): " << fmt;
+	out << "[" << GetCurrentProcessId() << "] " << m_pszFilename << "(" << m_nLine << "): " << fmt;
 	
 	LOGGER::instance()->log(m_priority,out.str().c_str(),args);
 

@@ -78,8 +78,10 @@ OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t_assign_1,2,((in),void*,h1,(in),con
 Omega::string_t& Omega::string_t::operator = (const string_t& s)
 {
 	if (this != &s)
+	{
 		m_handle = static_cast<handle_t*>(OOCore_string_t_assign_1(m_handle,s.m_handle));
-	OMEGA_DEBUG_STASH_STRING();
+		OMEGA_DEBUG_STASH_STRING();
+	}
 	return *this;
 }
 
@@ -253,7 +255,7 @@ Omega::string_t Omega::string_t::Format(const wchar_t* pszFormat, ...)
 	va_start(list,pszFormat);
 
 	handle_t* h2 = static_cast<handle_t*>(OOCore_string_t_format(pszFormat,&list));
-	
+
 	va_end(list);
 
 	if (h2)
@@ -293,7 +295,7 @@ Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
 	size_t pos = Length();
 	while (pos > 0 && (*this)[pos-1] == c)
 		--pos;
-	
+
 	return Left(pos);
 }
 
@@ -353,7 +355,7 @@ int Omega::guid_t::Compare(const guid_t& rhs) const
 				return (Data4[i] < rhs.Data4[i] ? -1 : 1);
 		}
 	}
-	
+
 	return 0;
 }
 

@@ -7,107 +7,41 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug Win32">
-				<Option platforms="Windows;" />
-				<Option output="../../../bin/Debug/TestProcess" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../../bin/Debug" />
-				<Option object_output="Debug" />
+				<Option output="..\..\..\bin\Debug Win32\TestProcess" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug Win32" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-fno-rtti" />
-					<Add option="-mthreads" />
-					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../../include" />
+					<Add option="-O0" />
+					<Add directory="..\..\..\include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../../include" />
+					<Add directory="..\..\..\include" />
 				</ResourceCompiler>
-				<Linker>
-					<Add option="-mthreads" />
-					<Add library="../../../bin/debug/libOOCore.a" />
-				</Linker>
 			</Target>
 			<Target title="Release Win32">
-				<Option platforms="Windows;" />
-				<Option output="../../../bin/TestProcess" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../../bin" />
-				<Option object_output="Release" />
+				<Option output="..\..\..\bin\TestProcess" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release Win32" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O3" />
-					<Add option="-Wall" />
-					<Add option="-fno-rtti" />
-					<Add option="-mthreads" />
 					<Add option="-DNDEBUG" />
-					<Add directory="../../../include" />
+					<Add option="-Wall" />
+					<Add option="-O3" />
+					<Add directory="..\..\..\include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="../../../include" />
+					<Add directory="..\..\..\include" />
 				</ResourceCompiler>
-				<Linker>
-					<Add option="-s" />
-					<Add option="-mthreads" />
-					<Add library="../../../bin/libOOCore.a" />
-				</Linker>
-			</Target>
-			<Target title="Debug Unix">
-				<Option platforms="Unix;Mac;" />
-				<Option output="../../../bin/Debug/testprocess" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../../bin/Debug" />
-				<Option object_output="Debug" />
-				<Option type="1" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-fno-rtti" />
-					<Add option="-pthread" />
-					<Add option="-fvisibility=hidden" />
-					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../../include" />
-				</Compiler>
-				<Linker>
-					<Add library="OOCored" />
-					<Add directory="../../../bin/Debug" />
-				</Linker>
-			</Target>
-			<Target title="Release Unix">
-				<Option platforms="Unix;Mac;" />
-				<Option output="../../../bin/testprocess" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../../bin" />
-				<Option object_output="Release" />
-				<Option type="1" />
-				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-fexpensive-optimizations" />
-					<Add option="-O3" />
-					<Add option="-Wall" />
-					<Add option="-fno-rtti" />
-					<Add option="-pthread" />
-					<Add option="-fvisibility=hidden" />
-					<Add option="-DNDEBUG" />
-					<Add directory="../../../include" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-					<Add library="OOCore" />
-					<Add directory="../../../bin" />
-				</Linker>
 			</Target>
 		</Build>
-		<Compiler>
-			<Add option="-DCODEBLOCKS" />
-		</Compiler>
-		<Unit filename="../SimpleTest.h" />
-		<Unit filename="TestProcess.cpp" />
-		<Unit filename="../interfaces.h" />
+		<Unit filename="..\SimpleTest.h" />
+		<Unit filename="testprocess.cpp" />
+		<Unit filename="..\interfaces.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
-			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

@@ -858,7 +858,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		delete pSpawn32;
 		return 0;
 	}
-		
+
 	// Spawn the process
 	if (!pSpawn32->Spawn(bUnsafe,uid,strRootPipe,bSandbox))
 	{
@@ -877,12 +877,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
 	if (!channel_id)
 		return 0;
-
-	// Create security attribute
-	/*SECURITY_ATTRIBUTES sa;
-	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-	sa.bInheritHandle = FALSE;
-	sa.lpSecurityDescriptor = sd.descriptor();*/
 
 	// Create an async socket wrapper
 	int err = 0;

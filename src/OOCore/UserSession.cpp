@@ -80,7 +80,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	if (!bStandalone)
 	{
 		// Connect up to the root process...
-		OOBase::timeval_t wait(20);
+		OOBase::timeval_t wait(5);
 		OOBase::Countdown countdown(&wait);
 		int err = 0;
 		do

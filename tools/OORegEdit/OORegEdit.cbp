@@ -3,60 +3,63 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="OORegEdit" />
-		<Option platforms="Unix;Mac;" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
-			<Target title="Debug Unix">
-				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/Debug/ooregedit" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin/Debug" />
-				<Option object_output="Debug" />
+			<Target title="Debug Win32">
+				<Option output="..\..\bin\Debug Win32\OORegEdit" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug Win32" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-Wall" />
-					<Add option="-g" />
-					<Add option="-fno-rtti" />
-					<Add option="-pthread" />
-					<Add option="-fvisibility=hidden" />
-					<Add option="`wx-config --cxxflags`" />
-					<Add option="-DOMEGA_DEBUG" />
-					<Add directory="../../include" />
+					<Add option="-O0" />
+					<Add directory="..\..\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include\msvc" />
 				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include\msvc" />
+				</ResourceCompiler>
 				<Linker>
-					<Add option="`wx-config --libs`" />
-					<Add library="../../bin/Debug/libOOCored.so" />
+					<Add library="comctl32" />
+					<Add library="rpcrt4" />
+					<Add directory="D:\wxWidgets-2.8.10\lib\vc_lib" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="$(SolutionDir)msvc_conf.exe $(SolutionPath) OORegEdit_vc8" />
+				</ExtraCommands>
 			</Target>
-			<Target title="Release Unix">
-				<Option platforms="Unix;Mac;" />
-				<Option output="../../bin/ooregedit" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="../../bin" />
-				<Option object_output="Release" />
+			<Target title="Release Win32">
+				<Option output="..\..\bin\OORegEdit" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release Win32" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-fexpensive-optimizations" />
-					<Add option="-O3" />
-					<Add option="-Wall" />
-					<Add option="-fno-rtti" />
-					<Add option="-pthread" />
-					<Add option="-fvisibility=hidden" />
-					<Add option="`wx-config --cxxflags`" />
 					<Add option="-DNDEBUG" />
-					<Add directory="../../include" />
+					<Add option="-Wall" />
+					<Add option="-O3" />
+					<Add directory="..\..\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include\msvc" />
 				</Compiler>
+				<ResourceCompiler>
+					<Add directory="..\..\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include" />
+					<Add directory="D:\wxWidgets-2.8.10\include\msvc" />
+				</ResourceCompiler>
 				<Linker>
-					<Add option="-s" />
-					<Add option="`wx-config --libs`" />
-					<Add library="../../bin/libOOCore.so" />
+					<Add library="comctl32" />
+					<Add library="rpcrt4" />
+					<Add directory="D:\wxWidgets-2.8.10\lib\vc_lib" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="$(SolutionDir)msvc_conf.exe $(SolutionPath) OORegEdit_vc8" />
+				</ExtraCommands>
 			</Target>
 		</Build>
-		<Compiler>
-			<Add option="-DCODEBLOCKS" />
-		</Compiler>
 		<Unit filename="AboutDlg.cpp" />
 		<Unit filename="AboutDlg.h" />
 		<Unit filename="AddFavDlg.cpp" />
@@ -76,13 +79,13 @@
 		<Unit filename="OORegEdit.cpp" />
 		<Unit filename="OORegEdit.h" />
 		<Unit filename="OORegEdit.rc">
-			<Option target="&lt;{~None~}&gt;" />
+			<Option compilerVar="WINDRES" />
 		</Unit>
 		<Unit filename="RemoveFavDlg.cpp" />
 		<Unit filename="RemoveFavDlg.h" />
 		<Unit filename="TreeItemData.cpp" />
 		<Unit filename="TreeItemData.h" />
-		<Unit filename="res/OORegEdit.ico" />
+		<Unit filename="res\OORegEdit.ico" />
 		<Unit filename="resource.h" />
 		<Unit filename="stdafx.cpp" />
 		<Unit filename="stdafx.h" />
@@ -90,7 +93,6 @@
 		<Extensions>
 			<code_completion />
 			<debugger />
-			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

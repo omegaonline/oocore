@@ -180,6 +180,10 @@ bool Root::Manager::init_database()
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
 {
+	// Don't route to null channels
+	if (!src_channel || !dest_channel)
+		return false;
+
 	// Only route to or from the sandbox
 	return (src_channel == m_sandbox_channel || dest_channel == m_sandbox_channel);
 }
@@ -231,7 +235,7 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 		std::string strPipe;
 		if (!spawn_user(uid,ptrRegistry,strPipe))
 			return "";
-
+		
 		return strPipe;
 	}
 	catch (std::exception& e)

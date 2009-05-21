@@ -1497,8 +1497,8 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 	}
 
 	// Check the timeout
-	if (msg.m_deadline <= OOBase::gettimeofday())
+	if (msg.m_deadline != OOBase::timeval_t::max_time && msg.m_deadline <= OOBase::gettimeofday())
 		return io_result::timedout;
-	
+		
 	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);
 }

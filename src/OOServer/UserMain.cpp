@@ -32,9 +32,13 @@ int main(int argc, char* argv[])
 	// Start the logger - use OOServer again...
 	OOSvrBase::Logger::open("OOServer");
 
-	// We do the most basic command line parsing...
-	// Check to see if we have been spawned
-	if (argc != 2)
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_argument("port",0);
+	
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
 	
 #if defined(_WIN32) && defined(OMEGA_DEBUG)
@@ -52,7 +56,7 @@ int main(int argc, char* argv[])
 #endif
 
 	// Run the UserManager
-	return User::Manager::run(argv[1]);
+	return User::Manager::run(args["port"]);
 }
 
 namespace OOBase

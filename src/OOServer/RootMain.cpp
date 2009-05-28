@@ -45,6 +45,27 @@ static int Help()
 {
 	std::cout << "OOServer - The Omega Online network deamon." << std::endl << std::endl;
 	std::cout << "Please consult the documentation at http://www.omegaonline.org.uk for further information." << std::endl << std::endl;
+
+#if defined(_WIN32) && !defined(__MINGW32__)
+	std::cout << "Usage: OOServer [options]" << std::endl << std::endl;
+#else
+	std::cout << "Usage: ooserverd [options]" << std::endl << std::endl;
+#endif
+
+	std::cout << "Options:" << std::endl;
+	std::cout << "  --help (-h)      Display this help text" << std::endl;
+	std::cout << "  --install (-i)   Install" << std::endl;
+	std::cout << "  --uninstall (-u) Uninstall"  << std::endl;
+	std::cout << "  --version (-v)   Display version information" << std::endl;
+	std::cout << std::endl;
+
+#if defined(_WIN32)
+	std::cout << "If the install option is used, optionally append the sandbox username and password" << std::endl;
+#else
+	std::cout << "If the install option is used, append the sandbox username or uid" << std::endl;
+#endif
+	std::cout << std::endl;
+
 	return EXIT_SUCCESS;
 }
 
@@ -56,37 +77,44 @@ int main(int argc, char* argv[])
 	// The one and only Root::Manager instance
 	Root::Manager root_manager;
 
-	// We do the most basic command line parsing...
-	if (argc > 1)
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("install",'i',"install");
+	cmd_args.add_option("uninstall",'u',"uninstall");
+	cmd_args.add_option("help",'h',"help");
+	cmd_args.add_option("version",'v',"version");
+
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
+		return EXIT_FAILURE;
+
+	if (args["help"] == "true")
+		return Help();
+
+	if (args["version"] == "true")
+		return Version();
+	
+	if (args["install"] == "true")
 	{
-		if (strcmp(argv[1],"--install")==0)
-		{
-			if (!root_manager.install(argc-2,&argv[2]))
-				return EXIT_FAILURE;
+		if (!root_manager.install(args))
+			return EXIT_FAILURE;
 
-			std::cout << "Installed successfully." << std::endl;
-			return EXIT_SUCCESS;
-		}
-		else if (strcmp(argv[1],"--uninstall")==0)
-		{
-			if (!root_manager.uninstall())
-				return EXIT_FAILURE;
+		std::cout << "Installed successfully." << std::endl;
+		return EXIT_SUCCESS;
+	}
 
-			std::cout << "Uninstalled successfully." << std::endl;
-			return EXIT_SUCCESS;
-		}
-		else if (strcmp(argv[1],"--helpstring")==0 || strcmp(argv[1],"/?")==0)
-		{
-			return Help();
-		}
-		else if (strcmp(argv[1],"--version")==0)
-		{
-			return Version();
-		}
+	if (args["uninstall"] == "true")
+	{
+		if (!root_manager.uninstall())
+			return EXIT_FAILURE;
+
+		std::cout << "Uninstalled successfully." << std::endl;
+		return EXIT_SUCCESS;
 	}
 
 	// Run the RootManager
-	return root_manager.run(argc,argv);
+	return root_manager.run();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

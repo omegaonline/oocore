@@ -20,6 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "../OOBase/DLL.h"
+#include "../OOBase/CmdArgs.h"
 
 #include <OOCore/OOCore.h>
 
@@ -28,11 +29,14 @@
 static void print_help()
 {
 	std::cout << "OORegister - Registers a library with Omega Online." << std::endl << std::endl;
-	std::cout << "Usage: OORegister [-i|u] [-s] library_name" << std::endl;
-	std::cout << "--install (-i)\tInstall the library" << std::endl;
-	std::cout << "--uninstall (-u)\tUninstall the library"  << std::endl;
-	std::cout << "--silent (-s)\tSilent, do not output anything" << std::endl << std::endl;
-	std::cout << "--current (-c)\tInstall for current user only" << std::endl << std::endl;
+	std::cout << "Usage: OORegister [options] <lib1> ... <libN>" << std::endl << std::endl;
+	std::cout << "Options:" << std::endl;
+	std::cout << "  --help (-h)      Display this help text" << std::endl;
+	std::cout << "  --install (-i)   Install the libraries" << std::endl;
+	std::cout << "  --uninstall (-u) Uninstall the libraries"  << std::endl;
+	std::cout << "  --silent (-s)    Silent, do not output anything" << std::endl;
+	std::cout << "  --current (-c)   Install for current user only" << std::endl;
+	std::cout << std::endl;
 }
 
 typedef Omega::System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bLocal, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
@@ -48,7 +52,7 @@ static void call_fn(pfnRegisterLib pfn, Omega::bool_t bInstall, Omega::bool_t bL
 		Omega::System::MetaInfo::throw_correct_exception(pSE);
 }
 
-static int do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_path)
+static bool do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_path)
 {
 	OOBase::DLL dll;
 	int err = dll.load(lib_path);
@@ -57,7 +61,7 @@ static int do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_
 		if (!bSilent)
 			std::cerr << "Failed to load library '" << lib_path << "', error code: " << err << std::endl;
 
-		return EXIT_FAILURE;
+		return false;
 	}
 
 	pfnRegisterLib pfnRegister = (pfnRegisterLib)dll.symbol("Omega_RegisterLibrary_Safe");
@@ -66,7 +70,7 @@ static int do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_
 		if (!bSilent)
 			std::cerr << "Library missing 'Omega_RegisterLibrary_Safe' function" << err << std::endl;
 
-		return EXIT_FAILURE;
+		return false;
 	}
 
 	try
@@ -77,17 +81,17 @@ static int do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_
 	catch (Omega::IException* pE)
 	{
 		if (!bSilent)
-			std::cerr << "Function failed: " << pE->GetDescription().ToUTF8().c_str() << std::endl;
+			std::cerr << "Registration failed: " << pE->GetDescription().ToUTF8().c_str() << std::endl;
 
 		pE->Release();
-		return EXIT_FAILURE;
+		return false;
 	}
 	catch (...)
 	{
 		if (!bSilent)
-			std::cerr << "Function failed with an unknown C++ exception" << std::endl;
+			std::cerr << "Registration failed with an unknown C++ exception" << std::endl;
 
-		return EXIT_FAILURE;
+		return false;
 	}
 
 	if (!bSilent)
@@ -98,89 +102,53 @@ static int do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_
 			std::cout << "Unregistration of '" << lib_path << "' successful" << std::endl << std::endl;
 	}
 
-	return EXIT_SUCCESS;
+	return true;
+}
+
+namespace OOBase
+{
+	// This is the critical failure hook - only called by the arg parser
+	void CriticalFailure(const char* msg)
+	{
+		std::cerr << msg << std::endl << std::endl;
+	}
 }
 
 int main(int argc, char* argv[])
 {
-	// Parse cmd line first
-	if (argc < 3)
-	{
-		std::cerr << "Invalid arguments" << std::endl << std::endl;
-		print_help();
+	// Set up the command line args
+	OOSvrBase::CmdArgs cmd_args;
+	cmd_args.add_option("install",'i',"install");
+	cmd_args.add_option("uninstall",'u',"uninstall");
+	cmd_args.add_option("help",'h',"help");
+	cmd_args.add_option("silent",'s',"silent");
+	cmd_args.add_option("current",'c',"current");
+	
+	// Parse command line
+	std::map<std::string,std::string> args;
+	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
-	}
 
-	int nInstall = -1;
-	bool bCurrent = false;
-	bool bSilent = false;
-	const char* pszLib = 0;
-	for (int i=1;i<argc;++i)
-	{
-		if (strcmp(argv[i],"-i")==0 || strcmp(argv[i],"--install")==0)
-		{
-			if (nInstall == 0)
-			{
-				if (!bSilent)
-				{
-					std::cerr << "Do not mix --install and --uninstall" << std::endl << std::endl;
-					print_help();
-				}
-
-				return EXIT_FAILURE;
-			}
-			nInstall = 1;
-		}
-		else if (strcmp(argv[i],"-u")==0 || strcmp(argv[i],"--uninstall")==0)
-		{
-			if (nInstall == 1)
-			{
-				if (!bSilent)
-				{
-					std::cerr << "Do not mix --uninstall and --install" << std::endl << std::endl;
-					print_help();
-				}
-
-				return EXIT_FAILURE;
-			}
-			nInstall = 0;
-		}
-		else if (strcmp(argv[i],"-s")==0 || strcmp(argv[i],"--silent")==0)
-		{
-			bSilent = true;
-		}
-		else if (strcmp(argv[i],"-c")==0 || strcmp(argv[i],"--current")==0)
-		{
-			bCurrent = true;
-		}
-		else
-		{
-			if (i != argc-1 && !bSilent)
-				std::cout << "Warning: Only the first library on the command line will be registered" << std::endl;
-			
-			pszLib = argv[i];
-			break;
-		}
-	}
-
-	if (!pszLib)
-	{
-		if (!bSilent)
-		{
-			std::cerr << "No library filename supplied" << std::endl << std::endl;
-			print_help();
-		}
-
-		return EXIT_FAILURE;
-	}
-	else if (nInstall == -1)
+	bool bSilent = (args["silent"] == "true");
+	
+	if ((args["install"].empty() && args["uninstall"].empty()) ||
+		(!args["install"].empty() && !args["uninstall"].empty()))
 	{
 		if (!bSilent)
 		{
 			std::cerr << "You must supply either --install or --uninstall" << std::endl << std::endl;
 			print_help();
 		}
+		return EXIT_FAILURE;
+	}
 
+	if (args["arg0"].empty())
+	{
+		if (!bSilent)
+		{
+			std::cerr << "No libraries supplied" << std::endl << std::endl;
+			print_help();
+		}
 		return EXIT_FAILURE;
 	}
 
@@ -194,9 +162,22 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	int res = do_install((nInstall == 1),bCurrent,bSilent,pszLib);
+	bool bCurrent = (args["current"] == "true");
+	bool bInstall = !args["install"].empty();
+	
+	bool bOk = true;
+	for (int i=0;bOk;++i)
+	{
+		std::stringstream ss;
+		ss << "arg" << i;
+		std::string strLib = args[ss.str()];
+		if (strLib.empty())
+			break;
+
+		bOk = do_install(bInstall,bCurrent,bSilent,strLib.c_str());
+	}
 
 	Omega::Uninitialize();
 
-	return res;
+	return bOk ? EXIT_SUCCESS : EXIT_FAILURE;
 }

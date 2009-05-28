@@ -47,9 +47,9 @@ Root::Manager::~Manager()
 {
 }
 
-bool Root::Manager::install(int argc, char* argv[])
+bool Root::Manager::install(const std::map<std::string,std::string>& args)
 {
-	if (!platform_install(argc,argv))
+	if (!platform_install(args))
 		return false;
 
 	if (!init_database())
@@ -63,7 +63,7 @@ bool Root::Manager::install(int argc, char* argv[])
 		return false;
 
 	// Set up the sandbox user
-	if (!install_sandbox(argc,argv))
+	if (!install_sandbox(args))
 		return false;
 	
 	// Now secure the files we will use...
@@ -88,7 +88,7 @@ bool Root::Manager::uninstall()
 	return true;
 }
 
-int Root::Manager::run(int /*argc*/, char* /*argv*/[])
+int Root::Manager::run()
 {
 	// Start the handler
 	if (!start())
@@ -318,12 +318,12 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 {
 	int err = pSocket->send(m_sandbox_channel);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::strerror(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
 		
 	size_t uLen = 0;
 	err = pSocket->recv(uLen);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::strerror(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
 	
 	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
 	OOBASE_NEW(buf,char[uLen]);
@@ -332,7 +332,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 	
 	pSocket->recv(buf.value(),uLen,&err);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::strerror(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
 
 	strPipe = buf.value();
 
@@ -346,7 +346,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 
 	err = pSocket->send(channel_id);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::strerror(err).c_str()),0);
+		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
 		
 	return channel_id;
 }
@@ -358,7 +358,7 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 	if (request.last_error() != 0)
 	{
-		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::strerror(request.last_error()).c_str()));
+		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::format_error(request.last_error()).c_str()));
 		return;
 	}
 

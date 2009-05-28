@@ -35,6 +35,7 @@
 
 #include "../OOBase/Proactor.h"
 #include "../OOBase/Logger.h"
+#include "../OOBase/CmdArgs.h"
 
 //////////////////////////////////////////////
 

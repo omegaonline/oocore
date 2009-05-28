@@ -48,7 +48,7 @@
 
 #define SERVICE_NAME L"OOServer"
 
-bool Root::Manager::platform_install(int /*argc*/, char* /*argv*/[])
+bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
 {
 	wchar_t szPath[MAX_PATH]; 
 	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
@@ -138,15 +138,19 @@ bool Root::Manager::platform_uninstall()
 	return true;
 }
 
-bool Root::Manager::install_sandbox(int argc, char* argv[])
+bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& args)
 {
 	std::wstring strUName = L"_OMEGA_SANDBOX_USER_";
 	std::wstring strPwd = L"4th_(*%LGe895y^$N|2";
 
-	if (argc>=1)
-		strUName = OOBase::from_native(argv[0]);
-	if (argc>=2)
-		strPwd = OOBase::from_native(argv[1]);
+	std::map<std::string,std::string>::const_iterator a = args.find("arg0");
+	if (a != args.end())
+	{
+		strUName = OOBase::from_native(a->second.c_str());
+		a = args.find("arg1");
+		if (a != args.end())
+			strPwd = OOBase::from_native(a->second.c_str());
+	}
 
 	USER_INFO_2	info =
 	{

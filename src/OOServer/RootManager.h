@@ -52,9 +52,9 @@ namespace Root
 		Manager();
 		virtual ~Manager();
 
-		bool install(int argc, char* argv[]);
+		bool install(const std::map<std::string,std::string>& args);
 		bool uninstall();
-		int run(int argc, char* argv[]);
+		int run();
 
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
@@ -69,9 +69,9 @@ namespace Root
 		void wait_for_quit();
 		
 		// Installation members
-		bool platform_install(int argc, char* argv[]);
+		bool platform_install(const std::map<std::string,std::string>& args);
 		bool platform_uninstall();
-		bool install_sandbox(int argc, char* argv[]);
+		bool install_sandbox(const std::map<std::string,std::string>& args);
 		bool uninstall_sandbox();
 		bool secure_file(const std::string& strFilename, bool bPublicRead);
 

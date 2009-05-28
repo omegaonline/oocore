@@ -101,7 +101,7 @@ bool Root::MessageConnection::read()
 	if (err != 0)
 	{
 		pBuffer->release();
-		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	}
 	
 	err = m_pSocket->read(pBuffer);
@@ -109,7 +109,7 @@ bool Root::MessageConnection::read()
 	pBuffer->release();
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	
 	return true;
 }
@@ -118,7 +118,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		close();
 		return;
 	}
@@ -172,7 +172,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 		err = header.last_error();
 		if (err != 0)
 		{
-			LOG_ERROR(("Corrupt header: %s",OOSvrBase::Logger::strerror(err).c_str()));
+			LOG_ERROR(("Corrupt header: %s",OOSvrBase::Logger::format_error(err).c_str()));
 			break;
 		}
 
@@ -241,7 +241,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 		if (err != 0)
 		{
 			bSuccess = false;
-			LOG_ERROR(("Out of buffer space: %s",OOSvrBase::Logger::strerror(err).c_str()));
+			LOG_ERROR(("Out of buffer space: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		}
 		else
 		{
@@ -252,7 +252,7 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 				if (err != 0)
 				{
 					bSuccess = false;
-					LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+					LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 				}
 			}
 
@@ -273,7 +273,7 @@ bool Root::MessageConnection::send(OOBase::Buffer* pBuffer)
 
 	int err = m_pSocket->write(pBuffer);
 	if (err != 0)
-		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	return true;
 }
@@ -282,7 +282,7 @@ void Root::MessageConnection::on_write(OOSvrBase::AsyncSocket* /*pSocket*/, OOBa
 {
 	if (err != 0)
 	{
-		LOG_ERROR(("AsyncSocket write failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		LOG_ERROR(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		close();
 	}
 }
@@ -381,7 +381,7 @@ bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_r
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Check the destination
 	bool bRoute = true;
@@ -440,7 +440,7 @@ bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_r
 		// Did everything make sense?
 		err = input.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+			LOG_ERROR_RETURN(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 		// Attach input
 		msg->m_payload = input;
@@ -562,7 +562,7 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 		// Did everything make sense?
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Corrupt message: %s",OOSvrBase::Logger::strerror(err).c_str()));
+			LOG_ERROR(("Corrupt message: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		else if (type == Message_t::Request)
 		{
 			// Set deadline
@@ -746,7 +746,7 @@ void Root::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
 	// Did everything make sense?
 	int err = input.last_error();
 	if (err != 0)
-		LOG_ERROR(("Corrupt input: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		LOG_ERROR(("Corrupt input: %s",OOSvrBase::Logger::format_error(err).c_str()));
 	else
 	{
 		if (input.buffer()->length() > 0)
@@ -1068,7 +1068,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+			LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		else	
 		{
 			if (type == Message_t::Request)
@@ -1146,7 +1146,7 @@ void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		return;
 	}
 
@@ -1184,7 +1184,7 @@ void Root::MessageHandler::process_async_function(const OOBase::SmartPtr<Message
 	int err = msg->m_payload.last_error();
 	if (err != 0)
 	{
-		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::strerror(err).c_str()));
+		LOG_ERROR(("Message reading failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 		return;
 	}
 
@@ -1251,7 +1251,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 
 	int err = msg->m_payload.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	
 	return (queue_message(msg) == io_result::success);
 }
@@ -1418,7 +1418,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::forward_message(Omeg
 
 		int err = msg->m_payload.last_error();
 		if (err != 0)
-			LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::strerror(err).c_str()),io_result::failed);
+			LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
 			
 		// Route it correctly...
 		return queue_message(msg);
@@ -1475,7 +1475,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 
 	int err = header.last_error();
 	if (err != 0)
-		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::strerror(err).c_str()),io_result::failed);
+		LOG_ERROR_RETURN(("Message writing failed: %s",OOSvrBase::Logger::format_error(err).c_str()),io_result::failed);
 
 	// Update the total length
 	header.replace(header.buffer()->length(),msg_len_point);

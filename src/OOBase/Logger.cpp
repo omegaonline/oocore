@@ -40,40 +40,19 @@ namespace
 
 	private:
 		HANDLE        m_hLog;
-		FILE*         m_stderr;
 		OOBase::Mutex m_lock;
 	};
 }
 
 LoggerImpl::LoggerImpl() : 
-	m_hLog(NULL),
-	m_stderr(NULL)
+	m_hLog(NULL)
 {
-	// Make sure we can printf to the attached console
-	HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
-	if (!hStdErr)
-	{
-		if (AttachConsole(ATTACH_PARENT_PROCESS))
-			hStdErr = GetStdHandle(STD_ERROR_HANDLE);
-	}
-
-	if (hStdErr)
-	{
-		int fd = _open_osfhandle((intptr_t)hStdErr,_O_TEXT);
-		if (fd != -1)
-		{
-			m_stderr = _fdopen(fd,"w");
-		}
-	}
 }
 
 LoggerImpl::~LoggerImpl()
 {
 	if (m_hLog)
 		DeregisterEventSource(m_hLog);
-
-	if (m_stderr)
-		fclose(m_stderr);
 }
 
 void LoggerImpl::open(const char* name)
@@ -142,30 +121,28 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 
 	if (m_hLog && priority != OOSvrBase::Logger::Debug)
 		ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
-#endif
 
 	OutputDebugStringA(szBuf);
 	OutputDebugStringA("\n");
-	
-	if (m_stderr)
+#endif
+
+	FILE* out_file = stdout;
+	switch (priority)
 	{
-		switch (priority)
-		{
-		case OOSvrBase::Logger::Error:
-			fputs("Error: ",m_stderr);
-			break;
+	case OOSvrBase::Logger::Error:
+		out_file = stderr;
+		fprintf(out_file,"Error: ");
+		break;
 
-		case OOSvrBase::Logger::Warning:
-			fputs("Warning: ",m_stderr);
-			break;
+	case OOSvrBase::Logger::Warning:
+		fprintf(out_file,"Warning: ");
+		break;
 
-		default:
-			break;
-		}
-		fputs(szBuf,m_stderr);
-		fputs("\n",m_stderr);
-		fflush(m_stderr);
+	default:
+		break;
 	}
+	fprintf(out_file,szBuf);
+	fprintf(out_file,"\n");
 }
 
 #elif defined(HAVE_ASL_H)
@@ -198,12 +175,12 @@ void OOSvrBase::Logger::log(Priority priority, const char* fmt, ...)
 	va_end(args);
 }
 
-std::string OOSvrBase::Logger::strerror(int err)
+std::string OOSvrBase::Logger::format_error(int err)
 {
 #if defined(_WIN32)
 	return OOBase::Win32::FormatMessage(err);
 #else
-#error Fix me!
+	return OOBase::strerror(err);
 #endif
 }
 

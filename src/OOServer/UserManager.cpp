@@ -167,7 +167,7 @@ bool User::Manager::init(const std::string& strPipe)
 	int err = 0;
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	countdown.update();
 
@@ -175,7 +175,7 @@ bool User::Manager::init(const std::string& strPipe)
 	Omega::uint32_t sandbox_channel = 0;
 	err = local_socket->recv(sandbox_channel,&wait);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Set the sandbox flag
 	m_bIsSandbox = (sandbox_channel == 0);
@@ -194,13 +194,13 @@ bool User::Manager::init(const std::string& strPipe)
 		err = local_socket->send(strNewPipe.c_str(),uLen);
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	
 	// Read our channel id
 	Omega::uint32_t our_channel = 0;
 	err = local_socket->recv(our_channel);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to read from root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Init our channel id
 	set_channel(our_channel,0xFF000000,0x00FFF000,m_root_channel);
@@ -220,7 +220,7 @@ bool User::Manager::init(const std::string& strPipe)
 	// Open the root connection
 	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,local_socket.value()));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Start I/O with root
 	if (!ptrMC->read())
@@ -234,7 +234,7 @@ bool User::Manager::init(const std::string& strPipe)
 	bs.write(sandbox_channel);
 	bs.write(strNewPipe);
 	if (bs.last_error() != 0)
-		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOSvrBase::Logger::strerror(bs.last_error()).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write bootstrap data: %s",OOSvrBase::Logger::format_error(bs.last_error()).c_str()),false);
 
 	if (!call_async_function_i(&do_bootstrap,this,&bs))
 		return false;
@@ -250,7 +250,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 	input.read(strNewPipe);
 	if (input.last_error() != 0)
 	{
-		LOG_ERROR(("Failed to read bootstrap data: %s",OOSvrBase::Logger::strerror(input.last_error()).c_str()));
+		LOG_ERROR(("Failed to read bootstrap data: %s",OOSvrBase::Logger::format_error(input.last_error()).c_str()));
 		quit();
 	}
 	else
@@ -312,12 +312,12 @@ bool User::Manager::on_accept(OOBase::Socket* sock)
 	// Send the channel id...
 	int err = sock->send(channel_id);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Attach the connection
 	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock)));
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 		
 	// Start I/O
 	if (!ptrMC->read())
@@ -388,7 +388,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	Root::RootOpCode_t op_code;
 	if (!request.read(op_code))
 	{
-		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::strerror(request.last_error()).c_str()));
+		LOG_ERROR(("Bad request: %s",OOSvrBase::Logger::format_error(request.last_error()).c_str()));
 		return;
 	}
 

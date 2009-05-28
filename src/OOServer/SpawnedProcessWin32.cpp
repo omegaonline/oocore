@@ -825,7 +825,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		std::string strPwd;
 		int err = m_registry->get_string_value(key,"UserName",0,strUName);
 		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::strerror(err).c_str()),(SpawnedProcess*)0);
+			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 
 		m_registry->get_string_value(key,"Password",0,strPwd);
 		
@@ -882,7 +882,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	int err = 0;
 	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,&sock);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::strerror(err).c_str()),(SpawnedProcess*)0);
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 	
 	// Attach the async socket to the message connection
 	ptrMC->attach(pAsync);

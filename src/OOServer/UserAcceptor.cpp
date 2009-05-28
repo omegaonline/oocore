@@ -88,7 +88,7 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 	int err = 0;
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	
 	return true;
 }
@@ -105,7 +105,7 @@ bool User::Acceptor::on_accept(OOBase::Socket* pSocket, int err)
 	OOBase::SmartPtr<OOBase::Socket> ptrSock = pSocket;
 
 	if (err != 0)
-		LOG_ERROR_RETURN(("User::Acceptor::on_accept received failure: %s",OOSvrBase::Logger::strerror(err).c_str()),false);
+		LOG_ERROR_RETURN(("User::Acceptor::on_accept received failure: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	if (!m_pManager->on_accept(pSocket))
 		pSocket->close();

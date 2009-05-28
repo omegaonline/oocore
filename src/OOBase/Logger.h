@@ -40,7 +40,7 @@ namespace OOSvrBase
 		
 		void open(const char* name);
 		void log(Priority priority, const char* fmt, ...);
-		std::string strerror(int err);
+		std::string format_error(int err);
 		
 		struct filenum_t
 		{

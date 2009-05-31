@@ -62,6 +62,7 @@
 #include "Base.h"
 #include "Export.h"
 #include "Rtti.h"
+#include "Safe.h"
 #include "Wire.h"
 #include "Interfaces.h"
 
@@ -127,5 +128,6 @@ Omega::string_t Omega::System::GetVersion()
 #include "Types.inl"
 #include "Threading.inl"
 #include "Rtti.inl"
+#include "Safe.inl"
 
 #endif // OOCORE_H_INCLUDED_

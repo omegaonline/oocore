@@ -126,9 +126,9 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 		ptrRecv->init(*response);
 		
 		// Unwrap the payload...
-		IObject* pRet = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pRet);
-		pRecv = static_cast<Remoting::IMessage*>(pRet);
+		IObject* pUI = 0;
+		ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+		pRecv = static_cast<Remoting::IMessage*>(pUI);
 	}
 	
 	return 0;
@@ -222,7 +222,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 
 		// If we have a pointer by now then we are actually running in the OOServer.exe,
 		// and can therefore do our specialized unmarshalling...
-		return ptrMarshalFactory->UnmarshalInterface(pObjectManager,pMessage,iid,flags,pObject);
+		ptrMarshalFactory->UnmarshalInterface(pObjectManager,pMessage,iid,flags,pObject);
 	}
 	else
 	{
@@ -244,7 +244,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 
 OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");
 
-void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, Omega::IObject*& pObject)
 {
 	uint64_t sz;
 	pMessage->ReadUInt64s(L"length",1,&sz);

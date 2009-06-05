@@ -140,9 +140,9 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			ptrRecv->init(*response);
 					
 			// Unwrap the payload...
-			IObject* pRet = 0;
-			ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pRet);
-			pRecv = static_cast<Remoting::IMessage*>(pRet);
+			IObject* pUI = 0;
+			ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+			pRecv = static_cast<Remoting::IMessage*>(pUI);
 		}
 	}
 	catch (IException* pE)

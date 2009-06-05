@@ -29,10 +29,56 @@ namespace Omega
 		inline bool PinObjectPointer(IObject* pObject);
 		inline void UnpinObjectPointer(IObject* pObject);
 
-		interface IProxy;
-
 		namespace MetaInfo
 		{
+			template <class I>
+			class auto_iface_ptr
+			{
+			public:
+				auto_iface_ptr(I* pI = 0) : m_pI(pI)
+				{}
+
+				auto_iface_ptr(const auto_iface_ptr& rhs) : m_pI(rhs.m_pI)
+				{
+					if (m_pI)
+						m_pI->AddRef();
+				}
+
+				auto_iface_ptr& operator = (const auto_iface_ptr& rhs)
+				{
+					if (&rhs != this && m_pI != rhs.m_pI)
+					{
+						if (m_pI)
+							m_pI->Release();
+
+						m_pI = rhs.m_pI;
+						
+						if (m_pI)
+							m_pI->AddRef();
+					}
+					return *this;
+				}
+
+				~auto_iface_ptr()
+				{
+					if (m_pI)
+						m_pI->Release();
+				}
+
+				operator I*&()
+				{
+					return m_pI;
+				}
+
+				I* operator ->() const
+				{
+					return m_pI;
+				}
+
+			private:
+				I* m_pI;
+			};
+
 			template <class T>
 			class std_safe_type
 			{
@@ -52,7 +98,7 @@ namespace Omega
 						return *this;
 					}
 
-					void update(T& dest)
+					void update(T& dest, const guid_t*)
 					{
 						dest = m_val;
 					}
@@ -116,17 +162,13 @@ namespace Omega
 				class ref_holder
 				{
 				public:
-					ref_holder(typename marshal_info<T>::safe_type::type* val) :
-						m_val(*val), m_dest(val)
-					{}
-
 					ref_holder(typename marshal_info<T>::safe_type::type* val, const guid_t* piid) :
-						m_val(*val,piid), m_dest(val)
+						m_val(*val), m_dest(val), m_piid(piid)
 					{}
 
 					~ref_holder()
 					{
-						m_val.update(*m_dest);
+						m_val.update(*m_dest,m_piid);
 					}
 
 					operator T&()
@@ -137,20 +179,18 @@ namespace Omega
 				private:
 					typename marshal_info<T>::safe_type::ref_type m_val;
 					typename marshal_info<T>::safe_type::type* m_dest;
+					const guid_t* m_piid;
 				};
 
 				class ref_holder_safe
 				{
 				public:
-					ref_holder_safe(T& val) : m_val(val), m_dest(&val)
-					{}
-
-					ref_holder_safe(T& val, const guid_t& iid) : m_val(val,iid), m_dest(&val)
+					ref_holder_safe(T& val, const guid_t* piid = 0) : m_val(val), m_dest(&val), m_piid(piid)
 					{}
 
 					~ref_holder_safe()
 					{
-						m_val.update(*m_dest);
+						m_val.update(*m_dest,m_piid);
 					}
 
 					operator typename marshal_info<T>::safe_type::type*()
@@ -161,6 +201,7 @@ namespace Omega
 				private:
 					typename marshal_info<T>::safe_type::ref_safe_type m_val;
 					T* m_dest;
+					const guid_t* m_piid;
 				};
 				typedef typename marshal_info<T>::safe_type::type* type;
 
@@ -171,15 +212,10 @@ namespace Omega
 
 				static ref_holder_safe coerce(T& val, const guid_t& iid)
 				{
-					return ref_holder_safe(val,iid);
+					return ref_holder_safe(val,&iid);
 				}
 
-				static ref_holder coerce(type val)
-				{
-					return ref_holder(val);
-				}
-
-				static ref_holder coerce(type val, const guid_t* piid)
+				static ref_holder coerce(type val, const guid_t* piid = 0)
 				{
 					return ref_holder(val,piid);
 				}
@@ -196,19 +232,9 @@ namespace Omega
 					return &marshal_info<T>::safe_type::coerce(const_cast<T&>(val));
 				}
 
-				static type coerce(const T& val, const guid_t& iid)
-				{
-					return &marshal_info<T>::safe_type::coerce(const_cast<T&>(val),iid);
-				}
-
 				static const T& coerce(type val)
 				{
 					return marshal_info<T>::safe_type::coerce(*const_cast<typename marshal_info<T>::safe_type::type*>(val));
-				}
-
-				static const T& coerce(type val, const guid_t* piid)
-				{
-					return marshal_info<T>::safe_type::coerce(*const_cast<typename marshal_info<T>::safe_type::type*>(val),piid);
 				}
 			};
 
@@ -227,39 +253,46 @@ namespace Omega
 			};
 
 			class Safe_Proxy_Owner;
-
-			template <class I>
-			inline IObject* create_proxy(SafeShim* shim, Safe_Proxy_Owner* pOwner);
-
+			
+			inline IObject* create_proxy(SafeShim* shim);
+			
 			class Safe_Stub_Owner;
 
-			template <class I>
-			inline SafeShim* create_stub(IObject* proxy, Safe_Stub_Owner* pOwner);
+			inline SafeShim* create_stub(IObject* proxy, const guid_t& iid);
 
 			inline void throw_correct_exception(SafeShim* except);
 			inline SafeShim* return_safe_exception(IException* pE);
+
+			struct IObject_Safe_VTable
+			{
+				SafeShim* (OMEGA_CALL* pfnAddRef_Safe)(SafeShim* shim);
+				SafeShim* (OMEGA_CALL* pfnRelease_Safe)(SafeShim* shim);
+				SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(SafeShim* shim, SafeShim** retval, const guid_t* iid);
+				SafeShim* (OMEGA_CALL* pfnPin_Safe)(SafeShim* shim);
+				SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(SafeShim* shim);
+			};
 
 			template <class I>
 			class iface_proxy_functor
 			{
 			public:
-				iface_proxy_functor(I* pI) :
+				iface_proxy_functor(I* pI, const guid_t& iid) :
 					m_pS(0)
 				{
-					m_pS = create_stub<I>(pI,0);
+					m_pS = create_stub(pI,iid);
 				}
 
 				iface_proxy_functor(const iface_proxy_functor& rhs) :
 					m_pS(rhs.m_pS)
 				{
 					if (m_pS)
-						m_pS->AddRef_Safe();
+						static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnAddRef_Safe(m_pS);
 				}
 
 				~iface_proxy_functor()
 				{
 					if (m_pS)
-						m_pS->Release_Safe();
+						static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
 				}
 
 				operator SafeShim* ()
@@ -267,7 +300,7 @@ namespace Omega
 					return m_pS;
 				}
 
-				typename SafeShim* operator -> ()
+				SafeShim* operator -> ()
 				{
 					return m_pS;
 				}
@@ -283,19 +316,19 @@ namespace Omega
 			{
 			public:
 				iface_proxy_functor_ref(I* pI) :
-					iface_proxy_functor<I>(pI)
+					iface_proxy_functor<I>(pI,OMEGA_GUIDOF(I))
 				{
 				}
 
-				void update(I*& pI)
+				void update(I*& pI, const guid_t*)
 				{
 					if (pI)
 						pI->Release();
 
-					pI = create_proxy<I>(this->m_pS,0);
+					pI = static_cast<I*>(create_proxy(this->m_pS));
 				}
 
-				typename SafeShim** operator & ()
+				SafeShim** operator & ()
 				{
 					return &this->m_pS;
 				}
@@ -305,10 +338,10 @@ namespace Omega
 			class iface_stub_functor
 			{
 			public:
-				iface_stub_functor(SafeShim* pS) :
+				iface_stub_functor(SafeShim* pS, const guid_t*) :
 					m_pI(0)
 				{
-					m_pI = create_proxy<I>(pS,0);
+					m_pI = static_cast<I*>(create_proxy(pS));
 				}
 
 				iface_stub_functor(const iface_stub_functor& rhs) :
@@ -346,16 +379,16 @@ namespace Omega
 			{
 			public:
 				iface_stub_functor_ref(SafeShim* pS) :
-				  iface_stub_functor<I>(pS)
+				  iface_stub_functor<I>(pS,0)
 				{
 				}
 
-				void update(SafeShim*& pS)
+				void update(SafeShim*& pS, const guid_t* piid)
 				{
 					if (pS)
-						pS->Release_Safe();
-
-					pS = create_stub<I>(this->m_pI,0);
+						static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
+					
+					pS = create_stub(this->m_pI,*piid);
 				}
 
 				operator I*& ()
@@ -373,14 +406,14 @@ namespace Omega
 				typedef iface_proxy_functor_ref<I> ref_safe_type;
 				typedef iface_stub_functor_ref<I> ref_type;
 
-				static iface_proxy_functor<I> coerce(I* val)
+				static iface_proxy_functor<I> coerce(I* val, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
-					return iface_proxy_functor<I>(val);
+					return iface_proxy_functor<I>(val,iid);
 				}
 
-				static iface_stub_functor<I> coerce(type val)
+				static iface_stub_functor<I> coerce(type val, const guid_t* piid = &OMEGA_GUIDOF(I))
 				{
-					return iface_stub_functor<I>(val);
+					return iface_stub_functor<I>(val,piid);
 				}
 			};
 
@@ -390,15 +423,6 @@ namespace Omega
 			{
 				typedef iface_safe_type<IObject> safe_type;
 				typedef iface_wire_type<IObject> wire_type;
-			};
-
-			struct IObject_Safe_VTable
-			{
-				SafeShim* (OMEGA_CALL* pfnAddRef_Safe)(SafeShim* shim);
-				SafeShim* (OMEGA_CALL* pfnRelease_Safe)(SafeShim* shim);
-				SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(SafeShim* shim, SafeShim** retval, const guid_t* iid);
-				SafeShim* (OMEGA_CALL* pfnPin_Safe)(SafeShim* shim);
-				SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(SafeShim* shim);
 			};
 
 			template <class I> struct vtable_info;
@@ -414,7 +438,11 @@ namespace Omega
 				virtual void DecRef() = 0;
 				virtual bool IsDerived(const guid_t& iid) const = 0;
 				virtual IObject* QIReturn() = 0;
+				virtual void Throw() = 0;
+				virtual void Throw(const guid_t& iid) = 0;
 			};
+
+			inline Safe_Proxy_Base* create_proxy_base(SafeShim* shim);
 
 			struct Safe_Stub_Base
 			{
@@ -444,7 +472,8 @@ namespace Omega
 						delete this;
 				}
 
-				virtual IObject* QueryInterface(const guid_t& iid);
+				inline IObject* QueryInterface(const guid_t& iid);
+				inline void Throw(const guid_t& iid);
 
 				void Pin()
 				{
@@ -474,6 +503,8 @@ namespace Omega
 					}
 				}
 
+				inline Safe_Proxy_Base* GetBase(const Omega::guid_t& iid);
+
 				SafeShim* GetStub()
 				{
 					return m_shim;
@@ -488,8 +519,8 @@ namespace Omega
 					m_iid_map[*iid] = shim;
 				}
 
-				SafeShim* CachedQI(Safe_Stub_Base* pStub, const guid_t& iid);
-				void RemoveShim(SafeShim* shim);
+				inline SafeShim* CachedQI(Safe_Stub_Base* pStub, const guid_t& iid);
+				inline void RemoveShim(SafeShim* shim);
 
 			private:
 				Threading::Mutex           m_lock;
@@ -498,8 +529,8 @@ namespace Omega
 
 			struct qi_rtti
 			{
-				IObject* (*pfnCreateSafeProxy)(SafeShim* shim, Safe_Proxy_Owner* pOwner);
-				SafeShim* (*pfnCreateSafeStub)(IObject* pI, Safe_Stub_Owner* pOwner);
+				Safe_Proxy_Base* (*pfnCreateSafeProxy)(SafeShim* shim, Safe_Proxy_Owner* pOwner);
+				SafeShim* (*pfnCreateSafeStub)(IObject* pI, Safe_Stub_Owner* pOwner, SafeShim** ret);
 				const wchar_t* pszName;
 			};
 
@@ -538,23 +569,22 @@ namespace Omega
 			class Safe_Proxy<IObject,D> : public Safe_Proxy_Base, public D
 			{
 			public:
-				static IObject* bind(SafeShim* shim, Safe_Proxy_Owner* pOwner)
+				static Safe_Proxy_Base* bind(SafeShim* shim, Safe_Proxy_Owner* pOwner)
 				{
-					if (!shim->m_proxy)
-						OMEGA_NEW(shim->m_proxy,Safe_Proxy(shim,&OMEGA_GUIDOF(IObject),pOwner));
-					
-					return static_cast<Safe_Proxy*>(shim->m_proxy);
+					Safe_Proxy* pThis;
+					OMEGA_NEW(pThis,Safe_Proxy(shim,pOwner));
+					return pThis;
 				}
 
 			protected:
-				Safe_Proxy(SafeShim* shim, const guid_t& iid, Safe_Proxy_Owner* pOwner) : m_shim(shim), m_pOwner(pOwner)
+				Safe_Proxy(SafeShim* shim, Safe_Proxy_Owner* pOwner) : m_shim(shim), m_pOwner(pOwner)
 				{
 					SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
 					if (except)
 						throw_correct_exception(except);
 
 					if (!m_pOwner)
-						OMEGA_NEW(m_pOwner,Safe_Proxy_Owner(m_shim,iface,this));
+						OMEGA_NEW(m_pOwner,Safe_Proxy_Owner(m_shim,OMEGA_GUIDOF(D),this));
 
 					m_refcount.AddRef();
 				}
@@ -592,6 +622,16 @@ namespace Omega
 					return static_cast<D*>(this);
 				}
 
+				void Throw()
+				{
+					throw static_cast<D*>(this);
+				}
+
+				void Throw(const guid_t& iid)
+				{
+					return m_pOwner->Throw(iid);
+				}
+
 				// IObject members
 			public:
 				virtual void AddRef()
@@ -606,7 +646,7 @@ namespace Omega
 
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
-					return m_pOwner->QueryInterface(iface);
+					return m_pOwner->QueryInterface(iid);
 				}
 			};
 
@@ -617,13 +657,14 @@ namespace Omega
 			class Safe_Stub<IObject> : public Safe_Stub_Base
 			{
 			public:
-				static SafeShim* create(IObject* pI, Safe_Stub_Owner* pOwner = 0)
+				static SafeShim* create(IObject* pI, Safe_Stub_Owner* pOwner, SafeShim** ret)
 				{
 					try
 					{
 						Safe_Stub* pThis;
 						OMEGA_NEW(pThis,Safe_Stub(pI,&OMEGA_GUIDOF(IObject),pOwner));
-						return &pThis->m_shim;
+						*ret = &pThis->m_shim;
+						return 0;
 					}
 					catch (IException* pE)
 					{
@@ -717,22 +758,18 @@ namespace Omega
 					IObject* pI = m_pI->QueryInterface(iid);
 					if (!pI)
 						return 0;
+					auto_iface_ptr<IObject> ptrI(pI);
 
 					// Wrap it in a shim and add it...
 					const qi_rtti* rtti = get_qi_rtti_info(iid);
 					if (!rtti)
-					{
-						pI->Release();
 						OMEGA_THROW(L"Failed to create stub for interface - missing rtti");
-					}
-
-					SafeShim* shim = (*rtti->pfnCreateSafeStub)(pI,m_pOwner);
-					if (!shim)
-					{
-						pI->Release();
-						OMEGA_THROW(L"Failed to create safe stub");
-					}
-
+					
+					SafeShim* shim;
+					SafeShim* except = (*rtti->pfnCreateSafeStub)(pI,m_pOwner,&shim);
+					if (except)
+						throw_correct_exception(except);
+					
 					return shim;
 				}
 

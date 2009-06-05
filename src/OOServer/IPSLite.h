@@ -42,6 +42,11 @@ public:
 		OMEGA_THROW(L"Invalid operation");
 	}
 
+	void UnpackKey(Omega::Remoting::IMessage*)
+	{
+		OMEGA_THROW(L"Invalid operation");
+	}
+
 	Omega::System::IMarshaller* GetMarshaller()
 	{
 		OMEGA_THROW(L"Invalid operation");

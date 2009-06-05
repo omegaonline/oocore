@@ -22,10 +22,12 @@
 #ifndef OOCORE_WIREPROXY_H_INCLUDED_
 #define OOCORE_WIREPROXY_H_INCLUDED_
 
-#include "StdObjectManager.h"
+#include <OOCore/Remoting.h>
 
 namespace OOCore
 {
+	class StdObjectManager;
+	
 	// {69099DD8-A628-458a-861F-009E016DB81B}
 	extern const Omega::guid_t OID_ProxyMarshalFactory;
 
@@ -45,83 +47,66 @@ namespace OOCore
 	};
 
 	class Proxy :
-		public Omega::System::MetaInfo::IProxy_Safe,
-		public Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class
+		public OTL::ObjectBase,
+		public Omega::System::IProxy,
+		public Omega::Remoting::IMarshal
 	{
 	public:
-		Proxy(Omega::uint32_t proxy_id, StdObjectManager* pManager);
+		Proxy();
 		virtual ~Proxy();
+
+		void init(Omega::uint32_t proxy_id, StdObjectManager* pManager);
 
 		void Disconnect();
 
-		Omega::System::MetaInfo::IObject_Safe* UnmarshalInterface(Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t& iid);
+		OTL::ObjectPtr<Omega::IObject> UnmarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& wire_iid);
 
-	// IObject_Safe methods
+		BEGIN_INTERFACE_MAP(Proxy)
+			INTERFACE_ENTRY(Omega::System::IProxy)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
+			INTERFACE_ENTRY_FUNCTION_BLIND(&Proxy::QI)
+		END_INTERFACE_MAP()
+
+	// IProxy members
 	public:
-		void OMEGA_CALL AddRef_Safe()
+		void WriteKey(Omega::Remoting::IMessage* pMessage)
 		{
-			++m_refcount;
+			Omega::System::MetaInfo::wire_write(L"$stub_id",pMessage,m_proxy_id);
 		}
 
-		void OMEGA_CALL Release_Safe()
+		void UnpackKey(Omega::Remoting::IMessage* pMessage)
 		{
-			if (--m_refcount==0)
-				delete this;
+			Omega::uint32_t k;
+			Omega::System::MetaInfo::wire_read(L"$stub_id",pMessage,k);
 		}
 
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppS);
+		Omega::System::IMarshaller* GetMarshaller();
+		Omega::bool_t IsAlive();
 
-		void OMEGA_CALL Pin()
-		{
-			// This needs implementing
-			void* TICKET_88;
-		}
-
-		void OMEGA_CALL Unpin()
-		{
-			// This needs implementing
-			void* TICKET_88;
-		}
-
-	// IProxy_Safe members
+	// IMarshal members
 	public:
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL WriteKey_Safe(Omega::System::MetaInfo::IMessage_Safe* pMessage)
+		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			return wire_write(L"$stub_id",pMessage,m_proxy_id);
+			return OID_ProxyMarshalFactory;
 		}
 
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetMarshaller_Safe(Omega::System::MetaInfo::IMarshaller_Safe** ppMarshaller)
-		{
-			*ppMarshaller = m_pManager;
-			(*ppMarshaller)->AddRef_Safe();
-			return 0;
-		}
-
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL IsAlive_Safe(Omega::bool_t* pRet);
-
-	// IMarshal_Safe members
-	public:
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetUnmarshalFactoryOID_Safe(Omega::guid_t* pRet, const Omega::guid_t*, Omega::Remoting::MarshalFlags_t)
-		{
-			*pRet = OID_ProxyMarshalFactory;
-			return 0;
-		}
-
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(Omega::System::MetaInfo::interface_info<Omega::Remoting::IObjectManager>::safe_class* pObjectManager, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
 	private:
-		Proxy(const Proxy&) : Omega::System::MetaInfo::IProxy_Safe(), Omega::System::MetaInfo::interface_info<Omega::Remoting::IMarshal>::safe_class() {}
+		Proxy(const Proxy&) : OTL::ObjectBase(), Omega::System::IProxy(), Omega::Remoting::IMarshal() {}
 		Proxy& operator = (const Proxy&) { return *this; }
 
-		OOBase::AtomicInt<size_t>          m_refcount;
 		OOBase::AtomicInt<Omega::uint32_t> m_marshal_count;
 		OOBase::RWMutex                    m_lock;
 		Omega::uint32_t                    m_proxy_id;
 		StdObjectManager*                  m_pManager;
 
-		std::map<const Omega::guid_t,Omega::System::MetaInfo::IObject_Safe*> m_iid_map;
+		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::IObject> > m_iid_map;
 
+		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
+		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);
+		Omega::IObject* QI(const Omega::guid_t& iid);
 		bool CallRemoteQI(const Omega::guid_t& iid);
 		Omega::Remoting::IMessage* CallRemoteStubMarshal(Omega::Remoting::IObjectManager* pObjectManager, const Omega::guid_t& iid);
 		void CallRemoteRelease();

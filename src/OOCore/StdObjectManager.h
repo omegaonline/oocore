@@ -24,81 +24,15 @@
 
 #include <OOCore/Remoting.h>
 
+#include "WireProxy.h"
+#include "WireStub.h"
+
 namespace OOCore
 {
-	class Stub;
-	class Proxy;
-
 	interface IStdObjectManager : public Omega::Remoting::IObjectManager
 	{
 		virtual void MarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 	};
-
-	// Some helpers
-	inline Omega::bool_t ReadBoolean(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::bool_t val;
-		if (pMsg->ReadBooleans(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::byte_t ReadByte(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::byte_t val;
-		if (pMsg->ReadBytes(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::uint16_t ReadUInt16(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::uint16_t val;
-		if (pMsg->ReadUInt16s(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::uint32_t ReadUInt32(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::uint32_t val;
-		if (pMsg->ReadUInt32s(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline Omega::guid_t ReadGuid(const wchar_t* name, Omega::Remoting::IMessage* pMsg)
-	{
-		Omega::guid_t val;
-		if (pMsg->ReadGuids(name,1,&val) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-		return val;
-	}
-
-	inline void WriteBoolean(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::bool_t val)
-	{
-		pMsg->WriteBooleans(name,1,&val);
-	}
-
-	inline void WriteByte(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::byte_t val)
-	{
-		pMsg->WriteBytes(name,1,&val);
-	}
-
-	inline void WriteUInt16(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::uint16_t val)
-	{
-		pMsg->WriteUInt16s(name,1,&val);
-	}
-
-	inline void WriteUInt32(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::uint32_t val)
-	{
-		pMsg->WriteUInt32s(name,1,&val);
-	}
-
-	inline void WriteGuid(const wchar_t* name, Omega::Remoting::IMessage* pMsg, Omega::guid_t val)
-	{
-		pMsg->WriteGuids(name,1,&val);
-	}
 
 	Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
 }
@@ -116,8 +50,7 @@ namespace OOCore
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
 		public IStdObjectManager,
-		public Omega::System::IMarshaller,
-		public Omega::System::MetaInfo::IMarshaller_Safe
+		public Omega::System::IMarshaller
 	{
 	public:
 		StdObjectManager();
@@ -138,8 +71,7 @@ namespace OOCore
 		StdObjectManager(const StdObjectManager&) :
             OTL::ObjectBase(),
             IStdObjectManager(),
-            Omega::System::IMarshaller(),
-            Omega::System::MetaInfo::IMarshaller_Safe()
+            Omega::System::IMarshaller()
         {}
 		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
 
@@ -147,20 +79,12 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;
 		Omega::uint32_t                           m_uNextStubId;
 				
-		std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>                                     m_mapStubObjs;
-		std::map<Omega::uint32_t,std::map<Omega::System::MetaInfo::IObject_Safe*,Stub*>::iterator> m_mapStubIds;
-		std::map<Omega::uint32_t,Proxy*>                                                           m_mapProxyIds;
+		std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >                                     m_mapStubObjs;
+		std::map<Omega::uint32_t,std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >::iterator> m_mapStubIds;
+		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Proxy> > >                                    m_mapProxyIds;
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 		
-	// IObject_Safe members
-	public:
-		void OMEGA_CALL AddRef_Safe();
-		void OMEGA_CALL Release_Safe();
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL QueryInterface_Safe(const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppS);
-		void OMEGA_CALL Pin() {}
-		void OMEGA_CALL Unpin() {}
-
 	// IMarshaller members
 	public:
 		void MarshalInterface(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject* pObject);
@@ -169,15 +93,6 @@ namespace OOCore
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout = 0);
 		Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
-		
-	// IMarshaller_Safe members
-	public:
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL MarshalInterface_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL ReleaseMarshalData_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe* pObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL UnmarshalInterface_Safe(const wchar_t* name, Omega::System::MetaInfo::IMessage_Safe* pMessage, const Omega::guid_t* piid, Omega::System::MetaInfo::IObject_Safe** ppObject);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL CreateMessage_Safe(Omega::System::MetaInfo::IMessage_Safe** ppRet);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL SendAndReceive_Safe(Omega::System::MetaInfo::IException_Safe** ppRet, Omega::TypeInfo::MethodAttributes_t attribs, Omega::System::MetaInfo::IMessage_Safe* pSend, Omega::System::MetaInfo::IMessage_Safe** ppRecv, Omega::uint32_t timeout);
-		Omega::System::MetaInfo::IException_Safe* OMEGA_CALL GetTypeInfo_Safe(Omega::System::MetaInfo::ITypeInfo_Safe** ppTypeInfo, const Omega::guid_t* piid);
 		
 	// IStdObjectManager members
 	public:

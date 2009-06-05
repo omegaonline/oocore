@@ -424,10 +424,10 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		ptrEnvelope->init(request);
 		
 		// Unpack the payload
-		IObject* pPayload = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+		IObject* pUI = 0;
+		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 		ObjectPtr<Remoting::IMessage> ptrRequest;
-		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pPayload));
+		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pUI));
 
 		// Check timeout
 		uint32_t timeout = 0;

@@ -48,6 +48,8 @@ liboosvrbase_a_CFLAGS = $(PTHREAD_CFLAGS)
 liboosvrbase_a_CXXFLAGS = $(PTHREAD_CFLAGS)
 
 liboosvrbase_a_SOURCES = \
+	CmdArgs.cpp \
+	CmdArgs.h \
 	Logger.cpp \
 	Logger.h \
 	PipeWin32.cpp \

@@ -59,10 +59,10 @@
 	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIAggregate, offsetof(RootClass,member_object), 0 },
 
 #define INTERFACE_ENTRY_FUNCTION(iface,pfn) \
-	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
+	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn) },
 
 #define INTERFACE_ENTRY_FUNCTION_BLIND(pfn) \
-	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(&pfn) },
+	{ &Omega::guid_t::Null(), &OTL::ObjectBase::QIFunction<RootClass>, 0, static_cast<OTL::ObjectBase::PFNMEMQI>(pfn) },
 
 #define INTERFACE_ENTRY_NOINTERFACE(iface) \
 	{ &OMEGA_GUIDOF(iface), &OTL::ObjectBase::QIFail, 0, 0 },

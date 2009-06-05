@@ -212,7 +212,7 @@ OOBase::SmartPtr<DLLImpl> DLLManagerImpl::load_dll(const string_t& name)
 
 void DLLManagerImpl::unload_unused()
 {
-	typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
+	typedef Omega::System::MetaInfo::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
 		
 	try
 	{
@@ -226,11 +226,11 @@ void DLLManagerImpl::unload_unused()
 				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
 				if (pfn)
 				{
-					System::MetaInfo::IException_Safe* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
+					Omega::System::MetaInfo::SafeShim* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
 
 					// Ignore exceptions
 					if (CanUnloadLibrary_Exception)
-						CanUnloadLibrary_Exception->Release_Safe();
+						static_cast<const System::MetaInfo::IObject_Safe_VTable*>(CanUnloadLibrary_Exception->m_vtable)->pfnRelease_Safe(CanUnloadLibrary_Exception);
 				}
 			}
 			catch (IException* pE)
@@ -300,7 +300,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega
 
 IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
+	typedef System::MetaInfo::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
 	pfnGetLibraryObject pfn = 0;
 	OOBase::SmartPtr<DLLImpl> dll;
 	
@@ -320,9 +320,9 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 		dll->get_lock().acquire();
 
 	IObject* pObj = 0;
-	System::MetaInfo::IException_Safe* GetLibraryObject_Exception = pfn(
+	System::MetaInfo::SafeShim* GetLibraryObject_Exception = pfn(
 		&oid,flags,&iid,
-		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
+		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj));
 
 	if (dll->m_first_time)
 	{

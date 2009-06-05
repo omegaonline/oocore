@@ -143,14 +143,14 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		typedef System::MetaInfo::IException_Safe* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(System::MetaInfo::marshal_info<System::IInterProcessService*&>::safe_type::type retval);
+		typedef System::MetaInfo::SafeShim* (OMEGA_CALL *pfnOOSvrLite_GetIPS_Safe)(Omega::System::MetaInfo::SafeShim** retval);
 
 		pfnOOSvrLite_GetIPS_Safe pfn = (pfnOOSvrLite_GetIPS_Safe)(m_lite_dll.symbol("OOSvrLite_GetIPS_Safe"));
 		if (!pfn)
 			OMEGA_THROW(L"Corrupt OOSvrLite");
 
 		System::IInterProcessService* pIPS = 0;
-		System::MetaInfo::IException_Safe* pSE = (*pfn)(System::MetaInfo::marshal_info<System::IInterProcessService*&>::safe_type::coerce(pIPS));
+		Omega::System::MetaInfo::SafeShim* pSE = (*pfn)(System::MetaInfo::marshal_info<System::IInterProcessService*&>::safe_type::coerce(pIPS));
 		if (pSE)
 			Omega::System::MetaInfo::throw_correct_exception(pSE);
 

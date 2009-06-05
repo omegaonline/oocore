@@ -32,19 +32,18 @@ namespace
 	{
 		struct pfns
 		{
-			System::MetaInfo::pfnCreateProxy pfnProxy;
-			System::MetaInfo::pfnCreateStub pfnStub;
+			System::MetaInfo::pfnCreateWireProxy pfnProxy;
+			System::MetaInfo::pfnCreateWireStub pfnStub;
 		};
 
 		OOBase::RWMutex            m_lock;
 		std::multimap<guid_t,pfns> m_ps_map;
-		//std::map<guid_t,System::MetaInfo::pfnCreateTypeInfo> m_ti_map;
 	};
 
 	typedef OOBase::Singleton<wire_holder> WIRE_HOLDER;
 }
 
-System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::MetaInfo::IStubController_Safe* pController, System::MetaInfo::IMarshaller_Safe* pManager, System::MetaInfo::IObject_Safe* pObjS)
+System::IStub* OOCore::CreateStub(const guid_t& iid, System::IStubController* pController, System::IMarshaller* pManager, IObject* pObj)
 {
 	wire_holder::pfns p = {0,0};
 	try
@@ -63,8 +62,12 @@ System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::Meta
 		OMEGA_THROW(e);
 	}
 
-	System::MetaInfo::IStub_Safe* pRet = 0;
-	System::MetaInfo::IException_Safe* pSE = p.pfnStub(pController,pManager,pObjS,&pRet);
+	System::IStub* pRet = 0;
+	Omega::System::MetaInfo::SafeShim* pSE = p.pfnStub(
+		Omega::System::MetaInfo::marshal_info<System::IStubController*>::safe_type::coerce(pController),
+		Omega::System::MetaInfo::marshal_info<System::IMarshaller*>::safe_type::coerce(pManager),
+		Omega::System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pObj),
+		Omega::System::MetaInfo::marshal_info<System::IStub*&>::safe_type::coerce(pRet));
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
@@ -72,7 +75,7 @@ System::MetaInfo::IStub_Safe* OOCore::CreateStub(const guid_t& iid, System::Meta
 	return pRet;
 }
 
-System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::MetaInfo::IProxy_Safe* pProxy, System::MetaInfo::IMarshaller_Safe* pManager)
+IObject* OOCore::CreateProxy(const guid_t& iid, System::IProxy* pProxy)
 {
 	wire_holder::pfns p = {0,0};
 	try
@@ -91,8 +94,10 @@ System::MetaInfo::IObject_Safe* OOCore::CreateProxy(const guid_t& iid, System::M
 		OMEGA_THROW(e);
 	}
 
-	System::MetaInfo::IObject_Safe* pRet = 0;
-	System::MetaInfo::IException_Safe* pSE = p.pfnProxy(pProxy,pManager,&pRet);
+	IObject* pRet = 0;
+	Omega::System::MetaInfo::SafeShim* pSE = p.pfnProxy(
+		Omega::System::MetaInfo::marshal_info<System::IProxy*>::safe_type::coerce(pProxy),
+		Omega::System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pRet));
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
@@ -105,8 +110,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoProxyStubCreators,3,((in)
 	try
 	{
 		wire_holder::pfns funcs;
-		funcs.pfnProxy = (System::MetaInfo::pfnCreateProxy)(pfnProxy);
-		funcs.pfnStub = (System::MetaInfo::pfnCreateStub)(pfnStub);
+		funcs.pfnProxy = (System::MetaInfo::pfnCreateWireProxy)(pfnProxy);
+		funcs.pfnStub = (System::MetaInfo::pfnCreateWireStub)(pfnStub);
 
 		wire_holder* instance = WIRE_HOLDER::instance();
 
@@ -130,8 +135,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoProxyStubCreators,3,((i
 
 		for (std::multimap<guid_t,wire_holder::pfns>::iterator i=instance->m_ps_map.find(iid);i!=instance->m_ps_map.end() && i->first==iid;)
 		{
-			if (i->second.pfnProxy == (System::MetaInfo::pfnCreateProxy)(pfnProxy) &&
-				i->second.pfnStub == (System::MetaInfo::pfnCreateStub)(pfnStub))
+			if (i->second.pfnProxy == (System::MetaInfo::pfnCreateWireProxy)(pfnProxy) &&
+				i->second.pfnStub == (System::MetaInfo::pfnCreateWireStub)(pfnStub))
 			{
 				instance->m_ps_map.erase(i++);
 			}

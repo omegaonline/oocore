@@ -20,6 +20,8 @@ nobase_include_HEADERS = \
 	OOCore/Remoting.h \
 	OOCore/Rtti.h \
 	OOCore/Rtti.inl \
+	OOCore/Safe.h \
+	OOCore/Safe.inl \
 	OOCore/Service.h \
 	OOCore/Threading.h \
 	OOCore/Threading.inl \

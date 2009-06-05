@@ -152,7 +152,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 		OMEGA_THROW(e);
 	}
 
-	return ptrChannel;	
+	return ptrChannel;
 }
 
 void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timeval_t& deadline)
@@ -166,10 +166,10 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	ptrEnvelope->init(pMsg->m_payload);
 
 	// Unpack the payload
-	IObject* pPayload = 0;
-	ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+	IObject* pUI = 0;
+	ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrRequest;
-	ptrRequest.Attach(static_cast<Remoting::IMessage*>(pPayload));
+	ptrRequest.Attach(static_cast<Remoting::IMessage*>(pUI));
 
 	// Check timeout
 	uint32_t timeout = 0;

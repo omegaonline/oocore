@@ -175,10 +175,10 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 			ptrInput->init(msg);
 			
 			ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
-			
-			IObject* pPayload = 0;
-			ptrOM->UnmarshalInterface(L"payload",ptrInput,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
-			ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
+
+			IObject* pUI = 0;
+			ptrOM->UnmarshalInterface(L"payload",ptrInput,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+			ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
 		}
 	}
 	
@@ -308,10 +308,10 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
-	IObject* pPayload = 0;
-	ptrOM->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+	IObject* pUI = 0;
+	ptrOM->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
-	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
+	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
 		
 	// Check timeout
 	uint32_t timeout = 0;
@@ -382,10 +382,10 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// Get the dest channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
 
-	IObject* pPayload = 0;
-	ptrOM->UnmarshalInterface(L"payload",pMsg,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+	IObject* pUI = 0;
+	ptrOM->UnmarshalInterface(L"payload",pMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
-	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pPayload));
+	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
 
 	pMsg->ReadStructEnd(L"message");
 	

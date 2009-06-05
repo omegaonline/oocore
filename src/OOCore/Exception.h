@@ -34,7 +34,7 @@ namespace OOCore
 	public:
 
 		BEGIN_INTERFACE_MAP(ExceptionAutoMarshalImpl)
-			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,ExceptionAutoMarshalImpl::QIMarshal)
+			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,&ExceptionAutoMarshalImpl::QIMarshal)
 			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
 		END_INTERFACE_MAP()
 
@@ -46,9 +46,10 @@ namespace OOCore
 			if (pMessage->ReadStrings(L"m_strSource",1,&this->m_strSource) != 1)
 				OMEGA_THROW(L"Unexpected end of message");
 
-			Omega::IObject* pE = 0;
-			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),pE);
-			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pE));
+			Omega::guid_t actual_iid = OMEGA_GUIDOF(Omega::IException);
+			IObject* pUI = 0;
+			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,actual_iid,pUI);
+			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pUI));
 		}
 
 	private:
@@ -110,7 +111,10 @@ namespace OOCore
 		{
 			OTL::ObjectPtr<OTL::ObjectImpl<E> > ptrE = OTL::ObjectImpl<E>::CreateInstancePtr();
 			ptrE->UnmarshalInterface(pObjectManager,pMessage,flags);
+
 			pObject = ptrE->QueryInterface(iid);
+			if (!pObject)
+				throw Omega::INoInterfaceException::Create(iid);
 		}
 	};
 

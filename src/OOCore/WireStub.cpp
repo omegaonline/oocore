@@ -28,106 +28,77 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::Stub::Stub(System::MetaInfo::IObject_Safe* pObjS, uint32_t stub_id, StdObjectManager* pManager) : 
-	m_stub_id(stub_id), m_pObjS(pObjS), m_pManager(pManager)
+OOCore::Stub::Stub() : 
+	m_stub_id(0), m_pManager(0)
 {
-	m_pObjS->AddRef_Safe();
 }
 
-OOCore::Stub::~Stub()
+void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pManager)
 {
-	for (std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
-	{
-		i->second->Release_Safe();
-	}
-	m_pObjS->Release_Safe();
+	m_stub_id = stub_id;
+	m_ptrObj = pObj;
+	m_pManager = pManager;
 }
 
-System::MetaInfo::IException_Safe* OOCore::Stub::MarshalInterface(System::MetaInfo::IMessage_Safe* pMessage, const guid_t& iid)
+void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
+	ObjectPtr<System::IStub> ptrStub = FindStub(iid);
+	
+	System::MetaInfo::wire_write(L"id",pMessage,m_stub_id);
 	try
 	{
-		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IStub_Safe> ptrStub(FindStub(iid));
+		System::MetaInfo::wire_write(L"iid",pMessage,iid);
 	}
-	catch (IException* pE)
-	{
-		return System::MetaInfo::return_safe_exception(pE);
-	}
-
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::wire_write(L"id",pMessage,m_stub_id);
-	if (pSE)
-		return pSE;
-
-	pSE = System::MetaInfo::wire_write(L"iid",pMessage,iid);
-	if (pSE)
+	catch (...)
 	{
 		uint32_t v;
-		System::MetaInfo::IException_Safe* pSE2 = System::MetaInfo::wire_read(L"id",pMessage,v);
-		if (pSE2)
-		{
-			pSE->Release_Safe();
-			return pSE2;
-		}
+		System::MetaInfo::wire_read(L"id",pMessage,v);
+		throw;
 	}
 
-	if (!pSE)
-		++m_marshal_count;
-
-	return pSE;
+	++m_marshal_count;
 }
 
-System::MetaInfo::IException_Safe* OOCore::Stub::ReleaseMarshalData(System::MetaInfo::IMessage_Safe* pMessage, const guid_t&)
+void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t&)
 {
-	uint32_t v;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::wire_read(L"id",pMessage,v);
-	if (!pSE)
-	{
-		guid_t iid;
-		pSE = System::MetaInfo::wire_read(L"iid",pMessage,iid);
-	}
-
 	// Deref safely
-	RemoteRelease_Safe(1);
+	RemoteRelease(1);
 
-	return pSE;
+	uint32_t v;
+	System::MetaInfo::wire_read(L"id",pMessage,v);
+		
+	guid_t iid;
+	System::MetaInfo::wire_read(L"iid",pMessage,iid);
 }
 
-System::MetaInfo::IStub_Safe* OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
+ObjectPtr<System::IStub> OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
 {
-	return FindStub(ReadGuid(L"$iid",pMessage));
+	guid_t iid;
+	System::MetaInfo::wire_read(L"$iid",pMessage,iid);
+	return FindStub(iid);
 }
 
-System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
+ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 {
 	try
 	{
-		System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IStub_Safe> ptrStub;
-		bool bAdd = false;
-		
+		ObjectPtr<System::IStub> ptrStub;
+			
 		// See if we have a stub for this interface already...
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator i=m_iid_map.find(iid);
+			std::map<const guid_t,ObjectPtr<System::IStub> >::iterator i=m_iid_map.find(iid);
 			if (i != m_iid_map.end())
-				ptrStub = i->second;
+				return i->second;
 			
-			if (!ptrStub)
+			// See if any known interface supports the new interface
+			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				// See if any known interface supports the new interface
-				for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+				if (i->second->SupportsInterface(iid))
 				{
-					bool_t bSupports = false;
-					System::MetaInfo::IException_Safe* pSE = i->second->SupportsInterface_Safe(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(bSupports),&iid);
-					if (pSE)
-						throw_correct_exception(pSE);
-						
-					if (bSupports)
-					{
-						bAdd = true;
-						ptrStub = i->second;
-						break;
-					}
+					ptrStub = i->second;
+					break;
 				}
 			}
 		}
@@ -135,35 +106,26 @@ System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
 		if (!ptrStub)
 		{
 			// Check whether underlying object supports interface
-			System::MetaInfo::IObject_Safe* pQI = 0;
-			System::MetaInfo::IException_Safe* pSE = m_pObjS->QueryInterface_Safe(&iid,&pQI);
-			if (pSE)
-				throw_correct_exception(pSE);
+			IObject* pQI = m_ptrObj->QueryInterface(iid);
 			if (!pQI)
 				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 
-			System::MetaInfo::auto_iface_safe_ptr<IObject_Safe> ptrQI(pQI);
-						
+			ObjectPtr<IObject> ptrQI;
+			ptrQI.Attach(pQI);
+
 			// Create a stub for this interface
-			ptrStub.attach(OOCore::CreateStub(iid,this,m_pManager,ptrQI));
+			ptrStub.Attach(OOCore::CreateStub(iid,this,m_pManager,ptrQI));
 			if (!ptrStub)
 				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-
-			bAdd = true;
 		}
 
-		if (bAdd)
-		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+		// Now add it...
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+			
+		std::pair<std::map<const guid_t,ObjectPtr<System::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<System::IStub> >::value_type(iid,ptrStub));
+		if (!p.second)
+			ptrStub = p.first->second;
 				
-			std::pair<std::map<const guid_t,System::MetaInfo::IStub_Safe*>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,System::MetaInfo::IStub_Safe*>::value_type(iid,ptrStub));
-			if (!p.second)
-				ptrStub = p.first->second;
-			else
-				ptrStub->AddRef_Safe();
-		}
-
-		ptrStub->AddRef_Safe();
 		return ptrStub;
 	}
 	catch (std::exception& e)
@@ -172,104 +134,58 @@ System::MetaInfo::IStub_Safe* OOCore::Stub::FindStub(const guid_t& iid)
 	}
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Stub::RemoteRelease_Safe(uint32_t release_count)
+void OOCore::Stub::RemoteRelease(uint32_t release_count)
 {
 	m_marshal_count -= release_count;
 	if (m_marshal_count == 0)
-	{
-		try
-		{
-			m_pManager->RemoveStub(m_stub_id);
-		}
-		catch (IException* pE)
-		{
-			return System::MetaInfo::return_safe_exception(pE);
-		}
-	}
-
-	return 0;
+		m_pManager->RemoveStub(m_stub_id);
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Stub::SupportsInterface_Safe(bool_t* pbSupports, const guid_t* piid)
+bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 {
-	System::MetaInfo::IObject_Safe* p;
-	System::MetaInfo::IException_Safe* pSE = m_pObjS->QueryInterface_Safe(piid,&p);
-	if (pSE)
-		return pSE;
-
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IObject_Safe> ptr(p);
-	*pbSupports = (p != 0);
-	return 0;
+	// If we have a stub, then we can handle it...
+	return (FindStub(iid) != 0);
 }
 
-System::MetaInfo::IException_Safe* OMEGA_CALL OOCore::Stub::MarshalStub_Safe(System::MetaInfo::IMessage_Safe* pParamsIn, System::MetaInfo::IMessage_Safe* pParamsOut)
+void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	System::MetaInfo::marshal_info<guid_t>::wire_type::type iid;
-	System::MetaInfo::IException_Safe* pSE = System::MetaInfo::marshal_info<guid_t>::wire_type::read(L"iid",m_pManager,pParamsIn,iid);
-	if (pSE)
-		return pSE;
-
+	guid_t iid;
+	System::MetaInfo::wire_read(L"iid",pParamsIn,iid);
+	
 	// Unmarshal the channel
-	System::MetaInfo::IObject_Safe* pCh = 0;
-	pSE = m_pManager->UnmarshalInterface_Safe(L"m_ptrChannel",pParamsIn,&OMEGA_GUIDOF(Remoting::IChannel),&pCh);
-	if (pSE)
-		return pSE;
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IChannel>::safe_class> ptrChannel(static_cast<System::MetaInfo::interface_info<Remoting::IChannel>::safe_class*>(pCh));
+	IObject* pUI = 0;
+	m_pManager->UnmarshalInterface(L"m_ptrChannel",pParamsIn,OMEGA_GUIDOF(Remoting::IChannel),pUI);
+	ObjectPtr<Remoting::IChannel> ptrChannel;
+	ptrChannel.Attach(static_cast<Remoting::IChannel*>(pUI));
 
 	// Create a new message
-	System::MetaInfo::IMessage_Safe* pMessage = 0;
-	pSE = ptrChannel->CreateMessage_Safe(&pMessage);
-	if (pSE)
-		return pSE;
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::IMessage_Safe> ptrMessage(static_cast<System::MetaInfo::IMessage_Safe*>(pMessage));
-
-	// Reflect the channel
-	guid_t oid;
-	pSE = ptrChannel->GetReflectUnmarshalFactoryOID_Safe(&oid);
-	if (pSE)
-		return pSE;
-
-	// The following format is the same as IObjectManager::UnmarshalInterface...
-	pSE = ptrMessage->WriteStructStart_Safe(L"m_ptrChannel",L"$iface_marshal");
-	if (pSE)
-		return pSE;
-	pSE = System::MetaInfo::wire_write(L"$marshal_type",ptrMessage,(byte_t)2);
-	if (pSE)
-		return pSE;
-	pSE = System::MetaInfo::wire_write(L"$oid",ptrMessage,oid);
-	if (pSE)
-		return pSE;
-
-	pSE = ptrChannel->ReflectMarshal_Safe(ptrMessage);
-	if (pSE)
-		return pSE;
-
-	pSE = ptrMessage->WriteStructEnd_Safe(L"m_ptrChannel");
-	if (pSE)
-		return pSE;
-
-	// Get the channel's OM
-	System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class* pOM = 0;
-	pSE = ptrChannel->GetObjectManager_Safe(&pOM);
-	if (pSE)
-		return pSE;
-	System::MetaInfo::auto_iface_safe_ptr<System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class> ptrManager(static_cast<System::MetaInfo::interface_info<Remoting::IObjectManager>::safe_class*>(pOM));
-
-	// Marshal the stub
-	pSE = ptrManager->MarshalInterface_Safe(L"stub",ptrMessage,&iid,m_pObjS);
-	if (pSE)
-		return pSE;
-		
-	pSE = m_pManager->MarshalInterface_Safe(L"pReflect",pParamsOut,&OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
-	if (pSE)
-	{
-		System::MetaInfo::IException_Safe* pSE2 = ptrManager->ReleaseMarshalData_Safe(L"stub",ptrMessage,&iid,m_pObjS);
-		if (pSE2)
-		{
-			pSE->Release_Safe();
-			return pSE2;
-		}
-	}
+	ObjectPtr<Remoting::IMessage> ptrMessage;
+	ptrMessage.Attach(ptrChannel->CreateMessage());
 	
-	return pSE;
+	// Reflect the channel
+	// The following format is the same as IObjectManager::UnmarshalInterface...
+	ptrMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
+	System::MetaInfo::wire_write(L"$marshal_type",ptrMessage,(byte_t)2);
+	System::MetaInfo::wire_write(L"$oid",ptrMessage,ptrChannel->GetReflectUnmarshalFactoryOID());
+	
+	ptrChannel->ReflectMarshal(ptrMessage);
+	
+	ptrMessage->WriteStructEnd(L"m_ptrChannel");
+	
+	// Get the channel's OM
+	ObjectPtr<Remoting::IObjectManager> ptrOM;
+	ptrOM.Attach(ptrChannel->GetObjectManager());
+	
+	// Marshal the stub
+	ptrOM->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);
+	
+	try
+	{
+		m_pManager->MarshalInterface(L"pReflect",pParamsOut,OMEGA_GUIDOF(Remoting::IMessage),ptrMessage);
+	}
+	catch (...)
+	{
+		ptrOM->ReleaseMarshalData(L"stub",ptrMessage,iid,m_ptrObj);
+		throw;
+	}
 }

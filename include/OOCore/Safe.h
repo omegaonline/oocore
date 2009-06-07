@@ -249,7 +249,7 @@ namespace Omega
 			{
 				virtual void Pin() = 0;
 				virtual void Unpin() = 0;
-				virtual SafeShim* GetStub() = 0;
+				virtual SafeShim* GetStub(const Omega::guid_t& iid) = 0;
 			};
 
 			class Safe_Proxy_Owner;
@@ -388,7 +388,7 @@ namespace Omega
 					if (pS)
 						static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
 					
-					pS = create_stub(this->m_pI,*piid);
+					pS = create_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
 				}
 
 				operator I*& ()
@@ -438,6 +438,7 @@ namespace Omega
 				virtual void DecRef() = 0;
 				virtual bool IsDerived(const guid_t& iid) const = 0;
 				virtual IObject* QIReturn() = 0;
+				virtual SafeShim* GetShim() = 0;
 				virtual void Throw() = 0;
 				virtual void Throw(const guid_t& iid) = 0;
 			};
@@ -505,9 +506,9 @@ namespace Omega
 
 				inline Safe_Proxy_Base* GetBase(const Omega::guid_t& iid);
 
-				SafeShim* GetStub()
+				SafeShim* GetStub(const Omega::guid_t& iid)
 				{
-					return m_shim;
+					return GetBase(iid)->GetShim();
 				}
 			};
 
@@ -579,10 +580,6 @@ namespace Omega
 			protected:
 				Safe_Proxy(SafeShim* shim, Safe_Proxy_Owner* pOwner) : m_shim(shim), m_pOwner(pOwner)
 				{
-					SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
-					if (except)
-						throw_correct_exception(except);
-
 					if (!m_pOwner)
 						OMEGA_NEW(m_pOwner,Safe_Proxy_Owner(m_shim,OMEGA_GUIDOF(D),this));
 
@@ -590,7 +587,11 @@ namespace Omega
 				}
 
 				virtual ~Safe_Proxy()
-				{ }
+				{
+					SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
+					if (except)
+						throw_correct_exception(except);
+				}
 
 				virtual bool IsDerived(const guid_t& iid) const
 				{
@@ -620,6 +621,11 @@ namespace Omega
 				IObject* QIReturn()
 				{
 					return static_cast<D*>(this);
+				}
+
+				SafeShim* GetShim()
+				{
+					return m_shim;
 				}
 
 				void Throw()

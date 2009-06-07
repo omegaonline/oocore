@@ -66,7 +66,7 @@ System::IStub* OOCore::CreateStub(const guid_t& iid, System::IStubController* pC
 	Omega::System::MetaInfo::SafeShim* pSE = p.pfnStub(
 		Omega::System::MetaInfo::marshal_info<System::IStubController*>::safe_type::coerce(pController),
 		Omega::System::MetaInfo::marshal_info<System::IMarshaller*>::safe_type::coerce(pManager),
-		Omega::System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pObj),
+		Omega::System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pObj,iid),
 		Omega::System::MetaInfo::marshal_info<System::IStub*&>::safe_type::coerce(pRet));
 
 	if (pSE)

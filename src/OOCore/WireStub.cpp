@@ -114,7 +114,7 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 			ptrQI.Attach(pQI);
 
 			// Create a stub for this interface
-			ptrStub.Attach(OOCore::CreateStub(iid,this,m_pManager,ptrQI));
+			ptrStub.Attach(OOCore::CreateStub(iid,this,m_pManager,pQI));
 			if (!ptrStub)
 				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 		}

@@ -443,7 +443,7 @@ namespace Omega
 
 				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, uint32_t cbSize)
 				{
-					read(pszName,pManager,pMessage,val,cbSize);
+					read(pszName,pManager,pMessage,val,static_cast<uint64_t>(cbSize));
 				}
 
 				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::type* pVals, const uint64_t& cbSize)
@@ -481,7 +481,7 @@ namespace Omega
 
 				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, uint32_t cbSize)
 				{
-					return unpack(pszName,pManager,pMessage,val,cbSize);
+					return unpack(pszName,pManager,pMessage,val,static_cast<uint64_t>(cbSize));
 				}				
 
 				template <class S>
@@ -600,6 +600,7 @@ namespace Omega
 					 m_ptrMarshaller(pProxy->GetMarshaller()),
 					 m_ptrProxy(pProxy)					 
 				{
+					m_ptrProxy->AddRef();
 					m_refcount.AddRef(); 
 
 					m_shim.m_vtable = get_vt();
@@ -773,6 +774,9 @@ namespace Omega
 				Wire_Stub(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) :
 					m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController)
 				{
+					m_ptrMarshaller->AddRef();
+					m_ptrI->AddRef();
+		
 					m_refcount.AddRef();
 
 					m_shim.m_vtable = get_vt();

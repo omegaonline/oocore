@@ -487,14 +487,18 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 				// Unmarshal the exception
 				IObject* pUI = 0;
 				UnmarshalInterface(L"exception",ptrRecv,OMEGA_GUIDOF(IException),pUI);
-				IException* pE = static_cast<IException*>(pUI);
+				ObjectPtr<IException> ptrE;
+				ptrE.Attach(static_cast<IException*>(pUI));
 
-				if (!pE)
+				if (!ptrE)
 					OMEGA_THROW(L"Null exception returned");
 
-				void* TODO; // Dynamic downcast on ThrownIID()
-
-				return pE;
+				guid_t iid = ptrE->GetThrownIID();
+				pUI = ptrE->QueryInterface(iid);
+				if (!pUI)
+					return ptrE.AddRef();
+				else
+					return static_cast<IException*>(pUI);
 			}
 		}
 		catch (IException* pE)

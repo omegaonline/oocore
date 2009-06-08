@@ -48,7 +48,7 @@ Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Ow
 	}
 
 	// QueryInterface the actual interface pointer
-	SafeShim* shim = 0;
+	auto_safe_shim shim;
 	SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnQueryInterface_Safe(m_shim,&shim,&iid);
 	if (except)
 		throw_correct_exception(except);
@@ -105,7 +105,6 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const Omega::guid_t& iid)
 	if (!obj)
 		OMEGA_THROW(L"Failed to create safe proxy");
 
-	AddRef();
 	return obj->Throw();
 }
 
@@ -142,7 +141,7 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::Cac
 	}
 
 	// Check the actual interface pointer
-	SafeShim* shim = pStub->ShimQI(iid);
+	auto_safe_shim shim = pStub->ShimQI(iid);
 	if (!shim)
 		return 0;
 
@@ -152,11 +151,10 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::Cac
 	}
 	catch (std::exception& e)
 	{
-		static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
 		OMEGA_THROW(e);
 	}
 
-	return shim;
+	return shim.detach();
 }
 
 void Omega::System::MetaInfo::Safe_Stub_Owner::RemoveShim(SafeShim* shim)
@@ -181,13 +179,8 @@ void Omega::System::MetaInfo::Safe_Stub_Owner::RemoveShim(SafeShim* shim)
 Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::create_proxy_base(SafeShim* shim)
 {
 	// QI for the IObject shim
-	SafeShim* base_shim = 0;
+	auto_safe_shim base_shim;
 	SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
-	if (except)
-		throw_correct_exception(except);
-
-	// Release the incoming shim
-	except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
 	if (except)
 		throw_correct_exception(except);
 
@@ -218,6 +211,9 @@ Omega::IObject* Omega::System::MetaInfo::create_proxy(SafeShim* shim)
 
 void Omega::System::MetaInfo::throw_correct_exception(SafeShim* shim)
 {
+	// Ensure incoming shim is Release'd()
+	auto_safe_shim sh = shim;
+
 	guid_t iid = *shim->m_iid;
 	create_proxy_base(shim)->Throw(iid);
 }
@@ -236,8 +232,8 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject*
 	auto_iface_ptr<IObject> ptrObject = static_cast<IObject*>(pObj->QueryInterface(OMEGA_GUIDOF(IObject)));
 
 	// Lookup in the global map
-	bool bReleaseShim = false;
 	SafeShim* shim = 0;
+	auto_safe_shim ss;
 	
 	if (!shim)
 	{
@@ -245,10 +241,12 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject*
 		SafeShim* except = Safe_Stub<IObject>::create(ptrObject,0,&shim);
 		if (except)
 			throw_correct_exception(except);
+
 		if (!shim)
 			OMEGA_THROW(L"Failed to create safe stub");
 
-		bReleaseShim = true;
+		// Make sure we release it
+		ss = shim;
 	}
 
 	// QI the base shim for the iid
@@ -256,14 +254,7 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject*
 	SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&iface_shim,&iid);
 	if (except)
 		throw_correct_exception(except);
-
-	if (bReleaseShim)
-	{
-		except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
-		if (except)
-			throw_correct_exception(except);
-	}
-
+	
 	return iface_shim;
 }
 

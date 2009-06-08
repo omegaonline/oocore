@@ -40,29 +40,25 @@ namespace Omega
 
 				auto_iface_ptr(const auto_iface_ptr& rhs) : m_pI(rhs.m_pI)
 				{
-					if (m_pI)
-						m_pI->AddRef();
+					AddRef();
 				}
 
 				auto_iface_ptr& operator = (const auto_iface_ptr& rhs)
 				{
-					if (&rhs != this && m_pI != rhs.m_pI)
+					if (&rhs != this)
 					{
-						if (m_pI)
-							m_pI->Release();
+						Release();
 
 						m_pI = rhs.m_pI;
 						
-						if (m_pI)
-							m_pI->AddRef();
+						AddRef();
 					}
 					return *this;
 				}
 
 				~auto_iface_ptr()
 				{
-					if (m_pI)
-						m_pI->Release();
+					Release();
 				}
 
 				operator I*&()
@@ -76,6 +72,18 @@ namespace Omega
 				}
 
 			private:
+				void AddRef()
+				{
+					if (m_pI)
+						m_pI->AddRef();
+				}
+
+				void Release()
+				{
+					if (m_pI)
+						m_pI->Release();
+				}
+
 				I* m_pI;
 			};
 
@@ -270,6 +278,81 @@ namespace Omega
 				SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(SafeShim* shim, SafeShim** retval, const guid_t* iid);
 				SafeShim* (OMEGA_CALL* pfnPin_Safe)(SafeShim* shim);
 				SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(SafeShim* shim);
+			};
+
+			class auto_safe_shim
+			{
+			public:
+				auto_safe_shim(SafeShim* pS = 0) : m_pS(pS)
+				{}
+
+				auto_safe_shim(const auto_safe_shim& rhs) : m_pS(rhs.m_pS)
+				{
+					AddRef();
+				}
+
+				auto_safe_shim& operator = (const auto_safe_shim& rhs)
+				{
+					if (&rhs != this)
+					{
+						Release();
+
+						m_pS = rhs.m_pS;
+						
+						AddRef();
+					}
+					return *this;
+				}
+
+				~auto_safe_shim()
+				{
+					Release();
+				}
+
+				operator SafeShim*&()
+				{
+					return m_pS;
+				}
+
+				SafeShim** operator &()
+				{
+					return &m_pS;
+				}
+
+				SafeShim* operator ->()
+				{
+					return m_pS;
+				}
+
+				SafeShim* detach()
+				{
+					SafeShim* ret = m_pS;
+					m_pS = 0;
+					return ret;
+				}
+
+			private:
+				SafeShim* m_pS;
+
+				void AddRef()
+				{
+					if (m_pS)
+					{
+						SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnAddRef_Safe(m_pS);
+						if (except)
+							throw_correct_exception(except);
+					}
+				}
+
+				void Release()
+				{
+					if (m_pS)
+					{
+						SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
+						if (except)
+							throw_correct_exception(except);
+					}
+				}
 			};
 
 			template <class I>
@@ -508,7 +591,15 @@ namespace Omega
 
 				SafeShim* GetStub(const Omega::guid_t& iid)
 				{
-					return GetBase(iid)->GetShim();
+					SafeShim* shim = GetBase(iid)->GetShim();
+					if (!shim)
+						OMEGA_THROW(L"No shim for stub");
+
+					SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);
+					if (except)
+						throw_correct_exception(except);
+
+					return shim;
 				}
 			};
 
@@ -580,6 +671,10 @@ namespace Omega
 			protected:
 				Safe_Proxy(SafeShim* shim, Safe_Proxy_Owner* pOwner) : m_shim(shim), m_pOwner(pOwner)
 				{
+					SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
+					if (except)
+						throw_correct_exception(except);
+
 					if (!m_pOwner)
 						OMEGA_NEW(m_pOwner,Safe_Proxy_Owner(m_shim,OMEGA_GUIDOF(D),this));
 
@@ -719,12 +814,13 @@ namespace Omega
 				
 				virtual void Pin()
 				{
-					void* TODO;
+					m_pincount.AddRef();
 				}
 
 				virtual void Unpin()
 				{
-					void* TODO;
+					if (m_pincount.Release() && m_refcount.IsZero())
+						delete this;
 				}
 
 				SafeShim         m_shim;
@@ -736,6 +832,7 @@ namespace Omega
 				Safe_Stub& operator =(const Safe_Stub&) { return *this; };
 
 				Threading::AtomicRefCount m_refcount;
+				Threading::AtomicRefCount m_pincount;
 								
 				void AddRef()
 				{
@@ -744,7 +841,7 @@ namespace Omega
 
 				void Release()
 				{
-					if (m_refcount.Release())
+					if (m_refcount.Release() && m_pincount.IsZero())
 						delete this;
 				}
 

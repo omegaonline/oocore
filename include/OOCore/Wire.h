@@ -774,6 +774,7 @@ namespace Omega
 				Wire_Stub(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) :
 					m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController)
 				{
+					PinObjectPointer(m_pController);
 					m_ptrMarshaller->AddRef();
 					m_ptrI->AddRef();
 		
@@ -785,7 +786,9 @@ namespace Omega
 				}
 
 				virtual ~Wire_Stub()
-				{}
+				{
+					UnpinObjectPointer(m_pController);
+				}
 
 				virtual bool_t SupportsInterface(const guid_t& iid)
 				{

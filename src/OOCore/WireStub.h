@@ -34,6 +34,9 @@ namespace OOCore
 	{
 	public:
 		Stub();
+		virtual ~Stub()
+		{
+		}
 		
 		void init(Omega::IObject* pObj, Omega::uint32_t stub_id, StdObjectManager* pManager);
 

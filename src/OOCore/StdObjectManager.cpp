@@ -345,7 +345,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 					if (i==m_mapStubIds.end())
 						OMEGA_THROW(L"Bad stub id");
 
-					ptrStub.Attach(i->second->second->LookupStub(pParamsIn));
+					ptrStub = i->second->second->LookupStub(pParamsIn);
 				}
 				catch (std::exception& e)
 				{

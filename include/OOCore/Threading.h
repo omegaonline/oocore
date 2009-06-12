@@ -177,6 +177,10 @@ namespace Omega
 			inline bool Release();
 			inline bool IsZero() const;
 
+#ifdef OMEGA_DEBUG
+			size_t m_debug_value;
+#endif
+
 		private:
 			struct handle_t
 			{

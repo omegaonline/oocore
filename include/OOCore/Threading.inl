@@ -93,10 +93,17 @@ void Omega::Threading::ReaderWriterLock::Release()
 	OOCore_rw_lock_unlockwrite(m_handle);
 }
 
+#ifdef OMEGA_DEBUG
+#define OMEGA_DEBUG_STASH_ATOMIC(expr)	m_debug_value expr
+#else
+#define OMEGA_DEBUG_STASH_ATOMIC(expr)	(void)0
+#endif
+
 OMEGA_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,());
 Omega::Threading::AtomicRefCount::AtomicRefCount() :
 	m_handle(static_cast<handle_t*>(OOCore_atomic__ctor()))
 {
+	OMEGA_DEBUG_STASH_ATOMIC(=0);
 }
 
 OMEGA_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,h));
@@ -109,18 +116,20 @@ OMEGA_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),void*,h));
 void Omega::Threading::AtomicRefCount::AddRef()
 {
 	OOCore_atomic_addref(m_handle);
+	OMEGA_DEBUG_STASH_ATOMIC(++);
 }
 
-OMEGA_EXPORTED_FUNCTION(bool,OOCore_atomic_release,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,h));
 bool Omega::Threading::AtomicRefCount::Release()
 {
-	return OOCore_atomic_release(m_handle);
+	OMEGA_DEBUG_STASH_ATOMIC(--);
+	return (OOCore_atomic_release(m_handle) != 0);
 }
 
-OMEGA_EXPORTED_FUNCTION(bool,OOCore_atomic_iszero,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_iszero,1,((in),void*,h));
 bool Omega::Threading::AtomicRefCount::IsZero() const
 {
-	return OOCore_atomic_iszero(m_handle);
+	return (OOCore_atomic_iszero(m_handle) != 0);
 }
 
 #endif // OMEGA_THREADING_INL_INCLUDED_

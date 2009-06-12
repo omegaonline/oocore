@@ -309,7 +309,7 @@ namespace OTL
 		{
 			if (m_refcount.Release())
 				delete this;
-		}
+		}		
 
 	public:
 		typedef Omega::IObject* (ObjectBase::*PFNMEMQI)(const Omega::guid_t& iid);

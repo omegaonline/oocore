@@ -136,10 +136,10 @@
 	OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_PS_PARAM_I,meta,(type,name))
 
 #define OMEGA_DECLARE_SAFE_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	SafeShim* (OMEGA_CALL* OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe)))(SafeShim* OMEGA_DECLARE_PARAMS_SAFE(param_count,params) );
+	const SafeShim* (OMEGA_CALL* OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe)))(const SafeShim* OMEGA_DECLARE_PARAMS_SAFE(param_count,params) );
 
 #define OMEGA_DECLARE_SAFE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	SafeShim* (OMEGA_CALL* OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe)))(SafeShim*, marshal_info<ret_type&>::safe_type::type OMEGA_DECLARE_PARAMS_SAFE(param_count,params) );
+	const SafeShim* (OMEGA_CALL* OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe)))(const SafeShim*, marshal_info<ret_type&>::safe_type::type OMEGA_DECLARE_PARAMS_SAFE(param_count,params) );
 
 #define OMEGA_DECLARE_SAFE_DECLARED_NO_METHODS()
 
@@ -275,18 +275,18 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_STUB_METHOD,methods,0)
 
 #define OMEGA_DEFINE_SAFE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	static SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(SafeShim* OMEGA_CONCAT(name,_shim) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
+	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
-		SafeShim* OMEGA_CONCAT(name,_except) = 0; \
+		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { deref_shim(OMEGA_CONCAT(name,_shim))->name( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
 	}
 
 #define OMEGA_DEFINE_SAFE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	static SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(SafeShim* OMEGA_CONCAT(name,_shim), marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
+	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim), marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
-		SafeShim* OMEGA_CONCAT(name,_except) = 0; \
+		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { static_cast<ret_type&>(marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal))) = \
 			deref_shim(OMEGA_CONCAT(name,_shim))->name( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
@@ -447,13 +447,10 @@
 	template <> class Safe_Stub<n_space::name> : public Safe_Stub<d_space::derived> \
 	{ \
 	public: \
-		static SafeShim* create(IObject* pI, Safe_Stub_Owner* pOwner, SafeShim** ret) \
+		static Safe_Stub_Base* create(IObject* pI, Safe_Stub_Owner* pOwner) \
 		{ \
-			try { \
 			Safe_Stub* pThis; OMEGA_NEW(pThis,Safe_Stub(static_cast<n_space::name*>(pI),&OMEGA_GUIDOF(n_space::name),pOwner)); \
-			*ret = &pThis->m_shim; \
-			return 0; \
-			} catch (IException* pE) { return return_safe_exception(pE); } \
+			return pThis; \
 		} \
 	protected: \
 		Safe_Stub(n_space::name* pI, const guid_t* iid, Safe_Stub_Owner* pOwner) : Safe_Stub<d_space::derived>(pI,iid,pOwner) \
@@ -471,7 +468,7 @@
 			return Safe_Stub<d_space::derived>::IsDerived(iid); \
 		} \
 	private: \
-		static n_space::name* deref_shim(SafeShim* shim) { return static_cast<n_space::name*>(static_cast<Safe_Stub*>(shim->m_stub)->m_pI); } \
+		static n_space::name* deref_shim(const SafeShim* shim) { return static_cast<n_space::name*>(static_cast<Safe_Stub*>(shim->m_stub)->m_pI); } \
 		OMEGA_DEFINE_SAFE_STUB_METHODS(methods) \
 	};
 
@@ -480,7 +477,7 @@
 	class Wire_Stub<n_space::name> : public Wire_Stub<d_space::derived> \
 	{ \
 	public: \
-		static SafeShim* create(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) \
+		static const SafeShim* create(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) \
 		{ \
 			Wire_Stub* pThis; \
 			OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI)); \
@@ -530,7 +527,7 @@
 #define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
-		SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))(this->m_shim OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
+		const SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))(this->m_shim OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
 		if (OMEGA_CONCAT(name,_except)) \
 			throw_correct_exception(OMEGA_CONCAT(name,_except)); \
 	}
@@ -539,7 +536,7 @@
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::System::MetaInfo::default_value<ret_type>::value(); \
-		SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))( \
+		const SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))( \
 			this->m_shim,marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) \
 			OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
 		if (OMEGA_CONCAT(name,_except)) \
@@ -644,9 +641,9 @@
 		if (OMEGA_CONCAT(name,_Exception)) throw OMEGA_CONCAT(name,_Exception); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 	} \
-	static SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(SafeShim* OMEGA_CONCAT(name,_shim) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
+	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
-		SafeShim* OMEGA_CONCAT(name,_except) = 0; \
+		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { static_cast<Wire_Proxy*>(OMEGA_CONCAT(name,_shim)->m_stub)->OMEGA_CONCAT(name,_Impl)( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
@@ -674,9 +671,9 @@
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 		marshal_info<ret_type&>::wire_type::read(L"$retval",m_ptrMarshaller,pParamsIn__wire__,OMEGA_CONCAT(name,_RetVal)); \
 	} \
-	static SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(SafeShim* OMEGA_CONCAT(name,_shim), marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
+	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim), marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
 	{ \
-		SafeShim* OMEGA_CONCAT(name,_except) = 0; \
+		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { static_cast<Wire_Proxy*>(OMEGA_CONCAT(name,_shim)->m_stub)->OMEGA_CONCAT(name,_Impl)(marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) OMEGA_DEFINE_PARAMS_SAFE_STUB(param_count,params) ); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
@@ -698,12 +695,12 @@
 	{ \
 		const vtable_info<n_space::name>::type* deref_vt() { return static_cast<const vtable_info<n_space::name>::type*>(this->m_shim->m_vtable); } \
 	public: \
-		static Safe_Proxy_Base* bind(SafeShim* shim, Safe_Proxy_Owner* pOwner) \
+		static Safe_Proxy_Base* bind(const SafeShim* shim, Safe_Proxy_Owner* pOwner) \
 		{ \
 			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim,pOwner)); return pThis; \
 		} \
 	protected: \
-		Safe_Proxy(SafeShim* shim, Safe_Proxy_Owner* pOwner = 0) : Safe_Proxy<d_space::derived,D>(shim,pOwner) {} \
+		Safe_Proxy(const SafeShim* shim, Safe_Proxy_Owner* pOwner = 0) : Safe_Proxy<d_space::derived,D>(shim,pOwner) {} \
 		virtual bool IsDerived(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
@@ -716,19 +713,19 @@
 #define OMEGA_DECLARE_WIRE_PROXY(n_space,name,d_space,derived,methods) \
 	template <> class Wire_Proxy<n_space::name> : public Wire_Proxy<d_space::derived> \
 	{ public: \
-		static SafeShim* create(IProxy* pProxy) \
+		static const SafeShim* create(IProxy* pProxy) \
 		{ \
 			Wire_Proxy* pThis; \
 			OMEGA_NEW(pThis,Wire_Proxy(pProxy,&OMEGA_GUIDOF(n_space::name))); \
-			return &pThis->m_shim; \
+			return &pThis->m_internal_shim; \
 		} \
 	protected: \
 		Wire_Proxy(IProxy* pProxy, const guid_t* iid) : Wire_Proxy<d_space::derived>(pProxy,iid) \
 		{ m_shim.m_vtable = get_vt(); } \
-		virtual bool IsDerived(const guid_t& iid) const \
+		virtual const SafeShim* IsDerived(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) \
-				return true; \
+				return &m_shim; \
 			return Wire_Proxy<d_space::derived>::IsDerived(iid); \
 		} \
 		static const vtable_info<n_space::name>::type* get_vt() \
@@ -803,21 +800,21 @@
 	(DECLARED_METHOD(TypeInfo::attribs,timeout,ret_type,name,param_count,params))
 
 #define OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params) \
-	extern "C" OMEGA_IMPORT Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \
+	extern "C" OMEGA_IMPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)); \
 	inline void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
 	{ \
-		Omega::System::MetaInfo::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_PROXY_VOID(param_count,params)); \
+		const Omega::System::MetaInfo::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_PROXY_VOID(param_count,params)); \
 		if (OMEGA_CONCAT(name,_Exception)) Omega::System::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
 	}
 
 #define OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params) \
-	extern "C" OMEGA_IMPORT Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)( \
+	extern "C" OMEGA_IMPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)( \
 		Omega::System::MetaInfo::marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) \
 		OMEGA_DECLARE_PARAMS_SAFE(param_count,params)); \
 	inline ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
 	{ \
 		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::System::MetaInfo::default_value<ret_type>::value(); \
-		Omega::System::MetaInfo::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)( \
+		const Omega::System::MetaInfo::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Safe)( \
 			Omega::System::MetaInfo::marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) \
 			OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
 		if (OMEGA_CONCAT(name,_Exception)) Omega::System::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
@@ -840,7 +837,7 @@
 
 #define OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
-	extern "C" OMEGA_EXPORT Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)) \
+	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_SAFE_VOID(param_count,params)) \
 	{ \
 		try \
 		{ \
@@ -860,7 +857,7 @@
 
 #define OMEGA_DEFINE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
-	extern "C" OMEGA_EXPORT Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(Omega::System::MetaInfo::marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
+	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(Omega::System::MetaInfo::marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params)) \
 	{ \
 		try \
 		{ \
@@ -880,7 +877,7 @@
 
 #define OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
-	extern "C" OMEGA_EXPORT Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
+	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
 	{ \
 		try \
 		{ \
@@ -900,7 +897,7 @@
 
 #define OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
-	extern "C" OMEGA_EXPORT Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(ret_type* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS(param_count,params)) \
+	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(ret_type* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS(param_count,params)) \
 	{ \
 		try \
 		{ \

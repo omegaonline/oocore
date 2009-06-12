@@ -114,12 +114,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),void*,m1))
 	++ *static_cast<OOBase::AtomicInt<size_t>*>(m1);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(bool,OOCore_atomic_release,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,m1))
 {
-	return (-- *static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0);
+	return (-- *static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0) ? 1 : 0;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(bool,OOCore_atomic_iszero,1,((in),void*,m1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_atomic_iszero,1,((in),void*,m1))
 {
-	return (*static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0);
+	return (*static_cast<OOBase::AtomicInt<size_t>*>(m1) == 0) ? 1 : 0;
 }

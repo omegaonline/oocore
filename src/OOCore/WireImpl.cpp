@@ -63,11 +63,11 @@ System::IStub* OOCore::CreateStub(const guid_t& iid, System::IStubController* pC
 	}
 
 	System::IStub* pRet = 0;
-	Omega::System::MetaInfo::SafeShim* pSE = p.pfnStub(
-		Omega::System::MetaInfo::marshal_info<System::IStubController*>::safe_type::coerce(pController),
-		Omega::System::MetaInfo::marshal_info<System::IMarshaller*>::safe_type::coerce(pManager),
-		Omega::System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pObj,iid),
-		Omega::System::MetaInfo::marshal_info<System::IStub*&>::safe_type::coerce(pRet));
+	const System::MetaInfo::SafeShim* pSE = p.pfnStub(
+		System::MetaInfo::marshal_info<System::IStubController*>::safe_type::coerce(pController),
+		System::MetaInfo::marshal_info<System::IMarshaller*>::safe_type::coerce(pManager),
+		System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pObj,iid),
+		System::MetaInfo::marshal_info<System::IStub*&>::safe_type::coerce(pRet));
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);
@@ -75,7 +75,7 @@ System::IStub* OOCore::CreateStub(const guid_t& iid, System::IStubController* pC
 	return pRet;
 }
 
-IObject* OOCore::CreateProxy(const guid_t& iid, System::IProxy* pProxy)
+const System::MetaInfo::SafeShim* OOCore::CreateProxy(const guid_t& iid, System::IProxy* pProxy)
 {
 	wire_holder::pfns p = {0,0};
 	try
@@ -94,10 +94,9 @@ IObject* OOCore::CreateProxy(const guid_t& iid, System::IProxy* pProxy)
 		OMEGA_THROW(e);
 	}
 
-	IObject* pRet = 0;
-	Omega::System::MetaInfo::SafeShim* pSE = p.pfnProxy(
-		Omega::System::MetaInfo::marshal_info<System::IProxy*>::safe_type::coerce(pProxy),
-		Omega::System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pRet));
+	const System::MetaInfo::SafeShim* pRet = 0;
+	const System::MetaInfo::SafeShim* pSE = p.pfnProxy(
+		System::MetaInfo::marshal_info<System::IProxy*>::safe_type::coerce(pProxy),&pRet);
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);

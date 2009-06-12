@@ -24,7 +24,7 @@
 
 namespace OOCore
 {
-	Omega::IObject* CreateProxy(const Omega::guid_t& iid, Omega::System::IProxy* pProxy);
+	const Omega::System::MetaInfo::SafeShim* CreateProxy(const Omega::guid_t& iid, Omega::System::IProxy* pProxy);
 	Omega::System::IStub* CreateStub(const Omega::guid_t& iid, Omega::System::IStubController* pController, Omega::System::IMarshaller* pManager, Omega::IObject* pObject);
 }
 

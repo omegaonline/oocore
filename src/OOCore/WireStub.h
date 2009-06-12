@@ -34,10 +34,7 @@ namespace OOCore
 	{
 	public:
 		Stub();
-		virtual ~Stub()
-		{
-		}
-		
+				
 		void init(Omega::IObject* pObj, Omega::uint32_t stub_id, StdObjectManager* pManager);
 
 		void MarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid);

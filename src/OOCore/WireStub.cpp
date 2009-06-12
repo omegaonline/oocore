@@ -108,7 +108,7 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 			// Check whether underlying object supports interface
 			IObject* pQI = m_ptrObj->QueryInterface(iid);
 			if (!pQI)
-				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+				return 0;
 
 			ObjectPtr<IObject> ptrQI;
 			ptrQI.Attach(pQI);

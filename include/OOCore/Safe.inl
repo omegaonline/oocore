@@ -22,39 +22,52 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
-Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Owner::GetBase(const Omega::guid_t& iid)
+Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Owner::GetBase(const Omega::guid_t& iid, const SafeShim* shim)
 {
 	Threading::Guard<Threading::Mutex> guard(m_lock);
 
-	// See if we have it cached
-	std::map<guid_t,Safe_Proxy_Base*>::iterator i=m_iid_map.find(iid);
-	if (i == m_iid_map.end())
+	try
 	{
-		// See if we have a derived iid
-		for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+		// See if we have it cached
+		std::map<guid_t,Safe_Proxy_Base*>::iterator i=m_iid_map.find(iid);
+		if (i == m_iid_map.end())
 		{
-			if (static_cast<Safe_Proxy_Base*>(i->second)->IsDerived(iid))
+			// See if we have a derived iid
+			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				m_iid_map[iid] = i->second;
-				i->second->IncRef();
-				break;
+				if (i->second->IsDerived(iid))
+				{
+					m_iid_map.insert(std::map<guid_t,Safe_Proxy_Base*>::value_type(iid,i->second));
+					i->second->IncRef();
+					break;
+				}
 			}
 		}
-	}
 
-	if (i != m_iid_map.end())
+		if (i != m_iid_map.end())
+		{
+			return i->second;
+		}
+	}
+	catch (std::exception& e)
 	{
-		return i->second;
+		OMEGA_THROW(e);
 	}
 
 	// QueryInterface the actual interface pointer
-	auto_safe_shim shim;
-	SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnQueryInterface_Safe(m_shim,&shim,&iid);
-	if (except)
-		throw_correct_exception(except);
-
+	auto_safe_shim ss;
 	if (!shim)
-		return 0;
+	{
+		const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnQueryInterface_Safe(m_shim,&shim,&iid);
+		if (except)
+			throw_correct_exception(except);
+
+		if (!shim)
+			return 0;
+
+		// Ensure its released
+		ss = shim;
+	}
 
 	// Wrap it in a proxy and add it...
 	const qi_rtti* rtti = get_qi_rtti_info(*shim->m_iid);
@@ -62,24 +75,35 @@ Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Ow
 		rtti = get_qi_rtti_info(iid);
 		
 	if (!rtti)
+		rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
+
+	if (!rtti)
 		OMEGA_THROW(L"Failed to create proxy for interface - missing rtti");
 
 	Safe_Proxy_Base* obj = (*rtti->pfnCreateSafeProxy)(shim,this);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create safe proxy");
 
-	if (iid != *shim->m_iid)
+	try
 	{
-		obj->IncRef();
-		m_iid_map[*shim->m_iid] = obj;
-	}
+		if (iid != *shim->m_iid)
+		{
+			obj->IncRef();
+			m_iid_map.insert(std::map<guid_t,Safe_Proxy_Base*>::value_type(*shim->m_iid,obj));
+		}
 
-	m_iid_map[iid] = obj;
+		m_iid_map.insert(std::map<guid_t,Safe_Proxy_Base*>::value_type(iid,obj));
+	}
+	catch (std::exception& e)
+	{
+		obj->DecRef();
+		OMEGA_THROW(e);
+	}
 
 	return obj;
 }
 
-Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const Omega::guid_t& iid)
+Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const Omega::guid_t& iid, const SafeShim* shim)
 {
 	// Always return the same object for IObject
 	if (iid == OMEGA_GUIDOF(IObject) ||
@@ -90,7 +114,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const 
 	}
 
 	// See if we have it cached
-	Safe_Proxy_Base* obj = GetBase(iid);
+	Safe_Proxy_Base* obj = GetBase(iid,shim);
 	if (!obj)
 		return 0;
 
@@ -98,32 +122,71 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const 
 	return obj->QIReturn();
 }
 
-void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const Omega::guid_t& iid)
+void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const Omega::guid_t& iid, const SafeShim* shim)
 {
 	// See if we have it cached
-	Safe_Proxy_Base* obj = GetBase(iid);
+	Safe_Proxy_Base* obj = GetBase(iid,shim);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create safe proxy");
 
+	AddRef();
 	return obj->Throw();
 }
 
-Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::CachedQI(Safe_Stub_Base* pStub, const guid_t& iid)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_proxy_owner(const SafeShim* shim)
+{
+	// QI for the IObject shim
+	auto_safe_shim base_shim;
+	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
+	if (except)
+		throw_correct_exception(except);
+
+	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner;
+
+	// Lookup in the global map...
+
+	if (!ptrOwner)
+	{
+		// Create a safe proxy owner
+		OMEGA_NEW(ptrOwner,Safe_Proxy_Owner(base_shim));
+		
+		// Add to the map...
+	}
+	
+	return ptrOwner;
+}
+
+Omega::IObject* Omega::System::MetaInfo::create_proxy(const SafeShim* shim)
+{
+	if (!shim)
+		return 0;
+
+	// QI and return
+	return create_proxy_owner(shim)->QueryInterface(*shim->m_iid,shim);
+}
+
+void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
+{
+	create_proxy_owner(shim)->Throw(*shim->m_iid,shim);
+}
+
+Omega::System::MetaInfo::Safe_Stub_Base* Omega::System::MetaInfo::Safe_Stub_Owner::GetBase(const guid_t& iid, IObject* pObj)
 {
 	Threading::Guard<Threading::Mutex> guard(m_lock);
 
 	// See if we have it cached
 	try
 	{
-		std::map<guid_t,SafeShim*>::iterator i=m_iid_map.find(iid);
+		std::map<guid_t,Safe_Stub_Base*>::iterator i=m_iid_map.find(iid);
 		if (i == m_iid_map.end())
 		{
 			// See if we have a derived iid
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				if (static_cast<Safe_Stub_Base*>(i->second->m_stub)->IsDerived(iid))
+				if (i->second->IsDerived(iid))
 				{
-					m_iid_map[iid] = i->second;
+					m_iid_map.insert(std::map<guid_t,Safe_Stub_Base*>::value_type(iid,i->second));
+					i->second->IncRef();
 					break;
 				}
 			}
@@ -131,7 +194,6 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::Cac
 
 		if (i != m_iid_map.end())
 		{
-			static_cast<Safe_Stub_Base*>(i->second->m_stub)->AddRef();
 			return i->second;
 		}
 	}
@@ -141,84 +203,79 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::Cac
 	}
 
 	// Check the actual interface pointer
-	auto_safe_shim shim = pStub->ShimQI(iid);
-	if (!shim)
-		return 0;
+	auto_iface_ptr<IObject> iface;
+	
+	if (!pObj)
+	{
+		pObj = m_pObject->QueryInterface(iid);
+		if (!pObj)
+			return 0;
 
+		// Ensure its released
+		iface = pObj;
+	}
+
+	// Wrap it in a shim and add it...
+	const qi_rtti* rtti = get_qi_rtti_info(iid);
+	if (!rtti)
+		OMEGA_THROW(L"Failed to create stub for interface - missing rtti");
+	
+	Safe_Stub_Base* pStub = (*rtti->pfnCreateSafeStub)(pObj,this);
+	if (!pStub)
+		OMEGA_THROW(L"Failed to create safe stub");
+	
 	try
 	{
-		m_iid_map[iid] = shim;
+		m_iid_map.insert(std::map<guid_t,Safe_Stub_Base*>::value_type(iid,pStub));
 	}
 	catch (std::exception& e)
 	{
+		pStub->DecRef();
 		OMEGA_THROW(e);
 	}
 
-	return shim.detach();
+	return pStub;
 }
 
-void Omega::System::MetaInfo::Safe_Stub_Owner::RemoveShim(SafeShim* shim)
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::QueryInterface(const guid_t& iid, IObject* pObj)
 {
-	Threading::Guard<Threading::Mutex> guard(m_lock);
-
-	for (std::map<guid_t,SafeShim*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();)
+	// Always return the same object for IObject
+	if (iid == OMEGA_GUIDOF(IObject))
 	{
-		if (i->second == shim)
-			m_iid_map.erase(i++);
-		else
-			++i;
+		AddRef();
+		return &m_shim;
 	}
 
-	if (m_iid_map.empty())
-	{
-		guard.Release();
-		delete this;
-	}
-}
-
-Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::create_proxy_base(SafeShim* shim)
-{
-	// QI for the IObject shim
-	auto_safe_shim base_shim;
-	SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
-	if (except)
-		throw_correct_exception(except);
-
-	// Lookup in the global map...
-	Safe_Proxy_Base* obj = 0;
-
-	if (!obj)
-	{
-		// Create a default proxy...
-		obj = Safe_Proxy<IObject,IObject>::bind(base_shim,0);
-		if (!obj)
-			OMEGA_THROW(L"Failed to create safe proxy");
-	}
-
-	return obj;
-}
-
-Omega::IObject* Omega::System::MetaInfo::create_proxy(SafeShim* shim)
-{
-	if (!shim)
+	// See if we have it cached
+	Safe_Stub_Base* pStub = GetBase(iid,pObj);
+	if (!pStub)
 		return 0;
 
-	// QI and return
-	guid_t iid = *shim->m_iid;
-	auto_iface_ptr<IObject> ptrObj = create_proxy_base(shim)->QIReturn();
-	return ptrObj->QueryInterface(iid);
+	AddRef();
+	return pStub->GetShim();
 }
 
-void Omega::System::MetaInfo::throw_correct_exception(SafeShim* shim)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::create_stub_owner(IObject* pObj)
 {
-	// Ensure incoming shim is Release'd()
-	auto_safe_shim sh = shim;
+	// Get the IObject interface
+	auto_iface_ptr<IObject> ptrObject = static_cast<IObject*>(pObj->QueryInterface(OMEGA_GUIDOF(IObject)));
 
-	guid_t iid = *shim->m_iid;
-	create_proxy_base(shim)->Throw(iid);
+	auto_iface_ptr<Safe_Stub_Owner> ptrOwner;
+
+	// Lookup in the global map...
+
+	if (!ptrOwner)
+	{
+		// Create a safe proxy owner
+		OMEGA_NEW(ptrOwner,Safe_Stub_Owner(ptrObject));
+		
+		// Add to the map...
+	}
+	
+	return ptrOwner;
 }
 
-Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject* pObj, const guid_t& iid)
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject* pObj, const guid_t& iid)
 {
 	if (!pObj)
 		return 0;
@@ -228,37 +285,11 @@ Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject*
 	if (ptrProxy)
 		return ptrProxy->GetStub(iid);
 
-	// Get the IObject interface
-	auto_iface_ptr<IObject> ptrObject = static_cast<IObject*>(pObj->QueryInterface(OMEGA_GUIDOF(IObject)));
-
-	// Lookup in the global map
-	SafeShim* shim = 0;
-	auto_safe_shim ss;
-	
-	if (!shim)
-	{
-		// Create the IObject shim
-		SafeShim* except = Safe_Stub<IObject>::create(ptrObject,0,&shim);
-		if (except)
-			throw_correct_exception(except);
-
-		if (!shim)
-			OMEGA_THROW(L"Failed to create safe stub");
-
-		// Make sure we release it
-		ss = shim;
-	}
-
-	// QI the base shim for the iid
-	SafeShim* iface_shim = 0;
-	SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&iface_shim,&iid);
-	if (except)
-		throw_correct_exception(except);
-	
-	return iface_shim;
+	// QI and return
+	return create_stub_owner(pObj)->QueryInterface(iid,pObj);
 }
 
-Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::return_safe_exception(IException* pE)
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::return_safe_exception(IException* pE)
 {
 	auto_iface_ptr<IException> ptrE(pE);
 	return create_stub(pE,ptrE->GetThrownIID());

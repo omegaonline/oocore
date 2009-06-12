@@ -47,7 +47,7 @@ Omega::string_t::string_t() :
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const char*,sz,(in),char,bUTF8));
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const char*,sz,(in),int,bUTF8));
 Omega::string_t::string_t(const char* sz, bool bUTF8) :
 	m_handle(static_cast<handle_t*>(OOCore_string_t__ctor2(sz,bUTF8 ? 1 : 0)))
 {
@@ -171,7 +171,7 @@ int Omega::string_t::CompareNoCase(const wchar_t* wsz) const
 	return OOCore_string_t_cnc3(m_handle,wsz);
 }
 
-OMEGA_EXPORTED_FUNCTION(char,OOCore_string_t_isempty,1,((in),const void*,h));
+OMEGA_EXPORTED_FUNCTION(int,OOCore_string_t_isempty,1,((in),const void*,h));
 bool Omega::string_t::IsEmpty() const
 {
 	return (OOCore_string_t_isempty(m_handle) != 0);
@@ -192,7 +192,7 @@ size_t Omega::string_t::Find(const string_t& str, size_t pos, bool bIgnoreCase) 
 		return this->ToLower().Find(str.ToLower(),pos,false);
 }
 
-OMEGA_EXPORTED_FUNCTION(size_t,OOCore_string_t_find3,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),char,d));
+OMEGA_EXPORTED_FUNCTION(size_t,OOCore_string_t_find3,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),int,d));
 size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
 {
 	if (!bIgnoreCase)
@@ -201,7 +201,7 @@ size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
 		return OOCore_string_t_find3(this->ToLower().m_handle,c,pos,1);
 }
 
-OMEGA_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind2,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),char,d));
+OMEGA_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind2,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),int,d));
 size_t Omega::string_t::ReverseFind(wchar_t c, size_t pos, bool bIgnoreCase) const
 {
 	if (!bIgnoreCase)

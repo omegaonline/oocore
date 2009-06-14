@@ -45,6 +45,20 @@ namespace OTL
 			Attach(Omega::Registry::IKey::OpenKey(key,flags));
 		}
 
+		ObjectPtr& operator = (const ObjectPtr<Omega::Registry::IKey>& rhs)
+		{ 
+			if (this != &rhs)
+				*this = rhs.m_ptr;
+
+			return *this;
+		}
+
+		ObjectPtr& operator = (Omega::Registry::IKey* obj)
+		{
+			ObjectPtrBase<Omega::Registry::IKey>::operator = (obj);
+			return *this;
+		}
+
 		ObjectPtr<Omega::Registry::IKey> OpenSubKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting)
 		{
 			ObjectPtr<Omega::Registry::IKey> sub_key;

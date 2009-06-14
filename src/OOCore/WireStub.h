@@ -50,7 +50,7 @@ namespace OOCore
 		Stub& operator = (const Stub&) { return *this; }
 
 		OOBase::AtomicInt<Omega::uint32_t>     m_marshal_count;
-		OOBase::RWMutex                        m_lock;
+		OOBase::SpinLock                       m_lock;
 		Omega::uint32_t                        m_stub_id;
 		OTL::ObjectPtr<Omega::IObject>         m_ptrObj;
 		StdObjectManager*                      m_pManager;

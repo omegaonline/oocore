@@ -225,7 +225,7 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
 void OOCore::StdObjectManager::Shutdown()
 {
 	std::list<ObjectPtr<ObjectImpl<Stub> > >  listStubs;
-	std::list<ObjectPtr<ObjectImpl<Proxy> > > listProxies;
+	std::list<ObjectImpl<Proxy>* > listProxies;
 
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -237,7 +237,7 @@ void OOCore::StdObjectManager::Shutdown()
 	m_mapStubObjs.clear();
 
 	// Copy the proxys
-	for (std::map<uint32_t,ObjectPtr<ObjectImpl<Proxy> > >::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
+	for (std::map<uint32_t,ObjectImpl<Proxy>* >::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
 		listProxies.push_back(j->second);
 	
 	m_mapProxyIds.clear();
@@ -687,10 +687,11 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 			
 			// See if we have a proxy already...
 			ObjectPtr<ObjectImpl<Proxy> > ptrProxy;
+
 			{
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-				std::map<uint32_t,ObjectPtr<ObjectImpl<Proxy> > >::iterator i=m_mapProxyIds.find(proxy_id);
+				std::map<uint32_t,ObjectImpl<Proxy>*>::iterator i=m_mapProxyIds.find(proxy_id);
 				if (i != m_mapProxyIds.end())
 					ptrProxy = i->second;
 			}
@@ -702,13 +703,12 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 
 				OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-				std::pair<std::map<uint32_t,ObjectPtr<ObjectImpl<Proxy> > >::iterator,bool> p = m_mapProxyIds.insert(std::map<uint32_t,ObjectPtr<ObjectImpl<Proxy> > >::value_type(proxy_id,ptrProxy));
+				std::pair<std::map<uint32_t,ObjectImpl<Proxy>*>::iterator,bool> p = m_mapProxyIds.insert(std::map<uint32_t,ObjectImpl<Proxy>*>::value_type(proxy_id,ptrProxy));
 				if (!p.second)
 					ptrProxy = p.first->second;
 			}
 
-			ObjectPtr<IObject> ptrObject = ptrProxy->UnmarshalInterface(pMessage,iid);
-			pObject = ptrObject.AddRef();
+			pObject = ptrProxy->UnmarshalInterface(pMessage,iid);
 		}
 		else if (flag == 2)
 		{

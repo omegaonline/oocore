@@ -81,7 +81,7 @@ namespace OOCore
 				
 		std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >                                     m_mapStubObjs;
 		std::map<Omega::uint32_t,std::map<Omega::IObject*,OTL::ObjectPtr<OTL::ObjectImpl<Stub> > >::iterator> m_mapStubIds;
-		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Proxy> > >                                    m_mapProxyIds;
+		std::map<Omega::uint32_t,OTL::ObjectImpl<Proxy>*>                                                     m_mapProxyIds;
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 		

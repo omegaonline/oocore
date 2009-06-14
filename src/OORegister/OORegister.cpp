@@ -152,7 +152,8 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	Omega::IException* pE = Omega::Initialize();
+	// Allow standalone startup
+	Omega::IException* pE = Omega::Initialize(true);
 	if (pE)
 	{
 		if (!bSilent)

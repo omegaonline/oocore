@@ -82,27 +82,25 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 {
 	try
 	{
+		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
 		ObjectPtr<System::IStub> ptrStub;
 			
 		// See if we have a stub for this interface already...
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-			std::map<const guid_t,ObjectPtr<System::IStub> >::iterator i=m_iid_map.find(iid);
-			if (i != m_iid_map.end())
-				return i->second;
+		std::map<const guid_t,ObjectPtr<System::IStub> >::iterator i=m_iid_map.find(iid);
+		if (i != m_iid_map.end())
+			return i->second;
 			
-			// See if any known interface supports the new interface
-			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+		// See if any known interface supports the new interface
+		for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
+		{
+			if (i->second->SupportsInterface(iid))
 			{
-				if (i->second->SupportsInterface(iid))
-				{
-					ptrStub = i->second;
-					break;
-				}
+				ptrStub = i->second;
+				break;
 			}
 		}
-
+	
 		if (!ptrStub)
 		{
 			// Check whether underlying object supports interface
@@ -120,8 +118,6 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 		}
 
 		// Now add it...
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-			
 		std::pair<std::map<const guid_t,ObjectPtr<System::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<System::IStub> >::value_type(iid,ptrStub));
 		if (!p.second)
 			ptrStub = p.first->second;

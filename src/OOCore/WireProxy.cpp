@@ -157,7 +157,7 @@ OOCore::Proxy::WireProxyShim OOCore::Proxy::FindShim(const guid_t& iid, bool bCh
 	return ptrProxy;
 }
 
-ObjectPtr<IObject> OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
+IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
 	// Up our marshal count early, because we are definitely attached to something!
 	++m_marshal_count;
@@ -172,6 +172,7 @@ ObjectPtr<IObject> OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessag
 	if (!ptrProxy)
 		OMEGA_THROW(L"Failed to find correct shim for wire_iid");
 
+	BORKED!!
 	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
 }
 
@@ -251,6 +252,7 @@ IObject* OOCore::Proxy::QI(const guid_t& iid)
 	if (!ptrProxy)
 		return 0;
 
+	BORKED!!
 	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
 }
 

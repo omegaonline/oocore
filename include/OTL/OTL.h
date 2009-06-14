@@ -175,14 +175,6 @@ namespace OTL
 			Attach(0);
 		}
 
-		ObjectPtrBase& operator = (const ObjectPtrBase& rhs)
-		{
-			if (this == &rhs)
-				return *this;
-
-			return this->operator = (static_cast<OBJECT*>(rhs));
-		}
-
 		ObjectPtrBase& operator = (OBJECT* ptr)
 		{
 			if (ptr != m_ptr)
@@ -244,6 +236,9 @@ namespace OTL
 
 	protected:
 		OBJECT* m_ptr;
+
+	private:
+		ObjectPtrBase& operator = (const ObjectPtrBase& rhs) { return *this; }
 	};
 
 	template <class OBJECT>
@@ -272,6 +267,20 @@ namespace OTL
 		ObjectPtr(const Omega::string_t& name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
 		  ObjectPtrBase<OBJECT>(name,flags,pOuter)
 		{ }
+
+		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
+		{ 
+			if (this != &rhs)
+				*this = rhs.m_ptr;
+
+			return *this;
+		}
+
+		ObjectPtr& operator = (OBJECT* obj)
+		{
+			ObjectPtrBase<OBJECT>::operator = (obj);
+			return *this;
+		}
 	};
 
 	template <>
@@ -285,6 +294,20 @@ namespace OTL
 		ObjectPtr(const ObjectPtr<Omega::IObject>& rhs) :
 		  ObjectPtrBase<Omega::IObject>(rhs)
 		{ }
+
+		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
+		{ 
+			if (this != &rhs)
+				*this = rhs.m_ptr;
+
+			return *this;
+		}
+
+		ObjectPtr& operator = (Omega::IObject* obj)
+		{
+			ObjectPtrBase<Omega::IObject>::operator = (obj);
+			return *this;
+		}
 	};
 
 	// If the compiler moans here, then you need to #include <OTL/Registry.h>

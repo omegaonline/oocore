@@ -22,6 +22,21 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_safe_proxy_remove,1,((in),const void*,shim));
+
+Omega::System::MetaInfo::Safe_Proxy_Owner::~Safe_Proxy_Owner()
+{
+	try
+	{
+		for (std::map<guid_t,Safe_Proxy_Base*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+			i->second->DecRef();
+
+		OOCore_safe_proxy_remove(m_shim);
+	}
+	catch (...)
+	{}
+}
+
 Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Owner::GetBase(const Omega::guid_t& iid, const SafeShim* shim)
 {
 	Threading::Guard<Threading::Mutex> guard(m_lock);
@@ -129,9 +144,17 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const Omega::guid_t& iid, 
 	if (!obj)
 		OMEGA_THROW(L"Failed to create safe proxy");
 
+	// Release the incoming shim....
+	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
+	if (except)
+		throw_correct_exception(except);
+
 	AddRef();
 	return obj->Throw();
 }
+
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_proxy_find,1,((in),const void*,shim));
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_proxy_add,2,((in),const void*,shim,(in),void*,pProxy));
 
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_proxy_owner(const SafeShim* shim)
 {
@@ -144,13 +167,21 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner;
 
 	// Lookup in the global map...
-
-	if (!ptrOwner)
+	ptrOwner = static_cast<Safe_Proxy_Owner*>(OOCore_safe_proxy_find(static_cast<const SafeShim*>(base_shim)));
+	if (ptrOwner)
+		ptrOwner->AddRef();
+	else
 	{
 		// Create a safe proxy owner
 		OMEGA_NEW(ptrOwner,Safe_Proxy_Owner(base_shim));
 		
 		// Add to the map...
+		Safe_Proxy_Owner* pExisting = static_cast<Safe_Proxy_Owner*>(OOCore_safe_proxy_add(static_cast<const SafeShim*>(base_shim),static_cast<Safe_Proxy_Owner*>(ptrOwner)));
+		if (pExisting)
+		{
+			ptrOwner = pExisting;
+			ptrOwner->AddRef();
+		}
 	}
 	
 	return ptrOwner;
@@ -168,6 +199,21 @@ Omega::IObject* Omega::System::MetaInfo::create_proxy(const SafeShim* shim)
 void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
 {
 	create_proxy_owner(shim)->Throw(*shim->m_iid,shim);
+}
+
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_safe_stub_remove,1,((in),void*,pObject));
+
+Omega::System::MetaInfo::Safe_Stub_Owner::~Safe_Stub_Owner()
+{
+	try
+	{
+		for (std::map<guid_t,Safe_Stub_Base*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
+			i->second->DecRef();
+
+		OOCore_safe_stub_remove(m_pObject);
+	}
+	catch (...)
+	{}
 }
 
 Omega::System::MetaInfo::Safe_Stub_Base* Omega::System::MetaInfo::Safe_Stub_Owner::GetBase(const guid_t& iid, IObject* pObj)
@@ -255,6 +301,9 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owne
 	return pStub->GetShim();
 }
 
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_stub_find,1,((in),void*,pObject));
+OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_stub_add,2,((in),void*,pObject,(in),void*,pStub));
+
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::create_stub_owner(IObject* pObj)
 {
 	// Get the IObject interface
@@ -263,13 +312,21 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	auto_iface_ptr<Safe_Stub_Owner> ptrOwner;
 
 	// Lookup in the global map...
-
-	if (!ptrOwner)
+	ptrOwner = static_cast<Safe_Stub_Owner*>(OOCore_safe_stub_find(static_cast<IObject*>(ptrObject)));
+	if (ptrOwner)
+		ptrOwner->AddRef();
+	else
 	{
 		// Create a safe proxy owner
 		OMEGA_NEW(ptrOwner,Safe_Stub_Owner(ptrObject));
 		
 		// Add to the map...
+		Safe_Stub_Owner* pExisting = static_cast<Safe_Stub_Owner*>(OOCore_safe_stub_add(static_cast<IObject*>(ptrObject),static_cast<Safe_Stub_Owner*>(ptrOwner)));
+		if (pExisting)
+		{
+			ptrOwner = pExisting;
+			ptrOwner->AddRef();
+		}
 	}
 	
 	return ptrOwner;

@@ -613,8 +613,18 @@ namespace Omega
 
 				virtual void Release()
 				{
-					if (m_refcount.Release() && m_pincount.IsZero())
-						delete this;
+					if (m_refcount.Release())
+					{
+						// Save the shim for after the delete
+						const SafeShim* shim = m_shim;
+
+						if (m_pincount.IsZero())
+							delete this;
+
+						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
+						if (except)
+							throw_correct_exception(except);
+					}
 				}
 
 				inline IObject* QueryInterface(const guid_t& iid)
@@ -626,18 +636,18 @@ namespace Omega
 				
 				void Pin()
 				{
-					/*const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
+					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnPin_Safe(m_shim);
 					if (except)
-						throw_correct_exception(except);*/
+						throw_correct_exception(except);
 
 					m_pincount.AddRef();
 				}
 
 				void Unpin()
 				{
-					/*const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnUnpin_Safe(m_shim);
+					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnUnpin_Safe(m_shim);
 					if (except)
-						throw_correct_exception(except);*/
+						throw_correct_exception(except);
 
 					if (m_pincount.Release() && m_refcount.IsZero())
 						delete this;
@@ -654,21 +664,8 @@ namespace Omega
 				const SafeShim*                   m_shim;
 				Threading::AtomicRefCount         m_refcount;
 				Threading::AtomicRefCount         m_pincount;
-
-				virtual ~Safe_Proxy_Owner()
-				{
-					try
-					{
-						for (std::map<guid_t,Safe_Proxy_Base*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
-							i->second->DecRef();
-					}
-					catch (...)
-					{}
-
-					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
-					if (except)
-						throw_correct_exception(except);
-				}
+				
+				inline virtual ~Safe_Proxy_Owner();
 
 				inline Safe_Proxy_Base* GetBase(const Omega::guid_t& iid, const SafeShim* shim = 0);
 
@@ -720,8 +717,14 @@ namespace Omega
 
 				virtual void Release()
 				{
-					if (m_refcount.Release() && m_pincount.IsZero())
-						delete this;
+					if (m_refcount.Release())
+					{
+						// Release our pointer
+						m_pObject->Release();						
+						
+						if (m_pincount.IsZero())
+							delete this;
+					}
 				}
 
 				inline const SafeShim* QueryInterface(const guid_t& iid)
@@ -753,18 +756,7 @@ namespace Omega
 				Threading::AtomicRefCount        m_pincount;
 				SafeShim                         m_shim;
 
-				virtual ~Safe_Stub_Owner()
-				{
-					try
-					{
-						for (std::map<guid_t,Safe_Stub_Base*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
-							i->second->DecRef();
-					}
-					catch (...)
-					{}
-
-					m_pObject->Release();
-				}
+				inline virtual ~Safe_Stub_Owner();
 
 				inline Safe_Stub_Base* GetBase(const guid_t& iid, IObject* pObj);
 

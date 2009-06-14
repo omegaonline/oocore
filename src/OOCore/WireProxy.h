@@ -60,7 +60,7 @@ namespace OOCore
 
 		void Disconnect();
 
-		OTL::ObjectPtr<Omega::IObject> UnmarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& wire_iid);
+		Omega::IObject* UnmarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& wire_iid);
 
 		BEGIN_INTERFACE_MAP(Proxy)
 			INTERFACE_ENTRY(Omega::System::IProxy)
@@ -100,12 +100,13 @@ namespace OOCore
 	public:
 		void Pin()
 		{
-			void* TODO;
+			++m_pin_count;
 		}
 
 		void Unpin()
 		{
-			void* TODO;
+			if (--m_pin_count==0 && m_refcount.IsZero())
+				delete this;
 		}
 
 		const Omega::System::MetaInfo::SafeShim* GetStub(const Omega::guid_t& iid);
@@ -124,11 +125,24 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
 
+	protected:
+		virtual void Internal_Release()
+		{
+			if (m_refcount.Release())
+			{
+				//CallRemoteRelease();
+
+				if (m_pin_count == 0)
+					delete this;
+			}
+		}
+
 	private:
 		Proxy(const Proxy&) : OTL::ObjectBase(), Omega::System::IProxy(), Omega::Remoting::IMarshal() {}
 		Proxy& operator = (const Proxy&) { return *this; }
 
 		OOBase::AtomicInt<Omega::uint32_t> m_marshal_count;
+		OOBase::AtomicInt<Omega::uint32_t> m_pin_count;
 		OOBase::SpinLock                   m_lock;
 		Omega::uint32_t                    m_proxy_id;
 		StdObjectManager*                  m_pManager;

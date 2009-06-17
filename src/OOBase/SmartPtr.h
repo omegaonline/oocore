@@ -93,9 +93,9 @@ namespace OOBase
 				}
 
 			private:
-				~SmartPtrNode() 
+				~SmartPtrNode()
 				{
-					Destructor::destroy(m_data);	
+					Destructor::destroy(m_data);
 				}
 
 				T*                m_data;
@@ -131,7 +131,7 @@ namespace OOBase
 				{
 					OOBASE_NEW(m_node,SmartPtrNode(ptr));
 					if (!m_node)
-						OOBase_CallCriticalFailure(GetLastError());
+						OOBase_OutOfMemory();
 				}
 
 				return *this;
@@ -148,7 +148,7 @@ namespace OOBase
 					}
 
 					m_node = rhs.m_node;
-					
+
 					if (m_node)
 						m_node->add_ref();
 				}
@@ -203,7 +203,7 @@ namespace OOBase
 		{
 			if (this != &rhs)
 				detail::SmartPtrImpl<T,Destructor>::operator = (rhs);
-			
+
 			return *this;
 		}
 
@@ -251,7 +251,7 @@ namespace OOBase
 		{
 			if (this != &rhs)
 				detail::SmartPtrImpl<void,Destructor>::operator = (rhs);
-			
+
 			return *this;
 		}
 

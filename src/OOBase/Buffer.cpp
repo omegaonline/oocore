@@ -21,12 +21,12 @@
 
 #include "Buffer.h"
 
-OOBase::Buffer::Buffer(size_t cbSize) : 
+OOBase::Buffer::Buffer(size_t cbSize) :
 	m_refcount(1),
 	m_capacity(0),
 	m_buffer(0),
 	m_wr_ptr(0),
-	m_rd_ptr(0)	
+	m_rd_ptr(0)
 {
 	int err = priv_malloc(m_buffer,cbSize);
 	if (err == 0)
@@ -36,12 +36,12 @@ OOBase::Buffer::Buffer(size_t cbSize) :
 	}
 }
 
-OOBase::Buffer::Buffer(const Buffer& rhs) : 
+OOBase::Buffer::Buffer(const Buffer& rhs) :
 	m_refcount(1),
 	m_capacity(0),
 	m_buffer(0),
 	m_wr_ptr(0),
-	m_rd_ptr(0)	
+	m_rd_ptr(0)
 {
 	size_t cbSize = rhs.m_capacity;
 	int err = priv_malloc(m_buffer,cbSize);
@@ -49,7 +49,7 @@ OOBase::Buffer::Buffer(const Buffer& rhs) :
 	{
 		m_capacity = cbSize;
 		memcpy(m_buffer,rhs.m_buffer,rhs.m_capacity);
-	
+
 		m_rd_ptr = m_buffer + (rhs.m_rd_ptr - rhs.m_buffer);
 		m_wr_ptr = m_buffer + (rhs.m_wr_ptr - rhs.m_buffer);
 	}
@@ -65,7 +65,7 @@ OOBase::Buffer& OOBase::Buffer::operator = (const Buffer& rhs)
 		{
 			m_capacity = cbSize;
 			memcpy(m_buffer,rhs.m_buffer,rhs.m_capacity);
-		
+
 			m_rd_ptr = m_buffer + (rhs.m_rd_ptr - rhs.m_buffer);
 			m_wr_ptr = m_buffer + (rhs.m_wr_ptr - rhs.m_buffer);
 		}
@@ -183,7 +183,7 @@ int OOBase::Buffer::reset(size_t align)
 size_t OOBase::Buffer::space() const
 {
 	size_t used = static_cast<size_t>(m_wr_ptr - m_buffer);
-	
+
 	return (used >= m_capacity ? 0 : m_capacity - used);
 }
 
@@ -212,6 +212,8 @@ int OOBase::Buffer::space(size_t cbSpace)
 
 //#if defined(_WIN32)
 
+// Possible better implementation?
+
 //#else
 
 int OOBase::Buffer::priv_malloc(char*& ptr, size_t& bytes)
@@ -225,7 +227,7 @@ int OOBase::Buffer::priv_realloc(char*& ptr, size_t& bytes)
 	char* new_ptr = (char*)realloc(ptr,bytes);
 	if (!new_ptr)
 		return errno;
-	
+
 	ptr = new_ptr;
 	return 0;
 }

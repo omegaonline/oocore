@@ -21,10 +21,11 @@
 
 #include "TLSSingleton.h"
 #include "Destructor.h"
+#include "Singleton.h"
 
 #include <map>
 
-namespace 
+namespace
 {
 	class TLSMap
 	{
@@ -32,7 +33,7 @@ namespace
 		static TLSMap* instance(bool create = true);
 
 		static void destroy(void* pThis);
-		
+
 		struct tls_val
 		{
 			void* val;
@@ -53,11 +54,15 @@ namespace
 		~TLSGlobal();
 
 #if defined(_WIN32)
-		DWORD m_key;
+		DWORD         m_key;
+#elif defined(HAVE_PTHREAD)
+		pthread_key_t m_key;
 #else
 #error Fix me!
 #endif
-	};	
+	};
+
+	typedef OOBase::Singleton<TLSGlobal> TLS_GLOBAL;
 }
 
 void OOBase::TLS::Add(const void* key, void (*destructor)(void*))
@@ -96,7 +101,7 @@ bool OOBase::TLS::Get(const void* key, void** val)
 		std::map<const void*,TLSMap::tls_val>::iterator i=inst->m_mapVals.find(key);
 		if (i == inst->m_mapVals.end())
 			return false;
-	
+
 		*val = i->second.val;
 	}
 	catch(std::exception& e)
@@ -148,24 +153,22 @@ void OOBase::TLS::ThreadExit()
 	TLSMap* inst = TLSMap::instance(false);
 	if (inst)
 	{
+#if defined(_WIN32)
 		OOBase::Destructor::remove_destructor(TLSMap::destroy,inst);
+#endif
 		TLSMap::destroy(inst);
 	}
 }
 
-namespace 
-{
-	static TLSGlobal s_tls_cons;
-}
-
 #if defined(_WIN32)
+
 TLSGlobal::TLSGlobal() :
 	m_key(TLS_OUT_OF_INDEXES)
 {
 	m_key = TlsAlloc();
 	if (m_key == TLS_OUT_OF_INDEXES)
 		OOBase_CallCriticalFailure(GetLastError());
-	
+
 	if (!TlsSetValue(m_key,0))
 		OOBase_CallCriticalFailure(GetLastError());
 }
@@ -176,51 +179,88 @@ TLSGlobal::~TLSGlobal()
 		TlsFree(m_key);
 }
 
+#elif defined(HAVE_PTHREAD)
+
+TLSGlobal::TLSGlobal()
+{
+	int err = pthread_key_create(&m_key,&TLSMap::destroy);
+	if (err != 0)
+		OOBase_CallCriticalFailure(err);
+}
+
+TLSGlobal::~TLSGlobal()
+{
+	int err = pthread_key_delete(m_key);
+	if (err != 0)
+		OOBase_CallCriticalFailure(err);
+}
+
 #else
-#error Fix TLS alloc stuff
+#error Fix me!
 #endif
 
 TLSMap* TLSMap::instance(bool create)
 {
 #if defined(_WIN32)
-	TLSMap* inst = static_cast<TLSMap*>(TlsGetValue(s_tls_cons.m_key));
-	if (inst == 0 && create)
+	TLSMap* inst = static_cast<TLSMap*>(TlsGetValue(TLS_GLOBAL::instance()->m_key));
+#elif defined(HAVE_PTHREAD)
+	TLSMap* inst = static_cast<TLSMap*>(pthread_getspecific(TLS_GLOBAL::instance()->m_key));
+#else
+#error Fix me!
+#endif
+	if (!inst && create)
 	{
 		OOBASE_NEW(inst,TLSMap());
 		if (!inst)
 			OOBase_OutOfMemory();
 
+#if defined(_WIN32)
 		OOBase::Destructor::add_destructor(destroy,inst);
 
-		if (!TlsSetValue(s_tls_cons.m_key,inst))
+		if (!TlsSetValue(TLS_GLOBAL::instance()->m_key,inst))
 			OOBase_CallCriticalFailure(GetLastError());
+#elif defined(HAVE_PTHREAD)
+		int err = pthread_setspecific(TLS_GLOBAL::instance()->m_key,inst);
+		if (err != 0)
+			OOBase_CallCriticalFailure(err);
+#else
+#error Fix me!
+#endif
 	}
 	return inst;
-#else
-#error Fix TLS alloc stuff
-#endif
 }
 
 void TLSMap::destroy(void* pThis)
 {
 	TLSMap* inst = static_cast<TLSMap*>(pThis);
-	try
+	if (inst)
 	{
-		for (std::map<const void*,tls_val>::iterator i=inst->m_mapVals.begin();i!=inst->m_mapVals.end();++i)
+		try
 		{
-			if (i->second.destructor)
-				(*(i->second.destructor))(i->second.val);
+			for (std::map<const void*,tls_val>::iterator i=inst->m_mapVals.begin();i!=inst->m_mapVals.end();++i)
+			{
+				if (i->second.destructor)
+					(*(i->second.destructor))(i->second.val);
+			}
+			inst->m_mapVals.clear();
 		}
-		inst->m_mapVals.clear();
-	}
-	catch(std::exception& e)
-	{
-		OOBase_CallCriticalFailure(e.what());
+		catch(std::exception& e)
+		{
+			OOBase_CallCriticalFailure(e.what());
+		}
+
+		delete inst;
 	}
 
-	delete inst;
-
+#if defined(_WIN32)
 	// Now set 0 back in place...
-	if (!TlsSetValue(s_tls_cons.m_key,0))
+	if (!TlsSetValue(TLS_GLOBAL::instance()->m_key,0))
 		OOBase_CallCriticalFailure(GetLastError());
+#elif defined(HAVE_PTHREAD)
+	int err = pthread_setspecific(TLS_GLOBAL::instance()->m_key,0);
+	if (err != 0)
+		OOBase_CallCriticalFailure(err);
+#else
+#error Fix me!
+#endif
 }

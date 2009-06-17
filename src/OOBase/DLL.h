@@ -24,6 +24,10 @@
 
 #include "Mutex.h"
 
+#if !defined(_WIN32)
+#include <ltdl.h>
+#endif
+
 namespace OOBase
 {
 	class DLL
@@ -39,11 +43,11 @@ namespace OOBase
 	private:
 		DLL(const DLL&) {}
 		DLL& operator = (const DLL&) { return *this; }
-		
+
 #if defined(_WIN32)
-		HMODULE m_module;
+		HMODULE     m_module;
 #else
-#error Fix me!
+		lt_dlhandle m_module;
 #endif
 	};
 }

@@ -31,6 +31,14 @@
 	#error Please add support for your dev environment or use autoconf
 #endif
 
+#if defined(HAVE_STDLIB_H)
+#include <stdlib.h>
+#endif
+
+#if defined(HAVE_ERRNO_H)
+#include <errno.h>
+#endif
+
 // Detect the correct use of new(no_throw)
 #if defined(__cplusplus)
 #include <new>

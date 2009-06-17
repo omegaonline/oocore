@@ -30,6 +30,8 @@ namespace OOBase
 	/// A recursive mutex that can be acquired with a timeout
 	class Mutex
 	{
+	    friend class Condition;
+
 	public:
 		Mutex();
 		~Mutex();
@@ -45,8 +47,10 @@ namespace OOBase
 
 #if defined(_WIN32)
 		Win32::SmartHandle m_mutex;
+#elif defined(HAVE_PTHREAD)
+		pthread_mutex_t    m_mutex;
 #else
-		#error Mutex
+#error Fix me!
 #endif
 	};
 
@@ -70,11 +74,11 @@ namespace OOBase
 #if defined(_WIN32)
 		CRITICAL_SECTION m_cs;
 #else
-#error Fix me!
+#error Futexes?!?
 #endif
 	};
 #else
-	typedef Mutex SpinLock
+	typedef Mutex SpinLock;
 #endif
 
 	class RWMutex
@@ -97,9 +101,11 @@ namespace OOBase
 		RWMutex& operator = (const RWMutex&) { return *this; }
 
 #if defined(_WIN32)
-		SRWLOCK m_lock;
+		SRWLOCK          m_lock;
+#elif defined(HAVE_PTHREAD)
+		pthread_rwlock_t m_mutex;
 #else
-		#error Please add RWMutex support
+#error Fix me!
 #endif
 	};
 
@@ -131,7 +137,7 @@ namespace OOBase
 		void acquire()
 		{
 			assert(!m_acquired);
-				
+
 			m_mutex.acquire();
 
 			m_acquired = true;
@@ -140,7 +146,7 @@ namespace OOBase
 		bool acquire(const timeval_t& wait)
 		{
 			assert(!m_acquired);
-				
+
 			if (m_mutex.acquire(&wait))
 				m_acquired = true;
 
@@ -152,7 +158,7 @@ namespace OOBase
 			assert(m_acquired);
 
 			m_acquired = false;
-				
+
 			m_mutex.release();
 		}
 
@@ -185,7 +191,7 @@ namespace OOBase
 		void acquire()
 		{
 			assert(!m_acquired);
-				
+
 			m_mutex.acquire_read();
 
 			m_acquired = true;
@@ -196,7 +202,7 @@ namespace OOBase
 			assert(m_acquired);
 
 			m_acquired = false;
-				
+
 			m_mutex.release_read();
 		}
 

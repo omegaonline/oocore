@@ -23,61 +23,77 @@
 
 #if !defined(HAVE_WINDOWS_H)
 
-namespace 
+namespace
 {
-	class LocalSocket : public OOBase::Socket
+	class SocketImpl
 	{
 	public:
-		LocalSocket(int sock);
-
-		virtual ~LocalSocket()
-		{
-			close();
-		}
+		SocketImpl(int sock_handle);
+		virtual ~SocketImpl();
 
 		virtual int send(const void* buf, size_t len, const OOBase::timeval_t* timeout = 0);
 		virtual size_t recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* timeout = 0);
 		virtual void close();
-		virtual uid_t get_uid();
+
+	protected:
+		int m_sock_handle;
+	};
+
+	template <class Base>
+	class SocketTempl :
+		public Base,
+		public SocketImpl
+	{
+	public:
+		SocketTempl(int sock_handle) :
+			SocketImpl(sock_handle)
+		{}
+
+		virtual ~SocketTempl()
+		{}
+
+		int send(const void* buf, size_t len, const OOBase::timeval_t* timeout = 0)
+		{
+			return SocketImpl::send(buf,len,timeout);
+		}
+
+		size_t recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* timeout = 0)
+		{
+			return SocketImpl::recv(buf,len,perr,timeout);
+		}
+
+		void close()
+		{
+			SocketImpl::close();
+		}
 
 	private:
-		int m_socket;
+		SocketTempl(const SocketTempl&) {}
+		SocketTempl& operator = (const SocketTempl&) { return *this; }
+	};
+
+	class Socket :
+		public SocketTempl<OOBase::Socket>
+	{
+	public:
+		Socket(int sock_handle) :
+			SocketTempl<OOBase::Socket>(sock_handle)
+		{}
+	};
+
+	class LocalSocket :
+		public SocketTempl<OOBase::LocalSocket>
+	{
+	public:
+		LocalSocket(int sock_handle) :
+			SocketTempl<OOBase::LocalSocket>(sock_handle)
+		{}
+
+		virtual OOBase::LocalSocket::uid_t get_uid();
 	};
 }
 
-OOBase::Socket* OOBase::Socket::connect_local(const std::string& path, int* perr)
-{
-}
-
-int OOCore::UserSession::MessagePipe::connect(MessagePipe& pipe, const std::string& strAddr, OOBase::timeval_t* wait)
-{
-	ACE_UNIX_Addr addr(ACE_TEXT_CHAR_TO_TCHAR(strAddr.c_str()));
-
-	if (ACE_SOCK_Connector().connect(pipe.m_stream,addr,wait) != 0)
-		return -1;
-
-	return 0;
-}
-
-void OOCore::UserSession::MessagePipe::close()
-{
-    m_stream.close_writer();
-	m_stream.close_reader();
-	m_stream.close_reader();
-	m_stream.close();
-}
-
-ssize_t OOCore::UserSession::MessagePipe::send(const ACE_Message_Block* mb, OOBase::timeval_t* timeout, size_t* sent)
-{
-	return m_stream.send_n(mb,timeout,sent);
-}
-
-ssize_t OOCore::UserSession::MessagePipe::recv(void* buf, size_t len)
-{
-	return m_stream.recv(buf,len);
-}
-
-OOBase::Socket::uid_t LocalSocket::get_uid()
+OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 {
 #if defined(HAVE_GETPEEREID)
 	/* OpenBSD style:  */
@@ -86,35 +102,42 @@ OOBase::Socket::uid_t LocalSocket::get_uid()
 	if (getpeereid(pSocket->get_read_handle(), &uid, &gid) != 0)
 	{
 		/* We didn't get a valid credentials struct. */
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+		OOBase_CallCriticalFailure(errno);
+		return -1;
 	}
+	return uid;
 
-#elif defined(SO_PEERCRED)
+#elif defined(HAVE_SO_PEERCRED)
 	/* Linux style: use getsockopt(SO_PEERCRED) */
-	struct ucred peercred;
-	//socklen_t so_len = sizeof(peercred);
-	size_t so_len = sizeof(peercred);
+	ucred peercred;
+	socklen_t so_len = sizeof(peercred);
 
 	if (getsockopt(pSocket->get_read_handle(), SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
 	{
 		/* We didn't get a valid credentials struct. */
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+		OOBase_CallCriticalFailure(errno);
+		return -1;
 	}
-
-	uid_t uid = peercred.uid;
+	return peercred.uid;
 
 #elif defined(HAVE_GETPEERUCRED)
 	/* Solaris > 10 */
 	ucred_t* ucred = NULL; /* must be initialized to NULL */
-	if (getpeerucred(pSocket->get_read_handle(), &ucred) == -1)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+	if (getpeerucred(pSocket->get_read_handle(), &ucred) != 0)
+	{
+		OOBase_CallCriticalFailure(errno);
+		return -1;
+	}
 
 	uid_t uid;
 	if ((uid = ucred_geteuid(ucred)) == -1)
 	{
+		int err = errno;
 		ucred_free(ucred);
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get effective UID from peer credentials")),-1);
+		OOBase_CallCriticalFailure(err);
+		return -1;
 	}
+	return uid;
 
 #elif defined(HAVE_STRUCT_CMSGCRED) || defined(HAVE_STRUCT_FCRED) || (defined(HAVE_STRUCT_SOCKCRED) && defined(LOCAL_CREDS))
 
@@ -124,18 +147,21 @@ OOBase::Socket::uid_t LocalSocket::get_uid()
 	* next packet.
 	*/
 	int on = 1;
-	if (setsockopt(pSocket->get_read_handle(), 0, LOCAL_CREDS, &on, sizeof(on)) < 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not enable credential reception")),-1);
+	if (setsockopt(pSocket->get_read_handle(), 0, LOCAL_CREDS, &on, sizeof(on)) != 0)
+	{
+		OOBase_CallCriticalFailure(errno);
+		return -1;
+	}
 
 	/* Credentials structure */
 #if defined(HAVE_STRUCT_CMSGCRED)
-	typedef struct cmsgcred Cred;
+	typedef cmsgcred Cred;
 	#define cruid cmcred_uid
 #elif defined(HAVE_STRUCT_FCRED)
-	typedef struct fcred Cred;
+	typedef fcred Cred;
 	#define cruid fc_uid
 #elif defined(HAVE_STRUCT_SOCKCRED)
-	typedef struct sockcred Cred;
+	typedef sockcred Cred;
 	#define cruid sc_uid
 #endif
 	/* Compute size without padding */
@@ -163,14 +189,25 @@ OOBase::Socket::uid_t LocalSocket::get_uid()
 	iov.iov_len = 1;
 
 	if (recvmsg(pSocket->get_read_handle(), &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("could not get peer credentials")),-1);
+	{
+		OOBase_CallCriticalFailure(errno);
+		return -1;
+	}
 
 	Cred* cred = (Cred*)CMSG_DATA(cmsg);
-	uid_t uid = cred->cruid;
+	return cred->cruid;
 #else
 	// We can't handle this situation
 	#error Fix me!
+	return -1;
 #endif
+}
+
+OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path, int* perr, const timeval_t* wait)
+{
+	#error Fix me!
+
+	return 0;
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)

@@ -45,14 +45,13 @@ int OOBase::DLL::load(const char* full_path)
 bool OOBase::DLL::unload()
 {
 	if (!m_module)
-		return false;
-	else if (FreeLibrary(m_module))
-	{
-		m_module = 0;
 		return true;
-	}
-	else
+
+	if (!FreeLibrary(m_module))
 		return false;
+
+	m_module = 0;
+	return true;
 }
 
 void* OOBase::DLL::symbol(const char* sym_name)
@@ -65,7 +64,96 @@ void* OOBase::DLL::symbol(const char* sym_name)
 
 #else
 
-#error Fix me!
+#include "Singleton.h"
+
+namespace
+{
+	struct Libtool_Helper
+	{
+		Libtool_Helper()
+		{
+			OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+			int err = lt_dlinit();
+			if (err != 0)
+				OOBase_CallCriticalFailure(lt_dlerror());
+		}
+
+		~Libtool_Helper()
+		{
+			OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+			lt_dlexit();
+		}
+
+		OOBase::Mutex m_lock;
+	};
+
+	typedef OOBase::Singleton<Libtool_Helper> LT_HELPER;
+}
+
+OOBase::DLL::DLL() :
+	m_module(0)
+{
+}
+
+OOBase::DLL::~DLL()
+{
+	unload();
+}
+
+int OOBase::DLL::load(const char* full_path)
+{
+	OOBase::Guard<OOBase::Mutex> guard(LT_HELPER::instance()->m_lock);
+
+	lt_dladvise adv;
+	int err2 = 0;
+	int err = lt_dladvise_init(&adv);
+	if (!err)
+	{
+		err = lt_dladvise_local(&adv);
+		if (!err)
+		{
+			m_module = lt_dlopenadvise(full_path,adv);
+			if (!m_module)
+				err2 = errno;
+		}
+
+		lt_dladvise_destroy(&adv);
+	}
+
+	if (err2)
+		return err2;
+
+	if (err)
+		OOBase_CallCriticalFailure(lt_dlerror());
+
+	return 0;
+}
+
+bool OOBase::DLL::unload()
+{
+	if (!m_module)
+		return true;
+
+	OOBase::Guard<OOBase::Mutex> guard(LT_HELPER::instance()->m_lock);
+
+	if (lt_dlclose(m_module))
+		return false;
+
+	m_module = 0;
+	return true;
+}
+
+void* OOBase::DLL::symbol(const char* sym_name)
+{
+	if (!m_module)
+		return 0;
+
+	OOBase::Guard<OOBase::Mutex> guard(LT_HELPER::instance()->m_lock);
+
+	return lt_dlsym(m_module,sym_name);
+}
 
 #endif
 

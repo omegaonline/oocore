@@ -23,7 +23,7 @@
 
 #if defined(_WIN32)
 
-namespace 
+namespace
 {
 	static BOOL __stdcall PINIT_ONCE_FN_impl(INIT_ONCE* /*InitOnce*/, void* Parameter, void** /*Context*/)
 	{
@@ -43,7 +43,9 @@ void OOBase::Once::Run(once_t* key, pfn_once fn)
 
 void OOBase::Once::Run(once_t* key, pfn_once fn)
 {
-#error Fix me!
+	int err = pthread_once(key,fn);
+	if (err != 0)
+		OOBase_CallCriticalFailure(err);
 }
 
 #else

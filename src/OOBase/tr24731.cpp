@@ -34,7 +34,7 @@ int vsnprintf_s(char* s, size_t n, const char* format, va_list arg)
 
 int vswprintf_s(wchar_t* s, size_t n, const wchar_t* format, va_list arg)
 {
-	return vswprintf(s,format,arg);
+	return vswprintf(s,n,format,arg);
 }
 
 #endif

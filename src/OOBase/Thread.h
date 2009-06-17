@@ -22,6 +22,7 @@
 #ifndef OOBASE_THREAD_H_INCLUDED_
 #define OOBASE_THREAD_H_INCLUDED_
 
+#include "Mutex.h"
 #include "TimeVal.h"
 #include "Win32.h"
 
@@ -42,6 +43,8 @@ namespace OOBase
 		Thread(const Thread&) {}
 		Thread& operator = (const Thread&) { return *this; }
 
+		Mutex     m_lock;
+
 #if defined(_WIN32)
 		struct wrapper
 		{
@@ -50,7 +53,18 @@ namespace OOBase
 			void*              param;
 		};
 		Win32::SmartHandle m_hThread;
-		static unsigned int __stdcall dummy_fn(void* param);
+		static unsigned int __stdcall oobase_thread_fn(void* param);
+#elif defined(HAVE_PTHREAD)
+		struct wrapper
+		{
+			Thread*            pThis;
+			int                (*thread_fn)(void*);
+			void*              param;
+		};
+		bool           m_running;
+		pthread_t      m_thread;
+		pthread_cond_t m_condition;
+		static void* oobase_thread_fn(void* param);
 #else
 #error Fix me!
 #endif

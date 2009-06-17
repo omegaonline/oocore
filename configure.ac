@@ -31,10 +31,10 @@ OO_PROG_CC
 
 # Set sensible default CFLAGS if necessary
 if test "$oo_test_CFLAGS" != set; then
-      
+
   # Always try to hide symbols
   AX_CFLAGS_GCC_OPTION([-fvisiblity=hidden])
-  
+
   if test x$debug = xtrue; then
     AX_CFLAGS_GCC_OPTION([-g])
   else
@@ -46,13 +46,13 @@ OO_PROG_CXX
 
 # Set sensible default CXXFLAGS if necessary
 if test "$oo_test_CXXFLAGS" != set; then
-    
+
   # Always add full warnings
   AX_CXXFLAGS_WARN_ALL
-  
+
   # Always try to hide symbols
   AX_CXXFLAGS_GCC_OPTION([-fvisiblity=hidden])
-  
+
   if test x$debug = xtrue; then
     AX_CXXFLAGS_GCC_OPTION([-g])
   else
@@ -78,7 +78,15 @@ OO_C_BUILTINS
 OO_NEW_NOTHROW
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h])
+AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h])
+
+# Check for specifics of Unix cred passing
+AC_CHECK_FUNCS([getpeereid])
+AC_CHECK_FUNCS([getpeerucred])
+AC_CHECK_TYPES([struct cmsgcred])
+AC_CHECK_TYPES([struct fcred])
+AC_CHECK_TYPES([struct sockcred])
+
 
 # Add windows resource support to libtool
 LT_INIT([win32-dll disable-static])

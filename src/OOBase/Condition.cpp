@@ -48,6 +48,55 @@ void OOBase::Condition::broadcast()
 	Win32::WakeAllConditionVariable(&m_var);
 }
 
+#elif defined(HAVE_PTHREAD)
+
+OOBase::Condition::Condition()
+{
+	int err = pthread_cond_init(&m_var,NULL);
+	if (err)
+		OOBase_CallCriticalFailure(err);
+}
+
+OOBase::Condition::~Condition()
+{
+	pthread_cond_destroy(&m_var);
+}
+
+bool OOBase::Condition::wait(Condition::Mutex& mutex, const timeval_t* wait)
+{
+	int err = 0;
+	if (!wait)
+		err = pthread_cond_wait(&m_var,&mutex.m_mutex);
+	else
+	{
+		timespec wt;
+		timeval_t now = OOBase::gettimeofday();
+		now += *wait;
+		wt.tv_sec = now.tv_sec;
+		wt.tv_nsec = now.tv_usec * 1000;
+
+    	err = pthread_cond_timedwait(&m_var,&mutex.m_mutex,&wt);
+	}
+
+	if (err == 0)
+		return true;
+
+	if (err != ETIMEDOUT)
+		OOBase_CallCriticalFailure(err);
+
+	return false;
+}
+
+void OOBase::Condition::signal()
+{
+	pthread_cond_signal(&m_var);
+}
+
+void OOBase::Condition::broadcast()
+{
+	pthread_cond_broadcast(&m_var);
+}
+
 #else
 
 #error Fix me!

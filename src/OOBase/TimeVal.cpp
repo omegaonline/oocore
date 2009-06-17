@@ -40,7 +40,7 @@ OOBase::timeval_t OOBase::gettimeofday()
 
 	FILETIME file_time;
 	GetSystemTimeAsFileTime(&file_time);
-	
+
 	ULARGE_INTEGER ularge;
 	ularge.LowPart = file_time.dwLowDateTime;
 	ularge.HighPart = file_time.dwHighDateTime;
@@ -52,10 +52,9 @@ OOBase::timeval_t OOBase::gettimeofday()
 	ret.tv_usec = static_cast<long>((q / 10L) % 1000000L);
 
 #elif defined(HAVE_SYS_TIME_H) && (HAVE_SYS_TIME_H == 1)
-	
+
 	timeval tv;
-	if (::gettimeofday(&tv,0) != 0)
-		CallCriticalFailure();
+	::gettimeofday(&tv,0);
 
 	ret.tv_sec = tv.tv_sec;
 	ret.tv_usec = tv.tv_usec;
@@ -71,6 +70,19 @@ void OOBase::sleep(const timeval_t& wait)
 {
 #if defined(_WIN32)
 	::Sleep(wait.msec());
+#elif defined(HAVE_TIME_H)
+	timespec wt;
+	wt.tv_sec = wait.tv_sec;
+	wt.tv_nsec = wait.tv_usec * 1000;
+
+	for (;;)
+	{
+		if (!nanosleep(&wt,&wt))
+		break;
+
+		if (errno != EINTR)
+			OOBase_CallCriticalFailure(errno);
+	}
 #else
 #error Fix me!
 #endif
@@ -78,7 +90,7 @@ void OOBase::sleep(const timeval_t& wait)
 
 OOBase::timeval_t& OOBase::timeval_t::operator += (const timeval_t& rhs)
 {
-	if (tv_usec + rhs.tv_usec > 1000000) 
+	if (tv_usec + rhs.tv_usec > 1000000)
 	{
 		long nsec = (tv_usec + rhs.tv_usec) / 1000000;
 		tv_usec -= 1000000 * nsec;
@@ -95,14 +107,14 @@ OOBase::timeval_t& OOBase::timeval_t::operator -= (const timeval_t& rhs)
 {
 	/* Perform the carry for the later subtraction by updating r. */
 	timeval_t r = rhs;
-	if (tv_usec < r.tv_usec) 
+	if (tv_usec < r.tv_usec)
 	{
 		long nsec = (r.tv_usec - tv_usec) / 1000000 + 1;
 		r.tv_usec -= 1000000 * nsec;
 		r.tv_sec += nsec;
 	}
-	
-	if (tv_usec - r.tv_usec > 1000000) 
+
+	if (tv_usec - r.tv_usec > 1000000)
 	{
 		long nsec = (tv_usec - r.tv_usec) / 1000000;
 		r.tv_usec += 1000000 * nsec;

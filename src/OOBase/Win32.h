@@ -34,23 +34,25 @@ namespace OOBase
 
 		struct init_once_t
 		{
-			LONG  check;
+			LONG check;
 		};
 
 		class SmartHandle
 		{
 		public:
-			SmartHandle() :
-				m_handle(INVALID_HANDLE_VALUE)
-			{}
-
-			SmartHandle(HANDLE h) :
+			SmartHandle(HANDLE h = INVALID_HANDLE_VALUE) :
 				m_handle(h)
 			{}
 
-			SmartHandle& operator = (HANDLE h) 
+			SmartHandle(const SmartHandle& rhs) :
+				m_handle(rhs.m_handle)
+			{}
+
+			SmartHandle& operator = (const SmartHandle& rhs)
 			{
-				m_handle = h;
+				if (&rhs != this)
+					m_handle = rhs.m_handle;
+
 				return *this;
 			}
 

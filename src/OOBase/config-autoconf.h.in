@@ -15,11 +15,17 @@
 /* Define to 1 if you have the `getpeerucred' function. */
 #undef HAVE_GETPEERUCRED
 
+/* Define to 1 if you have LOCAL_CREDS socket option */
+#undef HAVE_LOCAL_CREDS
+
 /* Define to 1 if you have new (std::nothrow) support */
 #undef HAVE_NEW_NOTHROW
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
+
+/* Define to 1 if you have SO_PEERCRED socket option */
+#undef HAVE_SO_PEERCRED
 
 /* Define to 1 if you have the SQLite3 library */
 #undef HAVE_SQLITE3
@@ -48,11 +54,17 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
 
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
 /* Define to 1 if you have the <sys/time.h> header file. */
 #undef HAVE_SYS_TIME_H
 
 /* Define to 1 if you have the <time.h> header file. */
 #undef HAVE_TIME_H
+
+/* Define to 1 if you have the <uuid/uuid.h> header file. */
+#undef HAVE_UUID_UUID_H
 
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H

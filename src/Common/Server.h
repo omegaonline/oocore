@@ -39,7 +39,7 @@ namespace Omega
 		};
 
 		// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
-		extern const Omega::guid_t OID_InterProcessService;
+		extern "C" const Omega::guid_t OID_InterProcessService;
 	}
 }
 

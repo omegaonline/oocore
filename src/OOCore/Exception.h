@@ -32,7 +32,6 @@ namespace OOCore
 		public Omega::Remoting::IMarshal
 	{
 	public:
-
 		BEGIN_INTERFACE_MAP(ExceptionAutoMarshalImpl)
 			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,&ExceptionAutoMarshalImpl::QIMarshal)
 			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
@@ -55,24 +54,16 @@ namespace OOCore
 	private:
 		Omega::IObject* QIMarshal(const Omega::guid_t&)
 		{
-			if (pOID == 0)
-				return 0;
-			else
-			{
-				Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
-				pRet->AddRef();
-				return pRet;
-			}
+			Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
+			pRet->AddRef();
+			return pRet;
 		}
 
 	// IMarshal members
 	public:
 		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			if (pOID)
-				return *pOID;
-			else
-				return Omega::guid_t::Null();
+			return *pOID;
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
@@ -119,7 +110,7 @@ namespace OOCore
 	};
 
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
-	extern const Omega::guid_t OID_SystemExceptionMarshalFactory;
+	extern "C" const Omega::guid_t OID_SystemExceptionMarshalFactory;
 
 	class SystemException :
 		public ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
@@ -168,7 +159,7 @@ namespace OOCore
 	};
 
 	// {1E127359-1542-4329-8E30-FED8FF810960}
-	extern const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
+	extern "C" const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
 
 	class NoInterfaceException :
 		public ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
@@ -217,7 +208,7 @@ namespace OOCore
 	};
 
 	// {8FA37F2C-8252-437e-9C54-F07C13152E94}
-	extern const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
+	extern "C" const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 
 	class TimeoutException :
 		public ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
@@ -236,7 +227,7 @@ namespace OOCore
 	};
 
 	// {029B38C5-CC76-4d13-98A4-83A65D40710A}
-	extern const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
+	extern "C" const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
 
 	class ChannelClosedException :
 		public ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>

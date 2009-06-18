@@ -43,7 +43,7 @@ namespace OOBase
 		{
 			OOBASE_NEW(m_buffer,Buffer(len + MaxAlignment));
 			if (!m_buffer)
-				OOBase_CallCriticalFailure(GetLastError());
+				OOBase_OutOfMemory();
 
 			reset();
 		}
@@ -163,7 +163,7 @@ namespace OOBase
 			unsigned char len_buf[4] = {0};
 			if (read_bytes(len_buf,sizeof(len_buf)) != sizeof(len_buf))
 				return false;
-			
+
 			size_t len = 0;
 			if (m_big_endian)
 			{
@@ -293,7 +293,7 @@ namespace OOBase
 			// Write the length first
 			if (write_bytes(len_buf,sizeof(len_buf)) != sizeof(len_buf))
 				return false;
-			
+
 			// Then the bytes of the string
 			m_last_error = m_buffer->space(len);
 			if (m_last_error != 0)
@@ -301,7 +301,7 @@ namespace OOBase
 
 			memcpy(m_buffer->wr_ptr(),strText.c_str(),len);
 			m_buffer->wr_ptr(len);
-						
+
 			return true;
 		}
 

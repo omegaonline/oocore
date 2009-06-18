@@ -269,7 +269,7 @@ namespace OTL
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<OBJECT>& rhs)
-		{ 
+		{
 			if (this != &rhs)
 				*this = rhs.m_ptr;
 
@@ -296,7 +296,7 @@ namespace OTL
 		{ }
 
 		ObjectPtr& operator = (const ObjectPtr<Omega::IObject>& rhs)
-		{ 
+		{
 			if (this != &rhs)
 				*this = rhs.m_ptr;
 
@@ -332,7 +332,7 @@ namespace OTL
 		{
 			if (m_refcount.Release())
 				delete this;
-		}		
+		}
 
 	public:
 		typedef Omega::IObject* (ObjectBase::*PFNMEMQI)(const Omega::guid_t& iid);
@@ -369,8 +369,8 @@ namespace OTL
 		{
 			/*******************************************
 			*
-			* If you get compiler errors here, make sure 
-			* you have derived from each class you have 
+			* If you get compiler errors here, make sure
+			* you have derived from each class you have
 			* included in your interface map!
 			*
 			********************************************/
@@ -645,7 +645,7 @@ namespace OTL
 	class SingletonObjectImpl : public ROOT
 	{
 		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT> >;
-		
+
 	public:
 		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* = 0)
 		{
@@ -755,7 +755,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	template <class ROOT, const Omega::guid_t* pOID = &Omega::guid_t::Null(), const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactory
 	{
 	public:
@@ -763,7 +763,7 @@ namespace OTL
 
 		static const Omega::guid_t* GetOid()
 		{
-			return (!pOID ? &Omega::guid_t::Null() : pOID);
+			return pOID;
 		}
 
 		static const Omega::Activation::Flags_t GetActivationFlags()

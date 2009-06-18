@@ -38,13 +38,18 @@ namespace
 		void open(const char* name);
 		void log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args);
 
+		static DWORD getpid()
+		{
+			return GetCurrentProcessId();
+		}
+
 	private:
 		HANDLE        m_hLog;
 		OOBase::Mutex m_lock;
 	};
 }
 
-LoggerImpl::LoggerImpl() : 
+LoggerImpl::LoggerImpl() :
 	m_hLog(NULL)
 {
 }
@@ -72,14 +77,14 @@ void LoggerImpl::open(const char* name)
 	// Create the relevant registry keys if they don't already exist
 	std::string strName = "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\";
 	strName += name;
-		
+
 	HKEY hk;
 	DWORD dwDisp;
-	if (RegCreateKeyExA(HKEY_LOCAL_MACHINE,strName.c_str(),0,NULL,REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hk,&dwDisp) == ERROR_SUCCESS) 
+	if (RegCreateKeyExA(HKEY_LOCAL_MACHINE,strName.c_str(),0,NULL,REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hk,&dwDisp) == ERROR_SUCCESS)
 	{
 		RegSetValueExW(hk,L"EventMessageFile",0,REG_EXPAND_SZ,(LPBYTE)szPath,(DWORD)wcslen(szPath)+1);
 
-		DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE; 
+		DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
  		RegSetValueExW(hk,L"TypesSupported",0,REG_DWORD,(LPBYTE)&dwData,sizeof(DWORD));
 
 		RegCloseKey(hk);
@@ -148,10 +153,41 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 #elif defined(HAVE_ASL_H)
 #include <asl.h>
 
+#error Fix me!
+
 #elif defined(HAVE_SYSLOG_H)
 #include <syslog.h>
+#include <stdarg.h>
+
+namespace
+{
+	class LoggerImpl
+	{
+	public:
+		LoggerImpl();
+		~LoggerImpl();
+
+		void open(const char* name);
+		void log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args);
+
+		static pid_t getpid()
+		{
+			return getpid();
+		}
+
+	private:
+		OOBase::Mutex m_lock;
+	};
+}
+
+LoggerImpl::LoggerImpl()
+{
+	void* IMPLEMENT_SYS_LOG;
+}
 
 #else
+
+#error Fix me!
 
 #endif
 
@@ -190,8 +226,8 @@ void OOSvrBase::Logger::filenum_t::log(const char* fmt, ...)
 	va_start(args,fmt);
 
 	std::stringstream out;
-	out << "[" << GetCurrentProcessId() << "] " << m_pszFilename << "(" << m_nLine << "): " << fmt;
-	
+	out << "[" << LoggerImpl::getpid() << "] " << m_pszFilename << "(" << m_nLine << "): " << fmt;
+
 	LOGGER::instance()->log(m_priority,out.str().c_str(),args);
 
 	va_end(args);

@@ -27,9 +27,9 @@
 namespace OOCore
 {
 	class StdObjectManager;
-	
+
 	// {69099DD8-A628-458a-861F-009E016DB81B}
-	extern const Omega::guid_t OID_ProxyMarshalFactory;
+	extern "C" const Omega::guid_t OID_ProxyMarshalFactory;
 
 	class ProxyMarshalFactory :
 		public OTL::ObjectBase,
@@ -95,7 +95,7 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL UnpackKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetMarshaller_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL IsAlive_Safe(const Omega::System::MetaInfo::SafeShim* shim, int* retval);
-		
+
 	// ISafeProxy members
 	public:
 		void Pin()

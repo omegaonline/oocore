@@ -81,9 +81,9 @@ namespace OOCore
 		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
-	
+
 	// {7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}
-	extern const Omega::guid_t OID_ChannelMarshalFactory;
+	extern "C" const Omega::guid_t OID_ChannelMarshalFactory;
 
 	class ChannelMarshalFactory :
 		public OTL::ObjectBase,

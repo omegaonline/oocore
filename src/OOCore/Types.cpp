@@ -82,7 +82,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const ch
 		OMEGA_NEW(pNode,StringNode(sz));
 	else
 		OMEGA_NEW(pNode,StringNode(OOBase::from_native(sz).c_str()));
-	
+
 	return pNode;
 }
 
@@ -136,7 +136,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const v
 
 	memcpy(sz,str.c_str(),len);
 	sz[len] = '\0';
-	
+
 	return str.length() + 1;
 }
 
@@ -333,7 +333,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 	result.Data2 = 0;
 	result.Data3 = 0;
 	memset(result.Data4,sizeof(result.Data4),0);
-	
+
 	if (sz[0] != L'{')
 		return false;
 
@@ -351,7 +351,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 
 		if (sz[9] != L'-')
 			return false;
-		
+
 		v = (parse(sz[10]) << 12);
 		v += (parse(sz[11]) << 8);
 		v += (parse(sz[12]) << 4);
@@ -372,7 +372,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 
 		result.Data4[0] = static_cast<Omega::byte_t>((parse(sz[20]) << 4) + parse(sz[21]));
 		result.Data4[1] = static_cast<Omega::byte_t>((parse(sz[22]) << 4) + parse(sz[23]));
-		
+
 		if (sz[24] != L'-')
 			return false;
 
@@ -382,7 +382,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 		result.Data4[5] = static_cast<Omega::byte_t>((parse(sz[31]) << 4) + parse(sz[32]));
 		result.Data4[6] = static_cast<Omega::byte_t>((parse(sz[33]) << 4) + parse(sz[34]));
 		result.Data4[7] = static_cast<Omega::byte_t>((parse(sz[35]) << 4) + parse(sz[36]));
-		
+
 		if (sz[37] != L'}' || sz[38] != L'\0')
 			return false;
 
@@ -403,48 +403,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,())
 
 	return *(Omega::guid_t*)(&uuid);
 
+#elif defined(HAVE_UUID_UUID_H)
+
+#error Fix me!
+
 #else
 
-	static bool bInit = false;
-	if (!bInit)
-	{
-		// We don't care if this gets called twice...
-		ACE_Utils::UUID_GENERATOR::instance()->init();
-		bInit = true;
-	}
-
-	ACE_Utils::UUID uuid;
-
-// They went and changed this in ACE!
-#if OMEGA_ACE_VERSION_CURRENT() < OMEGA_ACE_VERSION(5,6,2)
-	ACE_Utils::UUID_GENERATOR::instance()->generateUUID(uuid);
-
-	guid.Data1 = uuid.timeLow();
-	guid.Data2 = uuid.timeMid();
-	guid.Data3 = uuid.timeHiAndVersion();
-	guid.Data4[0] = uuid.clockSeqHiAndReserved();
-	guid.Data4[1] = uuid.clockSeqLow();
-	guid.Data4[2] = (uuid.node()->nodeID())[0];
-	guid.Data4[3] = (uuid.node()->nodeID())[1];
-	guid.Data4[4] = (uuid.node()->nodeID())[2];
-	guid.Data4[5] = (uuid.node()->nodeID())[3];
-	guid.Data4[6] = (uuid.node()->nodeID())[4];
-	guid.Data4[7] = (uuid.node()->nodeID())[5];
-#else
-	ACE_Utils::UUID_GENERATOR::instance()->generate_UUID(uuid);
-
-	guid.Data1 = uuid.time_low();
-	guid.Data2 = uuid.time_mid();
-	guid.Data3 = uuid.time_hi_and_version();
-	guid.Data4[0] = uuid.clock_seq_hi_and_reserved();
-	guid.Data4[1] = uuid.clock_seq_low();
-	guid.Data4[2] = (uuid.node()->node_ID())[0];
-	guid.Data4[3] = (uuid.node()->node_ID())[1];
-	guid.Data4[4] = (uuid.node()->node_ID())[2];
-	guid.Data4[5] = (uuid.node()->node_ID())[3];
-	guid.Data4[6] = (uuid.node()->node_ID())[4];
-	guid.Data4[7] = (uuid.node()->node_ID())[5];
-#endif
+#error Fix me!
 
 	// MD5 hash the result... it hides the MAC address
 	MD5Context ctx;

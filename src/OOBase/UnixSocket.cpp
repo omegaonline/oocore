@@ -21,7 +21,10 @@
 
 #include "Socket.h"
 
-#if !defined(HAVE_WINDOWS_H)
+#if !defined(HAVE_WINDOWS_H) && defined(HAVE_SYS_SOCKET_H)
+
+#include <sys/socket.h>
+#include <sys/un.h>
 
 namespace
 {
@@ -99,7 +102,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	/* OpenBSD style:  */
 	uid_t uid;
 	gid_t gid;
-	if (getpeereid(pSocket->get_read_handle(), &uid, &gid) != 0)
+	if (getpeereid(m_sock_handle, &uid, &gid) != 0)
 	{
 		/* We didn't get a valid credentials struct. */
 		OOBase_CallCriticalFailure(errno);
@@ -112,7 +115,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	ucred peercred;
 	socklen_t so_len = sizeof(peercred);
 
-	if (getsockopt(pSocket->get_read_handle(), SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
+	if (getsockopt(m_sock_handle, SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
 	{
 		/* We didn't get a valid credentials struct. */
 		OOBase_CallCriticalFailure(errno);
@@ -123,7 +126,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 #elif defined(HAVE_GETPEERUCRED)
 	/* Solaris > 10 */
 	ucred_t* ucred = NULL; /* must be initialized to NULL */
-	if (getpeerucred(pSocket->get_read_handle(), &ucred) != 0)
+	if (getpeerucred(m_sock_handle, &ucred) != 0)
 	{
 		OOBase_CallCriticalFailure(errno);
 		return -1;
@@ -139,7 +142,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	}
 	return uid;
 
-#elif defined(HAVE_STRUCT_CMSGCRED) || defined(HAVE_STRUCT_FCRED) || (defined(HAVE_STRUCT_SOCKCRED) && defined(LOCAL_CREDS))
+#elif (defined(HAVE_STRUCT_CMSGCRED) || defined(HAVE_STRUCT_FCRED) || defined(HAVE_STRUCT_SOCKCRED)) && defined(HAVE_LOCAL_CREDS)
 
 	/*
 	* Receive credentials on next message receipt, BSD/OS,
@@ -147,7 +150,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	* next packet.
 	*/
 	int on = 1;
-	if (setsockopt(pSocket->get_read_handle(), 0, LOCAL_CREDS, &on, sizeof(on)) != 0)
+	if (setsockopt(m_sock_handle, 0, LOCAL_CREDS, &on, sizeof(on)) != 0)
 	{
 		OOBase_CallCriticalFailure(errno);
 		return -1;
@@ -188,7 +191,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	iov.iov_base = &buf;
 	iov.iov_len = 1;
 
-	if (recvmsg(pSocket->get_read_handle(), &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
+	if (recvmsg(m_sock_handle, &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
 	{
 		OOBase_CallCriticalFailure(errno);
 		return -1;
@@ -205,9 +208,69 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 
 OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path, int* perr, const timeval_t* wait)
 {
-	#error Fix me!
+	int sock_handle;
+	if ((sock_handle = socket(AF_UNIX,SOCK_STREAM,0)) == -1)
+	{
+		*perr = errno;
+		return 0;
+	}
 
+	sockaddr_un addr;
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path,path.c_str(),sizeof(addr.sun_path)-1);
+
+	if (connect(sock_handle,(sockaddr*)(&addr),sizeof(addr)) != 0)
+	{
+		*perr = errno;
+		::close(sock_handle);
+		return 0;
+	}
+
+	::LocalSocket* pSocket = 0;
+	OOBASE_NEW(pSocket,::LocalSocket(sock_handle));
+	if (!pSocket)
+	{
+		*perr = ENOMEM;
+		::close(sock_handle);
+		return 0;
+	}
+
+	return pSocket;
+}
+
+SocketImpl::SocketImpl(int sock_handle) :
+	m_sock_handle(sock_handle)
+{
+}
+
+SocketImpl::~SocketImpl()
+{
+	close();
+}
+
+int SocketImpl::send(const void* buf, size_t len, const OOBase::timeval_t* /*timeout*/)
+{
+	ssize_t sent = ::send(m_sock_handle,buf,len,0);
+	if (sent == -1)
+		return errno;
+	else
+		return 0;
+}
+
+size_t SocketImpl::recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* /*timeout*/)
+{
+	ssize_t read = ::recv(m_sock_handle,buf,len,0);
+	if (read != -1)
+		return static_cast<size_t>(read);
+
+	*perr = errno;
 	return 0;
+}
+
+void SocketImpl::close()
+{
+	::close(m_sock_handle);
+	m_sock_handle = -1;
 }
 
 #endif // defined(ACE_HAS_WIN32_NAMED_PIPES)

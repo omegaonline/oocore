@@ -32,7 +32,7 @@ namespace OOCore
 	};
 
 	// {1455FCD0-A49B-4f2a-94A5-222949957123}
-	extern const Omega::guid_t OID_CDRMessageMarshalFactory;
+	extern "C" const Omega::guid_t OID_CDRMessageMarshalFactory;
 }
 
 OMEGA_DEFINE_INTERFACE_LOCAL
@@ -87,7 +87,7 @@ namespace OOCore
 		{
 			m_stream = stream;
 		}
-		
+
 		BEGIN_INTERFACE_MAP(CDRMessage)
 			INTERFACE_ENTRY(Omega::Remoting::IMessage)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
@@ -98,28 +98,28 @@ namespace OOCore
 		OOBase::CDRStream m_stream;
 
 		Omega::uint16_t ReadUInt16()
-		{ 
-			Omega::uint16_t val; 
-			if (!m_stream.read(val)) 
-				OMEGA_THROW(m_stream.last_error()); 
-			return val; 
+		{
+			Omega::uint16_t val;
+			if (!m_stream.read(val))
+				OMEGA_THROW(m_stream.last_error());
+			return val;
 		}
 
 		Omega::uint32_t ReadUInt32()
-		{ 
-			Omega::uint32_t val; 
-			if (!m_stream.read(val)) 
+		{
+			Omega::uint32_t val;
+			if (!m_stream.read(val))
 				OMEGA_THROW(m_stream.last_error());
 			return val;
 		}
 
 		Omega::string_t ReadString()
-		{ 
-			std::string val; 
-			if (!m_stream.read(val)) 
+		{
+			std::string val;
+			if (!m_stream.read(val))
 				OMEGA_THROW(m_stream.last_error());
 
-			return Omega::string_t(val.c_str(),true); 
+			return Omega::string_t(val.c_str(),true);
 		}
 
 		Omega::guid_t ReadGuid()
@@ -136,21 +136,21 @@ namespace OOCore
 		}
 
 		void WriteUInt16(Omega::uint16_t val)
-		{ 
-			if (!m_stream.write(val)) 
+		{
+			if (!m_stream.write(val))
 				OMEGA_THROW(m_stream.last_error());
 		}
-		
+
 		void WriteUInt32(Omega::uint32_t val)
-		{ 
-			if (!m_stream.write(val)) 
-				OMEGA_THROW(m_stream.last_error()); 
+		{
+			if (!m_stream.write(val))
+				OMEGA_THROW(m_stream.last_error());
 		}
 
 		void WriteString(const Omega::string_t& val)
-		{ 
-			if (!m_stream.write(val.ToUTF8())) 
-				OMEGA_THROW(m_stream.last_error()); 
+		{
+			if (!m_stream.write(val.ToUTF8()))
+				OMEGA_THROW(m_stream.last_error());
 		}
 
 		void WriteGuid(const Omega::guid_t& val)
@@ -167,7 +167,7 @@ namespace OOCore
 		}
 
 		void WriteBytes(const Omega::uint64_t& cbBytes, const Omega::byte_t* val)
-		{ 
+		{
 			m_stream.write_bytes(val,static_cast<size_t>(cbBytes));
 		}
 
@@ -179,7 +179,7 @@ namespace OOCore
 		}
 
 	// IMarshal members
-	public: 
+	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			return OID_CDRMessageMarshalFactory;
@@ -216,9 +216,9 @@ namespace OOCore
 		OOCORE_DEFINE_MESSAGE_READ(ReadUInt64s,uint64_t)
 		OOCORE_DEFINE_MESSAGE_READ(ReadFloat4s,float4_t)
 		OOCORE_DEFINE_MESSAGE_READ(ReadFloat8s,float8_t)
-		
+
 		size_t ReadStrings(const wchar_t*, size_t count, Omega::string_t* arr)
-		{ 
+		{
 			for (size_t i=0;i<count;++i)
 				arr[i] = ReadString();
 
@@ -251,7 +251,7 @@ namespace OOCore
 		OOCORE_DEFINE_MESSAGE_WRITE(WriteFloat8s,float8_t)
 
 		void WriteStrings(const wchar_t*, size_t count, const Omega::string_t* arr)
-		{ 
+		{
 			for (size_t i=0;i<count;++i)
 				WriteString(arr[i]);
 		}

@@ -37,6 +37,7 @@ if test "$oo_test_CFLAGS" != set; then
 
   if test x$debug = xtrue; then
     AX_CFLAGS_GCC_OPTION([-g])
+    AX_CFLAGS_GCC_OPTION([-O0])
   else
     AX_CFLAGS_GCC_OPTION([-O3])
   fi
@@ -54,7 +55,8 @@ if test "$oo_test_CXXFLAGS" != set; then
   AX_CXXFLAGS_GCC_OPTION([-fvisiblity=hidden])
 
   if test x$debug = xtrue; then
-    AX_CXXFLAGS_GCC_OPTION([-g])
+  	AX_CXXFLAGS_GCC_OPTION([-g])
+  	AX_CXXFLAGS_GCC_OPTION([-O0])
   else
     AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
     AX_CXXFLAGS_GCC_OPTION([-O3])
@@ -78,7 +80,10 @@ OO_C_BUILTINS
 OO_NEW_NOTHROW
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h])
+AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h])
+
+# Check for socket options
+OO_CHECK_SOCKOPT([SO_PEERCRED LOCAL_CREDS])
 
 # Check for specifics of Unix cred passing
 AC_CHECK_FUNCS([getpeereid])
@@ -86,7 +91,6 @@ AC_CHECK_FUNCS([getpeerucred])
 AC_CHECK_TYPES([struct cmsgcred])
 AC_CHECK_TYPES([struct fcred])
 AC_CHECK_TYPES([struct sockcred])
-
 
 # Add windows resource support to libtool
 LT_INIT([win32-dll disable-static])

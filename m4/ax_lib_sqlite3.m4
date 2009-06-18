@@ -1,5 +1,5 @@
 # ===========================================================================
-#             http://autoconf-archive.cryp.to/ax_lib_sqlite3.html
+#         http://www.nongnu.org/autoconf-archive/ax_lib_sqlite3.html
 # ===========================================================================
 #
 # SYNOPSIS
@@ -27,11 +27,7 @@
 #
 #     HAVE_SQLITE3
 #
-# LAST MODIFICATION
-#
-#   2008-04-12
-#
-# COPYLEFT
+# LICENSE
 #
 #   Copyright (c) 2008 Mateusz Loskot <mateusz@loskot.net>
 #

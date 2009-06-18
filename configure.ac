@@ -2,8 +2,6 @@ AC_PREREQ(2.61)
 
 AC_INIT(omegaonline,0.5.0)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
-#AC_CONFIG_HEADER([src/OOBase/config-autoconf.h])
-
 AC_CONFIG_HEADER([src/OOBase/autoheader_dummy.h src/OOBase/config-autoconf.h])
 # AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])
 
@@ -81,12 +79,10 @@ OO_NEW_NOTHROW
 AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h])
 
 # Check for specifics of Unix cred passing
-AC_CHECK_FUNCS([getpeereid])
-AC_CHECK_FUNCS([getpeerucred])
+AC_CHECK_FUNCS([getpeereid getpeerucred])
 AC_CHECK_TYPES([struct cmsgcred])
 AC_CHECK_TYPES([struct fcred])
 AC_CHECK_TYPES([struct sockcred])
-
 
 # Add windows resource support to libtool
 LT_INIT([win32-dll disable-static])

@@ -178,12 +178,24 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp3,2,((in),const void*,
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc1,2,((in),const void*,s1,(in),const void*,s2))
 {
+#if defined(HAVE_WCSICMP)
 	return wcsicmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
+#elif defined(HAVE_WCSCASECMP)
+	return wcscasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
+#else
+#error Fix me!
+#endif
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
+#if defined(HAVE_WCSICMP)
 	return wcsicmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
+#elif defined(HAVE_WCSCASECMP)
+	return wcscasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
+#else
+#error Fix me!
+#endif
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_isempty,1,((in),const void*,s1))
@@ -197,7 +209,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const v
 	if (!ptrNew)
 		return 0;
 
+#if defined(HAVE_WCSLWR)
 	wcslwr(ptrNew.value());
+#else
+	for (wchar_t* p=ptrNew.value();*p!=L'\0';++p)
+		*p = towlower(*p);
+#endif
 
 	StringNode* s2 = 0;
 	OMEGA_NEW(s2,StringNode(ptrNew.value()));
@@ -210,7 +227,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const v
 	if (!ptrNew)
 		return 0;
 
+#if defined(HAVE_WCSUPR)
 	wcsupr(ptrNew.value());
+#else
+	for (wchar_t* p=ptrNew.value();*p!=L'\0';++p)
+		*p = towupper(*p);
+#endif
 
 	StringNode* s2 = 0;
 	OMEGA_NEW(s2,StringNode(ptrNew.value()));
@@ -311,6 +333,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_clear,1,((in),void*,s1)
 	return s;
 }
 
+#if !defined(_WIN32) && !defined(HAVE_UUID_UUID_H)
 namespace
 {
 	static unsigned int parse(wchar_t c)
@@ -325,9 +348,25 @@ namespace
 			throw int(0);
 	}
 }
+#endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,result))
 {
+#if defined(_WIN32)
+
+#error Fix me!
+
+#elif defined(HAVE_UUID_UUID_H)
+
+	uuid_t uuid;
+	if (uuid_parse(OOBase::to_utf8(sz).c_str(),uuid))
+		return false;
+
+	result = *(Omega::guid_t*)(uuid);
+	return true;
+
+#else
+
 	// Do this manually...
 	result.Data1 = 0;
 	result.Data2 = 0;
@@ -392,6 +431,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 	{
 		return false;
 	}
+
+#endif
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,())
@@ -405,21 +446,27 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,())
 
 #elif defined(HAVE_UUID_UUID_H)
 
-#error Fix me!
+	uuid_t uuid = {0};
+	uuid_generate(uuid);
 
-#else
-
-#error Fix me!
+	if (uuid_type(uuid) == UUID_TYPE_DCE_RANDOM)
+		return *(Omega::guid_t*)(uuid);
 
 	// MD5 hash the result... it hides the MAC address
 	MD5Context ctx;
 	MD5Init(&ctx);
-	MD5Update(&ctx,(const unsigned char*)&guid,sizeof(guid));
+	MD5Update(&ctx,uuid,sizeof(uuid));
 
 	unsigned char digest[16];
 	MD5Final(digest,&ctx);
 
 	return *(Omega::guid_t*)(digest);
+
+#else
+
+#error Fix me!
+
+	// Pull from /dev/random ?
 
 #endif
 }

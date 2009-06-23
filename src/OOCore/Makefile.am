@@ -9,6 +9,8 @@ liboocore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
 
 if WIN32
 liboocore_la_LDFLAGS += -avoid-version -no-undefined -Wl,'-lrpcrt4'
+else
+liboocore_la_LDFLAGS += -release $(VERSION)
 endif
 
 liboocore_la_SOURCES = \
@@ -44,7 +46,7 @@ liboocore_la_SOURCES = \
 	Xml.cpp \
 	../Common/Server.h \
 	../Common/Version.h
-	
+
 if WIN32
 liboocore_la_SOURCES += OOCore_res.rc
 endif

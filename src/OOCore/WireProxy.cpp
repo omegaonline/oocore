@@ -28,10 +28,10 @@
 using namespace Omega;
 using namespace OTL;
 
-OOCore::Proxy::Proxy() : 
+OOCore::Proxy::Proxy() :
 	m_proxy_id(0)
 {
-	static const System::MetaInfo::vtable_info<System::IProxy>::type proxy_vt = 
+	static const System::MetaInfo::vtable_info<System::IProxy>::type proxy_vt =
 	{
 		{
 			&AddRef_Safe,
@@ -45,12 +45,12 @@ OOCore::Proxy::Proxy() :
 		&GetMarshaller_Safe,
 		&IsAlive_Safe
 	};
-	
+
 	m_proxy_shim.m_vtable = &proxy_vt;
 	m_proxy_shim.m_stub = this;
 	m_proxy_shim.m_iid = &OMEGA_GUIDOF(System::IProxy);
 
-	static const System::MetaInfo::vtable_info<Remoting::IMarshal>::type marshal_vt = 
+	static const System::MetaInfo::vtable_info<Remoting::IMarshal>::type marshal_vt =
 	{
 		{
 			&AddRef_Safe,
@@ -106,17 +106,17 @@ OOCore::Proxy::WireProxyShim OOCore::Proxy::FindShim(const guid_t& iid, bool bCh
 
 	// See if we have a proxy for this interface already...
 	WireProxyShim ptrProxy;
-	
+
 	try
 	{
 		std::map<const guid_t,WireProxyShim>::iterator i=m_iid_map.find(iid);
 		if (i != m_iid_map.end())
 			ptrProxy = i->second;
 		else
-		{			
+		{
 			// See if any known interface supports the new interface
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
-			{		
+			{
 				if (i->second.IsDerived(iid))
 				{
 					ptrProxy = i->second;
@@ -129,7 +129,7 @@ OOCore::Proxy::WireProxyShim OOCore::Proxy::FindShim(const guid_t& iid, bool bCh
 	{
 		OMEGA_THROW(e);
 	}
-		
+
 	if (!ptrProxy)
 	{
 		if (bCheckRemote)
@@ -138,7 +138,7 @@ OOCore::Proxy::WireProxyShim OOCore::Proxy::FindShim(const guid_t& iid, bool bCh
 			if (!CallRemoteQI(iid))
 				return ptrProxy;
 		}
-		
+
 		// Create a new proxy for this interface
 		ptrProxy.Attach(OOCore::CreateProxy(iid,this));
 	}
@@ -164,7 +164,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 
 	guid_t wire_iid;
 	System::MetaInfo::wire_read(L"iid",pMessage,wire_iid);
-	
+
 	WireProxyShim ptrProxy = FindShim(wire_iid,false);
 	if (!ptrProxy)
 		ptrProxy = FindShim(iid,false);
@@ -172,7 +172,6 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 	if (!ptrProxy)
 		OMEGA_THROW(L"Failed to find correct shim for wire_iid");
 
-	BORKED!!
 	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
 }
 
@@ -209,7 +208,7 @@ bool OOCore::Proxy::CallRemoteQI(const guid_t& iid)
 
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
-	
+
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
@@ -252,7 +251,6 @@ IObject* OOCore::Proxy::QI(const guid_t& iid)
 	if (!ptrProxy)
 		return 0;
 
-	BORKED!!
 	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
 }
 
@@ -273,7 +271,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 		m_pManager->DoMarshalChannel(pObjectManager,pParamsOut);
 
 		pParamsOut->WriteStructEnd(L"ipc_request");
-	
+
 		pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	}
 	catch (...)
@@ -315,10 +313,10 @@ void OOCore::Proxy::CallRemoteRelease()
 		System::MetaInfo::wire_write(L"release_count",pParamsOut,static_cast<uint32_t>(m_marshal_count.value()));
 
 		pParamsOut->WriteStructEnd(L"ipc_request");
-		
+
 		Remoting::IMessage* pParamsIn = 0;
 		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
-		
+
 		if (pParamsIn)
 			pParamsIn->Release();
 
@@ -336,7 +334,7 @@ void OOCore::Proxy::MarshalInterface(Remoting::IObjectManager* pObjectManager, R
 	// Tell the stub to expect incoming requests from a different channel...
 	ObjectPtr<Remoting::IMessage> ptrReflect;
 	ptrReflect.Attach(CallRemoteStubMarshal(pObjectManager,iid));
-	
+
 	return pObjectManager->MarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 

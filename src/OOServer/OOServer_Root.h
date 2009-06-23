@@ -38,6 +38,7 @@
 #include "../OOBase/SmartPtr.h"
 #include "../OOBase/TLSSingleton.h"
 #include "../OOBase/CDRStream.h"
+#include "../OOBase/pw_info.h"
 #include "../OOBase/Queue.h"
 #include "../OOBase/Thread.h"
 

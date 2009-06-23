@@ -54,8 +54,10 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 {
 #if defined(_WIN32)
 	std::string pipe_name = "OOServer";
-#else
+#elif defined(HAVE_UNISTD_H)
 	std::string pipe_name = "/tmp/omegaonline/ooserverd";
+#else
+#error Fix me!
 #endif
 
 	assert(!m_pManager);
@@ -68,7 +70,7 @@ bool Root::ClientAcceptor::start(Manager* pManager)
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-	
+
 	return true;
 }
 
@@ -99,7 +101,7 @@ bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
 			if (pSocket->send(uLen) == 0)
 				pSocket->send(strPipe.c_str(),uLen);
 		}
-			
+
 #if defined(_WIN32)
 		CloseHandle(uid);
 #endif
@@ -112,6 +114,8 @@ bool Root::ClientAcceptor::on_accept(OOBase::Socket* pSocket, int err)
 bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 {
 #if defined(_WIN32)
+
+	void* TODO; // Remove network service access from the pipe
 
 	assert(!pipe_name.empty());
 
@@ -126,7 +130,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 
 	const int NUM_ACES  = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-	
+
 	// Set full control for the calling process SID
 	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
 	ea[0].grfAccessMode = GRANT_ACCESS;
@@ -134,7 +138,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
 	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDProcess->User.Sid;
-	
+
 	// Create a SID for the BUILTIN\Users group.
 	PSID pSID;
 	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
@@ -155,7 +159,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
 	ea[1].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
-	
+
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
@@ -165,11 +169,13 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 	m_sa.bInheritHandle = FALSE;
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
-	
+
+#elif defined(HAVE_UNISTD_H)
+
+	void* TODO; // Set security on pipe_name
+
 #else
-
-#error set security on pipe_name
-
+#error Fix me!
 #endif
 
 	return true;

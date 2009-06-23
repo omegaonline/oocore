@@ -63,8 +63,8 @@ namespace Root
 
 		bool init_security(const std::string& pipe_name);
 
-#if defined(_WIN32)
 		SECURITY_ATTRIBUTES              m_sa;
+#if defined(_WIN32)
 		OOSvrBase::Win32::sec_descript_t m_sd;
 #endif
 	};

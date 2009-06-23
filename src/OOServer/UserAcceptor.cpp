@@ -58,22 +58,24 @@ std::string User::Acceptor::unique_name()
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),"");
-	
+
 	char* pszSid;
 	if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
 	{
 		ssPipe << pszSid;
 		LocalFree(pszSid);
 	}
-#else
+#elif defined(HAVE_UNISTD_H)
 
 	ssPipe << "/tmp/omegaonline/oou" << getuid();
-	
+
+#else
+#error Fix me!
 #endif
 
 	// Add the current time...
 	ssPipe << "-" << OOBase::gettimeofday().tv_usec;
-	
+
 	return ssPipe.str();
 }
 
@@ -89,7 +91,7 @@ bool User::Acceptor::start(Manager* pManager, const std::string& pipe_name)
 	m_pSocket = Proactor::instance()->accept_local(this,pipe_name,&err,&m_sa);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Proactor::accept_local failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-	
+
 	return true;
 }
 
@@ -130,10 +132,10 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hProcessToken,ptrSIDLogon);
 	if (dwRes != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
-		
+
 	const int NUM_ACES = 1;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-	
+
 	// Set full control for the Logon SID
 	ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
 	ea[0].grfAccessMode = SET_ACCESS;
@@ -141,7 +143,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
 	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
-	
+
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
 	if (dwErr != ERROR_SUCCESS)
@@ -151,7 +153,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	m_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 	m_sa.bInheritHandle = FALSE;
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
-	
+
 #else
 
 	assert(!pipe_name.empty());

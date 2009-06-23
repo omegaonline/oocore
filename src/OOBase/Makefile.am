@@ -58,5 +58,7 @@ liboosvrbase_a_SOURCES = \
 	ProactorEv.h \
 	ProactorWin32.cpp \
 	ProactorWin32.h \
+	pw_info.h \
+	pw_info.cpp \
 	SecurityWin32.cpp \
 	SecurityWin32.h

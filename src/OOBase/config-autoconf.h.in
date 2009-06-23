@@ -24,8 +24,14 @@
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
+/* Define to 1 if you have the <pwd.h> header file. */
+#undef HAVE_PWD_H
+
 /* Define to 1 if you have SO_PEERCRED socket option */
 #undef HAVE_SO_PEERCRED
+
+/* Define to 1 if you have the `getpwuid_r' function. */
+#undef HAVE_GETPWUID_R
 
 /* Define to 1 if you have the SQLite3 library */
 #undef HAVE_SQLITE3
@@ -63,8 +69,23 @@
 /* Define to 1 if you have the <time.h> header file. */
 #undef HAVE_TIME_H
 
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
 /* Define to 1 if you have the <uuid/uuid.h> header file. */
 #undef HAVE_UUID_UUID_H
+
+/* Define to 1 if you have the `wcscasecmp' function. */
+#undef HAVE_WCSCASECMP
+
+/* Define to 1 if you have the `wcsicmp' function. */
+#undef HAVE_WCSICMP
+
+/* Define to 1 if you have the `wcslwr' function. */
+#undef HAVE_WCSLWR
+
+/* Define to 1 if you have the `wcsupr' function. */
+#undef HAVE_WCSUPR
 
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H

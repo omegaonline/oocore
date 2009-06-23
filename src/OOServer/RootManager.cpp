@@ -65,7 +65,7 @@ bool Root::Manager::install(const std::map<std::string,std::string>& args)
 	// Set up the sandbox user
 	if (!install_sandbox(args))
 		return false;
-	
+
 	// Now secure the files we will use...
 	std::string dir;
 	if (!get_db_directory(dir))
@@ -73,7 +73,7 @@ bool Root::Manager::install(const std::map<std::string,std::string>& args)
 
 	if (!secure_file(dir + "system.regdb",false) || !secure_file(dir + "all_users.regdb",true))
 		return false;
-	
+
 	return true;
 }
 
@@ -81,7 +81,7 @@ bool Root::Manager::uninstall()
 {
 	if (!platform_uninstall())
 		return false;
-	
+
 	if (!uninstall_sandbox())
 		return false;
 
@@ -103,7 +103,7 @@ int Root::Manager::run()
 
 		// Stop accepting new clients
 		m_client_acceptor.stop();
-		
+
 		// Close all pipes
 		close();
 	}
@@ -113,7 +113,7 @@ int Root::Manager::run()
 
 	// Stop the MessageHandler
 	stop();
-	
+
 	return res;
 }
 
@@ -141,23 +141,6 @@ bool Root::Manager::init()
 
 bool Root::Manager::init_database()
 {
-#if !defined(_WIN32)
-
-#error Move me!
-
-	#define OMEGA_REGISTRY_DIR "/var/lib/omegaonline"
-
-	if (ACE_OS::mkdir(OMEGA_REGISTRY_DIR,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
-	{
-		int err = ACE_OS::last_error();
-		if (err != EEXIST)
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("mkdir failed")),-1);
-	}
-
-	m_strRegistry = OMEGA_REGISTRY_DIR "/system.regdb";
-
-#endif
-
 	std::string dir;
 	if (!get_db_directory(dir))
 		return false;
@@ -235,7 +218,7 @@ std::string Root::Manager::get_user_pipe(OOBase::LocalSocket::uid_t uid)
 		std::string strPipe;
 		if (!spawn_user(uid,ptrRegistry,strPipe))
 			return "";
-		
+
 		return strPipe;
 	}
 	catch (std::exception& e)
@@ -257,7 +240,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 
 	process.ptrRegistry = ptrRegistry;
 	process.strPipe = strPipe;
-	
+
 	// Init the registry, if necessary
 	bool bOk = true;
 	if (!process.ptrRegistry)
@@ -295,7 +278,7 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 				return i->first;
 			}
 		}
-		
+
 		m_mapUserProcesses.insert(std::map<Omega::uint32_t,UserProcess>::value_type(channel_id,process));
 	}
 	catch (std::exception& e)
@@ -319,17 +302,17 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 	int err = pSocket->send(m_sandbox_channel);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
-		
+
 	size_t uLen = 0;
 	err = pSocket->recv(uLen);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
-	
+
 	OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
 	OOBASE_NEW(buf,char[uLen]);
 	if (!buf)
 		LOG_ERROR_RETURN(("Out of memory"),0);
-	
+
 	pSocket->recv(buf.value(),uLen,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
@@ -339,7 +322,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 	OOBASE_NEW(ptrMC,MessageConnection(this));
 	if (!ptrMC)
 		LOG_ERROR_RETURN(("Out of memory"),0);
-	
+
 	Omega::uint32_t channel_id = register_channel(ptrMC,0);
 	if (!channel_id)
 		return 0;
@@ -347,7 +330,7 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 	err = pSocket->send(channel_id);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::send failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
-		
+
 	return channel_id;
 }
 

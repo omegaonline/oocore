@@ -80,8 +80,10 @@ namespace OOBase
 	public:
 #if defined(_WIN32)
 		typedef HANDLE uid_t;
-#else
+#elif defined(HAVE_UNISTD_H)
 		typedef ::uid_t uid_t;
+#else
+#error Fix me!
 #endif
 		virtual uid_t get_uid() = 0;
 

@@ -61,8 +61,6 @@ namespace
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
 		std::string GetRegistryHive();
 
-		static Root::SpawnedProcess* Spawn(OOBase::LocalSocket::uid_t uid);
-				
 	private:
 		bool                       m_bSandbox;
 		OOBase::Win32::SmartHandle m_hToken;
@@ -87,31 +85,31 @@ namespace
 		DWORD dwRes = OOSvrBase::Win32::GetLogonSID(hToken,ptrSIDLogon);
 		if (dwRes != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
-		
+
 		char* pszSid;
 		if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
 		{
 			ssPipe << pszSid;
 			LocalFree(pszSid);
 		}
-				
+
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		ssPipe << "-" << now.tv_usec;
 		strPipe = ssPipe.str();
-		
+
 		// Get the current processes user SID
 		OOBase::Win32::SmartHandle hProcessToken;
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
-			
+
 		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrSIDProcess = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrSIDProcess)
 			LOG_ERROR_RETURN(("GetTokenInfo failed: %s",OOBase::Win32::FormatMessage().c_str()),INVALID_HANDLE_VALUE);
-					
+
 		// Create security descriptor
 		static const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-		
+
 		// Set full control for the calling process SID
 		ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
 		ea[0].grfAccessMode = SET_ACCESS;
@@ -119,7 +117,7 @@ namespace
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
 		ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDProcess->User.Sid;
-		
+
 		// Set full control for Specific user.
 		ea[1].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
 		ea[1].grfAccessMode = SET_ACCESS;
@@ -153,7 +151,7 @@ namespace
 
 		if (hPipe == INVALID_HANDLE_VALUE)
 			LOG_ERROR(("CreateNamedPipeA failed: %s",OOBase::Win32::FormatMessage().c_str()));
-			
+
 		return hPipe;
 	}
 
@@ -203,7 +201,7 @@ namespace
 	{
 		if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-		
+
 		// Control handle lifetime
 		OOBase::Win32::SmartHandle tok(hToken);
 
@@ -225,7 +223,7 @@ namespace
 	{
 		const int NUM_ACES = 3;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-		
+
 		// Set minimum access for the calling process SID
 		ea[0].grfAccessPermissions = WINSTA_CREATEDESKTOP;
 		ea[0].grfAccessMode = GRANT_ACCESS;
@@ -264,7 +262,7 @@ namespace
 	{
 		const int NUM_ACES = 2;
 		EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-		
+
 		// Set minimum access for the calling process SID
 		ea[0].grfAccessPermissions = DESKTOP_CREATEWINDOW;
 		ea[0].grfAccessMode = GRANT_ACCESS;
@@ -307,14 +305,14 @@ namespace
 		wchar_t* pszSid = 0;
 		if (!ConvertSidToStringSidW(ptrSIDLogon.value(),&pszSid))
 			return GetLastError();
-			
+
 		strWindowStation = pszSid;
 		LocalFree(pszSid);
-		
+
 		// Logon SIDs are of the form S-1-5-5-X-Y, and we want X and Y
 		if (wcsncmp(strWindowStation.c_str(),L"S-1-5-5-",8) != 0)
 			return ERROR_INVALID_SID;
-		
+
 		// Crack out the last two parts - there is probably an easier way... but this works
 		strWindowStation = strWindowStation.substr(8);
 		const wchar_t* p = strWindowStation.c_str();
@@ -323,11 +321,11 @@ namespace
 		dwParts[0] = wcstoul(p,&pEnd,10);
 		if (*pEnd != L'-')
 			return ERROR_INVALID_SID;
-		
+
 		dwParts[1] = wcstoul(pEnd+1,&pEnd,10);
 		if (*pEnd != L'\0')
 			return ERROR_INVALID_SID;
-		
+
 		wchar_t szBuf[128] = {0};
 		wsprintfW(szBuf,L"Service-0x%lu-%lu$",dwParts[0],dwParts[1]);
 		strWindowStation = szBuf;
@@ -336,7 +334,7 @@ namespace
 		OOBase::Win32::SmartHandle hProcessToken;
 		if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
 			return GetLastError();
-			
+
 		OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrProcessUser = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
 		if (!ptrProcessUser)
 			return GetLastError();
@@ -350,7 +348,7 @@ namespace
 			dwRes = GetLastError();
 			if (dwRes != ERROR_FILE_NOT_FOUND)
 				return dwRes;
-			
+
 			OOSvrBase::Win32::sec_descript_t sd;
 			dwRes = CreateWindowStationSD(ptrProcessUser.value(),ptrSIDLogon.value(),sd);
 			if (dwRes != ERROR_SUCCESS)
@@ -360,7 +358,7 @@ namespace
 			sa.nLength = sizeof(sa);
 			sa.bInheritHandle = FALSE;
 			sa.lpSecurityDescriptor = sd.descriptor();
-			
+
 			hWinsta = CreateWindowStationW(strWindowStation.c_str(),0,WINSTA_CREATEDESKTOP,&sa);
 			if (!hWinsta)
 				return GetLastError();
@@ -432,7 +430,7 @@ namespace
 SpawnedProcessWin32::SpawnedProcessWin32() :
 	m_hToken(NULL),
 	m_hProcess(NULL),
-	m_hProfile(NULL)	
+	m_hProfile(NULL)
 {
 }
 
@@ -460,7 +458,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strP
 	wchar_t szPath[MAX_PATH];
 	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 		return GetLastError();
-	
+
 	// Strip off our name, and add OOSvrUser.exe
 	if (!PathRemoveFileSpecW(szPath))
 		return GetLastError();
@@ -518,7 +516,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strP
 	if (IsDebuggerPresent())
 	{
 		hDebugEvent = CreateEventW(NULL,FALSE,FALSE,L"Global\\OOSERVER_DEBUG_MUTEX");
-		
+
 		dwFlags |= CREATE_NEW_CONSOLE;
 
 		strTitle = szPath;
@@ -661,7 +659,7 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 					std::wstring strMsg =
 						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
 						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '";
-					
+
 					strMsg += strDomainName;
 					strMsg += L"\\";
 					strMsg += strUserName;
@@ -680,7 +678,7 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 							if (dwRes == ERROR_SUCCESS)
 							{
 								OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
-								
+
 								//CloseHandle(m_hToken);
 								//DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);
 
@@ -711,7 +709,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	DWORD cbNeeded = 0;
 	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
 		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	
+
 	pSD = malloc(cbNeeded);
 	if (!pSD)
 		LOG_ERROR_RETURN(("Out of memory"),false);
@@ -723,10 +721,10 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	DWORD dwAccessDesired = 0;
 	if (bRead)
 		dwAccessDesired |= FILE_GENERIC_READ;
-	
+
 	if (bWrite)
 		dwAccessDesired |= FILE_GENERIC_WRITE;
-	
+
 	GENERIC_MAPPING generic =
 	{
 		FILE_GENERIC_READ,
@@ -744,10 +742,10 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	BOOL bAllowedVal = FALSE;
 	BOOL bRes = ::AccessCheck((PSECURITY_DESCRIPTOR)pSD.value(),m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 	DWORD err = GetLastError();
-	
+
 	if (!bRes && err != ERROR_SUCCESS)
 		LOG_ERROR_RETURN(("AccessCheck failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
-	
+
 	bAllowed = (bAllowedVal == TRUE);
 	return true;
 }
@@ -762,7 +760,7 @@ bool SpawnedProcessWin32::Compare(HANDLE hToken)
 	OOBase::SmartPtr<TOKEN_GROUPS_AND_PRIVILEGES,OOBase::FreeDestructor<TOKEN_GROUPS_AND_PRIVILEGES> > pStats2 = static_cast<TOKEN_GROUPS_AND_PRIVILEGES*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenGroupsAndPrivileges));
 	if (!pStats2)
 		return false;
-	
+
 	return (pStats1->SidCount==pStats2->SidCount &&
 		pStats1->RestrictedSidCount==pStats2->RestrictedSidCount &&
 		pStats1->PrivilegeCount==pStats2->PrivilegeCount &&
@@ -780,7 +778,7 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
 	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo2 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(m_hToken,TokenUser));
 	if (!ptrUserInfo2)
 		return false;
-	
+
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
@@ -818,17 +816,18 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	{
 		// Get the user name and pwd...
 		Omega::int64_t key = 0;
-		if (m_registry->open_key(0,key,"System\\Server\\Sandbox",0) != 0)
-			return 0;
+		int err = m_registry->open_key(0,key,"System\\Server\\Sandbox",0);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to open sandbox registry key: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 
 		std::string strUName;
 		std::string strPwd;
-		int err = m_registry->get_string_value(key,"UserName",0,strUName);
+		err = m_registry->get_string_value(key,"UserName",0,strUName);
 		if (err != 0)
 			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 
 		m_registry->get_string_value(key,"Password",0,strPwd);
-		
+
 		if (!LogonSandboxUser(OOBase::from_utf8(strUName.c_str()),OOBase::from_utf8(strPwd.c_str()),uid))
 			return 0;
 
@@ -867,11 +866,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	}
 
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
-	
+
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
 		return 0;
-	
+
 	// Bootstrap the user process...
 	OOBase::Win32::LocalSocket sock(hPipe.detach());
 	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
@@ -883,7 +882,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,&sock);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
-	
+
 	// Attach the async socket to the message connection
 	ptrMC->attach(pAsync);
 

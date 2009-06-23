@@ -32,17 +32,18 @@
 /////////////////////////////////////////////////////////////
 
 #include "OOServer_Root.h"
+#include "RootManager.h"
+#include "SpawnedProcess.h"
 
-#if !defined(_WIN32)
-
-#include "./SpawnedProcess.h"
+#if defined(HAVE_UNISTD_H)
 
 #include <grp.h>
-
+#include <sys/wait.h>
+#include <dirent.h>
 
 
 // Will need this!
-
+/*
 	char szBuf[64];
 #if defined(OMEGA_DEBUG)
     OOBase::timeval_t now = OOBase::gettimeofday();
@@ -65,104 +66,73 @@
 	unlink(("/tmp/omegaonline/" + strPrefix + szBuf).c_str());
 
 	return "/tmp/omegaonline/" + strPrefix + szBuf;
+*/
 
-
-// Helper for the recusive getpwuid_r fns()
 namespace
 {
-	class SpawnedProcessUnix
+	class SpawnedProcessUnix : public Root::SpawnedProcess
 	{
 	public:
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
 		bool Spawn(OOBase::LocalSocket::uid_t id, const std::string& strPipe, bool bSandbox);
-		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 
+		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
 		std::string GetRegistryHive();
-	
+
 	private:
 		bool    m_bSandbox;
 		uid_t	m_uid;
 		pid_t	m_pid;
 
-		bool CleanEnvironment();
-		bool close_all_fds();
-		bool linux_close_all_fds();
-		bool posix_close_all_fds(long max_fd);
+		bool clean_environment();
+		void close_all_fds();
 	};
 
-	class pw_info
+	static bool y_or_n_p(const char* question)
 	{
-	public:
-		pw_info(uid_t uid);
-		~pw_info();
-
-		inline struct passwd* operator ->()
+		fputs(question,stdout);
+		while (1)
 		{
-			return m_pwd;
+			// Write a space
+			fputc(' ',stdout);
+
+			// Read first char of line
+			int c = tolower(fgetc(stdin));
+			int answer = c;
+
+			// Discard rest of line
+			while (c != '\n' && c != EOF)
+				c = fgetc(stdin);
+
+			if (answer == 'y')
+				return true;
+			else if (answer == 'n')
+				return false;
+
+			// Invalid answer
+			fputs("Please answer y or n:",stdout);
 		}
-
-		inline bool operator !() const
-		{
-			return (m_pwd==0);
-		}
-
-	private:
-		pw_info() {};
-
-		struct passwd* m_pwd;
-		struct passwd  m_pwd2;
-		char*          m_pBuffer;
-		size_t         m_buf_len;
-	};
-}
-
-Root::pw_info::pw_info(uid_t uid) :
-m_pwd(0), m_pBuffer(0), m_buf_len(1024)
-{
-#ifdef _SC_GETPW_R_SIZE_MAX
-	m_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
-#endif
-
-	// _SC_GETPW_R_SIZE_MAX is defined on Mac OS X. However,
-	// sysconf(_SC_GETPW_R_SIZE_MAX) returns an error. Therefore, the
-	// constant is used as below when error was retured.
-	if (m_buf_len <= 0)
-		m_buf_len = 1024;
-
-	m_pBuffer = new char[m_buf_len];
-	if (m_pBuffer)
-	{
-		setpwent();
-		if (::getpwuid_r(uid,&m_pwd2,m_pBuffer,m_buf_len,&m_pwd) != 0)
-			m_pwd = 0;
-
-		endpwent();
 	}
 }
 
-Root::pw_info::~pw_info()
-{
-	delete [] m_pBuffer;
-}
-
-Root::SpawnedProcess::SpawnedProcess() :
-m_pid(ACE_INVALID_PID)
+SpawnedProcessUnix::SpawnedProcessUnix() :
+	m_pid(-1)
 {
 }
 
-Root::SpawnedProcess::~SpawnedProcess()
+SpawnedProcessUnix::~SpawnedProcessUnix()
 {
-	if (m_pid != ACE_INVALID_PID)
+	if (m_pid != pid_t(-1))
 	{
 		pid_t retv = 0;
 		for (int i=0;i<10;++i)
 		{
-			ACE_exitcode ec;
-			retv = wait(m_pid,&ec,WNOHANG);
+			int ec;
+			retv = waitpid(m_pid,&ec,WNOHANG);
 			if (retv != 0)
 				break;
 
@@ -173,15 +143,13 @@ Root::SpawnedProcess::~SpawnedProcess()
 		if (retv == 0)
 			kill(m_pid,SIGKILL);
 
-		m_pid = ACE_INVALID_PID;
+		m_pid = pid_t(-1);
 	}
 }
 
 extern char **environ;
 
-#define SAFE_PATH "/usr/local/bin:/usr/bin:/bin"
-
-bool Root::SpawnedProcess::CleanEnvironment()
+bool SpawnedProcessUnix::clean_environment()
 {
 	// Add other safe environment variable names here
 	// NOTE: PATH is set by hand!
@@ -195,11 +163,9 @@ bool Root::SpawnedProcess::CleanEnvironment()
 	static const size_t env_max = 256;
 	char** cleanenv = static_cast<char**>(calloc(env_max,sizeof(char*)));
 	if (!cleanenv)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("calloc() failed!")),false);
+		return false;
 
-	char pathbuf[PATH_MAX + 6];
-	snprintf(pathbuf,PATH_MAX + 6,"PATH=%s",SAFE_PATH);
-	cleanenv[0] = strdup(pathbuf);
+	cleanenv[0] = strdup("PATH=/usr/local/bin:/usr/bin:/bin");
 
 	size_t cidx = 1;
 	for (char** ep = environ; *ep && cidx < env_max-1; ep++)
@@ -223,105 +189,62 @@ bool Root::SpawnedProcess::CleanEnvironment()
 		}
 	}
 
+	void* TODO; // Add USER, TERM etc...
+
 	cleanenv[cidx] = NULL;
 	environ = cleanenv;
 
 	return true;
 }
 
-bool Root::SpawnedProcess::close_all_fds()
+void SpawnedProcessUnix::close_all_fds()
 {
-#if !defined(LINUX) && defined(_POSIX_OPEN_MAX) &&  (_POSIX_OPEN_MAX == 0)
+	int mx = -1;
+
+#if defined(_POSIX_OPEN_MAX) && (_POSIX_OPEN_MAX >= 0)
+#if (_POSIX_OPEN_MAX == 0)
 	/* value available at runtime only */
-	int mx = sysconf(_SC_OPEN_MAX);
-	for( int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
-		close(fd_i);
-#elif !defined(LINUX) && (defined(_POSIX_OPEN_MAX) && (_POSIX_OPEN_MAX == -1))
-	/* value undefined,paranoia approch close all possible */
- 	int mx = INT_MAX;
-	for( int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
-		close(fd_i);
-#elif !defined(LINUX) && defined(_POSIX_OPEN_MAX)
-	/* value available at compile time */
-	int mx =_POSIX_OPEN_MAX;
-	for( int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
-		close(fd_i);
-#elif defined(LINUX)
-	/* based on lsof style walk of proc filesystem so should
-	 * work on anything with a proc filesystem i.e. a OSx/BSD */
-	/* walk proc, closing all descriptors from stderr onwards for our pid */
-	DIR *pdir;
-	char str[1024] = {0};
-
-	snprintf(str,sizeof(n)-1,"/proc/%u/fd/",getpid());
-
-	if (!(pdir = opendir(str)))
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("opendir() failed!")),false);
-
-	/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
-	for (int fd, struct dirent *pfile; (pfile = readdir(pdir)); )
-		if ( ! ('.' == *pfile->d_name || (((fd = atoi(pfile->d_name)))<0 || fd<STDERR_FILENO+1) ))
-			close(fd);
-	closedir(pdir);
-	return true;
+	mx = sysconf(_SC_OPEN_MAX);
 #else
-	#error "Not POSIX and not Linux, enable system specific way to close all files"
-#endif /* def LINUX */
-	return true;
-}
+	/* value available at compile time */
+	mx = _POSIX_OPEN_MAX;
+#endif
+#endif
 
-bool Root::SpawnedProcess::LogonSandboxUser(uid_t& uid)
-{
-	void* TICKET_96; // Look at using PAM for this...
-
-	// Get the correct uid from the registry
-	ACE_Refcounted_Auto_Ptr<Registry::Hive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
-
-	// Get the uid...
-	ACE_INT64 key = 0;
-	if (reg_root->open_key(key,"System\\Server\\Sandbox",0) != 0)
-		return true;
-
-	ACE_CDR::LongLong sb_uid = (ACE_CDR::ULong)-1;
-	int err = reg_root->get_integer_value(key,"Uid",0,sb_uid);
-	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to get sandbox uid from registry: %C"),strerror(err)),false);
-
-	uid = static_cast<uid_t>(sb_uid);
-	return true;
-}
-
-void Root::SpawnedProcess::CloseSandboxLogon(uid_t /*uid*/)
-{
-}
-
-static bool y_or_n_p(const char* question)
-{
-	fputs(question,stdout);
-	while (1)
+	if (mx > 4)
 	{
-		// Write a space
-		fputc(' ',stdout);
+		for (int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
+			close(fd_i);
+	}
+	else
+	{
+		/* based on lsof style walk of proc filesystem so should
+		 * work on anything with a proc filesystem i.e. a OSx/BSD */
+		/* walk proc, closing all descriptors from stderr onwards for our pid */
+		DIR *pdir;
+		char str[1024] = {0};
 
-		// Read first char of line
-		int c = ace_tolower(fgetc(stdin));
-		int answer = c;
+		snprintf(str,sizeof(str)-1,"/proc/%u/fd/",getpid());
 
-		// Discard rest of line
-		while (c != '\n' && c != EOF)
-			c = fgetc(stdin);
+		if (!(pdir = opendir(str)))
+		{
+			LOG_ERROR(("opendir failed for %s %s",str,OOSvrBase::Logger::format_error(errno).c_str()));
+			return;
+		}
 
-		if (answer == 'y')
-			return true;
-		else if (answer == 'n')
-			return false;
+		/* skips ./ and ../ entries in addition to skipping to the passed fd offset */
+		for (dirent* pfile; (pfile = readdir(pdir)); )
+		{
+			int fd;
+			if (!('.' == *pfile->d_name || (((fd = atoi(pfile->d_name)))<0 || fd<STDERR_FILENO+1) ))
+				close(fd);
+		}
 
-		// Invalid answer
-		fputs("Please answer y or n:",stdout);
+		closedir(pdir);
 	}
 }
 
-bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(uid_t uid, const std::string& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
@@ -332,16 +255,16 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 	{
 #if !defined(OMEGA_DEBUG)
 		if (!Manager::unsafe_sandbox())
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("OOServer must be started as root.\n")),false);
+			LOG_ERROR_RETURN(("OOServer must be started as root."),false);
 		else
 #endif
 		if (our_uid == uid)
 			bUnsafeStart = true;
 		else
 		{
-			Root::pw_info pw(our_uid);
+			OOSvrBase::pw_info pw(our_uid);
 			if (!pw)
-				ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
+				LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 			const char msg[] =
 				"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
@@ -352,7 +275,7 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 			snprintf(szBuf,1024,msg,pw->pw_name);
 
 			// Prompt for continue...
-			ACE_ERROR((LM_WARNING,L"%s",szBuf));
+			LOG_WARNING((szBuf));
 
 			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
 				return false;
@@ -368,17 +291,17 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 	if (child_id == -1)
 	{
 		// Error
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("fork() failed!")),false);
+		LOG_ERROR_RETURN(("fork() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 	}
 	else if (child_id == 0)
 	{
 		// We are the child...
 
 		// get our pw_info
-		Root::pw_info pw(uid);
+		OOSvrBase::pw_info pw(uid);
 		if (!pw)
 		{
-			ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")));
+			LOG_ERROR(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
 			exit(errno);
 		}
 
@@ -387,38 +310,36 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 			// Set our gid...
 			if (setgid(pw->pw_gid) != 0)
 			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setgid() failed!")));
+				LOG_ERROR(("setgid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
 				exit(errno);
 			}
 
 			// Init our groups...
 			if (initgroups(pw->pw_name,pw->pw_gid) != 0)
 			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("initgroups() failed!")));
+				LOG_ERROR(("initgroups() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
 				exit(errno);
 			}
 
 			// Stop being priviledged!
 			if (setuid(uid) != 0)
 			{
-				ACE_ERROR((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("setuid() failed!")));
+				LOG_ERROR(("setuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
 				exit(errno);
 			}
 		}
 
-		// Close all open handles
-		if (!close_all_fds())
-			exit(errno);
+		// Close all open handles - not that we should have any ;)
+		close_all_fds();
 
         // Clean up environment...
-		if (!CleanEnvironment())
+		if (!clean_environment())
 			exit(errno);
 
         // This all needs sorting out badly!
+        // We should be spawning the user's shell with -c
+        // Set pwd to user's home dir, etc...
         void* TODO;
-
-		// mount and chroot into our own FUSE dir
-
 
 		// Exec the user process
 		char* cmd_line[] =
@@ -427,11 +348,11 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 		    0,             //  argv[1] = Pipe name
 		    0
 		};
-		cmd_line[1] = const_cast<char*>(ACE_TEXT_CHAR_TO_TCHAR(strPipe.c_str()));
+		cmd_line[1] = const_cast<char*>(strPipe.c_str());
 
 		int err = execv("./oosvruser",cmd_line);
 
-		ACE_ERROR((LM_WARNING,ACE_TEXT("Child process exiting with code: %d\n"),err));
+		LOG_DEBUG(("Child process exiting with code: %d",err));
 
 		exit(err);
 	}
@@ -447,14 +368,22 @@ bool Root::SpawnedProcess::Spawn(uid_t uid, const std::string& strPipe, bool bSa
 	return true;
 }
 
-bool Root::SpawnedProcess::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
+bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed)
 {
 	bAllowed = false;
 
 	// Get file info
-	ACE_stat sb;
+	struct stat sb;
 	if (stat(pszFName,&sb) != 0)
-		return false;
+		LOG_ERROR_RETURN(("stat() failed!",OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+	int mode = -1;
+	if (bRead && !bWrite)
+		mode = O_RDONLY;
+	else if (!bRead && bWrite)
+		mode = O_WRONLY;
+	else if (bRead && bWrite)
+		mode = O_RDWR;
 
 	if (mode==O_RDONLY && (sb.st_mode & S_IROTH))
 		bAllowed = true;
@@ -475,9 +404,9 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, bool bRead, bool bW
 	else
 	{
 		// Get the suppied user's group see if that is the same as the file's group
-		Root::pw_info pw(m_uid);
+		OOSvrBase::pw_info pw(m_uid);
 		if (!pw)
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwuid() failed!")),false);
+			LOG_ERROR_RETURN(("getpwuid() failed!",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 		// Is the file's gid the same as the specified user's
 		if (pw->pw_gid == sb.st_gid)
@@ -494,7 +423,7 @@ bool Root::SpawnedProcess::CheckAccess(const char* pszFName, bool bRead, bool bW
 	return true;
 }
 
-bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
+/*bool SpawnedProcessUnix::InstallSandbox(int argc, char* argv[])
 {
 	std::string strUName = "omega_sandbox";
 	if (argc>=1)
@@ -525,56 +454,132 @@ bool Root::SpawnedProcess::InstallSandbox(int argc, ACE_TCHAR* argv[])
 	return true;
 }
 
-bool Root::SpawnedProcess::UninstallSandbox()
+bool SpawnedProcessUnix::UninstallSandbox()
 {
 	return true;
 }
 
-bool Root::SpawnedProcess::SecureFile(const std::string& strFilename)
+bool SpawnedProcessUnix::SecureFile(const std::string& strFilename)
 {
 	// Make sure the file is owned by root (0)
 	if (chown(strFilename.c_str(),0,(gid_t)-1) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chown failed")),false);
 
-	if (chmod(strFilename.c_str(),S_IRWXU) != 0)
+	if (chmod(strFilename.c_str(),S_IRWXU | S_IRGRP) != 0)
 		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chmod failed")),false);
 
 	return true;
-}
+}*/
 
-bool Root::SpawnedProcess::Compare(uid_t uid)
+bool SpawnedProcessUnix::Compare(uid_t uid)
 {
 	return (m_uid == uid);
 }
 
-bool Root::SpawnedProcess::IsSameUser(uid_t uid)
+bool SpawnedProcessUnix::IsSameUser(uid_t uid)
 {
 	return Compare(uid);
 }
 
-std::string Root::SpawnedProcess::GetRegistryHive()
+std::string SpawnedProcessUnix::GetRegistryHive()
 {
 	std::string strDir;
 	if (m_bSandbox)
 		strDir = "/var/lib/omegaonline";
 	else
 	{
-		pw_info pw(m_uid);
+		OOSvrBase::pw_info pw(m_uid);
 		if (!pw)
-			return "";
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),"");
 
 		strDir = pw->pw_dir;
 		strDir += "/.omegaonline";
 	}
 
-	if (mkdir(strDir.c_str(),S_IRWXU | S_IRWXG | S_IROTH) != 0)
+	if (mkdir(strDir.c_str(),S_IRWXU | S_IRGRP) != 0)
 	{
-		int err = last_error();
-		if (err != EEXIST)
-			return "";
+		if (errno != EEXIST)
+			LOG_ERROR_RETURN(("mkdir(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),"");
 	}
 
 	return strDir + "/user.regdb";
+}
+
+OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC)
+{
+	// Stash the sandbox flag because we adjust uid...
+	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
+	if (bSandbox)
+	{
+		// Get the user name and pwd...
+		Omega::int64_t key = 0;
+		int err = m_registry->open_key(0,key,"System\\Server\\Sandbox",0);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to open sandbox registry key: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+
+		Omega::int64_t sb_uid = -1;
+		err = m_registry->get_integer_value(key,"Uid",0,sb_uid);
+		if (err != 0)
+			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+
+		uid = static_cast<uid_t>(sb_uid);
+	}
+
+	// Work out if we are running in unsafe mode
+	Omega::int64_t key = 0;
+	Omega::int64_t v = 0;
+	if (bSandbox && m_registry->open_key(0,key,"System\\Server\\Sandbox",0) == 0)
+		m_registry->get_integer_value(key,"Unsafe",0,v);
+
+	bool bUnsafe = (v == 1);
+
+	// Alloc a new SpawnedProcess
+	SpawnedProcessUnix* pSpawnUnix = 0;
+	OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix);
+	if (!pSpawnUnix)
+		return 0;
+
+	// Create the named pipe
+	/*OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
+	if (!hPipe.is_valid())
+	{
+		delete pSpawnUnix;
+		return 0;
+	}*/
+
+
+	std::string strRootPipe;
+	int sock_h = -1;
+
+	// Spawn the process
+	if (!pSpawnUnix->Spawn(uid,strRootPipe,bSandbox))
+	{
+		delete pSpawnUnix;
+		return 0;
+	}
+
+	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
+
+	// Wait for the connect attempt
+	/*if (!WaitForConnect(hPipe))
+		return 0;*/
+
+	// Bootstrap the user process...
+	//OOBase::LocalSocket sock;
+	channel_id = bootstrap_user(NULL,ptrMC,strPipe);
+	if (!channel_id)
+		return 0;
+
+	// Create an async socket wrapper
+	int err = 0;
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,NULL);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+
+	// Attach the async socket to the message connection
+	ptrMC->attach(pAsync);
+
+	return pSpawn;
 }
 
 #endif // !ACE_WIN32

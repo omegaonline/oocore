@@ -141,8 +141,10 @@ namespace OOBase
 			{
 #if defined(_WIN32)
 				m_last_error = ERROR_HANDLE_EOF;
-#else
+#elif defined(HAVE_UNISTD_H)
 				m_last_error = ENOSPC;
+#else
+#error Fix me!
 #endif
 				return false;
 			}
@@ -201,8 +203,10 @@ namespace OOBase
 			{
 #if defined(_WIN32)
 				m_last_error = ERROR_HANDLE_EOF;
-#else
+#elif defined(HAVE_UNISTD_H)
 				m_last_error = ENOSPC;
+#else
+#error Fix me!
 #endif
 				return false;
 			}
@@ -267,8 +271,10 @@ namespace OOBase
 			{
 #if defined(_WIN32)
 				m_last_error = ERROR_BUFFER_OVERFLOW;
-#else
+#elif defined(HAVE_UNISTD_H)
 				m_last_error = E2BIG;
+#else
+#error Fix me!
 #endif
 				return false;
 			}

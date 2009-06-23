@@ -80,10 +80,16 @@ OO_C_BUILTINS
 OO_NEW_NOTHROW
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h])
+AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h])
 
 # Check for socket options
 OO_CHECK_SOCKOPT([SO_PEERCRED LOCAL_CREDS])
+
+# Check for wchar case compare
+AC_CHECK_FUNCS([wcsicmp wcscasecmp wcslwr wcsupr])
+
+# Check for password functions
+AC_CHECK_FUNCS([getpwuid_r])
 
 # Check for specifics of Unix cred passing
 AC_CHECK_FUNCS([getpeereid])

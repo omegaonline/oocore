@@ -57,6 +57,10 @@
 #define assert(x) ((void)0)
 #endif
 
+#if defined(HAVE_UUID_UUID_H)
+#include <uuid/uuid.h>
+#endif
+
 #if defined(HAVE_WINDOWS_H)
 #if (HAVE_WINDOWS_H != 1)
 #error What are you doing?
@@ -107,6 +111,10 @@
 #endif
 
 #endif // HAVE_WINDOWS_H
+
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
 
 // Byte-order (endian-ness) determination.
 # if defined(BYTE_ORDER)

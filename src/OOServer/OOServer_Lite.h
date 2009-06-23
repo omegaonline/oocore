@@ -23,6 +23,7 @@
 #define OOSERVER_LITE_H_INCLUDED_
 
 #include "../OOBase/Mutex.h"
+#include "../OOBase/pw_info.h"
 
 #include <OTL/OTL.h>
 

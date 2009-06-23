@@ -37,11 +37,11 @@ namespace OOSvrBase
 			Information,
 			Debug
 		};
-		
+
 		void open(const char* name);
 		void log(Priority priority, const char* fmt, ...);
 		std::string format_error(int err);
-		
+
 		struct filenum_t
 		{
 			filenum_t(Priority priority, const char* pszFilename, unsigned int nLine) :
@@ -60,6 +60,7 @@ namespace OOSvrBase
 }
 
 #define LOG_DEBUG(expr) OOSvrBase::Logger::filenum_t(OOSvrBase::Logger::Debug,__FILE__,__LINE__).log expr
+#define LOG_WARNING(expr) OOSvrBase::Logger::filenum_t(OOSvrBase::Logger::Warning,__FILE__,__LINE__).log expr
 #define LOG_ERROR(expr) OOSvrBase::Logger::filenum_t(OOSvrBase::Logger::Error,__FILE__,__LINE__).log expr
 #define LOG_ERROR_RETURN(expr,ret_val) return (LOG_ERROR(expr),ret_val)
 

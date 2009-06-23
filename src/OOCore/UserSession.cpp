@@ -92,7 +92,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 			// We ignore the error, and try again until we timeout
 			OOBase::sleep(OOBase::timeval_t(0,100000));
 
-			countdown.update();	
+			countdown.update();
 		} while (wait != OOBase::timeval_t::zero);
 
 		if (!m_stream)
@@ -103,7 +103,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		if (err != 0)
 			OMEGA_THROW(err);
 
-		countdown.update();	
+		countdown.update();
 
 		// Spawn off the io worker thread
 		m_worker_thread.run(io_worker_fn,this);
@@ -112,18 +112,18 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	// Create the zero apartment
 	OOBase::SmartPtr<Apartment> ptrZeroApt;
 	OMEGA_NEW(ptrZeroApt,Apartment(this,0));
-	
+
 	try
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-		
+
 		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,ptrZeroApt));
 	}
 	catch (std::exception& e)
 	{
 		OMEGA_THROW(e);
 	}
-		
+
 	ObjectPtr<System::IInterProcessService> ptrIPS;
 	if (m_channel_id != 0)
 	{
@@ -165,8 +165,10 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 {
 #if defined(_WIN32)
 	const char* name = "OOServer";
-#else
+#elif defined(HAVE_UNISTD_H)
 	const char* name = "/tmp/omegaonline/ooserverd";
+#else
+#error Fix me!
 #endif
 
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket;
@@ -182,7 +184,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		// We ignore the error, and try again until we timeout
 		OOBase::sleep(OOBase::timeval_t(0,100000));
 
-		countdown.update();	
+		countdown.update();
 	}
 	if (!local_socket)
 	{
@@ -268,7 +270,7 @@ int OOCore::UserSession::run_read_loop()
 {
 	static const size_t s_initial_read = sizeof(Omega::uint32_t) * 2;
 	OOBase::CDRStream header(s_initial_read);
-	
+
 	int err = 0;
 	for (;;)
 	{
@@ -277,11 +279,11 @@ int OOCore::UserSession::run_read_loop()
 		err = m_stream->recv_buffer(header.buffer(),s_initial_read);
 		if (err != 0)
 			break;
-		
+
 		// Read the payload specific data
 		bool big_endian;
 		header.read(big_endian);
-		
+
 		// Set the read for the right endianess
 		header.big_endian(big_endian);
 
@@ -290,20 +292,20 @@ int OOCore::UserSession::run_read_loop()
 		header.read(version);
 		if (version != 1)
 			OOBase_CallCriticalFailure("Invalid protocol version");
-			
+
 		// Room for 2 bytes here!
 
 		// Read the length
 		uint32_t nReadLen = 0;
 		header.read(nReadLen);
 
-		// If we add anything extra here to the header, 
+		// If we add anything extra here to the header,
 		// it must be padded to 8 bytes.
 
 		err = header.last_error();
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
-		
+
 		// Subtract what we have already read
 		nReadLen -= s_initial_read;
 
@@ -311,13 +313,13 @@ int OOCore::UserSession::run_read_loop()
 		OOBase::SmartPtr<Message> msg = 0;
 		OOBASE_NEW(msg,Message(nReadLen));
 		if (!msg)
-			OOBase_CallCriticalFailure(GetLastError());
+			OOBase_OutOfMemory();
 
 		// Issue another read for the rest of the data
 		err = m_stream->recv_buffer(msg->m_payload.buffer(),nReadLen);
 		if (err != 0)
 			OOBase_CallCriticalFailure(err);
-		
+
 		// Reset the byte order
 		msg->m_payload.big_endian(big_endian);
 
@@ -358,7 +360,7 @@ int OOCore::UserSession::run_read_loop()
 
 		// Unpack the apartment...
 		msg->m_apartment_id = static_cast<uint16_t>(dest_channel_id & 0x00000FFF);
-		
+
 		if ((msg->m_attribs & Message::system_message) && msg->m_type == Message::Request)
 		{
 			// Process system messages here... because the main message pump may not be running currently
@@ -460,14 +462,14 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	if (!m_stream)
 		throw Remoting::IChannelClosedException::Create();
-	
-	guard.release();	
+
+	guard.release();
 
 	// Increment the consumers...
 	++m_usage_count;
 
 	ThreadContext* pContext = ThreadContext::instance();
-	
+
 	do
 	{
 		// Get the next message
@@ -480,12 +482,12 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 		}
 
 		OOBase::SmartPtr<Message> msg = message;
-				
+
 		// Set deadline
 		// Dont confuse the wait deadline with the message processing deadline
 		OOBase::timeval_t old_deadline = pContext->m_deadline;
 		pContext->m_deadline = msg->m_deadline;
-		
+
 		try
 		{
 			// Set per channel thread id
@@ -549,7 +551,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 {
 	OOBase::CDRStream* response = 0;
 	ThreadContext* pContext = ThreadContext::instance();
-	
+
 	// Increment the usage count
 	++pContext->m_usage_count;
 
@@ -583,7 +585,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 				// Channel has gone!
 				throw Remoting::IChannelClosedException::Create();
 			}
-			
+
 			// Get the next message
 			Message* message = 0;
 			OOBase::BoundedQueue<Message*>::result_t res = pContext->m_msg_queue.pop(message,const_cast<OOBase::timeval_t*>(deadline));
@@ -653,7 +655,7 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext>::instance();
 	if (pThis->m_thread_id == 0)
 		pThis->m_thread_id = UserSession::USER_SESSION::instance()->insert_thread_context(pThis);
-	
+
 	return pThis;
 }
 
@@ -754,7 +756,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
-			
+
 		wait = deadline - now;
 	}
 
@@ -762,13 +764,13 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	if (!m_stream)
 		throw Remoting::IChannelClosedException::Create();
-	
+
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::max_time ? &wait : 0);
 	if (err != 0)
 		OMEGA_THROW(err);
 
 	guard.release();
-	
+
 	if (attribs & TypeInfo::Asynchronous)
 		return 0;
 	else
@@ -787,7 +789,7 @@ void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, 
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)
 			throw ITimeoutException::Create();
-			
+
 		wait = deadline - now;
 	}
 
@@ -795,7 +797,7 @@ void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, 
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 	if (!m_stream)
 		throw Remoting::IChannelClosedException::Create();
-	
+
 	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::max_time ? &wait : 0);
 	if (err != 0)
 		OMEGA_THROW(err);
@@ -864,7 +866,7 @@ void OOCore::UserSession::process_request(const Message* pMsg, const OOBase::tim
 	try
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-	
+
 		OOBase::SmartPtr<Apartment> ptrApt;
 		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pMsg->m_apartment_id);
 		if (i != m_mapApartments.end())
@@ -927,8 +929,8 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 				apt_id = ++m_next_apartment;
 				if (apt_id > 0xFFF)
 					apt_id = m_next_apartment = 1;
-				
-			} while (m_mapApartments.find(apt_id) != m_mapApartments.end());	
+
+			} while (m_mapApartments.find(apt_id) != m_mapApartments.end());
 		}
 		catch (std::exception& e)
 		{
@@ -937,7 +939,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 
 		// Create the new object
 		OMEGA_NEW(ptrApt,Apartment(this,apt_id));
-		
+
 		// Add it to the map
 		try
 		{
@@ -1016,11 +1018,11 @@ uint16_t OOCore::UserSession::update_state(uint16_t apartment_id, uint32_t* pTim
 			if (deadline2 < deadline)
 				deadline = deadline2;
 		}
-		
+
 		if (deadline != OOBase::timeval_t::max_time)
 			*pTimeout = (deadline - now).msec();
 	}
-	
+
 	return old_id;
 }
 

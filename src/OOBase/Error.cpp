@@ -31,7 +31,7 @@ std::string OOBase::strerror(int err)
 {
 	std::stringstream out;
 	out << "(" << err << ") ";
-	
+
 #if defined(HAVE_TR_24731)
 	char szBuf[256] = {0};
 	strerror_s(szBuf,sizeof(szBuf),err);
@@ -60,7 +60,7 @@ void OOBase::CallCriticalFailureMem(const char* pszFile, unsigned int nLine)
 	CallCriticalFailureX(pszFile,nLine,ERROR_OUTOFMEMORY);
 }
 
-#else
+#elif defined(HAVE_UNISTD_H)
 
 void OOBase::CallCriticalFailureX(const char* pszFile, unsigned int nLine, int err)
 {
@@ -72,6 +72,8 @@ void OOBase::CallCriticalFailureMem(const char* pszFile, unsigned int nLine)
 	CallCriticalFailureE(pszFile,nLine,ENOMEM);
 }
 
+#else
+#error Fix me!
 #endif
 
 void OOBase::CallCriticalFailureX(const char* pszFile, unsigned int nLine, const char* msg)

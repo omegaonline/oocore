@@ -42,7 +42,7 @@ namespace
 {
 	class RootKey;
 
-	class HiveKey : 
+	class HiveKey :
 		public ObjectBase,
 		public IKey
 	{
@@ -57,9 +57,9 @@ namespace
 		::Registry::Hive* m_pHive;
 		Omega::string_t   m_strKey;
 		Omega::int64_t    m_key;
-		
+
 		int GetValueType_i(const string_t& strName, ValueType_t& vtype);
-		
+
 	// IRegistry members
 	public:
 		bool_t IsSubKey(const string_t& strSubKey);
@@ -79,10 +79,10 @@ namespace
 		Omega::IEnumString* EnumSubKeys();
 		Omega::IEnumString* EnumValues();
 		void DeleteKey(const string_t& strSubKey);
-		void DeleteValue(const string_t& strName);	
+		void DeleteValue(const string_t& strName);
 	};
 
-	class RootKey : 
+	class RootKey :
 		public ObjectBase,
 		public ::Registry::Manager,
 		public IKey
@@ -125,7 +125,7 @@ namespace
 		Omega::IEnumString* EnumSubKeys();
 		Omega::IEnumString* EnumValues();
 		void DeleteKey(const string_t& strSubKey);
-		void DeleteValue(const string_t& strName);	
+		void DeleteValue(const string_t& strName);
 	};
 
 	static std::string get_db_dir(bool bSystem)
@@ -140,10 +140,10 @@ namespace
 
 		if FAILED(hr)
 			OMEGA_THROW(string_t(("SHGetFolderPathW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-		
+
 		if (!PathAppendW(szBuf,L"Omega Online"))
 			OMEGA_THROW(string_t(("PathAppendW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-			
+
 		if (!PathFileExistsW(szBuf))
 		{
 			if (!CreateDirectoryW(szBuf,NULL))
@@ -153,8 +153,31 @@ namespace
 		std::string dir = OOBase::to_utf8(szBuf);
 		if (*dir.rbegin() != '\\')
 			dir += '\\';
+#elif defined(HAVE_UNISTD_H)
+
+		std::string dir;
+		if (bSystem)
+			dir = "/var/lib/omegaonline";
+		else
+		{
+			OOSvrBase::pw_info pw(getuid());
+			if (!pw)
+				OMEGA_THROW(errno);
+
+			dir = pw->pw_dir;
+			dir += "/.omegaonline";
+		}
+
+		if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP) != 0)
+		{
+			if (errno != EEXIST)
+				OMEGA_THROW(errno);
+		}
+
+		dir += "/";
+
 #else
-#error TODO!
+#error Fix me!
 #endif
 
 		return dir;
@@ -439,13 +462,13 @@ Omega::IEnumString* HiveKey::EnumSubKeys()
 		OMEGA_THROW(err);
 
 	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
-		
+
 	try
 	{
 		for (std::list<std::string>::const_iterator i=listSubKeys.begin();i!=listSubKeys.end();++i)
 		{
 			ptrEnum->Append(string_t(i->c_str(),true));
-		}		
+		}
 	}
 	catch (std::exception& e)
 	{
@@ -468,13 +491,13 @@ Omega::IEnumString* HiveKey::EnumValues()
 		OMEGA_THROW(err);
 
 	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
-		
+
 	try
 	{
 		for (std::list<std::string>::const_iterator i=listValues.begin();i!=listValues.end();++i)
 		{
 			ptrEnum->Append(string_t(i->c_str(),true));
-		}		
+		}
 	}
 	catch (std::exception& e)
 	{
@@ -519,7 +542,7 @@ void RootKey::Init()
 
 	if (!m_system_hive->open() || !m_allusers_hive->open() || !m_localuser_hive->open())
 		OMEGA_THROW(L"Failed to open database files");
-	
+
 	// Add the default keys
 	int err = ::Registry::Hive::init_system_defaults(m_system_hive.value());
 	if (err != 0)
@@ -528,7 +551,7 @@ void RootKey::Init()
 	err = ::Registry::Hive::init_allusers_defaults(m_allusers_hive.value());
 	if (err != 0)
 		OMEGA_THROW(err);
-		
+
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_system_hive.value(),L"",0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);

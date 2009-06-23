@@ -50,7 +50,7 @@
 
 bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
 {
-	wchar_t szPath[MAX_PATH]; 
+	wchar_t szPath[MAX_PATH];
 	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
 		LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
@@ -58,20 +58,20 @@ bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*
 	if (!schSCManager)
 		LOG_ERROR_RETURN(("OpenSCManagerW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
-  	SC_HANDLE schService = CreateServiceW( 
-		schSCManager,                // SCManager database 
-		SERVICE_NAME,                // name of service 
-		L"Omega Online Network Hub", // service name to display 
-		SERVICE_ALL_ACCESS,          // desired access 
-		SERVICE_WIN32_OWN_PROCESS,   // service type 
-		SERVICE_DEMAND_START,        // start type 
-		SERVICE_ERROR_NORMAL,        // error control type 
-		szPath,                      // path to service's binary 
-		NULL,                        // no load ordering group 
-		NULL,                        // no tag identifier 
-		NULL,                        // no dependencies 
-		NULL,                        // LocalSystem account 
-		NULL);                       // no password 
+  	SC_HANDLE schService = CreateServiceW(
+		schSCManager,                // SCManager database
+		SERVICE_NAME,                // name of service
+		L"Omega Online Network Hub", // service name to display
+		SERVICE_ALL_ACCESS,          // desired access
+		SERVICE_WIN32_OWN_PROCESS,   // service type
+		SERVICE_DEMAND_START,        // start type
+		SERVICE_ERROR_NORMAL,        // error control type
+		szPath,                      // path to service's binary
+		NULL,                        // no load ordering group
+		NULL,                        // no tag identifier
+		NULL,                        // no dependencies
+		NULL,                        // LocalSystem account
+		NULL);                       // no password
 
 	DWORD dwErr = GetLastError();
 	if (!schService && dwErr != ERROR_SERVICE_EXISTS)
@@ -81,11 +81,11 @@ bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*
 
 	if (!schService)
 		return (dwErr == ERROR_SERVICE_EXISTS);
-	
+
 	SERVICE_DESCRIPTIONW sdesc;
 	sdesc.lpDescription = L"Manages the peer connections for the Omega Online network";
 	ChangeServiceConfig2(schService,SERVICE_CONFIG_DESCRIPTION,&sdesc);
-	
+
 	CloseServiceHandle(schService);
 
 	return true;
@@ -126,7 +126,7 @@ bool Root::Manager::platform_uninstall()
 		std::cerr << "You must stop the OOServer service before uninstalling." << std::endl;
 		return false;
 	}
-	
+
 	if (!DeleteService(schService))
 	{
 		LOG_ERROR(("DeleteService failed: %s",OOBase::Win32::FormatMessage().c_str()));
@@ -209,7 +209,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 			NetUserDel(NULL,info.usri2_name);
 		LOG_ERROR_RETURN(("Added user has invalid SID"),false);
 	}
-	
+
 	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSid = static_cast<PSID>(malloc(dwSidSize));
 	if (!pSid)
 	{
@@ -217,7 +217,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 			NetUserDel(NULL,info.usri2_name);
 		LOG_ERROR_RETURN(("Out of memeory"),false);
 	}
-	
+
 	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > pszDName;
 	OOBASE_NEW(pszDName,wchar_t[dwDnSize]);
 	if (!pszDName)
@@ -226,7 +226,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 			NetUserDel(NULL,info.usri2_name);
 		LOG_ERROR_RETURN(("Out of memory"),false);
 	}
-	
+
 	if (!LookupAccountNameW(NULL,info.usri2_name,pSid.value(),&dwSidSize,pszDName.value(),&dwDnSize,&use))
 	{
 		err = GetLastError();
@@ -234,7 +234,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 			NetUserDel(NULL,info.usri2_name);
 		LOG_ERROR_RETURN(("LookupAccountNameW failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
 	}
-		
+
 	if (use != SidTypeUser)
 	{
 		if (bAddedUser)
@@ -294,15 +294,15 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 	Omega::int64_t key = 0;
 	int err3 = m_registry->create_key(0,key,"System\\Server\\Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
 	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOBase::strerror(err3).c_str()),false);
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
 
 	err3 = m_registry->set_string_value(key,"UserName",0,OOBase::to_utf8(info.usri2_name).c_str());
 	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOBase::strerror(err3).c_str()),false);
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
 
 	err3 = m_registry->set_string_value(key,"Password",0,OOBase::to_utf8(info.usri2_password).c_str());
 	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOBase::strerror(err3).c_str()),false);
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
 
 	if (bAddedUser)
 	{
@@ -374,7 +374,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 
 	const int NUM_ACES  = 2;
 	EXPLICIT_ACCESSW ea[NUM_ACES] = {0};
-	
+
 	if (bPublicRead)
 	{
 		// Set read access for Users.
@@ -407,7 +407,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 	DWORD dwErr = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
 	if (dwErr != 0)
 		LOG_ERROR_RETURN(("SetEntriesInAclW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
-	
+
 	OOBase::SmartPtr<ACL,OOBase::Win32::LocalAllocDestructor<ACL> > ptrACL = pACL;
 
 	// Try to modify the object's DACL.
@@ -432,10 +432,10 @@ bool Root::Manager::get_db_directory(std::string& dir)
 	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
 	if FAILED(hr)
 		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	
+
 	if (!PathAppendW(szBuf,L"Omega Online"))
 		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	
+
 	if (!PathFileExistsW(szBuf))
 	{
 		if (!CreateDirectoryW(szBuf,NULL))
@@ -490,7 +490,7 @@ namespace
 		ss.dwControlsAccepted = SERVICE_ACCEPT_STOP|SERVICE_ACCEPT_SHUTDOWN;
 		ss.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
 		ss.dwCurrentState = SERVICE_RUNNING;
-		
+
 		switch (dwControl)
 		{
 		case SERVICE_CONTROL_STOP:
@@ -504,12 +504,12 @@ namespace
 
 		// Set the status of the service
 		SetServiceStatus(s_ssh,&ss);
-		
+
 		// Tell service_main thread to stop.
 		if (dwControl == SERVICE_CONTROL_STOP || dwControl == SERVICE_CONTROL_SHUTDOWN)
 		{
 			if (!SetEvent(s_hEvent))
-				OOBase_CallCriticalFailure(GetLastError());			
+				OOBase_CallCriticalFailure(GetLastError());
 		}
 	}
 
@@ -526,7 +526,7 @@ namespace
 		SERVICE_STATUS ss = {0};
 		ss.dwControlsAccepted = SERVICE_ACCEPT_STOP|SERVICE_ACCEPT_SHUTDOWN;
 		ss.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-		
+
 		// Register the service ctrl handler.
 		s_ssh = RegisterServiceCtrlHandlerW(lpszArgv[0],&ServiceCtrl);
 		if (!s_ssh)
@@ -542,7 +542,7 @@ namespace
 				LOG_ERROR(("WaitForSingleObject failed: %s",OOBase::Win32::FormatMessage().c_str()));
 
 			ss.dwCurrentState = SERVICE_STOPPED;
-			SetServiceStatus(s_ssh,&ss);		
+			SetServiceStatus(s_ssh,&ss);
 		}
 
 		CloseHandle(s_hEvent);

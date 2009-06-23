@@ -165,6 +165,12 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 	guid_t wire_iid;
 	System::MetaInfo::wire_read(L"iid",pMessage,wire_iid);
 
+	if (wire_iid == OMEGA_GUIDOF(IObject))
+	{
+		Internal_AddRef();
+		return static_cast<System::IProxy*>(this);
+	}
+
 	WireProxyShim ptrProxy = FindShim(wire_iid,false);
 	if (!ptrProxy)
 		ptrProxy = FindShim(iid,false);
@@ -225,12 +231,12 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetStub(const guid_t& iid)
 	if (iid == OMEGA_GUIDOF(IObject) ||
 		iid == OMEGA_GUIDOF(System::IProxy))
 	{
-		Internal_AddRef();
+		AddRef_Safe(&m_proxy_shim);
 		return &m_proxy_shim;
 	}
 	else if (iid == OMEGA_GUIDOF(Remoting::IMarshal))
 	{
-		Internal_AddRef();
+		AddRef_Safe(&m_marshal_shim);
 		return &m_marshal_shim;
 	}
 
@@ -240,7 +246,11 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetStub(const guid_t& iid)
 
 	const System::MetaInfo::SafeShim* shim = ptrProxy.GetShim();
 	if (shim)
-		Internal_AddRef();
+	{
+		const System::MetaInfo::SafeShim* except = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);
+		if (except)
+			throw_correct_exception(except);
+	}
 
 	return shim;
 }
@@ -250,6 +260,8 @@ IObject* OOCore::Proxy::QI(const guid_t& iid)
 	WireProxyShim ptrProxy = FindShim(iid,true);
 	if (!ptrProxy)
 		return 0;
+
+	Internal_AddRef();
 
 	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
 }
@@ -349,6 +361,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::AddRef_Safe(const System::MetaI
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
+		printf("Safe ");
 		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
 	}
 	catch (IException* pE)
@@ -363,6 +376,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::Release_Safe(const System::Meta
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
+		printf("Safe ");
 		static_cast<Proxy*>(shim->m_stub)->Internal_Release();
 	}
 	catch (IException* pE)
@@ -377,6 +391,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const Syste
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
+		printf("Safe %p QI for %ls\n",static_cast<Proxy*>(shim->m_stub),iid->ToString().c_str());
 		static_cast<IObject*&>(System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(retval,iid)) = static_cast<Proxy*>(shim->m_stub)->Internal_QueryInterface(*iid,getQIEntries());
 	}
 	catch (IException* pE)

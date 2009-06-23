@@ -22,7 +22,47 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_safe_proxy_remove,1,((in),const void*,shim));
+void Omega::System::MetaInfo::proxy_holder::remove(const SafeShim* shim)
+{
+	Threading::Guard<Threading::Mutex> guard(m_lock);
+	m_map.erase(shim);
+}
+
+Omega::System::MetaInfo::Safe_Proxy_Owner* Omega::System::MetaInfo::proxy_holder::find(const SafeShim* shim)
+{
+	try
+	{
+		Threading::Guard<Threading::Mutex> guard(m_lock);
+
+		std::map<const SafeShim*,Safe_Proxy_Owner*>::const_iterator i=m_map.find(shim);
+		if (i != m_map.end())
+			return i->second;
+		
+		return 0;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+Omega::System::MetaInfo::Safe_Proxy_Owner* Omega::System::MetaInfo::proxy_holder::add(const SafeShim* shim, Safe_Proxy_Owner* pOwner)
+{
+	try
+	{
+		Threading::Guard<Threading::Mutex> guard(m_lock);
+
+		std::pair<std::map<const SafeShim*,Safe_Proxy_Owner*>::iterator,bool> p = m_map.insert(std::map<const SafeShim*,Safe_Proxy_Owner*>::value_type(shim,pOwner));
+		if (!p.second)
+			return p.first->second;
+		
+		return 0;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
 
 Omega::System::MetaInfo::Safe_Proxy_Owner::~Safe_Proxy_Owner()
 {
@@ -31,7 +71,7 @@ Omega::System::MetaInfo::Safe_Proxy_Owner::~Safe_Proxy_Owner()
 		for (std::map<guid_t,Safe_Proxy_Base*>::iterator i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			i->second->DecRef();
 
-		OOCore_safe_proxy_remove(m_shim);
+		PROXY_HOLDER::instance()->remove(m_shim);
 	}
 	catch (...)
 	{}
@@ -81,7 +121,7 @@ Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Ow
 			return 0;
 
 		// Ensure its released
-		ss = shim;
+		ss.attach(shim);
 	}
 
 	// Wrap it in a proxy and add it...
@@ -121,12 +161,16 @@ Omega::System::MetaInfo::Safe_Proxy_Base* Omega::System::MetaInfo::Safe_Proxy_Ow
 Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const Omega::guid_t& iid, const SafeShim* shim)
 {
 	// Always return the same object for IObject
-	if (iid == OMEGA_GUIDOF(IObject) ||
-		iid == OMEGA_GUIDOF(ISafeProxy))
+	if (iid == OMEGA_GUIDOF(IObject))
 	{
 		AddRef();
-		return static_cast<ISafeProxy*>(this);
+		return static_cast<IObject*>(this);
 	}
+	else if (iid == OMEGA_GUIDOF(ISafeProxy))
+	{
+		Internal_AddRef();
+		return &m_internal_safe_proxy;
+	}	
 
 	// See if we have it cached
 	Safe_Proxy_Base* obj = GetBase(iid,shim);
@@ -153,9 +197,6 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const Omega::guid_t& iid, 
 	return obj->Throw();
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_proxy_find,1,((in),const void*,shim));
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_proxy_add,2,((in),const void*,shim,(in),void*,pProxy));
-
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_proxy_owner(const SafeShim* shim)
 {
 	// QI for the IObject shim
@@ -167,7 +208,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner;
 
 	// Lookup in the global map...
-	ptrOwner = static_cast<Safe_Proxy_Owner*>(OOCore_safe_proxy_find(static_cast<const SafeShim*>(base_shim)));
+	ptrOwner = PROXY_HOLDER::instance()->find(base_shim);
 	if (ptrOwner)
 		ptrOwner->AddRef();
 	else
@@ -176,7 +217,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 		OMEGA_NEW(ptrOwner,Safe_Proxy_Owner(base_shim));
 		
 		// Add to the map...
-		Safe_Proxy_Owner* pExisting = static_cast<Safe_Proxy_Owner*>(OOCore_safe_proxy_add(static_cast<const SafeShim*>(base_shim),static_cast<Safe_Proxy_Owner*>(ptrOwner)));
+		Safe_Proxy_Owner* pExisting = PROXY_HOLDER::instance()->add(base_shim,ptrOwner);
 		if (pExisting)
 		{
 			ptrOwner = pExisting;
@@ -258,7 +299,7 @@ Omega::System::MetaInfo::Safe_Stub_Base* Omega::System::MetaInfo::Safe_Stub_Owne
 			return 0;
 
 		// Ensure its released
-		iface = pObj;
+		iface.attach(pObj);
 	}
 
 	// Wrap it in a shim and add it...

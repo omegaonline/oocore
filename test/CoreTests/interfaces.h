@@ -37,6 +37,11 @@ namespace Omega
 			virtual void Throw(Omega::uint32_t err) = 0;
 			virtual void Abort() = 0;
 		};
+
+		interface ISimpleTest2 : public Omega::IObject
+		{
+			virtual Omega::string_t WhereAmI() = 0;
+		};
 	}
 }
 
@@ -74,6 +79,14 @@ OMEGA_DEFINE_INTERFACE
 
 	OMEGA_METHOD_VOID(Throw,1,((in),Omega::uint32_t,err))
 	OMEGA_METHOD_VOID(Abort,0,())
+)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::TestSuite, ISimpleTest2, "{AFD23012-F948-47e9-A3EB-76FECBAE30A4}",
+
+	// Methods
+	OMEGA_METHOD(Omega::string_t,WhereAmI,0,())
 )
 
 #endif // TEST_INTERFACES_INCLUDED

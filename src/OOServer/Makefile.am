@@ -45,8 +45,7 @@ ooserverd_SOURCES = \
 	RootWin32.cpp \
 	SpawnedProcess.h \
 	SpawnedProcessUnix.cpp \
-	SpawnedProcessWin32.cpp \
-	..\Common\Version.h
+	SpawnedProcessWin32.cpp
 
 if WIN32
 ooserverd_SOURCES += OOServer.rc
@@ -68,7 +67,6 @@ oosvruser_SOURCES = \
 	Channel.cpp \
 	InterProcessService.h \
 	InterProcessService.cpp \
-	Server.h \
 	RegistryCmn.h \
 	UserAcceptor.h \
 	UserAcceptor.cpp \
@@ -82,8 +80,7 @@ oosvruser_SOURCES = \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \
-	UserROT.cpp \
-	..\Common\Version.h
+	UserROT.cpp
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc
@@ -109,8 +106,7 @@ oosvrlite_la_SOURCES = \
 	RegistryCmn.h \
 	IPSLite.h \
 	IPSLite.cpp \
-	OOSvrLite.cpp \
-	..\Common\Version.h
+	OOSvrLite.cpp
 
 if WIN32
 oosvrlite_la_SOURCES += OOSvrLite_res.rc

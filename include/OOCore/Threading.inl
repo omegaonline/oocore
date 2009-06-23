@@ -112,11 +112,11 @@ Omega::Threading::AtomicRefCount::~AtomicRefCount()
 	OOCore_atomic__dctor(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_atomic_addref,1,((in),void*,h));
-void Omega::Threading::AtomicRefCount::AddRef()
+OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,h));
+bool Omega::Threading::AtomicRefCount::AddRef()
 {
-	OOCore_atomic_addref(m_handle);
 	OMEGA_DEBUG_STASH_ATOMIC(++);
+	return (OOCore_atomic_addref(m_handle) != 0);
 }
 
 OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,h));

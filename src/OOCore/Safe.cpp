@@ -26,75 +26,12 @@ using namespace OTL;
 
 namespace 
 {
-	struct proxy_holder
-	{
-		OOBase::RWMutex             m_lock;
-		std::map<const void*,void*> m_map;
-	};
-	typedef OOBase::Singleton<proxy_holder> PROXY_HOLDER;
-
 	struct stub_holder
 	{
 		OOBase::RWMutex       m_lock;
 		std::map<void*,void*> m_map;
 	};
 	typedef OOBase::Singleton<stub_holder> STUB_HOLDER;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_proxy_find,1,((in),const void*,shim))
-{
-	try
-	{
-		proxy_holder* pI = PROXY_HOLDER::instance();
-
-		OOBase::ReadGuard<OOBase::RWMutex> guard(pI->m_lock);
-
-		std::map<const void*,void*>::const_iterator i=pI->m_map.find(shim);
-		if (i != pI->m_map.end())
-			return i->second;
-		
-		return 0;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_proxy_add,2,((in),const void*,shim,(in),void*,pProxy))
-{
-	try
-	{
-		proxy_holder* pI = PROXY_HOLDER::instance();
-
-		OOBase::Guard<OOBase::RWMutex> guard(pI->m_lock);
-
-		std::pair<std::map<const void*,void*>::iterator,bool> p = pI->m_map.insert(std::map<const void*,void*>::value_type(shim,pProxy));
-		if (!p.second)
-			return p.first->second;
-		
-		return 0;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_safe_proxy_remove,1,((in),const void*,shim))
-{
-	try
-	{
-		proxy_holder* pI = PROXY_HOLDER::instance();
-
-		OOBase::Guard<OOBase::RWMutex> guard(pI->m_lock);
-
-		pI->m_map.erase(shim);
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_stub_find,1,((in),void*,pObject))

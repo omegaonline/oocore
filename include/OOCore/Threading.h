@@ -173,7 +173,7 @@ namespace Omega
 			inline AtomicRefCount();
 			inline ~AtomicRefCount();
 
-			inline void AddRef();
+			inline bool AddRef();
 			inline bool Release();
 			inline bool IsZero() const;
 

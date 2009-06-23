@@ -30,6 +30,7 @@ namespace OOCore
 
 	class Stub : 
 		public OTL::ObjectBase,
+		public Omega::System::IStub,
 		public Omega::System::IStubController
 	{
 	public:
@@ -42,6 +43,7 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::System::IStub> LookupStub(Omega::Remoting::IMessage* pMessage);
 
 		BEGIN_INTERFACE_MAP(Stub)
+			INTERFACE_ENTRY(Omega::System::IStub)
 			INTERFACE_ENTRY(Omega::System::IStubController)
 		END_INTERFACE_MAP()
 
@@ -58,6 +60,11 @@ namespace OOCore
 		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::System::IStub> > m_iid_map;
 
 		OTL::ObjectPtr<Omega::System::IStub> FindStub(const Omega::guid_t& iid);
+
+	// IStub members
+	public:
+		void Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pParamsOut);
+		Omega::bool_t SupportsInterface(const Omega::guid_t& /*iid*/) { return false; }
 
 	// IStubController members
 	public:

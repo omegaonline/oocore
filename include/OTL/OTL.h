@@ -551,10 +551,12 @@ namespace OTL
 
 	public:
 		ContainedObjectImpl(Omega::IObject* pOuter) :
-			m_ptrOuter(pOuter)
-		{ }
+			m_pOuter(pOuter)
+		{ 
+			Omega::System::PinObjectPointer(m_pOuter);
+		}
 
-		ObjectPtr<Omega::IObject> m_ptrOuter;
+		Omega::IObject* m_pOuter;
 
 	private:
 		ContainedObjectImpl(const ContainedObjectImpl& rhs)
@@ -563,13 +565,18 @@ namespace OTL
 		ContainedObjectImpl& operator = (const ContainedObjectImpl& rhs)
 		{}
 
+		virtual ~ContainedObjectImpl()
+		{
+			Omega::System::UnpinObjectPointer(m_pOuter);
+		}
+
 	// IObject members
 	public:
-		virtual void AddRef() { m_ptrOuter->AddRef(); }
-		virtual void Release() { m_ptrOuter->Release(); }
+		virtual void AddRef() { m_pOuter->AddRef(); }
+		virtual void Release() { m_pOuter->Release(); }
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			return m_ptrOuter->QueryInterface(iid);
+			return m_pOuter->QueryInterface(iid);
 		}
 	};
 
@@ -578,7 +585,7 @@ namespace OTL
 	{
 		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter)
 		{
-			m_refcount.AddRef();
+			AddRef();
 			GetModuleBase()->IncLockCount();
 		}
 
@@ -633,7 +640,7 @@ namespace OTL
 		{
 			if (iid==OMEGA_GUIDOF(Omega::IObject))
 			{
-				m_refcount.AddRef();
+				AddRef();
 				return this;
 			}
 			else

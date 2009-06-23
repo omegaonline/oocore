@@ -71,6 +71,12 @@ namespace Omega
 					return m_pI;
 				}
 
+				void attach(I* pI)
+				{
+					Release();
+					m_pI = pI;
+				}
+
 			private:
 				void AddRef()
 				{
@@ -306,6 +312,23 @@ namespace Omega
 				}
 			};
 
+			template <>
+			class std_safe_type<const bool_t&>
+			{
+			public:
+				typedef const int type;
+
+				static const int coerce(const bool_t& val)
+				{
+					return (val ? 1 : 0);
+				}
+
+				static const bool_t coerce(const int val)
+				{
+					return (val != 0);
+				}
+			};
+
 			struct SafeShim
 			{
 				const void* m_vtable;
@@ -382,6 +405,12 @@ namespace Omega
 				const SafeShim* operator ->()
 				{
 					return m_pS;
+				}
+
+				void attach(const SafeShim* pS)
+				{
+					Release();
+					m_pS = pS;
 				}
 
 				const SafeShim* detach()
@@ -593,38 +622,51 @@ namespace Omega
 				virtual const SafeShim* GetShim() = 0;
 			};
 
-			class Safe_Proxy_Owner : public ISafeProxy
+			class Safe_Proxy_Owner : public IObject
 			{
 			public:
 				Safe_Proxy_Owner(const SafeShim* shim) : 
 					m_shim(shim)
 				{
-					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
-					if (except)
-						throw_correct_exception(except);
-
-					m_refcount.AddRef();
+					m_internal_safe_proxy.m_pOwner = this;
+					AddRef();
 				}
 
-				virtual void AddRef()
+				void AddRef()
 				{
-					m_refcount.AddRef();
+					if (m_refcount.AddRef())
+					{
+						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
+						if (except)
+							throw_correct_exception(except);
+					}
 				}
 
-				virtual void Release()
+				void Internal_AddRef()
+				{
+					m_privcount.AddRef();
+				}
+
+				void Release()
 				{
 					if (m_refcount.Release())
 					{
-						// Save the shim for after the delete
+						// Release after the possible delete
 						const SafeShim* shim = m_shim;
 
-						if (m_pincount.IsZero())
+						if (m_pincount.IsZero() && m_privcount.IsZero())
 							delete this;
 
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
 						if (except)
 							throw_correct_exception(except);
 					}
+				}
+
+				void Internal_Release()
+				{
+					if (m_privcount.Release() && m_pincount.IsZero() && m_refcount.IsZero())
+						delete this;
 				}
 
 				inline IObject* QueryInterface(const guid_t& iid)
@@ -649,7 +691,7 @@ namespace Omega
 					if (except)
 						throw_correct_exception(except);
 
-					if (m_pincount.Release() && m_refcount.IsZero())
+					if (m_pincount.Release() && m_refcount.IsZero() && m_privcount.IsZero())
 						delete this;
 				}
 
@@ -664,6 +706,48 @@ namespace Omega
 				const SafeShim*                   m_shim;
 				Threading::AtomicRefCount         m_refcount;
 				Threading::AtomicRefCount         m_pincount;
+				Threading::AtomicRefCount         m_privcount;
+				
+				class InternalSafeProxy : public ISafeProxy
+				{
+				public:
+					InternalSafeProxy() : m_pOwner(0)
+					{}
+
+					void AddRef()
+					{
+						m_pOwner->Internal_AddRef();
+					}
+
+					void Release()
+					{
+						m_pOwner->Internal_Release();
+					}
+
+					IObject* QueryInterface(const guid_t& iid)
+					{
+						return m_pOwner->QueryInterface(iid);
+					}
+
+					void Pin()
+					{
+						m_pOwner->Pin();
+					}
+
+					void Unpin()
+					{
+						m_pOwner->Unpin();
+					}
+
+					const SafeShim* GetStub(const Omega::guid_t& iid)
+					{
+						return m_pOwner->GetStub(iid);
+					}
+
+					Safe_Proxy_Owner* m_pOwner;
+				};
+
+				InternalSafeProxy m_internal_safe_proxy;
 				
 				inline virtual ~Safe_Proxy_Owner();
 
@@ -671,6 +755,12 @@ namespace Omega
 
 				const SafeShim* GetStub(const Omega::guid_t& iid)
 				{
+					if (iid == OMEGA_GUIDOF(IObject))
+					{
+						AddRef();
+						return m_shim;
+					}
+
 					Safe_Proxy_Base* pBase = GetBase(iid);
 					if (!pBase)
 						return 0;
@@ -684,6 +774,21 @@ namespace Omega
 					return shim;
 				}
 			};
+
+			class proxy_holder
+			{
+			public:
+				inline void remove(const SafeShim* shim);
+				inline Safe_Proxy_Owner* find(const SafeShim* shim);
+				inline Safe_Proxy_Owner* add(const SafeShim* shim, Safe_Proxy_Owner* pOwner);
+
+				bool singleton_init() { return false; }
+
+			private:
+				Threading::Mutex                            m_lock;
+				std::map<const SafeShim*,Safe_Proxy_Owner*> m_map;
+			};
+			typedef Threading::Singleton<proxy_holder> PROXY_HOLDER;
 
 			inline auto_iface_ptr<Safe_Proxy_Owner> create_proxy_owner(const SafeShim* shim);
 
@@ -705,14 +810,13 @@ namespace Omega
 					m_shim.m_stub = this;
 					m_shim.m_iid = &OMEGA_GUIDOF(IObject);
 
-					m_pObject->AddRef();
-
-					m_refcount.AddRef();
+					AddRef();
 				}
 
 				virtual void AddRef()
 				{
-					m_refcount.AddRef();
+					if (m_refcount.AddRef())
+						m_pObject->AddRef();
 				}
 
 				virtual void Release()

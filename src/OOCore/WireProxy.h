@@ -99,14 +99,13 @@ namespace OOCore
 	// ISafeProxy members
 	public:
 		void Pin()
-		{
+		{ 
 			++m_pin_count;
 		}
 
 		void Unpin()
-		{
-			if (--m_pin_count==0 && m_refcount.IsZero())
-				delete this;
+		{ 
+			--m_pin_count;
 		}
 
 		const Omega::System::MetaInfo::SafeShim* GetStub(const Omega::guid_t& iid);
@@ -126,16 +125,22 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
 
 	protected:
-		virtual void Internal_Release()
+		void Internal_AddRef()
 		{
-			if (m_refcount.Release())
-			{
-				//CallRemoteRelease();
+			printf("%p AddRef > %lu P: %lu\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
 
-				if (m_pin_count == 0)
-					delete this;
-			}
+			m_refcount.AddRef();
+			//OTL::ObjectBase::Internal_AddRef();
 		}
+
+		void Internal_Release()
+		{
+			printf("%p Release < %lu P: %lu\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
+
+			m_refcount.Release();
+			//OTL::ObjectBase::Internal_Release();
+		}
+
 
 	private:
 		Proxy(const Proxy&) : OTL::ObjectBase(), Omega::System::IProxy(), Omega::Remoting::IMarshal() {}

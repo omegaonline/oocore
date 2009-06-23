@@ -20,7 +20,7 @@ bool exception_tests();
 bool otl_tests();
 bool registry_tests();
 bool registry_tests_2();
-bool interface_tests();
+bool interface_process_tests();
 bool interface_dll_tests();
 bool apartment_tests();
 bool apartment_dll_tests();
@@ -29,15 +29,15 @@ bool interface_tests2();
 
 static void tests(bool bStandalone)
 {
-	RUN_TEST(string_tests);
+	/*RUN_TEST(string_tests);
 	RUN_TEST(guid_tests);
 	RUN_TEST(exception_tests);
 	RUN_TEST(otl_tests);
 	RUN_TEST(registry_tests);
-	RUN_TEST(registry_tests_2);
+	RUN_TEST(registry_tests_2);*/
 	RUN_TEST(interface_dll_tests);
 	if (!bStandalone)
-		RUN_TEST(interface_tests);
+		RUN_TEST(interface_process_tests);
 	RUN_TEST(apartment_dll_tests);
 	if (!bStandalone)
 		RUN_TEST(apartment_tests);

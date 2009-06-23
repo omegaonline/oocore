@@ -10,6 +10,8 @@
 
 #include "Test.h"
 
+bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest);
+
 static bool do_local_library_test(const wchar_t* pszLibName)
 {
 	// Register the library
@@ -58,6 +60,11 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	TEST(ptrTI->GetName() == L"Omega::TestSuite::ISimpleTest");
 	TEST(ptrTI->GetIID() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 	TEST(ptrTI->GetMethodCount() == 23+3);
+
+	// Test the interface
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(ptrPOI);
+	TEST(ptrSimpleTest);
+	interface_tests(ptrSimpleTest);
 		
 	// Test unregistering
 	TEST(system((Omega::string_t(OOREGISTER L" -u -s ") + pszLibName).ToUTF8().c_str()) == 0);

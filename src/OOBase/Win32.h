@@ -44,15 +44,9 @@ namespace OOBase
 				m_handle(h)
 			{}
 
-			SmartHandle(const SmartHandle& rhs) :
-				m_handle(rhs.m_handle)
-			{}
-
-			SmartHandle& operator = (const SmartHandle& rhs)
+			SmartHandle& operator = (HANDLE h)
 			{
-				if (&rhs != this)
-					m_handle = rhs.m_handle;
-
+				m_handle = h;
 				return *this;
 			}
 

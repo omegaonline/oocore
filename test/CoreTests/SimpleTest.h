@@ -4,7 +4,8 @@
 #include "interfaces.h"
 
 class SimpleTestImpl :
-	public Omega::TestSuite::ISimpleTest
+	public Omega::TestSuite::ISimpleTest,
+	public Omega::TestSuite::ISimpleTest2
 {
 public:
 	Omega::bool_t BoolNot1(Omega::bool_t v)
@@ -100,6 +101,11 @@ public:
 	void Throw(Omega::uint32_t err)
 	{
 		throw Omega::ISystemException::Create(err,L"TestLibraryImpl");
+	}
+
+	Omega::string_t WhereAmI()
+	{
+		return L"Inner";
 	}
 };
 

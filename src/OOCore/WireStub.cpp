@@ -42,7 +42,7 @@ void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pMana
 
 void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
-	ObjectPtr<System::IStub> ptrStub = FindStub(iid);
+	//ObjectPtr<System::IStub> ptrStub = FindStub(iid);
 	
 	System::MetaInfo::wire_write(L"id",pMessage,m_stub_id);
 	try
@@ -71,10 +71,48 @@ void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t
 	System::MetaInfo::wire_read(L"iid",pMessage,iid);
 }
 
+void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
+{
+	// Read the method id
+	uint32_t method_id = 0;
+	System::MetaInfo::wire_read(L"$method_id",pParamsIn,method_id);
+
+	switch (method_id)
+	{
+	case 0: // RemoteRelease
+		{
+			uint32_t release_count = 0;
+			System::MetaInfo::wire_read(L"release_count",pParamsIn,release_count);
+			RemoteRelease(release_count);
+		}
+		break;
+
+	case 1: // QueryInterface
+		{
+			guid_t iid;
+			System::MetaInfo::wire_read(L"iid",pParamsIn,iid);
+			
+			bool_t bQI = RemoteQueryInterface(iid);
+			System::MetaInfo::wire_write(L"bQI",pParamsOut,bQI);
+		}
+		break;
+
+	case 2: // MarshalStub
+		MarshalStub(pParamsIn,pParamsOut);
+		break;
+
+	default:
+		OMEGA_THROW(L"Invoke called with invalid method index");
+	}
+}
+
 ObjectPtr<System::IStub> OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
 {
 	guid_t iid;
 	System::MetaInfo::wire_read(L"$iid",pMessage,iid);
+	if (iid == OMEGA_GUIDOF(IObject))
+		return static_cast<IStub*>(this);
+
 	return FindStub(iid);
 }
 

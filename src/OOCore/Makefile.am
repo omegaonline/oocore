@@ -8,7 +8,7 @@ liboocore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
 liboocore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
 
 if WIN32
-liboocore_la_LDFLAGS += -avoid-version -no-undefined -Wl,'-lrpcrt4'
+liboocore_la_LDFLAGS += -module -avoid-version -no-undefined -Wl,'-lrpcrt4'
 endif
 
 liboocore_la_SOURCES = \
@@ -27,6 +27,7 @@ liboocore_la_SOURCES = \
 	OOCore.cpp \
 	Registry.cpp \
 	RunningObjectTable.cpp \
+	Safe.cpp \
 	StdObjectManager.h \
 	StdObjectManager.cpp \
 	Threading.cpp \
@@ -41,9 +42,7 @@ liboocore_la_SOURCES = \
 	WireStub.h \
 	WireStub.cpp \
 	Xml.h \
-	Xml.cpp \
-	../Common/Server.h \
-	../Common/Version.h
+	Xml.cpp
 	
 if WIN32
 liboocore_la_SOURCES += OOCore_res.rc

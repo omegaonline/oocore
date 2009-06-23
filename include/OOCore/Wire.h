@@ -243,24 +243,24 @@ namespace Omega
 				typedef T type;
 				typedef T real_type;
 
-				static void read(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, T& val)
+				static void read(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, T& val, const guid_t& = OMEGA_GUIDOF(IObject))
 				{
 					wire_read(pszName,pMessage,val);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T& val)
+				static void write(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T& val, const guid_t& = OMEGA_GUIDOF(IObject))
 				{
 					wire_write(pszName,pMessage,val);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T&)
+				static void unpack(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T&, const guid_t& = OMEGA_GUIDOF(IObject))
 				{
 					// Just read the value back, moving the read pointer correctly
 					T val = default_value<T>::value();
 					wire_read(pszName,pMessage,val);
 				}
 
-				static void no_op(bool)
+				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
 				{ }
 			};
 
@@ -271,17 +271,17 @@ namespace Omega
 				typedef typename marshal_info<T>::wire_type::type type;
 				typedef typename marshal_info<T>::wire_type::type real_type;
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val)
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
 				{
-					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,const_cast<typename marshal_info<T>::wire_type::real_type&>(val));
+					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,const_cast<typename marshal_info<T>::wire_type::real_type&>(val),iid);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val)
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
 				{
-					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val);
+					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void no_op(bool)
+				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
 				{ }
 			};
 
@@ -304,25 +304,25 @@ namespace Omega
 				};
 				typedef ref_holder type;
 
-				static void init(ref_holder&)
+				static void init(ref_holder&, const guid_t& = OMEGA_GUIDOF(IObject))
 				{ }
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::real_type& val)
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
 				{
-					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,val);
+					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::real_type& val)
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
 				{
-					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val);
+					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::real_type& val)
+				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
 				{
-					marshal_info<T>::wire_type::unpack(pszName,pManager,pMessage,val);
+					marshal_info<T>::wire_type::unpack(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void no_op(bool)
+				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
 				{ }
 			};
 
@@ -343,7 +343,7 @@ namespace Omega
 					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val);
 				}
 
-				static void no_op(bool)
+				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
 				{ }
 			};
 
@@ -504,27 +504,27 @@ namespace Omega
 				};
 				typedef if_holder type;
 
-				static void init(type&)
+				static void init(type&, const guid_t& = OMEGA_GUIDOF(I))
 				{ }
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI)
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					IObject* p = 0;
-					pManager->UnmarshalInterface(pszName,pMessage,OMEGA_GUIDOF(I),p);
+					pManager->UnmarshalInterface(pszName,pMessage,iid,p);
 					pI = static_cast<I*>(p);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI)
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
-					pManager->MarshalInterface(pszName,pMessage,OMEGA_GUIDOF(I),pI);
+					pManager->MarshalInterface(pszName,pMessage,iid,pI);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI)
+				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
-					pManager->ReleaseMarshalData(pszName,pMessage,OMEGA_GUIDOF(I),pI);
+					pManager->ReleaseMarshalData(pszName,pMessage,iid,pI);
 				}
 
-				static void no_op(bool)
+				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(I))
 				{ }
 			};
 

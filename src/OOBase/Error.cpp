@@ -45,7 +45,7 @@ std::string OOBase::strerror(int err)
 
 void OOBase::CallCriticalFailureE(const char* pszFile, unsigned int nLine, int err)
 {
-	CallCriticalFailureX(pszFile,nLine,strerror(err).c_str());
+	CallCriticalFailureX(pszFile,nLine,OOBase::strerror(err).c_str());
 }
 
 #if defined(_WIN32)

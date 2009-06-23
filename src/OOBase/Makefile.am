@@ -55,6 +55,7 @@ liboosvrbase_a_SOURCES = \
 	PipeWin32.cpp \
 	Proactor.cpp \
 	Proactor.h \
+	ProactorEv.cpp \
 	ProactorEv.h \
 	ProactorWin32.cpp \
 	ProactorWin32.h \

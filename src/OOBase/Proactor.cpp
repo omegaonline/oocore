@@ -23,8 +23,10 @@
 
 #if defined(_WIN32)
 #include "ProactorWin32.h"
-#else
+#elif defined(HAVE_EV_H)
 #include "ProactorEv.h"
+#else
+#error Fix me!
 #endif
 
 OOSvrBase::Proactor::Proactor() :

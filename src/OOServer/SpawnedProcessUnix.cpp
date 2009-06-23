@@ -423,54 +423,6 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	return true;
 }
 
-/*bool SpawnedProcessUnix::InstallSandbox(int argc, char* argv[])
-{
-	std::string strUName = "omega_sandbox";
-	if (argc>=1)
-		strUName = ACE_TEXT_ALWAYS_CHAR(argv[0]);
-
-	setpwent();
-	passwd* pw = getpwnam(strUName.c_str());
-	if (!pw)
-	{
-		if (errno)
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: %p\n"),ACE_TEXT("getpwnam() failed!")),false);
-		else
-			ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("You must add a user account for 'omega_sandbox' or supply a valid user name on the command line\n")),false);
-	}
-	endpwent();
-
-	ACE_Refcounted_Auto_Ptr<Registry::Hive,ACE_Thread_Mutex> reg_root = Manager::get_registry();
-
-	// Set the sandbox uid
-	ACE_INT64 key = 0;
-	if (Manager::get_registry()->open_key(key,"System\\Server\\Sandbox",0) != 0)
-		return false;
-
-	int err = reg_root->set_integer_value(key,"Uid",0,pw->pw_uid);
-	if (err != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%N:%l: Failed to set sandbox uid in registry: %C"),strerror(err)),false);
-
-	return true;
-}
-
-bool SpawnedProcessUnix::UninstallSandbox()
-{
-	return true;
-}
-
-bool SpawnedProcessUnix::SecureFile(const std::string& strFilename)
-{
-	// Make sure the file is owned by root (0)
-	if (chown(strFilename.c_str(),0,(gid_t)-1) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chown failed")),false);
-
-	if (chmod(strFilename.c_str(),S_IRWXU | S_IRGRP) != 0)
-		ACE_ERROR_RETURN((LM_ERROR,ACE_TEXT("%p\n"),ACE_TEXT("chmod failed")),false);
-
-	return true;
-}*/
-
 bool SpawnedProcessUnix::Compare(uid_t uid)
 {
 	return (m_uid == uid);
@@ -496,11 +448,8 @@ std::string SpawnedProcessUnix::GetRegistryHive()
 		strDir += "/.omegaonline";
 	}
 
-	if (mkdir(strDir.c_str(),S_IRWXU | S_IRGRP) != 0)
-	{
-		if (errno != EEXIST)
-			LOG_ERROR_RETURN(("mkdir(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),"");
-	}
+	// Have a go at creating it... we catch failure elsewhere
+	mkdir(strDir.c_str(),S_IRWXU | S_IRGRP);
 
 	return strDir + "/user.regdb";
 }

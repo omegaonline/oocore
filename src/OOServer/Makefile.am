@@ -42,6 +42,7 @@ ooserverd_SOURCES = \
 	RootManager.h \
 	RootManager.cpp \
 	RootRegistry.cpp \
+	RootUnix.cpp \
 	RootWin32.cpp \
 	SpawnedProcess.h \
 	SpawnedProcessUnix.cpp \

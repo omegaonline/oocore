@@ -34,6 +34,7 @@ namespace OOSvrBase
 	{
 	public:
 		pw_info(uid_t uid);
+		pw_info(const char* uname);
 
 		inline struct passwd* operator ->()
 		{

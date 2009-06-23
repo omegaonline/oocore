@@ -154,12 +154,12 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	m_sa.bInheritHandle = FALSE;
 	m_sa.lpSecurityDescriptor = m_sd.descriptor();
 
+#elif defined(HAVE_UNISTD_H)
+
+	void* TODO; // chown pipe_name
+
 #else
-
-	assert(!pipe_name.empty());
-
 #error set security on pipe_name
-
 #endif
 
 	return true;

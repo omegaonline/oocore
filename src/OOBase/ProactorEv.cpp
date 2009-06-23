@@ -19,29 +19,30 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOSVRBASE_PROACTOR_EV_H_INCLUDED_
-#define OOSVRBASE_PROACTOR_EV_H_INCLUDED_
+#include "Proactor.h"
 
-#if !defined(HAVE_EV_H)
-#error Includes have got confused, check Proactor.h
-#endif
+#if defined(HAVE_EV_H)
 
-namespace OOSvrBase
+#include "ProactorEv.h"
+
+OOSvrBase::ProactorImpl::ProactorImpl()
 {
-	class ProactorImpl
-	{
-	public:
-		ProactorImpl();
-		~ProactorImpl();
-
-		OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*);
-
-		AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
-
-	private:
-		ProactorImpl(const ProactorImpl&) {}
-		ProactorImpl& operator = (const ProactorImpl&) { return *this; }
-	};
 }
 
-#endif // OOSVRBASE_PROACTOR_EV_H_INCLUDED_
+OOSvrBase::ProactorImpl::~ProactorImpl()
+{
+}
+
+OOBase::Socket* OOSvrBase::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*)
+{
+	void* TODO;
+	return 0;
+}
+
+OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
+{
+	void* TODO;
+	return 0;
+}
+
+#endif // HAVE_EV_H

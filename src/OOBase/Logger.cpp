@@ -22,11 +22,6 @@
 #include "Logger.h"
 #include "Singleton.h"
 
-#if defined(_WIN32)
-
-#include <io.h>
-#include <fcntl.h>
-
 namespace
 {
 	class LoggerImpl
@@ -38,16 +33,27 @@ namespace
 		void open(const char* name);
 		void log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args);
 
-		static DWORD getpid()
-		{
-			return GetCurrentProcessId();
-		}
+#if defined(_WIN32)
+		static DWORD getpid() { return GetCurrentProcessId(); }
+#elif defined(HAVE_UNISTD_H)
+		static pid_t getpid() { return getpid(); }
+#else
+#error Fix me!
+#endif
 
 	private:
-		HANDLE        m_hLog;
 		OOBase::Mutex m_lock;
+
+#if defined(_WIN32)
+		HANDLE m_hLog;
+#endif
 	};
 }
+
+#if defined(_WIN32)
+
+#include <io.h>
+#include <fcntl.h>
 
 LoggerImpl::LoggerImpl() :
 	m_hLog(NULL)
@@ -136,18 +142,18 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 	{
 	case OOSvrBase::Logger::Error:
 		out_file = stderr;
-		fprintf(out_file,"Error: ");
+		fputs("Error: ",out_file);
 		break;
 
 	case OOSvrBase::Logger::Warning:
-		fprintf(out_file,"Warning: ");
+		fputs("Warning: ",out_file);
 		break;
 
 	default:
 		break;
 	}
-	fprintf(out_file,szBuf);
-	fprintf(out_file,"\n");
+	fputs(szBuf,out_file);
+	fputs("\n",out_file);
 }
 
 #elif defined(HAVE_ASL_H)
@@ -156,33 +162,76 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 #error Fix me!
 
 #elif defined(HAVE_SYSLOG_H)
+
+// Syslog reuses these
+#undef LOG_WARNING
+#undef LOG_DEBUG
+
 #include <syslog.h>
 #include <stdarg.h>
 
-namespace
-{
-	class LoggerImpl
-	{
-	public:
-		LoggerImpl();
-		~LoggerImpl();
-
-		void open(const char* name);
-		void log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args);
-
-		static pid_t getpid()
-		{
-			return getpid();
-		}
-
-	private:
-		OOBase::Mutex m_lock;
-	};
-}
-
 LoggerImpl::LoggerImpl()
 {
-	void* IMPLEMENT_SYS_LOG;
+}
+
+LoggerImpl::~LoggerImpl()
+{
+	closelog();
+}
+
+void LoggerImpl::open(const char* name)
+{
+	openlog(name,LOG_NDELAY,LOG_DAEMON);
+}
+
+void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
+{
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	char szBuf[4096] = {0};
+	vsnprintf_s(szBuf,sizeof(szBuf),fmt,args);
+	szBuf[sizeof(szBuf)-1] = '\0';
+
+	int wType = 0;
+	switch (priority)
+	{
+	case OOSvrBase::Logger::Error:
+		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_ERR);
+		break;
+
+	case OOSvrBase::Logger::Warning:
+		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_WARNING);
+		break;
+
+	case OOSvrBase::Logger::Information:
+		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_INFO);
+		break;
+
+	case OOSvrBase::Logger::Debug:
+		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_DEBUG);
+		break;
+
+	default:
+		break;
+	}
+
+	FILE* out_file = stdout;
+	switch (priority)
+	{
+	case OOSvrBase::Logger::Error:
+		out_file = stderr;
+		fputs("Error: ",out_file);
+		break;
+
+	case OOSvrBase::Logger::Warning:
+		fputs("Warning: ",out_file);
+		break;
+
+	default:
+		break;
+	}
+	fputs(szBuf,out_file);
+	fputs("\n",out_file);
 }
 
 #else

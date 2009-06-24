@@ -103,7 +103,7 @@ LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
 
 # Find sqlite3
-AX_LIB_SQLITE3([3.5.0])
+OO_LIB_SQLITE3([3.5.0])
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error

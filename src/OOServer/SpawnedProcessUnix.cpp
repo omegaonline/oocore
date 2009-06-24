@@ -189,7 +189,7 @@ bool SpawnedProcessUnix::clean_environment()
 		}
 	}
 
-	void* TODO; // Add USER, TERM etc...
+	void* POSIX_TODO; // Add USER, TERM etc...
 
 	cleanenv[cidx] = NULL;
 	environ = cleanenv;
@@ -339,7 +339,7 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, const std::string& strPipe, bool bSand
         // This all needs sorting out badly!
         // We should be spawning the user's shell with -c
         // Set pwd to user's home dir, etc...
-        void* TODO;
+        void* POSIX_TODO;
 
 		// Exec the user process
 		char* cmd_line[] =

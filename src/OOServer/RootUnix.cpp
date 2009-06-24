@@ -104,7 +104,7 @@ bool Root::Manager::get_db_directory(std::string& dir)
 void Root::Manager::wait_for_quit()
 {
 	// Use libev or just a plain signal handler?
-	void* TODO;
+	void* POSIX_TODO;
 }
 
 namespace OOBase

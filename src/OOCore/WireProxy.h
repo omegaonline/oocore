@@ -99,12 +99,12 @@ namespace OOCore
 	// ISafeProxy members
 	public:
 		void Pin()
-		{ 
+		{
 			++m_pin_count;
 		}
 
 		void Unpin()
-		{ 
+		{
 			--m_pin_count;
 		}
 
@@ -127,7 +127,7 @@ namespace OOCore
 	protected:
 		void Internal_AddRef()
 		{
-			printf("%p AddRef > %lu P: %lu\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
+			printf("%p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
 
 			m_refcount.AddRef();
 			//OTL::ObjectBase::Internal_AddRef();
@@ -135,7 +135,7 @@ namespace OOCore
 
 		void Internal_Release()
 		{
-			printf("%p Release < %lu P: %lu\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
+			printf("%p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
 
 			m_refcount.Release();
 			//OTL::ObjectBase::Internal_Release();

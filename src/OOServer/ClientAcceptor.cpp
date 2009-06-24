@@ -172,7 +172,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 
 #elif defined(HAVE_UNISTD_H)
 
-	void* TODO; // Set security on pipe_name
+	void* POSIX_TODO; // Set security on pipe_name
 
 #else
 #error Fix me!

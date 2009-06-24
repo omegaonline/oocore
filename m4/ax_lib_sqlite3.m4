@@ -19,13 +19,13 @@
 #
 #   This macro calls:
 #
-#     AC_SUBST(SQLITE3_CPPFLAGS)
-#     AC_SUBST(SQLITE3_LDFLAGS)
-#     AC_SUBST(SQLITE3_VERSION)
+#     AC_SUBST(SQLITE3_CFLAGS)
+#     AC_SUBST(SQLITE3_LIBS)
 #
 #   And sets:
 #
 #     HAVE_SQLITE3
+#     HAVE_SQLITE3_AMALGAMATION
 #
 # LICENSE
 #
@@ -41,7 +41,6 @@
 #
 #   1) Change the language to C from C++
 #   2) Attempt to find the sqlite3.c amalgamation in same same dir as <sqlite3.h>
-#   3) Use pkg-config if possible
 
 AC_DEFUN([AX_LIB_SQLITE3],
 [
@@ -64,9 +63,8 @@ AC_DEFUN([AX_LIB_SQLITE3],
         [WANT_SQLITE3="yes"]
     )
 
-    SQLITE3_CPPFLAGS=""
-    SQLITE3_LDFLAGS=""
-    SQLITE3_VERSION=""
+    SQLITE3_CFLAGS=""
+    SQLITE3_LIBS=""
 
     if test "x$WANT_SQLITE3" = "xyes"; then
 
@@ -84,13 +82,13 @@ AC_DEFUN([AX_LIB_SQLITE3],
                                    \+ $sqlite3_version_req_minor \* 1000 \
                                    \+ $sqlite3_version_req_micro`
 
-        AC_MSG_CHECKING([for SQLite3 library >= $sqlite3_version_req])
+		AC_MSG_CHECKING([for SQLite3 library >= $sqlite3_version_req])
 
 		if test "$ac_sqlite3_path" != ""; then
             ac_sqlite3_ldflags="-L$ac_sqlite3_path/lib -lsqlite3"
             ac_sqlite3_header_path="$ac_sqlite3_path/include"
             ac_sqlite3_cppflags="-I$ac_sqlite3_header_path"
-            
+
             dnl Check for header not in include dir
             if test ! -f "ac_sqlite3_header_path/$ac_sqlite3_header"; then
                 if test -f "$ac_sqlite3_path/$ac_sqlite3_header" \
@@ -101,27 +99,17 @@ AC_DEFUN([AX_LIB_SQLITE3],
                 fi
             fi
         else
-			if test -n "$PKG_CONFIG"; then
-				PKG_CHECK_MODULES([SQLITE3],[sqlite3],
-				[
-					ac_sqlite3_cppflags="$SQLITE3_CFLAGS"
-					ac_sqlite3_ldflags="$SQLITE3_LIBS"	
-				])	
-			fi
-						
-			if test "$ac_sqlite3_cppflags" == ""; then
-				for ac_sqlite3_path_tmp in /usr /usr/local /opt ; do
-					if test -f "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header" \
-						&& test -r "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header"; then
-						ac_sqlite3_header_path="$ac_sqlite3_path_tmp/include"
-						ac_sqlite3_cppflags="-I$ac_sqlite3_header_path"
-						ac_sqlite3_ldflags="-L$ac_sqlite3_path_tmp/lib -lsqlite3"
-						break;
-					fi
-				done
-			fi
+			for ac_sqlite3_path_tmp in /usr /usr/local /opt ; do
+				if test -f "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header" \
+					&& test -r "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header"; then
+					ac_sqlite3_header_path="$ac_sqlite3_path_tmp/include"
+					ac_sqlite3_cppflags="-I$ac_sqlite3_header_path"
+					ac_sqlite3_ldflags="-L$ac_sqlite3_path_tmp/lib -lsqlite3"
+					break;
+				fi
+			done
         fi
-        
+
         dnl Check for amalgamated version
         if test -f "$ac_sqlite3_header_path/sqlite3.c" \
             && test -r "$ac_sqlite3_header_path/sqlite3.c"; then
@@ -159,8 +147,8 @@ AC_DEFUN([AX_LIB_SQLITE3],
 
         if test "$success" = "yes"; then
 
-            SQLITE3_CPPFLAGS="$ac_sqlite3_cppflags"
-            SQLITE3_LDFLAGS="$ac_sqlite3_ldflags"
+            SQLITE3_CFLAGS="$ac_sqlite3_cppflags"
+            SQLITE3_LIBS="$ac_sqlite3_ldflags"
 
             dnl Retrieve SQLite release version
             if test "x$ac_sqlite3_header_path" != "x"; then
@@ -174,14 +162,26 @@ AC_DEFUN([AX_LIB_SQLITE3],
                 fi
             fi
 
-            AC_SUBST(SQLITE3_CPPFLAGS)
-            AC_SUBST(SQLITE3_LDFLAGS)
-            AC_SUBST(SQLITE3_VERSION)
+            AC_SUBST(SQLITE3_CFLAGS)
+            AC_SUBST(SQLITE3_LIBS)
             AC_DEFINE([HAVE_SQLITE3], [1], [Define to 1 if you have the SQLite3 library])
-            
+
             if test "x$ac_sqlite3_amalgamation" = "xyes"; then
                 AC_DEFINE([HAVE_SQLITE3_AMALGAMATION], [1], [Define to 1 if you have the SQLite3 amalgamated sources])
             fi
         fi
     fi
+])
+
+AC_DEFUN([OO_LIB_SQLITE3],
+[
+	sqlite3_version_req=ifelse([$1], [], [3.0.0], [$1])
+
+	if test -n "$PKG_CONFIG"; then
+		PKG_CHECK_MODULES([SQLITE3],[sqlite3 >= $sqlite3_version_req])
+	fi
+
+	if test -z "$SQLITE3_CFLAGS"; then
+		AX_LIB_SQLITE3([$1])
+	fi
 ])

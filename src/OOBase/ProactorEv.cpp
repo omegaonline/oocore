@@ -35,13 +35,13 @@ OOSvrBase::ProactorImpl::~ProactorImpl()
 
 OOBase::Socket* OOSvrBase::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*)
 {
-	void* TODO;
+	void* POSIX_TODO;
 	return 0;
 }
 
 OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
 {
-	void* TODO;
+	void* POSIX_TODO;
 	return 0;
 }
 

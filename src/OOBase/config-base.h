@@ -110,6 +110,11 @@
 #error You cannot build Omega Online for Windows 95/98/Me!
 #endif
 
+// Remove the unistd include - we are windows
+#if defined(HAVE_UNISTD_H)
+#undef HAVE_UNISTD_H
+#endif
+
 #endif // HAVE_WINDOWS_H
 
 #if defined(HAVE_UNISTD_H)

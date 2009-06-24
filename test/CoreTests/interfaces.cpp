@@ -210,7 +210,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	ptrSimpleTest2.Release();
 	//interface_tests(ptrSimpleTest);
 
-	THIS RELEASE DOESN@T WORK!
+	//THIS RELEASE DOESN@T WORK!
 
 	ptrSimpleTest.Release();
 	

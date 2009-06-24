@@ -41,13 +41,14 @@
 #
 #   1) Change the language to C from C++
 #   2) Attempt to find the sqlite3.c amalgamation in same same dir as <sqlite3.h>
+#   3) Use pkg-config if possible
 
 AC_DEFUN([AX_LIB_SQLITE3],
 [
     AC_ARG_WITH([sqlite3],
         AC_HELP_STRING(
             [--with-sqlite3=@<:@ARG@:>@],
-            [use SQLite 3 library @<:@default=yes@:>@, optionally specify the prefix for sqlite3 library]
+            [use SQLite3 library @<:@default=yes@:>@, optionally specify the prefix for sqlite3 library]
         ),
         [
         if test "$withval" = "no"; then
@@ -85,8 +86,8 @@ AC_DEFUN([AX_LIB_SQLITE3],
 
         AC_MSG_CHECKING([for SQLite3 library >= $sqlite3_version_req])
 
-        if test "$ac_sqlite3_path" != ""; then
-            ac_sqlite3_ldflags="-L$ac_sqlite3_path/lib"
+		if test "$ac_sqlite3_path" != ""; then
+            ac_sqlite3_ldflags="-L$ac_sqlite3_path/lib -lsqlite3"
             ac_sqlite3_header_path="$ac_sqlite3_path/include"
             ac_sqlite3_cppflags="-I$ac_sqlite3_header_path"
             
@@ -100,15 +101,25 @@ AC_DEFUN([AX_LIB_SQLITE3],
                 fi
             fi
         else
-            for ac_sqlite3_path_tmp in /usr /usr/local /opt ; do
-                if test -f "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header" \
-                    && test -r "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header"; then
-                    ac_sqlite3_header_path="$ac_sqlite3_path_tmp/include"
-                    ac_sqlite3_cppflags="-I$ac_sqlite3_header_path"
-                    ac_sqlite3_ldflags="-L$ac_sqlite3_path_tmp/lib"
-                    break;
-                fi
-            done
+			if test -n "$PKG_CONFIG"; then
+				PKG_CHECK_MODULES([SQLITE3],[sqlite3],
+				[
+					ac_sqlite3_cppflags="$SQLITE3_CFLAGS"
+					ac_sqlite3_ldflags="$SQLITE3_LIBS"	
+				])	
+			fi
+						
+			if test "$ac_sqlite3_cppflags" == ""; then
+				for ac_sqlite3_path_tmp in /usr /usr/local /opt ; do
+					if test -f "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header" \
+						&& test -r "$ac_sqlite3_path_tmp/include/$ac_sqlite3_header"; then
+						ac_sqlite3_header_path="$ac_sqlite3_path_tmp/include"
+						ac_sqlite3_cppflags="-I$ac_sqlite3_header_path"
+						ac_sqlite3_ldflags="-L$ac_sqlite3_path_tmp/lib -lsqlite3"
+						break;
+					fi
+				done
+			fi
         fi
         
         dnl Check for amalgamated version
@@ -116,10 +127,6 @@ AC_DEFUN([AX_LIB_SQLITE3],
             && test -r "$ac_sqlite3_header_path/sqlite3.c"; then
             ac_sqlite3_amalgamation=yes
         fi
-
-        if test "$ac_sqlite3_ldflags" != ""; then
-		    ac_sqlite3_ldflags="$ac_sqlite3_ldflags -lsqlite3"
-		fi
 
         saved_CPPFLAGS="$CPPFLAGS"
         CPPFLAGS="$CPPFLAGS $ac_sqlite3_cppflags"

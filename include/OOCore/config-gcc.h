@@ -73,7 +73,7 @@
 #if defined(__MINGW32__)
 	// We assume win32 for MinGW
     #include <OOCore/config-win32.h>
-#elif defined(__unix)
+#elif defined(__unix__)
 	// We assume we are some kind of unix
     #define OMEGA_PLATFORM_STRING "Unix"
 #else

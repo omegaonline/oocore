@@ -31,7 +31,7 @@ OO_PROG_CC
 if test "$oo_test_CFLAGS" != set; then
 
   # Always try to hide symbols
-  AX_CFLAGS_GCC_OPTION([-fvisiblity=hidden])
+  AX_CFLAGS_GCC_OPTION([-fvisibility=hidden])
 
   if test x$debug = xtrue; then
     AX_CFLAGS_GCC_OPTION([-g])
@@ -50,7 +50,7 @@ if test "$oo_test_CXXFLAGS" != set; then
   AX_CXXFLAGS_WARN_ALL
 
   # Always try to hide symbols
-  AX_CXXFLAGS_GCC_OPTION([-fvisiblity=hidden])
+  AX_CXXFLAGS_GCC_OPTION([-fvisibility=hidden])
 
   if test x$debug = xtrue; then
   	AX_CXXFLAGS_GCC_OPTION([-g])
@@ -67,6 +67,9 @@ if test x$debug = xtrue; then
 else
   CPPFLAGS="$CPPFLAGS -DNDEBUG"
 fi
+
+# Check for pkg-config
+PKG_PROG_PKG_CONFIG
 
 # Check the multi-threading flags
 OO_MULTI_THREAD

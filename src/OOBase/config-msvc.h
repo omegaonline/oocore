@@ -61,5 +61,6 @@
 #define HAVE_NEW_NOTHROW 1
 #define HAVE_ASSERT_H 1
 #define HAVE_STRING_H 1
+#define HAVE_WCSICMP 1 
 
 #endif // OOBASE_CONFIG_MSVC_H_INCLUDED_

@@ -354,7 +354,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 {
 #if defined(_WIN32)
 
-#error Fix me!
+	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
+	if (UuidFromStringW((unsigned short*)sz,&uuid) != RPC_S_OK)
+		return false;
+
+	result = *(Omega::guid_t*)(&uuid);
+	return true;
 
 #elif defined(HAVE_UUID_UUID_H)
 

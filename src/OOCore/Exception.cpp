@@ -38,6 +38,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
+		printf("Buggered!");
 		throw OOCore_ISystemException_Create(string_t(msg,false),0);
 	}
 }

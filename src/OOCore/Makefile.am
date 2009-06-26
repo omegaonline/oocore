@@ -1,19 +1,6 @@
 include $(top_srcdir)/m4/ltrc.inc
 
-lib_LTLIBRARIES = liboocore.la
-
-liboocore_la_CPPFLAGS =  -I$(top_srcdir)/include
-liboocore_la_CFLAGS = $(PTHREAD_CFLAGS)
-liboocore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
-liboocore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
-
-if WIN32
-liboocore_la_LDFLAGS += -module -avoid-version -no-undefined -Wl,'-lrpcrt4'
-else
-liboocore_la_LDFLAGS += -release $(VERSION)
-endif
-
-liboocore_la_SOURCES = \
+common = \
 	OOCore_precomp.h \
 	md5.c \
 	Activation.h \
@@ -47,5 +34,30 @@ liboocore_la_SOURCES = \
 	Xml.cpp
 
 if WIN32
-liboocore_la_SOURCES += OOCore_res.rc
+
+lib_LTLIBRARIES = OOCore.la
+
+OOCore_la_CPPFLAGS =  -I$(top_srcdir)/include
+OOCore_la_CFLAGS = $(PTHREAD_CFLAGS)
+OOCore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+OOCore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
+OOCore_la_LDFLAGS += -module -avoid-version -no-undefined -Xlinker -lrpcrt4
+
+OOCore_la_SOURCES = \
+	$(common) \
+	OOCore_res.rc
+
+else
+
+lib_LTLIBRARIES = liboocore.la
+
+liboocore_la_CPPFLAGS =  -I$(top_srcdir)/include
+liboocore_la_CFLAGS = $(PTHREAD_CFLAGS)
+liboocore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboocore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
+liboocore_la_LDFLAGS += -release $(VERSION)
+
+liboocore_la_SOURCES = \
+	$(common)
+
 endif

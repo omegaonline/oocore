@@ -55,11 +55,13 @@ endif
 oosvruser_CPPFLAGS = -I$(top_srcdir)/include
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_LDADD = ../OOCore/liboocore.la
 oosvruser_LDFLAGS = -L. -loosvrcmn -L../OOBase  -loosvrbase -loobase $(PTHREAD_LIBS)
 
 if WIN32
 oosvruser_LDFLAGS += -lshlwapi -lnetapi32 -luserenv
+oosvruser_LDADD = ../OOCore/OOCore.la
+else
+oosvruser_LDADD = ../OOCore/liboocore.la
 endif
 
 oosvruser_SOURCES = \
@@ -93,12 +95,13 @@ oolibexec_LTLIBRARIES = oosvrlite.la
 oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include
 oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 oosvrlite_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-oosvrlite_la_LIBADD = ../OOCore/liboocore.la
 oosvrlite_la_LDFLAGS = -module -L. -loosvrdb $(SQLITE3_LIBS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS)
 
 if WIN32
+oosvrlite_la_LIBADD = ../OOCore/OOCore.la
 oosvrlite_la_LDFLAGS += -avoid-version -no-undefined -lshlwapi
 else
+oosvrlite_la_LIBADD = ../OOCore/liboocore.la
 oosvrlite_la_LDFLAGS += -release $(VERSION)
 endif
 

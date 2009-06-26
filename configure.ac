@@ -14,9 +14,10 @@ AC_CONFIG_FILES([
 	src/OOBase/Makefile
 	src/OOCore/Makefile
 	src/OOServer/Makefile
+	src/OORegister/Makefile
 ])
 
-AM_INIT_AUTOMAKE([foreign 1.10])
+AM_INIT_AUTOMAKE([foreign 1.10 no-define])
 AM_MAINTAINER_MODE
 
 AC_CANONICAL_HOST
@@ -34,7 +35,7 @@ if test "$oo_test_CFLAGS" != set; then
   AX_CFLAGS_GCC_OPTION([-fvisibility=hidden])
 
   if test x$debug = xtrue; then
-    AX_CFLAGS_GCC_OPTION([-g])
+    AX_CFLAGS_GCC_OPTION([-ggdb])
     AX_CFLAGS_GCC_OPTION([-O0])
   else
     AX_CFLAGS_GCC_OPTION([-O3])
@@ -51,11 +52,12 @@ if test "$oo_test_CXXFLAGS" != set; then
 
   # Always try to hide symbols
   AX_CXXFLAGS_GCC_OPTION([-fvisibility=hidden])
-
+  
   if test x$debug = xtrue; then
-  	AX_CXXFLAGS_GCC_OPTION([-g])
+  	AX_CXXFLAGS_GCC_OPTION([-ggdb])
   	AX_CXXFLAGS_GCC_OPTION([-O0])
   else
+    AX_CXXFLAGS_GCC_OPTION([-frepo])
     AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
     AX_CXXFLAGS_GCC_OPTION([-O3])
   fi

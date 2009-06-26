@@ -333,7 +333,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_clear,1,((in),void*,s1)
 	return s;
 }
 
-#if !defined(_WIN32) && !defined(HAVE_UUID_UUID_H)
+#if !defined(HAVE_UUID_UUID_H)
 namespace
 {
 	static unsigned int parse(wchar_t c)
@@ -352,16 +352,7 @@ namespace
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,result))
 {
-#if defined(_WIN32)
-
-	UUID uuid = {0,0,0, {0,0,0,0,0,0,0,0} };
-	if (UuidFromStringW((unsigned short*)sz,&uuid) != RPC_S_OK)
-		return false;
-
-	result = *(Omega::guid_t*)(&uuid);
-	return true;
-
-#elif defined(HAVE_UUID_UUID_H)
+#if defined(HAVE_UUID_UUID_H)
 
 	uuid_t uuid;
 	if (uuid_parse(OOBase::to_utf8(sz).c_str(),uuid))

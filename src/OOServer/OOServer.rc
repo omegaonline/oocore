@@ -39,7 +39,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Message Table
 //
 
-1 11 NT_msgs.bin
+1 11 OOServer_msgs.bin
 
 /////////////////////////////////////////////////////////////////////////////
 //

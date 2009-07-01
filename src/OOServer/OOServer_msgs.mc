@@ -1,4 +1,4 @@
-LanguageNames=(English=0x409:NT_msgs)
+LanguageNames=(English=0x409:OOServer_msgs)
 
 MessageId=0
 Language=English

@@ -127,6 +127,7 @@
 #define OMEGA_PS_PARAM_out(t,name)
 #define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_II
+#define OMEGA_PS_PARAM_outer_is(outer)   ,outer OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_II(t,name)
 
 #define OMEGA_PS_PARAM_I(index,meta,d) \
@@ -177,6 +178,7 @@
 #define OMEGA_DECLARE_TYPE_out(t,name)       TypeInfo::attrOut
 #define OMEGA_DECLARE_TYPE_iid_is(iid)       | TypeInfo::attrIid_is OMEGA_DECLARE_TYPE_II
 #define OMEGA_DECLARE_TYPE_size_is(size)     | TypeInfo::attrSize_is OMEGA_DECLARE_TYPE_II
+#define OMEGA_DECLARE_TYPE_outer_is(outer)   | TypeInfo::attrOuter_is OMEGA_DECLARE_TYPE_II
 #define OMEGA_DECLARE_TYPE_II(t,name)
 
 #define OMEGA_DECLARE_TYPE_PARAM_II(index,meta,d) \
@@ -188,6 +190,7 @@
 #define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       L""
 #define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(iid)) OMEGA_DECLARE_TYPE_ATTR_II
 #define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(size)) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_outer_is(outer)   OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(outer)) OMEGA_DECLARE_TYPE_ATTR_II
 #define OMEGA_DECLARE_TYPE_ATTR_II(t,name)
 
 #define OMEGA_DECLARE_TYPE_PARAM_III(index,meta,d) \
@@ -332,6 +335,7 @@
 #define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
+#define OMEGA_WIRE_READ_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_READ_STUB_PARAM_I(index,meta,d) \
@@ -355,6 +359,7 @@
 #define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
+#define OMEGA_WIRE_WRITE_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_WRITE_STUB_PARAM_I(index,meta,d) \
@@ -378,6 +383,7 @@
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_I(index,meta,d) \
@@ -558,6 +564,7 @@
 #define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_ptrMarshaller,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_II
+#define OMEGA_WIRE_READ_PROXY_PARAM_outer_is(outer)   OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_READ_PROXY_PARAM_I(index,meta,d) \
@@ -581,6 +588,7 @@
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_II
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_outer_is(outer)   OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_I(index,meta,d) \
@@ -604,6 +612,7 @@
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),this->m_ptrMarshaller,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_PROXY_PARAM_II
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_outer_is(outer)   OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_I(index,meta,d) \

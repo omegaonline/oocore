@@ -330,6 +330,8 @@ namespace OTL
 
 		virtual void Internal_Release()
 		{
+			assert(m_refcount.m_debug_value > 0);
+
 			if (m_refcount.Release())
 				delete this;
 		}
@@ -632,6 +634,8 @@ namespace OTL
 
 		virtual void Release()
 		{
+			assert(m_refcount.m_debug_value > 0);
+
 			if (m_refcount.Release())
 				delete this;
 		}

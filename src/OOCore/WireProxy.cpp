@@ -37,6 +37,7 @@ OOCore::Proxy::Proxy() :
 			&AddRef_Safe,
 			&Release_Safe,
 			&QueryInterface_Safe,
+			&GetBaseShim_Safe,
 			&Pin_Safe,
 			&Unpin_Safe
 		},
@@ -56,6 +57,7 @@ OOCore::Proxy::Proxy() :
 			&AddRef_Safe,
 			&Release_Safe,
 			&QueryInterface_Safe,
+			&GetBaseShim_Safe,
 			&Pin_Safe,
 			&Unpin_Safe
 		},
@@ -399,6 +401,12 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const Syste
 		except = System::MetaInfo::return_safe_exception(pE);
 	}
 	return except;
+}
+
+const System::MetaInfo::SafeShim* OOCore::Proxy::GetBaseShim_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval)
+{
+	*retval = &static_cast<Proxy*>(shim->m_stub)->m_proxy_shim;
+	return 0;	
 }
 
 const System::MetaInfo::SafeShim* OOCore::Proxy::Pin_Safe(const System::MetaInfo::SafeShim* shim)

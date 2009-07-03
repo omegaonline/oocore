@@ -83,4 +83,10 @@
 #include <errno.h>
 #include <stdarg.h>
 
+#if defined(HAVE_ASSERT_H)
+#include <assert.h>
+#else
+#define assert(x) ((void)0)
+#endif
+
 #endif // OOCORE_CONFIG_GCC_H_INCLUDED_

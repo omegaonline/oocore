@@ -137,13 +137,13 @@ namespace
 
 		void AddRef()
 		{
-			printf("%p AddRef > %lu\n",this,m_refcount.m_debug_value+1);
+			printf("AggOuter: %p AddRef > %lu\n",this,m_refcount.m_debug_value+1);
 			m_refcount.AddRef();
 		}
 
 		void Release()
 		{
-			printf("%p Release < %lu\n",this,m_refcount.m_debug_value-1);
+			printf("AggOuter: %p Release < %lu\n",this,m_refcount.m_debug_value-1);
 			if (m_refcount.Release())
 				delete this;
 		}
@@ -197,22 +197,34 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest;
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 
+	ptrSimpleTest.Release();
+	ptrSimpleTest2.Release();
+
 	// Test aggregation
 	Aggregated* pAgg = 0;
 	OMEGA_NEW(pAgg,Aggregated);
+
+	printf("\n\nCreate inner \n\n");
 	
 	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
-	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
+	printf("\n\nQI \n\n");
+
+	Omega::TestSuite::ISimpleTest* pI = ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>();
+	ptrSimpleTest.Attach(pI);
+
+	printf("\n\n");
+
+	ptrSimpleTest.Release();
 	ptrSimpleTest2.Release();
 	//interface_tests(ptrSimpleTest);
 
 	//THIS RELEASE DOESN@T WORK!
 
-	ptrSimpleTest.Release();
+	
 	
 	// Now check for activation rules
 	try

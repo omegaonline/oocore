@@ -95,7 +95,7 @@ void Omega::Uninitialize()
 	OOCore_Omega_Uninitialize();
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	IObject* pObj = 0;
@@ -103,7 +103,7 @@ Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_
 	return pObj;
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	IObject* pObj = 0;

@@ -648,6 +648,7 @@ namespace Omega
 						&AddRef_Safe,
 						&Release_Safe,
 						&QueryInterface_Safe,
+						&GetBaseShim_Safe,
 						0, 0 // Pin and Unpin are not called...
 					};
 					return &vt;
@@ -673,6 +674,8 @@ namespace Omega
 
 				void DecRef()
 				{
+					assert(m_refcount.m_debug_value > 0);
+
 					if (m_refcount.Release())
 						delete this;
 				}
@@ -781,6 +784,12 @@ namespace Omega
 					}
 					return except;
 				}
+
+				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					*retval = &static_cast<Wire_Proxy*>(shim->m_stub)->m_shim;
+					return 0;					
+				}
 			};
 
 			template <class I>
@@ -884,6 +893,7 @@ namespace Omega
 							&AddRef_Safe,
 							&Release_Safe,
 							&QueryInterface_Safe,
+							&GetBaseShim_Safe,
 							0, 0 // Pin and Unpin are not called...
 						},
 						&Invoke_Safe,
@@ -899,6 +909,8 @@ namespace Omega
 
 				void Release()
 				{
+					assert(m_refcount.m_debug_value > 0);
+
 					if (m_refcount.Release())
 						delete this;
 				}
@@ -959,6 +971,12 @@ namespace Omega
 						except = return_safe_exception(pE);
 					}
 					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					*retval = &static_cast<Wire_Stub*>(shim->m_stub)->m_shim;
+					return 0;
 				}
 
 				static const SafeShim* OMEGA_CALL Invoke_Safe(const SafeShim* shim, const SafeShim* shim_ParamsIn, const SafeShim* shim_ParamsOut)

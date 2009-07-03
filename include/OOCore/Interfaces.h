@@ -231,7 +231,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

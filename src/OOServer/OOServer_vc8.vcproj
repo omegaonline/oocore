@@ -332,7 +332,7 @@
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
 						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\$(InputName).rc"
+						Outputs=".\OOServer_msgs.bin"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -342,7 +342,7 @@
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
 						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\$(InputName).rc"
+						Outputs=".\OOServer_msgs.bin"
 					/>
 				</FileConfiguration>
 			</File>

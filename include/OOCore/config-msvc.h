@@ -106,6 +106,7 @@
 #endif
 
 #include <errno.h>
+#include <assert.h>
 
 #if !defined(EINVAL)
 #define EINVAL 22

@@ -108,7 +108,8 @@ namespace Omega
 			attrOut = 2,
 			attrInOut = (attrIn | attrOut),
 			attrIid_is = 4,
-			attrSize_is = 8
+			attrSize_is = 8,
+			attrOuter_is = 0x10
 		};
 		typedef byte_t ParamAttributes_t;
 

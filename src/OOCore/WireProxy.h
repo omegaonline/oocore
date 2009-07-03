@@ -89,6 +89,7 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL AddRef_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Release_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_t* iid);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetBaseShim_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Pin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Unpin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL WriteKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
@@ -127,18 +128,16 @@ namespace OOCore
 	protected:
 		void Internal_AddRef()
 		{
-			printf("%p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
+			printf("WireProxy %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
 
-			m_refcount.AddRef();
-			//OTL::ObjectBase::Internal_AddRef();
+			OTL::ObjectBase::Internal_AddRef();
 		}
 
 		void Internal_Release()
 		{
-			printf("%p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
+			printf("WireProxy %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
 
-			m_refcount.Release();
-			//OTL::ObjectBase::Internal_Release();
+			OTL::ObjectBase::Internal_Release();
 		}
 
 

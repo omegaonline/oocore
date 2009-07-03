@@ -430,7 +430,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 	OidNotFoundException::Throw(oid,L"Omega::Activation::GetRegisteredObject");
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),IObject*&,pObject))
 {
 	ObjectPtr<Activation::IObjectFactory> ptrOF;
 
@@ -439,7 +439,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),con
 	ptrOF->CreateInstance(pOuter,iid,pObject);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject))
 {
 	// First try to determine the protocol...
 	string_t strObject = strURI;

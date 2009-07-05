@@ -118,4 +118,4 @@ endif
 
 EXTRA_DIST = \
 	logo.ico \
-	NT_msgs.bin
+	OOServer_msgs.bin

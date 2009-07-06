@@ -637,7 +637,7 @@ namespace Omega
 				Safe_Proxy_Owner(const SafeShim* shim, IObject* pOuter) : 
 					m_shim(shim), m_pOuter(pOuter)
 				{
-					printf("SPO %p Init with SSO %p (%p)\n\t",this,shim->m_stub,pOuter);
+					//printf("SPO %p Init with SSO %p (%p)\n\t",this,shim->m_stub,pOuter);
 
 					m_agg_object.m_pOwner = this;
 					m_internal_safe_proxy.m_pOwner = this;
@@ -649,7 +649,7 @@ namespace Omega
 				{
 					if (m_pOuter)
 					{
-						printf("SPO %p Owner AddRef\t\n",this);
+						//printf("SPO %p Owner AddRef\t\n",this);
 
 						m_pOuter->AddRef();
 					}
@@ -659,11 +659,11 @@ namespace Omega
 
 				void Internal_AddRef()
 				{
-					printf("SPO %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pincount.m_debug_value);
+					//printf("SPO %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pincount.m_debug_value);
 
 					if (m_refcount.AddRef())
 					{
-						printf("\t");
+						//printf("\t");
 
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
 						if (except)
@@ -680,7 +680,7 @@ namespace Omega
 				{
 					if (m_pOuter)
 					{
-						printf("SPO %p Owner Release\t\n",this);
+						//printf("SPO %p Owner Release\t\n",this);
 						
 						m_pOuter->Release();
 					}
@@ -692,11 +692,11 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 
-					printf("SPO %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pincount.m_debug_value);
+					//printf("SPO %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pincount.m_debug_value);
 
 					if (m_refcount.Release())
 					{
-						printf("\t");
+						//printf("\t");
 
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
 						if (except)
@@ -884,14 +884,14 @@ namespace Omega
 					m_shim.m_stub = this;
 					m_shim.m_iid = &OMEGA_GUIDOF(IObject);
 
-					printf("SSO %p Init with Obj %p\n\t",this,m_pObject);
+					//printf("SSO %p Init with Obj %p\n\t",this,m_pObject);
 
 					AddRef();
 				}
 
 				virtual void AddRef()
 				{
-					printf("SSO %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pincount.m_debug_value);
+					//printf("SSO %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pincount.m_debug_value);
 
 					if (m_refcount.AddRef())
 						m_pObject->AddRef();
@@ -901,14 +901,14 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 					
-					printf("SSO %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pincount.m_debug_value);
+					//printf("SSO %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pincount.m_debug_value);
 
 					if (m_refcount.Release())
 					{
 						// Release our pointer
 						m_pObject->Release();		
 
-						printf("\t");
+						//printf("\t");
 						
 						if (m_pincount.IsZero())
 							delete this;
@@ -1228,7 +1228,7 @@ namespace Omega
 
 				void IncRef()
 				{
-					printf("SS %p IncRef > %u\n",this,m_refcount.m_debug_value+1);
+					//printf("SS %p IncRef > %u\n",this,m_refcount.m_debug_value+1);
 
 					m_refcount.AddRef();
 				}
@@ -1237,7 +1237,7 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 
-					printf("SS %p DecRef < %u\n",this,m_refcount.m_debug_value-1);
+					//printf("SS %p DecRef < %u\n",this,m_refcount.m_debug_value-1);
 
 					if (m_refcount.Release())
 						delete this;

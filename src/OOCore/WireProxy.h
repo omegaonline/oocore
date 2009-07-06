@@ -128,14 +128,14 @@ namespace OOCore
 	protected:
 		void Internal_AddRef()
 		{
-			printf("WireProxy %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
+			//printf("WireProxy %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
 
 			OTL::ObjectBase::Internal_AddRef();
 		}
 
 		void Internal_Release()
 		{
-			printf("WireProxy %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
+			//printf("WireProxy %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
 
 			OTL::ObjectBase::Internal_Release();
 		}

@@ -363,7 +363,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::AddRef_Safe(const System::MetaI
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		printf("Safe ");
+		//printf("Safe ");
 		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
 	}
 	catch (IException* pE)
@@ -378,7 +378,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::Release_Safe(const System::Meta
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		printf("Safe ");
+		//printf("Safe ");
 		static_cast<Proxy*>(shim->m_stub)->Internal_Release();
 	}
 	catch (IException* pE)
@@ -393,7 +393,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const Syste
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		printf("Safe %p QI for %ls\n",static_cast<Proxy*>(shim->m_stub),iid->ToString().c_str());
+		//printf("Safe %p QI for %ls\n",static_cast<Proxy*>(shim->m_stub),iid->ToString().c_str());
 		static_cast<IObject*&>(System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(retval,iid)) = static_cast<Proxy*>(shim->m_stub)->Internal_QueryInterface(*iid,getQIEntries());
 	}
 	catch (IException* pE)

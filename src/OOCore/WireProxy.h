@@ -140,7 +140,6 @@ namespace OOCore
 			OTL::ObjectBase::Internal_Release();
 		}
 
-
 	private:
 		Proxy(const Proxy&) : OTL::ObjectBase(), Omega::System::IProxy(), Omega::Remoting::IMarshal() {}
 		Proxy& operator = (const Proxy&) { return *this; }

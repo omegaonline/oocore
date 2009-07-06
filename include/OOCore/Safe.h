@@ -696,17 +696,14 @@ namespace Omega
 
 					if (m_refcount.Release())
 					{
-						// Release after the possible delete
-						const SafeShim* shim = m_shim;
+						printf("\t");
+
+						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
+						if (except)
+							throw_correct_exception(except);
 
 						if (m_pincount.IsZero() && m_privcount.IsZero())
 							delete this;
-					
-						printf("\t");
-
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
-						if (except)
-							throw_correct_exception(except);
 					}
 				}
 
@@ -909,7 +906,9 @@ namespace Omega
 					if (m_refcount.Release())
 					{
 						// Release our pointer
-						m_pObject->Release();						
+						m_pObject->Release();		
+
+						printf("\t");
 						
 						if (m_pincount.IsZero())
 							delete this;
@@ -1187,8 +1186,7 @@ namespace Omega
 				Safe_Stub(IObject* pI, const guid_t* iid, Safe_Stub_Owner* pOwner) : 
 					 m_pI(pI), m_pOwner(pOwner)
 				{
-					m_refcount.AddRef(); 
-					m_pI->AddRef();
+					IncRef(); 
 
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;
@@ -1197,7 +1195,6 @@ namespace Omega
 
 				virtual ~Safe_Stub()
 				{
-					m_pI->Release();
 				}
 				
 				static const IObject_Safe_VTable* get_vt()
@@ -1231,12 +1228,16 @@ namespace Omega
 
 				void IncRef()
 				{
+					printf("SS %p IncRef > %u\n",this,m_refcount.m_debug_value+1);
+
 					m_refcount.AddRef();
 				}
 
 				void DecRef()
 				{
 					assert(m_refcount.m_debug_value > 0);
+
+					printf("SS %p DecRef < %u\n",this,m_refcount.m_debug_value-1);
 
 					if (m_refcount.Release())
 						delete this;

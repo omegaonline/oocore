@@ -18,7 +18,8 @@ class TestLibraryImpl :
 {
 public:
 	TestLibraryImpl()
-	{ }
+	{ 
+	}
 
 	void Abort();
 

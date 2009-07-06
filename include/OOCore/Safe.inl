@@ -188,7 +188,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const 
 	if (!obj)
 		return 0;
 
-	Internal_AddRef();
+	AddRef();
 	return obj->QIReturn();
 }
 
@@ -204,9 +204,6 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const Omega::guid_t& iid, 
 	if (except)
 		throw_correct_exception(except);
 
-	if (!m_pOuter)
-		Internal_AddRef();
-	
 	return obj->Throw();
 }
 

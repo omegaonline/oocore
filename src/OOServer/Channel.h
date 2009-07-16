@@ -54,8 +54,8 @@ namespace User
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager>   m_ptrOM;
 		OTL::ObjectPtr<Omega::Activation::IObjectFactory> m_ptrOF;
 
-		Channel(const Channel&) : OTL::ObjectBase(), Omega::Remoting::IChannel(), Omega::Remoting::IMarshal() {}
-		Channel& operator = (const Channel&) { return *this; }
+		Channel(const Channel&);
+		Channel& operator = (const Channel&);
 
 	// IChannelBase members
 	public:

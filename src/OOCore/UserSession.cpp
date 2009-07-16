@@ -225,12 +225,9 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 void OOCore::UserSession::term()
 {
 	UserSession* pThis = USER_SESSION::instance();
-	if (--pThis->m_initcount == 0)
+	if (pThis->m_initcount != 0 && --pThis->m_initcount == 0)
 	{
 		pThis->term_i();
-
-		// Close the service manager
-		SERVICE_MANAGER::instance()->close();
 	}
 }
 
@@ -259,6 +256,83 @@ void OOCore::UserSession::term_i()
 
 	// Reset channel id
 	m_channel_id = 0;
+
+	// Close all singletons
+	close_singletons();
+}
+
+void OOCore::UserSession::close_singletons()
+{
+	USER_SESSION::instance()->close_singletons_i();
+}
+
+void OOCore::UserSession::close_singletons_i()
+{
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		// Copy the list so we can delete outside the lock
+		std::list<std::pair<void (OMEGA_CALL *)(void*),void*> > list(m_listUninitCalls);
+
+		m_listUninitCalls.clear();
+
+		guard.release();
+
+		for (std::list<std::pair<void (OMEGA_CALL *)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
+		{
+			(*(i->first))(i->second);
+		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+void OOCore::UserSession::add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+{
+	USER_SESSION::instance()->add_uninit_call_i(pfn_dctor,param);
+}
+
+void OOCore::UserSession::add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+{
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		m_listUninitCalls.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+void OOCore::UserSession::remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+{
+	USER_SESSION::instance()->remove_uninit_call_i(pfn_dctor,param);
+}
+
+void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
+{
+	try
+	{
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (std::list<std::pair<void (OMEGA_CALL *)(void*),void*> >::iterator i=m_listUninitCalls.begin();i!=m_listUninitCalls.end();++i)
+		{
+			if (i->first == pfn_dctor && i->second == param)
+			{
+				m_listUninitCalls.erase(i);
+				break;
+			}
+		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
 }
 
 int OOCore::UserSession::io_worker_fn(void* pParam)
@@ -652,7 +726,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 
 OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance()
 {
-	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext>::instance();
+	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext,OOCore::DLL>::instance();
 	if (pThis->m_thread_id == 0)
 		pThis->m_thread_id = UserSession::USER_SESSION::instance()->insert_thread_context(pThis);
 

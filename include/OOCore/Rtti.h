@@ -28,22 +28,22 @@ namespace Omega
 	{
 		namespace MetaInfo
 		{
-			template <class T> struct type_kind
+			template <typename T> struct type_kind
 			{
 				static const TypeInfo::Types_t type = TypeInfo::typeUnknown;
 			};
 
-			template <class T> struct type_kind<T*>
+			template <typename T> struct type_kind<T*>
 			{
 				static const TypeInfo::Types_t type = TypeInfo::typeArray | type_kind<T>::type;
 			};
 
-			template <class T> struct type_kind<T&>
+			template <typename T> struct type_kind<T&>
 			{
 				static const TypeInfo::Types_t type = TypeInfo::typeReference | type_kind<T>::type;
 			};
 
-			template <class T> struct type_kind<const T>
+			template <typename T> struct type_kind<const T>
 			{
 				static const TypeInfo::Types_t type = TypeInfo::typeConst | type_kind<T>::type;
 			};
@@ -155,7 +155,7 @@ namespace Omega
 				const guid_t* base_type;
 			};
 
-			template <class I>
+			template <typename I>
 			class TypeInfo_Holder;
 
 			template <>

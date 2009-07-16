@@ -41,8 +41,8 @@ namespace OOBase
 		void* symbol(const char* sym_name);
 
 	private:
-		DLL(const DLL&) {}
-		DLL& operator = (const DLL&) { return *this; }
+		DLL(const DLL&);
+		DLL& operator = (const DLL&);
 
 #if defined(_WIN32)
 		HMODULE     m_module;

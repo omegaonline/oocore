@@ -8,6 +8,7 @@ liboobase_a_SOURCES = \
 	Atomic.h \
 	Buffer.cpp \
 	Buffer.h \
+	ByteSwap.h \
 	CDRStream.h \
 	Condition.cpp \
 	Condition.h \
@@ -23,7 +24,6 @@ liboobase_a_SOURCES = \
 	Singleton.h \
 	SmartPtr.h \
 	Socket.h \
-	Swap.h \
 	TLS.cpp \
 	TLSSingleton.h \
 	Thread.cpp \

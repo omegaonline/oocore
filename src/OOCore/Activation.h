@@ -37,12 +37,12 @@ namespace OOCore
 		void close();
 
 	private:
-		friend class OOBase::Singleton<ServiceManager>;
+		friend class Omega::Threading::Singleton<ServiceManager,Omega::Threading::InitialiseDestructor<OOCore::DLL> >;
 		
 		ServiceManager();
 		~ServiceManager();
-		ServiceManager(const ServiceManager&) {}
-		ServiceManager& operator = (const ServiceManager&) { return *this; }
+		ServiceManager(const ServiceManager&);
+		ServiceManager& operator = (const ServiceManager&);
 
 		OOBase::RWMutex m_lock;
 		Omega::uint32_t m_nNextCookie;
@@ -58,7 +58,7 @@ namespace OOCore
 		std::map<Omega::uint32_t,Info>                                        m_mapServicesByCookie;
 		std::multimap<Omega::guid_t,std::map<Omega::uint32_t,Info>::iterator> m_mapServicesByOid;
 	};
-	typedef OOBase::Singleton<ServiceManager> SERVICE_MANAGER;
+	typedef Omega::Threading::Singleton<ServiceManager,Omega::Threading::InitialiseDestructor<OOCore::DLL> > SERVICE_MANAGER;
 }
 
 #endif // OOCORE_ACTIVATION_H_INCLUDED_

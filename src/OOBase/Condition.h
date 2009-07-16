@@ -48,8 +48,8 @@ namespace OOBase
 		void broadcast();
 
 	private:
-		Condition(const Condition&) {}
-		Condition& operator = (const Condition&) { return *this; }
+		Condition(const Condition&);
+		Condition& operator = (const Condition&);
 
 #if defined(_WIN32)
 		CONDITION_VARIABLE m_var;

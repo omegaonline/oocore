@@ -43,8 +43,8 @@ namespace
 
 	private:
 		TLSMap() {}
-		TLSMap(const TLSMap&) {}
-		TLSMap& operator = (const TLSMap&) { return *this; }
+		TLSMap(const TLSMap&);
+		TLSMap& operator = (const TLSMap&);
 		~TLSMap() {}
 	};
 
@@ -62,7 +62,7 @@ namespace
 #endif
 	};
 
-	typedef OOBase::Singleton<TLSGlobal> TLS_GLOBAL;
+	typedef OOBase::Singleton<TLSGlobal,TLSGlobal> TLS_GLOBAL;
 }
 
 void OOBase::TLS::Add(const void* key, void (*destructor)(void*))
@@ -153,8 +153,8 @@ void OOBase::TLS::ThreadExit()
 	TLSMap* inst = TLSMap::instance(false);
 	if (inst)
 	{
-#if defined(_WIN32)
-		OOBase::Destructor::remove_destructor(TLSMap::destroy,inst);
+#if !defined(HAVE_PTHREAD)
+		OOBase::DLLDestructor<TLSGlobal>::remove_destructor(TLSMap::destroy,inst);
 #endif
 		TLSMap::destroy(inst);
 	}
@@ -215,7 +215,7 @@ TLSMap* TLSMap::instance(bool create)
 			OOBase_OutOfMemory();
 
 #if defined(_WIN32)
-		OOBase::Destructor::add_destructor(destroy,inst);
+		OOBase::DLLDestructor<TLSGlobal>::add_destructor(destroy,inst);
 
 		if (!TlsSetValue(TLS_GLOBAL::instance()->m_key,inst))
 			OOBase_CallCriticalFailure(GetLastError());

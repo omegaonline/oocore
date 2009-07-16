@@ -52,15 +52,15 @@ namespace OOCore
 			channel_reflect = 0x20000
 		};
 
-		Omega::uint32_t                m_src_channel_id;
-		Omega::uint16_t                m_dest_thread_id;
-		Omega::uint16_t                m_src_thread_id;
-		Omega::uint32_t                m_attribs;
-		Omega::uint32_t                m_seq_no;
-		Omega::uint16_t                m_type;
-		Omega::uint16_t                m_apartment_id;
-		OOBase::timeval_t              m_deadline;
-		OOBase::CDRStream              m_payload;
+		Omega::uint32_t    m_src_channel_id;
+		Omega::uint16_t    m_dest_thread_id;
+		Omega::uint16_t    m_src_thread_id;
+		Omega::uint32_t    m_attribs;
+		Omega::uint32_t    m_seq_no;
+		Omega::uint16_t    m_type;
+		Omega::uint16_t    m_apartment_id;
+		OOBase::timeval_t  m_deadline;
+		OOBase::CDRStream  m_payload;
 	};
 
 	class UserSession
@@ -69,6 +69,9 @@ namespace OOCore
 		static Omega::IException* init(bool bStandalone);
 		static void term();
 		static bool handle_request(Omega::uint32_t timeout);
+		static void close_singletons();
+		static void add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+		static void remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 
 		static OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		Omega::Remoting::MarshalFlags_t classify_channel(Omega::uint32_t channel);
@@ -84,13 +87,13 @@ namespace OOCore
 				
 	private:
 		friend class ThreadContext;
-		friend class OOBase::Singleton<UserSession>;
-		typedef OOBase::Singleton<UserSession> USER_SESSION;
+		friend class OOBase::Singleton<UserSession,OOCore::DLL>;
+		typedef OOBase::Singleton<UserSession,OOCore::DLL> USER_SESSION;
 
 		UserSession();
 		~UserSession();
-		UserSession(const UserSession&) {}
-		UserSession& operator = (const UserSession&) { return *this; }
+		UserSession(const UserSession&);
+		UserSession& operator = (const UserSession&);
 
 		OOBase::RWMutex                  m_lock;
 		OOBase::AtomicInt<size_t>        m_initcount;
@@ -115,7 +118,7 @@ namespace OOCore
 			static ThreadContext* instance();
 
 		private:
-			friend class OOBase::TLSSingleton<ThreadContext>;
+			friend class OOBase::TLSSingleton<ThreadContext,OOCore::DLL>;
 			
 			ThreadContext();
 			~ThreadContext();
@@ -133,7 +136,14 @@ namespace OOCore
 		void init_i(bool bStandalone);
 		void term_i();
 		std::string discover_server_port(bool& bStandalone);
-		
+
+		// Uninitialise destructors
+		void close_singletons_i();
+		void add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+		void remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+		std::list<std::pair<void (OMEGA_CALL *)(void*),void*> > m_listUninitCalls;
+
+		// Message pumping
 		int run_read_loop();
 		bool pump_requests(const OOBase::timeval_t* deadline = 0, bool bOnce = false);
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);

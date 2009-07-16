@@ -44,8 +44,8 @@ namespace User
 		static std::string unique_name();
 
 	private:
-		Acceptor(const Acceptor&) {}
-		Acceptor& operator = (const Acceptor&) { return *this; }
+		Acceptor(const Acceptor&);
+		Acceptor& operator = (const Acceptor&);
 
 		Manager*        m_pManager;
 		OOBase::Socket* m_pSocket;

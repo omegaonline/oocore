@@ -94,8 +94,8 @@
 
 #define BEGIN_LIBRARY_OBJECT_MAP() \
 	namespace OTL { \
-	namespace { \
-	class LibraryModuleImpl : public LibraryModule \
+	namespace Module { \
+	class OMEGA_PRIVATE_TYPE(LibraryModuleImpl) : public LibraryModule \
 	{ \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
@@ -105,42 +105,41 @@
 #define END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
+	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::InitialiseDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
-	OMEGA_PRIVATE LibraryModuleImpl* GetModule() { static LibraryModuleImpl i; return &i; } \
-	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
 #define END_LIBRARY_OBJECT_MAP() \
 	END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_GetLibraryObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject)) \
-	{ pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid); } \
+	{ pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid); } \
 	OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(Omega_RegisterLibrary,3,((in),Omega::bool_t,bInstall,(in),Omega::bool_t,bLocal,(in),const Omega::string_t&,strSubsts)) \
-	{ OTL::GetModule()->RegisterLibrary(bInstall,bLocal,strSubsts); }
+	{ OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->RegisterLibrary(bInstall,bLocal,strSubsts); }
 
 #define BEGIN_PROCESS_OBJECT_MAP(app_name) \
 	namespace OTL { \
-	namespace { \
-	class ProcessModuleImpl : public ProcessModule \
+	namespace Module { \
+	class OMEGA_PRIVATE_TYPE(ProcessModuleImpl) : public ProcessModule \
 	{ \
-	public: \
-		void RegisterObjects(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts) \
-			{ RegisterObjectsImpl(bInstall,bLocal,app_name,strSubsts); } \
 	private: \
+		virtual void InstallObjects(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts) \
+			{ InstallObjectsImpl(bInstall,bLocal,app_name,strSubsts); } \
 		ModuleBase::CreatorEntry* getCreatorEntries() { static ModuleBase::CreatorEntry CreatorEntries[] = {
 
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
+	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::InitialiseDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
-	OMEGA_PRIVATE ProcessModuleImpl* GetModule() { static ProcessModuleImpl i; return &i; } \
-	OMEGA_PRIVATE ModuleBase* GetModuleBase() { return GetModule(); } \
 	}
 
 #include <OOCore/OOCore.h>
 
 namespace OTL
 {
-	template <class OBJECT>
+	template <typename OBJECT>
 	class ObjectPtrBase
 	{
 	public:
@@ -218,7 +217,7 @@ namespace OTL
 			Attach(0);
 		}
 
-		template <class Q>
+		template <typename Q>
 		Q* QueryInterface()
 		{
 			return static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q)));
@@ -238,10 +237,10 @@ namespace OTL
 		OBJECT* m_ptr;
 
 	private:
-		ObjectPtrBase& operator = (const ObjectPtrBase& rhs) { return *this; }
+		ObjectPtrBase& operator = (const ObjectPtrBase& rhs);
 	};
 
-	template <class OBJECT>
+	template <typename OBJECT>
 	class ObjectPtr : public ObjectPtrBase<OBJECT>
 	{
 	public:
@@ -366,7 +365,7 @@ namespace OTL
 			return 0;
 		}
 
-		template <class Interface, class Implementation>
+		template <typename Interface, typename Implementation>
 		static Omega::IObject* QIDelegate(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
 			/*******************************************
@@ -381,7 +380,7 @@ namespace OTL
 			return pI;
 		}
 
-		template <class Interface, class Interface2, class Implementation>
+		template <typename Interface, typename Interface2, typename Implementation>
 		static Omega::IObject* QIDelegate2(const Omega::guid_t&, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
 			Interface* pI = static_cast<Interface*>(static_cast<Interface2*>(static_cast<Implementation*>(pThis)));
@@ -389,7 +388,7 @@ namespace OTL
 			return pI;
 		}
 
-		template <class Base, class Implementation>
+		template <typename Base, typename Implementation>
 		static Omega::IObject* QIChain(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI)
 		{
 			return static_cast<Implementation*>(pThis)->Internal_QueryInterface(iid,Base::getQIEntries());
@@ -400,7 +399,7 @@ namespace OTL
 			return reinterpret_cast<Omega::IObject*>(reinterpret_cast<size_t>(pThis)+offset)->QueryInterface(iid);
 		}
 
-		template <class Implementation>
+		template <typename Implementation>
 		static Omega::IObject* QIFunction(const Omega::guid_t& iid, void* pThis, size_t, ObjectBase::PFNMEMQI pfnMemQI)
 		{
 			return (static_cast<Implementation*>(pThis)->*pfnMemQI)(iid);
@@ -422,13 +421,30 @@ namespace OTL
 		inline void IncLockCount();
 		inline void DecLockCount();
 		inline Omega::Threading::Mutex& GetLock();
+		inline void AddDestructor(void (OMEGA_CALL *pfn)(void*),void* param);
 
-		typedef void (*TERM_FUNC)(void* arg);
-		inline void AddTermFunc(TERM_FUNC pfnTerm, void* arg);
+		virtual void RegisterObjectFactories()
+		{
+			OMEGA_THROW(L"Invalid call");
+		}
+		
+		virtual void UnregisterObjectFactories()
+		{
+			OMEGA_THROW(L"Invalid call");
+		}
+
+		virtual void Run()
+		{
+			OMEGA_THROW(L"Invalid call");
+		}
+
+		virtual void InstallObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
+		{
+			OMEGA_THROW(L"Invalid call");
+		}
 
 	protected:
 		ModuleBase() {}
-
 		inline virtual ~ModuleBase();
 
 		struct CreatorEntry
@@ -442,22 +458,25 @@ namespace OTL
 		};
 
 		virtual CreatorEntry* getCreatorEntries() = 0;
-		inline void fini();
 
 	private:
 		Omega::Threading::Mutex          m_csMain;
 		Omega::Threading::AtomicRefCount m_lockCount;
 
-		struct Term
-		{
-			TERM_FUNC	pfn;
-			void*		arg;
-		};
-		std::list<Term> m_listTerminators;
+		std::list<std::pair<void (OMEGA_CALL *)(void*),void*> > m_listDestructors;
 	};
-	ModuleBase* GetModuleBase();
 
-	template <class ROOT>
+	namespace Module
+	{
+		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)();
+	}
+	
+	static inline ModuleBase* GetModule()
+	{
+		return Module::OMEGA_PRIVATE_FN_CALL(GetModuleBase)();
+	}
+
+	template <typename ROOT>
 	class ObjectImpl : public ROOT
 	{
 	public:
@@ -481,13 +500,13 @@ namespace OTL
 	private:
 		ObjectImpl() : ROOT()
 		{
-			GetModuleBase()->IncLockCount();
+			GetModule()->IncLockCount();
 			this->AddRef();
 		}
 
 		virtual ~ObjectImpl()
 		{
-			GetModuleBase()->DecLockCount();
+			GetModule()->DecLockCount();
 		}
 
 		ObjectImpl(const ObjectImpl& rhs)
@@ -506,7 +525,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT>
+	template <typename ROOT>
 	class NoLockObjectImpl : public ROOT
 	{
 	public:
@@ -543,10 +562,10 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT>
+	template <typename ROOT>
 	class AggregatedObjectImpl;
 
-	template <class ROOT>
+	template <typename ROOT>
 	class ContainedObjectImpl : public ROOT
 	{
 		friend class AggregatedObjectImpl<ROOT>;
@@ -582,18 +601,18 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT>
+	template <typename ROOT>
 	class AggregatedObjectImpl : public Omega::IObject
 	{
 		AggregatedObjectImpl(Omega::IObject* pOuter) : m_contained(pOuter)
 		{
+			GetModule()->IncLockCount();
 			AddRef();
-			GetModuleBase()->IncLockCount();
 		}
 
 		virtual ~AggregatedObjectImpl()
 		{
-			GetModuleBase()->DecLockCount();
+			GetModule()->DecLockCount();
 		}
 
 		// If the line below is flagged as the source of a compiler warning then
@@ -652,15 +671,15 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT>
+	template <typename ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
-		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT> >;
+		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,SingletonObjectImpl>;
 
 	public:
 		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* = 0)
 		{
-			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT> >::instance();
+			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,SingletonObjectImpl>::instance();
 			pObject->AddRef();
 			return pObject;
 		}
@@ -674,30 +693,30 @@ namespace OTL
 
 	protected:
 		SingletonObjectImpl() : ROOT()
-		{ }
+		{ 
+			ROOT::Init();
+		}
 
 		virtual ~SingletonObjectImpl()
 		{ }
 
+		static void add_destructor(void (OMEGA_CALL *pfn)(void*), void* param)
+		{
+			GetModule()->AddDestructor(pfn,param);
+		}
+
 	// IObject members
 	public:
-		virtual void AddRef() { GetModuleBase()->IncLockCount(); }
-		virtual void Release() { GetModuleBase()->DecLockCount(); }
+		virtual void AddRef() { GetModule()->IncLockCount(); }
+		virtual void Release() { GetModule()->DecLockCount(); }
 		virtual Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
 			return Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 
 	private:
-		SingletonObjectImpl(const SingletonObjectImpl&) {}
-		SingletonObjectImpl& operator = (const SingletonObjectImpl&) { return *this; }
-
-		bool singleton_init()
-		{
-			GetModuleBase()->AddTermFunc(terminator,this);
-			ROOT::Init();
-			return true;
-		}
+		SingletonObjectImpl(const SingletonObjectImpl&);
+		SingletonObjectImpl& operator = (const SingletonObjectImpl&);
 
 		static void terminator(void* p)
 		{
@@ -705,7 +724,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT>
+	template <typename ROOT>
 	class StackObjectImpl : public ROOT
 	{
 	public:
@@ -722,7 +741,7 @@ namespace OTL
 		}
 	};
 
-	template <class T, const Omega::guid_t* pOID>
+	template <typename T, const Omega::guid_t* pOID>
 	class ObjectFactoryCallCreate
 	{
 	public:
@@ -745,7 +764,7 @@ namespace OTL
 		}
 	};
 
-	template <class T1, class T2>
+	template <typename T1, typename T2>
 	class ObjectFactoryImpl :
 		public ObjectBase,
 		public Omega::Activation::IObjectFactory
@@ -766,7 +785,7 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID = &Omega::guid_t::Null(), const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID = &Omega::guid_t::Null(), const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactory
 	{
 	public:
@@ -788,14 +807,14 @@ namespace OTL
 		}
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactoryNoAggregation : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
 		typedef ObjectFactoryImpl<ObjectFactoryCallCreateThrow<pOID>,ObjectFactoryCallCreate<ObjectImpl<ROOT>,pOID> > ObjectFactoryClass;
 	};
 
-	template <class ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
+	template <typename ROOT, const Omega::guid_t* pOID, const Omega::Activation::Flags_t flags = Omega::Activation::Any, const Omega::Activation::RegisterFlags_t reg_flags = Omega::Activation::MultipleUse>
 	class AutoObjectFactorySingleton : public AutoObjectFactory<ROOT,pOID,flags,reg_flags>
 	{
 	public:
@@ -808,7 +827,7 @@ namespace OTL
 	class LibraryModule : public ModuleBase
 	{
 	public:
-		template <class T>
+		template <typename T>
 		struct Creator
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
@@ -831,14 +850,12 @@ namespace OTL
 	class ProcessModule : public ModuleBase
 	{
 	public:
-		// Register and unregister with the ROT
-		inline void RegisterObjectFactories();
-		inline void UnregisterObjectFactories();
-
-		inline void Run();
+		inline virtual void RegisterObjectFactories();
+		inline virtual void UnregisterObjectFactories();
+		inline virtual void Run();
 
 	protected:
-		template <class T>
+		template <typename T>
 		struct Creator
 		{
 			static Omega::IObject* Create(const Omega::guid_t& iid, Omega::Activation::Flags_t)
@@ -853,11 +870,10 @@ namespace OTL
 		ProcessModule()
 		{}
 
-		// Register and unregister with the OORegistry
-		inline void RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
+		inline virtual void InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
 	};
 
-	template <class EnumIFace, class EnumType>
+	template <typename EnumIFace, typename EnumType>
 	class EnumSTL :
 		public ObjectBase,
 		public EnumIFace
@@ -865,7 +881,7 @@ namespace OTL
 		typedef EnumSTL<EnumIFace,EnumType> MyType;
 
 	public:
-		template <class InputIterator>
+		template <typename InputIterator>
 		static EnumIFace* Create(InputIterator begin, InputIterator end)
 		{
 			try

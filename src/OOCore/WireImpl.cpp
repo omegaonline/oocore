@@ -40,7 +40,7 @@ namespace
 		std::multimap<guid_t,pfns> m_ps_map;
 	};
 
-	typedef OOBase::Singleton<wire_holder> WIRE_HOLDER;
+	typedef OOBase::Singleton<wire_holder,OOCore::DLL> WIRE_HOLDER;
 }
 
 System::IStub* OOCore::CreateStub(const guid_t& iid, System::IStubController* pController, System::IMarshaller* pManager, IObject* pObj)

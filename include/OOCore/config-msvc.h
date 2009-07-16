@@ -53,7 +53,6 @@
 
 #define OMEGA_IMPORT   __declspec(dllimport)
 #define OMEGA_EXPORT   __declspec(dllexport)
-#define OMEGA_PRIVATE
 #define OMEGA_CALL     __cdecl
 
 #define OMEGA_UNUSED_ARG(n)	(n)

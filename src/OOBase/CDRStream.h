@@ -23,7 +23,7 @@
 #define OOBASE_CDR_STREAM_H_INCLUDED_
 
 #include "Buffer.h"
-#include "Swap.h"
+#include "ByteSwap.h"
 
 namespace OOBase
 {
@@ -116,13 +116,13 @@ namespace OOBase
 			return m_last_error;
 		}
 
-		template <class T>
-		T swap(const T& val) const
+		template <typename T>
+		T byte_swap(const T& val) const
 		{
 #if (OMEGA_BYTE_ORDER == OMEGA_BIG_ENDIAN)
-			return (m_big_endian ? val : OOBase::swap(val));
+			return (m_big_endian ? val : OOBase::byte_swap(val));
 #else
-			return (!m_big_endian ? val : OOBase::swap(val));
+			return (!m_big_endian ? val : OOBase::byte_swap(val));
 #endif
 		}
 
@@ -130,7 +130,7 @@ namespace OOBase
 		 *	This function reads a value of type \p T, and advances rd_ptr() by \p sizeof(T).
 		 *	\return \p true on sucess or \p false if length() < \p sizeof(T).
 		 */
-		template <class T>
+		template <typename T>
 		bool read(T& val)
 		{
 			if (m_last_error != 0)
@@ -149,7 +149,7 @@ namespace OOBase
 				return false;
 			}
 
-			val = swap(*reinterpret_cast<const T*>(m_buffer->rd_ptr()));
+			val = byte_swap(*reinterpret_cast<const T*>(m_buffer->rd_ptr()));
 			m_buffer->rd_ptr(sizeof(T));
 			return true;
 		}
@@ -234,7 +234,7 @@ namespace OOBase
 		 *	This function will call space() to increase the internal buffer capacity.
 		 *	\return \p true on sucess or \p false if there is no more heap available.
 		 */
-		template <class T>
+		template <typename T>
 		bool write(const T& val)
 		{
 			if (m_last_error != 0)
@@ -248,7 +248,7 @@ namespace OOBase
 			if (m_last_error != 0)
 				return false;
 
-			*reinterpret_cast<T*>(m_buffer->wr_ptr()) = swap(val);
+			*reinterpret_cast<T*>(m_buffer->wr_ptr()) = byte_swap(val);
 			m_buffer->wr_ptr(sizeof(T));
 
 			return true;
@@ -360,7 +360,7 @@ namespace OOBase
 		 *	This function writes a value of type \p T, at position \p mark.
 		 *	This function does no buffer expansion or alignment.
 		 */
-		template <class T>
+		template <typename T>
 		void replace(const T& val, size_t mark)
 		{
 			size_t mark_cur = m_buffer->mark_wr_ptr();

@@ -103,8 +103,8 @@ namespace OOBase
 		void update();
 
 	private:
-		Countdown(const Countdown&) {}
-		Countdown& operator = (const Countdown&) { return *this; }
+		Countdown(const Countdown&);
+		Countdown& operator = (const Countdown&);
 
 		timeval_t  m_start;
 		timeval_t* m_wait;

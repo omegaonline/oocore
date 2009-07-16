@@ -286,7 +286,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 	// Stash call context
 	CallContext* pCC = 0;
-	pCC = OOBase::TLSSingleton<CallContext>::instance();
+	pCC = OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 	CallContext old_context;
 	if (pCC)
         old_context = *pCC;
@@ -847,7 +847,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallCo
 {
 	ObjectPtr<ObjectImpl<StdCallContext> > ptrCC = ObjectImpl<StdCallContext>::CreateInstancePtr();
 
-	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext>::instance();
+	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 
 	return ptrCC.AddRef();
 }

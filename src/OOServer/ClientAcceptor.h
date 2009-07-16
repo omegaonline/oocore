@@ -54,8 +54,8 @@ namespace Root
 		bool on_accept(OOBase::Socket* pSocket, int err);
 
 	private:
-		ClientAcceptor(const ClientAcceptor&) {}
-		ClientAcceptor& operator = (const ClientAcceptor&) { return *this; }
+		ClientAcceptor(const ClientAcceptor&);
+		ClientAcceptor& operator = (const ClientAcceptor&);
 
 		Manager*        m_pManager;
 		OOBase::Socket* m_pSocket;

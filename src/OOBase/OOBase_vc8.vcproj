@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ByteSwap.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CDRStream.h"
 				>
 			</File>
@@ -257,10 +261,6 @@
 			</File>
 			<File
 				RelativePath=".\Socket.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Swap.h"
 				>
 			</File>
 			<File

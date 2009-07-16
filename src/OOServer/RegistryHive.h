@@ -92,8 +92,8 @@ namespace Registry
 		OOBase::SmartPtr<Db::Database> m_db;
 		access_rights_t                m_default_permissions;
 
-		Hive(const Hive&) {}
-		Hive& operator = (const Hive&) { return *this; }
+		Hive(const Hive&);
+		Hive& operator = (const Hive&);
 
 		int get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const std::string& strSubKey, access_rights_t& access_mask);
 		int find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id);

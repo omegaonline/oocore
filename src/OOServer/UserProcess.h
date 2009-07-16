@@ -36,8 +36,8 @@ namespace User
 		Process() {}
 
 	private:
-		Process(const Process&) {}
-		Process& operator = (const Process&) { return *this; }
+		Process(const Process&);
+		Process& operator = (const Process&);
 	};
 }
 

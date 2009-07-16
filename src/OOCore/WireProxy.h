@@ -141,8 +141,8 @@ namespace OOCore
 		}
 
 	private:
-		Proxy(const Proxy&) : OTL::ObjectBase(), Omega::System::IProxy(), Omega::Remoting::IMarshal() {}
-		Proxy& operator = (const Proxy&) { return *this; }
+		Proxy(const Proxy&);
+		Proxy& operator = (const Proxy&);
 
 		OOBase::AtomicInt<Omega::uint32_t> m_marshal_count;
 		OOBase::AtomicInt<Omega::uint32_t> m_pin_count;

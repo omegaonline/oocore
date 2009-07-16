@@ -236,7 +236,7 @@ namespace Omega
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(guid_t,Guids)
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(string_t,Strings)
 
-			template <class T>
+			template <typename T>
 			class std_wire_type
 			{
 			public:
@@ -264,7 +264,7 @@ namespace Omega
 				{ }
 			};
 
-			template <class T>
+			template <typename T>
 			class std_wire_type<const T>
 			{
 			public:
@@ -285,7 +285,7 @@ namespace Omega
 				{ }
 			};
 
-			template <class T>
+			template <typename T>
 			class std_wire_type<T&>
 			{
 			public:
@@ -326,7 +326,7 @@ namespace Omega
 				{ }
 			};
 
-			template <class T>
+			template <typename T>
 			class std_wire_type<const T&>
 			{
 			public:
@@ -347,7 +347,7 @@ namespace Omega
 				{ }
 			};
 
-			template <class T>
+			template <typename T>
 			class std_wire_type_array
 			{
 			public:
@@ -452,7 +452,7 @@ namespace Omega
 					return unpack(pszName,pManager,pMessage,val,static_cast<uint64_t>(cbSize));
 				}				
 
-				template <class S>
+				template <typename S>
 				static void no_op(bool, S)
 				{ }
 			};
@@ -474,7 +474,7 @@ namespace Omega
 				}
 			};
 
-			template <class I>
+			template <typename I>
 			class iface_wire_type
 			{
 			public:
@@ -534,7 +534,7 @@ namespace Omega
 			inline void RegisterAutoProxyStubCreators(const guid_t& iid, pfnCreateWireProxy pfnProxy, pfnCreateWireStub pfnStub);
 			inline void UnregisterAutoProxyStubCreators(const guid_t& iid, pfnCreateWireProxy pfnProxy, pfnCreateWireStub pfnStub);
 
-			template <class I>
+			template <typename I>
 			class Wire_Proxy;
 
 			struct Wire_Proxy_Safe_VTable
@@ -545,8 +545,8 @@ namespace Omega
 				const SafeShim* (OMEGA_CALL* pfnGetShim_Safe)(const SafeShim* shim, const SafeShim** retval);
 			};
 
-			template <class I>
-			inline const SafeShim* create_wire_proxy(const SafeShim* proxy_shim, const SafeShim** ret)
+			template <typename I>
+			inline const SafeShim* OMEGA_CALL create_wire_proxy(const SafeShim* proxy_shim, const SafeShim** ret)
 			{
 				try
 				{
@@ -664,8 +664,8 @@ namespace Omega
 				Threading::AtomicRefCount   m_refcount;
 				IProxy*                     m_ptrProxy;
 								
-				Wire_Proxy(const Wire_Proxy&) {}
-				Wire_Proxy& operator = (const Wire_Proxy&) { return *this; }
+				Wire_Proxy(const Wire_Proxy&);
+				Wire_Proxy& operator = (const Wire_Proxy&);
 												
 				void IncRef()
 				{
@@ -792,11 +792,11 @@ namespace Omega
 				}
 			};
 
-			template <class I>
+			template <typename I>
 			class Wire_Stub;
 
-			template <class I>
-			inline const SafeShim* create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const SafeShim* shim_I, const SafeShim** ret)
+			template <typename I>
+			inline const SafeShim* OMEGA_CALL create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const SafeShim* shim_I, const SafeShim** ret)
 			{
 				try
 				{
@@ -866,7 +866,7 @@ namespace Omega
 					OMEGA_THROW(L"Invoke called with invalid method index");
 				}
 
-				template <class I>
+				template <typename I>
 				I* get_iface()
 				{
 					return static_cast<I*>(static_cast<IObject*>(m_ptrI));
@@ -882,8 +882,8 @@ namespace Omega
 				IStubController*          m_pController;
 				Threading::AtomicRefCount m_refcount;
 				
-				Wire_Stub(const Wire_Stub&) {}
-				Wire_Stub& operator = (const Wire_Stub&) { return *this; }
+				Wire_Stub(const Wire_Stub&);
+				Wire_Stub& operator = (const Wire_Stub&);
 
 				static const vtable_info<IStub>::type* get_vt()
 				{

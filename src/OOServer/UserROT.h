@@ -44,8 +44,8 @@ namespace User
 		END_INTERFACE_MAP()
 
 	private:
-		RunningObjectTable(const RunningObjectTable&) : OTL::ObjectBase(), Omega::Activation::IRunningObjectTable() {}
-		RunningObjectTable& operator = (const RunningObjectTable&) { return *this; }
+		RunningObjectTable(const RunningObjectTable&);
+		RunningObjectTable& operator = (const RunningObjectTable&);
 
 		OTL::ObjectPtr<Omega::Activation::IRunningObjectTable> m_ptrROT;
 		OOBase::RWMutex                                        m_lock;

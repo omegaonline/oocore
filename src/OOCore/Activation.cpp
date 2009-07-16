@@ -109,40 +109,23 @@ namespace
 		}
 	};
 
-	class DLLImpl : public OOBase::DLL
-	{
-	public:
-		DLLImpl() : m_first_time(true)
-		{}
-
-		OOBase::SpinLock& get_lock()
-		{
-			return m_lock;
-		}
-
-		bool m_first_time;
-
-	private:
-		OOBase::SpinLock m_lock;
-	};
-
 	class DLLManagerImpl
 	{
 	public:
-		DLLManagerImpl() {}
+		DLLManagerImpl();
 		~DLLManagerImpl();
 
-		OOBase::SmartPtr<DLLImpl> load_dll(const string_t& name);
+		OOBase::SmartPtr<OOBase::DLL> load_dll(const string_t& name);
 		void unload_unused();
 		
 	private:
-		DLLManagerImpl(const DLLManagerImpl&) {}
-		DLLManagerImpl& operator = (const DLLManagerImpl&) { return *this; }
+		DLLManagerImpl(const DLLManagerImpl&);
+		DLLManagerImpl& operator = (const DLLManagerImpl&);
 
-		OOBase::Mutex                                 m_lock;
-		std::map<string_t,OOBase::SmartPtr<DLLImpl> > m_dll_map;
+		OOBase::Mutex                                     m_lock;
+		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
 	};
-	typedef OOBase::Singleton<DLLManagerImpl> DLLManager;
+	typedef OOBase::Singleton<DLLManagerImpl,OOCore::DLL> DLLManager;
 
 	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
 	{
@@ -166,18 +149,22 @@ namespace
 	}
 }
 
+DLLManagerImpl::DLLManagerImpl()
+{
+}
+
 DLLManagerImpl::~DLLManagerImpl()
 {
 }
 
-OOBase::SmartPtr<DLLImpl> DLLManagerImpl::load_dll(const string_t& name)
+OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// See if we have it already
 	try
 	{
-		std::map<string_t,OOBase::SmartPtr<DLLImpl> >::iterator i=m_dll_map.find(name);
+		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
 		if (i != m_dll_map.end())
 			return i->second;
 	}
@@ -189,8 +176,8 @@ OOBase::SmartPtr<DLLImpl> DLLManagerImpl::load_dll(const string_t& name)
 	// Try to unload any unused dlls
 	unload_unused();
 
-	OOBase::SmartPtr<DLLImpl> dll;
-	OMEGA_NEW(dll,DLLImpl());
+	OOBase::SmartPtr<OOBase::DLL> dll;
+	OMEGA_NEW(dll,OOBase::DLL());
 
 	// Load the new DLL
 	int err = dll->load(name.ToUTF8().c_str());
@@ -200,7 +187,7 @@ OOBase::SmartPtr<DLLImpl> DLLManagerImpl::load_dll(const string_t& name)
 	// Add to the map
 	try
 	{
-		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<DLLImpl> >::value_type(name,dll));
+		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
 	}
 	catch (std::exception& e)
 	{
@@ -218,7 +205,7 @@ void DLLManagerImpl::unload_unused()
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-		for (std::map<string_t,OOBase::SmartPtr<DLLImpl> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
 		{
 			bool_t erase = false;
 			try
@@ -302,7 +289,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 {
 	typedef System::MetaInfo::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
 	pfnGetLibraryObject pfn = 0;
-	OOBase::SmartPtr<DLLImpl> dll;
+	OOBase::SmartPtr<OOBase::DLL> dll;
 	
 	try
 	{
@@ -314,21 +301,10 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 		LibraryNotFoundException::Throw(dll_name,L"Omega::Activation::GetRegisteredObject",pE);
 	}
 
-	// Lock access to the function the first time it is called
-	// This tries to prevent static initialisers having races
-	if (dll->m_first_time)
-		dll->get_lock().acquire();
-
 	IObject* pObj = 0;
 	System::MetaInfo::SafeShim* GetLibraryObject_Exception = pfn(
 		&oid,flags,&iid,
 		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj));
-
-	if (dll->m_first_time)
-	{
-		dll->m_first_time = false;
-		dll->get_lock().release();
-	}
 
 	if (GetLibraryObject_Exception)
 		System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
@@ -365,7 +341,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
-			pObject = OTL::GetModule()->GetLibraryObject(oid,flags,iid);
+			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid);
 			if (pObject)
 				return;
 		}

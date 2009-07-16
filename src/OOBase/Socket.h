@@ -34,7 +34,7 @@ namespace OOBase
 
 		virtual int send(const void* buf, size_t len, const timeval_t* timeout = 0) = 0;
 
-		template <class T>
+		template <typename T>
 		int send(const T& val, const timeval_t* timeout = 0)
 		{
 			return send(&val,sizeof(T),timeout);
@@ -47,7 +47,7 @@ namespace OOBase
 
 		virtual size_t recv(void* buf, size_t len, int* perr, const timeval_t* timeout = 0) = 0;
 
-		template <class T>
+		template <typename T>
 		int recv(T& val, const timeval_t* timeout = 0)
 		{
 			int err = 0;

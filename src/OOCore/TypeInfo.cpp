@@ -100,7 +100,7 @@ namespace
 
 		std::multimap<guid_t,ti_t> m_ti_map;
 	};
-	typedef OOBase::Singleton<TIMapImpl> TIMap;
+	typedef OOBase::Singleton<TIMapImpl,OOCore::DLL> TIMap;
 }
 
 TypeInfoImpl::TypeInfoImpl() :

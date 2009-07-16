@@ -42,15 +42,13 @@ Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
 	return m_csMain;
 }
 
-void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
+void OTL::ModuleBase::AddDestructor(void (OMEGA_CALL *pfn)(void*),void* param)
 {
 	try
 	{
-		Omega::Threading::Guard<Omega::Threading::Mutex> lock(m_csMain);
+		Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_csMain);
 
-		Term term = { pfnTerm, arg };
-
-		m_listTerminators.push_front(term);
+		m_listDestructors.push_front(std::pair<void (OMEGA_CALL *)(void*),void*>(pfn,param));
 	}
 	catch (std::exception& e)
 	{
@@ -60,25 +58,15 @@ void OTL::ModuleBase::AddTermFunc(OTL::ModuleBase::TERM_FUNC pfnTerm, void* arg)
 
 OTL::ModuleBase::~ModuleBase()
 {
-	fini();
-}
-
-void OTL::ModuleBase::fini()
-{
 	try
 	{
-		Omega::Threading::Guard<Omega::Threading::Mutex> lock(m_csMain);
-
-		for (std::list<Term>::iterator i=m_listTerminators.begin(); i!=m_listTerminators.end(); ++i)
+		Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_csMain);
+	
+		for (std::list<std::pair<void (OMEGA_CALL *)(void*),void*> >::iterator i=m_listDestructors.begin();i!=m_listDestructors.end();++i)
 		{
-			try
-			{
-				i->pfn(i->arg);
-			}
-			catch (...)
-			{}
+			(*(i->first))(i->second);
 		}
-		m_listTerminators.clear();
+		m_listDestructors.clear();
 	}
 	catch (std::exception& e)
 	{
@@ -147,7 +135,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t b
 	}
 }
 
-void OTL::ProcessModule::RegisterObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
+void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
 {
 	if (strAppName.IsEmpty())
 		return;

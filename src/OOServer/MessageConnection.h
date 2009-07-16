@@ -52,8 +52,8 @@ namespace Root
 		bool send(OOBase::Buffer* pBuffer);
 
 	private:
-		MessageConnection(const MessageConnection&) {}
-		MessageConnection& operator = (const MessageConnection&) { return *this; }
+		MessageConnection(const MessageConnection&);
+		MessageConnection& operator = (const MessageConnection&);
 
 		OOBase::SpinLock        m_lock;
 		MessageHandler*         m_pHandler;
@@ -139,8 +139,8 @@ namespace Root
 		Omega::uint16_t classify_channel(Omega::uint32_t channel_id);
 		
 	private:
-		MessageHandler(const MessageHandler&) {}
-		MessageHandler& operator = (const MessageHandler&) { return *this; }
+		MessageHandler(const MessageHandler&);
+		MessageHandler& operator = (const MessageHandler&);
 
 		OOBase::RWMutex      m_lock;
 		Omega::uint32_t      m_uChannelId;
@@ -189,13 +189,13 @@ namespace Root
 			static ThreadContext* instance(MessageHandler* pHandler);
 
 		private:
-			friend class OOBase::TLSSingleton<ThreadContext>;
+			friend class OOBase::TLSSingleton<ThreadContext,MessageHandler>;
 			
 			ThreadContext();
 			~ThreadContext();
 
-			ThreadContext(const ThreadContext&) {}
-			ThreadContext& operator = (const ThreadContext&) { return *this; }
+			ThreadContext(const ThreadContext&);
+			ThreadContext& operator = (const ThreadContext&);
 		};
 		friend struct ThreadContext;
 		std::map<Omega::uint16_t,ThreadContext*> m_mapThreadContexts;

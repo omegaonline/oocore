@@ -50,4 +50,12 @@
 
 /////////////////////////////////////////////////
 
+namespace User
+{
+	struct Module
+	{
+		int unused;
+	};
+}
+
 #endif // OOSERVER_USER_H_INCLUDED_

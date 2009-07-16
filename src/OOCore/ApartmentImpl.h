@@ -73,8 +73,8 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		AptChannel(const AptChannel&) : Channel() {}
-		AptChannel& operator = (const AptChannel&) { return *this; }
+		AptChannel(const AptChannel&);
+		AptChannel& operator = (const AptChannel&);
 
 		OOBase::SmartPtr<Apartment> m_ptrApt;
 

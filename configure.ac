@@ -57,7 +57,7 @@ if test "$oo_test_CXXFLAGS" != set; then
   	AX_CXXFLAGS_GCC_OPTION([-ggdb])
   	AX_CXXFLAGS_GCC_OPTION([-O0])
   else
-    AX_CXXFLAGS_GCC_OPTION([-frepo])
+    #AX_CXXFLAGS_GCC_OPTION([-frepo])
     AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
     AX_CXXFLAGS_GCC_OPTION([-O3])
   fi

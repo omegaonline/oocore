@@ -58,8 +58,8 @@ namespace Db
 
 	private:
 		Statement(sqlite3_stmt* pStmt);
-		Statement(const Statement&) {};
-		Statement& operator = (const Statement&) { return *this; };
+		Statement(const Statement&);
+		Statement& operator = (const Statement&);
 
 		sqlite3_stmt* m_pStmt;
 	};
@@ -76,8 +76,8 @@ namespace Db
 
 	private:
 		Transaction(sqlite3* db);
-		Transaction(const Transaction&) {};
-		Transaction& operator = (const Transaction&) { return *this; };
+		Transaction(const Transaction&);
+		Transaction& operator = (const Transaction&);
 
 		sqlite3* m_db;
 	};
@@ -99,8 +99,8 @@ namespace Db
 	private:
 		sqlite3* m_db;
 
-		Database(const Database&) {}
-		Database& operator = (const Database&) { return *this; }
+		Database(const Database&);
+		Database& operator = (const Database&);
 	};
 }
 

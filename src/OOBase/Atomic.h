@@ -126,12 +126,22 @@ namespace OOBase
 
 			bool operator == (const AtomicValImpl_Raw& rhs) const
 			{
-				return (this == &rhs || value() == rhs.value());
+				return (value() == rhs.value());
+			}
+
+			bool operator != (const AtomicValImpl_Raw& rhs) const
+			{
+				return (value() != rhs.value());
 			}
 
 			bool operator == (const T& v) const
 			{
 				return (value() == v);
+			}
+
+			bool operator != (const T& v) const
+			{
+				return (value() != v);
 			}
 
 			T value() const
@@ -164,7 +174,7 @@ namespace OOBase
 			}
 
 		private:
-			AtomicValImpl() {}
+			AtomicValImpl();
 		};
 
 		template <typename T, const size_t S>
@@ -227,7 +237,7 @@ namespace OOBase
 		}
 
 	private:
-		AtomicVal() {}
+		AtomicVal();
 	};
 
 	template <typename T>
@@ -294,12 +304,22 @@ namespace OOBase
 
 			bool operator == (const AtomicValImpl& rhs) const
 			{
-				return (this == &rhs || m_val == rhs.m_val);
+				return (m_val == rhs.m_val);
+			}
+
+			bool operator != (const AtomicValImpl& rhs) const
+			{
+				return (m_val != rhs.m_val);
 			}
 
 			bool operator == (const T& v) const
 			{
 				return (m_val == v);
+			}
+
+			bool operator != (const T& v) const
+			{
+				return (m_val != v);
 			}
 
 			T value() const
@@ -341,12 +361,22 @@ namespace OOBase
 
 			bool operator == (const AtomicValImpl& rhs) const
 			{
-				return (this == &rhs || m_val == rhs.m_val);
+				return (m_val == rhs.m_val);
+			}
+
+			bool operator != (const AtomicValImpl& rhs) const
+			{
+				return (m_val != rhs.m_val);
 			}
 
 			bool operator == (const T& v) const
 			{
 				return (m_val == v);
+			}
+
+			bool operator != (const T& v) const
+			{
+				return (m_val != v);
 			}
 
 			T value() const
@@ -355,7 +385,7 @@ namespace OOBase
 			}
 			
 		protected:
-			AtomicValImpl() {}
+			AtomicValImpl();
 
 			volatile T m_val;
 		};

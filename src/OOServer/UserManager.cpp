@@ -28,17 +28,10 @@ namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
 	// We don't use the macro as we overide some behaviours
-	namespace 
+	namespace Module
 	{
-		class ProcessModuleImpl : public ProcessModule
+		class OOSvrUser_ProcessModuleImpl : public ProcessModule
 		{
-		public:
-			void RegisterObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
-				{ /* NOP */ }
-
-			void Term()
-				{ fini(); }
-
 		private:
 			ModuleBase::CreatorEntry* getCreatorEntries()
 			{
@@ -49,21 +42,21 @@ namespace OTL
 				}; 
 				return CreatorEntries; 
 			}
+
+			virtual void InstallObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
+			{ /* NOP */ }
 		};
-	}
-	ProcessModuleImpl& UserGetModule()
-	{
-		static ProcessModuleImpl i;
-		return i;
-	}
+		
+		OMEGA_PRIVATE_FN_DECL(Module::OOSvrUser_ProcessModuleImpl*,GetModule())
+		{
+			return Omega::Threading::Singleton<Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Module> >::instance();
+		}
 
-	OMEGA_PRIVATE ProcessModuleImpl* GetModule()
-	{
-		return &(UserGetModule());
+		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)()
+		{
+			return OMEGA_PRIVATE_FN_CALL(GetModule)();
+		}
 	}
-
-	OMEGA_PRIVATE ModuleBase* GetModuleBase()
-		{ return GetModule(); }
 }
 
 using namespace Omega;
@@ -125,9 +118,6 @@ int User::Manager::run_i(const std::string& strPipe)
 
 		// Close the OOCore
 		Omega::Uninitialize();
-		
-		// Delete our OTL module
-		UserGetModule().Term();
 	}
 
 	// Close the proactor

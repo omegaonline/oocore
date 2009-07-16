@@ -34,7 +34,11 @@ namespace OOBase
 
 		struct init_once_t
 		{
+#if (WINVER >= 0x0600)
+			INIT_ONCE check;
+#else
 			LONG check;
+#endif
 		};
 
 		class SmartHandle
@@ -83,8 +87,8 @@ namespace OOBase
 			}
 
 		private:
-			SmartHandle(const SmartHandle&) {}
-			SmartHandle& operator = (const SmartHandle&) { return *this; }
+			SmartHandle(const SmartHandle&);
+			SmartHandle& operator = (const SmartHandle&);
 
 			HANDLE m_handle;
 		};

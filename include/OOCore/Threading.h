@@ -26,27 +26,6 @@ namespace Omega
 {
 	namespace Threading
 	{
-		template <class T>
-		class Singleton
-		{
-		public:
-			static T* instance();
-
-		private:
-			static void* s_instance;
-
-			static bool do_init()
-			{
-				s_instance = new T();
-				return static_cast<T*>(s_instance)->singleton_init();
-			}
-
-			static void do_term(void*)
-			{
-				delete static_cast<T*>(s_instance);
-			}
-		};
-
 		class Mutex
 		{
 		public:
@@ -57,8 +36,8 @@ namespace Omega
 			inline void Release();
 
 		private:
-			Mutex(const Mutex&) {}
-			Mutex& operator = (const Mutex&) { return *this; }
+			Mutex(const Mutex&);
+			Mutex& operator = (const Mutex&);
 
 			struct handle_t
 			{
@@ -78,8 +57,8 @@ namespace Omega
 			inline void Release();
 
 		private:
-			ReaderWriterLock(const ReaderWriterLock&) {}
-			ReaderWriterLock& operator = (const ReaderWriterLock&) { return *this; }
+			ReaderWriterLock(const ReaderWriterLock&);
+			ReaderWriterLock& operator = (const ReaderWriterLock&);
 
 			struct handle_t
 			{
@@ -120,8 +99,8 @@ namespace Omega
 			}
 
 		private:
-			Guard(const Guard&) {}
-			Guard& operator = (const Guard&) { return *this; }
+			Guard(const Guard&);
+			Guard& operator = (const Guard&);
 
 			bool   m_acquired;
 			MUTEX& m_mutex;
@@ -160,8 +139,8 @@ namespace Omega
 			}
 
 		private:
-			ReadGuard(const ReadGuard&) {}
-			ReadGuard& operator = (const ReadGuard&) { return *this; }
+			ReadGuard(const ReadGuard&);
+			ReadGuard& operator = (const ReadGuard&);
 
 			bool   m_acquired;
 			MUTEX& m_mutex;
@@ -186,6 +165,76 @@ namespace Omega
 			{
 				int unused;
 			}* m_handle;
+		};
+
+		template <typename DLL>
+		class ModuleDestructor
+		{
+		public:
+			typedef void (OMEGA_CALL *pfn_destructor)(void*);
+
+			inline static void add_destructor(pfn_destructor pfn, void* param);
+			inline static void remove_destructor(pfn_destructor pfn, void* param);
+			
+		private:
+			ModuleDestructor(const ModuleDestructor&);
+			ModuleDestructor& operator = (const ModuleDestructor&);
+
+			ModuleDestructor() 
+			{
+			}
+
+			inline ~ModuleDestructor();
+
+			Mutex                                       m_lock;
+			std::list<std::pair<pfn_destructor,void*> > m_list;
+
+			static ModuleDestructor& instance()
+			{
+				static ModuleDestructor inst;
+				return inst;
+			}
+		};
+
+		template <typename DLL>
+		class InitialiseDestructor
+		{
+		public:
+			typedef void (OMEGA_CALL* pfn_destructor)(void*);
+
+			inline static void add_destructor(pfn_destructor pfn, void* param);
+
+		private:
+			struct multi_dctor
+			{
+				pfn_destructor pfn;
+				void*          param;
+			};
+
+			inline static void OMEGA_CALL destruct(void*);
+		};
+
+		// Lifetime should be either ModuleDestructor<> or InitialiseDestructor
+		template <typename T, typename Lifetime>
+		class Singleton
+		{
+		public:
+			static T* instance();
+
+		private:
+			static void* s_instance;
+
+			static void OMEGA_CALL do_init()
+			{
+				s_instance = new T();
+				Lifetime::add_destructor(do_term,0);
+			}
+
+			static void OMEGA_CALL do_term(void*)
+			{
+				delete static_cast<T*>(s_instance);
+				s_instance = 0;
+			}
 		};
 	}
 }

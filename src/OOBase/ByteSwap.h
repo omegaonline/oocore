@@ -19,8 +19,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OOBASE_SWAP_H_INCLUDED_
-#define OOBASE_SWAP_H_INCLUDED_
+#ifndef OOBASE_BYTE_SWAP_H_INCLUDED_
+#define OOBASE_BYTE_SWAP_H_INCLUDED_
 
 #include "config-base.h"
 
@@ -54,32 +54,32 @@ namespace OOBase
 	namespace detail
 	{
 		template <const size_t S>
-		struct swapper;
+		struct byte_swapper;
 	}
 
 	template <typename T>
-	T swap(const T& val)
+	T byte_swap(const T& val)
 	{
-		return detail::swapper<sizeof(T)>::swap(val);
+		return detail::byte_swapper<sizeof(T)>::byte_swap(val);
 	}
 
 	namespace detail
 	{
 		template <>
-		struct swapper<1>
+		struct byte_swapper<1>
 		{
-			template <class T>
-			static T swap(T val)
+			template <typename T>
+			static T byte_swap(T val)
 			{
 				return val;
 			}
 		};
 
 		template <>
-		struct swapper<2>
+		struct byte_swapper<2>
 		{
-			template <class T>
-			static T swap(T val)
+			template <typename T>
+			static T byte_swap(T val)
 			{
 	#if defined(FAST_BYTESWAP_2)
 				return (T)(FAST_BYTESWAP_2(val));
@@ -94,10 +94,10 @@ namespace OOBase
 		};
 
 		template <>
-		struct swapper<4>
+		struct byte_swapper<4>
 		{
-			template <class T>
-			static T swap(T val)
+			template <typename T>
+			static T byte_swap(T val)
 			{
 	#if defined(FAST_BYTESWAP_4)
 				return (T)(FAST_BYTESWAP_4(val));
@@ -114,10 +114,10 @@ namespace OOBase
 		};
 
 		template <>
-		struct swapper<8>
+		struct byte_swapper<8>
 		{
-			template <class T>
-			static T swap(T val)
+			template <typename T>
+			static T byte_swap(T val)
 			{
 	#if defined(FAST_BYTESWAP_8)
 				return (T)(FAST_BYTESWAP_8(val));
@@ -143,4 +143,4 @@ namespace OOBase
 #pragma warning(pop)
 #endif
 
-#endif // OOBASE_SWAP_H_INCLUDED_
+#endif // OOBASE_BYTE_SWAP_H_INCLUDED_

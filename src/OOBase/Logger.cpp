@@ -242,7 +242,7 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 
 namespace
 {
-	typedef OOBase::Singleton<LoggerImpl> LOGGER;
+	typedef OOBase::Singleton<LoggerImpl,LoggerImpl> LOGGER;
 }
 
 void OOSvrBase::Logger::open(const char* name)

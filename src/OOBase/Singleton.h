@@ -28,8 +28,8 @@
 
 namespace OOBase
 {
-	template <typename T, typename DLL = int>
-	class SingletonNoDestroy
+	template <typename T, typename DLL>
+	class Singleton
 	{
 	public:
 		static T* instance()
@@ -41,73 +41,37 @@ namespace OOBase
 
 		static void close()
 		{
-			delete s_instance;
-			//s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
-		}
-
-	protected:
-		static T* s_instance;
-
-	private:
-		// Prevent creation
-		SingletonNoDestroy() {}
-		SingletonNoDestroy(const SingletonNoDestroy&) {}
-		SingletonNoDestroy& operator == (const SingletonNoDestroy&) { return *this; }
-		~SingletonNoDestroy() {}
-
-		static void init()
-		{
-			OOBASE_NEW(s_instance,T());
-			if (!s_instance)
-				OOBase_OutOfMemory();
-		}
-	};
-
-	template <typename T, typename DLL = int>
-	class Singleton : public SingletonNoDestroy<T,DLL>
-	{
-	public:
-		static T* instance()
-		{
-			static Once::once_t key = ONCE_T_INIT;
-			Once::Run(&key,init);
-			return SingletonNoDestroy<T,DLL>::s_instance;
-		}
-
-		static void close()
-		{
 			DLLDestructor<DLL>::remove_destructor(&destroy,0);
 			destroy();
 		}
 
 	private:
 		// Prevent creation
-		Singleton() {}
-		Singleton(const Singleton&) {}
-		Singleton& operator == (const Singleton&) { return *this; }
-		~Singleton() {}
+		Singleton();
+		Singleton(const Singleton&);
+		Singleton& operator == (const Singleton&);
+		~Singleton();
+
+		static T* s_instance;
 
 		static void init()
 		{
-			T* t;
-			OOBASE_NEW(t,T());
-			if (!t)
+			OOBASE_NEW(s_instance,T());
+			if (!s_instance)
 				OOBase_OutOfMemory();
-
-			SingletonNoDestroy<T,DLL>::s_instance = t;
 
 			DLLDestructor<DLL>::add_destructor(&destroy,0);
 		}
 
 		static void destroy(void* = 0)
 		{
-			delete SingletonNoDestroy<T,DLL>::s_instance;
-			//SingletonNoDestroy<T,DLL>::s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
+			delete s_instance;
+			s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
 		}
 	};
 
 	template <typename T, typename DLL>
-	T* SingletonNoDestroy<T,DLL>::s_instance = 0;
+	T* Singleton<T,DLL>::s_instance = 0;
 }
 
 #endif // OOBASE_SINGLETON_H_INCLUDED_

@@ -214,10 +214,6 @@ BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN Ini
 
 BOOL OOBase::Win32::InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 {
-#if (WINVER >= 0x0600)
-	assert(sizeof(init_once_t) >= sizeof(INIT_ONCE));
-#endif
-
 	return (*Win32Thunk::instance().m_InitOnceExecuteOnce)(InitOnce,InitFn,Parameter,Context);
 }
 

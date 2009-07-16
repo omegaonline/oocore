@@ -86,7 +86,7 @@ namespace OOCore
 		}
 	};
 
-	template <class E>
+	template <typename E>
 	class ExceptionMarshalFactoryImpl :
 		public OTL::ObjectBase,
 		public Omega::Remoting::IMarshalFactory

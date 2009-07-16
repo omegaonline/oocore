@@ -38,9 +38,9 @@ static void tests(bool bStandalone)
 	RUN_TEST(interface_dll_tests);
 	if (!bStandalone)
 		RUN_TEST(interface_process_tests);
-	RUN_TEST(apartment_dll_tests);
-	if (!bStandalone)
-		RUN_TEST(apartment_tests);
+	//RUN_TEST(apartment_dll_tests);
+	//if (!bStandalone)
+	//	RUN_TEST(apartment_tests);
 	//RUN_TEST(net_tests);
 	//RUN_TEST(interface_tests2);
 }
@@ -57,13 +57,13 @@ int main(int /*argc*/, char* /*argv*/[])
 		Omega::Uninitialize();
 	}
 
-	output("\nPerforming server tests...\n\n");
+	/*output("\nPerforming server tests...\n\n");
 	if (RUN_TEST(init_server_tests))
 	{
 		tests(false);
 
 		Omega::Uninitialize();
-	}
+	}*/
 
 	return test_summary();
 }

@@ -31,7 +31,7 @@ namespace
 		OOBase::RWMutex       m_lock;
 		std::map<void*,void*> m_map;
 	};
-	typedef OOBase::Singleton<stub_holder> STUB_HOLDER;
+	typedef Omega::Threading::Singleton<stub_holder,Omega::Threading::InitialiseDestructor<OOCore::DLL> > STUB_HOLDER;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_safe_stub_find,1,((in),void*,pObject))

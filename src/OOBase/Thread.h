@@ -40,8 +40,8 @@ namespace OOBase
 		bool is_running();
 
 	private:
-		Thread(const Thread&) {}
-		Thread& operator = (const Thread&) { return *this; }
+		Thread(const Thread&);
+		Thread& operator = (const Thread&);
 
 		Mutex     m_lock;
 

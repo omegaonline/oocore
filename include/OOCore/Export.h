@@ -699,7 +699,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_PROXY_METHOD,methods,0)
 
 #define OMEGA_DECLARE_PROXY(n_space,name,d_space,derived,methods) \
-	template <class D> \
+	template <typename D> \
 	class Safe_Proxy<n_space::name,D> : public Safe_Proxy<d_space::derived,D> \
 	{ \
 		const vtable_info<n_space::name>::type* deref_vt() { return static_cast<const vtable_info<n_space::name>::type*>(this->m_shim->m_vtable); } \

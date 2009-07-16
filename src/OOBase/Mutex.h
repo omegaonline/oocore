@@ -42,8 +42,8 @@ namespace OOBase
 
 	private:
 		// No copying
-		Mutex(const Mutex&) {};
-		Mutex& operator = (const Mutex&) { return *this; }
+		Mutex(const Mutex&);
+		Mutex& operator = (const Mutex&);
 
 #if defined(_WIN32)
 		Win32::SmartHandle m_mutex;
@@ -68,8 +68,8 @@ namespace OOBase
 
 	private:
 		// No copying
-		SpinLock(const SpinLock&) {};
-		SpinLock& operator = (const SpinLock&) { return *this; }
+		SpinLock(const SpinLock&);
+		SpinLock& operator = (const SpinLock&);
 
 #if defined(_WIN32)
 		CRITICAL_SECTION m_cs;
@@ -97,8 +97,8 @@ namespace OOBase
 
 	private:
 		// No copying
-		RWMutex(const RWMutex&) {};
-		RWMutex& operator = (const RWMutex&) { return *this; }
+		RWMutex(const RWMutex&);
+		RWMutex& operator = (const RWMutex&);
 
 #if defined(_WIN32)
 		SRWLOCK          m_lock;
@@ -163,8 +163,8 @@ namespace OOBase
 		}
 
 	private:
-		Guard(const Guard&) {}
-		Guard& operator = (const Guard&) { return *this; }
+		Guard(const Guard&);
+		Guard& operator = (const Guard&);
 
 		bool   m_acquired;
 		MUTEX& m_mutex;
@@ -207,8 +207,8 @@ namespace OOBase
 		}
 
 	private:
-		ReadGuard(const ReadGuard&) {}
-		ReadGuard& operator = (const ReadGuard&) { return *this; }
+		ReadGuard(const ReadGuard&);
+		ReadGuard& operator = (const ReadGuard&);
 
 		bool   m_acquired;
 		MUTEX& m_mutex;

@@ -36,7 +36,7 @@ namespace OOBase
 		void ThreadExit();
 	}
 
-	template <typename T, typename DLL = int>
+	template <typename T, typename DLL>
 	class TLSSingleton
 	{
 	public:
@@ -58,10 +58,10 @@ namespace OOBase
 
 	private:
 		// Prevent creation
-		TLSSingleton() {}
-		TLSSingleton(const TLSSingleton&) {}
-		TLSSingleton& operator == (const TLSSingleton&) { return *this; }
-		~TLSSingleton() {}
+		TLSSingleton();
+		TLSSingleton(const TLSSingleton&);
+		TLSSingleton& operator == (const TLSSingleton&);
+		~TLSSingleton();
 
 		static const size_t s_sentinal;
 

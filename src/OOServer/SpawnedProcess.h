@@ -50,8 +50,8 @@ namespace Root
 		SpawnedProcess() {}
 
 	private:
-		SpawnedProcess(const SpawnedProcess&) {}
-		SpawnedProcess& operator = (const SpawnedProcess&) { return *this; }
+		SpawnedProcess(const SpawnedProcess&);
+		SpawnedProcess& operator = (const SpawnedProcess&);
 	};
 }
 

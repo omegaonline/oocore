@@ -76,8 +76,8 @@ namespace OOSvrBase
 		OOBase::AtomicInt<size_t> m_outstanding;
 
 	private:
-		ProactorImpl(const ProactorImpl&) {}
-		ProactorImpl& operator = (const ProactorImpl&) { return *this; }
+		ProactorImpl(const ProactorImpl&);
+		ProactorImpl& operator = (const ProactorImpl&);
 	};
 }
 

@@ -68,12 +68,8 @@ namespace OOCore
 		void DoMarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pParamsOut);
 
 	private:
-		StdObjectManager(const StdObjectManager&) :
-            OTL::ObjectBase(),
-            IStdObjectManager(),
-            Omega::System::IMarshaller()
-        {}
-		StdObjectManager& operator = (const StdObjectManager&) { return *this; };
+		StdObjectManager(const StdObjectManager&);
+		StdObjectManager& operator = (const StdObjectManager&);
 
 		OOBase::RWMutex                           m_lock;
 		OTL::ObjectPtr<Omega::Remoting::IChannel> m_ptrChannel;

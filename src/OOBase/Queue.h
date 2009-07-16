@@ -28,7 +28,7 @@
 
 namespace OOBase
 {
-	template <class T>
+	template <typename T>
 	class BoundedQueue
 	{
 	public:

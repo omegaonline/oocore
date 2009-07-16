@@ -42,7 +42,7 @@
 
 namespace Root
 {
-	typedef OOBase::SingletonNoDestroy<OOSvrBase::Proactor> Proactor;
+	typedef OOBase::Singleton<OOSvrBase::Proactor,Root::Module> Proactor;
 
 	class Manager :
 		public MessageHandler,
@@ -59,8 +59,8 @@ namespace Root
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
 	private:
-		Manager(const Manager&) : MessageHandler() {}
-		Manager& operator = (const Manager&) { return *this; }
+		Manager(const Manager&);
+		Manager& operator = (const Manager&);
 
 		// Init and run members
 		bool init();

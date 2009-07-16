@@ -58,7 +58,7 @@ namespace OOBase
 			HANDLE m_hWriteEvent;
 		};
 
-		template <class Base>
+		template <typename Base>
 		class SocketTempl : 
 			public Base,
 			public SocketImpl
@@ -87,8 +87,8 @@ namespace OOBase
 			}
 
 		private:
-			SocketTempl(const SocketTempl&) {}
-			SocketTempl& operator = (const SocketTempl&) { return *this; }
+			SocketTempl(const SocketTempl&);
+			SocketTempl& operator = (const SocketTempl&);
 		};
 
 		class Socket : 

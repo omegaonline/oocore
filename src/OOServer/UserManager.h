@@ -30,7 +30,7 @@
 
 namespace User
 {
-	typedef OOBase::SingletonNoDestroy<OOSvrBase::Proactor> Proactor;
+	typedef OOBase::Singleton<OOSvrBase::Proactor,User::Module> Proactor;
 
 	class Manager : public Root::MessageHandler
 	{
@@ -46,16 +46,16 @@ namespace User
 		bool on_accept(OOBase::Socket* sock);
 
 	private:
-		friend class OOBase::SingletonNoDestroy<Manager>;
-		typedef OOBase::SingletonNoDestroy<Manager> USER_MANAGER;
+		friend class OOBase::Singleton<Manager,User::Module>;
+		typedef OOBase::Singleton<Manager,User::Module> USER_MANAGER;
 
 		static const Omega::uint32_t m_root_channel = 0x80000000;
 
 		Manager();
 		virtual ~Manager();
 
-		Manager(const Manager&) : Root::MessageHandler() {}
-		Manager& operator = (const Manager&) { return *this; }
+		Manager(const Manager&);
+		Manager& operator = (const Manager&);
 
 		OOBase::RWMutex                                                      m_lock;
 		Omega::uint32_t                                                      m_nIPSCookie;

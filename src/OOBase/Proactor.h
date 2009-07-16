@@ -64,8 +64,8 @@ namespace OOSvrBase
 		virtual ~AsyncSocket() {}
 
 	private:
-		AsyncSocket(const AsyncSocket&) {}
-		AsyncSocket& operator = (const AsyncSocket&) { return *this; }
+		AsyncSocket(const AsyncSocket&);
+		AsyncSocket& operator = (const AsyncSocket&);
 
 		OOBase::AtomicInt<size_t> m_ref_count;
 	};
@@ -104,8 +104,8 @@ namespace OOSvrBase
 		AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
 
 	private:
-		Proactor(const Proactor&) {}
-		Proactor& operator = (const Proactor&) { return *this; }
+		Proactor(const Proactor&);
+		Proactor& operator = (const Proactor&);
 
 		ProactorImpl* m_impl;
 	};

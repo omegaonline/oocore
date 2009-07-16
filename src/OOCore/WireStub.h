@@ -48,8 +48,8 @@ namespace OOCore
 		END_INTERFACE_MAP()
 
 	private:
-		Stub(const Stub&) : OTL::ObjectBase(), Omega::System::IStubController() {}
-		Stub& operator = (const Stub&) { return *this; }
+		Stub(const Stub&);
+		Stub& operator = (const Stub&);
 
 		OOBase::AtomicInt<Omega::uint32_t>     m_marshal_count;
 		OOBase::SpinLock                       m_lock;

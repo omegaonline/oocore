@@ -45,19 +45,19 @@ namespace Omega
 		inline size_t ToUTF8(char* sz, size_t size) const;
 		inline std::string ToUTF8() const;
 
-		template <class T>
+		template <typename T>
 		bool operator == (T t) const
 		{ return Compare(t) == 0; }
 
-		template <class T>
+		template <typename T>
 		bool operator != (T t) const
 		{ return Compare(t) != 0; }
 
-		template <class T>
+		template <typename T>
 		bool operator < (T t) const
 		{ return Compare(t) < 0; }
 
-		template <class T>
+		template <typename T>
 		bool operator > (T t) const
 		{ return Compare(t) > 0; }
 
@@ -139,7 +139,7 @@ namespace Omega
 	{
 		namespace MetaInfo
 		{
-			template <class T> struct default_value
+			template <typename T> struct default_value
 			{
 				static T value()
 				{
@@ -148,7 +148,7 @@ namespace Omega
 				}
 			};
 
-			template <class T> struct default_value<T&>
+			template <typename T> struct default_value<T&>
 			{
 				static T value()
 				{
@@ -168,22 +168,22 @@ namespace Omega
 			};
 			#endif
 
-			template <class T> struct remove_const
+			template <typename T> struct remove_const
 			{
 				typedef T type;
 			};
 
-			template <class T> struct remove_const<const T>
+			template <typename T> struct remove_const<const T>
 			{
 				typedef T type;
 			};
 
-			template <class T> struct remove_const<T&>
+			template <typename T> struct remove_const<T&>
 			{
 				typedef typename remove_const<T>::type& type;
 			};
 
-			template <class T> struct remove_const<T*>
+			template <typename T> struct remove_const<T*>
 			{
 				typedef typename remove_const<T>::type* type;
 			};

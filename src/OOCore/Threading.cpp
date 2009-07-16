@@ -21,24 +21,23 @@
 
 #include "OOCore_precomp.h"
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,3,((in),void**,val,(in),void*,pfn_init,(in),void*,pfn_term))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),void*,pfn_init))
 {
-	typedef bool (*init_function)();
-	typedef void (*term_function)(void*);
+	typedef void (OMEGA_CALL *init_function)();
 
-	// Do a double lock...
-	if (!*val)
+	// The value pointed to is definitely volatile under race conditions
+	volatile void* pVal = *val;
+	
+	// Do a double lock... this is so we can call it more than once
+	if (!pVal)
 	{
 		// This singleton should be race start safe...
-		OOBase::Guard<OOBase::SpinLock> guard(*OOBase::Singleton<OOBase::SpinLock>::instance());
+		OOBase::Guard<OOBase::SpinLock> guard(*OOBase::Singleton<OOBase::SpinLock,OOCore::DLL>::instance());
 
-		if (!*val)
+		if (!pVal)
 		{
 			// Call the init function
-			if (!(*(init_function)(pfn_init))())
-			{
-				OOBase::Destructor::add_destructor((term_function)(pfn_term),0);
-			}
+			(*(init_function)(pfn_init))();
 		}
 	}
 }

@@ -31,7 +31,7 @@ namespace Omega
 
 		namespace MetaInfo
 		{
-			template <class I>
+			template <typename I>
 			class auto_iface_ptr
 			{
 			public:
@@ -100,7 +100,7 @@ namespace Omega
 				const guid_t* m_iid;
 			};
 
-			template <class T>
+			template <typename T>
 			class std_safe_type
 			{
 			public:
@@ -212,10 +212,10 @@ namespace Omega
 				}
 			};
 
-			template <class T> class std_wire_type;
-			template <class T> class std_wire_type_array;
+			template <typename T> class std_wire_type;
+			template <typename T> class std_wire_type_array;
 
-			template <class T> struct marshal_info
+			template <typename T> struct marshal_info
 			{
 				typedef std_safe_type<T> safe_type;
 				typedef std_wire_type<T> wire_type;
@@ -235,13 +235,13 @@ namespace Omega
 			};
 			#endif
 
-			template <class T> struct marshal_info<T*>
+			template <typename T> struct marshal_info<T*>
 			{
 				typedef std_safe_type<T*> safe_type;
 				typedef std_wire_type_array<T> wire_type;
 			};
 
-			template <class T>
+			template <typename T>
 			class std_safe_type<T&>
 			{
 			public:
@@ -310,7 +310,7 @@ namespace Omega
 				}
 			};
 
-			template <class T>
+			template <typename T>
 			class std_safe_type<const T&>
 			{
 			public:
@@ -453,7 +453,7 @@ namespace Omega
 				}
 			};
 
-			template <class I>
+			template <typename I>
 			class iface_proxy_functor
 			{
 			public:
@@ -489,10 +489,10 @@ namespace Omega
 			protected:
 				const SafeShim* m_pS;
 
-				iface_proxy_functor& operator = (const iface_proxy_functor&) {}
+				iface_proxy_functor& operator = (const iface_proxy_functor&);
 			};
 
-			template <class I>
+			template <typename I>
 			class iface_proxy_functor_ref : public iface_proxy_functor<I>
 			{
 			public:
@@ -515,7 +515,7 @@ namespace Omega
 				}
 			};
 
-			template <class I>
+			template <typename I>
 			class iface_stub_functor
 			{
 			public:
@@ -552,10 +552,10 @@ namespace Omega
 			protected:
 				I* m_pI;
 
-				iface_stub_functor& operator = (const iface_stub_functor&) {};
+				iface_stub_functor& operator = (const iface_stub_functor&);
 			};
 
-			template <class I>
+			template <typename I>
 			class iface_stub_functor_ref : public iface_stub_functor<I>
 			{
 			public:
@@ -578,7 +578,7 @@ namespace Omega
 				}
 			};	
 
-			template <class I>
+			template <typename I>
 			class iface_safe_type
 			{
 			public:
@@ -598,7 +598,7 @@ namespace Omega
 				}
 			};
 
-			template <class I> class iface_wire_type;
+			template <typename I> class iface_wire_type;
 
 			template <> struct marshal_info<IObject*>
 			{
@@ -606,7 +606,7 @@ namespace Omega
 				typedef iface_wire_type<IObject> wire_type;
 			};
 
-			template <class I> struct vtable_info;
+			template <typename I> struct vtable_info;
 
 			template <> struct vtable_info<IObject>
 			{
@@ -746,8 +746,8 @@ namespace Omega
 				inline void Throw(const guid_t& iid, const SafeShim* shim);
 
 			private:
-				Safe_Proxy_Owner(const Safe_Proxy_Owner&) {};
-				Safe_Proxy_Owner& operator =(const Safe_Proxy_Owner&) { return *this; };
+				Safe_Proxy_Owner(const Safe_Proxy_Owner&);
+				Safe_Proxy_Owner& operator =(const Safe_Proxy_Owner&);
 
 				Threading::Mutex                  m_lock;
 				std::map<guid_t,Safe_Proxy_Base*> m_iid_map;
@@ -848,6 +848,11 @@ namespace Omega
 				}
 			};
 
+			struct OMEGA_PRIVATE_TYPE(safe_module)
+			{
+				int unused;
+			};
+
 			class proxy_holder
 			{
 			public:
@@ -855,13 +860,11 @@ namespace Omega
 				inline Safe_Proxy_Owner* find(const SafeShim* shim);
 				inline Safe_Proxy_Owner* add(const SafeShim* shim, Safe_Proxy_Owner* pOwner);
 
-				bool singleton_init() { return false; }
-
 			private:
 				Threading::Mutex                            m_lock;
 				std::map<const SafeShim*,Safe_Proxy_Owner*> m_map;
 			};
-			typedef Threading::Singleton<proxy_holder> PROXY_HOLDER;
+			typedef Threading::Singleton<proxy_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > PROXY_HOLDER;
 
 			inline Safe_Proxy_Owner* create_proxy_owner(const SafeShim* shim, IObject* pOuter);
 
@@ -941,8 +944,8 @@ namespace Omega
 				}
 
 			private:
-				Safe_Stub_Owner(const Safe_Stub_Owner&) {};
-				Safe_Stub_Owner& operator =(const Safe_Stub_Owner&) { return *this; };
+				Safe_Stub_Owner(const Safe_Stub_Owner&);
+				Safe_Stub_Owner& operator =(const Safe_Stub_Owner&);
 
 				Threading::Mutex                 m_lock;
 				std::map<guid_t,Safe_Stub_Base*> m_iid_map;
@@ -1049,26 +1052,15 @@ namespace Omega
 				const wchar_t* pszName;
 			};
 
-			struct qi_holder
-			{
-				static qi_holder& instance()
-				{
-					// This is a 'cheap' singleton as we only use it to read
-					// after the dll/so is init'ed
-					static qi_holder i;
-					return i;
-				}
-
-				std::map<guid_t,const qi_rtti*> iid_map;
-			};
+			typedef Threading::Singleton<std::map<guid_t,const qi_rtti*>,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > RTTI_HOLDER;
 
 			inline static const qi_rtti* get_qi_rtti_info(const guid_t& iid)
 			{
 				try
 				{
-					qi_holder& instance = qi_holder::instance();
-					std::map<guid_t,const qi_rtti*>::const_iterator i=instance.iid_map.find(iid);
-					if (i != instance.iid_map.end())
+					std::map<guid_t,const qi_rtti*>* iid_map = RTTI_HOLDER::instance();
+					std::map<guid_t,const qi_rtti*>::const_iterator i=iid_map->find(iid);
+					if (i != iid_map->end())
 						return i->second;
 				}
 				catch (...)
@@ -1077,10 +1069,22 @@ namespace Omega
 				return 0;
 			}
 
-			template <class I, class D>
+			inline static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
+			{
+				try
+				{
+					RTTI_HOLDER::instance()->insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
+				}
+				catch (std::exception& e)
+				{
+					OMEGA_THROW(e);
+				}
+			}
+
+			template <typename I, typename D>
 			class Safe_Proxy;
 
-			template <class D>
+			template <typename D>
 			class Safe_Proxy<IObject,D> : public Safe_Proxy_Base, public D
 			{
 			public:
@@ -1098,7 +1102,7 @@ namespace Omega
 					if (except)
 						throw_correct_exception(except);
 
-					m_refcount.AddRef();
+					IncRef();
 				}
 
 				virtual ~Safe_Proxy()
@@ -1119,8 +1123,8 @@ namespace Omega
 				Threading::AtomicRefCount m_refcount;
 				Safe_Proxy_Owner*         m_pOwner;
 
-				Safe_Proxy(const Safe_Proxy&) {};
-				Safe_Proxy& operator =(const Safe_Proxy&) { return *this; };
+				Safe_Proxy(const Safe_Proxy&);
+				Safe_Proxy& operator =(const Safe_Proxy&);
 				
 				void IncRef()
 				{
@@ -1168,7 +1172,7 @@ namespace Omega
 				}
 			};
 
-			template <class I>
+			template <typename I>
 			class Safe_Stub;
 
 			template <>
@@ -1223,8 +1227,8 @@ namespace Omega
 				Safe_Stub_Owner*          m_pOwner;
 				Threading::AtomicRefCount m_refcount;
 
-				Safe_Stub(const Safe_Stub&) {};
-				Safe_Stub& operator =(const Safe_Stub&) { return *this; };
+				Safe_Stub(const Safe_Stub&);
+				Safe_Stub& operator =(const Safe_Stub&);
 
 				void IncRef()
 				{
@@ -1390,18 +1394,6 @@ namespace Omega
 				OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
 				OMEGA_METHOD(guid_t,GetParamIid,2,((in),uint32_t,method_idx,(in),byte_t,param_idx))
 			)
-
-			inline static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
-			{
-				try
-				{
-					qi_holder::instance().iid_map.insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
-				}
-				catch (std::exception& e)
-				{
-					OMEGA_THROW(e);
-				}
-			}
 
 			OMEGA_QI_MAGIC(Omega,IObject)
 			OMEGA_QI_MAGIC(Omega,IException)

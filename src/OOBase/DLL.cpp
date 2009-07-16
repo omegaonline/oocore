@@ -89,7 +89,7 @@ namespace
 		OOBase::Mutex m_lock;
 	};
 
-	typedef OOBase::Singleton<Libtool_Helper> LT_HELPER;
+	typedef OOBase::Singleton<Libtool_Helper,Libtool_Helper> LT_HELPER;
 }
 
 OOBase::DLL::DLL() :

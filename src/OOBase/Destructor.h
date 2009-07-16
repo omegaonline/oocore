@@ -38,8 +38,9 @@ namespace OOBase
 		{
 			try
 			{
-				Guard<SpinLock> guard(instance().m_lock);
-				instance().m_list.push_front(std::pair<pfn_destructor,void*>(pfn,p));
+				DLLDestructor& inst = instance();
+				Guard<SpinLock> guard(inst.m_lock);
+				inst.m_list.push_front(std::pair<pfn_destructor,void*>(pfn,p));
 			}
 			catch (std::exception& e)
 			{
@@ -51,8 +52,9 @@ namespace OOBase
 		{
 			try
 			{
-				Guard<SpinLock> guard(instance().m_lock);
-				instance().m_list.remove(std::pair<pfn_destructor,void*>(pfn,p));
+				DLLDestructor& inst = instance();
+				Guard<SpinLock> guard(inst.m_lock);
+				inst.m_list.remove(std::pair<pfn_destructor,void*>(pfn,p));
 			}
 			catch (std::exception& e)
 			{
@@ -60,16 +62,10 @@ namespace OOBase
 			}
 		}
 
-		static void call_destructors()
-		{
-			Guard<SpinLock> guard(instance().m_lock);
-			instance().destruct();
-		}
-
 	private:
 		DLLDestructor() {}
-		DLLDestructor(const DLLDestructor&) {}
-		DLLDestructor& operator = (const DLLDestructor&) { return *this; }
+		DLLDestructor(const DLLDestructor&);
+		DLLDestructor& operator = (const DLLDestructor&);
 
 		~DLLDestructor()
 		{
@@ -80,6 +76,8 @@ namespace OOBase
 		{
 			try
 			{
+				Guard<SpinLock> guard(m_lock);
+			
 				for (std::list<std::pair<pfn_destructor,void*> >::iterator i=m_list.begin();i!=m_list.end();++i)
 				{
 					(*(i->first))(i->second);
@@ -99,10 +97,8 @@ namespace OOBase
 		{
 			static DLLDestructor inst;
 			return inst;
-		}			
+		}
 	};
-
-	typedef DLLDestructor<int> Destructor;
 }
 
 #endif // OOBASE_DESTRUCTOR_H_INCLUDED_

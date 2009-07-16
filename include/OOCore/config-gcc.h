@@ -44,35 +44,38 @@
 #define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
 
 /* stop lots of attributes warnings */
-#ifndef __x86_64__
+#if !defined(__x86_64__)
     #define OMEGA_CALL   __attribute__((__cdecl__))
 #else
     #define OMEGA_CALL
 #endif /* ndef __x86_64__ */
 
-#ifdef __LP64__
+#if defined(__LP64__)
     #define OMEGA_64
 #endif
 
+#if !defined(__EXCEPTIONS) || (__EXCEPTIONS != 1)
+#error Don't use -fno-exceptions!
+#endif
+
 #if defined(__ELF__)
-    #if __GNUC__ >= 4
+    #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 2) || (__GNUC__ > 4)
         #define OMEGA_EXPORT  __attribute__((visibility("default")))
         #define OMEGA_IMPORT  __attribute__((visibility("default")))
         #define OMEGA_PRIVATE __attribute__((visibility("hidden")))
-    #else
-        #error Need a version script!
+    #elif !defined(OMEGA_MODULE_PRIVATE_NAME)
+		#error You must define OMEGA_MODULE_PRIVATE_NAME to control symbol visibility
     #endif
-#elif defined(__MINGW32__) || defined(__CYGWIN__)
+#elif defined(__WIN32)
     #define OMEGA_IMPORT  __attribute__((dllimport))
     #define OMEGA_EXPORT  __attribute__((dllexport))
-    #define OMEGA_PRIVATE
 #else
-    #error No idea how to control export for this output!
+    #error No idea how to control symbol visibility for this output!
 #endif
 
-#if defined(__MINGW32__)
+#if defined(__WIN32)
 	// We assume win32 for MinGW
-    #include <OOCore/config-win32.h>
+    #include "config-win32.h"
 #elif defined(__unix__)
 	// We assume we are some kind of unix
     #define OMEGA_PLATFORM_STRING "Unix"

@@ -864,7 +864,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase
 
 Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instance(Root::MessageHandler* pHandler)
 {
-	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext>::instance();
+	ThreadContext* pThis = OOBase::TLSSingleton<ThreadContext,MessageHandler>::instance();
 	if (pThis->m_thread_id == 0)
 	{
 		pThis->m_thread_id = pHandler->insert_thread_context(pThis);

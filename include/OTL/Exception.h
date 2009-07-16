@@ -62,7 +62,7 @@ namespace OTL
 		}
 	};
 
-	template <class E>
+	template <typename E>
 	class ExceptionMarshalFactoryImpl :
 		public ObjectBase,
 		public Omega::Remoting::IMarshalFactory

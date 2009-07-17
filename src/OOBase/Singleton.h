@@ -49,7 +49,7 @@ namespace OOBase
 		// Prevent creation
 		Singleton();
 		Singleton(const Singleton&);
-		Singleton& operator == (const Singleton&);
+		Singleton& operator = (const Singleton&);
 		~Singleton();
 
 		static T* s_instance;

@@ -41,7 +41,7 @@ Omega::System::MetaInfo::Safe_Proxy_Owner* Omega::System::MetaInfo::proxy_holder
 			pRet->Internal_AddRef();
 			return pRet;
 		}
-		
+
 		return 0;
 	}
 	catch (std::exception& e)
@@ -219,29 +219,27 @@ Omega::System::MetaInfo::Safe_Proxy_Owner* Omega::System::MetaInfo::create_proxy
 	Safe_Proxy_Owner* pOwner = PROXY_HOLDER::instance()->find(base_shim);
 	if (pOwner)
 		return pOwner;
-	else
+	
+	// Create a safe proxy owner
+	OMEGA_NEW(pOwner,Safe_Proxy_Owner(base_shim,pOuter));
+	
+	// Add to the map...
+	try
 	{
-		// Create a safe proxy owner
-		OMEGA_NEW(pOwner,Safe_Proxy_Owner(base_shim,pOuter));
-		
-		// Add to the map...
-		try
+		Safe_Proxy_Owner* pExisting = PROXY_HOLDER::instance()->add(base_shim,pOwner);
+		if (pExisting)
 		{
-			Safe_Proxy_Owner* pExisting = PROXY_HOLDER::instance()->add(base_shim,pOwner);
-			if (pExisting)
-			{
-				pOwner->Internal_Release();
-				return pExisting;
-			}
+			pOwner->Internal_Release();
+			return pExisting;
 		}
-		catch (...)
-		{
-			pOwner->Release();
-			throw;
-		}
-
-		return pOwner;
 	}
+	catch (...)
+	{
+		pOwner->Release();
+		throw;
+	}
+
+	return pOwner;
 }
 
 Omega::IObject* Omega::System::MetaInfo::create_proxy(const SafeShim* shim, IObject* pOuter)

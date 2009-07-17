@@ -33,48 +33,42 @@
 	OMEGA_CONCAT(name,__LINE__)
 
 #define OMEGA_QI_MAGIC(n_space,iface) \
-	namespace \
+	class OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface)) \
 	{ \
-		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) \
+	public: \
+		static const wchar_t* get_name() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)); } \
+		OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface))() \
 		{ \
-		public: \
-			static const wchar_t* get_name() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)); } \
-			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
+			static const qi_rtti s_rtti = \
 			{ \
-				static const qi_rtti s_rtti = \
-				{ \
-					&Safe_Proxy<n_space::iface,n_space::iface>::bind, \
-					&Safe_Stub<n_space::iface>::create, \
-					get_name() \
-				}; \
-				register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
-				RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface>::get_type_info()); \
-			} \
-			~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
-			{ \
-				UnregisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface>::get_type_info()); \
-			} \
-		}; \
-		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit_i); \
-	}
-
+				&Safe_Proxy<n_space::iface,n_space::iface>::bind, \
+				&Safe_Stub<n_space::iface>::create, \
+				get_name() \
+			}; \
+			register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
+			RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface>::get_type_info()); \
+		} \
+		~OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface))() \
+		{ \
+			UnregisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface>::get_type_info()); \
+		} \
+	}; \
+	static const OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface)) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit_i);
+	
 #define OMEGA_WIRE_MAGIC(n_space,iface) \
-	namespace \
+	class OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface)) \
 	{ \
-		class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) \
+	public: \
+		OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface))() \
 		{ \
-		public: \
-			OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
-			{ \
-				RegisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy<n_space::iface>,&create_wire_stub<n_space::iface>); \
-			} \
-			~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
-			{ \
-				UnregisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy<n_space::iface>,&create_wire_stub<n_space::iface>); \
-			} \
-		}; \
-		static const OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i); \
-	}
+			RegisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy<n_space::iface>,&create_wire_stub<n_space::iface>); \
+		} \
+		~OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface))() \
+		{ \
+			UnregisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy<n_space::iface>,&create_wire_stub<n_space::iface>); \
+		} \
+	}; \
+	static const OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface)) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i);
 
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
 	type name

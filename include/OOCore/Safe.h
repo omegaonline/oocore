@@ -637,8 +637,6 @@ namespace Omega
 				Safe_Proxy_Owner(const SafeShim* shim, IObject* pOuter) : 
 					m_shim(shim), m_pOuter(pOuter)
 				{
-					//printf("SPO %p Init with SSO %p (%p)\n\t",this,shim->m_stub,pOuter);
-
 					m_agg_object.m_pOwner = this;
 					m_internal_safe_proxy.m_pOwner = this;
 
@@ -648,23 +646,15 @@ namespace Omega
 				void AddRef()
 				{
 					if (m_pOuter)
-					{
-						//printf("SPO %p Owner AddRef\t\n",this);
-
 						m_pOuter->AddRef();
-					}
-					
-					Internal_AddRef();					
+					else
+						Internal_AddRef();
 				}
 
 				void Internal_AddRef()
 				{
-					//printf("SPO %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pincount.m_debug_value);
-
 					if (m_refcount.AddRef())
 					{
-						//printf("\t");
-
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
 						if (except)
 							throw_correct_exception(except);
@@ -679,25 +669,17 @@ namespace Omega
 				void Release()
 				{
 					if (m_pOuter)
-					{
-						//printf("SPO %p Owner Release\t\n",this);
-						
 						m_pOuter->Release();
-					}
-					
-					Internal_Release();
+					else
+						Internal_Release();
 				}
 
 				void Internal_Release()
 				{
 					assert(m_refcount.m_debug_value > 0);
 
-					//printf("SPO %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pincount.m_debug_value);
-
 					if (m_refcount.Release())
 					{
-						//printf("\t");
-
 						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
 						if (except)
 							throw_correct_exception(except);
@@ -828,18 +810,17 @@ namespace Omega
 
 				const SafeShim* GetStub(const Omega::guid_t& iid)
 				{
-					if (iid == OMEGA_GUIDOF(IObject))
+					const SafeShim* shim = m_shim;
+					if (iid != OMEGA_GUIDOF(IObject))
 					{
-						Internal_AddRef();
-						return m_shim;
+						Safe_Proxy_Base* pBase = GetBase(iid);
+						if (!pBase)
+							return 0;
+					
+						shim = pBase->GetShim();
 					}
 
-					Safe_Proxy_Base* pBase = GetBase(iid);
-					if (!pBase)
-						return 0;
-					
 					// AddRef the shim
-					const SafeShim* shim = pBase->GetShim();
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);
 					if (except)
 						throw_correct_exception(except);
@@ -887,15 +868,11 @@ namespace Omega
 					m_shim.m_stub = this;
 					m_shim.m_iid = &OMEGA_GUIDOF(IObject);
 
-					//printf("SSO %p Init with Obj %p\n\t",this,m_pObject);
-
 					AddRef();
 				}
 
 				virtual void AddRef()
 				{
-					//printf("SSO %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pincount.m_debug_value);
-
 					if (m_refcount.AddRef())
 						m_pObject->AddRef();
 				}
@@ -904,15 +881,11 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 					
-					//printf("SSO %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pincount.m_debug_value);
-
 					if (m_refcount.Release())
 					{
 						// Release our pointer
 						m_pObject->Release();		
 
-						//printf("\t");
-						
 						if (m_pincount.IsZero())
 							delete this;
 					}
@@ -1232,16 +1205,12 @@ namespace Omega
 
 				void IncRef()
 				{
-					//printf("SS %p IncRef > %u\n",this,m_refcount.m_debug_value+1);
-
 					m_refcount.AddRef();
 				}
 
 				void DecRef()
 				{
 					assert(m_refcount.m_debug_value > 0);
-
-					//printf("SS %p DecRef < %u\n",this,m_refcount.m_debug_value-1);
 
 					if (m_refcount.Release())
 						delete this;

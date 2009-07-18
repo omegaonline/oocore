@@ -123,14 +123,14 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h',"help");
 	cmd_args.add_option("silent",'s',"silent");
 	cmd_args.add_option("current",'c',"current");
-	
+
 	// Parse command line
 	std::map<std::string,std::string> args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
 
 	bool bSilent = (args["silent"] == "true");
-	
+
 	if ((args["install"].empty() && args["uninstall"].empty()) ||
 		(!args["install"].empty() && !args["uninstall"].empty()))
 	{
@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 
 	bool bCurrent = (args["current"] == "true");
 	bool bInstall = !args["install"].empty();
-	
+
 	bool bOk = true;
 	for (int i=0;bOk;++i)
 	{

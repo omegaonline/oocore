@@ -23,6 +23,33 @@ liboosvrdb_a_SOURCES = \
 	RegistryHive.cpp \
 	SQLite3_comp.c
 
+oolibexecdir = $(libexecdir)/omegaonline
+oolibexec_LTLIBRARIES = oosvrlite.la
+
+oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include
+oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+oosvrlite_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+oosvrlite_la_LDFLAGS = -module -L. -loosvrdb $(SQLITE3_LIBS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS)
+
+if WIN32
+oosvrlite_la_LIBADD = ../OOCore/OOCore.la
+oosvrlite_la_LDFLAGS += -avoid-version -no-undefined -lshlwapi
+else
+oosvrlite_la_LIBADD = ../OOCore/liboocore.la
+oosvrlite_la_LDFLAGS += -release $(VERSION) -no-undefined
+endif
+
+oosvrlite_la_SOURCES = \
+	OOServer_Lite.h \
+	RegistryCmn.h \
+	IPSLite.h \
+	IPSLite.cpp \
+	OOSvrLite.cpp
+
+if WIN32
+oosvrlite_la_SOURCES += OOSvrLite_res.rc
+endif
+
 bin_PROGRAMS = ooserverd oosvruser
 
 ooserverd_CPPFLAGS = -I$(top_srcdir)/include
@@ -87,33 +114,6 @@ oosvruser_SOURCES = \
 
 if WIN32
 oosvruser_SOURCES += OOSvrUser.rc
-endif
-
-oolibexecdir = $(libexecdir)/omegaonline
-oolibexec_LTLIBRARIES = oosvrlite.la
-
-oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include
-oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-oosvrlite_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-oosvrlite_la_LDFLAGS = -module -L. -loosvrdb $(SQLITE3_LIBS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS)
-
-if WIN32
-oosvrlite_la_LIBADD = ../OOCore/OOCore.la
-oosvrlite_la_LDFLAGS += -avoid-version -no-undefined -lshlwapi
-else
-oosvrlite_la_LIBADD = ../OOCore/liboocore.la
-oosvrlite_la_LDFLAGS += -release $(VERSION) -no-undefined
-endif
-
-oosvrlite_la_SOURCES = \
-	OOServer_Lite.h \
-	RegistryCmn.h \
-	IPSLite.h \
-	IPSLite.cpp \
-	OOSvrLite.cpp
-
-if WIN32
-oosvrlite_la_SOURCES += OOSvrLite_res.rc
 endif
 
 EXTRA_DIST = \

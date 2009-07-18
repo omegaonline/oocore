@@ -36,6 +36,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
+		printf("CRITICAL FAILURE: %s\n",msg);
 		throw OOCore_ISystemException_Create(string_t(msg,false),0);
 	}
 }

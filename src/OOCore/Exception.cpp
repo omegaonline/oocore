@@ -31,19 +31,14 @@ OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
 OMEGA_DEFINE_OID(OOCore,OID_ChannelClosedExceptionMarshalFactory, "{029B38C5-CC76-4d13-98A4-83A65D40710A}");
 
-#if defined(_WIN32)
-
 namespace OOBase
 {
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		printf("Buggered!");
 		throw OOCore_ISystemException_Create(string_t(msg,false),0);
 	}
 }
-
-#endif
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_errno,2,((in),uint32_t,e,(in),const string_t&,source))
 {
@@ -65,7 +60,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ISystemException*,OOCore_ISystemException_Create_
 	pExcept->m_strDesc = string_t(strerror(e),false);
 
 #endif
-	
+
 	pExcept->m_errno = e;
 	return pExcept;
 }
@@ -88,7 +83,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 	const Omega::System::MetaInfo::qi_rtti* pRtti = Omega::System::MetaInfo::get_qi_rtti_info(iid);
 	if (pRtti && pRtti->pszName)
 		strIID = pRtti->pszName;
-	
+
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
 	pExcept->m_strSource = source;
 	pExcept->m_iid = iid;
@@ -98,7 +93,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 {
 	ObjectImpl<OOCore::TimeoutException>* pExcept = ObjectImpl<OOCore::TimeoutException>::CreateInstance();
-	
+
 	pExcept->m_strDesc = L"The operation timed out";
 	return pExcept;
 }
@@ -106,7 +101,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(ITimeoutException*,OOCore_ITimeoutException_Creat
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,0,())
 {
 	ObjectImpl<OOCore::ChannelClosedException>* pExcept = ObjectImpl<OOCore::ChannelClosedException>::CreateInstance();
-	
+
 	pExcept->m_strDesc = L"The remoting channel has closed";
 	return pExcept;
 }

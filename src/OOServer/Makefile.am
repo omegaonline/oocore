@@ -102,7 +102,7 @@ oosvrlite_la_LIBADD = ../OOCore/OOCore.la
 oosvrlite_la_LDFLAGS += -avoid-version -no-undefined -lshlwapi
 else
 oosvrlite_la_LIBADD = ../OOCore/liboocore.la
-oosvrlite_la_LDFLAGS += -release $(VERSION)
+oosvrlite_la_LDFLAGS += -release $(VERSION) -no-undefined
 endif
 
 oosvrlite_la_SOURCES = \

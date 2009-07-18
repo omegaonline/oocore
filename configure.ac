@@ -44,6 +44,9 @@ OO_NEW_NOTHROW
 # Check for the headers we use
 AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h ev.h])
 
+# Add the correct libs to LIBS
+AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
+
 # Check for socket options
 OO_CHECK_SOCKOPT([SO_PEERCRED LOCAL_CREDS])
 
@@ -81,7 +84,7 @@ if test "$oo_test_CXXFLAGS" != set; then
 
   # Always try to hide symbols
   AX_CXXFLAGS_GCC_OPTION([-fvisibility=hidden])
-  
+
   if test x$debug = xtrue; then
   	AX_CXXFLAGS_GCC_OPTION([-ggdb])
   	AX_CXXFLAGS_GCC_OPTION([-O0])
@@ -98,9 +101,11 @@ else
   CPPFLAGS="$CPPFLAGS -DNDEBUG"
 fi
 
-# Add windows resource support to libtool
+# Set up libtool correctly
+LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([win32-dll disable-static])
 LT_LANG([Windows Resource])
+LTDL_INIT
 
 # Find sqlite3
 OO_LIB_SQLITE3([3.5.0])

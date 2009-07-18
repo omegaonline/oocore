@@ -1,8 +1,8 @@
 noinst_LIBRARIES = liboobase.a liboosvrbase.a
 
 liboobase_a_CPPFLAGS = -I@top_srcdir@/include
-liboobase_a_CFLAGS = $(PTHREAD_CFLAGS)
-liboobase_a_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboobase_a_CFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
+liboobase_a_CXXFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
 
 liboobase_a_SOURCES = \
 	Atomic.h \

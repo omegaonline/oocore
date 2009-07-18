@@ -24,7 +24,7 @@
 
 /////////////////////////////////////////////////////////
 //
-// This file sets up the build environment for 
+// This file sets up the build environment for
 // Microsoft Visual Studio
 //
 /////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@
 
 #ifndef _MT
 #error You must enable multithreaded library use /MT, /MTd, /MD or /MDd
-#endif 
+#endif
 
 #if defined(_DEBUG) && !defined(OMEGA_DEBUG)
 #define OMEGA_DEBUG

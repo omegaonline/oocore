@@ -59,12 +59,14 @@
 #endif
 
 #if defined(__ELF__)
+	#define OMEGA_IMPORT
+
     #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 2) || (__GNUC__ > 4)
         #define OMEGA_EXPORT  __attribute__((visibility("default")))
-        #define OMEGA_IMPORT  __attribute__((visibility("default")))
-        #define OMEGA_PRIVATE __attribute__((visibility("hidden")))
     #elif !defined(OMEGA_MODULE_PRIVATE_NAME)
 		#error You must define OMEGA_MODULE_PRIVATE_NAME to control symbol visibility
+	#else
+		#define OMEGA_EXPORT
     #endif
 #elif defined(__WIN32)
     #define OMEGA_IMPORT  __attribute__((dllimport))

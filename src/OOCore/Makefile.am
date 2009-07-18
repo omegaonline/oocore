@@ -40,8 +40,7 @@ lib_LTLIBRARIES = OOCore.la
 OOCore_la_CPPFLAGS =  -I$(top_srcdir)/include
 OOCore_la_CFLAGS = $(PTHREAD_CFLAGS)
 OOCore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
-OOCore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
-OOCore_la_LDFLAGS += -module -avoid-version -no-undefined -Xlinker -lrpcrt4
+OOCore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase -module -avoid-version -no-undefined -Xlinker -lrpcrt4
 
 OOCore_la_SOURCES = \
 	$(common) \
@@ -54,8 +53,7 @@ lib_LTLIBRARIES = liboocore.la
 liboocore_la_CPPFLAGS =  -I$(top_srcdir)/include
 liboocore_la_CFLAGS = $(PTHREAD_CFLAGS)
 liboocore_la_CXXFLAGS = $(PTHREAD_CFLAGS)
-liboocore_la_LDFLAGS = $(PTHREAD_LIBS) -L../OOBase -loobase
-liboocore_la_LDFLAGS += -release $(VERSION)
+liboocore_la_LDFLAGS = $(PTHREAD_LIBS) $(UUID_LIBS) $(LIBLTDL) -L../OOBase -loobase -release $(VERSION) -no-undefined
 
 liboocore_la_SOURCES = \
 	$(common)

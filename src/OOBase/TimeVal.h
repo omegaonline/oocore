@@ -32,7 +32,7 @@ namespace OOBase
 		long tv_usec;  ///< Milliseconds since last second
 
 		timeval_t() {}
-		timeval_t(time_t s, long us = 0) : 
+		timeval_t(time_t s, long us = 0) :
 			tv_sec(s), tv_usec(us)
 		{}
 
@@ -41,32 +41,32 @@ namespace OOBase
 
 		bool operator == (const timeval_t& rhs) const
 		{
-			return (tv_sec == rhs.tv_sec) && (tv_usec == rhs.tv_usec);
+			return (cmp(rhs) == 0);
 		}
 
 		bool operator != (const timeval_t& rhs) const
 		{
-			return !(*this == rhs);
+			return (cmp(rhs) != 0);
 		}
 
 		bool operator < (const timeval_t& rhs) const
 		{
-			return (tv_sec < rhs.tv_sec) || (tv_sec == rhs.tv_sec && tv_usec < rhs.tv_usec);
+			return (cmp(rhs) < 0);
 		}
 
 		bool operator <= (const timeval_t& rhs) const
 		{
-			return (*this < rhs || *this == rhs);
+			return (cmp(rhs) <= 0);
 		}
 
 		bool operator > (const timeval_t& rhs) const
 		{
-			return !(*this <= rhs);
+			return (cmp(rhs) > 0);
 		}
 
 		bool operator >= (const timeval_t& rhs) const
 		{
-			return !(*this < rhs);
+			return (cmp(rhs) >= 0);
 		}
 
 		unsigned long msec() const
@@ -78,6 +78,22 @@ namespace OOBase
 		static const timeval_t zero;
 
 		static timeval_t deadline(unsigned long msec);
+
+	private:
+		int cmp(const timeval_t& rhs) const
+		{
+			if (tv_sec < rhs.tv_sec)
+				return -1;
+			else if (tv_sec > rhs.tv_sec)
+				return 1;
+
+			if (tv_usec < rhs.tv_usec)
+				return -1;
+			else if (tv_usec > rhs.tv_usec)
+				return 1;
+
+			return 0;
+		}
 	};
 
 	inline timeval_t operator + (const timeval_t& t1, const timeval_t& t2)
@@ -94,7 +110,7 @@ namespace OOBase
 
 	timeval_t gettimeofday();
 	void sleep(const timeval_t& wait);
-	
+
 	class Countdown
 	{
 	public:

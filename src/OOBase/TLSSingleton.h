@@ -60,7 +60,7 @@ namespace OOBase
 		// Prevent creation
 		TLSSingleton();
 		TLSSingleton(const TLSSingleton&);
-		TLSSingleton& operator == (const TLSSingleton&);
+		TLSSingleton& operator = (const TLSSingleton&);
 		~TLSSingleton();
 
 		static const size_t s_sentinal;

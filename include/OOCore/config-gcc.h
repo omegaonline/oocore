@@ -55,7 +55,7 @@
 #endif
 
 #if !defined(__EXCEPTIONS) || (__EXCEPTIONS != 1)
-#error Don't use -fno-exceptions!
+#error Dont use -fno-exceptions!
 #endif
 
 #if defined(__ELF__)

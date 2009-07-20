@@ -47,6 +47,7 @@ namespace OOBase
 {
 	void CriticalFailure(const char* msg)
 	{
+		printf(msg);
 		abort();
 	}
 }

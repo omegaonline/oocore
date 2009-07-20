@@ -107,6 +107,7 @@ oosvruser_SOURCES = \
 	UserNet.cpp \
 	UserProcess.h \
 	UserProcessWin32.cpp \
+	UserProcessUnix.cpp \
 	UserRegistry.h \
 	UserRegistry.cpp \
 	UserROT.h \

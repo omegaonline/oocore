@@ -354,8 +354,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 {
 #if defined(HAVE_UUID_UUID_H)
 
+	std::string str = OOBase::to_utf8(sz);
+	if (str.length() != 38 || str[0] != '{' || str[37] != '}')
+		return false;
+
 	uuid_t uuid;
-	if (uuid_parse(OOBase::to_utf8(sz).c_str(),uuid))
+	if (uuid_parse(str.substr(1,36).c_str(),uuid))
 		return false;
 
 	result = *(Omega::guid_t*)(uuid);

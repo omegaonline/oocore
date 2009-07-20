@@ -233,8 +233,11 @@ bool OOBase::Thread::join(const timeval_t* wait)
 			return false;
 	}
 
-	void* ret = 0;
-	pthread_join(m_thread,&ret);
+	if (m_running)
+	{
+		void* ret = 0;
+		pthread_join(m_thread,&ret);
+	}
 
 	return true;
 }

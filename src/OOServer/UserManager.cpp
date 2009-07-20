@@ -38,15 +38,15 @@ namespace OTL
 				static ModuleBase::CreatorEntry CreatorEntries[] =
 				{
 					OBJECT_MAP_ENTRY(User::ChannelMarshalFactory,0)
-					{ 0,0,0,0,0,0 } 
-				}; 
-				return CreatorEntries; 
+					{ 0,0,0,0,0,0 }
+				};
+				return CreatorEntries;
 			}
 
 			virtual void InstallObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
 			{ /* NOP */ }
 		};
-		
+
 		OMEGA_PRIVATE_FN_DECL(Module::OOSvrUser_ProcessModuleImpl*,GetModule())
 		{
 			return Omega::Threading::Singleton<Module::OOSvrUser_ProcessModuleImpl,Omega::Threading::InitialiseDestructor<User::Module> >::instance();
@@ -102,7 +102,7 @@ int User::Manager::run_i(const std::string& strPipe)
 
 		// Close all the sinks
 		close_all_remotes();
-	
+
 		// Close the user pipes
 		close();
 
@@ -125,7 +125,7 @@ int User::Manager::run_i(const std::string& strPipe)
 
 	// Stop the MessageHandler
 	stop();
-	
+
 	return res;
 }
 
@@ -176,7 +176,7 @@ bool User::Manager::init(const std::string& strPipe)
 		return false;
 
 	countdown.update();
-	
+
 	// Then send back our port name
 	size_t uLen = strNewPipe.length()+1;
 	err = local_socket->send(uLen,&wait);
@@ -185,7 +185,7 @@ bool User::Manager::init(const std::string& strPipe)
 
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to write to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-	
+
 	// Read our channel id
 	Omega::uint32_t our_channel = 0;
 	err = local_socket->recv(our_channel);
@@ -228,7 +228,7 @@ bool User::Manager::init(const std::string& strPipe)
 
 	if (!call_async_function_i(&do_bootstrap,this,&bs))
 		return false;
-		
+
 	return true;
 }
 
@@ -253,7 +253,7 @@ void User::Manager::do_bootstrap(void* pParams, OOBase::CDRStream& input)
 			quit();
 		}
 	}
-}	
+}
 
 bool User::Manager::bootstrap(Omega::uint32_t sandbox_channel)
 {
@@ -308,7 +308,7 @@ bool User::Manager::on_accept(OOBase::Socket* sock)
 	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock)));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-		
+
 	// Start I/O
 	if (!ptrMC->read())
 	{
@@ -356,7 +356,7 @@ void User::Manager::on_channel_closed(Omega::uint32_t channel)
 	}
 	catch (...)
 	{}
-	
+
 	// Give the remote layer a chance to close channels
 	local_channel_closed(channel);
 
@@ -412,7 +412,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
 		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 		ptrEnvelope->init(request);
-		
+
 		// Unpack the payload
 		IObject* pUI = 0;
 		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
@@ -426,7 +426,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 			OOBase::timeval_t now = OOBase::gettimeofday();
 			if (deadline <= now)
 				return;
-			
+
 			timeout = (deadline - now).msec();
 		}
 
@@ -501,7 +501,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uin
 		std::pair<std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
 		if (!p.second)
 			ptrChannel = p.first->second;
-		
+
 		return ptrChannel;
 	}
 	catch (std::exception& e)
@@ -584,6 +584,14 @@ void User::Manager::quit()
 
 #else
 
-#error Fix me!
+void User::Manager::wait_for_quit()
+{
+	void* POSIX_TODO;
+}
+
+void User::Manager::quit()
+{
+	void* POSIX_TODO;
+}
 
 #endif

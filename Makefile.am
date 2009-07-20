@@ -1,3 +1,3 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = include libltdl src
+SUBDIRS = include libltdl src test

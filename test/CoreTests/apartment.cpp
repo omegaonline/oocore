@@ -27,7 +27,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	Omega::IObject* pObject = 0;
 	ptrApartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,NULL,OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObject);
 	TEST(pObject);
-	
+
 	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
 	ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pObject));
 	pObject = 0;
@@ -65,7 +65,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(ptrPOI);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
-		
+
 	// Test unregistering
 	TEST(system((Omega::string_t(OOREGISTER L" -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
 

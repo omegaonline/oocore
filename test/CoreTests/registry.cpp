@@ -2,7 +2,7 @@
 #include "Test.h"
 
 #if !defined(_WIN32)
-pid_t GetCurrentProcessId();
+#define GetCurrentProcessId getpid
 #endif
 
 static bool test_values(Omega::Registry::IKey* pKey)

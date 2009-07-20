@@ -15,6 +15,10 @@ AC_CONFIG_FILES([
 	src/OOCore/Makefile
 	src/OOServer/Makefile
 	src/OORegister/Makefile
+	test/Makefile
+	test/CoreTests/Makefile
+	test/CoreTests/TestLibrary/Makefile
+	test/CoreTests/TestProcess/Makefile
 ])
 
 AM_INIT_AUTOMAKE([foreign 1.10 no-define])

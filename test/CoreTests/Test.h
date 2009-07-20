@@ -1,6 +1,10 @@
 #ifndef TEST_H_INCLUDED_
 #define TEST_H_INCLUDED_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();
 void add_success();
@@ -23,7 +27,7 @@ bool run_test(pfnTest t, const char* pszName);
 
 #define TEST_FAIL(expr) \
 	return print_result(#expr,__FILE__,__LINE__); \
-	
+
 #define TEST_VOID(expr) \
 	(expr); add_success();
 

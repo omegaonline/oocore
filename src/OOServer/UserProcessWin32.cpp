@@ -35,8 +35,6 @@ namespace
 	class UserProcessWin32 : public User::Process
 	{
 	public:
-		virtual ~UserProcessWin32() {}
-
 		virtual bool running();
 		virtual bool wait_for_exit(const OOBase::timeval_t* wait, int* exit_code);
 
@@ -96,7 +94,7 @@ User::Process* User::Process::exec(const std::wstring& strExeName)
 	OOBASE_NEW(ptrProcess,UserProcessWin32());
 	if (!ptrProcess)
 		OMEGA_THROW(ERROR_OUTOFMEMORY);
-		
+
 	ptrProcess->exec(strExeName);
 	return ptrProcess.detach();
 }
@@ -138,7 +136,7 @@ bool UserProcessWin32::running()
 	DWORD dwWait = WaitForSingleObject(m_hProcess,0);
 	if (dwWait == WAIT_TIMEOUT)
 		return true;
-	
+
 	if (dwWait != WAIT_OBJECT_0)
 		OOBase_CallCriticalFailure(GetLastError());
 
@@ -156,7 +154,7 @@ bool UserProcessWin32::wait_for_exit(const OOBase::timeval_t* wait, int* exit_co
 		DWORD dwCode;
 		if (GetExitCodeProcess(m_hProcess,&dwCode))
 			*exit_code = dwCode;
-		
+
 		return true;
 	}
 	else if (dwWait != WAIT_TIMEOUT)

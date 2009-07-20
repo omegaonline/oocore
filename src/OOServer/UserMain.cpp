@@ -35,12 +35,12 @@ int main(int argc, char* argv[])
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
 	cmd_args.add_argument("port",0);
-	
+
 	// Parse command line
 	std::map<std::string,std::string> args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
-	
+
 #if defined(_WIN32) && defined(OMEGA_DEBUG)
 	// If this event exists, then we are being debugged
 	// Scope it...
@@ -66,5 +66,6 @@ namespace OOBase
 	{
 		std::cerr << msg << std::endl << std::endl;
 		std::cerr << "Aborting!"  << std::endl;
+		abort();
 	}
 }

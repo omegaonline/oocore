@@ -550,8 +550,7 @@ namespace Omega
 			{
 				try
 				{
-					auto_iface_ptr<IProxy> ptrProxy = static_cast<IProxy*>(create_proxy(proxy_shim));
-					*ret = Wire_Proxy<I>::create(ptrProxy);
+					*ret = Wire_Proxy<I>::create(proxy_shim);
 					return 0;
 				}
 				catch (IException* pE)
@@ -564,21 +563,17 @@ namespace Omega
 			class Wire_Proxy<IObject>
 			{
 			public:
-				static const SafeShim* create(IProxy* pProxy)
+				static const SafeShim* create(const SafeShim* proxy_shim)
 				{
 					Wire_Proxy* pThis;
-					OMEGA_NEW(pThis,Wire_Proxy(pProxy,&OMEGA_GUIDOF(IObject)));
+					OMEGA_NEW(pThis,Wire_Proxy(proxy_shim,&OMEGA_GUIDOF(IObject)));
 					return &pThis->m_internal_shim;
 				}
 
 			protected:
-				Wire_Proxy(IProxy* pProxy, const guid_t* iid) : 
-					 m_ptrMarshaller(pProxy->GetMarshaller()),
-					 m_ptrProxy(pProxy)					 
+				Wire_Proxy(const SafeShim* proxy_shim, const guid_t* iid) : 
+					 m_proxy_shim(proxy_shim)					 
 				{
-					PinObjectPointer(m_ptrProxy);
-					m_refcount.AddRef(); 
-
 					static const Wire_Proxy_Safe_VTable vt = 
 					{
 						&IncRef_Safe,
@@ -592,23 +587,34 @@ namespace Omega
 
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;
-					m_shim.m_iid = iid;					
+					m_shim.m_iid = iid;		
+
+					IncRef();
 				}
 
 				virtual ~Wire_Proxy()
 				{
-					UnpinObjectPointer(m_ptrProxy);
 				}
 
-				auto_iface_ptr<Remoting::IMessage> CreateMessage(uint32_t method_id)
+				auto_iface_ptr<IMarshaller> GetMarshaller()
 				{
-					auto_iface_ptr<Remoting::IMessage> ptrMessage = m_ptrMarshaller->CreateMessage();
+					IMarshaller* pRet = 0;
+					const SafeShim* pSE = static_cast<const vtable_info<IProxy>::type*>(m_proxy_shim->m_vtable)->pfnGetMarshaller_Safe(m_proxy_shim,marshal_info<IMarshaller*&>::safe_type::coerce(pRet));
+					if (pSE)
+						throw_correct_exception(pSE);
+
+					return auto_iface_ptr<IMarshaller>(pRet);
+				}
+
+				auto_iface_ptr<Remoting::IMessage> CreateMessage(auto_iface_ptr<IMarshaller>& ptrMarshaller, uint32_t method_id)
+				{
+					auto_iface_ptr<Remoting::IMessage> ptrMessage = ptrMarshaller->CreateMessage();
 					bool unpack = false;
 					try
 					{
 						ptrMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 						unpack = true;
-						m_ptrProxy->WriteKey(ptrMessage);
+						WriteKey(ptrMessage);
 						wire_write(L"$iid",ptrMessage,*m_shim.m_iid);
 						wire_write(L"$method_id",ptrMessage,method_id);
 						return ptrMessage;
@@ -618,7 +624,7 @@ namespace Omega
 						if (unpack)
 						{
 							ptrMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-							m_ptrProxy->UnpackKey(ptrMessage);
+							UnpackKey(ptrMessage);
 						}
 						throw;
 					}
@@ -627,7 +633,7 @@ namespace Omega
 				void UnpackHeader(Remoting::IMessage* pMessage)
 				{
 					pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-					m_ptrProxy->UnpackKey(pMessage);
+					UnpackKey(pMessage);
 					uint32_t key1; guid_t key2;
 					wire_read(L"$iid",pMessage,key2);
 					wire_read(L"$method_id",pMessage,key1);
@@ -656,17 +662,16 @@ namespace Omega
 
 				static const uint32_t MethodCount = 3;	// This must match the stub
 
-				auto_iface_ptr<IMarshaller> m_ptrMarshaller;
 				SafeShim                    m_internal_shim;
 				SafeShim                    m_shim;
 								
 			private:
 				Threading::AtomicRefCount   m_refcount;
-				IProxy*                     m_ptrProxy;
+				const SafeShim*             m_proxy_shim;
 								
 				Wire_Proxy(const Wire_Proxy&);
 				Wire_Proxy& operator = (const Wire_Proxy&);
-												
+
 				void IncRef()
 				{
 					m_refcount.AddRef();
@@ -728,67 +733,42 @@ namespace Omega
 					return 0;
 				}
 
-				void AddRef()
-				{
-					m_ptrProxy->AddRef();
-				}
-
-				void Release()
-				{
-					m_ptrProxy->Release();
-				}
-
-				IObject* QueryInterface(const guid_t& iid)
-				{
-					return m_ptrProxy->QueryInterface(iid);
-				}
-
 				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
 				{
-					const SafeShim* except = 0;
-					try
-					{
-						static_cast<Wire_Proxy*>(shim->m_stub)->AddRef();
-					}
-					catch (IException* pE)
-					{
-						except = return_safe_exception(pE);
-					}
-					return except;
+					const SafeShim* p_shim = static_cast<Wire_Proxy*>(shim->m_stub)->m_proxy_shim;
+					return static_cast<const IObject_Safe_VTable*>(p_shim->m_vtable)->pfnAddRef_Safe(p_shim);
 				}
 
 				static const SafeShim* OMEGA_CALL Release_Safe(const SafeShim* shim)
 				{
-					const SafeShim* except = 0;
-					try
-					{
-						static_cast<Wire_Proxy*>(shim->m_stub)->Release();
-					}
-					catch (IException* pE)
-					{
-						except = return_safe_exception(pE);
-					}
-					return except;
+					const SafeShim* p_shim = static_cast<Wire_Proxy*>(shim->m_stub)->m_proxy_shim;
+					return static_cast<const IObject_Safe_VTable*>(p_shim->m_vtable)->pfnRelease_Safe(p_shim);
 				}
 
 				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
 				{
-					const SafeShim* except = 0;
-					try
-					{
-						static_cast<IObject*&>(Omega::System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(retval,iid)) = static_cast<Wire_Proxy*>(shim->m_stub)->QueryInterface(*iid);
-					}
-					catch (IException* pE)
-					{
-						except = return_safe_exception(pE);
-					}
-					return except;
+					const SafeShim* p_shim = static_cast<Wire_Proxy*>(shim->m_stub)->m_proxy_shim;
+					return static_cast<const IObject_Safe_VTable*>(p_shim->m_vtable)->pfnQueryInterface_Safe(p_shim,retval,iid);
 				}
 
 				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
 				{
 					*retval = &static_cast<Wire_Proxy*>(shim->m_stub)->m_shim;
 					return 0;					
+				}
+
+				void WriteKey(Remoting::IMessage* pMessage)
+				{
+					const SafeShim* pSE = static_cast<const vtable_info<IProxy>::type*>(m_proxy_shim->m_vtable)->pfnWriteKey_Safe(m_proxy_shim,marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage));
+					if (pSE)
+						throw_correct_exception(pSE);
+				}
+
+				void UnpackKey(Remoting::IMessage* pMessage)
+				{
+					const SafeShim* pSE = static_cast<const vtable_info<IProxy>::type*>(m_proxy_shim->m_vtable)->pfnUnpackKey_Safe(m_proxy_shim,marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage));
+					if (pSE)
+						throw_correct_exception(pSE);
 				}
 			};
 

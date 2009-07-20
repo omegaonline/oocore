@@ -76,12 +76,14 @@ OOCore::Proxy::~Proxy()
 	CallRemoteRelease();
 
 	m_pManager->RemoveProxy(m_proxy_id);
+	static_cast<IStdObjectManager*>(m_pManager)->Release();
 }
 
 void OOCore::Proxy::init(uint32_t proxy_id, StdObjectManager* pManager)
 {
 	m_proxy_id = proxy_id;
 	m_pManager = pManager;
+	static_cast<IStdObjectManager*>(m_pManager)->AddRef();
 }
 
 void OOCore::Proxy::Disconnect()
@@ -233,20 +235,21 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetStub(const guid_t& iid)
 	if (iid == OMEGA_GUIDOF(IObject) ||
 		iid == OMEGA_GUIDOF(System::IProxy))
 	{
-		AddRef_Safe(&m_proxy_shim);
+		Internal_AddRef();
 		return &m_proxy_shim;
 	}
-	else if (iid == OMEGA_GUIDOF(Remoting::IMarshal))
+	
+	if (iid == OMEGA_GUIDOF(Remoting::IMarshal))
 	{
-		AddRef_Safe(&m_marshal_shim);
+		Internal_AddRef();
 		return &m_marshal_shim;
 	}
-
+	
+	const System::MetaInfo::SafeShim* shim = 0;
 	WireProxyShim ptrProxy = FindShim(iid,true);
-	if (!ptrProxy)
-		return 0;
-
-	const System::MetaInfo::SafeShim* shim = ptrProxy.GetShim();
+	if (ptrProxy)
+		shim = ptrProxy.GetShim();
+	
 	if (shim)
 	{
 		const System::MetaInfo::SafeShim* except = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);

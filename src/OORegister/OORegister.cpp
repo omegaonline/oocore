@@ -111,6 +111,7 @@ namespace OOBase
 	void CriticalFailure(const char* msg)
 	{
 		std::cerr << msg << std::endl << std::endl;
+		abort();
 	}
 }
 
@@ -128,6 +129,13 @@ int main(int argc, char* argv[])
 	std::map<std::string,std::string> args;
 	if (!cmd_args.parse(argc,argv,args))
 		return EXIT_FAILURE;
+
+	// Check for help first
+	if (!args["help"].empty())
+	{
+		print_help();
+		return EXIT_SUCCESS;
+	}
 
 	bool bSilent = (args["silent"] == "true");
 

@@ -106,14 +106,14 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	}
 
 	// Check the QI rules
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest;
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
 	TEST(ptrSimpleTest2);
-	
+
 	OTL::ObjectPtr<Omega::IObject> ptrO1;
 	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
 	OTL::ObjectPtr<Omega::IObject> ptrO2;
 	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-	
+
 	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
 
 	return true;
@@ -194,7 +194,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
 	interface_tests(ptrSimpleTest);
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = ptrSimpleTest;
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
 	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
 
 	ptrSimpleTest.Release();
@@ -334,7 +334,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
-	
+
 	interface_tests(ptrSimpleTest);
 
 	// Now check for activation rules

@@ -114,9 +114,13 @@ int OOBase::DLL::load(const char* full_path)
 		err = lt_dladvise_local(&adv);
 		if (!err)
 		{
-			m_module = lt_dlopenadvise(full_path,adv);
-			if (!m_module)
-				err2 = errno;
+			err = lt_dladvise_ext(&adv);
+			if (!err)
+			{
+				m_module = lt_dlopenadvise(full_path,adv);
+				if (!m_module)
+					err2 = errno;
+			}
 		}
 
 		lt_dladvise_destroy(&adv);

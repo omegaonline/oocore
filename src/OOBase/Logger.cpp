@@ -36,7 +36,7 @@ namespace
 #if defined(_WIN32)
 		static DWORD getpid() { return GetCurrentProcessId(); }
 #elif defined(HAVE_UNISTD_H)
-		static pid_t getpid() { return getpid(); }
+		static pid_t getpid() { return ::getpid(); }
 #else
 #error Fix me!
 #endif

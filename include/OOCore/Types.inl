@@ -379,31 +379,21 @@ bool Omega::guid_t::operator>(const guid_t& rhs) const
 	return Compare(rhs) > 0;
 }
 
+OMEGA_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,1,((in),const Omega::guid_t&,guid));
 Omega::string_t Omega::guid_t::ToString() const
 {
-	return string_t::Format(L"{%8.8X-%4.4X-%4.4X-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
-		Data1,
-		Data2,
-		Data3,
-		Data4[0],
-		Data4[1],
-		Data4[2],
-		Data4[3],
-		Data4[4],
-		Data4[5],
-		Data4[6],
-		Data4[7]);
+	return OOCore_guid_t_to_string(*this);
 }
 
-OMEGA_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,guid));
+OMEGA_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,guid));
 bool Omega::guid_t::FromString(const wchar_t* sz, Omega::guid_t& guid)
 {
-	return OOCore_guid_t_from_string(sz,guid);
+	return (OOCore_guid_t_from_string(sz,guid) != 0);
 }
 
 bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 {
-	return OOCore_guid_t_from_string(str.c_str(),guid);
+	return (OOCore_guid_t_from_string(str.c_str(),guid) != 0);
 }
 
 Omega::guid_t Omega::guid_t::FromString(const wchar_t* sz)

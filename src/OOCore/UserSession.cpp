@@ -259,6 +259,9 @@ void OOCore::UserSession::term_i()
 
 	// Close all singletons
 	close_singletons();
+
+	// Unload the OOSvrLite dll if loaded
+	m_lite_dll.unload();
 }
 
 void OOCore::UserSession::close_singletons()

@@ -14,6 +14,17 @@ static bool test_values(Omega::Registry::IKey* pKey)
 		strTestValue = L"_" + strTestValue;
 	}
 
+	try
+	{
+		pKey->SetStringValue(strTestValue,L"Yes");
+	}
+	catch (Omega::Registry::IAccessDeniedException* pE)
+	{
+		// We have insufficient permissions to write here
+		pE->Release();
+		return true;
+	}
+
 	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 	TEST(pKey->GetValueType(strTestValue) == Omega::Registry::String);
 	TEST(pKey->IsValue(strTestValue));
@@ -179,7 +190,18 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 		strTestKey = L"_" + strTestKey;
 	}
 
-	Omega::Registry::IKey* pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create);
+	Omega::Registry::IKey* pSubKey;
+	try
+	{
+		pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create);
+	}
+	catch (Omega::Registry::IAccessDeniedException* pE)
+	{
+		// We have insufficient permissions to write here
+		pE->Release();
+		return true;
+	}
+
 	TEST(pSubKey);
 	TEST(pKey->IsSubKey(strTestKey));
 
@@ -334,7 +356,6 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 {
 	TEST(pKey->IsSubKey(L"All Users"));
 	TEST(pKey->IsSubKey(L"Local User"));
-	TEST(pKey->IsSubKey(L"System"));
 
 	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
 	while (pKey->IsValue(strTestValue))
@@ -368,9 +389,13 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	test_privates(pKey,L"All Users\\Objects");
 	test_privates(pKey,L"All Users\\Objects\\OIDs");
 	test_privates(pKey,L"Local User");
-	test_privates(pKey,L"System");
-	test_privates(pKey,L"System\\Server");
-	test_privates(pKey,L"System\\Server\\Sandbox");
+
+	if (bCanWriteToRoot)
+	{
+		test_privates(pKey,L"System");
+		test_privates(pKey,L"System\\Server");
+		test_privates(pKey,L"System\\Server\\Sandbox");
+	}
 
 	return true;
 }

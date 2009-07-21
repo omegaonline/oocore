@@ -350,20 +350,47 @@ namespace
 }
 #endif
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,result))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,1,((in),const Omega::guid_t&,guid))
+{
+#if defined(HAVE_UUID_UUID_H)
+
+	char szBuf[] = "{00000000-0000-0000-0000-000000000000}";
+	uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf+1);
+	szBuf[37] = '}';
+	return Omega::string_t(szBuf,true);
+
+#else
+
+	return Omega::string_t::Format(L"{%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
+		guid.Data1,
+		guid.Data2,
+		guid.Data3,
+		guid.Data4[0],
+		guid.Data4[1],
+		guid.Data4[2],
+		guid.Data4[3],
+		guid.Data4[4],
+		guid.Data4[5],
+		guid.Data4[6],
+		guid.Data4[7]);
+
+#endif
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),Omega::guid_t&,result))
 {
 #if defined(HAVE_UUID_UUID_H)
 
 	std::string str = OOBase::to_utf8(sz);
 	if (str.length() != 38 || str[0] != '{' || str[37] != '}')
-		return false;
+		return 0;
 
 	uuid_t uuid;
 	if (uuid_parse(str.substr(1,36).c_str(),uuid))
-		return false;
+		return 0;
 
 	result = *(Omega::guid_t*)(uuid);
-	return true;
+	return 1;
 
 #else
 
@@ -374,7 +401,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 	memset(result.Data4,sizeof(result.Data4),0);
 
 	if (sz[0] != L'{')
-		return false;
+		return 0;
 
 	try
 	{
@@ -389,7 +416,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 		result.Data1 = static_cast<Omega::uint32_t>(v);
 
 		if (sz[9] != L'-')
-			return false;
+			return 0;
 
 		v = (parse(sz[10]) << 12);
 		v += (parse(sz[11]) << 8);
@@ -398,7 +425,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 		result.Data2 = static_cast<Omega::uint16_t>(v);
 
 		if (sz[14] != L'-')
-			return false;
+			return 0;
 
 		v = (parse(sz[15]) << 12);
 		v += (parse(sz[16]) << 8);
@@ -407,7 +434,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 		result.Data3 = static_cast<Omega::uint16_t>(v);
 
 		if (sz[19] != L'-')
-			return false;
+			return 0;
 
 		result.Data4[0] = static_cast<Omega::byte_t>((parse(sz[20]) << 4) + parse(sz[21]));
 		result.Data4[1] = static_cast<Omega::byte_t>((parse(sz[22]) << 4) + parse(sz[23]));
@@ -423,13 +450,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool,OOCore_guid_t_from_string,2,((in),const wcha
 		result.Data4[7] = static_cast<Omega::byte_t>((parse(sz[35]) << 4) + parse(sz[36]));
 
 		if (sz[37] != L'}' || sz[38] != L'\0')
-			return false;
+			return 0;
 
-		return true;
+		return 1;
 	}
 	catch (int)
 	{
-		return false;
+		return 0;
 	}
 
 #endif

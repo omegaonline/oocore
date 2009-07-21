@@ -91,6 +91,7 @@ Db::Transaction::Transaction(sqlite3* db) :
 Db::Database::Database() :
 	m_db(0)
 {
+	assert(sqlite3_threadsafe());
 }
 
 Db::Database::~Database()
@@ -101,14 +102,21 @@ Db::Database::~Database()
 
 bool Db::Database::open(const char* pszDb)
 {
-	if (!sqlite3_threadsafe())
-		LOG_ERROR_RETURN(("SQLite is not built threadsafe"),false);
+	assert(!m_db);
 
-    assert(!m_db);
-		
 	int err = sqlite3_open(pszDb,&m_db);
 	if (err != SQLITE_OK)
-		LOG_ERROR_RETURN(("sqlite3_open(%s) failed: %s",pszDb,sqlite3_errmsg(m_db)),false);
+	{
+		if (!m_db)
+			LOG_ERROR_RETURN(("sqlite3_exec failed: Out of memory"),false);
+		else
+		{
+			LOG_ERROR(("sqlite3_open(%s) failed: %s",pszDb,sqlite3_errmsg(m_db)));
+			sqlite3_close(m_db);
+			m_db = 0;
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -156,14 +164,14 @@ int Db::Database::prepare_statement(OOBase::SmartPtr<Db::Statement>& ptrStmt, co
 
 	if (!pszBuf)
 		LOG_ERROR_RETURN(("sqlite3_vmprintf failed: %s",sqlite3_errmsg(m_db)),sqlite3_errcode(m_db));
-	
+
 	sqlite3_stmt* pStmt = 0;
 	int err = sqlite3_prepare_v2(m_db,pszBuf,-1,&pStmt,NULL);
 	sqlite3_free(pszBuf);
 
 	if (err != SQLITE_OK)
 		LOG_ERROR_RETURN(("sqlite3_prepare_v2 failed: %s",sqlite3_errmsg(m_db)),err);
-	
+
 	OOBASE_NEW(ptrStmt,Statement(pStmt));
 	if (!ptrStmt)
 	{

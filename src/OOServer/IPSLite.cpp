@@ -131,6 +131,7 @@ namespace
 	static std::string get_db_dir(bool bSystem)
 	{
 #if defined(_WIN32)
+
 		wchar_t szBuf[MAX_PATH] = {0};
 		HRESULT hr;
 		if (bSystem)
@@ -153,6 +154,7 @@ namespace
 		std::string dir = OOBase::to_utf8(szBuf);
 		if (*dir.rbegin() != '\\')
 			dir += '\\';
+
 #elif defined(HAVE_UNISTD_H)
 
 		std::string dir;
@@ -168,7 +170,13 @@ namespace
 			dir += "/.omegaonline";
 		}
 
-		if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP) != 0)
+		int flags;
+		if (bSystem)
+			flags = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+		else
+			flags = S_IRWXU | S_IRGRP;
+
+		if (mkdir(dir.c_str(),flags) != 0)
 		{
 			if (errno != EEXIST)
 				OMEGA_THROW(errno);

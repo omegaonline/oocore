@@ -85,7 +85,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 	if (chown(strFile.c_str(),0,(gid_t)-1) != 0)
 		LOG_ERROR_RETURN(("chown(%s) failed: %s",strFile.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-	if (chmod(strFile.c_str(),S_IRWXU | S_IRGRP) != 0)
+	if (chmod(strFile.c_str(),S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
 		LOG_ERROR_RETURN(("chmod(%s) failed: %s",strFile.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	return true;
@@ -95,7 +95,7 @@ bool Root::Manager::get_db_directory(std::string& dir)
 {
 	dir = "/var/lib/omegaonline";
 
-	if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP) != 0)
+	if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
 		LOG_ERROR_RETURN(("mkdir(%s) failed: %s",dir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	return true;

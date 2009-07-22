@@ -141,7 +141,7 @@ namespace OOCore
 		void close_singletons_i();
 		void add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 		void remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-		std::list<std::pair<void (OMEGA_CALL *)(void*),void*> > m_listUninitCalls;
+		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_listUninitCalls;
 
 		// Message pumping
 		int run_read_loop();

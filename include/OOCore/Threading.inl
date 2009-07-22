@@ -83,13 +83,13 @@ void Omega::Threading::ReaderWriterLock::Release()
 }
 
 template <typename DLL>
-void Omega::Threading::ModuleDestructor<DLL>::add_destructor(pfn_destructor pfn, void* param)
+void Omega::Threading::ModuleDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
 	try
 	{
 		ModuleDestructor& inst = instance();
 		Guard<Mutex> guard(inst.m_lock);
-		inst.m_list.push_front(std::pair<pfn_destructor,void*>(pfn,param));
+		inst.m_list.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
 	}
 	catch (std::exception& e)
 	{
@@ -98,16 +98,16 @@ void Omega::Threading::ModuleDestructor<DLL>::add_destructor(pfn_destructor pfn,
 }
 
 template <typename DLL>
-void Omega::Threading::ModuleDestructor<DLL>::remove_destructor(pfn_destructor pfn, void* param)
+void Omega::Threading::ModuleDestructor<DLL>::remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
 	try
 	{
 		ModuleDestructor& inst = instance();
 		Guard<Mutex> guard(inst.m_lock);
 
-		for (std::list<std::pair<pfn_destructor,void*> >::iterator i=inst.m_list.begin();i!=inst.m_list.end();++i)
+		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=inst.m_list.begin();i!=inst.m_list.end();++i)
 		{
-			if (i->first == pfn && i->second == param)
+			if (i->first == pfn_dctor && i->second == param)
 			{
 				inst.m_list.erase(i);
 				break;
@@ -128,13 +128,13 @@ Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 		Guard<Mutex> guard(m_lock);
 
 		// Copy the list outside the lock
-		std::list<std::pair<pfn_destructor,void*> > list(m_list);
+		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_list);
 
 		m_list.clear();
 
 		guard.Release();
 	
-		for (std::list<std::pair<pfn_destructor,void*> >::iterator i=list.begin();i!=list.end();++i)
+		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
 		{
 			(*(i->first))(i->second);
 		}
@@ -149,12 +149,12 @@ OMEGA_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in)
 OMEGA_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
 
 template <typename DLL>
-void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(pfn_destructor pfn, void* param)
+void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
 	multi_dctor* p = 0;
 	OMEGA_NEW(p,multi_dctor);
 
-	p->pfn = pfn;
+	p->pfn_dctor = pfn_dctor;
 	p->param = param;
 
 	try
@@ -206,20 +206,65 @@ void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 
 	multi_dctor* p = static_cast<multi_dctor*>(param);
 
-	// Now call the destructor
-	(*(p->pfn))(p->param);
-	delete p;
+	try
+	{
+		// Now call the destructor
+		(*(p->pfn_dctor))(p->param);
+		delete p;
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{}
 }
 
 template <typename T, typename Lifetime>
 void* Omega::Threading::Singleton<T,Lifetime>::s_instance = 0;
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),void*,pfn_init));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init));
 template <typename T, typename Lifetime>
 T* Omega::Threading::Singleton<T,Lifetime>::instance()
 {
-	OOCore_sngtn_once(&s_instance,(void*)&do_init);
+	OOCore_sngtn_once(&s_instance,&do_init);
 	return static_cast<T*>(s_instance);
+}
+
+template <typename T, typename Lifetime>
+const Omega::System::MetaInfo::SafeShim* Omega::Threading::Singleton<T,Lifetime>::do_init()
+{
+	try
+	{
+		OMEGA_NEW(s_instance,T());
+		Lifetime::add_destructor(do_term,0);
+		return 0;
+	}
+	catch (Omega::IException* pE)
+	{
+		return System::MetaInfo::return_safe_exception(pE);
+	}
+	catch (...)
+	{
+		return System::MetaInfo::return_safe_exception(ISystemException::Create(L"Unhandled exception",L"Omega::Threading::Singleton::constructor()"));
+	}
+}
+
+template <typename T, typename Lifetime>
+void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
+{
+	try
+	{
+		delete static_cast<T*>(s_instance);
+		s_instance = 0;
+	}
+	catch (Omega::IException* pE)
+	{
+		pE->Release();
+	}
+	catch (...)
+	{
+	}
 }
 
 #ifdef OMEGA_DEBUG

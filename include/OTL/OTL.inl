@@ -42,38 +42,6 @@ Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
 	return m_csMain;
 }
 
-void OTL::ModuleBase::AddDestructor(void (OMEGA_CALL *pfn)(void*),void* param)
-{
-	try
-	{
-		Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_csMain);
-
-		m_listDestructors.push_front(std::pair<void (OMEGA_CALL *)(void*),void*>(pfn,param));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-}
-
-OTL::ModuleBase::~ModuleBase()
-{
-	try
-	{
-		Omega::Threading::Guard<Omega::Threading::Mutex> guard(m_csMain);
-	
-		for (std::list<std::pair<void (OMEGA_CALL *)(void*),void*> >::iterator i=m_listDestructors.begin();i!=m_listDestructors.end();++i)
-		{
-			(*(i->first))(i->second);
-		}
-		m_listDestructors.clear();
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-}
-
 Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
 {
 	// We ignore any registered flags, and only enforce InProcess creation, because we are a library!

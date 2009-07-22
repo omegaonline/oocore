@@ -105,7 +105,7 @@
 #define END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
-	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::InitialiseDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
 	}
@@ -130,7 +130,7 @@
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
-	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::InitialiseDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
 	}
@@ -421,8 +421,7 @@ namespace OTL
 		inline void IncLockCount();
 		inline void DecLockCount();
 		inline Omega::Threading::Mutex& GetLock();
-		inline void AddDestructor(void (OMEGA_CALL *pfn)(void*),void* param);
-
+		
 		virtual void RegisterObjectFactories()
 		{
 			OMEGA_THROW(L"Invalid call");
@@ -445,7 +444,7 @@ namespace OTL
 
 	protected:
 		ModuleBase() {}
-		inline virtual ~ModuleBase();
+		virtual ~ModuleBase() {}
 
 		struct CreatorEntry
 		{
@@ -462,8 +461,6 @@ namespace OTL
 	private:
 		Omega::Threading::Mutex          m_csMain;
 		Omega::Threading::AtomicRefCount m_lockCount;
-
-		std::list<std::pair<void (OMEGA_CALL *)(void*),void*> > m_listDestructors;
 	};
 
 	namespace Module
@@ -674,12 +671,12 @@ namespace OTL
 	template <typename ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
-		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,SingletonObjectImpl>;
+		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >;
 
 	public:
 		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* = 0)
 		{
-			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,SingletonObjectImpl>::instance();
+			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
 			pObject->AddRef();
 			return pObject;
 		}
@@ -700,11 +697,6 @@ namespace OTL
 		virtual ~SingletonObjectImpl()
 		{ }
 
-		static void add_destructor(void (OMEGA_CALL *pfn)(void*), void* param)
-		{
-			GetModule()->AddDestructor(pfn,param);
-		}
-
 	// IObject members
 	public:
 		virtual void AddRef() { GetModule()->IncLockCount(); }
@@ -717,11 +709,6 @@ namespace OTL
 	private:
 		SingletonObjectImpl(const SingletonObjectImpl&);
 		SingletonObjectImpl& operator = (const SingletonObjectImpl&);
-
-		static void terminator(void* p)
-		{
-			delete static_cast<SingletonObjectImpl*>(p);
-		}
 	};
 
 	template <typename ROOT>

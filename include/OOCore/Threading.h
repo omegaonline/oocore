@@ -24,6 +24,15 @@
 
 namespace Omega
 {
+	// Forward declare
+	namespace System
+	{
+		namespace MetaInfo
+		{
+			struct SafeShim;
+		}
+	}
+
 	namespace Threading
 	{
 		class Mutex
@@ -171,10 +180,8 @@ namespace Omega
 		class ModuleDestructor
 		{
 		public:
-			typedef void (OMEGA_CALL *pfn_destructor)(void*);
-
-			inline static void add_destructor(pfn_destructor pfn, void* param);
-			inline static void remove_destructor(pfn_destructor pfn, void* param);
+			inline static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			inline static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 			
 		private:
 			ModuleDestructor(const ModuleDestructor&);
@@ -186,8 +193,8 @@ namespace Omega
 
 			inline ~ModuleDestructor();
 
-			Mutex                                       m_lock;
-			std::list<std::pair<pfn_destructor,void*> > m_list;
+			Mutex                                                   m_lock;
+			std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_list;
 
 			static ModuleDestructor& instance()
 			{
@@ -200,19 +207,19 @@ namespace Omega
 		class InitialiseDestructor
 		{
 		public:
-			typedef void (OMEGA_CALL* pfn_destructor)(void*);
-
-			inline static void add_destructor(pfn_destructor pfn, void* param);
+			inline static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 
 		private:
 			struct multi_dctor
 			{
-				pfn_destructor pfn;
-				void*          param;
+				void (OMEGA_CALL *pfn_dctor)(void*);
+				void*                         param;
 			};
 
-			inline static void OMEGA_CALL destruct(void*);
+			inline static void OMEGA_CALL destruct(void* param);
 		};
+
+		typedef const System::MetaInfo::SafeShim* (OMEGA_CALL *SingletonCallback)();
 
 		// Lifetime should be either ModuleDestructor<> or InitialiseDestructor
 		template <typename T, typename Lifetime>
@@ -224,17 +231,8 @@ namespace Omega
 		private:
 			static void* s_instance;
 
-			static void OMEGA_CALL do_init()
-			{
-				s_instance = new T();
-				Lifetime::add_destructor(do_term,0);
-			}
-
-			static void OMEGA_CALL do_term(void*)
-			{
-				delete static_cast<T*>(s_instance);
-				s_instance = 0;
-			}
+			inline static const System::MetaInfo::SafeShim* OMEGA_CALL do_init();
+			inline static void OMEGA_CALL do_term(void*);
 		};
 	}
 }

@@ -21,10 +21,8 @@
 
 #include "OOCore_precomp.h"
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),void*,pfn_init))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init))
 {
-	typedef void (OMEGA_CALL *init_function)();
-
 	// The value pointed to is definitely volatile under race conditions
 	volatile void* pVal = *val;
 	
@@ -37,7 +35,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in
 		if (!pVal)
 		{
 			// Call the init function
-			(*(init_function)(pfn_init))();
+			const Omega::System::MetaInfo::SafeShim* pE = (*pfn_init)();
+			if (pE)
+				Omega::System::MetaInfo::throw_correct_exception(pE);
 		}
 	}
 }

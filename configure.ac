@@ -107,7 +107,7 @@ fi
 
 # Set up libtool correctly
 LT_CONFIG_LTDL_DIR([libltdl])
-LT_INIT([win32-dll disable-static])
+LT_INIT([win32-dll disable-static dlopen])
 LT_LANG([Windows Resource])
 LTDL_INIT
 

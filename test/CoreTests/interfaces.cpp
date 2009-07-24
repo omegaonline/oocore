@@ -137,13 +137,13 @@ namespace
 
 		void AddRef()
 		{
-			//printf("AggOuter: %p AddRef > %lu\n",this,m_refcount.m_debug_value+1);
 			m_refcount.AddRef();
 		}
 
 		void Release()
 		{
-			//printf("AggOuter: %p Release < %lu\n",this,m_refcount.m_debug_value-1);
+			assert(m_refcount.m_debug_value > 0);
+
 			if (m_refcount.Release())
 				delete this;
 		}
@@ -210,9 +210,17 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
-	ptrSimpleTest2.Release();
-
+	
 	interface_tests(ptrSimpleTest);
+
+	OTL::ObjectPtr<Omega::IObject> ptrO1;
+	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+	OTL::ObjectPtr<Omega::IObject> ptrO2;
+	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+
+	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
+
+	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();
 
 	// Now check for activation rules

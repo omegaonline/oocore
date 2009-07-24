@@ -26,20 +26,32 @@ bool interface_tests2();
 
 static void tests(bool bStandalone)
 {
-	RUN_TEST(string_tests);
-	RUN_TEST(guid_tests);
-	RUN_TEST(exception_tests);
-	RUN_TEST(otl_tests);
+	if (bStandalone)
+	{
+		RUN_TEST(string_tests);
+		RUN_TEST(guid_tests);
+		RUN_TEST(exception_tests);
+		RUN_TEST(otl_tests);
+	}
+
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_dll_tests);
-	if (!bStandalone)
-		RUN_TEST(interface_process_tests);
+	
+	return;
+
 	RUN_TEST(apartment_dll_tests);
+	
 	if (!bStandalone)
+	{
 		RUN_TEST(apartment_tests);
-	//RUN_TEST(net_tests);
-	//RUN_TEST(interface_tests2);
+		RUN_TEST(interface_process_tests);
+	}
+
+	return;
+
+	RUN_TEST(net_tests);
+	RUN_TEST(interface_tests2);
 }
 
 int main(int /*argc*/, char* /*argv*/[])

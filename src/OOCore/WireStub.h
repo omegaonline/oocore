@@ -47,6 +47,21 @@ namespace OOCore
 			INTERFACE_ENTRY(Omega::System::IStubController)
 		END_INTERFACE_MAP()
 
+	protected:
+		void Internal_AddRef()
+		{
+			printf("WireStub %p AddRef > %u\n",this,m_refcount.m_debug_value+1);
+
+			OTL::ObjectBase::Internal_AddRef();
+		}
+
+		void Internal_Release()
+		{
+			printf("WireStub %p Release < %u\n",this,m_refcount.m_debug_value-1);
+
+			OTL::ObjectBase::Internal_Release();
+		}
+
 	private:
 		Stub(const Stub&);
 		Stub& operator = (const Stub&);

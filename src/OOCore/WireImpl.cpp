@@ -62,12 +62,16 @@ System::IStub* OOCore::CreateStub(const guid_t& iid, System::IStubController* pC
 		OMEGA_THROW(e);
 	}
 
+	printf("Before stub create\n\n");
+
 	System::IStub* pRet = 0;
 	const System::MetaInfo::SafeShim* pSE = p.pfnStub(
 		System::MetaInfo::marshal_info<System::IStubController*>::safe_type::coerce(pController),
 		System::MetaInfo::marshal_info<System::IMarshaller*>::safe_type::coerce(pManager),
 		System::MetaInfo::marshal_info<IObject*>::safe_type::coerce(pObj,iid),
 		System::MetaInfo::marshal_info<System::IStub*&>::safe_type::coerce(pRet));
+
+	printf("\n\nAfter stub create\n");
 
 	if (pSE)
 		System::MetaInfo::throw_correct_exception(pSE);

@@ -230,7 +230,7 @@ bool OOCore::Proxy::CallRemoteQI(const guid_t& iid)
 	return retval;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetStub(const guid_t& iid)
+const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(IObject) ||
 		iid == OMEGA_GUIDOF(System::IProxy))

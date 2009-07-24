@@ -109,7 +109,7 @@ namespace OOCore
 			--m_pin_count;
 		}
 
-		const Omega::System::MetaInfo::SafeShim* GetStub(const Omega::guid_t& iid);
+		const Omega::System::MetaInfo::SafeShim* GetShim(const Omega::guid_t& iid);
 
 	// IMarshal members
 	public:
@@ -124,21 +124,6 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetUnmarshalFactoryOID_Safe(const Omega::System::MetaInfo::SafeShim* shim, Omega::guid_t* retval, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
-
-	protected:
-		void Internal_AddRef()
-		{
-			//printf("WireProxy %p AddRef > %u P: %u\n",this,m_refcount.m_debug_value+1,m_pin_count.value());
-
-			OTL::ObjectBase::Internal_AddRef();
-		}
-
-		void Internal_Release()
-		{
-			//printf("WireProxy %p Release < %u P: %u\n",this,m_refcount.m_debug_value-1,m_pin_count.value());
-
-			OTL::ObjectBase::Internal_Release();
-		}
 
 	private:
 		Proxy(const Proxy&);

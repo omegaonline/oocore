@@ -812,7 +812,7 @@ namespace Omega
 					m_ptrMarshaller->AddRef();
 					m_ptrI->AddRef();
 		
-					m_refcount.AddRef();
+					AddRef();
 
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;

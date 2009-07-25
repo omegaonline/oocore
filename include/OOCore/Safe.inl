@@ -77,6 +77,61 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	}
 }
 
+void Omega::System::MetaInfo::stub_holder::remove(IObject* pObject)
+{
+	try
+	{
+		Threading::Guard<Threading::Mutex> guard(m_lock);
+		m_map.erase(pObject);
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::stub_holder::find(IObject* pObject)
+{
+	try
+	{
+		Threading::Guard<Threading::Mutex> guard(m_lock);
+
+		std::map<IObject*,Safe_Stub_Owner*>::const_iterator i=m_map.find(pObject);
+		if (i != m_map.end())
+		{
+			i->second->AddRef();
+			return auto_iface_ptr<Safe_Stub_Owner>(i->second);
+		}
+		
+		return 0;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::stub_holder::add(IObject* pObject, Safe_Stub_Owner* pOwner)
+{
+	try
+	{
+		Threading::Guard<Threading::Mutex> guard(m_lock);
+
+		std::pair<std::map<IObject*,Safe_Stub_Owner*>::iterator,bool> p = m_map.insert(std::map<IObject*,Safe_Stub_Owner*>::value_type(pObject,pOwner));
+		if (!p.second)
+		{
+			p.first->second->AddRef();
+			return auto_iface_ptr<Safe_Stub_Owner>(p.first->second);
+		}
+							
+		return 0;
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+}
+
 Omega::System::MetaInfo::Safe_Proxy_Owner::~Safe_Proxy_Owner()
 {
 	PROXY_HOLDER::instance()->remove(m_base_shim);
@@ -298,6 +353,8 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	if (except)
 		throw_correct_exception(except);
 
+	auto_safe_shim ss_base = base_shim;
+
 	// Lookup in the global map...
 	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner = PROXY_HOLDER::instance()->find(base_shim);
 	if (ptrOwner)
@@ -328,22 +385,9 @@ void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
 	create_proxy_owner(shim,0)->Throw(*shim->m_iid,shim);
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_stub_find,1,((in),void*,pObject));
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_safe_stub_add,2,((in),void*,pObject,(in),void*,pStub));
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_safe_stub_remove,1,((in),void*,pObject));
-
 Omega::System::MetaInfo::Safe_Stub_Owner::~Safe_Stub_Owner()
 {
-	try
-	{
-		OOCore_safe_stub_remove(m_pI);
-	}
-	catch (IException* pE)
-	{
-		pE->Release();
-	}
-	catch (...)
-	{}
+	STUB_HOLDER::instance()->remove(m_pI);
 }
 
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Base> Omega::System::MetaInfo::Safe_Stub_Owner::GetStubBase(const guid_t& iid, IObject* pObj)
@@ -483,25 +527,18 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	// Get the IObject interface
 	auto_iface_ptr<IObject> ptrObject = static_cast<IObject*>(pObj->QueryInterface(OMEGA_GUIDOF(IObject)));
 
-	auto_iface_ptr<Safe_Stub_Owner> ptrOwner;
-
 	// Lookup in the global map...
-	ptrOwner = static_cast<Safe_Stub_Owner*>(OOCore_safe_stub_find(static_cast<IObject*>(ptrObject)));
+	auto_iface_ptr<Safe_Stub_Owner> ptrOwner = STUB_HOLDER::instance()->find(ptrObject);
 	if (ptrOwner)
-		ptrOwner->AddRef();
-	else
-	{
-		// Create a safe proxy owner
-		OMEGA_NEW(ptrOwner,Safe_Stub_Owner(ptrObject));
+		return ptrOwner;
+	
+	// Create a safe proxy owner
+	OMEGA_NEW(ptrOwner,Safe_Stub_Owner(ptrObject));
 		
-		// Add to the map...
-		Safe_Stub_Owner* pExisting = static_cast<Safe_Stub_Owner*>(OOCore_safe_stub_add(static_cast<IObject*>(ptrObject),static_cast<Safe_Stub_Owner*>(ptrOwner)));
-		if (pExisting)
-		{
-			ptrOwner = pExisting;
-			ptrOwner->AddRef();
-		}
-	}
+	// Add to the map...
+	auto_iface_ptr<Safe_Stub_Owner> ptrExisting = STUB_HOLDER::instance()->add(ptrObject,ptrOwner);
+	if (ptrExisting)
+		return ptrExisting;
 	
 	return ptrOwner;
 }

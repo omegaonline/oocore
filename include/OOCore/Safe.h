@@ -1187,8 +1187,9 @@ namespace Omega
 
 				inline const SafeShim* QueryInterface(const guid_t& iid, IObject* pObj);
 
-				const SafeShim* GetBaseShim() const
+				const SafeShim* GetBaseShim()
 				{
+					AddRef();
 					return &m_base_shim;
 				}
 
@@ -1339,6 +1340,20 @@ namespace Omega
 				std::map<const SafeShim*,Safe_Proxy_Owner*> m_map;
 			};
 			typedef Threading::Singleton<proxy_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > PROXY_HOLDER;
+
+			class stub_holder
+			{
+			public:
+				inline void remove(IObject* pObject);
+				inline auto_iface_ptr<Safe_Stub_Owner> find(IObject* pObject);
+				inline auto_iface_ptr<Safe_Stub_Owner> add(IObject* pObject, Safe_Stub_Owner* pOwner);
+
+			private:
+				Threading::Mutex                    m_lock;
+				std::map<IObject*,Safe_Stub_Owner*> m_map;
+			};
+			typedef Threading::Singleton<stub_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > STUB_HOLDER;
+
 
 			struct qi_rtti
 			{

@@ -16,7 +16,6 @@ common = \
 	OOCore.cpp \
 	Registry.cpp \
 	RunningObjectTable.cpp \
-	Safe.cpp \
 	StdObjectManager.h \
 	StdObjectManager.cpp \
 	Threading.cpp \

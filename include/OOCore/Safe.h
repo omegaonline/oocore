@@ -1018,8 +1018,9 @@ namespace Omega
 				}
 
 				inline void RemoveBase(Safe_Proxy_Base* pProxy);
-				inline IObject* QueryInterface(const guid_t& iid, const SafeShim* shim);
-				inline void Throw(const guid_t& iid, const SafeShim* shim);
+				inline IObject* QueryInterface(const guid_t& iid);
+				inline IObject* CreateProxy(const SafeShim* shim);
+				inline void Throw(const SafeShim* shim);
 				inline const SafeShim* GetShim(const guid_t& iid);
 
 			private:
@@ -1063,7 +1064,7 @@ namespace Omega
 
 					IObject* QueryInterface(const guid_t& iid)
 					{
-						return m_pOwner->QueryInterface(iid,0);
+						return m_pOwner->QueryInterface(iid);
 					}
 
 					Safe_Proxy_Owner* m_pOwner;
@@ -1088,7 +1089,7 @@ namespace Omega
 
 					IObject* QueryInterface(const guid_t& iid)
 					{
-						return m_pOwner->QueryInterface(iid,0);
+						return m_pOwner->QueryInterface(iid);
 					}
 
 					void Pin()
@@ -1139,7 +1140,7 @@ namespace Omega
 					}
 				}
 
-				inline auto_iface_ptr<Safe_Proxy_Base> GetProxyBase(const Omega::guid_t& iid, const SafeShim* shim = 0);
+				inline auto_iface_ptr<Safe_Proxy_Base> GetProxyBase(const guid_t& iid, const SafeShim* shim, bool bAllPartial);
 			};
 
 			inline Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> create_proxy_owner(const SafeShim* shim, IObject* pOuter);
@@ -1353,7 +1354,6 @@ namespace Omega
 				std::map<IObject*,Safe_Stub_Owner*> m_map;
 			};
 			typedef Threading::Singleton<stub_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > STUB_HOLDER;
-
 
 			struct qi_rtti
 			{

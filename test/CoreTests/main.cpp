@@ -38,8 +38,6 @@ static void tests(bool bStandalone)
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_dll_tests);
 	
-	return;
-
 	RUN_TEST(apartment_dll_tests);
 	
 	if (!bStandalone)

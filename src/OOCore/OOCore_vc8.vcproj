@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;&quot;D:\Program Files\Visual Leak Detector\includes&quot;"
+				AdditionalIncludeDirectories="..\..\include"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -224,10 +224,6 @@
 			</File>
 			<File
 				RelativePath=".\RunningObjectTable.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Safe.cpp"
 				>
 			</File>
 			<File

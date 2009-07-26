@@ -3,7 +3,7 @@
 #include "interfaces.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"OORegister"
+#define OOREGISTER L"ooregister"
 #else
 #define OOREGISTER L"./ooregister"
 #endif

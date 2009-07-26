@@ -15,7 +15,7 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 #include "Test.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"OORegister"
+#define OOREGISTER L"ooregister"
 #else
 #define OOREGISTER L"./ooregister"
 #endif

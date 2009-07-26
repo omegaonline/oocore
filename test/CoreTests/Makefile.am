@@ -2,10 +2,7 @@ include $(top_srcdir)/m4/ltrc.inc
 
 SUBDIRS = . TestLibrary TestProcess
 
-# Change this to check_PROGRAMS = coretests
-# when everything is a bit more stable!
-
-noinst_PROGRAMS = coretests
+check_PROGRAMS = coretests
 
 coretests_CPPFLAGS = -I$(top_srcdir)/include
 coretests_CFLAGS = $(PTHREAD_CFLAGS)

@@ -23,7 +23,6 @@
 
 #include "WireProxy.h"
 #include "StdObjectManager.h"
-#include "WireImpl.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -104,108 +103,7 @@ bool_t OOCore::Proxy::IsAlive()
 	return m_pManager->IsAlive();
 }
 
-OOCore::Proxy::WireProxyShim OOCore::Proxy::FindShim(const guid_t& iid, bool bCheckRemote)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	// See if we have a proxy for this interface already...
-	WireProxyShim ptrProxy;
-
-	try
-	{
-		std::map<const guid_t,WireProxyShim>::iterator i=m_iid_map.find(iid);
-		if (i != m_iid_map.end())
-			ptrProxy = i->second;
-		else
-		{
-			// See if any known interface supports the new interface
-			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
-			{
-				if (i->second.IsDerived(iid))
-				{
-					ptrProxy = i->second;
-					break;
-				}
-			}
-		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
-	if (!ptrProxy)
-	{
-		if (bCheckRemote)
-		{
-			// Send a packet to the other end to see if the stub supports the interface
-			if (!CallRemoteQI(iid))
-				return ptrProxy;
-		}
-
-		// Create a new proxy for this interface
-		ptrProxy.Attach(OOCore::CreateProxy(iid,this));
-	}
-
-	try
-	{
-		std::pair<std::map<const guid_t,WireProxyShim>::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,WireProxyShim>::value_type(iid,ptrProxy));
-		if (!p.second)
-			ptrProxy = p.first->second;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
-	return ptrProxy;
-}
-
-IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
-{
-	// Up our marshal count early, because we are definitely attached to something!
-	++m_marshal_count;
-
-	guid_t wire_iid;
-	System::MetaInfo::wire_read(L"iid",pMessage,wire_iid);
-
-	if (wire_iid == OMEGA_GUIDOF(IObject))
-	{
-		Internal_AddRef();
-		return static_cast<System::IProxy*>(this);
-	}
-
-	WireProxyShim ptrProxy = FindShim(wire_iid,false);
-	if (!ptrProxy)
-		ptrProxy = FindShim(iid,false);
-
-	if (!ptrProxy)
-		OMEGA_THROW(L"Failed to find correct shim for wire_iid");
-
-	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
-}
-
-void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
-{
-	pMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
-
-	System::MetaInfo::wire_write(L"$stub_id",pMessage,m_proxy_id);
-	System::MetaInfo::wire_write(L"$iid",pMessage,OMEGA_GUIDOF(IObject));
-	System::MetaInfo::wire_write(L"$method_id",pMessage,method_id);
-}
-
-void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
-{
-	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-
-	uint32_t l;
-	guid_t m;
-	System::MetaInfo::wire_read(L"$stub_id",pMessage,l);
-	System::MetaInfo::wire_read(L"$iid",pMessage,m);
-	System::MetaInfo::wire_read(L"$method_id",pMessage,l);
-}
-
-bool OOCore::Proxy::CallRemoteQI(const guid_t& iid)
+bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 {
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
@@ -230,6 +128,46 @@ bool OOCore::Proxy::CallRemoteQI(const guid_t& iid)
 	return retval;
 }
 
+IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
+{
+	// Up our marshal count early, because we are definitely attached to something!
+	++m_marshal_count;
+
+	guid_t wire_iid;
+	System::MetaInfo::wire_read(L"iid",pMessage,wire_iid);
+
+	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(&m_proxy_shim,static_cast<IProxy*>(this));
+
+	IObject* pRet = ptrOwner->CreateProxy(wire_iid);
+	if (!pRet)
+		pRet = ptrOwner->CreateProxy(iid);
+
+	if (!pRet)
+		OMEGA_THROW(L"Failed to find correct shim for wire_iid");
+
+	return pRet;
+}
+
+void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
+{
+	pMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
+
+	System::MetaInfo::wire_write(L"$stub_id",pMessage,m_proxy_id);
+	System::MetaInfo::wire_write(L"$iid",pMessage,OMEGA_GUIDOF(IObject));
+	System::MetaInfo::wire_write(L"$method_id",pMessage,method_id);
+}
+
+void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
+{
+	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
+
+	uint32_t l;
+	guid_t m;
+	System::MetaInfo::wire_read(L"$stub_id",pMessage,l);
+	System::MetaInfo::wire_read(L"$iid",pMessage,m);
+	System::MetaInfo::wire_read(L"$method_id",pMessage,l);
+}
+
 const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(IObject) ||
@@ -246,9 +184,9 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 	}
 	
 	const System::MetaInfo::SafeShim* shim = 0;
-	WireProxyShim ptrProxy = FindShim(iid,true);
+	/*WireProxyShim ptrProxy = FindShim(iid,true);
 	if (ptrProxy)
-		shim = ptrProxy.GetShim();
+		shim = ptrProxy.GetShim();*/
 	
 	if (shim)
 	{
@@ -258,17 +196,6 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 	}
 
 	return shim;
-}
-
-IObject* OOCore::Proxy::QI(const guid_t& iid)
-{
-	WireProxyShim ptrProxy = FindShim(iid,true);
-	if (!ptrProxy)
-		return 0;
-
-	Internal_AddRef();
-
-	return System::MetaInfo::create_proxy(ptrProxy.GetShim());
 }
 
 Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)
@@ -408,8 +335,17 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const Syste
 
 const System::MetaInfo::SafeShim* OOCore::Proxy::GetBaseShim_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval)
 {
-	*retval = &static_cast<Proxy*>(shim->m_stub)->m_proxy_shim;
-	return 0;	
+	const System::MetaInfo::SafeShim* except = 0;
+	try
+	{
+		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
+		*retval = &static_cast<Proxy*>(shim->m_stub)->m_proxy_shim;
+	}
+	catch (IException* pE)
+	{
+		except = System::MetaInfo::return_safe_exception(pE);
+	}
+	return except;
 }
 
 const System::MetaInfo::SafeShim* OOCore::Proxy::Pin_Safe(const System::MetaInfo::SafeShim* shim)
@@ -488,6 +424,20 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::IsAlive_Safe(const System::Meta
 	try
 	{
 		static_cast<bool_t&>(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->IsAlive();
+	}
+	catch (IException* pE)
+	{
+		except = System::MetaInfo::return_safe_exception(pE);
+	}
+	return except;
+}
+
+const System::MetaInfo::SafeShim* OOCore::Proxy::RemoteQueryInterface_Safe(const System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_t* iid)
+{
+	const System::MetaInfo::SafeShim* except = 0;
+	try
+	{
+		static_cast<bool_t&>(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->RemoteQueryInterface(*iid);
 	}
 	catch (IException* pE)
 	{

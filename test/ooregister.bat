@@ -1,1 +1,1 @@
-@sh libtool --mode=execute ../src/OORegister/ooregister %*
+@%SHELL% libtool --mode=execute ../src/OORegister/ooregister %*

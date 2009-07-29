@@ -28,6 +28,7 @@ nobase_include_HEADERS = \
 	OOCore/Types.h \
 	OOCore/Types.inl \
 	OOCore/Wire.h \
+	OOCore/Wire.inl \
 	OTL/OTL.h \
 	OTL/OTL.inl \
 	OTL/Exception.h \

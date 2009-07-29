@@ -57,6 +57,11 @@ public:
 		return true;
 	}
 
+	Omega::bool_t RemoteQueryInterface(const Omega::guid_t&)
+	{
+		OMEGA_THROW(L"Invalid operation");
+	}
+
 // System::IInterProcessService members
 public:
 	Omega::Registry::IKey* GetRegistry();

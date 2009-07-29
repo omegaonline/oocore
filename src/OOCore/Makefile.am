@@ -23,8 +23,6 @@ common = \
 	Types.cpp \
 	UserSession.h \
 	UserSession.cpp \
-	WireImpl.h \
-	WireImpl.cpp \
 	WireProxy.h \
 	WireProxy.cpp \
 	WireStub.h \

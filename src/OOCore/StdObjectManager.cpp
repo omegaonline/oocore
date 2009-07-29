@@ -24,7 +24,6 @@
 #include "StdObjectManager.h"
 #include "WireProxy.h"
 #include "WireStub.h"
-#include "WireImpl.h"
 #include "IPS.h"
 
 // This is all the SEH guff - needs to go into the surrogate project
@@ -282,7 +281,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		OMEGA_THROW(L"Invoke called with no message");
 		
 	if (!m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager already connected to a channel");
+		OMEGA_THROW(L"ObjectManager not connected to a channel");
 
 	// Stash call context
 	CallContext* pCC = 0;

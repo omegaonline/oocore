@@ -1,2 +1,2 @@
 #!/bin/sh
-libtool --mode=execute ../src/OORegister/ooregister $@
+libtool --mode=execute -dlopen ../src/OOServer/oosvrlite.la ../src/OORegister/ooregister $@

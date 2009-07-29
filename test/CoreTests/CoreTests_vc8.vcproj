@@ -58,7 +58,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/CoreTests_msvc.exe"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 			/>
@@ -132,7 +131,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/CoreTests_msvc.exe"
 				AdditionalLibraryDirectories=""
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

@@ -351,14 +351,6 @@ namespace Omega
 				virtual const SafeShim* GetShim(const Omega::guid_t& iid) = 0;
 			};
 
-			class Safe_Proxy_Owner;
-			
-			inline IObject* create_proxy(const SafeShim* shim, IObject* pOuter = 0);
-			
-			class Safe_Stub_Owner;
-
-			inline const SafeShim* create_stub(IObject* proxy, const guid_t& iid);
-
 			inline void throw_correct_exception(const SafeShim* except);
 			inline const SafeShim* return_safe_exception(IException* pE);
 
@@ -506,7 +498,7 @@ namespace Omega
 					if (pI)
 						pI->Release();
 
-					pI = static_cast<I*>(create_proxy(this->m_pS,pOuter));
+					pI = static_cast<I*>(create_safe_proxy(this->m_pS,pOuter));
 				}
 
 				const SafeShim** operator & ()
@@ -515,6 +507,8 @@ namespace Omega
 				}
 			};
 
+			inline IObject* create_safe_proxy(const SafeShim* shim, IObject* pOuter = 0);
+
 			template <typename I>
 			class iface_stub_functor
 			{
@@ -522,7 +516,7 @@ namespace Omega
 				iface_stub_functor(const SafeShim* pS, const guid_t*) :
 					m_pI(0)
 				{
-					m_pI = static_cast<I*>(create_proxy(pS));
+					m_pI = static_cast<I*>(create_safe_proxy(pS));
 				}
 
 				iface_stub_functor(const iface_stub_functor& rhs) :
@@ -613,6 +607,8 @@ namespace Omega
 				typedef IObject_Safe_VTable type;
 			};
 
+			class Safe_Proxy_Owner;
+			
 			class Safe_Proxy_Base
 			{
 			public:
@@ -688,7 +684,7 @@ namespace Omega
 
 				inline virtual ~Safe_Proxy_Base();
 
-				const SafeShim*   m_shim;
+				const SafeShim* m_shim;
 				
 			private:
 				Safe_Proxy_Base(const Safe_Proxy_Base&);
@@ -792,6 +788,10 @@ namespace Omega
 					return Safe_Proxy_Base::QueryInterface(iid);
 				}
 			};
+
+			class Safe_Stub_Owner;
+
+			inline const SafeShim* create_stub(IObject* proxy, const guid_t& iid);
 
 			class Safe_Stub_Base
 			{
@@ -1140,10 +1140,10 @@ namespace Omega
 					}
 				}
 
-				inline auto_iface_ptr<Safe_Proxy_Base> GetProxyBase(const guid_t& iid, const SafeShim* shim, bool bAllPartial);
+				inline auto_iface_ptr<Safe_Proxy_Base> GetProxyBase(const guid_t& iid, const SafeShim* shim, bool bAllowPartial);
 			};
 
-			inline Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> create_proxy_owner(const SafeShim* shim, IObject* pOuter);
+			inline Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> create_safe_proxy_owner(const SafeShim* shim, IObject* pOuter);
 			
 			class Safe_Stub_Owner
 			{
@@ -1329,7 +1329,7 @@ namespace Omega
 				int unused;
 			};
 
-			class proxy_holder
+			class safe_proxy_holder
 			{
 			public:
 				inline void remove(const SafeShim* shim);
@@ -1340,9 +1340,9 @@ namespace Omega
 				Threading::Mutex                            m_lock;
 				std::map<const SafeShim*,Safe_Proxy_Owner*> m_map;
 			};
-			typedef Threading::Singleton<proxy_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > PROXY_HOLDER;
+			typedef Threading::Singleton<safe_proxy_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_PROXY_HOLDER;
 
-			class stub_holder
+			class safe_stub_holder
 			{
 			public:
 				inline void remove(IObject* pObject);
@@ -1353,7 +1353,7 @@ namespace Omega
 				Threading::Mutex                    m_lock;
 				std::map<IObject*,Safe_Stub_Owner*> m_map;
 			};
-			typedef Threading::Singleton<stub_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > STUB_HOLDER;
+			typedef Threading::Singleton<safe_stub_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_STUB_HOLDER;
 
 			struct qi_rtti
 			{
@@ -1425,7 +1425,7 @@ namespace Omega
 	}
 }
 
-// This IID is used to detect a SafeProxy - it has no other purpose
+// ISafeProxy has no rtti associated with it...
 OMEGA_SET_GUIDOF(Omega::System::MetaInfo,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}")
 
 #endif // OOCORE_SAFE_H_INCLUDED_

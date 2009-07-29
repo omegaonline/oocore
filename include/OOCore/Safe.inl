@@ -22,7 +22,7 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
-void Omega::System::MetaInfo::proxy_holder::remove(const SafeShim* shim)
+void Omega::System::MetaInfo::safe_proxy_holder::remove(const SafeShim* shim)
 {
 	try
 	{
@@ -35,7 +35,7 @@ void Omega::System::MetaInfo::proxy_holder::remove(const SafeShim* shim)
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::proxy_holder::find(const SafeShim* shim)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::safe_proxy_holder::find(const SafeShim* shim)
 {
 	try
 	{
@@ -56,7 +56,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::proxy_holder::add(const SafeShim* shim, Safe_Proxy_Owner* pOwner)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::safe_proxy_holder::add(const SafeShim* shim, Safe_Proxy_Owner* pOwner)
 {
 	try
 	{
@@ -77,7 +77,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	}
 }
 
-void Omega::System::MetaInfo::stub_holder::remove(IObject* pObject)
+void Omega::System::MetaInfo::safe_stub_holder::remove(IObject* pObject)
 {
 	try
 	{
@@ -90,7 +90,7 @@ void Omega::System::MetaInfo::stub_holder::remove(IObject* pObject)
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::stub_holder::find(IObject* pObject)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::safe_stub_holder::find(IObject* pObject)
 {
 	try
 	{
@@ -111,7 +111,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::stub_holder::add(IObject* pObject, Safe_Stub_Owner* pOwner)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::safe_stub_holder::add(IObject* pObject, Safe_Stub_Owner* pOwner)
 {
 	try
 	{
@@ -134,14 +134,14 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 
 Omega::System::MetaInfo::Safe_Proxy_Owner::~Safe_Proxy_Owner()
 {
-	PROXY_HOLDER::instance()->remove(m_base_shim);
+	SAFE_PROXY_HOLDER::instance()->remove(m_base_shim);
 
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_base_shim->m_vtable)->pfnUnpin_Safe(m_base_shim);
 	if (except)
 		static_cast<const IObject_Safe_VTable*>(except->m_vtable)->pfnRelease_Safe(except);
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base> Omega::System::MetaInfo::Safe_Proxy_Owner::GetProxyBase(const guid_t& iid, const SafeShim* shim, bool bAllPartial)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base> Omega::System::MetaInfo::Safe_Proxy_Owner::GetProxyBase(const guid_t& iid, const SafeShim* shim, bool bAllowPartial)
 {
 	assert(iid != OMEGA_GUIDOF(IObject));
 	assert(iid != OMEGA_GUIDOF(ISafeProxy));
@@ -196,7 +196,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base
 	if (!rtti && *shim->m_iid != iid)
 		rtti = get_qi_rtti_info(iid);
 		
-	if (!rtti && bAllPartial)
+	if (!rtti && bAllowPartial)
 		rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
 
 	if (!rtti)
@@ -371,7 +371,7 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Bas
 	return m_pOwner->GetShim(iid);
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_proxy_owner(const SafeShim* shim, IObject* pOuter)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_safe_proxy_owner(const SafeShim* shim, IObject* pOuter)
 {
 	// QI for the IObject shim
 	const SafeShim* base_shim;
@@ -382,7 +382,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	auto_safe_shim ss_base = base_shim;
 
 	// Lookup in the global map...
-	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner = PROXY_HOLDER::instance()->find(base_shim);
+	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner = SAFE_PROXY_HOLDER::instance()->find(base_shim);
 	if (ptrOwner)
 		return ptrOwner;
 	
@@ -390,30 +390,30 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	OMEGA_NEW(ptrOwner,Safe_Proxy_Owner(base_shim,pOuter));
 	
 	// Add to the map...
-	auto_iface_ptr<Safe_Proxy_Owner> ptrExisting = PROXY_HOLDER::instance()->add(base_shim,ptrOwner);
+	auto_iface_ptr<Safe_Proxy_Owner> ptrExisting = SAFE_PROXY_HOLDER::instance()->add(base_shim,ptrOwner);
 	if (ptrExisting)
 		return ptrExisting;
 	
 	return ptrOwner;
 }
 
-Omega::IObject* Omega::System::MetaInfo::create_proxy(const SafeShim* shim, IObject* pOuter)
+Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim, IObject* pOuter)
 {
 	if (!shim)
 		return 0;
 
 	// QI and return
-	return create_proxy_owner(shim,pOuter)->CreateProxy(shim);
+	return create_safe_proxy_owner(shim,pOuter)->CreateProxy(shim);
 }
 
 void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
 {
-	create_proxy_owner(shim,0)->Throw(shim);
+	create_safe_proxy_owner(shim,0)->Throw(shim);
 }
 
 Omega::System::MetaInfo::Safe_Stub_Owner::~Safe_Stub_Owner()
 {
-	STUB_HOLDER::instance()->remove(m_pI);
+	SAFE_STUB_HOLDER::instance()->remove(m_pI);
 }
 
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Base> Omega::System::MetaInfo::Safe_Stub_Owner::GetStubBase(const guid_t& iid, IObject* pObj)
@@ -554,7 +554,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	auto_iface_ptr<IObject> ptrObject = static_cast<IObject*>(pObj->QueryInterface(OMEGA_GUIDOF(IObject)));
 
 	// Lookup in the global map...
-	auto_iface_ptr<Safe_Stub_Owner> ptrOwner = STUB_HOLDER::instance()->find(ptrObject);
+	auto_iface_ptr<Safe_Stub_Owner> ptrOwner = SAFE_STUB_HOLDER::instance()->find(ptrObject);
 	if (ptrOwner)
 		return ptrOwner;
 	
@@ -562,7 +562,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	OMEGA_NEW(ptrOwner,Safe_Stub_Owner(ptrObject));
 		
 	// Add to the map...
-	auto_iface_ptr<Safe_Stub_Owner> ptrExisting = STUB_HOLDER::instance()->add(ptrObject,ptrOwner);
+	auto_iface_ptr<Safe_Stub_Owner> ptrExisting = SAFE_STUB_HOLDER::instance()->add(ptrObject,ptrOwner);
 	if (ptrExisting)
 		return ptrExisting;
 	

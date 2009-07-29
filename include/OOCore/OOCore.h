@@ -57,6 +57,11 @@
 #define OMEGA_PRIVATE_FN_DECL(r,fn) r OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,fn)
 #define OMEGA_PRIVATE_FN_CALL(fn)   OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,fn)
 
+#if !defined(OMEGA_WEAK_VARIABLE)
+#define OMEGA_WEAK_VARIABLE(t,v) \
+	static const t v;
+#endif
+
 //////////////////////////////////////////////
 // Include STL components
 
@@ -92,6 +97,12 @@ namespace Omega
 		inline string_t GetVersion();
 	}
 }
+
+#include "Types.inl"
+#include "Threading.inl"
+#include "Rtti.inl"
+#include "Safe.inl"
+#include "Wire.inl"
 
 #if !defined(DOXYGEN)
 
@@ -136,10 +147,5 @@ Omega::string_t Omega::System::GetVersion()
 }
 
 #endif // !defined(DOXYGEN)
-
-#include "Types.inl"
-#include "Threading.inl"
-#include "Rtti.inl"
-#include "Safe.inl"
 
 #endif // OOCORE_H_INCLUDED_

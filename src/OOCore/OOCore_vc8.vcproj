@@ -247,10 +247,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\WireImpl.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\WireProxy.cpp"
 				>
 			</File>
@@ -310,10 +306,6 @@
 			</File>
 			<File
 				RelativePath="..\Common\Version.h"
-				>
-			</File>
-			<File
-				RelativePath=".\WireImpl.h"
 				>
 			</File>
 			<File
@@ -440,6 +432,10 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Wire.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\Wire.inl"
 				>
 			</File>
 		</Filter>

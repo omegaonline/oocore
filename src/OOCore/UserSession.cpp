@@ -191,7 +191,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 		if (bStandalone)
 			return std::string();
 		else
-			throw Omega::ISystemException::Create(L"Failed to discover network daemon",L"Omega::Initialize");
+			throw Omega::ISystemException::Create(L"Failed to connect to network daemon",L"Omega::Initialize");
 	}
 	bStandalone = false;
 
@@ -1032,12 +1032,12 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 	ObjectPtr<Remoting::IObjectManager> ptrOM = ptrApt->get_apartment_om(0);
 
 	// Now get the new apartment OM to create an IApartment
-	IObject* pOF = 0;
-	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pOF);
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
-
 	IObject* pObject = 0;
+	ptrOM->GetRemoteInstance(OID_StdApartment.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(Omega::Activation::IObjectFactory),pObject);
+	ObjectPtr<Activation::IObjectFactory> ptrOF;
+	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
+	
+	pObject = 0;
 	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
 
 	return static_cast<Omega::Apartment::IApartment*>(pObject);

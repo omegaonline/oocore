@@ -33,11 +33,11 @@
 	OMEGA_CONCAT(name,__LINE__)
 
 #define OMEGA_QI_MAGIC(n_space,iface) \
-	class OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface)) \
+	class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) \
 	{ \
 	public: \
 		static const wchar_t* get_name() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)); } \
-		OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface))() \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 		{ \
 			static const qi_rtti s_rtti = \
 			{ \
@@ -48,28 +48,29 @@
 			register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 			RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface>::get_type_info()); \
 		} \
-		~OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface))() \
+		~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 		{ \
 			UnregisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface>::get_type_info()); \
 		} \
 	}; \
-	static const OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_RttiInit_),OMEGA_UNIQUE_NAME(iface)) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit_i);
+	OMEGA_WEAK_VARIABLE(OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit),OMEGA_CONCAT_R(OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,_RttiInit_),OMEGA_UNIQUE_NAME(iface)));
 	
 #define OMEGA_WIRE_MAGIC(n_space,iface) \
-	class OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface)) \
+	class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit) \
 	{ \
 	public: \
-		OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface))() \
+		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit)() \
 		{ \
-			RegisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy<n_space::iface>,&create_wire_stub<n_space::iface>); \
-		} \
-		~OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface))() \
-		{ \
-			UnregisterAutoProxyStubCreators(OMEGA_GUIDOF(n_space::iface),&create_wire_proxy<n_space::iface>,&create_wire_stub<n_space::iface>); \
+			static const wire_rtti s_rtti = \
+			{ \
+				&Wire_Proxy<n_space::iface,n_space::iface>::bind, \
+				&Safe_Stub<n_space::iface>::create, \
+			}; \
+			register_wire_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 		} \
 	}; \
-	static const OMEGA_CONCAT_R(OMEGA_PRIVATE_TYPE(_WireInit_),OMEGA_UNIQUE_NAME(iface)) OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit_i);
-
+	OMEGA_WEAK_VARIABLE(OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_WireInit),OMEGA_CONCAT_R(OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,_WireInit_),OMEGA_UNIQUE_NAME(iface)));
+	
 #define OMEGA_DECLARE_PARAM_I(meta,type,name) \
 	type name
 
@@ -324,8 +325,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
@@ -349,8 +350,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_WRITE_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,name
-#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_WRITE_STUB_PARAM_II
@@ -373,8 +374,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,name
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_UNPACK_STUB_PARAM_II
@@ -411,27 +412,29 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_WIRE_STUB_METHOD,methods,0)
 
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	static void OMEGA_CONCAT(name,_Wire)(void* pParam__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
+	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
-		OMEGA_UNUSED_ARG(pParam__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
+		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
+		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
-		try { static_cast<Wire_Stub*>(pParam__wire__)->get_iface<iface>()->name( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
+		try { pThis__wire__->get_iface<iface>()->name( OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) } \
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
 	}
 
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	static void OMEGA_CONCAT(name,_Wire)(void* pParam__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
+	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
-		OMEGA_UNUSED_ARG(pParam__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
+		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
+		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
-		try { marshal_info<ret_type>::wire_type::type OMEGA_CONCAT(name,_RetVal) = static_cast<Wire_Stub*>(pParam__wire__)->get_iface<iface>()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
+		try { marshal_info<ret_type>::wire_type::type OMEGA_CONCAT(name,_RetVal) = pThis__wire__->get_iface<iface>()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
-		marshal_info<ret_type>::wire_type::write(L"$retval",static_cast<Wire_Stub*>(pParam__wire__)->m_ptrMarshaller,pParamsOut__wire__,OMEGA_CONCAT(name,_RetVal)); } \
+		marshal_info<ret_type>::wire_type::write(L"$retval",ptrMarshaller__wire__,pParamsOut__wire__,OMEGA_CONCAT(name,_RetVal)); } \
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
 	}
 
@@ -481,7 +484,7 @@
 		{ \
 			Wire_Stub* pThis; \
 			OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI)); \
-			return &pThis->m_shim; \
+			return pThis->GetShim(); \
 		} \
 	protected: \
 		Wire_Stub(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) : \
@@ -493,7 +496,7 @@
 				return true; \
 			return Wire_Stub<d_space::derived>::SupportsInterface(iid); \
 		} \
-		virtual void Internal_Invoke(uint32_t method_id, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) \
+		virtual void Invoke(uint32_t method_id, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) \
 		{ \
 			static const MethodTableEntry MethodTable[] = \
 			{ \
@@ -501,7 +504,7 @@
 			}; \
 			if (method_id >= Wire_Stub<d_space::derived>::MethodCount && method_id < MethodCount) \
 				return MethodTable[method_id - Wire_Stub<d_space::derived>::MethodCount](this,pParamsIn,pParamsOut); \
-			return Wire_Stub<d_space::derived>::Internal_Invoke(method_id,pParamsIn,pParamsOut); \
+			return Wire_Stub<d_space::derived>::Invoke(method_id,pParamsIn,pParamsOut); \
 		} \
 		static const uint32_t MethodCount = Wire_Stub<d_space::derived>::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \
@@ -535,7 +538,7 @@
 #define OMEGA_DECLARE_SAFE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
-		ret_type OMEGA_CONCAT(name,_RetVal) = Omega::System::MetaInfo::default_value<ret_type>::value(); \
+		ret_type OMEGA_CONCAT(name,_RetVal) = default_value<ret_type>::value(); \
 		const SafeShim* OMEGA_CONCAT(name,_except) = deref_vt()->OMEGA_CONCAT_R2(pfn,OMEGA_CONCAT(name,_Safe))( \
 			this->m_shim,marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) \
 			OMEGA_DECLARE_PARAMS_SAFE_PROXY(param_count,params)); \
@@ -625,7 +628,7 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_UNPACK_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
+	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
 		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(ptrMarshaller__wire__,OMEGA_CONCAT(name,_MethodId)); \
@@ -644,18 +647,11 @@
 		} \
 		if (OMEGA_CONCAT(name,_Exception)) throw OMEGA_CONCAT(name,_Exception); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
-	} \
-	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
-	{ \
-		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
-		try { static_cast<Wire_Proxy*>(OMEGA_CONCAT(name,_shim)->m_stub)->OMEGA_CONCAT(name,_Impl)( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
-		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
-		return OMEGA_CONCAT(name,_except); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
 
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	void OMEGA_CONCAT(name,_Impl)(ret_type& OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS(param_count,params)) \
+	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
 		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(ptrMarshaller__wire__,OMEGA_CONCAT(name,_MethodId)); \
@@ -674,14 +670,9 @@
 		} \
 		if (OMEGA_CONCAT(name,_Exception)) throw OMEGA_CONCAT(name,_Exception); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
+		ret_type OMEGA_CONCAT(name,_RetVal) = default_value<ret_type>::value(); \
 		marshal_info<ret_type&>::wire_type::read(L"$retval",ptrMarshaller__wire__,pParamsIn__wire__,OMEGA_CONCAT(name,_RetVal)); \
-	} \
-	static const SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(const SafeShim* OMEGA_CONCAT(name,_shim), marshal_info<ret_type&>::safe_type::type OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS_SAFE(param_count,params) ) \
-	{ \
-		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
-		try { static_cast<Wire_Proxy*>(OMEGA_CONCAT(name,_shim)->m_stub)->OMEGA_CONCAT(name,_Impl)(marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal)) OMEGA_DEFINE_PARAMS_SAFE_STUB(param_count,params) ); } \
-		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
-		return OMEGA_CONCAT(name,_except); \
+		return OMEGA_CONCAT(name,_RetVal); \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
 	
@@ -716,34 +707,24 @@
 	};
 
 #define OMEGA_DECLARE_WIRE_PROXY(n_space,name,d_space,derived,methods) \
-	template <> class Wire_Proxy<n_space::name> : public Wire_Proxy<d_space::derived> \
-	{ public: \
-		static const SafeShim* create(const SafeShim* proxy_shim) \
+	template <typename D> \
+	class Wire_Proxy<n_space::name,D> : public Wire_Proxy<d_space::derived,D> \
+	{ \
+		typedef Wire_Proxy<d_space::derived,D> Base; \
+	public: \
+		static Wire_Proxy_Base* bind(Wire_Proxy_Owner* pOwner) \
 		{ \
-			Wire_Proxy* pThis; \
-			OMEGA_NEW(pThis,Wire_Proxy(proxy_shim,&OMEGA_GUIDOF(n_space::name))); \
-			return &pThis->m_internal_shim; \
+			Wire_Proxy* pThis; OMEGA_NEW(pThis,Wire_Proxy(pOwner)); return pThis; \
 		} \
 	protected: \
-		Wire_Proxy(const SafeShim* proxy_shim, const guid_t* iid) : Wire_Proxy<d_space::derived>(proxy_shim,iid) \
-		{ m_shim.m_vtable = get_vt(); } \
-		virtual const SafeShim* IsDerived(const guid_t& iid) const \
+		Wire_Proxy(Wire_Proxy_Owner* pOwner = 0) : Base(pOwner) {} \
+		virtual bool IsDerived(const guid_t& iid) const \
 		{ \
-			if (iid == OMEGA_GUIDOF(n_space::name)) \
-				return &m_shim; \
-			return Wire_Proxy<d_space::derived>::IsDerived(iid); \
+			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
+			return Base::IsDerived(iid); \
 		} \
-		static const vtable_info<n_space::name>::type* get_vt() \
-		{ \
-			static const vtable_info<n_space::name>::type vt = \
-			{ \
-				*Wire_Proxy<d_space::derived>::get_vt() \
-				OMEGA_DECLARE_SAFE_STUB_METHODS(methods) \
-			}; return &vt; \
-		} \
-		static const uint32_t MethodCount = Wire_Proxy<d_space::derived>::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
+		static const uint32_t MethodCount = Base::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \
-		typedef Wire_Proxy<d_space::derived> Base; \
 		OMEGA_DECLARE_WIRE_PROXY_METHODS(methods) \
 	};
 

@@ -58,7 +58,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestLibrary_msvc.dll"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
@@ -133,7 +132,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/TestLibrary_msvc.dll"
 				AdditionalLibraryDirectories=""
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

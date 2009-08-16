@@ -25,7 +25,7 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 
 	ptrApartment.Release();
 
-	return true;
+	//return true;
 
 	// try to create the object asking for TypeInfo::IProvideObjectInfo
 	Omega::IObject* pObject = 0;

@@ -789,8 +789,9 @@ namespace Omega
 					OMEGA_THROW(L"Invoke called with invalid method index");
 				}
 
-				const SafeShim* GetShim() const
+				const SafeShim* GetShim()
 				{
+					AddRef();
 					return &m_shim;
 				}
 
@@ -815,6 +816,7 @@ namespace Omega
 							&Release_Safe,
 							&QueryInterface_Safe,
 							&GetBaseShim_Safe,
+							0,
 							&Pin_Safe,
 							&Unpin_Safe
 						},
@@ -837,9 +839,13 @@ namespace Omega
 						delete this;
 				}
 
-				inline void Pin();
-				inline void Unpin();
-				inline const SafeShim* GetBaseShim();
+				void Pin() {}
+				void Unpin() {}
+
+				const SafeShim* GetBaseShim()
+				{
+					return GetShim();
+				}
 
 				void Invoke_Internal(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 				{
@@ -995,7 +1001,14 @@ namespace Omega
 			};
 
 			template <typename I>
-			class Wire_Stub;
+			class Wire_Stub
+			{
+			public:
+				static const SafeShim* create(IStubController*, IMarshaller*, IObject*)
+				{
+					OMEGA_THROW(L"No stub available");
+				}
+			};
 
 			template <>
 			class Wire_Stub<IObject> : public Wire_Stub_Base
@@ -1023,21 +1036,12 @@ namespace Omega
 			};
 
 			template <typename I>
-			inline const SafeShim* OMEGA_CALL create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const SafeShim* shim_I, const SafeShim** ret)
+			inline const SafeShim* create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, I* pI)
 			{
-				try
-				{
-					auto_iface_ptr<IStubController> ptrController = static_cast<IStubController*>(create_safe_proxy(shim_Controller));
-					auto_iface_ptr<IMarshaller> ptrMarshaller = static_cast<IMarshaller*>(create_safe_proxy(shim_Marshaller));
-					auto_iface_ptr<IObject> ptrI = create_safe_proxy(shim_I);
-					
-					*ret = Wire_Stub<I>::create(ptrController,ptrMarshaller,ptrI);
-					return 0;
-				}
-				catch (IException* pE)
-				{
-					return return_safe_exception(pE);
-				}
+				auto_iface_ptr<IStubController> ptrController = static_cast<IStubController*>(create_safe_proxy(shim_Controller));
+				auto_iface_ptr<IMarshaller> ptrMarshaller = static_cast<IMarshaller*>(create_safe_proxy(shim_Marshaller));
+										
+				return Wire_Stub<I>::create(ptrController,ptrMarshaller,pI);
 			}
 
 			class wire_proxy_holder

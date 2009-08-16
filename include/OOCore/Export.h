@@ -471,6 +471,7 @@
 			return Safe_Stub<d_space::derived>::IsDerived(iid); \
 		} \
 	private: \
+		virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller) { return create_wire_stub<n_space::name>(shim_Controller,shim_Marshaller,static_cast<n_space::name*>(m_pI)); } \
 		static n_space::name* deref_shim(const SafeShim* shim) { return static_cast<n_space::name*>(static_cast<Safe_Stub*>(shim->m_stub)->m_pI); } \
 		OMEGA_DEFINE_SAFE_STUB_METHODS(methods) \
 	};

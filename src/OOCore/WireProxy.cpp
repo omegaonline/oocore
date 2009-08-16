@@ -37,6 +37,7 @@ OOCore::Proxy::Proxy() :
 			&Release_Safe,
 			&QueryInterface_Safe,
 			&GetBaseShim_Safe,
+			0,
 			&Pin_Safe,
 			&Unpin_Safe
 		},
@@ -57,6 +58,7 @@ OOCore::Proxy::Proxy() :
 			&Release_Safe,
 			&QueryInterface_Safe,
 			&GetBaseShim_Safe,
+			0,
 			&Pin_Safe,
 			&Unpin_Safe
 		},

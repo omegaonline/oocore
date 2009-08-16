@@ -129,6 +129,11 @@ namespace OOCore
 
 		const Omega::System::MetaInfo::SafeShim* GetShim(const Omega::guid_t& iid);
 
+		const Omega::System::MetaInfo::SafeShim* CreateWireStub(const Omega::System::MetaInfo::SafeShim*, const Omega::System::MetaInfo::SafeShim*, const Omega::guid_t&)
+		{
+			OMEGA_THROW(L"Invalid function call");
+		}
+
 	// IMarshal members
 	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)

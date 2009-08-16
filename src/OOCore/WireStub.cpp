@@ -41,7 +41,9 @@ void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pMana
 
 void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
-	//ObjectPtr<System::IStub> ptrStub = FindStub(iid);
+	// Make sure we can support the outgoing interface...
+	if (iid != OMEGA_GUIDOF(IObject))
+		FindStub(iid);
 	
 	System::MetaInfo::wire_write(L"id",pMessage,m_stub_id);
 	try
@@ -139,21 +141,8 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 		}
 	
 		if (!ptrStub)
-		{
-			// Check whether underlying object supports interface
-			IObject* pQI = m_ptrObj->QueryInterface(iid);
-			if (!pQI)
-				return 0;
-
-			ObjectPtr<IObject> ptrQI;
-			ptrQI.Attach(pQI);
-
-			// Create a stub for this interface
-			/*ptrStub.Attach(OOCore::CreateStub(iid,this,m_pManager,pQI));
-			if (!ptrStub)*/
-				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-		}
-
+			ptrStub = CreateStub(iid);
+			
 		// Now add it...
 		std::pair<std::map<const guid_t,ObjectPtr<System::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<System::IStub> >::value_type(iid,ptrStub));
 		if (!p.second)
@@ -167,6 +156,38 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 	}
 }
 
+ObjectPtr<System::IStub> OOCore::Stub::CreateStub(const guid_t& iid)
+{
+	ObjectPtr<System::MetaInfo::ISafeProxy> ptrSafeProxy(m_ptrObj);
+	if (!ptrSafeProxy)
+	{
+		// Check the underlying object supports the interface
+		ObjectPtr<IObject> ptrQI;
+		ptrQI.Attach(m_ptrObj->QueryInterface(iid));
+		if (!ptrQI)
+			throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+
+		// Create a proxy/stub pair around m_ptrObj
+		System::MetaInfo::auto_safe_shim safe_stub = System::MetaInfo::create_safe_stub(ptrQI,iid);
+		
+		IObject* pProxy = System::MetaInfo::create_safe_proxy(safe_stub);
+		ObjectPtr<IObject> ptrProxy;
+		ptrProxy.Attach(pProxy);
+
+		ptrSafeProxy.Attach(ptrProxy.QueryInterface<System::MetaInfo::ISafeProxy>());
+	}
+
+	// Ask the safe proxy for the wire stub
+	System::MetaInfo::auto_safe_shim shim_Controller = System::MetaInfo::create_safe_stub(static_cast<System::IStubController*>(this),OMEGA_GUIDOF(System::IStubController));
+	System::MetaInfo::auto_safe_shim shim_Marshaller = System::MetaInfo::create_safe_stub(static_cast<System::IMarshaller*>(m_pManager),OMEGA_GUIDOF(System::IMarshaller));
+
+	System::MetaInfo::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
+	System::IStub* pStub = static_cast<System::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub));
+	ObjectPtr<System::IStub> ptrStub;
+	ptrStub.Attach(pStub);
+	return ptrStub;
+}
+
 void OOCore::Stub::RemoteRelease(uint32_t release_count)
 {
 	m_marshal_count -= release_count;
@@ -177,7 +198,7 @@ void OOCore::Stub::RemoteRelease(uint32_t release_count)
 bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 {
 	// If we have a stub, then we can handle it...
-	return (FindStub(iid) != 0);
+	return (iid == OMEGA_GUIDOF(IObject) || FindStub(iid) != 0);
 }
 
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

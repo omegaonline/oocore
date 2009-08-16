@@ -75,6 +75,7 @@ namespace OOCore
 		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::System::IStub> > m_iid_map;
 
 		OTL::ObjectPtr<Omega::System::IStub> FindStub(const Omega::guid_t& iid);
+		OTL::ObjectPtr<Omega::System::IStub> CreateStub(const Omega::guid_t& iid);
 
 	// IStub members
 	public:

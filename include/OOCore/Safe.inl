@@ -267,6 +267,19 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Own
 	return obj->GetShim();
 }
 
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
+{
+	assert(iid != OMEGA_GUIDOF(IObject));
+		
+	// See if we have it cached
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0,false);
+	if (!obj)
+		OMEGA_THROW(L"Failed to create safe proxy");
+
+	// Return the shim
+	return obj->CreateWireStub(shim_Controller,shim_Marshaller);
+}
+
 Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(IObject))
@@ -369,6 +382,14 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Bas
 		return GetShim();
 	
 	return m_pOwner->GetShim(iid);
+}
+
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
+{
+	if (IsDerived(iid))
+		return CreateWireStub(shim_Controller,shim_Marshaller);
+	
+	return m_pOwner->CreateWireStub(shim_Controller,shim_Marshaller,iid);
 }
 
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_safe_proxy_owner(const SafeShim* shim, IObject* pOuter)
@@ -548,7 +569,7 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base
 	return m_pOwner->GetBaseShim();
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::create_stub_owner(IObject* pObj)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::create_safe_stub_owner(IObject* pObj)
 {
 	// Get the IObject interface
 	auto_iface_ptr<IObject> ptrObject = static_cast<IObject*>(pObj->QueryInterface(OMEGA_GUIDOF(IObject)));
@@ -569,7 +590,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	return ptrOwner;
 }
 
-const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IObject* pObj, const guid_t& iid)
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_safe_stub(IObject* pObj, const guid_t& iid)
 {
 	if (!pObj)
 		return 0;
@@ -580,13 +601,13 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_stub(IO
 		return ptrProxy->GetShim(iid);
 
 	// QI and return
-	return create_stub_owner(pObj)->QueryInterface(iid,pObj);
+	return create_safe_stub_owner(pObj)->QueryInterface(iid,pObj);
 }
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::return_safe_exception(IException* pE)
 {
 	auto_iface_ptr<IException> ptrE(pE);
-	return create_stub(pE,ptrE->GetThrownIID());
+	return create_safe_stub(pE,ptrE->GetThrownIID());
 }
 
 #endif // OOCORE_SAFE_INL_INCLUDED_

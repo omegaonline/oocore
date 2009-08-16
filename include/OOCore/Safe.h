@@ -349,6 +349,7 @@ namespace Omega
 				virtual void Pin() = 0;
 				virtual void Unpin() = 0;
 				virtual const SafeShim* GetShim(const Omega::guid_t& iid) = 0;
+				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid) = 0;
 			};
 
 			inline void throw_correct_exception(const SafeShim* except);
@@ -360,6 +361,7 @@ namespace Omega
 				const SafeShim* (OMEGA_CALL* pfnRelease_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_t* iid);
 				const SafeShim* (OMEGA_CALL* pfnGetBaseShim_Safe)(const SafeShim* shim, const SafeShim** retval);
+				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const SafeShim** retval);
 				const SafeShim* (OMEGA_CALL* pfnPin_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(const SafeShim* shim);
 			};
@@ -452,7 +454,7 @@ namespace Omega
 				iface_proxy_functor(I* pI, const guid_t& iid) :
 					m_pS(0)
 				{
-					m_pS = create_stub(pI,iid);
+					m_pS = create_safe_stub(pI,iid);
 				}
 
 				iface_proxy_functor(const iface_proxy_functor& rhs) :
@@ -563,7 +565,7 @@ namespace Omega
 					if (pS)
 						static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
 					
-					pS = create_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
+					pS = create_safe_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
 				}
 
 				operator I*& ()
@@ -665,6 +667,7 @@ namespace Omega
 				}
 
 				inline const SafeShim* GetShim(const Omega::guid_t& iid);
+				inline const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid);
 				
 				const SafeShim* GetShim()
 				{
@@ -673,6 +676,19 @@ namespace Omega
 						throw_correct_exception(except);
 				
 					return m_shim;
+				}
+
+				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller)
+				{
+					const SafeShim* ret = 0;
+					if (static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe)
+					{
+						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe(m_shim,shim_Controller,shim_Marshaller,&ret);
+						if (except)
+							throw_correct_exception(except);
+					}
+				
+					return ret;
 				}
 
 			protected:
@@ -724,6 +740,11 @@ namespace Omega
 					const SafeShim* GetShim(const Omega::guid_t& iid)
 					{
 						return m_pOuter->GetShim(iid);
+					}
+
+					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
+					{
+						return m_pOuter->CreateWireStub(shim_Controller,shim_Marshaller,iid);
 					}
 
 					Safe_Proxy_Base* m_pOuter;
@@ -791,7 +812,7 @@ namespace Omega
 
 			class Safe_Stub_Owner;
 
-			inline const SafeShim* create_stub(IObject* proxy, const guid_t& iid);
+			inline const SafeShim* create_safe_stub(IObject* pObject, const guid_t& iid);
 
 			class Safe_Stub_Base
 			{
@@ -851,7 +872,9 @@ namespace Omega
 				}
 
 				inline const SafeShim* GetBaseShim();
-				
+
+				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller) = 0;
+								
 			private:
 				Safe_Stub_Owner*          m_pOwner;
 				Threading::AtomicRefCount m_refcount;
@@ -892,6 +915,7 @@ namespace Omega
 						&Release_Safe,
 						&QueryInterface_Safe,
 						&GetBaseShim_Safe,
+						&CreateWireStub_Safe,
 						&Pin_Safe,
 						&Unpin_Safe
 					};
@@ -904,6 +928,11 @@ namespace Omega
 				}
 				
 			private:
+				virtual const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*)
+				{
+					OMEGA_THROW(L"Attempting to remote IObject?");
+				}
+
 				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
 				{
 					const SafeShim* except = 0;
@@ -952,6 +981,20 @@ namespace Omega
 					try
 					{
 						*retval = static_cast<Safe_Stub*>(shim->m_stub)->GetBaseShim();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL CreateWireStub_Safe(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const SafeShim** retval)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						*retval = static_cast<Safe_Stub*>(shim->m_stub)->CreateWireStub(shim_Controller,shim_Marshaller);
 					}
 					catch (IException* pE)
 					{
@@ -1022,6 +1065,7 @@ namespace Omega
 				inline IObject* CreateProxy(const SafeShim* shim);
 				inline void Throw(const SafeShim* shim);
 				inline const SafeShim* GetShim(const guid_t& iid);
+				inline const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
 
 			private:
 				Safe_Proxy_Owner(const Safe_Proxy_Owner&);
@@ -1107,6 +1151,11 @@ namespace Omega
 						return m_pOwner->GetShim(iid);
 					}
 
+					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
+					{
+						return m_pOwner->CreateWireStub(shim_Controller,shim_Marshaller,iid);
+					}
+
 					Safe_Proxy_Owner* m_pOwner;
 				};
 				//friend struct SafeProxy;
@@ -1157,6 +1206,7 @@ namespace Omega
 						&Release_Safe,
 						&QueryInterface_Safe,
 						&GetBaseShim_Safe,
+						0,
 						&Pin_Safe,
 						&Unpin_Safe
 					};
@@ -1322,7 +1372,7 @@ namespace Omega
 				}
 			};
 
-			inline auto_iface_ptr<Safe_Stub_Owner> create_stub_owner(IObject* pObject);
+			inline auto_iface_ptr<Safe_Stub_Owner> create_safe_stub_owner(IObject* pObject);
 
 			struct OMEGA_PRIVATE_TYPE(safe_module)
 			{
@@ -1393,6 +1443,9 @@ namespace Omega
 
 			OMEGA_DECLARE_FORWARDS(Omega,IException)
 			OMEGA_DECLARE_FORWARDS(Omega::TypeInfo,ITypeInfo)
+
+			template <typename I>
+			inline const SafeShim* create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, I* pI);
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(

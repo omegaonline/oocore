@@ -157,7 +157,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base
 			// See if we have a derived iid
 			for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 			{
-				if (i->second->IsDerived(iid))
+				if (i->second->IsDerived__proxy__(iid))
 				{
 					m_iid_map.insert(std::map<guid_t,Safe_Proxy_Base*>::value_type(iid,i->second));
 					break;
@@ -270,14 +270,16 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Own
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
 {
 	assert(iid != OMEGA_GUIDOF(IObject));
-		
-	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0,false);
-	if (!obj)
-		OMEGA_THROW(L"Failed to create safe proxy");
 
-	// Return the shim
-	return obj->CreateWireStub(shim_Controller,shim_Marshaller);
+	if (!static_cast<const IObject_Safe_VTable*>(m_base_shim->m_vtable)->pfnCreateWireStub_Safe)
+		return 0;
+
+	const SafeShim* ret = 0;
+	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_base_shim->m_vtable)->pfnCreateWireStub_Safe(m_base_shim,shim_Controller,shim_Marshaller,&iid,&ret);
+	if (except)
+		throw_correct_exception(except);
+	
+	return ret;
 }
 
 Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const guid_t& iid)
@@ -307,7 +309,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const 
 		return 0;
 	
 	// Return cast to the correct type
-	return obj->QIReturn();
+	return obj->QIReturn__proxy__();
 }
 
 Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const SafeShim* shim)
@@ -326,7 +328,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const Saf
 		return 0;
 	
 	// Return cast to the correct type
-	return obj->QIReturn();
+	return obj->QIReturn__proxy__();
 }
 
 void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const SafeShim* shim)
@@ -357,7 +359,8 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const SafeShim* shim)
 	if (except)
 		throw_correct_exception(except);
 
-	return obj->Throw();
+	obj->AddRef();
+	return obj->Throw__proxy__();
 }
 
 Omega::System::MetaInfo::Safe_Proxy_Base::~Safe_Proxy_Base()
@@ -369,7 +372,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(const g
 {
 	if (iid == OMEGA_GUIDOF(ISafeProxy))
 	{
-		AddRef();
+		Internal_AddRef();
 		return &m_internal;
 	}
 	
@@ -378,7 +381,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(const g
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Base::GetShim(const guid_t& iid)
 {
-	if (IsDerived(iid))
+	if (IsDerived__proxy__(iid))
 		return GetShim();
 	
 	return m_pOwner->GetShim(iid);
@@ -386,9 +389,6 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Bas
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
 {
-	if (IsDerived(iid))
-		return CreateWireStub(shim_Controller,shim_Marshaller);
-	
 	return m_pOwner->CreateWireStub(shim_Controller,shim_Marshaller,iid);
 }
 
@@ -423,7 +423,25 @@ Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim,
 	if (!shim)
 		return 0;
 
-	// QI and return
+	// See if we are a Wire Proxy
+	if (static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+	{
+		const SafeShim* proxy = 0;
+		const SafeShim* pE = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
+		if (pE)
+			throw_correct_exception(pE);
+
+		auto_safe_shim ss_proxy = proxy;
+		
+		auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = create_wire_proxy_owner(ss_proxy,pOuter);
+
+		IObject* pRet = ptrOwner->CreateProxy(*shim->m_iid);
+		if (!pRet)
+			OMEGA_THROW(L"Failed to find correct shim for wire_iid");
+
+		return pRet;
+	}
+
 	return create_safe_proxy_owner(shim,pOuter)->CreateProxy(shim);
 }
 
@@ -548,6 +566,11 @@ void Omega::System::MetaInfo::Safe_Stub_Owner::RemoveBase(Safe_Stub_Base* pStub)
 	}
 }
 
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Owner::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
+{
+	return create_wire_stub(shim_Controller,shim_Marshaller,iid,m_pI);
+}
+
 Omega::System::MetaInfo::Safe_Stub_Base::~Safe_Stub_Base()
 {
 	m_pOwner->RemoveBase(this);
@@ -607,7 +630,7 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_safe_st
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::return_safe_exception(IException* pE)
 {
 	auto_iface_ptr<IException> ptrE(pE);
-	return create_safe_stub(pE,ptrE->GetThrownIID());
+	return create_safe_stub(pE,pE->GetThrownIID());
 }
 
 #endif // OOCORE_SAFE_INL_INCLUDED_

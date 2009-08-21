@@ -11,7 +11,7 @@ IMPLEMENT_APP(OORegEditApp)
 
 bool OORegEditApp::OnInit()
 {
-	Omega::IException* pE = Omega::Initialize();
+	Omega::IException* pE = Omega::Initialize(true);
 	if (pE)
 	{
 		wxString strText = wxString::Format(_("Exception: %ls\nAt: %ls."),pE->GetDescription().c_str(),pE->GetSource().c_str());

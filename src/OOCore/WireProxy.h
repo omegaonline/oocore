@@ -89,9 +89,9 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL AddRef_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Release_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_t* iid);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetBaseShim_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Pin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Unpin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetBaseShim_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL WriteKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL UnpackKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetMarshaller_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
@@ -104,11 +104,8 @@ namespace OOCore
 		{
 			assert(m_refcount.m_debug_value > 0);
 
-			if (m_refcount.Release())
-			{
-				if (m_pin_count == 0)
-					delete this;
-			}
+			if (m_refcount.Release() && m_pin_count == 0)
+				delete this;
 		}
 
 		void Pin()
@@ -120,18 +117,21 @@ namespace OOCore
 		{
 			assert(m_pin_count.value() > 0);
 
-			if (--m_pin_count == 0)
-			{
-				if (m_refcount.IsZero())
-					delete this;
-			}
+			if (--m_pin_count == 0 && m_refcount.IsZero())
+				delete this;
 		}
 
 		const Omega::System::MetaInfo::SafeShim* GetShim(const Omega::guid_t& iid);
 
 		const Omega::System::MetaInfo::SafeShim* CreateWireStub(const Omega::System::MetaInfo::SafeShim*, const Omega::System::MetaInfo::SafeShim*, const Omega::guid_t&)
 		{
-			OMEGA_THROW(L"Invalid function call");
+			return 0;
+		}
+
+		Omega::System::IProxy* GetWireProxy()
+		{
+			Internal_AddRef();
+			return static_cast<Omega::System::IProxy*>(this);
 		}
 
 	// IMarshal members

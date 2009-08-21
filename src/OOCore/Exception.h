@@ -26,96 +26,13 @@
 
 namespace OOCore
 {
-	template <typename E, const Omega::guid_t* pOID>
-	class ExceptionAutoMarshalImpl :
-		public OTL::ExceptionImpl<E>,
-		public Omega::Remoting::IMarshal
-	{
-	public:
-		BEGIN_INTERFACE_MAP(ExceptionAutoMarshalImpl)
-			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,&ExceptionAutoMarshalImpl::QIMarshal)
-			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
-		END_INTERFACE_MAP()
-
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
-		{
-			if (pMessage->ReadStrings(L"m_strDesc",1,&this->m_strDesc) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
-			if (pMessage->ReadStrings(L"m_strSource",1,&this->m_strSource) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
-			Omega::guid_t actual_iid = OMEGA_GUIDOF(Omega::IException);
-			IObject* pUI = 0;
-			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,actual_iid,pUI);
-			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pUI));
-		}
-
-	private:
-		Omega::IObject* QIMarshal(const Omega::guid_t&)
-		{
-			Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
-			pRet->AddRef();
-			return pRet;
-		}
-
-	// IMarshal members
-	public:
-		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
-		{
-			return *pOID;
-		}
-
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
-		{
-			pMessage->WriteStrings(L"m_strDesc",1,&this->m_strDesc);
-			pMessage->WriteStrings(L"m_strSource",1,&this->m_strSource);
-			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
-		}
-
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
-		{
-			Omega::string_t s;
-			if (pMessage->ReadStrings(L"m_strDesc",1,&s) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
-			if (pMessage->ReadStrings(L"m_strSource",1,&s) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
-			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
-		}
-	};
-
-	template <typename E>
-	class ExceptionMarshalFactoryImpl :
-		public OTL::ObjectBase,
-		public Omega::Remoting::IMarshalFactory
-	{
-	public:
-		BEGIN_INTERFACE_MAP(ExceptionMarshalFactoryImpl)
-			INTERFACE_ENTRY(Omega::Remoting::IMarshalFactory)
-		END_INTERFACE_MAP()
-
-	// IMarshalFactory members
-	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
-		{
-			OTL::ObjectPtr<OTL::ObjectImpl<E> > ptrE = OTL::ObjectImpl<E>::CreateInstancePtr();
-			ptrE->UnmarshalInterface(pObjectManager,pMessage,flags);
-
-			pObject = ptrE->QueryInterface(iid);
-			if (!pObject)
-				throw Omega::INoInterfaceException::Create(iid);
-		}
-	};
-
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}
 	extern "C" const Omega::guid_t OID_SystemExceptionMarshalFactory;
 
 	class SystemException :
-		public ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
+		public OTL::ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory>
 	{
-		typedef ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory> baseClass;
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::ISystemException, &OID_SystemExceptionMarshalFactory> baseClass;
 	public:
 		Omega::uint32_t m_errno;
 
@@ -154,7 +71,7 @@ namespace OOCore
 
 	class SystemExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactorySingleton<SystemExceptionMarshalFactoryImpl,&OOCore::OID_SystemExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public ExceptionMarshalFactoryImpl<SystemException>
+		public OTL::ExceptionMarshalFactoryImpl<SystemException>
 	{
 	};
 
@@ -162,9 +79,9 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_NoInterfaceExceptionMarshalFactory;
 
 	class NoInterfaceException :
-		public ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
+		public OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory>
 	{
-		typedef ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory> baseClass;
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::INoInterfaceException, &OID_NoInterfaceExceptionMarshalFactory> baseClass;
 	public:
 		Omega::guid_t m_iid;
 
@@ -203,7 +120,7 @@ namespace OOCore
 
 	class NoInterfaceExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactorySingleton<NoInterfaceExceptionMarshalFactoryImpl,&OOCore::OID_NoInterfaceExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public ExceptionMarshalFactoryImpl<NoInterfaceException>
+		public OTL::ExceptionMarshalFactoryImpl<NoInterfaceException>
 	{
 	};
 
@@ -211,9 +128,9 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_TimeoutExceptionMarshalFactory;
 
 	class TimeoutException :
-		public ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
+		public OTL::ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory>
 	{
-		typedef ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory> baseClass;
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::ITimeoutException, &OID_TimeoutExceptionMarshalFactory> baseClass;
 	public:
 		BEGIN_INTERFACE_MAP(TimeoutException)
 			INTERFACE_ENTRY_CHAIN(baseClass)
@@ -222,7 +139,7 @@ namespace OOCore
 
 	class TimeoutExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactorySingleton<TimeoutExceptionMarshalFactoryImpl,&OOCore::OID_TimeoutExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public ExceptionMarshalFactoryImpl<TimeoutException>
+		public OTL::ExceptionMarshalFactoryImpl<TimeoutException>
 	{
 	};
 
@@ -230,9 +147,9 @@ namespace OOCore
 	extern "C" const Omega::guid_t OID_ChannelClosedExceptionMarshalFactory;
 
 	class ChannelClosedException :
-		public ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>
+		public OTL::ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory>
 	{
-		typedef ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory> baseClass;
+		typedef OTL::ExceptionAutoMarshalImpl<Omega::Remoting::IChannelClosedException, &OID_ChannelClosedExceptionMarshalFactory> baseClass;
 	public:
 		BEGIN_INTERFACE_MAP(ChannelClosedException)
 			INTERFACE_ENTRY_CHAIN(baseClass)
@@ -241,7 +158,7 @@ namespace OOCore
 
 	class ChannelClosedExceptionMarshalFactoryImpl :
 		public OTL::AutoObjectFactorySingleton<ChannelClosedExceptionMarshalFactoryImpl,&OOCore::OID_ChannelClosedExceptionMarshalFactory,Omega::Activation::InProcess>,
-		public ExceptionMarshalFactoryImpl<ChannelClosedException>
+		public OTL::ExceptionMarshalFactoryImpl<ChannelClosedException>
 	{
 	};
 }

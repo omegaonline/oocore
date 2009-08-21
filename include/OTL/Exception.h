@@ -81,6 +81,66 @@ namespace OTL
 			pObject = ptrE->QueryInterface(iid);
 		}
 	};
+
+	template <typename E, const Omega::guid_t* pOID>
+	class ExceptionAutoMarshalImpl :
+		public OTL::ExceptionImpl<E>,
+		public Omega::Remoting::IMarshal
+	{
+	public:
+		BEGIN_INTERFACE_MAP(ExceptionAutoMarshalImpl)
+			INTERFACE_ENTRY_FUNCTION(Omega::Remoting::IMarshal,&ExceptionAutoMarshalImpl::QIMarshal)
+			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
+		END_INTERFACE_MAP()
+
+		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
+		{
+			if (pMessage->ReadStrings(L"m_strDesc",1,&this->m_strDesc) != 1)
+				OMEGA_THROW(L"Unexpected end of message");
+
+			if (pMessage->ReadStrings(L"m_strSource",1,&this->m_strSource) != 1)
+				OMEGA_THROW(L"Unexpected end of message");
+
+			Omega::guid_t actual_iid = OMEGA_GUIDOF(Omega::IException);
+			IObject* pUI = 0;
+			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,actual_iid,pUI);
+			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pUI));
+		}
+
+	private:
+		Omega::IObject* QIMarshal(const Omega::guid_t&)
+		{
+			Omega::IObject* pRet = static_cast<Omega::Remoting::IMarshal*>(this);
+			pRet->AddRef();
+			return pRet;
+		}
+
+	// IMarshal members
+	public:
+		virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			return *pOID;
+		}
+
+		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			pMessage->WriteStrings(L"m_strDesc",1,&this->m_strDesc);
+			pMessage->WriteStrings(L"m_strSource",1,&this->m_strSource);
+			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
+		}
+
+		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		{
+			Omega::string_t s;
+			if (pMessage->ReadStrings(L"m_strDesc",1,&s) != 1)
+				OMEGA_THROW(L"Unexpected end of message");
+
+			if (pMessage->ReadStrings(L"m_strSource",1,&s) != 1)
+				OMEGA_THROW(L"Unexpected end of message");
+
+			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
+		}
+	};
 }
 
 #endif // OTL_EXCEPTION_H_INCLUDED_

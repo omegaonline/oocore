@@ -535,8 +535,8 @@ namespace Omega
 			class Wire_Proxy_Base
 			{
 			public:
-				virtual bool IsDerived(const guid_t& iid) const = 0;
-				virtual IObject* QIReturn() = 0;
+				virtual bool IsDerived__proxy__(const guid_t& iid) const = 0;
+				virtual IObject* QIReturn__proxy__() = 0;
 				
 				void AddRef()
 				{
@@ -547,20 +547,46 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 
-					if (m_refcount.Release())
+					if (m_refcount.Release() && m_pincount.IsZero())
 						delete this;
 				}
 
 				inline IObject* QueryInterface(const guid_t& iid);
 
+				void Pin()
+				{
+					m_pincount.AddRef();
+				}
+
+				void Unpin()
+				{
+					assert(m_pincount.m_debug_value > 0);
+
+					if (m_pincount.Release() && m_refcount.IsZero())
+						delete this;
+				}
+
+				inline const SafeShim* GetShim(const Omega::guid_t& iid);
+
+				const SafeShim* GetShim()
+				{
+					AddRef();
+					return &m_shim;
+				}
+
 			protected:
+				SafeShim m_shim;
+
 				Wire_Proxy_Base(Wire_Proxy_Owner* pOwner) : m_pOwner(pOwner)
 				{
+					m_internal.m_pOuter = this;
 					AddRef();
 				}
 
 				inline virtual ~Wire_Proxy_Base();
 
+				inline const SafeShim* GetBaseShim();
+				inline const SafeShim* GetWireProxy();
 				inline auto_iface_ptr<IMarshaller> GetMarshaller();
 				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
 				inline void UnpackHeader(Remoting::IMessage* pMessage);
@@ -571,6 +597,54 @@ namespace Omega
 
 				Wire_Proxy_Owner*         m_pOwner;
 				Threading::AtomicRefCount m_refcount;
+				Threading::AtomicRefCount m_pincount;
+
+				struct Internal : public ISafeProxy
+				{
+					void AddRef() 
+					{ 
+						m_pOuter->AddRef(); 
+					}
+
+					void Release() 
+					{ 
+						m_pOuter->Release(); 
+					}
+
+					IObject* QueryInterface(const guid_t& iid)
+					{
+						return m_pOuter->QueryInterface(iid);
+					}
+
+					void Pin()
+					{
+						m_pOuter->Pin();
+					}
+
+					void Unpin()
+					{
+						m_pOuter->Unpin();
+					}
+
+					const SafeShim* GetShim(const Omega::guid_t& iid)
+					{
+						return m_pOuter->GetShim(iid);
+					}
+
+					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const Omega::guid_t&)
+					{
+						return 0;
+					}
+
+					IProxy* GetWireProxy()
+					{
+						auto_safe_shim ss = m_pOuter->GetWireProxy();
+						return static_cast<IProxy*>(create_safe_proxy(ss));
+					}
+
+					Wire_Proxy_Base* m_pOuter;
+				};
+				Internal m_internal;
 			};
 
 			template <typename I, typename D>
@@ -590,9 +664,24 @@ namespace Omega
 			protected:
 				Wire_Proxy(Wire_Proxy_Owner* pOwner) : 
 					 Wire_Proxy_Base(pOwner)
-				{}
+				{
+					static const IObject_Safe_VTable vt = 
+					{
+						&AddRef_Safe,
+						&Release_Safe,
+						&QueryInterface_Safe,
+						&Pin_Safe,
+						&Unpin_Safe,
+						&GetBaseShim_Safe,
+						0,
+						&GetWireProxy_Safe
+					};
+					m_shim.m_vtable = &vt;
+					m_shim.m_stub = this;
+					m_shim.m_iid = &OMEGA_GUIDOF(D);
+				}
 
-				virtual bool IsDerived(const guid_t& iid) const
+				virtual bool IsDerived__proxy__(const guid_t& iid) const
 				{
 					return (iid == OMEGA_GUIDOF(IObject));
 				}
@@ -605,10 +694,111 @@ namespace Omega
 				static const uint32_t MethodCount = 3;
 
 			private:
-				IObject* QIReturn()
+				IObject* QIReturn__proxy__()
 				{
 					AddRef();
 					return static_cast<D*>(this);
+				}
+
+				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy*>(shim->m_stub)->AddRef();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL Release_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy*>(shim->m_stub)->Release();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						if (*iid == OMEGA_GUIDOF(IObject))
+							*retval = static_cast<Wire_Proxy*>(shim->m_stub)->GetShim();
+						else
+							*retval = 0;
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL Pin_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy*>(shim->m_stub)->Pin();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL Unpin_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy*>(shim->m_stub)->Unpin();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						*retval = static_cast<Wire_Proxy*>(shim->m_stub)->GetBaseShim();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL GetWireProxy_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						*retval = static_cast<Wire_Proxy*>(shim->m_stub)->GetWireProxy();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
 				}
 	
 			// IObject members
@@ -625,8 +815,8 @@ namespace Omega
 
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
-					if (iid != OMEGA_GUIDOF(IObject) && IsDerived(iid))
-						return QIReturn();
+					if (iid != OMEGA_GUIDOF(IObject) && IsDerived__proxy__(iid))
+						return QIReturn__proxy__();
 					
 					return Wire_Proxy_Base::QueryInterface(iid);
 				}
@@ -644,6 +834,23 @@ namespace Omega
 					m_ptrMarshaller = m_ptrProxy->GetMarshaller();
 
 					m_internal.m_pOwner = this;	
+					m_safe_proxy.m_pOwner = this;	
+
+					static const IObject_Safe_VTable vt = 
+					{
+						&AddRef_Safe,
+						&Release_Safe,
+						&QueryInterface_Safe,
+						&Pin_Safe,
+						&Unpin_Safe,
+						&GetBaseShim_Safe,
+						0,
+						&GetWireProxy_Safe
+					};
+					m_base_shim.m_vtable = &vt;
+					m_base_shim.m_stub = this;
+					m_base_shim.m_iid = &OMEGA_GUIDOF(IObject);
+
 					AddRef();
 				}
 
@@ -656,19 +863,26 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 
-					if (m_refcount.Release() && ListEmpty())
+					if (m_refcount.Release() && m_pincount.IsZero() && ListEmpty())
 						delete this;
 				}
 
-				inline void RemoveBase(Wire_Proxy_Base* pProxy);
-				inline IObject* QueryInterface(const guid_t& iid);
-				inline IObject* CreateProxy(const guid_t& iid);
+				const SafeShim* GetBaseShim()
+				{
+					AddRef();
+					return &m_base_shim;
+				}
 
 				auto_iface_ptr<IMarshaller> GetMarshaller()
 				{
 					return m_ptrMarshaller;
 				}
 
+				inline void RemoveBase(Wire_Proxy_Base* pProxy);
+				inline IObject* QueryInterface(const guid_t& iid);
+				inline const SafeShim* GetShim(const guid_t& iid);
+				inline IObject* CreateProxy(const guid_t& iid);
+				inline const SafeShim* GetWireProxy();
 				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
 				inline void UnpackHeader(Remoting::IMessage* pMessage);
 								
@@ -680,8 +894,10 @@ namespace Omega
 				std::map<guid_t,Wire_Proxy_Base*> m_iid_map;
 				auto_iface_ptr<IProxy>            m_ptrProxy;
 				auto_iface_ptr<IMarshaller>       m_ptrMarshaller;
+				SafeShim                          m_base_shim;
 				IObject*                          m_pOuter;
 				Threading::AtomicRefCount         m_refcount;
+				Threading::AtomicRefCount         m_pincount;
 				
 				struct Internal : public IObject
 				{
@@ -709,10 +925,70 @@ namespace Omega
 				private:
 					Threading::AtomicRefCount m_refcount;
 				};
-				//friend struct Internal;
 				Internal m_internal;
 
+				struct SafeProxy : public ISafeProxy
+				{
+					void AddRef()
+					{
+						m_pOwner->AddRef();
+					}
+
+					void Release()
+					{
+						m_pOwner->Release();
+					}
+
+					IObject* QueryInterface(const guid_t& iid)
+					{
+						return m_pOwner->QueryInterface(iid);
+					}
+
+					void Pin()
+					{
+						m_pOwner->Pin();
+					}
+
+					void Unpin()
+					{
+						m_pOwner->Unpin();
+					}
+
+					const SafeShim* GetShim(const Omega::guid_t& iid)
+					{
+						return m_pOwner->GetShim(iid);
+					}
+
+					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const Omega::guid_t&)
+					{
+						return 0;
+					}
+
+					IProxy* GetWireProxy()
+					{
+						return static_cast<IProxy*>(create_safe_proxy(m_pOwner->GetWireProxy()));
+					}
+
+					Wire_Proxy_Owner* m_pOwner;
+				};
+				SafeProxy m_safe_proxy;
+
 				inline virtual ~Wire_Proxy_Owner();
+
+				inline auto_iface_ptr<Wire_Proxy_Base> GetProxyBase(const guid_t& iid, bool bAllowPartial, bool bQI);
+				
+				void Pin()
+				{
+					m_pincount.AddRef();
+				}
+
+				void Unpin()
+				{
+					assert(m_pincount.m_debug_value > 0);
+
+					if (m_pincount.Release() && m_refcount.IsZero() && ListEmpty())
+						delete this;
+				}
 
 				bool ListEmpty()
 				{
@@ -727,7 +1003,106 @@ namespace Omega
 					}
 				}
 
-				inline auto_iface_ptr<Wire_Proxy_Base> GetProxyBase(const guid_t& iid, bool bAllowPartial, bool bQI);
+				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy_Owner*>(shim->m_stub)->AddRef();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL Release_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy_Owner*>(shim->m_stub)->Release();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						if (*iid == OMEGA_GUIDOF(IObject))
+							*retval = static_cast<Wire_Proxy_Owner*>(shim->m_stub)->GetBaseShim();
+						else
+							*retval = 0;
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL Pin_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy_Owner*>(shim->m_stub)->Pin();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL Unpin_Safe(const SafeShim* shim)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						static_cast<Wire_Proxy_Owner*>(shim->m_stub)->Unpin();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						*retval = static_cast<Wire_Proxy_Owner*>(shim->m_stub)->GetBaseShim();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL GetWireProxy_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						*retval = static_cast<Wire_Proxy_Owner*>(shim->m_stub)->GetWireProxy();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
 			};
 
 			inline Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> create_wire_proxy_owner(const SafeShim* shim, IObject* pOuter);
@@ -755,8 +1130,6 @@ namespace Omega
 					m_ptrMarshaller->AddRef();
 					m_ptrI->AddRef();
 		
-					AddRef();
-
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;
 					m_shim.m_iid = &OMEGA_GUIDOF(IStub);
@@ -802,6 +1175,7 @@ namespace Omega
 				auto_iface_ptr<IObject>     m_ptrI;
 				IStubController*            m_pController;
 				Threading::AtomicRefCount   m_refcount;
+				Threading::AtomicRefCount   m_pincount;
 				SafeShim                    m_shim;
 				
 				Wire_Stub_Base(const Wire_Stub_Base&);
@@ -815,10 +1189,11 @@ namespace Omega
 							&AddRef_Safe,
 							&Release_Safe,
 							&QueryInterface_Safe,
+							&Pin_Safe,
+							&Unpin_Safe,
 							&GetBaseShim_Safe,
 							0,
-							&Pin_Safe,
-							&Unpin_Safe
+							0
 						},
 						&Invoke_Safe,
 						&SupportsInterface_Safe,
@@ -835,12 +1210,22 @@ namespace Omega
 				{
 					assert(m_refcount.m_debug_value > 0);
 
-					if (m_refcount.Release())
+					if (m_refcount.Release() && m_pincount.IsZero())
 						delete this;
 				}
 
-				void Pin() {}
-				void Unpin() {}
+				void Pin() 
+				{
+					m_pincount.AddRef();
+				}
+
+				void Unpin() 
+				{
+					assert(m_pincount.m_debug_value > 0);
+
+					if (m_pincount.Release() && m_refcount.IsZero())
+						delete this;
+				}
 
 				const SafeShim* GetBaseShim()
 				{
@@ -905,20 +1290,6 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
-				{
-					const SafeShim* except = 0;
-					try
-					{
-						*retval = static_cast<Wire_Stub_Base*>(shim->m_stub)->GetBaseShim();
-					}
-					catch (IException* pE)
-					{
-						except = return_safe_exception(pE);
-					}
-					return except;
-				}
-
 				static const SafeShim* OMEGA_CALL Pin_Safe(const SafeShim* shim)
 				{
 					const SafeShim* except = 0;
@@ -939,6 +1310,20 @@ namespace Omega
 					try
 					{
 						static_cast<Wire_Stub_Base*>(shim->m_stub)->Unpin();
+					}
+					catch (IException* pE)
+					{
+						except = return_safe_exception(pE);
+					}
+					return except;
+				}
+
+				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
+				{
+					const SafeShim* except = 0;
+					try
+					{
+						*retval = static_cast<Wire_Stub_Base*>(shim->m_stub)->GetBaseShim();
 					}
 					catch (IException* pE)
 					{
@@ -1001,14 +1386,7 @@ namespace Omega
 			};
 
 			template <typename I>
-			class Wire_Stub
-			{
-			public:
-				static const SafeShim* create(IStubController*, IMarshaller*, IObject*)
-				{
-					OMEGA_THROW(L"No stub available");
-				}
-			};
+			class Wire_Stub;
 
 			template <>
 			class Wire_Stub<IObject> : public Wire_Stub_Base
@@ -1035,15 +1413,8 @@ namespace Omega
 				static const uint32_t MethodCount = Wire_Stub_Base::MethodCount;
 			};
 
-			template <typename I>
-			inline const SafeShim* create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, I* pI)
-			{
-				auto_iface_ptr<IStubController> ptrController = static_cast<IStubController*>(create_safe_proxy(shim_Controller));
-				auto_iface_ptr<IMarshaller> ptrMarshaller = static_cast<IMarshaller*>(create_safe_proxy(shim_Marshaller));
-										
-				return Wire_Stub<I>::create(ptrController,ptrMarshaller,pI);
-			}
-
+			inline const SafeShim* create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid, IObject* pObj);
+			
 			class wire_proxy_holder
 			{
 			public:
@@ -1057,11 +1428,10 @@ namespace Omega
 			};
 			typedef Threading::Singleton<wire_proxy_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_PROXY_HOLDER;
 
-
 			struct wire_rtti
 			{
 				Wire_Proxy_Base* (*pfnCreateWireProxy)(Wire_Proxy_Owner* pOwner);
-				Safe_Stub_Base* (*pfnCreateSafeStub)(IObject* pI, Safe_Stub_Owner* pOwner);
+				const SafeShim* (*pfnCreateWireStub)(IStubController* pController, IMarshaller* pMarshaller, IObject* pI);
 			};
 
 			typedef Threading::Singleton<std::map<guid_t,const wire_rtti*>,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_HOLDER;

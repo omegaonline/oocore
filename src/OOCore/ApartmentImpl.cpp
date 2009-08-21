@@ -261,25 +261,19 @@ IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::Meth
 	old_id = m_pSession->update_state(apt_id,&timeout);
 	
 	// Make the call
-	IException* pE = 0;
 	try
 	{
 		pRecv = ptrOM->Invoke(pSend,timeout);
 	}
-	catch (IException* pE2)
-	{
-		pE = pE2;
-	}
-	catch (...)
+	catch (IException* pE)
 	{
 		// Reset state
 		m_pSession->update_state(old_id,0);
-		throw;
+		return pE;
 	}
 
 	m_pSession->update_state(old_id,0);
-
-	return pE;
+	return 0;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0,())

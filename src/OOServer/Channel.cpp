@@ -144,13 +144,13 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 			pRecv = static_cast<Remoting::IMessage*>(pUI);
 		}
+
+		return 0;
 	}
 	catch (IException* pE)
 	{
 		return pE;
 	}
-	
-	return 0;
 }
 
 Remoting::MarshalFlags_t User::Channel::GetMarshalFlags()

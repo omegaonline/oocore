@@ -464,17 +464,17 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 	if (pE)
 		return pE;
-
-	ObjectPtr<Remoting::IMessage> ptrRecv;
-	ptrRecv.Attach(pRecv);
-	pRecv = 0;
-
-	if (!(attribs & TypeInfo::Asynchronous))
+	
+	try
 	{
-		assert(ptrRecv);
+		ObjectPtr<Remoting::IMessage> ptrRecv;
+		ptrRecv.Attach(pRecv);
+		pRecv = 0;
 
-		try
+		if (!(attribs & TypeInfo::Asynchronous))
 		{
+			assert(ptrRecv);
+
 			// Read the header
 			ptrRecv->ReadStructStart(L"ipc_response",L"$ipc_response_type");
 
@@ -484,30 +484,23 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 			if (bthrow)
 			{
 				// Unmarshal the exception
-				IObject* pUI = 0;
-				UnmarshalInterface(L"exception",ptrRecv,OMEGA_GUIDOF(IException),pUI);
-				ObjectPtr<IException> ptrE;
-				ptrE.Attach(static_cast<IException*>(pUI));
-
-				if (!ptrE)
+				IObject* pE = 0;
+				UnmarshalInterface(L"exception",ptrRecv,OMEGA_GUIDOF(IException),pE);
+				if (!pE)
 					OMEGA_THROW(L"Null exception returned");
 
-				guid_t iid = ptrE->GetThrownIID();
-				pUI = ptrE->QueryInterface(iid);
-				if (!pUI)
-					return ptrE.AddRef();
-				else
-					return static_cast<IException*>(pUI);
+				return static_cast<IException*>(pE);
 			}
 		}
-		catch (IException* pE)
-		{
-			return pE;
-		}
-	}
 
-	pRecv = ptrRecv.AddRef();
-	return 0;
+		pRecv = ptrRecv.AddRef();
+
+		return 0;
+	}
+	catch (IException* pE)
+	{
+		return pE;
+	}
 }
 
 TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
@@ -686,7 +679,6 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 			
 			// See if we have a proxy already...
 			ObjectPtr<ObjectImpl<Proxy> > ptrProxy;
-
 			{
 				OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 

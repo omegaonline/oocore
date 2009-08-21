@@ -36,15 +36,17 @@ OOCore::Proxy::Proxy() :
 			&AddRef_Safe,
 			&Release_Safe,
 			&QueryInterface_Safe,
+			&Pin_Safe,
+			&Unpin_Safe,
 			&GetBaseShim_Safe,
 			0,
-			&Pin_Safe,
-			&Unpin_Safe
+			0
 		},
 		&WriteKey_Safe,
 		&UnpackKey_Safe,
 		&GetMarshaller_Safe,
-		&IsAlive_Safe
+		&IsAlive_Safe,
+		&RemoteQueryInterface_Safe
 	};
 
 	m_proxy_shim.m_vtable = &proxy_vt;
@@ -57,10 +59,11 @@ OOCore::Proxy::Proxy() :
 			&AddRef_Safe,
 			&Release_Safe,
 			&QueryInterface_Safe,
+			&Pin_Safe,
+			&Unpin_Safe,
 			&GetBaseShim_Safe,
 			0,
-			&Pin_Safe,
-			&Unpin_Safe
+			0
 		},
 		&GetUnmarshalFactoryOID_Safe,
 		&MarshalInterface_Safe,
@@ -118,12 +121,11 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
+	if (pE)
+		throw pE;
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
-
-	if (pE)
-		throw pE;
 
 	bool_t retval;
 	System::MetaInfo::wire_read(L"$retval",ptrParamsIn,retval);
@@ -138,7 +140,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 	guid_t wire_iid;
 	System::MetaInfo::wire_read(L"iid",pMessage,wire_iid);
 
-	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(&m_proxy_shim,static_cast<IProxy*>(this));
+	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(&m_proxy_shim,0);
 
 	IObject* pRet = ptrOwner->CreateProxy(wire_iid);
 	if (!pRet)
@@ -210,15 +212,16 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 	System::MetaInfo::wire_write(L"iid",pParamsOut,iid);
 
 	Remoting::IMessage* pParamsIn = 0;
-	IException* pE = 0;
-
+	
 	try
 	{
 		m_pManager->DoMarshalChannel(pObjectManager,pParamsOut);
 
 		pParamsOut->WriteStructEnd(L"ipc_request");
 
-		pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
+		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
+		if (pE)
+			throw pE;
 	}
 	catch (...)
 	{
@@ -235,9 +238,6 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
-
-	if (pE)
-		throw pE;
 
 	IObject* pUI = 0;
 	m_pManager->UnmarshalInterface(L"pReflect",ptrParamsIn,OMEGA_GUIDOF(Remoting::IMessage),pUI);
@@ -335,21 +335,6 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const Syste
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetBaseShim_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
-		*retval = &static_cast<Proxy*>(shim->m_stub)->m_proxy_shim;
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
 const System::MetaInfo::SafeShim* OOCore::Proxy::Pin_Safe(const System::MetaInfo::SafeShim* shim)
 {
 	const System::MetaInfo::SafeShim* except = 0;
@@ -370,6 +355,21 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::Unpin_Safe(const System::MetaIn
 	try
 	{
 		static_cast<Proxy*>(shim->m_stub)->Unpin();
+	}
+	catch (IException* pE)
+	{
+		except = System::MetaInfo::return_safe_exception(pE);
+	}
+	return except;
+}
+
+const System::MetaInfo::SafeShim* OOCore::Proxy::GetBaseShim_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval)
+{
+	const System::MetaInfo::SafeShim* except = 0;
+	try
+	{
+		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
+		*retval = &static_cast<Proxy*>(shim->m_stub)->m_proxy_shim;
 	}
 	catch (IException* pE)
 	{

@@ -141,7 +141,7 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 		}
 	
 		if (!ptrStub)
-			ptrStub = CreateStub(iid);
+			ptrStub.Attach(CreateStub(iid));
 			
 		// Now add it...
 		std::pair<std::map<const guid_t,ObjectPtr<System::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<System::IStub> >::value_type(iid,ptrStub));
@@ -156,7 +156,7 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 	}
 }
 
-ObjectPtr<System::IStub> OOCore::Stub::CreateStub(const guid_t& iid)
+System::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 {
 	ObjectPtr<System::MetaInfo::ISafeProxy> ptrSafeProxy(m_ptrObj);
 	if (!ptrSafeProxy)
@@ -182,17 +182,25 @@ ObjectPtr<System::IStub> OOCore::Stub::CreateStub(const guid_t& iid)
 	System::MetaInfo::auto_safe_shim shim_Marshaller = System::MetaInfo::create_safe_stub(static_cast<System::IMarshaller*>(m_pManager),OMEGA_GUIDOF(System::IMarshaller));
 
 	System::MetaInfo::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
-	System::IStub* pStub = static_cast<System::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub));
-	ObjectPtr<System::IStub> ptrStub;
-	ptrStub.Attach(pStub);
-	return ptrStub;
+	if (!wire_stub)
+		OMEGA_THROW(L"Attempt to create a stub for an object failed");
+
+	return static_cast<System::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub));
 }
 
 void OOCore::Stub::RemoteRelease(uint32_t release_count)
 {
 	m_marshal_count -= release_count;
 	if (m_marshal_count == 0)
+	{
 		m_pManager->RemoveStub(m_stub_id);
+
+		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+		m_iid_map.clear();
+		m_ptrObj.Release();
+		m_stub_id = 0;
+	}
 }
 
 bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)

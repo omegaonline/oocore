@@ -50,16 +50,20 @@ namespace OOCore
 	protected:
 		void Internal_AddRef()
 		{
-			printf("WireStub %p AddRef > %u\n",this,m_refcount.m_debug_value+1);
+			//printf("WireStub %p AddRef > %u\n",this,m_refcount.m_debug_value+1);
 
 			OTL::ObjectBase::Internal_AddRef();
 		}
 
 		void Internal_Release()
 		{
-			printf("WireStub %p Release < %u\n",this,m_refcount.m_debug_value-1);
+			//printf("WireStub %p Release < %u\n",this,m_refcount.m_debug_value-1);
 
 			OTL::ObjectBase::Internal_Release();
+		}
+
+		virtual ~Stub()
+		{
 		}
 
 	private:
@@ -75,7 +79,7 @@ namespace OOCore
 		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::System::IStub> > m_iid_map;
 
 		OTL::ObjectPtr<Omega::System::IStub> FindStub(const Omega::guid_t& iid);
-		OTL::ObjectPtr<Omega::System::IStub> CreateStub(const Omega::guid_t& iid);
+		Omega::System::IStub* CreateStub(const Omega::guid_t& iid);
 
 	// IStub members
 	public:

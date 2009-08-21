@@ -116,7 +116,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 	// Init the base class
 	if (type_info->base_type)
 	{
-		m_ptrBase = TIMap::instance()->get_type_info(*type_info->base_type);
+		m_ptrBase.Attach(TIMap::instance()->get_type_info(*type_info->base_type));
 		m_base_methods = m_ptrBase->GetMethodCount();
 	}
 

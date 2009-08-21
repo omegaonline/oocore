@@ -64,7 +64,7 @@
 			static const wire_rtti s_rtti = \
 			{ \
 				&Wire_Proxy<n_space::iface,n_space::iface>::bind, \
-				&Safe_Stub<n_space::iface>::create, \
+				&Wire_Stub<n_space::iface>::create, \
 			}; \
 			register_wire_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
 		} \
@@ -432,7 +432,8 @@
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
-		try { marshal_info<ret_type>::wire_type::type OMEGA_CONCAT(name,_RetVal) = pThis__wire__->get_iface<iface>()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
+		try { marshal_info<ret_type>::wire_type::type OMEGA_CONCAT(name,_RetVal); \
+		static_cast<ret_type&>(OMEGA_CONCAT(name,_RetVal)) = pThis__wire__->get_iface<iface>()->name(OMEGA_EMIT_PARAMS_VOID(param_count,params) ); \
 		OMEGA_WRITE_PARAMS_WIRE_STUB(param_count,params) \
 		marshal_info<ret_type>::wire_type::write(L"$retval",ptrMarshaller__wire__,pParamsOut__wire__,OMEGA_CONCAT(name,_RetVal)); } \
 		catch (...) { OMEGA_UNPACK_PARAMS_WIRE_STUB(param_count,params) throw; } \
@@ -471,7 +472,6 @@
 			return Safe_Stub<d_space::derived>::IsDerived(iid); \
 		} \
 	private: \
-		virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller) { return create_wire_stub<n_space::name>(shim_Controller,shim_Marshaller,static_cast<n_space::name*>(m_pI)); } \
 		static n_space::name* deref_shim(const SafeShim* shim) { return static_cast<n_space::name*>(static_cast<Safe_Stub*>(shim->m_stub)->m_pI); } \
 		OMEGA_DEFINE_SAFE_STUB_METHODS(methods) \
 	};
@@ -698,10 +698,10 @@
 		} \
 	protected: \
 		Safe_Proxy(const SafeShim* shim, Safe_Proxy_Owner* pOwner = 0) : Safe_Proxy<d_space::derived,D>(shim,pOwner) {} \
-		virtual bool IsDerived(const guid_t& iid) const \
+		virtual bool IsDerived__proxy__(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
-			return Safe_Proxy<d_space::derived,D>::IsDerived(iid); \
+			return Safe_Proxy<d_space::derived,D>::IsDerived__proxy__(iid); \
 		} \
 	public: \
 		OMEGA_DECLARE_SAFE_PROXY_METHODS(methods) \
@@ -719,10 +719,10 @@
 		} \
 	protected: \
 		Wire_Proxy(Wire_Proxy_Owner* pOwner = 0) : Base(pOwner) {} \
-		virtual bool IsDerived(const guid_t& iid) const \
+		virtual bool IsDerived__proxy__(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
-			return Base::IsDerived(iid); \
+			return Base::IsDerived__proxy__(iid); \
 		} \
 		static const uint32_t MethodCount = Base::MethodCount + OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \

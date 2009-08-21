@@ -119,19 +119,26 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 		throw;
 	}
 
-	if (response)
+	try
 	{
-		// Wrap the response
-		ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
-		ptrRecv->init(*response);
-		
-		// Unwrap the payload...
-		IObject* pUI = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-		pRecv = static_cast<Remoting::IMessage*>(pUI);
+		if (response)
+		{
+			// Wrap the response
+			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
+			ptrRecv->init(*response);
+			
+			// Unwrap the payload...
+			IObject* pUI = 0;
+			ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+			pRecv = static_cast<Remoting::IMessage*>(pUI);
+		}
+
+		return 0;
 	}
-	
-	return 0;
+	catch (IException* pE)
+	{
+		return pE;
+	}
 }
 
 Remoting::MarshalFlags_t OOCore::Channel::GetMarshalFlags()

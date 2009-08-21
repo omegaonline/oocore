@@ -23,10 +23,6 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	ptrApartment.Attach(Omega::Apartment::IApartment::Create());
 	TEST(ptrApartment);
 
-	ptrApartment.Release();
-
-	//return true;
-
 	// try to create the object asking for TypeInfo::IProvideObjectInfo
 	Omega::IObject* pObject = 0;
 	ptrApartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,NULL,OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObject);
@@ -36,8 +32,6 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pObject));
 	pObject = 0;
 	TEST(ptrPOI);
-
-	return true;
 
 	// Try to get the first interface
 	Omega::IEnumGuid* pEG = ptrPOI->EnumInterfaces();
@@ -52,7 +46,11 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	TEST(iid == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	// Confirm we can QI for all the interfaces we need...
-	OTL::ObjectPtr<Omega::System::IProxy> ptrProxy(ptrPOI);
+	OTL::ObjectPtr<Omega::System::MetaInfo::ISafeProxy> ptrSProxy(ptrPOI);
+	TEST(ptrSProxy);
+
+	OTL::ObjectPtr<Omega::System::IProxy> ptrProxy;
+	ptrProxy.Attach(ptrSProxy->GetWireProxy());
 	TEST(ptrProxy);
 
 	OTL::ObjectPtr<Omega::System::IMarshaller> ptrMarshaller;
@@ -91,7 +89,7 @@ bool apartment_dll_tests()
 {
 #if defined(_WIN32)
 	do_local_library_test(L"TestLibrary_msvc");
-	do_local_library_test(L"TestLibrary_mingw");
+	do_local_library_test(L"TestLibrary");
 #else
 	do_local_library_test(L"./libTestLibrary.so");
 #endif

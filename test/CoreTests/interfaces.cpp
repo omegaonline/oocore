@@ -399,7 +399,7 @@ bool interface_dll_tests()
 {
 #if defined(_WIN32)
 	do_local_library_test(L"TestLibrary_msvc");
-	do_local_library_test(L"TestLibrary_mingw");
+	do_local_library_test(L"TestLibrary");
 #else
 	do_local_library_test(L"./libTestLibrary.so");
 #endif
@@ -454,7 +454,7 @@ static bool interface_tests_i(const wchar_t* pszHost)
 	}
 	try
 	{
-		do_library_test(L"TestLibrary_mingw",pszHost);
+		do_library_test(L"TestLibrary",pszHost);
 		++c;
 	}
 	catch (Omega::IException* pE)

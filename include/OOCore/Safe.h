@@ -704,6 +704,8 @@ namespace Omega
 
 				inline virtual ~Safe_Proxy_Base();
 
+				inline void Throw(const guid_t& iid);
+
 				const SafeShim* m_shim;
 				
 			private:
@@ -1053,6 +1055,7 @@ namespace Omega
 				inline IObject* QueryInterface(const guid_t& iid);
 				inline IObject* CreateProxy(const SafeShim* shim);
 				inline void Throw(const SafeShim* shim);
+				inline void Throw(const guid_t& iid);
 				inline const SafeShim* GetShim(const guid_t& iid);
 				inline const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
 
@@ -1452,15 +1455,90 @@ namespace Omega
 			OMEGA_DECLARE_FORWARDS(Omega,IException)
 			OMEGA_DECLARE_FORWARDS(Omega::TypeInfo,ITypeInfo)
 
-			OMEGA_DEFINE_INTERNAL_INTERFACE
+			OMEGA_DEFINE_INTERNAL_INTERFACE_NOPROXY
 			(
 				Omega, IException,
 
+				OMEGA_METHOD_VOID(Throw,0,())
 				OMEGA_METHOD(guid_t,GetThrownIID,0,())
 				OMEGA_METHOD(IException*,GetCause,0,())
 				OMEGA_METHOD(string_t,GetDescription,0,())
 				OMEGA_METHOD(string_t,GetSource,0,())
 			)
+
+			template <typename D>
+			class Safe_Proxy<IException,D> : public Safe_Proxy<IObject,D>
+			{
+				const vtable_info<Omega::IException>::type* deref_vt() 
+				{ 
+					return static_cast<const vtable_info<IException>::type*>(this->m_shim->m_vtable); 
+				}
+
+			public:
+				static Safe_Proxy_Base* bind(const SafeShim* shim, Safe_Proxy_Owner* pOwner)
+				{
+					Safe_Proxy* pThis; 
+					OMEGA_NEW(pThis,Safe_Proxy(shim,pOwner)); 
+					return pThis;
+				}
+
+			protected:
+				Safe_Proxy(const SafeShim* shim, Safe_Proxy_Owner* pOwner = 0) : 
+					 Safe_Proxy<IObject,D>(shim,pOwner) 
+				{}
+
+				virtual bool IsDerived__proxy__(const guid_t& iid) const
+				{
+					if (iid == OMEGA_GUIDOF(Omega::IException)) 
+						return true;
+					return Safe_Proxy<IObject,D>::IsDerived__proxy__(iid);
+				}
+
+			public:
+				void Throw()
+				{
+					// Make sure we relase our refcount before throwing the correct interface
+					auto_iface_ptr<Safe_Proxy<IException,D> > ptrThis(this);
+
+					Safe_Proxy_Base::Throw(GetThrownIID());
+				}
+
+				guid_t GetThrownIID()
+				{
+					guid_t retval;
+					const SafeShim* pE = deref_vt()->pfnGetThrownIID_Safe(this->m_shim,&retval);
+					if (pE)
+						throw_correct_exception(pE);
+					return retval;
+				}
+
+				IException* GetCause()
+				{
+					IException* retval = 0;
+					const SafeShim* pE = deref_vt()->pfnGetCause_Safe(this->m_shim,marshal_info<IException*&>::safe_type::coerce(retval));
+					if (pE)
+						throw_correct_exception(pE);
+					return retval;
+				}
+
+				string_t GetDescription()
+				{
+					string_t retval;
+					const SafeShim* pE = deref_vt()->pfnGetDescription_Safe(this->m_shim,marshal_info<string_t&>::safe_type::coerce(retval));
+					if (pE)
+						throw_correct_exception(pE);
+					return retval;
+				}
+
+				string_t GetSource()
+				{
+					string_t retval;
+					const SafeShim* pE = deref_vt()->pfnGetSource_Safe(this->m_shim,marshal_info<string_t&>::safe_type::coerce(retval));
+					if (pE)
+						throw_correct_exception(pE);
+					return retval;
+				}
+			};
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(

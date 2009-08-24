@@ -5,7 +5,7 @@ bool init_standalone_tests()
 {
 	Omega::IException* pE = Omega::Initialize(true);
 	if (pE)
-		throw pE;
+		pE->Throw();
 
 	return true;
 }
@@ -14,7 +14,7 @@ bool init_server_tests()
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
-		throw pE;
+		pE->Throw();
 
 	return true;
 }

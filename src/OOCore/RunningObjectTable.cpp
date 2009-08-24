@@ -74,7 +74,8 @@ ObjectPtr<System::IInterProcessService> OOCore::GetInterProcessService()
 	{
 		IException* pE = ISystemException::Create(L"Omega::Initialize not called",L"");
 		pE2->Release();
-		throw pE;
+		pE->Throw();
+		return 0;
 	}
 }
 

@@ -44,6 +44,10 @@ namespace OTL
 
 	// IException members
 	public:
+		virtual void Throw()
+		{
+			throw static_cast<E*>(this);
+		}
 		virtual Omega::guid_t GetThrownIID()
 		{
 			return OMEGA_GUIDOF(E);

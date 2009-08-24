@@ -111,7 +111,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	{
 		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		disconnect();
-		throw pE;
+		pE->Throw();
 	}
 	catch (...)
 	{

@@ -39,6 +39,7 @@ namespace Omega
 
 	interface IException : public IObject
 	{
+		virtual void Throw() = 0;
 		virtual guid_t GetThrownIID() = 0;
 		virtual IException* GetCause() = 0;
 		virtual string_t GetDescription() = 0;

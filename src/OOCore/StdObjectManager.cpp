@@ -412,7 +412,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 	{
 		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,pParamsIn);
 	}
-	catch (IException*)
+	catch (...)
 	{
 		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 
@@ -432,7 +432,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 	}
 
 	if (pERet)
-		throw pERet;
+		pERet->Throw();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);

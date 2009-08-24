@@ -122,7 +122,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 	if (pE)
-		throw pE;
+		pE->Throw();
 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
@@ -221,7 +221,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 
 		IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
 		if (pE)
-			throw pE;
+			pE->Throw();
 	}
 	catch (...)
 	{

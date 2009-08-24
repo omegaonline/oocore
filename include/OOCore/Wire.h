@@ -1470,6 +1470,7 @@ namespace Omega
 			(
 				Omega, IException,
 
+				OMEGA_METHOD_VOID(Throw,0,())
 				OMEGA_METHOD(guid_t,GetThrownIID,0,())
 				OMEGA_METHOD(IException*,GetCause,0,())
 				OMEGA_METHOD(string_t,GetDescription,0,())

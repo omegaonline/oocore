@@ -37,7 +37,6 @@ static void tests(bool bStandalone)
 	RUN_TEST(registry_tests);
 	RUN_TEST(registry_tests_2);
 	RUN_TEST(interface_dll_tests);
-
 	RUN_TEST(apartment_dll_tests);
 	
 	if (!bStandalone)
@@ -175,19 +174,19 @@ bool run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		output("[Unhandled Omega::IException]\n\n");
+		output("[Omega::IException]\n\n");
 		output_exception(pE);
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		output("[Unhandled std::exception]\n\nWhat:\t%s\n",e.what());
+		output("[std::exception]\n\nWhat:\t%s\n",e.what());
 	}
 	catch (...)
 	{
 		++exception_count;
-		output("[Unhandled C++ exception!]\n");
+		output("[C++ exception!]\n");
 	}
 
     return false;

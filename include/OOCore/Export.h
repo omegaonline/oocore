@@ -646,7 +646,7 @@
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
 			throw; \
 		} \
-		if (OMEGA_CONCAT(name,_Exception)) throw OMEGA_CONCAT(name,_Exception); \
+		if (OMEGA_CONCAT(name,_Exception)) OMEGA_CONCAT(name,_Exception)->Throw(); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 	} \
 	static const uint32_t OMEGA_CONCAT(name,_MethodId) = Base::MethodCount + 
@@ -669,7 +669,7 @@
 			OMEGA_UNPACK_PARAMS_WIRE_PROXY(param_count,params) \
 			throw; \
 		} \
-		if (OMEGA_CONCAT(name,_Exception)) throw OMEGA_CONCAT(name,_Exception); \
+		if (OMEGA_CONCAT(name,_Exception)) OMEGA_CONCAT(name,_Exception)->Throw(); \
 		OMEGA_READ_PARAMS_WIRE_PROXY(param_count,params) \
 		ret_type OMEGA_CONCAT(name,_RetVal) = default_value<ret_type>::value(); \
 		marshal_info<ret_type&>::wire_type::read(L"$retval",ptrMarshaller__wire__,pParamsIn__wire__,OMEGA_CONCAT(name,_RetVal)); \
@@ -729,6 +729,11 @@
 		OMEGA_DECLARE_WIRE_PROXY_METHODS(methods) \
 	};
 
+#define OMEGA_DEFINE_INTERNAL_INTERFACE_NOPROXY(n_space,name,methods) \
+	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,n_space,name,Omega,IObject) \
+	OMEGA_DECLARE_TYPE(n_space,name,methods,Omega,IObject) \
+	OMEGA_DECLARE_STUB(n_space,name,Omega,IObject,methods)
+	
 #define OMEGA_DEFINE_INTERNAL_INTERFACE(n_space,name,methods) \
 	OMEGA_DECLARE_SAFE(OMEGA_UNIQUE_NAME(name),methods,n_space,name,Omega,IObject) \
 	OMEGA_DECLARE_TYPE(n_space,name,methods,Omega,IObject) \

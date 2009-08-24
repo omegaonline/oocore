@@ -334,25 +334,16 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const Saf
 void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const SafeShim* shim)
 {
 	assert(*shim->m_iid != OMEGA_GUIDOF(ISafeProxy));
-
-	if (*shim->m_iid == OMEGA_GUIDOF(IObject))
-	{
-		if (m_pOuter)
-		{
-			m_pOuter->AddRef();
-			throw m_pOuter;
-		}
-		else
-		{
-			m_internal.AddRef();
-			throw &m_internal;
-		}
-	}
-
+	assert(*shim->m_iid != OMEGA_GUIDOF(IObject));
+	
 	// See if we have it cached
 	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(*shim->m_iid,shim,false);
 	if (!obj)
-		OMEGA_THROW(L"Failed to create safe proxy");
+	{
+		obj = GetProxyBase(OMEGA_GUIDOF(IException),shim,false);		
+		if (!obj)
+			OMEGA_THROW(L"Failed to create safe exception proxy");
+	}
 
 	// Release the incoming shim....
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
@@ -363,9 +354,32 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const SafeShim* shim)
 	return obj->Throw__proxy__();
 }
 
+void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const guid_t& iid)
+{
+	assert(iid != OMEGA_GUIDOF(ISafeProxy));
+	assert(iid != OMEGA_GUIDOF(IObject));
+	
+	// See if we have it cached
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0,false);
+	if (!obj)
+	{
+		obj = GetProxyBase(OMEGA_GUIDOF(IException),0,false);
+		if (!obj)
+			OMEGA_THROW(L"Failed to create safe exception proxy");
+	}
+
+	obj->AddRef();
+	return obj->Throw__proxy__();
+}
+
 Omega::System::MetaInfo::Safe_Proxy_Base::~Safe_Proxy_Base()
 {
 	m_pOwner->RemoveBase(this);
+}
+
+void Omega::System::MetaInfo::Safe_Proxy_Base::Throw(const guid_t& iid)
+{
+	m_pOwner->Throw(iid);
 }
 
 Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(const guid_t& iid)

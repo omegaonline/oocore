@@ -40,9 +40,7 @@ Omega::string_t::string_t(handle_t* h) :
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,0,());
-Omega::string_t::string_t() :
-	m_handle(static_cast<handle_t*>(OOCore_string_t__ctor1()))
+Omega::string_t::string_t() : m_handle(0)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -61,6 +59,11 @@ Omega::string_t::string_t(const Omega::string_t& s) :
 	OMEGA_DEBUG_STASH_STRING();
 }
 
+void Omega::string_t::addref(handle_t* h)
+{
+	OOCore_string_t__ctor3(h);
+}
+
 OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor4,2,((in),const wchar_t*,wsz,(in),size_t,length));
 Omega::string_t::string_t(const wchar_t* wsz, size_t length) :
 	m_handle(static_cast<handle_t*>(OOCore_string_t__ctor4(wsz,length)))
@@ -72,6 +75,11 @@ OMEGA_EXPORTED_FUNCTION_VOID(OOCore_string_t__dctor,1,((in),void*,h));
 Omega::string_t::~string_t()
 {
 	OOCore_string_t__dctor(m_handle);
+}
+
+void Omega::string_t::release(handle_t* h)
+{
+	OOCore_string_t__dctor(h);
 }
 
 OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t_assign_1,2,((in),void*,h1,(in),const void*,h2));
@@ -228,10 +236,11 @@ Omega::string_t Omega::string_t::Right(size_t length) const
 	return string_t(static_cast<handle_t*>(OOCore_string_t_right(m_handle,length)));
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_string_t_clear,1,((in),void*,h));
+OMEGA_EXPORTED_FUNCTION_VOID(OOCore_string_t_clear,1,((in),void*,h));
 Omega::string_t& Omega::string_t::Clear()
 {
-	m_handle = static_cast<handle_t*>(OOCore_string_t_clear(m_handle));
+	OOCore_string_t_clear(m_handle);
+	m_handle = 0;
 	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }

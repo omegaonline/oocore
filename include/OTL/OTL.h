@@ -468,7 +468,7 @@ namespace OTL
 		OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)();
 	}
 	
-	static inline ModuleBase* GetModule()
+	inline static ModuleBase* GetModule()
 	{
 		return Module::OMEGA_PRIVATE_FN_CALL(GetModuleBase)();
 	}
@@ -1020,7 +1020,7 @@ namespace OTL
 	{
 	// IProvideObjectInfo members
 	public:
-		virtual Omega::IEnumGuid* EnumInterfaces()
+		/*virtual Omega::IEnumGuid* EnumInterfaces()
 		{
 			ObjectPtr<ObjectImpl<EnumGuid> > ptrEnum = ObjectImpl<EnumGuid>::CreateInstancePtr();
 
@@ -1056,6 +1056,46 @@ namespace OTL
 
 			ptrEnum->Init();
 			return ptrEnum.AddRef();
+		}*/
+
+		virtual std::list<Omega::guid_t> EnumInterfaces()
+		{
+			std::list<Omega::guid_t> retval;
+
+			const ObjectBase::QIEntry* pEntries = ROOT::getQIEntries();
+			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
+			{
+				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
+				{
+					if (*(pEntries[i].pGuid) != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
+						retval.push_back(*(pEntries[i].pGuid));
+				}
+				else
+				{
+					/*ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
+					ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset,pEntries[i].pfnMemQI)));
+					if (ptrPOI)
+					{
+						// Add each entry in ptrPOI
+
+						for (;;)
+						{
+							Omega::uint32_t count = 1;
+							Omega::guid_t iid;
+							ptrEnum->Next(count,&iid);
+							if (count==0)
+								break;
+
+							if (!ptrEnum->Find(iid) && iid != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
+								ptrEnum->Append(iid);
+						}
+					}*/
+
+					DebugBreak();
+				}
+			}
+
+			return retval;
 		}
 	};
 }

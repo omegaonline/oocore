@@ -312,7 +312,7 @@ namespace OOBase
 		}
 
 		/// A specialization of write() for type \p bool.
-		bool write(const bool& val)
+		bool write(bool val)
 		{
 			if (m_last_error != 0)
 				return false;

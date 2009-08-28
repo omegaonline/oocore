@@ -219,7 +219,7 @@ namespace Omega
 	{
 		interface IProvideObjectInfo : public IObject
 		{
-			virtual IEnumGuid* EnumInterfaces() = 0;
+			virtual std::list<guid_t> EnumInterfaces() = 0;
 		};
 	}
 }
@@ -427,7 +427,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::TypeInfo, IProvideObjectInfo, "{F66A857D-C474-4c9e-B08B-68135AC8459E}",
 		
 	// Methods
-	OMEGA_METHOD(IEnumGuid*,EnumInterfaces,0,())
+	OMEGA_METHOD(std::list<guid_t>,EnumInterfaces,0,())
 )
 
 OMEGA_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())

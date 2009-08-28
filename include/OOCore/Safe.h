@@ -33,6 +33,731 @@ namespace Omega
 
 		namespace MetaInfo
 		{
+			template <typename T>
+			struct std_safe_type
+			{
+				typedef T type;
+
+				static T coerce(T val, ...)
+				{
+					return val;
+				}
+			};
+
+			// MSVC gets twitchy about size_t
+			#if defined(_MSC_VER) && defined(_Wp64)
+			template <>
+			struct std_safe_type<size_t>
+			{
+			#if defined(_M_IA64) || defined(_M_X64)
+				typedef uint64_t type;
+			#else
+				typedef uint32_t type;
+			#endif
+				static type coerce(size_t val)
+				{
+					return static_cast<type>(val);
+				}
+			};
+			#endif
+
+			template <typename T>
+			struct std_safe_type_ref
+			{
+				typedef T* type;
+
+				static type coerce(T& val)
+				{
+					return &val;
+				}
+
+				static T& coerce(type val)
+				{
+					return *val;
+				}
+			};
+
+			template <typename T> struct custom_safe_type;
+			template <typename T> struct custom_wire_type;
+			
+			template <typename T> 
+			struct custom_safe_type_wrapper
+			{
+				typedef typename custom_safe_type<T>::impl::safe_type type;
+
+				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(T val)
+				{
+					return typename custom_safe_type<T>::impl::safe_type_wrapper(val);
+				}
+
+				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(T val, size_t count)
+				{
+					return typename custom_safe_type<T>::impl::safe_type_wrapper(val,count);
+				}
+
+				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val)
+				{
+					return typename custom_safe_type<T>::impl::type_wrapper(val);
+				}
+
+				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val, uint32_t count)
+				{
+					return typename custom_safe_type<T>::impl::type_wrapper(val,static_cast<size_t>(count));
+				}
+
+				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val, const uint64_t& count)
+				{
+					return typename custom_safe_type<T>::impl::type_wrapper(val,static_cast<size_t>(count));
+				}
+
+				template <typename S>
+				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val, S* count)
+				{
+					return coerce(val,*count);
+				}
+			};
+
+			template <typename T> 
+			struct custom_safe_type_ref_wrapper
+			{
+				typedef typename custom_safe_type<T>::impl::safe_type* type;
+
+				struct ref_holder
+				{
+					operator T&()
+					{
+						return m_val;
+					}
+
+				protected:
+					typename custom_safe_type<T>::impl::type_wrapper m_val;
+					type                                             m_dest;
+
+					ref_holder(type val) : m_val(*val), m_dest(val)
+					{}
+				};
+
+				struct ref_holder_lite : public ref_holder
+				{
+					ref_holder_lite(type val) :	ref_holder(val)
+					{}
+
+					~ref_holder_lite()
+					{
+						this->m_val.update(*this->m_dest);
+					}
+				};
+
+				struct ref_holder_full : public ref_holder
+				{
+					ref_holder_full(type val, const guid_t* piid, const SafeShim* pOuter = 0) :
+						ref_holder(val), m_piid(piid), m_pOuter(pOuter)
+					{}
+
+					~ref_holder_full()
+					{
+						this->m_val.update(*this->m_dest,m_piid,m_pOuter);
+					}
+
+				private:
+					const guid_t*   m_piid;
+					const SafeShim* m_pOuter;
+				};
+
+				struct ref_holder_safe
+				{
+					operator type()
+					{
+						return &m_val;
+					}
+
+				protected:
+					typename custom_safe_type<T>::impl::safe_type_wrapper m_val;
+					T&                                                    m_dest;
+					
+					ref_holder_safe(T& val) : m_val(val), m_dest(val)
+					{}
+
+					ref_holder_safe(const ref_holder_safe& rhs) : m_val(rhs.m_val), m_dest(rhs.m_dest)
+					{}
+
+				private:
+					ref_holder_safe& operator = (const ref_holder_safe&);
+				};
+
+				struct ref_holder_safe_lite : public ref_holder_safe
+				{
+					ref_holder_safe_lite(T& val) : ref_holder_safe(val)
+					{}
+
+					~ref_holder_safe_lite()
+					{
+						this->m_val.update(this->m_dest);
+					}
+				};
+
+				struct ref_holder_safe_full : public ref_holder_safe
+				{
+					ref_holder_safe_full(T& val, const guid_t& iid, IObject* pOuter = 0) : 
+						ref_holder_safe(val), m_iid(iid), m_pOuter(pOuter)
+					{}
+
+					~ref_holder_safe_full()
+					{
+						this->m_val.update(this->m_dest,m_iid,m_pOuter);
+					}
+
+					ref_holder_safe_full(const ref_holder_safe_full& rhs) : ref_holder_safe(rhs), m_iid(rhs.m_iid), m_pOuter(rhs.m_pOuter)
+					{}
+
+				private:
+					const guid_t& m_iid;
+					IObject*      m_pOuter;
+
+					ref_holder_safe_full& operator = (const ref_holder_safe_full&);
+				};
+
+				static ref_holder_safe_lite coerce(T& val)
+				{
+					return ref_holder_safe_lite(val);
+				}
+
+				static ref_holder_safe_full coerce(T& val, const guid_t& iid, IObject* pOuter = 0)
+				{
+					return ref_holder_safe_full(val,iid,pOuter);
+				}
+
+				static ref_holder_lite coerce(type val)
+				{
+					return ref_holder_lite(val);
+				}
+
+				static ref_holder_full coerce(type val, const guid_t* piid, const SafeShim* pOuter = 0)
+				{
+					return ref_holder_full(val,piid,pOuter);
+				}
+			};
+
+			template <typename T> 
+			struct custom_safe_type_const_ref_wrapper
+			{
+				typedef typename custom_safe_type<const T>::impl::safe_type* type;
+
+				struct ref_holder_safe
+				{
+					ref_holder_safe(const T& val) : m_val(val)
+					{}
+
+					operator type()
+					{
+						return &m_val;
+					}
+
+				private:
+					typename custom_safe_type<const T>::impl::safe_type_wrapper m_val;
+				};
+
+				static ref_holder_safe coerce(const T& val)
+				{
+					return ref_holder_safe(val);
+				}
+
+				static typename custom_safe_type<const T>::impl::type_wrapper coerce(type val)
+				{
+					return typename custom_safe_type<const T>::impl::type_wrapper(*val);
+				}
+			};
+
+			// Don't pass arrays by const& - just pass the array
+			template <typename T> 
+			struct custom_safe_type_const_ref_wrapper<T*>;
+
+			template <typename T> struct marshal_info;
+			
+			template <typename T> 
+			struct array_safe_type
+			{
+				typedef typename marshal_info<T>::safe_type::type* safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type vals, size_t cbSize) : 
+						m_bNull(!vals),
+						m_val(default_value<T>::value()),
+						m_pVals(0), 
+						m_pOrig(vals), 
+						m_cbSize(cbSize)
+					{
+						if (!m_bNull)
+						{
+							if (cbSize == 1)
+								m_val = marshal_info<T>::safe_type::coerce(*vals);
+							else if (cbSize > 1)
+							{
+								OMEGA_NEW(m_pVals,T[cbSize]);
+								for (size_t i=0;i<cbSize;++i)
+									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
+							}
+						}
+					}
+
+					~type_wrapper()
+					{
+						if (!m_bNull)
+						{
+							if (m_pVals)
+							{
+								for (size_t i=0;i<m_cbSize;++i)
+									m_pOrig[i] = marshal_info<T>::safe_type::coerce(m_pVals[i]);
+
+								delete [] m_pVals;
+							}
+							else
+								*m_pOrig = marshal_info<T>::safe_type::coerce(m_val);
+						}						
+					}
+
+					operator T*()
+					{
+						if (m_bNull)
+							return 0;
+						else if (m_pVals)
+							return m_pVals;
+						else
+							return &m_val;
+					}
+
+				private:
+					bool      m_bNull;
+					T         m_val;
+					T*        m_pVals;
+					safe_type m_pOrig;
+					size_t    m_cbSize;
+				};
+
+				struct safe_type_wrapper
+				{
+					typedef typename marshal_info<T>::safe_type::type arr_type;
+
+					safe_type_wrapper(T* vals, size_t cbSize) : 
+						m_bNull(!vals),
+						m_val(default_value<arr_type>::value()),
+						m_pVals(0), 
+						m_pOrig(vals), 
+						m_cbSize(cbSize)
+					{
+						if (!m_bNull)
+						{
+							if (cbSize == 1)
+								m_val = marshal_info<T>::safe_type::coerce(*vals);
+							else if (cbSize > 1)
+							{
+								OMEGA_NEW(m_pVals,arr_type[cbSize]);
+								for (size_t i=0;i<cbSize;++i)
+									m_pVals[i] = marshal_info<T>::safe_type::coerce(vals[i]);
+							}
+						}
+					}
+
+					~safe_type_wrapper()
+					{
+						if (!m_bNull)
+						{
+							if (m_pVals)
+							{
+								for (size_t i=0;i<m_cbSize;++i)
+									m_pOrig[i] = marshal_info<T>::safe_type::coerce(m_pVals[i]);
+
+								delete [] m_pVals;
+							}
+							else
+								*m_pOrig = marshal_info<T>::safe_type::coerce(m_val);
+						}	
+					}
+
+					operator safe_type()
+					{
+						if (m_bNull)
+							return 0;
+						else if (m_pVals)
+							return m_pVals;
+						else
+							return &m_val;
+					}
+
+				private:
+					bool      m_bNull;
+					arr_type  m_val;
+					arr_type* m_pVals;
+					T*        m_pOrig;
+					size_t    m_cbSize;
+				};
+			};
+
+			template <typename T> 
+			struct array_safe_type<const T>
+			{
+				typedef typename marshal_info<const T>::safe_type::type* safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type vals, size_t cbSize) : 
+						m_bNull(!vals),
+						m_val(default_value<T>::value()),
+						m_pVals(0)
+					{
+						if (!m_bNull)
+						{
+							if (cbSize == 1)
+								m_val = marshal_info<const T>::safe_type::coerce(*vals);
+							else if (cbSize > 1)
+							{
+								OMEGA_NEW(m_pVals,T[cbSize]);
+								for (size_t i=0;i<cbSize;++i)
+									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
+							}
+						}
+					}
+
+					~type_wrapper()
+					{
+						if (m_pVals)
+							delete [] m_pVals;
+					}
+
+					operator const T*()
+					{
+						if (m_bNull)
+							return 0;
+						else if (m_pVals)
+							return m_pVals;
+						else
+							return &m_val;
+					}
+
+				private:
+					bool m_bNull;
+					T    m_val;
+					T*   m_pVals;
+				};
+
+				struct safe_type_wrapper
+				{
+					typedef typename marshal_info<T>::safe_type::type arr_type;
+
+					safe_type_wrapper(const T* vals, size_t cbSize) : 
+						m_bNull(!vals),
+						m_val(default_value<arr_type>::value()),
+						m_pVals(0)
+					{
+						if (!m_bNull)
+						{
+							if (cbSize == 1)
+								m_val = marshal_info<const T>::safe_type::coerce(*vals);
+							else if (cbSize > 1)
+							{
+								OMEGA_NEW(m_pVals,arr_type[cbSize]);
+								for (size_t i=0;i<cbSize;++i)
+									m_pVals[i] = marshal_info<const T>::safe_type::coerce(vals[i]);
+							}
+						}
+					}
+
+					~safe_type_wrapper()
+					{
+						if (m_pVals)
+							delete [] m_pVals;
+					}
+
+					operator safe_type()
+					{
+						if (m_bNull)
+							return 0;
+						else if (m_pVals)
+							return m_pVals;
+						else
+							return &m_val;
+					}
+
+				private:
+					bool      m_bNull;
+					arr_type  m_val;
+					arr_type* m_pVals;
+				};
+			};
+
+			template <typename T> 
+			struct custom_safe_type<T*>
+			{
+				typedef array_safe_type<T> impl;
+			};
+
+			template <typename T>
+			struct custom_safe_type<const T>
+			{
+				typedef typename custom_safe_type<T>::impl impl;
+			};
+
+			struct string_t_safe_type
+			{
+				typedef void* safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type val) : m_val(string_t_safe_type::coerce(val))
+					{
+						string_t_safe_type::addref(val);
+					}
+
+					void update(safe_type& dest)
+					{
+						string_t_safe_type::release(dest);
+						dest = string_t_safe_type::coerce(m_val);
+						string_t_safe_type::addref(dest);
+					}
+
+					operator string_t&()
+					{
+						return m_val;
+					}
+
+				private:
+					string_t m_val;
+				};
+				friend struct type_wrapper;
+
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::coerce(val))
+					{
+						string_t_safe_type::addref(m_val);
+					}
+
+					~safe_type_wrapper()
+					{
+						string_t_safe_type::release(m_val);
+					}
+
+					void update(string_t& dest)
+					{
+						string_t_safe_type::addref(m_val);
+						dest = string_t_safe_type::coerce(m_val);
+					}
+
+					operator safe_type ()
+					{
+						return m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
+				private:
+					safe_type m_val;
+				};
+				friend struct safe_type_wrapper;
+
+			private:
+				static void* coerce(const string_t& s)
+				{
+					return static_cast<void*>(s.m_handle);
+				}
+
+				static string_t coerce(void* v)
+				{
+					return string_t(static_cast<string_t::handle_t*>(v));
+				}
+
+				static void addref(void* v)
+				{
+					string_t::addref(static_cast<string_t::handle_t*>(v));
+				}
+
+				static void release(void* v)
+				{
+					string_t::release(static_cast<string_t::handle_t*>(v));
+				}
+			};
+
+			template <>
+			struct custom_safe_type<string_t>
+			{
+				typedef struct string_t_safe_type impl;
+			};
+
+			template <>
+			struct custom_safe_type<bool_t>
+			{
+				typedef custom_safe_type<bool_t> impl;
+				typedef int safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type val) : m_val(val != 0)
+					{}
+
+					void update(safe_type& dest)
+					{
+						dest = (m_val ? 1 : 0);
+					}
+
+					operator bool_t&()
+					{
+						return m_val;
+					}
+
+				private:
+					bool_t m_val;
+				};
+
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(bool_t val = false) : m_val(val ? 1 : 0)
+					{}
+
+					void update(bool_t& dest)
+					{
+						dest = (m_val != 0);
+					}
+
+					operator safe_type ()
+					{
+						return m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
+				private:
+					safe_type m_val;
+				};
+			};
+
+			template <typename T> struct is_message_type
+			{
+				enum { result = 0 };
+			};
+
+			// These are the types that can be natively marshalled
+			template <> struct is_message_type<bool_t> { enum { result = 1 }; };
+			template <> struct is_message_type<byte_t> { enum { result = 1 }; };
+			template <> struct is_message_type<int16_t> { enum { result = 1 }; };
+			template <> struct is_message_type<uint16_t> { enum { result = 1 }; };
+			template <> struct is_message_type<int32_t> { enum { result = 1 }; };
+			template <> struct is_message_type<uint32_t> { enum { result = 1 }; };
+			template <> struct is_message_type<int64_t> { enum { result = 1 }; };
+			template <> struct is_message_type<uint64_t> { enum { result = 1 }; };
+			template <> struct is_message_type<float4_t> { enum { result = 1 }; };
+			template <> struct is_message_type<float8_t> { enum { result = 1 }; };
+			template <> struct is_message_type<string_t> { enum { result = 1 }; };
+			template <> struct is_message_type<guid_t> { enum { result = 1 }; };
+
+			template <typename T> struct is_message_type<const T>
+			{
+				enum { result = is_message_type<T>::result };
+			};
+
+			template <typename T> struct std_wire_type;
+			template <typename T> struct std_wire_type_array;
+
+			template <typename T> struct custom_wire_type_wrapper;
+			template <typename T> struct custom_wire_type_ref_wrapper;
+
+			template <typename T> struct marshal_info
+			{
+				typedef typename if_else_t<
+					is_c_abi<T>::result,
+					std_safe_type<T>,
+					custom_safe_type_wrapper<T> 
+				>::result safe_type;
+				
+				typedef typename if_else_t<
+					is_message_type<T>::result,
+					std_wire_type<T>,
+					custom_wire_type_wrapper<T> 
+				>::result wire_type;
+			};
+
+			template <typename T> struct marshal_info<T&>
+			{
+				typedef typename if_else_t<
+					is_c_abi<T>::result,
+					std_safe_type_ref<T>,
+					custom_safe_type_ref_wrapper<T>
+				>::result safe_type;
+
+				typedef typename if_else_t<
+					is_message_type<T>::result,
+					std_wire_type<T&>,
+					custom_wire_type_wrapper<T>
+				>::result wire_type;
+			};
+
+			template <typename T> struct marshal_info<const T&>
+			{
+				typedef typename if_else_t<
+					is_c_abi<const T>::result,
+					std_safe_type_ref<const T>,
+					custom_safe_type_const_ref_wrapper<T>
+				>::result safe_type;
+
+				typedef typename if_else_t<
+					is_message_type<const T>::result,
+					std_wire_type<const T&>,
+					custom_wire_type_wrapper<const T>
+				>::result wire_type;
+			};
+
+			template <typename T> struct marshal_info<T*>
+			{
+				typedef typename if_else_t<
+					is_c_abi<T*>::result,
+					std_safe_type<T*>,
+					custom_safe_type_wrapper<T*>
+				>::result safe_type;
+
+				typedef typename if_else_t<
+					is_message_type<T>::result,
+					std_wire_type_array<T>,
+					custom_wire_type_wrapper<T*>
+				>::result wire_type;
+			};
+
+			struct SafeShim
+			{
+				const void* m_vtable;
+				void* m_stub;
+				const guid_t* m_iid;
+			};
+
+			struct ISafeProxy : public IObject
+			{
+				virtual void Pin() = 0;
+				virtual void Unpin() = 0;
+				virtual const SafeShim* GetShim(const Omega::guid_t& iid) = 0;
+				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid) = 0;
+				virtual IProxy* GetWireProxy() = 0;
+			};
+
+			inline void throw_correct_exception(const SafeShim* except);
+			inline const SafeShim* return_safe_exception(IException* pE);
+
+			struct IObject_Safe_VTable
+			{
+				const SafeShim* (OMEGA_CALL* pfnAddRef_Safe)(const SafeShim* shim);
+				const SafeShim* (OMEGA_CALL* pfnRelease_Safe)(const SafeShim* shim);
+				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_t* iid);
+				const SafeShim* (OMEGA_CALL* pfnPin_Safe)(const SafeShim* shim);
+				const SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(const SafeShim* shim);
+				const SafeShim* (OMEGA_CALL* pfnGetBaseShim_Safe)(const SafeShim* shim, const SafeShim** retval);
+				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t* piid, const SafeShim** retval);
+				const SafeShim* (OMEGA_CALL* pfnGetWireProxy_Safe)(const SafeShim* shim, const SafeShim** retval);
+			};
+
 			template <typename I>
 			class auto_iface_ptr
 			{
@@ -93,281 +818,6 @@ namespace Omega
 				}
 
 				I* m_pI;
-			};
-
-			struct SafeShim
-			{
-				const void* m_vtable;
-				void* m_stub;
-				const guid_t* m_iid;
-			};
-
-			template <typename T>
-			class std_safe_type
-			{
-			public:
-				class micro_ref
-				{
-				public:
-					micro_ref(T& val) : m_val(val)
-					{}
-
-					micro_ref(const micro_ref& rhs) : m_val(rhs.m_val)
-					{}
-
-					micro_ref& operator = (const micro_ref& rhs)
-					{
-						m_val = rhs.m_val;
-						return *this;
-					}
-
-					void update(T& dest, const guid_t*, const SafeShim*)
-					{
-						dest = m_val;
-					}
-
-					void update(T& dest, const guid_t*, const IObject*)
-					{
-						dest = m_val;
-					}
-
-					operator T& ()
-					{
-						return m_val;
-					}
-
-					T* operator & ()
-					{
-						return &m_val;
-					}
-
-					T& m_val;
-				};
-
-				typedef T type;
-				typedef micro_ref ref_type;
-				typedef micro_ref ref_safe_type;
-
-				static T& coerce(T& val)
-				{
-					return val;
-				}
-			};
-
-			template <>
-			class std_safe_type<bool_t>
-			{
-			public:
-				struct bool_2_int
-				{
-					bool_2_int(bool_t val = false) : m_val(val ? 1 : 0)
-					{}
-
-					void update(bool_t& dest, const guid_t*, IObject*)
-					{
-						dest = (m_val != 0);
-					}
-					
-					operator int& ()
-					{
-						return m_val;
-					}
-
-					int* operator & ()
-					{
-						return &m_val;
-					}
-
-					int m_val;
-				};
-
-				struct int_2_bool
-				{
-					int_2_bool(int val) : m_val(val != 0)
-					{}
-
-					void update(int& dest, const guid_t*, const SafeShim*)
-					{
-						dest = (m_val ? 1 : 0);
-					}
-
-					operator bool_t&()
-					{
-						return m_val;
-					}
-
-					bool_t m_val;
-				};
-
-				typedef int type;
-				typedef int_2_bool ref_type;
-				typedef bool_2_int ref_safe_type;
-
-				static bool_2_int coerce(bool_t val)
-				{
-					return bool_2_int(val);
-				}
-
-				static int_2_bool coerce(int val)
-				{
-					return int_2_bool(val);
-				}
-			};
-
-			template <typename T> class std_wire_type;
-			template <typename T> class std_wire_type_array;
-
-			template <typename T> struct marshal_info
-			{
-				typedef std_safe_type<T> safe_type;
-				typedef std_wire_type<T> wire_type;
-			};
-
-			#if defined(_MSC_VER) && defined(_Wp64)
-			// VC gets badly confused with size_t
-			template <> struct marshal_info<size_t>
-			{
-			#if defined(OMEGA_64)
-				typedef std_safe_type<uint64_t> safe_type;
-				typedef std_wire_type<uint64_t> wire_type;
-			#else
-				typedef std_safe_type<uint32_t> safe_type;
-				typedef std_wire_type<uint32_t> wire_type;
-			#endif
-			};
-			#endif
-
-			template <typename T> struct marshal_info<T*>
-			{
-				typedef std_safe_type<T*> safe_type;
-				typedef std_wire_type_array<T> wire_type;
-			};
-
-			template <typename T>
-			class std_safe_type<T&>
-			{
-			public:
-				class ref_holder
-				{
-				public:
-					ref_holder(typename marshal_info<T>::safe_type::type* val, const guid_t* piid, const SafeShim* pOuter) :
-						m_val(*val), m_dest(val), m_piid(piid), m_pOuter(pOuter)
-					{}
-
-					~ref_holder()
-					{
-						m_val.update(*m_dest,m_piid,m_pOuter);
-					}
-
-					operator T&()
-					{
-						return m_val;
-					}
-
-				private:
-					typename marshal_info<T>::safe_type::ref_type m_val;
-					typename marshal_info<T>::safe_type::type* m_dest;
-					const guid_t* m_piid;
-					const SafeShim* m_pOuter;
-				};
-
-				class ref_holder_safe
-				{
-				public:
-					ref_holder_safe(T& val, const guid_t* piid = 0, IObject* pOuter = 0) : 
-						m_val(val), m_dest(&val), m_piid(piid), m_pOuter(pOuter)
-					{}
-
-					~ref_holder_safe()
-					{
-						m_val.update(*m_dest,m_piid,m_pOuter);
-					}
-
-					operator typename marshal_info<T>::safe_type::type*()
-					{
-						return &m_val;
-					}
-
-				private:
-					typename marshal_info<T>::safe_type::ref_safe_type m_val;
-					T*            m_dest;
-					const guid_t* m_piid;
-					IObject*      m_pOuter;
-				};
-				typedef typename marshal_info<T>::safe_type::type* type;
-
-				static ref_holder_safe coerce(T& val)
-				{
-					return ref_holder_safe(val);
-				}
-
-				static ref_holder_safe coerce(T& val, const guid_t& iid, IObject* pOuter = 0)
-				{
-					return ref_holder_safe(val,&iid,pOuter);
-				}
-
-				static ref_holder coerce(type val, const guid_t* piid = 0, const SafeShim* pOuter = 0)
-				{
-					return ref_holder(val,piid,pOuter);
-				}
-			};
-
-			template <typename T>
-			class std_safe_type<const T&>
-			{
-			public:
-				typedef const typename marshal_info<T>::safe_type::type* type;
-
-				static type coerce(const T& val)
-				{
-					return &marshal_info<T>::safe_type::coerce(const_cast<T&>(val));
-				}
-
-				static const T& coerce(type val)
-				{
-					return marshal_info<T>::safe_type::coerce(*const_cast<typename marshal_info<T>::safe_type::type*>(val));
-				}
-			};
-
-			template <>
-			class std_safe_type<const bool_t&>
-			{
-			public:
-				typedef const int type;
-
-				static const int coerce(const bool_t& val)
-				{
-					return (val ? 1 : 0);
-				}
-
-				static const bool_t coerce(const int val)
-				{
-					return (val != 0);
-				}
-			};
-
-			struct ISafeProxy : public IObject
-			{
-				virtual void Pin() = 0;
-				virtual void Unpin() = 0;
-				virtual const SafeShim* GetShim(const Omega::guid_t& iid) = 0;
-				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid) = 0;
-				virtual IProxy* GetWireProxy() = 0;
-			};
-
-			inline void throw_correct_exception(const SafeShim* except);
-			inline const SafeShim* return_safe_exception(IException* pE);
-
-			struct IObject_Safe_VTable
-			{
-				const SafeShim* (OMEGA_CALL* pfnAddRef_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnRelease_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_t* iid);
-				const SafeShim* (OMEGA_CALL* pfnPin_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnGetBaseShim_Safe)(const SafeShim* shim, const SafeShim** retval);
-				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t* piid, const SafeShim** retval);
-				const SafeShim* (OMEGA_CALL* pfnGetWireProxy_Safe)(const SafeShim* shim, const SafeShim** retval);
 			};
 
 			class auto_safe_shim
@@ -451,159 +901,100 @@ namespace Omega
 				}
 			};
 
-			template <typename I>
-			class iface_proxy_functor
-			{
-			public:
-				iface_proxy_functor(I* pI, const guid_t& iid) :
-					m_pS(0)
-				{
-					m_pS = create_safe_stub(pI,iid);
-				}
-
-				iface_proxy_functor(const iface_proxy_functor& rhs) :
-					m_pS(rhs.m_pS)
-				{
-					if (m_pS)
-						static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnAddRef_Safe(m_pS);
-				}
-
-				~iface_proxy_functor()
-				{
-					if (m_pS)
-						static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
-				}
-
-				operator const SafeShim* ()
-				{
-					return m_pS;
-				}
-
-				const SafeShim* operator -> ()
-				{
-					return m_pS;
-				}
-
-			protected:
-				const SafeShim* m_pS;
-
-				iface_proxy_functor& operator = (const iface_proxy_functor&);
-			};
-
-			template <typename I>
-			class iface_proxy_functor_ref : public iface_proxy_functor<I>
-			{
-			public:
-				iface_proxy_functor_ref(I* pI) :
-					iface_proxy_functor<I>(pI,OMEGA_GUIDOF(I))
-				{
-				}
-
-				void update(I*& pI, const guid_t*, IObject* pOuter)
-				{
-					if (pI)
-						pI->Release();
-
-					pI = static_cast<I*>(create_safe_proxy(this->m_pS,pOuter));
-				}
-
-				const SafeShim** operator & ()
-				{
-					return &this->m_pS;
-				}
-			};
-
 			inline IObject* create_safe_proxy(const SafeShim* shim, IObject* pOuter = 0);
-
-			template <typename I>
-			class iface_stub_functor
-			{
-			public:
-				iface_stub_functor(const SafeShim* pS, const guid_t*) :
-					m_pI(0)
-				{
-					m_pI = static_cast<I*>(create_safe_proxy(pS));
-				}
-
-				iface_stub_functor(const iface_stub_functor& rhs) :
-					m_pI(rhs.m_pI)
-				{
-					if (m_pI)
-						m_pI->AddRef();
-				}
-
-				~iface_stub_functor()
-				{
-					// If this blows, then you have released an (in) parameter!
-					if (m_pI)
-						m_pI->Release();
-				}
-
-				operator I* ()
-				{
-					return m_pI;
-				}
-
-				I* operator -> ()
-				{
-					return m_pI;
-				}
-
-			protected:
-				I* m_pI;
-
-				iface_stub_functor& operator = (const iface_stub_functor&);
-			};
-
-			template <typename I>
-			class iface_stub_functor_ref : public iface_stub_functor<I>
-			{
-			public:
-				iface_stub_functor_ref(const SafeShim* pS) :
-				  iface_stub_functor<I>(pS,0)
-				{
-				}
-
-				void update(const SafeShim*& pS, const guid_t* piid, const SafeShim*)
-				{
-					if (pS)
-						static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
-					
-					pS = create_safe_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
-				}
-
-				operator I*& ()
-				{
-					return this->m_pI;
-				}
-			};	
+			inline const SafeShim* create_safe_stub(IObject* pObject, const guid_t& iid);
 
 			template <typename I>
 			class iface_safe_type
 			{
 			public:
-				typedef const SafeShim* type;
+				typedef const SafeShim* safe_type;
 
-				typedef iface_proxy_functor_ref<I> ref_safe_type;
-				typedef iface_stub_functor_ref<I> ref_type;
-
-				static iface_proxy_functor<I> coerce(I* val, const guid_t& iid = OMEGA_GUIDOF(I))
+				struct type_wrapper
 				{
-					return iface_proxy_functor<I>(val,iid);
-				}
+					type_wrapper(safe_type pS) :
+						m_pI(0)
+					{
+						m_pI = static_cast<I*>(create_safe_proxy(pS));
+					}
 
-				static iface_stub_functor<I> coerce(type val, const guid_t* piid = &OMEGA_GUIDOF(I))
+					~type_wrapper()
+					{
+						if (m_pI)
+							m_pI->Release();
+					}
+
+					operator I*&()
+					{
+						return m_pI;
+					}
+
+					void update(safe_type& pS, const guid_t* piid = 0, const SafeShim* = 0)
+					{
+						if (pS)
+							static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
+						
+						pS = create_safe_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
+					}
+
+				private:
+					I* m_pI;
+				};
+
+				struct safe_type_wrapper
 				{
-					return iface_stub_functor<I>(val,piid);
-				}
+					safe_type_wrapper(I* pI)
+					{
+						m_pS = create_safe_stub(pI,OMEGA_GUIDOF(I));
+					}
+
+					~safe_type_wrapper()
+					{
+						if (m_pS)
+							static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
+					}
+
+					operator safe_type()
+					{
+						return m_pS;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_pS;
+					}
+
+					void update(I*& pI)
+					{
+						if (pI)
+							pI->Release();
+
+						pI = static_cast<I*>(create_safe_proxy(m_pS,0));
+					}
+
+					void update(I*& pI, const guid_t& /*iid*/, IObject* pOuter = 0)
+					{
+						if (pI)
+							pI->Release();
+
+						pI = static_cast<I*>(create_safe_proxy(m_pS,pOuter));
+					}
+
+				private:
+					safe_type m_pS;
+				};
 			};
 
-			template <typename I> class iface_wire_type;
+			template <typename I> struct iface_wire_type;
 
-			template <> struct marshal_info<IObject*>
+			template <> struct custom_safe_type<IObject*>
 			{
-				typedef iface_safe_type<IObject> safe_type;
-				typedef iface_wire_type<IObject> wire_type;
+				typedef iface_safe_type<IObject> impl;
+			};
+
+			template <> struct custom_wire_type<IObject*>
+			{
+				typedef iface_wire_type<IObject> impl;
 			};
 
 			template <typename I> struct vtable_info;
@@ -822,8 +1213,6 @@ namespace Omega
 			};
 
 			class Safe_Stub_Owner;
-
-			inline const SafeShim* create_safe_stub(IObject* pObject, const guid_t& iid);
 
 			class Safe_Stub_Base
 			{

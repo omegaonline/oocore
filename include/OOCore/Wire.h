@@ -184,7 +184,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(WriteStructStart,2,((in),const wchar_t*,pszName,(in),const wchar_t*,pszType))
 				OMEGA_METHOD_VOID(WriteStructEnd,1,((in),const wchar_t*,pszName))
 			)
-			
+
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
 				Omega::System, IStub,
@@ -217,9 +217,9 @@ namespace Omega
 			(
 				Omega::System, IMarshaller,
 
-				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
 				OMEGA_METHOD(TypeInfo::ITypeInfo*,GetTypeInfo,1,((in),const guid_t&,iid))
@@ -239,189 +239,96 @@ namespace Omega
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(string_t,Strings)
 
 			template <typename T>
-			class std_wire_type
+			struct std_wire_type
 			{
-			public:
-				typedef T type;
-				typedef T real_type;
+				typedef typename remove_const<typename remove_ref<T>::type>::type type;
+								
+				static void init(type&)
+				{ }
 
-				static void read(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, T& val, const guid_t& = OMEGA_GUIDOF(IObject))
+				static void read(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, type& val)
 				{
 					wire_read(pszName,pMessage,val);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T& val, const guid_t& = OMEGA_GUIDOF(IObject))
+				static void write(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, T val)
 				{
 					wire_write(pszName,pMessage,val);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T&, const guid_t& = OMEGA_GUIDOF(IObject))
+				static void unpack(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, T)
 				{
 					// Just read the value back, moving the read pointer correctly
-					T val = default_value<T>::value();
+					type val = default_value<type>::value();
 					wire_read(pszName,pMessage,val);
 				}
 
-				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
+				static void no_op(...)
 				{ }
 			};
 
 			template <typename T>
-			class std_wire_type<const T>
+			struct std_wire_type_array
 			{
-			public:
-				typedef typename marshal_info<T>::wire_type::type type;
-				typedef typename marshal_info<T>::wire_type::type real_type;
-
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
+				struct type
 				{
-					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,const_cast<typename marshal_info<T>::wire_type::real_type&>(val),iid);
-				}
-
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
-				{
-					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val,iid);
-				}
-
-				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
-				{ }
-			};
-
-			template <typename T>
-			class std_wire_type<T&>
-			{
-			public:
-				class ref_holder
-				{
-				public:
-					ref_holder(const typename marshal_info<T>::wire_type::type& val = default_value<typename marshal_info<T>::wire_type::type>::value()) : m_val(val)
+					type() : m_alloc_size(0),m_pVals(0)
 					{}
 
-					operator typename marshal_info<T>::wire_type::real_type&()
-					{
-						return m_val;
-					}
-
-					typename marshal_info<T>::wire_type::type m_val;
-				};
-				typedef ref_holder type;
-
-				static void init(ref_holder&, const guid_t& = OMEGA_GUIDOF(IObject))
-				{ }
-
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
-				{
-					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,val,iid);
-				}
-
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
-				{
-					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val,iid);
-				}
-
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::real_type& val, const guid_t& iid = OMEGA_GUIDOF(IObject))
-				{
-					marshal_info<T>::wire_type::unpack(pszName,pManager,pMessage,val,iid);
-				}
-
-				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
-				{ }
-			};
-
-			template <typename T>
-			class std_wire_type<const T&>
-			{
-			public:
-				typedef typename marshal_info<T>::wire_type::type type;
-				typedef typename marshal_info<T>::wire_type::type real_type;
-
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val)
-				{
-					marshal_info<T>::wire_type::read(pszName,pManager,pMessage,const_cast<typename marshal_info<T>::wire_type::real_type&>(val));
-				}
-
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const real_type& val)
-				{
-					marshal_info<T>::wire_type::write(pszName,pManager,pMessage,val);
-				}
-
-				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(IObject))
-				{ }
-			};
-
-			template <typename T>
-			class std_wire_type_array
-			{
-			public:
-				class array_holder
-				{
-				public:
-					array_holder() : m_alloc_size(0),m_pVals(0)
-					{}
-
-					~array_holder()
+					~type()
 					{
 						delete [] m_pVals;
 					}
 
-					void init(const uint64_t& cbSize)
+					template <typename S>
+					void init(S cbSize)
 					{
-					#if !defined(OMEGA_64)
-						if (cbSize > (size_t)-1 / sizeof(typename marshal_info<typename remove_const<T>::type>::wire_type::type))
+						if (cbSize > (size_t)-1 / sizeof(T))
 							OMEGA_THROW(L"Attempt to marshal too many array items");
-					#endif
-
-						m_alloc_size = cbSize;
-						OMEGA_NEW(m_pVals,typename marshal_info<typename remove_const<T>::type>::wire_type::type[(size_t)m_alloc_size]);
+					
+						m_alloc_size = static_cast<size_t>(cbSize);
+						OMEGA_NEW(m_pVals,typename remove_const<T>::type[m_alloc_size]);
 					}
 
-					operator typename marshal_info<T>::wire_type::type*()
+					operator T*()
 					{
 						return m_pVals;
 					}
 
-					uint64_t m_alloc_size;
-					typename marshal_info<typename remove_const<T>::type>::wire_type::type* m_pVals;
+					size_t                          m_alloc_size;
+					typename remove_const<T>::type* m_pVals;
 				};
-				typedef array_holder type;
-
-				static void init(type& val, const uint64_t& cbSize)
+				
+				template <typename S>
+				static void init(type& val, S cbSize)
 				{
 					val.init(cbSize);
 				}
 
-				static void init(type& val, uint32_t cbSize)
-				{
-					val.init(cbSize);
-				}
-
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::type* pVals, const uint64_t& cbSize)
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, const uint64_t& cbSize)
 				{
 					wire_read(pszName,pManager,pMessage,pVals,cbSize);
 				}
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::type* pVals, uint32_t cbSize)
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, const uint64_t& cbSize)
+				{
+					wire_write(pszName,pManager,pMessage,pVals,cbSize);
+				}
+
+				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, const uint64_t& cbSize)
 				{
 					wire_read(pszName,pManager,pMessage,pVals,cbSize);
 				}
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, const uint64_t& cbSize)
+				template <typename S>
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, S cbSize)
 				{
 					val.init(cbSize);
 					wire_read(pszName,pManager,pMessage,val.m_pVals,cbSize);
 				}
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, uint32_t cbSize)
-				{
-					read(pszName,pManager,pMessage,val,static_cast<uint64_t>(cbSize));
-				}
-
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const typename marshal_info<T>::wire_type::type* pVals, const uint64_t& cbSize)
-				{
-					wire_write(pszName,pManager,pMessage,pVals,cbSize);
-				}
-
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, const uint64_t& cbSize)
+				template <typename S>
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S cbSize)
 				{
 					// Only write back what we have room for...
 					if (cbSize > val.m_alloc_size)
@@ -430,68 +337,81 @@ namespace Omega
 						wire_write(pszName,pManager,pMessage,val.m_pVals,cbSize);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::type* pVals, const uint64_t& cbSize)
+				template <typename S>
+				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S cbSize)
 				{
-					wire_read(pszName,pManager,pMessage,pVals,cbSize);
-				}
-
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename marshal_info<T>::wire_type::type* pVals, uint32_t cbSize)
-				{
-					wire_read(pszName,pManager,pMessage,pVals,cbSize);
-				}
-
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, const uint64_t& cbSize)
-				{
-					// Only read what we have room for...
+					// Only read back what we have written...
 					if (cbSize > val.m_alloc_size)
 						wire_read(pszName,pManager,pMessage,val.m_pVals,val.m_alloc_size);
 					else
 						wire_read(pszName,pManager,pMessage,val.m_pVals,cbSize);
-				}
-
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, uint32_t cbSize)
-				{
-					return unpack(pszName,pManager,pMessage,val,static_cast<uint64_t>(cbSize));
 				}				
 
-				template <typename S>
-				static void no_op(bool, S)
+				static void no_op(...)
+				{ }
+			};
+			
+			template <typename T> 
+			struct custom_wire_type_wrapper
+			{
+				typedef typename custom_wire_type<T>::impl::type type;
+
+				static void init(type& val)
+				{
+					custom_wire_type<T>::impl::init(val);
+				}
+
+				static void init(type& val, const guid_t& iid)
+				{
+					custom_wire_type<T>::impl::init(val,iid);
+				}
+
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T& val)
+				{
+					custom_wire_type<T>::impl::read(pszName,pManager,pMessage,val);
+				}
+
+				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T& val, const guid_t& iid)
+				{
+					custom_wire_type<T>::impl::read(pszName,pManager,pMessage,val,iid);
+				}
+
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T val)
+				{
+					custom_wire_type<T>::impl::write(pszName,pManager,pMessage,val);
+				}
+
+				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T val, const guid_t& iid)
+				{
+					custom_wire_type<T>::impl::write(pszName,pManager,pMessage,val,iid);
+				}
+
+				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T val)
+				{
+					custom_wire_type<T>::impl::unpack(pszName,pManager,pMessage,val);
+				}
+
+				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T val, const guid_t& iid)
+				{
+					custom_wire_type<T>::impl::unpack(pszName,pManager,pMessage,val,iid);
+				}
+
+				static void no_op(...)
 				{ }
 			};
 
-			template <>
-			class std_wire_type_array<void>
-			{
-			public:
-				typedef void* type;
-
-				static void read(const wchar_t*, IMarshaller*, Remoting::IMessage*, type&)
-				{
-					OMEGA_THROW(L"Cannot marshal void*");
-				}
-
-				static void write(const wchar_t*, IMarshaller*, Remoting::IMessage*, const type&)
-				{
-					OMEGA_THROW(L"Cannot marshal void*");
-				}
-			};
-
 			template <typename I>
-			class iface_wire_type
+			struct iface_wire_type
 			{
-			public:
-				typedef I* real_type;
-
-				class if_holder
+				struct type
 				{
-				public:
-					if_holder(I* val = 0) : m_val(val)
+					type(I* val = 0) : m_val(val)
 					{
 						if (m_val)
 							m_val->AddRef();
 					}
 
-					~if_holder()
+					~type()
 					{
 						if (m_val)
 							m_val->Release();
@@ -504,7 +424,6 @@ namespace Omega
 
 					I* m_val;
 				};
-				typedef if_holder type;
 
 				static void init(type&, const guid_t& = OMEGA_GUIDOF(I))
 				{ }
@@ -525,9 +444,6 @@ namespace Omega
 				{
 					pManager->ReleaseMarshalData(pszName,pMessage,iid,pI);
 				}
-
-				static void no_op(bool, const guid_t& = OMEGA_GUIDOF(I))
-				{ }
 			};
 
 			class Wire_Proxy_Owner;
@@ -1496,6 +1412,145 @@ namespace Omega
 			OMEGA_QI_MAGIC(Omega::System,IStubController)
 			OMEGA_QI_MAGIC(Omega::System,IProxy)
 			OMEGA_QI_MAGIC(Omega::System,IMarshaller)
+
+			// STL collection marshalling types
+			template <typename Coll>
+			struct stl_safe_type_coll1
+			{
+				typedef typename marshal_info<typename Coll::value_type>::safe_type::type* safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type /*val*/) {}
+
+					void update(safe_type /*val*/) {}
+					
+					operator Coll&()
+					{
+						return m_val;
+					}
+
+				private:
+					Coll m_val;
+				};
+
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(Coll /*val*/) {}
+
+					void update(Coll& /*dest*/) {}
+					
+					operator safe_type ()
+					{
+						return m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
+				private:
+					safe_type m_val;
+				};
+			};
+
+			template <typename V>
+			struct custom_safe_type<std::list<V> >
+			{
+				typedef stl_safe_type_coll1<std::list<V> > impl;
+			};
+
+			template <typename Coll>
+			struct stl_wire_type_coll1
+			{
+				typedef Coll type;
+
+				static void read(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				{
+					pMessage->ReadStructStart(pszName,L"$list_type_1");
+					uint64_t cbSize = 0;
+					size_t ret = pMessage->ReadUInt64s(L"count",1,&cbSize);
+					if (ret != 1)
+						OMEGA_THROW(L"Failed to read from IMessage");
+					if (cbSize > (size_t)-1 / sizeof(typename Coll::value_type))
+						OMEGA_THROW(L"Attempt to marshal too many list items");
+				
+					size_t idx = 0;
+					for (size_t c = static_cast<size_t>(cbSize);c>0;--c,++idx)
+					{
+						typename Coll::value_type v_val = default_value<typename Coll::value_type>::value();
+						marshal_info<typename Coll::value_type>::wire_type::read(string_t::Format(L"item%u",idx).c_str(),pMarshaller,pMessage,v_val);
+						val.push_back(v_val);
+					}
+					pMessage->ReadStructEnd(pszName);
+				}
+
+				static void write(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				{
+					uint64_t cbSize = val.size();
+					pMessage->WriteStructStart(pszName,L"$list_type_1");
+					pMessage->WriteUInt64s(L"count",1,&cbSize);
+					size_t idx = 0;
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+						marshal_info<typename Coll::value_type>::wire_type::write(string_t::Format(L"item%u",idx).c_str(),pMarshaller,pMessage,*i);
+					pMessage->WriteStructEnd(pszName);
+				}
+			};
+
+			template <typename V>
+			struct custom_wire_type<std::list<V> >
+			{
+				typedef stl_wire_type_coll1<std::list<V> > impl;
+			};
+
+			/*
+
+			template <typename Collection>
+			inline static void unpack_stl_coll_1(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Collection&)
+			{
+				pMessage->ReadStructStart(pszName,L"$stl_coll1_type");
+				uint64_t cbSize = 0;
+				size_t ret = pMessage->ReadUInt64s(L"count",1,&cbSize);
+				if (ret != 1)
+					OMEGA_THROW(L"Failed to read from IMessage");
+				if (cbSize > (size_t)-1 / sizeof(typename Collection::value_type))
+					OMEGA_THROW(L"Attempt to marshal too many STL collection items");
+			
+				size_t idx = 0;
+				for (size_t c = static_cast<size_t>(cbSize);c>0;--c,++idx)
+				{
+					typename Collection::value_type v_val = default_value<typename Collection::value_type>::value();
+					marshal_info<typename Collection::value_type>::wire_type::unpack(string_t::Format(L"data_%u",idx).c_str(),pMarshaller,pMessage,v_val);
+				}
+				pMessage->ReadStructEnd(pszName);
+			}
+
+			template <typename V>
+			class std_wire_type<std::list<V> >
+			{
+			public:
+				typedef std::list<V> type;
+				typedef std::list<V> real_type;
+
+				static void read(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, std::list<V>& val)
+				{
+					read_stl_coll_1(pszName,pMarshaller,pMessage,val);
+				}
+
+				static void write(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const std::list<V>& val)
+				{
+					write_stl_coll_1(pszName,pMarshaller,pMessage,val);
+				}
+
+				static void unpack(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const std::list<V>& val)
+				{
+					unpack_stl_coll_1(pszName,pMarshaller,pMessage,val);
+				}
+
+				static void no_op(bool)
+				{ }
+			};*/
 		}
 	}
 }

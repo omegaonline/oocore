@@ -220,7 +220,7 @@ namespace Omega
 		};
 
 		typedef const System::MetaInfo::SafeShim* (OMEGA_CALL *SingletonCallback)();
-
+		
 		// Lifetime should be either ModuleDestructor<> or InitialiseDestructor
 		template <typename T, typename Lifetime>
 		class Singleton
@@ -234,6 +234,19 @@ namespace Omega
 			inline static const System::MetaInfo::SafeShim* OMEGA_CALL do_init();
 			inline static void OMEGA_CALL do_term(void*);
 		};
+	}
+
+	namespace System
+	{
+		namespace MetaInfo
+		{
+			// Callback is C ABI safe
+			template <> 
+			struct is_c_abi<const SafeShim*()> 
+			{ 
+				enum { result = 1 }; 
+			};
+		}
 	}
 }
 

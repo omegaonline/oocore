@@ -121,7 +121,7 @@
 #define OMEGA_PS_PARAM_in_out(t,name)
 #define OMEGA_PS_PARAM_out(t,name)
 #define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_II
-#define OMEGA_PS_PARAM_size_is(size)     OMEGA_PS_PARAM_II
+#define OMEGA_PS_PARAM_size_is(size)     ,size OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_outer_is(outer)   ,outer OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_II(t,name)
 
@@ -146,10 +146,13 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_SAFE_METHOD,methods,0)
 
 #define OMEGA_DECLARE_FORWARDS(n_space,name) \
-	template <> struct marshal_info<n_space::name*> \
+	template <> struct custom_safe_type<n_space::name*> \
 	{ \
-		typedef iface_safe_type<n_space::name> safe_type; \
-		typedef iface_wire_type<n_space::name> wire_type; \
+		typedef iface_safe_type<n_space::name> impl; \
+	}; \
+	template <> struct custom_wire_type<n_space::name*> \
+	{ \
+		typedef iface_wire_type<n_space::name> impl; \
 	}; \
 	template <> struct type_kind<n_space::name*> \
 	{ \

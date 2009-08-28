@@ -143,8 +143,8 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(Remoting::IMessage*,Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Shutdown,0,())
 	OMEGA_METHOD_VOID(GetRemoteInstance,4,((in),const string_t&,strOID,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-	OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
-	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in)(iid_is(iid)),IObject*,pObject))
+	OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
+	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 	OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 

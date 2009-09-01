@@ -208,7 +208,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base
 
 	try
 	{
-		if (iid != *shim->m_iid)
+		if (iid != guid_t(*shim->m_iid))
 			m_iid_map.insert(std::map<guid_t,Safe_Proxy_Base*>::value_type(*shim->m_iid,obj));
 		
 		m_iid_map.insert(std::map<guid_t,Safe_Proxy_Base*>::value_type(iid,obj));

@@ -263,7 +263,7 @@ namespace Omega
 					wire_read(pszName,pMessage,val);
 				}
 
-				static void no_op(...)
+				static void no_op(bool)
 				{ }
 			};
 
@@ -347,7 +347,8 @@ namespace Omega
 						wire_read(pszName,pManager,pMessage,val.m_pVals,cbSize);
 				}				
 
-				static void no_op(...)
+				template <typename S>
+				static void no_op(bool,S)
 				{ }
 			};
 			
@@ -396,7 +397,11 @@ namespace Omega
 					custom_wire_type<T>::impl::unpack(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void no_op(...)
+				static void no_op(bool)
+				{ }
+
+				template <typename S>
+				static void no_op(bool,S)
 				{ }
 			};
 
@@ -644,7 +649,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid)
 				{
 					const SafeShim* except = 0;
 					try
@@ -947,7 +952,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid)
 				{
 					const SafeShim* except = 0;
 					try
@@ -1185,7 +1190,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid)
 				{
 					const SafeShim* except = 0;
 					try
@@ -1265,7 +1270,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL SupportsInterface_Safe(const SafeShim* shim, int* retval, const guid_t* piid)
+				static const SafeShim* OMEGA_CALL SupportsInterface_Safe(const SafeShim* shim, int* retval, const guid_base_t* piid)
 				{
 					const SafeShim* except = 0;
 					try

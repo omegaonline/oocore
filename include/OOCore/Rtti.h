@@ -123,13 +123,13 @@ namespace Omega
 				template <bool E, typename I>
 				struct has_guid_t
 				{
-					static const guid_t* guid() { return &OMEGA_GUIDOF(I); }
+					static const guid_base_t* guid() { return &OMEGA_GUIDOF(I); }
 				};
 
 				template <typename I>
 				struct has_guid_t<false,I>
 				{
-					static const guid_t* guid() { return 0; }
+					static const guid_base_t* guid() { return 0; }
 				};
 
 				struct ParamInfo
@@ -138,7 +138,7 @@ namespace Omega
 					TypeInfo::Types_t           type;
 					TypeInfo::ParamAttributes_t attribs;
 					const wchar_t*              attrib_ref;
-					const guid_t*               iid;
+					const guid_base_t*          iid;
 				};
 				struct MethodInfo
 				{
@@ -150,9 +150,9 @@ namespace Omega
 					const ParamInfo*             params;
 				};
 
-				const MethodInfo* (*pfnGetMethodInfo)();
+				const MethodInfo* (OMEGA_CALL *pfnGetMethodInfo)();
 				uint32_t method_count;
-				const guid_t* base_type;
+				const guid_base_t* base_type;
 			};
 
 			template <typename I>

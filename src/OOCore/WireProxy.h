@@ -88,7 +88,7 @@ namespace OOCore
 		// IProxy_Safe members
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL AddRef_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Release_Safe(const Omega::System::MetaInfo::SafeShim* shim);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_t* iid);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_base_t* iid);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Pin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Unpin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetBaseShim_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
@@ -96,7 +96,7 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL UnpackKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetMarshaller_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL IsAlive_Safe(const Omega::System::MetaInfo::SafeShim* shim, int* retval);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL RemoteQueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_t* iid);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL RemoteQueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_base_t* iid);
 
 	// ISafeProxy members
 	public:
@@ -144,9 +144,9 @@ namespace OOCore
 		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetUnmarshalFactoryOID_Safe(const Omega::System::MetaInfo::SafeShim* shim, Omega::guid_t* retval, const Omega::guid_t* piid, Omega::Remoting::MarshalFlags_t flags);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_t* iid, Omega::Remoting::MarshalFlags_t flags);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetUnmarshalFactoryOID_Safe(const Omega::System::MetaInfo::SafeShim* shim, Omega::guid_base_t* retval, const Omega::guid_base_t* piid, Omega::Remoting::MarshalFlags_t flags);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
 
 	private:
 		Proxy(const Proxy&);

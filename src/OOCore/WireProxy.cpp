@@ -295,7 +295,6 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::AddRef_Safe(const System::MetaI
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		//printf("Safe ");
 		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
 	}
 	catch (IException* pE)
@@ -310,7 +309,6 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::Release_Safe(const System::Meta
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		//printf("Safe ");
 		static_cast<Proxy*>(shim->m_stub)->Internal_Release();
 	}
 	catch (IException* pE)
@@ -320,12 +318,11 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::Release_Safe(const System::Meta
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval, const guid_t* iid)
+const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval, const guid_base_t* iid)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		//printf("Safe %p QI for %ls\n",static_cast<Proxy*>(shim->m_stub),iid->ToString().c_str());
 		static_cast<IObject*&>(System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(retval,iid)) = static_cast<Proxy*>(shim->m_stub)->Internal_QueryInterface(*iid,getQIEntries());
 	}
 	catch (IException* pE)
@@ -434,7 +431,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::IsAlive_Safe(const System::Meta
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::RemoteQueryInterface_Safe(const System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_t* iid)
+const System::MetaInfo::SafeShim* OOCore::Proxy::RemoteQueryInterface_Safe(const System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_base_t* iid)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try
@@ -448,7 +445,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::RemoteQueryInterface_Safe(const
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetUnmarshalFactoryOID_Safe(const System::MetaInfo::SafeShim* shim, guid_t* retval, const guid_t* piid, Remoting::MarshalFlags_t flags)
+const System::MetaInfo::SafeShim* OOCore::Proxy::GetUnmarshalFactoryOID_Safe(const System::MetaInfo::SafeShim* shim, guid_base_t* retval, const guid_base_t* piid, Remoting::MarshalFlags_t flags)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try
@@ -462,7 +459,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetUnmarshalFactoryOID_Safe(con
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pObjectManager, const System::MetaInfo::SafeShim* pMessage, const guid_t* iid, Remoting::MarshalFlags_t flags)
+const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pObjectManager, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try
@@ -476,7 +473,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const Sys
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pObjectManager, const System::MetaInfo::SafeShim* pMessage, const guid_t* iid, Remoting::MarshalFlags_t flags)
+const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pObjectManager, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try

@@ -456,11 +456,11 @@
 	public: \
 		static Safe_Stub_Base* create(IObject* pI, Safe_Stub_Owner* pOwner) \
 		{ \
-			Safe_Stub* pThis; OMEGA_NEW(pThis,Safe_Stub(static_cast<n_space::name*>(pI),&OMEGA_GUIDOF(n_space::name),pOwner)); \
+			Safe_Stub* pThis; OMEGA_NEW(pThis,Safe_Stub(static_cast<n_space::name*>(pI),OMEGA_GUIDOF(n_space::name),pOwner)); \
 			return pThis; \
 		} \
 	protected: \
-		Safe_Stub(n_space::name* pI, const guid_t* iid, Safe_Stub_Owner* pOwner) : Safe_Stub<d_space::derived>(pI,iid,pOwner) \
+		Safe_Stub(n_space::name* pI, const guid_t& iid, Safe_Stub_Owner* pOwner) : Safe_Stub<d_space::derived>(pI,iid,pOwner) \
 		{ m_shim.m_vtable = get_vt(); } \
 		static const vtable_info<n_space::name>::type* get_vt() \
 		{ \

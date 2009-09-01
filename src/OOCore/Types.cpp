@@ -65,7 +65,7 @@ extern "C"
 	void MD5Final(unsigned char digest[16], MD5Context *pCtx);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const char*,sz,(in),int,bUTF8))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,2,((in),const char*,sz,(in),int,bUTF8))
 {
 	if (!sz)
 		return 0;
@@ -79,7 +79,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const ch
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,1,((in),const void*,s1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,1,((in),const void*,s1))
 {
 	if (!s1)
 		return 0;
@@ -87,7 +87,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,1,((in),const vo
 	return static_cast<const StringNode*>(s1)->AddRef();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor4,2,((in),const wchar_t*,wsz,(in),size_t,length))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,2,((in),const wchar_t*,wsz,(in),size_t,length))
 {
 	if (!wsz)
 		return 0;
@@ -106,7 +106,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__dctor,1,((in),void*,s1)
 		static_cast<StringNode*>(s1)->Release();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign_1,2,((in),void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s1,(in),const void*,s2))
 {
 	if (s1)
 		static_cast<StringNode*>(s1)->Release();
@@ -117,7 +117,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign_1,2,((in),void*,
 	return static_cast<const StringNode*>(s2)->AddRef();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign_3,2,((in),void*,s1,(in),const wchar_t*,wsz))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,s1,(in),const wchar_t*,wsz))
 {
 	if (s1)
 		static_cast<StringNode*>(s1)->Release();
@@ -181,7 +181,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add3,2,((in),void*,s1,(in),const wchar_t*,wsz))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(in),const wchar_t*,wsz))
 {
 	if (!wsz)
 	{
@@ -219,7 +219,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,2,((in),const void*,
 		return static_cast<const StringNode*>(s1)->m_str.compare(static_cast<const StringNode*>(s2)->m_str);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
 	if (!s1 && !wsz)
 		return 0;
@@ -249,7 +249,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc1,2,((in),const void*,
 #endif
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc3,2,((in),const void*,s1,(in),const wchar_t*,wsz))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc2,2,((in),const void*,s1,(in),const wchar_t*,wsz))
 {
 	if (!s1 && !wsz)
 		return 0;
@@ -325,7 +325,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,3,((in),const vo
 	return static_cast<const StringNode*>(s1)->m_str.find(static_cast<const StringNode*>(s2)->m_str,pos);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find3,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
 {
 	if (!s1)
 		return (size_t)-1;
@@ -333,7 +333,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find3,4,((in),const vo
 	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase != 0 ? static_cast<wchar_t>(tolower(c)) : c,pos);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind2,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
 {
 	if (!s1)
 		return (size_t)-1;

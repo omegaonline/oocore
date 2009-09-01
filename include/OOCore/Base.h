@@ -128,23 +128,6 @@ namespace Omega
 	}
 }
 
-#if defined(OMEGA_HAS_UUIDOF)
-
-#define OMEGA_SET_GUIDOF(n_space, type, guid) \
-	interface __declspec(uuid(guid)) n_space::type;
-
-#define OMEGA_GUIDOF(type) Omega::guid_t::FromUuidof(__uuidof(type))
-
-#elif defined(DOXYGEN)
-
-/// Associate a guid_t value with a type
-#define OMEGA_SET_GUIDOF(n_space, type, guid)
-
-/// Return the guid_t value associated with a type
-#define OMEGA_GUIDOF(type)
-
-#else
-
 namespace Omega
 {
 	namespace System
@@ -160,18 +143,50 @@ namespace Omega
 					return uid_traits<T>::GetUID();
 				}
 			};
+
+			template <typename T> struct uid_traits<const T>
+			{
+				static const guid_t& GetUID()
+				{
+					return uid_traits<T>::GetUID();
+				}
+			};
+
+			template <typename T> struct uid_traits<T&>
+			{
+				static const guid_t& GetUID()
+				{
+					return uid_traits<T>::GetUID();
+				}
+			};
 		}
 	}
 }
+
+#if defined(OMEGA_HAS_UUIDOF)
+
+#define OMEGA_SET_GUIDOF(n_space, type, guid) \
+	interface __declspec(uuid(guid)) n_space::type; \
+	namespace Omega { namespace System { namespace MetaInfo { \
+	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(__uuidof(n_space::type)); return v; } }; \
+	} } }
+
+#elif defined(DOXYGEN)
+
+/// Associate a guid_t value with a type
+#define OMEGA_SET_GUIDOF(n_space, type, guid)
+
+#else
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace MetaInfo { \
 	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid) ); return v; } }; \
 	} } }
 
-#define OMEGA_GUIDOF(type)	(Omega::System::MetaInfo::uid_traits<type>::GetUID())
-
 #endif
+
+/// Return the guid_t value associated with a type
+#define OMEGA_GUIDOF(type)     Omega::System::MetaInfo::uid_traits<type>::GetUID()
 
 #if !defined(DOXYGEN)
 

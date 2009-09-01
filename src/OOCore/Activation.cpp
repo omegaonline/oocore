@@ -303,7 +303,9 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 
 	IObject* pObj = 0;
 	const System::MetaInfo::SafeShim* GetLibraryObject_Exception = pfn(
-		&oid,flags,&iid,
+		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid)
+		,flags,
+		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
 		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
 
 	if (GetLibraryObject_Exception)

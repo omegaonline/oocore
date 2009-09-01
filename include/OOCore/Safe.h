@@ -150,7 +150,7 @@ namespace Omega
 
 				struct ref_holder_full : public ref_holder
 				{
-					ref_holder_full(type val, const guid_t* piid, const SafeShim* pOuter = 0) :
+					ref_holder_full(type val, const guid_base_t* piid, const SafeShim* pOuter = 0) :
 						ref_holder(val), m_piid(piid), m_pOuter(pOuter)
 					{}
 
@@ -160,8 +160,8 @@ namespace Omega
 					}
 
 				private:
-					const guid_t*   m_piid;
-					const SafeShim* m_pOuter;
+					const guid_base_t* m_piid;
+					const SafeShim*    m_pOuter;
 				};
 
 				struct ref_holder_safe
@@ -232,7 +232,7 @@ namespace Omega
 					return ref_holder_lite(val);
 				}
 
-				static ref_holder_full coerce(type val, const guid_t* piid, const SafeShim* pOuter = 0)
+				static ref_holder_full coerce(type val, const guid_base_t* piid, const SafeShim* pOuter = 0)
 				{
 					return ref_holder_full(val,piid,pOuter);
 				}
@@ -492,12 +492,6 @@ namespace Omega
 				typedef array_safe_type<T> impl;
 			};
 
-			template <typename T>
-			struct custom_safe_type<const T>
-			{
-				typedef typename custom_safe_type<T>::impl impl;
-			};
-
 			struct string_t_safe_type
 			{
 				typedef void* safe_type;
@@ -588,6 +582,12 @@ namespace Omega
 			};
 
 			template <>
+			struct custom_safe_type<const string_t>
+			{
+				typedef struct string_t_safe_type impl;
+			};
+
+			template <>
 			struct custom_safe_type<bool_t>
 			{
 				typedef custom_safe_type<bool_t> impl;
@@ -634,6 +634,127 @@ namespace Omega
 
 				private:
 					safe_type m_val;
+				};
+			};
+
+			template <>
+			struct custom_safe_type<const bool_t>
+			{
+				typedef custom_safe_type<const bool_t> impl;
+				typedef const int safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type val) : m_val(val != 0)
+					{}
+
+					operator const bool_t&()
+					{
+						return m_val;
+					}
+
+				private:
+					bool_t m_val;
+				};
+
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(const bool_t val = false) : m_val(val ? 1 : 0)
+					{}
+
+					safe_type_wrapper(const safe_type_wrapper& rhs) : m_val(rhs.m_val)
+					{}
+
+					operator safe_type ()
+					{
+						return m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
+				private:
+					safe_type m_val;
+
+					safe_type_wrapper& operator = (const safe_type_wrapper&);
+				};
+			};
+
+			template <>
+			struct custom_safe_type<guid_t>
+			{
+				typedef custom_safe_type<guid_t> impl;
+				typedef guid_base_t safe_type;
+
+				struct type_wrapper
+				{
+					type_wrapper(const safe_type& val) : m_val(val)
+					{}
+
+					void update(safe_type& dest)
+					{
+						dest = m_val;
+					}
+
+					operator guid_t&()
+					{
+						return m_val;
+					}
+
+				private:
+					guid_t m_val;
+				};
+
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(guid_t& val) : m_val(&val)
+					{}
+
+					void update(guid_t&)
+					{}
+
+					operator safe_type ()
+					{
+						return *m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return m_val;
+					}
+
+				private:
+					safe_type* m_val;
+				};
+			};
+
+			template <>
+			struct custom_safe_type<const guid_t>
+			{
+				typedef custom_safe_type<const guid_t> impl;
+				typedef const guid_base_t safe_type;
+
+				typedef guid_t type_wrapper;
+				
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(const guid_t& val) : m_val(&val)
+					{}
+
+					operator safe_type ()
+					{
+						return *m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return m_val;
+					}
+
+				private:
+					safe_type* m_val;
 				};
 			};
 
@@ -731,7 +852,7 @@ namespace Omega
 			{
 				const void* m_vtable;
 				void* m_stub;
-				const guid_t* m_iid;
+				const guid_base_t* m_iid;
 			};
 
 			struct ISafeProxy : public IObject
@@ -750,11 +871,11 @@ namespace Omega
 			{
 				const SafeShim* (OMEGA_CALL* pfnAddRef_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnRelease_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_t* iid);
+				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid);
 				const SafeShim* (OMEGA_CALL* pfnPin_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnGetBaseShim_Safe)(const SafeShim* shim, const SafeShim** retval);
-				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t* piid, const SafeShim** retval);
+				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_base_t* piid, const SafeShim** retval);
 				const SafeShim* (OMEGA_CALL* pfnGetWireProxy_Safe)(const SafeShim* shim, const SafeShim** retval);
 			};
 
@@ -929,7 +1050,7 @@ namespace Omega
 						return m_pI;
 					}
 
-					void update(safe_type& pS, const guid_t* piid = 0, const SafeShim* = 0)
+					void update(safe_type& pS, const guid_base_t* piid = 0, const SafeShim* = 0)
 					{
 						if (pS)
 							static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
@@ -1292,17 +1413,17 @@ namespace Omega
 				static Safe_Stub_Base* create(IObject* pI, Safe_Stub_Owner* pOwner)
 				{
 					Safe_Stub* pThis;
-					OMEGA_NEW(pThis,Safe_Stub(pI,&OMEGA_GUIDOF(IObject),pOwner));
+					OMEGA_NEW(pThis,Safe_Stub(pI,OMEGA_GUIDOF(IObject),pOwner));
 					return pThis;					
 				}
 
 			protected:
-				Safe_Stub(IObject* pI, const guid_t* iid, Safe_Stub_Owner* pOwner) : 
+				Safe_Stub(IObject* pI, const guid_t& iid, Safe_Stub_Owner* pOwner) : 
 					 Safe_Stub_Base(pI,pOwner)
 				{
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;
-					m_shim.m_iid = iid;
+					m_shim.m_iid = &iid;
 				}
 
 				static const IObject_Safe_VTable* get_vt()
@@ -1355,7 +1476,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid)
 				{
 					const SafeShim* except = 0;
 					try
@@ -1701,7 +1822,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_t* iid)
+				static const SafeShim* OMEGA_CALL QueryInterface_Safe(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid)
 				{
 					const SafeShim* except = 0;
 					try
@@ -1757,7 +1878,7 @@ namespace Omega
 					return except;
 				}
 
-				static const SafeShim* OMEGA_CALL CreateWireStub_Safe(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t* piid, const SafeShim** retval)
+				static const SafeShim* OMEGA_CALL CreateWireStub_Safe(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_base_t* piid, const SafeShim** retval)
 				{
 					const SafeShim* except = 0;
 					try

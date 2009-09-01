@@ -114,12 +114,25 @@ namespace Omega
 #endif
 	};
 
-	struct guid_t
+#if defined(_WIN32)
+	typedef struct _GUID guid_base_t;
+#else
+	struct guid__base_t
 	{
 		uint32_t	Data1;
 		uint16_t	Data2;
 		uint16_t	Data3;
 		byte_t		Data4[8];
+	};
+#endif
+
+	struct guid_t : public guid_base_t
+	{
+		guid_t()
+		{}
+
+		guid_t(const guid_base_t& rhs) : guid_base_t(rhs)
+		{}
 
 		inline bool operator==(const guid_t& rhs) const;
 		inline bool operator==(const string_t& str) const;
@@ -136,16 +149,10 @@ namespace Omega
 		inline static guid_t Create();
 		inline static const guid_t& Null()
 		{
-			static const guid_t sNull = {0,0,0,{0,0,0,0,0,0,0,0}};
+			static const guid_base_t sbNull = {0,0,0,{0,0,0,0,0,0,0,0}};
+			static const guid_t sNull(sbNull);
 			return sNull;
 		}
-
-#ifdef OMEGA_HAS_UUIDOF
-		inline static const guid_t& FromUuidof(const _GUID& rhs)
-		{
-			return *reinterpret_cast<const guid_t*>(&rhs);
-		}
-#endif
 	};
 
 	namespace System
@@ -168,7 +175,7 @@ namespace Omega
 				}
 			};
 
-			template <typename T> struct default_value<T&>
+			/*template <typename T> struct default_value<T&>
 			{
 				static T& value()
 				{
@@ -176,6 +183,15 @@ namespace Omega
 					return v;
 				}
 			};
+
+			template <> struct default_value<const guid_t&>
+			{
+				static T& value()
+				{
+					static T v(default_value<T>::value());
+					return v;
+				}
+			};*/
 
 			// MSVC gets twitchy about size_t/uint32_t
 			#if defined(_MSC_VER)
@@ -257,8 +273,8 @@ namespace Omega
 			template <> struct is_c_abi<int64_t> { enum { result = 1 }; };
 			template <> struct is_c_abi<uint64_t> { enum { result = 1 }; };
 
-			// Simple structures or explicit API...
-			template <> struct is_c_abi<guid_t> { enum { result = 1 }; };
+			// Simple structures
+			template <> struct is_c_abi<guid_base_t> { enum { result = 1 }; };
 			
 			// Pointers are also C ABI compliant
 			template <typename T> struct is_c_abi<T*>

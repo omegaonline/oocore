@@ -50,7 +50,7 @@
 				PrecompiledHeaderThrough="OOCore_precomp.h"
 				WarningLevel="4"
 				Detect64BitPortabilityProblems="true"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

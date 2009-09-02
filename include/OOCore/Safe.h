@@ -73,6 +73,9 @@ namespace Omega
 
 				static T& coerce(type val)
 				{
+					if (!val)
+						OMEGA_THROW(L"Null pointer passed for reference");
+
 					return *val;
 				}
 			};
@@ -85,12 +88,12 @@ namespace Omega
 			{
 				typedef typename custom_safe_type<T>::impl::safe_type type;
 
-				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(T val)
+				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(const T& val)
 				{
 					return typename custom_safe_type<T>::impl::safe_type_wrapper(val);
 				}
 
-				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(T val, size_t count)
+				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(const T& val, size_t count)
 				{
 					return typename custom_safe_type<T>::impl::safe_type_wrapper(val,count);
 				}
@@ -134,7 +137,10 @@ namespace Omega
 					type                                             m_dest;
 
 					ref_holder(type val) : m_val(*val), m_dest(val)
-					{}
+					{
+						if (!val)
+							OMEGA_THROW(L"Null pointer passed for reference");
+					}
 				};
 
 				struct ref_holder_lite : public ref_holder
@@ -268,7 +274,7 @@ namespace Omega
 				}
 			};
 
-			// Don't pass arrays by const& - just pass the array
+			// Don't pass pointers by const& - just pass the pointer
 			template <typename T> 
 			struct custom_safe_type_const_ref_wrapper<T*>;
 
@@ -282,13 +288,12 @@ namespace Omega
 				struct type_wrapper
 				{
 					type_wrapper(safe_type vals, size_t cbSize) : 
-						m_bNull(!vals),
-						m_val(default_value<T>::value()),
+						m_val(default_value<typename marshal_info<T>::safe_type::type>::value()),
 						m_pVals(0), 
 						m_pOrig(vals), 
 						m_cbSize(cbSize)
 					{
-						if (!m_bNull)
+						if (m_pOrig)
 						{
 							if (cbSize == 1)
 								m_val = marshal_info<T>::safe_type::coerce(*vals);
@@ -303,33 +308,32 @@ namespace Omega
 
 					~type_wrapper()
 					{
-						if (!m_bNull)
+						if (m_pOrig)
 						{
 							if (m_pVals)
 							{
 								for (size_t i=0;i<m_cbSize;++i)
-									m_pOrig[i] = marshal_info<T>::safe_type::coerce(m_pVals[i]);
+									static_cast<T&>(marshal_info<T&>::safe_type::coerce(m_pOrig+i)) = m_pVals[i];
 
 								delete [] m_pVals;
 							}
 							else
-								*m_pOrig = marshal_info<T>::safe_type::coerce(m_val);
+								m_val.update(*m_pOrig);
 						}						
 					}
 
 					operator T*()
 					{
-						if (m_bNull)
+						if (!m_pOrig)
 							return 0;
 						else if (m_pVals)
 							return m_pVals;
 						else
-							return &m_val;
+							return &static_cast<T&>(m_val);
 					}
 
 				private:
-					bool      m_bNull;
-					T         m_val;
+					typename custom_safe_type<T>::impl::type_wrapper m_val;
 					T*        m_pVals;
 					safe_type m_pOrig;
 					size_t    m_cbSize;
@@ -340,13 +344,12 @@ namespace Omega
 					typedef typename marshal_info<T>::safe_type::type arr_type;
 
 					safe_type_wrapper(T* vals, size_t cbSize) : 
-						m_bNull(!vals),
-						m_val(default_value<arr_type>::value()),
+						m_val(default_value<T>::value()),
 						m_pVals(0), 
 						m_pOrig(vals), 
 						m_cbSize(cbSize)
 					{
-						if (!m_bNull)
+						if (m_pOrig)
 						{
 							if (cbSize == 1)
 								m_val = marshal_info<T>::safe_type::coerce(*vals);
@@ -361,23 +364,23 @@ namespace Omega
 
 					~safe_type_wrapper()
 					{
-						if (!m_bNull)
+						if (m_pOrig)
 						{
 							if (m_pVals)
 							{
 								for (size_t i=0;i<m_cbSize;++i)
-									m_pOrig[i] = marshal_info<T>::safe_type::coerce(m_pVals[i]);
+									*marshal_info<T&>::safe_type::coerce(m_pOrig[i]) = m_pVals[i];
 
 								delete [] m_pVals;
 							}
 							else
-								*m_pOrig = marshal_info<T>::safe_type::coerce(m_val);
+								m_val.update(*m_pOrig);
 						}	
 					}
 
 					operator safe_type()
 					{
-						if (m_bNull)
+						if (!m_pOrig)
 							return 0;
 						else if (m_pVals)
 							return m_pVals;
@@ -386,8 +389,7 @@ namespace Omega
 					}
 
 				private:
-					bool      m_bNull;
-					arr_type  m_val;
+					typename custom_safe_type<T>::impl::safe_type_wrapper m_val;
 					arr_type* m_pVals;
 					T*        m_pOrig;
 					size_t    m_cbSize;
@@ -614,7 +616,7 @@ namespace Omega
 
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(bool_t val = false) : m_val(val ? 1 : 0)
+					safe_type_wrapper(bool_t val) : m_val(val ? 1 : 0)
 					{}
 
 					void update(bool_t& dest)
@@ -659,7 +661,7 @@ namespace Omega
 
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(const bool_t val = false) : m_val(val ? 1 : 0)
+					safe_type_wrapper(bool_t val) : m_val(val ? 1 : 0)
 					{}
 
 					safe_type_wrapper(const safe_type_wrapper& rhs) : m_val(rhs.m_val)
@@ -709,24 +711,26 @@ namespace Omega
 
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(guid_t& val) : m_val(&val)
+					safe_type_wrapper(const guid_t& val) : m_val(val)
 					{}
 
-					void update(guid_t&)
-					{}
-
-					operator safe_type ()
+					void update(guid_t& dest)
 					{
-						return *m_val;
+						dest = m_val;
 					}
 
-					safe_type* operator & ()
+					operator safe_type ()
 					{
 						return m_val;
 					}
 
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
 				private:
-					safe_type* m_val;
+					safe_type m_val;
 				};
 			};
 

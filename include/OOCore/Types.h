@@ -44,8 +44,8 @@ namespace Omega
 		inline ~string_t();
 
 		inline string_t& operator = (const string_t& s);
-		inline string_t& operator = (const wchar_t* wsz);
-
+		inline string_t& operator = (const wchar_t* sz);
+		
 		inline const wchar_t* c_str() const;
 		const wchar_t operator[](size_t i) const
 		{ return c_str()[i]; }
@@ -53,29 +53,17 @@ namespace Omega
 		inline size_t ToUTF8(char* sz, size_t size) const;
 		inline std::string ToUTF8() const;
 
-		template <typename T>
-		bool operator == (T t) const
-		{ return Compare(t) == 0; }
-
-		template <typename T>
-		bool operator != (T t) const
-		{ return Compare(t) != 0; }
-
-		template <typename T>
-		bool operator < (T t) const
-		{ return Compare(t) < 0; }
-
-		template <typename T>
-		bool operator > (T t) const
-		{ return Compare(t) > 0; }
+		bool operator == (const string_t& s) const { return Compare(s) == 0; }
+		bool operator != (const string_t& s) const { return Compare(s) != 0; }
+		bool operator < (const string_t& s) const { return Compare(s) < 0; }
+		bool operator <= (const string_t& s) const { return Compare(s) <= 0; }
+		bool operator > (const string_t& s) const { return Compare(s) > 0; }
+		bool operator >= (const string_t& s) const { return Compare(s) >= 0; }
 
 		inline string_t& operator += (const string_t& s);
-		inline string_t& operator += (const wchar_t* wsz);
-
+		
 		inline int Compare(const string_t& s) const;
-		inline int Compare(const wchar_t* sz) const;
 		inline int CompareNoCase(const string_t& s) const;
-		inline int CompareNoCase(const wchar_t* sz) const;
 		inline bool IsEmpty() const;
 		inline size_t Length() const;
 		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
@@ -88,9 +76,9 @@ namespace Omega
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
 		inline string_t TrimLeft(wchar_t c = L' ') const;
-		inline string_t TrimLeft(const wchar_t* sz) const;
+		inline string_t TrimLeft(const string_t& str) const;
 		inline string_t TrimRight(wchar_t c = L' ') const;
-		inline string_t TrimRight(const wchar_t* sz) const;
+		inline string_t TrimRight(const string_t& str) const;
 
 		inline static string_t Format(const wchar_t* pszFormat, ...);
 
@@ -175,23 +163,13 @@ namespace Omega
 				}
 			};
 
-			/*template <typename T> struct default_value<T&>
+			template <> struct default_value<guid_t>
 			{
-				static T& value()
+				static const guid_t& value()
 				{
-					static T v(default_value<T>::value());
-					return v;
+					return guid_t::Null();
 				}
 			};
-
-			template <> struct default_value<const guid_t&>
-			{
-				static T& value()
-				{
-					static T v(default_value<T>::value());
-					return v;
-				}
-			};*/
 
 			// MSVC gets twitchy about size_t/uint32_t
 			#if defined(_MSC_VER)
@@ -295,21 +273,6 @@ namespace Omega
 			};
 		}
 	}
-}
-
-inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
-}
-
-inline Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
-}
-
-inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs)
-{
-	return (Omega::string_t(lhs) += rhs);
 }
 
 #endif // OMEGA_TYPES_H_INCLUDED_

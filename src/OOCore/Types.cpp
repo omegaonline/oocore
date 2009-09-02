@@ -106,7 +106,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__dctor,1,((in),void*,s1)
 		static_cast<StringNode*>(s1)->Release();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign,2,((in),void*,s1,(in),const void*,s2))
 {
 	if (s1)
 		static_cast<StringNode*>(s1)->Release();
@@ -115,19 +115,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s
 		return 0;
 
 	return static_cast<const StringNode*>(s2)->AddRef();
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,s1,(in),const wchar_t*,wsz))
-{
-	if (s1)
-		static_cast<StringNode*>(s1)->Release();
-
-	if (!wsz)
-		return 0;
-
-	StringNode* pNode;
-	OMEGA_NEW(pNode,StringNode(wsz));
-	return pNode;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,s1))
@@ -155,7 +142,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const v
 	return str.length() + 1;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(in),const void*,s2))
 {
 	if (!s2)
 	{
@@ -181,87 +168,20 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(in),const wchar_t*,wsz))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp,2,((in),const void*,s1,(in),const void*,s2))
 {
-	if (!wsz)
-	{
-		if (!s1)
-			return 0;
-		else
-		{
-			static_cast<StringNode*>(s1)->AddRef();
-			return s1;
-		}
-	}
-
-	StringNode* pNode;
-	if (s1)
-	{
-		StringNode* pOld = static_cast<StringNode*>(s1);
-		OMEGA_NEW(pNode,StringNode(pOld->m_str + wsz));
-		pOld->Release();
-	}
-	else
-		OMEGA_NEW(pNode,StringNode(wsz));
-
-	return pNode;
+	return (s1 ? static_cast<const StringNode*>(s1)->m_str : std::wstring()).compare((s2 ? static_cast<const StringNode*>(s2)->m_str : std::wstring()));
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,2,((in),const void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc,2,((in),const void*,s1,(in),const void*,s2))
 {
-	if (!s1 && !s2)
-		return 0;
-	else if (!s1 && s2)
-		return -1;
-	else if (s1 && !s2)
-		return 1;
-	else
-		return static_cast<const StringNode*>(s1)->m_str.compare(static_cast<const StringNode*>(s2)->m_str);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,2,((in),const void*,s1,(in),const wchar_t*,wsz))
-{
-	if (!s1 && !wsz)
-		return 0;
-	else if (!s1 && wsz)
-		return -1;
-	else if (s1 && !wsz)
-		return 1;
-	else
-		return static_cast<const StringNode*>(s1)->m_str.compare(wsz);
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc1,2,((in),const void*,s1,(in),const void*,s2))
-{
-	if (!s1 && !s2)
-		return 0;
-	else if (!s1 && s2)
-		return -1;
-	else if (s1 && !s2)
-		return 1;
+	const wchar_t* str1 = (s1 ? static_cast<const StringNode*>(s1)->m_str.c_str() : 0);
+	const wchar_t* str2 = (s2 ? static_cast<const StringNode*>(s2)->m_str.c_str() : 0);
 
 #if defined(HAVE_WCSICMP)
-	return wcsicmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
+	return wcsicmp(str1,str2);
 #elif defined(HAVE_WCSCASECMP)
-	return wcscasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),static_cast<const StringNode*>(s2)->m_str.c_str());
-#else
-#error Fix me!
-#endif
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc2,2,((in),const void*,s1,(in),const wchar_t*,wsz))
-{
-	if (!s1 && !wsz)
-		return 0;
-	else if (!s1 && wsz)
-		return -1;
-	else if (s1 && !wsz)
-		return 1;
-
-#if defined(HAVE_WCSICMP)
-	return wcsicmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
-#elif defined(HAVE_WCSCASECMP)
-	return wcscasecmp(static_cast<const StringNode*>(s1)->m_str.c_str(),wsz);
+	return wcscasecmp(str1,str2);
 #else
 #error Fix me!
 #endif

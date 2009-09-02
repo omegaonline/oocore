@@ -61,6 +61,12 @@ static bool string_tests_wchar()
 	TEST(s1.Mid(15,3) == L"fgh");
 	TEST(s1.Right(3) == L"hij");
 
+	Omega::string_t s4;
+	TEST(s4 == L"");
+	TEST(s4 == (wchar_t*)0);
+	TEST(s4 == Omega::string_t(L""));
+	TEST(s4 == Omega::string_t("",false));
+
 	return true;
 }
 

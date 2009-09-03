@@ -22,6 +22,12 @@
 #ifndef OOCORE_WIRE_INL_INCLUDED_
 #define OOCORE_WIRE_INL_INCLUDED_
 
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,());
+Omega::Remoting::IMessage* Omega::Remoting::CreateMemoryMessage()
+{
+	return OOCore_Remoting_CreateMemoryMessage();
+}
+
 void Omega::System::MetaInfo::wire_proxy_holder::remove(const SafeShim* shim)
 {
 	try
@@ -269,8 +275,8 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System
 		ptrMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 		unpack = true;
 		m_ptrProxy->WriteKey(ptrMessage);
-		wire_write(L"$iid",ptrMessage,iid);
-		wire_write(L"$method_id",ptrMessage,method_id);
+		ptrMessage->WriteGuid(L"$iid",iid);
+		ptrMessage->WriteUInt32(L"$method_id",method_id);
 		return ptrMessage;
 	}
 	catch (...)
@@ -288,9 +294,8 @@ void Omega::System::MetaInfo::Wire_Proxy_Owner::UnpackHeader(Remoting::IMessage*
 {
 	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 	m_ptrProxy->UnpackKey(pMessage);
-	uint32_t key1; guid_t key2;
-	wire_read(L"$iid",pMessage,key2);
-	wire_read(L"$method_id",pMessage,key1);
+	pMessage->ReadGuid(L"$iid");
+	pMessage->ReadUInt32(L"$method_id");
 }
 
 Omega::System::MetaInfo::Wire_Proxy_Base::~Wire_Proxy_Base()

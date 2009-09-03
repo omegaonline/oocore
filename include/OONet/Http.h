@@ -54,7 +54,7 @@ namespace Omega
 			};
 
 			// {72B33743-6E02-49a1-89C3-C8B988492EF4}
-			OMEGA_DECLARE_OID(OID_StdHttpRequest);
+			OMEGA_EXPORT_OID(OID_StdHttpRequest);
 
 			//inline void SplitURL(const string_t& strURL, string_t& strScheme, string_t& strHost, string_t& strPort, string_t& strUserName, string_t& strPassword, string_t& strResource, string_t& strQuery);
 

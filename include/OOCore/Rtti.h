@@ -134,23 +134,24 @@ namespace Omega
 
 				struct ParamInfo
 				{
-					const wchar_t*              pszName;
+					const char*                 pszName;
 					TypeInfo::Types_t           type;
 					TypeInfo::ParamAttributes_t attribs;
-					const wchar_t*              attrib_ref;
+					const char*                 attrib_ref;
 					const guid_base_t*          iid;
 				};
+
 				struct MethodInfo
 				{
-					const wchar_t*               pszName;
+					const char*                  pszName;
 					TypeInfo::MethodAttributes_t attribs;
 					uint32_t                     timeout;
 					byte_t                       param_count;
 					TypeInfo::Types_t            return_type;
-					const ParamInfo*             params;
+					const ParamInfo* (*pfnGetParamInfo)();
 				};
 
-				const MethodInfo* (OMEGA_CALL *pfnGetMethodInfo)();
+				const MethodInfo* (*pfnGetMethodInfo)();
 				uint32_t method_count;
 				const guid_base_t* base_type;
 			};
@@ -171,27 +172,38 @@ namespace Omega
 				static const uint32_t method_count = 3;
 
 			private:
+				static const typeinfo_rtti::ParamInfo* AddRef_params()
+				{
+					static const typeinfo_rtti::ParamInfo pi[] =
+					{
+						{ 0, 0, 0, "", 0 }
+					};
+					return pi;
+				}
+				static const typeinfo_rtti::ParamInfo* Release_params()
+				{
+					static const typeinfo_rtti::ParamInfo pi[] =
+					{
+						{ 0, 0, 0, "", 0 }
+					};
+					return pi;
+				}
+				static const typeinfo_rtti::ParamInfo* QueryInterface_params()
+				{
+					static const typeinfo_rtti::ParamInfo pi[] =
+					{
+						{ "iid", TypeInfo::typeGuid | TypeInfo::typeConst | TypeInfo::typeReference, TypeInfo::attrIn, "", 0 },
+						{ 0, 0, 0, "", 0 }
+					};
+					return pi;
+				}
 				static const typeinfo_rtti::MethodInfo* method_info()
 				{
-					static const typeinfo_rtti::ParamInfo AddRef_params[] =
-					{
-						{ 0, 0, 0, L"", 0 }
-					};
-					static const typeinfo_rtti::ParamInfo Release_params[] =
-					{
-						{ 0, 0, 0, L"", 0 }
-					};
-					static const typeinfo_rtti::ParamInfo QueryInterface_params[] =
-					{
-						{ L"iid", TypeInfo::typeGuid | TypeInfo::typeConst | TypeInfo::typeReference, TypeInfo::attrIn, L"", 0 },
-						{ 0, 0, 0, L"", 0 }
-					};
-
 					static const typeinfo_rtti::MethodInfo methods[] =
 					{
-						{ L"AddRef", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, AddRef_params },
-						{ L"Release", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, Release_params },
-						{ L"QueryInterface", TypeInfo::Synchronous, 0, 1, TypeInfo::typeObject, QueryInterface_params }
+						{ "AddRef", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, &AddRef_params },
+						{ "Release", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, &Release_params },
+						{ "QueryInterface", TypeInfo::Synchronous, 0, 1, TypeInfo::typeObject, &QueryInterface_params }
 					};
 					return methods;
 				}

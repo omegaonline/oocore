@@ -183,8 +183,8 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 		OMEGA_THROW(L"Unexpected end of message");
 	
 	// Return in the same format as we marshal
-	pMessage->WriteUInt32s(L"m_channel_id",1,&other_end);
-	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
+	pMessage->WriteUInt32(L"m_channel_id",other_end);
+	pMessage->WriteGuid(L"m_message_oid",m_message_oid);
 }
 
 Remoting::IObjectManager* OOCore::Channel::GetObjectManager()
@@ -202,19 +202,14 @@ guid_t OOCore::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalF
 
 void OOCore::Channel::MarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
-	pMessage->WriteUInt32s(L"m_channel_id",1,&m_channel_id);
-	pMessage->WriteGuids(L"m_message_oid",1,&m_message_oid);
+	pMessage->WriteUInt32(L"m_channel_id",m_channel_id);
+	pMessage->WriteGuid(L"m_message_oid",m_message_oid);
 }
 
 void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
-	uint32_t c;
-	if (pMessage->ReadUInt32s(L"m_channel_id",1,&c) != 1)
-		OMEGA_THROW(L"Unexpected end of message");
-
-	guid_t g;
-	if (pMessage->ReadGuids(L"m_message_oid",1,&g) != 1)
-		OMEGA_THROW(L"Unexpected end of message");
+	pMessage->ReadUInt32(L"m_channel_id");
+	pMessage->ReadGuid(L"m_message_oid");
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
@@ -236,13 +231,8 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 		// If we get here, then we are loaded into a different exe from OOServer,
 		// therefore we do simple unmarshalling
 	
-		uint32_t channel_id;
-		if (pMessage->ReadUInt32s(L"m_channel_id",1,&channel_id) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
-
-		guid_t message_oid;
-		if (pMessage->ReadGuids(L"m_message_oid",1,&message_oid) != 1)
-			OMEGA_THROW(L"Unexpected end of message");
+		uint32_t channel_id = pMessage->ReadUInt32(L"m_channel_id");
+		guid_t message_oid = pMessage->ReadGuid(L"m_message_oid");
 
 		// Create a new channel
 		pObject = UserSession::create_channel(channel_id,message_oid)->QueryInterface(iid);
@@ -253,13 +243,7 @@ OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-2
 
 void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, Omega::IObject*& pObject)
 {
-	uint64_t sz;
-	pMessage->ReadUInt64s(L"length",1,&sz);
-
-	if (sz > (size_t)-1)
-		OMEGA_THROW(L"Message too long to unmarshal");
-
-	size_t len = static_cast<size_t>(sz);
+	uint32_t len = pMessage->ReadUInt32(L"length");
 
 	OOBase::CDRStream input(len);
 	pMessage->ReadBytes(L"data",len,(byte_t*)input.buffer()->wr_ptr());
@@ -269,4 +253,9 @@ void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManag
 	ptrInput->init(input);
 
 	pObject = ptrInput->QueryInterface(iid);
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,())
+{
+	return ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr().QueryInterface<Remoting::IMessage>();
 }

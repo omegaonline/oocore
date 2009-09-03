@@ -22,61 +22,61 @@
 #ifndef OMEGA_THREADING_INL_INCLUDED_
 #define OMEGA_THREADING_INL_INCLUDED_
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,());
+OOCORE_EXPORTED_FUNCTION(void*,OOCore_cs__ctor,0,());
 Omega::Threading::Mutex::Mutex() :
 	m_handle(static_cast<handle_t*>(OOCore_cs__ctor()))
 {
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_cs__dctor,1,((in),void*,h));
 Omega::Threading::Mutex::~Mutex()
 {
 	OOCore_cs__dctor(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_cs_lock,1,((in),void*,h));
 void Omega::Threading::Mutex::Acquire()
 {
 	OOCore_cs_lock(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_cs_unlock,1,((in),void*,h));
 void Omega::Threading::Mutex::Release()
 {
 	OOCore_cs_unlock(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,());
+OOCORE_EXPORTED_FUNCTION(void*,OOCore_rw_lock__ctor,0,());
 Omega::Threading::ReaderWriterLock::ReaderWriterLock() :
 	m_handle(static_cast<handle_t*>(OOCore_rw_lock__ctor()))
 {	
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_rw_lock__dctor,1,((in),void*,h));
 Omega::Threading::ReaderWriterLock::~ReaderWriterLock()
 {
 	OOCore_rw_lock__dctor(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockread,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::AcquireRead()
 {
 	OOCore_rw_lock_lockread(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockwrite,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_lockwrite,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::Acquire()
 {
 	OOCore_rw_lock_lockwrite(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockread,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockread,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::ReleaseRead()
 {
 	OOCore_rw_lock_unlockread(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_rw_lock_unlockwrite,1,((in),void*,h));
 void Omega::Threading::ReaderWriterLock::Release()
 {
 	OOCore_rw_lock_unlockwrite(m_handle);
@@ -145,8 +145,8 @@ Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 	}
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_add_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_remove_uninit_call,2,((in),void*,pfn_dctor,(in),void*,param));
 
 template <typename DLL>
 void Omega::Threading::InitialiseDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
@@ -223,7 +223,7 @@ void Omega::Threading::InitialiseDestructor<DLL>::destruct(void* param)
 template <typename T, typename Lifetime>
 void* Omega::Threading::Singleton<T,Lifetime>::s_instance = 0;
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_sngtn_once,2,((in),void**,val,(in),Omega::Threading::SingletonCallback,pfn_init));
 template <typename T, typename Lifetime>
 T* Omega::Threading::Singleton<T,Lifetime>::instance()
 {
@@ -273,34 +273,34 @@ void Omega::Threading::Singleton<T,Lifetime>::do_term(void*)
 #define OMEGA_DEBUG_STASH_ATOMIC(expr)	(void)0
 #endif
 
-OMEGA_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,());
+OOCORE_EXPORTED_FUNCTION(void*,OOCore_atomic__ctor,0,());
 Omega::Threading::AtomicRefCount::AtomicRefCount() :
 	m_handle(static_cast<handle_t*>(OOCore_atomic__ctor()))
 {
 	OMEGA_DEBUG_STASH_ATOMIC(=0);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_atomic__dctor,1,((in),void*,h));
 Omega::Threading::AtomicRefCount::~AtomicRefCount()
 {
 	OOCore_atomic__dctor(m_handle);
 }
 
-OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_atomic_addref,1,((in),void*,h));
 bool Omega::Threading::AtomicRefCount::AddRef()
 {
 	OMEGA_DEBUG_STASH_ATOMIC(++);
 	return (OOCore_atomic_addref(m_handle) != 0);
 }
 
-OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_atomic_release,1,((in),void*,h));
 bool Omega::Threading::AtomicRefCount::Release()
 {
 	OMEGA_DEBUG_STASH_ATOMIC(--);
 	return (OOCore_atomic_release(m_handle) != 0);
 }
 
-OMEGA_EXPORTED_FUNCTION(int,OOCore_atomic_iszero,1,((in),void*,h));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_atomic_iszero,1,((in),void*,h));
 bool Omega::Threading::AtomicRefCount::IsZero() const
 {
 	return (OOCore_atomic_iszero(m_handle) != 0);

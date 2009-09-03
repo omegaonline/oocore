@@ -115,8 +115,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 
 	WriteStubInfo(pParamsOut,1);
 
-	System::MetaInfo::wire_write(L"iid",pParamsOut,iid);
-
+	pParamsOut->WriteGuid(L"iid",iid);
 	pParamsOut->WriteStructEnd(L"ipc_request");
 
 	Remoting::IMessage* pParamsIn = 0;
@@ -127,9 +126,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
-	bool_t retval;
-	System::MetaInfo::wire_read(L"$retval",ptrParamsIn,retval);
-	return retval;
+	return ptrParamsIn->ReadBoolean(L"$retval");
 }
 
 IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
@@ -137,8 +134,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 	// Up our marshal count early, because we are definitely attached to something!
 	++m_marshal_count;
 
-	guid_t wire_iid;
-	System::MetaInfo::wire_read(L"iid",pMessage,wire_iid);
+	guid_t wire_iid = pMessage->ReadGuid(L"iid");
 
 	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(&m_proxy_shim,0);
 
@@ -156,20 +152,17 @@ void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_
 {
 	pMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
-	System::MetaInfo::wire_write(L"$stub_id",pMessage,m_proxy_id);
-	System::MetaInfo::wire_write(L"$iid",pMessage,OMEGA_GUIDOF(IObject));
-	System::MetaInfo::wire_write(L"$method_id",pMessage,method_id);
+	pMessage->WriteUInt32(L"$stub_id",m_proxy_id);
+	pMessage->WriteGuid(L"$iid",OMEGA_GUIDOF(IObject));
+	pMessage->WriteUInt32(L"$method_id",method_id);
 }
 
 void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 {
 	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
-
-	uint32_t l;
-	guid_t m;
-	System::MetaInfo::wire_read(L"$stub_id",pMessage,l);
-	System::MetaInfo::wire_read(L"$iid",pMessage,m);
-	System::MetaInfo::wire_read(L"$method_id",pMessage,l);
+	pMessage->ReadUInt32(L"$stub_id");
+	pMessage->ReadGuid(L"$iid");
+	pMessage->ReadUInt32(L"$method_id");
 }
 
 const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
@@ -209,7 +202,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 
 	WriteStubInfo(pParamsOut,2);
 
-	System::MetaInfo::wire_write(L"iid",pParamsOut,iid);
+	pParamsOut->WriteGuid(L"iid",iid);
 
 	Remoting::IMessage* pParamsIn = 0;
 	
@@ -227,8 +220,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 	{
 		ReadStubInfo(pParamsOut);
 
-		guid_t m;
-		System::MetaInfo::wire_read(L"iid",pParamsOut,m);
+		pParamsOut->ReadGuid(L"iid");
 
 		void* TODO; // Release marshal data for channel
 		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::IMarshaller),pObjectManager);
@@ -256,8 +248,7 @@ void OOCore::Proxy::CallRemoteRelease()
 
 		WriteStubInfo(pParamsOut,0);
 
-		System::MetaInfo::wire_write(L"release_count",pParamsOut,static_cast<uint32_t>(m_marshal_count.value()));
-
+		pParamsOut->WriteUInt32(L"release_count",static_cast<uint32_t>(m_marshal_count.value()));
 		pParamsOut->WriteStructEnd(L"ipc_request");
 
 		Remoting::IMessage* pParamsIn = 0;

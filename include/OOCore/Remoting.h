@@ -108,7 +108,7 @@ namespace Omega
 		};
 		
 		/// {63EB243E-6AE3-43BD-B073-764E096775F8}
-		OMEGA_DECLARE_OID(OID_StdObjectManager);
+		OOCORE_DECLARE_OID(OID_StdObjectManager);
 	}
 }
 
@@ -197,19 +197,19 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(Remoting::IChannelSink*,Open,2,((in),const string_t&,strEndpoint,(in),Remoting::IChannelSink*,pSink))
 )
 
-OMEGA_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,0,())
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,0,())
 Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create()
 {
 	return OOCore_Remoting_IChannelClosedException_Create();
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
 Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
 {
 	return OOCore_Remoting_GetCallContext();
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
 Omega::Remoting::IChannelSink* Omega::Remoting::IChannelSink::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
 {
 	return OOCore_Remoting_OpenServerSink(message_oid,pSink);

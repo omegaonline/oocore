@@ -411,6 +411,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\SafePS.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\Service.h"
 				>
 			</File>
@@ -436,6 +440,10 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Wire.inl"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\WirePS.h"
 				>
 			</File>
 		</Filter>

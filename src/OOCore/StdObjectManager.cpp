@@ -251,10 +251,8 @@ void OOCore::StdObjectManager::Shutdown()
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the oid, iid and flags
-	string_t strOID;
-	pParamsIn->ReadStrings(L"oid",1,&strOID);
-	guid_t iid;
-	System::MetaInfo::wire_read(L"iid",pParamsIn,iid);
+	string_t strOID = pParamsIn->ReadString(L"oid");
+	guid_t iid = pParamsIn->ReadGuid(L"iid");
 	Activation::Flags_t act_flags;
 	System::MetaInfo::wire_read(L"flags",pParamsIn,act_flags);
 
@@ -306,9 +304,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 		// Assume we succeed
 		ptrResponse->WriteStructStart(L"ipc_response",L"$ipc_response_type");
-
-		bool_t v = false;
-		ptrResponse->WriteBooleans(L"$throw",1,&v);
+		ptrResponse->WriteBoolean(L"$throw",false);
 
 		try
 		{
@@ -316,12 +312,10 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			pParamsIn->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 
 			// Read the stub id
-			uint32_t stub_id;
-			System::MetaInfo::wire_read(L"$stub_id",pParamsIn,stub_id);
+			uint32_t stub_id = pParamsIn->ReadUInt32(L"$stub_id");
 			if (stub_id == 0)
 			{
-				uint32_t method_id;
-				System::MetaInfo::wire_read(L"$method_id",pParamsIn,method_id);
+				uint32_t method_id = pParamsIn->ReadUInt32(L"$method_id");
 				if (method_id == 0)
 				{
 					// It's a call from GetRemoteInstance
@@ -365,8 +359,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			ptrResponse.Attach(m_ptrChannel->CreateMessage());
 			ptrResponse->WriteStructStart(L"ipc_response",L"$ipc_response_type");
 
-			bool_t v = true;
-			ptrResponse->WriteBooleans(L"$throw",1,&v);
+			ptrResponse->WriteBoolean(L"$throw",true);
 
 			// Write the exception onto the wire
 			MarshalInterface(L"exception",ptrResponse,pE->GetThrownIID(),pE);
@@ -397,10 +390,10 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 
 	ptrParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
-	System::MetaInfo::wire_write(L"$stub_id",ptrParamsOut,(uint32_t)0);
-	System::MetaInfo::wire_write(L"$method_id",ptrParamsOut,(uint32_t)0);
-	System::MetaInfo::wire_write(L"oid",ptrParamsOut,strOID);
-	System::MetaInfo::wire_write(L"iid",ptrParamsOut,iid);
+	ptrParamsOut->WriteUInt32(L"$stub_id",0);
+	ptrParamsOut->WriteUInt32(L"$method_id",0);
+	ptrParamsOut->WriteString(L"oid",strOID);
+	ptrParamsOut->WriteGuid(L"iid",iid);
 	System::MetaInfo::wire_write(L"flags",ptrParamsOut,flags);
 
 	ptrParamsOut->WriteStructEnd(L"ipc_request");
@@ -416,12 +409,10 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 	{
 		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 
-		uint32_t u32;
-		System::MetaInfo::wire_read(L"$stub_id",ptrParamsOut,u32);
-		System::MetaInfo::wire_read(L"$method_id",ptrParamsOut,u32);
-		guid_t g;
-		System::MetaInfo::wire_read(L"oid",ptrParamsOut,g);
-		System::MetaInfo::wire_read(L"iid",ptrParamsOut,g);
+		ptrParamsOut->ReadUInt32(L"$stub_id");
+		ptrParamsOut->ReadUInt32(L"$method_id");
+		ptrParamsOut->ReadGuid(L"oid");
+		ptrParamsOut->ReadGuid(L"iid");
 
 		Activation::Flags_t f;
 		System::MetaInfo::wire_read(L"flags",ptrParamsOut,f);
@@ -479,9 +470,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 			ptrRecv->ReadStructStart(L"ipc_response",L"$ipc_response_type");
 
 			// Read exception status
-			bool_t bthrow;
-			System::MetaInfo::wire_read(L"$throw",ptrRecv,bthrow);
-			if (bthrow)
+			if (ptrRecv->ReadBoolean(L"$throw"))
 			{
 				// Unmarshal the exception
 				IObject* pE = 0;
@@ -548,7 +537,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 		// See if object is NULL
 		if (!pObject)
 		{
-			System::MetaInfo::wire_write(L"$marshal_type",pMessage,(byte_t)0);
+			pMessage->WriteByte(L"$marshal_type",0);
 			pMessage->WriteStructEnd(pszName);
 			return;
 		}
@@ -583,10 +572,10 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 					try
 					{
 						// Write the marshalling oid
-						System::MetaInfo::wire_write(L"$marshal_type",pMessage,(byte_t)2);
+						pMessage->WriteByte(L"$marshal_type",2);
 						++undo_count;
 
-						System::MetaInfo::wire_write(L"$oid",pMessage,oid);
+						pMessage->WriteGuid(L"$oid",oid);
 						++undo_count;
 
 						// Let the custom handle marshalling...
@@ -602,17 +591,11 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 						void* TODO; // This won't work without correct unwinding semantics on a message
 
 						if (undo_count > 0)
-						{
-							byte_t v;
-							System::MetaInfo::wire_read(L"$marshal_type",pMessage,v);
-						}
-
+							pMessage->ReadByte(L"$marshal_type");
+						
 						if (undo_count > 1)
-						{
-							guid_t v;
-							System::MetaInfo::wire_read(L"$oid",pMessage,v);
-						}
-
+							pMessage->ReadGuid(L"$oid");
+						
 						if (undo_count > 2)
 							ptrMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
 						
@@ -642,7 +625,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 		}
 
 		// Write out the data
-		System::MetaInfo::wire_write(L"$marshal_type",pMessage,(byte_t)1);
+		pMessage->WriteByte(L"$marshal_type",1);
 		
 		ptrStub->MarshalInterface(pMessage,iid);
 		
@@ -664,9 +647,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 		// Read the header
 		pMessage->ReadStructStart(pszName,L"$iface_marshal");
 		
-		byte_t flag;
-		System::MetaInfo::wire_read(L"$marshal_type",pMessage,flag);
-		
+		byte_t flag = pMessage->ReadByte(L"$marshal_type");		
 		if (flag == 0)
 		{
 			// NOP
@@ -674,8 +655,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 		}
 		else if (flag == 1)
 		{
-			uint32_t proxy_id;
-			System::MetaInfo::wire_read(L"id",pMessage,proxy_id);
+			uint32_t proxy_id = pMessage->ReadUInt32(L"id");
 			
 			// See if we have a proxy already...
 			ObjectPtr<ObjectImpl<Proxy> > ptrProxy;
@@ -703,8 +683,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 		}
 		else if (flag == 2)
 		{
-			guid_t oid;
-			System::MetaInfo::wire_read(L"$oid",pMessage,oid);
+			guid_t oid = pMessage->ReadGuid(L"$oid");
 			
 			// Create an instance of Oid
 			ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
@@ -734,9 +713,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 		// Read the header
 		pMessage->ReadStructStart(pszName,L"$iface_marshal");
 		
-		byte_t flag;
-		System::MetaInfo::wire_read(L"$marshal_type",pMessage,flag);
-		
+		byte_t flag = pMessage->ReadByte(L"$marshal_type");		
 		if (flag == 0)
 		{
 			/* NOP */
@@ -744,8 +721,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 		else if (flag == 1)
 		{
 			// Skip the stub id
-			uint32_t stub_id;
-			System::MetaInfo::wire_read(L"id",pMessage,stub_id);
+			pMessage->ReadUInt32(L"id");
 			
 			IObject* pObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
 			ObjectPtr<IObject> ptrObj;
@@ -775,8 +751,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 		else if (flag == 2)
 		{
 			// Skip the guid...
-			guid_t oid;
-			System::MetaInfo::wire_read(L"oid",pMessage,oid);
+			guid_t oid = pMessage->ReadGuid(L"oid");
 			
 			// See if pObject does custom marshalling...
 			ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
@@ -821,13 +796,13 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	pMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
-	System::MetaInfo::wire_write(L"$marshal_type",pMessage,(byte_t)2);
+	pMessage->WriteByte(L"$marshal_type",2);
 
 	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_GUIDOF(Remoting::IChannel),flags);
 	if (oid == guid_t::Null())
 		OMEGA_THROW(L"Channels must support custom marshalling if they support reflection");
 
-	System::MetaInfo::wire_write(L"$oid",pMessage,oid);
+	pMessage->WriteGuid(L"$oid",oid);
 
 	ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 	

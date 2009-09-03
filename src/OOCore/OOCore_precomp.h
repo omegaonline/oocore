@@ -35,16 +35,16 @@
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE
-#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+
+#define OOCORE_INTERNAL
+
+#define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params)
 
-#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+#define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_LOCAL_FUNCTION(ret_type,name,param_count,params)
 
-#define OMEGA_INTERNAL \
-	OMEGA_EXPORT
-
-#define OMEGA_DECLARE_OID(name) \
+#define OOCORE_DECLARE_OID(name) \
 	OMEGA_EXPORT_OID(name)
 
 /////////////////////////////////////////////////

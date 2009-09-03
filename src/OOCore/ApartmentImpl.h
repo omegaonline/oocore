@@ -95,7 +95,7 @@ namespace OOCore
 	};
 
 	// {6654B003-44F1-497a-B539-80B5FCED73BC}
-	OMEGA_DECLARE_OID(OID_StdApartment);
+	OOCORE_DECLARE_OID(OID_StdApartment);
 
 	class ApartmentImpl :
 		public OTL::ObjectBase,

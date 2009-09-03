@@ -21,6 +21,7 @@ nobase_include_HEADERS = \
 	OOCore/Rtti.h \
 	OOCore/Rtti.inl \
 	OOCore/Safe.h \
+	OOCore/SafePS.h \
 	OOCore/Safe.inl \
 	OOCore/Service.h \
 	OOCore/Threading.h \
@@ -28,6 +29,7 @@ nobase_include_HEADERS = \
 	OOCore/Types.h \
 	OOCore/Types.inl \
 	OOCore/Wire.h \
+	OOCore/WirePS.h \
 	OOCore/Wire.inl \
 	OTL/OTL.h \
 	OTL/OTL.inl \

@@ -45,18 +45,9 @@ void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& 
 	if (iid != OMEGA_GUIDOF(IObject))
 		FindStub(iid);
 	
-	System::MetaInfo::wire_write(L"id",pMessage,m_stub_id);
-	try
-	{
-		System::MetaInfo::wire_write(L"iid",pMessage,iid);
-	}
-	catch (...)
-	{
-		uint32_t v;
-		System::MetaInfo::wire_read(L"id",pMessage,v);
-		throw;
-	}
-
+	pMessage->WriteUInt32(L"id",m_stub_id);
+	pMessage->WriteGuid(L"iid",iid);
+	
 	++m_marshal_count;
 }
 
@@ -65,36 +56,25 @@ void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t
 	// Deref safely
 	RemoteRelease(1);
 
-	uint32_t v;
-	System::MetaInfo::wire_read(L"id",pMessage,v);
-		
-	guid_t iid;
-	System::MetaInfo::wire_read(L"iid",pMessage,iid);
+	pMessage->ReadUInt32(L"id");
+	pMessage->ReadGuid(L"iid");
 }
 
 void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
 	// Read the method id
-	uint32_t method_id = 0;
-	System::MetaInfo::wire_read(L"$method_id",pParamsIn,method_id);
-
+	uint32_t method_id = pParamsIn->ReadUInt32(L"$method_id");
 	switch (method_id)
 	{
 	case 0: // RemoteRelease
 		{
-			uint32_t release_count = 0;
-			System::MetaInfo::wire_read(L"release_count",pParamsIn,release_count);
-			RemoteRelease(release_count);
+			RemoteRelease(pParamsIn->ReadUInt32(L"release_count"));
 		}
 		break;
 
 	case 1: // QueryInterface
 		{
-			guid_t iid;
-			System::MetaInfo::wire_read(L"iid",pParamsIn,iid);
-			
-			bool_t bQI = RemoteQueryInterface(iid);
-			System::MetaInfo::wire_write(L"bQI",pParamsOut,bQI);
+			pParamsOut->WriteBoolean(L"bQI",RemoteQueryInterface(pParamsIn->ReadGuid(L"iid")));
 		}
 		break;
 
@@ -109,8 +89,7 @@ void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pPa
 
 ObjectPtr<System::IStub> OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
 {
-	guid_t iid;
-	System::MetaInfo::wire_read(L"$iid",pMessage,iid);
+	guid_t iid = pMessage->ReadGuid(L"$iid");
 	if (iid == OMEGA_GUIDOF(IObject))
 		return static_cast<IStub*>(this);
 
@@ -211,8 +190,7 @@ bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	guid_t iid;
-	System::MetaInfo::wire_read(L"iid",pParamsIn,iid);
+	guid_t iid = pParamsIn->ReadGuid(L"iid");
 	
 	// Unmarshal the channel
 	IObject* pUI = 0;
@@ -227,8 +205,8 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Reflect the channel
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	ptrMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
-	System::MetaInfo::wire_write(L"$marshal_type",ptrMessage,(byte_t)2);
-	System::MetaInfo::wire_write(L"$oid",ptrMessage,ptrChannel->GetReflectUnmarshalFactoryOID());
+	ptrMessage->WriteByte(L"$marshal_type",2);
+	ptrMessage->WriteGuid(L"$oid",ptrChannel->GetReflectUnmarshalFactoryOID());
 	
 	ptrChannel->ReflectMarshal(ptrMessage);
 	

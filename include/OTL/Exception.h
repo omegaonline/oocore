@@ -99,11 +99,8 @@ namespace OTL
 
 		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
 		{
-			if (pMessage->ReadStrings(L"m_strDesc",1,&this->m_strDesc) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
-			if (pMessage->ReadStrings(L"m_strSource",1,&this->m_strSource) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
+			this->m_strDesc = pMessage->ReadString(L"m_strDesc");
+			this->m_strSource = pMessage->ReadString(L"m_strSource");
 
 			Omega::guid_t actual_iid = OMEGA_GUIDOF(Omega::IException);
 			IObject* pUI = 0;
@@ -128,20 +125,15 @@ namespace OTL
 
 		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			pMessage->WriteStrings(L"m_strDesc",1,&this->m_strDesc);
-			pMessage->WriteStrings(L"m_strSource",1,&this->m_strSource);
+			pMessage->WriteString(L"m_strDesc",this->m_strDesc);
+			pMessage->WriteString(L"m_strSource",this->m_strSource);
 			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
-			Omega::string_t s;
-			if (pMessage->ReadStrings(L"m_strDesc",1,&s) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
-			if (pMessage->ReadStrings(L"m_strSource",1,&s) != 1)
-				OMEGA_THROW(L"Unexpected end of message");
-
+			pMessage->ReadString(L"m_strDesc");
+			pMessage->ReadString(L"m_strSource");
 			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
 	};

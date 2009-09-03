@@ -47,16 +47,16 @@ namespace
 	private:
 		struct ParamInfo
 		{
-			std::wstring                strName;
+			std::string                 strName;
 			TypeInfo::Types_t           type;
 			TypeInfo::ParamAttributes_t attribs;
-			std::wstring                strRef;
+			std::string                 strRef;
 			guid_t                      iid;
 		};
 
 		struct MethodInfo
 		{
-			std::wstring                 strName;
+			std::string                  strName;
 			TypeInfo::MethodAttributes_t attribs;
 			uint32_t                     timeout;
 			TypeInfo::Types_t            return_type;
@@ -131,7 +131,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 			mi.timeout = pmi->timeout,
 			mi.return_type = pmi->return_type;
 
-			for (const System::MetaInfo::typeinfo_rtti::ParamInfo* pi=pmi->params;pi->pszName!=0;++pi)
+			for (const System::MetaInfo::typeinfo_rtti::ParamInfo* pi=(*pmi->pfnGetParamInfo)();pi->pszName!=0;++pi)
 			{
 				ParamInfo p;
 				p.strName = pi->pszName;
@@ -185,7 +185,7 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 
 	const MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
 
-	strName = mi.strName.c_str();
+	strName = string_t(mi.strName.c_str(),true);
 	attribs = mi.attribs;
 	timeout = mi.timeout;
 	param_count = static_cast<byte_t>(mi.params.size());
@@ -207,7 +207,7 @@ void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t&
 
 	const ParamInfo& pi = mi.params.at(param_idx);
 
-	strName = pi.strName.c_str();
+	strName = string_t(pi.strName.c_str(),true);
 	type = pi.type;
 	attribs = pi.attribs;
 }

@@ -72,13 +72,12 @@ namespace OOCore
 	public:
 		void WriteKey(Omega::Remoting::IMessage* pMessage)
 		{
-			Omega::System::MetaInfo::wire_write(L"$stub_id",pMessage,m_proxy_id);
+			pMessage->WriteUInt32(L"$stub_id",m_proxy_id);
 		}
 
 		void UnpackKey(Omega::Remoting::IMessage* pMessage)
 		{
-			Omega::uint32_t k;
-			Omega::System::MetaInfo::wire_read(L"$stub_id",pMessage,k);
+			pMessage->ReadUInt32(L"$stub_id");
 		}
 
 		Omega::System::IMarshaller* GetMarshaller();

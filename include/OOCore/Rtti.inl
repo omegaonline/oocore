@@ -22,13 +22,13 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
 void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
 {
 	OOCore_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
 void Omega::System::MetaInfo::UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info)
 {
 	OOCore_UnregisterAutoTypeInfo(iid,(const void*)type_info);
@@ -56,13 +56,13 @@ void Omega::System::UnpinObjectPointer(IObject* pObject)
 		ptrProxy->Unpin();
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
+OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
 Omega::ISystemException* Omega::ISystemException::Create(uint32_t errno_val, const string_t& source)
 {
 	return OOCore_ISystemException_Create_errno(errno_val,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source))
+OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create,2,((in),const Omega::string_t&,desc,(in),const Omega::string_t&,source))
 Omega::ISystemException* Omega::ISystemException::Create(const std::exception& e, const string_t& source)
 {
 	return OOCore_ISystemException_Create(string_t(e.what(),false),source);
@@ -73,13 +73,13 @@ Omega::ISystemException* Omega::ISystemException::Create(const string_t& desc, c
 	return OOCore_ISystemException_Create(desc,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::INoInterfaceException*,OOCore_INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source))
+OOCORE_EXPORTED_FUNCTION(Omega::INoInterfaceException*,OOCore_INoInterfaceException_Create,2,((in),const Omega::guid_t&,iid,(in),const Omega::string_t&,source))
 Omega::INoInterfaceException* Omega::INoInterfaceException::Create(const guid_t& iid, const string_t& source)
 {
 	return OOCore_INoInterfaceException_Create(iid,source);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::ITimeoutException*,OOCore_ITimeoutException_Create,0,())
+OOCORE_EXPORTED_FUNCTION(Omega::ITimeoutException*,OOCore_ITimeoutException_Create,0,())
 Omega::ITimeoutException* Omega::ITimeoutException::Create()
 {
 	return OOCore_ITimeoutException_Create();

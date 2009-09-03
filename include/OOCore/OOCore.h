@@ -33,16 +33,16 @@
 //////////////////////////////////////////////
 // Set up the correct export macros
 
-#if !defined(OMEGA_INTERNAL)
+#if !defined(OOCORE_INTERNAL)
 
-#define OMEGA_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+#define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
 
-#define OMEGA_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+#define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
 
-#define OMEGA_INTERNAL \
-	OMEGA_IMPORT
+#define OOCORE_DECLARE_OID(name) \
+	OMEGA_IMPORT_OID(name)
 
 #endif
 
@@ -80,7 +80,9 @@
 #include "Export.h"
 #include "Rtti.h"
 #include "Safe.h"
+#include "SafePS.h"
 #include "Wire.h"
+#include "WirePS.h"
 #include "Interfaces.h"
 
 namespace Omega
@@ -106,19 +108,19 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
-OMEGA_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
+OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
 Omega::IException* Omega::Initialize(bool bStandalone)
 {
 	return OOCore_Omega_Initialize(bStandalone);
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
 void Omega::Uninitialize()
 {
 	OOCore_Omega_Uninitialize();
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	IObject* pObj = 0;
@@ -126,7 +128,7 @@ Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_
 	return pObj;
 }
 
-OMEGA_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	IObject* pObj = 0;
@@ -134,13 +136,13 @@ Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_
 	return pObj;
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
+OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
 Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 {
 	return OOCore_Omega_HandleRequest(timeout);
 }
 
-OMEGA_EXPORTED_FUNCTION(Omega::string_t,OOCore_GetVersion,0,())
+OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_GetVersion,0,())
 Omega::string_t Omega::System::GetVersion()
 {
 	return OOCore_GetVersion();

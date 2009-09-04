@@ -305,10 +305,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Version.h"
-				>
-			</File>
-			<File
 				RelativePath=".\WireProxy.h"
 				>
 			</File>
@@ -432,6 +428,10 @@
 			</File>
 			<File
 				RelativePath="..\..\include\OOCore\Types.inl"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\version.h"
 				>
 			</File>
 			<File

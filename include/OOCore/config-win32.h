@@ -66,10 +66,4 @@
 #error No _WIN32?!?
 #endif
 
-#if defined(_WIN64)
-#define OMEGA_PLATFORM_STRING "Win64"
-#else
-#define OMEGA_PLATFORM_STRING "Win32"
-#endif
-
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_

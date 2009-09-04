@@ -68,21 +68,15 @@
 	#else
 		#define OMEGA_EXPORT
     #endif
-#elif defined(__WIN32)
+#elif defined(_WIN32)
     #define OMEGA_IMPORT  __attribute__((dllimport))
     #define OMEGA_EXPORT  __attribute__((dllexport))
 #else
-    #error No idea how to control symbol visibility for this output!
+    #error No idea how to control symbol visibility for this compiler/linker/output format!
 #endif
 
-#if defined(__WIN32)
-	// We assume win32 for MinGW
-    #include "config-win32.h"
-#elif defined(__unix__)
-	// We assume we are some kind of unix
-    #define OMEGA_PLATFORM_STRING "Unix"
-#else
-	#error What platform is this?
+#if defined(_WIN32)
+	#include "config-win32.h"
 #endif
 
 #include <errno.h>

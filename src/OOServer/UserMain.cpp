@@ -21,7 +21,6 @@
 
 #include "OOServer_User.h"
 #include "UserManager.h"
-#include "../Common/Version.h"
 
 #ifdef HAVE_VLD_H
 #include <vld.h>

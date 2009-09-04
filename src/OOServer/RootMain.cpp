@@ -33,7 +33,6 @@
 
 #include "OOServer_Root.h"
 #include "RootManager.h"
-#include "../Common/Version.h"
 
 #ifdef HAVE_VLD_H
 #include <vld.h>
@@ -54,9 +53,9 @@ static int Help()
 
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help (-h)      Display this help text" << std::endl;
+	std::cout << "  --version (-v)   Display version information" << std::endl;
 	std::cout << "  --install (-i)   Install" << std::endl;
 	std::cout << "  --uninstall (-u) Uninstall"  << std::endl;
-	std::cout << "  --version (-v)   Display version information" << std::endl;
 	std::cout << std::endl;
 
 #if defined(_WIN32)
@@ -120,22 +119,21 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last because we includes a lot of headers, which might be dangerous!
 
+#include <OOCore/config-guess.h>
+#include <OOCore/version.h>
 #include <sqlite3.h>
 
 static int Version()
 {
-	printf("OOServer version information:\n");
+std::cout << "OOServer version information:" << std::endl;
 #if defined(OMEGA_DEBUG)
-	//printf("Version: %s (Debug build)\nPlatform: %s\nCompiler: %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
+	std::cout << "Version: " << OOCORE_VERSION << " (Debug build)" << std::endl;
 #else
-	//printf("Version: %s\nPlatform: %s\nCompiler: %s\n",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
+	std::cout << "Version: " << OOCORE_VERSION << std::endl;
 #endif
+	std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
+	std::cout << "SQLite library version: " << sqlite3_libversion() << ", built with " << sqlite3_version << " headers" << std::endl;
+	std::cout << std::endl;
 
-	//printf("\nOOCore version information:\n");
-	//printf("%ls\n\n",Omega::System::GetVersion().c_str());
-
-	printf("SQLite version: %s\n",SQLITE_VERSION);
-
-	printf("\n");
 	return EXIT_SUCCESS;
 }

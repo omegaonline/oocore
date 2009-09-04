@@ -53,7 +53,7 @@ static void tests(bool bStandalone)
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	output("OOCore version info:\n%ls\n\n",Omega::System::GetVersion().c_str());
+	output("OOCore version: %s\n\n",OOCore::GetVersion());
 
 	output("\nPerforming standalone tests...\n\n");
 	if (RUN_TEST(init_standalone_tests))

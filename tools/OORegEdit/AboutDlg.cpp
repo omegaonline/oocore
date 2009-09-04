@@ -53,13 +53,11 @@ static char *image[] =
 AboutDlg::AboutDlg(wxWindow* parent, int id, const wxString& title, const wxPoint& pos, const wxSize& size, long /*style*/):
     wxDialog(parent, id, title, pos, size, wxDEFAULT_DIALOG_STYLE)
 {
-	wxString strVersion = Omega::System::GetVersion().c_str();
-
-    // begin wxGlade: AboutDlg::AboutDlg
+	// begin wxGlade: AboutDlg::AboutDlg
     m_picIcon = new wxStaticBitmap(this, -1, wxBitmap(image));
     m_lblDesc = new wxStaticText(this, -1, _("Omega Online Registry Editor\n\nWARNING:\nEditing the registry can stop Omega Online functioning.\nOnly edit parts of the registry you understand."));
     m_line = new wxStaticLine(this, -1);
-    m_lblVersion = new wxStaticText(this, -1, strVersion, wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT);
+    m_lblVersion = new wxStaticText(this, -1, wxString(OOCore::GetVersion(),wxConvUTF8), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT);
     m_buttons = new wxStdButtons(this, -1, wxOK);
 
     set_properties();

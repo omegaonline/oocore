@@ -24,6 +24,7 @@
 
 //////////////////////////////////////////////
 #include "config-guess.h"
+#include "version.h"
 
 #if defined(_WIN32)
 // MS define interface as well...
@@ -93,11 +94,6 @@ namespace Omega
 	inline IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	inline IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
 	inline bool_t HandleRequest(uint32_t timeout = 0);
-
-	namespace System
-	{
-		inline string_t GetVersion();
-	}
 }
 
 #include "Types.inl"
@@ -111,6 +107,12 @@ namespace Omega
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
 Omega::IException* Omega::Initialize(bool bStandalone)
 {
+#if !defined(OOCORE_INTERNAL)
+	// Check the versions are correct
+	if (OOCore::GetMajorVersion() < OOCORE_MAJOR_VERSION)
+		OMEGA_THROW(L"This component requires a later version of OOCore");
+#endif
+
 	return OOCore_Omega_Initialize(bStandalone);
 }
 
@@ -140,12 +142,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega:
 Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 {
 	return OOCore_Omega_HandleRequest(timeout);
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_GetVersion,0,())
-Omega::string_t Omega::System::GetVersion()
-{
-	return OOCore_GetVersion();
 }
 
 #endif // !defined(DOXYGEN)

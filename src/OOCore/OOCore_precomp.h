@@ -52,8 +52,6 @@
 
 #include <OTL/OTL.h>
 
-#include "../Common/Version.h"
-
 // End of OOCore/OTL includes
 /////////////////////////////////////////////////
 

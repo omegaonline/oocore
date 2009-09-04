@@ -55,13 +55,24 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 #endif
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_GetVersion,0,())
+extern "C" OMEGA_EXPORT char* OOCore_GetVersion()
 {
-#if defined(OMEGA_DEBUG)
-	return string_t::Format(L"Version: %hs (Debug build)\nPlatform: %hs\nCompiler: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
-#else
-	return string_t::Format(L"Version: %hs\nPlatform: %hs\nCompiler: %hs",OOCORE_VERSION,OMEGA_PLATFORM_STRING,OMEGA_COMPILER_STRING);
-#endif
+	return OOCORE_VERSION;
+}
+
+extern "C" OMEGA_EXPORT unsigned int OOCore_GetMajorVersion()
+{
+	return OOCORE_MAJOR_VERSION;
+}
+
+extern "C" OMEGA_EXPORT unsigned int OOCore_GetMinorVersion()
+{
+	return OOCORE_MINOR_VERSION;
+}
+
+extern "C" OMEGA_EXPORT unsigned int OOCore_GetPatchVersion()
+{
+	return OOCORE_PATCH_VERSION;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))

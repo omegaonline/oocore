@@ -32,10 +32,24 @@ static void print_help()
 	std::cout << "Usage: OORegister [options] <lib1> ... <libN>" << std::endl << std::endl;
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help (-h)      Display this help text" << std::endl;
+	std::cout << "  --version (-v)   Display version information" << std::endl;
 	std::cout << "  --install (-i)   Install the libraries" << std::endl;
 	std::cout << "  --uninstall (-u) Uninstall the libraries"  << std::endl;
 	std::cout << "  --silent (-s)    Silent, do not output anything" << std::endl;
 	std::cout << "  --current (-c)   Install for current user only" << std::endl;
+	std::cout << std::endl;
+}
+
+static void print_version()
+{
+	std::cout << "OORegister version information:" << std::endl;
+#if defined(OMEGA_DEBUG)
+	std::cout << "Version: " << OOCORE_VERSION << " (Debug build)" << std::endl;
+#else
+	std::cout << "Version: " << OOCORE_VERSION << std::endl;
+#endif
+	std::cout << "Compiler: " << OMEGA_COMPILER_STRING << std::endl;
+	std::cout << "OOCore library version: " << OOCore::GetVersion() << std::endl;
 	std::cout << std::endl;
 }
 
@@ -124,6 +138,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h',"help");
 	cmd_args.add_option("silent",'s',"silent");
 	cmd_args.add_option("current",'c',"current");
+	cmd_args.add_option("version",'v',"version");
 
 	// Parse command line
 	std::map<std::string,std::string> args;
@@ -134,6 +149,12 @@ int main(int argc, char* argv[])
 	if (!args["help"].empty())
 	{
 		print_help();
+		return EXIT_SUCCESS;
+	}
+
+	if (args["version"] == "true")
+	{
+		print_version();
 		return EXIT_SUCCESS;
 	}
 

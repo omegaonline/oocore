@@ -16,3 +16,7 @@ endif
 
 ooregister_SOURCES = \
 	OORegister.cpp
+
+if WIN32
+ooregister_SOURCES += OORegister_res.rc
+endif

@@ -306,10 +306,6 @@
 				RelativePath="..\Common\Server.h"
 				>
 			</File>
-			<File
-				RelativePath="..\Common\Version.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

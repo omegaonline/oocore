@@ -1,21 +1,21 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2009 Rick Taylor
+// Copyright (C) 2007 Rick Taylor
 //
-// This file is part of OOSvrLite, the Omega Online Standalone plugin.
+// This file is part of OORegister, the Omega Online registration tool
 //
-// OOSvrLite is free software: you can redistribute it and/or modify
+// OORegister is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// OOSvrLite is distributed in the hope that it will be useful,
+// OORegister is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with OOSvrLite.  If not, see <http://www.gnu.org/licenses/>.
+// along with OORegister.  If not, see <http://www.gnu.org/licenses/>.
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -25,13 +25,6 @@
 #include "winnt.h"
 #include "winver.h"
 #include "../../include/OOCore/version.h"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Message Table
-//
-
-1 11 OOServer_msgs.bin
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -56,11 +49,11 @@ BEGIN
         BLOCK "080004b0"
         BEGIN
             VALUE "CompanyName", "www.omegaonline.org.uk"
-            VALUE "FileDescription", "OOSvrLite library"
+            VALUE "FileDescription", "Omega Online registration tool"
             VALUE "FileVersion", OOCORE_VERSION
-            VALUE "InternalName", "OOSvrLite"
 			VALUE "LegalCopyright", "GNU General Public License"
-            VALUE "OriginalFilename", "OOSvrLite.dll"
+            VALUE "InternalName", "OORegister"
+            VALUE "OriginalFilename", "OORegister.exe"
             VALUE "ProductName", "Omega Online Core"
             VALUE "ProductVersion", OOCORE_VERSION
         END

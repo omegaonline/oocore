@@ -21,6 +21,7 @@
 
 #include "Logger.h"
 #include "Singleton.h"
+#include "SmartPtr.h"
 
 namespace
 {
@@ -48,6 +49,27 @@ namespace
 		HANDLE m_hLog;
 #endif
 	};
+
+	std::string string_printf(const char* fmt, va_list args)
+	{
+		for (size_t len=256;len<=(size_t)-1;)
+		{
+			OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
+			OOBASE_NEW(buf,char[len]);
+
+			int len2 = vsnprintf_s(buf.value(),len,fmt,args);
+			if (len2 > -1 && static_cast<size_t>(len2) < len)
+				return std::string(buf.value(),len2);
+			
+			if (len2 > -1)
+				len = len2 + 1;
+			else
+				len *= 2;
+		}
+
+		OOBase_CallCriticalFailure("vsnprintf_s failed");
+		return std::string();
+	}
 }
 
 #if defined(_WIN32)
@@ -103,11 +125,7 @@ void LoggerImpl::open(const char* name)
 void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	char szBuf[4096] = {0};
-	vsnprintf_s(szBuf,sizeof(szBuf),fmt,args);
-	szBuf[sizeof(szBuf)-1] = '\0';
-
+	
 	WORD wType = 0;
 	switch (priority)
 	{
@@ -127,13 +145,15 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 		break;
 	}
 
+	std::string msg = string_printf(fmt,args);
+
 #if !defined(OMEGA_DEBUG)
-	const char* arrBufs[2] = { szBuf, 0 };
+	const char* arrBufs[2] = { msg.c_str(), 0 };
 
 	if (m_hLog && priority != OOSvrBase::Logger::Debug)
 		ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
 
-	OutputDebugStringA(szBuf);
+	OutputDebugStringA(msg.c_str());
 	OutputDebugStringA("\n");
 #endif
 
@@ -152,7 +172,7 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 	default:
 		break;
 	}
-	fputs(szBuf,out_file);
+	fputs(msg.c_str(),out_file);
 	fputs("\n",out_file);
 }
 
@@ -187,10 +207,6 @@ void LoggerImpl::open(const char* name)
 void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	char szBuf[4096] = {0};
-	vsnprintf_s(szBuf,sizeof(szBuf),fmt,args);
-	szBuf[sizeof(szBuf)-1] = '\0';
 
 	int wType = 0;
 	switch (priority)
@@ -230,7 +246,8 @@ void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_l
 	default:
 		break;
 	}
-	fputs(szBuf,out_file);
+
+	fputs(string_printf(fmt,args).c_str(),out_file);
 	fputs("\n",out_file);
 }
 

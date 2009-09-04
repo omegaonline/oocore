@@ -38,19 +38,16 @@
 
 // These are missing from the earlier draft...
 #if defined(HAVE_TR_24731) && (!defined(__STDC_LIB_EXT1__) || (__STDC_LIB_EXT1__ < 200509L))
-
 inline int vsnprintf_s_fixed(char* s, rsize_t n, const char* format, va_list arg)
 {
-	return _vsnprintf_s(s,n,n-1,format,arg);
+	return _vsnprintf_s(s,n,_TRUNCATE,format,arg);
 }
 #define vsnprintf_s vsnprintf_s_fixed
 #endif
 
 #if !defined(HAVE_TR_24731)
-
 int vsnprintf_s(char* s, size_t n, const char* format, va_list arg);
 int vswprintf_s(wchar_t* s, size_t n, const wchar_t* format, va_list arg);
-
 #endif
 
 #endif // OOBASE_TR24731_H_INCLUDED_

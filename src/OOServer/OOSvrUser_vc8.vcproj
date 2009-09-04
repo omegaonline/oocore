@@ -306,7 +306,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Server.h"
+				RelativePath="..\OOCore\Server.h"
 				>
 			</File>
 			<File

@@ -22,11 +22,11 @@
 #ifndef OOCORE_IPS_H_INCLUDED_
 #define OOCORE_IPS_H_INCLUDED_
 
-#include "../Common/Server.h"
+#include "Server.h"
 
 namespace OOCore
 {
-	OTL::ObjectPtr<Omega::System::IInterProcessService> GetInterProcessService();
+	OTL::ObjectPtr<IInterProcessService> GetInterProcessService();
 }
 
 #endif // OOCORE_IPS_H_INCLUDED_

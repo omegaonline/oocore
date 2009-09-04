@@ -22,7 +22,7 @@
 #include "OOServer_User.h"
 #include "UserROT.h"
 
-#include "../Common/Server.h"
+#include "../OOCore/Server.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -37,9 +37,9 @@ void User::RunningObjectTable::Init(ObjectPtr<Remoting::IObjectManager> ptrOM)
 	{
 		// Create a proxy to the global interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
-		ObjectPtr<System::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
+		ptrOM->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 
 		// Get the running object table
 		m_ptrROT.Attach(ptrIPS->GetRunningObjectTable());

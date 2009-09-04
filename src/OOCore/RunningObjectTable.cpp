@@ -62,12 +62,12 @@ void DuplicateRegistrationException::Throw(const guid_t& oid, IException* pE)
 	throw static_cast<IDuplicateRegistrationException*>(pRE);
 }
 
-ObjectPtr<System::IInterProcessService> OOCore::GetInterProcessService()
+ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 {
 	try
 	{
-		ObjectPtr<System::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<System::IInterProcessService*>(Activation::GetRegisteredObject(System::OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService))));
+		ObjectPtr<IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<IInterProcessService*>(Activation::GetRegisteredObject(OID_InterProcessService,Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService))));
 		return ptrIPS;
 	}
 	catch (IException* pE2)
@@ -87,7 +87,7 @@ bool OOCore::HostedByOOServer()
 	if (!bChecked)
 	{
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
-		ObjectPtr<System::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 		ObjectPtr<System::IProxy> ptrProxy;
 		ptrProxy.Attach(ptrIPS.QueryInterface<System::IProxy>());
 		if (!ptrProxy)

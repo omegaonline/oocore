@@ -444,7 +444,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Om
 	else
 	{
 		// Get IPS
-		ObjectPtr<System::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 
 		// Open a remote channel
 		ObjectPtr<Remoting::IChannel> ptrChannel;

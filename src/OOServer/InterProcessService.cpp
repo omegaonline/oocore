@@ -37,17 +37,17 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	if (ptrOMSB)
 	{
 		IObject* pIPS = 0;
-		ptrOMSB->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
-		m_ptrSBIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
+		ptrOMSB->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		m_ptrSBIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 	}
 
 	if (ptrOMUser)
 	{
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOMUser->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
-		ObjectPtr<System::IInterProcessService> ptrIPS;
-		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
+		ptrOMUser->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
+		ObjectPtr<OOCore::IInterProcessService> ptrIPS;
+		ptrIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));
 
 		// Get the running object table
 		m_ptrReg.Attach(ptrIPS->GetRegistry());
@@ -236,4 +236,4 @@ Remoting::IChannelSink* User::InterProcessService::OpenServerSink(const guid_t& 
 	return Manager::open_server_sink(message_oid,pSink);
 }
 
-OMEGA_DEFINE_OID(System,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");
+OMEGA_DEFINE_OID(OOCore,OID_InterProcessService,"{7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}");

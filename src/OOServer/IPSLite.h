@@ -24,14 +24,14 @@
 
 class InterProcessService :
 	public OTL::ObjectBase,
-	public Omega::System::IInterProcessService,
+	public OOCore::IInterProcessService,
 	public Omega::System::IProxy
 {
 public:
 	void Init() {}
 
 	BEGIN_INTERFACE_MAP(InterProcessService)
-		INTERFACE_ENTRY(Omega::System::IInterProcessService)
+		INTERFACE_ENTRY(OOCore::IInterProcessService)
 		INTERFACE_ENTRY(Omega::System::IProxy)
 	END_INTERFACE_MAP()
 
@@ -62,7 +62,7 @@ public:
 		OMEGA_THROW(L"Invalid operation");
 	}
 
-// System::IInterProcessService members
+// OOCore::IInterProcessService members
 public:
 	Omega::Registry::IKey* GetRegistry();
 	Omega::Activation::IRunningObjectTable* GetRunningObjectTable();

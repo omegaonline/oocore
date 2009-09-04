@@ -28,31 +28,31 @@
 
 #include <OTL/Registry.h>
 
-#include "../Common/Server.h"
+#include "../OOCore/Server.h"
 
 namespace User
 {
 	class InterProcessService :
 		public OTL::ObjectBase,
-		public Omega::System::IInterProcessService
+		public OOCore::IInterProcessService
 	{
 	public:
 		void Init(OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMSB, OTL::ObjectPtr<Omega::Remoting::IObjectManager> ptrOMUser, Manager* pManager);
 
 		BEGIN_INTERFACE_MAP(InterProcessService)
-			INTERFACE_ENTRY(Omega::System::IInterProcessService)
+			INTERFACE_ENTRY(OOCore::IInterProcessService)
 		END_INTERFACE_MAP()
 
 	private:
 		OOBase::Mutex                                         m_lock;
-		OTL::ObjectPtr<Omega::System::IInterProcessService>   m_ptrSBIPS;
+		OTL::ObjectPtr<OOCore::IInterProcessService>          m_ptrSBIPS;
 		OTL::ObjectPtr<OTL::ObjectImpl<RunningObjectTable> >  m_ptrROT;
 		OTL::ObjectPtr<Omega::Registry::IKey>                 m_ptrReg;
 		Manager*                                              m_pManager;
 
 		std::map<Omega::string_t,OOBase::SmartPtr<User::Process> > m_mapInProgress;
 
-	// System::IInterProcessService members
+	// OOCore::IInterProcessService members
 	public:
 		Omega::Registry::IKey* GetRegistry();
 		Omega::Activation::IRunningObjectTable* GetRunningObjectTable();

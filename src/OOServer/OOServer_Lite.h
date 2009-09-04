@@ -27,6 +27,6 @@
 
 #include <OTL/OTL.h>
 
-#include "../Common/Server.h"
+#include "../OOCore/Server.h"
 
 #endif // OOSERVER_LITE_H_INCLUDED_

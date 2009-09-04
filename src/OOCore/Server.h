@@ -24,28 +24,25 @@
 
 #include <OOCore/Remoting.h>
 
-namespace Omega
+namespace OOCore
 {
-	namespace System
+	interface IInterProcessService : public Omega::IObject
 	{
-		interface IInterProcessService : public IObject
-		{
-			virtual Registry::IKey* GetRegistry() = 0;
-			virtual Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
-			virtual void LaunchObjectApp(const guid_t& oid, const guid_t& iid, IObject*& pObject) = 0;
-			virtual bool_t HandleRequest(uint32_t timeout) = 0;
-			virtual Remoting::IChannel* OpenRemoteChannel(const string_t& strEndpoint) = 0;
-			virtual Remoting::IChannelSink* OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink) = 0;
-		};
+		virtual Omega::Registry::IKey* GetRegistry() = 0;
+		virtual Omega::Activation::IRunningObjectTable* GetRunningObjectTable() = 0;
+		virtual void LaunchObjectApp(const Omega::guid_t& oid, const Omega::guid_t& iid, Omega::IObject*& pObject) = 0;
+		virtual Omega::bool_t HandleRequest(Omega::uint32_t timeout) = 0;
+		virtual Omega::Remoting::IChannel* OpenRemoteChannel(const Omega::string_t& strEndpoint) = 0;
+		virtual Omega::Remoting::IChannelSink* OpenServerSink(const Omega::guid_t& message_oid, Omega::Remoting::IChannelSink* pSink) = 0;
+	};
 
-		// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
-		extern "C" const Omega::guid_t OID_InterProcessService;
-	}
+	// {7E9E22E8-C0B0-43f9-9575-BFB1665CAE4A}
+	extern "C" const Omega::guid_t OID_InterProcessService;
 }
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega::System, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
+	OOCore, IInterProcessService, "{70F6D098-6E53-4e8d-BF21-9EA359DC4FF8}",
 
 	OMEGA_METHOD(Registry::IKey*,GetRegistry,0,())
 	OMEGA_METHOD(Activation::IRunningObjectTable*,GetRunningObjectTable,0,())

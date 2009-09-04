@@ -124,7 +124,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		OMEGA_THROW(e);
 	}
 
-	ObjectPtr<System::IInterProcessService> ptrIPS;
+	ObjectPtr<IInterProcessService> ptrIPS;
 	if (m_channel_id != 0)
 	{
 		// Create a new object manager for the user channel on the zero apartment
@@ -132,9 +132,9 @@ void OOCore::UserSession::init_i(bool bStandalone)
 
 		// Create a proxy to the server interface
 		IObject* pIPS = 0;
-		ptrOM->GetRemoteInstance(System::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(System::IInterProcessService),pIPS);
+		ptrOM->GetRemoteInstance(OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(IInterProcessService),pIPS);
 
-		ptrIPS.Attach(static_cast<System::IInterProcessService*>(pIPS));
+		ptrIPS.Attach(static_cast<IInterProcessService*>(pIPS));
 	}
 	else
 	{
@@ -149,8 +149,8 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		if (!pfn)
 			OMEGA_THROW(L"Corrupt OOSvrLite");
 
-		System::IInterProcessService* pIPS = 0;
-		const Omega::System::MetaInfo::SafeShim* pSE = (*pfn)(System::MetaInfo::marshal_info<System::IInterProcessService*&>::safe_type::coerce(pIPS));
+		IInterProcessService* pIPS = 0;
+		const Omega::System::MetaInfo::SafeShim* pSE = (*pfn)(System::MetaInfo::marshal_info<IInterProcessService*&>::safe_type::coerce(pIPS));
 		if (pSE)
 			Omega::System::MetaInfo::throw_correct_exception(pSE);
 
@@ -158,7 +158,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	}
 
 	// Register locally...
-	m_nIPSCookie = Activation::RegisterObject(System::OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
+	m_nIPSCookie = Activation::RegisterObject(OID_InterProcessService,ptrIPS,Activation::InProcess,Activation::MultipleUse);
 }
 
 std::string OOCore::UserSession::discover_server_port(bool& bStandalone)

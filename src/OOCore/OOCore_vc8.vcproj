@@ -293,7 +293,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Server.h"
+				RelativePath=".\Server.h"
 				>
 			</File>
 			<File

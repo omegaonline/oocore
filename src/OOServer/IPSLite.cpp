@@ -759,7 +759,7 @@ Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remot
 	throw Omega::Remoting::IChannelClosedException::Create();
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::System::IInterProcessService*,OOSvrLite_GetIPS,0,())
+OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,0,())
 {
 	return SingletonObjectImpl<InterProcessService>::CreateInstancePtr().AddRef();
 }

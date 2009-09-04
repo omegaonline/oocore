@@ -1,2 +1,0 @@
-/* Have the SQLite3 amalgamated sources */
-#undef HAVE_SQLITE3_AMALGAMATION

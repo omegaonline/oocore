@@ -34,20 +34,9 @@ static bool do_local_library_test(const wchar_t* pszLibName)
 	TEST(ptrPOI);
 
 	// Try to get the first interface
-	/*Omega::IEnumGuid* pEG = ptrPOI->EnumInterfaces();
-	OTL::ObjectPtr<Omega::IEnumGuid> ptrEG;
-	ptrEG.Attach(static_cast<Omega::IEnumGuid*>(pEG));
-	TEST(ptrEG);
-
-	Omega::uint32_t count = 1;
-	Omega::guid_t iid;
-	ptrEG->Next(count,&iid);
-	TEST(count!=0);
-	TEST(iid == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));*/
-
 	std::list<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
 	TEST(!interfaces.empty());
-	TEST(*interfaces.begin() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	// Confirm we can QI for all the interfaces we need...
 	OTL::ObjectPtr<Omega::System::MetaInfo::ISafeProxy> ptrSProxy(ptrPOI);

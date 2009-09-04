@@ -102,14 +102,6 @@ namespace Omega
 		virtual IEnumString* Clone() = 0;
 	};
 
-	interface IEnumGuid : public IObject
-	{
-		virtual bool_t Next(uint32_t& count, guid_t* parrVals) = 0;
-		virtual bool_t Skip(uint32_t count) = 0;
-		virtual void Reset() = 0;
-		virtual IEnumGuid* Clone() = 0;
-	};
-	
 	namespace Registry
 	{
 		enum ValueType
@@ -306,17 +298,6 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(bool_t,Skip,1,((in),uint32_t,count))
 	OMEGA_METHOD_VOID(Reset,0,())
 	OMEGA_METHOD(IEnumString*,Clone,0,())
-)
-
-OMEGA_DEFINE_INTERFACE
-(
-	Omega, IEnumGuid, "{2EBA6C85-0577-43f9-8A8B-FBE1C9F933D5}",
-
-	// Methods
-	OMEGA_METHOD(bool_t,Next,2,((in_out),uint32_t&,count,(out)(size_is(count)),guid_t*,parrVals))
-	OMEGA_METHOD(bool_t,Skip,1,((in),uint32_t,count))
-	OMEGA_METHOD_VOID(Reset,0,())
-	OMEGA_METHOD(IEnumGuid*,Clone,0,())
 )
 
 OMEGA_DEFINE_INTERFACE

@@ -1012,52 +1012,13 @@ namespace OTL
 	};
 
 	typedef EnumSTL<Omega::IEnumString,Omega::string_t>	EnumString;
-	typedef EnumSTL<Omega::IEnumGuid,Omega::guid_t>	EnumGuid;
-
+	
 	template <typename ROOT>
 	class IProvideObjectInfoImpl :
 		public Omega::TypeInfo::IProvideObjectInfo
 	{
 	// IProvideObjectInfo members
 	public:
-		/*virtual Omega::IEnumGuid* EnumInterfaces()
-		{
-			ObjectPtr<ObjectImpl<EnumGuid> > ptrEnum = ObjectImpl<EnumGuid>::CreateInstancePtr();
-
-			const ObjectBase::QIEntry* pEntries = ROOT::getQIEntries();
-			for (size_t i=0;pEntries && pEntries[i].pGuid!=0;++i)
-			{
-				if (*(pEntries[i].pGuid) != Omega::guid_t::Null())
-				{
-					if (*(pEntries[i].pGuid) != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
-						ptrEnum->Append(*(pEntries[i].pGuid));
-				}
-				else
-				{
-					ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
-					ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset,pEntries[i].pfnMemQI)));
-					if (ptrPOI)
-					{
-						// Add each entry in ptrPOI
-						for (;;)
-						{
-							Omega::uint32_t count = 1;
-							Omega::guid_t iid;
-							ptrEnum->Next(count,&iid);
-							if (count==0)
-								break;
-
-							if (!ptrEnum->Find(iid) && iid != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
-								ptrEnum->Append(iid);
-						}
-					}
-				}
-			}
-
-			ptrEnum->Init();
-			return ptrEnum.AddRef();
-		}*/
-
 		virtual std::list<Omega::guid_t> EnumInterfaces()
 		{
 			std::list<Omega::guid_t> retval;
@@ -1072,26 +1033,7 @@ namespace OTL
 				}
 				else
 				{
-					/*ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;
-					ptrPOI.Attach(static_cast<Omega::TypeInfo::IProvideObjectInfo*>(pEntries[i].pfnQI(OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),this,pEntries[i].offset,pEntries[i].pfnMemQI)));
-					if (ptrPOI)
-					{
-						// Add each entry in ptrPOI
-
-						for (;;)
-						{
-							Omega::uint32_t count = 1;
-							Omega::guid_t iid;
-							ptrEnum->Next(count,&iid);
-							if (count==0)
-								break;
-
-							if (!ptrEnum->Find(iid) && iid != OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo))
-								ptrEnum->Append(iid);
-						}
-					}*/
-
-					DebugBreak();
+					void* TODO; // Walk up the chain...
 				}
 			}
 

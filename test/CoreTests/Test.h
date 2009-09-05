@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <io.h>
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();

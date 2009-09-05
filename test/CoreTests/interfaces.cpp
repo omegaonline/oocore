@@ -184,11 +184,25 @@ namespace
 	};
 }
 
-static bool do_local_library_test(const wchar_t* pszLibName)
+static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 {
 	// Register the library
+	output("  %-45ls ",pszLibName);
+
+	// Register the library
+	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+
+	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
-    	return true;
+	{
+		add_failure(L"Registration failed\n");
+		return false;
+	}
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
@@ -397,13 +411,39 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 
 bool interface_dll_tests()
 {
+output("\n");
+	bool bSkipped;
+
 #if defined(_WIN32)
-	do_local_library_test(L"TestLibrary_msvc");
-	do_local_library_test(L"TestLibrary");
+	if (!do_local_library_test(L"TestLibrary_msvc.dll",bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+
+	#if defined(__MINGW32__)
+	if (!do_local_library_test(L"CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#elif defined(_MSC_VER)
+#if defined(_DEBUG)
+	if (!do_local_library_test(L"../../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
 #else
-	do_local_library_test(L"./libTestLibrary.so");
+	if (!do_local_library_test(L"../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
+#endif
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
 #endif
 
+#else
+	if (!do_local_library_test(L"./libTestLibrary.so",bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#endif
+
+	output("  %-46s","Result");
 	return true;
 }
 
@@ -418,11 +458,26 @@ bool interface_process_tests()
 	return true;
 }
 
-static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoint)
+static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoint, bool& bSkipped)
 {
 	// Register the library ready for local loopback stuff
-	system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str());
+	output("  %-45ls ",pszLibName);
 
+	// Register the library
+	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+
+	bSkipped = false;
+	if (system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
+	{
+		add_failure(L"Registration failed\n");
+		return false;
+	}
+	
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
 	interface_tests(ptrSimpleTest);
 
@@ -441,31 +496,40 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 
 static bool interface_tests_i(const wchar_t* pszHost)
 {
+output("\n");
+	bool bSkipped;
+
 #if defined(_WIN32)
-	int c = 0;
-	try
-	{
-		do_library_test(L"TestLibrary_msvc",pszHost);
-		++c;
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-	try
-	{
-		do_library_test(L"TestLibrary",pszHost);
-		++c;
-	}
-	catch (Omega::IException* pE)
-	{
-		pE->Release();
-	}
-	// One must pass...
-	TEST(c != 0);
+	if (!do_library_test(L"TestLibrary_msvc.dll",pszHost,bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+
+#if defined(__MINGW32__)
+	if (!do_library_test(L"CoreTests/TestLibrary/.libs/TestLibrary.dll",pszHost,bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#elif defined(_MSC_VER)
+#if defined(_DEBUG)
+	if (!do_library_test(L"../../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",pszHost,bSkipped))
 #else
-	do_library_test(L"TestLibrary",pszHost);
+	if (!do_library_test(L"../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",pszHost,bSkipped))
 #endif
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#endif
+
+#else
+	if (!do_library_test(L"./libTestLibrary.so",pszHost,bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#endif
+
+	output("  %-46s","Result");
+	return true;
 
 	do_process_test(L"TestProcess",pszHost);
 

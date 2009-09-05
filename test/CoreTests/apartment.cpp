@@ -12,11 +12,24 @@
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest);
 
-static bool do_local_library_test(const wchar_t* pszLibName)
+static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 {
+	output("  %-45ls ",pszLibName);
+
 	// Register the library
+	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+
+	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
-    	return true;
+	{
+		add_failure(L"Registration failed\n");
+		return false;
+	}
 
 	// Create an apartment
 	OTL::ObjectPtr<Omega::Apartment::IApartment> ptrApartment;
@@ -80,13 +93,39 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 
 bool apartment_dll_tests()
 {
+	output("\n");
+	bool bSkipped;
+
 #if defined(_WIN32)
-	do_local_library_test(L"TestLibrary_msvc");
-	do_local_library_test(L"TestLibrary");
+	if (!do_local_library_test(L"TestLibrary_msvc.dll",bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+
+	#if defined(__MINGW32__)
+	if (!do_local_library_test(L"CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#elif defined(_MSC_VER)
+#if defined(_DEBUG)
+	if (!do_local_library_test(L"../../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
 #else
-	do_local_library_test(L"./libTestLibrary.so");
+	if (!do_local_library_test(L"../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
+#endif
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
 #endif
 
+#else
+	if (!do_local_library_test(L"./libTestLibrary.so",bSkipped))
+		return false;
+	if (!bSkipped)
+		output("[Ok]\n");
+#endif
+
+	output("  %-46s","Result");
 	return true;
 }
 

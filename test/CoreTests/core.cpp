@@ -5,16 +5,34 @@ bool init_standalone_tests()
 {
 	Omega::IException* pE = Omega::Initialize(true);
 	if (pE)
-		pE->Throw();
+	{
+		output("[Omega::IException]\n");
+		output_exception(pE);
+		pE->Release();
+		return false;
+	}
 
 	return true;
 }
 
-bool init_server_tests()
+bool init_server_tests(bool& bRun)
 {
 	Omega::IException* pE = Omega::Initialize();
 	if (pE)
-		pE->Throw();
+	{
+		if (pE->GetDescription() == L"Failed to connect to network daemon")
+		{
+			pE->Release();
+			output("[No server]\n");
+			bRun = false;
+			return true;
+		}
+
+		output("[Omega::IException]\n");
+		output_exception(pE);
+		pE->Release();
+		return false;
+	}
 
 	return true;
 }

@@ -10,7 +10,7 @@
 // cos I'm lazy ;)
 
 bool init_standalone_tests();
-bool init_server_tests();
+bool init_server_tests(bool& bRun);
 bool string_tests();
 bool guid_tests();
 bool exception_tests();
@@ -53,24 +53,27 @@ static void tests(bool bStandalone)
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	output("OOCore version: %s\n\n",OOCore::GetVersion());
+	output("OOCore version: %s\n",OOCore::GetVersion());
 
-	output("\nPerforming standalone tests...\n\n");
-	if (RUN_TEST(init_standalone_tests))
+	output("\nRunning %-40s\n\n","standalone tests");
+	if (init_standalone_tests())
 	{
 		tests(true);
 
 		Omega::Uninitialize();
 	}
 
-	output("\nPerforming server tests...\n\n");
-	if (RUN_TEST(init_server_tests))
+	output("\nRunning %-40s","server tests");
+	bool bRun = true;
+	if (init_server_tests(bRun) && bRun)
 	{
+		output("\n\n");
+
 		tests(false);
 
 		Omega::Uninitialize();
 	}
-
+	
 	return test_summary();
 }
 
@@ -124,7 +127,7 @@ void add_success()
 
 void add_failure(const wchar_t* pszText)
 {
-	output("[Failed]\n\n%ls",pszText);
+	output("[Failed]\n%ls",pszText);
 	++fail_count;
 }
 
@@ -132,12 +135,12 @@ int test_summary()
 {
 	if (fail_count || exception_count)
 	{
-		output("\n%lu tests failed, %lu tests passed.\n",fail_count + exception_count,pass_count);
+		output("\n%lu tests failed, %lu tests passed.\n\n",fail_count + exception_count,pass_count);
 		return EXIT_FAILURE;
 	}
 	else
 	{
-		output("\nAll (%lu) tests passed.\n",pass_count);
+		output("\nAll (%lu) tests passed.\n\n",pass_count);
 		return EXIT_SUCCESS;
 	}
 }
@@ -174,14 +177,14 @@ bool run_test(pfnTest t, const char* pszName)
 	catch (Omega::IException* pE)
 	{
 		++exception_count;
-		output("[Omega::IException]\n\n");
+		output("[Omega::IException]\n");
 		output_exception(pE);
 		pE->Release();
 	}
 	catch (std::exception& e)
 	{
 		++exception_count;
-		output("[std::exception]\n\nWhat:\t%s\n",e.what());
+		output("[std::exception]\nWhat:\t%s\n",e.what());
 	}
 	catch (...)
 	{

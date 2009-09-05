@@ -37,7 +37,13 @@
 int Registry::Hive::init_system_defaults(Hive* pHive)
 {
 	Omega::int64_t key = 0;
-	int err = pHive->create_key(0,key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
+	int err = pHive->create_key(0,key,"System",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
+	if (err != 0)
+		return err;
+
+	pHive->set_description(key,0,"The system configuration key");
+
+	err = pHive->create_key(0,key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
 	if (err != 0)
 		return err;
 

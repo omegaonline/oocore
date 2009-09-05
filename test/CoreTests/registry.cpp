@@ -391,12 +391,8 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	test_privates(pKey,L"Local User");
 
 	if (bCanWriteToRoot)
-	{
 		test_privates(pKey,L"System");
-		test_privates(pKey,L"System\\Server");
-		test_privates(pKey,L"System\\Server\\Sandbox");
-	}
-
+	
 	return true;
 }
 

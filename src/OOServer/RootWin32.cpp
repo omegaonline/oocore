@@ -296,6 +296,10 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 	if (err3 != 0)
 		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
 
+	err3 = m_registry->set_description(key,0,"The system configuration key");
+	if (err3 != 0)
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
+
 	err3 = m_registry->set_string_value(key,"UserName",0,OOBase::to_utf8(info.usri2_name).c_str());
 	if (err3 != 0)
 		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);

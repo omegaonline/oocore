@@ -45,7 +45,7 @@ namespace Omega
 
 		inline string_t& operator = (const string_t& s);
 		inline string_t& operator = (const wchar_t* sz);
-		
+
 		inline const wchar_t* c_str() const;
 		const wchar_t operator[](size_t i) const
 		{ return c_str()[i]; }
@@ -61,7 +61,7 @@ namespace Omega
 		bool operator >= (const string_t& s) const { return Compare(s) >= 0; }
 
 		inline string_t& operator += (const string_t& s);
-		
+
 		inline int Compare(const string_t& s) const;
 		inline int CompareNoCase(const string_t& s) const;
 		inline bool IsEmpty() const;
@@ -105,7 +105,7 @@ namespace Omega
 #if defined(_WIN32)
 	typedef struct _GUID guid_base_t;
 #else
-	struct guid__base_t
+	struct guid_base_t
 	{
 		uint32_t	Data1;
 		uint16_t	Data2;
@@ -212,13 +212,13 @@ namespace Omega
 				typedef T type;
 			};
 
-			template <bool, typename True, typename False> 
+			template <bool, typename True, typename False>
 			struct if_else_t
 			{
 				typedef False result;
 			};
 
-			template <typename True, typename False> 
+			template <typename True, typename False>
 			struct if_else_t<true,True,False>
 			{
 				typedef True result;
@@ -253,7 +253,7 @@ namespace Omega
 
 			// Simple structures
 			template <> struct is_c_abi<guid_base_t> { enum { result = 1 }; };
-			
+
 			// Pointers are also C ABI compliant
 			template <typename T> struct is_c_abi<T*>
 			{

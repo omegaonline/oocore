@@ -11,7 +11,7 @@ if WIN32
 testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/OOCore.la
 testlibrary_la_LDFLAGS += -avoid-version -no-undefined
 else
-testlibrary_la_LIBADD = $(top_builddir)/OOCore/liboocore.la
+testlibrary_la_LIBADD = $(top_builddir)/src/OOCore/liboocore.la
 testlibrary_la_LDFLAGS += -release $(VERSION) -no-undefined
 endif
 

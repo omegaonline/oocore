@@ -231,16 +231,16 @@ void OOCore::StdObjectManager::Shutdown()
 	// Copy the stub map
 	for (std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator i=m_mapStubObjs.begin();i!=m_mapStubObjs.end();++i)
 		listStubs.push_back(i->second);
-	
+
 	m_mapStubIds.clear();
 	m_mapStubObjs.clear();
 
 	// Copy the proxys
 	for (std::map<uint32_t,ObjectImpl<Proxy>* >::iterator j=m_mapProxyIds.begin();j!=m_mapProxyIds.end();++j)
 		listProxies.push_back(j->second);
-	
+
 	m_mapProxyIds.clear();
-	
+
 	guard.release();
 
 	// Now do the final releases on the stub and proxies
@@ -277,7 +277,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 {
 	if (!pParamsIn)
 		OMEGA_THROW(L"Invoke called with no message");
-		
+
 	if (!m_ptrChannel)
 		OMEGA_THROW(L"ObjectManager not connected to a channel");
 
@@ -455,7 +455,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
 	if (pE)
 		return pE;
-	
+
 	try
 	{
 		ObjectPtr<Remoting::IMessage> ptrRecv;
@@ -533,7 +533,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 
 		// Write a header
 		pMessage->WriteStructStart(pszName,L"$iface_marshal");
-		
+
 		// See if object is NULL
 		if (!pObject)
 		{
@@ -545,7 +545,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 		// See if we have a stub already...
 		ObjectPtr<IObject> ptrObj;
 		ptrObj.Attach(pObject->QueryInterface(OMEGA_GUIDOF(IObject)));
-		
+
 		ObjectPtr<ObjectImpl<Stub> > ptrStub;
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
@@ -588,17 +588,15 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 					}
 					catch (...)
 					{
-						void* TODO; // This won't work without correct unwinding semantics on a message
-
 						if (undo_count > 0)
 							pMessage->ReadByte(L"$marshal_type");
-						
+
 						if (undo_count > 1)
 							pMessage->ReadGuid(L"$oid");
-						
+
 						if (undo_count > 2)
 							ptrMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
-						
+
 						throw;
 					}
 				}
@@ -626,9 +624,9 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 
 		// Write out the data
 		pMessage->WriteByte(L"$marshal_type",1);
-		
+
 		ptrStub->MarshalInterface(pMessage,iid);
-		
+
 		pMessage->WriteStructEnd(pszName);
 	}
 	catch (std::exception& e)
@@ -646,8 +644,8 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 
 		// Read the header
 		pMessage->ReadStructStart(pszName,L"$iface_marshal");
-		
-		byte_t flag = pMessage->ReadByte(L"$marshal_type");		
+
+		byte_t flag = pMessage->ReadByte(L"$marshal_type");
 		if (flag == 0)
 		{
 			// NOP
@@ -656,7 +654,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 		else if (flag == 1)
 		{
 			uint32_t proxy_id = pMessage->ReadUInt32(L"id");
-			
+
 			// See if we have a proxy already...
 			ObjectPtr<ObjectImpl<Proxy> > ptrProxy;
 			{
@@ -684,7 +682,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 		else if (flag == 2)
 		{
 			guid_t oid = pMessage->ReadGuid(L"$oid");
-			
+
 			// Create an instance of Oid
 			ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
 			if (!ptrMarshalFactory)
@@ -712,8 +710,8 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 
 		// Read the header
 		pMessage->ReadStructStart(pszName,L"$iface_marshal");
-		
-		byte_t flag = pMessage->ReadByte(L"$marshal_type");		
+
+		byte_t flag = pMessage->ReadByte(L"$marshal_type");
 		if (flag == 0)
 		{
 			/* NOP */
@@ -722,7 +720,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 		{
 			// Skip the stub id
 			pMessage->ReadUInt32(L"id");
-			
+
 			IObject* pObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
 			ObjectPtr<IObject> ptrObj;
 			ptrObj.Attach(pObj);
@@ -752,10 +750,10 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 		{
 			// Skip the guid...
 			guid_t oid = pMessage->ReadGuid(L"oid");
-			
+
 			// See if pObject does custom marshalling...
 			ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
-			
+
 			if (!ptrMarshal)
 				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshal),OMEGA_SOURCE_INFO);
 
@@ -779,13 +777,13 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjec
 	if (!m_ptrChannel)
 		OMEGA_THROW(L"ObjectManager is not connected");
 
-	// QI pObjectManager for a private interface - it will have it because pObjectManager is 
+	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
 	ObjectPtr<IStdObjectManager> ptrOM(pObjectManager);
 	assert(ptrOM);
-	
-	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());	
+
+	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 
 void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
@@ -805,8 +803,8 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 	pMessage->WriteGuid(L"$oid",oid);
 
 	ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
-	
-	pMessage->WriteStructEnd(L"m_ptrChannel");		
+
+	pMessage->WriteStructEnd(L"m_ptrChannel");
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())

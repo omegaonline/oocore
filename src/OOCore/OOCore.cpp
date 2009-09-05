@@ -57,7 +57,10 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 extern "C" OMEGA_EXPORT char* OOCore_GetVersion()
 {
-	return OOCORE_VERSION;
+	// Just in case someone tries to manipulate the data...
+	// This is a non-const function for lowest common denominator C support
+	static char buf[32] = OOCORE_VERSION;
+	return buf;
 }
 
 extern "C" OMEGA_EXPORT unsigned int OOCore_GetMajorVersion()
@@ -152,7 +155,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 
 	if (oid == guid_t::Null())
 		throw ISystemException::Create(L"No handler for protocol " + strProtocol,L"Omega::IO::OpenStream");
-	
+
 	// Create the handler...
 	ObjectPtr<Net::IProtocolHandler> ptrHandler(oid);
 

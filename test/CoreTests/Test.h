@@ -4,7 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(_WIN32)
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine);
 int test_summary();

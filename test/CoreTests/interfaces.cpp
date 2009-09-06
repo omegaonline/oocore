@@ -15,9 +15,9 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 #include "Test.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"ooregister"
+#define OOREGISTER L"ooregister -s -c"
 #else
-#define OOREGISTER L"./ooregister"
+#define OOREGISTER L"./ooregister -s -c"
 #endif
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest)
@@ -190,15 +190,17 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	output("  %-45ls ",pszLibName);
 
 	// Register the library
+#if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	bSkipped = false;
-	if (system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
+	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
 	{
 		add_failure(L"Registration failed\n");
 		return false;
@@ -224,7 +226,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
-	
+
 	interface_tests(ptrSimpleTest);
 
 	OTL::ObjectPtr<Omega::IObject> ptrO1;
@@ -324,7 +326,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	}
 
 	// Test unregistering
-	TEST(system((Omega::string_t(OOREGISTER L" -u -s ") + pszLibName).ToUTF8().c_str()) == 0);
+	TEST(system((Omega::string_t(OOREGISTER L" -u ") + pszLibName).ToUTF8().c_str()) == 0);
 
 	try
 	{
@@ -437,7 +439,7 @@ output("\n");
 #endif
 
 #else
-	if (!do_local_library_test(L"./libTestLibrary.so",bSkipped))
+	if (!do_local_library_test(L"testlibrary",bSkipped))
 		return false;
 	if (!bSkipped)
 		output("[Ok]\n");
@@ -464,20 +466,22 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	output("  %-45ls ",pszLibName);
 
 	// Register the library
+#if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	bSkipped = false;
-	if (system((Omega::string_t(OOREGISTER L" -i -s ") + pszLibName).ToUTF8().c_str()) != 0)
+	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
 	{
 		add_failure(L"Registration failed\n");
 		return false;
 	}
-	
+
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
 	interface_tests(ptrSimpleTest);
 
@@ -522,7 +526,7 @@ output("\n");
 #endif
 
 #else
-	if (!do_library_test(L"./libTestLibrary.so",pszHost,bSkipped))
+	if (!do_library_test(L"testlibrary",pszHost,bSkipped))
 		return false;
 	if (!bSkipped)
 		output("[Ok]\n");

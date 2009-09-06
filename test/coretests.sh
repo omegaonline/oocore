@@ -6,4 +6,4 @@ if test -x $srcdir/../bin/Debug/TestLibrary_msvc.dll; then
 	ln -s $srcdir/../bin/Debug/TestLibrary_msvc.dll
 fi
 
-libtool --mode=execute -dlopen ../src/OOServer/oosvrlite.la ./CoreTests/coretests
+libtool --mode=execute -dlopen ../src/OOServer/oosvrlite.la -dlopen CoreTests/TestLibrary/testlibrary.la ./CoreTests/coretests

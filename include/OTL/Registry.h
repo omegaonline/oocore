@@ -65,20 +65,6 @@ namespace OTL
 			sub_key.Attach(m_ptr->OpenSubKey(key,flags));
 			return sub_key;
 		}
-
-		ObjectPtr<Omega::IEnumString> EnumSubKeys()
-		{
-			ObjectPtr<Omega::IEnumString> en;
-			en.Attach(m_ptr->EnumSubKeys());
-			return en;
-		}
-
-		ObjectPtr<Omega::IEnumString> EnumValues()
-		{
-			ObjectPtr<Omega::IEnumString> en;
-			en.Attach(m_ptr->EnumValues());
-			return en;
-		}
 	};
 }
 

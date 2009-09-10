@@ -40,13 +40,14 @@ namespace Omega
 
 			interface IRequest : public IObject
 			{
+				typedef std::multimap<Omega::string_t,Omega::string_t> headers_t;
+
 				virtual void Open(const string_t& strMethod, const string_t& strURL, IRequestNotify* pAsyncNotify = 0) = 0;
 				virtual void Send(uint32_t cbBytes = 0, const byte_t* pData = 0) = 0;
 				virtual void SetRequestHeader(const string_t& strHeader, const string_t& strValue) = 0;
 				virtual uint16_t Status() = 0;
 				virtual string_t StatusText() = 0;
-				virtual IEnumString* GetAllResponseHeaders() = 0;
-				virtual string_t GetResponseHeader(const string_t& strHeader) = 0;
+				virtual headers_t GetResponseHeaders() = 0;
 				virtual void ResponseBody(uint32_t& cbBytes, byte_t* pBody) = 0;
 				virtual IO::IStream* ResponseStream() = 0;
 				virtual void Abort() = 0;
@@ -63,10 +64,11 @@ namespace Omega
 			{
 				interface IRequest : public IObject
 				{
+					typedef std::multimap<Omega::string_t,Omega::string_t> headers_t;
+
 					virtual string_t Method() = 0;
 					virtual string_t Resource() = 0;
-					virtual IEnumString* GetAllRequestHeaders() = 0;
-					virtual string_t GetRequestHeader(const string_t& strHeader) = 0;
+					virtual headers_t GetRequestHeaders() = 0;
 					virtual void RequestBody(uint32_t& cbBytes, byte_t* pBody) = 0;
 					virtual IO::IStream* RequestStream() = 0;
 				};
@@ -110,8 +112,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_EX_VOID(Synchronous,30,Send,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
 	OMEGA_METHOD(uint16_t,Status,0,())
 	OMEGA_METHOD(string_t,StatusText,0,())
-	OMEGA_METHOD(IEnumString*,GetAllResponseHeaders,0,())
-	OMEGA_METHOD(string_t,GetResponseHeader,1,((in),const string_t&,strHeader))
+	OMEGA_METHOD(Omega::Net::Http::IRequest::headers_t,GetResponseHeaders,0,())
 	OMEGA_METHOD_VOID(ResponseBody,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,pBody))
 	OMEGA_METHOD(IO::IStream*,ResponseStream,0,())
 	OMEGA_METHOD_VOID(Abort,0,())
@@ -131,8 +132,7 @@ OMEGA_DEFINE_INTERFACE
 	// Methods
 	OMEGA_METHOD(string_t,Method,0,())
 	OMEGA_METHOD(string_t,Resource,0,())
-	OMEGA_METHOD(Omega::IEnumString*,GetAllRequestHeaders,0,())
-	OMEGA_METHOD(string_t,GetRequestHeader,1,((in),const string_t&,strHeader))
+	OMEGA_METHOD(Omega::Net::Http::Server::IRequest::headers_t,GetRequestHeaders,0,())
 	OMEGA_METHOD_VOID(RequestBody,2,((in),uint32_t&,cbBytes,(in)(size_is(cbBytes)),byte_t*,pBody))
 	OMEGA_METHOD(IO::IStream*,RequestStream,0,())
 )

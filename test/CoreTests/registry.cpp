@@ -134,48 +134,16 @@ static bool test_values(Omega::Registry::IKey* pKey)
 
 	TEST_VOID(pKey->SetStringValue(strTestValue,L"Yes"));
 
-	Omega::IEnumString* pValues = pKey->EnumValues();
-	TEST(pValues);
-
-	Omega::uint32_t nFound = 0;
-	Omega::bool_t bMore;
-	do
-	{
-		Omega::string_t vals[10];
-		Omega::uint32_t count = 10;
-
-		bMore = pValues->Next(count,vals);
-
-		for (Omega::uint32_t i=0;i<count;++i)
-		{
-			if (vals[i] == strTestValue)
-				++nFound;
-		}
-	} while (bMore);
-	pValues->Release();
-	TEST(nFound == 1);
-
+	std::set<Omega::string_t> values = pKey->EnumValues();
+	
+	TEST(!values.empty());
+	TEST(values.find(strTestValue) != values.end());
+	
 	TEST_VOID(pKey->DeleteValue(strTestValue));
 
-	pValues = pKey->EnumValues();
-	TEST(pValues);
-	nFound = 0;
-	do
-	{
-		Omega::string_t vals[10];
-		Omega::uint32_t count = 10;
-
-		bMore = pValues->Next(count,vals);
-
-		for (Omega::uint32_t i=0;i<count;++i)
-		{
-			if (vals[i] == strTestValue)
-				++nFound;
-		}
-	} while (bMore);
-	pValues->Release();
-	TEST(nFound == 0);
-
+	values = pKey->EnumValues();
+	TEST(values.find(strTestValue) == values.end());
+	
 	return true;
 }
 
@@ -240,26 +208,9 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 		pE->Release();
 	}
 
-	Omega::IEnumString* pKeys = pKey->EnumSubKeys();
-	TEST(pKeys);
-
-	Omega::uint32_t nFound = 0;
-	Omega::bool_t bMore;
-	do
-	{
-		Omega::string_t keys[10];
-		Omega::uint32_t count = 10;
-
-		bMore = pKeys->Next(count,keys);
-
-		for (Omega::uint32_t i=0;i<count;++i)
-		{
-			if (keys[i] == strTestKey)
-				++nFound;
-		}
-	} while (bMore);
-	pKeys->Release();
-	TEST(nFound == 1);
+	std::set<Omega::string_t> keys = pKey->EnumSubKeys();
+	TEST(!keys.empty());
+	TEST(keys.find(strTestKey) != keys.end());
 
 	try
 	{
@@ -292,24 +243,8 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 		pE->Release();
 	}
 
-	pKeys = pKey->EnumSubKeys();
-	TEST(pKeys);
-	nFound = 0;
-	do
-	{
-		Omega::string_t keys[10];
-		Omega::uint32_t count = 10;
-
-		bMore = pKeys->Next(count,keys);
-
-		for (Omega::uint32_t i=0;i<count;++i)
-		{
-			if (keys[i] == strTestKey)
-				++nFound;
-		}
-	} while (bMore);
-	pKeys->Release();
-	TEST(nFound == 0);
+	keys = pKey->EnumSubKeys();
+	TEST(keys.find(strTestKey) == keys.end());
 
 	return true;
 }

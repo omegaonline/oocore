@@ -76,8 +76,8 @@ namespace
 		void SetValueDescription(const string_t& strName, const string_t& strValue);
 		ValueType_t GetValueType(const string_t& strName);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-		Omega::IEnumString* EnumSubKeys();
-		Omega::IEnumString* EnumValues();
+		std::set<Omega::string_t> EnumSubKeys();
+		std::set<Omega::string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
@@ -122,8 +122,8 @@ namespace
 		void SetValueDescription(const string_t& strName, const string_t& strValue);
 		ValueType_t GetValueType(const string_t& strName);
 		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
-		Omega::IEnumString* EnumSubKeys();
-		Omega::IEnumString* EnumValues();
+		std::set<Omega::string_t> EnumSubKeys();
+		std::set<Omega::string_t> EnumValues();
 		void DeleteKey(const string_t& strSubKey);
 		void DeleteValue(const string_t& strName);
 	};
@@ -458,7 +458,7 @@ IKey* HiveKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrNew.AddRef();
 }
 
-Omega::IEnumString* HiveKey::EnumSubKeys()
+std::set<Omega::string_t> HiveKey::EnumSubKeys()
 {
 	std::list<std::string> listSubKeys;
 	int err = m_pHive->enum_subkeys(m_key,0,listSubKeys);
@@ -469,25 +469,14 @@ Omega::IEnumString* HiveKey::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
+	std::set<Omega::string_t> setOutSubKeys;
+	for (std::list<std::string>::const_iterator i=listSubKeys.begin();i!=listSubKeys.end();++i)
+		setOutSubKeys.insert(string_t(i->c_str(),true));
 
-	try
-	{
-		for (std::list<std::string>::const_iterator i=listSubKeys.begin();i!=listSubKeys.end();++i)
-		{
-			ptrEnum->Append(string_t(i->c_str(),true));
-		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
-	ptrEnum->Init();
-	return ptrEnum.AddRef();
+	return setOutSubKeys;
 }
 
-Omega::IEnumString* HiveKey::EnumValues()
+std::set<Omega::string_t> HiveKey::EnumValues()
 {
 	std::list<std::string> listValues;
 	int err = m_pHive->enum_values(m_key,0,listValues);
@@ -498,22 +487,11 @@ Omega::IEnumString* HiveKey::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
+	std::set<Omega::string_t> setOutValues;
+	for (std::list<std::string>::const_iterator i=listValues.begin();i!=listValues.end();++i)
+		setOutValues.insert(string_t(i->c_str(),true));
 
-	try
-	{
-		for (std::list<std::string>::const_iterator i=listValues.begin();i!=listValues.end();++i)
-		{
-			ptrEnum->Append(string_t(i->c_str(),true));
-		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
-	ptrEnum->Init();
-	return ptrEnum.AddRef();
+	return setOutValues;
 }
 
 void HiveKey::DeleteKey(const string_t& strSubKey)
@@ -700,12 +678,12 @@ IKey* RootKey::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrKey->OpenSubKey(strSubKey2,flags);
 }
 
-Omega::IEnumString* RootKey::EnumSubKeys()
+std::set<Omega::string_t> RootKey::EnumSubKeys()
 {
 	return m_ptrSystemKey->EnumSubKeys();
 }
 
-Omega::IEnumString* RootKey::EnumValues()
+std::set<Omega::string_t> RootKey::EnumValues()
 {
 	return m_ptrSystemKey->EnumValues();
 }

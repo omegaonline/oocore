@@ -125,7 +125,7 @@ namespace
 		OOBase::Mutex                                     m_lock;
 		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> > m_dll_map;
 	};
-	typedef OOBase::Singleton<DLLManagerImpl,OOCore::DLL> DLLManager;
+	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
 	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
 	{
@@ -155,6 +155,15 @@ DLLManagerImpl::DLLManagerImpl()
 
 DLLManagerImpl::~DLLManagerImpl()
 {
+	try
+	{
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+		// Clear out our map now, as the smart ptrs use m_lock
+		m_dll_map.clear();
+	}
+	catch (...)
+	{ }
 }
 
 OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)

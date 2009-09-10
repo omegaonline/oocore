@@ -14,25 +14,18 @@ TreeItemData::~TreeItemData(void)
 
 void TreeItemData::Fill(wxTreeCtrl* pTree, const wxTreeItemId& id)
 {
-	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = m_ptrKey.EnumSubKeys();
-	for (;;)
+	std::set<Omega::string_t> keys = m_ptrKey->EnumSubKeys();
+	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
-		Omega::uint32_t count = 1;
-		Omega::string_t strName;
-		ptrEnum->Next(count,&strName);
-		if (count==0)
-			break;
-
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey = m_ptrKey.OpenSubKey(strName);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey = m_ptrKey.OpenSubKey(*i);
 
 		TreeItemData* pNewItem = new TreeItemData(ptrKey,(m_nDepth>0 ? m_nDepth-1 : 0));
-		wxTreeItemId itemId = pTree->AppendItem(id,wxString(strName.c_str()),2,3,pNewItem);
+		wxTreeItemId itemId = pTree->AppendItem(id,wxString(i->c_str()),2,3,pNewItem);
 
 		if (m_nDepth==0)
 		{
-			OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
-			ptrEnum2->Next(count,&strName);
-			if (count==1)
+			std::set<Omega::string_t> sub_keys = ptrKey->EnumSubKeys();
+			if (!sub_keys.empty())
 				pTree->AppendItem(itemId,wxT("DUFF!"));
 		}
 		else
@@ -48,28 +41,22 @@ void TreeItemData::InitList(wxListCtrl* pList)
 {
 	pList->DeleteAllItems();
 
-	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = m_ptrKey.EnumValues();
-	int i;
-	for (i=0;;++i)
+	std::set<Omega::string_t> values = m_ptrKey->EnumValues();
+	int i = 0;
+	for (std::set<Omega::string_t>::const_iterator it=values.begin();it!=values.end();++i,++it)
 	{
-		Omega::uint32_t count = 1;
-		Omega::string_t strName;
- 		ptrEnum->Next(count,&strName);
-		if (count==0)
-			break;
+		Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(*it);
 
-		Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
-
-		long item = pList->InsertItem(i,wxString(strName.c_str()),type==Omega::Registry::String ? 4 : 5);
+		long item = pList->InsertItem(i,wxString(it->c_str()),type==Omega::Registry::String ? 4 : 5);
 
 		if (type==Omega::Registry::String)
 		{
 			pList->SetItem(item,1,_("String"));
-			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(strName).c_str()));
+			pList->SetItem(item,2,wxString(m_ptrKey->GetStringValue(*it).c_str()));
 		}
 		else if (type==Omega::Registry::Integer)
 		{
-			Omega::int64_t val = m_ptrKey->GetIntegerValue(strName);
+			Omega::int64_t val = m_ptrKey->GetIntegerValue(*it);
 			pList->SetItem(item,1,_("Integer"));
 			pList->SetItem(item,2,wxString::Format(wxT("%lld"),val));
 		}
@@ -77,7 +64,7 @@ void TreeItemData::InitList(wxListCtrl* pList)
 		{
 			Omega::byte_t szBuf[128];
 			Omega::uint32_t cbLen = sizeof(szBuf);
-			m_ptrKey->GetBinaryValue(strName,cbLen,szBuf);
+			m_ptrKey->GetBinaryValue(*it,cbLen,szBuf);
 
 			wxString val;
 			if (cbLen==0)
@@ -173,37 +160,31 @@ void TreeItemData::RenameKey(const Omega::string_t& strFrom, const Omega::string
 
 void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL::ObjectPtr<Omega::Registry::IKey>& ptrNewKey)
 {
-	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = ptrOldKey.EnumValues();
-	for (;;)
+	std::set<Omega::string_t> values = ptrOldKey->EnumValues();
+	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
 	{
-		Omega::uint32_t count = 1;
-		Omega::string_t strName;
-		ptrEnum->Next(count,&strName);
-		if (count==0)
-			break;
-
-		Omega::Registry::ValueType_t type = ptrOldKey->GetValueType(strName);
+		Omega::Registry::ValueType_t type = ptrOldKey->GetValueType(*i);
 
 		if (type==Omega::Registry::String)
 		{
-			Omega::string_t val = ptrOldKey->GetStringValue(strName);
-			ptrNewKey->SetStringValue(strName,val);
+			Omega::string_t val = ptrOldKey->GetStringValue(*i);
+			ptrNewKey->SetStringValue(*i,val);
 		}
 		else if (type==Omega::Registry::Integer)
 		{
-			Omega::uint64_t val = ptrOldKey->GetIntegerValue(strName);
-			ptrNewKey->SetIntegerValue(strName,val);
+			Omega::uint64_t val = ptrOldKey->GetIntegerValue(*i);
+			ptrNewKey->SetIntegerValue(*i,val);
 		}
 		else
 		{
 			Omega::uint32_t cbLen = 0;
-			ptrNewKey->GetBinaryValue(strName,cbLen,NULL);
+			ptrNewKey->GetBinaryValue(*i,cbLen,NULL);
 
 			Omega::byte_t* pBuffer = (Omega::byte_t*)malloc(cbLen);
 			try
 			{
-				ptrOldKey->GetBinaryValue(strName,cbLen,pBuffer);
-				ptrNewKey->SetBinaryValue(strName,cbLen,pBuffer);
+				ptrOldKey->GetBinaryValue(*i,cbLen,pBuffer);
+				ptrNewKey->SetBinaryValue(*i,cbLen,pBuffer);
 			}
 			catch (...)
 			{
@@ -214,17 +195,11 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL
 		}
 	}
 
-	ptrEnum = ptrOldKey.EnumSubKeys();
-	for (;;)
+	values = ptrOldKey->EnumSubKeys();
+	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
 	{
-		Omega::uint32_t count = 1;
-		Omega::string_t strName;
-		ptrEnum->Next(count,&strName);
-		if (count==0)
-			break;
-
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrOldSub = ptrOldKey.OpenSubKey(strName,Omega::Registry::IKey::OpenExisting);
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey.OpenSubKey(strName,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrOldSub = ptrOldKey.OpenSubKey(*i,Omega::Registry::IKey::OpenExisting);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey.OpenSubKey(*i,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
 
 		CopyKey(ptrOldSub,ptrNewSub);
 	}
@@ -256,10 +231,8 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 
 	if (m_nDepth==0)
 	{
-		Omega::uint32_t count = 1;
-		OTL::ObjectPtr<Omega::IEnumString> ptrEnum2 = ptrKey.EnumSubKeys();
-		ptrEnum2->Next(count,&strName);
-		if (count==1)
+		std::set<Omega::string_t> sub_keys = ptrKey->EnumSubKeys();
+		if (!sub_keys.empty())
 			pTree->AppendItem(itemId,wxT("DUFF!"));
 	}
 	else
@@ -503,57 +476,45 @@ void TreeItemData::Find2(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pL
 Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKey, const Omega::string_t& strFind, bool bKeys, bool bValues, bool bData, bool bMatchAll, bool bIgnoreCase, bool& bKey)
 {
 	// Check the current sub-keys
-	OTL::ObjectPtr<Omega::IEnumString> ptrEnum = ptrKey.EnumSubKeys();
-	for (;;)
+	std::set<Omega::string_t> keys = ptrKey->EnumSubKeys();
+	for (std::set<Omega::string_t>::const_iterator i=keys.begin();i!=keys.end();++i)
 	{
-		Omega::uint32_t count = 1;
-		Omega::string_t strName;
-		ptrEnum->Next(count,&strName);
-		if (count==0)
-			break;
-
 		// Check key name
 		if (bKeys)
 		{
 			if (bMatchAll)
 			{
-				if (!bIgnoreCase && strFind == strName)
+				if (!bIgnoreCase && strFind == *i)
 				{
 					// Found it!
 					bKey = true;
-					return strName;
+					return *i;
 				}
-				else if (strName.CompareNoCase(strName)==0)
+				else if (i->CompareNoCase(*i)==0)
 				{
 					// Found it!
 					bKey = true;
-					return strName;
+					return *i;
 				}
 			}
-			else if (strName.Find(strFind,0,bIgnoreCase) != Omega::string_t::npos)
+			else if (i->Find(strFind,0,bIgnoreCase) != Omega::string_t::npos)
 			{
 				// Found it!
 				bKey = true;
-				return strName;
+				return *i;
 			}
 		}
 
 		// Check key values
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(strName);
-		OTL::ObjectPtr<Omega::IEnumString> ptrEnum = ptrSubKey.EnumValues();
-		for (;;)
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrSubKey = ptrKey.OpenSubKey(*i);
+		std::set<Omega::string_t> values = ptrSubKey->EnumValues();
+		for (std::set<Omega::string_t>::const_iterator j=values.begin();j!=values.end();++j)
 		{
-			count = 1;
-			Omega::string_t strValue;
-			ptrEnum->Next(count,&strValue);
-			if (count==0)
-				break;
-
-			if (MatchValue(strFind,ptrSubKey,strValue,bValues,bData,bMatchAll,bIgnoreCase))
+			if (MatchValue(strFind,ptrSubKey,*j,bValues,bData,bMatchAll,bIgnoreCase))
 			{
 				// Found it!
 				bKey = false;
-				return strName + L"\\" + strValue;
+				return *i + L"\\" + *j;
 			}
 		}
 
@@ -561,7 +522,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKe
 		Omega::string_t strNext = Find3(ptrSubKey,strFind,bKeys,bValues,bData,bMatchAll,bIgnoreCase,bKey);
 		if (!strNext.IsEmpty())
 		{
-			return strName + L"\\" + strNext;
+			return *i + L"\\" + strNext;
 		}
 	}
 

@@ -3,9 +3,9 @@
 #include "interfaces.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"ooregister -s -c"
+#define OOREGISTER L"ooregister -s"
 #else
-#define OOREGISTER L"./ooregister -s -c"
+#define OOREGISTER L"./ooregister -s"
 #endif
 
 #include "Test.h"
@@ -71,7 +71,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 	TEST(ptrTI->GetName() == L"Omega::TestSuite::ISimpleTest");
 	TEST(ptrTI->GetIID() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
-	TEST(ptrTI->GetMethodCount() == 23+3);
+	TEST(ptrTI->GetMethodCount() == 25+3);
 
 	// Test the interface
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(ptrPOI);

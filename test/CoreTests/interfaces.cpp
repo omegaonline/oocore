@@ -15,9 +15,9 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 #include "Test.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"ooregister -s -c"
+#define OOREGISTER L"ooregister -s"
 #else
-#define OOREGISTER L"./ooregister -s -c"
+#define OOREGISTER L"./ooregister -s"
 #endif
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest)
@@ -94,6 +94,17 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	}
 
 	TEST(ptrSimpleTest->Hello() == L"Hello!");
+
+	std::list<Omega::uint32_t> list1;
+	list1.push_back(0);
+
+	TEST(ptrSimpleTest->ListUInt32_Count(list1) == 1);
+
+	std::list<Omega::uint32_t> list = ptrSimpleTest->ListUInt32_Fill();
+
+	TEST(list.size() == 2);
+	TEST(list.front() == 1);
+	TEST(list.back() == 2);
 
 	try
 	{

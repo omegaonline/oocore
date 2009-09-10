@@ -35,7 +35,12 @@ namespace Omega
 			{
 				typedef T type;
 
-				static T coerce(T val, ...)
+				static T coerce(typename optimal_param<T>::type val, ...)
+				{
+					return val;
+				}
+
+				static T clone(typename optimal_param<T>::type val)
 				{
 					return val;
 				}
@@ -52,6 +57,11 @@ namespace Omega
 				typedef uint32_t type;
 			#endif
 				static type coerce(size_t val)
+				{
+					return static_cast<type>(val);
+				}
+
+				static type clone(size_t val)
 				{
 					return static_cast<type>(val);
 				}
@@ -83,44 +93,104 @@ namespace Omega
 			template <typename T> 
 			struct custom_safe_type_wrapper
 			{
-				typedef typename custom_safe_type<T>::impl::safe_type type;
+				typedef typename custom_safe_type<T>::impl impl;
+				typedef typename impl::safe_type type;
 
-				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(const T& val)
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<T>::type val)
 				{
-					return typename custom_safe_type<T>::impl::safe_type_wrapper(val);
+					return typename impl::safe_type_wrapper(val);
 				}
 
-				static typename custom_safe_type<T>::impl::safe_type_wrapper coerce(const T& val, size_t count)
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<T>::type val, size_t count)
 				{
-					return typename custom_safe_type<T>::impl::safe_type_wrapper(val,count);
+					return typename impl::safe_type_wrapper(val,count);
 				}
 
-				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val)
+				static typename impl::type_wrapper coerce(type val)
 				{
-					return typename custom_safe_type<T>::impl::type_wrapper(val);
+					return typename impl::type_wrapper(val);
 				}
 
-				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val, uint32_t count)
+				static typename impl::type_wrapper coerce(type val, uint32_t count)
 				{
-					return typename custom_safe_type<T>::impl::type_wrapper(val,static_cast<size_t>(count));
+					return typename impl::type_wrapper(val,static_cast<size_t>(count));
 				}
 
-				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val, const uint64_t& count)
+				static typename impl::type_wrapper coerce(type val, const uint64_t& count)
 				{
-					return typename custom_safe_type<T>::impl::type_wrapper(val,static_cast<size_t>(count));
+					return typename impl::type_wrapper(val,static_cast<size_t>(count));
 				}
 
 				template <typename S>
-				static typename custom_safe_type<T>::impl::type_wrapper coerce(type val, S* count)
+				static typename impl::type_wrapper coerce(type val, S* count)
 				{
 					return coerce(val,*count);
+				}
+
+				static type clone(typename optimal_param<T>::type val)
+				{
+					return impl::clone(val);
+				}
+
+				static T clone(type val)
+				{
+					return impl::clone(val);
+				}
+			};
+
+			template <typename T> 
+			struct custom_safe_type_const_wrapper
+			{
+				typedef typename custom_safe_type<T>::impl impl;
+				typedef const typename impl::safe_type type;
+
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<const T>::type val)
+				{
+					return typename impl::safe_type_wrapper(val);
+				}
+
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<const T>::type val, size_t count)
+				{
+					return typename impl::safe_type_wrapper(val,count);
+				}
+
+				static typename impl::type_wrapper coerce(type val)
+				{
+					return typename impl::type_wrapper(val);
+				}
+
+				static typename impl::type_wrapper coerce(type val, uint32_t count)
+				{
+					return typename impl::type_wrapper(val,static_cast<size_t>(count));
+				}
+
+				static typename impl::type_wrapper coerce(type val, const uint64_t& count)
+				{
+					return typename impl::type_wrapper(val,static_cast<size_t>(count));
+				}
+
+				template <typename S>
+				static typename impl::type_wrapper coerce(type val, S* count)
+				{
+					return coerce(val,*count);
+				}
+
+				static type clone(typename optimal_param<const T>::type val)
+				{
+					return impl::clone(val);
+				}
+
+				static const T clone(type val)
+				{
+					return impl::clone(val);
 				}
 			};
 
 			template <typename T> 
 			struct custom_safe_type_ref_wrapper
 			{
-				typedef typename custom_safe_type<T>::impl::safe_type* type;
+				typedef typename custom_safe_type<T>::impl impl;
+				typedef typename impl::safe_type* type;
 
 				struct ref_holder
 				{
@@ -130,8 +200,8 @@ namespace Omega
 					}
 
 				protected:
-					typename custom_safe_type<T>::impl::type_wrapper m_val;
-					type                                             m_dest;
+					typename impl::type_wrapper m_val;
+					type                        m_dest;
 
 					ref_holder(type val) : m_val(*val), m_dest(val)
 					{
@@ -175,8 +245,8 @@ namespace Omega
 					}
 
 				protected:
-					typename custom_safe_type<T>::impl::safe_type_wrapper m_val;
-					T&                                                    m_dest;
+					typename impl::safe_type_wrapper m_val;
+					T&                               m_dest;
 					
 					ref_holder_safe(T& val) : m_val(val), m_dest(val)
 					{}
@@ -244,11 +314,12 @@ namespace Omega
 			template <typename T> 
 			struct custom_safe_type_const_ref_wrapper
 			{
-				typedef typename custom_safe_type<const T>::impl::safe_type* type;
+				typedef typename custom_safe_type<T>::impl impl;
+				typedef const typename impl::safe_type* type;
 
 				struct ref_holder_safe
 				{
-					ref_holder_safe(const T& val) : m_val(val)
+					ref_holder_safe(typename optimal_param<T>::type val) : m_val(val)
 					{}
 
 					operator type()
@@ -257,17 +328,17 @@ namespace Omega
 					}
 
 				private:
-					typename custom_safe_type<const T>::impl::safe_type_wrapper m_val;
+					typename impl::safe_type_wrapper m_val;
 				};
 
-				static ref_holder_safe coerce(const T& val)
+				static ref_holder_safe coerce(typename optimal_param<T>::type val)
 				{
 					return ref_holder_safe(val);
 				}
 
-				static typename custom_safe_type<const T>::impl::type_wrapper coerce(type val)
+				static typename impl::type_wrapper coerce(type val)
 				{
-					return typename custom_safe_type<const T>::impl::type_wrapper(*val);
+					return typename impl::type_wrapper(*val);
 				}
 			};
 
@@ -330,7 +401,7 @@ namespace Omega
 					}
 
 				private:
-					typename custom_safe_type<T>::impl::type_wrapper m_val;
+					typename marshal_info<T>::safe_type::impl::type_wrapper m_val;
 					T*        m_pVals;
 					safe_type m_pOrig;
 					size_t    m_cbSize;
@@ -552,6 +623,18 @@ namespace Omega
 				};
 				friend struct safe_type_wrapper;
 
+				static void* clone(const string_t& s)
+				{
+					void* h = static_cast<void*>(s.m_handle);
+					addref(h);
+					return h;
+				}
+
+				static string_t clone(void* v)
+				{
+					return string_t(static_cast<string_t::handle_t*>(v));
+				}
+
 			private:
 				static void* coerce(const string_t& s)
 				{
@@ -576,12 +659,6 @@ namespace Omega
 
 			template <>
 			struct custom_safe_type<string_t>
-			{
-				typedef struct string_t_safe_type impl;
-			};
-
-			template <>
-			struct custom_safe_type<const string_t>
 			{
 				typedef struct string_t_safe_type impl;
 			};
@@ -634,51 +711,16 @@ namespace Omega
 				private:
 					safe_type m_val;
 				};
-			};
 
-			template <>
-			struct custom_safe_type<const bool_t>
-			{
-				typedef custom_safe_type<const bool_t> impl;
-				typedef const int safe_type;
-
-				struct type_wrapper
+				static safe_type clone(bool_t val)
 				{
-					type_wrapper(safe_type val) : m_val(val != 0)
-					{}
+					return (val ? 1 : 0);
+				}
 
-					operator const bool_t&()
-					{
-						return m_val;
-					}
-
-				private:
-					bool_t m_val;
-				};
-
-				struct safe_type_wrapper
+				static bool_t clone(safe_type val)
 				{
-					safe_type_wrapper(bool_t val) : m_val(val ? 1 : 0)
-					{}
-
-					safe_type_wrapper(const safe_type_wrapper& rhs) : m_val(rhs.m_val)
-					{}
-
-					operator safe_type ()
-					{
-						return m_val;
-					}
-
-					safe_type* operator & ()
-					{
-						return &m_val;
-					}
-
-				private:
-					safe_type m_val;
-
-					safe_type_wrapper& operator = (const safe_type_wrapper&);
-				};
+					return (val != 0);
+				}
 			};
 
 			template <>
@@ -729,34 +771,16 @@ namespace Omega
 				private:
 					safe_type m_val;
 				};
-			};
 
-			template <>
-			struct custom_safe_type<const guid_t>
-			{
-				typedef custom_safe_type<const guid_t> impl;
-				typedef const guid_base_t safe_type;
-
-				typedef guid_t type_wrapper;
-				
-				struct safe_type_wrapper
+				static safe_type clone(const guid_t& val)
 				{
-					safe_type_wrapper(const guid_t& val) : m_val(&val)
-					{}
+					return val;
+				}
 
-					operator safe_type ()
-					{
-						return *m_val;
-					}
-
-					safe_type* operator & ()
-					{
-						return m_val;
-					}
-
-				private:
-					safe_type* m_val;
-				};
+				static guid_t clone(const safe_type& val)
+				{
+					return guid_t(val);
+				}
 			};
 
 			template <typename T> struct is_message_type
@@ -804,6 +828,21 @@ namespace Omega
 				>::result wire_type;
 			};
 
+			template <typename T> struct marshal_info<const T>
+			{
+				typedef typename if_else_t<
+					is_c_abi<T>::result,
+					std_safe_type<const T>,
+					custom_safe_type_const_wrapper<T> 
+				>::result safe_type;
+				
+				typedef typename if_else_t<
+					is_message_type<T>::result,
+					std_wire_type<const T>,
+					custom_wire_type_wrapper<const T> 
+				>::result wire_type;
+			};
+
 			template <typename T> struct marshal_info<T&>
 			{
 				typedef typename if_else_t<
@@ -814,7 +853,7 @@ namespace Omega
 
 				typedef typename if_else_t<
 					is_message_type<T>::result,
-					std_wire_type<T&>,
+					std_wire_type<T>,
 					custom_wire_type_wrapper<T>
 				>::result wire_type;
 			};
@@ -822,14 +861,14 @@ namespace Omega
 			template <typename T> struct marshal_info<const T&>
 			{
 				typedef typename if_else_t<
-					is_c_abi<const T>::result,
+					is_c_abi<T>::result,
 					std_safe_type_ref<const T>,
 					custom_safe_type_const_ref_wrapper<T>
 				>::result safe_type;
 
 				typedef typename if_else_t<
-					is_message_type<const T>::result,
-					std_wire_type<const T&>,
+					is_message_type<T>::result,
+					std_wire_type<const T>,
 					custom_wire_type_wrapper<const T>
 				>::result wire_type;
 			};
@@ -837,7 +876,7 @@ namespace Omega
 			template <typename T> struct marshal_info<T*>
 			{
 				typedef typename if_else_t<
-					is_c_abi<T*>::result,
+					is_c_abi<T>::result,
 					std_safe_type<T*>,
 					custom_safe_type_wrapper<T*>
 				>::result safe_type;
@@ -962,6 +1001,16 @@ namespace Omega
 				private:
 					safe_type m_pS;
 				};
+
+				static safe_type clone(I* pI)
+				{
+					return create_safe_stub(pI,OMEGA_GUIDOF(I));
+				}
+
+				static I* clone(safe_type shim)
+				{
+					return static_cast<I*>(create_safe_proxy(shim,0));
+				}
 			};
 
 			template <typename I> struct iface_wire_type;

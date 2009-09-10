@@ -36,6 +36,9 @@ namespace Omega
 
 			virtual void Throw(Omega::uint32_t err) = 0;
 			virtual void Abort() = 0;
+
+			virtual Omega::uint32_t ListUInt32_Count(const std::list<Omega::uint32_t>& list) = 0;
+			virtual std::list<Omega::uint32_t> ListUInt32_Fill() = 0;
 		};
 
 		interface ISimpleTest2 : public Omega::IObject
@@ -79,6 +82,9 @@ OMEGA_DEFINE_INTERFACE
 
 	OMEGA_METHOD_VOID(Throw,1,((in),Omega::uint32_t,err))
 	OMEGA_METHOD_VOID(Abort,0,())
+
+	OMEGA_METHOD(Omega::uint32_t,ListUInt32_Count,1,((in),const std::list<Omega::uint32_t>&,list))
+	OMEGA_METHOD(std::list<Omega::uint32_t>,ListUInt32_Fill,0,())
 )
 
 OMEGA_DEFINE_INTERFACE

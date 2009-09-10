@@ -550,7 +550,7 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	return ptrNew.AddRef();
 }
 
-Omega::IEnumString* Key::EnumSubKeys()
+std::set<Omega::string_t> Key::EnumSubKeys()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::EnumSubKeys));
@@ -574,7 +574,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
+	std::set<Omega::string_t> sub_keys;
 		
 	try
 	{
@@ -587,7 +587,7 @@ Omega::IEnumString* Key::EnumSubKeys()
 			if (strName.empty())
 				break;
 
-			ptrEnum->Append(string_t(strName.c_str(),true));
+			sub_keys.insert(string_t(strName.c_str(),true));
 		}		
 	}
 	catch (std::exception& e)
@@ -595,11 +595,10 @@ Omega::IEnumString* Key::EnumSubKeys()
 		OMEGA_THROW(e);
 	}
 
-	ptrEnum->Init();
-	return ptrEnum.AddRef();
+	return sub_keys;
 }
 
-Omega::IEnumString* Key::EnumValues()
+std::set<Omega::string_t> Key::EnumValues()
 {
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::EnumValues));
@@ -623,7 +622,7 @@ Omega::IEnumString* Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	ObjectPtr<ObjectImpl<EnumString> > ptrEnum = ObjectImpl<EnumString>::CreateInstancePtr();
+	std::set<Omega::string_t> values;
 		
 	try
 	{
@@ -636,7 +635,7 @@ Omega::IEnumString* Key::EnumValues()
 			if (strName.empty())
 				break;
 
-			ptrEnum->Append(string_t(strName.c_str(),true));
+			values.insert(string_t(strName.c_str(),true));
 		}		
 	}
 	catch (std::exception& e)
@@ -644,8 +643,7 @@ Omega::IEnumString* Key::EnumValues()
 		OMEGA_THROW(e);
 	}
 
-	ptrEnum->Init();
-	return ptrEnum.AddRef();
+	return values;
 }
 
 void Key::DeleteKey(const string_t& strSubKey)

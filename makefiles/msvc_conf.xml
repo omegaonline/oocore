@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <msvc_conf>
   <Project Name="OOCore">
     <Configuration Name="Debug">
@@ -71,6 +71,30 @@
     </Configuration>
     <Configuration Name="Release">
       <Library Name="wxmsw28u_core.lib" />
+    </Configuration>
+  </Project>
+  <Project Name="CoreTests">
+    <Configuration Name="Debug">
+      <Platform Name="Win32">
+        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
+        <Library Name="vld.lib" Optional="true" />
+      </Platform>
+    </Configuration>
+  </Project>
+  <Project Name="TestLibrary">
+    <Configuration Name="Debug">
+      <Platform Name="Win32">
+        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
+        <Library Name="vld.lib" Optional="true" />
+      </Platform>
+    </Configuration>
+  </Project>
+  <Project Name="TestProcess">
+    <Configuration Name="Debug">
+      <Platform Name="Win32">
+        <Include Name="vld.h" Optional="true" Define="HAVE_VLD_H" />
+        <Library Name="vld.lib" Optional="true" />
+      </Platform>
     </Configuration>
   </Project>
 </msvc_conf>

@@ -3,6 +3,10 @@
 
 #include "interfaces.h"
 
+#ifdef HAVE_VLD_H
+#include <vld.h>
+#endif
+
 class SimpleTestImpl :
 	public Omega::TestSuite::ISimpleTest,
 	public Omega::TestSuite::ISimpleTest2
@@ -106,6 +110,19 @@ public:
 	Omega::string_t WhereAmI()
 	{
 		return L"Inner";
+	}
+
+	Omega::uint32_t ListUInt32_Count(const std::list<Omega::uint32_t>& list)
+	{
+		return static_cast<Omega::uint32_t>(list.size());
+	}
+
+	std::list<Omega::uint32_t> ListUInt32_Fill()
+	{
+		std::list<Omega::uint32_t> list;
+		list.push_back(1);
+		list.push_back(2);
+		return list;
 	}
 };
 

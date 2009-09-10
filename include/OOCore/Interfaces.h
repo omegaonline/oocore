@@ -94,14 +94,6 @@ namespace Omega
 		};
 	}
 
-	interface IEnumString : public IObject
-	{
-		virtual bool_t Next(uint32_t& count, string_t* parrVals) = 0;
-		virtual bool_t Skip(uint32_t count) = 0;
-		virtual void Reset() = 0;
-		virtual IEnumString* Clone() = 0;
-	};
-
 	namespace Registry
 	{
 		enum ValueType
@@ -136,8 +128,8 @@ namespace Omega
 			virtual void SetValueDescription(const string_t& name, const string_t& desc) = 0;
 			virtual ValueType_t GetValueType(const string_t& name) = 0;
 			virtual IKey* OpenSubKey(const string_t& key, OpenFlags_t flags = OpenExisting) = 0;
-			virtual IEnumString* EnumSubKeys() = 0;
-			virtual IEnumString* EnumValues() = 0;
+			virtual std::set<string_t> EnumSubKeys() = 0;
+			virtual std::set<string_t> EnumValues() = 0;
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
 
@@ -291,17 +283,6 @@ OMEGA_DEFINE_INTERFACE
 
 OMEGA_DEFINE_INTERFACE
 (
-	Omega, IEnumString, "{0D796351-7197-4444-B6E0-74A669289D8F}",
-
-	// Methods
-	OMEGA_METHOD(bool_t,Next,2,((in_out),uint32_t&,count,(out)(size_is(count)),string_t*,parrVals))
-	OMEGA_METHOD(bool_t,Skip,1,((in),uint32_t,count))
-	OMEGA_METHOD_VOID(Reset,0,())
-	OMEGA_METHOD(IEnumString*,Clone,0,())
-)
-
-OMEGA_DEFINE_INTERFACE
-(
 	Omega::Registry, IKey, "{F33E828A-BF5E-4c26-A541-BDB2CA736DBD}",
 
 	// Methods
@@ -319,8 +300,8 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD_VOID(SetValueDescription,2,((in),const string_t&,name,(in),const string_t&,desc))
 	OMEGA_METHOD(Registry::ValueType_t,GetValueType,1,((in),const string_t&,name))
 	OMEGA_METHOD(Registry::IKey*,OpenSubKey,2,((in),const string_t&,key,(in),Registry::IKey::OpenFlags_t,flags))
-	OMEGA_METHOD(IEnumString*,EnumSubKeys,0,())
-	OMEGA_METHOD(IEnumString*,EnumValues,0,())
+	OMEGA_METHOD(std::set<string_t>,EnumSubKeys,0,())
+	OMEGA_METHOD(std::set<string_t>,EnumValues,0,())
 	OMEGA_METHOD_VOID(DeleteKey,1,((in),const string_t&,strKey))
 	OMEGA_METHOD_VOID(DeleteValue,1,((in),const string_t&,strValue))
 )

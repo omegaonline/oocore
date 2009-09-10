@@ -63,8 +63,8 @@ namespace User
 			void SetValueDescription(const Omega::string_t& strName, const Omega::string_t& strValue);
 			Omega::Registry::ValueType_t GetValueType(const Omega::string_t& strName);
 			Omega::Registry::IKey* OpenSubKey(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags = OpenExisting);
-			Omega::IEnumString* EnumSubKeys();
-			Omega::IEnumString* EnumValues();
+			std::set<Omega::string_t> EnumSubKeys();
+			std::set<Omega::string_t> EnumValues();
 			void DeleteKey(const Omega::string_t& strSubKey);
 			void DeleteValue(const Omega::string_t& strName);	
 		};

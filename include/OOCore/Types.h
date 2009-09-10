@@ -192,14 +192,14 @@ namespace Omega
 				typedef T type;
 			};
 
-			template <typename T> struct remove_const<T&>
-			{
-				typedef typename remove_const<T>::type& type;
-			};
-
 			template <typename T> struct remove_const<T*>
 			{
 				typedef typename remove_const<T>::type* type;
+			};
+
+			template <typename T> struct remove_const<T&>
+			{
+				typedef typename remove_const<T>::type& type;
 			};
 
 			template <typename T> struct remove_ref
@@ -270,6 +270,30 @@ namespace Omega
 			template <typename T> struct is_c_abi<volatile T>
 			{
 				enum { result = is_c_abi<T>::result };
+			};
+
+			// Optimal paramater passing
+			template <typename T> struct optimal_param
+			{
+				typedef typename if_else_t<is_c_abi<T>::result,
+					typename if_else_t<sizeof(T) <= sizeof(size_t),T,const typename remove_const<T>::type&>::result,
+					const typename remove_const<T>::type&
+				>::result type;
+			};
+
+			template <> struct optimal_param<bool>
+			{
+				typedef bool type;
+			};
+
+			template <typename T> struct optimal_param<T&>
+			{
+				typedef T& type;
+			};
+
+			template <typename T> struct optimal_param<T*>
+			{
+				typedef T* type;
 			};
 		}
 	}

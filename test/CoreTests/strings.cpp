@@ -15,7 +15,7 @@ static bool string_tests_wchar()
 	TEST(s1.Length() == 6);
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
-	TEST(s1.CompareNoCase(sz1_2) == 0);
+	TEST(s1.Compare(sz1_2,0,Omega::string_t::npos,true) == 0);
 
 	const wchar_t sz2[] = L"ghijk";
 	Omega::string_t s2(sz2);
@@ -35,7 +35,7 @@ static bool string_tests_wchar()
 	TEST(s3.IsEmpty());
 
 	s3 = sz1_2;
-	TEST(s1.CompareNoCase(s3) == 0);
+	TEST(s1.Compare(s3,0,Omega::string_t::npos,true) == 0);
 	TEST(s1 == s3.ToLower());
 	TEST(s1.ToUpper() == s3);
 
@@ -45,6 +45,13 @@ static bool string_tests_wchar()
 	TEST(s1.Find(L'A',0,true) == 0);
 	TEST(s1.Find(L'A',1,true) == 10);
 
+	TEST(s1.FindNot(L'a') == 1);
+	TEST(s1.FindNot(L'a',1) == 1);
+	TEST(s1.FindNot(L'A',0,true) == 1);
+	TEST(s1.FindNot(L'A',1,true) == 1);
+
+	TEST(s1.FindOneOf(L"edf") == 3);
+	
 	TEST(s1.ReverseFind(L'a') == 10);
 	TEST(s1.ReverseFind(L'a',9) == 0);
 	TEST(s1.ReverseFind(L'A',Omega::string_t::npos,true) == 10);
@@ -66,6 +73,16 @@ static bool string_tests_wchar()
 	TEST(s4 == (wchar_t*)0);
 	TEST(s4 == Omega::string_t(L""));
 	TEST(s4 == Omega::string_t("",false));
+
+	TEST(Omega::string_t(L"1111H").TrimLeft(L'1') == L"H");
+	TEST(Omega::string_t(L"1111").TrimLeft(L'1').IsEmpty());
+	TEST(Omega::string_t(L"123321H").TrimLeft(L"123") == L"H");
+	TEST(Omega::string_t(L"123321").TrimLeft(L"123").IsEmpty());
+
+	TEST(Omega::string_t(L"H1111").TrimRight(L'1') == L"H");
+	TEST(Omega::string_t(L"1111").TrimRight(L'1').IsEmpty());
+	TEST(Omega::string_t(L"H123321").TrimRight(L"123") == L"H");
+	TEST(Omega::string_t(L"123321").TrimRight(L"123").IsEmpty());
 
 	return true;
 }
@@ -123,9 +140,14 @@ static bool string_tests_utf8()
 
 bool string_tests()
 {
-	TEST(string_tests_wchar());
-	TEST(string_tests_format());
-	TEST(string_tests_utf8());
+	if (!string_tests_wchar())
+		return false;
+
+	if (!string_tests_format())
+		return false;
+
+	if (!string_tests_utf8())
+		return false;
 
 	return true;
 }
@@ -140,8 +162,7 @@ bool guid_tests()
 	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
-	TEST(guid2 == sz);
-
+	
 	TEST(Omega::guid_t::FromString(sz,guid2));
 
 	// Create a load of unique guid_t's
@@ -162,7 +183,7 @@ bool guid_tests()
 	TEST(bTest);
 
 	// Check to see if we can export OID's properly
-	TEST(Omega::Remoting::OID_StdObjectManager == L"{63EB243E-6AE3-43bd-B073-764E096775F8}");
+	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t::FromString(L"{63EB243E-6AE3-43bd-B073-764E096775F8}"));
 
 	// Check whether OMEGA_GUIDOF works...
 	TEST(OMEGA_GUIDOF(Omega::IObject) == OMEGA_GUIDOF(Omega::IObject*));

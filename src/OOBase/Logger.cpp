@@ -22,6 +22,7 @@
 #include "Logger.h"
 #include "Singleton.h"
 #include "SmartPtr.h"
+#include "tr24731.h"
 
 namespace
 {

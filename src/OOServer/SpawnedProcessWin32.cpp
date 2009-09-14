@@ -40,6 +40,7 @@
 #include "../OOBase/SecurityWin32.h"
 #include "../OOBase/Win32Socket.h"
 #include "../OOBase/SmartPtr.h"
+#include "../OOBase/utf8.h"
 
 #include <sddl.h>
 #include <shlwapi.h>

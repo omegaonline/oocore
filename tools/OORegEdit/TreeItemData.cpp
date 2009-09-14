@@ -484,13 +484,7 @@ Omega::string_t TreeItemData::Find3(OTL::ObjectPtr<Omega::Registry::IKey>& ptrKe
 		{
 			if (bMatchAll)
 			{
-				if (!bIgnoreCase && strFind == *i)
-				{
-					// Found it!
-					bKey = true;
-					return *i;
-				}
-				else if (i->CompareNoCase(*i)==0)
+				if (i->Compare(strFind,0,Omega::string_t::npos,bIgnoreCase) == 0)
 				{
 					// Found it!
 					bKey = true;
@@ -535,9 +529,7 @@ bool TreeItemData::MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Ome
 	{
 		if (bMatchAll)
 		{
-			if (!bIgnoreCase && strFind == strName)
-				return true;
-			else if (strName.CompareNoCase(strFind)==0)
+			if (strName.Compare(strFind,0,Omega::string_t::npos,bIgnoreCase) == 0)
 				return true;
 		}
 		else if (strName.Find(strFind,0,bIgnoreCase) != Omega::string_t::npos)
@@ -549,9 +541,7 @@ bool TreeItemData::MatchValue(const Omega::string_t& strFind, OTL::ObjectPtr<Ome
 		Omega::string_t strValue = ptrKey->GetStringValue(strName);
 		if (bMatchAll)
 		{
-			if (!bIgnoreCase && strFind == strValue)
-				return true;
-			else if (strValue.CompareNoCase(strFind)==0)
+			if (strValue.Compare(strFind,0,Omega::string_t::npos,bIgnoreCase) == 0)
 				return true;
 		}
 		else if (strValue.Find(strFind,0,bIgnoreCase) != Omega::string_t::npos)

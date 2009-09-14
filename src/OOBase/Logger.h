@@ -24,8 +24,6 @@
 
 #include "config-base.h"
 
-#include <string>
-
 namespace OOSvrBase
 {
 	namespace Logger

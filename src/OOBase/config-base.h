@@ -41,14 +41,16 @@
 
 // Detect the correct use of new(no_throw)
 #if defined(__cplusplus)
+#if !defined(OOBASE_NEW)
 #include <new>
 #if defined(HAVE_NEW_NOTHROW)
 	#define OOBASE_NEW(POINTER,CONSTRUCTOR) \
 		POINTER = new (std::nothrow) CONSTRUCTOR;
-
 #else
-#error Define OOBASE_NEW for your compiler
-#endif
+	#define OOBASE_NEW(POINTER,CONSTRUCTOR) \
+		POINTER = new CONSTRUCTOR;
+#endif // HAVE_NEW_NOTHROW
+#endif // !defined OOBASE_NEW
 #endif // __cplusplus
 
 #if defined(HAVE_ASSERT_H)
@@ -191,9 +193,6 @@ namespace OOBase
 
 #define OOBase_OutOfMemory() \
 	OOBase::CallCriticalFailureMem(__FILE__,__LINE__)
-
-#include "tr24731.h"
-#include "utf8.h"
 
 #endif
 

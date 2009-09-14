@@ -47,6 +47,7 @@
 #include "../OOBase/Proactor.h"
 #include "../OOBase/Logger.h"
 #include "../OOBase/CmdArgs.h"
+#include "../OOBase/utf8.h"
 
 //////////////////////////////////////////////
 

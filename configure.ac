@@ -54,9 +54,6 @@ AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
 # Check for socket options
 OO_CHECK_SOCKOPT([SO_PEERCRED LOCAL_CREDS])
 
-# Check for wchar case compare
-AC_CHECK_FUNCS([wcsicmp wcscasecmp wcslwr wcsupr])
-
 # Check for password functions
 AC_CHECK_FUNCS([getpwuid_r])
 

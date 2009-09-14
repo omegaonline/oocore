@@ -26,8 +26,6 @@
 #include "Buffer.h"
 #include "Socket.h"
 
-#include <string>
-
 #if !defined(_WIN32)
 typedef struct
 {

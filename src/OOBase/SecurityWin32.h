@@ -26,8 +26,6 @@
 
 #include "SmartPtr.h"
 
-#include <string>
-
 #include <userenv.h>
 #include <lm.h>
 #include <aclapi.h>

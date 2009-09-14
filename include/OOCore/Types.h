@@ -37,6 +37,8 @@ namespace Omega
 	class string_t
 	{
 	public:
+		static const size_t npos = size_t(-1);
+
 		inline string_t();
 		inline string_t(const string_t& s);
 		inline string_t(const char* sz, bool bUTF8);
@@ -44,11 +46,12 @@ namespace Omega
 		inline ~string_t();
 
 		inline string_t& operator = (const string_t& s);
-		inline string_t& operator = (const wchar_t* sz);
+		inline string_t& operator = (const wchar_t* wsz);
+
+		inline string_t& operator += (const string_t& s);
 
 		inline const wchar_t* c_str() const;
-		const wchar_t operator[](size_t i) const
-		{ return c_str()[i]; }
+		const wchar_t operator[](size_t i) const { return c_str()[i]; }
 
 		inline size_t ToUTF8(char* sz, size_t size) const;
 		inline std::string ToUTF8() const;
@@ -59,30 +62,32 @@ namespace Omega
 		bool operator <= (const string_t& s) const { return Compare(s) <= 0; }
 		bool operator > (const string_t& s) const { return Compare(s) > 0; }
 		bool operator >= (const string_t& s) const { return Compare(s) >= 0; }
-
-		inline string_t& operator += (const string_t& s);
-
-		inline int Compare(const string_t& s) const;
-		inline int CompareNoCase(const string_t& s) const;
+		inline int Compare(const string_t& s, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
+		
 		inline bool IsEmpty() const;
 		inline size_t Length() const;
-		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline string_t& Clear();
+
 		inline size_t Find(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t FindNot(wchar_t c, size_t pos = 0, bool bIgnoreCase = false) const;
 		inline size_t ReverseFind(wchar_t c, size_t pos = npos, bool bIgnoreCase = false) const;
+		inline size_t Find(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t FindOneOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;
+		inline size_t FindNotOf(const string_t& str, size_t pos = 0, bool bIgnoreCase = false) const;		
+		
 		inline string_t Left(size_t length) const;
 		inline string_t Mid(size_t start, size_t length = npos) const;
 		inline string_t Right(size_t length) const;
-		inline string_t& Clear();
+		
 		inline string_t ToLower() const;
 		inline string_t ToUpper() const;
+
 		inline string_t TrimLeft(wchar_t c = L' ') const;
 		inline string_t TrimLeft(const string_t& str) const;
 		inline string_t TrimRight(wchar_t c = L' ') const;
 		inline string_t TrimRight(const string_t& str) const;
 
 		inline static string_t Format(const wchar_t* pszFormat, ...);
-
-		static const size_t npos = size_t(-1);
 
 	private:
 		struct handle_t
@@ -122,25 +127,27 @@ namespace Omega
 		guid_t(const guid_base_t& rhs) : guid_base_t(rhs)
 		{}
 
-		inline bool operator==(const guid_t& rhs) const;
-		inline bool operator==(const string_t& str) const;
-		inline bool operator!=(const guid_t& rhs) const;
-		inline bool operator<(const guid_t& rhs) const;
-		inline bool operator>(const guid_t& rhs) const;
+		bool operator == (const guid_t& rhs) const { return Compare(rhs) == 0; }
+		bool operator != (const guid_t& rhs) const { return Compare(rhs) != 0; }
+		bool operator < (const guid_t& rhs) const { return Compare(rhs) < 0; }
+		bool operator <= (const guid_t& rhs) const { return Compare(rhs) <= 0; }
+		bool operator > (const guid_t& rhs) const { return Compare(rhs) > 0; }
+		bool operator >= (const guid_t& rhs) const { return Compare(rhs) >= 0; }
 		inline int Compare(const guid_t& rhs) const;
 
-		inline string_t ToString() const;
-		inline static bool FromString(const wchar_t* sz, guid_t& guid);
-		inline static bool FromString(const string_t& str, guid_t& guid);
-		inline static guid_t FromString(const wchar_t* sz);
-		inline static guid_t FromString(const string_t& str);
 		inline static guid_t Create();
+		inline static guid_t FromString(const string_t& str);
+
 		inline static const guid_t& Null()
 		{
 			static const guid_base_t sbNull = {0,0,0,{0,0,0,0,0,0,0,0}};
 			static const guid_t sNull(sbNull);
 			return sNull;
 		}
+
+		// To be moved
+		inline string_t ToString() const;
+		inline static bool FromString(const string_t& str, guid_t& guid);
 	};
 
 	namespace System
@@ -284,6 +291,11 @@ namespace Omega
 			template <> struct optimal_param<bool>
 			{
 				typedef bool type;
+			};
+
+			template <> struct optimal_param<const bool>
+			{
+				typedef const bool type;
 			};
 
 			template <typename T> struct optimal_param<T&>

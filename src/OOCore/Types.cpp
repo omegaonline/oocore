@@ -25,17 +25,30 @@ namespace
 {
 	struct StringNode
 	{
-		StringNode(const char* sz) : m_str(OOBase::from_utf8(sz)), m_refcount(1)
-		{}
+		StringNode(const wchar_t* sz, size_t length) : m_buf(0), m_len(0), m_refcount(1)
+		{
+			assert(sz);
+			assert(length);
 
-		StringNode(const wchar_t* sz) : m_str(sz), m_refcount(1)
-		{}
+			OMEGA_NEW(m_buf,wchar_t[length+1]);
+			memcpy(m_buf,sz,length*sizeof(wchar_t));
+			m_buf[length] = L'\0';
+			m_len = length;
+		}
 
-		StringNode(const wchar_t* sz, size_t length) : m_str(sz,length), m_refcount(1)
-		{}
+		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(0), m_len(0), m_refcount(1)
+		{
+			assert(sz1);
+			assert(len1);
+			assert(sz2);
+			assert(len2);
 
-		StringNode(const std::wstring& s) : m_str(s), m_refcount(1)
-		{}
+			OMEGA_NEW(m_buf,wchar_t[len1+len2+1]);
+			memcpy(m_buf,sz1,len1*sizeof(wchar_t));
+			memcpy(m_buf+len1,sz2,len2*sizeof(wchar_t));
+			m_buf[len1+len2] = L'\0';
+			m_len = len1+len2;
+		}
 
 		void* AddRef() const
 		{
@@ -49,64 +62,61 @@ namespace
 				delete this;
 		}
 
-		std::wstring m_str;
+		wchar_t* m_buf;
+		size_t   m_len;
 
 	private:
 		OOBase::AtomicInt<size_t> m_refcount;
-	};
-}
 
-// Forward declare the md5 stuff
-extern "C"
-{
-	typedef char MD5Context[88];
-	void MD5Init(MD5Context *pCtx);
-	void MD5Update(MD5Context *pCtx, const unsigned char *buf, unsigned int len);
-	void MD5Final(unsigned char digest[16], MD5Context *pCtx);
+		~StringNode()
+		{
+			delete [] m_buf;
+		}
+	};
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,2,((in),const char*,sz,(in),int,bUTF8))
 {
-	if (!sz)
+	void* TODO; // Support embedded NUL
+
+	std::wstring str;
+	if (bUTF8)
+		str = OOBase::from_utf8(sz);
+	else
+		str = OOBase::from_native(sz);
+
+	if (str.empty())
 		return 0;
 
-	StringNode* pNode;
-	if (bUTF8)
-		OMEGA_NEW(pNode,StringNode(sz));
-	else
-		OMEGA_NEW(pNode,StringNode(OOBase::from_native(sz).c_str()));
-
+	StringNode* pNode = 0;
+	OMEGA_NEW(pNode,StringNode(str.c_str(),str.length()));
 	return pNode;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,1,((in),const void*,s1))
 {
-	if (!s1)
-		return 0;
-
 	return static_cast<const StringNode*>(s1)->AddRef();
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,2,((in),const wchar_t*,wsz,(in),size_t,length))
 {
-	if (!wsz)
+	if (length == Omega::string_t::npos)
+		length = wcslen(wsz);
+
+	if (!length)
 		return 0;
 
-	StringNode* pNode;
-	if (length == Omega::string_t::npos)
-		OMEGA_NEW(pNode,StringNode(wsz));
-	else
-		OMEGA_NEW(pNode,StringNode(wsz,length));
+	StringNode* pNode = 0;
+	OMEGA_NEW(pNode,StringNode(wsz,length));
 	return pNode;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__dctor,1,((in),void*,s1))
 {
-	if (s1)
-		static_cast<StringNode*>(s1)->Release();
+	static_cast<StringNode*>(s1)->Release();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign,2,((in),void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,s1,(in),const void*,s2))
 {
 	if (s1)
 		static_cast<StringNode*>(s1)->Release();
@@ -117,20 +127,39 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign,2,((in),void*,s1
 	return static_cast<const StringNode*>(s2)->AddRef();
 }
 
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,s1,(in),const wchar_t*,wsz))
+{
+	if (s1)
+		static_cast<StringNode*>(s1)->Release();
+
+	if (!wsz)
+		return 0;
+
+	size_t length = wcslen(wsz);
+	if (length == 0)
+		return 0;
+
+	StringNode* pNode = 0;
+	OMEGA_NEW(pNode,StringNode(wsz,length));
+	return pNode;
+}
+
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,s1))
 {
 	if (!s1)
-		return 0;
+		return L"";
 
-	return static_cast<const StringNode*>(s1)->m_str.c_str();
+	return static_cast<const StringNode*>(s1)->m_buf;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size))
 {
 	std::string str;
 
+	void* TODO; // Support embedded NUL
+
 	if (h)
-		str = OOBase::to_utf8(static_cast<const StringNode*>(h)->m_str.c_str());
+		str = OOBase::to_utf8(static_cast<const StringNode*>(h)->m_buf);
 
 	size_t len = str.length();
 	if (len >= size)
@@ -144,55 +173,58 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const v
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(in),const void*,s2))
 {
-	if (!s2)
-	{
-		if (!s1)
-			return 0;
-		else
-		{
-			static_cast<StringNode*>(s1)->AddRef();
-			return s1;
-		}
-	}
+	StringNode* pOrig = static_cast<StringNode*>(s1);
+	const StringNode* pAdd = static_cast<const StringNode*>(s2);
+
+	if (!s1)
+		return pAdd->AddRef();
 
 	StringNode* pNode;
-	if (s1)
-	{
-		StringNode* pOld = static_cast<StringNode*>(s1);
-		OMEGA_NEW(pNode,StringNode(pOld->m_str + static_cast<const StringNode*>(s2)->m_str));
-		pOld->Release();
-	}
-	else
-		OMEGA_NEW(pNode,StringNode(static_cast<const StringNode*>(s2)->m_str));
+	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,pAdd->m_buf,pAdd->m_len));
+
+	pOrig->Release();
 
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp,2,((in),const void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp,5,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
 {
-	return (s1 ? static_cast<const StringNode*>(s1)->m_str : std::wstring()).compare((s2 ? static_cast<const StringNode*>(s2)->m_str : std::wstring()));
-}
+	size_t len1 = static_cast<const StringNode*>(s1)->m_len;
+	if (length > len1 - pos)
+		length = len1 - pos;
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cnc,2,((in),const void*,s1,(in),const void*,s2))
-{
-	const wchar_t* str1 = (s1 ? static_cast<const StringNode*>(s1)->m_str.c_str() : 0);
-	const wchar_t* str2 = (s2 ? static_cast<const StringNode*>(s2)->m_str.c_str() : 0);
+	size_t len2 = static_cast<const StringNode*>(s2)->m_len;
 
-#if defined(HAVE_WCSICMP)
-	return wcsicmp(str1,str2);
-#elif defined(HAVE_WCSCASECMP)
-	return wcscasecmp(str1,str2);
-#else
-#error Fix me!
-#endif
-}
+	const wchar_t* st1 = static_cast<const StringNode*>(s1)->m_buf + pos;
+	const wchar_t* p1 = st1;
+	const wchar_t* st2 = static_cast<const StringNode*>(s2)->m_buf;
+	const wchar_t* p2 = st2;
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_isempty,1,((in),const void*,s1))
-{
-	if (!s1)
-		return 1;
+	wint_t l1 = 0, l2 = 0;
+	if (bIgnoreCase)
+	{
+		while ((size_t(p1-st1)<length) && (size_t(p2-st2)<len2) && (l1 = towlower(*p1)) == (l2 = towlower(*p2)))
+		{
+			++p1;
+			++p2;
+		}
+	}
 	else
-		return (static_cast<const StringNode*>(s1)->m_str.empty() ? 1 : 0);
+	{
+		while ((size_t(p1-st1)<length) && (size_t(p2-st2)<len2) && (l1 = *p1) == (l2 = *p2))
+		{
+			++p1;
+			++p2;
+		}
+	}
+
+	if (l1 != l2)
+		return (l1 < l2 ? -1 : 1);
+
+	if (length != len2)
+		return (length < len2 ? -1 : 1);
+
+	return 0;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const void*,s1))
@@ -200,19 +232,12 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const v
 	if (!s1)
 		return 0;
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<wchar_t> > ptrNew = wcsdup(static_cast<const StringNode*>(s1)->m_str.c_str());
-	if (!ptrNew)
-		return 0;
-
-#if defined(HAVE_WCSLWR)
-	wcslwr(ptrNew.value());
-#else
-	for (wchar_t* p=ptrNew.value();*p!=L'\0';++p)
-		*p = towlower(*p);
-#endif
-
 	StringNode* s2 = 0;
-	OMEGA_NEW(s2,StringNode(ptrNew.value()));
+	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len));
+	
+	for (wchar_t* p=s2->m_buf;size_t(p-s2->m_buf) < s2->m_len;++p)
+		*p = towlower(*p);
+
 	return s2;
 }
 
@@ -221,99 +246,196 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const v
 	if (!s1)
 		return 0;
 
-	OOBase::SmartPtr<wchar_t,OOBase::FreeDestructor<wchar_t> > ptrNew = wcsdup(static_cast<const StringNode*>(s1)->m_str.c_str());
-	if (!ptrNew)
-		return 0;
-
-#if defined(HAVE_WCSUPR)
-	wcsupr(ptrNew.value());
-#else
-	for (wchar_t* p=ptrNew.value();*p!=L'\0';++p)
-		*p = towupper(*p);
-#endif
-
 	StringNode* s2 = 0;
-	OMEGA_NEW(s2,StringNode(ptrNew.value()));
+	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len));
+	
+	for (wchar_t* p=s2->m_buf;size_t(p-s2->m_buf) < s2->m_len;++p)
+		*p = towupper(*p);
+
 	return s2;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,3,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
 {
-	if (!s1 || !s2)
-		return (size_t)-1;
+	size_t len = static_cast<const StringNode*>(s1)->m_len;
+	if (pos >= len)
+		return Omega::string_t::npos;
 
-	return static_cast<const StringNode*>(s1)->m_str.find(static_cast<const StringNode*>(s2)->m_str,pos);
+	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
+	const wchar_t* p = st + pos;
+
+	if (bIgnoreCase)
+	{
+		wint_t ci = towlower(c);
+		for (;tolower(*p) != ci && size_t(p-st)<len;++p)
+			;
+	}
+	else
+	{
+		for (;*p != c && size_t(p-st)<len;++p)
+			;
+	}
+
+	if (size_t(p-st) == len)
+		return Omega::string_t::npos;
+	else
+		return size_t(p-st);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
 {
-	if (!s1)
-		return (size_t)-1;
+	size_t len = static_cast<const StringNode*>(s1)->m_len;
+	if (pos >= len)
+		return Omega::string_t::npos;
 
-	return static_cast<const StringNode*>(s1)->m_str.find(bIgnoreCase != 0 ? static_cast<wchar_t>(tolower(c)) : c,pos);
+	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
+	const wchar_t* p = st + pos;
+
+	if (bIgnoreCase)
+	{
+		wint_t ci = towlower(c);
+		for (;tolower(*p) == ci && size_t(p-st)<len;++p)
+			;
+	}
+	else
+	{
+		for (;*p == c && size_t(p-st)<len;++p)
+			;
+	}
+
+	if (size_t(p-st) == len)
+		return Omega::string_t::npos;
+	else
+		return size_t(p-st);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,4,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),int,bIgnoreCase))
+{
+	const wchar_t* st = static_cast<const StringNode*>(s2)->m_buf;
+	size_t len = static_cast<const StringNode*>(s2)->m_len;
+
+	for (;;)
+	{
+		size_t start = OOCore_string_t_find1_Impl(s1,*st,pos,bIgnoreCase);
+		if (start == Omega::string_t::npos)
+			break;
+
+		if (OOCore_string_t_cmp_Impl(s1,s2,start,len,bIgnoreCase) == 0)
+			return start;
+
+		pos = start + 1;
+	}
+
+	return Omega::string_t::npos;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,4,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),int,bIgnoreCase))
+{
+	size_t len = static_cast<const StringNode*>(s1)->m_len;
+	if (pos >= len)
+		return Omega::string_t::npos;
+
+	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
+	const wchar_t* p = st + pos;
+
+	for (;OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) == Omega::string_t::npos && size_t(p-st)<len;++p)
+		;
+	
+	if (size_t(p-st) == len)
+		return Omega::string_t::npos;
+	else
+		return size_t(p-st);
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_notof,4,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),int,bIgnoreCase))
+{
+	size_t len = static_cast<const StringNode*>(s1)->m_len;
+	if (pos >= len)
+		return Omega::string_t::npos;
+
+	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
+	const wchar_t* p = st + pos;
+
+	for (;OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) != Omega::string_t::npos && size_t(p-st)<len;++p)
+		;
+	
+	if (size_t(p-st) == len)
+		return Omega::string_t::npos;
+	else
+		return size_t(p-st);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,4,((in),const void*,s1,(in),wchar_t,c,(in),size_t,pos,(in),int,bIgnoreCase))
 {
-	if (!s1)
-		return (size_t)-1;
+	size_t len = static_cast<const StringNode*>(s1)->m_len;
+	if (pos >= len)
+		pos = len - 1;
 
-	return static_cast<const StringNode*>(s1)->m_str.rfind(bIgnoreCase != 0 ? static_cast<wchar_t>(tolower(c)) : c,pos);
+	const wchar_t* st = static_cast<const StringNode*>(s1)->m_buf;
+	const wchar_t* p = st + pos;
+
+	if (bIgnoreCase)
+	{
+		wint_t ci = towlower(c);
+		for (;tolower(*p) != ci && p>=st;--p)
+			;
+	}
+	else
+	{
+		for (;*p != c && p>=st;--p)
+			;
+	}
+
+	if (p < st)
+		return Omega::string_t::npos;
+	else
+		return size_t(p-st);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_len,1,((in),const void*,s1))
 {
-	if (!s1)
-		return 0;
-
-	return static_cast<const StringNode*>(s1)->m_str.length();
+	return static_cast<const StringNode*>(s1)->m_len;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_left,2,((in),const void*,s1,(in),size_t,length))
 {
-	if (!s1)
-		return 0;
-
 	const StringNode* s = static_cast<const StringNode*>(s1);
-	if (length == s->m_str.length())
+	if (length >= s->m_len)
 		return s->AddRef();
 
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(s->m_str.substr(0,length)));
+	OMEGA_NEW(s2,StringNode(s->m_buf,length));
 	return s2;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_mid,3,((in),const void*,s1,(in),size_t,start,(in),size_t,length))
 {
-	if (!s1)
+	const StringNode* s = static_cast<const StringNode*>(s1);
+	if (start > s->m_len)
 		return 0;
 
-	const StringNode* s = static_cast<const StringNode*>(s1);
-	if (start == 0 && length == s->m_str.length())
+	if (length >= s->m_len - start)
+		length = s->m_len - start;
+
+	if (length == 0)
+		return 0;
+
+	if (start == 0 && length == s->m_len)
 		return s->AddRef();
 
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(s->m_str.substr(start,length)));
+	OMEGA_NEW(s2,StringNode(s->m_buf + start,length));
 	return s2;
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const void*,s1,(in),size_t,length))
 {
-	if (!s1)
-		return 0;
-
 	const StringNode* s = static_cast<const StringNode*>(s1);
-	if (length == 0)
+	if (length >= s->m_len)
 		return s->AddRef();
 
-	size_t start = s->m_str.length();
-	if (length >= start)
-		start = 0;
-	else
-		start -= length;
-
 	StringNode* s2;
-	OMEGA_NEW(s2,StringNode(s->m_str.substr(start)));
+	OMEGA_NEW(s2,StringNode(s->m_buf + s->m_len-length,length));
 	return s2;
 }
 
@@ -331,7 +453,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_format,2,((in),const wc
 		if (len2 > -1 && static_cast<size_t>(len2) < len)
 		{
 			StringNode* s1;
-			OMEGA_NEW(s1,StringNode(std::wstring(buf.value(),len2)));
+			OMEGA_NEW(s1,StringNode(buf.value(),len2));
 			return s1;
 		}
 
@@ -342,12 +464,6 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_format,2,((in),const wc
 	}
 
 	return 0;
-}
-
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_clear,1,((in),void*,s1))
-{
-	if (s1)
-		static_cast<StringNode*>(s1)->Release();
 }
 
 #if !defined(HAVE_UUID_UUID_H)
@@ -366,6 +482,15 @@ namespace
 	}
 }
 #endif
+
+// Forward declare the md5 stuff
+extern "C"
+{
+	typedef char MD5Context[88];
+	void MD5Init(MD5Context *pCtx);
+	void MD5Update(MD5Context *pCtx, const unsigned char *buf, unsigned int len);
+	void MD5Final(unsigned char digest[16], MD5Context *pCtx);
+}
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,1,((in),const Omega::guid_t&,guid))
 {

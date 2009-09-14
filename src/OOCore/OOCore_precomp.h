@@ -32,6 +32,8 @@
 #include "../OOBase/Queue.h"
 #include "../OOBase/DLL.h"
 #include "../OOBase/Win32.h"
+#include "../OOBase/utf8.h"
+#include "../OOBase/tr24731.h"
 
 //////////////////////////////////////////////
 // Set up the export macros for OOCORE

@@ -182,11 +182,11 @@ namespace OOBase
 				len += len_buf[0];
 			}
 
-			if (len == 1)
+			if (len == 0)
 				val.empty();
 			else
 			{
-				val.assign(m_buffer->rd_ptr(),len-1);
+				val.assign(m_buffer->rd_ptr(),len);
 				m_buffer->rd_ptr(len);
 			}
 			return true;
@@ -255,26 +255,22 @@ namespace OOBase
 		}
 
 		/// A specialization of write() for type \p std::string.
-		bool write(const char* pszText)
-		{
-			return write(std::string(pszText));
-		}
-
-		/// A specialization of write() for type \p std::string.
-		bool write(const std::string& strText)
+		bool write(const char* pszText, size_t len = (size_t)-1)
 		{
 			if (m_last_error != 0)
 				return false;
 
-			size_t len = strText.size() + 1;
-			if (len > 0xFFFFFFFF)
+			if (len == (size_t)-1)
+				len = strlen(pszText);
+
+			if (len >= 0xFFFFFFFF)
 			{
 #if defined(_WIN32)
 				m_last_error = ERROR_BUFFER_OVERFLOW;
 #elif defined(HAVE_UNISTD_H)
 				m_last_error = E2BIG;
 #else
-#error Fix me!
+				#error Fix me!
 #endif
 				return false;
 			}
@@ -305,10 +301,16 @@ namespace OOBase
 			if (m_last_error != 0)
 				return false;
 
-			memcpy(m_buffer->wr_ptr(),strText.c_str(),len);
+			memcpy(m_buffer->wr_ptr(),pszText,len);
 			m_buffer->wr_ptr(len);
-
+			
 			return true;
+		}
+
+		/// A specialization of write() for type \p std::string.
+		bool write(const std::string& strText)
+		{
+			return write(strText.data(),strText.size());			
 		}
 
 		/// A specialization of write() for type \p bool.

@@ -23,75 +23,162 @@
 
 #include "SmartPtr.h"
 
-#if defined(_WIN32)
-
-std::wstring OOBase::from_utf8(const char* sz)
+std::wstring OOBase::from_utf8(const char* sz, size_t len)
 {
-	if (!sz || sz[0]=='\0')
+	if (!sz)
 		return std::wstring();
 
-	int len = MultiByteToWideChar(CP_UTF8,0,sz,-1,NULL,0);
-	if (!len)
-		OOBase_CallCriticalFailure(GetLastError());
+	size_t actual_len = measure_utf8(sz,len);
 
 	SmartPtr<wchar_t,ArrayDestructor<wchar_t> > ptrBuf;
-	OOBASE_NEW(ptrBuf,wchar_t[len+1]);
+	OOBASE_NEW(ptrBuf,wchar_t[actual_len]);
 	if (!ptrBuf)
 		OOBase_OutOfMemory();
 
-	if (!MultiByteToWideChar(CP_UTF8,0,sz,-1,ptrBuf.value(),len))
-		OOBase_CallCriticalFailure(GetLastError());
+	from_utf8(ptrBuf.value(),actual_len,sz,len);
 
-	return ptrBuf.value();
+	if (len == size_t(-1))
+		--actual_len;
+
+	return std::wstring(ptrBuf.value(),actual_len);
 }
 
-std::string OOBase::to_utf8(const wchar_t* wsz)
+std::wstring OOBase::from_native(const char* sz, size_t len)
 {
-	if (!wsz || wsz[0]==L'\0')
+	if (!sz)
+		return std::wstring();
+
+	size_t actual_len = measure_native(sz,len);
+
+	SmartPtr<wchar_t,ArrayDestructor<wchar_t> > ptrBuf;
+	OOBASE_NEW(ptrBuf,wchar_t[actual_len]);
+	if (!ptrBuf)
+		OOBase_OutOfMemory();
+
+	from_native(ptrBuf.value(),actual_len,sz,len);
+
+	if (len == size_t(-1))
+		--actual_len;
+
+	return std::wstring(ptrBuf.value(),actual_len);
+}
+
+std::string OOBase::to_utf8(const wchar_t* wsz, size_t len)
+{
+	if (!wsz)
 		return std::string();
 
-	int len = WideCharToMultiByte(CP_UTF8,0,wsz,-1,NULL,0,NULL,NULL);
-	if (!len)
-		OOBase_CallCriticalFailure(GetLastError());
+	size_t actual_len = measure_utf8(wsz,len);
 
 	SmartPtr<char,ArrayDestructor<char> > ptrBuf;
-	OOBASE_NEW(ptrBuf,char[len+1]);
+	OOBASE_NEW(ptrBuf,char[actual_len]);
 	if (!ptrBuf)
 		OOBase_OutOfMemory();
 
-	if (!WideCharToMultiByte(CP_UTF8,0,wsz,-1,ptrBuf.value(),len,NULL,NULL))
-		OOBase_CallCriticalFailure(GetLastError());
+	to_utf8(ptrBuf.value(),actual_len,wsz,len);
 
-	return ptrBuf.value();
+	if (len == size_t(-1))
+		--actual_len;
+
+	return std::string(ptrBuf.value(),actual_len);
 }
 
-std::wstring OOBase::from_native(const char* sz)
+#if defined(_WIN32)
+
+size_t OOBase::measure_utf8(const char* sz, size_t len)
 {
-	if (!sz || sz[0]=='\0')
-		return std::wstring();
+	if (!sz)
+		return (len == size_t(-1) ? 1 : 0);
 
-	int len = MultiByteToWideChar(CP_THREAD_ACP,0,sz,-1,NULL,0);
-	if (!len)
+	int actual_len = MultiByteToWideChar(CP_UTF8,0,sz,static_cast<int>(len),NULL,0);
+	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
+	
+	return static_cast<size_t>(actual_len);
+}
 
-	SmartPtr<wchar_t,ArrayDestructor<wchar_t> > ptrBuf;
-	OOBASE_NEW(ptrBuf,wchar_t[len+1]);
-	if (!ptrBuf)
-		OOBase_OutOfMemory();
+size_t OOBase::from_utf8(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
+{
+	if (!sz)
+	{
+		if (wlen)
+			*wsz = L'\0';
+		return (len == size_t(-1) ? 1 : 0);
+	}
 
-	if (!MultiByteToWideChar(CP_THREAD_ACP,0,sz,-1,ptrBuf.value(),len))
+	int actual_len = MultiByteToWideChar(CP_UTF8,0,sz,static_cast<int>(len),wsz,static_cast<int>(wlen));
+	if (actual_len < 1)
 		OOBase_CallCriticalFailure(GetLastError());
+	
+	return static_cast<size_t>(actual_len);
+}
 
-	return ptrBuf.value();
+size_t OOBase::measure_native(const char* sz, size_t len)
+{
+	if (!sz)
+		return (len == size_t(-1) ? 1 : 0);
+
+	int actual_len = MultiByteToWideChar(CP_THREAD_ACP,0,sz,static_cast<int>(len),NULL,0);
+	if (actual_len < 1)
+		OOBase_CallCriticalFailure(GetLastError());
+	
+	return static_cast<size_t>(actual_len);
+}
+
+size_t OOBase::from_native(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
+{
+	if (!sz)
+	{
+		if (wlen)
+			*wsz = L'\0';
+		return (len == size_t(-1) ? 1 : 0);
+	}
+
+	int actual_len = MultiByteToWideChar(CP_THREAD_ACP,0,sz,static_cast<int>(len),wsz,static_cast<int>(wlen));
+	if (actual_len < 1)
+		OOBase_CallCriticalFailure(GetLastError());
+	
+	return static_cast<size_t>(actual_len);
+}
+
+size_t OOBase::measure_utf8(const wchar_t* wsz, size_t len)
+{
+	if (!wsz)
+		return (len == size_t(-1) ? 1 : 0);
+
+	int actual_len = WideCharToMultiByte(CP_UTF8,0,wsz,static_cast<int>(len),NULL,0,NULL,NULL);
+	if (actual_len < 1)
+		OOBase_CallCriticalFailure(GetLastError());
+	
+	return static_cast<size_t>(actual_len);
+}
+
+size_t OOBase::to_utf8(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
+{
+	if (!wsz)
+	{
+		if (len)
+			*sz = '\0';
+		return (wlen == size_t(-1) ? 1 : 0);
+	}
+
+	int actual_len = WideCharToMultiByte(CP_UTF8,0,wsz,static_cast<int>(wlen),sz,static_cast<int>(len),NULL,NULL);
+	if (actual_len < 1)
+	{
+		DWORD err = GetLastError();
+		if (err == ERROR_INSUFFICIENT_BUFFER)
+			return measure_utf8(wsz,wlen);
+
+		OOBase_CallCriticalFailure(err);
+	}
+	
+	return static_cast<size_t>(actual_len);
 }
 
 #else
 
-std::wstring OOBase::from_utf8(const char* sz)
+namespace
 {
-    if (!sz || *sz=='\0')
-        return L"";
-
 	static const int trailingBytesForUTF8[256] =
 	{
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,	// 0x00 - 0x1F
@@ -103,10 +190,84 @@ std::wstring OOBase::from_utf8(const char* sz)
 		9,9,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,	// 0xC0 - 0xDF
 		2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,11,11,11,4,4,4,4,5,5,6,7	// 0xE0 - 0xFF
 	};
+}
 
-	std::wstring strRet;
-	strRet.reserve(strlen(sz));
-	for (const char* p=sz;*p!='\0';)
+size_t OOBase::measure_utf8(const char* sz, size_t len)
+{
+	if (!sz)
+		return (len == size_t(-1) ? 1 : 0);
+
+	size_t required_len = 0;
+	for (const char* p=sz;len == size_t(-1) ? *p!='\0' : size_t(p-sz)<len;)
+	{
+		unsigned int c;
+		unsigned char v = *p++;
+		int trailers = trailingBytesForUTF8[v];
+		switch (trailers)
+		{
+		case 0:
+			c = v;
+			break;
+
+		case 1:
+			c = v & 0x1f;
+			break;
+
+		case 2:
+			c = v & 0xf;
+			break;
+
+		case 3:
+			c = v & 0x7;
+			break;
+
+		default:
+			trailers &= 7;
+			c = L'\xFFFD';
+		}
+
+		for (int i=trailers;i>0;--i,++p)
+		{
+			if (len == size_t(-1) ? *p=='\0' : size_t(p-sz)>=len)
+			{
+				c = L'\xFFFD';
+				break;
+			}
+
+			if (c != L'\xFFFD')
+			{
+				c <<= 6;
+				c += (*p & 0x3f);
+			}
+		}
+
+		if (sizeof(wchar_t) == 2 && (c & 0xFFFF0000))
+		{
+			// Oh god.. we're big and going to UCS-16
+			required_len += 2;
+		}
+		else
+			++required_len;
+	}
+
+	if (len == size_t(-1))
+		++required_len;
+		
+	return required_len;
+}
+
+size_t OOBase::from_utf8(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
+{
+    if (!sz)
+	{
+		if (wlen)
+			*wsz = L'\0';
+		return (len == size_t(-1) ? 1 : 0);
+	}
+
+	wchar_t* wp = wsz;
+	size_t required_len = 0;
+	for (const char* p=sz;len == size_t(-1) ? *p!='\0' : size_t(p-sz)<len;)
 	{
 		unsigned int c;
 		unsigned char v = *p++;
@@ -136,7 +297,7 @@ std::wstring OOBase::from_utf8(const char* sz)
 
 		for (int i=0;i<trailers;++i,++p)
 		{
-			if (*p == '\0')
+			if (len == size_t(-1) ? *p=='\0' : size_t(p-sz)>=len)
 			{
 				c = L'\xFFFD';
 				break;
@@ -152,100 +313,268 @@ std::wstring OOBase::from_utf8(const char* sz)
 		if (sizeof(wchar_t) == 2 && (c & 0xFFFF0000))
 		{
 			// Oh god.. we're big and going to UCS-16
+			required_len += 2;
 			c -= 0x10000;
 
-#if (OMEGA_BYTE_ORDER == OMEGA_BIG_ENDIAN)
-			strRet += static_cast<wchar_t>((c >> 10) | 0xD800);
-			strRet += static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
+			if (required_len < len)
+			{
+#if (OMEGA_BYTE_ORDER != OMEGA_BIG_ENDIAN)
+				*wp++ = static_cast<wchar_t>((c >> 10) | 0xD800);
+				*wp++ = static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
 #else
-			strRet += static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
-			strRet += static_cast<wchar_t>((c >> 10) | 0xD800);
+				*wp++ = static_cast<wchar_t>((c & 0x3ff) | 0xDC00);
+				*wp++ = static_cast<wchar_t>((c >> 10) | 0xD800);
 #endif
-			continue;
+			}
 		}
-
-		strRet += static_cast<wchar_t>(c);
+		else
+		{
+			++required_len;
+			if (required_len < len)
+				*wp++ = static_cast<wchar_t>(c);
+		}
 	}
 
-	return strRet;
+	if (len == size_t(-1))
+	{
+		++required_len;
+		if (required_len < len)
+			*wp++ = L'\0';
+	}
+
+	return required_len;
 }
 
-std::string OOBase::to_utf8(const wchar_t* wsz)
+size_t OOBase::measure_utf8(const wchar_t* wsz, size_t len)
 {
-    if (!wsz || *wsz==L'\0')
-        return "";
+	if (!wsz)
+		return (len == size_t(-1) ? 1 : 0);
 
-	std::string strRet;
-	strRet.reserve(wcslen(wsz)*2);
-	for (const wchar_t* p=wsz;*p!=0;)
+	size_t required_len = 0;
+	for (const wchar_t* p=wsz;len == size_t(-1) ? *p!=L'\0' : size_t(p-wsz)<len;)
 	{
-		char c;
 		unsigned int v = *p++;
 
+		if (sizeof(wchar_t) == 2)
+		{
+			if (v >= 0xD800 && v <= 0xDBFF)
+			{
+				// Surrogate pair
+				v = (v & 0x27FF) << 10;
+				if (len == size_t(-1) ? *p==L'\0' : size_t(p-wsz)>=len)
+					break;
+
+				v += ((*p++ & 0x23FF) >> 10) + 0x10000;
+			}
+			else if (v >= 0xDC00 && v <= 0xDFFF)
+			{
+				// Surrogate pair
+				v = (v & 0x23FF) >> 10;
+				if (len == size_t(-1) ? *p==L'\0' : size_t(p-wsz)>=len)
+					break;
+
+				v += ((*p++ & 0x27FF) << 10) + 0x10000;
+			}
+		}
+
 		if (v <= 0x7f)
-			strRet += static_cast<char>(v);
+			++required_len;
+		else if (v <= 0x7FF)
+			required_len += 2;
+		else if (v <= 0xFFFF)
+			required_len += 3;
+		else if (v <= 0x10FFFF)
+			required_len += 4;
+		else
+			required_len += 3;
+	}
+
+	if (len == size_t(-1))
+		++required_len;
+
+	return required_len;
+}
+
+size_t OOBase::to_utf8(char* sz, size_t len, const wchar_t* wsz, size_t wlen)
+{
+    if (!wsz)
+	{
+		if (len)
+			*sz = '\0';
+		return (wlen == size_t(-1) ? 1 : 0);
+	}
+
+	char* cp = sz;
+	size_t required_len = 0;
+	for (const wchar_t* p=wsz;wlen == size_t(-1) ? *p!=L'\0' : size_t(p-wsz)<wlen;)
+	{
+		unsigned int v = *p++;
+		if (sizeof(wchar_t) == 2)
+		{
+			if (v >= 0xD800 && v <= 0xDBFF)
+			{
+				// Surrogate pair
+				unsigned int hi = (v & 0x3FF);
+				if (wlen == size_t(-1) ? *p==L'\0' : size_t(p-wsz)>=wlen)
+					break;
+
+				unsigned int lo = (*p++ & 0x3FF);
+
+				v = ((hi << 10) | lo) + 0x10000;
+			}
+			else if (v >= 0xDC00 && v <= 0xDFFF)
+			{
+				// Surrogate pair
+				unsigned int lo = (v & 0x3FF);
+				if (wlen == size_t(-1) ? *p==L'\0' : size_t(p-wsz)>=wlen)
+					break;
+
+				unsigned int hi = (*p++ & 0x3FF);
+
+				v = ((hi << 10) | lo) + 0x10000;
+			}
+		}
+
+		if (v <= 0x7f)
+		{
+			++required_len;
+			if (required_len < len)
+				*cp++ = static_cast<char>(v);
+		}
 		else if (v <= 0x7FF)
 		{
-			c = static_cast<char>(v >> 6) | 0xc0;
-			strRet += c;
-			c = static_cast<char>(v & 0x3f) | 0x80;
-			strRet += c;
+			required_len += 2;
+			if (required_len < len)
+			{
+				*cp++ = static_cast<char>(v >> 6) | 0xc0;
+				*cp++ = static_cast<char>(v & 0x3f) | 0x80;
+			}
 		}
 		else if (v <= 0xFFFF)
 		{
-			// Invalid range
-			if (v > 0xD7FF && v < 0xE00)
-				strRet += "\xEF\xBF\xBD";
-			else
+			required_len += 3;
+			if (required_len < len)
 			{
-				c = static_cast<char>(v >> 12) | 0xe0;
-				strRet += c;
-				c = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
-				strRet += c;
-				c = static_cast<char>(v & 0x3f) | 0x80;
-				strRet += c;
+				// Invalid range
+				if (v > 0xD7FF && v < 0xE00)
+				{
+					*cp++ = '\xEF';
+					*cp++ = '\xBF';
+					*cp++ = '\xBD';
+				}
+				else
+				{
+					*cp++ = static_cast<char>(v >> 12) | 0xe0;
+					*cp++ = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
+					*cp++ = static_cast<char>(v & 0x3f) | 0x80;
+				}
 			}
 		}
 		else if (v <= 0x10FFFF)
 		{
-			c = static_cast<char>(v >> 18) | 0xf0;
-			strRet += c;
-			c = static_cast<char>((v & 0x3f000) >> 12) | 0x80;
-			strRet += c;
-			c = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
-			strRet += c;
-			c = static_cast<char>(v & 0x3f) | 0x80;
-			strRet += c;
+			required_len += 4;
+			if (required_len < len)
+			{
+				*cp++ = static_cast<char>(v >> 18) | 0xf0;
+				*cp++ = static_cast<char>((v & 0x3f000) >> 12) | 0x80;
+				*cp++ = static_cast<char>((v & 0xfc0) >> 6) | 0x80;
+				*cp++ = static_cast<char>(v & 0x3f) | 0x80;
+			}
 		}
 		else
-			strRet += "\xEF\xBF\xBD";
+		{
+			required_len += 3;
+			if (required_len < len)
+			{
+				*cp++ = '\xEF';
+				*cp++ = '\xBF';
+				*cp++ = '\xBD';
+			}
+		}
 	}
 
-	return strRet;
+	if (len == size_t(-1))
+	{
+		++required_len;
+		if (required_len < len)
+			*cp++ = '\0';
+	}
+
+	return required_len;
 }
 
-std::wstring OOBase::from_native(const char* sz)
+size_t OOBase::measure_native(const char* sz, size_t len)
 {
-	if (!sz || sz[0]=='\0')
-		return std::wstring();
+	if (!sz)
+		return (len == size_t(-1) ? 1 : 0);
 
-	size_t in_len = strlen(sz) + 1;
-	size_t out_len = mbstowcs(NULL,sz,in_len);
-	if (out_len == (size_t)-1)
-		OOBase_CallCriticalFailureErrno(errno);
+	wchar_t wc[2];
+	mbstate_t state = {0};
+	size_t required_len = 0;
+	for (const char* p=sz;size_t(p-sz)<len;)
+	{
+		size_t c = (len == size_t(-1) ? MB_CUR_MAX : size_t(p-sz));
+		size_t count = mbrtowc(wc,p,c,&state);
+		if (count == 0)
+		{
+			// Null
+			++required_len;
+			if (len == size_t(-1))
+				break;
 
-	// Always allow room for the NULL terminator
-	++out_len;
+			++p;
+		}
+		else if (count > 0)
+		{
+			required_len += count;
+			p += count;
+		}
+		else if (count == (size_t)-2)
+			p += c;
+		else
+			break;
+	}
 
-	SmartPtr<wchar_t,ArrayDestructor<wchar_t> > buf;
-	OOBASE_NEW(buf,wchar_t[out_len]);
-	if (!buf)
-		OOBase_OutOfMemory();
+	return required_len;
+}
 
-	if (mbstowcs(buf.value(),sz,in_len) == (size_t)-1)
-		OOBase_CallCriticalFailureErrno(errno);
+size_t OOBase::from_native(wchar_t* wsz, size_t wlen, const char* sz, size_t len)
+{
+	if (!sz)
+	{
+		if (wlen)
+			*wsz = L'\0';
+		return (len == size_t(-1) ? 1 : 0);
+	}
 
-	return buf.value();
+	wchar_t* wp = wsz;
+	mbstate_t state = {0};
+	size_t required_len = 0;
+	for (const char* p=sz;size_t(p-sz)<len && size_t(wp-wsz)<wlen;)
+	{
+		size_t c = (len == size_t(-1) ? MB_CUR_MAX : size_t(p-sz));
+		size_t count = mbrtowc(wp++,p,c,&state);
+		if (count == 0)
+		{
+			// Null
+			++required_len;
+			if (len == size_t(-1))
+				break;
+
+			++p;
+		}
+		else if (count > 0)
+		{
+			required_len += count;
+			p += count;
+		}
+		else if (count == (size_t)-2)
+			p += c;
+		else
+			break;
+	}
+
+	return required_len;
 }
 
 #endif

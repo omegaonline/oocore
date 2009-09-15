@@ -20,7 +20,7 @@
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)_User"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -96,7 +96,7 @@
 			OutputDirectory="..\..\bin"
 			IntermediateDirectory="$(ConfigurationName)_User"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool

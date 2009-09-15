@@ -41,12 +41,12 @@ Omega::string_t::string_t() : m_handle(0)
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OOCORE_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,2,((in),const char*,sz,(in),int,bUTF8));
-Omega::string_t::string_t(const char* sz, bool bUTF8) :
+OOCORE_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const char*,sz,(in),size_t,len,(in),int,bUTF8));
+Omega::string_t::string_t(const char* sz, bool bUTF8, size_t length) :
 	m_handle(0)
 {
 	if (sz)
-		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor1(sz,bUTF8 ? 1 : 0));
+		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor1(sz,length,bUTF8 ? 1 : 0));
 
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -124,25 +124,25 @@ inline std::string Omega::string_t::ToUTF8() const
 {
 	std::string str;
 	char szBuf[128];
-	size_t len = ToUTF8(szBuf,128);
+	size_t len = OOCore_string_t_toutf8(m_handle,szBuf,128);
 	if (len > 128)
 	{
 		char* pszBuf = 0;
 		OMEGA_NEW(pszBuf,char[len]);
 		try
 		{
-			ToUTF8(pszBuf,len);
+			OOCore_string_t_toutf8(m_handle,pszBuf,len);
 		}
 		catch (...)
 		{
 			delete [] pszBuf;
 			throw;
 		}
-		str = pszBuf;
+		str.assign(pszBuf,len-1);
 		delete [] pszBuf;
 	}
 	else
-		str = szBuf;
+		str.assign(szBuf,len-1);
 
 	return str;
 }
@@ -158,7 +158,7 @@ Omega::string_t& Omega::string_t::operator += (const string_t& s)
 	return *this;
 }
 
-OOCORE_EXPORTED_FUNCTION(int,OOCore_string_t_cmp,5,((in),const void*,h1,(in),const void*,h2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,h1,(in),const void*,h2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
 int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool bIgnoreCase) const
 {
 	if (m_handle == s.m_handle)
@@ -170,7 +170,27 @@ int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool 
 	if (!s.m_handle)
 		return 1;
 
-	return OOCore_string_t_cmp(m_handle,s.m_handle,pos,length,(bIgnoreCase ? 1 : 0));
+	return OOCore_string_t_cmp1(m_handle,s.m_handle,pos,length,(bIgnoreCase ? 1 : 0));
+}
+
+OOCORE_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,h,(in),const wchar_t*,wsz,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
+int Omega::string_t::Compare(const wchar_t* wsz, size_t pos, size_t length, bool bIgnoreCase) const
+{
+	if (!m_handle)
+	{
+		if (!wsz)
+			return 0;
+
+		if (wcslen(wsz) == 0)
+			return 0;
+		
+		return -1;
+	}
+
+	if (!wsz)
+		return 1;
+
+	return OOCore_string_t_cmp2(m_handle,wsz,pos,length,(bIgnoreCase ? 1 : 0));
 }
 
 bool Omega::string_t::IsEmpty() const

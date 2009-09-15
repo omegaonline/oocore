@@ -97,44 +97,75 @@ static bool string_tests_format()
 
 static bool string_tests_utf8()
 {
-/*	This test is automated...
+#if defined(_MSC_VER)
+	FILE* pInUTF8 = fopen("../../test/CoreTests/UTF-8-test.txt","rb");
+#else
+	FILE* pInUTF8 = fopen("UTF-8-test.txt","rb");
+#endif
 
-	FILE* pIn = fopen("UTF-8-test.txt","rb");
-	if (!pIn)
+	if (!pInUTF8)
 		return false;
 
 	// Loop reading and converting...
-	Omega::string_t str;
+	std::string strUTF8;
 	for (;;)
 	{
 		char szBuf[129];
-		if (!fgets(szBuf,128,pIn))
+		if (!fgets(szBuf,128,pInUTF8))
 			break;
 
 		szBuf[128] = '\0';
-		str += Omega::string_t(szBuf,true);
+		strUTF8 += szBuf;
 	}
+	fclose(pInUTF8);
 
-	fclose(pIn);
+#if defined(_MSC_VER)
+	FILE* pInUTF16 = fopen("../../test/CoreTests/UTF-16-test.txt","rb");
+#else
+	FILE* pInUTF16 = fopen("UTF-16-test.txt","rb");
+#endif
 
-	FILE* pOut = fopen("UTF-8-results.txt","w+b");
-	if (!pOut)
+	if (!pInUTF16)
 		return false;
 
-	fwrite(L"\xFEFF",sizeof(wchar_t),1,pOut);
-	fwrite(str.c_str(),sizeof(wchar_t),str.Length(),pOut);
+	// Loop reading and converting...
+	std::wstring strUTF16;
+	strUTF16.reserve(strUTF8.size());
+	for (;;)
+	{
+		Omega::uint16_t szBuf[128];
+		if (!fread(szBuf,sizeof(Omega::uint16_t),128,pInUTF16))
+			break;
 
-	fclose(pOut);
+		for (int i=0;i<128;++i)
+		{
+			unsigned int v = szBuf[i];
+			if (sizeof(wchar_t) == 4)
+			{
+				if (v >= 0xD800 && v <= 0xDBFF)
+				{
+					// Surrogate pair
+					v = (v & 0x27FF) << 10;
+					v += ((szBuf[++i] & 0x23FF) >> 10) + 0x10000;
+				}
+				else if (v >= 0xDC00 && v <= 0xDFFF)
+				{
+					// Surrogate pair
+					v = (v & 0x23FF) >> 10;
+					v += ((szBuf[++i] & 0x27FF) << 10) + 0x10000;
+				}
+			}
+			
+			strUTF16.append(1,wchar_t(v));
+		}
+	}
+	fclose(pInUTF16);
 
-	pOut = fopen("UTF-8-results2.txt","w+b");
-	if (!pOut)
-		return false;
+	Omega::string_t str(strUTF8.c_str(),true);
 
-	std::string str2 = str.ToUTF8();
-	fwrite(str2.c_str(),sizeof(char),str2.length(),pOut);
-
-	fclose(pOut); */
-
+	TEST(str == strUTF16.c_str());	
+	TEST(str.ToUTF8() == strUTF8);
+	
 	return true;
 }
 

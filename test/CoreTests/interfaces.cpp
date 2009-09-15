@@ -424,7 +424,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 
 bool interface_dll_tests()
 {
-output("\n");
+	output("\n");
 	bool bSkipped;
 
 #if defined(_WIN32)

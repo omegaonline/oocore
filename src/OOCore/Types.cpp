@@ -25,6 +25,15 @@ namespace
 {
 	struct StringNode
 	{
+		StringNode(size_t length) : m_buf(0), m_len(0), m_refcount(1)
+		{
+			assert(length);
+
+			OMEGA_NEW(m_buf,wchar_t[length+1]);
+			m_buf[length] = L'\0';
+			m_len = length;
+		}
+
 		StringNode(const wchar_t* sz, size_t length) : m_buf(0), m_len(0), m_refcount(1)
 		{
 			assert(sz);
@@ -75,21 +84,30 @@ namespace
 	};
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,2,((in),const char*,sz,(in),int,bUTF8))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const char*,sz,(in),size_t,len,(in),int,bUTF8))
 {
-	void* TODO; // Support embedded NUL
+	if (!sz)
+		return 0;
 
-	std::wstring str;
+	size_t wlen = 0;
 	if (bUTF8)
-		str = OOBase::from_utf8(sz);
+		wlen = OOBase::measure_utf8(sz,len);
 	else
-		str = OOBase::from_native(sz);
+		wlen = OOBase::measure_native(sz,len);
 
-	if (str.empty())
+	// Remove any trailing null terminator
+	if (len == size_t(-1))
+		--wlen;
+
+	if (!wlen)
 		return 0;
 
 	StringNode* pNode = 0;
-	OMEGA_NEW(pNode,StringNode(str.c_str(),str.length()));
+	OMEGA_NEW(pNode,StringNode(wlen));
+	if (bUTF8)
+		OOBase::from_utf8(pNode->m_buf,pNode->m_len+1,sz,len);
+	else
+		OOBase::from_native(pNode->m_buf,pNode->m_len+1,sz,len);
 	return pNode;
 }
 
@@ -154,21 +172,14 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),c
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size))
 {
-	std::string str;
+	if (!h)
+	{
+		if (sz && size)
+			*sz = '\0';
+		return 1;
+	}
 
-	void* TODO; // Support embedded NUL
-
-	if (h)
-		str = OOBase::to_utf8(static_cast<const StringNode*>(h)->m_buf);
-
-	size_t len = str.length();
-	if (len >= size)
-		len = size-1;
-
-	memcpy(sz,str.c_str(),len);
-	sz[len] = '\0';
-
-	return str.length() + 1;
+	return 1 + OOBase::to_utf8(sz,size,static_cast<const StringNode*>(h)->m_buf,static_cast<const StringNode*>(h)->m_len);
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(in),const void*,s2))
@@ -187,17 +198,18 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(i
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp,5,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
 {
-	size_t len1 = static_cast<const StringNode*>(s1)->m_len;
-	if (length > len1 - pos)
-		length = len1 - pos;
+	const StringNode* s = static_cast<const StringNode*>(s1);
+	if (length > s->m_len - pos)
+		length = s->m_len - pos;
 
 	size_t len2 = static_cast<const StringNode*>(s2)->m_len;
 
-	const wchar_t* st1 = static_cast<const StringNode*>(s1)->m_buf + pos;
-	const wchar_t* p1 = st1;
+	const wchar_t* st1 = s->m_buf + pos;
 	const wchar_t* st2 = static_cast<const StringNode*>(s2)->m_buf;
+	
+	const wchar_t* p1 = st1;
 	const wchar_t* p2 = st2;
 
 	wint_t l1 = 0, l2 = 0;
@@ -221,6 +233,45 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp,5,((in),const void*,s
 	if (l1 != l2)
 		return (l1 < l2 ? -1 : 1);
 
+	if (length != len2)
+		return (length < len2 ? -1 : 1);
+
+	return 0;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,s1,(in),const wchar_t*,st2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
+{
+	const StringNode* s = static_cast<const StringNode*>(s1);
+	if (length > s->m_len - pos)
+		length = s->m_len - pos;
+
+	const wchar_t* st1 = s->m_buf + pos;
+		
+	const wchar_t* p1 = st1;
+	const wchar_t* p2 = st2;
+
+	wint_t l1 = 0, l2 = 0;
+	if (bIgnoreCase)
+	{
+		while ((size_t(p1-st1)<length) && (*p2 != L'\0') && (l1 = towlower(*p1)) == (l2 = towlower(*p2)))
+		{
+			++p1;
+			++p2;
+		}
+	}
+	else
+	{
+		while ((size_t(p1-st1)<length) && (*p2 != L'\0') && (l1 = *p1) == (l2 = *p2))
+		{
+			++p1;
+			++p2;
+		}
+	}
+
+	if (l1 != l2)
+		return (l1 < l2 ? -1 : 1);
+
+	size_t len2 = size_t(p2-st2);
 	if (length != len2)
 		return (length < len2 ? -1 : 1);
 
@@ -320,7 +371,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,4,((in),const vo
 		if (start == Omega::string_t::npos)
 			break;
 
-		if (OOCore_string_t_cmp_Impl(s1,s2,start,len,bIgnoreCase) == 0)
+		if (OOCore_string_t_cmp1_Impl(s1,s2,start,len,bIgnoreCase) == 0)
 			return start;
 
 		pos = start + 1;

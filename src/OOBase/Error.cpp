@@ -82,4 +82,5 @@ void OOBase::CallCriticalFailureX(const char* pszFile, unsigned int nLine, const
 	std::stringstream out;
 	out << pszFile << "(" << nLine << "): " << msg;
 	CriticalFailure(out.str().c_str());
+	abort();
 }

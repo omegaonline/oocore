@@ -41,7 +41,7 @@ namespace Omega
 
 		inline string_t();
 		inline string_t(const string_t& s);
-		inline string_t(const char* sz, bool bUTF8);
+		inline string_t(const char* sz, bool bUTF8, size_t length = npos);
 		inline string_t(const wchar_t* wsz, size_t length = npos);
 		inline ~string_t();
 
@@ -56,13 +56,15 @@ namespace Omega
 		inline size_t ToUTF8(char* sz, size_t size) const;
 		inline std::string ToUTF8() const;
 
-		bool operator == (const string_t& s) const { return Compare(s) == 0; }
-		bool operator != (const string_t& s) const { return Compare(s) != 0; }
-		bool operator < (const string_t& s) const { return Compare(s) < 0; }
-		bool operator <= (const string_t& s) const { return Compare(s) <= 0; }
-		bool operator > (const string_t& s) const { return Compare(s) > 0; }
-		bool operator >= (const string_t& s) const { return Compare(s) >= 0; }
+		template <typename T> bool operator == (T v) const { return Compare(v) == 0; }
+		template <typename T> bool operator != (T v) const { return Compare(v) != 0; }
+		template <typename T> bool operator < (T v) const { return Compare(v) < 0; }
+		template <typename T> bool operator <= (T v) const { return Compare(v) <= 0; }
+		template <typename T> bool operator > (T v) const { return Compare(v) > 0; }
+		template <typename T> bool operator >= (T v) const { return Compare(v) >= 0; }
+
 		inline int Compare(const string_t& s, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
+		inline int Compare(const wchar_t* wsz, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
 		
 		inline bool IsEmpty() const;
 		inline size_t Length() const;

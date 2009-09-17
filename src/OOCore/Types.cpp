@@ -865,7 +865,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,2,((in),c
 {
 #if defined(HAVE_UUID_UUID_H)
 
-	char szBuf[38] = {0};
+	char szBuf[39] = {0};
 	if (strFormat == L"{}")
 	{
 		uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf+1);
@@ -882,7 +882,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,2,((in),c
 
 #else
 
-	wchar_t szBuf[38] = {0};
+	wchar_t szBuf[39] = {0};
 
 	if (strFormat == L"{}")
 	{

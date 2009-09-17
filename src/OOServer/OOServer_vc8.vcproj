@@ -42,9 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOServer_Root.h"
@@ -327,7 +326,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
+						CommandLine="mc $(InputFileName)"
 						Outputs=".\OOServer_msgs.bin"
 					/>
 				</FileConfiguration>
@@ -337,7 +336,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
+						CommandLine="mc $(InputFileName)"
 						Outputs=".\OOServer_msgs.bin"
 					/>
 				</FileConfiguration>

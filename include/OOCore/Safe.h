@@ -66,6 +66,24 @@ namespace Omega
 					return static_cast<type>(val);
 				}
 			};
+			template <>
+			struct std_safe_type<intptr_t>
+			{
+			#if defined(_M_IA64) || defined(_M_X64)
+				typedef int64_t type;
+			#else
+				typedef int32_t type;
+			#endif
+				static type coerce(intptr_t val)
+				{
+					return static_cast<type>(val);
+				}
+
+				static type clone(intptr_t val)
+				{
+					return static_cast<type>(val);
+				}
+			};
 			#endif
 
 			template <typename T>

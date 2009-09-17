@@ -60,7 +60,7 @@ namespace
 			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",name.c_str());
+			pRE->m_strDesc = string_t(L"Invalid name for registry key or value: '%0%'.") % name;
 			throw static_cast<Registry::IBadNameException*>(pRE);
 		}
 	};

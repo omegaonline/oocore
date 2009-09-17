@@ -65,7 +65,7 @@ namespace Registry
 			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Invalid name for registry key or value: '%ls'.",name.c_str());
+			pRE->m_strDesc = string_t(L"Invalid name for registry key or value: '%0%'.") % name;
 			throw static_cast<IBadNameException*>(pRE);
 		}
 	};
@@ -107,7 +107,7 @@ namespace Registry
 			else if (actual_type==Binary)
 				tp = L"Binary";
 
-			pRE->m_strDesc = string_t::Format(L"Incorrect registry value type, actual value type is %ls.",tp.c_str());
+			pRE->m_strDesc = string_t(L"Incorrect registry value type, actual value type is %0%.") % tp;
 
 			throw static_cast<IWrongValueTypeException*>(pRE);
 		}
@@ -135,7 +135,7 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
-			pRE->m_strDesc = string_t::Format(L"'%ls' not found.",name.c_str());
+			pRE->m_strDesc = string_t(L"'%0%' not found.") % name;
 			throw static_cast<INotFoundException*>(pRE);
 		}
 	};
@@ -161,7 +161,7 @@ namespace Registry
 			ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Key '%ls' already exists.",name.c_str());
+			pRE->m_strDesc = string_t(L"Key '%0%' already exists.") % name;
 			throw static_cast<IAlreadyExistsException*>(pRE);
 		}
 	};
@@ -187,7 +187,7 @@ namespace Registry
 			ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t::Format(L"Write attempt illegal for '%ls'.",name.c_str());
+			pRE->m_strDesc = string_t(L"Write attempt illegal for '%0%'.") % name;
 			throw static_cast<IAccessDeniedException*>(pRE);
 		}
 	};

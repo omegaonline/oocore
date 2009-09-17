@@ -89,8 +89,12 @@ namespace Omega
 		inline string_t TrimRight(wchar_t c = L' ') const;
 		inline string_t TrimRight(const string_t& str) const;
 
-		inline static string_t Format(const wchar_t* pszFormat, ...);
+		template <typename T>
+		inline string_t operator % (const T& val) const;
 
+		template <typename T>
+		inline string_t& operator % (const T& val);
+		
 	private:
 		struct handle_t
 		{
@@ -138,6 +142,8 @@ namespace Omega
 		inline int Compare(const guid_t& rhs) const;
 
 		inline static guid_t Create();
+
+		inline static bool FromString(const string_t& str, guid_t& guid);
 		inline static guid_t FromString(const string_t& str);
 
 		inline static const guid_t& Null()
@@ -147,9 +153,35 @@ namespace Omega
 			return sNull;
 		}
 
-		// To be moved
-		inline string_t ToString() const;
-		inline static bool FromString(const string_t& str, guid_t& guid);
+		inline string_t ToString(const string_t& strFormat = L"{}") const;
+	};
+
+	namespace Formatting
+	{
+		inline string_t ToString(intptr_t val, const string_t& strFormat = L"");
+		inline string_t ToString(size_t val, const string_t& strFormat = L"");
+
+		inline string_t ToString(const int64_t& val, const string_t& strFormat = L"");
+		inline string_t ToString(const uint64_t& val, const string_t& strFormat = L"");
+
+		inline string_t ToString(string_t val, const string_t& strFormat = L"")
+		{
+			OMEGA_UNUSED_ARG(strFormat);
+			return val;
+		}
+
+		inline string_t ToString(const guid_t& val, const string_t& strFormat = L"{}")
+		{
+			return val.ToString(strFormat);
+		}
+
+		// This is not allowed - we do not know the encoding of the char*
+		// Use string_t(val,true|false) instead.
+		inline string_t ToString(const char* val, const string_t&)
+		{
+			assert(false);
+			return string_t(val,false);
+		}
 	};
 
 	namespace System
@@ -179,17 +211,6 @@ namespace Omega
 					return guid_t::Null();
 				}
 			};
-
-			// MSVC gets twitchy about size_t/uint32_t
-			#if defined(_MSC_VER)
-			template <> struct default_value<uint32_t>
-			{
-				static uint32_t value()
-				{
-					return 0;
-				}
-			};
-			#endif
 
 			template <typename T> struct remove_const
 			{
@@ -312,5 +333,7 @@ namespace Omega
 		}
 	}
 }
+
+inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs);
 
 #endif // OMEGA_TYPES_H_INCLUDED_

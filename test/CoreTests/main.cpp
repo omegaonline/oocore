@@ -89,7 +89,7 @@ void output(const char* sz, ...)
 	char szBuf[4096] = {0};
 	vsnprintf(szBuf,sizeof(szBuf),sz,argptr);
 
-	printf(szBuf);
+	fputs(szBuf,stdout);
 	OutputDebugStringA(szBuf);
 
 	va_end(argptr);
@@ -116,7 +116,7 @@ static unsigned long fail_count = 0;
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
-	add_failure(Omega::string_t::Format(L"Assertion '%hs' failed at %hs:%u\n",pszExpr,pszSrc,nLine).c_str());
+	add_failure((Omega::string_t(L"Assertion '%0%' failed at %1%:%2%\n") % pszExpr % pszSrc % nLine).c_str());
 	return false;
 }
 

@@ -89,8 +89,10 @@ static bool string_tests_wchar()
 
 static bool string_tests_format()
 {
-	TEST(Omega::string_t::Format(L"%ls:%d",L"hello",1) == L"hello:1");
-	TEST(Omega::string_t::Format(L"%hs:%d","hello",1) == L"hello:1");
+	TEST(Omega::string_t(L"1st:%0% 2nd:%1%") % 1 % 2 == L"1st:1 2nd:2");
+	TEST(Omega::string_t(L"2nd:%1% 1st:%0%") % 1 % 2 == L"2nd:2 1st:1");
+	TEST(Omega::string_t(L"1st:%0,10% 2nd:%1%") % 1 % 2 ==  L"1st:         1 2nd:2");
+	TEST(Omega::string_t(L"1st:%0,-10% 2nd:%1%") % 1 % 2 == L"1st:1          2nd:2");
 
 	return true;
 }

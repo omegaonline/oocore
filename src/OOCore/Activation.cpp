@@ -270,7 +270,7 @@ void LibraryNotFoundException::Throw(const string_t& strName, const string_t& st
 {
 	ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = string_t::Format(L"Dynamic library '%ls' not found or malformed",strName.c_str());
+	pRE->m_strDesc = string_t(L"Dynamic library '%0%' not found or malformed") % strName;
 	pRE->m_strSource = strFn;
 	pRE->m_dll_name = strName;
 	throw static_cast<ILibraryNotFoundException*>(pRE);

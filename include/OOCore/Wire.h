@@ -683,7 +683,7 @@ namespace Omega
 					for (uint32_t c = 0;c<count;++c)
 					{
 						typename Coll::value_type v_val = default_value<typename Coll::value_type>::value();
-						marshal_info<typename Coll::value_type>::wire_type::read(string_t::Format(L"item%u",c).c_str(),pMarshaller,pMessage,v_val);
+						marshal_info<typename Coll::value_type>::wire_type::read((string_t(L"item%0%")%c).c_str(),pMarshaller,pMessage,v_val);
 						val.insert(val.end(),v_val);
 					}
 					pMessage->ReadStructEnd(pszName);
@@ -700,7 +700,7 @@ namespace Omega
 					pMessage->WriteUInt32(L"count",count);
 					size_t idx = 0;
 					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
-						marshal_info<typename Coll::value_type>::wire_type::write(string_t::Format(L"item%u",idx).c_str(),pMarshaller,pMessage,*i);
+						marshal_info<typename Coll::value_type>::wire_type::write((string_t(L"item%0%")%idx).c_str(),pMarshaller,pMessage,*i);
 					pMessage->WriteStructEnd(pszName);
 				}
 			};
@@ -883,10 +883,10 @@ namespace Omega
 					for (uint32_t c = 0;c<count;++c)
 					{
 						typename Coll::key_type v_k = default_value<typename Coll::key_type>::value();
-						marshal_info<typename Coll::key_type>::wire_type::read(string_t::Format(L"key%u",c).c_str(),pMarshaller,pMessage,v_k);
+						marshal_info<typename Coll::key_type>::wire_type::read((string_t(L"key%0%") % c).c_str(),pMarshaller,pMessage,v_k);
 
 						typename Coll::mapped_type v_m = default_value<typename Coll::mapped_type>::value();
-						marshal_info<typename Coll::mapped_type>::wire_type::read(string_t::Format(L"item%u",c).c_str(),pMarshaller,pMessage,v_m);
+						marshal_info<typename Coll::mapped_type>::wire_type::read((string_t(L"item%0%") % c).c_str(),pMarshaller,pMessage,v_m);
 
 						val.insert(val.end(),typename Coll::value_type(v_k,v_m));
 					}
@@ -905,8 +905,8 @@ namespace Omega
 					size_t idx = 0;
 					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
 					{
-						marshal_info<typename Coll::key_type>::wire_type::write(string_t::Format(L"key%u",idx).c_str(),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::write(string_t::Format(L"item%u",idx).c_str(),pMarshaller,pMessage,i->second);
+						marshal_info<typename Coll::key_type>::wire_type::write((string_t(L"key%0%") % idx).c_str(),pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::write((string_t(L"item%0%") % idx).c_str(),pMarshaller,pMessage,i->second);
 					}
 					pMessage->WriteStructEnd(pszName);
 				}

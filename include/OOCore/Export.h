@@ -819,6 +819,26 @@
 		return OMEGA_CONCAT(name,_RetVal); \
 	}
 
+#define OMEGA_RAW_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params) \
+	extern "C" OMEGA_IMPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Raw)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
+	inline void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
+	{ \
+		const Omega::System::MetaInfo::SafeShim* OMEGA_CONCAT(name,_Exception) = OMEGA_CONCAT(name,_Raw)(OMEGA_EMIT_PARAMS_VOID(param_count,params)); \
+		if (OMEGA_CONCAT(name,_Exception)) Omega::System::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+	}
+
+#define OMEGA_RAW_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params) \
+	extern "C" OMEGA_IMPORT ret_type OMEGA_CALL OMEGA_CONCAT(name,_Raw)( \
+		const Omega::System::MetaInfo::SafeShim** OMEGA_CONCAT(name,_Exception) OMEGA_DECLARE_PARAMS(param_count,params)); \
+	inline ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
+	{ \
+		const Omega::System::MetaInfo::SafeShim* OMEGA_CONCAT(name,_Exception) = 0; \
+		ret_type OMEGA_CONCAT(name,_RetVal) = OMEGA_CONCAT(name,_Raw)( \
+			&OMEGA_CONCAT(name,_Exception) OMEGA_EMIT_PARAMS(param_count,params)); \
+		if (OMEGA_CONCAT(name,_Exception)) Omega::System::MetaInfo::throw_correct_exception(OMEGA_CONCAT(name,_Exception)); \
+		return OMEGA_CONCAT(name,_RetVal); \
+	}
+
 #define OMEGA_LOCAL_FUNCTION_VOID(name,param_count,params) \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
 	inline void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
@@ -875,7 +895,7 @@
 
 #define OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
-	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
+	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Raw)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)) \
 	{ \
 		try \
 		{ \
@@ -895,21 +915,21 @@
 
 #define OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params)); \
-	extern "C" OMEGA_EXPORT const Omega::System::MetaInfo::SafeShim* OMEGA_CALL OMEGA_CONCAT(name,_Safe)(ret_type* OMEGA_CONCAT(name,_RetVal) OMEGA_DECLARE_PARAMS(param_count,params)) \
+	extern "C" OMEGA_EXPORT ret_type OMEGA_CALL OMEGA_CONCAT(name,_Raw)(const Omega::System::MetaInfo::SafeShim** OMEGA_CONCAT(name,_Exception) OMEGA_DECLARE_PARAMS(param_count,params)) \
 	{ \
 		try \
 		{ \
-			*OMEGA_CONCAT(name,_RetVal) = OMEGA_CONCAT(name,_Impl)(OMEGA_EMIT_PARAMS_VOID(param_count,params)); \
-			return 0; \
+			return OMEGA_CONCAT(name,_Impl)(OMEGA_EMIT_PARAMS_VOID(param_count,params)); \
 		} \
-		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
+		catch (Omega::IException* OMEGA_CONCAT(name,_Exception2)) \
 		{ \
-			return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
+			*OMEGA_CONCAT(name,_Exception) = Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception2)); \
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			*OMEGA_CONCAT(name,_Exception) = Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
 		} \
+		return Omega::System::MetaInfo::default_value<ret_type>::value(); \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
 

@@ -8,7 +8,7 @@
 static bool test_values(Omega::Registry::IKey* pKey)
 {
 	// Generate a unique value name
-	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
+	Omega::string_t strTestValue = Omega::string_t(L"TestValue_%0%") % (size_t)GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
 		strTestValue = L"_" + strTestValue;
@@ -152,7 +152,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	if (!test_values(pKey))
 		return false;
 
-	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
+	Omega::string_t strTestKey = Omega::string_t(L"TestKey_%0%") % (size_t)GetCurrentProcessId();
 	while (pKey->IsSubKey(strTestKey))
 	{
 		strTestKey = L"_" + strTestKey;
@@ -292,7 +292,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	TEST(pKey->IsSubKey(L"All Users"));
 	TEST(pKey->IsSubKey(L"Local User"));
 
-	Omega::string_t strTestValue = Omega::string_t::Format(L"TestValue_%lu",::GetCurrentProcessId());
+	Omega::string_t strTestValue = Omega::string_t(L"TestValue_%0%") % (size_t)GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
 		strTestValue = L"_" + strTestValue;
@@ -371,7 +371,7 @@ bool registry_tests_2()
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\");
 
 	// Generate a unique value name
-	Omega::string_t strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
+	Omega::string_t strTestKey = Omega::string_t(L"TestKey_%0%") % (size_t)GetCurrentProcessId();
 	while (ptrKey->IsSubKey(strTestKey))
 	{
 		strTestKey = L"_" + strTestKey;
@@ -415,7 +415,7 @@ bool registry_tests_2()
 
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\Local User");
 	// Generate a unique value name
-	strTestKey = Omega::string_t::Format(L"TestKey_%lu",::GetCurrentProcessId());
+	strTestKey = Omega::string_t(L"TestKey_%0%") % (size_t)GetCurrentProcessId();
 	while (ptrKey->IsSubKey(strTestKey))
 	{
 		strTestKey = L"_" + strTestKey;

@@ -214,9 +214,9 @@ OMEGA_SET_GUIDOF(Omega::TypeInfo, ITypeInfo, "{13EC66A0-D266-4682-9A47-6E2F178C4
 	/// Return the current source filename and line as a string_t
 	#define OMEGA_SOURCE_INFO
 #elif !defined(OMEGA_FUNCNAME)
-	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u)",__FILE__,__LINE__))
+	#define OMEGA_SOURCE_INFO    (Omega::string_t(L"%0%(%1%)") % Omega::string_t(__FILE__,false) % __LINE__)
 #else
-	#define OMEGA_SOURCE_INFO    (Omega::string_t::Format(L"%hs(%u): %ls",__FILE__,__LINE__,Omega::string_t(OMEGA_FUNCNAME,false).c_str()))
+	#define OMEGA_SOURCE_INFO    (Omega::string_t(L"%0%(%1%): %2%") % Omega::string_t(__FILE__,false) % __LINE__ % Omega::string_t(OMEGA_FUNCNAME,false))
 #endif
 
 #define OMEGA_THROW(e)           throw Omega::ISystemException::Create(e,OMEGA_SOURCE_INFO)

@@ -42,6 +42,12 @@
 #define OOCORE_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
 
+#define OOCORE_RAW_EXPORTED_FUNCTION_VOID(name,param_count,params) \
+	OMEGA_RAW_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
+
+#define OOCORE_RAW_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
+	OMEGA_RAW_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
+
 #define OOCORE_DECLARE_OID(name) \
 	OMEGA_IMPORT_OID(name)
 

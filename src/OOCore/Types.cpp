@@ -25,7 +25,7 @@ namespace
 {
 	struct StringNode
 	{
-		StringNode(size_t length) : m_buf(0), m_len(0), m_refcount(1)
+		StringNode(size_t length) : m_buf(0), m_len(0), m_fs(0), m_refcount(1)
 		{
 			assert(length);
 
@@ -34,7 +34,7 @@ namespace
 			m_len = length;
 		}
 
-		StringNode(const wchar_t* sz, size_t length) : m_buf(0), m_len(0), m_refcount(1)
+		StringNode(const wchar_t* sz, size_t length) : m_buf(0), m_len(0), m_fs(0), m_refcount(1)
 		{
 			assert(sz);
 			assert(length);
@@ -45,7 +45,7 @@ namespace
 			m_len = length;
 		}
 
-		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(0), m_len(0), m_refcount(1)
+		StringNode(const wchar_t* sz1, size_t len1, const wchar_t* sz2, size_t len2) : m_buf(0), m_len(0), m_fs(0), m_refcount(1)
 		{
 			assert(sz1);
 			assert(len1);
@@ -74,14 +74,131 @@ namespace
 		wchar_t* m_buf;
 		size_t   m_len;
 
+		struct format_state_t
+		{
+			struct insert_t
+			{
+				unsigned int index;
+				int          alignment;
+				std::wstring format;
+				std::wstring suffix;
+			};
+			std::list<insert_t> m_listInserts;
+			size_t              m_curr_arg;
+			std::wstring        m_prefix;
+		};
+		format_state_t* m_fs;
+
+		void parse_format();
+
 	private:
 		OOBase::AtomicInt<size_t> m_refcount;
 
 		~StringNode()
 		{
 			delete [] m_buf;
+			if (m_fs)
+				delete m_fs;
 		}
+
+		size_t find_skip(size_t start);
+		void merge_percent(std::wstring& str, size_t start, size_t end);
+		void parse_arg(size_t& pos);
 	};
+
+	unsigned int parse_uint_hex(wchar_t c)
+	{
+		if (c >= L'0' && c <= L'9')
+			return (c-L'0');
+		else if (c >= L'A' && c <= L'F')
+			return (c-L'A'+10);
+		else if (c >= L'a' && c <= L'f')
+			return (c-L'a'+10);
+		else
+			throw int(0);
+	}
+
+	unsigned int parse_uint(wchar_t c)
+	{
+		if (c >= L'0' && c <= L'9')
+			return (c-L'0');
+		else
+			throw int(0);
+	}
+
+	unsigned int parse_uint(const wchar_t* sz)
+	{
+		unsigned int v = 0;
+		const wchar_t* p = sz;
+		if (*p == L'+')
+			++p;
+
+		try
+		{
+			for (;;)
+			{
+				unsigned int i = parse_uint(*p++);
+
+				if (v > UINT_MAX/10)
+					break;
+				v *= 10;
+
+				if (v > UINT_MAX-i)
+					break;
+				v += i;		
+			}
+		}
+		catch (int)
+		{}
+
+		return v;
+	}
+
+	int parse_int(const wchar_t* sz)
+	{
+		bool bNeg = false;
+		int v = 0;
+		const wchar_t* p = sz;
+		if (*p == L'+')
+			++p;
+		else if (*p == L'-')
+		{
+			++p;
+			bNeg = true;
+		}
+
+		try
+		{
+			for (;;)
+			{
+				unsigned int i = parse_uint(*p++);
+
+				if (v > INT_MAX/10)
+					break;
+				v *= 10;
+
+				if ((unsigned int)v > INT_MAX-i)
+					break;
+				v += i;		
+			}
+		}
+		catch (int)
+		{}
+
+		return (bNeg ? -v : v);
+	}
+
+	std::wstring align(const std::wstring& str, int align)
+	{
+		unsigned width = (align < 0 ? -align : align);
+		if (str.size() >= width)
+			return str;
+
+		if (align < 0)
+			return str + std::wstring(width-str.size(),L' ');
+		else
+			return std::wstring(width-str.size(),L' ') + str;
+	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const char*,sz,(in),size_t,len,(in),int,bUTF8))
@@ -187,7 +304,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(i
 	StringNode* pOrig = static_cast<StringNode*>(s1);
 	const StringNode* pAdd = static_cast<const StringNode*>(s2);
 
-	if (!s1)
+	if (!pOrig)
 		return pAdd->AddRef();
 
 	StringNode* pNode;
@@ -490,49 +607,250 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const voi
 	return s2;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_format,2,((in),const wchar_t*,sz,(in),va_list*,ap))
+void StringNode::parse_arg(size_t& pos)
 {
-	if (!sz)
-		return 0;
+	size_t end = OOCore_string_t_find1_Impl(this,L'%',pos,0);
+	if (end == Omega::string_t::npos)
+		OMEGA_THROW(L"Missing matching % in format string");
 
-	for (size_t len=256;len<=(size_t)-1 / sizeof(wchar_t);)
+	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
+	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
+	
+	if (comma == pos || colon == pos)
+		OMEGA_THROW(L"Missing index in format string");
+
+	format_state_t::insert_t ins;
+	ins.index = parse_uint(m_buf+pos);
+	if (ins.index < m_fs->m_curr_arg)
+		m_fs->m_curr_arg = ins.index;
+
+	if (comma < end)
+		ins.alignment = parse_int(m_buf+comma+1);
+	else
 	{
-		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf = 0;
-		OMEGA_NEW(buf,wchar_t[len]);
-
-		int len2 = vswprintf_s(buf.value(),len,sz,*ap);
-		if (len2 > -1 && static_cast<size_t>(len2) < len)
-		{
-			StringNode* s1;
-			OMEGA_NEW(s1,StringNode(buf.value(),len2));
-			return s1;
-		}
-
-		if (len2 > -1)
-			len = len2 + 1;
-		else
-			len *= 2;
+		ins.alignment = 0;
+		comma = end;
 	}
 
+	if (colon > end)
+		colon = end;
+
+	ins.format.assign(m_buf+colon+1,comma > colon ? comma-colon : end-colon);
+	
+	m_fs->m_listInserts.push_back(ins);
+
+	pos = end + 1;
+}
+
+void StringNode::merge_percent(std::wstring& str, size_t start, size_t end)
+{
+	for (size_t pos = start;;)
+	{
+		size_t found = OOCore_string_t_find1_Impl(this,L'%',pos,0);
+		if (found >= end)
+		{
+			if (end == Omega::string_t::npos)
+				str.append(m_buf+pos,m_len-pos);
+			else
+				str.append(m_buf+pos,end-pos);
+			break;
+		}
+				
+		str.append(m_buf+pos,found-pos+1);
+				
+		// Skip %%
+		start = pos + 2;
+	}
+}
+
+size_t StringNode::find_skip(size_t start)
+{
+	for (;;)
+	{
+		size_t found = OOCore_string_t_find1_Impl(this,L'%',start,0);
+		if (found == Omega::string_t::npos)
+			return Omega::string_t::npos;
+				
+		if (found < m_len && m_buf[found+1] != L'%')
+			return found;
+				
+		// Skip %%
+		start = found + 2;
+	}
+}
+
+void StringNode::parse_format()
+{
+	// Prefix first
+	size_t pos = find_skip(0);
+	if (pos == Omega::string_t::npos)
+		return;
+
+	OMEGA_NEW(m_fs,format_state_t);
+	m_fs->m_curr_arg = (size_t)-1;
+	m_fs->m_prefix.assign(m_buf,pos++);
+			
+	// Parse args
+	for (;;)
+	{
+		parse_arg(pos);
+		
+		size_t found = find_skip(pos);
+		merge_percent(m_fs->m_listInserts.back().suffix,pos,found);
+		
+		if (found == Omega::string_t::npos)
+			break;
+				
+		pos = found + 1;
+	}
+
+	for (size_t idx = m_fs->m_curr_arg;;)
+	{
+		size_t count = 0;
+		bool bFound = false;
+		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=m_fs->m_listInserts.begin();i!=m_fs->m_listInserts.end();++i)
+		{
+			if (i->index <= idx)
+				++count;
+
+			if (i->index == idx)
+			{
+				bFound = true;
+				++idx;
+				break;
+			}
+		}
+
+		if (!bFound)
+		{
+			if (count < m_fs->m_listInserts.size())
+				OMEGA_THROW(L"Index gap in format string");
+			break;
+		}
+	}
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),void**,fmt))
+{
+	StringNode*& s = *reinterpret_cast<StringNode**>(s1);
+	if (!s)
+		OMEGA_THROW(L"Empty format string");
+	
+	try
+	{
+		size_t arg;
+		if (!idx)
+		{
+			// Clone s
+			StringNode* pNewNode = 0;
+			OMEGA_NEW(pNewNode,StringNode(s->m_buf,s->m_len));
+
+			if (s->m_fs)
+				OMEGA_NEW(pNewNode->m_fs,StringNode::format_state_t(*s->m_fs));
+			
+			s->Release();
+			s = pNewNode;
+
+			if (!s->m_fs)
+				s->parse_format();
+
+			arg = s->m_fs->m_curr_arg++;
+		}
+		else
+		{
+			assert(s->m_fs);
+			arg = s->m_fs->m_curr_arg-1;
+		}
+		
+		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
+		{
+			if (i->index == arg)
+			{
+				*fmt = OOCore_string_t__ctor3_Impl(i->format.data(),i->format.size());
+				return 1;
+			}
+		}
+
+		// Now measure how much space we need
+		std::wstring str = s->m_fs->m_prefix;
+		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
+		{
+			str += i->format;
+			str += i->suffix;
+		}
+		
+		if (str.size() > s->m_len)
+		{
+			wchar_t* buf_new = 0;
+			OMEGA_NEW(buf_new,wchar_t[str.size()+1]);
+			buf_new[str.size()] = L'\0';
+
+			delete [] s->m_buf;
+			s->m_buf = buf_new;
+		}
+	
+		memcpy(s->m_buf,str.data(),str.size()*sizeof(wchar_t));
+		s->m_buf[str.size()] = L'\0';
+		s->m_len = str.size();
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
+	}
+		
 	return 0;
 }
 
-#if !defined(HAVE_UUID_UUID_H)
-namespace
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),void*,arg))
 {
-	static unsigned int parse(wchar_t c)
+	StringNode* s = static_cast<StringNode*>(s1);
+
+	try
 	{
-		if (c >= L'0' && c <= L'9')
-			return (c-L'0');
-		else if (c >= L'A' && c <= L'F')
-			return (c-L'A'+10);
-		else if (c >= L'a' && c <= L'f')
-			return (c-L'a'+10);
-		else
-			throw int(0);
+		for (std::list<StringNode::format_state_t::insert_t>::iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
+		{
+			if (i->index == s->m_fs->m_curr_arg-1)
+			{
+				if (i == s->m_fs->m_listInserts.begin())
+				{
+					std::wstring str;
+					if (arg)
+						str.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
+
+					s->m_fs->m_prefix += align(str,i->alignment);
+					s->m_fs->m_prefix += i->suffix;
+					s->m_fs->m_listInserts.pop_front();
+
+					while (!s->m_fs->m_listInserts.empty())
+					{
+						i = s->m_fs->m_listInserts.begin();
+						if (i->index == (size_t)-1)
+						{
+							s->m_fs->m_prefix += align(i->format,i->alignment);
+							s->m_fs->m_prefix += i->suffix;
+							s->m_fs->m_listInserts.pop_front();
+						}
+						else
+							break;
+					}				
+				}
+				else
+				{
+					i->format.empty();
+					if (arg)
+						i->format.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
+
+					i->index = (size_t)-1;
+				}
+				break;
+			}
+		}
+	}
+	catch (std::exception& e)
+	{
+		OMEGA_THROW(e);
 	}
 }
-#endif
 
 // Forward declare the md5 stuff
 extern "C"
@@ -543,29 +861,63 @@ extern "C"
 	void MD5Final(unsigned char digest[16], MD5Context *pCtx);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,1,((in),const Omega::guid_t&,guid))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,2,((in),const Omega::guid_t&,guid,(in),const Omega::string_t&,strFormat))
 {
 #if defined(HAVE_UUID_UUID_H)
 
-	char szBuf[] = "{00000000-0000-0000-0000-000000000000}";
-	uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf+1);
-	szBuf[37] = '}';
+	char szBuf[38] = {0};
+	if (strFormat == L"{}")
+	{
+		uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf+1);
+		szBuf[37] = '}';
+	}
+	else if (strFormat.IsEmpty())
+	{
+		uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf);
+	}
+	else
+		OMEGA_THROW(string_t(L"Invalid guid_t format string: %0%.") % strFormat);
+
 	return Omega::string_t(szBuf,true);
 
 #else
 
-	return Omega::string_t::Format(L"{%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
-		guid.Data1,
-		guid.Data2,
-		guid.Data3,
-		guid.Data4[0],
-		guid.Data4[1],
-		guid.Data4[2],
-		guid.Data4[3],
-		guid.Data4[4],
-		guid.Data4[5],
-		guid.Data4[6],
-		guid.Data4[7]);
+	wchar_t szBuf[38] = {0};
+
+	if (strFormat == L"{}")
+	{
+		swprintf(szBuf,L"{%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
+			guid.Data1,
+			guid.Data2,
+			guid.Data3,
+			guid.Data4[0],
+			guid.Data4[1],
+			guid.Data4[2],
+			guid.Data4[3],
+			guid.Data4[4],
+			guid.Data4[5],
+			guid.Data4[6],
+			guid.Data4[7]);
+	}
+	else if (strFormat.IsEmpty())
+	{
+		swprintf(szBuf,L"%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
+			guid.Data1,
+			guid.Data2,
+			guid.Data3,
+			guid.Data4[0],
+			guid.Data4[1],
+			guid.Data4[2],
+			guid.Data4[3],
+			guid.Data4[4],
+			guid.Data4[5],
+			guid.Data4[6],
+			guid.Data4[7]);
+	}
+	else
+		OMEGA_THROW(Omega::string_t(L"Invalid guid_t format string: %0%.") % strFormat);
+
+	return Omega::string_t(szBuf);
 
 #endif
 }
@@ -598,49 +950,49 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 
 	try
 	{
-		unsigned int v = (parse(sz[1]) << 28);
-		v += (parse(sz[2]) << 24);
-		v += (parse(sz[3]) << 20);
-		v += (parse(sz[4]) << 16);
-		v += (parse(sz[5]) << 12);
-		v += (parse(sz[6]) << 8);
-		v += (parse(sz[7]) << 4);
-		v += parse(sz[8]);
+		unsigned int v = (parse_uint_hex(sz[1]) << 28);
+		v += (parse_uint_hex(sz[2]) << 24);
+		v += (parse_uint_hex(sz[3]) << 20);
+		v += (parse_uint_hex(sz[4]) << 16);
+		v += (parse_uint_hex(sz[5]) << 12);
+		v += (parse_uint_hex(sz[6]) << 8);
+		v += (parse_uint_hex(sz[7]) << 4);
+		v += parse_uint_hex(sz[8]);
 		result.Data1 = static_cast<Omega::uint32_t>(v);
 
 		if (sz[9] != L'-')
 			return 0;
 
-		v = (parse(sz[10]) << 12);
-		v += (parse(sz[11]) << 8);
-		v += (parse(sz[12]) << 4);
-		v += parse(sz[13]);
+		v = (parse_uint_hex(sz[10]) << 12);
+		v += (parse_uint_hex(sz[11]) << 8);
+		v += (parse_uint_hex(sz[12]) << 4);
+		v += parse_uint_hex(sz[13]);
 		result.Data2 = static_cast<Omega::uint16_t>(v);
 
 		if (sz[14] != L'-')
 			return 0;
 
-		v = (parse(sz[15]) << 12);
-		v += (parse(sz[16]) << 8);
-		v += (parse(sz[17]) << 4);
-		v += parse(sz[18]);
+		v = (parse_uint_hex(sz[15]) << 12);
+		v += (parse_uint_hex(sz[16]) << 8);
+		v += (parse_uint_hex(sz[17]) << 4);
+		v += parse_uint_hex(sz[18]);
 		result.Data3 = static_cast<Omega::uint16_t>(v);
 
 		if (sz[19] != L'-')
 			return 0;
 
-		result.Data4[0] = static_cast<Omega::byte_t>((parse(sz[20]) << 4) + parse(sz[21]));
-		result.Data4[1] = static_cast<Omega::byte_t>((parse(sz[22]) << 4) + parse(sz[23]));
+		result.Data4[0] = static_cast<Omega::byte_t>((parse_uint_hex(sz[20]) << 4) + parse_uint_hex(sz[21]));
+		result.Data4[1] = static_cast<Omega::byte_t>((parse_uint_hex(sz[22]) << 4) + parse_uint_hex(sz[23]));
 
 		if (sz[24] != L'-')
 			return false;
 
-		result.Data4[2] = static_cast<Omega::byte_t>((parse(sz[25]) << 4) + parse(sz[26]));
-		result.Data4[3] = static_cast<Omega::byte_t>((parse(sz[27]) << 4) + parse(sz[28]));
-		result.Data4[4] = static_cast<Omega::byte_t>((parse(sz[29]) << 4) + parse(sz[30]));
-		result.Data4[5] = static_cast<Omega::byte_t>((parse(sz[31]) << 4) + parse(sz[32]));
-		result.Data4[6] = static_cast<Omega::byte_t>((parse(sz[33]) << 4) + parse(sz[34]));
-		result.Data4[7] = static_cast<Omega::byte_t>((parse(sz[35]) << 4) + parse(sz[36]));
+		result.Data4[2] = static_cast<Omega::byte_t>((parse_uint_hex(sz[25]) << 4) + parse_uint_hex(sz[26]));
+		result.Data4[3] = static_cast<Omega::byte_t>((parse_uint_hex(sz[27]) << 4) + parse_uint_hex(sz[28]));
+		result.Data4[4] = static_cast<Omega::byte_t>((parse_uint_hex(sz[29]) << 4) + parse_uint_hex(sz[30]));
+		result.Data4[5] = static_cast<Omega::byte_t>((parse_uint_hex(sz[31]) << 4) + parse_uint_hex(sz[32]));
+		result.Data4[6] = static_cast<Omega::byte_t>((parse_uint_hex(sz[33]) << 4) + parse_uint_hex(sz[34]));
+		result.Data4[7] = static_cast<Omega::byte_t>((parse_uint_hex(sz[35]) << 4) + parse_uint_hex(sz[36]));
 
 		if (sz[37] != L'}' || sz[38] != L'\0')
 			return 0;
@@ -689,4 +1041,19 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,())
 	// Pull from /dev/random ?
 
 #endif
+}
+
+////////////////////////////////////////////////////
+// Formatting starts here
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_intptr_t,2,((in),intptr_t,val,(in),const Omega::string_t&,strFormat))
+{
+	wchar_t sz[33];
+	return Omega::string_t(_itow(val,sz,10));
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_size_t,2,((in),size_t,val,(in),const Omega::string_t&,strFormat))
+{
+	wchar_t sz[33];
+	return Omega::string_t(_itow(val,sz,10));
 }

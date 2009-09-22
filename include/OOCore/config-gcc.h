@@ -38,9 +38,6 @@
 
 #define OMEGA_COMPILER_STRING  "gcc " __VERSION__
 
-#undef interface
-#define interface struct
-
 #define OMEGA_FUNCNAME		__PRETTY_FUNCTION__
 
 /* stop lots of attributes warnings */
@@ -77,6 +74,14 @@
 
 #if defined(_WIN32)
 	#include "config-win32.h"
+
+	// These play havoc with gcc's stl
+	#if defined(min)
+		#undef min
+	#endif
+	#if defined(max)
+		#undef max
+	#endif
 #endif
 
 #include <errno.h>

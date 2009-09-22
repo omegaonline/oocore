@@ -57,7 +57,8 @@ void DuplicateRegistrationException::Throw(const guid_t& oid, IException* pE)
 {
 	ObjectImpl<DuplicateRegistrationException>* pRE = ObjectImpl<DuplicateRegistrationException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = string_t(L"Duplicate registration of oid %0% in running object table") % oid;
+	pRE->m_strDesc = L"Duplicate registration of oid %0% in running object table.";
+	pRE->m_strDesc %= oid;
 	pRE->m_oid = oid;
 	throw static_cast<IDuplicateRegistrationException*>(pRE);
 }

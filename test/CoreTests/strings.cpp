@@ -18,7 +18,7 @@ static bool string_tests_wchar()
 	TEST(s1.Compare(sz1_2,0,Omega::string_t::npos,true) == 0);
 
 	const wchar_t sz2[] = L"ghijk";
-	Omega::string_t s2(sz2);
+	Omega::string_t s2(L"ghijk");
 	TEST(s2 == sz2);
 
 	Omega::string_t s3(s1);

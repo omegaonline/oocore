@@ -130,7 +130,7 @@ namespace
 	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
 	{
 		// Lookup OID
-		string_t strOid = oid.ToString();
+		string_t strOid = L"{" + oid.ToString() + L"}";
 
 		// This needs to use a local cached map, and register for update notifications from the
 		// registry to refresh the map... This will result in a significant speedup.
@@ -251,7 +251,8 @@ void DLLManagerImpl::unload_unused()
 void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)
 {
 	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: " + oid.ToString();
+	pNew->m_strDesc = L"The identified object could not be found: %0%";
+	pNew->m_strDesc %= oid;
 	pNew->m_strSource = strFn;
 	pNew->m_ptrCause = pE;
 	pNew->m_oid = oid;
@@ -270,7 +271,8 @@ void LibraryNotFoundException::Throw(const string_t& strName, const string_t& st
 {
 	ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = string_t(L"Dynamic library '%0%' not found or malformed") % strName;
+	pRE->m_strDesc = L"Dynamic library '%0%' not found or malformed.";
+	pRE->m_strDesc %= strName;
 	pRE->m_strSource = strFn;
 	pRE->m_dll_name = strName;
 	throw static_cast<ILibraryNotFoundException*>(pRE);

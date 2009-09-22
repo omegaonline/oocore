@@ -24,6 +24,10 @@
 
 #include "Preprocessor/base.h"
 
+#if !defined(interface)
+#define interface struct
+#endif
+
 namespace Omega
 {
 	// The root of all objects

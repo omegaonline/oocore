@@ -532,7 +532,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val));
 							if (msg)
 							{
-								std_safe_type<size_t>::type count = 0;
+								size_t count = 0;
 								wire_read(0,msg,count);
 							
 								for (size_t i=0;i<count;++i)
@@ -556,7 +556,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,static_cast<std_safe_type<size_t>::type>(m_val.size()));
+							wire_write(0,msg,m_val.size());
 							for (typename Coll::reverse_iterator i=m_val.rbegin();i!=m_val.rend();++i)
 								write(msg,static_cast<typename impl::type>(impl::clone(*i)));
 							
@@ -583,7 +583,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,static_cast<std_safe_type<size_t>::type>(val.size()));
+							wire_write(0,msg,val.size());
 							for (typename Coll::const_reverse_iterator i=val.rbegin();i!=val.rend();++i)
 								write(msg,static_cast<typename impl::type>(impl::coerce(*i)));
 
@@ -610,7 +610,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim));
 							if (msg)
 							{
-								std_safe_type<size_t>::type count = 0;
+								size_t count = 0;
 								wire_read(0,msg,count);
 							
 								for (size_t i=0;i<count;++i)
@@ -653,7 +653,7 @@ namespace Omega
 				template <typename T>
 				static void read(Remoting::IMessage* msg, T*& pval)
 				{
-					size_t ptr = 0;
+					uintptr_t ptr = 0;
 					wire_read(0,msg,ptr);
 					pval = reinterpret_cast<T*>(ptr);
 				}
@@ -667,7 +667,7 @@ namespace Omega
 				template <typename T>
 				static void write(Remoting::IMessage* msg, T* pval)
 				{
-					wire_write(0,msg,std_safe_type<size_t>::coerce(reinterpret_cast<size_t>(pval)));
+					wire_write(0,msg,reinterpret_cast<uintptr_t>(pval));
 				}
 			};
 
@@ -722,7 +722,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val));
 							if (msg)
 							{
-								std_safe_type<size_t>::type count = 0;
+								size_t count = 0;
 								wire_read(0,msg,count);
 							
 								for (size_t i=0;i<count;++i)
@@ -748,7 +748,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,static_cast<std_safe_type<size_t>::type>(m_val.size()));
+							wire_write(0,msg,m_val.size());
 							for (typename Coll::reverse_iterator i=m_val.rbegin();i!=m_val.rend();++i)
 							{
 								write(msg,key_impl::clone(i->first));
@@ -778,7 +778,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,static_cast<std_safe_type<size_t>::type>(val.size()));
+							wire_write(0,msg,val.size());
 							for (typename Coll::const_reverse_iterator i=val.rbegin();i!=val.rend();++i)
 							{
 								write(msg,static_cast<typename key_impl::type>(key_impl::coerce(i->first)));
@@ -808,7 +808,7 @@ namespace Omega
 							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim));
 							if (msg)
 							{
-								std_safe_type<size_t>::type count = 0;
+								size_t count = 0;
 								wire_read(0,msg,count);
 							
 								for (size_t i=0;i<count;++i)
@@ -853,7 +853,7 @@ namespace Omega
 				template <typename T>
 				static void read(Remoting::IMessage* msg, T*& pval)
 				{
-					size_t ptr = 0;
+					uintptr_t ptr = 0;
 					wire_read(0,msg,ptr);
 					pval = reinterpret_cast<T*>(ptr);
 				}
@@ -867,7 +867,7 @@ namespace Omega
 				template <typename T>
 				static void write(Remoting::IMessage* msg, T* pval)
 				{
-					wire_write(0,msg,std_safe_type<size_t>::coerce(reinterpret_cast<size_t>(pval)));
+					wire_write(0,msg,reinterpret_cast<uintptr_t>(pval));
 				}
 			};
 

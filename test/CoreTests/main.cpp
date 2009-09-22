@@ -116,7 +116,7 @@ static unsigned long fail_count = 0;
 
 bool print_result(const char* pszExpr, const char* pszSrc, unsigned int nLine)
 {
-	add_failure((Omega::string_t(L"Assertion '%0%' failed at %1%:%2%\n") % pszExpr % pszSrc % nLine).c_str());
+	add_failure((L"Assertion '%0%' failed at %1%:%2%\n" % Omega::string_t(pszExpr,false) % Omega::string_t(pszSrc,false) % nLine).c_str());
 	return false;
 }
 

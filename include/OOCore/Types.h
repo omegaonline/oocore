@@ -41,8 +41,9 @@ namespace Omega
 
 		inline string_t();
 		inline string_t(const string_t& s);
-		inline string_t(const char* sz, bool bUTF8, size_t length = npos);
 		inline string_t(const wchar_t* wsz, size_t length = npos);
+		inline string_t(const char* sz, bool bUTF8, size_t length = npos);
+		
 		inline ~string_t();
 
 		inline string_t& operator = (const string_t& s);
@@ -90,10 +91,7 @@ namespace Omega
 		inline string_t TrimRight(const string_t& str) const;
 
 		template <typename T>
-		inline string_t operator % (const T& val) const;
-
-		template <typename T>
-		inline string_t& operator % (const T& val);
+		inline string_t& operator %= (T val);
 		
 	private:
 		struct handle_t
@@ -153,35 +151,7 @@ namespace Omega
 			return sNull;
 		}
 
-		inline string_t ToString(const string_t& strFormat = L"{}") const;
-	};
-
-	namespace Formatting
-	{
-		inline string_t ToString(intptr_t val, const string_t& strFormat = L"");
-		inline string_t ToString(size_t val, const string_t& strFormat = L"");
-
-		inline string_t ToString(const int64_t& val, const string_t& strFormat = L"");
-		inline string_t ToString(const uint64_t& val, const string_t& strFormat = L"");
-
-		inline string_t ToString(string_t val, const string_t& strFormat = L"")
-		{
-			OMEGA_UNUSED_ARG(strFormat);
-			return val;
-		}
-
-		inline string_t ToString(const guid_t& val, const string_t& strFormat = L"{}")
-		{
-			return val.ToString(strFormat);
-		}
-
-		// This is not allowed - we do not know the encoding of the char*
-		// Use string_t(val,true|false) instead.
-		inline string_t ToString(const char* val, const string_t&)
-		{
-			assert(false);
-			return string_t(val,false);
-		}
+		inline string_t ToString(const string_t& strFormat = L"") const;
 	};
 
 	namespace System
@@ -335,5 +305,10 @@ namespace Omega
 }
 
 inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs);
+inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs);
+inline Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs);
+
+template <typename T>
+inline Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs);
 
 #endif // OMEGA_TYPES_H_INCLUDED_

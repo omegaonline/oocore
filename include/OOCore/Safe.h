@@ -45,47 +45,7 @@ namespace Omega
 					return val;
 				}
 			};
-
-			// MSVC gets twitchy about size_t
-			#if defined(_MSC_VER) && defined(_Wp64)
-			template <>
-			struct std_safe_type<size_t>
-			{
-			#if defined(_M_IA64) || defined(_M_X64)
-				typedef uint64_t type;
-			#else
-				typedef uint32_t type;
-			#endif
-				static type coerce(size_t val)
-				{
-					return static_cast<type>(val);
-				}
-
-				static type clone(size_t val)
-				{
-					return static_cast<type>(val);
-				}
-			};
-			template <>
-			struct std_safe_type<intptr_t>
-			{
-			#if defined(_M_IA64) || defined(_M_X64)
-				typedef int64_t type;
-			#else
-				typedef int32_t type;
-			#endif
-				static type coerce(intptr_t val)
-				{
-					return static_cast<type>(val);
-				}
-
-				static type clone(intptr_t val)
-				{
-					return static_cast<type>(val);
-				}
-			};
-			#endif
-
+			
 			template <typename T>
 			struct std_safe_type_ref
 			{

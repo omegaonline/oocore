@@ -42,19 +42,19 @@ void OOCore::Xml::XMLSplitAttr(const string_t& strAttr, std::map<string_t,string
 
 	size_t pos = strAttr.Find(L'=');
 	if (pos == string_t::npos)
-		OMEGA_THROW(string_t(L"%0% is not an XML attribute") % strAttr);
+		OMEGA_THROW(L"%0% is not an XML attribute" % strAttr);
 
 	string_t strVal;
 	if (strAttr[pos+1] == L'"' || strAttr[pos+1] == L'\'')
 	{
 		size_t pos2 = strAttr.Find(strAttr[pos+1],pos+2);
 		if (pos2 == string_t::npos)
-			OMEGA_THROW(string_t(L"Unmatched quote in attribute %0%") % strAttr);
+			OMEGA_THROW(L"Unmatched quote in attribute %0%" % strAttr);
 
 		strVal = strAttr.Mid(pos+2,pos2-pos-2);
 	}
 	else
-		OMEGA_THROW(string_t(L"Unquoted attribute value %0%") % strAttr);
+		OMEGA_THROW(L"Unquoted attribute value %0%" % strAttr);
 
 	attribs.insert(std::map<string_t,string_t>::value_type(strAttr.Left(pos),strVal));
 }
@@ -72,7 +72,7 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 		// Find the next whitespace or terminator
 		const wchar_t* p = wcspbrk(rd_ptr,szTerm);
 		if (!p)
-			OMEGA_THROW(string_t(L"Incomplete XML text %0%") % string_t(rd_ptr,25));
+			OMEGA_THROW(L"Incomplete XML text %0%" % string_t(rd_ptr,25));
 
 		if (p != rd_ptr)
 			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr),attribs);
@@ -122,7 +122,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 	++p;
 	size_t len = wcscspn(p,L"/>" XML_WHITESPACE);
 	if (!len)
-		OMEGA_THROW(string_t(L"Unterminated XML element: %0%") % string_t(rd_ptr,25));
+		OMEGA_THROW(L"Unterminated XML element: %0%" % string_t(rd_ptr,25));
 
 	strName = string_t(p,len);
 	rd_ptr += len+1;
@@ -139,13 +139,13 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		{
 			p = wcspbrk(p,L"'\"/>" XML_WHITESPACE);
 			if (!p)
-				OMEGA_THROW(string_t(L"Unterminated XML element: %0%") % string_t(rd_ptr,25));
+				OMEGA_THROW(L"Unterminated XML element: %0%" % string_t(rd_ptr,25));
 
 			if (p[0]==L'"' || p[0]==L'\'')
 			{
 				p = wcschr(p+1,p[0]);
 				if (!p)
-					OMEGA_THROW(string_t(L"Mismatched quote: %0%") % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Mismatched quote: %0%" % string_t(rd_ptr,25));
 				++p;
 				continue;
 			}
@@ -247,7 +247,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			{
 				p = wcsstr(rd_ptr+4,L"-->");
 				if (!p)
-					OMEGA_THROW(string_t(L"Unmatched comment open: %0%") % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Unmatched comment open: %0%" % string_t(rd_ptr,25));
 
 				rd_ptr = p + 3;				
 				bFoundOne = true;
@@ -258,7 +258,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			{
 				p = wcsstr(rd_ptr+2,L"?>");
 				if (!p)
-					OMEGA_THROW(string_t(L"Unmatched processing instruction open: %0%") % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Unmatched processing instruction open: %0%" % string_t(rd_ptr,25));
 
 				rd_ptr = p + 2;
 				bFoundOne = true;
@@ -269,7 +269,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			{
 				p = wcsstr(rd_ptr+9,L"]]>");
 				if (!p)
-					OMEGA_THROW(string_t(L"Unmatched CDATA open: %0%") % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Unmatched CDATA open: %0%" % string_t(rd_ptr,25));
 
 				rd_ptr = p + 3;
 				bFoundOne = true;
@@ -286,14 +286,14 @@ void OOCore::Xml::ParseXMLEndElement(const wchar_t*& rd_ptr, const string_t& str
 	const wchar_t* p = rd_ptr;
 
 	if (wcsncmp(p,L"</",2)!=0 || wcsncmp(p+2,strName.c_str(),strName.Length())!=0)
-		OMEGA_THROW(string_t(L"Invalid element end tag: %0%") % string_t(rd_ptr,25));
+		OMEGA_THROW(L"Invalid element end tag: %0%" % string_t(rd_ptr,25));
 
 	// Skip whistepace
 	p += strName.Length()+2;
 	p += wcsspn(p,XML_WHITESPACE);
 	
 	if (p[0] != L'>')
-		OMEGA_THROW(string_t(L"Invalid element end tag: %0%") % string_t(rd_ptr,25));
+		OMEGA_THROW(L"Invalid element end tag: %0%" % string_t(rd_ptr,25));
 	
 	rd_ptr = p+1;
 }
@@ -323,7 +323,7 @@ void OOCore::Xml::ParseXMLName(string_t& strName, string_t& strNamespace, const 
 	{
 		strNamespace = strName.Left(pos);
 		if (namespaces.find(strNamespace) == namespaces.end())
-			OMEGA_THROW(string_t(L"Unrecognised namespace qualification: %0%") % strName);
+			OMEGA_THROW(L"Unrecognised namespace qualification: %0%" % strName);
 
 		strName = strName.Mid(pos+1);
 	}

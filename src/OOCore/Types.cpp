@@ -97,8 +97,7 @@ namespace
 		~StringNode()
 		{
 			delete [] m_buf;
-			if (m_fs)
-				delete m_fs;
+			delete m_fs;
 		}
 
 		size_t find_skip(size_t start);
@@ -612,7 +611,7 @@ void StringNode::parse_arg(size_t& pos)
 	size_t end = OOCore_string_t_find1_Impl(this,L'%',pos,0);
 	if (end == Omega::string_t::npos)
 		OMEGA_THROW(L"Missing matching % in format string");
-
+	
 	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
 	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
 	
@@ -624,18 +623,23 @@ void StringNode::parse_arg(size_t& pos)
 	if (ins.index < m_fs->m_curr_arg)
 		m_fs->m_curr_arg = ins.index;
 
-	if (comma < end)
-		ins.alignment = parse_int(m_buf+comma+1);
-	else
+	if (comma >= end)
 	{
 		ins.alignment = 0;
 		comma = end;
 	}
-
-	if (colon > end)
+	else
+	{
+		++comma;
+		ins.alignment = parse_int(m_buf+comma);
+	}
+	
+	if (colon >= end)
 		colon = end;
+	else
+		++colon;
 
-	ins.format.assign(m_buf+colon+1,comma > colon ? comma-colon : end-colon);
+	ins.format.assign(m_buf+colon,comma > colon ? comma-colon : end-colon);
 	
 	m_fs->m_listInserts.push_back(ins);
 
@@ -732,7 +736,7 @@ void StringNode::parse_format()
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),void**,fmt))
 {
-	StringNode*& s = *reinterpret_cast<StringNode**>(s1);
+	StringNode* s = static_cast<StringNode*>(*s1);
 	if (!s)
 		OMEGA_THROW(L"Empty format string");
 	
@@ -750,6 +754,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 			
 			s->Release();
 			s = pNewNode;
+			*s1 = s;
 
 			if (!s->m_fs)
 				s->parse_format();
@@ -866,57 +871,26 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,2,((in),c
 #if defined(HAVE_UUID_UUID_H)
 
 	char szBuf[38] = {0};
-	if (strFormat == L"{}")
-	{
-		uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf+1);
-		szBuf[37] = '}';
-	}
-	else if (strFormat.IsEmpty())
-	{
-		uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf);
-	}
-	else
-		OMEGA_THROW(string_t(L"Invalid guid_t format string: %0%.") % strFormat);
-
+	uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf);
 	return Omega::string_t(szBuf,true);
 
 #else
 
 	wchar_t szBuf[38] = {0};
 
-	if (strFormat == L"{}")
-	{
-		swprintf(szBuf,L"{%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X}",
-			guid.Data1,
-			guid.Data2,
-			guid.Data3,
-			guid.Data4[0],
-			guid.Data4[1],
-			guid.Data4[2],
-			guid.Data4[3],
-			guid.Data4[4],
-			guid.Data4[5],
-			guid.Data4[6],
-			guid.Data4[7]);
-	}
-	else if (strFormat.IsEmpty())
-	{
-		swprintf(szBuf,L"%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
-			guid.Data1,
-			guid.Data2,
-			guid.Data3,
-			guid.Data4[0],
-			guid.Data4[1],
-			guid.Data4[2],
-			guid.Data4[3],
-			guid.Data4[4],
-			guid.Data4[5],
-			guid.Data4[6],
-			guid.Data4[7]);
-	}
-	else
-		OMEGA_THROW(Omega::string_t(L"Invalid guid_t format string: %0%.") % strFormat);
-
+	swprintf(szBuf,L"%8.8lX-%4.4hX-%4.4hX-%2.2X%2.2X-%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
+		guid.Data1,
+		guid.Data2,
+		guid.Data3,
+		guid.Data4[0],
+		guid.Data4[1],
+		guid.Data4[2],
+		guid.Data4[3],
+		guid.Data4[4],
+		guid.Data4[5],
+		guid.Data4[6],
+		guid.Data4[7]);
+	
 	return Omega::string_t(szBuf);
 
 #endif
@@ -927,11 +901,24 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 #if defined(HAVE_UUID_UUID_H)
 
 	std::string str = OOBase::to_utf8(sz);
-	if (str.length() != 38 || str[0] != '{' || str[37] != '}')
-		return 0;
+	const char* buf;
+	if (str.length() == 38 && str[0] == '{')
+	{
+		if (str[37] != '}')
+			return 0;
+
+		buf = str.c_str() + 1;
+	}
+	else
+	{
+		if (str.length() == 36)
+			return 0;
+
+		buf = str.c_str();
+	}
 
 	uuid_t uuid;
-	if (uuid_parse(str.substr(1,36).c_str(),uuid))
+	if (uuid_parse(buf,uuid))
 		return 0;
 
 	result = *(Omega::guid_t*)(uuid);
@@ -945,56 +932,65 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 	result.Data3 = 0;
 	memset(result.Data4,sizeof(result.Data4),0);
 
-	if (sz[0] != L'{')
-		return 0;
+	bool bQuoted = false;
+	if (sz[0] == L'{')
+	{
+		if (sz[37] != L'}')
+			return 0;
+		
+		++sz;
+		bQuoted = true;
+	}
 
 	try
 	{
-		unsigned int v = (parse_uint_hex(sz[1]) << 28);
-		v += (parse_uint_hex(sz[2]) << 24);
-		v += (parse_uint_hex(sz[3]) << 20);
-		v += (parse_uint_hex(sz[4]) << 16);
-		v += (parse_uint_hex(sz[5]) << 12);
-		v += (parse_uint_hex(sz[6]) << 8);
-		v += (parse_uint_hex(sz[7]) << 4);
-		v += parse_uint_hex(sz[8]);
+		unsigned int v = (parse_uint_hex(sz[0]) << 28);
+		v += (parse_uint_hex(sz[1]) << 24);
+		v += (parse_uint_hex(sz[2]) << 20);
+		v += (parse_uint_hex(sz[3]) << 16);
+		v += (parse_uint_hex(sz[4]) << 12);
+		v += (parse_uint_hex(sz[5]) << 8);
+		v += (parse_uint_hex(sz[6]) << 4);
+		v += parse_uint_hex(sz[7]);
 		result.Data1 = static_cast<Omega::uint32_t>(v);
 
-		if (sz[9] != L'-')
+		if (sz[8] != L'-')
 			return 0;
 
-		v = (parse_uint_hex(sz[10]) << 12);
-		v += (parse_uint_hex(sz[11]) << 8);
-		v += (parse_uint_hex(sz[12]) << 4);
-		v += parse_uint_hex(sz[13]);
+		v = (parse_uint_hex(sz[9]) << 12);
+		v += (parse_uint_hex(sz[10]) << 8);
+		v += (parse_uint_hex(sz[11]) << 4);
+		v += parse_uint_hex(sz[12]);
 		result.Data2 = static_cast<Omega::uint16_t>(v);
 
-		if (sz[14] != L'-')
+		if (sz[13] != L'-')
 			return 0;
 
-		v = (parse_uint_hex(sz[15]) << 12);
-		v += (parse_uint_hex(sz[16]) << 8);
-		v += (parse_uint_hex(sz[17]) << 4);
-		v += parse_uint_hex(sz[18]);
+		v = (parse_uint_hex(sz[14]) << 12);
+		v += (parse_uint_hex(sz[15]) << 8);
+		v += (parse_uint_hex(sz[16]) << 4);
+		v += parse_uint_hex(sz[17]);
 		result.Data3 = static_cast<Omega::uint16_t>(v);
 
-		if (sz[19] != L'-')
+		if (sz[18] != L'-')
 			return 0;
 
-		result.Data4[0] = static_cast<Omega::byte_t>((parse_uint_hex(sz[20]) << 4) + parse_uint_hex(sz[21]));
-		result.Data4[1] = static_cast<Omega::byte_t>((parse_uint_hex(sz[22]) << 4) + parse_uint_hex(sz[23]));
+		result.Data4[0] = static_cast<Omega::byte_t>((parse_uint_hex(sz[19]) << 4) + parse_uint_hex(sz[20]));
+		result.Data4[1] = static_cast<Omega::byte_t>((parse_uint_hex(sz[21]) << 4) + parse_uint_hex(sz[22]));
 
-		if (sz[24] != L'-')
+		if (sz[23] != L'-')
 			return false;
 
-		result.Data4[2] = static_cast<Omega::byte_t>((parse_uint_hex(sz[25]) << 4) + parse_uint_hex(sz[26]));
-		result.Data4[3] = static_cast<Omega::byte_t>((parse_uint_hex(sz[27]) << 4) + parse_uint_hex(sz[28]));
-		result.Data4[4] = static_cast<Omega::byte_t>((parse_uint_hex(sz[29]) << 4) + parse_uint_hex(sz[30]));
-		result.Data4[5] = static_cast<Omega::byte_t>((parse_uint_hex(sz[31]) << 4) + parse_uint_hex(sz[32]));
-		result.Data4[6] = static_cast<Omega::byte_t>((parse_uint_hex(sz[33]) << 4) + parse_uint_hex(sz[34]));
-		result.Data4[7] = static_cast<Omega::byte_t>((parse_uint_hex(sz[35]) << 4) + parse_uint_hex(sz[36]));
+		result.Data4[2] = static_cast<Omega::byte_t>((parse_uint_hex(sz[24]) << 4) + parse_uint_hex(sz[25]));
+		result.Data4[3] = static_cast<Omega::byte_t>((parse_uint_hex(sz[26]) << 4) + parse_uint_hex(sz[27]));
+		result.Data4[4] = static_cast<Omega::byte_t>((parse_uint_hex(sz[28]) << 4) + parse_uint_hex(sz[29]));
+		result.Data4[5] = static_cast<Omega::byte_t>((parse_uint_hex(sz[30]) << 4) + parse_uint_hex(sz[31]));
+		result.Data4[6] = static_cast<Omega::byte_t>((parse_uint_hex(sz[32]) << 4) + parse_uint_hex(sz[33]));
+		result.Data4[7] = static_cast<Omega::byte_t>((parse_uint_hex(sz[34]) << 4) + parse_uint_hex(sz[35]));
 
-		if (sz[37] != L'}' || sz[38] != L'\0')
+		if (bQuoted && sz[37] != L'\0')
+			return 0;
+		else if (!bQuoted && sz[36] != L'\0')
 			return 0;
 
 		return 1;
@@ -1046,14 +1042,26 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,())
 ////////////////////////////////////////////////////
 // Formatting starts here
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_intptr_t,2,((in),intptr_t,val,(in),const Omega::string_t&,strFormat))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_int_t,2,((in),Omega::int64_t,val,(in),const Omega::string_t&,strFormat))
 {
-	wchar_t sz[33];
-	return Omega::string_t(_itow(val,sz,10));
+	wchar_t sz[66];
+	return Omega::string_t(_i64tow(val,sz,10));
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_size_t,2,((in),size_t,val,(in),const Omega::string_t&,strFormat))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_uint_t,2,((in),Omega::uint64_t,val,(in),const Omega::string_t&,strFormat))
 {
-	wchar_t sz[33];
-	return Omega::string_t(_itow(val,sz,10));
+	wchar_t sz[66];
+	return Omega::string_t(_i64tow(val,sz,10));
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_float_t,2,((in),Omega::float8_t,val,(in),const Omega::string_t&,strFormat))
+{
+	wchar_t sz[66];
+	return Omega::string_t(_i64tow(val,sz,10));
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_bool_t,2,((in),Omega::bool_t,val,(in),const Omega::string_t&,strFormat))
+{
+	wchar_t sz[66];
+	return Omega::string_t(_i64tow(val,sz,10));
 }

@@ -66,4 +66,9 @@
 #error No _WIN32?!?
 #endif
 
+#if defined(_WIN32)
+// MS define interface as well...
+#include <objbase.h>
+#endif
+
 #endif // OOCORE_CONFIG_WIN32_H_INCLUDED_

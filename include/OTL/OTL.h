@@ -22,6 +22,8 @@
 #ifndef OTL_OTL_H_INCLUDED_
 #define OTL_OTL_H_INCLUDED_
 
+#include <OOCore/OOCore.h>
+
 ///////////////////////////////////////////////////////////////////
 // Interface map macros
 //
@@ -134,8 +136,6 @@
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
 	}
-
-#include <OOCore/OOCore.h>
 
 namespace OTL
 {

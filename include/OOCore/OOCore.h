@@ -26,11 +26,6 @@
 #include "config-guess.h"
 #include "version.h"
 
-#if defined(_WIN32)
-// MS define interface as well...
-#include <objbase.h>
-#endif
-
 //////////////////////////////////////////////
 // Set up the correct export macros
 
@@ -72,6 +67,7 @@
 //////////////////////////////////////////////
 // Include STL components
 
+#include <limits>
 #include <set>
 #include <list>
 #include <map>
@@ -80,6 +76,12 @@
 
 // End of STL includes
 //////////////////////////////////////////////
+
+#if defined(_MSC_VER) && defined(_Wp64)
+// MSVC moans about possibly poor size_t coercion - its checked - its all fine
+#pragma warning(push)
+#pragma warning(disable : 4244 4267)
+#endif
 
 #include "Types.h"
 #include "Threading.h"
@@ -107,6 +109,10 @@ namespace Omega
 #include "Rtti.inl"
 #include "Safe.inl"
 #include "Wire.inl"
+
+#if defined(_MSC_VER) && defined(_Wp64)
+#pragma warning(pop)
+#endif
 
 #if !defined(DOXYGEN)
 

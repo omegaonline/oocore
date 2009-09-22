@@ -65,7 +65,8 @@ namespace Registry
 			ObjectImpl<BadNameException>* pRE = ObjectImpl<BadNameException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t(L"Invalid name for registry key or value: '%0%'.") % name;
+			pRE->m_strDesc = L"Invalid name for registry key or value: '%0%'.";
+			pRE->m_strDesc %= name;
 			throw static_cast<IBadNameException*>(pRE);
 		}
 	};
@@ -99,15 +100,15 @@ namespace Registry
 			pRE->m_strValue = strValue;
 			pRE->m_strSource = strSource;
 			
-			string_t tp = L"Corrupt!";
+			pRE->m_strDesc = L"Incorrect registry value type, actual value type is %0%.";
 			if (actual_type==String)
-				tp = L"String";
+				pRE->m_strDesc %= L"String";
 			else if (actual_type==Integer)
-				tp = L"Integer";
+				pRE->m_strDesc %= L"Integer";
 			else if (actual_type==Binary)
-				tp = L"Binary";
-
-			pRE->m_strDesc = string_t(L"Incorrect registry value type, actual value type is %0%.") % tp;
+				pRE->m_strDesc %= L"Binary";
+			else
+				pRE->m_strDesc %= L"Corrupt!";
 
 			throw static_cast<IWrongValueTypeException*>(pRE);
 		}
@@ -135,7 +136,8 @@ namespace Registry
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
 			pRE->m_ptrCause = pE;
-			pRE->m_strDesc = string_t(L"'%0%' not found.") % name;
+			pRE->m_strDesc = L"'%0%' not found.";
+			pRE->m_strDesc %= name;
 			throw static_cast<INotFoundException*>(pRE);
 		}
 	};
@@ -161,7 +163,8 @@ namespace Registry
 			ObjectImpl<AlreadyExistsException>* pRE = ObjectImpl<AlreadyExistsException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t(L"Key '%0%' already exists.") % name;
+			pRE->m_strDesc = L"Key '%0%' already exists.";
+			pRE->m_strDesc %= name;
 			throw static_cast<IAlreadyExistsException*>(pRE);
 		}
 	};
@@ -187,7 +190,8 @@ namespace Registry
 			ObjectImpl<AccessDeniedException>* pRE = ObjectImpl<AccessDeniedException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_strDesc = string_t(L"Write attempt illegal for '%0%'.") % name;
+			pRE->m_strDesc = L"Write attempt illegal for '%0%'.";
+			pRE->m_strDesc %= name;
 			throw static_cast<IAccessDeniedException*>(pRE);
 		}
 	};

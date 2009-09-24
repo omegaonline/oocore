@@ -141,8 +141,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				AdditionalLibraryDirectories=""
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
 			/>
 			<Tool
 				Name="VCALinkTool"

@@ -101,6 +101,7 @@
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="NDEBUG"
+				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"

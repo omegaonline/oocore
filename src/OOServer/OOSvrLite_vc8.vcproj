@@ -44,7 +44,6 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOServer_Lite.h"
@@ -121,7 +120,6 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include"
 				PreprocessorDefinitions="NDEBUG"
 				StringPooling="true"
@@ -144,8 +142,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool

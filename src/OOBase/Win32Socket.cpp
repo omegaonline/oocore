@@ -189,18 +189,16 @@ OOBase::LocalSocket::uid_t OOBase::Win32::LocalSocket::get_uid()
 
 	OOBase::Win32::SmartHandle uid;
 	BOOL bRes = OpenThreadToken(GetCurrentThread(),TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE,FALSE,&uid);
+	DWORD err = 0;
+	if (!bRes)
+		err = GetLastError();
+
 	if (!RevertToSelf())
-	{
 		OOBase_CallCriticalFailure(GetLastError());
-
-		// This is critical and FATAL!
-		ExitProcess(EXIT_FAILURE);
-	}
-	else if (!bRes)
-	{
-		OOBase_CallCriticalFailure(GetLastError());
-	}
-
+	
+	if (!bRes)
+		OOBase_CallCriticalFailure(err);
+	
 	return uid.detach();
 }
 

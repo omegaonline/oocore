@@ -19,9 +19,9 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)_Root"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -45,12 +45,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
 				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;OMEGA_HAVE_SQLITE3_AMALGAMATION;OMEGA_HAVE_VLD"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="true"
-				TreatWChar_tAsBuiltInType="true"
-				ForceConformanceInForLoopScope="true"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOServer_Root.h"
 				WarningLevel="4"
@@ -67,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib ACEsd.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
@@ -104,9 +99,9 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)_Root"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -153,7 +148,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib ACEs.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				OutputFile="$(OutDir)/OOServer.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
@@ -197,6 +192,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\ClientAcceptor.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Database.cpp"
 				>
 			</File>
@@ -206,14 +205,6 @@
 			</File>
 			<File
 				RelativePath=".\MessageConnection.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\MessagePipeWin32.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\NTService.cpp"
 				>
 			</File>
 			<File
@@ -249,6 +240,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RootWin32.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SpawnedProcessUnix.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SpawnedProcessWin32.cpp"
 				>
 			</File>
@@ -262,7 +261,7 @@
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
-						WarningLevel="0"
+						WarningLevel="3"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -271,6 +270,7 @@
 					<Tool
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
 						WarningLevel="0"
 					/>
 				</FileConfiguration>
@@ -282,23 +282,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\ClientAcceptor.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Database.h"
 				>
 			</File>
 			<File
 				RelativePath=".\MessageConnection.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MessagePipe.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MessagePipe.inl"
-				>
-			</File>
-			<File
-				RelativePath=".\NTService.h"
 				>
 			</File>
 			<File
@@ -319,10 +311,6 @@
 			</File>
 			<File
 				RelativePath=".\SpawnedProcess.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\Version.h"
 				>
 			</File>
 		</Filter>
@@ -348,8 +336,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\$(InputName).rc"
+						CommandLine="mc $(InputFileName)"
+						Outputs=".\OOServer_msgs.bin"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -358,8 +346,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\$(InputName).rc"
+						CommandLine="mc $(InputFileName)"
+						Outputs=".\OOServer_msgs.bin"
 					/>
 				</FileConfiguration>
 			</File>

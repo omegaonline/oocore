@@ -19,9 +19,9 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)_Host"
+			IntermediateDirectory="$(ConfigurationName)_User"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -44,14 +44,14 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;C:\Work\ACE_wrappers;C:\Work\sqlite"
-				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;OMEGA_HAVE_SQLITE3_AMALGAMATION;OMEGA_HAVE_VLD"
+				PreprocessorDefinitions="ACE_AS_STATIC_LIBS;HAVE_VLD_H;OMEGA_HAVE_SQLITE3_AMALGAMATION;OMEGA_HAVE_VLD"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOServer_User.h"
 				WarningLevel="4"
-				DebugInformationFormat="3"
+				DebugInformationFormat="4"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib ACEsd.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				GenerateDebugInformation="true"
@@ -98,9 +98,9 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="$(ConfigurationName)_Host"
+			IntermediateDirectory="$(ConfigurationName)_User"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -145,7 +145,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib ACEs.lib"
+				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="C:\Work\ACE_wrappers\lib"
 				SubSystem="1"
@@ -189,28 +189,6 @@
 			<File
 				RelativePath=".\Channel.cpp"
 				>
-			</File>
-			<File
-				RelativePath=".\Database.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\DebuggerWin32.cpp"
@@ -261,49 +239,8 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\MessagePipeWin32.cpp"
+				RelativePath=".\UserAcceptor.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\SQLite3_comp.c"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-						WarningLevel="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						WarningLevel="0"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\UserMain.cpp"
@@ -334,6 +271,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\UserProcessWin32.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UserRegistry.cpp"
 				>
 			</File>
@@ -352,23 +293,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Database.h"
-				>
-			</File>
-			<File
 				RelativePath=".\InterProcessService.h"
 				>
 			</File>
 			<File
 				RelativePath=".\MessageConnection.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MessagePipe.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MessagePipe.inl"
 				>
 			</File>
 			<File
@@ -380,7 +309,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Common\Server.h"
+				RelativePath=".\RegistryCmn.h"
+				>
+			</File>
+			<File
+				RelativePath="..\OOCore\Server.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserAcceptor.h"
 				>
 			</File>
 			<File
@@ -392,15 +329,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\UserProcess.h"
+				>
+			</File>
+			<File
 				RelativePath=".\UserRegistry.h"
 				>
 			</File>
 			<File
 				RelativePath=".\UserROT.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\Version.h"
 				>
 			</File>
 		</Filter>

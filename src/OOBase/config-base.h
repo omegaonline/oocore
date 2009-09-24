@@ -172,6 +172,8 @@
 
 #ifdef __cplusplus
 
+#include <math.h>
+
 #include <string>
 #include <sstream>
 

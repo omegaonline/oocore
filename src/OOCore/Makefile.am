@@ -12,6 +12,8 @@ common = \
 	Channel.cpp \
 	Exception.h \
 	Exception.cpp \
+	Formatting.h \
+	Formatting.cpp \
 	IPS.h \
 	OOCore.cpp \
 	Registry.cpp \

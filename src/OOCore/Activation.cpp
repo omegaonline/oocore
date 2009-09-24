@@ -251,7 +251,7 @@ void DLLManagerImpl::unload_unused()
 void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)
 {
 	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: %0%";
+	pNew->m_strDesc = L"The identified object could not be found: {0}";
 	pNew->m_strDesc %= oid;
 	pNew->m_strSource = strFn;
 	pNew->m_ptrCause = pE;
@@ -271,7 +271,7 @@ void LibraryNotFoundException::Throw(const string_t& strName, const string_t& st
 {
 	ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
 	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = L"Dynamic library '%0%' not found or malformed.";
+	pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed.";
 	pRE->m_strDesc %= strName;
 	pRE->m_strSource = strFn;
 	pRE->m_dll_name = strName;

@@ -374,9 +374,9 @@ Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs)
 OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,idx,(in_out),void**,s1,(out),void**,fmt));
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1,(in),void*,arg));
 
-OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_int_t,2,((in),Omega::int64_t,val,(in),const Omega::string_t&,strFormat));
-OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_uint_t,2,((in),Omega::uint64_t,val,(in),const Omega::string_t&,strFormat));
-OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_float_t,2,((in),Omega::float8_t,val,(in),const Omega::string_t&,strFormat));
+OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_int_t,3,((in),Omega::int64_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
+OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_uint_t,3,((in),Omega::uint64_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
+OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_float_t,3,((in),Omega::float8_t,val,(in),const Omega::string_t&,strFormat,(in),size_t,byte_width));
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_to_string_bool_t,2,((in),Omega::bool_t,val,(in),const Omega::string_t&,strFormat));
 
 namespace Omega
@@ -385,35 +385,43 @@ namespace Omega
 	{
 		namespace MetaInfo
 		{
+			template <typename T>
 			struct integer_formatter_t
 			{
-				static string_t ToString(int64_t val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat)
 				{
-					return OOCore_to_string_int_t(val,strFormat);
+					return OOCore_to_string_int_t(val,strFormat,sizeof(T));
 				}
 			};
 
+			template <typename T>
 			struct unsigned_integer_formatter_t
 			{
-				static string_t ToString(uint64_t val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat)
 				{
-					return OOCore_to_string_uint_t(val,strFormat);
+					return OOCore_to_string_uint_t(val,strFormat,sizeof(T));
 				}
 			};
 
+			template <typename T>
 			struct float_formatter_t
 			{
-				static string_t ToString(float8_t val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat)
 				{
-					return OOCore_to_string_float_t(val,strFormat);
+					return OOCore_to_string_float_t(val,strFormat,sizeof(T));
 				}
 			};
 
-			struct bool_formatter_t
+			template <>
+			struct float_formatter_t<float4_t>
 			{
-				static string_t ToString(bool_t val, const string_t& strFormat)
+				static string_t ToString(float4_t val, const string_t& strFormat)
 				{
-					return OOCore_to_string_bool_t(val,strFormat);
+					static const float4_t nan = std::numeric_limits<float4_t>::signaling_NaN();
+					if (*reinterpret_cast<const uint32_t*>(&val) == *reinterpret_cast<const uint32_t*>(&nan))
+						return OOCore_to_string_float_t(std::numeric_limits<float8_t>::signaling_NaN(),strFormat,sizeof(float4_t));
+					else
+						return OOCore_to_string_float_t(val,strFormat,sizeof(float4_t));
 				}
 			};
 
@@ -426,24 +434,15 @@ namespace Omega
 				}
 			};
 
-			template <>
-			struct to_string_member_formatter_t<Omega::string_t>
-			{
-				static string_t ToString(const Omega::string_t& val, const string_t& /*strFormat*/)
-				{
-					return val;
-				}
-			};
-
 			template <typename T>
 			struct formatter_t
 			{
 				typedef typename if_else_t<std::numeric_limits<T>::is_specialized,
 					typename if_else_t<std::numeric_limits<T>::is_integer,
-						typename if_else_t<std::numeric_limits<T>::is_signed,integer_formatter_t,unsigned_integer_formatter_t>::result,
-						float_formatter_t
+						typename if_else_t<std::numeric_limits<T>::is_signed,integer_formatter_t<T>,unsigned_integer_formatter_t<T> >::result,
+						float_formatter_t<T>
 					>::result,
-					to_string_member_formatter_t<T> 
+					to_string_member_formatter_t<T>
 				>::result type;
 			};
 
@@ -475,25 +474,31 @@ namespace Omega
 			// Don't pass pointers
 			template <typename T> struct formatter_t<T*>;
 
-			// Don't pass characters, we can't resolve the locale
-			template <> struct formatter_t<char>;
-
 			// Long doubles are not compiler agnostic...
 			template <> struct formatter_t<long double>;
-
-			template <> 
-			struct formatter_t<wchar_t*>
-			{
-				typedef to_string_member_formatter_t<Omega::string_t> type;
-			};
-
-			template <> 
-			struct formatter_t<bool>
-			{
-				typedef bool_formatter_t type;
-			};
 		}
 	}
+}
+
+Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t&)
+{
+	return val;
+}
+
+Omega::string_t Omega::Formatting::ToString(const wchar_t* val, const string_t& strFormat)
+{
+	return ToString(string_t(val),strFormat);
+}
+
+Omega::string_t Omega::Formatting::ToString(bool_t val, const string_t& strFormat)
+{
+	return OOCore_to_string_bool_t(val,strFormat);
+}
+
+template <typename T>
+Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFormat)
+{
+	return System::MetaInfo::formatter_t<T>::type::ToString(val,strFormat);
 }
 
 template <typename T>
@@ -503,11 +508,11 @@ Omega::string_t& Omega::string_t::operator %= (T val)
 	void* format;
 	while (OOCore_string_t_get_arg(index++,reinterpret_cast<void**>(&m_handle),&format))
 	{
-		OMEGA_DEBUG_STASH_STRING();
-		string_t strVal = Omega::System::MetaInfo::formatter_t<T>::type::ToString(val,string_t(static_cast<handle_t*>(format)));
+		string_t strVal = Formatting::ToString(val,string_t(static_cast<handle_t*>(format)));
 		OOCore_string_t_set_arg(m_handle,strVal.m_handle);
 	}
 
+	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }
 

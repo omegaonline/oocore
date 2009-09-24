@@ -76,4 +76,6 @@ namespace OOCore
 	};
 }
 
+#include "Formatting.h"
+
 #endif // OOCORE_LOCAL_MACROS_H_INCLUDED_

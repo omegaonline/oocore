@@ -154,6 +154,16 @@ namespace Omega
 		inline string_t ToString(const string_t& strFormat = L"") const;
 	};
 
+	namespace Formatting
+	{
+		inline string_t ToString(const string_t& val, const string_t&);
+		inline string_t ToString(const wchar_t* val, const string_t&);
+		inline string_t ToString(bool_t val, const string_t& strFormat);
+
+		template <typename T>
+		inline string_t ToString(T val, const string_t& strFormat);
+	}
+
 	namespace System
 	{
 		namespace MetaInfo

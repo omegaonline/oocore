@@ -46,14 +46,4 @@ int vsnprintf_s(char* s, size_t n, const char* format, va_list arg)
 	return r;
 }
 
-int vswprintf_s(wchar_t* s, size_t n, const wchar_t* format, va_list arg)
-{
-#if defined(_WIN32)
-	// Win32 seems to have a funny vswprintf?
-	return vswprintf(s,format,arg);
-#else
-	return vswprintf(s,n,format,arg);
-#endif
-}
-
 #endif

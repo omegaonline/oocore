@@ -89,10 +89,22 @@ static bool string_tests_wchar()
 
 static bool string_tests_format()
 {
-	TEST(Omega::string_t(L"1st:%0% 2nd:%1%") % 1 % 2 == L"1st:1 2nd:2");
-	TEST(Omega::string_t(L"2nd:%1% 1st:%0%") % 1 % 2 == L"2nd:2 1st:1");
-	TEST(Omega::string_t(L"1st:%0,10% 2nd:%1%") % 1 % 2 ==  L"1st:         1 2nd:2");
-	TEST(Omega::string_t(L"1st:%0,-10% 2nd:%1%") % 1 % 2 == L"1st:1          2nd:2");
+	TEST(Omega::string_t(L"1st:{0} 2nd:{1}") % 1 % 2 == L"1st:1 2nd:2");
+	TEST(Omega::string_t(L"2nd:{1} 1st:{0}") % 1 % 2 == L"2nd:2 1st:1");
+	TEST(Omega::string_t(L"1st:{0,10} 2nd:{1}") % 1 % 2 ==  L"1st:         1 2nd:2");
+	TEST(Omega::string_t(L"1st:{0,-10} 2nd:{1}") % 1 % 2 == L"1st:1          2nd:2");
+
+	TEST(Omega::string_t(L"Number:{0:e}") % 1 == L"Number:1.000000e+000");
+	TEST(Omega::string_t(L"Number:{0:E}") % 1.0 == L"Number:1.000000E+000");
+
+	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float4_t>::infinity() == L"1.#INF");
+	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float8_t>::infinity() == L"1.#INF");
+	TEST(Omega::string_t(L"{0}") % -std::numeric_limits<Omega::float4_t>::infinity() == L"-1.#INF");
+	TEST(Omega::string_t(L"{0}") % -std::numeric_limits<Omega::float8_t>::infinity() == L"-1.#INF");
+	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float4_t>::signaling_NaN() == L"1.#NAN");
+	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float8_t>::signaling_NaN() == L"1.#NAN");
+	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float4_t>::quiet_NaN() == L"1.#IND");
+	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float8_t>::quiet_NaN() == L"1.#IND");
 
 	return true;
 }

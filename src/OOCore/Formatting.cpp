@@ -827,9 +827,7 @@ namespace
 		double frac_part = fabs(modf(val,&int_part));
 
 		std::string ret = fmt_number(lc,static_cast<int64_t>(int_part),-1) + lc->decimal_point;
-		if (int_part == -0.0)
-			ret = '-' + ret;
-
+		
 		if (precision < 0)
 		{
 			if (lc->frac_digits != CHAR_MAX)
@@ -940,9 +938,7 @@ namespace
 
 		std::wstring dps;
 		string_t ret = fmt_decimal(static_cast<int64_t>(int_part),-1,false);
-		if (int_part == -0.0)
-			ret = L"-" + ret;
-
+		
 		if (precision != 0)
 		{
 			ret += L".";
@@ -1010,134 +1006,293 @@ namespace
 		void* TODO;
 		return fmt_fixed(val,-1,false);
 	}
+
+	size_t find_skip_quote(const string_t& str, size_t start, wchar_t c)
+	{
+		string_t strFind = L"'\"";
+		strFind += c;
+		size_t pos = start;
+		
+		for (;;)
+		{
+			size_t found = str.FindOneOf(strFind,pos);
+			if (found == string_t::npos)
+				return found;
+
+			if (str[found] == L'\'')
+			{
+				found = str.Find(L'\'',found+1);
+				if (found == string_t::npos)
+					return found;
+
+				pos = found+1;
+			}
+			else if (str[found] == L'"')
+			{
+				found = str.Find(L'"',found+1);
+				if (found == string_t::npos)
+					return found;
+
+				pos = found+1;
+			}
+			else
+				return found;
+		}
+	}
+
+	int parse_custom(const string_t& str, std::vector<string_t>& parts)
+	{
+		size_t pos = find_skip_quote(str,0,L';');
+		if (pos == string_t::npos)
+			parts.push_back(str);
+		else
+		{
+			parts.push_back(string_t(str.c_str(),pos++));
+			size_t pos2 = find_skip_quote(str,pos,L';');
+			if (pos2 == string_t::npos)
+				parts.push_back(string_t(str.c_str()+pos));
+			else
+			{
+				parts.push_back(string_t(str.c_str()+pos,pos2-pos));
+				parts.push_back(string_t(str.c_str()+pos2+1));
+			}
+		}
+		return parts.size();
+	}
+
+	template <typename T>
+	string_t fmt_custom(T val, const string_t& strFormat, size_t byte_width);
+
+	template <typename T>
+	string_t fmt_custom_i(T val, const string_t& /*strFormat*/, size_t byte_width)
+	{
+		void* TODO;
+		return fmt_recurse(val,L"G",byte_width,false);
+	}
+
+	string_t fmt_recurse(int64_t val, const string_t& strFormat, size_t byte_width, bool bRecurse)
+	{
+		num_fmt fmt;
+		bool capital;
+		int precision;
+		if (parse_numfmt(strFormat,fmt,capital,precision))
+		{
+			switch (fmt)
+			{
+			case currency:
+				return fmt_currency(val,precision);
+
+			case decimal:
+			case round_trip:
+				return fmt_decimal(val,precision,true);
+
+			case scientific:
+				return fmt_scientific(val,capital,precision,true);
+
+			case fixed_point:
+				return fmt_fixed(val,precision,true);
+
+			case number:
+				return fmt_number(val,precision);
+
+			case hexadecimal:
+				return fmt_hex(static_cast<uint64_t>(val),capital,precision);
+
+			case general:
+			default:
+				if (precision <= 0)
+				{
+					switch (byte_width)
+					{
+					case sizeof(byte_t):
+						precision = 3;
+						break;
+
+					case sizeof(uint16_t):
+						precision = 5;
+						break;
+
+					case sizeof(uint32_t):
+						precision = 10;
+						break;
+
+					case sizeof(uint64_t):
+						precision = 19;
+						break;
+
+					default:
+						break;
+					}
+				}
+				return fmt_general(val,capital,precision);
+			}
+		}
+		else if (bRecurse)
+		{
+			return fmt_custom(val,strFormat,byte_width);
+		}
+		else
+		{
+			return fmt_custom_i(val,strFormat,byte_width);
+		}
+	}
+
+	string_t fmt_recurse(uint64_t val, const string_t& strFormat, size_t byte_width, bool bRecurse)
+	{
+		num_fmt fmt;
+		bool capital;
+		int precision;
+		if (parse_numfmt(strFormat,fmt,capital,precision))
+		{
+			switch (fmt)
+			{
+			case currency:
+				return fmt_currency(val,precision);
+
+			case decimal:
+			case round_trip:
+				return fmt_decimal(val,precision,true);
+
+			case scientific:
+				return fmt_scientific(val,capital,precision,true);
+
+			case fixed_point:
+				return fmt_fixed(val,precision,true);
+
+			case number:
+				return fmt_number(val,precision);
+
+			case hexadecimal:
+				return fmt_hex(val,capital,precision);
+
+			case general:
+			default:
+				if (precision <= 0)
+				{
+					switch (byte_width)
+					{
+					case sizeof(byte_t):
+						precision = 3;
+						break;
+
+					case sizeof(uint16_t):
+						precision = 5;
+						break;
+
+					case sizeof(uint32_t):
+						precision = 10;
+						break;
+
+					case sizeof(uint64_t):
+						precision = 19;
+						break;
+
+					default:
+						break;
+					}
+				}
+				return fmt_general(val,capital,precision);
+			}
+		}
+		else if (bRecurse)
+		{
+			return fmt_custom(val,strFormat,byte_width);
+		}
+		else
+		{
+			return fmt_custom_i(val,strFormat,byte_width);
+		}
+	}
+
+	string_t fmt_recurse(float8_t val, const string_t& strFormat, size_t byte_width, bool bRecurse)
+	{
+		num_fmt fmt;
+		bool capital;
+		int precision;
+		if (parse_numfmt(strFormat,fmt,capital,precision))
+		{
+			switch (fmt)
+			{
+			case currency:
+				return fmt_currency(val,precision);
+
+			case scientific:
+				return fmt_scientific(val,capital,precision,true);
+
+			case decimal:
+			case fixed_point:
+				return fmt_fixed(val,precision,true);
+
+			case number:
+				return fmt_number(val,precision);
+
+			case round_trip:
+				return fmt_round_trip(val);
+
+			case hexadecimal:
+				return fmt_hex(static_cast<uint64_t>(val),capital,precision);
+
+			case general:
+			default:
+				if (precision <= 0)
+				{
+					switch (byte_width)
+					{
+					case sizeof(float4_t):
+						precision = 7;
+						break;
+
+					case sizeof(float8_t):
+						precision = 15;
+						break;
+
+					default:
+						break;
+					}
+				}
+				return fmt_general(val,capital,precision);
+			}
+		}
+		else if (bRecurse)
+		{
+			return fmt_custom(val,strFormat,byte_width);
+		}
+		else
+		{
+			return fmt_custom_i(val,strFormat,byte_width);
+		}
+	}
+
+	template <typename T>
+	string_t fmt_custom(T val, const string_t& strFormat, size_t byte_width)
+	{
+		std::vector<string_t> parts;
+		switch (parse_custom(strFormat,parts))
+		{
+		case 3:
+			if (val == 0)
+				return fmt_recurse(val,parts[2],byte_width,false);
+
+		case 2:
+			if (val < 0)
+				return fmt_recurse(val,parts[1],byte_width,false);
+			else
+				return fmt_recurse(val,parts[0],byte_width,false);
+
+		default:
+			return fmt_custom_i(val,strFormat,byte_width);
+		}
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	num_fmt fmt;
-	bool capital;
-	int precision;
-	if (parse_numfmt(strFormat,fmt,capital,precision))
-	{
-		switch (fmt)
-		{
-		case currency:
-			return fmt_currency(val,precision);
-
-		case decimal:
-		case round_trip:
-			return fmt_decimal(val,precision,true);
-
-		case scientific:
-			return fmt_scientific(val,capital,precision,true);
-
-		case fixed_point:
-			return fmt_fixed(val,precision,true);
-
-		case number:
-			return fmt_number(val,precision);
-
-		case hexadecimal:
-			return fmt_hex(static_cast<uint64_t>(val),capital,precision);
-
-		case general:
-		default:
-			if (precision <= 0)
-			{
-				switch (byte_width)
-				{
-				case sizeof(byte_t):
-					precision = 3;
-					break;
-
-				case sizeof(uint16_t):
-					precision = 5;
-					break;
-
-				case sizeof(uint32_t):
-					precision = 10;
-					break;
-
-				case sizeof(uint64_t):
-					precision = 19;
-					break;
-
-				default:
-					break;
-				}
-			}
-			return fmt_general(val,capital,precision);
-		}
-	}
-	else
-	{
-		void* TODO;
-		return fmt_fixed(val,6,false);
-	}
+	return fmt_recurse(val,strFormat,byte_width,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	num_fmt fmt;
-	bool capital;
-	int precision;
-	if (parse_numfmt(strFormat,fmt,capital,precision))
-	{
-		switch (fmt)
-		{
-		case currency:
-			return fmt_currency(val,precision);
-
-		case decimal:
-		case round_trip:
-			return fmt_decimal(val,precision,true);
-
-		case scientific:
-			return fmt_scientific(val,capital,precision,true);
-
-		case fixed_point:
-			return fmt_fixed(val,precision,true);
-
-		case number:
-			return fmt_number(val,precision);
-
-		case hexadecimal:
-			return fmt_hex(val,capital,precision);
-
-		case general:
-		default:
-			if (precision <= 0)
-			{
-				switch (byte_width)
-				{
-				case sizeof(byte_t):
-					precision = 3;
-					break;
-
-				case sizeof(uint16_t):
-					precision = 5;
-					break;
-
-				case sizeof(uint32_t):
-					precision = 10;
-					break;
-
-				case sizeof(uint64_t):
-					precision = 19;
-					break;
-
-				default:
-					break;
-				}
-			}
-			return fmt_general(val,capital,precision);
-		}
-	}
-	else
-	{
-		void* TODO;
-		return fmt_fixed(val,6,false);
-	}
+	return fmt_recurse(val,strFormat,byte_width,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
@@ -1146,64 +1301,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_
 	if (check_double(ret,val))
 		return ret;
 
-	num_fmt fmt;
-	bool capital;
-	int precision;
-	if (parse_numfmt(strFormat,fmt,capital,precision))
-	{
-		switch (fmt)
-		{
-		case currency:
-			return fmt_currency(val,precision);
-
-		case scientific:
-			return fmt_scientific(val,capital,precision,true);
-
-		case decimal:
-		case fixed_point:
-			return fmt_fixed(val,precision,true);
-
-		case number:
-			return fmt_number(val,precision);
-
-		case round_trip:
-			return fmt_round_trip(val);
-
-		case hexadecimal:
-			return fmt_hex(static_cast<uint64_t>(val),capital,precision);
-
-		case general:
-		default:
-			if (precision <= 0)
-			{
-				switch (byte_width)
-				{
-				case sizeof(float4_t):
-					precision = 7;
-					break;
-
-				case sizeof(float8_t):
-					precision = 15;
-					break;
-
-				default:
-					break;
-				}
-			}
-			return fmt_general(val,capital,precision);
-		}
-	}
-	else
-	{
-		void* TODO;
-		return fmt_fixed(val,6,false);
-	}	
+	return fmt_recurse(val,strFormat,byte_width,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,val,(in),const string_t&,strFormat))
 {
-	void* TODO;
-	return val ? L"true" : L"false";
+	if (strFormat.IsEmpty())
+		return val ? L"true" : L"false";
+
+	std::vector<string_t> parts;
+	parse_custom(strFormat,parts);
+
+	if (parts.size() != 2)
+		OMEGA_THROW(L"Invalid bool_t format string {0}" % strFormat);
+
+	return val ? parts[0] : parts[1];
 }
 
 unsigned int OOCore::parse_uint_hex(wchar_t c)

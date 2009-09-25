@@ -218,7 +218,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const v
 	return 1 + OOBase::to_utf8(sz,size,static_cast<const StringNode*>(h)->m_buf,static_cast<const StringNode*>(h)->m_len);
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(in),const void*,s2))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(in),const void*,s2))
 {
 	StringNode* pOrig = static_cast<StringNode*>(s1);
 	const StringNode* pAdd = static_cast<const StringNode*>(s2);
@@ -228,6 +228,21 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,s1,(i
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,pAdd->m_buf,pAdd->m_len));
+
+	pOrig->Release();
+
+	return pNode;
+}
+
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(in),wchar_t,c))
+{
+	StringNode* pOrig = static_cast<StringNode*>(s1);
+	
+	if (!pOrig)
+		return OOCore_string_t__ctor3(&c,1);
+
+	StringNode* pNode;
+	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,&c,1));
 
 	pOrig->Release();
 
@@ -289,7 +304,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,
 	wint_t l1 = 0, l2 = 0;
 	if (bIgnoreCase)
 	{
-		while ((size_t(p1-st1)<length) && (*p2 != L'\0') && (l1 = towlower(*p1)) == (l2 = towlower(*p2)))
+		while ((size_t(p1-st1)<length) && (l1 = towlower(*p1)) == (l2 = towlower(*p2)) && (*p2 != L'\0'))
 		{
 			++p1;
 			++p2;
@@ -297,7 +312,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,
 	}
 	else
 	{
-		while ((size_t(p1-st1)<length) && (*p2 != L'\0') && (l1 = *p1) == (l2 = *p2))
+		while ((size_t(p1-st1)<length) && (l1 = *p1) == (l2 = *p2) && (*p2 != L'\0'))
 		{
 			++p1;
 			++p2;
@@ -534,33 +549,26 @@ void StringNode::parse_arg(size_t& pos)
 	
 	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
 	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
-	
 	if (comma == pos || colon == pos)
 		OMEGA_THROW(L"Missing index in format string");
 
 	format_state_t::insert_t ins;
+	ins.alignment = 0;
 	ins.index = OOCore::parse_uint(m_buf+pos);
 	if (ins.index < m_fs->m_curr_arg)
 		m_fs->m_curr_arg = ins.index;
 
-	if (comma >= end)
+	if (comma < end && comma < colon)
 	{
-		ins.alignment = 0;
-		comma = end;
-	}
-	else
-	{
-		++comma;
+		pos = comma++;
 		ins.alignment = OOCore::parse_int(m_buf+comma);
 	}
 	
-	if (colon >= end)
-		colon = end;
-	else
-		++colon;
-
-	ins.format.assign(m_buf+colon,comma > colon ? comma-colon : end-colon);
-	merge_braces(ins.format);
+	if (colon < end)
+	{
+		ins.format.assign(m_buf+colon+1,end-colon-1);
+		merge_braces(ins.format);
+	}
 	
 	m_fs->m_listInserts.push_back(ins);
 

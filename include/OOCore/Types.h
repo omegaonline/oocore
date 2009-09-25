@@ -50,6 +50,7 @@ namespace Omega
 		inline string_t& operator = (const wchar_t* wsz);
 
 		inline string_t& operator += (const string_t& s);
+		inline string_t& operator += (wchar_t c);
 
 		inline const wchar_t* c_str() const;
 		const wchar_t operator[](size_t i) const { return c_str()[i]; }
@@ -317,6 +318,8 @@ namespace Omega
 inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs);
 inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs);
 inline Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs);
+inline Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs);
+inline Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs);
 
 template <typename T>
 inline Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs);

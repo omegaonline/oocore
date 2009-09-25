@@ -98,7 +98,7 @@ namespace
 				const wchar_t* p2 = wcsstr(p1,i->first.c_str());
 				if (!p2)
 				{
-					strRes2 += string_t(p1);
+					strRes2 += p1;
 					break;
 				}
 				

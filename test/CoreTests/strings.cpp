@@ -34,6 +34,8 @@ static bool string_tests_wchar()
 	s3.Clear();
 	TEST(s3.IsEmpty());
 
+	TEST(s2 != L"ghijklmno");
+
 	s3 = sz1_2;
 	TEST(s1.Compare(s3,0,Omega::string_t::npos,true) == 0);
 	TEST(s1 == s3.ToLower());
@@ -94,8 +96,8 @@ static bool string_tests_format()
 	TEST(Omega::string_t(L"1st:{0,10} 2nd:{1}") % 1 % 2 ==  L"1st:         1 2nd:2");
 	TEST(Omega::string_t(L"1st:{0,-10} 2nd:{1}") % 1 % 2 == L"1st:1          2nd:2");
 
-	TEST(Omega::string_t(L"Number:{0:e}") % 1 == L"Number:1.000000e+000");
-	TEST(Omega::string_t(L"Number:{0:E}") % 1.0 == L"Number:1.000000E+000");
+	TEST(Omega::string_t(L"{0:e}") % 1 == L"1.000000e+000");
+	TEST(Omega::string_t(L"{0:E}") % 1.0 == L"1.000000E+000");
 
 	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float4_t>::infinity() == L"1.#INF");
 	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float8_t>::infinity() == L"1.#INF");
@@ -105,6 +107,19 @@ static bool string_tests_format()
 	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float8_t>::signaling_NaN() == L"1.#NAN");
 	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float4_t>::quiet_NaN() == L"1.#IND");
 	TEST(Omega::string_t(L"{0}") % std::numeric_limits<Omega::float8_t>::quiet_NaN() == L"1.#IND");
+
+	TEST(Omega::string_t(L"{0}") % true == L"true");
+	TEST(Omega::string_t(L"{0}") % false == L"false");
+	TEST(Omega::string_t(L"{0:yes;no}") % true == L"yes");
+	TEST(Omega::string_t(L"{0:yes;no}") % false == L"no");
+	TEST(Omega::string_t(L"{0:'yes;';'no;'}") % true == L"'yes;'");
+	TEST(Omega::string_t(L"{0:\"yes;\";\"no;\"}") % false == L"\"no;\"");
+
+	TEST(Omega::string_t(L"{0:E;F}") % 1.0 == L"1.000000E+000");
+	TEST(Omega::string_t(L"{0:E;F}") % -1.5 == L"-1.5");
+	TEST(Omega::string_t(L"{0:E;F;e}") % 0.0 == L"0.000000e+000");
+
+	TEST(Omega::string_t(L"{0:##,00.000}") % 0.0 == L"0.0000");
 
 	return true;
 }

@@ -150,14 +150,22 @@ std::string Omega::string_t::ToUTF8() const
 	return str;
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add,2,((in),void*,h,(in),const void*,h2));
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,h,(in),const void*,h2));
 Omega::string_t& Omega::string_t::operator += (const string_t& s)
 {
 	if (s.m_handle)
 	{
-		m_handle = static_cast<handle_t*>(OOCore_string_t_add(m_handle,s.m_handle));
+		m_handle = static_cast<handle_t*>(OOCore_string_t_add1(m_handle,s.m_handle));
 		OMEGA_DEBUG_STASH_STRING();
 	}
+	return *this;
+}
+
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,h,(in),wchar_t,c));
+Omega::string_t& Omega::string_t::operator += (wchar_t c)
+{
+	m_handle = static_cast<handle_t*>(OOCore_string_t_add2(m_handle,c));
+	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }
 
@@ -365,6 +373,16 @@ Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs)
 	return (Omega::string_t(lhs) += rhs);
 }
 
+Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs)
+{
+	return (Omega::string_t(&lhs,1) += rhs);
+}
+
+Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs)
+{
+	return (Omega::string_t(lhs) += rhs);
+}
+
 template <typename T>
 Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs)
 {
@@ -480,8 +498,12 @@ namespace Omega
 	}
 }
 
-Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t&)
+Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
 {
+	if (strFormat.IsEmpty())
+		return val;
+	
+	void* TODO;
 	return val;
 }
 

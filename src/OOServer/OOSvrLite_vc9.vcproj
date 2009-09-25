@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
-	Name="OOServer"
-	ProjectGUID="{43AB6DFC-B8A8-4A09-AF3E-A31B29AD2E2A}"
-	RootNamespace="OOServer"
+	Version="9.00"
+	Name="OOSvrLite"
+	ProjectGUID="{27040171-332D-4AFD-AD95-B6A9A25925C2}"
+	RootNamespace="OOSvrLite"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -21,8 +22,8 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="..\..\bin\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Root"
-			ConfigurationType="1"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Lite"
+			ConfigurationType="2"
 			CharacterSet="0"
 			>
 			<Tool
@@ -49,7 +50,7 @@
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="OOServer_Root.h"
+				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
 				DebugInformationFormat="4"
 			/>
@@ -64,9 +65,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
+				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -96,8 +98,8 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Root"
-			ConfigurationType="1"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Lite"
+			ConfigurationType="2"
 			CharacterSet="0"
 			>
 			<Tool
@@ -125,7 +127,7 @@
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="OOServer_Root.h"
+				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
 				DebugInformationFormat="3"
 			/>
@@ -140,9 +142,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
+				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -173,9 +176,10 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="..\..\bin"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Root"
-			ConfigurationType="1"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Lite"
+			ConfigurationType="2"
 			CharacterSet="0"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -198,14 +202,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="OOServer_Root.h"
+				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
 			/>
 			<Tool
@@ -219,9 +222,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
+				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
-				LinkTimeCodeGeneration="1"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -251,9 +254,10 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Root"
-			ConfigurationType="1"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)_Lite"
+			ConfigurationType="2"
 			CharacterSet="0"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -277,14 +281,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="OOServer_Root.h"
+				PrecompiledHeaderThrough="OOServer_Lite.h"
 				WarningLevel="4"
 			/>
 			<Tool
@@ -298,9 +301,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
+				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
-				LinkTimeCodeGeneration="1"
+				ImportLibrary="$(IntDir)\$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -334,13 +337,9 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath=".\ClientAcceptor.cpp"
-				>
-			</File>
 			<File
 				RelativePath=".\Database.cpp"
 				>
@@ -382,55 +381,18 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\DebuggerWin32.cpp"
+				RelativePath=".\IPSLite.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\MessageConnection.cpp"
+				RelativePath=".\OOSvrLite.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
+						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -438,8 +400,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
+						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -447,8 +408,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
+						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -456,8 +416,7 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						PrecompiledHeaderThrough=""
+						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
 			</File>
@@ -502,62 +461,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\RootMain.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="1"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\RootManager.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RootRegistry.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\RootWin32.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SpawnedProcessUnix.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SpawnedProcessWin32.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\SQLite3_comp.c"
 				>
 				<FileConfiguration
@@ -568,6 +471,7 @@
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
 						WarningLevel="0"
+						Detect64BitPortabilityProblems="false"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -578,6 +482,7 @@
 						UsePrecompiledHeader="0"
 						PrecompiledHeaderThrough=""
 						WarningLevel="0"
+						Detect64BitPortabilityProblems="false"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -608,23 +513,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\ClientAcceptor.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Database.h"
 				>
 			</File>
 			<File
-				RelativePath=".\MessageConnection.h"
+				RelativePath=".\IPSLite.h"
 				>
 			</File>
 			<File
-				RelativePath=".\OOServer_Root.h"
+				RelativePath=".\OOServer_Lite.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Protocol.h"
+				RelativePath=".\RegistryCmn.h"
 				>
 			</File>
 			<File
@@ -632,70 +533,18 @@
 				>
 			</File>
 			<File
-				RelativePath=".\RootManager.h"
-				>
-			</File>
-			<File
-				RelativePath=".\SpawnedProcess.h"
+				RelativePath="..\OOCore\Server.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\logo.ico"
+				RelativePath=".\OOSvrLite_res.rc"
 				>
-			</File>
-			<File
-				RelativePath=".\OOServer.rc"
-				>
-			</File>
-			<File
-				RelativePath=".\OOServer_msgs.mc"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\OOServer_msgs.bin"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\OOServer_msgs.bin"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\OOServer_msgs.bin"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Compiling messages..."
-						CommandLine="mc $(InputFileName)&#x0D;&#x0A;"
-						Outputs=".\OOServer_msgs.bin"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

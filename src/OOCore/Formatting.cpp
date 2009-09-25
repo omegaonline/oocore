@@ -173,7 +173,395 @@ namespace
 		return true;
 	}
 
-	////// START OF THE DEFINE STUFF
+#if defined(_WIN32)
+
+	/*std::wstring fmt_currency_i(uint64_t val, int)
+	{
+		wchar_t mon_grouping[12] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SMONGROUPING,mon_grouping,12))
+			OMEGA_THROW(GetLastError());
+
+		wchar_t mon_sep[5] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SMONTHOUSANDSEP,mon_sep,5))
+			OMEGA_THROW(GetLastError());
+
+		wchar_t* grouping = mon_grouping;
+		int grp = -1;
+		int d = 0;
+
+		std::wstring str;
+		do
+		{
+			if (!d && *grouping)
+			{
+				unsigned int g = OOCore::parse_uint(grouping);
+				if (g)
+				{
+					grp = g;
+					grouping = wcschr(grouping,L';');
+					if (grouping)
+						++grouping;
+				}
+			}
+
+			str = static_cast<wchar_t>((val % 10) + L'0') + str;
+			val /= 10;
+
+			if (grp!=-1 && ++d==grp && val!=0)
+			{
+				str = mon_sep + str;
+				d = 0;
+			}
+
+		} while (val > 0);
+		return str;
+	}
+
+	std::wstring fmt_currency_i(int64_t val, int)
+	{
+		return fmt_currency_i(static_cast<uint64_t>(val < 0 ? -val : val),-1);
+	}
+
+	std::wstring fmt_currency_i(const double& val, int precision)
+	{
+		double int_part = 0.0;
+		double frac_part = fabs(modf(val,&int_part));
+
+		std::wstring ret = fmt_currency_i(static_cast<int64_t>(int_part),-1);
+		
+		if (precision < 0)
+		{
+			DWORD prec = 0;
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_ICURRDIGITS,(LPWSTR)&prec,sizeof(DWORD)))
+				OMEGA_THROW(GetLastError());
+
+			precision = prec;
+		}
+
+		wchar_t mon_dec[5] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SMONDECIMALSEP,mon_dec,5))
+			OMEGA_THROW(GetLastError());
+
+		if (precision > 0)
+			ret += mon_dec;
+		
+		std::wstring dps;
+		dps.reserve(std::numeric_limits<double>::digits10);
+		do
+		{
+			frac_part = modf(frac_part * 10.0,&int_part);
+			dps += static_cast<wchar_t>(int_part + L'0');
+		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
+
+		if (frac_part != 0.0)
+		{
+			// Round...
+			if (frac_part >= 0.5)
+				dps += static_cast<wchar_t>(ceil(frac_part*10.0)) + L'0';
+			else
+				dps += static_cast<wchar_t>(floor(frac_part*10.0)) + L'0';
+		}
+
+		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
+			dps.append(precision-dps.size(),'0');
+
+		return ret + dps;
+	}
+	
+	template <typename T>
+	string_t fmt_currency(T val, int precision)
+	{
+		std::wstring str = fmt_currency_i(val,precision);
+
+		wchar_t symbol[8] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SCURRENCY,symbol,8))
+			OMEGA_THROW(GetLastError());
+
+		if (val >= 0)
+		{
+			DWORD fmt = 0;
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_ICURRENCY,(LPWSTR)&fmt,sizeof(DWORD)))
+				OMEGA_THROW(GetLastError());
+
+			switch (fmt)
+			{
+			case 0:
+			default:
+				str = symbol + str;
+				break;
+
+			case 1:
+				str += symbol;
+				break;
+
+			case 2:
+				str = std::wstring(symbol) + L' ' + str;
+				break;
+
+			case 3:
+				str += L' ';
+				str += symbol;
+				break;
+			}
+		}
+		else
+		{
+			DWORD fmt = 0;
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_INEGCURR,(LPWSTR)&fmt,sizeof(DWORD)))
+				OMEGA_THROW(GetLastError());
+
+			wchar_t neg[6] = {0};
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SNEGATIVESIGN,neg,6))
+				OMEGA_THROW(GetLastError());
+
+			switch (fmt)
+			{
+			case 0:
+				str = std::wstring(L"(") + symbol + str + L')';
+				break;
+
+			default:
+			case 1:
+				str = std::wstring(neg) + symbol + str;
+				break;
+
+			case 2:
+				str = std::wstring(symbol) + neg + str;
+				break;
+
+			case 3:
+				str = symbol + str + neg;
+				break;
+
+			case 4:
+				str = L'(' + str + symbol + L')';
+				break;
+
+			case 5:
+				str = neg + str + symbol;
+				break;
+
+			case 6:
+				str += neg;
+				str += symbol;
+				break;
+
+			case 7:
+				str += symbol;
+				str += neg;
+				break;
+
+			case 8:
+				str = neg + str + L' ' + symbol;
+				break;
+
+			case 9:
+				str = std::wstring(neg) + symbol + L' ' + str;
+				break;
+
+			case 10:
+				str += L' ';
+				str += symbol;
+				str += neg;
+				break;
+
+			case 11:
+				str = std::wstring(symbol) + L' ' + str + neg;
+				break;
+
+			case 12:
+				str = std::wstring(symbol) + L' ' + neg + str;
+				break;
+
+			case 13:
+				str += neg;
+				str += L' ';
+				str += symbol;
+				break;
+
+			case 14:
+				str = std::wstring(L"(") + symbol + L' ' + str + L')';
+				break;
+
+			case 15:
+				str = L'(' + str + L' ' + symbol + L')';
+				break;
+			}
+		}
+		return string_t(str.c_str());
+	}
+
+	std::wstring fmt_number_i(uint64_t val, int)
+	{
+		wchar_t mon_grouping[25] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SGROUPING,mon_grouping,25))
+			OMEGA_THROW(GetLastError());
+
+		wchar_t mon_sep[5] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_STHOUSAND,mon_sep,5))
+			OMEGA_THROW(GetLastError());
+
+		wchar_t* grouping = mon_grouping;
+		int grp = -1;
+		int d = 0;
+
+		std::wstring str;
+		do
+		{
+			if (!d && *grouping)
+			{
+				unsigned int g = OOCore::parse_uint(grouping);
+				if (g)
+				{
+					grp = g;
+					grouping = wcschr(grouping,L';');
+					if (grouping)
+						++grouping;
+				}
+			}
+
+			str = static_cast<wchar_t>((val % 10) + L'0') + str;
+			val /= 10;
+
+			if (grp!=-1 && ++d==grp && val!=0)
+			{
+				str = mon_sep + str;
+				d = 0;
+			}
+
+		} while (val > 0);
+		return str;
+	}
+
+	std::wstring fmt_number_i(int64_t val, int)
+	{
+		return fmt_number_i(static_cast<uint64_t>(val < 0 ? -val : val),-1);
+	}
+
+	std::wstring fmt_number_i(const double& val, int precision)
+	{
+		double int_part = 0.0;
+		double frac_part = fabs(modf(val,&int_part));
+
+		std::wstring ret = fmt_number_i(static_cast<int64_t>(int_part),-1);
+		
+		if (precision < 0)
+		{
+			DWORD curr_digits = 0;
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_IDIGITS,(LPWSTR)&curr_digits,sizeof(DWORD)))
+				OMEGA_THROW(GetLastError());
+
+			precision = curr_digits;
+		}
+
+		wchar_t mon_dec[5] = {0};
+		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SDECIMAL,mon_dec,5))
+			OMEGA_THROW(GetLastError());
+
+		if (precision > 0)
+			ret += mon_dec;
+		
+		std::wstring dps;
+		dps.reserve(std::numeric_limits<double>::digits10);
+		do
+		{
+			frac_part = modf(frac_part * 10.0,&int_part);
+			dps += static_cast<wchar_t>(int_part + L'0');
+		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
+
+		if (frac_part != 0.0)
+		{
+			// Round...
+			if (frac_part >= 0.5)
+				dps += static_cast<wchar_t>(ceil(frac_part*10.0)) + L'0';
+			else
+				dps += static_cast<wchar_t>(floor(frac_part*10.0)) + L'0';
+		}
+
+		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
+			dps.append(precision-dps.size(),'0');
+
+		return ret + dps;
+	}
+	
+	template <typename T>
+	string_t fmt_number(T val, int precision)
+	{
+		std::wstring str = fmt_number_i(val,precision);
+
+		if (val < 0)
+		{
+			wchar_t neg[6] = {0};
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SNEGATIVESIGN,neg,6))
+				OMEGA_THROW(GetLastError());
+
+			DWORD fmt = 0;
+			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_INEGNUMBER,(LPWSTR)&fmt,sizeof(DWORD)))
+				OMEGA_THROW(GetLastError());
+
+			switch (fmt)
+			{
+			case 0:
+				str = L'(' + str + L')';
+				break;
+
+			default:
+			case 1:
+				str = neg + str;
+				break;
+
+			case 2:
+				str = std::wstring(neg) + L' ' + str;
+				break;
+
+			case 3:
+				str += neg;
+				break;
+
+			case 4:
+				str += L' ';
+				str += neg;
+				break;
+			}
+		}
+		return string_t(str.c_str());
+	}*/
+
+	template <typename T>
+	string_t fmt_currency(T val, int precision)
+	{
+		string_t str = fmt_fixed(val,precision,false);
+				
+		int buf_size = GetCurrencyFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,NULL,0);
+		if (!buf_size)
+			OMEGA_THROW(GetLastError());
+
+		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf;
+		OMEGA_NEW(buf,wchar_t[buf_size]);
+		if (!GetCurrencyFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,buf.value(),buf_size))
+			OMEGA_THROW(GetLastError());
+
+		return string_t(buf.value());
+	}
+
+	template <typename T>
+	string_t fmt_number(T val, int precision)
+	{
+		string_t str = fmt_fixed(val,precision,false);
+				
+		int buf_size = GetNumberFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,NULL,0);
+		if (!buf_size)
+			OMEGA_THROW(GetLastError());
+
+		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf;
+		OMEGA_NEW(buf,wchar_t[buf_size]);
+		if (!GetNumberFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,buf.value(),buf_size))
+			OMEGA_THROW(GetLastError());
+
+		return string_t(buf.value());
+	}
+
+#else
 
 	std::string fmt_currency(lconv* lc, uint64_t val, int)
 	{
@@ -211,29 +599,37 @@ namespace
 		double frac_part = fabs(modf(val,&int_part));
 
 		std::string ret = fmt_currency(lc,static_cast<int64_t>(int_part),-1);
-		if (int_part == -0.0)
-			ret = '-' + ret;
-
-		if (!lc->mon_decimal_point || lc->mon_decimal_point[0] == '\0')
-			ret += lc->decimal_point;
-		else
-			ret += lc->mon_decimal_point;
-
+	
 		if (precision < 0)
 		{
 			if (lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
+		}
+
+		if (precision != 0)
+		{
+			if (!lc->mon_decimal_point || lc->mon_decimal_point[0] == '\0')
+				ret += lc->decimal_point;
 			else
-				precision = 2;
+				ret += lc->mon_decimal_point;
 		}
 		
 		std::string dps;
 		dps.reserve(std::numeric_limits<double>::digits10);
 		do
 		{
-			frac_part = modf(frac_part * 10,&int_part);
+			frac_part = modf(frac_part * 10.0,&int_part);
 			dps += static_cast<char>(int_part + '0');
-		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision));
+		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
+
+		if (frac_part != 0.0)
+		{
+			// Round...
+			if (frac_part >= 0.5)
+				dps += static_cast<char>(ceil(frac_part*10.0)) + '0';
+			else
+				dps += static_cast<char>(floor(frac_part*10.0)) + '0';
+		}
 
 		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
 			dps.append(precision-dps.size(),'0');
@@ -438,17 +834,27 @@ namespace
 		{
 			if (lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
-			else
-				precision = 2;
 		}
-		
+
+		if (precision != 0)
+			ret += lc->decimal_point;
+					
 		std::string dps;
 		dps.reserve(std::numeric_limits<double>::digits10);
 		do
 		{
-			frac_part = modf(frac_part * 10,&int_part);
+			frac_part = modf(frac_part * 10.0,&int_part);
 			dps += static_cast<char>(int_part + '0');
-		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision));
+		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
+
+		if (frac_part != 0.0)
+		{
+			// Round...
+			if (frac_part >= 0.5)
+				dps += static_cast<char>(ceil(frac_part*10.0)) + '0';
+			else
+				dps += static_cast<char>(floor(frac_part*10.0)) + '0';
+		}
 
 		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
 			dps.append(precision-dps.size(),'0');
@@ -466,7 +872,7 @@ namespace
 		return string_t(fmt_number(lc,val,precision).c_str(),false);
 	}
 
-	////// END OF THE DEFINE STUFF
+#endif // !_WIN32
 
 	string_t fmt_decimal(uint64_t val, int precision, bool zeros)
 	{
@@ -537,10 +943,10 @@ namespace
 		if (int_part == -0.0)
 			ret = L"-" + ret;
 
-		if (precision > 0)
+		if (precision != 0)
 		{
 			ret += L".";
-				
+			
 			dps.reserve(std::numeric_limits<double>::digits10);
 			do
 			{
@@ -551,7 +957,10 @@ namespace
 			if (frac_part != 0.0)
 			{
 				// Round...
-				dps += static_cast<wchar_t>(fabs(frac_part*10.0)) + L'0';
+				if (frac_part >= 0.5)
+					dps += static_cast<wchar_t>(ceil(frac_part*10.0)) + L'0';
+				else
+					dps += static_cast<wchar_t>(floor(frac_part*10.0)) + L'0';
 			}
 
 			if (zeros && precision >= 0 && static_cast<size_t>(precision) > dps.size())

@@ -762,7 +762,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1
 					while (!s->m_fs->m_listInserts.empty())
 					{
 						i = s->m_fs->m_listInserts.begin();
-						if (i->index == (size_t)-1)
+						if (i->index == (unsigned int)-1)
 						{
 							s->m_fs->m_prefix += align(i->format,i->alignment);
 							s->m_fs->m_prefix += i->suffix;
@@ -778,7 +778,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1
 					if (arg)
 						i->format.assign(static_cast<StringNode*>(arg)->m_buf,static_cast<StringNode*>(arg)->m_len);
 
-					i->index = (size_t)-1;
+					i->index = (unsigned int)-1;
 				}
 				break;
 			}

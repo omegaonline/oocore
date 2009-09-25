@@ -79,7 +79,8 @@ namespace Omega
 					return typename impl::safe_type_wrapper(val);
 				}
 
-				static typename impl::safe_type_wrapper coerce(typename optimal_param<T>::type val, size_t count)
+				template <typename S>
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<T>::type val, S count)
 				{
 					return typename impl::safe_type_wrapper(val,count);
 				}
@@ -89,14 +90,10 @@ namespace Omega
 					return typename impl::type_wrapper(val);
 				}
 
-				static typename impl::type_wrapper coerce(type val, uint32_t count)
+				template <typename S>
+				static typename impl::type_wrapper coerce(type val, S count)
 				{
-					return typename impl::type_wrapper(val,static_cast<size_t>(count));
-				}
-
-				static typename impl::type_wrapper coerce(type val, const uint64_t& count)
-				{
-					return typename impl::type_wrapper(val,static_cast<size_t>(count));
+					return typename impl::type_wrapper(val,count);
 				}
 
 				template <typename S>
@@ -127,7 +124,8 @@ namespace Omega
 					return typename impl::safe_type_wrapper(val);
 				}
 
-				static typename impl::safe_type_wrapper coerce(typename optimal_param<const T>::type val, size_t count)
+				template <typename S>
+				static typename impl::safe_type_wrapper coerce(typename optimal_param<const T>::type val, S count)
 				{
 					return typename impl::safe_type_wrapper(val,count);
 				}
@@ -137,14 +135,10 @@ namespace Omega
 					return typename impl::type_wrapper(val);
 				}
 
-				static typename impl::type_wrapper coerce(type val, uint32_t count)
+				template <typename S>
+				static typename impl::type_wrapper coerce(type val, S count)
 				{
-					return typename impl::type_wrapper(val,static_cast<size_t>(count));
-				}
-
-				static typename impl::type_wrapper coerce(type val, const uint64_t& count)
-				{
-					return typename impl::type_wrapper(val,static_cast<size_t>(count));
+					return typename impl::type_wrapper(val,count);
 				}
 
 				template <typename S>

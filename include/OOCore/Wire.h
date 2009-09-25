@@ -324,9 +324,6 @@ namespace Omega
 
 					void init(uint32_t count)
 					{
-						if (count > (uint32_t)-1 / sizeof(T))
-							OMEGA_THROW(L"Attempt to marshal too many array items");
-					
 						m_alloc_count = count;
 						OMEGA_NEW(m_pVals,typename remove_const<T>::type[m_alloc_count]);
 					}
@@ -343,6 +340,9 @@ namespace Omega
 				template <typename S>
 				static void init(type& val, S count)
 				{
+					if (count > (uint32_t)-1 / sizeof(T))
+						OMEGA_THROW(L"Attempt to marshal too many array items");
+
 					val.init(static_cast<uint32_t>(count));
 				}
 

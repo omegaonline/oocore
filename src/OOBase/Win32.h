@@ -32,11 +32,6 @@ namespace OOBase
 	{
 		std::string FormatMessage(DWORD dwErr = GetLastError());
 
-		struct init_once_t
-		{
-			LONG check;
-		};
-
 		class SmartHandle
 		{
 		public:
@@ -152,7 +147,7 @@ namespace OOBase
 // Declare types and function not declared prior to Vista
 #if (WINVER < 0x0600)
 
-typedef OOBase::Win32::init_once_t INIT_ONCE;
+typedef LONG INIT_ONCE;
 typedef BOOL (__stdcall *PINIT_ONCE_FN) (INIT_ONCE* InitOnce, void* Parameter, void** Context);
 
 typedef OOBase::Win32::rwmutex_t* SRWLOCK;

@@ -169,15 +169,15 @@ namespace
 
 BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 {
-	char static_check[sizeof(OOBase::Win32::init_once_t) == sizeof(INIT_ONCE) ? 1 : -1]; static_check;
+	char static_check[sizeof(LONG) <= sizeof(INIT_ONCE) ? 1 : -1]; static_check;
 	
-	OOBase::Win32::init_once_t* Once = reinterpret_cast<OOBase::Win32::init_once_t*>(InitOnce);
+	LONG* check = reinterpret_cast<LONG*>(InitOnce);
 
-	LONG checked = InterlockedCompareExchange(&Once->check,-1,0);
+	LONG checked = InterlockedCompareExchange(check,-1,0);
 	if (checked != 1)
 	{
 		// Get lock...
-		OOBase::Win32::SmartHandle mutex(get_mutex(Once));
+		OOBase::Win32::SmartHandle mutex(get_mutex(check));
 
 		do
 		{
@@ -190,19 +190,19 @@ BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN Ini
 				try
 				{
 					if ((*InitFn)(InitOnce,Parameter,Context))
-						InterlockedExchange(&Once->check,1);
+						InterlockedExchange(check,1);
 					else
-						InterlockedExchange(&Once->check,0);
+						InterlockedExchange(check,0);
 				}
 				catch (...)
 				{
-					InterlockedExchange(&Once->check,0);
+					InterlockedExchange(check,0);
 					ReleaseMutex(mutex);
 					return FALSE;
 				}
 			}
 
-			checked = Once->check;
+			checked = *check;
 					
 			// And release
 			if (!ReleaseMutex(mutex))
@@ -231,7 +231,7 @@ void Win32Thunk::impl_InitializeSRWLock(SRWLOCK* SRWLock)
 void OOBase::Win32::InitializeSRWLock(SRWLOCK* SRWLock)
 {
 #if (WINVER >= 0x0600)
-	assert(sizeof(rwmutex_t*) >= sizeof(SRWLOCK));
+	char static_check[sizeof(rwmutex_t*) >= sizeof(SRWLOCK) ? 1 : -1]; static_check;
 #endif
 
 	(*Win32Thunk::instance().m_InitializeSRWLock)(SRWLock);
@@ -363,7 +363,7 @@ void Win32Thunk::impl_InitializeConditionVariable(CONDITION_VARIABLE* ConditionV
 void OOBase::Win32::InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
 {
 #if (WINVER >= 0x0600)
-	assert(sizeof(condition_variable_t*) >= sizeof(CONDITION_VARIABLE));
+	char static_check[sizeof(condition_variable_t*) >= sizeof(CONDITION_VARIABLE) ? 1 : -1]; static_check;
 #endif
 
 	(*Win32Thunk::instance().m_InitializeConditionVariable)(ConditionVariable);

@@ -169,6 +169,8 @@ namespace
 
 BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 {
+	char static_check[sizeof(OOBase::Win32::init_once_t) == sizeof(INIT_ONCE) ? 1 : -1]; static_check;
+	
 	OOBase::Win32::init_once_t* Once = reinterpret_cast<OOBase::Win32::init_once_t*>(InitOnce);
 
 	LONG checked = InterlockedCompareExchange(&Once->check,-1,0);

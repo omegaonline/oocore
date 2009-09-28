@@ -37,19 +37,10 @@ using namespace OTL;
 
 extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpreserved*/)
 {
-	if (reason == DLL_PROCESS_ATTACH)
-	{
-	}
-	else if (reason == DLL_THREAD_DETACH)
+	if (reason == DLL_THREAD_DETACH)
 	{
 		OOBase::TLS::ThreadExit();
 	}
-	/*else if (reason == DLL_PROCESS_DETACH)
-	{
-		// Clean up all our singletons...
-		OOBase::Destructor::call_destructors();
-	}*/
-
 	return TRUE;
 }
 

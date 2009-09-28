@@ -27,23 +27,26 @@
 
 int vsnprintf_s(char* s, size_t n, const char* format, va_list arg)
 {
-	if (!s)
-		OOBase_CallCriticalFailure("Null pointer passed to vsnprintf_s");
+	if (!s || !format || !n)
+	{
+		errno = EINVAL;
+		return -1;
+	}
 
 	s[0] = '\0';
-
-	if (!format)
-		OOBase_CallCriticalFailure("Null pointer passed to vsnprintf_s");
-
-	if (n == 0)
-		OOBase_CallCriticalFailure("Empty buffer passed to vsnprintf_s");
-
-	if (n == 1)
-		OOBase_CallCriticalFailure("Single character buffer passed to vsnprintf_s");
-	
 	int r = vsnprintf(s,n-1,format,arg);
 	s[n-1] = '\0';
 	return r;
+}
+
+int strcpy_s(char* dest, size_t n, const char* src)
+{
+	if (!dest || !src || !n)
+		return EINVAL;
+
+	strncpy(dest,src,n-1);
+	dest[n-1] = '\0';
+	return 0;
 }
 
 #endif

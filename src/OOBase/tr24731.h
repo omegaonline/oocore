@@ -47,6 +47,7 @@ inline int vsnprintf_s_fixed(char* s, rsize_t n, const char* format, va_list arg
 
 #if !defined(HAVE_TR_24731)
 int vsnprintf_s(char* s, size_t n, const char* format, va_list arg);
+int strcpy_s(char* dest, size_t n, const char* src);
 #endif
 
 #endif // OOBASE_TR24731_H_INCLUDED_

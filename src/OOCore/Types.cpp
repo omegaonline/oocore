@@ -252,21 +252,23 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
 {
 	const StringNode* s = static_cast<const StringNode*>(s1);
-	if (length > s->m_len - pos)
-		length = s->m_len - pos;
-
-	size_t len2 = static_cast<const StringNode*>(s2)->m_len;
-
-	const wchar_t* st1 = s->m_buf + pos;
-	const wchar_t* st2 = static_cast<const StringNode*>(s2)->m_buf;
 	
-	const wchar_t* p1 = st1;
-	const wchar_t* p2 = st2;
+	const wchar_t* p1 = s->m_buf + pos;
+	const wchar_t* end1 = s->m_buf + s->m_len;
 
+	const wchar_t* p2 = static_cast<const StringNode*>(s2)->m_buf;
+	const wchar_t* end2 = p2 + static_cast<const StringNode*>(s2)->m_len;
+
+	if (length != string_t::npos && length < s->m_len - pos)
+	{
+		end1 = p1 + length;
+		end2 = p2 + length;
+	}
+		
 	wint_t l1 = 0, l2 = 0;
 	if (bIgnoreCase)
 	{
-		while ((size_t(p1-st1)<length) && (size_t(p2-st2)<len2) && (l1 = towlower(*p1)) == (l2 = towlower(*p2)))
+		while (p1<end1 && p2<end2 && (l1 = towlower(*p1)) == (l2 = towlower(*p2)))
 		{
 			++p1;
 			++p2;
@@ -274,7 +276,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,
 	}
 	else
 	{
-		while ((size_t(p1-st1)<length) && (size_t(p2-st2)<len2) && (l1 = *p1) == (l2 = *p2))
+		while (p1<end1 && p2<end2 && (l1 = *p1) == (l2 = *p2))
 		{
 			++p1;
 			++p2;
@@ -284,47 +286,51 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,
 	if (l1 != l2)
 		return (l1 < l2 ? -1 : 1);
 
-	if (length != len2)
-		return (length < len2 ? -1 : 1);
+	if (p1 < end1)
+		return 1;
+
+	if (p2 < end2)
+		return -1;
 
 	return 0;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,s1,(in),const wchar_t*,st2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,s1,(in),const wchar_t*,wsz,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
 {
 	const StringNode* s = static_cast<const StringNode*>(s1);
-	if (length > s->m_len - pos)
-		length = s->m_len - pos;
-
-	const wchar_t* st1 = s->m_buf + pos;
+	
+	const wchar_t* p1 = s->m_buf + pos;
+	const wchar_t* end1 = s->m_buf + s->m_len;
+	
+	if (length != string_t::npos && length < s->m_len - pos)
+		end1 = p1 + length;
 		
-	const wchar_t* p1 = st1;
-	const wchar_t* p2 = st2;
-
 	wint_t l1 = 0, l2 = 0;
 	if (bIgnoreCase)
 	{
-		while ((size_t(p1-st1)<length) && (l1 = towlower(*p1)) == (l2 = towlower(*p2)) && (*p2 != L'\0'))
+		while (p1<end1 && *wsz != L'\0' && (l1 = towlower(*p1)) == (l2 = towlower(*wsz)))
 		{
 			++p1;
-			++p2;
+			++wsz;
 		}
 	}
 	else
 	{
-		while ((size_t(p1-st1)<length) && (l1 = *p1) == (l2 = *p2) && (*p2 != L'\0'))
+		while (p1<end1 && *wsz != L'\0' && (l1 = *p1) == (l2 = *wsz))
 		{
 			++p1;
-			++p2;
+			++wsz;
 		}
 	}
 
 	if (l1 != l2)
 		return (l1 < l2 ? -1 : 1);
 
-	size_t len2 = size_t(p2-st2);
-	if (length != len2)
-		return (length < len2 ? -1 : 1);
+	if (p1 < end1)
+		return 1;
+
+	if (*wsz != L'\0')
+		return -1;
 
 	return 0;
 }

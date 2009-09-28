@@ -173,7 +173,10 @@ OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,h1,(in
 int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool bIgnoreCase) const
 {
 	if (m_handle == s.m_handle)
-		return 0;
+	{
+		if ((pos == 0 && length == string_t::npos) || !m_handle)
+			return 0;
+	}
 
 	if (!m_handle)
 		return -1;

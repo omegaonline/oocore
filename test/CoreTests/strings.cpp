@@ -13,6 +13,7 @@ static bool string_tests_wchar()
 	s1 = sz1;
 	TEST(!s1.IsEmpty());
 	TEST(s1.Length() == 6);
+
 	TEST(s1 == sz1_1 && !(s1 != sz1_1));
 	TEST(s1.Compare(sz1_1) == 0);
 	TEST(s1.Compare(sz1_2,0,Omega::string_t::npos,true) == 0);

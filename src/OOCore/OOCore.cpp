@@ -46,15 +46,9 @@ extern "C" BOOL WINAPI DllMain(HANDLE /*instance*/, DWORD reason, LPVOID /*lpres
 
 #endif
 
-extern "C" OMEGA_EXPORT char* OOCore_GetVersion()
+extern "C" OMEGA_EXPORT const char* OOCore_GetVersion()
 {
-	// This is a non-const function for lowest common denominator C support
-	static char buf[32] = OOCORE_VERSION;
-
-	// Just in case someone tries to manipulate the data...
-	strcpy_s(buf,sizeof(buf),OOCORE_VERSION);
-
-	return buf;
+	return OOCORE_VERSION;
 }
 
 extern "C" OMEGA_EXPORT unsigned int OOCore_GetMajorVersion()

@@ -57,7 +57,7 @@ extern "C"
 OOCORE_EXTERN unsigned int OOCore_GetMajorVersion();
 OOCORE_EXTERN unsigned int OOCore_GetMinorVersion();
 OOCORE_EXTERN unsigned int OOCore_GetPatchVersion();
-OOCORE_EXTERN char* OOCore_GetVersion();
+OOCORE_EXTERN const char* OOCore_GetVersion();
 
 #if defined(__cplusplus)
 } // extern "C"

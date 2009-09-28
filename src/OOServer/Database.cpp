@@ -127,6 +127,8 @@ bool Db::Database::open(const char* pszDb)
 		}
 	}
 
+	sqlite3_busy_timeout(m_db,500);
+
 	return true;
 }
 

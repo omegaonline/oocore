@@ -96,15 +96,24 @@ Db::Database::Database() :
 
 Db::Database::~Database()
 {
-	if (sqlite3_close(m_db) != SQLITE_OK)
-		LOG_ERROR(("sqlite3_close failed: %s",sqlite3_errmsg(m_db)));
+	if (m_db)
+	{
+		// Close all prepared statements...
+		sqlite3_stmt* pStmt;
+		while((pStmt = sqlite3_next_stmt(m_db, 0)) != 0)
+			sqlite3_finalize(pStmt);
+		
+		// Now close the db
+		if (sqlite3_close(m_db) != SQLITE_OK)
+			LOG_ERROR(("sqlite3_close failed: %s",sqlite3_errmsg(m_db)));
+	}
 }
 
 bool Db::Database::open(const char* pszDb)
 {
 	assert(!m_db);
 
-	int err = sqlite3_open(pszDb,&m_db);
+	int err = sqlite3_open_v2(pszDb,&m_db,SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,0);
 	if (err != SQLITE_OK)
 	{
 		if (!m_db)

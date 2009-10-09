@@ -38,16 +38,29 @@
 
 // These are missing from the earlier draft...
 #if defined(HAVE_TR_24731) && (!defined(__STDC_LIB_EXT1__) || (__STDC_LIB_EXT1__ < 200509L))
+#if defined(_MSC_VER)
 inline int vsnprintf_s_fixed(char* s, rsize_t n, const char* format, va_list arg)
 {
-	return _vsnprintf_s(s,n,_TRUNCATE,format,arg);
+	if (!s || !format)
+	{
+		errno = 22 /*EINVAL*/;
+		return -1;
+	}
+
+	int r = _vsnprintf_s(s,n,_TRUNCATE,format,arg);
+	if (r == -1)
+		return n *= 2;
+	else
+		return r;
 }
 #define vsnprintf_s vsnprintf_s_fixed
+#else
+#error Fix for the early safe libc draft
+#endif
 #endif
 
 #if !defined(HAVE_TR_24731)
 int vsnprintf_s(char* s, size_t n, const char* format, va_list arg);
-int strcpy_s(char* dest, size_t n, const char* src);
 #endif
 
 #endif // OOBASE_TR24731_H_INCLUDED_

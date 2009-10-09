@@ -112,7 +112,7 @@ static bool AttachVSDebugger(DWORD our_pid)
 
 static void PromptForDebugger(DWORD pid)
 {
-	std::stringstream out;
+	std::ostringstream out;
 	out << "Attach the debugger to process id " << pid << " now if you want!";
 	MessageBoxA(NULL,out.str().c_str(),"Break",MB_ICONEXCLAMATION | MB_OK | MB_SERVICE_NOTIFICATION);
 }

@@ -35,18 +35,13 @@ int vsnprintf_s(char* s, size_t n, const char* format, va_list arg)
 
 	s[0] = '\0';
 	int r = vsnprintf(s,n-1,format,arg);
+
+	// MSVCRT returns -1 when truncating
+	if (r == -1)
+		r = n * 2;
+
 	s[n-1] = '\0';
 	return r;
-}
-
-int strcpy_s(char* dest, size_t n, const char* src)
-{
-	if (!dest || !src || !n)
-		return EINVAL;
-
-	strncpy(dest,src,n-1);
-	dest[n-1] = '\0';
-	return 0;
 }
 
 #endif

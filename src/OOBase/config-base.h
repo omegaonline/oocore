@@ -176,6 +176,7 @@
 
 #include <string>
 #include <sstream>
+#include <locale>
 
 namespace OOBase
 {
@@ -195,6 +196,11 @@ namespace OOBase
 
 #define OOBase_OutOfMemory() \
 	OOBase::CallCriticalFailureMem(__FILE__,__LINE__)
+
+#if !defined(HAVE_STATIC_ASSERT)
+#define static_assert(expr,msg) \
+	{ struct s_a { char static_check[expr ? 1 : -1]; }; }
+#endif
 
 #endif
 

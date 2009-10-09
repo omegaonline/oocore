@@ -77,7 +77,8 @@ namespace
 	static HANDLE CreatePipe(HANDLE hToken, std::string& strPipe)
 	{
 		// Create a new unique pipe
-		std::stringstream ssPipe;
+		std::ostringstream ssPipe;
+		ssPipe.imbue(std::locale::classic());
 		ssPipe.setf(std::ios_base::hex);
 		ssPipe << "OOR";
 

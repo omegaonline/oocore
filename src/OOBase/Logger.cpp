@@ -53,23 +53,20 @@ namespace
 
 	std::string string_printf(const char* fmt, va_list args)
 	{
-		for (size_t len=256;len<=(size_t)-1;)
+		for (size_t len=256;;)
 		{
 			OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
 			OOBASE_NEW(buf,char[len]);
 
 			int len2 = vsnprintf_s(buf.value(),len,fmt,args);
-			if (len2 > -1 && static_cast<size_t>(len2) < len)
+			if (len2 < 0)
+				OOBase_CallCriticalFailure("vsnprintf_s failed");
+
+			if (static_cast<size_t>(len2) < len)
 				return std::string(buf.value(),len2);
 			
-			if (len2 > -1)
-				len = len2 + 1;
-			else
-				len *= 2;
+			len = len2 + 1;
 		}
-
-		OOBase_CallCriticalFailure("vsnprintf_s failed");
-		return std::string();
 	}
 }
 
@@ -292,7 +289,7 @@ void OOSvrBase::Logger::filenum_t::log(const char* fmt, ...)
 	va_list args;
 	va_start(args,fmt);
 
-	std::stringstream out;
+	std::ostringstream out;
 	out << "[" << LoggerImpl::getpid() << "] " << m_pszFilename << "(" << m_nLine << "): " << fmt;
 
 	LOGGER::instance()->log(m_priority,out.str().c_str(),args);

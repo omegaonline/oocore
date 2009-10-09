@@ -198,7 +198,8 @@ int main(int argc, char* argv[])
 	bool bOk = true;
 	for (int i=0;bOk;++i)
 	{
-		std::stringstream ss;
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
 		ss << "arg" << i;
 		std::string strLib = args[ss.str()];
 		if (strLib.empty())

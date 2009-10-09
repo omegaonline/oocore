@@ -42,7 +42,8 @@ User::Acceptor::~Acceptor()
 std::string User::Acceptor::unique_name()
 {
 	// Create a new unique pipe
-	std::stringstream ssPipe;
+	std::ostringstream ssPipe;
+	ssPipe.imbue(std::locale::classic());
 	ssPipe.setf(std::ios_base::hex);
 
 #if defined(_WIN32)

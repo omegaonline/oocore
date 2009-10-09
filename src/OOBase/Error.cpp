@@ -30,7 +30,7 @@ namespace OOBase
 
 std::string OOBase::strerror(int err)
 {
-	std::stringstream out;
+	std::ostringstream out;
 	out << "(" << err << ") ";
 
 #if defined(HAVE_TR_24731)
@@ -79,7 +79,7 @@ void OOBase::CallCriticalFailureMem(const char* pszFile, unsigned int nLine)
 
 void OOBase::CallCriticalFailureX(const char* pszFile, unsigned int nLine, const char* msg)
 {
-	std::stringstream out;
+	std::ostringstream out;
 	out << pszFile << "(" << nLine << "): " << msg;
 	CriticalFailure(out.str().c_str());
 	abort();

@@ -169,7 +169,7 @@ namespace
 
 BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 {
-	char static_check[sizeof(LONG) <= sizeof(INIT_ONCE) ? 1 : -1]; static_check;
+	static_assert(sizeof(LONG) <= sizeof(INIT_ONCE),"Refer to maintainters");
 	
 	LONG* check = reinterpret_cast<LONG*>(InitOnce);
 
@@ -664,7 +664,7 @@ namespace
 
 std::string OOBase::Win32::FormatMessage(DWORD dwErr)
 {
-	std::stringstream ret;
+	std::ostringstream ret;
 	ret.setf(std::ios_base::hex);
 	ret << "(0x" << dwErr << ") ";
 

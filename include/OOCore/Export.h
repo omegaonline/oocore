@@ -283,6 +283,7 @@
 	{ \
 		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { deref_shim(OMEGA_CONCAT(name,_shim))->name( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
+		catch (std::exception& OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
 	}
@@ -293,6 +294,7 @@
 		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { static_cast<ret_type&>(marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal))) = \
 			deref_shim(OMEGA_CONCAT(name,_shim))->name( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
+		catch (std::exception& OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
 	}
@@ -862,6 +864,10 @@
 			OMEGA_CONCAT(name,_Impl)(OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params)); \
 			return 0; \
 		} \
+		catch (std::exception& OMEGA_CONCAT(name,_Exception)) \
+		{ \
+			return Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
 			return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
@@ -881,6 +887,10 @@
 		{ \
 			static_cast<ret_type&>(Omega::System::MetaInfo::marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal))) = OMEGA_CONCAT(name,_Impl)(OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params)); \
 			return 0; \
+		} \
+		catch (std::exception& OMEGA_CONCAT(name,_Exception)) \
+		{ \
+			return Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
@@ -902,6 +912,10 @@
 			OMEGA_CONCAT(name,_Impl)(OMEGA_EMIT_PARAMS_VOID(param_count,params)); \
 			return 0; \
 		} \
+		catch (std::exception& OMEGA_CONCAT(name,_Exception)) \
+		{ \
+			return Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
 			return Omega::System::MetaInfo::return_safe_exception(OMEGA_CONCAT(name,_Exception)); \
@@ -920,6 +934,10 @@
 		try \
 		{ \
 			return OMEGA_CONCAT(name,_Impl)(OMEGA_EMIT_PARAMS_VOID(param_count,params)); \
+		} \
+		catch (std::exception& OMEGA_CONCAT(name,_Exception2)) \
+		{ \
+			*OMEGA_CONCAT(name,_Exception) = Omega::System::MetaInfo::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception2),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception2)) \
 		{ \

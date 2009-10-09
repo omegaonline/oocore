@@ -12,6 +12,8 @@
 bool init_standalone_tests();
 bool init_server_tests(bool& bRun);
 bool string_tests();
+bool string_tests_format();
+bool string_tests_utf8();
 bool guid_tests();
 bool exception_tests();
 bool otl_tests();
@@ -29,6 +31,8 @@ static void tests(bool bStandalone)
 	if (bStandalone)
 	{
 		RUN_TEST(string_tests);
+		RUN_TEST(string_tests_format);
+		RUN_TEST(string_tests_utf8);
 		RUN_TEST(guid_tests);
 		RUN_TEST(exception_tests);
 		RUN_TEST(otl_tests);

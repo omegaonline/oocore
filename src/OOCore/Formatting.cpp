@@ -25,6 +25,63 @@ using namespace Omega;
 
 namespace 
 {
+	class LocaleHolder
+	{
+	public:
+		LocaleHolder()
+		{			
+#if defined(_WIN32)
+			// Sync Win32 locale with internal locale
+			LCID lcid = GetThreadLocale();
+
+			char buffer[256] = {0};
+			if (!GetLocaleInfoA(lcid,LOCALE_SENGLANGUAGE,buffer,255))
+				OMEGA_THROW(GetLastError());
+
+			std::string str = buffer;
+
+			if (!GetLocaleInfoA(lcid,LOCALE_SENGCOUNTRY,buffer,255))
+				OMEGA_THROW(GetLastError());
+		
+			str += "_";
+			str += buffer;
+
+			if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTANSICODEPAGE,buffer,255))
+				OMEGA_THROW(GetLastError());
+			
+			if (strcmp(buffer,"0") != 0)
+			{
+				str += ".";
+				str += buffer;
+			}
+			else
+			{
+				if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTCODEPAGE,buffer,255))
+					OMEGA_THROW(GetLastError());
+
+				if (strcmp(buffer,"1") != 0)
+				{
+					str += ".";
+					str += buffer;
+				}
+			}
+			
+			// Sync the crt locale with the Win32 one
+			m_prev_locale = setlocale(LC_ALL,str.c_str());
+#endif
+		}
+
+		~LocaleHolder()
+		{
+#if defined(_WIN32)
+			setlocale(LC_ALL,m_prev_locale.c_str());
+#endif
+		}
+
+	private:
+		std::string m_prev_locale;
+	};
+
 	enum num_fmt
 	{
 		currency,
@@ -36,57 +93,6 @@ namespace
 		round_trip,
 		hexadecimal
 	};
-
-	bool is_quiet_nan(const double& val)
-	{
-		static const double nan = std::numeric_limits<double>::quiet_NaN();
-		return *reinterpret_cast<const uint64_t*>(&val) == *reinterpret_cast<const uint64_t*>(&nan);
-	}
-
-	bool is_nan(const double& val)
-	{
-		static const double nan = std::numeric_limits<double>::signaling_NaN();
-		return *reinterpret_cast<const uint64_t*>(&val) == *reinterpret_cast<const uint64_t*>(&nan);
-	}
-
-	bool is_p_infinity(const double& val)
-	{
-		return val == std::numeric_limits<double>::infinity();
-	}
-
-	bool is_n_infinity(const double& val)
-	{
-		return val == -std::numeric_limits<double>::infinity();
-	}
-
-	bool check_double(string_t& strText, const double& val)
-	{
-		if (is_quiet_nan(val))
-		{
-			strText = L"1.#IND";
-			return true;
-		}
-
-		if (is_nan(val))
-		{
-			strText = L"1.#NAN";
-			return true;
-		}
-
-		if (is_p_infinity(val))
-		{
-			strText = L"1.#INF";
-			return true;
-		}
-
-		if (is_n_infinity(val))
-		{
-			strText = L"-1.#INF";
-			return true;
-		}
-
-		return false;
-	}
 
 	bool parse_numfmt(const string_t& str, num_fmt& fmt, bool& capital, int& precision)
 	{
@@ -173,849 +179,533 @@ namespace
 		return true;
 	}
 
+	void do_intl_mon(std::string& str, bool negative)
+	{
 #if defined(_WIN32)
+		LCID lcid = GetThreadLocale();
 
-	/*std::wstring fmt_currency_i(uint64_t val, int)
-	{
-		wchar_t mon_grouping[12] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SMONGROUPING,mon_grouping,12))
+		char decimal_point[5] = {0};
+		if (!GetLocaleInfoA(lcid,LOCALE_SMONDECIMALSEP,decimal_point,sizeof(decimal_point)))
 			OMEGA_THROW(GetLastError());
 
-		wchar_t mon_sep[5] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SMONTHOUSANDSEP,mon_sep,5))
+		char grouping_buf[128] = {0};
+		if (!GetLocaleInfoA(lcid,LOCALE_SMONGROUPING,grouping_buf,sizeof(grouping_buf)))
 			OMEGA_THROW(GetLastError());
 
-		wchar_t* grouping = mon_grouping;
-		int grp = -1;
-		int d = 0;
-
-		std::wstring str;
-		do
+		// Build a crt style grouping
+		char grouping_trans[128] = {0};
+		const char* grouping = grouping_trans;
+		size_t g = 0;
+		for (const char* c = grouping_buf;*c != '\0' && g<sizeof(grouping_trans)-1;++g)
 		{
-			if (!d && *grouping)
-			{
-				unsigned int g = OOCore::parse_uint(grouping);
-				if (g)
-				{
-					grp = g;
-					grouping = wcschr(grouping,L';');
-					if (grouping)
-						++grouping;
-				}
-			}
+			grouping_trans[g] = static_cast<char>(atoi(c));
+			if (!grouping_trans[g])
+				break;
 
-			str = static_cast<wchar_t>((val % 10) + L'0') + str;
-			val /= 10;
+			c = strchr(c,';');
+			if (!c)
+				break;
+			++c;
+		}
 
-			if (grp!=-1 && ++d==grp && val!=0)
-			{
-				str = mon_sep + str;
-				d = 0;
-			}
-
-		} while (val > 0);
-		return str;
-	}
-
-	std::wstring fmt_currency_i(int64_t val, int)
-	{
-		return fmt_currency_i(static_cast<uint64_t>(val < 0 ? -val : val),-1);
-	}
-
-	std::wstring fmt_currency_i(const double& val, int precision)
-	{
-		double int_part = 0.0;
-		double frac_part = fabs(modf(val,&int_part));
-
-		std::wstring ret = fmt_currency_i(static_cast<int64_t>(int_part),-1);
+		grouping_trans[g+1] = CHAR_MAX;
 		
-		if (precision < 0)
-		{
-			DWORD prec = 0;
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_ICURRDIGITS,(LPWSTR)&prec,sizeof(DWORD)))
-				OMEGA_THROW(GetLastError());
-
-			precision = prec;
-		}
-
-		wchar_t mon_dec[5] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SMONDECIMALSEP,mon_dec,5))
+		char thousands_sep[5] = {0};
+		if (!GetLocaleInfoA(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep,sizeof(thousands_sep)))
 			OMEGA_THROW(GetLastError());
-
-		if (precision > 0)
-			ret += mon_dec;
-		
-		std::wstring dps;
-		dps.reserve(std::numeric_limits<double>::digits10);
-		do
-		{
-			frac_part = modf(frac_part * 10.0,&int_part);
-			dps += static_cast<wchar_t>(int_part + L'0');
-		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
-
-		if (frac_part != 0.0)
-		{
-			// Round...
-			if (frac_part >= 0.5)
-				dps += static_cast<wchar_t>(ceil(frac_part*10.0)) + L'0';
-			else
-				dps += static_cast<wchar_t>(floor(frac_part*10.0)) + L'0';
-		}
-
-		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
-			dps.append(precision-dps.size(),'0');
-
-		return ret + dps;
-	}
-	
-	template <typename T>
-	string_t fmt_currency(T val, int precision)
-	{
-		std::wstring str = fmt_currency_i(val,precision);
-
-		wchar_t symbol[8] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SCURRENCY,symbol,8))
-			OMEGA_THROW(GetLastError());
-
-		if (val >= 0)
-		{
-			DWORD fmt = 0;
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_ICURRENCY,(LPWSTR)&fmt,sizeof(DWORD)))
-				OMEGA_THROW(GetLastError());
-
-			switch (fmt)
-			{
-			case 0:
-			default:
-				str = symbol + str;
-				break;
-
-			case 1:
-				str += symbol;
-				break;
-
-			case 2:
-				str = std::wstring(symbol) + L' ' + str;
-				break;
-
-			case 3:
-				str += L' ';
-				str += symbol;
-				break;
-			}
-		}
-		else
-		{
-			DWORD fmt = 0;
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_INEGCURR,(LPWSTR)&fmt,sizeof(DWORD)))
-				OMEGA_THROW(GetLastError());
-
-			wchar_t neg[6] = {0};
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SNEGATIVESIGN,neg,6))
-				OMEGA_THROW(GetLastError());
-
-			switch (fmt)
-			{
-			case 0:
-				str = std::wstring(L"(") + symbol + str + L')';
-				break;
-
-			default:
-			case 1:
-				str = std::wstring(neg) + symbol + str;
-				break;
-
-			case 2:
-				str = std::wstring(symbol) + neg + str;
-				break;
-
-			case 3:
-				str = symbol + str + neg;
-				break;
-
-			case 4:
-				str = L'(' + str + symbol + L')';
-				break;
-
-			case 5:
-				str = neg + str + symbol;
-				break;
-
-			case 6:
-				str += neg;
-				str += symbol;
-				break;
-
-			case 7:
-				str += symbol;
-				str += neg;
-				break;
-
-			case 8:
-				str = neg + str + L' ' + symbol;
-				break;
-
-			case 9:
-				str = std::wstring(neg) + symbol + L' ' + str;
-				break;
-
-			case 10:
-				str += L' ';
-				str += symbol;
-				str += neg;
-				break;
-
-			case 11:
-				str = std::wstring(symbol) + L' ' + str + neg;
-				break;
-
-			case 12:
-				str = std::wstring(symbol) + L' ' + neg + str;
-				break;
-
-			case 13:
-				str += neg;
-				str += L' ';
-				str += symbol;
-				break;
-
-			case 14:
-				str = std::wstring(L"(") + symbol + L' ' + str + L')';
-				break;
-
-			case 15:
-				str = L'(' + str + L' ' + symbol + L')';
-				break;
-			}
-		}
-		return string_t(str.c_str());
-	}
-
-	std::wstring fmt_number_i(uint64_t val, int)
-	{
-		wchar_t mon_grouping[25] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SGROUPING,mon_grouping,25))
-			OMEGA_THROW(GetLastError());
-
-		wchar_t mon_sep[5] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_STHOUSAND,mon_sep,5))
-			OMEGA_THROW(GetLastError());
-
-		wchar_t* grouping = mon_grouping;
-		int grp = -1;
-		int d = 0;
-
-		std::wstring str;
-		do
-		{
-			if (!d && *grouping)
-			{
-				unsigned int g = OOCore::parse_uint(grouping);
-				if (g)
-				{
-					grp = g;
-					grouping = wcschr(grouping,L';');
-					if (grouping)
-						++grouping;
-				}
-			}
-
-			str = static_cast<wchar_t>((val % 10) + L'0') + str;
-			val /= 10;
-
-			if (grp!=-1 && ++d==grp && val!=0)
-			{
-				str = mon_sep + str;
-				d = 0;
-			}
-
-		} while (val > 0);
-		return str;
-	}
-
-	std::wstring fmt_number_i(int64_t val, int)
-	{
-		return fmt_number_i(static_cast<uint64_t>(val < 0 ? -val : val),-1);
-	}
-
-	std::wstring fmt_number_i(const double& val, int precision)
-	{
-		double int_part = 0.0;
-		double frac_part = fabs(modf(val,&int_part));
-
-		std::wstring ret = fmt_number_i(static_cast<int64_t>(int_part),-1);
-		
-		if (precision < 0)
-		{
-			DWORD curr_digits = 0;
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_IDIGITS,(LPWSTR)&curr_digits,sizeof(DWORD)))
-				OMEGA_THROW(GetLastError());
-
-			precision = curr_digits;
-		}
-
-		wchar_t mon_dec[5] = {0};
-		if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SDECIMAL,mon_dec,5))
-			OMEGA_THROW(GetLastError());
-
-		if (precision > 0)
-			ret += mon_dec;
-		
-		std::wstring dps;
-		dps.reserve(std::numeric_limits<double>::digits10);
-		do
-		{
-			frac_part = modf(frac_part * 10.0,&int_part);
-			dps += static_cast<wchar_t>(int_part + L'0');
-		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
-
-		if (frac_part != 0.0)
-		{
-			// Round...
-			if (frac_part >= 0.5)
-				dps += static_cast<wchar_t>(ceil(frac_part*10.0)) + L'0';
-			else
-				dps += static_cast<wchar_t>(floor(frac_part*10.0)) + L'0';
-		}
-
-		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
-			dps.append(precision-dps.size(),'0');
-
-		return ret + dps;
-	}
-	
-	template <typename T>
-	string_t fmt_number(T val, int precision)
-	{
-		std::wstring str = fmt_number_i(val,precision);
-
-		if (val < 0)
-		{
-			wchar_t neg[6] = {0};
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SNEGATIVESIGN,neg,6))
-				OMEGA_THROW(GetLastError());
-
-			DWORD fmt = 0;
-			if (!GetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_RETURN_NUMBER | LOCALE_INEGNUMBER,(LPWSTR)&fmt,sizeof(DWORD)))
-				OMEGA_THROW(GetLastError());
-
-			switch (fmt)
-			{
-			case 0:
-				str = L'(' + str + L')';
-				break;
-
-			default:
-			case 1:
-				str = neg + str;
-				break;
-
-			case 2:
-				str = std::wstring(neg) + L' ' + str;
-				break;
-
-			case 3:
-				str += neg;
-				break;
-
-			case 4:
-				str += L' ';
-				str += neg;
-				break;
-			}
-		}
-		return string_t(str.c_str());
-	}*/
-
-	template <typename T>
-	string_t fmt_currency(T val, int precision)
-	{
-		string_t str = fmt_fixed(val,precision,false);
-				
-		int buf_size = GetCurrencyFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,NULL,0);
-		if (!buf_size)
-			OMEGA_THROW(GetLastError());
-
-		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf;
-		OMEGA_NEW(buf,wchar_t[buf_size]);
-		if (!GetCurrencyFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,buf.value(),buf_size))
-			OMEGA_THROW(GetLastError());
-
-		return string_t(buf.value());
-	}
-
-	template <typename T>
-	string_t fmt_number(T val, int precision)
-	{
-		string_t str = fmt_fixed(val,precision,false);
-				
-		int buf_size = GetNumberFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,NULL,0);
-		if (!buf_size)
-			OMEGA_THROW(GetLastError());
-
-		OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > buf;
-		OMEGA_NEW(buf,wchar_t[buf_size]);
-		if (!GetNumberFormatW(LOCALE_USER_DEFAULT,0,str.c_str(),NULL,buf.value(),buf_size))
-			OMEGA_THROW(GetLastError());
-
-		return string_t(buf.value());
-	}
-
 #else
+		const lconv* lc = localeconv();
+		if (!lc)
+			return;
 
-	std::string fmt_currency(lconv* lc, uint64_t val, int)
-	{
-		char* grouping = lc->mon_grouping;
-		int grp = CHAR_MAX;
-		int d = 0;
+		const char* decimal_point = lc->mon_decimal_point;
+		const char* grouping = lc->mon_grouping;
+		const char* thousands_sep = lc->mon_thousands_sep;
+#endif
 
-		std::string str;
-		do
+		size_t pos = str.find('.');
+		if (pos != std::string::npos)
+			str.replace(pos,1,decimal_point);
+
+		for (int grp = CHAR_MAX;;)
 		{
-			if (!d && *grouping)
-				grp = *grouping++;
+			char n_grp = *(grouping++);
+			if (n_grp != 0)
+				grp = n_grp;
 
-			str = static_cast<char>((val % 10) + '0') + str;
-			val /= 10;
+			if (grp == CHAR_MAX)
+				break;
+		
+			if (pos <= static_cast<size_t>(grp))
+				break;
 
-			if (grp!=CHAR_MAX && ++d==grp && val!=0)
-			{
-				str = lc->mon_thousands_sep + str;
-				d = 0;
-			}
+			pos -= grp;
+			str.insert(pos,thousands_sep);
+		}
 
-		} while (val > 0);
-		return str;
+		bool cs_precedes = false;
+		bool sep_by_space = false;
+		int posn = 0;
+		std::string sign;
+		std::string currency;
+
+#if defined(_WIN32)
+		if (negative)
+		{
+			DWORD val = 0;
+			if (!GetLocaleInfoA(lcid,LOCALE_INEGSEPBYSPACE | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
+				OMEGA_THROW(GetLastError());
+			sep_by_space = (val == 1);
+
+			if (!GetLocaleInfoA(lcid,LOCALE_INEGSYMPRECEDES | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
+				OMEGA_THROW(GetLastError());
+			cs_precedes = (val == 1);
+
+			if (!GetLocaleInfoA(lcid,LOCALE_INEGSIGNPOSN | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
+				OMEGA_THROW(GetLastError());
+			posn = static_cast<int>(val);
+
+			char sign_symbol[6];
+			if (!GetLocaleInfoA(lcid,LOCALE_SNEGATIVESIGN,sign_symbol,sizeof(sign_symbol)))
+				OMEGA_THROW(GetLastError());
+
+			sign = sign_symbol;
+		}
+		else
+		{
+			DWORD val = 0;
+			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSEPBYSPACE | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
+				OMEGA_THROW(GetLastError());
+			sep_by_space = (val == 1);
+
+			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSYMPRECEDES | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
+				OMEGA_THROW(GetLastError());
+			cs_precedes = (val == 1);
+
+			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSIGNPOSN | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
+				OMEGA_THROW(GetLastError());
+			posn = static_cast<int>(val);
+
+			char sign_symbol[6];
+			if (!GetLocaleInfoA(lcid,LOCALE_SPOSITIVESIGN,sign_symbol,sizeof(sign_symbol)))
+				OMEGA_THROW(GetLastError());
+
+			sign = sign_symbol;
+		}
+
+		char currency_buf[8];
+		if (!GetLocaleInfoA(lcid,LOCALE_SCURRENCY,currency_buf,sizeof(currency)))
+			OMEGA_THROW(GetLastError());
+
+		currency = currency_buf;
+		
+#else
+		if (negative)
+		{
+			cs_precedes = (lc->n_cs_precedes == 1);
+			sep_by_space = (lc->n_sep_by_space == 1);
+			posn = lc->n_sign_posn;
+			sign = lc->negative_sign;
+		}
+		else
+		{
+			cs_precedes = (lc->p_cs_precedes == 1);
+			sep_by_space = (lc->p_sep_by_space == 1);
+			posn = lc->p_sign_posn;
+			sign = lc->positive_sign;
+		}
+		currency = lc->currency_symbol;
+#endif
+
+		switch (posn)
+		{
+		case 0:
+			if (cs_precedes)
+				str = (sep_by_space ? currency + ' ' : currency) + str;
+			else
+				str += (sep_by_space ? ' ' + currency : currency);
+			str = '(' + str + ')';
+			break;
+
+		case 1:
+			if (cs_precedes)
+				str = (sep_by_space ? currency + ' ' : currency) + str;
+			else
+				str += (sep_by_space ? ' ' + currency : currency);
+			str = sign + str;
+			break;
+
+		case 2:
+			if (cs_precedes)
+				str = (sep_by_space ? currency + ' ' : currency) + str;
+			else
+				str += (sep_by_space ? ' ' + currency : currency);
+			str += sign;
+			break;
+
+		case 3:
+			currency = sign + currency;
+			if (cs_precedes)
+				str = (sep_by_space ? currency + ' ' : currency) + str;
+			else
+				str += (sep_by_space ? ' ' + currency : currency);
+			break;
+
+		case 4:
+		default:
+			currency += sign;
+			if (cs_precedes)
+				str = (sep_by_space ? currency + ' ' : currency) + str;
+			else
+				str += (sep_by_space ? ' ' + currency : currency);
+			break;
+		}
 	}
-
-	std::string fmt_currency(lconv* lc, int64_t val, int)
-	{
-		return fmt_currency(lc,static_cast<uint64_t>(val < 0 ? -val : val),-1);
-	}
-
-	std::string fmt_currency(lconv* lc, const double& val, int precision)
-	{
-		double int_part = 0.0;
-		double frac_part = fabs(modf(val,&int_part));
-
-		std::string ret = fmt_currency(lc,static_cast<int64_t>(int_part),-1);
 	
+	string_t fmt_currency(const double& val, int precision)
+	{
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+		
+		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+		
 		if (precision < 0)
 		{
-			if (lc->frac_digits != CHAR_MAX)
+#if defined(_WIN32)
+			LCID lcid = GetThreadLocale();
+
+			DWORD v = 0;
+			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
+				OMEGA_THROW(GetLastError());
+
+			precision = static_cast<int>(v);
+#else
+			precision = 2;
+			const lconv* lc = localeconv();
+			if (lc && lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
+#endif
 		}
+					
+		ss.precision(precision);
 
-		if (precision != 0)
-		{
-			if (!lc->mon_decimal_point || lc->mon_decimal_point[0] == '\0')
-				ret += lc->decimal_point;
-			else
-				ret += lc->mon_decimal_point;
-		}
+		ss << val;
+
+		std::string ret = ss.str();
+
+		do_intl_mon(ret,val < 0.0);
 		
-		std::string dps;
-		dps.reserve(std::numeric_limits<double>::digits10);
-		do
-		{
-			frac_part = modf(frac_part * 10.0,&int_part);
-			dps += static_cast<char>(int_part + '0');
-		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
-
-		if (frac_part != 0.0)
-		{
-			// Round...
-			if (frac_part >= 0.5)
-				dps += static_cast<char>(ceil(frac_part*10.0)) + '0';
-			else
-				dps += static_cast<char>(floor(frac_part*10.0)) + '0';
-		}
-
-		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
-			dps.append(precision-dps.size(),'0');
-
-		return ret + dps;
+		return string_t(ret.c_str(),false);
 	}
 
 	template <typename T>
 	string_t fmt_currency(T val, int precision)
 	{
-		lconv* lc = localeconv();
+		return fmt_currency(static_cast<double>(val),precision);
+	}
+
+	void do_intl(std::string& str, bool bThou)
+	{
+#if defined(_WIN32)
+		LCID lcid = GetThreadLocale();
+
+		char decimal_point[5] = {0};
+		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
+			OMEGA_THROW(GetLastError());
+
+		
+		char thousands_sep[5] = {0};
+		char trans_grouping[128] = {0};	
+		const char* grouping = trans_grouping;
+
+		if (bThou)
+		{
+			char grouping_buf[128] = {0};
+			if (!GetLocaleInfoA(lcid,LOCALE_SGROUPING,grouping_buf,sizeof(grouping_buf)))
+				OMEGA_THROW(GetLastError());
+
+			// Build a crt style grouping
+			
+			size_t g = 0;
+			for (const char* c = grouping_buf;*c != '\0' && g<sizeof(trans_grouping)-1;++g)
+			{
+				trans_grouping[g] = static_cast<char>(atoi(c));
+				if (!trans_grouping[g])
+					break;
+
+				c = strchr(c,';');
+				if (!c)
+					break;
+				++c;
+			}
+
+			trans_grouping[g+1] = CHAR_MAX;
+						
+			if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_sep,sizeof(thousands_sep)))
+				OMEGA_THROW(GetLastError());
+		}
+#else
+		const lconv* lc = localeconv();
 		if (!lc)
-			OMEGA_THROW(L"Failed to retrieve locale information.");
+			return;
 
-		std::string str = fmt_currency(lc,val,precision);
-		if (val >= 0)
+		const char* decimal_point = lc->decimal_point;
+		const char* grouping = lc->grouping;
+		const char* thousands_sep = lc->thousands_sep;
+#endif
+
+		size_t pos = str.find('.');
+		if (pos != std::string::npos)
+			str.replace(pos,1,decimal_point);
+
+		if (!bThou)
+			return;
+		
+		for (int grp = CHAR_MAX;;)
 		{
-			switch (lc->p_sign_posn)
-			{
-			case 0:
-			case 1:
-			case 2:
-				if (lc->p_cs_precedes)
-				{
-					if (lc->p_sep_by_space)
-						str = lc->currency_symbol + (" " + str);
-					else
-						str = lc->currency_symbol + str;
-				}
-				else
-				{
-					if (lc->p_sep_by_space)
-						str = str + ' ' + lc->currency_symbol;
-					else
-						str += lc->currency_symbol;
-				}
-				if (lc->p_sign_posn == 0)
-					str = '(' + str + ')';
-				else if (lc->p_sign_posn == 1)
-					str = lc->positive_sign + str;
-				else
-					str += lc->positive_sign;
+			char n_grp = *(grouping++);
+			if (n_grp != 0)
+				grp = n_grp;
+
+			if (grp == CHAR_MAX)
+				break;
+		
+			if (pos <= static_cast<size_t>(grp))
 				break;
 
-			case 3:
-				if (lc->p_cs_precedes)
-				{
-					if (lc->p_sep_by_space)
-						str = std::string(lc->positive_sign) + lc->currency_symbol + " " + str;
-					else
-						str = std::string(lc->positive_sign) + lc->currency_symbol + str;
-				}
-				else
-				{
-					if (lc->p_sep_by_space)
-						str = str + " " + lc->positive_sign + lc->currency_symbol;
-					else
-						str = str + lc->positive_sign + lc->currency_symbol;
-				}
-				break;
-
-			case 4:
-				if (lc->p_cs_precedes)
-				{
-					if (lc->p_sep_by_space)
-						str = lc->currency_symbol + std::string(lc->positive_sign) + " " + str;
-					else
-						str = lc->currency_symbol + std::string(lc->positive_sign) + str;
-				}
-				else
-				{
-					if (lc->p_sep_by_space)
-						str = str + ' ' + lc->currency_symbol + lc->positive_sign;
-					else
-						str += lc->currency_symbol + std::string(lc->positive_sign);
-				}
-				break;
-
-			default:
-				str = lc->currency_symbol + str;
-				break;
-			}
+			pos -= grp;
+			str.insert(pos,thousands_sep);
 		}
-		else
-		{
-			switch (lc->n_sign_posn)
-			{
-			case 0:
-			case 1:
-			case 2:
-				if (lc->n_cs_precedes)
-				{
-					if (lc->n_sep_by_space)
-						str = lc->currency_symbol + (" " + str);
-					else
-						str = lc->currency_symbol + str;
-				}
-				else
-				{
-					if (lc->n_sep_by_space)
-						str = str + ' ' + lc->currency_symbol;
-					else
-						str += lc->currency_symbol;
-				}
-				if (lc->n_sign_posn == 0)
-					str = '(' + str + ')';
-				else if (lc->n_sign_posn == 1)
-					str = lc->negative_sign + str;
-				else
-					str += lc->negative_sign;
-				break;
-
-			case 3:
-				if (lc->n_cs_precedes)
-				{
-					if (lc->n_sep_by_space)
-						str = std::string(lc->negative_sign) + lc->currency_symbol + " " + str;
-					else
-						str = std::string(lc->negative_sign) + lc->currency_symbol + str;
-				}
-				else
-				{
-					if (lc->n_sep_by_space)
-						str = str + " " + lc->negative_sign + lc->currency_symbol;
-					else
-						str = str + lc->negative_sign + lc->currency_symbol;
-				}
-				break;
-
-			case 4:
-				if (lc->n_cs_precedes)
-				{
-					if (lc->n_sep_by_space)
-						str = lc->currency_symbol + std::string(lc->negative_sign) + " " + str;
-					else
-						str = lc->currency_symbol + std::string(lc->negative_sign) + str;
-				}
-				else
-				{
-					if (lc->n_sep_by_space)
-						str = str + ' ' + lc->currency_symbol + lc->negative_sign;
-					else
-						str += lc->currency_symbol + std::string(lc->negative_sign);
-				}
-				break;
-
-			default:
-				if (lc->negative_sign && lc->negative_sign[0] != '\0')
-					str = std::string(lc->negative_sign) + lc->currency_symbol + str;
-				else
-					str = std::string("-") + lc->currency_symbol + str;
-				break;
-			}
-		}
-
-		return string_t(str.c_str(),false);
 	}
 
-	std::string fmt_number(lconv* lc, uint64_t val, int)
+	string_t fmt_number(const double& val, int precision)
 	{
-		char* grouping = lc->grouping;
-		int grp = CHAR_MAX;
-		int d = 0;
-
-		std::string str;
-		do
-		{
-			if (!d && *grouping)
-				grp = *grouping++;
-
-			str = static_cast<char>((val % 10) + '0') + str;
-			val /= 10;
-
-			if (grp!=CHAR_MAX && ++d==grp && val!=0)
-			{
-				str = lc->thousands_sep + str;
-				d = 0;
-			}
-
-		} while (val > 0);
-		return str;
-	}
-
-	std::string fmt_number(lconv* lc, int64_t val, int)
-	{
-		if (val < 0)
-			return '-' + fmt_number(lc,static_cast<uint64_t>(-val),-1);
-		else
-			return fmt_number(lc,static_cast<uint64_t>(val),-1);
-	}
-
-	std::string fmt_number(lconv* lc, const double& val, int precision)
-	{
-		double int_part = 0.0;
-		double frac_part = fabs(modf(val,&int_part));
-
-		std::string ret = fmt_number(lc,static_cast<int64_t>(int_part),-1) + lc->decimal_point;
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+		
+		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
 		
 		if (precision < 0)
 		{
-			if (lc->frac_digits != CHAR_MAX)
+#if defined(_WIN32)
+			LCID lcid = GetThreadLocale();
+
+			DWORD v = 0;
+			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
+				OMEGA_THROW(GetLastError());
+
+			precision = static_cast<int>(v);
+#else
+			precision = 2;
+			const lconv* lc = localeconv();
+			if (lc && lc->frac_digits != CHAR_MAX)
 				precision = lc->frac_digits;
+#endif
 		}
-
-		if (precision != 0)
-			ret += lc->decimal_point;
 					
-		std::string dps;
-		dps.reserve(std::numeric_limits<double>::digits10);
-		do
-		{
-			frac_part = modf(frac_part * 10.0,&int_part);
-			dps += static_cast<char>(int_part + '0');
-		} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
+		ss.precision(precision);
 
-		if (frac_part != 0.0)
-		{
-			// Round...
-			if (frac_part >= 0.5)
-				dps += static_cast<char>(ceil(frac_part*10.0)) + '0';
-			else
-				dps += static_cast<char>(floor(frac_part*10.0)) + '0';
-		}
+		ss << val;
 
-		if (precision >= 0 && static_cast<size_t>(precision) > dps.size())
-			dps.append(precision-dps.size(),'0');
+		std::string ret = ss.str();
 
-		return ret + dps;
+		do_intl(ret,true);
+		
+		return string_t(ret.c_str(),false);
 	}
 
 	template <typename T>
 	string_t fmt_number(T val, int precision)
 	{
-		lconv* lc = localeconv();
-		if (!lc)
-			OMEGA_THROW(L"Failed to retrieve locale information.");
-
-		return string_t(fmt_number(lc,val,precision).c_str(),false);
+		return fmt_number(static_cast<double>(val),precision);
 	}
 
-#endif // !_WIN32
-
-	string_t fmt_decimal(uint64_t val, int precision, bool zeros)
+	template <typename T>
+	string_t fmt_decimal(T val, int precision)
 	{
-		const size_t max_len = 99 + std::numeric_limits<uint64_t>::digits10;
-		wchar_t szBuf[max_len+1] = {0};
-		wchar_t* p = szBuf+max_len;
-
-		do
-		{
-			*--p = (static_cast<wchar_t>(val % 10) + L'0');
-			val /= 10;
-		} while (val > 0);
-
-		while (zeros && precision > (szBuf+max_len-p))
-			*--p = L'0';
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
 		
-		return string_t(p);
+		if (precision >= 0)
+		{
+			ss.fill('0');
+			ss.width(precision);
+		}
+
+		ss << val;
+
+		return string_t(ss.str().c_str(),false);
 	}
 
-	string_t fmt_decimal(int64_t val, int precision, bool zeros)
+	string_t fmt_decimal(const double& val, int precision)
 	{
-		if (val < 0)
-			return L"-" + fmt_decimal(static_cast<uint64_t>(-val),precision,zeros);
-		else
-			return fmt_decimal(static_cast<uint64_t>(val),precision,zeros);
+		return fmt_decimal(static_cast<uint64_t>(val),precision);
 	}
 
 	string_t fmt_hex(uint64_t val, bool capital, int precision)
 	{
-		const size_t max_len = 99 + std::numeric_limits<uint64_t>::digits10;
-		wchar_t szBuf[max_len+1] = {0};
-		wchar_t* p = szBuf+max_len;
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
 
-		do
+		ss.setf(std::ios_base::hex,std::ios_base::basefield);
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
+
+		if (precision >= 0)
 		{
-			int v = static_cast<int>(val % 16);
-			if (v >= 0 && v <= 9)
-				*--p = static_cast<wchar_t>(v + L'0');
-			else
-				*--p = static_cast<wchar_t>(v-10 + (capital ? L'A' : L'a'));
-			
-			val /= 16;
-		} while (val > 0);
-
-		while (precision > (szBuf+max_len-p))
-			*--p = L'0';
-		
-		return string_t(p);
-	}
-
-	string_t fmt_fixed(int64_t val, int precision, bool zeros)
-	{
-		return fmt_decimal(val,precision,zeros);
-	}
-
-	string_t fmt_fixed(uint64_t val, int precision, bool zeros)
-	{
-		return fmt_decimal(val,precision,zeros);
-	}
-
-	string_t fmt_fixed(const double& val, int precision, bool zeros)
-	{
-		double int_part = 0.0;
-		double frac_part = fabs(modf(val,&int_part));
-
-		std::wstring dps;
-		string_t ret = fmt_decimal(static_cast<int64_t>(int_part),-1,false);
-		
-		if (precision != 0)
-		{
-			ret += L".";
-			
-			dps.reserve(std::numeric_limits<double>::digits10);
-			do
-			{
-				frac_part = modf(frac_part * 10.0,&int_part);
-				dps += static_cast<wchar_t>(int_part) + L'0';
-			} while (frac_part != 0.0 && dps.size() < static_cast<size_t>(precision)-1);
-
-			if (frac_part != 0.0)
-			{
-				// Round...
-				if (frac_part >= 0.5)
-					dps += static_cast<wchar_t>(ceil(frac_part*10.0)) + L'0';
-				else
-					dps += static_cast<wchar_t>(floor(frac_part*10.0)) + L'0';
-			}
-
-			if (zeros && precision >= 0 && static_cast<size_t>(precision) > dps.size())
-				dps.append(precision-dps.size(),L'0');
+			ss.fill('0');
+			ss.width(precision);
 		}
-		
-		return ret + dps.c_str();		
+
+		ss << val;
+
+		return string_t(ss.str().c_str(),false);
 	}
 
-	string_t fmt_scientific(const double& val, bool capital, int precision, bool zeros)
+	string_t fmt_hex(const double& val, bool capital, int precision)
 	{
+		return fmt_hex(*reinterpret_cast<const uint64_t*>(&val),capital,precision);
+	}
+
+	string_t fmt_fixed(const double& val, int precision)
+	{
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+		
 		if (precision < 0)
-			precision = 6;
+		{
+#if defined(_WIN32)
+			LCID lcid = GetThreadLocale();
 
-		double e = 0.0;
-		if (val != 0.0)
-			e = floor(log10(fabs(val)));
+			DWORD v = 0;
+			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
+				OMEGA_THROW(GetLastError());
 
-		string_t ret = fmt_fixed(val / pow(10.0,e),precision,zeros);
-		ret += (capital ? L"E" : L"e");
-		if (val >= 0.0)
-			ret += L"+";
-		ret += fmt_decimal(static_cast<int64_t>(e),3,true);
+			precision = static_cast<int>(v);
+#else
+			precision = 2;
+			const lconv* lc = localeconv();
+			if (lc && lc->frac_digits != CHAR_MAX)
+				precision = lc->frac_digits;
+#endif
+		}
+
+		ss.precision(precision);
+
+		ss << val;
+
+		std::string ret = ss.str();
+
+		do_intl(ret,false);
+
+		return string_t(ret.c_str(),false);
+	}
+
+	template <typename T>
+	string_t fmt_fixed(T val, int precision)
+	{
+		return fmt_fixed(static_cast<double>(val),precision);
+	}
+
+	string_t fmt_scientific(const double& val, bool capital, int precision)
+	{
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
+		
+		if (precision >= 0)
+			ss.precision(precision);
+
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
+		
+		ss << val;
+
+		std::string ret = ss.str();
+
+		do_intl(ret,false);
+
+		return string_t(ret.c_str(),false);
+	}
+
+	template <typename T>
+	string_t fmt_scientific(T val, bool capital, int precision)
+	{
+		return fmt_scientific(static_cast<double>(val),capital,precision);
+	}
+
+	std::string exp_strip(const std::string& str, int precision, bool show_plus)
+	{
+		assert(precision >= 0);
+
+		std::string ret = str;
+		size_t pos = ret.find_first_of("Ee");
+		if (pos == std::string::npos || pos == ret.length()-1)
+			return str;
+
+		// Remove + if !exp_plus
+		++pos;
+		if (ret[pos] == '+')
+		{
+			if (!show_plus)
+				ret.erase(pos,1);
+			else
+				++pos;
+		}
+		else if (str[pos] == '-')
+			++pos;
+		
+		// Remove leading zeros if > precision
+		while (pos < ret.length()-precision && ret[pos] == '0')
+			ret.erase(pos,1);
+
+		// Insert any extra zero's required
+		if (ret.length() < pos+precision)
+			ret.insert(pos,pos+precision-ret.length(),'0');
+
 		return ret;
 	}
 
-	template <typename T>
-	string_t fmt_scientific(T val, bool capital, int precision, bool zeros)
+	string_t fmt_general(const double& val, bool capital, int precision)
 	{
-		return fmt_scientific(static_cast<double>(val),capital,precision,zeros);
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
+		
+		ss.precision(precision);
+				
+		ss << val;
+
+		return string_t(exp_strip(ss.str(),0,false).c_str(),false);
 	}
 
 	template <typename T>
-	string_t fmt_general(T val, bool capital, int precision)
+	string_t fmt_general(T val, bool /*capital*/, int /*precision*/)
 	{
-		double e = 0;
-		if (val != 0)
-			e = floor(log10(fabs(static_cast<double>(val))));
-		if (e > -5 && e < precision)
-			return fmt_fixed(val,precision,false);
-		else
-			return fmt_scientific(val,capital,precision,false);
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss << val;
+
+		return string_t(ss.str().c_str(),false);
 	}
 
 	string_t fmt_round_trip(double val)
 	{
 		void* TODO;
-		return fmt_fixed(val,-1,false);
+		return fmt_fixed(val,-1);
 	}
 
-	size_t find_skip_quote(const string_t& str, size_t start, wchar_t c)
+	size_t find_skip_quote(const string_t& str, size_t start, const string_t& strFind)
 	{
-		string_t strFind = L"'\"";
-		strFind += c;
-		size_t pos = start;
-		
-		for (;;)
+		for (size_t pos = start;;)
 		{
-			size_t found = str.FindOneOf(strFind,pos);
+			size_t found = str.FindOneOf(L"'\"" + strFind,pos);
 			if (found == string_t::npos)
 				return found;
 
@@ -1040,15 +730,15 @@ namespace
 		}
 	}
 
-	int parse_custom(const string_t& str, std::vector<string_t>& parts)
+	size_t parse_custom(const string_t& str, std::vector<string_t>& parts)
 	{
-		size_t pos = find_skip_quote(str,0,L';');
+		size_t pos = find_skip_quote(str,0,L";");
 		if (pos == string_t::npos)
 			parts.push_back(str);
 		else
 		{
 			parts.push_back(string_t(str.c_str(),pos++));
-			size_t pos2 = find_skip_quote(str,pos,L';');
+			size_t pos2 = find_skip_quote(str,pos,L";");
 			if (pos2 == string_t::npos)
 				parts.push_back(string_t(str.c_str()+pos));
 			else
@@ -1061,16 +751,231 @@ namespace
 	}
 
 	template <typename T>
-	string_t fmt_custom(T val, const string_t& strFormat, size_t byte_width);
+	string_t fmt_custom(T val, const string_t& strFormat, int def_precision);
 
 	template <typename T>
-	string_t fmt_custom_i(T val, const string_t& /*strFormat*/, size_t byte_width)
+	string_t fmt_recurse(T val, const string_t& strFormat, int def_precision, bool bRecurse);
+
+	template <typename T>
+	std::string fmt_custom_sci(T val, const string_t& strFormat, size_t found, int def_precision)
 	{
-		void* TODO;
-		return fmt_recurse(val,L"G",byte_width,false);
+		bool capital = (strFormat[found++] == L'E');
+
+		bool bPlus = false;
+		if (strFormat[found] == L'+')
+		{
+			bPlus = true;
+			++found;
+		}
+		else if (strFormat[found] == L'-')
+			++found;
+
+		// Count the zeros
+		int exp_precision = 0;
+		for (;strFormat[found++]==L'0';++exp_precision)
+			;
+
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
+		
+		ss.precision(def_precision);
+
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
+		
+		ss << val;
+
+		return ss.str();
 	}
 
-	string_t fmt_recurse(int64_t val, const string_t& strFormat, size_t byte_width, bool bRecurse)
+	template <typename T>
+	string_t fmt_rnd_away(T val)
+	{
+		return fmt_decimal(val,-1);
+	}
+
+	string_t fmt_rnd_away(const double& val)
+	{
+		if (val < 0.0)
+			return fmt_decimal(static_cast<int64_t>(val-0.5),-1);
+		else
+			return fmt_decimal(static_cast<int64_t>(val+0.5),-1);
+	}
+
+	template <typename T>
+	string_t fmt_custom_i(T val, const string_t& strFormat, int def_precision)
+	{
+		if (strFormat == L"##" || strFormat == L"00")
+			return fmt_rnd_away(val);
+		
+#if defined(_WIN32)
+		LCID lcid = GetThreadLocale();
+
+		wchar_t decimal_point[5] = {0};
+		if (!GetLocaleInfoW(lcid,LOCALE_SDECIMAL,decimal_point,5))
+			OMEGA_THROW(GetLastError());
+
+		string_t decimal(decimal_point);
+		
+		wchar_t thousands_sep[5] = {0};
+		if (!GetLocaleInfoW(lcid,LOCALE_STHOUSAND,thousands_sep,5))
+			OMEGA_THROW(GetLastError());
+
+		string_t thousands(thousands_sep);
+#else
+		const lconv* lc = localeconv();
+		if (!lc)
+			return;
+
+		string_t decimal(lc->decimal_point,false);
+		string_t thousands(lc->thousands_sep,false);
+#endif
+
+		string_t strFind = L"0#Ee";
+		strFind += decimal[0];
+		strFind += thousands[0];
+
+		// Work out precision and mode...
+		size_t prefix = size_t(-1);
+		bool sci = false;
+		bool exp_plus = false;
+		size_t exp_prec = 0;
+		int precision = 0;
+		int width = 0;
+		bool dp_prec = false;
+		bool group = false;
+
+		for (size_t pos = 0;;)
+		{
+			size_t found = find_skip_quote(strFormat,pos,strFind);
+			if (found == string_t::npos)
+				break;
+
+			if (strFormat[found] == L'E' || strFormat[found] == L'e')
+			{
+				if (found >= strFormat.Length()-1)
+					break;
+
+				if (strFormat[found+1] == L'-' || strFormat[found+1] == L'+')
+				{
+					if (found >= strFormat.Length()-2)
+						break;
+
+					exp_plus = (strFormat[found+1] == L'+');
+
+					if (strFormat[found+2] == L'0')
+					{
+						exp_prec = found+2;
+						sci = true;
+					}
+				}
+				else if (strFormat[found+1] == L'0')
+				{
+					sci = true;
+					exp_prec = found+1;
+				}
+				
+				if (sci)
+				{
+					if (prefix == size_t(-1))
+						prefix = found;
+
+					for (found = exp_prec;strFormat[found]==L'0' || strFormat[found]==L'#';++found)
+						;
+
+					break;
+				}
+			}
+			else if (strFormat[found] == L'#')
+			{
+				if (width > 0 && !dp_prec)
+					break;
+
+				if (prefix == size_t(-1))
+					prefix = found;
+
+				if (dp_prec)
+					++precision;
+			}
+			else if (strFormat[found] == L'0')
+			{
+				if (prefix == size_t(-1))
+					prefix = found;
+
+				if (dp_prec)
+					++precision;
+				
+				++width;
+			}
+			else if (strFormat.Compare(decimal,found,decimal.Length()) == 0)
+			{
+				if (dp_prec)
+					break;
+
+				if (prefix == size_t(-1))
+					prefix = found;
+
+				dp_prec = true;
+				precision = 0;
+			}
+			else if (strFormat.Compare(thousands,found,thousands.Length()) == 0)
+			{
+				if (dp_prec || group)
+					break;
+
+				if (found > 0 && found < strFormat.Length()-1 &&
+					(strFormat[found-1]==L'#' || strFormat[found-1]==L'0') &&
+					(strFormat[found+1]==L'#' || strFormat[found+1]==L'0'))
+				{
+					group = true;
+				}				
+			}
+
+			pos = found + 1;
+		}
+
+		std::string str;
+
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.width(width);
+		ss.fill('0');
+
+		if (sci)
+		{
+			ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
+		
+			ss.precision(precision);
+
+			//if (capital)
+			//	ss.setf(std::ios_base::uppercase);
+			
+			ss << val;
+
+			str = ss.str();
+		}
+		else
+		{
+			if (dp_prec)
+				ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
+			
+			ss.precision(precision);
+
+			ss << val;
+
+			str = ss.str();
+		}
+
+		do_intl(str,group);
+
+		return string_t(str.c_str(),false);
+	}
+
+	template <typename T>
+	string_t fmt_recurse(T val, const string_t& strFormat, int def_precision, bool bRecurse)
 	{
 		num_fmt fmt;
 		bool capital;
@@ -1083,14 +988,13 @@ namespace
 				return fmt_currency(val,precision);
 
 			case decimal:
-			case round_trip:
-				return fmt_decimal(val,precision,true);
+				return fmt_decimal(val,precision);
 
 			case scientific:
-				return fmt_scientific(val,capital,precision,true);
+				return fmt_scientific(val,capital,precision);
 
 			case fixed_point:
-				return fmt_fixed(val,precision,true);
+				return fmt_fixed(val,precision);
 
 			case number:
 				return fmt_number(val,precision);
@@ -1098,221 +1002,131 @@ namespace
 			case hexadecimal:
 				return fmt_hex(static_cast<uint64_t>(val),capital,precision);
 
-			case general:
-			default:
-				if (precision <= 0)
-				{
-					switch (byte_width)
-					{
-					case sizeof(byte_t):
-						precision = 3;
-						break;
-
-					case sizeof(uint16_t):
-						precision = 5;
-						break;
-
-					case sizeof(uint32_t):
-						precision = 10;
-						break;
-
-					case sizeof(uint64_t):
-						precision = 19;
-						break;
-
-					default:
-						break;
-					}
-				}
-				return fmt_general(val,capital,precision);
-			}
-		}
-		else if (bRecurse)
-		{
-			return fmt_custom(val,strFormat,byte_width);
-		}
-		else
-		{
-			return fmt_custom_i(val,strFormat,byte_width);
-		}
-	}
-
-	string_t fmt_recurse(uint64_t val, const string_t& strFormat, size_t byte_width, bool bRecurse)
-	{
-		num_fmt fmt;
-		bool capital;
-		int precision;
-		if (parse_numfmt(strFormat,fmt,capital,precision))
-		{
-			switch (fmt)
-			{
-			case currency:
-				return fmt_currency(val,precision);
-
-			case decimal:
 			case round_trip:
-				return fmt_decimal(val,precision,true);
-
-			case scientific:
-				return fmt_scientific(val,capital,precision,true);
-
-			case fixed_point:
-				return fmt_fixed(val,precision,true);
-
-			case number:
-				return fmt_number(val,precision);
-
-			case hexadecimal:
-				return fmt_hex(val,capital,precision);
 
 			case general:
 			default:
 				if (precision <= 0)
-				{
-					switch (byte_width)
-					{
-					case sizeof(byte_t):
-						precision = 3;
-						break;
+					precision = def_precision;
 
-					case sizeof(uint16_t):
-						precision = 5;
-						break;
-
-					case sizeof(uint32_t):
-						precision = 10;
-						break;
-
-					case sizeof(uint64_t):
-						precision = 19;
-						break;
-
-					default:
-						break;
-					}
-				}
 				return fmt_general(val,capital,precision);
 			}
 		}
 		else if (bRecurse)
 		{
-			return fmt_custom(val,strFormat,byte_width);
+			return fmt_custom(val,strFormat,def_precision);
 		}
 		else
 		{
-			return fmt_custom_i(val,strFormat,byte_width);
+			return fmt_custom_i(val,strFormat,def_precision);
 		}
 	}
-
-	string_t fmt_recurse(float8_t val, const string_t& strFormat, size_t byte_width, bool bRecurse)
-	{
-		num_fmt fmt;
-		bool capital;
-		int precision;
-		if (parse_numfmt(strFormat,fmt,capital,precision))
-		{
-			switch (fmt)
-			{
-			case currency:
-				return fmt_currency(val,precision);
-
-			case scientific:
-				return fmt_scientific(val,capital,precision,true);
-
-			case decimal:
-			case fixed_point:
-				return fmt_fixed(val,precision,true);
-
-			case number:
-				return fmt_number(val,precision);
-
-			case round_trip:
-				return fmt_round_trip(val);
-
-			case hexadecimal:
-				return fmt_hex(static_cast<uint64_t>(val),capital,precision);
-
-			case general:
-			default:
-				if (precision <= 0)
-				{
-					switch (byte_width)
-					{
-					case sizeof(float4_t):
-						precision = 7;
-						break;
-
-					case sizeof(float8_t):
-						precision = 15;
-						break;
-
-					default:
-						break;
-					}
-				}
-				return fmt_general(val,capital,precision);
-			}
-		}
-		else if (bRecurse)
-		{
-			return fmt_custom(val,strFormat,byte_width);
-		}
-		else
-		{
-			return fmt_custom_i(val,strFormat,byte_width);
-		}
-	}
-
+	
 	template <typename T>
-	string_t fmt_custom(T val, const string_t& strFormat, size_t byte_width)
+	string_t fmt_custom(T val, const string_t& strFormat, int def_precision)
 	{
 		std::vector<string_t> parts;
 		switch (parse_custom(strFormat,parts))
 		{
 		case 3:
 			if (val == 0)
-				return fmt_recurse(val,parts[2],byte_width,false);
+				return fmt_recurse(val,parts[2],def_precision,false);
 
 		case 2:
 			if (val < 0)
-				return fmt_recurse(val,parts[1],byte_width,false);
+				return fmt_recurse(val,parts[1],def_precision,false);
 			else
-				return fmt_recurse(val,parts[0],byte_width,false);
+				return fmt_recurse(val,parts[0],def_precision,false);
 
 		default:
-			return fmt_custom_i(val,strFormat,byte_width);
+			return fmt_custom_i(val,strFormat,def_precision);
 		}
 	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	return fmt_recurse(val,strFormat,byte_width,true);
+	int def_precision = 0;
+	switch (byte_width)
+	{
+	case sizeof(byte_t):
+		def_precision = 3;
+		break;
+
+	case sizeof(uint16_t):
+		def_precision = 5;
+		break;
+
+	case sizeof(uint32_t):
+		def_precision = 10;
+		break;
+
+	default:
+	case sizeof(uint64_t):
+		def_precision = 19;
+		break;
+	}
+
+	return fmt_recurse(val,strFormat,def_precision,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_uint_t,3,((in),uint64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	return fmt_recurse(val,strFormat,byte_width,true);
+	int def_precision = 0;
+	switch (byte_width)
+	{
+	case sizeof(byte_t):
+		def_precision = 3;
+		break;
+
+	case sizeof(uint16_t):
+		def_precision = 5;
+		break;
+
+	case sizeof(uint32_t):
+		def_precision = 10;
+		break;
+
+	default:
+	case sizeof(uint64_t):
+		def_precision = 19;
+		break;
+	}
+
+	return fmt_recurse(val,strFormat,def_precision,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
-	string_t ret;
-	if (check_double(ret,val))
-		return ret;
+	int def_precision = 0;
+	switch (byte_width)
+	{
+	case sizeof(float4_t):
+		def_precision = 7;
+		break;
 
-	return fmt_recurse(val,strFormat,byte_width,true);
+	case sizeof(float8_t):
+	default:
+		def_precision = 15;
+		break;
+	}
+
+	return fmt_recurse(val,strFormat,def_precision,true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,val,(in),const string_t&,strFormat))
 {
 	if (strFormat.IsEmpty())
-		return val ? L"true" : L"false";
+	{
+		std::ostringstream ss;
+		ss.setf(std::ios_base::boolalpha);
+		ss << val;
+		
+		return string_t(ss.str().c_str(),false);
+	}
 
 	std::vector<string_t> parts;
-	parse_custom(strFormat,parts);
-
-	if (parts.size() != 2)
+	if (parse_custom(strFormat,parts) != 2)
 		OMEGA_THROW(L"Invalid bool_t format string {0}" % strFormat);
 
 	return val ? parts[0] : parts[1];

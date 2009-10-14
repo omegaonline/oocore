@@ -205,14 +205,10 @@ bool string_tests_format()
 	TEST(Omega::string_t(L"{0:##;(##)}") % 1234 == L"1234"); 
 	TEST(Omega::string_t(L"{0:##;(##)}") % -1234 == L"(1234)");
  	
-	//TEST(Omega::string_t(L"{0:yes;no}") % true == L"yes");
-	//TEST(Omega::string_t(L"{0:yes;no}") % false == L"no");
-	//TEST(Omega::string_t(L"{0:'yes;';'no;'}") % true == L"'yes;'");
-	//TEST(Omega::string_t(L"{0:\"yes;\";\"no;\"}") % false == L"\"no;\"");
-
-	TEST(Omega::string_t(L"{0:E;F}") % 1.0 == L"1.000000E+000");
-	TEST(Omega::string_t(L"{0:E;F}") % -1.5 == L"-1.5");
-	TEST(Omega::string_t(L"{0:E;F;e}") % 0.0 == L"0.000000e+000");
+	TEST(Omega::string_t(L"{0:yes;no}") % true == L"yes");
+	TEST(Omega::string_t(L"{0:yes;no}") % false == L"no");
+	TEST(Omega::string_t(L"{0:'yes;';'no;'}") % true == L"'yes;'");
+	TEST(Omega::string_t(L"{0:\"yes;\";\"no;\"}") % false == L"\"no;\"");
 
 	return true;
 }

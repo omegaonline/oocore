@@ -291,13 +291,15 @@ bool guid_tests()
 {
 	Omega::guid_t guid(Omega::guid_t::Null());
 	TEST(guid == Omega::guid_t::Null());
-
+	TEST(guid.ToString() == L"{00000000-0000-0000-0000-000000000000}");
+	
 	const wchar_t sz[] = L"{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
 	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
-	
+
+	TEST(guid2.ToString().Compare(sz,0,Omega::string_t::npos,true)==0);
 	TEST(Omega::guid_t::FromString(sz,guid2));
 
 	// Create a load of unique guid_t's

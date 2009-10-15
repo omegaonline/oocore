@@ -176,6 +176,7 @@
 
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <locale>
 
 namespace OOBase

@@ -130,7 +130,7 @@ namespace
 	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
 	{
 		// Lookup OID
-		string_t strOid = L"{" + oid.ToString() + L"}";
+		string_t strOid = oid.ToString();
 
 		// This needs to use a local cached map, and register for update notifications from the
 		// registry to refresh the map... This will result in a significant speedup.

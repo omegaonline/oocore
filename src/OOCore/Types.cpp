@@ -819,28 +819,31 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 {
 	OMEGA_UNUSED_ARG(strFormat);
 
-#if defined(HAVE_UUID_UUID_H)
+	std::ostringstream ss;
+	ss.imbue(std::locale::classic());
 
-	char szBuf[38] = {0};
-	uuid_unparse_upper(*(const uuid_t*)(&guid),szBuf);
-	return string_t(szBuf,true);
+	ss.setf(std::ios_base::hex,std::ios_base::basefield);
+	ss.setf(std::ios_base::uppercase);
+	ss.fill('0');
 
-#else
+	ss << '{';
+	ss << std::setw(8) << guid.Data1 << '-';
+	ss << std::setw(4) << guid.Data2 << '-';
+	ss << std::setw(4) << guid.Data3 << '-';
 
-	return string_t(L"{0:X8}-{1:X4}-{2:X4}-{3:X2}{4:X2}-{5:X2}{6:X2}{7:X2}{8:X2}{9:X2}{10:X2}") %
-		guid.Data1 % 
-		guid.Data2 % 
-		guid.Data3 % 
-		guid.Data4[0] %
-		guid.Data4[1] % 
-		guid.Data4[2] % 
-		guid.Data4[3] % 
-		guid.Data4[4] % 
-		guid.Data4[5] % 
-		guid.Data4[6] % 
-		guid.Data4[7];
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[0]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[1]);
+	ss << '-';
 
-#endif
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[2]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[3]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[4]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[5]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[6]);
+	ss << std::setw(2) << static_cast<unsigned int>(guid.Data4[7]);
+	ss << '}';
+
+	return string_t(ss.str().c_str(),true);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),guid_t&,result))
@@ -849,23 +852,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 
 	std::string str = OOBase::to_utf8(sz);
 	const char* buf;
-	if (str.length() == 38 && str[0] == '{')
-	{
-		if (str[37] != '}')
-			return 0;
 
-		buf = str.c_str() + 1;
-	}
-	else
-	{
-		if (str.length() == 36)
-			return 0;
-
-		buf = str.c_str();
-	}
+	if (str.length() != 38 || str[0] != '{' || str[37] != '}')
+		return 0;
 
 	uuid_t uuid;
-	if (uuid_parse(buf,uuid))
+	if (uuid_parse(str.c_str() + 1,uuid))
 		return 0;
 
 	result = *(guid_t*)(uuid);
@@ -879,67 +871,58 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 	result.Data3 = 0;
 	memset(result.Data4,sizeof(result.Data4),0);
 
-	bool bQuoted = false;
-	if (sz[0] == L'{')
-	{
-		if (sz[37] != L'}')
-			return 0;
-		
-		++sz;
-		bQuoted = true;
-	}
-
 	try
 	{
-		unsigned int v = (OOCore::parse_uint_hex(sz[0]) << 28);
-		v += (OOCore::parse_uint_hex(sz[1]) << 24);
-		v += (OOCore::parse_uint_hex(sz[2]) << 20);
-		v += (OOCore::parse_uint_hex(sz[3]) << 16);
-		v += (OOCore::parse_uint_hex(sz[4]) << 12);
-		v += (OOCore::parse_uint_hex(sz[5]) << 8);
-		v += (OOCore::parse_uint_hex(sz[6]) << 4);
-		v += OOCore::parse_uint_hex(sz[7]);
+		if (sz[0] != L'{')
+			return 0;
+
+		unsigned int v = (OOCore::parse_uint_hex(sz[1]) << 28);
+		v += (OOCore::parse_uint_hex(sz[2]) << 24);
+		v += (OOCore::parse_uint_hex(sz[3]) << 20);
+		v += (OOCore::parse_uint_hex(sz[4]) << 16);
+		v += (OOCore::parse_uint_hex(sz[5]) << 12);
+		v += (OOCore::parse_uint_hex(sz[6]) << 8);
+		v += (OOCore::parse_uint_hex(sz[7]) << 4);
+		v += OOCore::parse_uint_hex(sz[8]);
 		result.Data1 = static_cast<uint32_t>(v);
 
-		if (sz[8] != L'-')
+		if (sz[9] != L'-')
 			return 0;
 
-		v = (OOCore::parse_uint_hex(sz[9]) << 12);
-		v += (OOCore::parse_uint_hex(sz[10]) << 8);
-		v += (OOCore::parse_uint_hex(sz[11]) << 4);
-		v += OOCore::parse_uint_hex(sz[12]);
+		v = (OOCore::parse_uint_hex(sz[10]) << 12);
+		v += (OOCore::parse_uint_hex(sz[11]) << 8);
+		v += (OOCore::parse_uint_hex(sz[12]) << 4);
+		v += OOCore::parse_uint_hex(sz[13]);
 		result.Data2 = static_cast<uint16_t>(v);
 
-		if (sz[13] != L'-')
+		if (sz[14] != L'-')
 			return 0;
 
-		v = (OOCore::parse_uint_hex(sz[14]) << 12);
-		v += (OOCore::parse_uint_hex(sz[15]) << 8);
-		v += (OOCore::parse_uint_hex(sz[16]) << 4);
-		v += OOCore::parse_uint_hex(sz[17]);
+		v = (OOCore::parse_uint_hex(sz[15]) << 12);
+		v += (OOCore::parse_uint_hex(sz[16]) << 8);
+		v += (OOCore::parse_uint_hex(sz[17]) << 4);
+		v += OOCore::parse_uint_hex(sz[18]);
 		result.Data3 = static_cast<uint16_t>(v);
 
-		if (sz[18] != L'-')
+		if (sz[19] != L'-')
 			return 0;
 
-		result.Data4[0] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[19]) << 4) + OOCore::parse_uint_hex(sz[20]));
-		result.Data4[1] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[21]) << 4) + OOCore::parse_uint_hex(sz[22]));
+		result.Data4[0] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[20]) << 4) + OOCore::parse_uint_hex(sz[21]));
+		result.Data4[1] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[22]) << 4) + OOCore::parse_uint_hex(sz[23]));
 
-		if (sz[23] != L'-')
+		if (sz[24] != L'-')
 			return false;
 
-		result.Data4[2] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[24]) << 4) + OOCore::parse_uint_hex(sz[25]));
-		result.Data4[3] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[26]) << 4) + OOCore::parse_uint_hex(sz[27]));
-		result.Data4[4] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[28]) << 4) + OOCore::parse_uint_hex(sz[29]));
-		result.Data4[5] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[30]) << 4) + OOCore::parse_uint_hex(sz[31]));
-		result.Data4[6] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[32]) << 4) + OOCore::parse_uint_hex(sz[33]));
-		result.Data4[7] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[34]) << 4) + OOCore::parse_uint_hex(sz[35]));
+		result.Data4[2] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[25]) << 4) + OOCore::parse_uint_hex(sz[26]));
+		result.Data4[3] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[27]) << 4) + OOCore::parse_uint_hex(sz[28]));
+		result.Data4[4] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[29]) << 4) + OOCore::parse_uint_hex(sz[30]));
+		result.Data4[5] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[31]) << 4) + OOCore::parse_uint_hex(sz[32]));
+		result.Data4[6] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[33]) << 4) + OOCore::parse_uint_hex(sz[34]));
+		result.Data4[7] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[35]) << 4) + OOCore::parse_uint_hex(sz[36]));
 
-		if (bQuoted && sz[37] != L'\0')
+		if (sz[37] != L'}' || sz[38] != L'\0')
 			return 0;
-		else if (!bQuoted && sz[36] != L'\0')
-			return 0;
-
+		
 		return 1;
 	}
 	catch (int)

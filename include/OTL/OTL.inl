@@ -66,7 +66,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t b
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
-		Omega::string_t strOID = L"{" + (g[i].pfnOid)()->ToString() + L"}";
+		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
 		if (bLocal)
 			strXML += L"<key name=\"\\Local User\\Objects\">";
@@ -125,7 +125,7 @@ void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_
 	const CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
 	{
-		Omega::string_t strOID = L"{" + (g[i].pfnOid)()->ToString() + L"}";
+		Omega::string_t strOID = (g[i].pfnOid)()->ToString();
 
 		if (bLocal)
 			strXML += L"<key name=\"\\Local User\\Objects\">";

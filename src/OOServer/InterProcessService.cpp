@@ -89,7 +89,7 @@ namespace
 	static ObjectPtr<Omega::Registry::IKey> FindAppKey(const guid_t& oid)
 	{
 		// Lookup OID
-		string_t strOid = L"{" + oid.ToString() + L"}";
+		string_t strOid = oid.ToString();
 
 		// Find the OID key... Check Local User first
 		ObjectPtr<Omega::Registry::IKey> ptrOidKey;

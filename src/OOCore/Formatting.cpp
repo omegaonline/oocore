@@ -24,64 +24,7 @@
 using namespace Omega;
 
 namespace 
-{
-	class LocaleHolder
-	{
-	public:
-		LocaleHolder()
-		{			
-#if defined(_WIN32)
-			// Sync Win32 locale with internal locale
-			LCID lcid = GetThreadLocale();
-
-			char buffer[256] = {0};
-			if (!GetLocaleInfoA(lcid,LOCALE_SENGLANGUAGE,buffer,255))
-				OMEGA_THROW(GetLastError());
-
-			std::string str = buffer;
-
-			if (!GetLocaleInfoA(lcid,LOCALE_SENGCOUNTRY,buffer,255))
-				OMEGA_THROW(GetLastError());
-		
-			str += "_";
-			str += buffer;
-
-			if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTANSICODEPAGE,buffer,255))
-				OMEGA_THROW(GetLastError());
-			
-			if (strcmp(buffer,"0") != 0)
-			{
-				str += ".";
-				str += buffer;
-			}
-			else
-			{
-				if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTCODEPAGE,buffer,255))
-					OMEGA_THROW(GetLastError());
-
-				if (strcmp(buffer,"1") != 0)
-				{
-					str += ".";
-					str += buffer;
-				}
-			}
-			
-			// Sync the crt locale with the Win32 one
-			m_prev_locale = setlocale(LC_ALL,str.c_str());
-#endif
-		}
-
-		~LocaleHolder()
-		{
-#if defined(_WIN32)
-			setlocale(LC_ALL,m_prev_locale.c_str());
-#endif
-		}
-
-	private:
-		std::string m_prev_locale;
-	};
-
+{	
 	enum num_fmt
 	{
 		currency,

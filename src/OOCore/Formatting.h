@@ -24,10 +24,11 @@
 
 namespace OOCore
 {
-	unsigned int parse_uint_hex(wchar_t c);
-	unsigned int parse_uint(wchar_t c);
-	unsigned int parse_uint(const wchar_t* sz);
-	int parse_int(const wchar_t* sz);
+	Omega::int32_t wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
+	Omega::uint32_t wcstou32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
+	Omega::int64_t wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
+	Omega::uint64_t wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base);
+	Omega::float8_t wcstod(const wchar_t* sz, wchar_t const*& endptr);
 }
 
 #endif // OOCORE_FORMATTING_H_INCLUDED_

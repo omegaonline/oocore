@@ -35,6 +35,10 @@
 #include <stdlib.h>
 #endif
 
+#if defined(HAVE_WCHAR_H)
+#include <wchar.h>
+#endif
+
 #if defined(HAVE_ERRNO_H)
 #include <errno.h>
 #endif

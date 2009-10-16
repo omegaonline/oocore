@@ -46,7 +46,7 @@ OO_C_BUILTINS
 OO_NEW_NOTHROW
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h ev.h])
+AC_CHECK_HEADERS([windows.h wchar.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h ev.h])
 
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
@@ -62,6 +62,9 @@ AC_CHECK_FUNCS([getpeereid getpeerucred])
 AC_CHECK_TYPES([struct cmsgcred])
 AC_CHECK_TYPES([struct fcred])
 AC_CHECK_TYPES([struct sockcred])
+
+# Check for wcstoull and friends
+AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
 
 # Set sensible default CFLAGS if necessary
 if test "$oo_test_CFLAGS" != set; then

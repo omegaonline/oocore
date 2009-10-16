@@ -103,22 +103,17 @@ namespace
 			}
 		}
 
-		try
+		if (str.Length() >= 2)
 		{
-			if (str.Length() >= 2)
-				precision = OOCore::parse_uint(str[1]);
-
-			if (str.Length() == 3)
+			if (iswdigit(str[1]))
 			{
-				precision *= 10;
-				precision += OOCore::parse_uint(str[2]);
+				const wchar_t* endp = 0;
+				precision = OOCore::wcsto32(str.c_str()+1,endp,10);
+				if (*endp != L'\0')
+					return false;
 			}
 		}
-		catch (int)
-		{
-			return false;
-		}
-
+		
 		return true;
 	}
 
@@ -682,10 +677,17 @@ namespace
 
 	string_t fmt_round_trip(const double& val, int precision)
 	{
-		// Fix this when we have parsing
-		void* TODO;
+		string_t s;
+		double p = 0.0;
+		for (int i=0;i<10 && val != p;++i)
+		{
+			s = fmt_fixed(val,precision+i);
 
-		return fmt_fixed(val,precision+2);
+			const wchar_t* end = 0;
+			p = OOCore::wcstod(s.c_str(),end);
+		}
+
+		return s;
 	}
 
 	size_t find_skip_quote(const string_t& str, size_t start, const string_t& strFind)
@@ -1194,84 +1196,99 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 	return val ? parts[0] : parts[1];
 }
 
-unsigned int OOCore::parse_uint_hex(wchar_t c)
+int32_t OOCore::wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-	if (c >= L'0' && c <= L'9')
-		return (c-L'0');
-	else if (c >= L'A' && c <= L'F')
-		return (c-L'A'+10);
-	else if (c >= L'a' && c <= L'f')
-		return (c-L'a'+10);
-	else
-		throw int(0);
+	static_assert(sizeof(::wcstol(0,0,0)) == sizeof(int32_t),"Non-standard wcstol");
+
+	return ::wcstol(sz,const_cast<wchar_t**>(&endptr),base);
 }
 
-unsigned int OOCore::parse_uint(wchar_t c)
+uint32_t OOCore::wcstou32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-	if (c >= L'0' && c <= L'9')
-		return (c-L'0');
-	else
-		throw int(0);
+	static_assert(sizeof(::wcstoul(0,0,0)) == sizeof(uint32_t),"Non-standard wcstoul");
+
+	return ::wcstoul(sz,const_cast<wchar_t**>(&endptr),base);
 }
 
-unsigned int OOCore::parse_uint(const wchar_t* sz)
+int64_t OOCore::wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-	unsigned int v = 0;
-	const wchar_t* p = sz;
-	if (*p == L'+')
-		++p;
+#if defined(HAVE__WCSTOI64)
+	static_assert(sizeof(::_wcstoi64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoi64");
 
-	try
+	return ::_wcstoi64(sz,const_cast<wchar_t**>(&endptr),base);
+#elif defined(HAVE_WCSTOLL)
+	static_assert(sizeof(::wcstoll(0,0,0)) == sizeof(int64_t),"Non-standard wcstoll");
+
+	return ::wcstoll(sz,const_cast<wchar_t**>(&endptr),base);
+#else
+#error Fix me!
+#endif
+}
+
+uint64_t OOCore::wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
+{
+#if defined(HAVE__WCSTOUI64)
+	static_assert(sizeof(::_wcstoui64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoui64");
+
+	return ::_wcstoui64(sz,const_cast<wchar_t**>(&endptr),base);
+#elif defined(HAVE_WCSTOULL)
+	static_assert(sizeof(::wcstoull(0,0,0)) == sizeof(int64_t),"Non-standard wcstoull");
+
+	return ::wcstoull(sz,const_cast<wchar_t**>(&endptr),base);
+#else
+#error Fix me!
+#endif
+}
+
+float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
+{
+	static_assert(sizeof(::wcstod(0,0)) == sizeof(float8_t),"Non-standard wcstod");
+
+#if defined(_WIN32)
+	// Sync Win32 locale with internal locale
+	LCID lcid = GetThreadLocale();
+
+	char buffer[256] = {0};
+	if (!GetLocaleInfoA(lcid,LOCALE_SENGLANGUAGE,buffer,255))
+		OMEGA_THROW(GetLastError());
+
+	std::string str = buffer;
+
+	if (!GetLocaleInfoA(lcid,LOCALE_SENGCOUNTRY,buffer,255))
+		OMEGA_THROW(GetLastError());
+
+	str += "_";
+	str += buffer;
+
+	if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTANSICODEPAGE,buffer,255))
+		OMEGA_THROW(GetLastError());
+
+	if (strcmp(buffer,"0") != 0)
 	{
-		while (*p >=L'0' && *p<=L'9')
+		str += ".";
+		str += buffer;
+	}
+	else
+	{
+		if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTCODEPAGE,buffer,255))
+			OMEGA_THROW(GetLastError());
+
+		if (strcmp(buffer,"1") != 0)
 		{
-			unsigned int i = parse_uint(*p++);
-
-			if (v > UINT_MAX/10)
-				break;
-			v *= 10;
-
-			if (v > UINT_MAX-i)
-				break;
-			v += i;		
+			str += ".";
+			str += buffer;
 		}
 	}
-	catch (int)
-	{}
 
-	return v;
-}
+	// Sync the crt locale with the Win32 one
+	std::string prev_locale = setlocale(LC_NUMERIC,str.c_str());
+#endif
 
-int OOCore::parse_int(const wchar_t* sz)
-{
-	bool bNeg = false;
-	int v = 0;
-	const wchar_t* p = sz;
-	if (*p == L'+')
-		++p;
-	else if (*p == L'-')
-	{
-		++p;
-		bNeg = true;
-	}
+	double ret = ::wcstod(sz,const_cast<wchar_t**>(&endptr));
 
-	try
-	{
-		while (*p >=L'0' && *p<=L'9')
-		{
-			unsigned int i = parse_uint(*p++);
+#if defined(_WIN32)
+	setlocale(LC_NUMERIC,prev_locale.c_str());
+#endif
 
-			if (v > INT_MAX/10)
-				break;
-			v *= 10;
-
-			if ((unsigned int)v > INT_MAX-i)
-				break;
-			v += i;		
-		}
-	}
-	catch (int)
-	{}
-
-	return (bNeg ? -v : v);
+	return ret;
 }

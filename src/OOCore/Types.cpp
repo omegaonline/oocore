@@ -80,8 +80,8 @@ namespace
 		{
 			struct insert_t
 			{
-				unsigned int index;
-				int          alignment;
+				uint32_t     index;
+				int32_t      alignment;
 				std::wstring format;
 				std::wstring suffix;
 			};
@@ -560,14 +560,16 @@ void StringNode::parse_arg(size_t& pos)
 
 	format_state_t::insert_t ins;
 	ins.alignment = 0;
-	ins.index = OOCore::parse_uint(m_buf+pos);
+
+	const wchar_t* endp = 0;
+	ins.index = OOCore::wcstou32(m_buf+pos,endp,10);
 	if (ins.index < m_fs->m_curr_arg)
 		m_fs->m_curr_arg = ins.index;
 
 	if (comma < end && comma < colon)
 	{
 		pos = comma++;
-		ins.alignment = OOCore::parse_int(m_buf+comma);
+		ins.alignment = OOCore::wcsto32(m_buf+comma,endp,10);
 	}
 	
 	if (colon < end)
@@ -873,52 +875,45 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 
 	try
 	{
-		if (sz[0] != L'{')
+		if (sz[0] != L'{' || !iswxdigit(sz[1]))
 			return 0;
 
-		unsigned int v = (OOCore::parse_uint_hex(sz[1]) << 28);
-		v += (OOCore::parse_uint_hex(sz[2]) << 24);
-		v += (OOCore::parse_uint_hex(sz[3]) << 20);
-		v += (OOCore::parse_uint_hex(sz[4]) << 16);
-		v += (OOCore::parse_uint_hex(sz[5]) << 12);
-		v += (OOCore::parse_uint_hex(sz[6]) << 8);
-		v += (OOCore::parse_uint_hex(sz[7]) << 4);
-		v += OOCore::parse_uint_hex(sz[8]);
-		result.Data1 = static_cast<uint32_t>(v);
-
-		if (sz[9] != L'-')
+		const wchar_t* endp = 0;
+		result.Data1 = OOCore::wcstou32(sz+1,endp,16);
+		if (endp != sz+9)
 			return 0;
 
-		v = (OOCore::parse_uint_hex(sz[10]) << 12);
-		v += (OOCore::parse_uint_hex(sz[11]) << 8);
-		v += (OOCore::parse_uint_hex(sz[12]) << 4);
-		v += OOCore::parse_uint_hex(sz[13]);
-		result.Data2 = static_cast<uint16_t>(v);
-
-		if (sz[14] != L'-')
+		if (sz[9] != L'-' || !iswxdigit(sz[10]))
 			return 0;
 
-		v = (OOCore::parse_uint_hex(sz[15]) << 12);
-		v += (OOCore::parse_uint_hex(sz[16]) << 8);
-		v += (OOCore::parse_uint_hex(sz[17]) << 4);
-		v += OOCore::parse_uint_hex(sz[18]);
-		result.Data3 = static_cast<uint16_t>(v);
-
-		if (sz[19] != L'-')
+		result.Data2 = static_cast<uint16_t>(OOCore::wcstou32(sz+10,endp,16));
+		if (endp != sz+14 || sz[14] != L'-' || !iswxdigit(sz[15]))
 			return 0;
 
-		result.Data4[0] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[20]) << 4) + OOCore::parse_uint_hex(sz[21]));
-		result.Data4[1] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[22]) << 4) + OOCore::parse_uint_hex(sz[23]));
+		result.Data3 = static_cast<uint16_t>(OOCore::wcstou32(sz+15,endp,16));
+		if (endp != sz+19 || sz[19] != L'-' || !iswxdigit(sz[20]))
+			return 0;
 
-		if (sz[24] != L'-')
-			return false;
+		uint32_t v1 = OOCore::wcstou32(sz+20,endp,16);
+		if (endp != sz+24)
+			return 0;
 
-		result.Data4[2] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[25]) << 4) + OOCore::parse_uint_hex(sz[26]));
-		result.Data4[3] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[27]) << 4) + OOCore::parse_uint_hex(sz[28]));
-		result.Data4[4] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[29]) << 4) + OOCore::parse_uint_hex(sz[30]));
-		result.Data4[5] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[31]) << 4) + OOCore::parse_uint_hex(sz[32]));
-		result.Data4[6] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[33]) << 4) + OOCore::parse_uint_hex(sz[34]));
-		result.Data4[7] = static_cast<byte_t>((OOCore::parse_uint_hex(sz[35]) << 4) + OOCore::parse_uint_hex(sz[36]));
+		result.Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
+		result.Data4[1] = static_cast<byte_t>(v1 & 0xFF);
+
+		if (sz[24] != L'-' || !iswxdigit(sz[25]))
+			return 0;
+
+		uint64_t v2 = OOCore::wcstou64(sz+25,endp,16);
+		if (endp != sz+37)
+			return 0;
+
+		result.Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
+		result.Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
+		result.Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
+		result.Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
+		result.Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
+		result.Data4[7] = static_cast<byte_t>(v2 & 0xFF);
 
 		if (sz[37] != L'}' || sz[38] != L'\0')
 			return 0;

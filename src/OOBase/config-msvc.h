@@ -58,8 +58,28 @@
 	#error What else can MSVC compile?
 #endif
 
-#define HAVE_NEW_NOTHROW 1
+/* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
+
+/* Define to 1 if you have the <errno.h> header file. */
+#define HAVE_ERRNO_H 1
+
+/* Define to 1 if you have new (std::nothrow) support */
+#define HAVE_NEW_NOTHROW 1
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#define HAVE_STDLIB_H 1
+
+/* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
+
+/* Define to 1 if you have the <wchar.h> header file. */
+#define HAVE_WCHAR_H 1
+
+/* Define to 1 if you have the `_wcstoi64' function. */
+#define HAVE__WCSTOI64 1
+
+/* Define to 1 if you have the `_wcstoui64' function. */
+#define HAVE__WCSTOUI64 1
 
 #endif // OOBASE_CONFIG_MSVC_H_INCLUDED_

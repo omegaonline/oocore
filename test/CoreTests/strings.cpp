@@ -187,6 +187,8 @@ bool string_tests_format()
 	TEST(Omega::string_t(L"{0:X}") % 0x2c45e == L"2C45E"); 
 	TEST(Omega::string_t(L"{0:X8}") % 0x2c45e == L"0002C45E"); 
 	TEST(Omega::string_t(L"{0:x}") % 123456789 == L"75bcd15");
+
+	TEST(Omega::string_t(L"{0:R}") % 1.23456789 == L"1.23456789");
  
 	TEST(Omega::string_t(L"{0}") % true == L"true");
 	TEST(Omega::string_t(L"{0}") % false == L"false");

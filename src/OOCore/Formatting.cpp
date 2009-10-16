@@ -681,7 +681,7 @@ namespace
 		double p = 0.0;
 		for (int i=0;i<10 && val != p;++i)
 		{
-			s = fmt_fixed(val,precision+i);
+			s = fmt_general(val,false,precision+i);
 
 			const wchar_t* end = 0;
 			p = OOCore::wcstod(s.c_str(),end);

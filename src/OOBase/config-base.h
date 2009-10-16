@@ -103,7 +103,7 @@
 #undef WINVER
 #define WINVER 0x0500
 #else
-#error OOCore requires WINVER >= 0x0500!
+#error OOBase requires WINVER >= 0x0500!
 #endif
 #endif
 

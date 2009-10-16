@@ -480,7 +480,7 @@ namespace OTL
 		static ObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				throw Omega::Activation::INoAggregationException::Create(Omega::guid_t::Null());
+				return 0;
 
 			ObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,ObjectImpl<ROOT>());
@@ -619,19 +619,19 @@ namespace OTL
 		Omega::Threading::AtomicRefCount m_refcount;
 
 	public:
-		static AggregatedObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter)
+		static AggregatedObjectImpl* CreateInstance(Omega::IObject* pOuter)
 		{
 			if (!pOuter)
-				OMEGA_THROW(L"AggregatedObjectImpl must be aggregated");
+				return 0;
 
-			AggregatedObjectImpl<ROOT>* pObject;
-			OMEGA_NEW(pObject,AggregatedObjectImpl<ROOT>(pOuter));
+			AggregatedObjectImpl* pObject;
+			OMEGA_NEW(pObject,AggregatedObjectImpl(pOuter));
 			return pObject;
 		}
 
-		static ObjectPtr<AggregatedObjectImpl<ROOT> > CreateInstancePtr(Omega::IObject* pOuter = 0)
+		static ObjectPtr<AggregatedObjectImpl> CreateInstancePtr(Omega::IObject* pOuter)
 		{
-			ObjectPtr<AggregatedObjectImpl<ROOT> > ptr;
+			ObjectPtr<AggregatedObjectImpl> ptr;
 			ptr.Attach(CreateInstance(pOuter));
 			return ptr;
 		}
@@ -674,8 +674,11 @@ namespace OTL
 		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >;
 
 	public:
-		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* = 0)
+		static SingletonObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
+			if (pOuter)
+				return 0;
+
 			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
 			pObject->AddRef();
 			return pObject;
@@ -734,7 +737,16 @@ namespace OTL
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
 		{
-			Omega::IObject* pObject = T::CreateInstancePtr(pOuter)->QueryInterface(iid);
+			ObjectPtr<T> ptrT = T::CreateInstancePtr(pOuter);
+			if (!ptrT)
+			{
+				if (pOuter)
+					throw Omega::Activation::INoAggregationException::Create(*pOID);
+				else
+					throw Omega::Activation::IMustAggregateException::Create(*pOID);
+			}
+			
+			Omega::IObject* pObject = ptrT->QueryInterface(iid);
 			if (!pObject)
 				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 			return pObject;

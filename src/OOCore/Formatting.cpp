@@ -21,10 +21,22 @@
 
 #include "OOCore_precomp.h"
 
+#include <OTL/Exception.h>
+
 using namespace Omega;
+using namespace OTL;
 
 namespace 
 {	
+	class FormattingException :
+		public ExceptionImpl<Formatting::IFormattingException>
+	{
+	public:
+		BEGIN_INTERFACE_MAP(FormattingException)
+			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Formatting::IFormattingException>)
+		END_INTERFACE_MAP()
+	};
+
 	enum num_fmt
 	{
 		currency,
@@ -1108,6 +1120,15 @@ namespace
 	}
 }
 
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,3,((in),const Omega::string_t&,msg,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause))
+{
+	ObjectImpl<FormattingException>* pNew = ObjectImpl<FormattingException>::CreateInstance();
+	pNew->m_strDesc = msg;
+	pNew->m_strSource = source;
+	pNew->m_ptrCause = pCause;
+	return static_cast<Formatting::IFormattingException*>(pNew);
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_int_t,3,((in),int64_t,val,(in),const string_t&,strFormat,(in),size_t,byte_width))
 {
 	int def_precision = 0;
@@ -1191,11 +1212,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 
 	std::vector<string_t> parts;
 	if (parse_custom(strFormat,parts) != 2)
-		OMEGA_THROW(L"Invalid bool_t format string {0}" % strFormat);
+		throw Formatting::IFormattingException::Create(L"Invalid bool_t format string {0}" % strFormat,OMEGA_SOURCE_INFO);
 
 	return val ? parts[0] : parts[1];
 }
-
 int32_t OOCore::wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
 	static_assert(sizeof(::wcstol(0,0,0)) == sizeof(int32_t),"Non-standard wcstol");
@@ -1245,7 +1265,7 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 	static_assert(sizeof(::wcstod(0,0)) == sizeof(float8_t),"Non-standard wcstod");
 
 #if defined(_WIN32)
-	// Sync Win32 locale with internal locale
+	// Sync the crt locale with the Win32 one
 	LCID lcid = GetThreadLocale();
 
 	char buffer[256] = {0};
@@ -1280,15 +1300,23 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 		}
 	}
 
-	// Sync the crt locale with the Win32 one
 	std::string prev_locale = setlocale(LC_NUMERIC,str.c_str());
 #endif
 
-	double ret = ::wcstod(sz,const_cast<wchar_t**>(&endptr));
+	try
+	{
+		double ret = ::wcstod(sz,const_cast<wchar_t**>(&endptr));
 
 #if defined(_WIN32)
-	setlocale(LC_NUMERIC,prev_locale.c_str());
+		setlocale(LC_NUMERIC,prev_locale.c_str());
 #endif
-
-	return ret;
+		return ret;
+	}
+	catch (...)
+	{
+#if defined(_WIN32)
+		setlocale(LC_NUMERIC,prev_locale.c_str());
+#endif
+		throw;
+	}
 }

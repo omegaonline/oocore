@@ -85,5 +85,11 @@ Omega::ITimeoutException* Omega::ITimeoutException::Create()
 	return OOCore_ITimeoutException_Create();
 }
 
+OOCORE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,3,((in),const Omega::string_t&,msg,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause))
+Omega::Formatting::IFormattingException* Omega::Formatting::IFormattingException::Create(const string_t& strMsg, const string_t& strSource, IException* pE)
+{
+	return OOCore_IFormattingException_Create(strMsg,strSource,pE);
+}
+
 #endif // OOCORE_RTTI_INL_INCLUDED_
 

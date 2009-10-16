@@ -551,12 +551,12 @@ void StringNode::parse_arg(size_t& pos)
 {
 	size_t end = find_brace(pos,L'}');
 	if (end == string_t::npos)
-		OMEGA_THROW(L"Missing matching } in format string");
+		throw Formatting::IFormattingException::Create(L"Missing matching } in format string",OMEGA_SOURCE_INFO);
 	
 	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
 	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
 	if (comma == pos || colon == pos)
-		OMEGA_THROW(L"Missing index in format string");
+		throw Formatting::IFormattingException::Create(L"Missing index in format string",OMEGA_SOURCE_INFO);
 
 	format_state_t::insert_t ins;
 	ins.alignment = 0;
@@ -627,7 +627,7 @@ void StringNode::parse_format()
 	// Prefix first
 	size_t pos = find_brace(0,L'{');
 	if (pos == string_t::npos)
-		OMEGA_THROW(L"No inserts in format string");
+		throw Formatting::IFormattingException::Create(L"No inserts in format string",OMEGA_SOURCE_INFO);
 
 	OMEGA_NEW(m_fs,format_state_t);
 	m_fs->m_curr_arg = (size_t)-1;
@@ -677,7 +677,7 @@ void StringNode::parse_format()
 		if (!bFound)
 		{
 			if (count < m_fs->m_listInserts.size())
-				OMEGA_THROW(L"Index gap in format string");
+				throw Formatting::IFormattingException::Create(L"Index gap in format string",OMEGA_SOURCE_INFO);
 			break;
 		}
 	}
@@ -687,7 +687,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 {
 	StringNode* s = static_cast<StringNode*>(*s1);
 	if (!s)
-		OMEGA_THROW(L"Empty format string");
+		throw Formatting::IFormattingException::Create(L"Empty format string",OMEGA_SOURCE_INFO);
 	
 	try
 	{

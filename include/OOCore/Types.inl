@@ -503,10 +503,9 @@ namespace Omega
 
 Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
 {
-	if (strFormat.IsEmpty())
-		return val;
+	if (!strFormat.IsEmpty())
+		throw Formatting::IFormattingException::Create(L"Invalid string_t format string {0}" % strFormat,OMEGA_SOURCE_INFO);
 	
-	void* TODO;
 	return val;
 }
 
@@ -580,7 +579,7 @@ Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
 	guid_t ret;
 	if (!FromString(str,ret))
-		OMEGA_THROW(L"Invalid guid_t format string");
+		throw Formatting::IFormattingException::Create(L"{0} is not a guid_t string representation" % str,OMEGA_SOURCE_INFO);
 	return ret;
 }
 

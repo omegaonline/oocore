@@ -106,6 +106,7 @@ else
 fi
 
 # Set up libtool correctly
+LT_PREREQ([2.2.7])
 LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([win32-dll disable-static dlopen])
 LT_LANG([Windows Resource])
@@ -117,9 +118,9 @@ OO_LIB_SQLITE3([3.5.0])
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error
 case $host_os in
-	*cygwin*)
+	cygwin)
 		AC_MSG_ERROR([Don't build for cygwin, use a native Win32 port such as MinGW]) ;;
-	*mingw*)
+	mingw*)
 		win32=true ;;
 esac
 AM_CONDITIONAL([WIN32],[test x$win32 = xtrue])

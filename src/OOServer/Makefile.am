@@ -1,22 +1,22 @@
 include $(top_srcdir)/m4/ltrc.inc
 
-noinst_LIBRARIES = liboosvrcmn.a liboosvrdb.a
+noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
 
-liboosvrcmn_a_CPPFLAGS = -I@top_srcdir@/include
-liboosvrcmn_a_CFLAGS = $(PTHREAD_CFLAGS)
-liboosvrcmn_a_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboosvrcmn_la_CPPFLAGS = -I@top_srcdir@/include
+liboosvrcmn_la_CFLAGS = $(PTHREAD_CFLAGS)
+liboosvrcmn_la_CXXFLAGS = $(PTHREAD_CFLAGS)
 
-liboosvrcmn_a_SOURCES = \
+liboosvrcmn_la_SOURCES = \
 	DebuggerWin32.cpp \
 	MessageConnection.h \
 	MessageConnection.cpp \
 	Protocol.h
 
-liboosvrdb_a_CPPFLAGS = -I@top_srcdir@/include
-liboosvrdb_a_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-liboosvrdb_a_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+liboosvrdb_la_CPPFLAGS = -I@top_srcdir@/include
+liboosvrdb_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+liboosvrdb_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 
-liboosvrdb_a_SOURCES = \
+liboosvrdb_la_SOURCES = \
 	Database.h \
 	Database.cpp \
 	RegistryHive.h \
@@ -29,14 +29,15 @@ oolibexec_LTLIBRARIES = oosvrlite.la
 oosvrlite_la_CPPFLAGS =  -I$(top_srcdir)/include
 oosvrlite_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 oosvrlite_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-oosvrlite_la_LDFLAGS = -module -L. -loosvrdb $(SQLITE3_LIBS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS)
+oosvrlite_la_LDFLAGS = $(SQLITE3_LIBS) $(PTHREAD_LIBS) -module -no-undefined
+oosvrlite_la_LIBADD = liboosvrdb.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
 
 if WIN32
-oosvrlite_la_LIBADD = ../OOCore/OOCore.la
-oosvrlite_la_LDFLAGS += -avoid-version -no-undefined -lshlwapi
+oosvrlite_la_LIBADD += ../OOCore/OOCore.la
+oosvrlite_la_LDFLAGS += -avoid-version
 else
-oosvrlite_la_LIBADD = ../OOCore/liboocore.la
-oosvrlite_la_LDFLAGS += -release $(VERSION) -no-undefined
+oosvrlite_la_LIBADD += ../OOCore/liboocore.la
+oosvrlite_la_LDFLAGS += -release $(VERSION)
 endif
 
 oosvrlite_la_SOURCES = \
@@ -55,11 +56,8 @@ bin_PROGRAMS = ooserverd oosvruser
 ooserverd_CPPFLAGS = -I$(top_srcdir)/include
 ooserverd_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 ooserverd_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-ooserverd_LDFLAGS = -L. -loosvrcmn -loosvrdb $(SQLITE3_LIBS) -L../OOBase -loosvrbase -loobase $(PTHREAD_LIBS)
-
-if WIN32
-ooserverd_LDFLAGS += -lnetapi32 -luserenv -lshlwapi
-endif
+ooserverd_LDFLAGS = $(SQLITE3_LIBS) $(PTHREAD_LIBS)
+ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
 
 ooserverd_SOURCES = \
 	OOServer_Root.h \
@@ -82,13 +80,13 @@ endif
 oosvruser_CPPFLAGS = -I$(top_srcdir)/include
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_LDFLAGS = -L. -loosvrcmn -L../OOBase  -loosvrbase -loobase $(PTHREAD_LIBS)
+oosvruser_LDFLAGS = $(PTHREAD_LIBS)
+oosvruser_LDADD = liboosvrcmn.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
 
 if WIN32
-oosvruser_LDFLAGS += -lshlwapi -lnetapi32 -luserenv
-oosvruser_LDADD = ../OOCore/OOCore.la
+oosvruser_LDADD += ../OOCore/OOCore.la
 else
-oosvruser_LDADD = ../OOCore/liboocore.la
+oosvruser_LDADD += ../OOCore/liboocore.la
 endif
 
 oosvruser_SOURCES = \

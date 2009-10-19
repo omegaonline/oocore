@@ -1232,14 +1232,14 @@ uint32_t OOCore::wcstou32(const wchar_t* sz, wchar_t const*& endptr, unsigned in
 
 int64_t OOCore::wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-#if defined(HAVE__WCSTOI64)
-	static_assert(sizeof(::_wcstoi64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoi64");
-
-	return ::_wcstoi64(sz,const_cast<wchar_t**>(&endptr),base);
-#elif defined(HAVE_WCSTOLL)
+#if defined(HAVE_WCSTOLL)
 	static_assert(sizeof(::wcstoll(0,0,0)) == sizeof(int64_t),"Non-standard wcstoll");
 
-	return ::wcstoll(sz,const_cast<wchar_t**>(&endptr),base);
+	return wcstoll(sz,const_cast<wchar_t**>(&endptr),base);
+#elif defined(HAVE__WCSTOI64)
+	static_assert(sizeof(::_wcstoi64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoi64");
+
+	return _wcstoi64(sz,const_cast<wchar_t**>(&endptr),base);
 #else
 #error Fix me!
 #endif
@@ -1247,14 +1247,14 @@ int64_t OOCore::wcsto64(const wchar_t* sz, wchar_t const*& endptr, unsigned int 
 
 uint64_t OOCore::wcstou64(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
-#if defined(HAVE__WCSTOUI64)
-	static_assert(sizeof(::_wcstoui64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoui64");
-
-	return ::_wcstoui64(sz,const_cast<wchar_t**>(&endptr),base);
-#elif defined(HAVE_WCSTOULL)
+#if defined(HAVE_WCSTOULL)
 	static_assert(sizeof(::wcstoull(0,0,0)) == sizeof(int64_t),"Non-standard wcstoull");
 
-	return ::wcstoull(sz,const_cast<wchar_t**>(&endptr),base);
+	return wcstoull(sz,const_cast<wchar_t**>(&endptr),base);
+#elif defined(HAVE__WCSTOUI64)
+	static_assert(sizeof(::_wcstoui64(0,0,0)) == sizeof(int64_t),"Non-standard _wcstoui64");
+
+	return _wcstoui64(sz,const_cast<wchar_t**>(&endptr),base);
 #else
 #error Fix me!
 #endif

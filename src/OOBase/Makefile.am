@@ -1,10 +1,10 @@
-noinst_LIBRARIES = liboobase.a liboosvrbase.a
+noinst_LTLIBRARIES = liboobase.la liboosvrbase.la
 
-liboobase_a_CPPFLAGS = -I@top_srcdir@/include
-liboobase_a_CFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
-liboobase_a_CXXFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
+liboobase_la_CPPFLAGS = -I@top_srcdir@/include
+liboobase_la_CFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
+liboobase_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
 
-liboobase_a_SOURCES = \
+liboobase_la_SOURCES = \
 	Atomic.h \
 	Buffer.cpp \
 	Buffer.h \
@@ -43,11 +43,15 @@ liboobase_a_SOURCES = \
 	utf8.cpp \
 	utf8.h
 
-liboosvrbase_a_CPPFLAGS = -I@top_srcdir@/include
-liboosvrbase_a_CFLAGS = $(PTHREAD_CFLAGS)
-liboosvrbase_a_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboosvrbase_la_CPPFLAGS = -I@top_srcdir@/include
+liboosvrbase_la_CFLAGS = $(PTHREAD_CFLAGS)
+liboosvrbase_la_CXXFLAGS = $(PTHREAD_CFLAGS)
 
-liboosvrbase_a_SOURCES = \
+if WIN32
+liboosvrbase_la_LDFLAGS = -lnetapi32 -luserenv -lshlwapi
+endif
+
+liboosvrbase_la_SOURCES = \
 	CmdArgs.cpp \
 	CmdArgs.h \
 	Logger.cpp \

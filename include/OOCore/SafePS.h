@@ -1063,7 +1063,7 @@ namespace Omega
 			public:
 				void Throw()
 				{
-					// Make sure we relase our refcount before throwing the correct interface
+					// Make sure we release our refcount before throwing the correct interface
 					auto_iface_ptr<Safe_Proxy<IException,D> > ptrThis(this);
 
 					Safe_Proxy_Base::Throw(GetThrownIID());

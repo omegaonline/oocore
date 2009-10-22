@@ -22,13 +22,16 @@ AC_CONFIG_FILES([
 ])
 
 AM_INIT_AUTOMAKE([foreign 1.10 no-define])
+
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 AM_MAINTAINER_MODE
 
 AC_CANONICAL_HOST
 
 # Add the --enable-debug arg
 AC_ARG_ENABLE([debug],AS_HELP_STRING([--enable-debug],[Turn on debugging]),[debug=true],[debug=false])
-AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+AM_CONDITIONAL([DEBUG], [test "x$debug" = "xtrue"])
 
 OO_PROG_CC
 OO_PROG_CXX
@@ -67,43 +70,43 @@ AC_CHECK_TYPES([struct sockcred])
 AC_CHECK_FUNCS([_wcstoui64 _wcstoi64 wcstoull wcstoll])
 
 # Set sensible default CFLAGS if necessary
-if test "$oo_test_CFLAGS" != set; then
-
+AS_IF([test "x$oo_test_CFLAGS" != "xset"],
+[
   # Always try to hide symbols
   AX_CFLAGS_GCC_OPTION([-fvisibility=hidden])
 
-  if test x$debug = xtrue; then
+  AS_IF([test "x$debug" = "xtrue"], 
+  [
     AX_CFLAGS_GCC_OPTION([-ggdb])
     AX_CFLAGS_GCC_OPTION([-O0])
-  else
+  ],
+  [
     AX_CFLAGS_GCC_OPTION([-O3])
-  fi
-fi
+  ])
+])
 
 # Set sensible default CXXFLAGS if necessary
-if test "$oo_test_CXXFLAGS" != set; then
-
+AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
+[
   # Always add full warnings
   AX_CXXFLAGS_WARN_ALL
 
   # Always try to hide symbols
   AX_CXXFLAGS_GCC_OPTION([-fvisibility=hidden])
 
-  if test x$debug = xtrue; then
+  AS_IF([test "x$debug" = "xtrue"],
+  [
   	AX_CXXFLAGS_GCC_OPTION([-ggdb])
   	AX_CXXFLAGS_GCC_OPTION([-O0])
-  else
+  ],
+  [
     AX_CXXFLAGS_GCC_OPTION([-fno-rtti])
     AX_CXXFLAGS_GCC_OPTION([-O3])
-  fi
-fi
+  ])
+])
 
 # Add debug defines
-if test x$debug = xtrue; then
-  CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"
-else
-  CPPFLAGS="$CPPFLAGS -DNDEBUG"
-fi
+AS_IF([test "x$debug" = "xtrue"],[CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"],[CPPFLAGS="$CPPFLAGS -DNDEBUG"])
 
 # Set up libtool correctly
 LT_PREREQ([2.2.7])
@@ -117,12 +120,10 @@ OO_LIB_SQLITE3([3.5.0])
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error
-case $host_os in
-	cygwin)
-		AC_MSG_ERROR([Don't build for cygwin, use a native Win32 port such as MinGW]) ;;
-	mingw*)
-		win32=true ;;
-esac
-AM_CONDITIONAL([WIN32],[test x$win32 = xtrue])
+AS_CASE([$host_os],
+	[*cygwin*],[AC_MSG_ERROR([Don't build for cygwin, use a native Win32 port such as MinGW])],
+	[mingw*],[win32=true]
+)
+AM_CONDITIONAL([WIN32],[test "x$win32" = "xtrue"])
 
 AC_OUTPUT()

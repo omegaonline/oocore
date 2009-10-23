@@ -376,7 +376,7 @@ bool Root::MessageHandler::parse_message(OOBase::CDRStream& input, size_t mark_r
 	input.read(req_dline_secs);
 	Omega::int32_t req_dline_usecs;
 	input.read(req_dline_usecs);
-	OOBase::timeval_t deadline = OOBase::timeval_t(static_cast<time_t>(req_dline_secs),req_dline_usecs);
+	OOBase::timeval_t deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
 
 	// Did everything make sense?
 	int err = input.last_error();
@@ -726,7 +726,7 @@ void Root::MessageHandler::do_route_off(void* pParam, OOBase::CDRStream& input)
 	input.read(req_dline_secs);
 	Omega::int32_t req_dline_usecs;
 	input.read(req_dline_usecs);
-	OOBase::timeval_t deadline = OOBase::timeval_t(static_cast<time_t>(req_dline_secs),req_dline_usecs);
+	OOBase::timeval_t deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
 
 	Omega::uint32_t attribs = 0;
 	input.read(attribs);

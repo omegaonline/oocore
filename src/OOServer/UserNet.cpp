@@ -288,7 +288,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	
 	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
 	if (secs != 0 && usecs != 0)
-		deadline = OOBase::timeval_t((time_t)secs,usecs);
+		deadline = OOBase::timeval_t(secs,usecs);
 
 	uint32_t ex_attribs = 0;
 	input.read(ex_attribs);
@@ -352,7 +352,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
 	if (secs != 0 && usecs != 0)
-		deadline = OOBase::timeval_t((time_t)secs,usecs);
+		deadline = OOBase::timeval_t(secs,usecs);
 
 	if (timeout != 0)
 	{

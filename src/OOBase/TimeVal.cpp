@@ -27,7 +27,7 @@
 
 #include <limits.h>
 
-const OOBase::timeval_t OOBase::timeval_t::max_time((time_t)LLONG_MAX, LONG_MAX);
+const OOBase::timeval_t OOBase::timeval_t::max_time(LLONG_MAX, 999999);
 const OOBase::timeval_t OOBase::timeval_t::zero(0, 0);
 
 OOBase::timeval_t OOBase::gettimeofday()
@@ -48,7 +48,7 @@ OOBase::timeval_t OOBase::gettimeofday()
 	// Move to epoch
 	ULONGLONG q = (ularge.QuadPart - epoch);
 
-	ret.tv_sec = static_cast<time_t>(q / 10000000LL);
+	ret.tv_sec = (q / 10000000LL);
 	ret.tv_usec = static_cast<long>((q / 10L) % 1000000L);
 
 #elif defined(HAVE_SYS_TIME_H) && (HAVE_SYS_TIME_H == 1)
@@ -90,9 +90,9 @@ void OOBase::sleep(const timeval_t& wait)
 
 OOBase::timeval_t& OOBase::timeval_t::operator += (const timeval_t& rhs)
 {
-	if (tv_usec + rhs.tv_usec > 1000000)
+	if (tv_usec + rhs.tv_usec >= 1000000)
 	{
-		long nsec = (tv_usec + rhs.tv_usec) / 1000000;
+		int nsec = (tv_usec + rhs.tv_usec) / 1000000;
 		tv_usec -= 1000000 * nsec;
 		tv_sec += nsec;
 	}
@@ -109,14 +109,14 @@ OOBase::timeval_t& OOBase::timeval_t::operator -= (const timeval_t& rhs)
 	timeval_t r = rhs;
 	if (tv_usec < r.tv_usec)
 	{
-		long nsec = (r.tv_usec - tv_usec) / 1000000 + 1;
+		int nsec = (r.tv_usec - tv_usec) / 1000000 + 1;
 		r.tv_usec -= 1000000 * nsec;
 		r.tv_sec += nsec;
 	}
 
-	if (tv_usec - r.tv_usec > 1000000)
+	if (tv_usec - r.tv_usec >= 1000000)
 	{
-		long nsec = (tv_usec - r.tv_usec) / 1000000;
+		int nsec = (tv_usec - r.tv_usec) / 1000000;
 		r.tv_usec += 1000000 * nsec;
 		r.tv_sec -= nsec;
 	}

@@ -24,17 +24,31 @@
 
 #include "config-base.h"
 
+#if defined(HAVE_STDINT_H)
+#include <stdint.h>
+#endif
+
 namespace OOBase
 {
 	struct timeval_t
 	{
-		time_t tv_sec; ///< Seconds since 01 Jan 1970 UTC
-		long tv_usec;  ///< Milliseconds since last second
+#if defined(_MSC_VER)
+		typedef __int64 time_64_t;
+#elif defined(HAVE_STDINT_H)
+		typedef int64_t time_64_t;
+#else
+#error Fix me!
+#endif
+
+		time_64_t tv_sec;    ///< Seconds since 01 Jan 1970 UTC
+		int       tv_usec;   ///< Milliseconds since last second
 
 		timeval_t() {}
-		timeval_t(time_t s, long us = 0) :
+		timeval_t(time_64_t s, int us = 0) :
 			tv_sec(s), tv_usec(us)
-		{}
+		{
+			normalise();
+		}
 
 		timeval_t& operator += (const timeval_t& rhs);
 		timeval_t& operator -= (const timeval_t& rhs);
@@ -71,13 +85,23 @@ namespace OOBase
 
 		unsigned long msec() const
 		{
-			return static_cast<unsigned long>((tv_sec * time_t(1000)) + (tv_usec / 1000));
+			return static_cast<unsigned long>((tv_sec * 1000) + (tv_usec / 1000));
 		}
 
 		static const timeval_t max_time;
 		static const timeval_t zero;
 
 		static timeval_t deadline(unsigned long msec);
+
+		void normalise()
+		{
+			if (tv_usec >= 1000000)
+			{
+				long nsec = tv_usec / 1000000;
+				tv_usec -= 1000000 * nsec;
+				tv_sec += nsec;
+			}
+		}
 
 	private:
 		int cmp(const timeval_t& rhs) const

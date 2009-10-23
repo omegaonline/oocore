@@ -410,7 +410,7 @@ int OOCore::UserSession::run_read_loop()
 		msg->m_payload.read(req_dline_secs);
 		Omega::int32_t req_dline_usecs;
 		msg->m_payload.read(req_dline_usecs);
-		msg->m_deadline = OOBase::timeval_t(static_cast<time_t>(req_dline_secs),req_dline_usecs);
+		msg->m_deadline = OOBase::timeval_t(req_dline_secs,req_dline_usecs);
 
 		// Read the rest of the message
 		msg->m_payload.read(msg->m_attribs);

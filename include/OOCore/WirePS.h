@@ -35,6 +35,7 @@ namespace Omega
 			public:
 				virtual bool IsDerived__proxy__(const guid_t& iid) const = 0;
 				virtual IObject* QIReturn__proxy__() = 0;
+				virtual void Throw__proxy__() = 0;
 
 				void AddRef()
 				{
@@ -64,7 +65,7 @@ namespace Omega
 						delete this;
 				}
 
-				inline const SafeShim* GetShim(const Omega::guid_t& iid);
+				inline const SafeShim* GetShim(const guid_t& iid);
 
 				const SafeShim* GetShim()
 				{
@@ -83,6 +84,7 @@ namespace Omega
 
 				inline virtual ~Wire_Proxy_Base();
 
+				inline void Throw(const guid_t& iid);
 				inline const SafeShim* GetBaseShim();
 				inline const SafeShim* GetWireProxy();
 				inline auto_iface_ptr<IMarshaller> GetMarshaller();
@@ -124,12 +126,12 @@ namespace Omega
 						m_pOuter->Unpin();
 					}
 
-					const SafeShim* GetShim(const Omega::guid_t& iid)
+					const SafeShim* GetShim(const guid_t& iid)
 					{
 						return m_pOuter->GetShim(iid);
 					}
 
-					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const Omega::guid_t&)
+					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const guid_t&)
 					{
 						return 0;
 					}
@@ -196,6 +198,12 @@ namespace Omega
 				{
 					AddRef();
 					return static_cast<D*>(this);
+				}
+
+				void Throw__proxy__()
+				{
+					AddRef();
+					throw static_cast<D*>(this);
 				}
 
 				static const SafeShim* OMEGA_CALL AddRef_Safe(const SafeShim* shim)
@@ -320,6 +328,50 @@ namespace Omega
 				}
 			};
 
+			template <typename D> 
+			class Wire_Proxy<IException,D> : public Wire_Proxy<IObject,D> 
+			{ 
+				typedef Wire_Proxy<IObject,D> Base;
+
+			public: 
+				static Wire_Proxy_Base* bind(Wire_Proxy_Owner* pOwner) 
+				{ 
+					Wire_Proxy* pThis; 
+					OMEGA_NEW(pThis,Wire_Proxy(pOwner));
+					return pThis; 
+				} 
+			
+			protected: 
+				Wire_Proxy(Wire_Proxy_Owner* pOwner = 0) : Base(pOwner) {} 
+				
+				virtual bool IsDerived__proxy__(const guid_t& iid) const 
+				{ 
+					if (iid == System::MetaInfo::uid_traits<IException>::GetUID()) 
+						return true; 
+					return Base::IsDerived__proxy__(iid); 
+				} 
+				
+				static const uint32_t MethodCount = Base::MethodCount + 5; 
+			
+			private: 
+				void Throw( ) 
+				{ 
+					// Make sure we release our refcount before throwing the correct interface
+					auto_iface_ptr<Wire_Proxy<IException,D> > ptrThis(this);
+
+					Wire_Proxy_Base::Throw(GetThrownIID());
+				} 
+
+				OMEGA_DECLARE_WIRE_PROXY_METHODS
+				(
+					OMEGA_METHOD_VOID(Throw__dummy__,0,())
+					OMEGA_METHOD(guid_t,GetThrownIID,0,())
+					OMEGA_METHOD(IException*,GetCause,0,())
+					OMEGA_METHOD(string_t,GetDescription,0,())
+					OMEGA_METHOD(string_t,GetSource,0,())
+				)
+			};			
+				
 			class Wire_Proxy_Owner
 			{
 			public:
@@ -376,6 +428,7 @@ namespace Omega
 					return m_ptrMarshaller;
 				}
 
+				inline void Throw(const guid_t& iid);
 				inline void RemoveBase(Wire_Proxy_Base* pProxy);
 				inline IObject* QueryInterface(const guid_t& iid);
 				inline const SafeShim* GetShim(const guid_t& iid);
@@ -452,12 +505,12 @@ namespace Omega
 						m_pOwner->Unpin();
 					}
 
-					const SafeShim* GetShim(const Omega::guid_t& iid)
+					const SafeShim* GetShim(const guid_t& iid)
 					{
 						return m_pOwner->GetShim(iid);
 					}
 
-					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const Omega::guid_t&)
+					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const guid_t&)
 					{
 						return 0;
 					}
@@ -603,7 +656,7 @@ namespace Omega
 				}
 			};
 
-			inline Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> create_wire_proxy_owner(const SafeShim* shim, IObject* pOuter);
+			inline System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> create_wire_proxy_owner(const SafeShim* shim, IObject* pOuter);
 
 			class Wire_Stub_Base
 			{
@@ -955,7 +1008,7 @@ namespace Omega
 			OMEGA_WIRE_MAGIC(Omega,IObject)
 
 			// These are the remoteable interfaces
-			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2
+			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2_NOPROXY
 			(
 				Omega, IException,
 

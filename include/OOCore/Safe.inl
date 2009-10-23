@@ -350,7 +350,6 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const SafeShim* shim)
 	if (except)
 		throw_correct_exception(except);
 
-	obj->AddRef();
 	return obj->Throw__proxy__();
 }
 
@@ -368,7 +367,6 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const guid_t& iid)
 			OMEGA_THROW(L"Failed to create safe exception proxy");
 	}
 
-	obj->AddRef();
 	return obj->Throw__proxy__();
 }
 

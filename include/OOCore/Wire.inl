@@ -183,7 +183,7 @@ void Omega::System::MetaInfo::Wire_Proxy_Owner::RemoveBase(Wire_Proxy_Base* pPro
 				++i;
 		}
 
-		if (m_iid_map.empty() && m_refcount.IsZero())
+		if (m_iid_map.empty() && m_refcount.IsZero() && m_pincount.IsZero())
 		{
 			guard.Release();
 			delete this;
@@ -256,6 +256,23 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const gui
 	return obj->QIReturn__proxy__();
 }
 
+void Omega::System::MetaInfo::Wire_Proxy_Owner::Throw(const guid_t& iid)
+{
+	assert(iid != OMEGA_GUIDOF(ISafeProxy));
+	assert(iid != OMEGA_GUIDOF(IObject));
+
+	// See if we have it cached
+	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,false,false);
+	if (!obj)
+	{
+		obj = GetProxyBase(OMEGA_GUIDOF(IException),false,false);
+		if (!obj)
+			OMEGA_THROW(L"Failed to create wire exception proxy");
+	}
+
+	return obj->Throw__proxy__();
+}
+
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Owner::GetWireProxy()
 {
 	// We know that m_ptrProxy is a SafeProxy
@@ -320,6 +337,11 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Bas
 		return GetShim();
 	
 	return m_pOwner->GetShim(iid);
+}
+
+void Omega::System::MetaInfo::Wire_Proxy_Base::Throw(const guid_t& iid)
+{
+	m_pOwner->Throw(iid);
 }
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Base::GetBaseShim()

@@ -747,7 +747,11 @@
 	OMEGA_DECLARE_TYPE(n_space,name,methods,Omega,IObject) \
 	OMEGA_DECLARE_PROXY(n_space,name,Omega,IObject,methods) \
 	OMEGA_DECLARE_STUB(n_space,name,Omega,IObject,methods)
-	
+
+#define OMEGA_DEFINE_INTERNAL_INTERFACE_PART2_NOPROXY(n_space,name,methods) \
+	OMEGA_DECLARE_WIRE_STUB(n_space,name,Omega,IObject,methods) \
+	OMEGA_WIRE_MAGIC(n_space,name)
+
 #define OMEGA_DEFINE_INTERNAL_INTERFACE_PART2(n_space,name,methods) \
 	OMEGA_DECLARE_WIRE_PROXY(n_space,name,Omega,IObject,methods) \
 	OMEGA_DECLARE_WIRE_STUB(n_space,name,Omega,IObject,methods) \

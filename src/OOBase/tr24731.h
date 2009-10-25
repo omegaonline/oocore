@@ -49,7 +49,7 @@ inline int vsnprintf_s_fixed(char* s, rsize_t n, const char* format, va_list arg
 
 	int r = _vsnprintf_s(s,n,_TRUNCATE,format,arg);
 	if (r == -1)
-		return n *= 2;
+		return static_cast<int>(n) * 2;
 	else
 		return r;
 }

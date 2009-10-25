@@ -830,9 +830,9 @@ namespace
 		size_t sci = string_t::npos;
 		size_t dec_place = string_t::npos;
 		bool group = false;
-		size_t precision = 0;
-		size_t width = 0;
-		size_t exp_digits = 0;
+		int precision = 0;
+		int width = 0;
+		int exp_digits = 0;
 						
 		for (size_t pos = 0;pos < strFormat.Length();)
 		{

@@ -66,8 +66,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/TestProcess.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -145,8 +145,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(OutDir)/TestProcess.pdb"
 				SubSystem="1"
 				TargetMachine="17"
 			/>
@@ -222,8 +222,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -303,8 +302,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
+				OutputFile="$(OutDir)\$(ProjectName)_msvc.exe"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

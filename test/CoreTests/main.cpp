@@ -21,7 +21,6 @@ bool registry_tests();
 bool registry_tests_2();
 bool interface_process_tests();
 bool interface_dll_tests();
-bool apartment_tests();
 bool apartment_dll_tests();
 bool net_tests();
 bool interface_tests2();
@@ -45,7 +44,6 @@ static void tests(bool bStandalone)
 	
 	if (!bStandalone)
 	{
-		RUN_TEST(apartment_tests);
 		RUN_TEST(interface_process_tests);
 	}
 

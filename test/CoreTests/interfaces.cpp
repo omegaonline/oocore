@@ -203,12 +203,14 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+#else
+	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),F_OK) != 0)
+#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
-#endif
 
 	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
@@ -362,8 +364,21 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	return true;
 }
 
-static bool do_local_process_test(const wchar_t* pszModulePath)
+static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 {
+	output("  %-45ls ",pszModulePath);
+
+#if defined(_WIN32)
+	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),0) != 0)
+#else
+	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),F_OK) != 0)
+#endif
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+
 	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Test the simplest case
@@ -422,51 +437,77 @@ static bool do_local_process_test(const wchar_t* pszModulePath)
 	return true;
 }
 
+const wchar_t** get_dlls()
+{
+	static const wchar_t* dlls[] =
+	{
+#if defined(_WIN32)
+		L"TestLibrary_msvc.dll",	
+	#if defined(__MINGW32__)
+			L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
+	#elif defined(_MSC_VER)
+		#if defined(_DEBUG)
+				L"..\\..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
+		#else
+				L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
+		#endif
+	#endif
+#else
+		L"CoreTests/TestLibrary/.libs/TestLibrary.so",
+#endif
+		0
+	};
+	return dlls;
+}
+
 bool interface_dll_tests()
 {
 	output("\n");
-	bool bSkipped;
 
-#if defined(_WIN32)
-	if (!do_local_library_test(L"TestLibrary_msvc.dll",bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-
-	#if defined(__MINGW32__)
-	if (!do_local_library_test(L"CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#elif defined(_MSC_VER)
-#if defined(_DEBUG)
-	if (!do_local_library_test(L"../../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
-#else
-	if (!do_local_library_test(L"../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
-#endif
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#endif
-
-#else
-	if (!do_local_library_test(L"testlibrary",bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#endif
+	for (const wchar_t** pszDlls = get_dlls();*pszDlls;++pszDlls)
+	{
+		bool bSkipped;
+		if (!do_local_library_test(*pszDlls,bSkipped))
+			return false;
+		if (!bSkipped)
+			output("[Ok]\n");
+	}
 
 	output("  %-46s","Result");
 	return true;
 }
 
+const wchar_t** get_exes()
+{
+	static const wchar_t* exes[] =
+	{
+#if defined(_WIN32)
+		L"TestProcess_msvc.exe",	
+	#if defined(__MINGW32__)
+			L"CoreTests\\TestProcess\\testprocess.bat",
+	#endif
+#else
+		L"CoreTests/TestProcess/testprocess.sh",
+#endif
+		0
+	};
+	return exes;
+}
+
 bool interface_process_tests()
 {
-#if defined(_WIN32)
-	do_local_process_test(L"TestProcess");
-#else
-    do_local_process_test(L"./testprocess");
-#endif
+	output("\n");
+
+	for (const wchar_t** pszExes = get_exes();*pszExes;++pszExes)
+	{
+		bool bSkipped;
+		if (!do_local_process_test(*pszExes,bSkipped))
+			return false;
+		if (!bSkipped)
+			output("[Ok]\n");
+	}
+
+	output("  %-46s","Result");
 
 	return true;
 }
@@ -479,12 +520,14 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+#else
+	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),F_OK) != 0)
+#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
-#endif
 
 	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
@@ -499,8 +542,21 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	return true;
 }
 
-static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndpoint)
+static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndpoint, bool& bSkipped)
 {
+	output("  %-45ls ",pszModulePath);
+
+#if defined(_WIN32)
+	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),0) != 0)
+#else
+	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),F_OK) != 0)
+#endif
+	{
+		output("[Missing]\n");
+		bSkipped = true;
+		return true;
+	}
+
 	system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
@@ -511,43 +567,29 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 
 static bool interface_tests_i(const wchar_t* pszHost)
 {
-output("\n");
-	bool bSkipped;
+	output("\n");
 
-#if defined(_WIN32)
-	if (!do_library_test(L"TestLibrary_msvc.dll",pszHost,bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-
-#if defined(__MINGW32__)
-	if (!do_library_test(L"CoreTests/TestLibrary/.libs/TestLibrary.dll",pszHost,bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#elif defined(_MSC_VER)
-#if defined(_DEBUG)
-	if (!do_library_test(L"../../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",pszHost,bSkipped))
-#else
-	if (!do_library_test(L"../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",pszHost,bSkipped))
-#endif
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#endif
-
-#else
-	if (!do_library_test(L"testlibrary",pszHost,bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#endif
+	for (const wchar_t** pszDlls = get_dlls();*pszDlls;++pszDlls)
+	{
+		bool bSkipped;
+		if (!do_library_test(*pszDlls,pszHost,bSkipped))
+			return false;
+		if (!bSkipped)
+			output("[Ok]\n");
+	}
 
 	output("  %-46s","Result");
-	return true;
+	
+	for (const wchar_t** pszExes = get_exes();*pszExes;++pszExes)
+	{
+		bool bSkipped;
+		if (!do_process_test(*pszExes,pszHost,bSkipped))
+			return false;
+		if (!bSkipped)
+			output("[Ok]\n");
+	}
 
-	do_process_test(L"TestProcess",pszHost);
-
+	output("  %-46s","Result");
 	return true;
 }
 

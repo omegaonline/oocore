@@ -10,9 +10,9 @@ coretests_CXXFLAGS = $(PTHREAD_CFLAGS)
 coretests_LDFLAGS = $(PTHREAD_LIBS)
 
 if WIN32
-coretests_LDADD = ../../src/OOCore/OOCore.la
+coretests_LDADD = $(top_builddir)/src/OOCore/OOCore.la
 else
-coretests_LDADD = ../../src/OOCore/liboocore.la
+coretests_LDADD = $(top_builddir)/src/OOCore/liboocore.la
 endif
 
 coretests_SOURCES = \
@@ -27,5 +27,5 @@ coretests_SOURCES = \
 	Test.h
 
 EXTRA_DIST = \
-	SimpleTest.h \
+	UTF-16-test.txt \
 	UTF-8-test.txt

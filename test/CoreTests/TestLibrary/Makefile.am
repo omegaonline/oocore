@@ -16,5 +16,5 @@ testlibrary_la_LDFLAGS += -release $(VERSION)
 endif
 
 testlibrary_la_SOURCES = \
-	SimpleTest.h \
+	../SimpleTest.h \
 	TestLibrary.cpp

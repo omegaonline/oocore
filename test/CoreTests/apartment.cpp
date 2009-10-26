@@ -12,19 +12,21 @@
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest);
 
-static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
+static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 {
 	output("  %-45ls ",pszLibName);
 
 	// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+#else
+	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),F_OK) != 0)
+#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
-#endif
 
 	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
@@ -84,60 +86,21 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	return true;
 }
 
-static bool do_local_process_test(const wchar_t* pszModulePath)
-{
-	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
-
-	TEST(system((Omega::string_t(pszModulePath) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
-
-	return true;
-}
+const wchar_t** get_dlls();
 
 bool apartment_dll_tests()
 {
 	output("\n");
-	bool bSkipped;
 
-#if defined(_WIN32)
-	if (!do_local_library_test(L"TestLibrary_msvc.dll",bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-
-	#if defined(__MINGW32__)
-	if (!do_local_library_test(L"CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#elif defined(_MSC_VER)
-#if defined(_DEBUG)
-	if (!do_local_library_test(L"../../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
-#else
-	if (!do_local_library_test(L"../build/test/CoreTests/TestLibrary/.libs/TestLibrary.dll",bSkipped))
-#endif
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#endif
-
-#else
-	if (!do_local_library_test(L"testlibrary",bSkipped))
-		return false;
-	if (!bSkipped)
-		output("[Ok]\n");
-#endif
+	for (const wchar_t** pszDlls = get_dlls();*pszDlls;++pszDlls)
+	{
+		bool bSkipped;
+		if (!do_apt_library_test(*pszDlls,bSkipped))
+			return false;
+		if (!bSkipped)
+			output("[Ok]\n");
+	}
 
 	output("  %-46s","Result");
-	return true;
-}
-
-bool apartment_tests()
-{
-#if defined(_WIN32)
-	do_local_process_test(L"TestProcess");
-#else
-    do_local_process_test(L"./testprocess");
-#endif
-
 	return true;
 }

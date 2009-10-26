@@ -36,6 +36,8 @@ namespace OOBase
 		{
 			static Once::once_t key = ONCE_T_INIT;
 			Once::Run(&key,init);
+
+			assert(s_instance != reinterpret_cast<T*>((uintptr_t)0xdeadbeef));
 			return s_instance;
 		}
 
@@ -65,6 +67,8 @@ namespace OOBase
 
 		static void destroy(void* = 0)
 		{
+			assert(s_instance != reinterpret_cast<T*>((uintptr_t)0xdeadbeef));
+
 			delete s_instance;
 			s_instance = reinterpret_cast<T*>((uintptr_t)0xdeadbeef);
 		}

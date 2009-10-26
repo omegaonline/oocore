@@ -91,14 +91,12 @@ bool OOCore::HostedByOOServer()
 		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 
 		ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(ptrIPS);
-		if (!ptrSProxy)
-			bHosted = true;
-		else
+		if (ptrSProxy)
 		{
 			ObjectPtr<System::IProxy> ptrProxy;
 			ptrProxy.Attach(ptrSProxy->GetWireProxy());
 			if (!ptrProxy)
-				bHosted = true;
+				bHosted = !ptrIPS->IsStandalone();
 		}
 		
 		bChecked = true;

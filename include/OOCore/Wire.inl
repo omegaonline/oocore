@@ -22,12 +22,6 @@
 #ifndef OOCORE_WIRE_INL_INCLUDED_
 #define OOCORE_WIRE_INL_INCLUDED_
 
-OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,());
-Omega::Remoting::IMessage* Omega::Remoting::CreateMemoryMessage()
-{
-	return OOCore_Remoting_CreateMemoryMessage();
-}
-
 void Omega::System::MetaInfo::wire_proxy_holder::remove(const SafeShim* shim)
 {
 	try
@@ -201,7 +195,7 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Own
 		return GetBaseShim();
 	
 	// See if we have it cached
-	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,false,false);
+	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,true,false);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create wire proxy");
 
@@ -229,7 +223,12 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::QueryInterface(const 
 		m_safe_proxy.AddRef();
 		return &m_safe_proxy;
 	}
-		
+	
+	// Try the outer proxy first... this might save a round-trip
+	IObject* pOuter = m_ptrProxy->QueryInterface(iid);
+	if (pOuter)
+		return pOuter;
+			
 	// See if we have it cached
 	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,false,true);
 	if (!obj)
@@ -413,5 +412,15 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_wire_st
 
 	return (*rtti->pfnCreateWireStub)(ptrController,ptrMarshaller,ptrQI);
 }
+
+#if !defined(DOXYGEN)
+
+OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,());
+Omega::Remoting::IMessage* Omega::Remoting::CreateMemoryMessage()
+{
+	return OOCore_Remoting_CreateMemoryMessage();
+}
+
+#endif // !defined(DOXYGEN)
 
 #endif // OOCORE_WIRE_INL_INCLUDED_

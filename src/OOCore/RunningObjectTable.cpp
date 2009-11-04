@@ -90,15 +90,10 @@ bool OOCore::HostedByOOServer()
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
 		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 
-		ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(ptrIPS);
-		if (ptrSProxy)
-		{
-			ObjectPtr<System::IProxy> ptrProxy;
-			ptrProxy.Attach(ptrSProxy->GetWireProxy());
-			if (!ptrProxy)
-				bHosted = !ptrIPS->IsStandalone();
-		}
-		
+		ObjectPtr<System::IProxy> ptrProxy(ptrIPS);
+		if (!ptrProxy)
+			bHosted = !ptrIPS->IsStandalone();
+				
 		bChecked = true;
 	}
 

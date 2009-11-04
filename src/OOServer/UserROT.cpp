@@ -140,17 +140,14 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 				// QI for IProxy and check its still there!
 				bool bOk = true;
 				ObjectPtr<System::IProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
-				if (ptrProxy != 0)
+				if (ptrProxy && !ptrProxy->IsAlive())
 				{
-					if (!ptrProxy->IsAlive())
-					{
-						listDeadEntries.push_back(i->second->first);
-						bOk = false;
+					listDeadEntries.push_back(i->second->first);
+					bOk = false;
 
-						LOG_DEBUG(("Dropping dead object %ls (cookie %lu)",oid.ToString().c_str(),i->second->first));
-					}
+					LOG_DEBUG(("Dropping dead object %ls (cookie %lu)",oid.ToString().c_str(),i->second->first));
 				}
-
+				
 				if (bOk)
 					ptrRet = i->second->second.m_ptrObject;
 			}

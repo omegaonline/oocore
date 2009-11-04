@@ -873,7 +873,6 @@ namespace Omega
 				virtual void Unpin() = 0;
 				virtual const SafeShim* GetShim(const Omega::guid_t& iid) = 0;
 				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid) = 0;
-				virtual IProxy* GetWireProxy() = 0;
 			};
 
 			inline void throw_correct_exception(const SafeShim* except);

@@ -24,43 +24,14 @@
 
 class InterProcessService :
 	public OTL::ObjectBase,
-	public OOCore::IInterProcessService,
-	public Omega::System::IProxy
+	public OOCore::IInterProcessService
 {
 public:
 	void Init() {}
 
 	BEGIN_INTERFACE_MAP(InterProcessService)
 		INTERFACE_ENTRY(OOCore::IInterProcessService)
-		INTERFACE_ENTRY(Omega::System::IProxy)
 	END_INTERFACE_MAP()
-
-// System::IProxy members
-public:
-	void WriteKey(Omega::Remoting::IMessage*)
-	{
-		OMEGA_THROW(L"Invalid operation");
-	}
-
-	void UnpackKey(Omega::Remoting::IMessage*)
-	{
-		OMEGA_THROW(L"Invalid operation");
-	}
-
-	Omega::System::IMarshaller* GetMarshaller()
-	{
-		OMEGA_THROW(L"Invalid operation");
-	}
-
-	Omega::bool_t IsAlive()
-	{
-		return true;
-	}
-
-	Omega::bool_t RemoteQueryInterface(const Omega::guid_t&)
-	{
-		OMEGA_THROW(L"Invalid operation");
-	}
 
 // OOCore::IInterProcessService members
 public:

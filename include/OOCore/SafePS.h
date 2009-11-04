@@ -315,11 +315,6 @@ namespace Omega
 						return m_pOuter->CreateWireStub(shim_Controller,shim_Marshaller,iid);
 					}
 
-					IProxy* GetWireProxy()
-					{
-						return 0;
-					}
-
 					Safe_Proxy_Base* m_pOuter;
 				};
 				Internal m_internal;
@@ -705,11 +700,6 @@ namespace Omega
 					const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
 					{
 						return m_pOwner->CreateWireStub(shim_Controller,shim_Marshaller,iid);
-					}
-
-					IProxy* GetWireProxy()
-					{
-						return 0;
 					}
 
 					Safe_Proxy_Owner* m_pOwner;

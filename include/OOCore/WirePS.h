@@ -136,12 +136,6 @@ namespace Omega
 						return 0;
 					}
 
-					IProxy* GetWireProxy()
-					{
-						auto_safe_shim ss = m_pOuter->GetWireProxy();
-						return static_cast<IProxy*>(create_safe_proxy(ss));
-					}
-
 					Wire_Proxy_Base* m_pOuter;
 				};
 				Internal m_internal;
@@ -513,11 +507,6 @@ namespace Omega
 					const SafeShim* CreateWireStub(const SafeShim*, const SafeShim*, const guid_t&)
 					{
 						return 0;
-					}
-
-					IProxy* GetWireProxy()
-					{
-						return static_cast<IProxy*>(create_safe_proxy(m_pOwner->GetWireProxy()));
 					}
 
 					Wire_Proxy_Owner* m_pOwner;

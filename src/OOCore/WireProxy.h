@@ -127,12 +127,6 @@ namespace OOCore
 			return 0;
 		}
 
-		Omega::System::IProxy* GetWireProxy()
-		{
-			Internal_AddRef();
-			return static_cast<Omega::System::IProxy*>(this);
-		}
-
 	// IMarshal members
 	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)

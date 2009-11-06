@@ -28,6 +28,14 @@ namespace OOBase
 {
 	namespace Once
 	{
+		/** \typedef once_t
+		 *  The platform specific 'once' type.
+		 */
+
+		/** \def ONCE_T_INIT 
+		 *  The platform specific 'once' type initialiser
+		 */
+
 #if defined(_WIN32)
 		typedef INIT_ONCE once_t;
 		#define ONCE_T_INIT {0}

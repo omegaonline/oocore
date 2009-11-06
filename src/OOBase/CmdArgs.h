@@ -31,7 +31,7 @@ namespace OOSvrBase
 	class CmdArgs
 	{
 	public:
-		bool add_option(const char* id, char short_opt /* = 0 */, const char* long_opt = 0, bool bHasValue = false);
+		bool add_option(const char* id, char short_opt /* = 0 */, const char* long_opt = 0, bool has_value = false);
 		bool add_argument(const char* id, int position);
 
 		bool parse(int argc, char* argv[], std::map<std::string,std::string>& results, int skip = 1) const;
@@ -39,9 +39,9 @@ namespace OOSvrBase
 	private:
 		struct Option
 		{
-			char        short_opt;
-			std::string long_opt;
-			bool        bHasValue;
+			char        m_short_opt;
+			std::string m_long_opt;
+			bool        m_has_value;
 		};
 		
 		std::multimap<std::string,Option> m_map_opts;

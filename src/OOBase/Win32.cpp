@@ -26,7 +26,7 @@
 
 #if defined(_WIN32)
 
-namespace
+namespace 
 {
 	class Win32Thunk
 	{
@@ -86,75 +86,72 @@ namespace
 	private:
 		void init_low_frag_heap();
 	};
-}
-
-Win32Thunk::Win32Thunk() :
-	m_hKernel32(0)
-{
-	m_hKernel32 = GetModuleHandleW(L"Kernel32.dll");
-	if (!m_hKernel32)
-		OOBase_CallCriticalFailure(GetLastError());
-
-	m_InitOnceExecuteOnce = (pfn_InitOnceExecuteOnce)(GetProcAddress(m_hKernel32,"InitOnceExecuteOnce"));
-	if (!m_InitOnceExecuteOnce)
-		m_InitOnceExecuteOnce = impl_InitOnceExecuteOnce;
-
-	m_InitializeSRWLock = (pfn_InitializeSRWLock)(GetProcAddress(m_hKernel32,"InitializeSRWLock"));
-	m_AcquireSRWLockShared = (pfn_AcquireSRWLockShared)(GetProcAddress(m_hKernel32,"AcquireSRWLockShared"));
-	m_AcquireSRWLockExclusive = (pfn_AcquireSRWLockExclusive)(GetProcAddress(m_hKernel32,"AcquireSRWLockExclusive"));
-	m_ReleaseSRWLockShared = (pfn_ReleaseSRWLockShared)(GetProcAddress(m_hKernel32,"ReleaseSRWLockShared"));
-	m_ReleaseSRWLockExclusive = (pfn_ReleaseSRWLockExclusive)(GetProcAddress(m_hKernel32,"ReleaseSRWLockExclusive"));
 	
-	if (!m_InitializeSRWLock ||
-		!m_AcquireSRWLockShared ||
-		!m_AcquireSRWLockExclusive ||
-		!m_ReleaseSRWLockShared ||
-		!m_ReleaseSRWLockExclusive)
+	Win32Thunk::Win32Thunk() :
+		m_hKernel32(0)
 	{
-		m_InitializeSRWLock = impl_InitializeSRWLock;
-		m_AcquireSRWLockShared = impl_AcquireSRWLockShared;
-		m_AcquireSRWLockExclusive = impl_AcquireSRWLockExclusive;
-		m_ReleaseSRWLockShared = impl_ReleaseSRWLockShared;
-		m_ReleaseSRWLockExclusive = impl_ReleaseSRWLockExclusive;
-	}
+		m_hKernel32 = GetModuleHandleW(L"Kernel32.dll");
+		if (!m_hKernel32)
+			OOBase_CallCriticalFailure(GetLastError());
 
-	m_InitializeConditionVariable = (pfn_InitializeConditionVariable)(GetProcAddress(m_hKernel32,"InitializeConditionVariable"));
-	m_SleepConditionVariableCS = (pfn_SleepConditionVariableCS)(GetProcAddress(m_hKernel32,"SleepConditionVariableCS"));
-	m_WakeConditionVariable = (pfn_WakeConditionVariable)(GetProcAddress(m_hKernel32,"WakeConditionVariable"));
-	m_WakeAllConditionVariable = (pfn_WakeAllConditionVariable)(GetProcAddress(m_hKernel32,"WakeAllConditionVariable"));
-	
-	if (!m_InitializeConditionVariable ||
-		!m_SleepConditionVariableCS ||
-		!m_WakeConditionVariable ||
-		!m_WakeAllConditionVariable)
-	{
-		m_InitializeConditionVariable = impl_InitializeConditionVariable;
-		m_SleepConditionVariableCS = 0;
-		m_WakeConditionVariable = impl_WakeConditionVariable;
-		m_WakeAllConditionVariable = impl_WakeAllConditionVariable;
-	}
+		m_InitOnceExecuteOnce = (pfn_InitOnceExecuteOnce)(GetProcAddress(m_hKernel32,"InitOnceExecuteOnce"));
+		if (!m_InitOnceExecuteOnce)
+			m_InitOnceExecuteOnce = impl_InitOnceExecuteOnce;
 
-	m_BindIoCompletionCallback = (pfn_BindIoCompletionCallback)(GetProcAddress(m_hKernel32,"BindIoCompletionCallback"));
-
-	init_low_frag_heap();
-}
-
-void Win32Thunk::init_low_frag_heap()
-{
-#if (WINVER >= 0x0501)
-	typedef BOOL (__stdcall *pfn_HeapSetInformation)(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, void* HeapInformation, SIZE_T HeapInformationLength);
+		m_InitializeSRWLock = (pfn_InitializeSRWLock)(GetProcAddress(m_hKernel32,"InitializeSRWLock"));
+		m_AcquireSRWLockShared = (pfn_AcquireSRWLockShared)(GetProcAddress(m_hKernel32,"AcquireSRWLockShared"));
+		m_AcquireSRWLockExclusive = (pfn_AcquireSRWLockExclusive)(GetProcAddress(m_hKernel32,"AcquireSRWLockExclusive"));
+		m_ReleaseSRWLockShared = (pfn_ReleaseSRWLockShared)(GetProcAddress(m_hKernel32,"ReleaseSRWLockShared"));
+		m_ReleaseSRWLockExclusive = (pfn_ReleaseSRWLockExclusive)(GetProcAddress(m_hKernel32,"ReleaseSRWLockExclusive"));
 		
-	pfn_HeapSetInformation pfn = (pfn_HeapSetInformation)(GetProcAddress(m_hKernel32,"HeapSetInformation"));
-	if (pfn)
-	{
-		ULONG ulEnableLFH = 2;
-		(*pfn)((HANDLE)_get_heap_handle(),HeapCompatibilityInformation,&ulEnableLFH, sizeof(ulEnableLFH));
-	}
-#endif
-}
+		if (!m_InitializeSRWLock ||
+			!m_AcquireSRWLockShared ||
+			!m_AcquireSRWLockExclusive ||
+			!m_ReleaseSRWLockShared ||
+			!m_ReleaseSRWLockExclusive)
+		{
+			m_InitializeSRWLock = impl_InitializeSRWLock;
+			m_AcquireSRWLockShared = impl_AcquireSRWLockShared;
+			m_AcquireSRWLockExclusive = impl_AcquireSRWLockExclusive;
+			m_ReleaseSRWLockShared = impl_ReleaseSRWLockShared;
+			m_ReleaseSRWLockExclusive = impl_ReleaseSRWLockExclusive;
+		}
 
-namespace 
-{
+		m_InitializeConditionVariable = (pfn_InitializeConditionVariable)(GetProcAddress(m_hKernel32,"InitializeConditionVariable"));
+		m_SleepConditionVariableCS = (pfn_SleepConditionVariableCS)(GetProcAddress(m_hKernel32,"SleepConditionVariableCS"));
+		m_WakeConditionVariable = (pfn_WakeConditionVariable)(GetProcAddress(m_hKernel32,"WakeConditionVariable"));
+		m_WakeAllConditionVariable = (pfn_WakeAllConditionVariable)(GetProcAddress(m_hKernel32,"WakeAllConditionVariable"));
+		
+		if (!m_InitializeConditionVariable ||
+			!m_SleepConditionVariableCS ||
+			!m_WakeConditionVariable ||
+			!m_WakeAllConditionVariable)
+		{
+			m_InitializeConditionVariable = impl_InitializeConditionVariable;
+			m_SleepConditionVariableCS = 0;
+			m_WakeConditionVariable = impl_WakeConditionVariable;
+			m_WakeAllConditionVariable = impl_WakeAllConditionVariable;
+		}
+
+		m_BindIoCompletionCallback = (pfn_BindIoCompletionCallback)(GetProcAddress(m_hKernel32,"BindIoCompletionCallback"));
+
+		init_low_frag_heap();
+	}
+
+	void Win32Thunk::init_low_frag_heap()
+	{
+#if (WINVER >= 0x0501)
+		typedef BOOL (__stdcall *pfn_HeapSetInformation)(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, void* HeapInformation, SIZE_T HeapInformationLength);
+			
+		pfn_HeapSetInformation pfn = (pfn_HeapSetInformation)(GetProcAddress(m_hKernel32,"HeapSetInformation"));
+		if (pfn)
+		{
+			ULONG ulEnableLFH = 2;
+			(*pfn)((HANDLE)_get_heap_handle(),HeapCompatibilityInformation,&ulEnableLFH, sizeof(ulEnableLFH));
+		}
+#endif
+	}
+
 	static HANDLE get_mutex(void* v)
 	{
 		wchar_t buf[256] = {0};
@@ -165,67 +162,106 @@ namespace
 
 		return h;
 	}
-}
 
-BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
-{
-	static_assert(sizeof(LONG) <= sizeof(INIT_ONCE),"Refer to maintainters");
-	
-	LONG* check = reinterpret_cast<LONG*>(InitOnce);
-
-	LONG checked = InterlockedCompareExchange(check,-1,0);
-	if (checked != 1)
+	BOOL Win32Thunk::impl_InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 	{
-		// Get lock...
-		OOBase::Win32::SmartHandle mutex(get_mutex(check));
+		static_assert(sizeof(LONG) <= sizeof(INIT_ONCE),"Refer to maintainters");
+		
+		LONG* check = reinterpret_cast<LONG*>(InitOnce);
 
-		do
+		LONG checked = InterlockedCompareExchange(check,-1,0);
+		if (checked != 1)
 		{
-			if (WaitForSingleObject(mutex,INFINITE) != WAIT_OBJECT_0)
-				OOBase_CallCriticalFailure(GetLastError());
+			// Get lock...
+			OOBase::Win32::SmartHandle mutex(get_mutex(check));
 
-			if (checked == 0)
+			do
 			{
-				// First in...
-				try
+				if (WaitForSingleObject(mutex,INFINITE) != WAIT_OBJECT_0)
+					OOBase_CallCriticalFailure(GetLastError());
+
+				if (checked == 0)
 				{
-					if ((*InitFn)(InitOnce,Parameter,Context))
-						InterlockedExchange(check,1);
-					else
+					// First in...
+					try
+					{
+						if ((*InitFn)(InitOnce,Parameter,Context))
+							InterlockedExchange(check,1);
+						else
+							InterlockedExchange(check,0);
+					}
+					catch (...)
+					{
 						InterlockedExchange(check,0);
+						ReleaseMutex(mutex);
+						return FALSE;
+					}
 				}
-				catch (...)
-				{
-					InterlockedExchange(check,0);
-					ReleaseMutex(mutex);
-					return FALSE;
-				}
-			}
 
-			checked = *check;
-					
-			// And release
-			if (!ReleaseMutex(mutex))
-				OOBase_CallCriticalFailure(GetLastError());
+				checked = *check;
+						
+				// And release
+				if (!ReleaseMutex(mutex))
+					OOBase_CallCriticalFailure(GetLastError());
 
-		} while (checked != 1);
+			} while (checked != 1);
+		}
+		
+		return TRUE;
 	}
-	
-	return TRUE;
+
+	void Win32Thunk::impl_InitializeSRWLock(SRWLOCK* SRWLock)
+	{
+		OOBase::Win32::rwmutex_t** mtx = reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock);
+
+		OOBASE_NEW((*mtx),OOBase::Win32::rwmutex_t());
+		if (!(*mtx))
+			OOBase_OutOfMemory();
+	}
+
+	void Win32Thunk::impl_AcquireSRWLockShared(SRWLOCK* SRWLock)
+	{
+		(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->acquire_read();
+	}
+
+	void Win32Thunk::impl_AcquireSRWLockExclusive(SRWLOCK* SRWLock)
+	{
+		(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->acquire();
+	}
+
+	void Win32Thunk::impl_ReleaseSRWLockShared(SRWLOCK* SRWLock)
+	{
+		(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->release_read();
+	}
+
+	void Win32Thunk::impl_ReleaseSRWLockExclusive(SRWLOCK* SRWLock)
+	{
+		(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->release();
+	}
+
+	void Win32Thunk::impl_InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
+	{
+		OOBase::Win32::condition_variable_t** var = reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable);
+
+		OOBASE_NEW((*var),OOBase::Win32::condition_variable_t());
+		if (!(*var))
+			OOBase_OutOfMemory();
+	}
+
+	void Win32Thunk::impl_WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
+	{
+		(*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable))->signal();
+	}
+
+	void Win32Thunk::impl_WakeAllConditionVariable(CONDITION_VARIABLE* ConditionVariable)
+	{
+		(*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable))->broadcast();
+	}
 }
 
 BOOL OOBase::Win32::InitOnceExecuteOnce(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context)
 {
 	return (*Win32Thunk::instance().m_InitOnceExecuteOnce)(InitOnce,InitFn,Parameter,Context);
-}
-
-void Win32Thunk::impl_InitializeSRWLock(SRWLOCK* SRWLock)
-{
-	OOBase::Win32::rwmutex_t** mtx = reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock);
-
-	OOBASE_NEW((*mtx),OOBase::Win32::rwmutex_t());
-	if (!(*mtx))
-		OOBase_OutOfMemory();
 }
 
 void OOBase::Win32::InitializeSRWLock(SRWLOCK* SRWLock)
@@ -237,19 +273,9 @@ void OOBase::Win32::InitializeSRWLock(SRWLOCK* SRWLock)
 	(*Win32Thunk::instance().m_InitializeSRWLock)(SRWLock);
 }
 
-void Win32Thunk::impl_AcquireSRWLockShared(SRWLOCK* SRWLock)
-{
-	(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->acquire_read();
-}
-
 void OOBase::Win32::AcquireSRWLockShared(SRWLOCK* SRWLock)
 {
 	(*Win32Thunk::instance().m_AcquireSRWLockShared)(SRWLock);
-}
-
-void Win32Thunk::impl_AcquireSRWLockExclusive(SRWLOCK* SRWLock)
-{
-	(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->acquire();
 }
 
 void OOBase::Win32::AcquireSRWLockExclusive(SRWLOCK* SRWLock)
@@ -257,19 +283,9 @@ void OOBase::Win32::AcquireSRWLockExclusive(SRWLOCK* SRWLock)
 	(*Win32Thunk::instance().m_AcquireSRWLockExclusive)(SRWLock);
 }
 
-void Win32Thunk::impl_ReleaseSRWLockShared(SRWLOCK* SRWLock)
-{
-	(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->release_read();
-}
-
 void OOBase::Win32::ReleaseSRWLockShared(SRWLOCK* SRWLock)
 {
 	(*Win32Thunk::instance().m_ReleaseSRWLockShared)(SRWLock);
-}
-
-void Win32Thunk::impl_ReleaseSRWLockExclusive(SRWLOCK* SRWLock)
-{
-	(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock))->release();
 }
 
 void OOBase::Win32::ReleaseSRWLockExclusive(SRWLOCK* SRWLock)
@@ -280,7 +296,7 @@ void OOBase::Win32::ReleaseSRWLockExclusive(SRWLOCK* SRWLock)
 void OOBase::Win32::DeleteSRWLock(SRWLOCK* SRWLock)
 {
 	if (Win32Thunk::instance().m_InitializeSRWLock == Win32Thunk::impl_InitializeSRWLock)
-		delete (*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock));
+		delete (*reinterpret_cast<rwmutex_t**>(SRWLock));
 }
 
 OOBase::Win32::rwmutex_t::rwmutex_t() :
@@ -351,15 +367,6 @@ void OOBase::Win32::rwmutex_t::release_read()
 	}
 }
 
-void Win32Thunk::impl_InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
-{
-	OOBase::Win32::condition_variable_t** var = reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable);
-
-	OOBASE_NEW((*var),OOBase::Win32::condition_variable_t());
-	if (!(*var))
-		OOBase_OutOfMemory();
-}
-
 void OOBase::Win32::InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
 {
 #if (WINVER >= 0x0600)
@@ -372,24 +379,14 @@ void OOBase::Win32::InitializeConditionVariable(CONDITION_VARIABLE* ConditionVar
 BOOL OOBase::Win32::SleepConditionVariable(CONDITION_VARIABLE* ConditionVariable, condition_mutex_t* Mutex, DWORD dwMilliseconds)
 {
 	if (Win32Thunk::instance().m_SleepConditionVariableCS == 0)
-		return (*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable))->wait(Mutex->m_mutex,dwMilliseconds) ? TRUE : FALSE;
+		return (*reinterpret_cast<condition_variable_t**>(ConditionVariable))->wait(Mutex->m_mutex,dwMilliseconds) ? TRUE : FALSE;
 	else
 		return (*Win32Thunk::instance().m_SleepConditionVariableCS)(ConditionVariable,&Mutex->m_cs,dwMilliseconds);
-}
-
-void Win32Thunk::impl_WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
-{
-	(*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable))->signal();
 }
 
 void OOBase::Win32::WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
 {
 	(*Win32Thunk::instance().m_WakeConditionVariable)(ConditionVariable);
-}
-
-void Win32Thunk::impl_WakeAllConditionVariable(CONDITION_VARIABLE* ConditionVariable)
-{
-	(*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable))->broadcast();
 }
 
 void OOBase::Win32::WakeAllConditionVariable(CONDITION_VARIABLE* ConditionVariable)
@@ -400,7 +397,7 @@ void OOBase::Win32::WakeAllConditionVariable(CONDITION_VARIABLE* ConditionVariab
 void OOBase::Win32::DeleteConditionVariable(CONDITION_VARIABLE* ConditionVariable)
 {
 	if (Win32Thunk::instance().m_InitializeConditionVariable == Win32Thunk::impl_InitializeConditionVariable)
-		delete (*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable));
+		delete (*reinterpret_cast<condition_variable_t**>(ConditionVariable));
 }
 
 BOOL OOBase::Win32::BindIoCompletionCallback(HANDLE FileHandle, LPOVERLAPPED_COMPLETION_ROUTINE Function, ULONG Flags)

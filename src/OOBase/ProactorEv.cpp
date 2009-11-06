@@ -25,21 +25,21 @@
 
 #include "ProactorEv.h"
 
-OOSvrBase::ProactorImpl::ProactorImpl()
+OOSvrBase::Ev::ProactorImpl::ProactorImpl()
 {
 }
 
-OOSvrBase::ProactorImpl::~ProactorImpl()
+OOSvrBase::Ev::ProactorImpl::~ProactorImpl()
 {
 }
 
-OOBase::Socket* OOSvrBase::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*)
+OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*)
 {
 	void* POSIX_TODO;
 	return 0;
 }
 
-OOSvrBase::AsyncSocket* OOSvrBase::ProactorImpl::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
+OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
 {
 	void* POSIX_TODO;
 	return 0;

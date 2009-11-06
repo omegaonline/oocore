@@ -44,6 +44,9 @@ namespace OOBase
 		DLL(const DLL&);
 		DLL& operator = (const DLL&);
 
+		/** \var m_module
+		 *  The platform specific DLL/SO variable.
+		 */
 #if defined(_WIN32)
 		HMODULE     m_module;
 #else

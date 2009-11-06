@@ -69,7 +69,7 @@ namespace OOBase
 					m_refcount(1)
 				{}
 
-				void add_ref()
+				void addref()
 				{
 					++m_refcount;
 				}
@@ -116,7 +116,7 @@ namespace OOBase
 			SmartPtrImpl(const SmartPtrImpl& rhs) : m_node(rhs.m_node)
 			{
 				if (m_node)
-					m_node->add_ref();
+					m_node->addref();
 			}
 
 			SmartPtrImpl& operator = (T* ptr)
@@ -150,7 +150,7 @@ namespace OOBase
 					m_node = rhs.m_node;
 
 					if (m_node)
-						m_node->add_ref();
+						m_node->addref();
 				}
 				return *this;
 			}

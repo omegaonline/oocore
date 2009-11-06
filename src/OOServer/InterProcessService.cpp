@@ -175,7 +175,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 
 		// Wait for the process to start and register its parts...
 		OOBase::Countdown timeout(&wait);
-		while (wait != OOBase::timeval_t::zero)
+		while (wait != OOBase::timeval_t::Zero)
 		{
 			ObjectPtr<IObject> ptrObject;
 			ptrObject.Attach(m_ptrROT->GetObject(oid));
@@ -202,7 +202,7 @@ void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t&
 			timeout.update();
 		}
 
-		if (wait == OOBase::timeval_t::zero)
+		if (wait == OOBase::timeval_t::Zero)
 			throw ITimeoutException::Create();
 
 		// Remove from the map

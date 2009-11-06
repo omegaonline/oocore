@@ -22,26 +22,29 @@
 #ifndef OOSVRBASE_PROACTOR_EV_H_INCLUDED_
 #define OOSVRBASE_PROACTOR_EV_H_INCLUDED_
 
+#if !defined(OOSVRBASE_PROACTOR_H_INCLUDED_)
+#error include "Proactor.h" instead
+#endif
+
 #if !defined(HAVE_EV_H)
 #error Includes have got confused, check Proactor.h
 #endif
 
 namespace OOSvrBase
 {
-	class ProactorImpl
+	namespace Ev
 	{
-	public:
-		ProactorImpl();
-		~ProactorImpl();
+		class ProactorImpl : public detail::ProactorImpl
+		{
+		public:
+			ProactorImpl();
+			~ProactorImpl();
 
-		OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*);
+			OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*);
 
-		AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
-
-	private:
-		ProactorImpl(const ProactorImpl&) {}
-		ProactorImpl& operator = (const ProactorImpl&) { return *this; }
-	};
+			AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
+		};
+	}
 }
 
 #endif // OOSVRBASE_PROACTOR_EV_H_INCLUDED_

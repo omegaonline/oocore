@@ -497,7 +497,7 @@ int Root::MessageHandler::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
-		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = m_default_msg_queue.pop(msg,&wait2);
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = m_default_msg_queue.pop(msg,&wait2);
 		
 		// Dec usage count
 		--m_waiting_threads;
@@ -824,7 +824,7 @@ Omega::uint16_t Root::MessageHandler::classify_channel(Omega::uint32_t channel_i
 
 Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase::SmartPtr<Message>& msg)
 {
-	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed;
+	OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::closed;
 
 	if (msg->m_dest_thread_id != 0)
 	{
@@ -835,7 +835,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase
 		{
 			std::map<Omega::uint16_t,ThreadContext*>::const_iterator i=m_mapThreadContexts.find(msg->m_dest_thread_id);
 			if (i != m_mapThreadContexts.end())
-				res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
+				res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 		}
 		catch (std::exception& e)
 		{
@@ -846,7 +846,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::queue_message(OOBase
 	{
 		size_t waiting = m_waiting_threads.value();
 
-		res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
+		res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 
 		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::success && waiting <= 1)
 			start_thread();
@@ -880,7 +880,7 @@ Root::MessageHandler::ThreadContext* Root::MessageHandler::ThreadContext::instan
 Root::MessageHandler::ThreadContext::ThreadContext() :
 	m_thread_id(0),
 	m_pHandler(0),
-	m_deadline(OOBase::timeval_t::max_time),
+	m_deadline(OOBase::timeval_t::MaxTime),
 	m_seq_no(0)
 {
 }
@@ -946,7 +946,7 @@ void Root::MessageHandler::close()
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::zero)
+	while (wait != OOBase::timeval_t::Zero)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -985,7 +985,7 @@ void Root::MessageHandler::stop()
 	// Wait for all the request threads to finish
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::zero)
+	while (wait != OOBase::timeval_t::Zero)
 	{
 		OOBase::Thread* pThread = 0;
 
@@ -1042,7 +1042,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 		
 		// Get the next message
 		OOBase::SmartPtr<Message> msg;
-		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::result_t res = pContext->m_msg_queue.pop(msg,deadline);
+		OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::Result res = pContext->m_msg_queue.pop(msg,deadline);
 
 		if (res == OOBase::BoundedQueue<OOBase::SmartPtr<Message> >::pulsed)
 			continue;
@@ -1225,7 +1225,7 @@ bool Root::MessageHandler::call_async_function_i(void (*pfnCall)(void*,OOBase::C
 	if (!msg)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	msg->m_deadline = OOBase::timeval_t::max_time;
+	msg->m_deadline = OOBase::timeval_t::MaxTime;
 	msg->m_src_channel_id = m_uChannelId;
 	msg->m_dest_thread_id = 0;
 	msg->m_src_thread_id = 0;
@@ -1263,7 +1263,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_request(Omega::
 	msg.m_dest_thread_id = 0;
 	msg.m_src_channel_id = m_uChannelId;
 	msg.m_src_thread_id = 0;
-	msg.m_deadline = deadline ? *deadline : OOBase::timeval_t::max_time;
+	msg.m_deadline = deadline ? *deadline : OOBase::timeval_t::MaxTime;
 	msg.m_attribs = attribs;
 
 	if (request)
@@ -1323,7 +1323,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_request(Omega::
 		return io_result::success;
 
 	// Wait for response...
-	return wait_for_response(response,seq_no,msg.m_deadline != OOBase::timeval_t::max_time ? &msg.m_deadline : 0,actual_dest_channel_id);
+	return wait_for_response(response,seq_no,msg.m_deadline != OOBase::timeval_t::MaxTime ? &msg.m_deadline : 0,actual_dest_channel_id);
 }
 
 Root::MessageHandler::io_result::type Root::MessageHandler::send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs)
@@ -1452,8 +1452,8 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 	header.write(dest_channel_id);
 	header.write(msg.m_src_channel_id);
 
-	header.write(static_cast<Omega::int64_t>(msg.m_deadline.tv_sec));
-	header.write(static_cast<Omega::int32_t>(msg.m_deadline.tv_usec));
+	header.write(static_cast<Omega::int64_t>(msg.m_deadline.tv_sec()));
+	header.write(static_cast<Omega::int32_t>(msg.m_deadline.tv_usec()));
 
 	header.write(msg.m_attribs);
 	header.write(msg.m_dest_thread_id);
@@ -1497,7 +1497,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::send_message(Omega::
 	}
 
 	// Check the timeout
-	if (msg.m_deadline != OOBase::timeval_t::max_time && msg.m_deadline <= OOBase::gettimeofday())
+	if (msg.m_deadline != OOBase::timeval_t::MaxTime && msg.m_deadline <= OOBase::gettimeofday())
 		return io_result::timedout;
 		
 	return (ptrMC->send(header.buffer()) ? io_result::success : io_result::failed);

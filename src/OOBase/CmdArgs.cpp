@@ -21,17 +21,17 @@
 
 #include "CmdArgs.h"
 
-bool OOSvrBase::CmdArgs::add_option(const char* id, char short_opt, const char* long_opt, bool bHasValue)
+bool OOSvrBase::CmdArgs::add_option(const char* id, char short_opt, const char* long_opt, bool has_value)
 {
 	assert(id);
 	assert(short_opt || long_opt);
 	assert(m_map_args.find(id) == m_map_args.end());
 
 	Option opt;
-	opt.short_opt = short_opt;
+	opt.m_short_opt = short_opt;
 	if (long_opt)
-		opt.long_opt = long_opt;
-	opt.bHasValue = bHasValue;
+		opt.m_long_opt = long_opt;
+	opt.m_has_value = has_value;
 
 	try
 	{
@@ -107,9 +107,9 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 	for (std::multimap<std::string,Option>::const_iterator i=m_map_opts.begin();i!=m_map_opts.end();++i)
 	{
 		std::string value = "true";
-		if (i->second.long_opt == argv[arg]+2)
+		if (i->second.m_long_opt == argv[arg]+2)
 		{
-			if (i->second.bHasValue)
+			if (i->second.m_has_value)
 			{
 				if (arg >= argc-1)
 				{
@@ -123,10 +123,10 @@ bool OOSvrBase::CmdArgs::parse_long_option(std::map<std::string,std::string>& re
 			return true;
 		}
 
-		if (strncmp(i->second.long_opt.c_str(),argv[arg]+2,i->second.long_opt.length())==0 && argv[arg][i->second.long_opt.length()+2]=='=')
+		if (strncmp(i->second.m_long_opt.c_str(),argv[arg]+2,i->second.m_long_opt.length())==0 && argv[arg][i->second.m_long_opt.length()+2]=='=')
 		{
-			if (i->second.bHasValue)
-				value = &argv[arg][i->second.long_opt.length()+3];
+			if (i->second.m_has_value)
+				value = &argv[arg][i->second.m_long_opt.length()+3];
 			
 			results[i->first] = value;
 			return true;
@@ -144,9 +144,9 @@ bool OOSvrBase::CmdArgs::parse_short_options(std::map<std::string,std::string>& 
 		std::multimap<std::string,Option>::const_iterator i;
 		for (i=m_map_opts.begin();i!=m_map_opts.end();++i)
 		{
-			if (i->second.short_opt == *c)
+			if (i->second.m_short_opt == *c)
 			{
-				if (i->second.bHasValue)
+				if (i->second.m_has_value)
 				{
 					std::string value;
 					if (c[1] == '\0')

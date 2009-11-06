@@ -28,6 +28,25 @@
 
 namespace OOBase
 {
+	namespace detail
+	{
+		class ThreadImpl
+		{
+		public:
+			ThreadImpl() {}
+			virtual ~ThreadImpl() {}
+
+			virtual void run(int (*thread_fn)(void*), void* param) = 0;
+			virtual bool join(const timeval_t* wait = 0) = 0;
+			virtual void abort() = 0;
+			virtual bool is_running() = 0;
+
+		private:
+			ThreadImpl(const ThreadImpl&);
+			ThreadImpl& operator = (const ThreadImpl&);
+		};
+	}
+
 	class Thread
 	{
 	public:
@@ -43,31 +62,7 @@ namespace OOBase
 		Thread(const Thread&);
 		Thread& operator = (const Thread&);
 
-		Mutex     m_lock;
-
-#if defined(_WIN32)
-		struct wrapper
-		{
-			Win32::SmartHandle hEvent;
-			int                (*thread_fn)(void*);
-			void*              param;
-		};
-		Win32::SmartHandle m_hThread;
-		static unsigned int __stdcall oobase_thread_fn(void* param);
-#elif defined(HAVE_PTHREAD)
-		struct wrapper
-		{
-			Thread*            pThis;
-			int                (*thread_fn)(void*);
-			void*              param;
-		};
-		bool           m_running;
-		pthread_t      m_thread;
-		pthread_cond_t m_condition;
-		static void* oobase_thread_fn(void* param);
-#else
-#error Fix me!
-#endif
+		detail::ThreadImpl* m_impl;
 	};
 }
 

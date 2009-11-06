@@ -31,7 +31,11 @@ namespace OOBase
 	class Condition
 	{
 	public:
-
+		/** \typedef Mutex
+		 *  The Condition mutex type.
+		 *  Individual platforms require a different type of mutex for condition variables
+		 *  e.g. \link Win32::condition_mutex_t \endlink or \link OOBase::Mutex \endlink
+		 */
 #if defined(_WIN32)
 		typedef Win32::condition_mutex_t Mutex;
 #elif defined(HAVE_PTHREAD)
@@ -51,6 +55,9 @@ namespace OOBase
 		Condition(const Condition&);
 		Condition& operator = (const Condition&);
 
+		/** \var m_var
+		 *  The platform specific condition variable.
+		 */
 #if defined(_WIN32)
 		CONDITION_VARIABLE m_var;
 #elif defined(HAVE_PTHREAD)

@@ -32,20 +32,20 @@ namespace OOBase
 {
 	struct timeval_t
 	{
-#if defined(_MSC_VER)
-		typedef __int64 time_64_t;
-#elif defined(HAVE_STDINT_H)
+		/** \typedef time_64_t
+		 *  A 64-bit signed integer.
+		 */
+#if defined(HAVE_STDINT_H)
 		typedef int64_t time_64_t;
+#elif defined(_MSC_VER)
+		typedef __int64 time_64_t;
 #else
 #error Fix me!
 #endif
 
-		time_64_t tv_sec;    ///< Seconds since 01 Jan 1970 UTC
-		int       tv_usec;   ///< Milliseconds since last second
-
 		timeval_t() {}
 		timeval_t(time_64_t s, int us = 0) :
-			tv_sec(s), tv_usec(us)
+			m_tv_sec(s), m_tv_usec(us)
 		{
 			normalise();
 		}
@@ -83,41 +83,57 @@ namespace OOBase
 			return (cmp(rhs) >= 0);
 		}
 
+		time_64_t tv_sec() const
+		{
+			return m_tv_sec;
+		}
+
+		int tv_usec() const
+		{
+			return m_tv_usec;
+		}
+
 		unsigned long msec() const
 		{
-			return static_cast<unsigned long>((tv_sec * 1000) + (tv_usec / 1000));
+			return static_cast<unsigned long>((m_tv_sec * 1000) + (m_tv_usec / 1000));
 		}
 
-		static const timeval_t max_time;
-		static const timeval_t zero;
+		static const timeval_t MaxTime;
+		static const timeval_t Zero;
 
 		static timeval_t deadline(unsigned long msec);
-
-		void normalise()
-		{
-			if (tv_usec >= 1000000)
-			{
-				long nsec = tv_usec / 1000000;
-				tv_usec -= 1000000 * nsec;
-				tv_sec += nsec;
-			}
-		}
 
 	private:
 		int cmp(const timeval_t& rhs) const
 		{
-			if (tv_sec < rhs.tv_sec)
+			if (m_tv_sec < rhs.m_tv_sec)
 				return -1;
-			else if (tv_sec > rhs.tv_sec)
+			else if (m_tv_sec > rhs.m_tv_sec)
 				return 1;
 
-			if (tv_usec < rhs.tv_usec)
+			if (m_tv_usec < rhs.m_tv_usec)
 				return -1;
-			else if (tv_usec > rhs.tv_usec)
+			else if (m_tv_usec > rhs.m_tv_usec)
 				return 1;
 
 			return 0;
 		}
+
+		void normalise()
+		{
+			if (m_tv_usec >= 1000000)
+			{
+				int nsec = m_tv_usec / 1000000;
+				m_tv_usec -= 1000000 * nsec;
+				m_tv_sec += nsec;
+			}
+		}
+
+		time_64_t m_tv_sec;    ///< Seconds since 01 Jan 1970 UTC
+		int       m_tv_usec;   ///< Milliseconds since last second
+
+
+		friend timeval_t gettimeofday();
 	};
 
 	inline timeval_t operator + (const timeval_t& t1, const timeval_t& t2)

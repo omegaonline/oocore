@@ -93,7 +93,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 			OOBase::sleep(OOBase::timeval_t(0,100000));
 
 			countdown.update();
-		} while (wait != OOBase::timeval_t::zero);
+		} while (wait != OOBase::timeval_t::Zero);
 
 		if (!m_stream)
 			OMEGA_THROW(err);
@@ -175,7 +175,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 	OOBase::timeval_t wait(5);
 	OOBase::Countdown countdown(&wait);
 	int err = 0;
-	while (wait != OOBase::timeval_t::zero)
+	while (wait != OOBase::timeval_t::Zero)
 	{
 		local_socket = OOBase::LocalSocket::connect_local(name,&err,&wait);
 		if (local_socket || bStandalone)
@@ -473,7 +473,7 @@ int OOCore::UserSession::run_read_loop()
 				{
 					size_t waiting = i->second->m_usage_count.value();
 
-					OOBase::BoundedQueue<Message*>::result_t res = i->second->m_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
+					OOBase::BoundedQueue<Message*>::Result res = i->second->m_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 					if (res == OOBase::BoundedQueue<Message*>::success)
 					{
 						msg.detach();
@@ -498,7 +498,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				size_t waiting = m_usage_count.value();
 
-				OOBase::BoundedQueue<Message*>::result_t res = m_default_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::max_time ? 0 : &msg->m_deadline);
+				OOBase::BoundedQueue<Message*>::Result res = m_default_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<Message*>::success)
 				{
 					msg.detach();
@@ -551,7 +551,7 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 	{
 		// Get the next message
 		Message* message = 0;
-		OOBase::BoundedQueue<Message*>::result_t res = m_default_msg_queue.pop(message,wait);
+		OOBase::BoundedQueue<Message*>::Result res = m_default_msg_queue.pop(message,wait);
 		if (res != OOBase::BoundedQueue<Message*>::success)
 		{
 			timedout = true;
@@ -665,7 +665,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 
 			// Get the next message
 			Message* message = 0;
-			OOBase::BoundedQueue<Message*>::result_t res = pContext->m_msg_queue.pop(message,const_cast<OOBase::timeval_t*>(deadline));
+			OOBase::BoundedQueue<Message*>::Result res = pContext->m_msg_queue.pop(message,const_cast<OOBase::timeval_t*>(deadline));
 			if (res == OOBase::BoundedQueue<Message*>::success)
 			{
 				OOBase::SmartPtr<Message> msg = message;
@@ -738,7 +738,7 @@ OOCore::UserSession::ThreadContext* OOCore::UserSession::ThreadContext::instance
 
 OOCore::UserSession::ThreadContext::ThreadContext() :
 	m_thread_id(0),
-	m_deadline(OOBase::timeval_t::max_time),
+	m_deadline(OOBase::timeval_t::MaxTime),
 	m_seq_no(0),
 	m_current_apt(0)
 {
@@ -786,7 +786,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 {
 	uint16_t src_thread_id = 0;
 	uint16_t dest_thread_id = 0;
-	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
 
 	uint32_t seq_no = 0;
 
@@ -828,7 +828,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 
 	// Send to the handle
 	OOBase::timeval_t wait = deadline;
-	if (deadline != OOBase::timeval_t::max_time)
+	if (deadline != OOBase::timeval_t::MaxTime)
 	{
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)
@@ -842,7 +842,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 	if (!m_stream)
 		throw Remoting::IChannelClosedException::Create();
 
-	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::max_time ? &wait : 0);
+	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
 	if (err != 0)
 		OMEGA_THROW(err);
 
@@ -852,7 +852,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 		return 0;
 	else
 		// Wait for response...
-		return wait_for_response(apartment_id,seq_no,deadline != OOBase::timeval_t::max_time ? &deadline : 0,dest_channel_id);
+		return wait_for_response(apartment_id,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
 }
 
 void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
@@ -861,7 +861,7 @@ void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, 
 	OOBase::CDRStream header = build_header(seq_no,m_channel_id | apartment_id,ThreadContext::instance()->m_thread_id,dest_channel_id,dest_thread_id,response,deadline,Message::Response,attribs);
 
 	OOBase::timeval_t wait = deadline;
-	if (deadline != OOBase::timeval_t::max_time)
+	if (deadline != OOBase::timeval_t::MaxTime)
 	{
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)
@@ -875,7 +875,7 @@ void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, 
 	if (!m_stream)
 		throw Remoting::IChannelClosedException::Create();
 
-	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::max_time ? &wait : 0);
+	int err = m_stream->send_buffer(header.buffer(),wait != OOBase::timeval_t::MaxTime ? &wait : 0);
 	if (err != 0)
 		OMEGA_THROW(err);
 }
@@ -893,8 +893,8 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 	header.write(dest_channel_id);
 	header.write(src_channel_id);
 
-	header.write(static_cast<int64_t>(deadline.tv_sec));
-	header.write(static_cast<int32_t>(deadline.tv_usec));
+	header.write(static_cast<int64_t>(deadline.tv_sec()));
+	header.write(static_cast<int32_t>(deadline.tv_usec()));
 
 	header.write(attribs);
 	header.write(dest_thread_id);
@@ -1096,7 +1096,7 @@ uint16_t OOCore::UserSession::update_state(uint16_t apartment_id, uint32_t* pTim
 				deadline = deadline2;
 		}
 
-		if (deadline != OOBase::timeval_t::max_time)
+		if (deadline != OOBase::timeval_t::MaxTime)
 			*pTimeout = (deadline - now).msec();
 	}
 

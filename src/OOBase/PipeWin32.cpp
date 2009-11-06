@@ -27,49 +27,52 @@
 #include "ProactorWin32.h"
 #include "Win32Socket.h"
 
-namespace
+namespace OOSvrBase
 {
-	class PipeAcceptor : public OOBase::Socket
+	namespace Win32
 	{
-	public:
-		PipeAcceptor(OOSvrBase::ProactorImpl* pProactor, const std::string& pipe_name, LPSECURITY_ATTRIBUTES psa);
-		int init(OOSvrBase::Acceptor* sync_handler);
-
-		virtual ~PipeAcceptor();
-		
-		virtual int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
+		class PipeAcceptor : public OOBase::Socket
 		{
-			return ERROR_INVALID_FUNCTION;
-		}
+		public:
+			PipeAcceptor(ProactorImpl* pProactor, const std::string& pipe_name, LPSECURITY_ATTRIBUTES psa);
+			virtual ~PipeAcceptor();
 
-		virtual size_t recv(void* /*buf*/, size_t /*len*/, int* perr, const OOBase::timeval_t* /*timeout*/ = 0)
-		{
-			*perr = ERROR_INVALID_FUNCTION;
-			return 0;
-		}
+			int init(Acceptor* sync_handler);
+			
+			virtual int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
+			{
+				return ERROR_INVALID_FUNCTION;
+			}
 
-		virtual void close();
+			virtual size_t recv(void* /*buf*/, size_t /*len*/, int* perr, const OOBase::timeval_t* /*timeout*/ = 0)
+			{
+				*perr = ERROR_INVALID_FUNCTION;
+				return 0;
+			}
 
-		int accept_named_pipe();
+			virtual void close();
 
-	private:
-		OOSvrBase::ProactorImpl*   m_pProactor;
-		OOBase::SpinLock           m_lock;
-		OVERLAPPED                 m_ov;
-		bool                       m_closed;
-		OOSvrBase::Acceptor*       m_sync_handler;
-		OOBase::Win32::SmartHandle m_hPipe;
-		OOBase::Win32::SmartHandle m_hClosed;
-		std::string                m_pipe_name;
-		LPSECURITY_ATTRIBUTES      m_psa;
-		HANDLE                     m_hWait;
-		
-		static VOID CALLBACK accept_named_pipe2(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/);
-		void do_accept();
-	};
+			int accept_named_pipe();
+
+		private:
+			ProactorImpl*              m_pProactor;
+			OOBase::SpinLock           m_lock;
+			OVERLAPPED                 m_ov;
+			bool                       m_closed;
+			Acceptor*                  m_sync_handler;
+			OOBase::Win32::SmartHandle m_hPipe;
+			OOBase::Win32::SmartHandle m_hClosed;
+			std::string                m_pipe_name;
+			LPSECURITY_ATTRIBUTES      m_psa;
+			HANDLE                     m_hWait;
+			
+			static VOID CALLBACK accept_named_pipe_i(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/);
+			void do_accept();
+		};
+	}
 }
 
-PipeAcceptor::PipeAcceptor(OOSvrBase::ProactorImpl* pProactor, const std::string& pipe_name, LPSECURITY_ATTRIBUTES psa) :
+OOSvrBase::Win32::PipeAcceptor::PipeAcceptor(ProactorImpl* pProactor, const std::string& pipe_name, LPSECURITY_ATTRIBUTES psa) :
 	m_pProactor(pProactor),
 	m_closed(false),
 	m_sync_handler(0),
@@ -80,7 +83,7 @@ PipeAcceptor::PipeAcceptor(OOSvrBase::ProactorImpl* pProactor, const std::string
 	ZeroMemory(&m_ov,sizeof(OVERLAPPED));
 }
 
-PipeAcceptor::~PipeAcceptor()
+OOSvrBase::Win32::PipeAcceptor::~PipeAcceptor()
 {
 	close();
 
@@ -88,7 +91,7 @@ PipeAcceptor::~PipeAcceptor()
 		CloseHandle(m_ov.hEvent);
 }
 
-int PipeAcceptor::init(OOSvrBase::Acceptor* sync_handler)
+int OOSvrBase::Win32::PipeAcceptor::init(Acceptor* sync_handler)
 {
 	m_sync_handler = sync_handler;
 	
@@ -109,7 +112,7 @@ int PipeAcceptor::init(OOSvrBase::Acceptor* sync_handler)
 	return 0;
 }
 
-void PipeAcceptor::close()
+void OOSvrBase::Win32::PipeAcceptor::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -126,7 +129,7 @@ void PipeAcceptor::close()
 		WaitForSingleObject(m_hClosed,INFINITE);
 }
 
-int PipeAcceptor::accept_named_pipe()
+int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe()
 {
 	m_hPipe = CreateNamedPipeA(m_pipe_name.c_str(),
 		PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
@@ -165,7 +168,7 @@ int PipeAcceptor::accept_named_pipe()
 		if (m_hWait)
 			UnregisterWaitEx(m_hWait,NULL);
 
-		if (!RegisterWaitForSingleObject(&m_hWait,m_ov.hEvent,accept_named_pipe2,this,INFINITE,WT_EXECUTEONLYONCE | WT_EXECUTELONGFUNCTION))
+		if (!RegisterWaitForSingleObject(&m_hWait,m_ov.hEvent,accept_named_pipe_i,this,INFINITE,WT_EXECUTEONLYONCE | WT_EXECUTELONGFUNCTION))
 		{
 			m_hWait = 0;
 			dwErr = GetLastError();
@@ -179,7 +182,7 @@ int PipeAcceptor::accept_named_pipe()
 	return dwErr;
 }
 
-VOID CALLBACK PipeAcceptor::accept_named_pipe2(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/)
+VOID CALLBACK OOSvrBase::Win32::PipeAcceptor::accept_named_pipe_i(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/)
 {
 	PipeAcceptor* pThis = static_cast<PipeAcceptor*>(lpParameter);
 	
@@ -188,7 +191,7 @@ VOID CALLBACK PipeAcceptor::accept_named_pipe2(PVOID lpParameter, BOOLEAN /*Time
 	--pThis->m_pProactor->m_outstanding;
 }
 
-void PipeAcceptor::do_accept()
+void OOSvrBase::Win32::PipeAcceptor::do_accept()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
@@ -238,12 +241,12 @@ void PipeAcceptor::do_accept()
 	}
 }
 
-OOBase::Socket* OOSvrBase::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa)
+OOBase::Socket* OOSvrBase::Win32::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa)
 {
 	*perr = 0;
 
-	OOBase::SmartPtr<PipeAcceptor> pAcceptor = 0;
-	OOBASE_NEW(pAcceptor,PipeAcceptor(this,"\\\\.\\pipe\\" + path,psa));
+	OOBase::SmartPtr<Win32::PipeAcceptor> pAcceptor = 0;
+	OOBASE_NEW(pAcceptor,Win32::PipeAcceptor(this,"\\\\.\\pipe\\" + path,psa));
 	if (!pAcceptor)
 		*perr = ERROR_OUTOFMEMORY;
 	else

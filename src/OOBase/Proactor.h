@@ -89,7 +89,22 @@ namespace OOSvrBase
 		virtual bool on_accept(IOHandler* handler, AsyncSocket* pSocket, int err) = 0;
 	};
 
-	class ProactorImpl;
+	namespace detail
+	{
+		class ProactorImpl
+		{
+		public:
+			ProactorImpl() {}
+			virtual ~ProactorImpl() {}
+
+			virtual OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa) = 0;
+			virtual AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock) = 0;
+
+		private:
+			ProactorImpl(const ProactorImpl&);
+			ProactorImpl& operator = (const ProactorImpl&);
+		};
+	}
 
 	class Proactor
 	{
@@ -105,7 +120,7 @@ namespace OOSvrBase
 		Proactor(const Proactor&);
 		Proactor& operator = (const Proactor&);
 
-		ProactorImpl* m_impl;
+		detail::ProactorImpl* m_impl;
 	};
 }
 

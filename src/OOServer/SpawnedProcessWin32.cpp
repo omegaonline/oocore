@@ -96,7 +96,7 @@ namespace
 		}
 
 		OOBase::timeval_t now = OOBase::gettimeofday();
-		ssPipe << "-" << now.tv_usec;
+		ssPipe << "-" << now.tv_usec();
 		strPipe = ssPipe.str();
 
 		// Get the current processes user SID

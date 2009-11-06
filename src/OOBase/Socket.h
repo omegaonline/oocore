@@ -78,6 +78,9 @@ namespace OOBase
 	class LocalSocket : public Socket
 	{
 	public:
+		/** \typedef uid_t
+		 *  The platform specific user id type.
+		 */
 #if defined(_WIN32)
 		typedef HANDLE uid_t;
 #elif defined(HAVE_UNISTD_H)

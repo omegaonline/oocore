@@ -45,6 +45,9 @@ namespace OOBase
 		Mutex(const Mutex&);
 		Mutex& operator = (const Mutex&);
 
+		/** \var m_mutex
+		 *  The platform specific mutex variable.
+		 */
 #if defined(_WIN32)
 		Win32::SmartHandle m_mutex;
 #elif defined(HAVE_PTHREAD)
@@ -71,6 +74,9 @@ namespace OOBase
 		SpinLock(const SpinLock&);
 		SpinLock& operator = (const SpinLock&);
 
+		/** \var m_cs
+		 *  The platform specific spin-lock variable.
+		 */
 #if defined(_WIN32)
 		CRITICAL_SECTION m_cs;
 #else
@@ -100,6 +106,9 @@ namespace OOBase
 		RWMutex(const RWMutex&);
 		RWMutex& operator = (const RWMutex&);
 
+		/** \var m_lock
+		 *  The platform specific read/write lock variable.
+		 */
 #if defined(_WIN32)
 		SRWLOCK          m_lock;
 #elif defined(HAVE_PTHREAD)

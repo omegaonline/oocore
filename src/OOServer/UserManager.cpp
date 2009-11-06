@@ -421,7 +421,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 
 		// Check timeout
 		uint32_t timeout = 0;
-		if (deadline != OOBase::timeval_t::max_time)
+		if (deadline != OOBase::timeval_t::MaxTime)
 		{
 			OOBase::timeval_t now = OOBase::gettimeofday();
 			if (deadline <= now)
@@ -436,7 +436,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 
 		if (!(attribs & TypeInfo::Asynchronous))
 		{
-			if (deadline != OOBase::timeval_t::max_time)
+			if (deadline != OOBase::timeval_t::MaxTime)
 			{
 				if (deadline <= OOBase::gettimeofday())
 					return;
@@ -513,7 +513,7 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uin
 OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::CDRStream& request, TypeInfo::MethodAttributes_t attribs)
 {
 	// The timeout needs to be related to the request timeout...
-	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
 	ObjectPtr<Remoting::ICallContext> ptrCC;
 	ptrCC.Attach(Remoting::GetCallContext());
 	if (ptrCC)
@@ -524,7 +524,7 @@ OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::C
 	}
 
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
-	Root::MessageHandler::io_result::type res = send_request(m_root_channel,&request,response,deadline == OOBase::timeval_t::max_time ? 0 : &deadline,attribs);
+	Root::MessageHandler::io_result::type res = send_request(m_root_channel,&request,response,deadline == OOBase::timeval_t::MaxTime ? 0 : &deadline,attribs);
 	if (res != Root::MessageHandler::io_result::success)
 	{
 		if (res == Root::MessageHandler::io_result::timedout)

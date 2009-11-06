@@ -32,7 +32,7 @@ namespace OOBase
 	class BoundedQueue
 	{
 	public:
-		enum result_t
+		enum Result
 		{
 			success = 0,
 			timedout,
@@ -47,7 +47,7 @@ namespace OOBase
 			m_pulsed(false)
 		{}
 		
-		result_t push(const T& val, const timeval_t* wait = 0)
+		Result push(const T& val, const timeval_t* wait = 0)
 		{
 			timeval_t wait2;
 			if (wait)
@@ -81,7 +81,7 @@ namespace OOBase
 			return success;
 		}
 
-		result_t pop(T& val, const timeval_t* wait = 0)
+		Result pop(T& val, const timeval_t* wait = 0)
 		{
 			timeval_t wait2;
 			if (wait)

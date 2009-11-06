@@ -44,7 +44,10 @@
 #endif
 
 // Detect the correct use of new(no_throw)
-#if defined(__cplusplus)
+#if defined(DOXYGEN)
+/// Macro that wraps a non-throwing call to new
+#define OOBASE_NEW(POINTER,CONSTRUCTOR)
+#elif defined(__cplusplus)
 #if !defined(OOBASE_NEW)
 #include <new>
 #if defined(HAVE_NEW_NOTHROW)

@@ -173,7 +173,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 
 	// Check timeout
 	uint32_t timeout = 0;
-	if (deadline != OOBase::timeval_t::max_time)
+	if (deadline != OOBase::timeval_t::MaxTime)
 	{
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)

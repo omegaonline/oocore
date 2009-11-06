@@ -75,7 +75,7 @@ std::string User::Acceptor::unique_name()
 #endif
 
 	// Add the current time...
-	ssPipe << "-" << OOBase::gettimeofday().tv_usec;
+	ssPipe << "-" << OOBase::gettimeofday().tv_usec();
 
 	return ssPipe.str();
 }

@@ -23,16 +23,23 @@
 
 #if defined(_WIN32)
 #include "ProactorWin32.h"
-#elif defined(HAVE_EV_H)
+#endif
+
+#if defined(HAVE_EV_H)
 #include "ProactorEv.h"
-#else
-#error Fix me!
 #endif
 
 OOSvrBase::Proactor::Proactor() :
 	m_impl(0)
 {
-	OOBASE_NEW(m_impl,ProactorImpl());
+#if defined(_WIN32)
+	OOBASE_NEW(m_impl,Win32::ProactorImpl());
+#elif (defined(HAVE_EV_H)
+	OOBASE_NEW(m_impl,Ev::ProactorImpl());
+#else
+#error Fix me!
+#endif
+
 	if (!m_impl)
 		OOBase_OutOfMemory();
 }

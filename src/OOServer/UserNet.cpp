@@ -202,10 +202,10 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 	// Fiddle with remote deadline value...
 	int64_t secs = 0;
 	int32_t usecs = 0;
-	if (deadline != OOBase::timeval_t::max_time)
+	if (deadline != OOBase::timeval_t::MaxTime)
 	{
-		secs = deadline.tv_sec;
-		usecs = deadline.tv_usec;
+		secs = deadline.tv_sec();
+		usecs = deadline.tv_usec();
 	}
 	ptrMessage->WriteInt64(L"deadline_secs",secs);
 	ptrMessage->WriteInt32(L"deadline_usecs",usecs);
@@ -224,7 +224,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 		ptrMessage->WriteStructEnd(L"message");
 
 		uint32_t timeout = 0;
-		if (deadline != OOBase::timeval_t::max_time)
+		if (deadline != OOBase::timeval_t::MaxTime)
 		{
 			OOBase::timeval_t now = OOBase::gettimeofday();
 			if (deadline <= now)
@@ -286,7 +286,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	int32_t usecs = 0;
 	input.read(usecs);
 	
-	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
 	if (secs != 0 && usecs != 0)
 		deadline = OOBase::timeval_t(secs,usecs);
 
@@ -313,7 +313,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 		
 	// Check timeout
 	uint32_t timeout = 0;
-	if (deadline != OOBase::timeval_t::max_time)
+	if (deadline != OOBase::timeval_t::MaxTime)
 	{
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		if (deadline <= now)
@@ -327,7 +327,7 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 
 	if (!(ex_attribs & TypeInfo::Asynchronous))
 	{
-		if (deadline != OOBase::timeval_t::max_time)
+		if (deadline != OOBase::timeval_t::MaxTime)
 		{
 			if (deadline <= OOBase::gettimeofday())
 				return;
@@ -350,7 +350,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	int32_t usecs = pMsg->ReadInt32(L"deadline_usecs");
 	uint32_t ex_attribs = pMsg->ReadUInt32(L"attribs");
 
-	OOBase::timeval_t deadline = OOBase::timeval_t::max_time;
+	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
 	if (secs != 0 && usecs != 0)
 		deadline = OOBase::timeval_t(secs,usecs);
 
@@ -427,10 +427,10 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			output.write(src_channel_id);
 			int64_t secs = 0;
 			int32_t usecs = 0;
-			if (deadline != OOBase::timeval_t::max_time)
+			if (deadline != OOBase::timeval_t::MaxTime)
 			{
-				secs = deadline.tv_sec;
-				usecs = deadline.tv_usec;
+				secs = deadline.tv_sec();
+				usecs = deadline.tv_usec();
 			}
 			output.write(secs);
 			output.write(usecs);
@@ -604,7 +604,7 @@ void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
 		guard.release();
 
 		// Send a sys message
-		send_away_i(ptrMsg,0,0,OOBase::timeval_t::max_time,Root::Message_t::asynchronous | Root::Message_t::channel_close,0,0,Root::Message_t::Request,0);
+		send_away_i(ptrMsg,0,0,OOBase::timeval_t::MaxTime,Root::Message_t::asynchronous | Root::Message_t::channel_close,0,0,Root::Message_t::Request,0);
 	}
 }
 
@@ -785,7 +785,7 @@ void User::Manager::close_all_remotes()
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
 	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::zero)
+	while (wait != OOBase::timeval_t::Zero)
 	{
 		OOBase::ReadGuard<OOBase::RWMutex> guard(m_remote_lock);
 

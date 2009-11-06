@@ -22,63 +22,65 @@
 #ifndef OOSVRBASE_PROACTOR_WIN32_H_INCLUDED_
 #define OOSVRBASE_PROACTOR_WIN32_H_INCLUDED_
 
+#if !defined(OOSVRBASE_PROACTOR_H_INCLUDED_)
+#error include "Proactor.h" instead
+#endif
+
 #if !defined(_WIN32)
 #error Includes have got confused, check Proactor.h
 #endif
 
 namespace OOSvrBase
 {
-	class HandleSocket : public OOSvrBase::AsyncSocket
+	namespace Win32
 	{
-	public:
-		HandleSocket(ProactorImpl* pProactor, HANDLE handle);
-		int init(OOSvrBase::IOHandler* handler);
-				
-		int read(OOBase::Buffer* buffer, size_t len);
-		int write(OOBase::Buffer* buffer);
-		void close();
-
-	private:
-		virtual ~HandleSocket();
-
-		static VOID CALLBACK completion_fn(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped);
-
-		struct Completion
+		class ProactorImpl : public detail::ProactorImpl
 		{
-			OVERLAPPED      ov;
-			HandleSocket*   this_ptr;
-			OOBase::Buffer* buffer;
-			bool            is_reading;
-			size_t          to_read;
+		public:
+			ProactorImpl();
+			virtual ~ProactorImpl();
+
+			virtual OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa);
+			virtual AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
+
+			OOBase::AtomicInt<size_t> m_outstanding;
 		};
 
-		DWORD do_read(Completion* pInfo, DWORD dwToRead);
-		void handle_read(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, Completion* pInfo);
+		class HandleSocket : public OOSvrBase::AsyncSocket
+		{
+		public:
+			HandleSocket(ProactorImpl* pProactor, HANDLE handle);
+			int init(OOSvrBase::IOHandler* handler);
+					
+			int read(OOBase::Buffer* buffer, size_t len);
+			int write(OOBase::Buffer* buffer);
+			void close();
 
-		DWORD do_write(Completion* pInfo);
-		void handle_write(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, Completion* pInfo);
+		private:
+			virtual ~HandleSocket();
 
-		ProactorImpl*              m_pProactor;
-		OOBase::Win32::SmartHandle m_handle;
-		OOSvrBase::IOHandler*      m_handler;
-	};
+			static VOID CALLBACK completion_fn(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped);
 
-	class ProactorImpl
-	{
-	public:
-		ProactorImpl();
-		~ProactorImpl();
+			struct Completion
+			{
+				OVERLAPPED      m_ov;
+				HandleSocket*   m_this_ptr;
+				OOBase::Buffer* m_buffer;
+				bool            m_is_reading;
+				size_t          m_to_read;
+			};
 
-		OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa);
-		
-		AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
+			DWORD do_read(Completion* pInfo, DWORD dwToRead);
+			void handle_read(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, Completion* pInfo);
 
-		OOBase::AtomicInt<size_t> m_outstanding;
+			DWORD do_write(Completion* pInfo);
+			void handle_write(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, Completion* pInfo);
 
-	private:
-		ProactorImpl(const ProactorImpl&);
-		ProactorImpl& operator = (const ProactorImpl&);
-	};
+			ProactorImpl*              m_pProactor;
+			OOBase::Win32::SmartHandle m_handle;
+			OOSvrBase::IOHandler*      m_handler;
+		};
+	}
 }
 
 #endif // OOSVRBASE_PROACTOR_WIN32_H_INCLUDED_

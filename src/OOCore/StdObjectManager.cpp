@@ -140,7 +140,7 @@ namespace
 	struct CallContext
 	{
 		CallContext() :
-			m_deadline(OOBase::timeval_t::max_time),
+			m_deadline(OOBase::timeval_t::MaxTime),
 			m_src_id(0),
 			m_flags(0)
 		{}
@@ -179,7 +179,7 @@ uint32_t StdCallContext::Timeout()
 	if (m_cc.m_deadline <= now)
 		return 0;
 
-	if (m_cc.m_deadline == OOBase::timeval_t::max_time)
+	if (m_cc.m_deadline == OOBase::timeval_t::MaxTime)
 		return (uint32_t)-1;
 
 	return (m_cc.m_deadline - now).msec();
@@ -293,7 +293,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		if (timeout)
 			pCC->m_deadline = OOBase::timeval_t::deadline(timeout);
 		else
-			pCC->m_deadline = OOBase::timeval_t::max_time;
+			pCC->m_deadline = OOBase::timeval_t::MaxTime;
 
 		pCC->m_src_id = m_ptrChannel->GetSource();
 		pCC->m_flags = m_ptrChannel->GetMarshalFlags();

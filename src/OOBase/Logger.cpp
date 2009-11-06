@@ -24,32 +24,71 @@
 #include "SmartPtr.h"
 #include "tr24731.h"
 
+#if !defined(HAVE_UNISTD_H)
+	#if defined(_WIN32)
+		#define getpid GetCurrentProcessId
+	#else
+		#error Fix me!
+	#endif
+#endif
+
+#if defined(_WIN32)
+	#include <io.h>
+	#include <fcntl.h>
+#endif // _WIN32
+
+#if defined(HAVE_ASL_H)
+	#include <asl.h>
+
+	#error Fix me!
+#endif // HAVE_ASL_H
+
+#if defined(HAVE_SYSLOG_H)
+	// Syslog reuses these
+	#undef LOG_WARNING
+	#undef LOG_DEBUG
+
+	#include <syslog.h>
+#endif // HAVE_SYSLOG_H
+
 namespace
 {
-	class LoggerImpl
+#if defined(_WIN32)
+	class Win32Logger
 	{
 	public:
-		LoggerImpl();
-		~LoggerImpl();
+		Win32Logger();
+		~Win32Logger();
 
 		void open(const char* name);
 		void log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args);
 
-#if defined(_WIN32)
-		static DWORD getpid() { return GetCurrentProcessId(); }
-#elif defined(HAVE_UNISTD_H)
-		static pid_t getpid() { return ::getpid(); }
-#else
-#error Fix me!
+	private:
+		OOBase::Mutex m_lock;
+		HANDLE        m_hLog;
+	};
 #endif
+
+#if defined(HAVE_ASL_H)
+	class ASLLogger
+	{
+#error Fix me!
+	};
+#endif
+
+#if defined(HAVE_SYSLOG_H)
+	class SysLogLogger
+	{
+	public:
+		~SysLogLogger();
+
+		void open(const char* name);
+		void log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args);
 
 	private:
 		OOBase::Mutex m_lock;
-
-#if defined(_WIN32)
-		HANDLE m_hLog;
-#endif
 	};
+#endif
 
 	std::string string_printf(const char* fmt, va_list args)
 	{
@@ -68,197 +107,187 @@ namespace
 			len = len2 + 1;
 		}
 	}
-}
+
+	/** \typedef LOGGER
+	 *  The logger singleton.
+	 *  The singleton is specialised by the platform specific implementation
+	 *  e.g. \link Win32Logger \endlink , \link ASLLogger \endlink or \link SysLogLogger \endlink
+	 */
+#if defined(_WIN32)
+	typedef OOBase::Singleton<Win32Logger,Win32Logger> LOGGER;
+#elif defined(HAVE_ASL_H)
+	typedef OOBase::Singleton<ASLLogger,ASLLogger> LOGGER;
+#elif defined(HAVE_SYSLOG_H)
+	typedef OOBase::Singleton<SysLogLogger,SysLogLogger> LOGGER;
+#else
+#error Fix me!
+#endif
 
 #if defined(_WIN32)
 
-#include <io.h>
-#include <fcntl.h>
-
-LoggerImpl::LoggerImpl() :
-	m_hLog(NULL)
-{
-}
-
-LoggerImpl::~LoggerImpl()
-{
-	if (m_hLog)
-		DeregisterEventSource(m_hLog);
-}
-
-void LoggerImpl::open(const char* name)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	if (m_hLog)
+	Win32Logger::Win32Logger() :
+		m_hLog(NULL)
 	{
-		DeregisterEventSource(m_hLog);
-		m_hLog = NULL;
 	}
 
-	wchar_t szPath[MAX_PATH];
-	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
-		return;
-
-	// Create the relevant registry keys if they don't already exist
-	std::string strName = "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\";
-	strName += name;
-
-	HKEY hk;
-	DWORD dwDisp;
-	if (RegCreateKeyExA(HKEY_LOCAL_MACHINE,strName.c_str(),0,NULL,REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hk,&dwDisp) == ERROR_SUCCESS)
+	Win32Logger::~Win32Logger()
 	{
-		RegSetValueExW(hk,L"EventMessageFile",0,REG_EXPAND_SZ,(LPBYTE)szPath,(DWORD)wcslen(szPath)+1);
-
-		DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
- 		RegSetValueExW(hk,L"TypesSupported",0,REG_DWORD,(LPBYTE)&dwData,sizeof(DWORD));
-
-		RegCloseKey(hk);
+		if (m_hLog)
+			DeregisterEventSource(m_hLog);
 	}
 
-	// Get our event source
-	m_hLog = RegisterEventSourceA(NULL,name);
-}
-
-void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-	
-	WORD wType = 0;
-	switch (priority)
+	void Win32Logger::open(const char* name)
 	{
-	case OOSvrBase::Logger::Error:
-		wType = EVENTLOG_ERROR_TYPE;
-		break;
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-	case OOSvrBase::Logger::Warning:
-		wType = EVENTLOG_WARNING_TYPE;
-		break;
+		if (m_hLog)
+		{
+			DeregisterEventSource(m_hLog);
+			m_hLog = NULL;
+		}
 
-	case OOSvrBase::Logger::Information:
-		wType = EVENTLOG_INFORMATION_TYPE;
-		break;
+		wchar_t szPath[MAX_PATH];
+		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
+			return;
 
-	default:
-		break;
+		// Create the relevant registry keys if they don't already exist
+		std::string strName = "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\";
+		strName += name;
+
+		HKEY hk;
+		DWORD dwDisp;
+		if (RegCreateKeyExA(HKEY_LOCAL_MACHINE,strName.c_str(),0,NULL,REG_OPTION_NON_VOLATILE,KEY_WRITE,NULL,&hk,&dwDisp) == ERROR_SUCCESS)
+		{
+			RegSetValueExW(hk,L"EventMessageFile",0,REG_EXPAND_SZ,(LPBYTE)szPath,(DWORD)wcslen(szPath)+1);
+
+			DWORD dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE;
+ 			RegSetValueExW(hk,L"TypesSupported",0,REG_DWORD,(LPBYTE)&dwData,sizeof(DWORD));
+
+			RegCloseKey(hk);
+		}
+
+		// Get our event source
+		m_hLog = RegisterEventSourceA(NULL,name);
 	}
 
-	std::string msg = string_printf(fmt,args);
-
-#if !defined(OMEGA_DEBUG)
-	const char* arrBufs[2] = { msg.c_str(), 0 };
-
-	if (m_hLog && priority != OOSvrBase::Logger::Debug)
-		ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
-
-	OutputDebugStringA(msg.c_str());
-	OutputDebugStringA("\n");
-#endif
-
-	FILE* out_file = stdout;
-	switch (priority)
+	void Win32Logger::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
 	{
-	case OOSvrBase::Logger::Error:
-		out_file = stderr;
-		fputs("Error: ",out_file);
-		break;
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
+		
+		WORD wType = 0;
+		switch (priority)
+		{
+		case OOSvrBase::Logger::Error:
+			wType = EVENTLOG_ERROR_TYPE;
+			break;
 
-	case OOSvrBase::Logger::Warning:
-		fputs("Warning: ",out_file);
-		break;
+		case OOSvrBase::Logger::Warning:
+			wType = EVENTLOG_WARNING_TYPE;
+			break;
 
-	default:
-		break;
-	}
-	fputs(msg.c_str(),out_file);
-	fputs("\n",out_file);
-}
+		case OOSvrBase::Logger::Information:
+			wType = EVENTLOG_INFORMATION_TYPE;
+			break;
 
-#elif defined(HAVE_ASL_H)
-#include <asl.h>
+		default:
+			break;
+		}
 
-#error Fix me!
+		std::string msg = string_printf(fmt,args);
 
-#elif defined(HAVE_SYSLOG_H)
+	#if !defined(OMEGA_DEBUG)
+		const char* arrBufs[2] = { msg.c_str(), 0 };
 
-// Syslog reuses these
-#undef LOG_WARNING
-#undef LOG_DEBUG
+		if (m_hLog && priority != OOSvrBase::Logger::Debug)
+			ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
 
-#include <syslog.h>
-#include <stdarg.h>
+		OutputDebugStringA(msg.c_str());
+		OutputDebugStringA("\n");
+	#endif
 
-LoggerImpl::LoggerImpl()
-{
-}
+		FILE* out_file = stdout;
+		switch (priority)
+		{
+		case OOSvrBase::Logger::Error:
+			out_file = stderr;
+			fputs("Error: ",out_file);
+			break;
 
-LoggerImpl::~LoggerImpl()
-{
-	closelog();
-}
+		case OOSvrBase::Logger::Warning:
+			fputs("Warning: ",out_file);
+			break;
 
-void LoggerImpl::open(const char* name)
-{
-	openlog(name,LOG_NDELAY,LOG_DAEMON);
-}
-
-void LoggerImpl::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	int wType = 0;
-	switch (priority)
-	{
-	case OOSvrBase::Logger::Error:
-		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_ERR);
-		break;
-
-	case OOSvrBase::Logger::Warning:
-		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_WARNING);
-		break;
-
-	case OOSvrBase::Logger::Information:
-		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_INFO);
-		break;
-
-	case OOSvrBase::Logger::Debug:
-		wType = LOG_MAKEPRI(LOG_DAEMON,LOG_DEBUG);
-		break;
-
-	default:
-		break;
+		default:
+			break;
+		}
+		fputs(msg.c_str(),out_file);
+		fputs("\n",out_file);
 	}
 
-	FILE* out_file = stdout;
-	switch (priority)
+#endif // _WIN32
+
+#if defined(HAVE_SYSLOG_H)
+
+	SysLogLogger::~SysLogLogger()
 	{
-	case OOSvrBase::Logger::Error:
-		out_file = stderr;
-		fputs("Error: ",out_file);
-		break;
-
-	case OOSvrBase::Logger::Warning:
-		fputs("Warning: ",out_file);
-		break;
-
-	default:
-		break;
+		closelog();
 	}
 
-	fputs(string_printf(fmt,args).c_str(),out_file);
-	fputs("\n",out_file);
-}
+	void SysLogLogger::open(const char* name)
+	{
+		openlog(name,LOG_NDELAY,LOG_DAEMON);
+	}
 
-#else
+	void SysLogLogger::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
+	{
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-#error Fix me!
+		int wType = 0;
+		switch (priority)
+		{
+		case OOSvrBase::Logger::Error:
+			wType = LOG_MAKEPRI(LOG_DAEMON,LOG_ERR);
+			break;
 
-#endif
+		case OOSvrBase::Logger::Warning:
+			wType = LOG_MAKEPRI(LOG_DAEMON,LOG_WARNING);
+			break;
 
-namespace
-{
-	typedef OOBase::Singleton<LoggerImpl,LoggerImpl> LOGGER;
-}
+		case OOSvrBase::Logger::Information:
+			wType = LOG_MAKEPRI(LOG_DAEMON,LOG_INFO);
+			break;
+
+		case OOSvrBase::Logger::Debug:
+			wType = LOG_MAKEPRI(LOG_DAEMON,LOG_DEBUG);
+			break;
+
+		default:
+			break;
+		}
+
+		FILE* out_file = stdout;
+		switch (priority)
+		{
+		case OOSvrBase::Logger::Error:
+			out_file = stderr;
+			fputs("Error: ",out_file);
+			break;
+
+		case OOSvrBase::Logger::Warning:
+			fputs("Warning: ",out_file);
+			break;
+
+		default:
+			break;
+		}
+
+		fputs(string_printf(fmt,args).c_str(),out_file);
+		fputs("\n",out_file);
+	}
+
+#endif // HAVE_SYSLOG_H
+
+} // Anonymous namespace
 
 void OOSvrBase::Logger::open(const char* name)
 {
@@ -290,7 +319,7 @@ void OOSvrBase::Logger::filenum_t::log(const char* fmt, ...)
 	va_start(args,fmt);
 
 	std::ostringstream out;
-	out << "[" << LoggerImpl::getpid() << "] " << m_pszFilename << "(" << m_nLine << "): " << fmt;
+	out << "[" << getpid() << "] " << m_pszFilename << "(" << m_nLine << "): " << fmt;
 
 	LOGGER::instance()->log(m_priority,out.str().c_str(),args);
 

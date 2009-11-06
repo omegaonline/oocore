@@ -24,7 +24,27 @@
 
 #include "Mutex.h"
 
-#if defined(HAVE___SYNC_TEST_AND_SET)
+#if defined(DOXYGEN)
+
+/* Define to if you have atomic exchange for 32bit values */
+#define ATOMIC_EXCH_32(t,v) 
+
+/* Define to if you have atomic inc and dec for 32bit values */
+#define ATOMIC_INC_32(t) 
+#define ATOMIC_DEC_32(t) 
+#define ATOMIC_ADD_32(t,v) 
+#define ATOMIC_SUB_32(t,v) 
+
+/* Define to if you have atomic exchange for 64bit values */
+#define ATOMIC_EXCH_64(t,v) 
+
+/* Define to if you have atomic exchange for 64bit values */
+#define ATOMIC_INC_64(t)
+#define ATOMIC_DEC_64(t)
+#define ATOMIC_ADD_64(t,v)
+#define ATOMIC_SUB_64(t,v)
+
+#elif defined(HAVE___SYNC_TEST_AND_SET)
 
 /* Define to if you have atomic exchange for 32bit values */
 #define ATOMIC_EXCH_32(t,v) __sync_lock_test_and_set((long volatile*)(t),v)

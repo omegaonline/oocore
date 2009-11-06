@@ -32,6 +32,8 @@
 #include "Activation.h"
 #include "IPS.h"
 
+#if !defined(DOXYGEN)
+
 // Our library map
 BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::StdObjectManager,0)
@@ -44,6 +46,8 @@ BEGIN_LIBRARY_OBJECT_MAP()
 	OBJECT_MAP_ENTRY(OOCore::TimeoutExceptionMarshalFactoryImpl,0)
 	OBJECT_MAP_ENTRY(OOCore::ChannelClosedExceptionMarshalFactoryImpl,0)
 END_LIBRARY_OBJECT_MAP_NO_REGISTRATION()
+
+#endif // DOXYGEN
 
 using namespace Omega;
 using namespace OTL;
@@ -145,7 +149,7 @@ namespace
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
-	static ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
+	ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
 	{
 		// Lookup OID
 		string_t strOid = oid.ToString();
@@ -165,161 +169,127 @@ namespace
 
 		return 0;
 	}
-}
 
-DLLManagerImpl::DLLManagerImpl()
-{
-}
-
-DLLManagerImpl::~DLLManagerImpl()
-{
-	try
+	DLLManagerImpl::DLLManagerImpl()
 	{
-		OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-		// Clear out our map now, as the smart ptrs use m_lock
-		m_dll_map.clear();
-	}
-	catch (...)
-	{ }
-}
-
-OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
-{
-	OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-	// See if we have it already
-	try
-	{
-		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
-		if (i != m_dll_map.end())
-			return i->second;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
 	}
 
-	// Try to unload any unused dlls
-	unload_unused();
-
-	OOBase::SmartPtr<OOBase::DLL> dll;
-	OMEGA_NEW(dll,OOBase::DLL());
-
-	// Load the new DLL
-	int err = dll->load(name.ToUTF8().c_str());
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	// Add to the map
-	try
+	DLLManagerImpl::~DLLManagerImpl()
 	{
-		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
-	return dll;
-}
-
-void DLLManagerImpl::unload_unused()
-{
-	typedef Omega::System::MetaInfo::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
-		
-	try
-	{
-		OOBase::Guard<OOBase::Mutex> guard(m_lock);
-
-		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		try
 		{
-			bool_t erase = false;
-			try
-			{
-				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
-				if (pfn)
-				{
-					Omega::System::MetaInfo::SafeShim* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
+			OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-					// Ignore exceptions
-					if (CanUnloadLibrary_Exception)
-						static_cast<const System::MetaInfo::IObject_Safe_VTable*>(CanUnloadLibrary_Exception->m_vtable)->pfnRelease_Safe(CanUnloadLibrary_Exception);
-				}
-			}
-			catch (IException* pE)
-			{
-				// Ignore exceptions
-				pE->Release();
-			}
-
-			if (erase)
-				m_dll_map.erase(i++);
-			else
-				++i;
+			// Clear out our map now, as the smart ptrs use m_lock
+			m_dll_map.clear();
 		}
+		catch (...)
+		{ }
 	}
-	catch (std::exception& e)
+
+	OOBase::SmartPtr<OOBase::DLL> DLLManagerImpl::load_dll(const string_t& name)
 	{
-		OMEGA_THROW(e);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+		// See if we have it already
+		try
+		{
+			std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
+			if (i != m_dll_map.end())
+				return i->second;
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
+
+		// Try to unload any unused dlls
+		unload_unused();
+
+		OOBase::SmartPtr<OOBase::DLL> dll;
+		OMEGA_NEW(dll,OOBase::DLL());
+
+		// Load the new DLL
+		int err = dll->load(name.ToUTF8().c_str());
+		if (err != 0)
+			OMEGA_THROW(err);
+
+		// Add to the map
+		try
+		{
+			m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
+
+		return dll;
 	}
-	
-}
 
-void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)
-{
-	ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
-	pNew->m_strDesc = L"The identified object could not be found: {0}";
-	pNew->m_strDesc %= oid;
-	pNew->m_strSource = strFn;
-	pNew->m_ptrCause = pE;
-	pNew->m_oid = oid;
-	throw static_cast<IOidNotFoundException*>(pNew);
-}
+	void DLLManagerImpl::unload_unused()
+	{
+		typedef Omega::System::MetaInfo::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
+			
+		try
+		{
+			OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
-{
-	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
-	pNew->m_strDesc = L"Object does not support aggregation.";
-	pNew->m_oid = oid;
-	return pNew;
-}
+			for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+			{
+				bool_t erase = false;
+				try
+				{
+					pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
+					if (pfn)
+					{
+						Omega::System::MetaInfo::SafeShim* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IMustAggregateException*,OOCore_Activation_IMustAggregateException_Create,1,((in),const guid_t&,oid))
-{
-	ObjectImpl<MustAggregateException>* pNew = ObjectImpl<MustAggregateException>::CreateInstance();
-	pNew->m_strDesc = L"Object must be aggregated.";
-	pNew->m_oid = oid;
-	return pNew;
-}
+						// Ignore exceptions
+						if (CanUnloadLibrary_Exception)
+							static_cast<const System::MetaInfo::IObject_Safe_VTable*>(CanUnloadLibrary_Exception->m_vtable)->pfnRelease_Safe(CanUnloadLibrary_Exception);
+					}
+				}
+				catch (IException* pE)
+				{
+					// Ignore exceptions
+					pE->Release();
+				}
 
-void LibraryNotFoundException::Throw(const string_t& strName, const string_t& strFn, IException* pE)
-{
-	ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
-	pRE->m_ptrCause = pE;
-	pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed.";
-	pRE->m_strDesc %= strName;
-	pRE->m_strSource = strFn;
-	pRE->m_dll_name = strName;
-	throw static_cast<ILibraryNotFoundException*>(pRE);
-}
+				if (erase)
+					m_dll_map.erase(i++);
+				else
+					++i;
+			}
+		}
+		catch (std::exception& e)
+		{
+			OMEGA_THROW(e);
+		}
+		
+	}
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
-{
-	if (!pObject)
-		OMEGA_THROW(L"Do not register NULL object pointers");
+	void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)
+	{
+		ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
+		pNew->m_strDesc = L"The identified object could not be found: {0}";
+		pNew->m_strDesc %= oid;
+		pNew->m_strSource = strFn;
+		pNew->m_ptrCause = pE;
+		pNew->m_oid = oid;
+		throw static_cast<IOidNotFoundException*>(pNew);
+	}
 
-	uint32_t ret = OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
-
-	// This forces the detection, so cleanup succeeds
-	OOCore::HostedByOOServer();
-
-	return ret;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega::uint32_t,cookie))
-{
-	OOCore::SERVICE_MANAGER::instance()->RevokeObject(cookie);
+	void LibraryNotFoundException::Throw(const string_t& strName, const string_t& strFn, IException* pE)
+	{
+		ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
+		pRE->m_ptrCause = pE;
+		pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed.";
+		pRE->m_strDesc %= strName;
+		pRE->m_strSource = strFn;
+		pRE->m_dll_name = strName;
+		throw static_cast<ILibraryNotFoundException*>(pRE);
+	}
 }
 
 IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
@@ -349,6 +319,40 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 		System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
 	
 	return pObj;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const guid_t&,oid))
+{
+	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
+	pNew->m_strDesc = L"Object does not support aggregation.";
+	pNew->m_oid = oid;
+	return pNew;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IMustAggregateException*,OOCore_Activation_IMustAggregateException_Create,1,((in),const guid_t&,oid))
+{
+	ObjectImpl<MustAggregateException>* pNew = ObjectImpl<MustAggregateException>::CreateInstance();
+	pNew->m_strDesc = L"Object must be aggregated.";
+	pNew->m_oid = oid;
+	return pNew;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags))
+{
+	if (!pObject)
+		OMEGA_THROW(L"Do not register NULL object pointers");
+
+	uint32_t ret = OOCore::SERVICE_MANAGER::instance()->RegisterObject(oid,pObject,flags,reg_flags);
+
+	// This forces the detection, so cleanup succeeds
+	OOCore::HostedByOOServer();
+
+	return ret;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega::uint32_t,cookie))
+{
+	OOCore::SERVICE_MANAGER::instance()->RevokeObject(cookie);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const string_t&,strObjectName))

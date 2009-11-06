@@ -22,18 +22,6 @@
 #ifndef OOCORE_RTTI_INL_INCLUDED_
 #define OOCORE_RTTI_INL_INCLUDED_
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
-void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
-{
-	OOCore_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
-}
-
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
-void Omega::System::MetaInfo::UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info)
-{
-	OOCore_UnregisterAutoTypeInfo(iid,(const void*)type_info);
-}
-
 bool Omega::System::PinObjectPointer(IObject* pObject)
 {
 	if (pObject)
@@ -54,6 +42,20 @@ void Omega::System::UnpinObjectPointer(IObject* pObject)
 	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::MetaInfo::ISafeProxy))));
 	if (ptrProxy)
 		ptrProxy->Unpin();
+}
+
+#if !defined(DOXYGEN)
+
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
+void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
+{
+	OOCore_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
+void Omega::System::MetaInfo::UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info)
+{
+	OOCore_UnregisterAutoTypeInfo(iid,(const void*)type_info);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::ISystemException*,OOCore_ISystemException_Create_errno,2,((in),Omega::uint32_t,e,(in),const Omega::string_t&,source))
@@ -90,6 +92,8 @@ Omega::Formatting::IFormattingException* Omega::Formatting::IFormattingException
 {
 	return OOCore_IFormattingException_Create(strMsg,strSource,pE);
 }
+
+#endif // !defined(DOXYGEN)
 
 #endif // OOCORE_RTTI_INL_INCLUDED_
 

@@ -205,6 +205,12 @@ namespace Omega
 
 #else // DOXYGEN
 
+#define OMEGA_EXPORT_OID(name) \
+	extern "C" const Omega::guid_t name;
+
+#define OMEGA_IMPORT_OID(name) \
+	extern "C" const Omega::guid_t name;
+
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
 	const Omega::guid_t n_space::name = guid;
 
@@ -215,14 +221,14 @@ OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
 OMEGA_SET_GUIDOF(Omega::TypeInfo, ITypeInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}");
 
 #if defined(DOXYGEN)
-	/// Return the current source filename and line as a string_t
-	#define OMEGA_SOURCE_INFO
+/// Return the current source filename and line as a string_t
+#define OMEGA_SOURCE_INFO
 #elif !defined(OMEGA_FUNCNAME)
 #define OMEGA_SOURCE_INFO    (L"{0}({1})" % Omega::string_t(__FILE__,false) % __LINE__)
 #else
 #define OMEGA_SOURCE_INFO    (L"{0}({1}): {2}" % Omega::string_t(__FILE__,false) % __LINE__ % Omega::string_t(OMEGA_FUNCNAME,false))
 #endif
 
-#define OMEGA_THROW(e)           throw Omega::ISystemException::Create(e,OMEGA_SOURCE_INFO)
+#define OMEGA_THROW(e)       throw Omega::ISystemException::Create(e,OMEGA_SOURCE_INFO)
 
 #endif // OOCORE_BASE_H_INCLUDED_

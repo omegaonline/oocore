@@ -29,7 +29,9 @@
 //////////////////////////////////////////////
 // Set up the correct export macros
 
-#if !defined(OOCORE_INTERNAL)
+#if !defined(OOCORE_INTERNAL) 
+
+#if !defined(DOXYGEN)
 
 #define OOCORE_EXPORTED_FUNCTION_VOID(name,param_count,params) \
 	OMEGA_EXPORTED_FUNCTION_VOID_IMPL(name,param_count,params)
@@ -42,6 +44,8 @@
 
 #define OOCORE_RAW_EXPORTED_FUNCTION(ret_type,name,param_count,params) \
 	OMEGA_RAW_EXPORTED_FUNCTION_IMPL(ret_type,name,param_count,params)
+
+#endif // !DOXYGEN
 
 #define OOCORE_DECLARE_OID(name) \
 	OMEGA_IMPORT_OID(name)

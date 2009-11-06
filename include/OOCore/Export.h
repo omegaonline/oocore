@@ -955,8 +955,6 @@
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
 
-#else // defined(DOXYGEN)
-
 #endif // defined(DOXYGEN)
 
 #endif // OOCORE_MACROS_H_INCLUDED_

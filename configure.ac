@@ -75,7 +75,7 @@ AS_IF([test "x$oo_test_CFLAGS" != "xset"],
   # Always try to hide symbols
   AX_CFLAGS_GCC_OPTION([-fvisibility=hidden])
 
-  AS_IF([test "x$debug" = "xtrue"], 
+  AS_IF([test "x$debug" = "xtrue"],
   [
     AX_CFLAGS_GCC_OPTION([-ggdb])
     AX_CFLAGS_GCC_OPTION([-O0])
@@ -109,7 +109,7 @@ AS_IF([test "x$oo_test_CXXFLAGS" != "xset"],
 AS_IF([test "x$debug" = "xtrue"],[CPPFLAGS="$CPPFLAGS -DOMEGA_DEBUG"],[CPPFLAGS="$CPPFLAGS -DNDEBUG"])
 
 # Set up libtool correctly
-LT_PREREQ([2.2.7])
+LT_PREREQ([2.2.6])
 LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([win32-dll disable-static dlopen])
 LT_LANG([Windows Resource])

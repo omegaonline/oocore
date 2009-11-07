@@ -237,7 +237,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,s1,(
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(in),wchar_t,c))
 {
 	StringNode* pOrig = static_cast<StringNode*>(s1);
-	
+
 	if (!pOrig)
 		return OOCore_string_t__ctor3(&c,1);
 
@@ -252,7 +252,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,s1,(in),const void*,s2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
 {
 	const StringNode* s = static_cast<const StringNode*>(s1);
-	
+
 	const wchar_t* p1 = s->m_buf + pos;
 	const wchar_t* end1 = s->m_buf + s->m_len;
 
@@ -264,7 +264,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,
 		end1 = p1 + length;
 		end2 = p2 + length;
 	}
-		
+
 	wint_t l1 = 0, l2 = 0;
 	if (bIgnoreCase)
 	{
@@ -298,13 +298,13 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,s1,(in),const wchar_t*,wsz,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase))
 {
 	const StringNode* s = static_cast<const StringNode*>(s1);
-	
+
 	const wchar_t* p1 = s->m_buf + pos;
 	const wchar_t* end1 = s->m_buf + s->m_len;
-	
+
 	if (length != string_t::npos && length < s->m_len - pos)
 		end1 = p1 + length;
-		
+
 	wint_t l1 = 0, l2 = 0;
 	if (bIgnoreCase)
 	{
@@ -342,7 +342,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const v
 
 	StringNode* s2 = 0;
 	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len));
-	
+
 	for (wchar_t* p=s2->m_buf;size_t(p-s2->m_buf) < s2->m_len;++p)
 		*p = towlower(*p);
 
@@ -356,7 +356,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const v
 
 	StringNode* s2 = 0;
 	OMEGA_NEW(s2,StringNode(static_cast<const StringNode*>(s1)->m_buf,static_cast<const StringNode*>(s1)->m_len));
-	
+
 	for (wchar_t* p=s2->m_buf;size_t(p-s2->m_buf) < s2->m_len;++p)
 		*p = towupper(*p);
 
@@ -375,7 +375,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,4,((in),const vo
 	if (bIgnoreCase)
 	{
 		wint_t ci = towlower(c);
-		for (;tolower(*p) != ci && size_t(p-st)<len;++p)
+		for (;towlower(*p) != ci && size_t(p-st)<len;++p)
 			;
 	}
 	else
@@ -402,7 +402,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,4,((in),const
 	if (bIgnoreCase)
 	{
 		wint_t ci = towlower(c);
-		for (;tolower(*p) == ci && size_t(p-st)<len;++p)
+		for (;towlower(*p) == ci && size_t(p-st)<len;++p)
 			;
 	}
 	else
@@ -448,7 +448,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,4,((in),con
 
 	for (;OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) == string_t::npos && size_t(p-st)<len;++p)
 		;
-	
+
 	if (size_t(p-st) == len)
 		return string_t::npos;
 	else
@@ -466,7 +466,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_notof,4,((in),con
 
 	for (;OOCore_string_t_find1_Impl(s2,*p,0,bIgnoreCase) != string_t::npos && size_t(p-st)<len;++p)
 		;
-	
+
 	if (size_t(p-st) == len)
 		return string_t::npos;
 	else
@@ -485,7 +485,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,4,((in),const vo
 	if (bIgnoreCase)
 	{
 		wint_t ci = towlower(c);
-		for (;tolower(*p) != ci && p>=st;--p)
+		for (;towlower(*p) != ci && p>=st;--p)
 			;
 	}
 	else
@@ -552,7 +552,7 @@ void StringNode::parse_arg(size_t& pos)
 	size_t end = find_brace(pos,L'}');
 	if (end == string_t::npos)
 		throw Formatting::IFormattingException::Create(L"Missing matching } in format string",OMEGA_SOURCE_INFO);
-	
+
 	size_t comma = OOCore_string_t_find1_Impl(this,L',',pos,0);
 	size_t colon = OOCore_string_t_find1_Impl(this,L':',pos,0);
 	if (comma == pos || colon == pos)
@@ -571,13 +571,13 @@ void StringNode::parse_arg(size_t& pos)
 		pos = comma++;
 		ins.alignment = OOCore::wcsto32(m_buf+comma,endp,10);
 	}
-	
+
 	if (colon < end)
 	{
 		ins.format.assign(m_buf+colon+1,end-colon-1);
 		merge_braces(ins.format);
 	}
-	
+
 	m_fs->m_listInserts.push_back(ins);
 
 	pos = end + 1;
@@ -613,10 +613,10 @@ size_t StringNode::find_brace(size_t start, wchar_t brace)
 		size_t found = OOCore_string_t_find1_Impl(this,brace,start,0);
 		if (found == string_t::npos)
 			return string_t::npos;
-				
+
 		if (found < m_len && m_buf[found+1] != brace)
 			return found;
-				
+
 		// Skip {{
 		start = found + 2;
 	}
@@ -633,12 +633,12 @@ void StringNode::parse_format()
 	m_fs->m_curr_arg = (size_t)-1;
 	m_fs->m_prefix.assign(m_buf,pos++);
 	merge_braces(m_fs->m_prefix);
-			
+
 	// Parse args
 	for (;;)
 	{
 		parse_arg(pos);
-		
+
 		size_t found = find_brace(pos,L'{');
 
 		std::wstring suffix;
@@ -648,12 +648,12 @@ void StringNode::parse_format()
 			suffix.assign(m_buf+pos,found-pos);
 
 		merge_braces(suffix);
-		
+
 		m_fs->m_listInserts.back().suffix = suffix;
-		
+
 		if (found == string_t::npos)
 			break;
-				
+
 		pos = found + 1;
 	}
 
@@ -688,7 +688,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	StringNode* s = static_cast<StringNode*>(*s1);
 	if (!s)
 		throw Formatting::IFormattingException::Create(L"Empty format string",OMEGA_SOURCE_INFO);
-	
+
 	try
 	{
 		size_t arg;
@@ -700,7 +700,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 
 			if (s->m_fs)
 				OMEGA_NEW(pNewNode->m_fs,StringNode::format_state_t(*s->m_fs));
-			
+
 			s->Release();
 			s = pNewNode;
 			*s1 = s;
@@ -715,7 +715,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 			assert(s->m_fs);
 			arg = s->m_fs->m_curr_arg-1;
 		}
-		
+
 		for (std::list<StringNode::format_state_t::insert_t>::const_iterator i=s->m_fs->m_listInserts.begin();i!=s->m_fs->m_listInserts.end();++i)
 		{
 			if (i->index == arg)
@@ -732,7 +732,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 			str += i->format;
 			str += i->suffix;
 		}
-		
+
 		if (str.size() > s->m_len)
 		{
 			wchar_t* buf_new = 0;
@@ -742,7 +742,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 			delete [] s->m_buf;
 			s->m_buf = buf_new;
 		}
-	
+
 		memcpy(s->m_buf,str.data(),str.size()*sizeof(wchar_t));
 		s->m_buf[str.size()] = L'\0';
 		s->m_len = str.size();
@@ -751,7 +751,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 	{
 		OMEGA_THROW(e);
 	}
-		
+
 	return 0;
 }
 
@@ -786,7 +786,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_set_arg,2,((in),void*,s1
 						}
 						else
 							break;
-					}				
+					}
 				}
 				else
 				{
@@ -853,13 +853,14 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 #if defined(HAVE_UUID_UUID_H)
 
 	std::string str = OOBase::to_utf8(sz);
-	const char* buf;
 
 	if (str.length() != 38 || str[0] != '{' || str[37] != '}')
 		return 0;
 
+	str = str.substr(1,36);
+
 	uuid_t uuid;
-	if (uuid_parse(str.c_str() + 1,uuid))
+	if (uuid_parse(str.c_str(),uuid))
 		return 0;
 
 	result = *(guid_t*)(uuid);
@@ -917,7 +918,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar
 
 		if (sz[37] != L'}' || sz[38] != L'\0')
 			return 0;
-		
+
 		return 1;
 	}
 	catch (int)

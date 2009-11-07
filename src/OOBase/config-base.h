@@ -130,6 +130,12 @@
 #include <unistd.h>
 #endif
 
+#if defined(HAVE_STRING_H)
+#define __STDC_WANT_LIB_EXT1__ 1
+#define __STDC_WANT_SECURE_LIB__ 1
+#include <string.h>
+#endif
+
 // Byte-order (endian-ness) determination.
 # if defined(BYTE_ORDER)
 #   if (BYTE_ORDER == LITTLE_ENDIAN)

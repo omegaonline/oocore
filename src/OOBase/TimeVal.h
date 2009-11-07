@@ -131,9 +131,6 @@ namespace OOBase
 
 		time_64_t m_tv_sec;    ///< Seconds since 01 Jan 1970 UTC
 		int       m_tv_usec;   ///< Milliseconds since last second
-
-
-		friend timeval_t gettimeofday();
 	};
 
 	inline timeval_t operator + (const timeval_t& t1, const timeval_t& t2)

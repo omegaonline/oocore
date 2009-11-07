@@ -23,11 +23,13 @@
 
 #include <OTL/Exception.h>
 
+#include <limits.h>
+
 using namespace Omega;
 using namespace OTL;
 
-namespace 
-{	
+namespace
+{
 	class FormattingException :
 		public ExceptionImpl<Formatting::IFormattingException>
 	{
@@ -125,7 +127,7 @@ namespace
 					return false;
 			}
 		}
-		
+
 		return true;
 	}
 
@@ -159,7 +161,7 @@ namespace
 		}
 
 		grouping_trans[g+1] = CHAR_MAX;
-		
+
 		char thousands_sep[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep,sizeof(thousands_sep)))
 			OMEGA_THROW(GetLastError());
@@ -191,10 +193,10 @@ namespace
 				grp = n_grp;
 				++grouping;
 			}
-			
+
 			if (grp == CHAR_MAX)
 				break;
-		
+
 			if (pos <= static_cast<size_t>(grp))
 				break;
 
@@ -257,7 +259,7 @@ namespace
 			OMEGA_THROW(GetLastError());
 
 		currency = currency_buf;
-		
+
 #else
 		if (negative)
 		{
@@ -320,7 +322,7 @@ namespace
 			break;
 		}
 	}
-	
+
 	size_t do_intl(std::string& str, bool bThou)
 	{
 #if defined(_WIN32)
@@ -329,9 +331,9 @@ namespace
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
 			OMEGA_THROW(GetLastError());
-		
+
 		char thousands_sep[5] = {0};
-		char trans_grouping[128] = {0};	
+		char trans_grouping[128] = {0};
 		const char* grouping = trans_grouping;
 
 		if (bThou)
@@ -341,7 +343,7 @@ namespace
 				OMEGA_THROW(GetLastError());
 
 			// Build a crt style grouping
-			
+
 			size_t g = 0;
 			for (const char* c = grouping_buf;*c != '\0' && g<sizeof(trans_grouping)-1;++g)
 			{
@@ -356,7 +358,7 @@ namespace
 			}
 
 			trans_grouping[g+1] = CHAR_MAX;
-						
+
 			if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_sep,sizeof(thousands_sep)))
 				OMEGA_THROW(GetLastError());
 		}
@@ -392,10 +394,10 @@ namespace
 					grp = n_grp;
 					++grouping;
 				}
-				
+
 				if (grp == CHAR_MAX)
 					break;
-			
+
 				if (pos <= static_cast<size_t>(grp))
 					break;
 
@@ -413,7 +415,7 @@ namespace
 		ss.imbue(std::locale::classic());
 
 		ss.setf(std::ios_base::fixed,std::ios_base::floatfield);
-		
+
 		ss.precision(precision);
 
 		ss << val;
@@ -503,7 +505,7 @@ namespace
 	{
 		std::ostringstream ss;
 		ss.imbue(std::locale::classic());
-		
+
 		if (width >= 0)
 		{
 			ss.fill('0');
@@ -528,7 +530,7 @@ namespace
 			ss.fill('0');
 			ss.width(width);
 		}
-		
+
 		ss << val;
 
 		return ss.str();
@@ -595,13 +597,13 @@ namespace
 		ss.imbue(std::locale::classic());
 
 		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
-		
+
 		if (precision >= 0)
 			ss.precision(precision);
 
 		if (capital)
 			ss.setf(std::ios_base::uppercase);
-		
+
 		ss << val;
 
 		return ss.str();
@@ -643,7 +645,7 @@ namespace
 		}
 		else if (str[pos] == '-')
 			++pos;
-		
+
 		// Remove leading zeros if > precision
 		while (pos < ret.length()-precision && ret[pos] == '0')
 			ret.erase(pos,1);
@@ -662,9 +664,9 @@ namespace
 
 		if (capital)
 			ss.setf(std::ios_base::uppercase);
-		
+
 		ss.precision(precision);
-				
+
 		ss << val;
 
 		return string_t(exp_strip(ss.str(),0,false).c_str(),false);
@@ -790,7 +792,7 @@ namespace
 
 		bool negative;
 		T abs_val = quick_abs(val,negative);
-		
+
 #if defined(_WIN32)
 		LCID lcid = GetThreadLocale();
 
@@ -800,7 +802,7 @@ namespace
 
 		std::string decimal_char(decimal_point);
 		string_t decimal(decimal_point,false);
-		
+
 		char thousands_sep[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_sep,5))
 			OMEGA_THROW(GetLastError());
@@ -810,7 +812,7 @@ namespace
 #else
 		std::string decimal_char(".");
 		std::string thousands_char(",");
-		
+
 		const lconv* lc = localeconv();
 		if (lc)
 		{
@@ -825,7 +827,7 @@ namespace
 		string_t strFind = L"0#Ee";
 		strFind += decimal[0];
 		strFind += thousands[0];
-		
+
 		// Work out precision and mode...
 		size_t sci = string_t::npos;
 		size_t dec_place = string_t::npos;
@@ -833,7 +835,7 @@ namespace
 		int precision = 0;
 		int width = 0;
 		int exp_digits = 0;
-						
+
 		for (size_t pos = 0;pos < strFormat.Length();)
 		{
 			size_t found = find_skip_quote(strFormat,pos,strFind);
@@ -854,7 +856,7 @@ namespace
 					}
 					else if (strFormat[found+1] == L'0')
 					{
-						sci = found;	
+						sci = found;
 						++found;
 					}
 
@@ -910,21 +912,21 @@ namespace
 			number = fmt_decimal_i(abs_val,width);
 
 		if (sci != string_t::npos || dec_place != string_t::npos)
-		{			
+		{
 			// Add extra leading zero's
 			size_t dp = number.find('.');
 			if (dp == std::string::npos)
 			{
 				dp = number.length();
-				number += '.';				
+				number += '.';
 			}
-			
+
 			if (static_cast<size_t>(width) > dp)
 				number.insert(0,width-dp,'0');
 		}
 
 		// Translate to intl format
-		size_t dp = do_intl(number,group);			
+		size_t dp = do_intl(number,group);
 
 		// Transpose number into format
 		string_t res;
@@ -962,7 +964,7 @@ namespace
 
 						if (numpos + len < dp && --width == 0)
 							len += (dp == std::string::npos ? number.length() : dp) - (numpos + len);
-												
+
 						res += string_t(number.substr(numpos,len).c_str(),false);
 						if (number[numpos] != '0')
 							sig_zero = !seen_decimal;
@@ -999,14 +1001,14 @@ namespace
 					{
 						if (strFormat[pos+1] == L'-' || strFormat[pos+1] == L'+')
 							++pos;
-						
+
 						if (number[numpos+1] == '+' || number[numpos+1] == '-')
 							++len;
-						
+
 						len += exp_digits;
 						pos += exp_digits;
 					}
-					
+
 					res += string_t(number.substr(numpos,len).c_str(),false);
 				}
 				break;
@@ -1094,7 +1096,7 @@ namespace
 			return fmt_custom_i(val,strFormat);
 		}
 	}
-	
+
 	template <typename T>
 	string_t fmt_custom(T val, const string_t& strFormat, int def_precision)
 	{
@@ -1206,7 +1208,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 		std::ostringstream ss;
 		ss.setf(std::ios_base::boolalpha);
 		ss << val;
-		
+
 		return string_t(ss.str().c_str(),false);
 	}
 

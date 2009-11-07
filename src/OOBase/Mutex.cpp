@@ -179,8 +179,8 @@ bool OOBase::Mutex::acquire(const timeval_t* wait)
 		timespec ts;
 		OOBase::timeval_t now = OOBase::gettimeofday();
 		now += *wait;
-		ts.tv_sec = now.tv_sec;
-		ts.tv_nsec = now.tv_usec * 1000;
+		ts.tv_sec = now.tv_sec();
+		ts.tv_nsec = now.tv_usec() * 1000;
 
 		int err = pthread_mutex_timedlock(&m_mutex,&ts);
 		if (err == 0)

@@ -34,7 +34,7 @@ OOSvrBase::Proactor::Proactor() :
 {
 #if defined(_WIN32)
 	OOBASE_NEW(m_impl,Win32::ProactorImpl());
-#elif (defined(HAVE_EV_H)
+#elif defined(HAVE_EV_H)
 	OOBASE_NEW(m_impl,Ev::ProactorImpl());
 #else
 #error Fix me!

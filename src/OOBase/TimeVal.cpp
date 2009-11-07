@@ -32,7 +32,6 @@ const OOBase::timeval_t OOBase::timeval_t::Zero(0, 0);
 
 OOBase::timeval_t OOBase::gettimeofday()
 {
-	OOBase::timeval_t ret;
 
 #if defined(_WIN32)
 
@@ -48,22 +47,18 @@ OOBase::timeval_t OOBase::gettimeofday()
 	// Move to epoch
 	ULONGLONG q = (ularge.QuadPart - epoch);
 
-	ret.m_tv_sec = (q / 10000000LL);
-	ret.m_tv_usec = static_cast<int>((q / 10L) % 1000000L);
+	return OOBase::timeval_t(q / 10000000LL),static_cast<int>((q / 10L) % 1000000L));
 
 #elif defined(HAVE_SYS_TIME_H) && (HAVE_SYS_TIME_H == 1)
 
 	timeval tv;
 	::gettimeofday(&tv,0);
 
-	ret.m_tv_sec = tv.tv_sec;
-	ret.m_tv_usec = tv.tv_usec;
+	return OOBase::timeval_t(tv.tv_sec,tv.tv_usec);
 
 #else
 #error gettimeofday() !!
 #endif
-
-	return ret;
 }
 
 void OOBase::sleep(const timeval_t& wait)
@@ -72,8 +67,8 @@ void OOBase::sleep(const timeval_t& wait)
 	::Sleep(wait.msec());
 #elif defined(HAVE_TIME_H)
 	timespec wt;
-	wt.tv_sec = wait.m_tv_sec;
-	wt.tv_nsec = wait.m_tv_usec * 1000;
+	wt.tv_sec = wait.tv_sec();
+	wt.tv_nsec = wait.tv_usec() * 1000;
 
 	for (;;)
 	{

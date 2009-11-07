@@ -21,6 +21,7 @@
 
 #include "config-base.h"
 
+#include <stdio.h>
 #include <stdarg.h>
 
 #if !defined(HAVE_TR_24731)

@@ -24,6 +24,8 @@
 #include "SmartPtr.h"
 #include "tr24731.h"
 
+#include <stdio.h>
+
 #if !defined(HAVE_UNISTD_H)
 	#if defined(_WIN32)
 		#define getpid GetCurrentProcessId
@@ -103,7 +105,7 @@ namespace
 
 			if (static_cast<size_t>(len2) < len)
 				return std::string(buf.value(),len2);
-			
+
 			len = len2 + 1;
 		}
 	}
@@ -173,7 +175,7 @@ namespace
 	void Win32Logger::log(OOSvrBase::Logger::Priority priority, const char* fmt, va_list args)
 	{
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
-		
+
 		WORD wType = 0;
 		switch (priority)
 		{

@@ -26,9 +26,7 @@
 #error No <string.h>?
 #endif
 
-#define __STDC_WANT_LIB_EXT1__ 1
-#define __STDC_WANT_SECURE_LIB__ 1
-#include <string.h>
+#include <stdarg.h>
 
 #ifndef HAVE_TR_24731
 #if (defined(__STDC_LIB_EXT1__) && (__STDC_LIB_EXT1__ >= 200509L)) || (defined(__STDC_SECURE_LIB__) && (__STDC_SECURE_LIB__ >= 200411L))

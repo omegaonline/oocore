@@ -186,7 +186,7 @@ namespace
 	private:
 		struct wrapper
 		{
-			Thread*            m_pThis;
+			PthreadThread*     m_pThis;
 			int                (*m_thread_fn)(void*);
 			void*              m_param;
 		};
@@ -273,10 +273,10 @@ namespace
 			while (m_running)
 			{
 				timespec wt;
-				timeval_t now = OOBase::gettimeofday();
+				OOBase::timeval_t now = OOBase::gettimeofday();
 				now += *wait;
-				wt.tv_sec = now.tv_sec;
-				wt.tv_nsec = now.tv_usec * 1000;
+				wt.tv_sec = now.tv_sec();
+				wt.tv_nsec = now.tv_usec() * 1000;
 				err = pthread_cond_timedwait(&m_condition,&join_mutex,&wt);
 
 				if (err)
@@ -322,7 +322,7 @@ namespace
 		wrapper* wrap = static_cast<wrapper*>(param);
 
 		// Copy the values out before we signal
-		Thread* pThis = wrap->m_pThis;
+		PthreadThread* pThis = wrap->m_pThis;
 		int (*thread_fn)(void*) = wrap->m_thread_fn;
 		void* p = wrap->m_param;
 
@@ -348,12 +348,12 @@ namespace
 
 }
 
-OOBase::Thread::Thread() : 
+OOBase::Thread::Thread() :
 	m_impl(0)
 {
 #if defined(_WIN32)
 	OOBASE_NEW(m_impl,Win32Thread());
-#elif (defined(HAVE_PTHREAD)
+#elif defined(HAVE_PTHREAD)
 	OOBASE_NEW(m_impl,PthreadThread());
 #else
 #error Fix me!

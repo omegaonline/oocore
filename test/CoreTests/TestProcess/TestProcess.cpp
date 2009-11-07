@@ -2,6 +2,10 @@
 
 #include "../SimpleTest.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 namespace Omega {
 namespace TestSuite
 {

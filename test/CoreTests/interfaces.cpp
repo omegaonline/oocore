@@ -442,7 +442,7 @@ const wchar_t** get_dlls()
 	static const wchar_t* dlls[] =
 	{
 #if defined(_WIN32)
-		L"TestLibrary_msvc.dll",	
+		L"TestLibrary_msvc.dll",
 	#if defined(__MINGW32__)
 			L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
 	#elif defined(_MSC_VER)
@@ -453,7 +453,7 @@ const wchar_t** get_dlls()
 		#endif
 	#endif
 #else
-		L"CoreTests/TestLibrary/.libs/TestLibrary.so",
+		L"CoreTests/TestLibrary/testlibrary.la",
 #endif
 		0
 	};
@@ -482,7 +482,7 @@ const wchar_t** get_exes()
 	static const wchar_t* exes[] =
 	{
 #if defined(_WIN32)
-		L"TestProcess_msvc.exe",	
+		L"TestProcess_msvc.exe",
 	#if defined(__MINGW32__)
 			L"CoreTests\\TestProcess\\testprocess.bat",
 	#endif
@@ -579,7 +579,7 @@ static bool interface_tests_i(const wchar_t* pszHost)
 	}
 
 	output("  %-46s","Result");
-	
+
 	for (const wchar_t** pszExes = get_exes();*pszExes;++pszExes)
 	{
 		bool bSkipped;

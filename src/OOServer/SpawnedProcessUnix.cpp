@@ -37,6 +37,7 @@
 
 #if defined(HAVE_UNISTD_H)
 
+#include <stdio.h>
 #include <grp.h>
 #include <sys/wait.h>
 #include <dirent.h>

@@ -591,40 +591,6 @@ namespace
 		return string_t(ret.c_str(),false);
 	}
 
-	std::string fmt_scientific_i(const double& val, bool capital, int precision)
-	{
-		std::ostringstream ss;
-		ss.imbue(std::locale::classic());
-
-		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
-
-		if (precision >= 0)
-			ss.precision(precision);
-
-		if (capital)
-			ss.setf(std::ios_base::uppercase);
-
-		ss << val;
-
-		return ss.str();
-	}
-
-	template <typename T>
-	std::string fmt_scientific_i(T val, bool capital, int precision)
-	{
-		return fmt_scientific_i(static_cast<double>(val),capital,precision);
-	}
-
-	template <typename T>
-	string_t fmt_scientific(T val, bool capital, int precision)
-	{
-		std::string ret = fmt_scientific_i(val,capital,precision);
-
-		do_intl(ret,false);
-
-		return string_t(ret.c_str(),false);
-	}
-
 	std::string exp_strip(const std::string& str, int precision, bool show_plus)
 	{
 		assert(precision >= 0);
@@ -655,6 +621,41 @@ namespace
 			ret.insert(pos,pos+precision-ret.length(),'0');
 
 		return ret;
+	}
+
+	std::string fmt_scientific_i(const double& val, bool capital, int precision)
+	{
+		std::ostringstream ss;
+		ss.imbue(std::locale::classic());
+
+		ss.setf(std::ios_base::scientific,std::ios_base::floatfield);
+
+		if (precision >= 0)
+			ss.precision(precision);
+
+		if (capital)
+			ss.setf(std::ios_base::uppercase);
+
+		ss << val;
+
+		return ss.str();
+	}
+
+	template <typename T>
+	std::string fmt_scientific_i(T val, bool capital, int precision)
+	{
+		return fmt_scientific_i(static_cast<double>(val),capital,precision);
+	}
+
+	template <typename T>
+	string_t fmt_scientific(T val, bool capital, int precision)
+	{
+		std::string ret = fmt_scientific_i(val,capital,precision);
+
+		do_intl(ret,false);
+		ret = exp_strip(ret,3,true);
+
+		return string_t(ret.c_str(),false);
 	}
 
 	string_t fmt_general(const double& val, bool capital, int precision)

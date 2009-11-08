@@ -121,67 +121,77 @@ struct loc_holder
 };
 
 #if defined(_WIN32)
-static void set_locale_helper_win32(unsigned long win_loc)
+static bool set_locale_helper_win32(unsigned long win_loc)
 {
-	SetThreadLocale(win_loc);
+	return (SetThreadLocale(win_loc) == TRUE);
 }
 #define set_locale_helper(w,c) set_locale_helper_win32(w)
 #else
-static void set_locale_helper_crt(const char* posix_loc)
+static bool set_locale_helper_crt(const char* posix_loc)
 {
-	setlocale(LC_ALL,posix_loc);
+	return (setlocale(LC_ALL,posix_loc) != 0);
 }
 #define set_locale_helper(w,c) set_locale_helper_crt(c)
 #endif
 
 bool string_tests_format()
 {
-	loc_holder lh;
-
-	set_locale_helper(1033,"en_US");
-
 	TEST(Omega::string_t(L"1st:{0} 2nd:{1}") % 1 % 2 == L"1st:1 2nd:2");
 	TEST(Omega::string_t(L"2nd:{1} 1st:{0}") % 1 % 2 == L"2nd:2 1st:1");
 	TEST(Omega::string_t(L"1st:{0,10} 2nd:{1}") % 1 % 2 ==  L"1st:         1 2nd:2");
 	TEST(Omega::string_t(L"1st:{0,-10} 2nd:{1}") % 1 % 2 == L"1st:1          2nd:2");
 
-	TEST(Omega::string_t(L"{0:C}") % 12345.6789 == L"$12,345.68");
+	{
+		loc_holder lh;
 
-	set_locale_helper(1031,"de_DE");
-	TEST(Omega::string_t(L"{0:C}") % 12345.678 == L"12.345,68 \x20AC");
-	set_locale_helper(1033,"en_US");
+		if (set_locale_helper(1033,"en_US.utf8"))
+			TEST(Omega::string_t(L"{0:C}") % 12345.6789 == L"$12,345.68");
 
-	TEST(Omega::string_t(L"{0:D}") % 12345 == L"12345");
-	TEST(Omega::string_t(L"{0:D8}") % 12345 == L"00012345");
-	TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1.234568E+004");
-	TEST(Omega::string_t(L"{0:E10}") % 12345.6789 == L"1.2345678900E+004");
+		if (set_locale_helper(1031,"de_DE.utf8"))
+			TEST(Omega::string_t(L"{0:C}") % 12345.678 == L"12.345,68 \x20AC");
 
-	set_locale_helper(1036,"fr_FR");
-	TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1,234568E+004");
-	set_locale_helper(1033,"en_US");
 
-	TEST(Omega::string_t(L"{0:e4}") % 12345.6789 == L"1.2346e+004");
-	TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345.68");
+		if (set_locale_helper(1033,"en_US.utf8"))
+		{
+			TEST(Omega::string_t(L"{0:D}") % 12345 == L"12345");
+			TEST(Omega::string_t(L"{0:D8}") % 12345 == L"00012345");
+			TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1.234568E+004");
+			TEST(Omega::string_t(L"{0:E10}") % 12345.6789 == L"1.2345678900E+004");
+		}
 
-	set_locale_helper(1034,"es_ES");
-	TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345,68");
-	set_locale_helper(1033,"en_US");
+		if (set_locale_helper(1036,"fr_FR.utf8"))
+			TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1,234568E+004");
 
-	TEST(Omega::string_t(L"{0:F0}") % 12345.6789 == L"12346");
-	TEST(Omega::string_t(L"{0:F6}") % 12345.6789 == L"12345.678900");
-	TEST(Omega::string_t(L"{0:G}") % 12345.6789 == L"12345.6789");
-	TEST(Omega::string_t(L"{0:G7}") % 12345.6789 == L"12345.68");
-	TEST(Omega::string_t(L"{0:G}") % 0.0000023 == L"2.3E-6");
-	TEST(Omega::string_t(L"{0:G}") % 0.0023 == L"0.0023");
-	TEST(Omega::string_t(L"{0:G2}") % 1234.0 == L"1.2E3");
-	TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12,345.68");
+		if (set_locale_helper(1033,"en_US.utf8"))
+		{
+			TEST(Omega::string_t(L"{0:e4}") % 12345.6789 == L"1.2346e+004");
+			TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345.68");
+		}
 
-	set_locale_helper(1053,"sv_SE");
-	TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12\xa0" L"345,68");
-	set_locale_helper(1033,"en_US");
+		if (set_locale_helper(1034,"es_ES.utf8"))
+			TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345,68");
 
-	TEST(Omega::string_t(L"{0:N4}") % 123456789 == L"123,456,789.0000");
-	TEST(Omega::string_t(L"{0:N4}") % 123456789.0 == L"123,456,789.0000");
+		if (set_locale_helper(1033,"en_US.utf8"))
+		{
+			TEST(Omega::string_t(L"{0:F0}") % 12345.6789 == L"12346");
+			TEST(Omega::string_t(L"{0:F6}") % 12345.6789 == L"12345.678900");
+			TEST(Omega::string_t(L"{0:G}") % 12345.6789 == L"12345.6789");
+			TEST(Omega::string_t(L"{0:G7}") % 12345.6789 == L"12345.68");
+			TEST(Omega::string_t(L"{0:G}") % 0.0000023 == L"2.3E-6");
+			TEST(Omega::string_t(L"{0:G}") % 0.0023 == L"0.0023");
+			TEST(Omega::string_t(L"{0:G2}") % 1234.0 == L"1.2E3");
+			TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12,345.68");
+		}
+
+		if (set_locale_helper(1053,"sv_SE.utf8"))
+			TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12\xa0" L"345,68");
+
+		if (set_locale_helper(1033,"en_US.utf8"))
+		{
+			TEST(Omega::string_t(L"{0:N4}") % 123456789 == L"123,456,789.0000");
+			TEST(Omega::string_t(L"{0:N4}") % 123456789.0 == L"123,456,789.0000");
+		}
+	}
 
 	TEST(Omega::string_t(L"{0:x}") % 0x2c45e == L"2c45e");
 	TEST(Omega::string_t(L"{0:X}") % 0x2c45e == L"2C45E");
@@ -196,13 +206,23 @@ bool string_tests_format()
 	TEST(Omega::string_t(L"{0:#####}") % 123 == L"123");
 	TEST(Omega::string_t(L"{0:00000}") % 123 == L"00123");
 	TEST(Omega::string_t(L"{0:(###) ### - ####}") % 1234567890 == L"(123) 456 - 7890");
-	TEST(Omega::string_t(L"{0:#.##}") % 1.2 == L"1.2");
-	TEST(Omega::string_t(L"{0:0.00}") % 1.2 == L"1.20");
-	TEST(Omega::string_t(L"{0:00.00}") % 1.2 == L"01.20");
-	TEST(Omega::string_t(L"{0:#,#}") % 1234567890 == L"1,234,567,890");
-	TEST(Omega::string_t(L"{0:0.###E+0}") % 86000 == L"8.6E+4");
-	TEST(Omega::string_t(L"{0:0.###E+000}") % 86000 == L"8.6E+004");
-	TEST(Omega::string_t(L"{0:0.###E-000}") % 86000 == L"8.6E004");
+
+	{
+		loc_holder lh;
+
+		if (set_locale_helper(1033,"en_US.utf8"))
+		{
+			TEST(Omega::string_t(L"{0:#.##}") % 1.2 == L"1.2");
+			TEST(Omega::string_t(L"{0:0.00}") % 1.2 == L"1.20");
+			TEST(Omega::string_t(L"{0:00.00}") % 1.2 == L"01.20");
+			TEST(Omega::string_t(L"{0:#,#}") % 1234567890 == L"1,234,567,890");
+
+			TEST(Omega::string_t(L"{0:0.###E+0}") % 86000 == L"8.6E+4");
+			TEST(Omega::string_t(L"{0:0.###E+000}") % 86000 == L"8.6E+004");
+			TEST(Omega::string_t(L"{0:0.###E-000}") % 86000 == L"8.6E004");
+		}
+	}
+
 	TEST(Omega::string_t(L"{0:[##-##-##]}") % 123456 == L"[12-34-56]");
 	TEST(Omega::string_t(L"{0:##;(##)}") % 1234 == L"1234");
 	TEST(Omega::string_t(L"{0:##;(##)}") % -1234 == L"(1234)");

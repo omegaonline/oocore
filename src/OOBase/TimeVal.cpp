@@ -47,7 +47,7 @@ OOBase::timeval_t OOBase::gettimeofday()
 	// Move to epoch
 	ULONGLONG q = (ularge.QuadPart - epoch);
 
-	return OOBase::timeval_t(q / 10000000LL),static_cast<int>((q / 10L) % 1000000L));
+	return OOBase::timeval_t(q / 10000000LL,static_cast<int>((q / 10L) % 1000000L));
 
 #elif defined(HAVE_SYS_TIME_H) && (HAVE_SYS_TIME_H == 1)
 

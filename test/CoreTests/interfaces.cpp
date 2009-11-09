@@ -203,14 +203,12 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
-#else
-	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),F_OK) != 0)
-#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
@@ -370,14 +368,12 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),0) != 0)
-#else
-	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),F_OK) != 0)
-#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
@@ -453,7 +449,7 @@ const wchar_t** get_dlls()
 		#endif
 	#endif
 #else
-		L"CoreTests/TestLibrary/testlibrary.la",
+		L"CoreTests/TestLibrary/testlibrary",
 #endif
 		0
 	};
@@ -520,14 +516,12 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
-#else
-	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),F_OK) != 0)
-#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)
@@ -548,14 +542,12 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),0) != 0)
-#else
-	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),F_OK) != 0)
-#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
 

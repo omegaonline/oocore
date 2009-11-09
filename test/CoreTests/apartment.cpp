@@ -19,14 +19,12 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	// Register the library
 #if defined(_WIN32)
 	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
-#else
-	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),F_OK) != 0)
-#endif
 	{
 		output("[Missing]\n");
 		bSkipped = true;
 		return true;
 	}
+#endif
 
 	bSkipped = false;
 	if (system((Omega::string_t(OOREGISTER L" -i ") + pszLibName).ToUTF8().c_str()) != 0)

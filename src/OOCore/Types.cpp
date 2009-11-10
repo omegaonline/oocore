@@ -850,83 +850,56 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),guid_t&,result))
 {
-#if defined(HAVE_UUID_UUID_H)
-
-	std::string str = OOBase::to_utf8(sz);
-
-	if (str.length() != 38 || str[0] != '{' || str[37] != '}')
-		return 0;
-
-	str = str.substr(1,36);
-
-	uuid_t uuid;
-	if (uuid_parse(str.c_str(),uuid))
-		return 0;
-
-	result = *(guid_t*)(uuid);
-	return 1;
-
-#else
-
 	// Do this manually...
 	result.Data1 = 0;
 	result.Data2 = 0;
 	result.Data3 = 0;
 	memset(result.Data4,sizeof(result.Data4),0);
 
-	try
-	{
-		if (sz[0] != L'{' || !iswxdigit(sz[1]))
-			return 0;
-
-		const wchar_t* endp = 0;
-		result.Data1 = OOCore::wcstou32(sz+1,endp,16);
-		if (endp != sz+9)
-			return 0;
-
-		if (sz[9] != L'-' || !iswxdigit(sz[10]))
-			return 0;
-
-		result.Data2 = static_cast<uint16_t>(OOCore::wcstou32(sz+10,endp,16));
-		if (endp != sz+14 || sz[14] != L'-' || !iswxdigit(sz[15]))
-			return 0;
-
-		result.Data3 = static_cast<uint16_t>(OOCore::wcstou32(sz+15,endp,16));
-		if (endp != sz+19 || sz[19] != L'-' || !iswxdigit(sz[20]))
-			return 0;
-
-		uint32_t v1 = OOCore::wcstou32(sz+20,endp,16);
-		if (endp != sz+24)
-			return 0;
-
-		result.Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
-		result.Data4[1] = static_cast<byte_t>(v1 & 0xFF);
-
-		if (sz[24] != L'-' || !iswxdigit(sz[25]))
-			return 0;
-
-		uint64_t v2 = OOCore::wcstou64(sz+25,endp,16);
-		if (endp != sz+37)
-			return 0;
-
-		result.Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
-		result.Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
-		result.Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
-		result.Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
-		result.Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
-		result.Data4[7] = static_cast<byte_t>(v2 & 0xFF);
-
-		if (sz[37] != L'}' || sz[38] != L'\0')
-			return 0;
-
-		return 1;
-	}
-	catch (int)
-	{
+	if (sz[0] != L'{' || !iswxdigit(sz[1]))
 		return 0;
-	}
 
-#endif
+	const wchar_t* endp = 0;
+	result.Data1 = OOCore::wcstou32(sz+1,endp,16);
+	if (endp != sz+9)
+		return 0;
+
+	if (sz[9] != L'-' || !iswxdigit(sz[10]))
+		return 0;
+
+	result.Data2 = static_cast<uint16_t>(OOCore::wcstou32(sz+10,endp,16));
+	if (endp != sz+14 || sz[14] != L'-' || !iswxdigit(sz[15]))
+		return 0;
+
+	result.Data3 = static_cast<uint16_t>(OOCore::wcstou32(sz+15,endp,16));
+	if (endp != sz+19 || sz[19] != L'-' || !iswxdigit(sz[20]))
+		return 0;
+
+	uint32_t v1 = OOCore::wcstou32(sz+20,endp,16);
+	if (endp != sz+24)
+		return 0;
+
+	result.Data4[0] = static_cast<byte_t>((v1 >> 8) & 0xFF);
+	result.Data4[1] = static_cast<byte_t>(v1 & 0xFF);
+
+	if (sz[24] != L'-' || !iswxdigit(sz[25]))
+		return 0;
+
+	uint64_t v2 = OOCore::wcstou64(sz+25,endp,16);
+	if (endp != sz+37)
+		return 0;
+
+	result.Data4[2] = static_cast<byte_t>(((v2 >> 32) >> 8) & 0xFF);
+	result.Data4[3] = static_cast<byte_t>((v2 >> 32) & 0xFF);
+	result.Data4[4] = static_cast<byte_t>((v2 >> 24) & 0xFF);
+	result.Data4[5] = static_cast<byte_t>((v2 >> 16) & 0xFF);
+	result.Data4[6] = static_cast<byte_t>((v2 >> 8) & 0xFF);
+	result.Data4[7] = static_cast<byte_t>(v2 & 0xFF);
+
+	if (sz[37] != L'}' || sz[38] != L'\0')
+		return 0;
+
+	return 1;
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())

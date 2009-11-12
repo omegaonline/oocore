@@ -65,7 +65,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
@@ -139,7 +138,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
@@ -216,7 +214,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
@@ -292,7 +289,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib"
 				AdditionalLibraryDirectories=""
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 				TargetMachine="17"

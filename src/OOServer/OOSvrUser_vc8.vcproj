@@ -64,7 +64,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 			/>
@@ -140,7 +139,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
 				TargetMachine="17"
@@ -219,7 +217,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				AdditionalLibraryDirectories=""
 			/>
 			<Tool
@@ -297,7 +294,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib Userenv.lib Netapi32.lib"
 				AdditionalLibraryDirectories=""
 				TargetMachine="17"
 			/>

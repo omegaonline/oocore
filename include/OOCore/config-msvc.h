@@ -97,13 +97,13 @@
 		do { \
 			POINTER = new (std::nothrow) CONSTRUCTOR; \
 			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
-		} while (!POINTER)
+		} while ((void)0,false)
 #else
 	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
 		do { \
 			POINTER = new (std::nothrow) CONSTRUCTOR; \
 			if (!POINTER) OMEGA_THROW(ENOMEM); \
-		} while (!POINTER)
+		} while ((void)0,false)
 #endif
 
 #endif

@@ -52,10 +52,10 @@
 #include <new>
 #if defined(HAVE_NEW_NOTHROW)
 	#define OOBASE_NEW(POINTER,CONSTRUCTOR) \
-		POINTER = new (std::nothrow) CONSTRUCTOR;
+		POINTER = new (std::nothrow) CONSTRUCTOR
 #else
 	#define OOBASE_NEW(POINTER,CONSTRUCTOR) \
-		POINTER = new CONSTRUCTOR;
+		POINTER = new CONSTRUCTOR
 #endif // HAVE_NEW_NOTHROW
 #endif // !defined OOBASE_NEW
 #endif // __cplusplus

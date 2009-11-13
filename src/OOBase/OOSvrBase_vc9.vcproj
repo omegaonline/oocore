@@ -60,7 +60,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -120,7 +119,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -183,7 +181,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -247,7 +244,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

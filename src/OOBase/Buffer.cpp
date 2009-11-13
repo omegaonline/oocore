@@ -210,12 +210,6 @@ int OOBase::Buffer::space(size_t cbSpace)
 	return err;
 }
 
-//#if defined(_WIN32)
-
-// Possible better implementation?
-
-//#else
-
 int OOBase::Buffer::priv_malloc(char*& ptr, size_t& bytes)
 {
 	ptr = (char*)malloc(bytes);
@@ -236,5 +230,3 @@ void OOBase::Buffer::priv_free(char* ptr)
 {
 	free(ptr);
 }
-
-//#endif

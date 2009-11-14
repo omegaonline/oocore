@@ -68,17 +68,23 @@ void Root::MessageConnection::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
+	OOSvrBase::AsyncSocket* pSocket = 0;
 	if (m_pSocket)
 	{
-		m_pSocket->close();
-		m_pSocket->release();
+		pSocket = m_pSocket;
+		m_pSocket = 0;
 	}
-	m_pSocket = 0;
 
 	Omega::uint32_t prev_channel = m_channel_id;
 	m_channel_id = 0;
 
 	guard.release();
+
+	if (pSocket)
+	{
+		pSocket->close();
+		pSocket->release();
+	}
 
 	if (prev_channel)
 		m_pHandler->channel_closed(prev_channel,0);
@@ -86,11 +92,6 @@ void Root::MessageConnection::close()
 
 bool Root::MessageConnection::read()
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	
-	if (!m_pSocket)
-		return false;
-
 	OOBase::Buffer* pBuffer = 0;
 	OOBASE_NEW(pBuffer,OOBase::Buffer(m_default_buffer_size));
 	if (!pBuffer)
@@ -103,10 +104,24 @@ bool Root::MessageConnection::read()
 		pBuffer->release();
 		LOG_ERROR_RETURN(("Buffer reset failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 	}
+
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 	
-	err = m_pSocket->read(pBuffer);
+	if (!m_pSocket)
+	{
+		pBuffer->release();
+		return false;
+	}
+
+	OOSvrBase::AsyncSocket* pSocket = m_pSocket;
+	pSocket->addref();
+
+	guard.release();
+		
+	err = pSocket->read(pBuffer);
 
 	pBuffer->release();
+	pSocket->release();
 
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
@@ -114,7 +129,7 @@ bool Root::MessageConnection::read()
 	return true;
 }
 
-void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBase::Buffer* buffer, int err)
+void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* pSocket, OOBase::Buffer* buffer, int err)
 {
 	if (err != 0)
 	{
@@ -245,15 +260,11 @@ void Root::MessageConnection::on_read(OOSvrBase::AsyncSocket* /*pSocket*/, OOBas
 		}
 		else
 		{
-			OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-			if (m_pSocket)
+			err = pSocket->read(buffer);
+			if (err != 0)
 			{
-				err = m_pSocket->read(buffer);
-				if (err != 0)
-				{
-					bSuccess = false;
-					LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
-				}
+				bSuccess = false;
+				LOG_ERROR(("AsyncSocket read failed: %s",OOSvrBase::Logger::format_error(err).c_str()));
 			}
 
 			if (bRelease)
@@ -271,9 +282,16 @@ bool Root::MessageConnection::send(OOBase::Buffer* pBuffer)
 	if (!m_pSocket)
 		return false;
 
-	int err = m_pSocket->write(pBuffer);
+	OOSvrBase::AsyncSocket* pSocket = m_pSocket;
+	pSocket->addref();
+
+	guard.release();
+
+	int err = pSocket->write(pBuffer);
 	if (err != 0)
 		LOG_ERROR_RETURN(("AsyncSocket write failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	pSocket->release();
 
 	return true;
 }

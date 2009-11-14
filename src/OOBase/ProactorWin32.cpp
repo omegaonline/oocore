@@ -123,7 +123,7 @@ int OOSvrBase::Win32::HandleSocket::read(OOBase::Buffer* buffer, size_t len)
 
 	AsyncRead read = { buffer->duplicate(), len };
 
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	try
 	{
@@ -175,7 +175,7 @@ int OOSvrBase::Win32::HandleSocket::write(OOBase::Buffer* buffer)
 	if (buffer->length() == 0)
 		return 0;
 
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	try
 	{
@@ -278,7 +278,7 @@ bool OOSvrBase::Win32::HandleSocket::do_read(DWORD dwToRead)
 
 void OOSvrBase::Win32::HandleSocket::handle_read(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Update wr_ptr
 	m_read_complete.m_buffer->wr_ptr(dwNumberOfBytesTransfered);
@@ -361,7 +361,7 @@ bool OOSvrBase::Win32::HandleSocket::do_write()
 
 void OOSvrBase::Win32::HandleSocket::handle_write(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Update rd_ptr
 	m_write_complete.m_buffer->rd_ptr(dwNumberOfBytesTransfered);
@@ -401,7 +401,7 @@ void OOSvrBase::Win32::HandleSocket::handle_write(DWORD dwErrorCode, DWORD dwNum
 
 void OOSvrBase::Win32::HandleSocket::close()
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	m_handler = 0;
 

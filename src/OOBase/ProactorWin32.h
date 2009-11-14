@@ -86,7 +86,7 @@ namespace OOSvrBase
 				size_t          m_to_read;
 			};
 
-			OOBase::SpinLock            m_lock;
+			OOBase::Mutex               m_lock;
 			ProactorImpl*               m_pProactor;
 			OOBase::Win32::SmartHandle  m_handle;
 			OOSvrBase::IOHandler*       m_handler;

@@ -23,6 +23,7 @@
 #include "Singleton.h"
 #include "SmartPtr.h"
 #include "tr24731.h"
+#include "SecurityWin32.h"
 
 #include <stdio.h>
 
@@ -201,7 +202,20 @@ namespace
 		const char* arrBufs[2] = { msg.c_str(), 0 };
 
 		if (m_hLog && priority != OOSvrBase::Logger::Debug)
-			ReportEventA(m_hLog,wType,0,0,NULL,1,0,arrBufs,NULL);
+		{
+			PSID psid = NULL;
+			OOBase::Win32::SmartHandle hProcessToken;
+			OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrSIDProcess;
+
+			if (OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&hProcessToken))
+			{
+				ptrSIDProcess = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hProcessToken,TokenUser));
+				if (ptrSIDProcess)
+					psid = ptrSIDProcess->User.Sid;
+			}
+
+			ReportEventA(m_hLog,wType,0,0,psid,1,0,arrBufs,NULL);
+		}
 
 		OutputDebugStringA(msg.c_str());
 		OutputDebugStringA("\n");

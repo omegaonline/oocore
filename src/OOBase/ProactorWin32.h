@@ -30,6 +30,8 @@
 #error Includes have got confused, check Proactor.h
 #endif
 
+#include <deque>
+
 namespace OOSvrBase
 {
 	namespace Win32
@@ -59,26 +61,39 @@ namespace OOSvrBase
 		private:
 			virtual ~HandleSocket();
 
+			bool do_read(DWORD dwToRead);
+			int read_next();
+			void handle_read(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered);
+
+			bool do_write();
+			int write_next();
+			void handle_write(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered);
+
 			static VOID CALLBACK completion_fn(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped);
 
 			struct Completion
 			{
 				OVERLAPPED      m_ov;
-				HandleSocket*   m_this_ptr;
 				OOBase::Buffer* m_buffer;
 				bool            m_is_reading;
 				size_t          m_to_read;
+				HandleSocket*   m_this_ptr;
 			};
 
-			DWORD do_read(Completion* pInfo, DWORD dwToRead);
-			void handle_read(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, Completion* pInfo);
+			struct AsyncRead
+			{
+				OOBase::Buffer* m_buffer;
+				size_t          m_to_read;
+			};
 
-			DWORD do_write(Completion* pInfo);
-			void handle_write(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, Completion* pInfo);
-
-			ProactorImpl*              m_pProactor;
-			OOBase::Win32::SmartHandle m_handle;
-			OOSvrBase::IOHandler*      m_handler;
+			OOBase::SpinLock            m_lock;
+			ProactorImpl*               m_pProactor;
+			OOBase::Win32::SmartHandle  m_handle;
+			OOSvrBase::IOHandler*       m_handler;
+			Completion                  m_read_complete;
+			Completion                  m_write_complete;
+			std::deque<AsyncRead>       m_async_reads;
+			std::deque<OOBase::Buffer*> m_async_writes;
 		};
 	}
 }

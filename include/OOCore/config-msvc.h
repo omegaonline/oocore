@@ -57,14 +57,7 @@
 
 #define OMEGA_UNUSED_ARG(n)	(n)
 
-#define OMEGA_WEAK_VARIABLE(t,v) \
-	extern const t v; \
-	const __declspec(selectany) t v;
-
 #define OMEGA_HAS_UUIDOF
-
-// 'function' : unreferenced local function has been removed
-#pragma warning(disable : 4505)
 
 #ifndef _DEBUG
 // Optimization sometimes re-orders things causing this error

@@ -203,7 +203,8 @@ namespace Omega
 					{
 						{ "AddRef", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, &AddRef_params },
 						{ "Release", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, &Release_params },
-						{ "QueryInterface", TypeInfo::Synchronous, 0, 1, TypeInfo::typeObject, &QueryInterface_params }
+						{ "QueryInterface", TypeInfo::Synchronous, 0, 1, TypeInfo::typeObject, &QueryInterface_params },
+						{ 0, 0, 0, 0, 0 }
 					};
 					return methods;
 				}

@@ -238,13 +238,20 @@ bool string_tests_format()
 bool string_tests_utf8()
 {
 #if defined(_MSC_VER)
-	FILE* pInUTF8 = fopen("../../test/CoreTests/UTF-8-test.txt","rb");
+	#if defined(_DEBUG)
+		FILE* pInUTF8 = fopen("../../test/CoreTests/UTF-8-test.txt","rb");
+	#else
+		FILE* pInUTF8 = fopen("../test/CoreTests/UTF-8-test.txt","rb");
+	#endif
 #else
 	FILE* pInUTF8 = fopen("UTF-8-test.txt","rb");
 #endif
 
 	if (!pInUTF8)
+	{
+		output("[Skipped]\n");
 		return false;
+	}
 
 	// Loop reading and converting...
 	std::string strUTF8;
@@ -260,13 +267,20 @@ bool string_tests_utf8()
 	fclose(pInUTF8);
 
 #if defined(_MSC_VER)
-	FILE* pInUTF16 = fopen("../../test/CoreTests/UTF-16-test.txt","rb");
+	#if defined(_DEBUG)
+		FILE* pInUTF16 = fopen("../../test/CoreTests/UTF-16-test.txt","rb");
+	#else
+		FILE* pInUTF16 = fopen("../test/CoreTests/UTF-16-test.txt","rb");
+	#endif
 #else
 	FILE* pInUTF16 = fopen("UTF-16-test.txt","rb");
 #endif
 
 	if (!pInUTF16)
+	{
+		output("[Skipped]\n");
 		return false;
+	}
 
 	// Loop reading and converting...
 	std::wstring strUTF16;

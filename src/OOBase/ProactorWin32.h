@@ -51,8 +51,8 @@ namespace OOSvrBase
 		class HandleSocket : public OOSvrBase::AsyncSocket
 		{
 		public:
-			HandleSocket(ProactorImpl* pProactor, HANDLE handle);
-			int init(OOSvrBase::IOHandler* handler);
+			HandleSocket(ProactorImpl* pProactor, HANDLE handle, OOSvrBase::IOHandler* handler);
+			int bind();
 					
 			int read(OOBase::Buffer* buffer, size_t len);
 			int write(OOBase::Buffer* buffer);

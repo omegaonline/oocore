@@ -58,34 +58,38 @@ OOSvrBase::AsyncSocket* OOSvrBase::Win32::ProactorImpl::attach_socket(IOHandler*
 	// Cast to our known base
 	OOBase::Win32::Socket* pOrigSock = static_cast<OOBase::Win32::Socket*>(sock);
 
+	// Duplicate the contained handle
+	HANDLE hClone;
+	if (!DuplicateHandle(GetCurrentProcess(),pOrigSock->peek_handle(),GetCurrentProcess(),&hClone,0,FALSE,DUPLICATE_SAME_ACCESS))
+	{
+		*perr = GetLastError();
+		return 0;
+	}
+	
 	// Alloc a ShmSocket
 	HandleSocket* pSock;
-	OOBASE_NEW(pSock,HandleSocket(this,pOrigSock->peek_handle()));
+	OOBASE_NEW(pSock,HandleSocket(this,hClone,handler));
 	if (!pSock)
 	{
+		CloseHandle(hClone);
 		*perr = ERROR_OUTOFMEMORY;
 		return 0;
 	}
 
-	*perr = pSock->init(handler);
+	*perr = pSock->bind();
 	if (*perr != 0)
 	{
 		pSock->release();
 		return 0;
 	}
 
-	void* TODO; // Duplicate the incoming handle
-
-	// Now swap out the handle
-	pOrigSock->detach_handle();	
-
 	return pSock;
 }
 
-OOSvrBase::Win32::HandleSocket::HandleSocket(OOSvrBase::Win32::ProactorImpl* pProactor, HANDLE handle) :
+OOSvrBase::Win32::HandleSocket::HandleSocket(OOSvrBase::Win32::ProactorImpl* pProactor, HANDLE handle, OOSvrBase::IOHandler* handler) :
 	m_pProactor(pProactor),
 	m_handle(handle),
-	m_handler(0)
+	m_handler(handler)
 {
 	m_read_complete.m_is_reading = true;
 	m_read_complete.m_buffer = 0;
@@ -100,12 +104,10 @@ OOSvrBase::Win32::HandleSocket::~HandleSocket()
 	close();
 }
 
-int OOSvrBase::Win32::HandleSocket::init(OOSvrBase::IOHandler* handler)
+int OOSvrBase::Win32::HandleSocket::bind()
 {
 	if (!OOBase::Win32::BindIoCompletionCallback(m_handle,&completion_fn,0))
 		return GetLastError();
-
-	m_handler = handler;
 
 	return 0;
 }

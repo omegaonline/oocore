@@ -44,11 +44,6 @@ namespace OOBase
 			{
 				return m_hSocket;
 			}
-
-			HANDLE detach_handle()
-			{
-				return m_hSocket.detach();
-			}
 		
 		protected:
 			SmartHandle m_hSocket;

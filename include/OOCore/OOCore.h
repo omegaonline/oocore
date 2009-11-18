@@ -138,20 +138,27 @@ void Omega::Uninitialize()
 	OOCore_Omega_Uninitialize();
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
 Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
-	IObject* pObj = 0;
-	OOCore_Omega_CreateLocalInstance(oid,flags,pOuter,iid,pObj);
-	return pObj;
+	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(static_cast<Activation::IObjectFactory*>(Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory))));
+	if (!ptrOF)
+		OMEGA_THROW(L"Failed to create object factory");
+	
+	IObject* pObject = 0;
+	ptrOF->CreateInstance(pOuter,iid,pObject);
+	return pObject;
 }
 
-OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject));
+OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags));
 Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
-	IObject* pObj = 0;
-	OOCore_Omega_CreateInstance(strURI,flags,pOuter,iid,pObj);
-	return pObj;
+	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(strURI,flags));
+	if (!ptrOF)
+		OMEGA_THROW(L"Failed to create object factory");
+	
+	IObject* pObject = 0;
+	ptrOF->CreateInstance(pOuter,iid,pObject);
+	return pObject;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));

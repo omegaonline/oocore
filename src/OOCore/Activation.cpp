@@ -384,6 +384,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 		// Try ourselves first... this prevents anyone overloading standard behaviours!
 		if (flags & Activation::InProcess)
 		{
+			void* TODO; // Allow injection of callback
+
 			pObject = OTL::Module::OMEGA_PRIVATE_FN_CALL(GetModule)()->GetLibraryObject(oid,flags,iid);
 			if (pObject)
 				return;
@@ -449,16 +451,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 	OidNotFoundException::Throw(oid,L"Omega::Activation::GetRegisteredObject");
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateLocalInstance,5,((in),const guid_t&,oid,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),IObject*&,pObject))
-{
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-
-	IObject* pOF = Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
-	ptrOF->CreateInstance(pOuter,iid,pObject);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Omega::string_t&,strURI,(in),Activation::Flags_t,flags,(in),Omega::IObject*,pOuter,(in),const Omega::guid_t&,iid,(out)(iid_is(iid))(outer_is(pOuter)),Omega::IObject*&,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags))
 {
 	// First try to determine the protocol...
 	string_t strObject = strURI;
@@ -472,7 +465,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Om
 			strEndpoint.Clear();
 	}
 
-	IObject* pOF = 0;
 	if (strEndpoint.IsEmpty())
 	{
 		// Do a quick registry lookup
@@ -480,7 +472,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Om
 		if (!guid_t::FromString(strObject,oid))
 			oid = Omega::Activation::NameToOid(strObject);
 
-		pOF = Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory));
+		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
 	}
 	else
 	{
@@ -496,12 +488,17 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Omega_CreateInstance,5,((in),const Om
 		ptrOM.Attach(ptrChannel->GetObjectManager());
 
 		// Get the remote instance
+		IObject* pOF = 0;
 		ptrOM->GetRemoteInstance(strObject,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pOF);
-	}
+		
+		if (!pOF)
+		{
+			void* TODO; // Throw some kind of exception
+			OMEGA_THROW(L"Failed to create object factory");
+		}
 
-	ObjectPtr<Activation::IObjectFactory> ptrOF;
-	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pOF));
-	ptrOF->CreateInstance(pOuter,iid,pObject);
+		return static_cast<Activation::IObjectFactory*>(pOF);
+	}
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())

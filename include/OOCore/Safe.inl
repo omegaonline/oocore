@@ -141,7 +141,7 @@ Omega::System::MetaInfo::Safe_Proxy_Owner::~Safe_Proxy_Owner()
 		static_cast<const IObject_Safe_VTable*>(except->m_vtable)->pfnRelease_Safe(except);
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base> Omega::System::MetaInfo::Safe_Proxy_Owner::GetProxyBase(const guid_t& iid, const SafeShim* shim, bool bAllowPartial)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base> Omega::System::MetaInfo::Safe_Proxy_Owner::GetProxyBase(const guid_t& iid, const SafeShim* shim)
 {
 	assert(iid != OMEGA_GUIDOF(IObject));
 	assert(iid != OMEGA_GUIDOF(ISafeProxy));
@@ -195,9 +195,6 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Base
 	const qi_rtti* rtti = get_qi_rtti_info(*shim->m_iid);
 	if (!rtti && guid_t(*shim->m_iid) != iid)
 		rtti = get_qi_rtti_info(iid);
-
-	if (!rtti && bAllowPartial)
-		rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
 
 	if (!rtti)
 		OMEGA_THROW(L"Failed to create proxy for interface - missing rtti");
@@ -259,7 +256,7 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Own
 	}
 
 	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0,false);
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create safe proxy");
 
@@ -304,7 +301,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const 
 	}
 
 	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0,false);
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0);
 	if (!obj)
 		return 0;
 
@@ -323,7 +320,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const Saf
 	}
 
 	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(*shim->m_iid,shim,true);
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(*shim->m_iid,shim);
 	if (!obj)
 		return 0;
 
@@ -337,14 +334,10 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const SafeShim* shim)
 	assert(guid_t(*shim->m_iid) != OMEGA_GUIDOF(IObject));
 
 	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(*shim->m_iid,shim,false);
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(*shim->m_iid,shim);
 	if (!obj)
-	{
-		obj = GetProxyBase(OMEGA_GUIDOF(IException),shim,false);
-		if (!obj)
-			OMEGA_THROW(L"Failed to create safe exception proxy");
-	}
-
+		OMEGA_THROW(L"Failed to throw safe proxy");
+	
 	// Release the incoming shim....
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
 	if (except)
@@ -359,14 +352,10 @@ void Omega::System::MetaInfo::Safe_Proxy_Owner::Throw(const guid_t& iid)
 	assert(iid != OMEGA_GUIDOF(IObject));
 
 	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0,false);
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,0);
 	if (!obj)
-	{
-		obj = GetProxyBase(OMEGA_GUIDOF(IException),0,false);
-		if (!obj)
-			OMEGA_THROW(L"Failed to create safe exception proxy");
-	}
-
+		OMEGA_THROW(L"Failed to throw safe proxy");
+	
 	return obj->Throw__proxy__();
 }
 

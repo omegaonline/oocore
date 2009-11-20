@@ -139,7 +139,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 			{
 				// QI for IProxy and check its still there!
 				bool bOk = true;
-				ObjectPtr<System::IProxy> ptrProxy = (IObject*)i->second->second.m_ptrObject;
+				ObjectPtr<System::IProxy> ptrProxy(i->second->second.m_ptrObject);
 				if (ptrProxy && !ptrProxy->IsAlive())
 				{
 					listDeadEntries.push_back(i->second->first);

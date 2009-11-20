@@ -84,7 +84,6 @@ namespace OOCore
 		Omega::bool_t IsAlive();
 		Omega::bool_t RemoteQueryInterface(const Omega::guid_t& iid);
 
-		// IProxy_Safe members
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL AddRef_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Release_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_base_t* iid);

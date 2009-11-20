@@ -80,14 +80,14 @@ OOCore::Proxy::~Proxy()
 	CallRemoteRelease();
 
 	m_pManager->RemoveProxy(m_proxy_id);
-	static_cast<IStdObjectManager*>(m_pManager)->Release();
+	static_cast<Remoting::IObjectManager*>(m_pManager)->Release();
 }
 
 void OOCore::Proxy::init(uint32_t proxy_id, StdObjectManager* pManager)
 {
 	m_proxy_id = proxy_id;
 	m_pManager = pManager;
-	static_cast<IStdObjectManager*>(m_pManager)->AddRef();
+	static_cast<Remoting::IObjectManager*>(m_pManager)->AddRef();
 }
 
 void OOCore::Proxy::Disconnect()
@@ -151,7 +151,6 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
 {
 	pMessage->WriteStructStart(L"ipc_request",L"$ipc_request_type");
-
 	pMessage->WriteUInt32(L"$stub_id",m_proxy_id);
 	pMessage->WriteGuid(L"$iid",OMEGA_GUIDOF(IObject));
 	pMessage->WriteUInt32(L"$method_id",method_id);
@@ -173,26 +172,13 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 		Internal_AddRef();
 		return &m_proxy_shim;
 	}
-	
-	if (iid == OMEGA_GUIDOF(Remoting::IMarshal))
+	else if (iid == OMEGA_GUIDOF(Remoting::IMarshal))
 	{
 		Internal_AddRef();
 		return &m_marshal_shim;
 	}
 	
-	const System::MetaInfo::SafeShim* shim = 0;
-	/*WireProxyShim ptrProxy = FindShim(iid,true);
-	if (ptrProxy)
-		shim = ptrProxy.GetShim();*/
-	
-	if (shim)
-	{
-		const System::MetaInfo::SafeShim* except = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);
-		if (except)
-			throw_correct_exception(except);
-	}
-
-	return shim;
+	return 0;
 }
 
 Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)

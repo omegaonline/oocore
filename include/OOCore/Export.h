@@ -422,7 +422,7 @@
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
-		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
+		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
 		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
@@ -435,7 +435,7 @@
 #define OMEGA_DEFINE_WIRE_STUB_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	static void OMEGA_CONCAT(name,_Wire)(Wire_Stub_Base* pThis__wire__, Remoting::IMessage* pParamsIn__wire__, Remoting::IMessage* pParamsOut__wire__) \
 	{ \
-		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
+		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = pThis__wire__->GetMarshaller(); \
 		OMEGA_UNUSED_ARG(ptrMarshaller__wire__); OMEGA_UNUSED_ARG(pThis__wire__); OMEGA_UNUSED_ARG(pParamsIn__wire__); OMEGA_UNUSED_ARG(pParamsOut__wire__); \
 		OMEGA_DECLARE_PARAMS_WIRE_STUB(param_count,params) \
 		OMEGA_READ_PARAMS_WIRE_STUB(param_count,params) \
@@ -489,14 +489,14 @@
 	class Wire_Stub<n_space::name > : public Wire_Stub<d_space::derived > \
 	{ \
 	public: \
-		static const SafeShim* create(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) \
+		static const SafeShim* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) \
 		{ \
 			Wire_Stub* pThis; \
 			OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI)); \
 			return pThis->GetShim(); \
 		} \
 	protected: \
-		Wire_Stub(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) : \
+		Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) : \
 			Wire_Stub<d_space::derived >(pController,pMarshaller,pI) \
 		{ } \
 		virtual bool_t SupportsInterface(const guid_t& iid) \
@@ -639,7 +639,7 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
-		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
+		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
 		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(ptrMarshaller__wire__,OMEGA_CONCAT(name,_MethodId)); \
 		auto_iface_ptr<Remoting::IMessage> pParamsIn__wire__; \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
@@ -662,7 +662,7 @@
 #define OMEGA_DECLARE_WIRE_PROXY_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
-		auto_iface_ptr<IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
+		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
 		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(ptrMarshaller__wire__,OMEGA_CONCAT(name,_MethodId)); \
 		auto_iface_ptr<Remoting::IMessage> pParamsIn__wire__; \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \

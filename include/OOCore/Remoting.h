@@ -63,9 +63,6 @@ namespace Omega
 			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t timeout) = 0;
 			virtual void Shutdown() = 0;
 			virtual void GetRemoteInstance(const Omega::string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
-			virtual void MarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-			virtual void ReleaseMarshalData(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-			virtual void UnmarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
 		};
 
 		interface IChannel : public IChannelBase
@@ -83,13 +80,13 @@ namespace Omega
 		interface IMarshal : public IObject
 		{
 			virtual guid_t GetUnmarshalFactoryOID(const guid_t& iid, MarshalFlags_t flags) = 0;
-			virtual void MarshalInterface(IObjectManager* pObjectManager, IMessage* pMessage, const guid_t& iid, MarshalFlags_t flags) = 0;
-			virtual void ReleaseMarshalData(IObjectManager* pObjectManager, IMessage* pMessage, const guid_t& iid, MarshalFlags_t flags) = 0;
+			virtual void MarshalInterface(IMarshaller* pMarshaller, IMessage* pMessage, const guid_t& iid, MarshalFlags_t flags) = 0;
+			virtual void ReleaseMarshalData(IMarshaller* pMarshaller, IMessage* pMessage, const guid_t& iid, MarshalFlags_t flags) = 0;
 		};
 
 		interface IMarshalFactory : public IObject
 		{
-			virtual void UnmarshalInterface(IObjectManager* pObjectManager, IMessage* pMessage, const guid_t& iid, MarshalFlags_t flags, IObject*& pObject) = 0;
+			virtual void UnmarshalInterface(IMarshaller* pMarshaller, IMessage* pMessage, const guid_t& iid, MarshalFlags_t flags, IObject*& pObject) = 0;
 		};
 
 		interface IChannelSink : public IObject
@@ -143,9 +140,6 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(Remoting::IMessage*,Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Shutdown,0,())
 	OMEGA_METHOD_VOID(GetRemoteInstance,4,((in),const string_t&,strOID,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-	OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
-	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
-	OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
@@ -169,15 +163,15 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	Omega::Remoting, IMarshal, "{5EE81A3F-88AA-47ee-9CAA-CECC8BE8F4C4}",
 
 	OMEGA_METHOD(guid_t,GetUnmarshalFactoryOID,2,((in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
-	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
-	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IObjectManager*,pObjectManager,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(MarshalInterface,4,((in),Remoting::IMarshaller*,pMarshaller,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),Remoting::IMarshaller*,pMarshaller,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags))
 )
 
 OMEGA_DEFINE_INTERFACE_LOCAL
 (
 	Omega::Remoting, IMarshalFactory, "{68C779B3-72E7-4c09-92F0-118A01AF224D}",
 
-	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IObjectManager*,pObjectManager,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(UnmarshalInterface,5,((in),Remoting::IMarshaller*,pMarshaller,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),Remoting::MarshalFlags_t,flags,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE

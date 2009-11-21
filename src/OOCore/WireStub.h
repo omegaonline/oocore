@@ -30,8 +30,8 @@ namespace OOCore
 
 	class Stub : 
 		public OTL::ObjectBase,
-		public Omega::System::IStub,
-		public Omega::System::IStubController
+		public Omega::Remoting::IStub,
+		public Omega::Remoting::IStubController
 	{
 	public:
 		Stub();
@@ -40,11 +40,11 @@ namespace OOCore
 
 		void MarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid);
 		void ReleaseMarshalData(Omega::Remoting::IMessage* pMessage, const Omega::guid_t&);
-		OTL::ObjectPtr<Omega::System::IStub> LookupStub(Omega::Remoting::IMessage* pMessage);
+		OTL::ObjectPtr<Omega::Remoting::IStub> LookupStub(Omega::Remoting::IMessage* pMessage);
 
 		BEGIN_INTERFACE_MAP(Stub)
-			INTERFACE_ENTRY(Omega::System::IStub)
-			INTERFACE_ENTRY(Omega::System::IStubController)
+			INTERFACE_ENTRY(Omega::Remoting::IStub)
+			INTERFACE_ENTRY(Omega::Remoting::IStubController)
 		END_INTERFACE_MAP()
 
 	private:
@@ -57,10 +57,10 @@ namespace OOCore
 		OTL::ObjectPtr<Omega::IObject>         m_ptrObj;
 		StdObjectManager*                      m_pManager;
 
-		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::System::IStub> > m_iid_map;
+		std::map<const Omega::guid_t,OTL::ObjectPtr<Omega::Remoting::IStub> > m_iid_map;
 
-		OTL::ObjectPtr<Omega::System::IStub> FindStub(const Omega::guid_t& iid);
-		Omega::System::IStub* CreateStub(const Omega::guid_t& iid);
+		OTL::ObjectPtr<Omega::Remoting::IStub> FindStub(const Omega::guid_t& iid);
+		Omega::Remoting::IStub* CreateStub(const Omega::guid_t& iid);
 
 	// IStub members
 	public:

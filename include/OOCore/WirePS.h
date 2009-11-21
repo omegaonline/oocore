@@ -87,8 +87,8 @@ namespace Omega
 				inline void Throw(const guid_t& iid);
 				inline const SafeShim* GetBaseShim();
 				inline const SafeShim* GetWireProxy();
-				inline auto_iface_ptr<IMarshaller> GetMarshaller();
-				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
+				inline auto_iface_ptr<Remoting::IMarshaller> GetMarshaller();
+				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(Remoting::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
 				inline void UnpackHeader(Remoting::IMessage* pMessage);
 
 			private:
@@ -180,7 +180,7 @@ namespace Omega
 					return (iid == OMEGA_GUIDOF(IObject));
 				}
 
-				auto_iface_ptr<Remoting::IMessage> CreateMessage(IMarshaller* pMarshaller, uint32_t method_id)
+				auto_iface_ptr<Remoting::IMessage> CreateMessage(Remoting::IMarshaller* pMarshaller, uint32_t method_id)
 				{
 					return Wire_Proxy_Base::CreateMessage(pMarshaller,OMEGA_GUIDOF(D),method_id);
 				}
@@ -372,7 +372,7 @@ namespace Omega
 				Wire_Proxy_Owner(const SafeShim* proxy_shim, IObject* pOuter) : m_pOuter(pOuter)
 				{
 					// Wrap the proxy shim in a safe proxy
-					m_ptrProxy = static_cast<IProxy*>(create_safe_proxy(proxy_shim));
+					m_ptrProxy = static_cast<Remoting::IProxy*>(create_safe_proxy(proxy_shim));
 					assert(m_ptrProxy);
 
 					m_ptrMarshaller = m_ptrProxy->GetMarshaller();
@@ -417,7 +417,7 @@ namespace Omega
 					return &m_base_shim;
 				}
 
-				auto_iface_ptr<IMarshaller> GetMarshaller()
+				auto_iface_ptr<Remoting::IMarshaller> GetMarshaller()
 				{
 					return m_ptrMarshaller;
 				}
@@ -428,21 +428,21 @@ namespace Omega
 				inline const SafeShim* GetShim(const guid_t& iid);
 				inline IObject* CreateProxy(const guid_t& iid);
 				inline const SafeShim* GetWireProxy();
-				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
+				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(Remoting::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
 				inline void UnpackHeader(Remoting::IMessage* pMessage);
 
 			private:
 				Wire_Proxy_Owner(const Wire_Proxy_Owner&);
 				Wire_Proxy_Owner& operator =(const Wire_Proxy_Owner&);
 
-				Threading::Mutex                  m_lock;
-				std::map<guid_t,Wire_Proxy_Base*> m_iid_map;
-				auto_iface_ptr<IProxy>            m_ptrProxy;
-				auto_iface_ptr<IMarshaller>       m_ptrMarshaller;
-				SafeShim                          m_base_shim;
-				IObject*                          m_pOuter;
-				Threading::AtomicRefCount         m_refcount;
-				Threading::AtomicRefCount         m_pincount;
+				Threading::Mutex                      m_lock;
+				std::map<guid_t,Wire_Proxy_Base*>     m_iid_map;
+				auto_iface_ptr<Remoting::IProxy>      m_ptrProxy;
+				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
+				SafeShim                              m_base_shim;
+				IObject*                              m_pOuter;
+				Threading::AtomicRefCount             m_refcount;
+				Threading::AtomicRefCount             m_pincount;
 
 				struct Internal : public IObject
 				{
@@ -657,13 +657,13 @@ namespace Omega
 					return static_cast<I*>(static_cast<IObject*>(m_ptrI));
 				}
 
-				auto_iface_ptr<IMarshaller> GetMarshaller()
+				auto_iface_ptr<Remoting::IMarshaller> GetMarshaller()
 				{
 					return m_ptrMarshaller;
 				}
 
 			protected:
-				Wire_Stub_Base(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) :
+				Wire_Stub_Base(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
 					m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController)
 				{
 					PinObjectPointer(m_pController);
@@ -672,7 +672,7 @@ namespace Omega
 
 					m_shim.m_vtable = get_vt();
 					m_shim.m_stub = this;
-					m_shim.m_iid = &OMEGA_GUIDOF(IStub);
+					m_shim.m_iid = &OMEGA_GUIDOF(Remoting::IStub);
 				}
 
 				virtual ~Wire_Stub_Base()
@@ -711,19 +711,19 @@ namespace Omega
 				static const uint32_t MethodCount = 3;	// This must match the proxy
 
 			private:
-				auto_iface_ptr<IMarshaller> m_ptrMarshaller;
-				auto_iface_ptr<IObject>     m_ptrI;
-				IStubController*            m_pController;
-				Threading::AtomicRefCount   m_refcount;
-				Threading::AtomicRefCount   m_pincount;
-				SafeShim                    m_shim;
+				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
+				auto_iface_ptr<IObject>               m_ptrI;
+				Remoting::IStubController*            m_pController;
+				Threading::AtomicRefCount             m_refcount;
+				Threading::AtomicRefCount             m_pincount;
+				SafeShim                              m_shim;
 
 				Wire_Stub_Base(const Wire_Stub_Base&);
 				Wire_Stub_Base& operator = (const Wire_Stub_Base&);
 
-				static const vtable_info<IStub>::type* get_vt()
+				static const vtable_info<Remoting::IStub>::type* get_vt()
 				{
-					static const vtable_info<IStub>::type vt =
+					static const vtable_info<Remoting::IStub>::type vt =
 					{
 						{
 							&AddRef_Safe,
@@ -812,7 +812,7 @@ namespace Omega
 					try
 					{
 						if (guid_t(*iid) == OMEGA_GUIDOF(IObject) ||
-							guid_t(*iid) == OMEGA_GUIDOF(IStub))
+							guid_t(*iid) == OMEGA_GUIDOF(Remoting::IStub))
 						{
 							static_cast<Wire_Stub_Base*>(shim->m_stub)->AddRef();
 							*retval = shim;
@@ -923,7 +923,7 @@ namespace Omega
 			class Wire_Stub<IObject> : public Wire_Stub_Base
 			{
 			public:
-				static const SafeShim* create(IStubController* pController, IMarshaller* pMarshaller, IObject* pI)
+				static const SafeShim* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI)
 				{
 					Wire_Stub* pThis;
 					OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI));
@@ -931,7 +931,7 @@ namespace Omega
 				}
 
 			protected:
-				Wire_Stub(IStubController* pController, IMarshaller* pMarshaller, IObject* pI) :
+				Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
 					Wire_Stub_Base(pController,pMarshaller,pI)
 				{
 				}
@@ -962,7 +962,7 @@ namespace Omega
 			struct wire_rtti
 			{
 				Wire_Proxy_Base* (*pfnCreateWireProxy)(Wire_Proxy_Owner* pOwner);
-				const SafeShim* (*pfnCreateWireStub)(IStubController* pController, IMarshaller* pMarshaller, IObject* pI);
+				const SafeShim* (*pfnCreateWireStub)(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI);
 			};
 
 			typedef Threading::Singleton<std::map<guid_t,const wire_rtti*>,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > WIRE_HOLDER;
@@ -1023,10 +1023,10 @@ namespace Omega
 			)
 
 			OMEGA_QI_MAGIC(Omega::Remoting,IMessage)
-			OMEGA_QI_MAGIC(Omega::System,IStub)
-			OMEGA_QI_MAGIC(Omega::System,IStubController)
-			OMEGA_QI_MAGIC(Omega::System,IProxy)
-			OMEGA_QI_MAGIC(Omega::System,IMarshaller)
+			OMEGA_QI_MAGIC(Omega::Remoting,IStub)
+			OMEGA_QI_MAGIC(Omega::Remoting,IStubController)
+			OMEGA_QI_MAGIC(Omega::Remoting,IProxy)
+			OMEGA_QI_MAGIC(Omega::Remoting,IMarshaller)
 
 		}
 	}

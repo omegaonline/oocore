@@ -54,10 +54,10 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	// Confirm we can QI for all the interfaces we need...
-	OTL::ObjectPtr<Omega::System::IProxy> ptrProxy(ptrPOI);
+	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy(ptrPOI);
 	TEST(ptrProxy);
 
-	OTL::ObjectPtr<Omega::System::IMarshaller> ptrMarshaller;
+	OTL::ObjectPtr<Omega::Remoting::IMarshaller> ptrMarshaller;
 	ptrMarshaller.Attach(ptrProxy->GetMarshaller());
 	TEST(ptrMarshaller);
 

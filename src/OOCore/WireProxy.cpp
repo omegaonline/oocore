@@ -30,7 +30,7 @@ using namespace OTL;
 OOCore::Proxy::Proxy() :
 	m_proxy_id(0)
 {
-	static const System::MetaInfo::vtable_info<System::IProxy>::type proxy_vt =
+	static const System::MetaInfo::vtable_info<Remoting::IProxy>::type proxy_vt =
 	{
 		{
 			&AddRef_Safe,
@@ -51,7 +51,7 @@ OOCore::Proxy::Proxy() :
 
 	m_proxy_shim.m_vtable = &proxy_vt;
 	m_proxy_shim.m_stub = this;
-	m_proxy_shim.m_iid = &OMEGA_GUIDOF(System::IProxy);
+	m_proxy_shim.m_iid = &OMEGA_GUIDOF(Remoting::IProxy);
 
 	static const System::MetaInfo::vtable_info<Remoting::IMarshal>::type marshal_vt =
 	{
@@ -96,9 +96,9 @@ void OOCore::Proxy::Disconnect()
 	m_marshal_count = 0;
 }
 
-System::IMarshaller* OOCore::Proxy::GetMarshaller()
+Remoting::IMarshaller* OOCore::Proxy::GetMarshaller()
 {
-	System::IMarshaller* pRet = static_cast<System::IMarshaller*>(m_pManager);
+	Remoting::IMarshaller* pRet = static_cast<Remoting::IMarshaller*>(m_pManager);
 	pRet->AddRef();
 	return pRet;
 }
@@ -167,7 +167,7 @@ void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(IObject) ||
-		iid == OMEGA_GUIDOF(System::IProxy))
+		iid == OMEGA_GUIDOF(Remoting::IProxy))
 	{
 		Internal_AddRef();
 		return &m_proxy_shim;
@@ -181,7 +181,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
 	return 0;
 }
 
-Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManager* pObjectManager, const guid_t& iid)
+Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* pMarshaller, const guid_t& iid)
 {
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
@@ -194,7 +194,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 	
 	try
 	{
-		m_pManager->DoMarshalChannel(pObjectManager,pParamsOut);
+		m_pManager->DoMarshalChannel(pMarshaller,pParamsOut);
 
 		pParamsOut->WriteStructEnd(L"ipc_request");
 
@@ -209,7 +209,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IObjectManage
 		pParamsOut->ReadGuid(L"iid");
 
 		void* TODO; // Release marshal data for channel
-		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(System::IMarshaller),pObjectManager);
+		//m_pManager->ReleaseMarshalData(L"pObjectManager",pParamsOut,OMEGA_GUIDOF(Remoting::IMarshaller),pObjectManager);
 
 		throw;
 	}
@@ -252,16 +252,16 @@ void OOCore::Proxy::CallRemoteRelease()
 	}
 }
 
-void OOCore::Proxy::MarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t)
+void OOCore::Proxy::MarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t)
 {
 	// Tell the stub to expect incoming requests from a different channel...
 	ObjectPtr<Remoting::IMessage> ptrReflect;
-	ptrReflect.Attach(CallRemoteStubMarshal(pObjectManager,iid));
+	ptrReflect.Attach(CallRemoteStubMarshal(pMarshaller,iid));
 
-	return pObjectManager->MarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
+	return pMarshaller->MarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),ptrReflect);
 }
 
-void OOCore::Proxy::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMessage*, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessage*, const guid_t&, Remoting::MarshalFlags_t)
 {
 	// How do we undo this?
 	void* TODO;
@@ -385,7 +385,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetMarshaller_Safe(const System
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		static_cast<System::IMarshaller*&>(System::MetaInfo::marshal_info<System::IMarshaller*&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->GetMarshaller();
+		static_cast<Remoting::IMarshaller*&>(System::MetaInfo::marshal_info<Remoting::IMarshaller*&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->GetMarshaller();
 	}
 	catch (IException* pE)
 	{
@@ -436,12 +436,12 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::GetUnmarshalFactoryOID_Safe(con
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pObjectManager, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
+const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pMarshaller, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		static_cast<Proxy*>(shim->m_stub)->MarshalInterface(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(pObjectManager),System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage),*iid,flags);
+		static_cast<Proxy*>(shim->m_stub)->MarshalInterface(System::MetaInfo::marshal_info<Remoting::IMarshaller*>::safe_type::coerce(pMarshaller),System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage),*iid,flags);
 	}
 	catch (IException* pE)
 	{
@@ -450,12 +450,12 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const Sys
 	return except;
 }
 
-const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pObjectManager, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
+const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pMarshaller, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
 {
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		static_cast<Proxy*>(shim->m_stub)->ReleaseMarshalData(System::MetaInfo::marshal_info<Remoting::IObjectManager*>::safe_type::coerce(pObjectManager),System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage),*iid,flags);
+		static_cast<Proxy*>(shim->m_stub)->ReleaseMarshalData(System::MetaInfo::marshal_info<Remoting::IMarshaller*>::safe_type::coerce(pMarshaller),System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage),*iid,flags);
 	}
 	catch (IException* pE)
 	{
@@ -464,23 +464,28 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const S
 	return except;
 }
 
-void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	// Unmarshal the reflect package
 	IObject* pUI = 0;
-	pObjectManager->UnmarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+	pMarshaller->UnmarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrReflect;
 	ptrReflect.Attach(static_cast<Remoting::IMessage*>(pUI));
 
 	// Unmarshal the manager
 	pUI = 0;
-	pObjectManager->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_GUIDOF(Remoting::IChannel),pUI);
+	pMarshaller->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_GUIDOF(Remoting::IChannel),pUI);
 	ObjectPtr<Remoting::IChannel> ptrChannel;
 	ptrChannel.Attach(static_cast<Remoting::IChannel*>(pUI));
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());
 
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
 	// Unmarshal the new proxy on the new manager
-	ptrOM->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
+	ptrMarshaller->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
 }

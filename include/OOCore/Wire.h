@@ -88,23 +88,20 @@ namespace Omega
 		};
 
 		inline IMessage* CreateMemoryMessage();
-	}
-
-	namespace System
-	{
+	
 		interface IMarshaller : public IObject
 		{
-			virtual void MarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-			virtual void UnmarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
-			virtual void ReleaseMarshalData(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-			virtual Remoting::IMessage* CreateMessage() = 0;
-			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0) = 0;
+			virtual void MarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
+			virtual void UnmarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void ReleaseMarshalData(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
+			virtual IMessage* CreateMessage() = 0;
+			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
 			virtual TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid) = 0;
 		};
 
 		interface IStub : public IObject
 		{
-			virtual void Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) = 0;
+			virtual void Invoke(IMessage* pParamsIn, IMessage* pParamsOut) = 0;
 			virtual bool_t SupportsInterface(const guid_t& iid) = 0;
 		};
 
@@ -112,13 +109,13 @@ namespace Omega
 		{
 			virtual void RemoteRelease(uint32_t release_count) = 0;
 			virtual bool_t RemoteQueryInterface(const guid_t& iid) = 0;
-			virtual void MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) = 0;
+			virtual void MarshalStub(IMessage* pParamsIn, IMessage* pParamsOut) = 0;
 		};
 
 		interface IProxy : public IObject
 		{
-			virtual void WriteKey(Remoting::IMessage* pMessage) = 0;
-			virtual void UnpackKey(Remoting::IMessage* pMessage) = 0;
+			virtual void WriteKey(IMessage* pMessage) = 0;
+			virtual void UnpackKey(IMessage* pMessage) = 0;
 			virtual IMarshaller* GetMarshaller() = 0;
 			virtual bool_t IsAlive() = 0;
 			virtual bool_t RemoteQueryInterface(const guid_t& iid) = 0;
@@ -129,17 +126,17 @@ namespace Omega
 #if !defined(DOXYGEN)
 
 OMEGA_SET_GUIDOF(Omega::Remoting, IMessage, "{044E0896-8A60-49e8-9143-5B1F01D4AE4C}")
-OMEGA_SET_GUIDOF(Omega::System, IStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
-OMEGA_SET_GUIDOF(Omega::System, IStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
-OMEGA_SET_GUIDOF(Omega::System, IProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
-OMEGA_SET_GUIDOF(Omega::System, IMarshaller, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
+OMEGA_SET_GUIDOF(Omega::Remoting, IStub, "{0785F8A6-A6BE-4714-A306-D9886128A40E}")
+OMEGA_SET_GUIDOF(Omega::Remoting, IStubController, "{B9AD6795-72FA-45a4-9B91-68CE1D5B6283}")
+OMEGA_SET_GUIDOF(Omega::Remoting, IProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B}")
+OMEGA_SET_GUIDOF(Omega::Remoting, IMarshaller, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
 #define OMEGA_WIRE_DECLARE_WIRE_READWRITE(T_type,fn_type) \
 	inline void wire_read(const wchar_t* pszName, Remoting::IMessage* pMessage, T_type& val) \
 	{ \
 		val = pMessage->OMEGA_CONCAT(Read,fn_type)(pszName); \
 	} \
-	inline void wire_read(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, T_type* pVals, uint32_t count) \
+	inline void wire_read(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, T_type* pVals, uint32_t count) \
 	{ \
 		pMessage->OMEGA_CONCAT(Read,OMEGA_CONCAT_R(fn_type,s))(pszName,count,pVals); \
 	} \
@@ -147,7 +144,7 @@ OMEGA_SET_GUIDOF(Omega::System, IMarshaller, "{1C288214-61CD-4bb9-B44D-21813DCB0
 	{ \
 		pMessage->OMEGA_CONCAT(Write,fn_type)(pszName,val); \
 	} \
-	inline void wire_write(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, const T_type* pVals, uint32_t count) \
+	inline void wire_write(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, const T_type* pVals, uint32_t count) \
 	{ \
 		pMessage->OMEGA_CONCAT(Write,OMEGA_CONCAT_R(fn_type,s))(pszName,count,pVals); \
 	}
@@ -159,10 +156,10 @@ namespace Omega
 		namespace MetaInfo
 		{
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IMessage)
-			OMEGA_DECLARE_FORWARDS(Omega::System,IStub)
-			OMEGA_DECLARE_FORWARDS(Omega::System,IStubController)
-			OMEGA_DECLARE_FORWARDS(Omega::System,IProxy)
-			OMEGA_DECLARE_FORWARDS(Omega::System,IMarshaller)
+			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStub)
+			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStubController)
+			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IProxy)
+			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IMarshaller)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
@@ -229,7 +226,7 @@ namespace Omega
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System, IStub,
+				Omega::Remoting, IStub,
 
 				OMEGA_METHOD_VOID(Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),Remoting::IMessage*,pParamsOut))
 				OMEGA_METHOD(bool_t,SupportsInterface,1,((in),const guid_t&,iid))
@@ -237,7 +234,7 @@ namespace Omega
 			
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System, IStubController,
+				Omega::Remoting, IStubController,
 
 				OMEGA_METHOD_VOID(RemoteRelease,1,((in),uint32_t,release_count))
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
@@ -246,18 +243,18 @@ namespace Omega
 			
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System, IProxy,
+				Omega::Remoting, IProxy,
 
 				OMEGA_METHOD_VOID(WriteKey,1,((in),Remoting::IMessage*,pMessage))
 				OMEGA_METHOD_VOID(UnpackKey,1,((in),Remoting::IMessage*,pMessage))
-				OMEGA_METHOD(IMarshaller*,GetMarshaller,0,())
+				OMEGA_METHOD(Remoting::IMarshaller*,GetMarshaller,0,())
 				OMEGA_METHOD(bool_t,IsAlive,0,())
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
 			)
 			
 			OMEGA_DEFINE_INTERNAL_INTERFACE
 			(
-				Omega::System, IMarshaller,
+				Omega::Remoting, IMarshaller,
 
 				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
@@ -288,17 +285,17 @@ namespace Omega
 				static void init(type&)
 				{ }
 
-				static void read(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, type& val)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, type& val)
 				{
 					wire_read(pszName,pMessage,val);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
 					wire_write(pszName,pMessage,val);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type)
+				static void unpack(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type)
 				{
 					// Just read the value back, moving the read pointer correctly
 					type val = default_value<type>::value();
@@ -347,7 +344,7 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
@@ -356,7 +353,7 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, S count)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
@@ -365,7 +362,7 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
+				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
@@ -374,7 +371,7 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, S count)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
@@ -384,7 +381,7 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
@@ -397,7 +394,7 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
+				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
@@ -431,32 +428,32 @@ namespace Omega
 					impl::init(val,iid);
 				}
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val)
 				{
 					impl::read(pszName,pManager,pMessage,val);
 				}
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val, const guid_t& iid)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val, const guid_t& iid)
 				{
 					impl::read(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
 					impl::write(pszName,pManager,pMessage,val);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
 				{
 					impl::write(pszName,pManager,pMessage,val,iid);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
 					impl::unpack(pszName,pManager,pMessage,val);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
+				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
 				{
 					impl::unpack(pszName,pManager,pMessage,val,iid);
 				}
@@ -497,19 +494,19 @@ namespace Omega
 				static void init(type&, const guid_t& = OMEGA_GUIDOF(I))
 				{ }
 
-				static void read(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					IObject* p = 0;
 					pManager->UnmarshalInterface(pszName,pMessage,iid,p);
 					pI = static_cast<I*>(p);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					pManager->MarshalInterface(pszName,pMessage,iid,pI);
 				}
 
-				static void unpack(const wchar_t* pszName, IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					pManager->ReleaseMarshalData(pszName,pMessage,iid,pI);
 				}
@@ -676,7 +673,7 @@ namespace Omega
 			{
 				typedef Coll type;
 
-				static void read(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
 					pMessage->ReadStructStart(pszName,L"$collection_type_1");
 					uint32_t count = pMessage->ReadUInt32(L"count");
@@ -689,7 +686,7 @@ namespace Omega
 					pMessage->ReadStructEnd(pszName);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					if (val.size() > (uint32_t)-1 / sizeof(typename Coll::value_type))
 						OMEGA_THROW(L"Attempt to marshal too many collection items");
@@ -876,7 +873,7 @@ namespace Omega
 			{
 				typedef Coll type;
 
-				static void read(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				static void read(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
 					pMessage->ReadStructStart(pszName,L"$collection_type_2");
 					uint32_t count = pMessage->ReadUInt32(L"count");
@@ -893,7 +890,7 @@ namespace Omega
 					pMessage->ReadStructEnd(pszName);
 				}
 
-				static void write(const wchar_t* pszName, IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void write(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					if (val.size() > (uint32_t)-1 / sizeof(typename Coll::value_type))
 						OMEGA_THROW(L"Attempt to marshal too many collection items");

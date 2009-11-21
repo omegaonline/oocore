@@ -78,10 +78,10 @@ namespace OTL
 
 	// IMarshalFactory members
 	public:
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
+		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject)
 		{
 			ObjectPtr<ObjectImpl<E> > ptrE = ObjectImpl<E>::CreateInstancePtr();
-			ptrE->UnmarshalInterface(pObjectManager,pMessage,flags);
+			ptrE->UnmarshalInterface(pMarshaller,pMessage,flags);
 			pObject = ptrE->QueryInterface(iid);
 		}
 	};
@@ -97,14 +97,14 @@ namespace OTL
 			INTERFACE_ENTRY_CHAIN(OTL::ExceptionImpl<E>)
 		END_INTERFACE_MAP()
 
-		virtual void UnmarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
+		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t)
 		{
 			this->m_strDesc = pMessage->ReadString(L"m_strDesc");
 			this->m_strSource = pMessage->ReadString(L"m_strSource");
 
 			Omega::guid_t actual_iid = OMEGA_GUIDOF(Omega::IException);
 			IObject* pUI = 0;
-			pManager->UnmarshalInterface(L"m_ptrCause",pMessage,actual_iid,pUI);
+			pMarshaller->UnmarshalInterface(L"m_ptrCause",pMessage,actual_iid,pUI);
 			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pUI));
 		}
 
@@ -123,18 +123,18 @@ namespace OTL
 			return *pOID;
 		}
 
-		virtual void MarshalInterface(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			pMessage->WriteString(L"m_strDesc",this->m_strDesc);
 			pMessage->WriteString(L"m_strSource",this->m_strSource);
-			pManager->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
+			pMarshaller->MarshalInterface(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
 
-		virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			pMessage->ReadString(L"m_strDesc");
 			pMessage->ReadString(L"m_strSource");
-			pManager->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
+			pMarshaller->ReleaseMarshalData(L"m_ptrCause",pMessage,OMEGA_GUIDOF(Omega::IException),this->m_ptrCause);
 		}
 	};
 }

@@ -159,6 +159,11 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 {
 	// Find and/or create the object manager associated with src_channel_id
 	ObjectPtr<Remoting::IObjectManager> ptrOM = get_channel_om(pMsg->m_src_channel_id);
+
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 	
 	// Wrap up the request
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
@@ -167,7 +172,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 
 	// Unpack the payload
 	IObject* pUI = 0;
-	ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+	ptrMarshaller->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrRequest;
 	ptrRequest.Attach(static_cast<Remoting::IMessage*>(pUI));
 
@@ -190,7 +195,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 	{
 		// Wrap the response...
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
-		ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+		ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 		// Send it back...
 		try
@@ -199,7 +204,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 		}
 		catch (...)
 		{
-			ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+			ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 			throw;
 		}
 	}

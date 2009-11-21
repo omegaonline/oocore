@@ -43,13 +43,13 @@ namespace OOCore
 
 	// IMarshalFactory members
 	public:
-		void UnmarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
+		void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags, Omega::IObject*& pObject);
 	};
 
 	class Proxy :
 		public OTL::ObjectBase,
-		public Omega::System::IProxy,
 		public Omega::System::MetaInfo::ISafeProxy,
+		public Omega::Remoting::IProxy,
 		public Omega::Remoting::IMarshal
 	{
 	public:
@@ -63,8 +63,8 @@ namespace OOCore
 		Omega::IObject* UnmarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& wire_iid);
 
 		BEGIN_INTERFACE_MAP(Proxy)
-			INTERFACE_ENTRY(Omega::System::IProxy)
 			INTERFACE_ENTRY(Omega::System::MetaInfo::ISafeProxy)
+			INTERFACE_ENTRY(Omega::Remoting::IProxy)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
 
@@ -80,7 +80,7 @@ namespace OOCore
 			pMessage->ReadUInt32(L"$stub_id");
 		}
 
-		Omega::System::IMarshaller* GetMarshaller();
+		Omega::Remoting::IMarshaller* GetMarshaller();
 		Omega::bool_t IsAlive();
 		Omega::bool_t RemoteQueryInterface(const Omega::guid_t& iid);
 
@@ -133,12 +133,12 @@ namespace OOCore
 			return OID_ProxyMarshalFactory;
 		}
 
-		void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
+		void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetUnmarshalFactoryOID_Safe(const Omega::System::MetaInfo::SafeShim* shim, Omega::guid_base_t* retval, const Omega::guid_base_t* piid, Omega::Remoting::MarshalFlags_t flags);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pObjectManager, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMarshaller, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
+		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMarshaller, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
 
 	private:
 		Proxy(const Proxy&);
@@ -154,7 +154,7 @@ namespace OOCore
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
 		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);
-		Omega::Remoting::IMessage* CallRemoteStubMarshal(Omega::Remoting::IObjectManager* pObjectManager, const Omega::guid_t& iid);
+		Omega::Remoting::IMessage* CallRemoteStubMarshal(Omega::Remoting::IMarshaller* pMarshaller, const Omega::guid_t& iid);
 		void CallRemoteRelease();
 	};
 }

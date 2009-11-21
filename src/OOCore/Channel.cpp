@@ -86,13 +86,17 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 	if (!m_ptrOM)
 		throw Remoting::IChannelClosedException::Create();
+
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(m_ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 	
-	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrOM;
 	guard.release();
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<CDRMessage> > ptrEnvelope = ObjectImpl<CDRMessage>::CreateInstancePtr();
-	ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	OOBase::SmartPtr<OOBase::CDRStream> response = 0;
 	try
@@ -109,13 +113,13 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 	}
 	catch (Remoting::IChannelClosedException* pE)
 	{
-		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+		ptrMarshaller->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		disconnect();
 		pE->Throw();
 	}
 	catch (...)
 	{
-		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+		ptrMarshaller->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		throw;
 	}
 
@@ -129,7 +133,7 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 			
 			// Unwrap the payload...
 			IObject* pUI = 0;
-			ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+			ptrMarshaller->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 			pRecv = static_cast<Remoting::IMessage*>(pUI);
 		}
 
@@ -200,13 +204,13 @@ guid_t OOCore::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalF
 	return OID_ChannelMarshalFactory;
 }
 
-void OOCore::Channel::MarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::Channel::MarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->WriteUInt32(L"m_channel_id",m_channel_id);
 	pMessage->WriteGuid(L"m_message_oid",m_message_oid);
 }
 
-void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
+void OOCore::Channel::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->ReadUInt32(L"m_channel_id");
 	pMessage->ReadGuid(L"m_message_oid");
@@ -214,7 +218,7 @@ void OOCore::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IM
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 
-void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
+void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t flags, IObject*& pObject)
 {
 	if (OOCore::HostedByOOServer())
 	{
@@ -224,7 +228,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 
 		// If we have a pointer by now then we are actually running in the OOServer.exe,
 		// and can therefore do our specialized unmarshalling...
-		ptrMarshalFactory->UnmarshalInterface(pObjectManager,pMessage,iid,flags,pObject);
+		ptrMarshalFactory->UnmarshalInterface(pMarshaller,pMessage,iid,flags,pObject);
 	}
 	else
 	{
@@ -241,7 +245,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*
 
 OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");
 
-void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, Omega::IObject*& pObject)
+void OOCore::CDRMessageMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, Omega::IObject*& pObject)
 {
 	uint32_t len = pMessage->ReadUInt32(L"length");
 

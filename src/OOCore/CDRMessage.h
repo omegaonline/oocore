@@ -119,7 +119,7 @@ namespace OOCore
 			return OID_CDRMessageMarshalFactory;
 		}
 
-		void MarshalInterface(Omega::Remoting::IObjectManager*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		void MarshalInterface(Omega::Remoting::IMarshaller*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			if (m_stream.buffer()->length() > (Omega::uint32_t)-1)
 				OMEGA_THROW(L"Message too long to marshal");
@@ -129,7 +129,7 @@ namespace OOCore
 			pMessage->WriteBytes(L"data",len,reinterpret_cast<const Omega::byte_t*>(m_stream.buffer()->rd_ptr()));
 		}
 
-		void ReleaseMarshalData(Omega::Remoting::IObjectManager*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
+		void ReleaseMarshalData(Omega::Remoting::IMarshaller*, Omega::Remoting::IMessage* pMessage, const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
 		{
 			Omega::uint32_t len = pMessage->ReadUInt32(L"length");
 			OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;

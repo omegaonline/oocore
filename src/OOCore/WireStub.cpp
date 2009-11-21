@@ -87,25 +87,25 @@ void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pPa
 	}
 }
 
-ObjectPtr<System::IStub> OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
+ObjectPtr<Remoting::IStub> OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
 {
 	guid_t iid = pMessage->ReadGuid(L"$iid");
 	if (iid == OMEGA_GUIDOF(IObject))
-		return static_cast<IStub*>(this);
+		return static_cast<Remoting::IStub*>(this);
 
 	return FindStub(iid);
 }
 
-ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
+ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 {
 	try
 	{
 		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-		ObjectPtr<System::IStub> ptrStub;
+		ObjectPtr<Remoting::IStub> ptrStub;
 			
 		// See if we have a stub for this interface already...
-		std::map<const guid_t,ObjectPtr<System::IStub> >::iterator i=m_iid_map.find(iid);
+		std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator i=m_iid_map.find(iid);
 		if (i != m_iid_map.end())
 			return i->second;
 			
@@ -123,7 +123,7 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 			ptrStub.Attach(CreateStub(iid));
 			
 		// Now add it...
-		std::pair<std::map<const guid_t,ObjectPtr<System::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<System::IStub> >::value_type(iid,ptrStub));
+		std::pair<std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<Remoting::IStub> >::value_type(iid,ptrStub));
 		if (!p.second)
 			ptrStub = p.first->second;
 				
@@ -135,7 +135,7 @@ ObjectPtr<System::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 	}
 }
 
-System::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
+Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 {
 	ObjectPtr<System::MetaInfo::ISafeProxy> ptrSafeProxy(m_ptrObj);
 	if (!ptrSafeProxy)
@@ -157,14 +157,14 @@ System::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 	}
 
 	// Ask the safe proxy for the wire stub
-	System::MetaInfo::auto_safe_shim shim_Controller = System::MetaInfo::create_safe_stub(static_cast<System::IStubController*>(this),OMEGA_GUIDOF(System::IStubController));
-	System::MetaInfo::auto_safe_shim shim_Marshaller = System::MetaInfo::create_safe_stub(static_cast<System::IMarshaller*>(m_pManager),OMEGA_GUIDOF(System::IMarshaller));
+	System::MetaInfo::auto_safe_shim shim_Controller = System::MetaInfo::create_safe_stub(static_cast<Remoting::IStubController*>(this),OMEGA_GUIDOF(Remoting::IStubController));
+	System::MetaInfo::auto_safe_shim shim_Marshaller = System::MetaInfo::create_safe_stub(static_cast<Remoting::IMarshaller*>(m_pManager),OMEGA_GUIDOF(Remoting::IMarshaller));
 
 	System::MetaInfo::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
 	if (!wire_stub)
 		OMEGA_THROW(L"Attempt to create a stub for an object failed");
 
-	return static_cast<System::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub));
+	return static_cast<Remoting::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub));
 }
 
 void OOCore::Stub::RemoteRelease(uint32_t release_count)
@@ -215,9 +215,14 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Get the channel's OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());
+
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 	
 	// Marshal the stub
-	ptrOM->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);
+	ptrMarshaller->MarshalInterface(L"stub",ptrMessage,iid,m_ptrObj);
 	
 	try
 	{
@@ -225,7 +230,7 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	}
 	catch (...)
 	{
-		ptrOM->ReleaseMarshalData(L"stub",ptrMessage,iid,m_ptrObj);
+		ptrMarshaller->ReleaseMarshalData(L"stub",ptrMessage,iid,m_ptrObj);
 		throw;
 	}
 }

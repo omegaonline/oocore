@@ -31,7 +31,7 @@ namespace OOCore
 {
 	interface IStdObjectManager : public Omega::Remoting::IObjectManager
 	{
-		virtual void MarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
+		virtual void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 	};
 
 	Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
@@ -41,7 +41,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	OOCore, IStdObjectManager, Omega::Remoting, IObjectManager, "{AC019AD3-1E57-4641-A584-772F9604E31D}",
 
-	OMEGA_METHOD_VOID(MarshalChannel,3,((in),Omega::Remoting::IObjectManager*,pObjectManager,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
+	OMEGA_METHOD_VOID(MarshalChannel,3,((in),Omega::Remoting::IMarshaller*,pMarshaller,(in),Omega::Remoting::IMessage*,pMessage,(in),Omega::Remoting::MarshalFlags_t,flags))
 )
 
 namespace OOCore
@@ -50,7 +50,7 @@ namespace OOCore
 		public OTL::ObjectBase,
 		public OTL::AutoObjectFactoryNoAggregation<StdObjectManager,&Omega::Remoting::OID_StdObjectManager,Omega::Activation::InProcess>,
 		public IStdObjectManager,
-		public Omega::System::IMarshaller
+		public Omega::Remoting::IMarshaller
 	{
 	public:
 		StdObjectManager();
@@ -59,13 +59,13 @@ namespace OOCore
 		BEGIN_INTERFACE_MAP(StdObjectManager)
 			INTERFACE_ENTRY(IStdObjectManager)
 			INTERFACE_ENTRY(Omega::Remoting::IObjectManager)
-			INTERFACE_ENTRY(Omega::System::IMarshaller)
+			INTERFACE_ENTRY(Omega::Remoting::IMarshaller)
 		END_INTERFACE_MAP()
 
 		void RemoveProxy(Omega::uint32_t proxy_id);
 		void RemoveStub(Omega::uint32_t stub_id);
 		bool IsAlive();
-		void DoMarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pParamsOut);
+		void DoMarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pParamsOut);
 
 	private:
 		StdObjectManager(const StdObjectManager&);
@@ -92,7 +92,7 @@ namespace OOCore
 		
 	// IStdObjectManager members
 	public:
-		void MarshalChannel(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
+		void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
 
 	// IObjectManager members
 	public:

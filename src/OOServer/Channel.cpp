@@ -89,12 +89,16 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	if (!m_ptrOM)
 		throw Omega::Remoting::IChannelClosedException::Create();
 	
-	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrOM;
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(m_ptrOM);
+	if (!ptrMarshaller)
+		throw Omega::INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
 	guard.release();
 
 	// We need to wrap the message
 	ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
-	ptrOM->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+	ptrMarshaller->MarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 
 	OOBase::SmartPtr<OOBase::CDRStream> response;
 	try
@@ -127,7 +131,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	}
 	catch (...)
 	{
-		ptrOM->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
+		ptrMarshaller->ReleaseMarshalData(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pSend);
 		throw;
 	}
 
@@ -141,7 +145,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 					
 			// Unwrap the payload...
 			IObject* pUI = 0;
-			ptrOM->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+			ptrMarshaller->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 			pRecv = static_cast<Remoting::IMessage*>(pUI);
 		}
 
@@ -216,19 +220,19 @@ guid_t User::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFla
 	return oid;
 }
 
-void User::Channel::MarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
+void User::Channel::MarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->WriteUInt32(L"m_channel_id",m_channel_id);
 	pMessage->WriteGuid(L"m_message_oid",m_message_oid);
 }
 
-void User::Channel::ReleaseMarshalData(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
+void User::Channel::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)
 {
 	pMessage->ReadUInt32(L"m_channel_id");
 	pMessage->ReadGuid(L"m_message_oid");
 }
 
-void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IObjectManager*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
+void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	Omega::uint32_t channel_id = pMessage->ReadUInt32(L"m_channel_id");
 	guid_t message_oid = pMessage->ReadGuid(L"m_message_oid");

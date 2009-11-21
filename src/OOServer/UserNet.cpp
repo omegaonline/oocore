@@ -176,8 +176,13 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 			
 			ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
+			// QI for IMarshaller
+			ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+			if (!ptrMarshaller)
+				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
 			IObject* pUI = 0;
-			ptrOM->UnmarshalInterface(L"payload",ptrInput,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+			ptrMarshaller->UnmarshalInterface(L"payload",ptrInput,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 			ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
 		}
 	}
@@ -217,7 +222,13 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 
 	// Get the source channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
-	ptrOM->MarshalInterface(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
+	ptrMarshaller->MarshalInterface(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 
 	try
 	{
@@ -250,7 +261,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 		ptrMessage->ReadUInt16(L"src_thread_id");
 		ptrMessage->ReadUInt16(L"flags");
 		ptrMessage->ReadUInt32(L"seq_no");
-		ptrOM->ReleaseMarshalData(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
+		ptrMarshaller->ReleaseMarshalData(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		throw;
 	}
 }
@@ -306,8 +317,13 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
 
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
 	IObject* pUI = 0;
-	ptrOM->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+	ptrMarshaller->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
 		
@@ -371,8 +387,13 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// Get the dest channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
 
+	// QI for IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	if (!ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
 	IObject* pUI = 0;
-	ptrOM->UnmarshalInterface(L"payload",pMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+	ptrMarshaller->UnmarshalInterface(L"payload",pMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 	ObjectPtr<Remoting::IMessage> ptrPayload;
 	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
 
@@ -444,7 +465,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrMsg = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
 			ptrMsg->init(output);
 
-			ptrOM->MarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+			ptrMarshaller->MarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 			
 			AddRef();
 
@@ -452,7 +473,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 			{
 				Release();
 
-				ptrOM->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+				ptrMarshaller->ReleaseMarshalData(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 				OMEGA_THROW(L"Failed to queue message");
 			}
 		}
@@ -492,7 +513,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		else
 		{
 			// Marshal the message onto the CDR message
-			ptrOM->MarshalInterface(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+			ptrMarshaller->MarshalInterface(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 		}
 
 		// Translate channel ids
@@ -532,7 +553,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		if (res != Root::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & Root::Message_t::system_message))
-				ptrOM->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
+				ptrMarshaller->ReleaseMarshalData(L"payload",ptrOutput,OMEGA_GUIDOF(Remoting::IMessage),ptrPayload);
 
 			if (res == Root::MessageHandler::io_result::timedout)
 				throw Omega::ITimeoutException::Create();

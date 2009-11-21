@@ -408,6 +408,11 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		if (!ptrOM)
 			return;
 
+		// QI for IMarshaller
+		ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+		if (!ptrMarshaller)
+			return;
+
 		// Wrap up the request
 		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrEnvelope;
 		ptrEnvelope = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
@@ -415,7 +420,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 
 		// Unpack the payload
 		IObject* pUI = 0;
-		ptrOM->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
+		ptrMarshaller->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
 		ObjectPtr<Remoting::IMessage> ptrRequest;
 		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pUI));
 
@@ -444,14 +449,14 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 
 			// Wrap the response...
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrResponse = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
-			ptrOM->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+			ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
 			const OOBase::CDRStream* buffer = static_cast<const OOBase::CDRStream*>(ptrResponse->GetCDRStream());
 			Root::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*buffer,deadline,attribs);
 			if (res != Root::MessageHandler::io_result::success)
 			{
-				ptrOM->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
+				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 				if (res == Root::MessageHandler::io_result::failed)
 					LOG_ERROR(("Response sending failed"));

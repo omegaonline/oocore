@@ -327,7 +327,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			else
 			{
 				// It's a method call on a stub...
-				ObjectPtr<System::IStub> ptrStub;
+				ObjectPtr<Remoting::IStub> ptrStub;
 
 				// Look up the stub
 				try
@@ -772,7 +772,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 	}
 }
 
-void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pParamsOut)
+void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pParamsOut)
 {
 	if (!m_ptrChannel)
 		OMEGA_THROW(L"ObjectManager is not connected");
@@ -780,13 +780,13 @@ void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IObjectManager* pObjec
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...
-	ObjectPtr<IStdObjectManager> ptrOM(pObjectManager);
+	ObjectPtr<IStdObjectManager> ptrOM(pMarshaller);
 	assert(ptrOM);
 
 	ptrOM->MarshalChannel(this,pParamsOut,m_ptrChannel->GetMarshalFlags());
 }
 
-void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectManager, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
+void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Remoting::MarshalFlags_t flags)
 {
 	ObjectPtr<Remoting::IMarshal> ptrMarshal(m_ptrChannel);
 	if (!ptrMarshal)
@@ -802,7 +802,7 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IObjectManager* pObjectM
 
 	pMessage->WriteGuid(L"$oid",oid);
 
-	ptrMarshal->MarshalInterface(pObjectManager,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
+	ptrMarshal->MarshalInterface(pMarshaller,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 
 	pMessage->WriteStructEnd(L"m_ptrChannel");
 }

@@ -65,9 +65,7 @@ namespace OOCore
 		AptChannel() : Channel() {}
 
 		void init(Omega::uint16_t apt_id, OOBase::SmartPtr<Apartment> ptrApt, Omega::Remoting::IObjectManager* pOM);
-		//void init(uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
-		//void disconnect();
-
+		
 		BEGIN_INTERFACE_MAP(AptChannel)
 			INTERFACE_ENTRY_CHAIN(Channel)
 		END_INTERFACE_MAP()
@@ -81,17 +79,6 @@ namespace OOCore
 	// IChannelBase members
 	public:
 		virtual Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
-	
-	//// IChannel members
-	//public:
-	//	virtual Omega::guid_t GetReflectUnmarshalFactoryOID();
-	//	virtual void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
-	
-	//// IMarshal members
-	//public:
-	//	virtual Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-	//	virtual void MarshalInterface(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
-	//	virtual void ReleaseMarshalData(Omega::Remoting::IObjectManager* pObjectManager, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 	};
 
 	// {6654B003-44F1-497a-B539-80B5FCED73BC}

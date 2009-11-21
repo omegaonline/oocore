@@ -279,10 +279,10 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Own
 	if (!ptrSProxy)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(ISafeProxy));
 
-	return ptrSProxy->GetShim(OMEGA_GUIDOF(IProxy));
+	return ptrSProxy->GetShim(OMEGA_GUIDOF(Remoting::IProxy));
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::MetaInfo::Wire_Proxy_Owner::CreateMessage(IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::MetaInfo::Wire_Proxy_Owner::CreateMessage(Remoting::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id)
 {
 	auto_iface_ptr<Remoting::IMessage> ptrMessage = pMarshaller->CreateMessage();
 	bool unpack = false;
@@ -353,12 +353,12 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Bas
 	return m_pOwner->GetWireProxy();
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::IMarshaller> Omega::System::MetaInfo::Wire_Proxy_Base::GetMarshaller()
+Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMarshaller> Omega::System::MetaInfo::Wire_Proxy_Base::GetMarshaller()
 {
 	return m_pOwner->GetMarshaller();
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::MetaInfo::Wire_Proxy_Base::CreateMessage(System::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::MetaInfo::Wire_Proxy_Base::CreateMessage(Remoting::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id)
 {
 	return m_pOwner->CreateMessage(pMarshaller,iid,method_id);
 }
@@ -402,8 +402,8 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_wire_st
 		throw INoInterfaceException::Create(iid);	
 
 	// Proxy the incoming params
-	auto_iface_ptr<IStubController> ptrController = static_cast<IStubController*>(create_safe_proxy(shim_Controller));
-	auto_iface_ptr<IMarshaller> ptrMarshaller = static_cast<IMarshaller*>(create_safe_proxy(shim_Marshaller));
+	auto_iface_ptr<Remoting::IStubController> ptrController = static_cast<Remoting::IStubController*>(create_safe_proxy(shim_Controller));
+	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(create_safe_proxy(shim_Marshaller));
 
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);

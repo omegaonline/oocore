@@ -143,7 +143,7 @@ namespace OTL
 	class ObjectPtrBase
 	{
 	public:
-		explicit ObjectPtrBase(OBJECT* obj) :
+		ObjectPtrBase(OBJECT* obj) :
 			m_ptr(obj)
 		{
 			if (m_ptr)
@@ -218,9 +218,9 @@ namespace OTL
 		}
 
 		template <typename Q>
-		Q* QueryInterface()
+		Q* QueryInterface() const
 		{
-			return static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q)));
+			return (m_ptr ? static_cast<Q*>(m_ptr->QueryInterface(OMEGA_GUIDOF(Q))) : 0);
 		}
 
 		OBJECT* operator ->() const
@@ -244,11 +244,12 @@ namespace OTL
 	class ObjectPtr : public ObjectPtrBase<OBJECT>
 	{
 	public:
-		explicit ObjectPtr(OBJECT* obj = 0) :
+		ObjectPtr(OBJECT* obj = 0) :
 		  ObjectPtrBase<OBJECT>(obj)
 		{ }
 
-		ObjectPtr(Omega::IObject* pObject) :
+		template <typename I>
+		ObjectPtr(I* pObject) :
 		  ObjectPtrBase<OBJECT>(0)
 		{
 			if (pObject)
@@ -259,8 +260,20 @@ namespace OTL
 		  ObjectPtrBase<OBJECT>(rhs)
 		{ }
 
+		template <typename I>
+		ObjectPtr(const ObjectPtr<I>& rhs) :
+		  ObjectPtrBase<OBJECT>(0)
+		{ 
+			if (rhs)
+				this->m_ptr = static_cast<OBJECT*>(rhs->QueryInterface(OMEGA_GUIDOF(OBJECT)));
+		}
+
 		ObjectPtr(const Omega::guid_t& oid, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
 		  ObjectPtrBase<OBJECT>(oid,flags,pOuter)
+		{ }
+
+		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
+		  ObjectPtrBase<OBJECT>(name,flags,pOuter)
 		{ }
 
 		ObjectPtr(const Omega::string_t& name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
@@ -529,7 +542,7 @@ namespace OTL
 		static NoLockObjectImpl<ROOT>* CreateInstance(Omega::IObject* pOuter = 0)
 		{
 			if (pOuter)
-				throw Omega::Activation::INoAggregationException::Create(Omega::guid_t::Null());
+				return 0;
 
 			NoLockObjectImpl<ROOT>* pObject;
 			OMEGA_NEW(pObject,NoLockObjectImpl<ROOT>());

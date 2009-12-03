@@ -21,9 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OTL/Exception.h>
-#include <OTL/Registry.h>
-
 #include "StdObjectManager.h"
 #include "ApartmentImpl.h"
 #include "WireProxy.h"
@@ -167,7 +164,7 @@ namespace
 		if (ptrOidsKey->IsSubKey(strOid))
 			return ptrOidsKey.OpenSubKey(strOid);
 
-		return 0;
+		return ObjectPtr<Registry::IKey>();
 	}
 
 	DLLManagerImpl::DLLManagerImpl()

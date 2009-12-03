@@ -21,8 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OTL/Registry.h>
-
 #include "UserSession.h"
 #include "Activation.h"
 

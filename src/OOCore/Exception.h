@@ -22,8 +22,6 @@
 #ifndef OOCORE_EXCEPTION_H_INCLUDED_
 #define OOCORE_EXCEPTION_H_INCLUDED_
 
-#include <OTL/Exception.h>
-
 namespace OOCore
 {
 	// {35F2702C-0A1B-4962-A012-F6BBBF4B0732}

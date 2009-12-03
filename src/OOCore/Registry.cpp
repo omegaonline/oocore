@@ -21,9 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OTL/Exception.h>
-#include <OTL/Registry.h>
-
 #include "IPS.h"
 
 #if defined(_WIN32)
@@ -149,7 +146,7 @@ namespace
 			}			
 		}
 
-		return 0;
+		return ObjectPtr<Registry::IKey>();
 	}
 
 	static int64_t ProcessXmlInteger(const wchar_t* p)
@@ -425,7 +422,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 	// Read keys...
 	do
 	{
-		ReadXmlKey(rd_ptr,0,namespaces,bAdd,mapSubsts);
+		ReadXmlKey(rd_ptr,static_cast<Registry::IKey*>(0),namespaces,bAdd,mapSubsts);
 
 		// Skip any guff...
 		OOCore::Xml::ParseXMLCharData(rd_ptr,strGuff);

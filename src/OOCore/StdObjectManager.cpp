@@ -452,19 +452,19 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	if (!m_ptrChannel)
 		OMEGA_THROW(L"ObjectManager is not connected");
 
-	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
+	Remoting::IMessage* pInternalRecv = 0;
+	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pInternalRecv,timeout);
 	if (pE)
 		return pE;
 
 	try
 	{
 		ObjectPtr<Remoting::IMessage> ptrRecv;
-		ptrRecv.Attach(pRecv);
-		pRecv = 0;
+		ptrRecv.Attach(pInternalRecv);
 
 		if (!(attribs & TypeInfo::Asynchronous))
 		{
-			assert(ptrRecv);
+			assert(pInternalRecv);
 
 			// Read the header
 			ptrRecv->ReadStructStart(L"ipc_response",L"$ipc_response_type");
@@ -483,7 +483,6 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 		}
 
 		pRecv = ptrRecv.AddRef();
-
 		return 0;
 	}
 	catch (IException* pE)

@@ -87,12 +87,10 @@ Omega::System::MetaInfo::Wire_Proxy_Owner::~Wire_Proxy_Owner()
 	assert(shim);
 
 	// Get the base shim
-	const SafeShim* base_shim;
+	auto_safe_shim base_shim;
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetBaseShim_Safe(shim,&base_shim);
 	if (except)
 		throw_correct_exception(except);
-
-	auto_safe_shim ss_base = base_shim;
 
 	WIRE_PROXY_HOLDER::instance()->remove(base_shim);
 }
@@ -371,12 +369,10 @@ void Omega::System::MetaInfo::Wire_Proxy_Base::UnpackHeader(Omega::Remoting::IMe
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> Omega::System::MetaInfo::create_wire_proxy_owner(const SafeShim* shim, IObject* pOuter)
 {
 	// QI for the IObject shim
-	const SafeShim* base_shim;
+	auto_safe_shim base_shim;
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetBaseShim_Safe(shim,&base_shim);
 	if (except)
 		throw_correct_exception(except);
-
-	auto_safe_shim ss_base = base_shim;
 
 	// Lookup in the global map...
 	auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = WIRE_PROXY_HOLDER::instance()->find(base_shim);

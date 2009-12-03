@@ -59,6 +59,8 @@
 // Include OOCore/OTL components
 
 #include <OTL/OTL.h>
+#include <OTL/Exception.h>
+#include <OTL/Registry.h>
 
 // End of OOCore/OTL includes
 /////////////////////////////////////////////////

@@ -20,9 +20,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "OOServer_User.h"
-
-#include <OTL/Registry.h>
-
 #include "UserManager.h"
 #include "MessageConnection.h"
 

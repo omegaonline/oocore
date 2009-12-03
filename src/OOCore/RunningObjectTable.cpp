@@ -21,8 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OTL/Exception.h>
-
 #include "Activation.h"
 #include "IPS.h"
 
@@ -76,7 +74,7 @@ ObjectPtr<OOCore::IInterProcessService> OOCore::GetInterProcessService()
 		IException* pE = ISystemException::Create(L"Omega::Initialize not called",L"");
 		pE2->Release();
 		pE->Throw();
-		return 0;
+		return ObjectPtr<OOCore::IInterProcessService>();
 	}
 }
 

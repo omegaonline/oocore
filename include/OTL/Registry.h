@@ -35,9 +35,31 @@ namespace OTL
 		  ObjectPtrBase<Omega::Registry::IKey>(pKey)
 		{ }
 
+		template <typename I>
+	    ObjectPtr(I* pObject) :
+		  ObjectPtrBase<Omega::Registry::IKey>(0)
+		{
+			if (pObject)
+				this->m_ptr = static_cast<Omega::Registry::IKey*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::Registry::IKey)));
+		}
+
 		ObjectPtr(const ObjectPtr<Omega::Registry::IKey>& rhs) :
 		  ObjectPtrBase<Omega::Registry::IKey>(rhs)
 		{ }
+
+		template <typename I>
+		ObjectPtr(const ObjectPtr<I>& rhs) :
+		  ObjectPtrBase<Omega::Registry::IKey>(0)
+		{ 
+			if (rhs)
+				this->m_ptr = static_cast<Omega::Registry::IKey*>(rhs->QueryInterface(OMEGA_GUIDOF(Omega::Registry::IKey)));
+		}
+
+		ObjectPtr(const wchar_t* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
+		  ObjectPtrBase<Omega::Registry::IKey>(0)
+		{
+			Attach(Omega::Registry::IKey::OpenKey(key,flags));
+		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 		  ObjectPtrBase<Omega::Registry::IKey>(0)

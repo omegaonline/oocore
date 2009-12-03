@@ -21,8 +21,6 @@
 
 #include "OOCore_precomp.h"
 
-#include <OTL/Exception.h>
-
 #include <limits.h>
 
 using namespace Omega;

@@ -21,8 +21,6 @@
 
 #include "OOServer_User.h"
 
-#include <OTL/Registry.h>
-
 #include "InterProcessService.h"
 #include "UserManager.h"
 
@@ -104,7 +102,7 @@ namespace
 		}
 
 		if (!ptrOidKey || !ptrOidKey->IsValue(L"Application"))
-			return 0;
+			return static_cast<Omega::Registry::IKey*>(0);
 
 		string_t strAppName = ptrOidKey->GetStringValue(L"Application");
 
@@ -117,7 +115,7 @@ namespace
 		if (ptrServer->IsSubKey(strAppName + L"\\Activation"))
 			return ptrServer.OpenSubKey(strAppName + L"\\Activation");
 
-		return 0;
+		return static_cast<Omega::Registry::IKey*>(0);
 	}
 }
 

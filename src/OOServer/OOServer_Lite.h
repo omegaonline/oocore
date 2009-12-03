@@ -26,6 +26,8 @@
 #include "../OOBase/pw_info.h"
 
 #include <OTL/OTL.h>
+#include <OTL/Exception.h>
+#include <OTL/Registry.h>
 
 #include "../OOCore/Server.h"
 

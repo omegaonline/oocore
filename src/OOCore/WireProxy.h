@@ -144,13 +144,14 @@ namespace OOCore
 		Proxy(const Proxy&);
 		Proxy& operator = (const Proxy&);
 
-		OOBase::AtomicInt<Omega::uint32_t> m_marshal_count;
-		OOBase::AtomicInt<Omega::uint32_t> m_pin_count;
-		OOBase::SpinLock                   m_lock;
-		Omega::uint32_t                    m_proxy_id;
-		StdObjectManager*                  m_pManager;
-		Omega::System::MetaInfo::SafeShim  m_proxy_shim;
-		Omega::System::MetaInfo::SafeShim  m_marshal_shim;
+		OOBase::AtomicInt<Omega::uint32_t>    m_marshal_count;
+		OOBase::AtomicInt<Omega::uint32_t>    m_pin_count;
+		OOBase::SpinLock                      m_lock;
+		Omega::uint32_t                       m_proxy_id;
+		StdObjectManager*                     m_pManager;
+		Omega::System::MetaInfo::SafeShim     m_proxy_shim;
+		Omega::System::MetaInfo::SafeShim     m_marshal_shim;
+		std::map<Omega::guid_t,Omega::bool_t> m_iids;
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
 		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);

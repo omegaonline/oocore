@@ -21,8 +21,6 @@
 
 #include "OOServer_User.h"
 
-#include <OTL/Exception.h>
-
 #include "UserRegistry.h"
 #include "UserManager.h"
 #include "SpawnedProcess.h"

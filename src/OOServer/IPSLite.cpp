@@ -26,9 +26,6 @@
 #include <shlobj.h>
 #endif
 
-#include <OTL/Exception.h>
-#include <OTL/Registry.h>
-
 #include "IPSLite.h"
 #include "RegistryHive.h"
 
@@ -709,7 +706,7 @@ void RootKey::DeleteValue(const string_t& strName)
 IKey* InterProcessService::GetRegistry()
 {
 	// Return a pointer to the singleton
-	return SingletonObjectImpl<RootKey>::CreateInstancePtr().AddRef();
+	return SingletonObjectImpl<RootKey>::CreateInstance();
 }
 
 Activation::IRunningObjectTable* InterProcessService::GetRunningObjectTable()
@@ -739,5 +736,5 @@ Remoting::IChannelSink* InterProcessService::OpenServerSink(const guid_t&, Remot
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(OOCore::IInterProcessService*,OOSvrLite_GetIPS,0,())
 {
-	return SingletonObjectImpl<InterProcessService>::CreateInstancePtr().AddRef();
+	return SingletonObjectImpl<InterProcessService>::CreateInstance();
 }

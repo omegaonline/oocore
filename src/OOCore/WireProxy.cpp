@@ -73,6 +73,8 @@ OOCore::Proxy::Proxy() :
 	m_marshal_shim.m_vtable = &marshal_vt;
 	m_marshal_shim.m_stub = this;
 	m_marshal_shim.m_iid = &OMEGA_GUIDOF(Remoting::IMarshal);
+
+	m_iids.insert(std::map<Omega::guid_t,bool_t>::value_type(OMEGA_GUIDOF(IObject),true));
 }
 
 OOCore::Proxy::~Proxy()
@@ -110,6 +112,14 @@ bool_t OOCore::Proxy::IsAlive()
 
 bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	std::map<Omega::guid_t,bool>::const_iterator i = m_iids.find(iid);
+	if (i != m_iids.end())
+		return i->second;
+
+	guard.release();
+
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
 
@@ -126,7 +136,13 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
-	return ptrParamsIn->ReadBoolean(L"$retval");
+	bool_t bOk = ptrParamsIn->ReadBoolean(L"$retval");
+	
+	guard.acquire();
+
+	m_iids.insert(std::map<Omega::guid_t,bool_t>::value_type(iid,bOk));
+	
+	return bOk;
 }
 
 IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)

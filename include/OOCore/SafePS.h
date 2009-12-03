@@ -944,8 +944,8 @@ namespace Omega
 			{
 			public:
 				inline void remove(const SafeShim* shim);
-				inline auto_iface_ptr<Safe_Proxy_Owner> find(const SafeShim* shim);
-				inline auto_iface_ptr<Safe_Proxy_Owner> add(const SafeShim* shim, Safe_Proxy_Owner* pOwner);
+				inline Safe_Proxy_Owner* find(const SafeShim* shim);
+				inline Safe_Proxy_Owner* add(const SafeShim* shim, Safe_Proxy_Owner* pOwner);
 
 			private:
 				Threading::Mutex                            m_lock;
@@ -957,8 +957,8 @@ namespace Omega
 			{
 			public:
 				inline void remove(IObject* pObject);
-				inline auto_iface_ptr<Safe_Stub_Owner> find(IObject* pObject);
-				inline auto_iface_ptr<Safe_Stub_Owner> add(IObject* pObject, Safe_Stub_Owner* pOwner);
+				inline Safe_Stub_Owner* find(IObject* pObject);
+				inline Safe_Stub_Owner* add(IObject* pObject, Safe_Stub_Owner* pOwner);
 
 			private:
 				Threading::Mutex                    m_lock;

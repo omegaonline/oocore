@@ -950,8 +950,8 @@ namespace Omega
 			{
 			public:
 				inline void remove(const SafeShim* shim);
-				inline auto_iface_ptr<Wire_Proxy_Owner> find(const SafeShim* shim);
-				inline auto_iface_ptr<Wire_Proxy_Owner> add(const SafeShim* shim, Wire_Proxy_Owner* pOwner);
+				inline Wire_Proxy_Owner* find(const SafeShim* shim);
+				inline Wire_Proxy_Owner* add(const SafeShim* shim, Wire_Proxy_Owner* pOwner);
 
 			private:
 				Threading::Mutex                            m_lock;

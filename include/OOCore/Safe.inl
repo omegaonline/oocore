@@ -35,7 +35,7 @@ void Omega::System::MetaInfo::safe_proxy_holder::remove(const SafeShim* shim)
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::safe_proxy_holder::find(const SafeShim* shim)
+Omega::System::MetaInfo::Safe_Proxy_Owner* Omega::System::MetaInfo::safe_proxy_holder::find(const SafeShim* shim)
 {
 	try
 	{
@@ -45,7 +45,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 		if (i != m_map.end())
 		{
 			i->second->AddRef();
-			return auto_iface_ptr<Safe_Proxy_Owner>(i->second);
+			return i->second;
 		}
 
 		return 0;
@@ -56,7 +56,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::safe_proxy_holder::add(const SafeShim* shim, Safe_Proxy_Owner* pOwner)
+Omega::System::MetaInfo::Safe_Proxy_Owner* Omega::System::MetaInfo::safe_proxy_holder::add(const SafeShim* shim, Safe_Proxy_Owner* pOwner)
 {
 	try
 	{
@@ -66,7 +66,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 		if (!p.second)
 		{
 			p.first->second->AddRef();
-			return auto_iface_ptr<Safe_Proxy_Owner>(p.first->second);
+			return p.first->second;
 		}
 
 		return 0;
@@ -90,7 +90,7 @@ void Omega::System::MetaInfo::safe_stub_holder::remove(IObject* pObject)
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::safe_stub_holder::find(IObject* pObject)
+Omega::System::MetaInfo::Safe_Stub_Owner* Omega::System::MetaInfo::safe_stub_holder::find(IObject* pObject)
 {
 	try
 	{
@@ -100,7 +100,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 		if (i != m_map.end())
 		{
 			i->second->AddRef();
-			return auto_iface_ptr<Safe_Stub_Owner>(i->second);
+			return i->second;
 		}
 
 		return 0;
@@ -111,7 +111,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::safe_stub_holder::add(IObject* pObject, Safe_Stub_Owner* pOwner)
+Omega::System::MetaInfo::Safe_Stub_Owner* Omega::System::MetaInfo::safe_stub_holder::add(IObject* pObject, Safe_Stub_Owner* pOwner)
 {
 	try
 	{
@@ -121,7 +121,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner
 		if (!p.second)
 		{
 			p.first->second->AddRef();
-			return auto_iface_ptr<Safe_Stub_Owner>(p.first->second);
+			return p.first->second;
 		}
 
 		return 0;
@@ -396,12 +396,10 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Proxy_Bas
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owner> Omega::System::MetaInfo::create_safe_proxy_owner(const SafeShim* shim, IObject* pOuter)
 {
 	// QI for the IObject shim
-	const SafeShim* base_shim;
+	auto_safe_shim base_shim;
 	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetBaseShim_Safe(shim,&base_shim);
 	if (except)
 		throw_correct_exception(except);
-
-	auto_safe_shim ss_base = base_shim;
 
 	// Lookup in the global map...
 	auto_iface_ptr<Safe_Proxy_Owner> ptrOwner = SAFE_PROXY_HOLDER::instance()->find(base_shim);
@@ -427,14 +425,12 @@ Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim,
 	// See if we are a Wire Proxy
 	if (static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 	{
-		const SafeShim* proxy = 0;
+		auto_safe_shim proxy;
 		const SafeShim* pE = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
 		if (pE)
 			throw_correct_exception(pE);
 
-		auto_safe_shim ss_proxy = proxy;
-
-		auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = create_wire_proxy_owner(ss_proxy,pOuter);
+		auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = create_wire_proxy_owner(proxy,pOuter);
 
 		IObject* pRet = ptrOwner->CreateProxy(*shim->m_iid);
 		if (!pRet)

@@ -35,7 +35,7 @@ void Omega::System::MetaInfo::wire_proxy_holder::remove(const SafeShim* shim)
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> Omega::System::MetaInfo::wire_proxy_holder::find(const SafeShim* shim)
+Omega::System::MetaInfo::Wire_Proxy_Owner* Omega::System::MetaInfo::wire_proxy_holder::find(const SafeShim* shim)
 {
 	try
 	{
@@ -45,7 +45,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owne
 		if (i != m_map.end())
 		{
 			i->second->AddRef();
-			return auto_iface_ptr<Wire_Proxy_Owner>(i->second);
+			return i->second;
 		}
 		
 		return 0;
@@ -56,7 +56,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owne
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> Omega::System::MetaInfo::wire_proxy_holder::add(const SafeShim* shim, Wire_Proxy_Owner* pOwner)
+Omega::System::MetaInfo::Wire_Proxy_Owner* Omega::System::MetaInfo::wire_proxy_holder::add(const SafeShim* shim, Wire_Proxy_Owner* pOwner)
 {
 	try
 	{
@@ -66,7 +66,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owne
 		if (!p.second)
 		{
 			p.first->second->AddRef();
-			return auto_iface_ptr<Wire_Proxy_Owner>(p.first->second);
+			return p.first->second;
 		}
 							
 		return 0;

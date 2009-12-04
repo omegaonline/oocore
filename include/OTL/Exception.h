@@ -22,8 +22,7 @@
 #ifndef OTL_EXCEPTION_H_INCLUDED_
 #define OTL_EXCEPTION_H_INCLUDED_
 
-#include "OTL.h"
-#include <OOCore/Remoting.h>
+#include "Remoting.h"
 
 namespace OTL
 {
@@ -101,11 +100,7 @@ namespace OTL
 		{
 			this->m_strDesc = pMessage->ReadString(L"m_strDesc");
 			this->m_strSource = pMessage->ReadString(L"m_strSource");
-
-			Omega::guid_t actual_iid = OMEGA_GUIDOF(Omega::IException);
-			IObject* pUI = 0;
-			pMarshaller->UnmarshalInterface(L"m_ptrCause",pMessage,actual_iid,pUI);
-			this->m_ptrCause.Attach(static_cast<Omega::IException*>(pUI));
+			this->m_ptrCause = ObjectPtr<Omega::Remoting::IMarshaller>(pMarshaller).UnmarshalInterface<Omega::IException>(L"m_ptrCause",pMessage);
 		}
 
 	private:

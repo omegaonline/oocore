@@ -70,8 +70,7 @@ Remoting::IMessage* User::Channel::CreateMessage()
 	if (m_message_oid == guid_t::Null())
 	{
 		// Create a fresh CDRMessage
-		ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrOutput = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
-		return ptrOutput.QueryInterface<Remoting::IMessage>();
+		return static_cast<Remoting::IMessage*>(ObjectImpl<OOCore::CDRMessage>::CreateInstance());
 	}
 	else
 	{
@@ -144,9 +143,7 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			ptrRecv->init(*response);
 					
 			// Unwrap the payload...
-			IObject* pUI = 0;
-			ptrMarshaller->UnmarshalInterface(L"payload",ptrRecv,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-			pRecv = static_cast<Remoting::IMessage*>(pUI);
+			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
 		}
 
 		return 0;

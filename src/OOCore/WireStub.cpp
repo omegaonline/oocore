@@ -193,11 +193,10 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	guid_t iid = pParamsIn->ReadGuid(L"iid");
 	
 	// Unmarshal the channel
-	IObject* pUI = 0;
-	m_pManager->UnmarshalInterface(L"m_ptrChannel",pParamsIn,OMEGA_GUIDOF(Remoting::IChannel),pUI);
-	ObjectPtr<Remoting::IChannel> ptrChannel;
-	ptrChannel.Attach(static_cast<Remoting::IChannel*>(pUI));
-
+	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(m_pManager)).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",pParamsIn);
+	if (!ptrChannel)
+		OMEGA_THROW(L"No channel");
+	
 	// Create a new message
 	ObjectPtr<Remoting::IMessage> ptrMessage;
 	ptrMessage.Attach(ptrChannel->CreateMessage());

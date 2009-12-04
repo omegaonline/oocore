@@ -26,8 +26,6 @@ namespace Omega
 {
 	namespace System
 	{
-		struct IProxy;
-
 		namespace MetaInfo
 		{
 			template <typename T>

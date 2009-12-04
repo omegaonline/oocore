@@ -233,9 +233,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
-	IObject* pUI = 0;
-	m_pManager->UnmarshalInterface(L"pReflect",ptrParamsIn,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-	return static_cast<Remoting::IMessage*>(pUI);
+	return ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(m_pManager)).UnmarshalInterface<Remoting::IMessage>(L"pReflect",ptrParamsIn).AddRef();
 }
 
 void OOCore::Proxy::CallRemoteRelease()
@@ -316,7 +314,7 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const Syste
 	const System::MetaInfo::SafeShim* except = 0;
 	try
 	{
-		static_cast<IObject*&>(System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(retval,iid)) = static_cast<Proxy*>(shim->m_stub)->Internal_QueryInterface(*iid,getQIEntries());
+		*retval = System::MetaInfo::create_safe_stub(static_cast<Proxy*>(shim->m_stub)->Internal_QueryInterface(*iid,getQIEntries()),*iid);
 	}
 	catch (IException* pE)
 	{
@@ -483,17 +481,15 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const S
 void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
 	// Unmarshal the reflect package
-	IObject* pUI = 0;
-	pMarshaller->UnmarshalInterface(L"pReflect",pMessage,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-	ObjectPtr<Remoting::IMessage> ptrReflect;
-	ptrReflect.Attach(static_cast<Remoting::IMessage*>(pUI));
-
+	ObjectPtr<Remoting::IMessage> ptrReflect = ObjectPtr<Remoting::IMarshaller>(pMarshaller).UnmarshalInterface<Remoting::IMessage>(L"pReflect",pMessage);
+	if (!ptrReflect)
+		OMEGA_THROW(L"No package");
+	
 	// Unmarshal the manager
-	pUI = 0;
-	pMarshaller->UnmarshalInterface(L"m_ptrChannel",ptrReflect,OMEGA_GUIDOF(Remoting::IChannel),pUI);
-	ObjectPtr<Remoting::IChannel> ptrChannel;
-	ptrChannel.Attach(static_cast<Remoting::IChannel*>(pUI));
-
+	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(pMarshaller).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",ptrReflect);
+	if (!ptrChannel)
+		OMEGA_THROW(L"No channel");
+		
 	ObjectPtr<Remoting::IObjectManager> ptrOM;
 	ptrOM.Attach(ptrChannel->GetObjectManager());
 

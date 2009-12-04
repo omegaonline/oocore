@@ -461,7 +461,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	{
 		ObjectPtr<Remoting::IMessage> ptrRecv;
 		ptrRecv.Attach(pInternalRecv);
-
+		
 		if (!(attribs & TypeInfo::Asynchronous))
 		{
 			assert(pInternalRecv);
@@ -473,12 +473,11 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 			if (ptrRecv->ReadBoolean(L"$throw"))
 			{
 				// Unmarshal the exception
-				IObject* pE = 0;
-				UnmarshalInterface(L"exception",ptrRecv,OMEGA_GUIDOF(IException),pE);
-				if (!pE)
+				ObjectPtr<IException> ptrE = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(this)).UnmarshalInterface<IException>(L"exception",ptrRecv);
+				if (!ptrE)
 					OMEGA_THROW(L"Null exception returned");
 
-				return static_cast<IException*>(pE);
+				return ptrE.AddRef();
 			}
 		}
 

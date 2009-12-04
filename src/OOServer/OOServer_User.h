@@ -45,10 +45,10 @@
 
 /////////////////////////////////////////////////
 
-#include <OTL/OTL.h>
+#include <OTL/Remoting.h>
 #include <OTL/Exception.h>
 #include <OTL/Registry.h>
-#include <OOCore/Remoting.h>
+
 #include <OOCore/Service.h>
 
 /////////////////////////////////////////////////

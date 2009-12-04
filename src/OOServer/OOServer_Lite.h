@@ -25,7 +25,7 @@
 #include "../OOBase/Mutex.h"
 #include "../OOBase/pw_info.h"
 
-#include <OTL/OTL.h>
+#include <OTL/Remoting.h>
 #include <OTL/Exception.h>
 #include <OTL/Registry.h>
 

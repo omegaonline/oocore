@@ -31,9 +31,9 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 {
 	m_pManager = pManager;
 
-	// Create a proxy to the server interface
 	if (ptrOMSB)
 	{
+		// Create a proxy to the server interface
 		IObject* pIPS = 0;
 		ptrOMSB->GetRemoteInstance(OOCore::OID_InterProcessService.ToString(),Activation::InProcess | Activation::DontLaunch,OMEGA_GUIDOF(OOCore::IInterProcessService),pIPS);
 		m_ptrSBIPS.Attach(static_cast<OOCore::IInterProcessService*>(pIPS));

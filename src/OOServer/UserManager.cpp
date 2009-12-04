@@ -419,11 +419,8 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 		ptrEnvelope->init(request);
 
 		// Unpack the payload
-		IObject* pUI = 0;
-		ptrMarshaller->UnmarshalInterface(L"payload",ptrEnvelope,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-		ObjectPtr<Remoting::IMessage> ptrRequest;
-		ptrRequest.Attach(static_cast<Remoting::IMessage*>(pUI));
-
+		ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
+		
 		// Check timeout
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)

@@ -178,9 +178,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 			if (!ptrMarshaller)
 				throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 
-			IObject* pUI = 0;
-			ptrMarshaller->UnmarshalInterface(L"payload",ptrInput,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-			ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
+			ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrInput);
 		}
 	}
 	
@@ -319,10 +317,8 @@ void User::RemoteChannel::process_here_i(OOBase::CDRStream& input)
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 
-	IObject* pUI = 0;
-	ptrMarshaller->UnmarshalInterface(L"payload",ptrMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-	ObjectPtr<Remoting::IMessage> ptrPayload;
-	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
+	// Unmarshal payload
+	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrMsg);
 		
 	// Check timeout
 	uint32_t timeout = 0;
@@ -389,10 +385,8 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 
-	IObject* pUI = 0;
-	ptrMarshaller->UnmarshalInterface(L"payload",pMsg,OMEGA_GUIDOF(Remoting::IMessage),pUI);
-	ObjectPtr<Remoting::IMessage> ptrPayload;
-	ptrPayload.Attach(static_cast<Remoting::IMessage*>(pUI));
+	// Unmarshal payload
+	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",pMsg);
 
 	pMsg->ReadStructEnd(L"message");
 	

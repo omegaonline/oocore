@@ -175,9 +175,10 @@ namespace Omega
 					m_shim.m_iid = &OMEGA_GUIDOF(D);
 				}
 
-				virtual bool IsDerived__proxy__(const guid_t& iid) const
+				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
 				{
-					return (iid == OMEGA_GUIDOF(IObject));
+					// Don't return OMEGA_GUIDOF(IObject) - Should be passed on to m_pOwner
+					return false;
 				}
 
 				auto_iface_ptr<Remoting::IMessage> CreateMessage(Remoting::IMarshaller* pMarshaller, uint32_t method_id)
@@ -315,7 +316,7 @@ namespace Omega
 
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
-					if (iid != OMEGA_GUIDOF(IObject) && IsDerived__proxy__(iid))
+					if (IsDerived__proxy__(iid))
 						return QIReturn__proxy__();
 
 					return Wire_Proxy_Base::QueryInterface(iid);
@@ -340,8 +341,9 @@ namespace Omega
 				
 				virtual bool IsDerived__proxy__(const guid_t& iid) const 
 				{ 
-					if (iid == System::MetaInfo::uid_traits<IException>::GetUID()) 
+					if (iid == OMEGA_GUIDOF(IException)) 
 						return true; 
+
 					return Base::IsDerived__proxy__(iid); 
 				} 
 				

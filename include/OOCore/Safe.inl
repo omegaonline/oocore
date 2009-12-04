@@ -371,7 +371,11 @@ void Omega::System::MetaInfo::Safe_Proxy_Base::Throw(const guid_t& iid)
 
 Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(const guid_t& iid)
 {
-	if (iid == OMEGA_GUIDOF(ISafeProxy))
+	if (IsDerived__proxy__(iid))
+	{
+		return QIReturn__proxy__();
+	}				
+	else if (iid == OMEGA_GUIDOF(ISafeProxy))
 	{
 		Internal_AddRef();
 		return &m_internal;
@@ -575,7 +579,7 @@ Omega::System::MetaInfo::Safe_Stub_Base::~Safe_Stub_Base()
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base::QueryInterface(const guid_t& iid)
 {
-	if (iid != OMEGA_GUIDOF(IObject) && IsDerived(iid))
+	if (IsDerived(iid))
 	{
 		AddRef();
 		return &m_shim;

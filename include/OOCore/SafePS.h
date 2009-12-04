@@ -231,9 +231,6 @@ namespace Omega
 						delete this;
 				}
 
-				inline const SafeShim* GetShim(const guid_t& iid);
-				inline const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
-				
 				const SafeShim* GetShim()
 				{
 					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
@@ -241,19 +238,6 @@ namespace Omega
 						throw_correct_exception(except);
 				
 					return m_shim;
-				}
-
-				void Internal_AddRef()
-				{
-					m_intcount.AddRef();
-				}
-
-				void Internal_Release()
-				{
-					assert(m_intcount.m_debug_value > 0);
-
-					if (m_intcount.Release() && m_refcount.IsZero() && m_pincount.IsZero())
-						delete this;
 				}
 
 			protected:
@@ -278,6 +262,22 @@ namespace Omega
 				Threading::AtomicRefCount m_intcount;
 				Threading::AtomicRefCount m_pincount;
 
+				void Internal_AddRef()
+				{
+					m_intcount.AddRef();
+				}
+
+				void Internal_Release()
+				{
+					assert(m_intcount.m_debug_value > 0);
+
+					if (m_intcount.Release() && m_refcount.IsZero() && m_pincount.IsZero())
+						delete this;
+				}
+
+				inline const SafeShim* GetShim(const guid_t& iid);
+				inline const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
+				
 				struct Internal : public ISafeProxy
 				{
 					void AddRef() 
@@ -318,6 +318,7 @@ namespace Omega
 					Safe_Proxy_Base* m_pOuter;
 				};
 				Internal m_internal;
+				friend struct Internal;
 			};
 
 			template <typename I, typename D>
@@ -339,9 +340,10 @@ namespace Omega
 					 Safe_Proxy_Base(shim,pOwner)
 				{}
 
-				virtual bool IsDerived__proxy__(const guid_t& iid) const
+				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
 				{
-					return (iid == OMEGA_GUIDOF(IObject));
+					// Don't return OMEGA_GUIDOF(IObject) - Should be passed on to m_pOwner
+					return false;
 				}
 
 			private:
@@ -371,9 +373,6 @@ namespace Omega
 
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
-					if (iid != OMEGA_GUIDOF(IObject) && IsDerived__proxy__(iid))
-						return QIReturn__proxy__();
-					
 					return Safe_Proxy_Base::QueryInterface(iid);
 				}
 			};
@@ -487,9 +486,10 @@ namespace Omega
 					return &vt;
 				}
 
-				virtual bool IsDerived(const guid_t& iid) const
+				virtual bool IsDerived(const guid_t& /*iid*/) const
 				{
-					return (iid == OMEGA_GUIDOF(IObject));
+					// Do not return (iid == OMEGA_GUIDOF(IObject)) - pass up to owner
+					return false;
 				}
 				
 			private:
@@ -1048,6 +1048,7 @@ namespace Omega
 				{
 					if (iid == OMEGA_GUIDOF(IException)) 
 						return true;
+
 					return Safe_Proxy<IObject,D>::IsDerived__proxy__(iid);
 				}
 

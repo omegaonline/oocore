@@ -235,7 +235,7 @@ void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*, Rem
 	guid_t message_oid = pMessage->ReadGuid(L"m_message_oid");
 
 	// Create a new object manager (and channel)
-	pObject = Manager::create_channel(channel_id,message_oid)->QueryInterface(iid);
+	pObject = static_cast<Remoting::IChannel*>(Manager::create_channel(channel_id,message_oid).AddRef());
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");

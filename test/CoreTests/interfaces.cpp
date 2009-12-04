@@ -132,11 +132,11 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 
 namespace
 {
-	class Aggregated :
+	class Aggregator :
 		public Omega::TestSuite::ISimpleTest2
 	{
 	public:
-		Aggregated() : m_pInner(0)
+		Aggregator() : m_pInner(0)
 		{
 			AddRef();
 		}
@@ -184,7 +184,7 @@ namespace
 		}
 
 	private:
-		virtual ~Aggregated()
+		virtual ~Aggregator()
 		{
 			if (m_pInner)
 				m_pInner->Release();
@@ -219,6 +219,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess);
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
@@ -228,8 +229,8 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	ptrSimpleTest2.Release();
 
 	// Test aggregation
-	Aggregated* pAgg = 0;
-	OMEGA_NEW(pAgg,Aggregated);
+	Aggregator* pAgg = 0;
+	OMEGA_NEW(pAgg,Aggregator);
 
 	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
@@ -237,7 +238,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
 
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
-
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	OTL::ObjectPtr<Omega::IObject> ptrO1;
@@ -263,18 +264,22 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 	// Test for local activation
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary.ToString());
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test for local activation
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Library");
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test for local activation with '@local'
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Library@local");
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test for local activation with '@local'
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestLibrary.ToString() + L"@local");
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test redirecting the registration
@@ -294,6 +299,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test it has gone
@@ -322,6 +328,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest@local");
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Test it has gone
@@ -380,7 +387,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	// Test the simplest case
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
-
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Now check for activation rules
@@ -405,6 +412,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	}
 
 	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"Test.Process");
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	// Kill the running version
@@ -531,6 +539,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 	}
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	return true;
@@ -552,6 +561,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 	system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
 
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
+	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
 	return true;

@@ -134,9 +134,9 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 		throw;
 	}
 
-	try
+	if (response)
 	{
-		if (response)
+		try
 		{
 			// Wrap the response
 			ObjectPtr<ObjectImpl<OOCore::CDRMessage> > ptrRecv = ObjectImpl<OOCore::CDRMessage>::CreateInstancePtr();
@@ -145,13 +145,12 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 			// Unwrap the payload...
 			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
 		}
-
-		return 0;
+		catch (IException* pE)
+		{
+			return pE;
+		}
 	}
-	catch (IException* pE)
-	{
-		return pE;
-	}
+	return 0;
 }
 
 Remoting::MarshalFlags_t User::Channel::GetMarshalFlags()
@@ -235,7 +234,7 @@ void User::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller*, Rem
 	guid_t message_oid = pMessage->ReadGuid(L"m_message_oid");
 
 	// Create a new object manager (and channel)
-	pObject = static_cast<Remoting::IChannel*>(Manager::create_channel(channel_id,message_oid).AddRef());
+	pObject = Manager::create_channel(channel_id,message_oid)->QueryInterface(iid);
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_CDRMessageMarshalFactory,"{1455FCD0-A49B-4f2a-94A5-222949957123}");

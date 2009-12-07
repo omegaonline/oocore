@@ -122,10 +122,11 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 		throw;
 	}
 
-	try
+	if (response)
 	{
-		if (response)
+		try
 		{
+		
 			// Wrap the response
 			ObjectPtr<ObjectImpl<CDRMessage> > ptrRecv = ObjectImpl<CDRMessage>::CreateInstancePtr();
 			ptrRecv->init(*response);
@@ -133,12 +134,12 @@ IException* OOCore::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs
 			// Unwrap the payload...
 			pRecv = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrRecv).AddRef();
 		}
-		return 0;
+		catch (IException* pE)
+		{
+			return pE;
+		}
 	}
-	catch (IException* pE)
-	{
-		return pE;
-	}
+	return 0;
 }
 
 Remoting::MarshalFlags_t OOCore::Channel::GetMarshalFlags()

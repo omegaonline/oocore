@@ -73,12 +73,11 @@ namespace OTL
 		template <typename I>
 		ObjectPtr<I> UnmarshalInterface(const wchar_t* pszName, Omega::Remoting::IMessage* pMessage)
 		{
-			Omega::IObject* pObj = 0;
+			IObject* pObj = 0;
 			m_ptr->UnmarshalInterface(pszName,pMessage,OMEGA_GUIDOF(I),pObj);
 			
 			ObjectPtr<I> ptrObj;
 			ptrObj.Attach(static_cast<I*>(pObj));
-
 			return ptrObj;
 		}
 	};

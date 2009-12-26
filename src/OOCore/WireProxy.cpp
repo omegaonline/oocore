@@ -38,7 +38,6 @@ OOCore::Proxy::Proxy() :
 			&QueryInterface_Safe,
 			&Pin_Safe,
 			&Unpin_Safe,
-			&GetBaseShim_Safe,
 			0,
 			0
 		},
@@ -61,7 +60,6 @@ OOCore::Proxy::Proxy() :
 			&QueryInterface_Safe,
 			&Pin_Safe,
 			&Unpin_Safe,
-			&GetBaseShim_Safe,
 			0,
 			0
 		},
@@ -343,21 +341,6 @@ const System::MetaInfo::SafeShim* OOCore::Proxy::Unpin_Safe(const System::MetaIn
 	try
 	{
 		static_cast<Proxy*>(shim->m_stub)->Unpin();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetBaseShim_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
-		*retval = &static_cast<Proxy*>(shim->m_stub)->m_proxy_shim;
 	}
 	catch (IException* pE)
 	{

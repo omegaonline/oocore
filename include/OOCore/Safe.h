@@ -883,7 +883,6 @@ namespace Omega
 				const SafeShim* (OMEGA_CALL* pfnQueryInterface_Safe)(const SafeShim* shim, const SafeShim** retval, const guid_base_t* iid);
 				const SafeShim* (OMEGA_CALL* pfnPin_Safe)(const SafeShim* shim);
 				const SafeShim* (OMEGA_CALL* pfnUnpin_Safe)(const SafeShim* shim);
-				const SafeShim* (OMEGA_CALL* pfnGetBaseShim_Safe)(const SafeShim* shim, const SafeShim** retval);
 				const SafeShim* (OMEGA_CALL* pfnCreateWireStub_Safe)(const SafeShim* shim, const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_base_t* piid, const SafeShim** retval);
 				const SafeShim* (OMEGA_CALL* pfnGetWireProxy_Safe)(const SafeShim* shim, const SafeShim** retval);
 			};

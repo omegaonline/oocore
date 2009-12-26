@@ -435,9 +435,7 @@ namespace Omega
 					if (m_pincount.Release() && m_refcount.IsZero())
 						delete this;
 				}
-
-				inline const SafeShim* GetBaseShim();
-								
+				
 			private:
 				Safe_Stub_Owner*          m_pOwner;
 				Threading::AtomicRefCount m_refcount;
@@ -479,7 +477,6 @@ namespace Omega
 						&QueryInterface_Safe,
 						&Pin_Safe,
 						&Unpin_Safe,
-						&GetBaseShim_Safe,
 						0,
 						0
 					};
@@ -555,20 +552,6 @@ namespace Omega
 					try
 					{
 						static_cast<Safe_Stub*>(shim->m_stub)->Unpin();
-					}
-					catch (IException* pE)
-					{
-						except = return_safe_exception(pE);
-					}
-					return except;
-				}
-
-				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
-				{
-					const SafeShim* except = 0;
-					try
-					{
-						*retval = static_cast<Safe_Stub*>(shim->m_stub)->GetBaseShim();
 					}
 					catch (IException* pE)
 					{
@@ -752,7 +735,6 @@ namespace Omega
 						&QueryInterface_Safe,
 						&Pin_Safe,
 						&Unpin_Safe,
-						&GetBaseShim_Safe,
 						&CreateWireStub_Safe,
 						0
 					};
@@ -783,12 +765,6 @@ namespace Omega
 				}
 
 				inline const SafeShim* QueryInterface(const guid_t& iid, IObject* pObj);
-
-				const SafeShim* GetBaseShim()
-				{
-					AddRef();
-					return &m_base_shim;
-				}
 
 				void Pin()
 				{
@@ -896,20 +872,6 @@ namespace Omega
 					try
 					{
 						static_cast<Safe_Stub_Owner*>(shim->m_stub)->Unpin();
-					}
-					catch (IException* pE)
-					{
-						except = return_safe_exception(pE);
-					}
-					return except;
-				}
-
-				static const SafeShim* OMEGA_CALL GetBaseShim_Safe(const SafeShim* shim, const SafeShim** retval)
-				{
-					const SafeShim* except = 0;
-					try
-					{
-						*retval = static_cast<Safe_Stub_Owner*>(shim->m_stub)->GetBaseShim();
 					}
 					catch (IException* pE)
 					{

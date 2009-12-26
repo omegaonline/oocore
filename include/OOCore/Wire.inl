@@ -88,7 +88,7 @@ Omega::System::MetaInfo::Wire_Proxy_Owner::~Wire_Proxy_Owner()
 
 	// Get the base shim
 	auto_safe_shim base_shim;
-	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetBaseShim_Safe(shim,&base_shim);
+	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
 	if (except)
 		throw_correct_exception(except);
 
@@ -190,7 +190,10 @@ void Omega::System::MetaInfo::Wire_Proxy_Owner::RemoveBase(Wire_Proxy_Base* pPro
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Owner::GetShim(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(IObject))
-		return GetBaseShim();
+	{
+		AddRef();
+		return &m_base_shim;
+	}
 	
 	// See if we have it cached
 	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,true,false);
@@ -212,7 +215,7 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::QueryInterface(const 
 		}
 		else
 		{
-			m_internal.AddRef();
+			AddRef();
 			return &m_internal;
 		}
 	}
@@ -240,7 +243,7 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const gui
 {
 	if (iid == OMEGA_GUIDOF(IObject))
 	{
-		m_internal.AddRef();
+		AddRef();
 		return &m_internal;
 	}
 		
@@ -341,11 +344,6 @@ void Omega::System::MetaInfo::Wire_Proxy_Base::Throw(const guid_t& iid)
 	m_pOwner->Throw(iid);
 }
 
-const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Base::GetBaseShim()
-{
-	return m_pOwner->GetBaseShim();
-}
-
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Base::GetWireProxy()
 {
 	return m_pOwner->GetWireProxy();
@@ -370,7 +368,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owne
 {
 	// QI for the IObject shim
 	auto_safe_shim base_shim;
-	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetBaseShim_Safe(shim,&base_shim);
+	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
 	if (except)
 		throw_correct_exception(except);
 

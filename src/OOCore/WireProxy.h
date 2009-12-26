@@ -89,7 +89,6 @@ namespace OOCore
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_base_t* iid);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Pin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Unpin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetBaseShim_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL WriteKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL UnpackKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
 		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetMarshaller_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);

@@ -402,7 +402,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 {
 	// QI for the IObject shim
 	auto_safe_shim base_shim;
-	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetBaseShim_Safe(shim,&base_shim);
+	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
 	if (except)
 		throw_correct_exception(except);
 
@@ -587,11 +587,6 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base
 	}
 
 	return m_pOwner->QueryInterface(iid,0);
-}
-
-const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base::GetBaseShim()
-{
-	return m_pOwner->GetBaseShim();
 }
 
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Stub_Owner> Omega::System::MetaInfo::create_safe_stub_owner(IObject* pObj)

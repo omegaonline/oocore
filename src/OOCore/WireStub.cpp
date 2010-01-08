@@ -149,7 +149,7 @@ Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 		// Create a proxy/stub pair around m_ptrObj
 		System::MetaInfo::auto_safe_shim safe_stub = System::MetaInfo::create_safe_stub(ptrQI,iid);
 		
-		IObject* pProxy = System::MetaInfo::create_safe_proxy(safe_stub);
+		IObject* pProxy = System::MetaInfo::create_safe_proxy(safe_stub,iid);
 		ObjectPtr<IObject> ptrProxy;
 		ptrProxy.Attach(pProxy);
 
@@ -164,7 +164,7 @@ Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 	if (!wire_stub)
 		OMEGA_THROW(L"Attempt to create a stub for an object failed");
 
-	return static_cast<Remoting::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub));
+	return static_cast<Remoting::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub,OMEGA_GUIDOF(Remoting::IStub)));
 }
 
 void OOCore::Stub::RemoteRelease(uint32_t release_count)

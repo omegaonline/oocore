@@ -591,7 +591,7 @@ namespace Omega
 
 				inline void RemoveBase(Safe_Proxy_Base* pProxy);
 				inline IObject* QueryInterface(const guid_t& iid);
-				inline IObject* CreateProxy(const SafeShim* shim);
+				inline IObject* CreateProxy(const SafeShim* shim, const guid_t& iid);
 				inline void Throw(const SafeShim* shim);
 				inline void Throw(const guid_t& iid);
 				inline const SafeShim* GetShim(const guid_t& iid);
@@ -688,6 +688,7 @@ namespace Omega
 					Safe_Proxy_Owner* m_pOwner;
 				};
 				SafeProxy m_safe_proxy;
+				friend struct SafeProxy;
 								
 				inline virtual ~Safe_Proxy_Owner();
 

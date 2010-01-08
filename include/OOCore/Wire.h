@@ -526,7 +526,7 @@ namespace Omega
 					{
 						if (val)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val));
+							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val,OMEGA_GUIDOF(Remoting::IMessage)));
 							if (msg)
 							{
 								size_t count = 0;
@@ -604,7 +604,7 @@ namespace Omega
 						
 						if (m_shim)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim));
+							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim,OMEGA_GUIDOF(Remoting::IMessage)));
 							if (msg)
 							{
 								size_t count = 0;
@@ -716,7 +716,7 @@ namespace Omega
 					{
 						if (val)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val));
+							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val,OMEGA_GUIDOF(Remoting::IMessage)));
 							if (msg)
 							{
 								size_t count = 0;
@@ -802,7 +802,7 @@ namespace Omega
 						
 						if (m_shim)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim));
+							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim,OMEGA_GUIDOF(Remoting::IMessage)));
 							if (msg)
 							{
 								size_t count = 0;

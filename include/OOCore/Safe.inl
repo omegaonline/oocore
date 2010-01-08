@@ -310,7 +310,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::QueryInterface(const 
 	return obj->QIReturn__proxy__();
 }
 
-Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const SafeShim* shim)
+Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const SafeShim* shim, const guid_t& iid)
 {
 	assert(guid_t(*shim->m_iid) != OMEGA_GUIDOF(ISafeProxy));
 
@@ -321,9 +321,13 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Owner::CreateProxy(const Saf
 	}
 
 	// See if we have it cached
-	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(OMEGA_GUIDOF(IObject),shim);
+	auto_iface_ptr<Safe_Proxy_Base> obj = GetProxyBase(iid,shim);
 	if (!obj)
 		return 0;
+
+	// Check we have something valid
+	if (iid != OMEGA_GUIDOF(IObject) && !obj->IsDerived__proxy__(iid))
+		OMEGA_THROW(L"Stub is not of expected interface!");
 
 	// Return cast to the correct type
 	return obj->QIReturn__proxy__();
@@ -422,7 +426,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Safe_Proxy_Owne
 	return ptrOwner;
 }
 
-Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim, IObject* pOuter)
+Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim, const guid_t& iid, IObject* pOuter)
 {
 	if (!shim)
 		return 0;
@@ -437,14 +441,14 @@ Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim,
 
 		auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = create_wire_proxy_owner(proxy,pOuter);
 
-		IObject* pRet = ptrOwner->CreateProxy(*shim->m_iid);
+		IObject* pRet = ptrOwner->CreateProxy(iid);
 		if (!pRet)
 			OMEGA_THROW(L"Failed to find correct shim for wire_iid");
 
 		return pRet;
 	}
-
-	return create_safe_proxy_owner(shim,pOuter)->CreateProxy(shim);
+	
+	return create_safe_proxy_owner(shim,pOuter)->CreateProxy(shim,iid);
 }
 
 void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)

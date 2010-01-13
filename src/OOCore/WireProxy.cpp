@@ -112,9 +112,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 	System::MetaInfo::auto_safe_shim ss = System::MetaInfo::create_safe_stub(static_cast<IProxy*>(this),OMEGA_GUIDOF(IProxy));
 
 	// Create a wire proxy wrapping our stub
-	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(ss,0);
-
-	return ptrOwner->CreateProxy(wire_iid,iid);
+	return System::MetaInfo::create_wire_proxy_owner(ss,0)->CreateProxy(wire_iid,iid);
 }
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)

@@ -40,7 +40,7 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 	// try to create the object asking for TypeInfo::IProvideObjectInfo
 	Omega::IObject* pObject = 0;
-	ptrApartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,NULL,OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObject);
+	ptrApartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,OMEGA_GUIDOF(Omega::TypeInfo::IProvideObjectInfo),pObject);
 	TEST(pObject);
 
 	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI;

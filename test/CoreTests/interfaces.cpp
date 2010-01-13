@@ -232,7 +232,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	Aggregator* pAgg = 0;
 	OMEGA_NEW(pAgg,Aggregator);
 
-	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+	pAgg->SetInner(Omega::CreateLocalAggregate(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");

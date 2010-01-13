@@ -103,8 +103,10 @@ namespace Omega
 	inline IException* Initialize(bool bStandalone = false);
 	inline void Uninitialize();
 
-	inline IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
-	inline IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	inline IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+	inline IObject* CreateLocalAggregate(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter);
+	inline IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, const guid_t& iid);
+	inline IObject* CreateAggregate(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter);
 	inline bool_t HandleRequest(uint32_t timeout = 0);
 }
 
@@ -138,26 +140,48 @@ void Omega::Uninitialize()
 	OOCore_Omega_Uninitialize();
 }
 
-Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
 	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(static_cast<Activation::IObjectFactory*>(Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory))));
 	if (!ptrOF)
 		OMEGA_THROW(L"Failed to create object factory");
 	
 	IObject* pObject = 0;
-	ptrOF->CreateInstance(pOuter,iid,pObject);
+	ptrOF->CreateInstance(iid,pObject);
+	return pObject;
+}
+
+Omega::IObject* Omega::CreateLocalAggregate(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter)
+{
+	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(static_cast<Activation::IObjectFactory*>(Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory))));
+	if (!ptrOF)
+		OMEGA_THROW(L"Failed to create object factory");
+	
+	IObject* pObject = 0;
+	ptrOF->CreateAggregate(pOuter,pObject);
 	return pObject;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags));
-Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, const guid_t& iid)
 {
 	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(strURI,flags));
 	if (!ptrOF)
 		OMEGA_THROW(L"Failed to create object factory");
 	
 	IObject* pObject = 0;
-	ptrOF->CreateInstance(pOuter,iid,pObject);
+	ptrOF->CreateInstance(iid,pObject);
+	return pObject;
+}
+
+Omega::IObject* Omega::CreateAggregate(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter)
+{
+	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(strURI,flags));
+	if (!ptrOF)
+		OMEGA_THROW(L"Failed to create object factory");
+	
+	IObject* pObject = 0;
+	ptrOF->CreateAggregate(pOuter,pObject);
 	return pObject;
 }
 

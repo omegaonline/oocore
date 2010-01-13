@@ -1038,7 +1038,7 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 	ptrOF.Attach(static_cast<Activation::IObjectFactory*>(pObject));
 	
 	pObject = 0;
-	ptrOF->CreateInstance(0,OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
+	ptrOF->CreateInstance(OMEGA_GUIDOF(Omega::Apartment::IApartment),pObject);
 
 	return static_cast<Omega::Apartment::IApartment*>(pObject);
 }

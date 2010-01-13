@@ -30,48 +30,6 @@ using namespace OTL;
 OOCore::Proxy::Proxy() :
 	m_proxy_id(0)
 {
-	static const System::MetaInfo::vtable_info<Remoting::IProxy>::type proxy_vt =
-	{
-		{
-			&AddRef_Safe,
-			&Release_Safe,
-			&QueryInterface_Safe,
-			&Pin_Safe,
-			&Unpin_Safe,
-			0,
-			0
-		},
-		&WriteKey_Safe,
-		&UnpackKey_Safe,
-		&GetMarshaller_Safe,
-		&IsAlive_Safe,
-		&RemoteQueryInterface_Safe
-	};
-
-	m_proxy_shim.m_vtable = &proxy_vt;
-	m_proxy_shim.m_stub = this;
-	m_proxy_shim.m_iid = &OMEGA_GUIDOF(Remoting::IProxy);
-
-	static const System::MetaInfo::vtable_info<Remoting::IMarshal>::type marshal_vt =
-	{
-		{
-			&AddRef_Safe,
-			&Release_Safe,
-			&QueryInterface_Safe,
-			&Pin_Safe,
-			&Unpin_Safe,
-			0,
-			0
-		},
-		&GetUnmarshalFactoryOID_Safe,
-		&MarshalInterface_Safe,
-		&ReleaseMarshalData_Safe
-	};
-
-	m_marshal_shim.m_vtable = &marshal_vt;
-	m_marshal_shim.m_stub = this;
-	m_marshal_shim.m_iid = &OMEGA_GUIDOF(Remoting::IMarshal);
-
 	m_iids.insert(std::map<Omega::guid_t,bool_t>::value_type(OMEGA_GUIDOF(IObject),true));
 }
 
@@ -150,16 +108,13 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 
 	guid_t wire_iid = pMessage->ReadGuid(L"iid");
 
-	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(&m_proxy_shim,0);
+	// Create stub around ourselves
+	System::MetaInfo::auto_safe_shim ss = System::MetaInfo::create_safe_stub(static_cast<IProxy*>(this),OMEGA_GUIDOF(IProxy));
 
-	IObject* pRet = ptrOwner->CreateProxy(wire_iid);
-	if (!pRet)
-		pRet = ptrOwner->CreateProxy(iid);
+	// Create a wire proxy wrapping our stub
+	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(ss,0);
 
-	if (!pRet)
-		OMEGA_THROW(L"Failed to find correct shim for wire_iid");
-
-	return pRet;
+	return ptrOwner->CreateProxy(wire_iid,iid);
 }
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
@@ -176,23 +131,6 @@ void OOCore::Proxy::ReadStubInfo(Remoting::IMessage* pMessage)
 	pMessage->ReadUInt32(L"$stub_id");
 	pMessage->ReadGuid(L"$iid");
 	pMessage->ReadUInt32(L"$method_id");
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetShim(const guid_t& iid)
-{
-	if (iid == OMEGA_GUIDOF(IObject) ||
-		iid == OMEGA_GUIDOF(Remoting::IProxy))
-	{
-		Internal_AddRef();
-		return &m_proxy_shim;
-	}
-	else if (iid == OMEGA_GUIDOF(Remoting::IMarshal))
-	{
-		Internal_AddRef();
-		return &m_marshal_shim;
-	}
-	
-	return 0;
 }
 
 Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* pMarshaller, const guid_t& iid)
@@ -277,188 +215,6 @@ void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessag
 {
 	// How do we undo this?
 	void* TODO;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::AddRef_Safe(const System::MetaInfo::SafeShim* shim)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->Internal_AddRef();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::Release_Safe(const System::MetaInfo::SafeShim* shim)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->Internal_Release();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::QueryInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval, const guid_base_t* iid)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		*retval = System::MetaInfo::create_safe_stub(static_cast<Proxy*>(shim->m_stub)->Internal_QueryInterface(*iid,getQIEntries()),*iid);
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::Pin_Safe(const System::MetaInfo::SafeShim* shim)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->Pin();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::Unpin_Safe(const System::MetaInfo::SafeShim* shim)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->Unpin();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::WriteKey_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pMessage)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->WriteKey(System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage));
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::UnpackKey_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pMessage)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->UnpackKey(System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage));
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetMarshaller_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim** retval)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Remoting::IMarshaller*&>(System::MetaInfo::marshal_info<Remoting::IMarshaller*&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->GetMarshaller();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::IsAlive_Safe(const System::MetaInfo::SafeShim* shim, int* retval)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<bool_t&>(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->IsAlive();
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::RemoteQueryInterface_Safe(const System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_base_t* iid)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<bool_t&>(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->RemoteQueryInterface(*iid);
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::GetUnmarshalFactoryOID_Safe(const System::MetaInfo::SafeShim* shim, guid_base_t* retval, const guid_base_t* piid, Remoting::MarshalFlags_t flags)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<guid_t&>(System::MetaInfo::marshal_info<guid_t&>::safe_type::coerce(retval)) = static_cast<Proxy*>(shim->m_stub)->GetUnmarshalFactoryOID(*piid,flags);
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::MarshalInterface_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pMarshaller, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->MarshalInterface(System::MetaInfo::marshal_info<Remoting::IMarshaller*>::safe_type::coerce(pMarshaller),System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage),*iid,flags);
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
-}
-
-const System::MetaInfo::SafeShim* OOCore::Proxy::ReleaseMarshalData_Safe(const System::MetaInfo::SafeShim* shim, const System::MetaInfo::SafeShim* pMarshaller, const System::MetaInfo::SafeShim* pMessage, const guid_base_t* iid, Remoting::MarshalFlags_t flags)
-{
-	const System::MetaInfo::SafeShim* except = 0;
-	try
-	{
-		static_cast<Proxy*>(shim->m_stub)->ReleaseMarshalData(System::MetaInfo::marshal_info<Remoting::IMarshaller*>::safe_type::coerce(pMarshaller),System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pMessage),*iid,flags);
-	}
-	catch (IException* pE)
-	{
-		except = System::MetaInfo::return_safe_exception(pE);
-	}
-	return except;
 }
 
 void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)

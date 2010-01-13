@@ -136,13 +136,21 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Base
 	const wire_rtti* rtti = get_wire_rtti_info(iid);
 	if (!rtti && iid != fallback_iid)
 		rtti = get_wire_rtti_info(fallback_iid);
-
+	
+	bool bFound = true;
 	if (!rtti)
-		OMEGA_THROW(L"Failed to create wire proxy for interface - missing rtti");
-
+	{
+		bFound = false;
+		rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
+	}
+	
 	auto_iface_ptr<Wire_Proxy_Base> obj = (*rtti->pfnCreateWireProxy)(this);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create wire proxy");
+
+	// Check we have something valid
+	if (bFound && fallback_iid != OMEGA_GUIDOF(IObject) && !obj->IsDerived__proxy__(fallback_iid))
+		OMEGA_THROW(L"Proxy is not of expected interface!");
 
 	try
 	{
@@ -225,16 +233,16 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::QueryInterface(const 
 	return obj->QIReturn__proxy__();
 }
 
-Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const guid_t& iid)
+Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const guid_t& wire_iid, const guid_t& iid)
 {
-	if (iid == OMEGA_GUIDOF(IObject))
+	if (wire_iid == OMEGA_GUIDOF(IObject))
 	{
 		AddRef();
 		return &m_internal;
 	}
 		
 	// See if we have it cached
-	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,OMEGA_GUIDOF(IObject),false);
+	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(wire_iid,iid,false);
 	
 	// Return cast to the correct type
 	return obj->QIReturn__proxy__();
@@ -348,7 +356,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owne
 		return ptrOwner;
 	
 	// Create a wire proxy owner
-	OMEGA_NEW(ptrOwner,Wire_Proxy_Owner(base_shim,pOuter));
+	OMEGA_NEW(ptrOwner,Wire_Proxy_Owner(shim,pOuter));
 	
 	// Add to the map...
 	auto_iface_ptr<Wire_Proxy_Owner> ptrExisting = WIRE_PROXY_HOLDER::instance()->add(base_shim,ptrOwner);
@@ -366,8 +374,8 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_wire_st
 		throw INoInterfaceException::Create(iid);	
 
 	// Proxy the incoming params
-	auto_iface_ptr<Remoting::IStubController> ptrController = static_cast<Remoting::IStubController*>(create_safe_proxy(shim_Controller,OMEGA_GUIDOF(Remoting::IStubController)));
-	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(create_safe_proxy(shim_Marshaller,OMEGA_GUIDOF(Remoting::IMarshaller)));
+	auto_iface_ptr<Remoting::IStubController> ptrController = create_safe_proxy<Remoting::IStubController>(shim_Controller);
+	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = create_safe_proxy<Remoting::IMarshaller>(shim_Marshaller);
 
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);

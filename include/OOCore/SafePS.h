@@ -156,21 +156,13 @@ namespace Omega
 				void AddRef()
 				{
 					if (m_pS)
-					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnAddRef_Safe(m_pS);
-						if (except)
-							throw_correct_exception(except);
-					}
+						addref_safe(m_pS);
 				}
 
 				void Release()
 				{
 					if (m_pS)
-					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
-						if (except)
-							throw_correct_exception(except);
-					}
+						release_safe(m_pS);
 				}
 			};
 
@@ -186,11 +178,7 @@ namespace Omega
 				void AddRef()
 				{
 					if (m_refcount.AddRef())
-					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
-					}
+						addref_safe(m_shim);
 				}
 
 				void Release()
@@ -199,10 +187,8 @@ namespace Omega
 
 					if (m_refcount.Release())
 					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
-
+						release_safe(m_shim);
+						
 						if (m_intcount.IsZero() && m_pincount.IsZero())
 							delete this;
 					}
@@ -233,11 +219,7 @@ namespace Omega
 
 				const SafeShim* GetShim()
 				{
-					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
-					if (except)
-						throw_correct_exception(except);
-				
-					return m_shim;
+					return addref_safe(m_shim);
 				}
 
 			protected:
@@ -616,9 +598,7 @@ namespace Omega
 						{
 							m_pOwner->AddRef();
 
-							const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pOwner->m_base_shim->m_vtable)->pfnAddRef_Safe(m_pOwner->m_base_shim);
-							if (except)
-								throw_correct_exception(except);
+							addref_safe(m_pOwner->m_base_shim);
 						}
 					}
 
@@ -628,10 +608,8 @@ namespace Omega
 
 						if (m_refcount.Release())
 						{
-							const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pOwner->m_base_shim->m_vtable)->pfnRelease_Safe(m_pOwner->m_base_shim);
-							if (except)
-								throw_correct_exception(except);
-
+							release_safe(m_pOwner->m_base_shim);
+							
 							m_pOwner->Release();
 						}
 					}

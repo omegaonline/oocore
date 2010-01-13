@@ -48,7 +48,6 @@ namespace OOCore
 
 	class Proxy :
 		public OTL::ObjectBase,
-		public Omega::System::MetaInfo::ISafeProxy,
 		public Omega::Remoting::IProxy,
 		public Omega::Remoting::IMarshal
 	{
@@ -63,7 +62,6 @@ namespace OOCore
 		Omega::IObject* UnmarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& wire_iid);
 
 		BEGIN_INTERFACE_MAP(Proxy)
-			INTERFACE_ENTRY(Omega::System::MetaInfo::ISafeProxy)
 			INTERFACE_ENTRY(Omega::Remoting::IProxy)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
@@ -84,47 +82,6 @@ namespace OOCore
 		Omega::bool_t IsAlive();
 		Omega::bool_t RemoteQueryInterface(const Omega::guid_t& iid);
 
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL AddRef_Safe(const Omega::System::MetaInfo::SafeShim* shim);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Release_Safe(const Omega::System::MetaInfo::SafeShim* shim);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL QueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval, const Omega::guid_base_t* iid);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Pin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL Unpin_Safe(const Omega::System::MetaInfo::SafeShim* shim);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL WriteKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL UnpackKey_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMessage);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetMarshaller_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim** retval);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL IsAlive_Safe(const Omega::System::MetaInfo::SafeShim* shim, int* retval);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL RemoteQueryInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, int* retval, const Omega::guid_base_t* iid);
-
-	// ISafeProxy members
-	public:
-		void Internal_Release()
-		{
-			assert(m_refcount.m_debug_value > 0);
-
-			if (m_refcount.Release() && m_pin_count == 0)
-				delete this;
-		}
-
-		void Pin()
-		{
-			++m_pin_count;
-		}
-
-		void Unpin()
-		{
-			assert(m_pin_count.value() > 0);
-
-			if (--m_pin_count == 0 && m_refcount.IsZero())
-				delete this;
-		}
-
-		const Omega::System::MetaInfo::SafeShim* GetShim(const Omega::guid_t& iid);
-
-		const Omega::System::MetaInfo::SafeShim* CreateWireStub(const Omega::System::MetaInfo::SafeShim*, const Omega::System::MetaInfo::SafeShim*, const Omega::guid_t&)
-		{
-			return 0;
-		}
-
 	// IMarshal members
 	public:
 		Omega::guid_t GetUnmarshalFactoryOID(const Omega::guid_t&, Omega::Remoting::MarshalFlags_t)
@@ -135,10 +92,6 @@ namespace OOCore
 		void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 		void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags);
 
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL GetUnmarshalFactoryOID_Safe(const Omega::System::MetaInfo::SafeShim* shim, Omega::guid_base_t* retval, const Omega::guid_base_t* piid, Omega::Remoting::MarshalFlags_t flags);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL MarshalInterface_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMarshaller, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
-		static const Omega::System::MetaInfo::SafeShim* OMEGA_CALL ReleaseMarshalData_Safe(const Omega::System::MetaInfo::SafeShim* shim, const Omega::System::MetaInfo::SafeShim* pMarshaller, const Omega::System::MetaInfo::SafeShim* pMessage, const Omega::guid_base_t* iid, Omega::Remoting::MarshalFlags_t flags);
-
 	private:
 		Proxy(const Proxy&);
 		Proxy& operator = (const Proxy&);
@@ -148,8 +101,6 @@ namespace OOCore
 		OOBase::SpinLock                      m_lock;
 		Omega::uint32_t                       m_proxy_id;
 		StdObjectManager*                     m_pManager;
-		Omega::System::MetaInfo::SafeShim     m_proxy_shim;
-		Omega::System::MetaInfo::SafeShim     m_marshal_shim;
 		std::map<Omega::guid_t,Omega::bool_t> m_iids;
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);

@@ -226,7 +226,7 @@ namespace
 
 	void DLLManagerImpl::unload_unused()
 	{
-		typedef Omega::System::MetaInfo::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
+		typedef System::MetaInfo::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
 			
 		try
 		{
@@ -240,11 +240,11 @@ namespace
 					pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
 					if (pfn)
 					{
-						Omega::System::MetaInfo::SafeShim* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
+						System::MetaInfo::SafeShim* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
 
 						// Ignore exceptions
 						if (CanUnloadLibrary_Exception)
-							static_cast<const System::MetaInfo::IObject_Safe_VTable*>(CanUnloadLibrary_Exception->m_vtable)->pfnRelease_Safe(CanUnloadLibrary_Exception);
+							System::MetaInfo::release_safe(CanUnloadLibrary_Exception);
 					}
 				}
 				catch (IException* pE)

@@ -79,15 +79,7 @@ Omega::System::MetaInfo::Wire_Proxy_Owner* Omega::System::MetaInfo::wire_proxy_h
 
 Omega::System::MetaInfo::Wire_Proxy_Owner::~Wire_Proxy_Owner()
 {
-	// QI for ISafeProxy 
-	auto_iface_ptr<ISafeProxy> ptrSP = static_cast<ISafeProxy*>(m_ptrProxy->QueryInterface(OMEGA_GUIDOF(ISafeProxy)));
-	assert(ptrSP);
-
-	// Get the base shim
-	auto_safe_shim base_shim = ptrSP->GetShim(OMEGA_GUIDOF(IObject));
-	assert(base_shim);
-
-	WIRE_PROXY_HOLDER::instance()->remove(base_shim);
+	WIRE_PROXY_HOLDER::instance()->remove(m_proxy_shim);
 }
 
 Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Base> Omega::System::MetaInfo::Wire_Proxy_Owner::GetProxyBase(const guid_t& iid, const guid_t& fallback_iid, bool bQI)
@@ -135,11 +127,12 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Base
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);
 	if (!rtti && iid != fallback_iid)
+	{
 		rtti = get_wire_rtti_info(fallback_iid);
-
-	if (!rtti)
-		OMEGA_THROW(L"Failed to create wire proxy for interface - missing rtti");
-
+		if (!rtti)
+			rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
+	}
+	
 	auto_iface_ptr<Wire_Proxy_Base> obj = (*rtti->pfnCreateWireProxy)(this);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create wire proxy");
@@ -184,8 +177,6 @@ void Omega::System::MetaInfo::Wire_Proxy_Owner::RemoveBase(Wire_Proxy_Base* pPro
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Wire_Proxy_Owner::GetShim(const guid_t& /*iid*/)
 {
-	// ADD MICRO SHIMS HERE
-
 	AddRef();
 	return &m_base_shim;
 }
@@ -218,24 +209,27 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::QueryInterface(const 
 			
 	// See if we have it cached
 	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,OMEGA_GUIDOF(IObject),true);
-	if (!obj)
-		return 0;
+	if (obj)
+		return obj->QIReturn__proxy__();
 	
 	// Return cast to the correct type
 	return obj->QIReturn__proxy__();
 }
 
-Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const guid_t& iid)
+Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const guid_t& wire_iid, const guid_t& iid)
 {
-	if (iid == OMEGA_GUIDOF(IObject))
+	if (wire_iid == OMEGA_GUIDOF(IObject))
 	{
 		AddRef();
 		return &m_internal;
 	}
 		
-	// See if we have it cached
-	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(iid,OMEGA_GUIDOF(IObject),false);
-	
+	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(wire_iid,iid,false);
+
+	// Check we have something valid
+	if (iid != OMEGA_GUIDOF(IObject) && !obj->IsDerived__proxy__(iid))
+		OMEGA_THROW(L"Stub is not of expected interface!");
+		
 	// Return cast to the correct type
 	return obj->QIReturn__proxy__();
 }
@@ -334,24 +328,20 @@ void Omega::System::MetaInfo::Wire_Proxy_Base::UnpackHeader(Omega::Remoting::IMe
 	return m_pOwner->UnpackHeader(pMessage);
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> Omega::System::MetaInfo::create_wire_proxy_owner(const SafeShim* shim, IObject* pOuter)
+Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owner> Omega::System::MetaInfo::create_wire_proxy_owner(const SafeShim* proxy, IObject* pOuter)
 {
-	// QI for the IObject shim
-	auto_safe_shim base_shim;
-	const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnQueryInterface_Safe(shim,&base_shim,&OMEGA_GUIDOF(IObject));
-	if (except)
-		throw_correct_exception(except);
+	assert(guid_t(*proxy->m_iid) == OMEGA_GUIDOF(Omega::Remoting::IProxy));
 
 	// Lookup in the global map...
-	auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = WIRE_PROXY_HOLDER::instance()->find(base_shim);
+	auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = WIRE_PROXY_HOLDER::instance()->find(proxy);
 	if (ptrOwner)
 		return ptrOwner;
 	
 	// Create a wire proxy owner
-	OMEGA_NEW(ptrOwner,Wire_Proxy_Owner(base_shim,pOuter));
+	OMEGA_NEW(ptrOwner,Wire_Proxy_Owner(proxy,pOuter));
 	
 	// Add to the map...
-	auto_iface_ptr<Wire_Proxy_Owner> ptrExisting = WIRE_PROXY_HOLDER::instance()->add(base_shim,ptrOwner);
+	auto_iface_ptr<Wire_Proxy_Owner> ptrExisting = WIRE_PROXY_HOLDER::instance()->add(proxy,ptrOwner);
 	if (ptrExisting)
 		return ptrExisting;
 	
@@ -366,8 +356,8 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_wire_st
 		throw INoInterfaceException::Create(iid);	
 
 	// Proxy the incoming params
-	auto_iface_ptr<Remoting::IStubController> ptrController = static_cast<Remoting::IStubController*>(create_safe_proxy(shim_Controller,OMEGA_GUIDOF(Remoting::IStubController)));
-	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = static_cast<Remoting::IMarshaller*>(create_safe_proxy(shim_Marshaller,OMEGA_GUIDOF(Remoting::IMarshaller)));
+	auto_iface_ptr<Remoting::IStubController> ptrController = create_safe_proxy<Remoting::IStubController>(shim_Controller);
+	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = create_safe_proxy<Remoting::IMarshaller>(shim_Marshaller);
 
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);

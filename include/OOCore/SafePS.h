@@ -156,21 +156,13 @@ namespace Omega
 				void AddRef()
 				{
 					if (m_pS)
-					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnAddRef_Safe(m_pS);
-						if (except)
-							throw_correct_exception(except);
-					}
+						safe_shim_addref(m_pS);
 				}
 
 				void Release()
 				{
 					if (m_pS)
-					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
-						if (except)
-							throw_correct_exception(except);
-					}
+						safe_shim_release(m_pS);
 				}
 			};
 
@@ -186,11 +178,7 @@ namespace Omega
 				void AddRef()
 				{
 					if (m_refcount.AddRef())
-					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
-					}
+						safe_shim_addref(m_shim);
 				}
 
 				void Release()
@@ -199,9 +187,7 @@ namespace Omega
 
 					if (m_refcount.Release())
 					{
-						const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
-						if (except)
-							throw_correct_exception(except);
+						safe_shim_release(m_shim);
 
 						if (m_intcount.IsZero() && m_pincount.IsZero())
 							delete this;
@@ -233,11 +219,7 @@ namespace Omega
 
 				const SafeShim* GetShim()
 				{
-					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnAddRef_Safe(m_shim);
-					if (except)
-						throw_correct_exception(except);
-				
-					return m_shim;
+					return safe_shim_addref(m_shim);
 				}
 
 			protected:
@@ -421,7 +403,7 @@ namespace Omega
 
 				inline virtual ~Safe_Stub_Base();
 
-				inline const SafeShim* QueryInterface(const guid_t& iid);
+				inline const SafeShim* GetShim(const guid_t& iid);
 
 				void Pin()
 				{
@@ -523,7 +505,7 @@ namespace Omega
 					const SafeShim* except = 0;
 					try
 					{
-						*retval = static_cast<Safe_Stub*>(shim->m_stub)->QueryInterface(*iid);
+						*retval = static_cast<Safe_Stub*>(shim->m_stub)->GetShim(*iid);
 					}
 					catch (IException* pE)
 					{
@@ -616,9 +598,7 @@ namespace Omega
 						{
 							m_pOwner->AddRef();
 
-							const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pOwner->m_base_shim->m_vtable)->pfnAddRef_Safe(m_pOwner->m_base_shim);
-							if (except)
-								throw_correct_exception(except);
+							safe_shim_addref(m_pOwner->m_base_shim);
 						}
 					}
 
@@ -628,10 +608,8 @@ namespace Omega
 
 						if (m_refcount.Release())
 						{
-							const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_pOwner->m_base_shim->m_vtable)->pfnRelease_Safe(m_pOwner->m_base_shim);
-							if (except)
-								throw_correct_exception(except);
-
+							safe_shim_release(m_pOwner->m_base_shim);
+							
 							m_pOwner->Release();
 						}
 					}
@@ -765,7 +743,7 @@ namespace Omega
 					}
 				}
 
-				inline const SafeShim* QueryInterface(const guid_t& iid, IObject* pObj);
+				inline const SafeShim* GetShim(const guid_t& iid, IObject* pObj);
 
 				void Pin()
 				{
@@ -844,7 +822,7 @@ namespace Omega
 					const SafeShim* except = 0;
 					try
 					{
-						*retval = static_cast<Safe_Stub_Owner*>(shim->m_stub)->QueryInterface(*iid,0);
+						*retval = static_cast<Safe_Stub_Owner*>(shim->m_stub)->GetShim(*iid,0);
 					}
 					catch (IException* pE)
 					{

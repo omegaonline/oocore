@@ -152,14 +152,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 
 	System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> ptrOwner = System::MetaInfo::create_wire_proxy_owner(&m_proxy_shim,0);
 
-	IObject* pRet = ptrOwner->CreateProxy(wire_iid);
-	if (!pRet)
-		pRet = ptrOwner->CreateProxy(iid);
-
-	if (!pRet)
-		OMEGA_THROW(L"Failed to find correct shim for wire_iid");
-
-	return pRet;
+	return ptrOwner->CreateProxy(wire_iid,iid);
 }
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)

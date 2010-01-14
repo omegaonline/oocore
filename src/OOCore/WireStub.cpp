@@ -164,7 +164,7 @@ Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 	if (!wire_stub)
 		OMEGA_THROW(L"Attempt to create a stub for an object failed");
 
-	return static_cast<Remoting::IStub*>(System::MetaInfo::create_safe_proxy(wire_stub,OMEGA_GUIDOF(Remoting::IStub)));
+	return System::MetaInfo::create_safe_proxy<Remoting::IStub>(wire_stub);
 }
 
 void OOCore::Stub::RemoteRelease(uint32_t release_count)

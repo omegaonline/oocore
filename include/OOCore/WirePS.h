@@ -248,8 +248,10 @@ namespace Omega
 				Wire_Proxy_Owner(const SafeShim* proxy_shim, IObject* pOuter) : m_pOuter(pOuter)
 				{
 					// Wrap the proxy shim in a safe proxy
-					m_ptrProxy = static_cast<Remoting::IProxy*>(create_safe_proxy(proxy_shim,OMEGA_GUIDOF(Remoting::IProxy)));
+					m_ptrProxy = create_safe_proxy<Remoting::IProxy>(proxy_shim);
 					assert(m_ptrProxy);
+
+					m_proxy_shim = proxy_shim;
 
 					m_ptrMarshaller = m_ptrProxy->GetMarshaller();
 
@@ -295,7 +297,7 @@ namespace Omega
 
 				inline void RemoveBase(Wire_Proxy_Base* pProxy);
 				inline const SafeShim* GetShim(const guid_t& iid);
-				inline IObject* CreateProxy(const guid_t& iid);
+				inline IObject* CreateProxy(const guid_t& wire_iid, const guid_t& iid);
 				inline void Throw(const guid_t& iid);
 				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(Remoting::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
 				inline void UnpackHeader(Remoting::IMessage* pMessage);
@@ -307,6 +309,7 @@ namespace Omega
 				Threading::Mutex                      m_lock;
 				std::map<guid_t,Wire_Proxy_Base*>     m_iid_map;
 				auto_iface_ptr<Remoting::IProxy>      m_ptrProxy;
+				const SafeShim*                       m_proxy_shim;
 				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
 				SafeShim                              m_base_shim;
 				IObject*                              m_pOuter;
@@ -490,7 +493,7 @@ namespace Omega
 				}
 			};
 
-			inline System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> create_wire_proxy_owner(const SafeShim* shim, IObject* pOuter);
+			inline System::MetaInfo::auto_iface_ptr<System::MetaInfo::Wire_Proxy_Owner> create_wire_proxy_owner(const SafeShim* proxy, IObject* pOuter);
 
 			class Wire_Stub_Base
 			{
@@ -696,8 +699,8 @@ namespace Omega
 					const SafeShim* except = 0;
 					try
 					{
-						auto_iface_ptr<Remoting::IMessage> ptrParamsIn = static_cast<Remoting::IMessage*>(create_safe_proxy(shim_ParamsIn,OMEGA_GUIDOF(Remoting::IMessage)));
-						auto_iface_ptr<Remoting::IMessage> ptrParamsOut = static_cast<Remoting::IMessage*>(create_safe_proxy(shim_ParamsOut,OMEGA_GUIDOF(Remoting::IMessage)));
+						auto_iface_ptr<Remoting::IMessage> ptrParamsIn = create_safe_proxy<Remoting::IMessage>(shim_ParamsIn);
+						auto_iface_ptr<Remoting::IMessage> ptrParamsOut = create_safe_proxy<Remoting::IMessage>(shim_ParamsOut);
 
 						static_cast<Wire_Stub_Base*>(shim->m_stub)->Invoke_Internal(ptrParamsIn,ptrParamsOut);
 					}

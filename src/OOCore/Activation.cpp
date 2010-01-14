@@ -244,7 +244,7 @@ namespace
 
 						// Ignore exceptions
 						if (CanUnloadLibrary_Exception)
-							static_cast<const System::MetaInfo::IObject_Safe_VTable*>(CanUnloadLibrary_Exception->m_vtable)->pfnRelease_Safe(CanUnloadLibrary_Exception);
+							safe_shim_release(CanUnloadLibrary_Exception);
 					}
 				}
 				catch (IException* pE)

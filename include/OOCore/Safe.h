@@ -887,7 +887,34 @@ namespace Omega
 				const SafeShim* (OMEGA_CALL* pfnGetWireProxy_Safe)(const SafeShim* shim, const SafeShim** retval);
 			};
 
+			inline const SafeShim* safe_shim_addref(const SafeShim* shim)
+			{
+				assert(shim);
+
+				const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnAddRef_Safe(shim);
+				if (except)
+					throw_correct_exception(except);
+
+				return shim;
+			}
+
+			inline void safe_shim_release(const SafeShim* shim)
+			{
+				assert(shim);
+
+				const SafeShim* except = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnRelease_Safe(shim);
+				if (except)
+					throw_correct_exception(except);
+			}
+
 			inline IObject* create_safe_proxy(const SafeShim* shim, const guid_t& iid, IObject* pOuter = 0);
+
+			template <typename I>
+			inline I* create_safe_proxy(const SafeShim* shim, IObject* pOuter = 0)
+			{
+				return static_cast<I*>(create_safe_proxy(shim,OMEGA_GUIDOF(I),pOuter));
+			}
+
 			inline const SafeShim* create_safe_stub(IObject* pObject, const guid_t& iid);
 
 			template <typename I>
@@ -901,7 +928,7 @@ namespace Omega
 					type_wrapper(safe_type pS) :
 						m_pI(0)
 					{
-						m_pI = static_cast<I*>(create_safe_proxy(pS,OMEGA_GUIDOF(I)));
+						m_pI = create_safe_proxy<I>(pS);
 					}
 
 					~type_wrapper()
@@ -918,7 +945,7 @@ namespace Omega
 					void update(safe_type& pS, const guid_base_t* piid = 0, const SafeShim* = 0)
 					{
 						if (pS)
-							static_cast<const IObject_Safe_VTable*>(pS->m_vtable)->pfnRelease_Safe(pS);
+							safe_shim_release(pS);
 						
 						pS = create_safe_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
 					}
@@ -937,7 +964,7 @@ namespace Omega
 					~safe_type_wrapper()
 					{
 						if (m_pS)
-							static_cast<const IObject_Safe_VTable*>(m_pS->m_vtable)->pfnRelease_Safe(m_pS);
+							safe_shim_release(m_pS);
 					}
 
 					operator safe_type()
@@ -955,7 +982,7 @@ namespace Omega
 						if (pI)
 							pI->Release();
 
-						pI = static_cast<I*>(create_safe_proxy(m_pS,OMEGA_GUIDOF(I),0));
+						pI = create_safe_proxy<I>(m_pS);
 					}
 
 					void update(I*& pI, const guid_t& iid, IObject* pOuter = 0)
@@ -977,7 +1004,7 @@ namespace Omega
 
 				static I* clone(safe_type shim)
 				{
-					return static_cast<I*>(create_safe_proxy(shim,OMEGA_GUIDOF(I),0));
+					return create_safe_proxy<I>(shim);
 				}
 			};
 

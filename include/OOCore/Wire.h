@@ -526,7 +526,7 @@ namespace Omega
 					{
 						if (val)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val,OMEGA_GUIDOF(Remoting::IMessage)));
+							auto_iface_ptr<Remoting::IMessage> msg = create_safe_proxy<Remoting::IMessage>(val);
 							if (msg)
 							{
 								size_t count = 0;
@@ -591,11 +591,7 @@ namespace Omega
 					~safe_type_wrapper()
 					{
 						if (m_shim)
-						{
-							const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
-							if (except)
-								throw_correct_exception(except);
-						}
+							safe_shim_release(m_shim);
 					}
 
 					void update(Coll& dest) 
@@ -604,7 +600,7 @@ namespace Omega
 						
 						if (m_shim)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim,OMEGA_GUIDOF(Remoting::IMessage)));
+							auto_iface_ptr<Remoting::IMessage> msg = create_safe_proxy<Remoting::IMessage>(m_shim);
 							if (msg)
 							{
 								size_t count = 0;
@@ -716,7 +712,7 @@ namespace Omega
 					{
 						if (val)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(val,OMEGA_GUIDOF(Remoting::IMessage)));
+							auto_iface_ptr<Remoting::IMessage> msg = create_safe_proxy<Remoting::IMessage>(val);
 							if (msg)
 							{
 								size_t count = 0;
@@ -789,11 +785,7 @@ namespace Omega
 					~safe_type_wrapper()
 					{
 						if (m_shim)
-						{
-							const SafeShim* except = static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnRelease_Safe(m_shim);
-							if (except)
-								throw_correct_exception(except);
-						}
+							safe_shim_release(m_shim);
 					}
 
 					void update(Coll& dest) 
@@ -802,7 +794,7 @@ namespace Omega
 						
 						if (m_shim)
 						{
-							auto_iface_ptr<Remoting::IMessage> msg = static_cast<Remoting::IMessage*>(create_safe_proxy(m_shim,OMEGA_GUIDOF(Remoting::IMessage)));
+							auto_iface_ptr<Remoting::IMessage> msg = create_safe_proxy<Remoting::IMessage>(m_shim);
 							if (msg)
 							{
 								size_t count = 0;

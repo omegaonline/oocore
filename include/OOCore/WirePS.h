@@ -295,9 +295,11 @@ namespace Omega
 					return m_ptrMarshaller;
 				}
 
+				IObject* GetInternal() { return 0; }
+
 				inline void RemoveBase(Wire_Proxy_Base* pProxy);
 				inline const SafeShim* GetShim(const guid_t& iid);
-				inline IObject* CreateProxy(const guid_t& wire_iid, const guid_t& iid);
+				inline IObject* CreateProxy(const guid_t& wire_iid, const guid_t& iid = OMEGA_GUIDOF(IObject));
 				inline void Throw(const guid_t& iid);
 				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(Remoting::IMarshaller* pMarshaller, const guid_t& iid, uint32_t method_id);
 				inline void UnpackHeader(Remoting::IMessage* pMessage);

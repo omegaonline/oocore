@@ -591,7 +591,7 @@ namespace Omega
 					~safe_type_wrapper()
 					{
 						if (m_shim)
-							safe_shim_release(m_shim);
+							release_safe(m_shim);
 					}
 
 					void update(Coll& dest) 
@@ -785,7 +785,7 @@ namespace Omega
 					~safe_type_wrapper()
 					{
 						if (m_shim)
-							safe_shim_release(m_shim);
+							release_safe(m_shim);
 					}
 
 					void update(Coll& dest) 

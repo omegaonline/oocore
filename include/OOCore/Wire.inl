@@ -127,15 +127,22 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Base
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);
 	if (!rtti && iid != fallback_iid)
-	{
 		rtti = get_wire_rtti_info(fallback_iid);
-		if (!rtti)
-			rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
+	
+	bool bFound = true;
+	if (!rtti)
+	{
+		bFound = false;
+		rtti = get_wire_rtti_info(OMEGA_GUIDOF(IObject));
 	}
 	
 	auto_iface_ptr<Wire_Proxy_Base> obj = (*rtti->pfnCreateWireProxy)(this);
 	if (!obj)
 		OMEGA_THROW(L"Failed to create wire proxy");
+
+	// Check we have something valid
+	if (bFound && fallback_iid != OMEGA_GUIDOF(IObject) && !obj->IsDerived__proxy__(fallback_iid))
+		OMEGA_THROW(L"Proxy is not of expected interface!");
 
 	try
 	{
@@ -224,12 +231,9 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Owner::CreateProxy(const gui
 		return &m_internal;
 	}
 		
+	// See if we have it cached
 	auto_iface_ptr<Wire_Proxy_Base> obj = GetProxyBase(wire_iid,iid,false);
-
-	// Check we have something valid
-	if (iid != OMEGA_GUIDOF(IObject) && !obj->IsDerived__proxy__(iid))
-		OMEGA_THROW(L"Stub is not of expected interface!");
-		
+	
 	// Return cast to the correct type
 	return obj->QIReturn__proxy__();
 }

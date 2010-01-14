@@ -702,7 +702,7 @@
 	public: \
 		static Safe_Proxy_Base* bind(const SafeShim* shim, Safe_Proxy_Owner* pOwner) \
 		{ \
-			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim,pOwner)); return pThis; \
+			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim,pOwner)); return &pThis->m_internal; \
 		} \
 	protected: \
 		Safe_Proxy(const SafeShim* shim, Safe_Proxy_Owner* pOwner = 0) : Safe_Proxy<d_space::derived,D>(shim,pOwner) {} \

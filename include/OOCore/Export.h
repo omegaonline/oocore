@@ -483,11 +483,11 @@
 	class Wire_Stub<n_space::name > : public Wire_Stub<d_space::derived > \
 	{ \
 	public: \
-		static const SafeShim* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) \
+	static Remoting::IStub* create(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) \
 		{ \
 			Wire_Stub* pThis; \
 			OMEGA_NEW(pThis,Wire_Stub(pController,pMarshaller,pI)); \
-			return pThis->GetShim(); \
+			return pThis; \
 		} \
 	protected: \
 		Wire_Stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) : \

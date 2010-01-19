@@ -206,11 +206,6 @@ void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
 	ptrEx->Throw();
 }
 
-const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
-{
-	return create_wire_stub(shim_Controller,shim_Marshaller,iid,m_pI);
-}
-
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_safe_stub(IObject* pObj, const guid_t& iid)
 {
 	if (!pObj)

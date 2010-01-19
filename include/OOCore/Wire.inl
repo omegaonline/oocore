@@ -352,23 +352,34 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::Wire_Proxy_Owne
 	return ptrOwner;
 }
 
-const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_wire_stub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid, IObject* pObj)
+const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
 {
-	// Check that pObj supports the interface...
-	auto_iface_ptr<IObject> ptrQI(pObj->QueryInterface(iid));
-	if (!ptrQI)
-		throw INoInterfaceException::Create(iid);	
-
 	// Proxy the incoming params
 	auto_iface_ptr<Remoting::IStubController> ptrController = create_safe_proxy<Remoting::IStubController>(shim_Controller);
 	auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller = create_safe_proxy<Remoting::IMarshaller>(shim_Marshaller);
 
+	auto_iface_ptr<Remoting::IStub> ptrStub = create_wire_stub(ptrController,ptrMarshaller,iid,m_pI);
+
+	return create_safe_stub(ptrStub,OMEGA_GUIDOF(Remoting::IStub));
+}
+
+Omega::Remoting::IStub* Omega::System::MetaInfo::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
+{
+	// Check that pObj supports the interface...
+	auto_iface_ptr<IObject> ptrQI(pObj->QueryInterface(iid));
+	if (!ptrQI)
+		return 0;
+	
 	// Wrap it in a proxy and add it...
 	const wire_rtti* rtti = get_wire_rtti_info(iid);
 	if (!rtti)
 		OMEGA_THROW(L"Failed to create wire stub for interface - missing rtti");
 
-	return (*rtti->pfnCreateWireStub)(ptrController,ptrMarshaller,ptrQI);
+	Remoting::IStub* pStub = (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
+	if (!pStub)
+		OMEGA_THROW(L"Failed to create wire stub for interface");
+
+	return pStub;
 }
 
 #if !defined(DOXYGEN)

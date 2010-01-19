@@ -89,24 +89,6 @@ namespace
 		}
 	};
 
-	class MustAggregateException :
-		public ExceptionImpl<Activation::IMustAggregateException>
-	{
-	public:
-		guid_t	m_oid;
-
-		BEGIN_INTERFACE_MAP(MustAggregateException)
-			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IMustAggregateException>)
-		END_INTERFACE_MAP()
-
-	// Activation::IMustAggregateException members
-	public:
-		guid_t GetFailingOid()
-		{
-			return m_oid;
-		}
-	};
-
 	class LibraryNotFoundException :
 		public ExceptionImpl<Activation::ILibraryNotFoundException>
 	{
@@ -322,14 +304,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCor
 {
 	ObjectImpl<NoAggregationException>* pNew = ObjectImpl<NoAggregationException>::CreateInstance();
 	pNew->m_strDesc = L"Object does not support aggregation.";
-	pNew->m_oid = oid;
-	return pNew;
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IMustAggregateException*,OOCore_Activation_IMustAggregateException_Create,1,((in),const guid_t&,oid))
-{
-	ObjectImpl<MustAggregateException>* pNew = ObjectImpl<MustAggregateException>::CreateInstance();
-	pNew->m_strDesc = L"Object must be aggregated.";
 	pNew->m_oid = oid;
 	return pNew;
 }

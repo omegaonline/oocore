@@ -311,12 +311,7 @@ OOCore::ApartmentImpl::~ApartmentImpl()
 		UserSession::remove_apartment(m_id);
 }
 
-void OOCore::ApartmentImpl::CreateInstance(const string_t& strURI, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject)
+void OOCore::ApartmentImpl::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
-	pObject = Omega::CreateInstance(strURI,flags,iid);
-}
-
-void OOCore::ApartmentImpl::CreateAggregate(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, IObject*& pObject)
-{
-	pObject = Omega::CreateAggregate(strURI,flags,pOuter);
+	pObject = Omega::CreateInstance(strURI,flags,pOuter,iid);
 }

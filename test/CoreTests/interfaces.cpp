@@ -232,7 +232,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	Aggregator* pAgg = 0;
 	OMEGA_NEW(pAgg,Aggregator);
 
-	pAgg->SetInner(Omega::CreateLocalAggregate(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg));
+	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestLibrary,Omega::Activation::InProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
 
 	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
 	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
@@ -240,13 +240,6 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
-
-	OTL::ObjectPtr<Omega::IObject> ptrO1;
-	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-	OTL::ObjectPtr<Omega::IObject> ptrO2;
-	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
-
-	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
 
 	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();

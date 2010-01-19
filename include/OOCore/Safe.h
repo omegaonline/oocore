@@ -206,21 +206,6 @@ namespace Omega
 					const guid_base_t* m_piid;
 				};
 
-				struct ref_holder_agg : public ref_holder
-				{
-					ref_holder_agg(type val, const SafeShim* pOuter) :
-						ref_holder(val), m_pOuter(pOuter)
-					{}
-
-					~ref_holder_agg()
-					{
-						this->m_val.update(*this->m_dest,m_pOuter);
-					}
-
-				private:
-					const SafeShim* m_pOuter;
-				};
-
 				struct ref_holder_safe
 				{
 					operator type()
@@ -273,26 +258,6 @@ namespace Omega
 					ref_holder_safe_full& operator = (const ref_holder_safe_full&);
 				};
 
-				struct ref_holder_safe_agg : public ref_holder_safe
-				{
-					ref_holder_safe_agg(T& val, IObject* pOuter) : 
-						ref_holder_safe(val), m_pOuter(pOuter)
-					{}
-
-					~ref_holder_safe_agg()
-					{
-						this->m_val.update(this->m_dest,m_pOuter);
-					}
-
-					ref_holder_safe_agg(const ref_holder_safe_full& rhs) : ref_holder_safe(rhs), m_pOuter(rhs.m_pOuter)
-					{}
-
-				private:
-					IObject* m_pOuter;
-
-					ref_holder_safe_agg& operator = (const ref_holder_safe_full&);
-				};
-
 				static ref_holder_safe_lite coerce(T& val)
 				{
 					return ref_holder_safe_lite(val);
@@ -303,11 +268,6 @@ namespace Omega
 					return ref_holder_safe_full(val,iid);
 				}
 
-				static ref_holder_safe_agg coerce(T& val, IObject* pOuter)
-				{
-					return ref_holder_safe_agg(val,pOuter);
-				}
-
 				static ref_holder_lite coerce(type val)
 				{
 					return ref_holder_lite(val);
@@ -316,11 +276,6 @@ namespace Omega
 				static ref_holder_full coerce(type val, const guid_base_t* piid)
 				{
 					return ref_holder_full(val,piid);
-				}
-
-				static ref_holder_agg coerce(type val, const SafeShim* pOuter)
-				{
-					return ref_holder_agg(val,pOuter);
 				}
 			};
 
@@ -951,8 +906,7 @@ namespace Omega
 			}
 
 			inline IObject* create_safe_proxy(const SafeShim* shim, const guid_t& iid);
-			inline IObject* create_safe_agg_proxy(const SafeShim* shim, IObject* pOuter);
-
+			
 			template <typename I>
 			inline I* create_safe_proxy(const SafeShim* shim)
 			{
@@ -992,14 +946,6 @@ namespace Omega
 							release_safe(pS);
 													
 						pS = create_safe_stub(this->m_pI,piid ? *piid : OMEGA_GUIDOF(I));
-					}
-
-					void update(safe_type& pS, const SafeShim*)
-					{
-						if (pS)
-							release_safe(pS);
-													
-						pS = create_safe_stub(this->m_pI,OMEGA_GUIDOF(I));
 					}
 
 				private:
@@ -1043,14 +989,6 @@ namespace Omega
 							pI->Release();
 
 						pI = static_cast<I*>(create_safe_proxy(m_pS,iid));
-					}
-
-					void update(I*& pI, IObject* pOuter)
-					{
-						if (pI)
-							pI->Release();
-
-						pI = static_cast<I*>(create_safe_agg_proxy(m_pS,pOuter));
 					}
 
 				private:

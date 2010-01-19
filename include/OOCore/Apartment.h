@@ -30,9 +30,8 @@ namespace Omega
 	{
 		interface IApartment : public IObject
 		{
-			virtual void CreateInstance(const string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
-			virtual void CreateAggregate(const string_t& strOID, Activation::Flags_t flags, IObject* pOuter, IObject*& pObject) = 0;
-			
+			virtual void CreateInstance(const string_t& strOID, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
+						
 			inline static IApartment* Create();
 		};
 	}
@@ -44,8 +43,7 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Apartment, IApartment, "{9D92BFD7-631C-46dd-A123-E9CEB18A2285}",
 
-	OMEGA_METHOD_VOID(CreateInstance,4,((in),const string_t&,strURI,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-	OMEGA_METHOD_VOID(CreateAggregate,4,((in),const string_t&,strURI,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(out)(outer_is(pOuter)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,5,((in),const string_t&,strURI,(in),Activation::Flags_t,flags,(in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,OOCore_IApartment_Create,0,());

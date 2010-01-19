@@ -122,7 +122,6 @@
 #define OMEGA_PS_PARAM_out(t,name)
 #define OMEGA_PS_PARAM_iid_is(iid)       ,iid OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_size_is(size)     ,size OMEGA_PS_PARAM_II
-#define OMEGA_PS_PARAM_outer_is(outer)   ,outer OMEGA_PS_PARAM_II
 #define OMEGA_PS_PARAM_II(t,name)
 
 #define OMEGA_PS_PARAM_I(index,meta,d) \
@@ -176,7 +175,6 @@
 #define OMEGA_DECLARE_TYPE_out(t,name)       TypeInfo::attrOut
 #define OMEGA_DECLARE_TYPE_iid_is(iid)       | TypeInfo::attrIid_is OMEGA_DECLARE_TYPE_II
 #define OMEGA_DECLARE_TYPE_size_is(size)     | TypeInfo::attrSize_is OMEGA_DECLARE_TYPE_II
-#define OMEGA_DECLARE_TYPE_outer_is(outer)   | TypeInfo::attrOuter_is OMEGA_DECLARE_TYPE_II
 #define OMEGA_DECLARE_TYPE_II(t,name)
 
 #define OMEGA_DECLARE_TYPE_PARAM_II(index,meta,d) \
@@ -188,7 +186,6 @@
 #define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       ""
 #define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_STRINGIZE(iid) OMEGA_DECLARE_TYPE_ATTR_II
 #define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_STRINGIZE(size) OMEGA_DECLARE_TYPE_ATTR_II
-#define OMEGA_DECLARE_TYPE_ATTR_outer_is(outer)   OMEGA_STRINGIZE(outer) OMEGA_DECLARE_TYPE_ATTR_II
 #define OMEGA_DECLARE_TYPE_ATTR_II(t,name)
 
 #define OMEGA_DECLARE_TYPE_PARAM_III(index,meta,d) \
@@ -338,7 +335,6 @@
 #define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
-#define OMEGA_WIRE_READ_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_READ_STUB_PARAM_I(index,meta,d) \
@@ -362,7 +358,6 @@
 #define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
-#define OMEGA_WIRE_WRITE_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_WRITE_STUB_PARAM_I(index,meta,d) \
@@ -386,7 +381,6 @@
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_outer_is(outer)   OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_I(index,meta,d) \
@@ -459,13 +453,13 @@
 	template <> class Safe_Stub<n_space::name > : public Safe_Stub<d_space::derived > \
 	{ \
 	public: \
-		static Safe_Stub_Base* create(IObject* pI, Safe_Stub_Owner* pOwner) \
+		static const SafeShim* create(IObject* pI) \
 		{ \
-			Safe_Stub* pThis; OMEGA_NEW(pThis,Safe_Stub(static_cast<n_space::name*>(pI),OMEGA_GUIDOF(n_space::name),pOwner)); \
-			return pThis; \
+			Safe_Stub* pThis; OMEGA_NEW(pThis,Safe_Stub(static_cast<n_space::name*>(pI),OMEGA_GUIDOF(n_space::name))); \
+			return &pThis->m_shim; \
 		} \
 	protected: \
-		Safe_Stub(n_space::name* pI, const guid_t& iid, Safe_Stub_Owner* pOwner) : Safe_Stub<d_space::derived >(pI,iid,pOwner) \
+		Safe_Stub(n_space::name* pI, const guid_t& iid) : Safe_Stub<d_space::derived >(pI,iid) \
 		{ m_shim.m_vtable = get_vt(); } \
 		static const vtable_info<n_space::name >::type* get_vt() \
 		{ \
@@ -570,7 +564,6 @@
 #define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_II
-#define OMEGA_WIRE_READ_PROXY_PARAM_outer_is(outer)   OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_READ_PROXY_PARAM_I(index,meta,d) \
@@ -594,7 +587,6 @@
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_II
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_outer_is(outer)   OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_I(index,meta,d) \
@@ -618,7 +610,6 @@
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_PROXY_PARAM_II
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_outer_is(outer)   OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_I(index,meta,d) \
@@ -700,12 +691,14 @@
 	{ \
 		const vtable_info<n_space::name >::type* deref_vt() { return static_cast<const vtable_info<n_space::name >::type*>(this->m_shim->m_vtable); } \
 	public: \
-		static Safe_Proxy_Base* bind(const SafeShim* shim, Safe_Proxy_Owner* pOwner) \
+		static IObject* bind(const SafeShim* shim, const guid_t& iid) \
 		{ \
-			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim,pOwner)); return &pThis->m_internal; \
+			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim)); \
+			if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid)) OMEGA_THROW(L"Proxy is not of expected interface!"); \
+			return pThis; \
 		} \
 	protected: \
-		Safe_Proxy(const SafeShim* shim, Safe_Proxy_Owner* pOwner = 0) : Safe_Proxy<d_space::derived,D>(shim,pOwner) {} \
+		Safe_Proxy(const SafeShim* shim) : Safe_Proxy<d_space::derived,D>(shim) {} \
 		virtual bool IsDerived__proxy__(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \

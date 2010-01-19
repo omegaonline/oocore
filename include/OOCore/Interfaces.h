@@ -36,8 +36,7 @@ namespace Omega
 	{
 		interface IObjectFactory : public IObject
 		{
-			virtual void CreateInstance(const guid_t& iid, IObject*& pObject) = 0;
-			virtual void CreateAggregate(IObject* pOuter, IObject*& pObject) = 0;
+			virtual void CreateInstance(IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
 		};
 		
 		enum Flags
@@ -81,13 +80,6 @@ namespace Omega
 			inline static INoAggregationException* Create(const guid_t& oid);
 		};
 
-		interface IMustAggregateException : public IException
-		{
-			virtual guid_t GetFailingOid() = 0;
-
-			inline static IMustAggregateException* Create(const guid_t& oid);
-		};
-		
 		interface ILibraryNotFoundException : public IException
 		{
 			virtual string_t GetLibraryName() = 0;
@@ -238,8 +230,7 @@ OMEGA_DEFINE_INTERFACE
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
 	// Methods
-	OMEGA_METHOD_VOID(CreateInstance,2,((in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-	OMEGA_METHOD_VOID(CreateAggregate,2,((in),IObject*,pOuter,(out)(outer_is(pOuter)),IObject*&,pObject))
+	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED
@@ -274,14 +265,6 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Activation, INoAggregationException, Omega, IException, "{A752C1AF-68CB-4fab-926A-DFC3319CEDE1}",
-
-	// Methods
-	OMEGA_METHOD(guid_t,GetFailingOid,0,())
-)
-
-OMEGA_DEFINE_INTERFACE_DERIVED
-(
-	Omega::Activation, IMustAggregateException, Omega, IException, "{9E545E35-C6E7-47b0-8A91-2F4383689D09}",
 
 	// Methods
 	OMEGA_METHOD(guid_t,GetFailingOid,0,())
@@ -434,12 +417,6 @@ OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Acti
 Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::guid_t& oid)
 {
 	return OOCore_Activation_INoAggregationException_Create(oid);
-}
-
-OOCORE_EXPORTED_FUNCTION(Omega::Activation::IMustAggregateException*,OOCore_Activation_IMustAggregateException_Create,1,((in),const Omega::guid_t&,oid));
-Omega::Activation::IMustAggregateException* Omega::Activation::IMustAggregateException::Create(const Omega::guid_t& oid)
-{
-	return OOCore_Activation_IMustAggregateException_Create(oid);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags));

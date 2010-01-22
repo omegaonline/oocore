@@ -345,8 +345,8 @@ Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
 {
 	const wchar_t* s = c_str();
 	const wchar_t* p = s + Length()-1;
-	for (;*p == c && p>=s;--p)
-		;
+	while (p>=s && *p == c)
+		--p;
 
 	return Left(p+1-s);
 }
@@ -355,8 +355,8 @@ Omega::string_t Omega::string_t::TrimRight(const string_t& str) const
 {
 	const wchar_t* s = c_str();
 	const wchar_t* p = s + Length()-1;
-	for (;str.Find(*p) != string_t::npos && p>=s;--p)
-		;
+	while (p>=s && str.Find(*p) != string_t::npos)
+		--p;
 
 	return Left(p+1-s);
 }

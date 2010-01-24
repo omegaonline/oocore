@@ -124,8 +124,10 @@ bool Registry::Hive::open()
 		"ANALYZE RegistryValues;"
 		"COMMIT;";
 
-	int err = m_db->exec(szSQL);
-	return (err == SQLITE_OK || err == SQLITE_READONLY);
+	//int err = m_db->exec(szSQL);
+	//return (err == SQLITE_OK || err == SQLITE_READONLY);
+
+	return true;
 }
 
 int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
@@ -137,32 +139,58 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 		return SQLITE_ROW;
 	}
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	int err = m_db->prepare_statement(ptrStmt,"SELECT Access FROM RegistryKeys WHERE Id = %lld;",uKey);
+	// Create or reset the prepared statement
+	int err = SQLITE_OK;
+	if (!m_ptrCheckKey_Stmt)
+		err = m_db->prepare_statement(m_ptrCheckKey_Stmt,"SELECT Access FROM RegistryKeys WHERE Id = ?1;");
+	else
+		err = m_ptrCheckKey_Stmt->reset();
+
 	if (err != SQLITE_OK)
 		return err;
 
-	err = ptrStmt->step();
+	// Bind the key value
+	err = m_ptrCheckKey_Stmt->bind_int64(1,uKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	// And run the statement
+	err = m_ptrCheckKey_Stmt->step();
 	if (err == SQLITE_ROW)
-		access_mask = static_cast<access_rights_t>(ptrStmt->column_int(0));
+		access_mask = static_cast<access_rights_t>(m_ptrCheckKey_Stmt->column_int(0));
 
 	return err;
 }
 
 int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& uKey, const std::string& strSubKey, access_rights_t& access_mask)
 {
-	// Lock must be help first...
+	// Lock must be held first...
 
-	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	int err = m_db->prepare_statement(ptrStmt,"SELECT Id, Access FROM RegistryKeys WHERE Name = %Q AND Parent = %lld;",strSubKey.c_str(),uParent);
+	// Create or reset the prepared statement
+	int err = SQLITE_OK;
+	if (!m_ptrGetKeyInfo_Stmt)
+		err = m_db->prepare_statement(m_ptrGetKeyInfo_Stmt,"SELECT Id, Access FROM RegistryKeys WHERE Name = ?1 AND Parent = ?2;");
+	else
+		err = m_ptrGetKeyInfo_Stmt->reset();
+
 	if (err != SQLITE_OK)
 		return err;
 
-	err = ptrStmt->step();
+	// Bind the search values
+	err = m_ptrGetKeyInfo_Stmt->bind_string(1,strSubKey);
+	if (err != SQLITE_OK)
+		return err;
+
+	err = m_ptrGetKeyInfo_Stmt->bind_int64(2,uParent);
+	if (err != SQLITE_OK)
+		return err;
+
+	// And run the statement
+	err = m_ptrGetKeyInfo_Stmt->step();
 	if (err == SQLITE_ROW)
 	{
-		uKey = ptrStmt->column_int64(0);
-		access_mask = static_cast<access_rights_t>(ptrStmt->column_int(1));
+		uKey = m_ptrGetKeyInfo_Stmt->column_int64(0);
+		access_mask = static_cast<access_rights_t>(m_ptrGetKeyInfo_Stmt->column_int(1));
 	}
 
 	return err;
@@ -170,6 +198,8 @@ int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& 
 
 int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string& strSubKey, access_rights_t& access_mask, Omega::uint32_t channel_id)
 {
+	// Lock must be held first...
+
 	// Check if the key still exists
 	int err = check_key_exists(uParent,access_mask);
 	if (err == SQLITE_DONE)

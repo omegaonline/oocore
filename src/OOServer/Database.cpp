@@ -48,6 +48,14 @@ int Db::Statement::step()
 	return err;
 }
 
+int Db::Statement::reset()
+{
+	int err = sqlite3_reset(m_pStmt);
+	if (err != SQLITE_OK)
+		LOG_ERROR(("sqlite3_reset failed: %s",sqlite3_errmsg(sqlite3_db_handle(m_pStmt))));
+	return err;
+}
+
 int Db::Statement::column_int(int iCol)
 {
 	return sqlite3_column_int(m_pStmt,iCol);
@@ -71,6 +79,16 @@ const void* Db::Statement::column_blob(int iCol)
 int Db::Statement::column_bytes(int iCol)
 {
 	return sqlite3_column_bytes(m_pStmt,iCol);
+}
+
+int Db::Statement::bind_int64(int index, const sqlite3_int64& val)
+{
+	return sqlite3_bind_int64(m_pStmt,index,val);
+}
+
+int Db::Statement::bind_string(int index, const std::string& val)
+{
+	return sqlite3_bind_text(m_pStmt,index,val.c_str(),val.length(),0);
 }
 
 sqlite3_stmt* Db::Statement::statement()

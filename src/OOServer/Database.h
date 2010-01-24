@@ -48,11 +48,16 @@ namespace Db
 		~Statement();
 
 		int step();
+		int reset();
+
 		int column_int(int iCol);
 		const char* column_text(int iCol);
 		sqlite3_int64 column_int64(int iCol);
 		const void* column_blob(int iCol);
 		int column_bytes(int iCol);
+
+		int bind_int64(int index, const sqlite3_int64& val);
+		int bind_string(int index, const std::string& val);
 
 		sqlite3_stmt* statement();
 

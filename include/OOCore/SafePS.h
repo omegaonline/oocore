@@ -166,6 +166,29 @@ namespace Omega
 				}
 			};
 
+			struct OMEGA_PRIVATE_TYPE(safe_module)
+			{
+				int unused;
+			};
+
+			class safe_holder
+			{
+			public:
+				inline IObject* add(const SafeShim* shim, IObject* pObject);
+				inline const SafeShim* add(IObject* pObject, const SafeShim* shim);
+
+				inline const SafeShim* find(IObject* pObject);
+
+				inline void remove(IObject* pObject);
+				inline void remove(const SafeShim* shim);
+
+			private:
+				Threading::Mutex                   m_lock;
+				std::map<IObject*,const SafeShim*> m_obj_map;
+				std::map<const SafeShim*,IObject*> m_shim_map;
+			};
+			typedef Threading::Singleton<safe_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_HOLDER;
+
 			class Safe_Proxy_Base
 			{
 			protected:
@@ -226,6 +249,12 @@ namespace Omega
 
 					IObject* QueryInterface(const guid_t& iid)
 					{
+						if (iid == OMEGA_GUIDOF(IObject))
+						{
+							AddRef();
+							return this;
+						}
+
 						return m_pProxy->QueryInterface(iid);
 					}
 
@@ -341,15 +370,12 @@ namespace Omega
 					if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid))
 						OMEGA_THROW(L"Proxy is not of expected interface!");
 					
-					return static_cast<D*>(pThis);
+					return pThis->QIReturn__proxy__();
 				}
 
 			protected:
 				Safe_Proxy(const SafeShim* shim) : 
 					 Safe_Proxy_Base(shim)
-				{ }
-
-				virtual ~Safe_Proxy() 
 				{ }
 
 				virtual bool IsDerived__proxy__(const guid_t& /*iid*/) const
@@ -358,7 +384,6 @@ namespace Omega
 					return false;
 				}
 
-			private:
 				IObject* QIReturn__proxy__()
 				{
 					return static_cast<D*>(this);
@@ -379,6 +404,42 @@ namespace Omega
 				virtual IObject* QueryInterface(const guid_t& iid)
 				{
 					return Safe_Proxy_Base::QueryInterface(iid);
+				}
+			};
+
+			class Safe_Proxy_IObject : public Safe_Proxy<IObject,IObject>
+			{
+			public:
+				static IObject* bind(const SafeShim* shim)
+				{
+					Safe_Proxy_IObject* pThis;
+					OMEGA_NEW(pThis,Safe_Proxy_IObject(shim));
+					
+					// Add to the map...
+					IObject* pExisting = SAFE_HOLDER::instance()->add(shim,pThis);
+					if (pExisting)
+					{
+						pThis->Release();
+						return pExisting;
+					}
+
+					return static_cast<IObject*>(pThis);
+				}
+
+			protected:
+				Safe_Proxy_IObject(const SafeShim* shim) : 
+					 Safe_Proxy<IObject,IObject>(shim)
+				{ }
+
+				virtual ~Safe_Proxy_IObject() 
+				{
+					SAFE_HOLDER::instance()->remove(this);
+				}
+
+				virtual bool IsDerived__proxy__(const guid_t& iid) const
+				{
+					// We are derived from IObject
+					return (iid == OMEGA_GUIDOF(IObject));
 				}
 			};
 
@@ -590,66 +651,7 @@ namespace Omega
 					return except;
 				}
 			};
-			
-			struct OMEGA_PRIVATE_TYPE(safe_module)
-			{
-				int unused;
-			};
-
-			class safe_holder
-			{
-			public:
-				inline IObject* add(const SafeShim* shim, IObject* pOwner);
-				inline const SafeShim* add(IObject* pObject, const SafeShim* shim);
-
-				inline const SafeShim* find(IObject* pObject);
-
-				inline void remove(IObject* pObject);
-				inline void remove(const SafeShim* shim);
-
-			private:
-				Threading::Mutex                   m_lock;
-				std::map<IObject*,const SafeShim*> m_obj_map;
-				std::map<const SafeShim*,IObject*> m_shim_map;
-			};
-			typedef Threading::Singleton<safe_holder,Threading::InitialiseDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > SAFE_HOLDER;
-
-			class Safe_Proxy_IObject : public Safe_Proxy<IObject,IObject>
-			{
-			public:
-				static IObject* bind(const SafeShim* shim)
-				{
-					Safe_Proxy_IObject* pThis;
-					OMEGA_NEW(pThis,Safe_Proxy_IObject(shim));
-					
-					// Add to the map...
-					IObject* pExisting = SAFE_HOLDER::instance()->add(shim,pThis);
-					if (pExisting)
-					{
-						pThis->Release();
-						return pExisting;
-					}
-
-					return pThis;
-				}
-
-			protected:
-				Safe_Proxy_IObject(const SafeShim* shim) : 
-					 Safe_Proxy<IObject,IObject>(shim)
-				{ }
-
-				virtual ~Safe_Proxy_IObject() 
-				{
-					SAFE_HOLDER::instance()->remove(this);
-				}
-
-				virtual bool IsDerived__proxy__(const guid_t& iid) const
-				{
-					// We are derived from IObject
-					return (iid == OMEGA_GUIDOF(IObject));
-				}
-			};
-
+						
 			class Safe_Stub_IObject : public Safe_Stub<IObject>
 			{
 			public:
@@ -762,7 +764,7 @@ namespace Omega
 					if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid))
 						OMEGA_THROW(L"Proxy is not of expected interface!");
 
-					return pThis;
+					return pThis->QIReturn__proxy__();
 				}
 
 			protected:
@@ -781,8 +783,24 @@ namespace Omega
 			public:
 				void Throw()
 				{
-					this->AddRef();
-					throw static_cast<D*>(this);
+					guid_t iid = GetThrownIID();
+					if (IsDerived__proxy__(iid))
+						throw static_cast<D*>(this);
+										
+					// QI m_shim
+					auto_safe_shim retval;
+					const SafeShim* except = static_cast<const IObject_Safe_VTable*>(this->m_shim->m_vtable)->pfnQueryInterface_Safe(this->m_shim,&retval,&iid);
+					if (except)
+					{
+						this->Release();
+						throw_correct_exception(except);
+					}
+
+					if (!retval)
+						throw static_cast<D*>(this);
+					
+					this->Release();
+					static_cast<IException*>(create_safe_proxy(retval,OMEGA_GUIDOF(IException)))->Throw();
 				}
 				
 				OMEGA_DECLARE_SAFE_PROXY_METHODS

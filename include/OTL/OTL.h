@@ -520,11 +520,8 @@ namespace OTL
 			GetModule()->DecLockCount();
 		}
 
-		ObjectImpl(const ObjectImpl& rhs)
-		{}
-
-		ObjectImpl& operator = (const ObjectImpl& rhs)
-		{}
+		ObjectImpl(const ObjectImpl& rhs);
+		ObjectImpl& operator = (const ObjectImpl& rhs);
 
 	// IObject members
 	public:
@@ -588,11 +585,8 @@ namespace OTL
 		Omega::IObject* m_pOuter;
 
 	private:
-		ContainedObjectImpl(const ContainedObjectImpl& rhs)
-		{}
-
-		ContainedObjectImpl& operator = (const ContainedObjectImpl& rhs)
-		{}
+		ContainedObjectImpl(const ContainedObjectImpl& rhs);
+		ContainedObjectImpl& operator = (const ContainedObjectImpl& rhs);
 
 		virtual ~ContainedObjectImpl()
 		{

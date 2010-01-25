@@ -631,7 +631,7 @@
 	void name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
-		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(ptrMarshaller__wire__,OMEGA_CONCAT(name,_MethodId)); \
+		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(OMEGA_CONCAT(name,_MethodId)); \
 		auto_iface_ptr<Remoting::IMessage> pParamsIn__wire__; \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
 		IException* OMEGA_CONCAT(name,_Exception) = 0; \
@@ -654,7 +654,7 @@
 	ret_type name(OMEGA_DECLARE_PARAMS_VOID(param_count,params) ) \
 	{ \
 		auto_iface_ptr<Remoting::IMarshaller> ptrMarshaller__wire__ = this->GetMarshaller(); \
-		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(ptrMarshaller__wire__,OMEGA_CONCAT(name,_MethodId)); \
+		auto_iface_ptr<Remoting::IMessage> pParamsOut__wire__ = this->CreateMessage(OMEGA_CONCAT(name,_MethodId)); \
 		auto_iface_ptr<Remoting::IMessage> pParamsIn__wire__; \
 		size_t unpack_count__wire__ = 0; OMEGA_UNUSED_ARG(unpack_count__wire__); \
 		IException* OMEGA_CONCAT(name,_Exception) = 0; \
@@ -695,7 +695,7 @@
 		{ \
 			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim)); \
 			if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid)) OMEGA_THROW(L"Proxy is not of expected interface!"); \
-			return pThis; \
+			return pThis->QIReturn__proxy__(); \
 		} \
 	protected: \
 		Safe_Proxy(const SafeShim* shim) : Safe_Proxy<d_space::derived,D>(shim) {} \
@@ -704,7 +704,7 @@
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
 			return Safe_Proxy<d_space::derived,D>::IsDerived__proxy__(iid); \
 		} \
-	public: \
+	private: \
 		OMEGA_DECLARE_SAFE_PROXY_METHODS(methods) \
 	};
 
@@ -714,12 +714,13 @@
 	{ \
 		typedef Wire_Proxy<d_space::derived,D> Base; \
 	public: \
-		static Wire_Proxy_Base* bind(Wire_Proxy_Owner* pOwner) \
+		static IObject* bind(Remoting::IProxy* pProxy) \
 		{ \
-			Wire_Proxy* pThis; OMEGA_NEW(pThis,Wire_Proxy(pOwner)); return pThis; \
+			Wire_Proxy* pThis; OMEGA_NEW(pThis,Wire_Proxy(pProxy)); \
+			return pThis->QIReturn__proxy__(); \
 		} \
 	protected: \
-		Wire_Proxy(Wire_Proxy_Owner* pOwner = 0) : Base(pOwner) {} \
+		Wire_Proxy(Remoting::IProxy* pProxy) : Base(pProxy) {} \
 		virtual bool IsDerived__proxy__(const guid_t& iid) const \
 		{ \
 			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \

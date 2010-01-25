@@ -133,7 +133,7 @@ Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(const g
 {
 	if (iid == OMEGA_GUIDOF(ISafeProxy))
 	{
-		Internal_AddRef();
+		m_internal.AddRef();
 		return &m_internal;
 	}
 	else if (IsDerived__proxy__(iid))
@@ -159,16 +159,21 @@ Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim,
 	// See if we are a Wire Proxy
 	if (static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 	{
+		// Retrieve the underlying proxy
 		auto_safe_shim proxy;
 		const SafeShim* pE = static_cast<const IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
 		if (pE)
 			throw_correct_exception(pE);
 
-		auto_iface_ptr<Wire_Proxy_Owner> ptrOwner = create_wire_proxy_owner(proxy,0);
+		// Control its lifetime
+		auto_iface_ptr<Remoting::IProxy> ptrProxy = create_safe_proxy<Remoting::IProxy>(proxy);
 
-		return ptrOwner->CreateProxy(iid);
+		assert(ptrProxy->RemoteQueryInterface(iid));
+			
+		// Create a wire proxy
+		return create_wire_proxy(ptrProxy,iid);
 	}
-
+	
 	IObject* obj = 0;
 	if (guid_t(*shim->m_iid) == OMEGA_GUIDOF(IObject))
 	{
@@ -191,7 +196,7 @@ Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim,
 	}
 
 	if (!obj)
-		OMEGA_THROW(L"Failed to create safe proxy");
+		OMEGA_THROW(L"Failed to create proxy");
 
 	return obj;
 }
@@ -200,10 +205,10 @@ void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
 {
 	assert(shim);
 
+	// Ensure shim is released
 	auto_safe_shim ss = shim;
 
-	auto_iface_ptr<IException> ptrEx = create_safe_proxy<IException>(shim);
-	ptrEx->Throw();
+	create_safe_proxy<IException>(shim)->Throw();
 }
 
 const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_safe_stub(IObject* pObj, const guid_t& iid)

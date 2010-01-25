@@ -108,11 +108,23 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const g
 
 	guid_t wire_iid = pMessage->ReadGuid(L"iid");
 
-	// Create stub around ourselves
-	System::MetaInfo::auto_safe_shim ss = System::MetaInfo::create_safe_stub(static_cast<IProxy*>(this),OMEGA_GUIDOF(IProxy));
+	// Add tot he cache map...
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	// Create a wire proxy wrapping our stub
-	return System::MetaInfo::create_wire_proxy_owner(ss,0)->CreateProxy(wire_iid,iid);
+	m_iids.insert(std::map<Omega::guid_t,bool>::value_type(wire_iid,true));
+
+	guard.release();
+
+	// Create a wire_proxy...
+	ObjectPtr<IObject> ptrBase;
+	ptrBase.Attach(System::MetaInfo::Wire_Proxy_IObject::bind(this));
+
+	// QI Base for the desired interface
+	IObject* pRet = ptrBase->QueryInterface(iid);
+	if (!pRet)
+		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
+
+	return pRet;
 }
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)

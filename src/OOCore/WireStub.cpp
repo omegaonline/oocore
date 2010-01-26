@@ -42,7 +42,7 @@ void OOCore::Stub::init(IObject* pObj, uint32_t stub_id, StdObjectManager* pMana
 void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
 {
 	// Make sure we can support the outgoing interface...
-	assert(iid == OMEGA_GUIDOF(IObject) || FindStub(iid) != 0);
+	assert(FindStub(iid) != 0);
 	
 	pMessage->WriteUInt32(L"id",m_stub_id);
 	pMessage->WriteGuid(L"iid",iid);
@@ -61,34 +61,11 @@ void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t
 
 void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	// Read the method id
-	uint32_t method_id = pParamsIn->ReadUInt32(L"$method_id");
-	switch (method_id)
-	{
-	case 0: // RemoteRelease
-		RemoteRelease();
-		break;
+	ObjectPtr<Remoting::IStub> ptrStub = FindStub(pParamsIn->ReadGuid(L"$iid"));
+	if (!ptrStub)
+		OMEGA_THROW(L"Invoke on unsupported interface");
 
-	case 1: // QueryInterface
-		pParamsOut->WriteBoolean(L"bQI",RemoteQueryInterface(pParamsIn->ReadGuid(L"iid")));
-		break;
-
-	case 2: // MarshalStub
-		MarshalStub(pParamsIn,pParamsOut);
-		break;
-
-	default:
-		OMEGA_THROW(L"Invoke called with invalid method index");
-	}
-}
-
-ObjectPtr<Remoting::IStub> OOCore::Stub::LookupStub(Remoting::IMessage* pMessage)
-{
-	guid_t iid = pMessage->ReadGuid(L"$iid");
-	if (iid == OMEGA_GUIDOF(IObject))
-		return static_cast<Remoting::IStub*>(this);
-
-	return FindStub(iid);
+	ptrStub->Invoke(pParamsIn,pParamsOut);
 }
 
 ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
@@ -150,20 +127,15 @@ void OOCore::Stub::RemoteRelease()
 {
 	if (--m_marshal_count == 0)
 	{
+		// This will Release() us...
 		m_pManager->RemoveStub(m_stub_id);
-
-		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-		m_iid_map.clear();
-		m_ptrObj.Release();
-		m_stub_id = 0;
 	}
 }
 
 bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 {
 	// If we have a stub, then we can handle it...
-	return (iid == OMEGA_GUIDOF(IObject) || FindStub(iid) != 0);
+	return (FindStub(iid) != 0);
 }
 
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

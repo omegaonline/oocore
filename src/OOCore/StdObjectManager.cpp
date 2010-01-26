@@ -279,7 +279,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 		OMEGA_THROW(L"Invoke called with no message");
 
 	if (!m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager not connected to a channel");
+		throw Remoting::IChannelClosedException::Create();
 
 	// Stash call context
 	CallContext* pCC = 0;
@@ -327,7 +327,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			else
 			{
 				// It's a method call on a stub...
-				ObjectPtr<Remoting::IStub> ptrStub;
+				ObjectPtr<ObjectImpl<Stub> > ptrStub;
 
 				// Look up the stub
 				try
@@ -338,7 +338,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 					if (i==m_mapStubIds.end())
 						OMEGA_THROW(L"Bad stub id");
 
-					ptrStub = i->second->second->LookupStub(pParamsIn);
+					ptrStub = i->second->second;
 				}
 				catch (std::exception& e)
 				{
@@ -442,7 +442,7 @@ bool OOCore::StdObjectManager::IsAlive()
 Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 {
 	if (!m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager is not connected");
+		throw Remoting::IChannelClosedException::Create();
 
 	return m_ptrChannel->CreateMessage();
 }
@@ -450,7 +450,7 @@ Remoting::IMessage* OOCore::StdObjectManager::CreateMessage()
 IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	if (!m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager is not connected");
+		throw Remoting::IChannelClosedException::Create();
 
 	Remoting::IMessage* pInternalRecv = 0;
 	IException* pE = m_ptrChannel->SendAndReceive(attribs,pSend,pInternalRecv,timeout);
@@ -527,7 +527,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 	try
 	{
 		if (!m_ptrChannel)
-			OMEGA_THROW(L"ObjectManager is not connected");
+			throw Remoting::IChannelClosedException::Create();
 
 		// Write a header
 		pMessage->WriteStructStart(pszName,L"$iface_marshal");
@@ -638,7 +638,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 	try
 	{
 		if (!m_ptrChannel)
-			OMEGA_THROW(L"ObjectManager is not connected");
+			throw Remoting::IChannelClosedException::Create();
 
 		// Read the header
 		pMessage->ReadStructStart(pszName,L"$iface_marshal");
@@ -711,7 +711,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 	try
 	{
 		if (!m_ptrChannel)
-			OMEGA_THROW(L"ObjectManager is not connected");
+			throw Remoting::IChannelClosedException::Create();
 
 		// Read the header
 		pMessage->ReadStructStart(pszName,L"$iface_marshal");
@@ -779,9 +779,6 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 
 void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pParamsOut)
 {
-	if (!m_ptrChannel)
-		OMEGA_THROW(L"ObjectManager is not connected");
-
 	// QI pObjectManager for a private interface - it will have it because pObjectManager is
 	// an instance of StdObjectManager 2 calls up the stack..
 	// Call a private method that marshals the channel...

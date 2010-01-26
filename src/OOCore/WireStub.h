@@ -30,7 +30,6 @@ namespace OOCore
 
 	class Stub : 
 		public OTL::ObjectBase,
-		public Omega::Remoting::IStub,
 		public Omega::Remoting::IStubController
 	{
 	public:
@@ -40,10 +39,9 @@ namespace OOCore
 
 		void MarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid);
 		void ReleaseMarshalData(Omega::Remoting::IMessage* pMessage, const Omega::guid_t&);
-		OTL::ObjectPtr<Omega::Remoting::IStub> LookupStub(Omega::Remoting::IMessage* pMessage);
+		void Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pParamsOut);
 
 		BEGIN_INTERFACE_MAP(Stub)
-			INTERFACE_ENTRY(Omega::Remoting::IStub)
 			INTERFACE_ENTRY(Omega::Remoting::IStubController)
 		END_INTERFACE_MAP()
 
@@ -61,11 +59,6 @@ namespace OOCore
 
 		OTL::ObjectPtr<Omega::Remoting::IStub> FindStub(const Omega::guid_t& iid);
 		Omega::Remoting::IStub* CreateStub(const Omega::guid_t& iid);
-
-	// IStub members
-	public:
-		void Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pParamsOut);
-		Omega::bool_t SupportsInterface(const Omega::guid_t& /*iid*/) { return false; }
 
 	// IStubController members
 	public:

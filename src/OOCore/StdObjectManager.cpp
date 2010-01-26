@@ -334,7 +334,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				{
 					OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-					std::map<Omega::uint32_t,std::map<Omega::IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
+					std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
 					if (i==m_mapStubIds.end())
 						OMEGA_THROW(L"Bad stub id");
 
@@ -514,12 +514,79 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-	std::map<Omega::uint32_t,std::map<Omega::IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
-	if (i==m_mapStubIds.end())
-		OMEGA_THROW(L"Bad stub id");
+	std::map<uint32_t,std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::iterator>::iterator i=m_mapStubIds.find(stub_id);
+	if (i != m_mapStubIds.end())
+	{
+		m_mapStubObjs.erase(i->second);
+		m_mapStubIds.erase(i);
+	}
+}
 
-	m_mapStubObjs.erase(i->second);
-	m_mapStubIds.erase(i);
+bool OOCore::StdObjectManager::CustomMarshalInterface(const wchar_t* pszName, ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
+{
+	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
+
+	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
+	if (oid == guid_t::Null())
+		return false;
+
+	size_t undo_count = 0;
+	try
+	{
+		// Write the marshalling oid
+		pMessage->WriteByte(L"$marshal_type",2);
+		++undo_count;
+
+		pMessage->WriteGuid(L"$oid",oid);
+		++undo_count;
+
+		// Let the custom handle marshalling...
+		ptrMarshal->MarshalInterface(this,pMessage,iid,marshal_flags);
+		++undo_count;
+
+		// Write the struct end
+		pMessage->WriteStructEnd(pszName);
+	}
+	catch (...)
+	{
+		if (undo_count > 0)
+			pMessage->ReadByte(L"$marshal_type");
+
+		if (undo_count > 1)
+			pMessage->ReadGuid(L"$oid");
+
+		if (undo_count > 2)
+			ptrMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
+
+		throw;
+	}
+	
+	return true;
+}
+
+Remoting::IMarshal* OOCore::StdObjectManager::GetSafeProxyMarshaller(IObject* pObject)
+{
+	ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(pObject);
+	if (ptrSProxy)
+	{
+		System::MetaInfo::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
+		if (shim && static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+		{
+			// Retrieve the underlying wire proxy
+			System::MetaInfo::auto_safe_shim proxy;
+			const System::MetaInfo::SafeShim* pE = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
+			if (pE)
+				System::MetaInfo::throw_correct_exception(pE);
+
+			// Control its lifetime
+			ObjectPtr<Remoting::IProxy> ptrProxy;
+			ptrProxy.Attach(System::MetaInfo::create_safe_proxy<Remoting::IProxy>(proxy));
+
+			return static_cast<Remoting::IMarshal*>(ptrProxy->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal)));
+		}
+	}
+
+	return 0;
 }
 
 void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
@@ -550,56 +617,24 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 
 			std::map<IObject*,ObjectPtr<ObjectImpl<Stub> > >::const_iterator i=m_mapStubObjs.find(ptrObj);
 			if (i != m_mapStubObjs.end())
-			{
 				ptrStub = i->second;
-			}
 		}
 
 		if (!ptrStub)
 		{
+			ObjectPtr<Remoting::IMarshal> ptrMarshal;
+
+			// See if pObject is a SafeProxy wrapping a WireProxy...
+			ptrMarshal.Attach(GetSafeProxyMarshaller(pObject));
+
 			// See if pObject does custom marshalling...
-			ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
-			if (ptrMarshal)
-			{
-				Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
-
-				guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(iid,marshal_flags);
-				if (oid != guid_t::Null())
-				{
-					size_t undo_count = 0;
-					try
-					{
-						// Write the marshalling oid
-						pMessage->WriteByte(L"$marshal_type",2);
-						++undo_count;
-
-						pMessage->WriteGuid(L"$oid",oid);
-						++undo_count;
-
-						// Let the custom handle marshalling...
-						ptrMarshal->MarshalInterface(this,pMessage,iid,marshal_flags);
-						++undo_count;
-
-						// Write the struct end
-						pMessage->WriteStructEnd(pszName);
-						return;
-					}
-					catch (...)
-					{
-						if (undo_count > 0)
-							pMessage->ReadByte(L"$marshal_type");
-
-						if (undo_count > 1)
-							pMessage->ReadGuid(L"$oid");
-
-						if (undo_count > 2)
-							ptrMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
-
-						throw;
-					}
-				}
-			}
-
+			if (!ptrMarshal)
+				ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(pObject->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
+			
+			// See if custom marshalling is possible...
+			if (ptrMarshal && CustomMarshalInterface(pszName,ptrMarshal,iid,pMessage))
+				return;
+							
 			// Create a new stub and stub id
 			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 

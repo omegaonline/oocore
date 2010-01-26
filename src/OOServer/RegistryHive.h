@@ -92,6 +92,10 @@ namespace Registry
 		OOBase::SmartPtr<Db::Database> m_db;
 		access_rights_t                m_default_permissions;
 
+		// Stashed prepared statements...
+		OOBase::SmartPtr<Db::Statement> m_ptrCheckKey_Stmt;
+		OOBase::SmartPtr<Db::Statement> m_ptrGetKeyInfo_Stmt;
+
 		Hive(const Hive&);
 		Hive& operator = (const Hive&);
 

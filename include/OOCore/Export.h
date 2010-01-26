@@ -495,8 +495,7 @@
 		{ } \
 		virtual bool_t SupportsInterface(const guid_t& iid) \
 		{ \
-			if (iid == OMEGA_GUIDOF(n_space::name)) \
-				return true; \
+			if (iid == OMEGA_GUIDOF(n_space::name)) return true; \
 			return Wire_Stub<d_space::derived >::SupportsInterface(iid); \
 		} \
 		virtual void Invoke(uint32_t method_id, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut) \

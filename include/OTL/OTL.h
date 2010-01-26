@@ -441,22 +441,26 @@ namespace OTL
 		
 		virtual void RegisterObjectFactories()
 		{
-			OMEGA_THROW(L"Invalid call");
+			// Override this in a derived class, or do not call
+			assert(false);
 		}
 		
 		virtual void UnregisterObjectFactories()
 		{
-			OMEGA_THROW(L"Invalid call");
+			// Override this in a derived class, or do not call
+			assert(false);
 		}
 
 		virtual void Run()
 		{
-			OMEGA_THROW(L"Invalid call");
+			// Override this in a derived class, or do not call
+			assert(false);
 		}
 
 		virtual void InstallObjects(Omega::bool_t, Omega::bool_t, const Omega::string_t&)
 		{
-			OMEGA_THROW(L"Invalid call");
+			// Override this in a derived class, or do not call
+			assert(false);
 		}
 
 	protected:

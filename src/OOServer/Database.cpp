@@ -135,7 +135,7 @@ bool Db::Database::open(const char* pszDb)
 	if (err != SQLITE_OK)
 	{
 		if (!m_db)
-			LOG_ERROR_RETURN(("sqlite3_exec failed: Out of memory"),false);
+			LOG_ERROR_RETURN(("sqlite3_open failed: Out of memory"),false);
 		else
 		{
 			LOG_ERROR(("sqlite3_open(%s) failed: %s",pszDb,sqlite3_errmsg(m_db)));

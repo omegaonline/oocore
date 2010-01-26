@@ -69,6 +69,24 @@ namespace Db
 		sqlite3_stmt* m_pStmt;
 	};
 
+	class Resetter
+	{
+	public:
+		Resetter(Statement& stmt) : m_stmt(stmt)
+		{}
+
+		~Resetter()
+		{
+			m_stmt.reset();
+		}
+
+	private:
+		Resetter(const Resetter&);
+		Resetter& operator = (const Resetter&);
+
+		Statement& m_stmt;
+	};
+
 	class Transaction
 	{
 		friend class Database;

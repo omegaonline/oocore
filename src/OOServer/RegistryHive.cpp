@@ -124,10 +124,8 @@ bool Registry::Hive::open()
 		"ANALYZE RegistryValues;"
 		"COMMIT;";
 
-	//int err = m_db->exec(szSQL);
-	//return (err == SQLITE_OK || err == SQLITE_READONLY);
-
-	return true;
+	int err = m_db->exec(szSQL);
+	return (err == SQLITE_OK || err == SQLITE_READONLY);
 }
 
 int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
@@ -142,12 +140,13 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 	// Create or reset the prepared statement
 	int err = SQLITE_OK;
 	if (!m_ptrCheckKey_Stmt)
+	{
 		err = m_db->prepare_statement(m_ptrCheckKey_Stmt,"SELECT Access FROM RegistryKeys WHERE Id = ?1;");
-	else
-		err = m_ptrCheckKey_Stmt->reset();
+		if (err != SQLITE_OK)
+			return err;
+	}
 
-	if (err != SQLITE_OK)
-		return err;
+	Db::Resetter resetter(*m_ptrCheckKey_Stmt);
 
 	// Bind the key value
 	err = m_ptrCheckKey_Stmt->bind_int64(1,uKey);
@@ -169,12 +168,13 @@ int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& 
 	// Create or reset the prepared statement
 	int err = SQLITE_OK;
 	if (!m_ptrGetKeyInfo_Stmt)
+	{
 		err = m_db->prepare_statement(m_ptrGetKeyInfo_Stmt,"SELECT Id, Access FROM RegistryKeys WHERE Name = ?1 AND Parent = ?2;");
-	else
-		err = m_ptrGetKeyInfo_Stmt->reset();
+		if (err != SQLITE_OK)
+			return err;
+	}
 
-	if (err != SQLITE_OK)
-		return err;
+	Db::Resetter resetter(*m_ptrGetKeyInfo_Stmt);
 
 	// Bind the search values
 	err = m_ptrGetKeyInfo_Stmt->bind_string(1,strSubKey);

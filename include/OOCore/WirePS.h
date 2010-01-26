@@ -413,9 +413,9 @@ namespace Omega
 					Invoke(pParamsIn->ReadUInt32(L"$method_id"),pParamsIn,pParamsOut);
 				}			
 				
-				static void Release_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage*)
+				static void Release_Wire(Wire_Stub_Base* pThis, Remoting::IMessage*, Remoting::IMessage*)
 				{
-					pThis->m_pController->RemoteRelease(pParamsIn->ReadUInt32(L"release_count"));
+					pThis->m_pController->RemoteRelease();
 				}
 
 				static void QueryInterface_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

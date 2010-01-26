@@ -107,7 +107,7 @@ namespace Omega
 
 		interface IStubController : public IObject
 		{
-			virtual void RemoteRelease(uint32_t release_count) = 0;
+			virtual void RemoteRelease() = 0;
 			virtual bool_t RemoteQueryInterface(const guid_t& iid) = 0;
 			virtual void MarshalStub(IMessage* pParamsIn, IMessage* pParamsOut) = 0;
 		};
@@ -236,7 +236,7 @@ namespace Omega
 			(
 				Omega::Remoting, IStubController,
 
-				OMEGA_METHOD_VOID(RemoteRelease,1,((in),uint32_t,release_count))
+				OMEGA_METHOD_VOID(RemoteRelease,0,())
 				OMEGA_METHOD(bool_t,RemoteQueryInterface,1,((in),const guid_t&,iid))
 				OMEGA_METHOD_VOID(MarshalStub,2,((in),Remoting::IMessage*,pParamsIn,(in),Remoting::IMessage*,pParamsOut))
 			)

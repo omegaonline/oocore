@@ -57,9 +57,7 @@ namespace OOCore
 
 		void init(Omega::uint32_t proxy_id, StdObjectManager* pManager);
 
-		void Disconnect();
-
-		Omega::IObject* UnmarshalInterface(Omega::Remoting::IMessage* pMessage, const Omega::guid_t& wire_iid);
+		Omega::IObject* UnmarshalInterface(Omega::Remoting::IMessage* pMessage);
 
 		BEGIN_INTERFACE_MAP(Proxy)
 			INTERFACE_ENTRY(Omega::Remoting::IProxy)
@@ -96,12 +94,10 @@ namespace OOCore
 		Proxy(const Proxy&);
 		Proxy& operator = (const Proxy&);
 
-		OOBase::AtomicInt<Omega::uint32_t>    m_marshal_count;
-		OOBase::AtomicInt<Omega::uint32_t>    m_pin_count;
-		OOBase::SpinLock                      m_lock;
-		Omega::uint32_t                       m_proxy_id;
-		StdObjectManager*                     m_pManager;
-		std::map<Omega::guid_t,Omega::bool_t> m_iids;
+		OOBase::SpinLock                   m_lock;
+		Omega::uint32_t                    m_proxy_id;
+		StdObjectManager*                  m_pManager;
+		std::map<Omega::guid_t,bool>       m_iids;
 
 		void WriteStubInfo(Omega::Remoting::IMessage* pMessage, Omega::uint32_t method_id);
 		void ReadStubInfo(Omega::Remoting::IMessage* pMessage);

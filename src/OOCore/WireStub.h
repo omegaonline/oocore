@@ -69,7 +69,7 @@ namespace OOCore
 
 	// IStubController members
 	public:
-		void RemoteRelease(Omega::uint32_t release_count);
+		void RemoteRelease();
 		Omega::bool_t RemoteQueryInterface(const Omega::guid_t& iid);
 		void MarshalStub(Omega::Remoting::IMessage* pParamsIn, Omega::Remoting::IMessage* pParamsOut);
 	};

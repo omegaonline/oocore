@@ -30,13 +30,12 @@ using namespace OTL;
 OOCore::Proxy::Proxy() :
 	m_proxy_id(0)
 {
-	m_iids.insert(std::map<Omega::guid_t,bool_t>::value_type(OMEGA_GUIDOF(IObject),true));
 }
 
 OOCore::Proxy::~Proxy()
 {
 	CallRemoteRelease();
-
+	
 	m_pManager->RemoveProxy(m_proxy_id);
 	static_cast<Remoting::IObjectManager*>(m_pManager)->Release();
 }
@@ -46,12 +45,6 @@ void OOCore::Proxy::init(uint32_t proxy_id, StdObjectManager* pManager)
 	m_proxy_id = proxy_id;
 	m_pManager = pManager;
 	static_cast<Remoting::IObjectManager*>(m_pManager)->AddRef();
-}
-
-void OOCore::Proxy::Disconnect()
-{
-	// Force our marshal count to 0, cos the other end has gone
-	m_marshal_count = 0;
 }
 
 Remoting::IMarshaller* OOCore::Proxy::GetMarshaller()
@@ -92,7 +85,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ObjectPtr<Remoting::IMessage> ptrParamsIn;
 	ptrParamsIn.Attach(pParamsIn);
 
-	bool_t bOk = ptrParamsIn->ReadBoolean(L"$retval");
+	bool bOk = ptrParamsIn->ReadBoolean(L"$retval");
 	
 	guard.acquire();
 
@@ -101,30 +94,20 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	return bOk;
 }
 
-IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage, const guid_t& iid)
+IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 {
-	// Up our marshal count early, because we are definitely attached to something!
-	++m_marshal_count;
+	guid_t iid = pMessage->ReadGuid(L"iid");
 
-	guid_t wire_iid = pMessage->ReadGuid(L"iid");
+	// Add to the cache map...
+	{
+		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	// Add tot he cache map...
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	m_iids.insert(std::map<Omega::guid_t,bool>::value_type(wire_iid,true));
-
-	guard.release();
+		m_iids.insert(std::map<Omega::guid_t,bool>::value_type(OMEGA_GUIDOF(IObject),true));
+		m_iids.insert(std::map<Omega::guid_t,bool>::value_type(iid,true));
+	}
 
 	// Create a wire_proxy...
-	ObjectPtr<IObject> ptrBase;
-	ptrBase.Attach(System::MetaInfo::Wire_Proxy_IObject::bind(this));
-
-	// QI Base for the desired interface
-	IObject* pRet = ptrBase->QueryInterface(iid);
-	if (!pRet)
-		throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
-
-	return pRet;
+	return System::MetaInfo::create_wire_proxy(this,iid);
 }
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)
@@ -184,9 +167,6 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 
 void OOCore::Proxy::CallRemoteRelease()
 {
-	if (m_marshal_count == 0)
-		return;
-
 	try
 	{
 		ObjectPtr<Remoting::IMessage> pParamsOut;
@@ -194,7 +174,6 @@ void OOCore::Proxy::CallRemoteRelease()
 
 		WriteStubInfo(pParamsOut,0);
 
-		pParamsOut->WriteUInt32(L"release_count",static_cast<uint32_t>(m_marshal_count.value()));
 		pParamsOut->WriteStructEnd(L"ipc_request");
 
 		Remoting::IMessage* pParamsIn = 0;
@@ -203,11 +182,13 @@ void OOCore::Proxy::CallRemoteRelease()
 		if (pParamsIn)
 			pParamsIn->Release();
 
+		// Absord all exceptions...
 		if (pE)
 			pE->Release();
 	}
 	catch (IException* pE)
 	{
+		// Absord all exceptions...
 		pE->Release();
 	}
 }

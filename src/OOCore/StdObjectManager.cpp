@@ -675,7 +675,14 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 					ptrProxy = p.first->second;
 			}
 
-			pObject = ptrProxy->UnmarshalInterface(pMessage,iid);
+			// Unmarshal the object
+			ObjectPtr<IObject> ptrObj;
+			ptrObj.Attach(ptrProxy->UnmarshalInterface(pMessage));
+
+			// QI for the desired interface
+			pObject = ptrObj->QueryInterface(iid);
+			if (!pObject)
+				throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 		}
 		else if (flag == 2)
 		{

@@ -53,7 +53,7 @@ void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& 
 void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t&)
 {
 	// Deref safely
-	RemoteRelease(1);
+	RemoteRelease();
 
 	pMessage->ReadUInt32(L"id");
 	pMessage->ReadGuid(L"iid");
@@ -66,7 +66,7 @@ void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pPa
 	switch (method_id)
 	{
 	case 0: // RemoteRelease
-		RemoteRelease(pParamsIn->ReadUInt32(L"release_count"));
+		RemoteRelease();
 		break;
 
 	case 1: // QueryInterface
@@ -146,10 +146,9 @@ Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 	return System::MetaInfo::create_wire_stub(this,m_pManager,iid,m_ptrObj);	
 }
 
-void OOCore::Stub::RemoteRelease(uint32_t release_count)
+void OOCore::Stub::RemoteRelease()
 {
-	m_marshal_count -= release_count;
-	if (m_marshal_count == 0)
+	if (--m_marshal_count == 0)
 	{
 		m_pManager->RemoveStub(m_stub_id);
 

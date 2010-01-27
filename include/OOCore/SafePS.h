@@ -426,7 +426,7 @@ namespace Omega
 					return static_cast<IObject*>(pThis);
 				}
 
-			protected:
+			private:
 				Safe_Proxy_IObject(const SafeShim* shim) : 
 					 Safe_Proxy<IObject,IObject>(shim)
 				{ }
@@ -671,7 +671,7 @@ namespace Omega
 					return &pThis->m_shim;
 				}
 
-			protected:
+			private:
 				Safe_Stub_IObject(IObject* pI, const guid_t& iid) : 
 					 Safe_Stub<IObject>(pI,iid)
 				{					

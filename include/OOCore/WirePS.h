@@ -289,11 +289,8 @@ namespace Omega
 					Wire_Proxy_IObject* pThis;
 					OMEGA_NEW(pThis,Wire_Proxy_IObject(pProxy));
 
-					// QI for base object of pProxy
-					auto_iface_ptr<IObject> ptrObj = pProxy->QueryInterface(OMEGA_GUIDOF(IObject));
-					
 					// Add to the map...
-					IObject* pExisting = WIRE_HOLDER::instance()->add(ptrObj,pThis);
+					IObject* pExisting = WIRE_HOLDER::instance()->add(pThis->m_ptrProxyObj,pThis);
 					if (pExisting)
 					{
 						pThis->Release();
@@ -303,17 +300,19 @@ namespace Omega
 					return pThis;
 				}
 
-			protected:
+			private:
+				auto_iface_ptr<IObject> m_ptrProxyObj;
+
 				Wire_Proxy_IObject(Remoting::IProxy* pProxy) : 
 					 Wire_Proxy<IObject,IObject>(pProxy)
-				{ }
+				{ 
+					// QI for base object of pProxy
+					m_ptrProxyObj = pProxy->QueryInterface(OMEGA_GUIDOF(IObject));
+				}
 
 				virtual ~Wire_Proxy_IObject() 
 				{
-					// QI for base object of pProxy
-					auto_iface_ptr<IObject> ptrObj = m_ptrProxy->QueryInterface(OMEGA_GUIDOF(IObject));
-
-					WIRE_HOLDER::instance()->remove(ptrObj);
+					WIRE_HOLDER::instance()->remove(m_ptrProxyObj);
 				}
 
 				virtual bool IsDerived__proxy__(const guid_t& iid) const

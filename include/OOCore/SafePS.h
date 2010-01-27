@@ -340,8 +340,6 @@ namespace Omega
 
 				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid)
 				{
-					assert(iid != OMEGA_GUIDOF(IObject));
-
 					if (!static_cast<const IObject_Safe_VTable*>(m_shim->m_vtable)->pfnCreateWireStub_Safe)
 						return 0;
 

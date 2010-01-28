@@ -54,7 +54,7 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
 	// Confirm we can QI for all the interfaces we need...
-	OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy(ptrPOI);
+	/*OTL::ObjectPtr<Omega::Remoting::IProxy> ptrProxy(ptrPOI);
 	TEST(ptrProxy);
 
 	OTL::ObjectPtr<Omega::Remoting::IMarshaller> ptrMarshaller;
@@ -67,7 +67,7 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 	TEST(ptrTI->GetName() == L"Omega::TestSuite::ISimpleTest");
 	TEST(ptrTI->GetIID() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
-	TEST(ptrTI->GetMethodCount() == 25+3);
+	TEST(ptrTI->GetMethodCount() == 25+3);*/
 
 	// Test the interface
 	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(ptrPOI);

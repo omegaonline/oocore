@@ -182,7 +182,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 			break;
 
 		// We ignore the error, and try again until we timeout
-		OOBase::sleep(OOBase::timeval_t(0,100000));
+		OOBase::sleep(OOBase::timeval_t(0,10000));
 
 		countdown.update();
 	}
@@ -199,13 +199,13 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	// Send nothing, but we must send...
 	uint32_t duff = 0;
-	err = local_socket->send(duff,&wait);
+	err = local_socket->send(duff);
 	if (err)
 		OMEGA_THROW(err);
 
 	// Read the string length
 	uint32_t uLen = 0;
-	err = local_socket->recv(uLen,&wait);
+	err = local_socket->recv(uLen);
 	if (err)
 		OMEGA_THROW(err);
 
@@ -215,7 +215,7 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	countdown.update();
 
-	local_socket->recv(buf.value(),uLen,&err,&wait);
+	local_socket->recv(buf.value(),uLen,&err);
 	if (err)
 		OMEGA_THROW(err);
 

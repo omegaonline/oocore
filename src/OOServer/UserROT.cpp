@@ -137,19 +137,13 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 
 			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
 			{
-				// QI for IProxy and check its still there!
-				bool bOk = true;
-				ObjectPtr<Remoting::IProxy> ptrProxy(i->second->second.m_ptrObject);
-				if (ptrProxy && !ptrProxy->IsAlive())
+				if (Remoting::IsAlive(i->second->second.m_ptrObject))
+					ptrRet = i->second->second.m_ptrObject;
+				else
 				{
 					listDeadEntries.push_back(i->second->first);
-					bOk = false;
-
 					LOG_DEBUG(("Dropping dead object %ls (cookie %lu)",oid.ToString().c_str(),i->second->first));
-				}
-				
-				if (bOk)
-					ptrRet = i->second->second.m_ptrObject;
+				}	
 			}
 		}
 

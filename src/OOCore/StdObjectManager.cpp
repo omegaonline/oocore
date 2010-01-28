@@ -171,6 +171,29 @@ namespace
 	public:
 		CallContext m_cc;
 	};
+
+	ObjectPtr<Remoting::IProxy> GetWireProxy(IObject* pObject)
+	{
+		ObjectPtr<Remoting::IProxy> ptrProxy;
+
+		ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(pObject);
+		if (ptrSProxy)
+		{
+			System::MetaInfo::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
+			if (shim && static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+			{
+				// Retrieve the underlying wire proxy
+				System::MetaInfo::auto_safe_shim proxy;
+				const System::MetaInfo::SafeShim* pE = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
+				if (pE)
+					System::MetaInfo::throw_correct_exception(pE);
+
+				ptrProxy.Attach(System::MetaInfo::create_safe_proxy<Remoting::IProxy>(proxy));
+			}
+		}
+
+		return ptrProxy;
+	}
 }
 
 uint32_t StdCallContext::Timeout()
@@ -564,31 +587,6 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(const wchar_t* pszName, Ob
 	return true;
 }
 
-Remoting::IMarshal* OOCore::StdObjectManager::GetSafeProxyMarshaller(IObject* pObject)
-{
-	ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(pObject);
-	if (ptrSProxy)
-	{
-		System::MetaInfo::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
-		if (shim && static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
-		{
-			// Retrieve the underlying wire proxy
-			System::MetaInfo::auto_safe_shim proxy;
-			const System::MetaInfo::SafeShim* pE = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
-			if (pE)
-				System::MetaInfo::throw_correct_exception(pE);
-
-			// Control its lifetime
-			ObjectPtr<Remoting::IProxy> ptrProxy;
-			ptrProxy.Attach(System::MetaInfo::create_safe_proxy<Remoting::IProxy>(proxy));
-
-			return static_cast<Remoting::IMarshal*>(ptrProxy->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal)));
-		}
-	}
-
-	return 0;
-}
-
 void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	try
@@ -625,7 +623,9 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 			ObjectPtr<Remoting::IMarshal> ptrMarshal;
 
 			// See if pObject is a SafeProxy wrapping a WireProxy...
-			ptrMarshal.Attach(GetSafeProxyMarshaller(pObject));
+			ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+			if (ptrProxy)
+				ptrMarshal.Attach(ptrProxy.QueryInterface<Remoting::IMarshal>());
 
 			// See if pObject does custom marshalling...
 			if (!ptrMarshal)
@@ -851,6 +851,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallCo
 	ptrCC->m_cc = *OOBase::TLSSingleton<CallContext,OOCore::DLL>::instance();
 
 	return ptrCC.AddRef();
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Remoting_IsAlive,1,((in),IObject*,pObject))
+{
+	bool_t ret = false;
+	if (pObject)
+	{
+		ret = true;
+
+		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		if (ptrProxy)
+			ret = ptrProxy->IsAlive();
+	}
+
+	return ret;
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");

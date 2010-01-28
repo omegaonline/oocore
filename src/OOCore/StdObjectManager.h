@@ -81,7 +81,6 @@ namespace OOCore
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 		bool CustomMarshalInterface(const wchar_t* pszName, OTL::ObjectPtr<Omega::Remoting::IMarshal>& ptrMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
-		Omega::Remoting::IMarshal* GetSafeProxyMarshaller(Omega::IObject* pObject);
 		
 	// IMarshaller members
 	public:

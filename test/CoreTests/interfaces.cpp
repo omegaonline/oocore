@@ -375,18 +375,44 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	}
 #endif
 
-	TEST(system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
+	bSkipped = false;
+	if (system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) != 0)
+	{
+		add_failure(L"Registration failed\n");
+		return false;
+	}
 
 	// Test the simplest case
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest;
-	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
+
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest2> ptrSimpleTest2 = static_cast<Omega::TestSuite::ISimpleTest*>(ptrSimpleTest);
+	TEST(ptrSimpleTest2->WhereAmI() == L"Inner");
+
+	ptrSimpleTest.Release();
+	ptrSimpleTest2.Release();
+
+	// Test aggregation
+	Aggregator* pAgg = 0;
+	OMEGA_NEW(pAgg,Aggregator);
+
+	pAgg->SetInner(Omega::CreateLocalInstance(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess,pAgg,OMEGA_GUIDOF(Omega::IObject)));
+
+	ptrSimpleTest2.Attach(static_cast<Omega::TestSuite::ISimpleTest2*>(pAgg));
+	TEST(ptrSimpleTest2->WhereAmI() == L"Outer");
+
+	ptrSimpleTest.Attach(ptrSimpleTest2.QueryInterface<Omega::TestSuite::ISimpleTest>());
+	TEST(ptrSimpleTest);
+	interface_tests(ptrSimpleTest);
+
+	ptrSimpleTest2.Release();
+	ptrSimpleTest.Release();
 
 	// Now check for activation rules
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::InProcess);
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(Omega::TestSuite::OID_TestProcess,Omega::Activation::OutOfProcess);
 	}
 	catch (Omega::Activation::IOidNotFoundException* pE)
 	{
@@ -415,9 +441,11 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	}
 	catch (Omega::IException* pE)
 	{
+		add_success();
 		pE->Release();
 	}
 
+	// Test unregistering
 	TEST(system((Omega::string_t(pszModulePath) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Check its gone

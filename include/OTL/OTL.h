@@ -740,7 +740,12 @@ namespace OTL
 	public:
 		static Omega::IObject* CreateInstance(Omega::IObject* pOuter, const Omega::guid_t& iid)
 		{
-			Omega::IObject* ret = T::CreateInstancePtr(pOuter)->QueryInterface(iid);
+			Omega::IObject* ret = 0;
+			ObjectPtr<T> ptr = T::CreateInstancePtr(pOuter);
+			if (iid != OMEGA_GUIDOF(Omega::IObject))
+				ret = ptr->QueryInterface(iid);
+			else
+				ret = ptr.AddRef();
 			if (!ret)
 				throw Omega::INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 			return ret;

@@ -94,6 +94,28 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	return bOk;
 }
 
+IObject* OOCore::Proxy::QueryIObject()
+{
+	ObjectPtr<Remoting::IMessage> pParamsOut;
+	pParamsOut.Attach(m_pManager->CreateMessage());
+
+	WriteStubInfo(pParamsOut,2);
+
+	pParamsOut->WriteStructEnd(L"ipc_request");
+
+	Remoting::IMessage* pParamsIn = 0;
+	IException* pE = m_pManager->SendAndReceive(TypeInfo::Synchronous,pParamsOut,pParamsIn);
+	if (pE)
+		pE->Throw();
+
+	ObjectPtr<Remoting::IMessage> ptrParamsIn;
+	ptrParamsIn.Attach(pParamsIn);
+
+	IObject* pRet = 0;
+	m_pManager->UnmarshalInterface(L"$retval",ptrParamsIn,OMEGA_GUIDOF(IObject),pRet);
+	return pRet;
+}
+
 IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 {
 	guid_t iid = pMessage->ReadGuid(L"iid");
@@ -131,7 +153,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
 
-	WriteStubInfo(pParamsOut,2);
+	WriteStubInfo(pParamsOut,3);
 
 	pParamsOut->WriteGuid(L"iid",iid);
 

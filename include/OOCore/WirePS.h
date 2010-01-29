@@ -261,7 +261,7 @@ namespace Omega
 					return Wire_Proxy_Base::CreateMessage(OMEGA_GUIDOF(D),method_id);
 				}
 
-				static const uint32_t MethodCount = 3;
+				static const uint32_t MethodCount = 4;
 
 			// IObject members
 			public:
@@ -362,6 +362,7 @@ namespace Omega
 					{
 						&Release_Wire,
 						&QueryInterface_Wire,
+						&QueryIObject_Wire,
 						&MarshalStub_Wire
 					};
 
@@ -371,7 +372,7 @@ namespace Omega
 					OMEGA_THROW(L"Invoke called with invalid method index");
 				}
 
-				static const uint32_t MethodCount = 3;	// This must match the proxy
+				static const uint32_t MethodCount = 4;	// This must match the proxy
 
 			private:
 				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
@@ -419,7 +420,13 @@ namespace Omega
 
 				static void QueryInterface_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 				{
-					pParamsOut->WriteBoolean(L"bQI",pThis->m_pController->RemoteQueryInterface(pParamsIn->ReadGuid(L"iid")));
+					pParamsOut->WriteBoolean(L"$retval",pThis->m_pController->RemoteQueryInterface(pParamsIn->ReadGuid(L"iid")));
+				}
+
+				static void QueryIObject_Wire(Wire_Stub_Base* pThis, Remoting::IMessage*, Remoting::IMessage* pParamsOut)
+				{
+					auto_iface_ptr<IObject> ptrObj = pThis->m_ptrI->QueryInterface(OMEGA_GUIDOF(IObject));
+					pThis->m_ptrMarshaller->MarshalInterface(L"$retval",pParamsOut,OMEGA_GUIDOF(IObject),ptrObj);
 				}
 
 				static void MarshalStub_Wire(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)

@@ -122,11 +122,19 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Base::QueryInterface(const g
 		return QIReturn__proxy__();
 	}
 
-	// Check the proxy supports the interface
-	if (!m_ptrProxy->RemoteQueryInterface(iid))
-		return 0;
+	if (iid == OMEGA_GUIDOF(IObject))
+	{
+		// Get the controlling IObject
+		return m_ptrProxy->QueryIObject();
+	}
+	else
+	{
+		// Check the proxy supports the interface
+		if (!m_ptrProxy->RemoteQueryInterface(iid))
+			return 0;
 
-	return create_wire_proxy(m_ptrProxy,iid);
+		return create_wire_proxy(m_ptrProxy,iid);
+	}
 }
 
 Omega::IException* Omega::System::MetaInfo::Wire_Proxy_Base::Throw(const guid_t& iid)
@@ -182,7 +190,15 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base
 Omega::Remoting::IStub* Omega::System::MetaInfo::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
 {
 	// Check that pObj supports the interface...
-	auto_iface_ptr<IObject> ptrQI(pObj->QueryInterface(iid));
+	auto_iface_ptr<IObject> ptrQI;
+	if (iid != OMEGA_GUIDOF(IObject))
+		ptrQI = pObj->QueryInterface(iid);
+	else
+	{
+		ptrQI = pObj;
+		pObj->AddRef();
+	}
+
 	if (!ptrQI)
 		return 0;
 	

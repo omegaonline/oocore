@@ -127,6 +127,9 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 
 	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
 
+	ptrO1.Release();
+	ptrO2.Release();
+
 	return true;
 }
 

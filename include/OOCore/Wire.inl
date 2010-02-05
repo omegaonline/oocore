@@ -189,25 +189,26 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base
 
 Omega::Remoting::IStub* Omega::System::MetaInfo::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
 {
-	// Check that pObj supports the interface...
-	auto_iface_ptr<IObject> ptrQI;
-	if (iid != OMEGA_GUIDOF(IObject))
-		ptrQI = pObj->QueryInterface(iid);
+	Remoting::IStub* pStub = 0;
+	if (iid == OMEGA_GUIDOF(IObject))
+	{
+		pStub = Wire_Stub<IObject>::create(pController,pMarshaller,pObj);
+	}
 	else
 	{
-		ptrQI = pObj;
-		pObj->AddRef();
+		// Check that pObj supports the interface...
+		auto_iface_ptr<IObject> ptrQI = pObj->QueryInterface(iid);
+		if (!ptrQI)
+			return 0;
+	
+		// Wrap it in a proxy and add it...
+		const wire_rtti* rtti = get_wire_rtti_info(iid);
+		if (!rtti)
+			OMEGA_THROW(L"Failed to create wire stub for interface - missing rtti");
+
+		pStub = (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
 	}
 
-	if (!ptrQI)
-		return 0;
-	
-	// Wrap it in a proxy and add it...
-	const wire_rtti* rtti = get_wire_rtti_info(iid);
-	if (!rtti)
-		OMEGA_THROW(L"Failed to create wire stub for interface - missing rtti");
-
-	Remoting::IStub* pStub = (*rtti->pfnCreateWireStub)(pController,pMarshaller,ptrQI);
 	if (!pStub)
 		OMEGA_THROW(L"Failed to create wire stub for interface");
 

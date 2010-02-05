@@ -581,20 +581,23 @@ namespace OTL
 
 	public:
 		ContainedObjectImpl(Omega::IObject* pOuter) :
-			m_pOuter(pOuter)
+			m_pOuter(pOuter), m_bPinned(false)
 		{ 
-			Omega::System::PinObjectPointer(m_pOuter);
+			m_bPinned = Omega::System::PinObjectPointer(m_pOuter);
 		}
 
 		Omega::IObject* m_pOuter;
 
 	private:
+		bool m_bPinned;
+
 		ContainedObjectImpl(const ContainedObjectImpl& rhs);
 		ContainedObjectImpl& operator = (const ContainedObjectImpl& rhs);
 
 		virtual ~ContainedObjectImpl()
 		{
-			Omega::System::UnpinObjectPointer(m_pOuter);
+			if (m_bPinned)
+				Omega::System::UnpinObjectPointer(m_pOuter);
 		}
 
 	// IObject members
@@ -664,13 +667,7 @@ namespace OTL
 
 		Omega::IObject* QueryInterface(const Omega::guid_t& iid)
 		{
-			if (iid==OMEGA_GUIDOF(Omega::IObject))
-			{
-				AddRef();
-				return this;
-			}
-			else
-				return m_contained.Internal_QueryInterface(iid,ROOT::getQIEntries());
+			return m_contained.Internal_QueryInterface(iid,ROOT::getQIEntries());
 		}
 	};
 

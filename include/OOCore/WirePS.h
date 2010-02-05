@@ -70,7 +70,7 @@ namespace Omega
 					m_shim.m_stub = this;
 					m_shim.m_iid = &OMEGA_GUIDOF(IObject);
 
-					AddRef();
+					m_refcount.AddRef();
 				}
 
 				virtual ~Wire_Proxy_Base() 
@@ -339,9 +339,9 @@ namespace Omega
 
 			protected:
 				Wire_Stub_Base(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, IObject* pI) :
-					m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController)
+					m_ptrMarshaller(pMarshaller), m_ptrI(pI), m_pController(pController), m_bPinned(false)
 				{
-					PinObjectPointer(m_pController);
+					m_bPinned = PinObjectPointer(m_pController);
 
 					m_ptrMarshaller->AddRef();
 					m_ptrI->AddRef();
@@ -351,7 +351,8 @@ namespace Omega
 
 				virtual ~Wire_Stub_Base()
 				{
-					UnpinObjectPointer(m_pController);
+					if (m_bPinned)
+						UnpinObjectPointer(m_pController);
 				}
 
 				typedef void (*MethodTableEntry)(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut);
@@ -378,6 +379,7 @@ namespace Omega
 				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
 				auto_iface_ptr<IObject>               m_ptrI;
 				Remoting::IStubController*            m_pController;
+				bool                                  m_bPinned;
 				Threading::AtomicRefCount             m_refcount;
 				
 				Wire_Stub_Base(const Wire_Stub_Base&);

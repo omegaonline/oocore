@@ -1124,6 +1124,8 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel_i(ui
 	}
 	ptrApt = i->second;
 
+	assert(src_channel_id != (m_channel_id | pContext->m_current_apt));
+
 	guard.release();
 
 	return ptrApt->create_channel(src_channel_id,message_oid);

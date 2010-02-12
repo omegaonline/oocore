@@ -455,8 +455,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObje
 		ptrChannel.Attach(ptrIPS->OpenRemoteChannel(strEndpoint));
 
 		// Get the ObjectManager
-		ObjectPtr<Remoting::IObjectManager> ptrOM;
-		ptrOM.Attach(ptrChannel->GetObjectManager());
+		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrChannel.GetManager<Remoting::IObjectManager>();
 
 		// Get the remote instance
 		IObject* pOF = 0;

@@ -39,8 +39,12 @@ namespace User
 		void init(Manager* pManager, Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid);
 		void disconnect();
 
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager()
+		{
+			return m_ptrOM;
+		}
+
 		BEGIN_INTERFACE_MAP(Channel)
-			INTERFACE_ENTRY(Omega::Remoting::IChannelBase)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
@@ -57,19 +61,16 @@ namespace User
 		Channel(const Channel&);
 		Channel& operator = (const Channel&);
 
-	// IChannelBase members
+	// IChannel members
 	public:
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		Omega::Remoting::MarshalFlags_t GetMarshalFlags();
 		Omega::uint32_t GetSource();
 		Omega::bool_t IsConnected();
-
-	// IChannel members
-	public:
 		Omega::guid_t GetReflectUnmarshalFactoryOID();
 		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
-		Omega::Remoting::IObjectManager* GetObjectManager();
+		void GetManager(const Omega::guid_t& iid, Omega::IObject*& pObject);
 
 	// IMarshal members
 	public:

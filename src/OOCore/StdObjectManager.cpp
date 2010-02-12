@@ -232,7 +232,7 @@ OOCore::StdObjectManager::~StdObjectManager()
 {
 }
 
-void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
+void OOCore::StdObjectManager::Connect(Remoting::IChannel* pChannel)
 {
 	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
@@ -240,8 +240,6 @@ void OOCore::StdObjectManager::Connect(Remoting::IChannelBase* pChannel)
 		OMEGA_THROW(L"ObjectManager already connected to a Channel");
 
 	m_ptrChannel = pChannel;
-	if (!m_ptrChannel)
-		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IChannel),OMEGA_SOURCE_INFO);
 }
 
 void OOCore::StdObjectManager::Shutdown()

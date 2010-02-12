@@ -76,7 +76,6 @@ namespace OOCore
 
 		OOBase::SmartPtr<Apartment> m_ptrApt;
 
-	// IChannelBase members
 	public:
 		virtual Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};

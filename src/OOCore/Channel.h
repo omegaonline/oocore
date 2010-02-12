@@ -40,8 +40,12 @@ namespace OOCore
 		void init(UserSession* pSession, Omega::uint16_t apt_id, Omega::uint32_t channel_id, Omega::Remoting::MarshalFlags_t marshal_flags, const Omega::guid_t& message_oid, Omega::Remoting::IObjectManager* pOM);
 		void disconnect();
 
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager()
+		{
+			return m_ptrOM;
+		}
+
 		BEGIN_INTERFACE_MAP(Channel)
-			INTERFACE_ENTRY(Omega::Remoting::IChannelBase)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
 		END_INTERFACE_MAP()
@@ -61,19 +65,16 @@ namespace OOCore
 		Channel(const Channel&);
 		Channel& operator = (const Channel&);
 
-	// IChannelBase members
+	// IChannel members
 	public:
 		virtual Omega::Remoting::IMessage* CreateMessage();
 		virtual Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		virtual Omega::Remoting::MarshalFlags_t GetMarshalFlags();
 		virtual Omega::uint32_t GetSource();
 		virtual Omega::bool_t IsConnected();
-
-	// IChannel members
-	public:
 		virtual Omega::guid_t GetReflectUnmarshalFactoryOID();
 		virtual void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
-		virtual Omega::Remoting::IObjectManager* GetObjectManager();
+		virtual void GetManager(const Omega::guid_t& iid, Omega::IObject*& pObject);
 
 	// IMarshal members
 	public:

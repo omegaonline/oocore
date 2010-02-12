@@ -188,12 +188,12 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	pMessage->WriteGuid(L"m_message_oid",m_message_oid);
 }
 
-Remoting::IObjectManager* OOCore::Channel::GetObjectManager()
+void OOCore::Channel::GetManager(const guid_t& iid, IObject*& pObject)
 {
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 	
-	return m_ptrOM.AddRef();
+	pObject = m_ptrOM->QueryInterface(iid);
 }
 
 guid_t OOCore::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)

@@ -83,9 +83,7 @@ ObjectPtr<Remoting::IObjectManager> User::RemoteChannel::create_object_manager(O
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel(channel_id);
 
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-	return ptrOM;
+	return ptrChannel->GetObjectManager();
 }
 
 void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_t src_channel_id, Omega::uint32_t dest_channel_id, const OOBase::timeval_t& deadline, Omega::uint32_t attribs, Omega::uint16_t dest_thread_id, Omega::uint16_t src_thread_id, Omega::uint16_t flags, Omega::uint32_t seq_no)

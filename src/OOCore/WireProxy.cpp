@@ -232,24 +232,23 @@ void OOCore::Proxy::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::IMessag
 
 void OOCore::ProxyMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const guid_t& iid, Remoting::MarshalFlags_t, IObject*& pObject)
 {
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(pMarshaller);
+
 	// Unmarshal the reflect package
-	ObjectPtr<Remoting::IMessage> ptrReflect = ObjectPtr<Remoting::IMarshaller>(pMarshaller).UnmarshalInterface<Remoting::IMessage>(L"pReflect",pMessage);
+	ObjectPtr<Remoting::IMessage> ptrReflect = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"pReflect",pMessage);
 	if (!ptrReflect)
 		OMEGA_THROW(L"No package");
 	
 	// Unmarshal the manager
-	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(pMarshaller).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",ptrReflect);
+	ObjectPtr<Remoting::IChannel> ptrChannel = ptrMarshaller.UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",ptrReflect);
 	if (!ptrChannel)
 		OMEGA_THROW(L"No channel");
 		
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
-	if (!ptrMarshaller)
+	// Get the IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller2 = ptrChannel.GetManager<Remoting::IMarshaller>();
+	if (!ptrMarshaller2)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 
 	// Unmarshal the new proxy on the new manager
-	ptrMarshaller->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
+	ptrMarshaller2->UnmarshalInterface(L"stub",ptrReflect,iid,pObject);
 }

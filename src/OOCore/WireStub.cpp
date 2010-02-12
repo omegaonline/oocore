@@ -161,12 +161,8 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	
 	ptrMessage->WriteStructEnd(L"m_ptrChannel");
 	
-	// Get the channel's OM
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(ptrOM);
+	// Get the channel's IMarshaller
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrChannel.GetManager<Remoting::IMarshaller>();
 	if (!ptrMarshaller)
 		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
 	

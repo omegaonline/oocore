@@ -470,9 +470,8 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 ObjectPtr<Remoting::IObjectManager> User::Manager::create_object_manager(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = create_channel_i(src_channel_id,message_oid);
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-	return ptrOM;
+
+	return ptrChannel->GetObjectManager();
 }
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(Omega::uint32_t src_channel_id, const guid_t& message_oid)

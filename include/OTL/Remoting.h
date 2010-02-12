@@ -81,6 +81,60 @@ namespace OTL
 			return ptrObj;
 		}
 	};
+
+	template <>
+	class ObjectPtr<Omega::Remoting::IChannel> : public ObjectPtrBase<Omega::Remoting::IChannel>
+	{
+	public:
+		ObjectPtr(Omega::Remoting::IChannel* pMarshaller = 0) :
+		  ObjectPtrBase<Omega::Remoting::IChannel>(pMarshaller)
+		{ }
+
+		template <typename I>
+	    ObjectPtr(I* pObject) :
+		  ObjectPtrBase<Omega::Remoting::IChannel>(0)
+		{
+			if (pObject)
+				this->m_ptr = static_cast<Omega::Remoting::IChannel*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::Remoting::IChannel)));
+		}
+
+		ObjectPtr(const ObjectPtr<Omega::Remoting::IChannel>& rhs) :
+		  ObjectPtrBase<Omega::Remoting::IChannel>(rhs)
+		{ }
+
+		template <typename I>
+		ObjectPtr(const ObjectPtr<I>& rhs) :
+		  ObjectPtrBase<Omega::Remoting::IChannel>(0)
+		{ 
+			if (rhs)
+				this->m_ptr = static_cast<Omega::Remoting::IChannel*>(rhs->QueryInterface(OMEGA_GUIDOF(Omega::Remoting::IChannel)));
+		}
+
+		ObjectPtr& operator = (const ObjectPtr<Omega::Remoting::IChannel>& rhs)
+		{ 
+			if (this != &rhs)
+				*this = rhs.m_ptr;
+
+			return *this;
+		}
+
+		ObjectPtr& operator = (Omega::Remoting::IChannel* obj)
+		{
+			ObjectPtrBase<Omega::Remoting::IChannel>::operator = (obj);
+			return *this;
+		}
+
+		template <typename I>
+		ObjectPtr<I> GetManager()
+		{
+			Omega::IObject* pObj = 0;
+			m_ptr->GetManager(OMEGA_GUIDOF(I),pObj);
+			
+			ObjectPtr<I> ptrObj;
+			ptrObj.Attach(static_cast<I*>(pObj));
+			return ptrObj;
+		}
+	};
 }
 
 #endif // OTL_REMOTING_H_INCLUDED_

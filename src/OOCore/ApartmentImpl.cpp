@@ -110,9 +110,8 @@ bool OOCore::Apartment::is_channel_open(uint32_t channel_id)
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t src_channel_id)
 {
 	ObjectPtr<ObjectImpl<OOCore::Channel> > ptrChannel = create_channel(src_channel_id,guid_t::Null());
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-	return ptrOM;
+	
+	return ptrChannel->GetObjectManager();
 }
 
 ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
@@ -248,9 +247,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(uint16_t
 		}
 	}
 
-	ObjectPtr<Remoting::IObjectManager> ptrOM;
-	ptrOM.Attach(ptrChannel->GetObjectManager());
-	return ptrOM;
+	return ptrChannel->GetObjectManager();
 }
 
 IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)

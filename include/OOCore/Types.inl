@@ -26,7 +26,7 @@
 // string_t starts here
 
 #ifdef OMEGA_DEBUG
-#define OMEGA_DEBUG_STASH_STRING()	m_debug_value = OOCore_string_t_cast(m_handle)
+#define OMEGA_DEBUG_STASH_STRING()	m_debug_value = (m_handle ? OOCore_string_t_cast(m_handle) : L"")
 #else
 #define OMEGA_DEBUG_STASH_STRING()	(void)0
 #endif
@@ -54,43 +54,41 @@ Omega::string_t::string_t(const char* sz, bool bUTF8, size_t length) :
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,1,((in),const void*,s1));
-Omega::string_t::string_t(const Omega::string_t& s) :
-	m_handle(0)
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,1,((in),const void*,s1));
+void Omega::string_t::addref(handle_t* h)
 {
-	if (s.m_handle)
-		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor2(s.m_handle));
+	if (h)
+		OOCore_string_t_addref(h);
+}
+
+Omega::string_t::string_t(const Omega::string_t& s) :
+	m_handle(s.m_handle)
+{
+	addref(m_handle);
 
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-void Omega::string_t::addref(handle_t* h)
-{
-	if (h)
-		OOCore_string_t__ctor2(h);
-}
-
-OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,2,((in),const wchar_t*,wsz,(in),size_t,length));
+OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const wchar_t*,wsz,(in),size_t,length));
 Omega::string_t::string_t(const wchar_t* wsz, size_t length) :
 	m_handle(0)
 {
 	if (wsz)
-		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor3(wsz,length));
+		m_handle = static_cast<handle_t*>(OOCore_string_t__ctor2(wsz,length));
 
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__dctor,1,((in),void*,h));
-Omega::string_t::~string_t()
-{
-	if (m_handle)
-		OOCore_string_t__dctor(m_handle);
-}
-
+OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,h));
 void Omega::string_t::release(handle_t* h)
 {
 	if (h)
-		OOCore_string_t__dctor(h);
+		OOCore_string_t_release(h);
+}
+
+Omega::string_t::~string_t()
+{
+	release(m_handle);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,h1,(in),const void*,h2));
@@ -114,6 +112,9 @@ Omega::string_t& Omega::string_t::operator = (const wchar_t* wsz)
 
 const wchar_t* Omega::string_t::c_str() const
 {
+	if (!m_handle)
+		return L"";
+
 	return OOCore_string_t_cast(m_handle);
 }
 
@@ -127,14 +128,14 @@ std::string Omega::string_t::ToUTF8() const
 {
 	std::string str;
 	char szBuf[128];
-	size_t len = OOCore_string_t_toutf8(m_handle,szBuf,128);
+	size_t len = ToUTF8(szBuf,128);
 	if (len > 128)
 	{
 		char* pszBuf = 0;
 		OMEGA_NEW(pszBuf,char[len]);
 		try
 		{
-			OOCore_string_t_toutf8(m_handle,pszBuf,len);
+			ToUTF8(pszBuf,len);
 		}
 		catch (...)
 		{
@@ -192,12 +193,9 @@ int Omega::string_t::Compare(const wchar_t* wsz, size_t pos, size_t length, bool
 {
 	if (!m_handle)
 	{
-		if (!wsz)
+		if (!wsz || wsz[0] == L'\0')
 			return 0;
 
-		if (wcslen(wsz) == 0)
-			return 0;
-		
 		return -1;
 	}
 
@@ -209,7 +207,7 @@ int Omega::string_t::Compare(const wchar_t* wsz, size_t pos, size_t length, bool
 
 bool Omega::string_t::IsEmpty() const
 {
-	return (m_handle == 0);
+	return (Length() == 0);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_len,1,((in),const void*,h));
@@ -304,12 +302,11 @@ Omega::string_t Omega::string_t::Right(size_t length) const
 
 Omega::string_t& Omega::string_t::Clear()
 {
-	if (m_handle)
-	{
-		OOCore_string_t__dctor(m_handle);
-		m_handle = 0;
-		OMEGA_DEBUG_STASH_STRING();
-	}
+	release(m_handle);
+	m_handle = 0;
+
+	OMEGA_DEBUG_STASH_STRING();
+	
 	return *this;
 }
 

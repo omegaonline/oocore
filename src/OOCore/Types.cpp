@@ -147,12 +147,14 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const ch
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,1,((in),const void*,s1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,1,((in),const void*,s1))
 {
-	return static_cast<const StringNode*>(s1)->AddRef();
+	assert(s1);
+
+	static_cast<const StringNode*>(s1)->AddRef();
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,2,((in),const wchar_t*,wsz,(in),size_t,length))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const wchar_t*,wsz,(in),size_t,length))
 {
 	if (length == string_t::npos)
 		length = wcslen(wsz);
@@ -165,8 +167,10 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor3,2,((in),const wc
 	return pNode;
 }
 
-OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t__dctor,1,((in),void*,s1))
+OMEGA_DEFINE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,s1))
 {
+	assert(s1);
+
 	static_cast<StringNode*>(s1)->Release();
 }
 
@@ -200,9 +204,8 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,s
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,s1))
 {
-	if (!s1)
-		return L"";
-
+	assert(s1);
+		
 	return static_cast<const StringNode*>(s1)->m_buf;
 }
 
@@ -239,7 +242,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,s1,(
 	StringNode* pOrig = static_cast<StringNode*>(s1);
 
 	if (!pOrig)
-		return OOCore_string_t__ctor3(&c,1);
+		return OOCore_string_t__ctor2(&c,1);
 
 	StringNode* pNode;
 	OMEGA_NEW(pNode,StringNode(pOrig->m_buf,pOrig->m_len,&c,1));
@@ -720,7 +723,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 		{
 			if (i->index == arg)
 			{
-				*fmt = OOCore_string_t__ctor3_Impl(i->format.data(),i->format.size());
+				*fmt = OOCore_string_t__ctor2_Impl(i->format.data(),i->format.size());
 				return 1;
 			}
 		}

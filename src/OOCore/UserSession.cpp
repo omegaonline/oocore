@@ -125,7 +125,7 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	}
 
 	ObjectPtr<IInterProcessService> ptrIPS;
-	if (m_channel_id != 0)
+	if (!bStandalone)
 	{
 		// Create a new object manager for the user channel on the zero apartment
 		ObjectPtr<Remoting::IObjectManager> ptrOM = ptrZeroApt->get_channel_om(m_channel_id & 0xFF000000);
@@ -253,9 +253,6 @@ void OOCore::UserSession::term_i()
 		j->second->close();
 	}
 	m_mapApartments.clear();
-
-	// Reset channel id
-	m_channel_id = 0;
 
 	// Close all singletons
 	close_singletons();
@@ -782,7 +779,7 @@ void OOCore::UserSession::remove_thread_context(uint16_t thread_id)
 	m_mapThreadContexts.erase(thread_id);
 }
 
-OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
+OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, uint32_t dest_channel_id, const OOBase::CDRStream* request, uint32_t timeout, uint32_t attribs)
 {
 	uint16_t src_thread_id = 0;
 	uint16_t dest_thread_id = 0;
@@ -824,7 +821,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 	}
 
 	// Write the header info
-	OOBase::CDRStream header = build_header(seq_no,m_channel_id | apartment_id,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
+	OOBase::CDRStream header = build_header(seq_no,m_channel_id | src_apartment_id,src_thread_id,dest_channel_id,dest_thread_id,request,deadline,Message::Request,attribs);
 
 	// Send to the handle
 	OOBase::timeval_t wait = deadline;
@@ -852,7 +849,7 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t apartment_id, uint
 		return 0;
 	else
 		// Wait for response...
-		return wait_for_response(apartment_id,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
+		return wait_for_response(src_apartment_id,seq_no,deadline != OOBase::timeval_t::MaxTime ? &deadline : 0,dest_channel_id);
 }
 
 void OOCore::UserSession::send_response(uint16_t apartment_id, uint32_t seq_no, uint32_t dest_channel_id, uint16_t dest_thread_id, const OOBase::CDRStream* response, const OOBase::timeval_t& deadline, uint32_t attribs)
@@ -927,8 +924,12 @@ OOBase::CDRStream OOCore::UserSession::build_header(uint32_t seq_no, uint32_t sr
 
 Remoting::MarshalFlags_t OOCore::UserSession::classify_channel(uint32_t channel)
 {
-	Remoting::MarshalFlags_t mflags = Remoting::Same;
-	if ((channel & 0xFF000000) == (m_channel_id & 0xFF000000))
+	Remoting::MarshalFlags_t mflags;
+	if (channel == m_channel_id)
+		mflags = Remoting::Same;
+	else if ((channel & 0xFFFFF000) == (m_channel_id & 0xFFFFF000))
+		mflags = Remoting::Apartment;
+	else if ((channel & 0xFF000000) == (m_channel_id & 0xFF000000))
 		mflags = Remoting::InterProcess;
 	else if ((channel & 0x80000000) == (m_channel_id & 0x80000000))
 		mflags = Remoting::InterUser;
@@ -1103,30 +1104,36 @@ uint16_t OOCore::UserSession::update_state(uint16_t apartment_id, uint32_t* pTim
 	return old_id;
 }
 
-ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel(uint32_t src_channel_id, const Omega::guid_t& message_oid)
+IObject* OOCore::UserSession::create_channel(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
 {
-	return USER_SESSION::instance()->create_channel_i(src_channel_id,message_oid);
+	return USER_SESSION::instance()->create_channel_i(src_channel_id,message_oid,iid);
 }
 
-ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid)
+IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const guid_t& message_oid, const guid_t& iid)
 {
 	// Create a channel in the context of the current apartment
 	const ThreadContext* pContext = ThreadContext::instance();
-
-	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
+	
 	OOBase::SmartPtr<Apartment> ptrApt;
-	std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pContext->m_current_apt);
-	if (i == m_mapApartments.end())
 	{
-		// Apartment has gone!
-		throw Remoting::IChannelClosedException::Create();
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+		std::map<uint16_t,OOBase::SmartPtr<Apartment> >::iterator i=m_mapApartments.find(pContext->m_current_apt);
+		if (i == m_mapApartments.end())
+		{
+			// Apartment has gone!
+			throw Remoting::IChannelClosedException::Create();
+		}
+		ptrApt = i->second;
 	}
-	ptrApt = i->second;
 
-	assert(src_channel_id != (m_channel_id | pContext->m_current_apt));
+	switch (classify_channel(src_channel_id))
+	{
+	case Remoting::Same:
+	case Remoting::Apartment:
+		return ptrApt->create_apartment(src_channel_id & 0xFFF,message_oid)->QueryInterface(iid);
 
-	guard.release();
-
-	return ptrApt->create_channel(src_channel_id,message_oid);
+	default:
+		return ptrApt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);
+	} 
 }

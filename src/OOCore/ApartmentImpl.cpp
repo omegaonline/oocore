@@ -135,7 +135,7 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 		
 	// Create a new channel
 	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-	ptrChannel->init(m_pSession,m_id,src_channel_id,m_pSession->classify_channel(src_channel_id),message_oid,ptrOM);
+	ptrChannel->init(m_pSession,m_id,src_channel_id,ptrOM,message_oid);
 
 	// And add to the map
 	try
@@ -196,7 +196,7 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 		// Send it back...
 		try
 		{
-			m_pSession->send_response(m_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,static_cast<const OOBase::CDRStream*>(ptrResponse->GetCDRStream()),deadline);
+			m_pSession->send_response(m_id,pMsg->m_seq_no,pMsg->m_src_channel_id,pMsg->m_src_thread_id,ptrResponse->GetCDRStream(),deadline);
 		}
 		catch (...)
 		{
@@ -207,6 +207,13 @@ void OOCore::Apartment::process_request(const Message* pMsg, const OOBase::timev
 }
 
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(uint16_t apartment_id)
+{
+	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel = create_apartment(apartment_id,guid_t::Null());
+	
+	return ptrChannel->GetObjectManager();
+}
+
+ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(uint16_t apartment_id, const guid_t& message_oid)
 {
 	// Lookup existing..
 	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
@@ -230,7 +237,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(uint16_t
 		
 		// Create a new channel
 		ptrChannel = ObjectImpl<AptChannel>::CreateInstancePtr();
-		ptrChannel->init(m_id,m_pSession->get_apartment(apartment_id),ptrOM);
+		ptrChannel->init(m_pSession->get_apartment(apartment_id),m_id | m_pSession->get_channel_id(),ptrOM,message_oid);
 
 		// And add to the map
 		try
@@ -247,7 +254,7 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_apartment_om(uint16_t
 		}
 	}
 
-	return ptrChannel->GetObjectManager();
+	return ptrChannel;
 }
 
 IException* OOCore::Apartment::apartment_message(uint16_t apt_id, TypeInfo::MethodAttributes_t /*attribs*/, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
@@ -282,18 +289,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Apartment::IApartment*,OOCore_IApartment_Create,0
 
 	// Create a new apartment
 	return OOCore::UserSession::create_apartment();
-}
-
-void OOCore::AptChannel::init(uint16_t apt_id, OOBase::SmartPtr<Apartment> ptrApt, Remoting::IObjectManager* pOM)
-{
-	Channel::init(0,apt_id,0,Remoting::Apartment,guid_t::Null(),pOM);
-
-	m_ptrApt = ptrApt;
-}
-
-IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
-{
-	return m_ptrApt->apartment_message(m_apt_id,attribs,pSend,pRecv,timeout);
 }
 
 OOCore::ApartmentImpl::ApartmentImpl() : 

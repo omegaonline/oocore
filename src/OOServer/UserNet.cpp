@@ -537,8 +537,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 		src_channel_id |= m_channel_id;
 	
 		// Forward through the network...
-		const OOBase::CDRStream* output = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
-		Root::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,*output);
+		Root::MessageHandler::io_result::type res = m_pManager->forward_message(src_channel_id,dest_channel_id,deadline,ex_attribs,dest_thread_id,src_thread_id,flags,seq_no,*ptrOutput->GetCDRStream());
 		if (res != Root::MessageHandler::io_result::success)
 		{
 			if (!(ex_attribs & Root::Message_t::system_message))

@@ -26,22 +26,9 @@
 
 namespace OOCore
 {
-	interface ICDRStreamHolder : public Omega::IObject
-	{
-		virtual void* GetCDRStream() = 0;
-	};
-
 	// {1455FCD0-A49B-4f2a-94A5-222949957123}
 	extern "C" const Omega::guid_t OID_CDRMessageMarshalFactory;
 }
-
-OMEGA_DEFINE_INTERFACE_LOCAL
-(
-	OOCore, ICDRStreamHolder, "{5251283B-95C8-4e5b-9136-5DDCBE636A4E}",
-
-	// Methods
-	OMEGA_METHOD(void*,GetCDRStream,0,())
-)
 
 // Some macros to help
 
@@ -86,7 +73,6 @@ namespace OOCore
 {
 	class CDRMessage :
 		public OTL::ObjectBase,
-		public OOCore::ICDRStreamHolder,
 		public Omega::Remoting::IMessage,
 		public Omega::Remoting::IMarshal
 	{
@@ -99,15 +85,13 @@ namespace OOCore
 		BEGIN_INTERFACE_MAP(CDRMessage)
 			INTERFACE_ENTRY(Omega::Remoting::IMessage)
 			INTERFACE_ENTRY(Omega::Remoting::IMarshal)
-			INTERFACE_ENTRY(OOCore::ICDRStreamHolder)
 		END_INTERFACE_MAP()
 
 	private:
 		OOBase::CDRStream m_stream;
 
-	// ICDRStreamHolder
 	public:
-		void* GetCDRStream()
+		const OOBase::CDRStream* GetCDRStream() const
 		{
 			return &m_stream;
 		}

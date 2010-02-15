@@ -100,4 +100,3 @@ namespace User
 }
 
 #endif // OOSERVER_USER_MANAGER_H_INCLUDED_
-

@@ -50,6 +50,11 @@ void User::Channel::init(Manager* pManager, Omega::uint32_t channel_id, Remoting
 	// Create a new OM
 	m_ptrOM = ObjectPtr<Remoting::IObjectManager>(Remoting::OID_StdObjectManager,Activation::InProcess | Activation::DontLaunch);
 
+	// QI for IMarshaller
+	m_ptrMarshaller = m_ptrOM;
+	if (!m_ptrMarshaller)
+		throw INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
 	// Associate it with the channel
 	m_ptrOM->Connect(this);
 }
@@ -85,13 +90,10 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 {
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-	if (!m_ptrOM)
-		throw Omega::Remoting::IChannelClosedException::Create();
-	
-	// QI for IMarshaller
-	ObjectPtr<Remoting::IMarshaller> ptrMarshaller(m_ptrOM);
-	if (!ptrMarshaller)
-		throw Omega::INoInterfaceException::Create(OMEGA_GUIDOF(Remoting::IMarshaller),OMEGA_SOURCE_INFO);
+
+	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = m_ptrMarshaller;
+	if (!m_ptrMarshaller)
+		throw Remoting::IChannelClosedException::Create();
 
 	guard.release();
 
@@ -102,19 +104,11 @@ IException* User::Channel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, 
 	OOBase::SmartPtr<OOBase::CDRStream> response;
 	try
 	{
-		// QI pSend for our private interface
-		ObjectPtr<OOCore::ICDRStreamHolder> ptrOutput;
-		ptrOutput.Attach(static_cast<OOCore::ICDRStreamHolder*>(ptrEnvelope->QueryInterface(OMEGA_GUIDOF(OOCore::ICDRStreamHolder))));
-		assert(ptrOutput);
-		
-		// Get the message block
-		const OOBase::CDRStream* request = static_cast<const OOBase::CDRStream*>(ptrOutput->GetCDRStream());
-
 		OOBase::timeval_t deadline;
 		if (timeout > 0)
 			deadline = OOBase::timeval_t::deadline(timeout);
 
-		Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,request,response,timeout ? &deadline : 0,attribs);
+		Root::MessageHandler::io_result::type res = m_pManager->send_request(m_channel_id,ptrEnvelope->GetCDRStream(),response,timeout ? &deadline : 0,attribs);
 		if (res != Root::MessageHandler::io_result::success)
 		{
 			if (res == Root::MessageHandler::io_result::timedout)

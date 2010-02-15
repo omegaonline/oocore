@@ -449,8 +449,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 			ptrMarshaller->MarshalInterface(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
 
 			// Send it back...
-			const OOBase::CDRStream* buffer = static_cast<const OOBase::CDRStream*>(ptrResponse->GetCDRStream());
-			Root::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*buffer,deadline,attribs);
+			Root::MessageHandler::io_result::type res = send_response(seq_no,src_channel_id,src_thread_id,*ptrResponse->GetCDRStream(),deadline,attribs);
 			if (res != Root::MessageHandler::io_result::success)
 			{
 				ptrMarshaller->ReleaseMarshalData(L"payload",ptrResponse,OMEGA_GUIDOF(Remoting::IMessage),ptrResult);
@@ -481,6 +480,8 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel(Omega::uint3
 
 ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uint32_t src_channel_id, const guid_t& message_oid)
 {
+	assert(classify_channel(src_channel_id) > 1);
+
 	try
 	{
 		// Lookup existing..

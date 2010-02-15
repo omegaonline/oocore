@@ -46,6 +46,7 @@ namespace OOCore
 		OTL::ObjectPtr<OTL::ObjectImpl<Channel> > create_channel(Omega::uint32_t src_channel_id, const Omega::guid_t& message_oid);
 		void process_request(const Message* pMsg, const OOBase::timeval_t& deadline);
 
+		OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > create_apartment(Omega::uint16_t apartment_id, const Omega::guid_t& message_oid);
 		OTL::ObjectPtr<Omega::Remoting::IObjectManager> get_apartment_om(Omega::uint16_t apartment_id);
 		Omega::IException* apartment_message(Omega::uint16_t apt_id, Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		
@@ -56,28 +57,6 @@ namespace OOCore
 
 		std::map<Omega::uint32_t,OTL::ObjectPtr<OTL::ObjectImpl<Channel> > >    m_mapChannels;
 		std::map<Omega::uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > > m_mapApartments;
-	};
-
-	class AptChannel :
-		public Channel
-	{
-	public:
-		AptChannel() : Channel() {}
-
-		void init(Omega::uint16_t apt_id, OOBase::SmartPtr<Apartment> ptrApt, Omega::Remoting::IObjectManager* pOM);
-		
-		BEGIN_INTERFACE_MAP(AptChannel)
-			INTERFACE_ENTRY_CHAIN(Channel)
-		END_INTERFACE_MAP()
-
-	private:
-		AptChannel(const AptChannel&);
-		AptChannel& operator = (const AptChannel&);
-
-		OOBase::SmartPtr<Apartment> m_ptrApt;
-
-	public:
-		virtual Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 	};
 
 	// {6654B003-44F1-497a-B539-80B5FCED73BC}

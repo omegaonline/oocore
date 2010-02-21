@@ -1131,7 +1131,7 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	{
 	case Remoting::Same:
 	case Remoting::Apartment:
-		return ptrApt->create_apartment(src_channel_id & 0xFFF,message_oid)->QueryInterface(iid);
+		return ptrApt->create_apartment(static_cast<uint16_t>(src_channel_id & 0xFFF),message_oid)->QueryInterface(iid);
 
 	default:
 		return ptrApt->create_channel(src_channel_id,message_oid)->QueryInterface(iid);

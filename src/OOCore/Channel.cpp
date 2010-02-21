@@ -52,10 +52,9 @@ void OOCore::ChannelBase::disconnect()
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	if (m_ptrOM)
-	{
 		m_ptrOM->Shutdown();
-		m_ptrOM.Release();
-	}
+	
+	m_ptrOM.Release();
 }
 
 Remoting::IMessage* OOCore::ChannelBase::CreateMessage()
@@ -232,7 +231,7 @@ void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_
 
 IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
-	return m_ptrApt->apartment_message((m_channel_id & 0x00000FFF),attribs,pSend,pRecv,timeout);
+	return m_ptrApt->apartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);
 }
 
 void OOCore::AptChannel::ReflectMarshal(Remoting::IMessage* pMessage)

@@ -64,10 +64,10 @@ void User::Channel::disconnect()
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
 	if (m_ptrOM)
-	{
 		m_ptrOM->Shutdown();
-		m_ptrOM.Release();
-	}
+	
+	m_ptrOM.Release();
+	m_ptrMarshaller.Release();
 }
 
 Remoting::IMessage* User::Channel::CreateMessage()

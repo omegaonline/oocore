@@ -71,8 +71,10 @@ namespace OOBase
 
 	protected:
 		Socket() {}
-		Socket(const Socket&) {}
-		Socket& operator = (const Socket&) { return *this; }
+
+	private:
+		Socket(const Socket&);
+		Socket& operator = (const Socket&);
 	};
 
 	class LocalSocket : public Socket
@@ -94,8 +96,6 @@ namespace OOBase
 
 	protected:
 		LocalSocket() {}
-		LocalSocket(const LocalSocket&) {}
-		LocalSocket& operator = (const LocalSocket&) { return *this; }
 	};
 }
 

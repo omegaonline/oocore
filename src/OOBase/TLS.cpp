@@ -43,9 +43,10 @@ namespace
 
 	private:
 		TLSMap() {}
+		~TLSMap() {}
+
 		TLSMap(const TLSMap&);
 		TLSMap& operator = (const TLSMap&);
-		~TLSMap() {}
 	};
 
 #if defined(_WIN32)

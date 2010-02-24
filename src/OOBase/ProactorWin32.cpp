@@ -407,10 +407,6 @@ void OOSvrBase::Win32::HandleSocket::close()
 
 	m_handler = 0;
 
-	do
-	{
-	} while ((void)0,false);
-
 	// Empty the queues
 	for (std::deque<AsyncRead>::iterator i=m_async_reads.begin();i!=m_async_reads.end();++i)
 		i->m_buffer->release();

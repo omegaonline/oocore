@@ -22,14 +22,6 @@
 #ifndef OOCORE_CONFIG_GCC_H_INCLUDED_
 #define OOCORE_CONFIG_GCC_H_INCLUDED_
 
-#ifdef __cplusplus
-	#include <new>
-	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		do { POINTER = new (std::nothrow) CONSTRUCTOR; \
-			if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
-		} while (0)
-#endif
-
 #if !defined(HAVE_STDINT_H)
 #define HAVE_STDINT_H 1
 #endif
@@ -70,6 +62,14 @@
     #define OMEGA_EXPORT  __attribute__((dllexport))
 #else
     #error No idea how to control symbol visibility for this compiler/linker/output format!
+#endif
+
+#ifdef __cplusplus
+	#include <new>
+	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
+		if (true) { POINTER = new (std::nothrow) CONSTRUCTOR; \
+			if (POINTER == 0) { OMEGA_THROW(ENOMEM); } \
+		} else (void)0
 #endif
 
 #if defined(_WIN32)

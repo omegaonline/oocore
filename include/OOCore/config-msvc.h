@@ -49,13 +49,19 @@
 
 #define OMEGA_MAX_DEFINES 249
 
+#define OMEGA_UNUSED_ARG(n)	(n)
+
+#define OMEGA_COMPILER_STRING_III(n)  #n
+#define OMEGA_COMPILER_STRING_II(a,b) OMEGA_COMPILER_STRING_III(a b)
+#define OMEGA_COMPILER_STRING_I(a,b)  OMEGA_COMPILER_STRING_II(a,b)
+#define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I(MSVC,_MSC_VER)
+
 #define OMEGA_FUNCNAME    __FUNCSIG__
+
+#define OMEGA_CALL     __cdecl
 
 #define OMEGA_IMPORT   __declspec(dllimport)
 #define OMEGA_EXPORT   __declspec(dllexport)
-#define OMEGA_CALL     __cdecl
-
-#define OMEGA_UNUSED_ARG(n)	(n)
 
 #define OMEGA_HAS_UUIDOF
 
@@ -69,10 +75,16 @@
 #define OMEGA_64
 #endif
 
-#define OMEGA_COMPILER_STRING_III(n)  #n
-#define OMEGA_COMPILER_STRING_II(a,b) OMEGA_COMPILER_STRING_III(a b)
-#define OMEGA_COMPILER_STRING_I(a,b)  OMEGA_COMPILER_STRING_II(a,b)
-#define OMEGA_COMPILER_STRING         OMEGA_COMPILER_STRING_I(MSVC,_MSC_VER)
+#ifdef __cplusplus
+	#include <new>
+
+	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
+		if ((void)0,true) { \
+			POINTER = new (std::nothrow) CONSTRUCTOR; \
+			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
+		} else (void)0
+
+#endif
 
 #if defined(_WIN32_WCE)
 #include "config-wince.h"
@@ -80,25 +92,6 @@
 #include "config-win32.h"
 #else
 #error What else can MSVC compile?
-#endif
-
-#ifdef __cplusplus
-	#include <new>
-
-#if defined(_WIN32)
-	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		do { \
-			POINTER = new (std::nothrow) CONSTRUCTOR; \
-			if (!POINTER) OMEGA_THROW(ERROR_OUTOFMEMORY); \
-		} while ((void)0,false)
-#else
-	#define OMEGA_NEW(POINTER,CONSTRUCTOR) \
-		do { \
-			POINTER = new (std::nothrow) CONSTRUCTOR; \
-			if (!POINTER) OMEGA_THROW(ENOMEM); \
-		} while ((void)0,false)
-#endif
-
 #endif
 
 #include <errno.h>

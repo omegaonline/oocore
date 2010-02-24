@@ -44,7 +44,8 @@ void OOCore::ChannelBase::init(uint32_t channel_id, Remoting::MarshalFlags_t mar
 	
 	// Connect the OM to us
 	m_ptrOM = pOM;
-	m_ptrOM->Connect(this);
+	if (m_ptrOM)
+		m_ptrOM->Connect(this);
 }
 
 void OOCore::ChannelBase::disconnect()
@@ -55,6 +56,11 @@ void OOCore::ChannelBase::disconnect()
 		m_ptrOM->Shutdown();
 	
 	m_ptrOM.Release();
+}
+
+ObjectPtr<Remoting::IObjectManager> OOCore::ChannelBase::GetObjectManager()
+{
+	return m_ptrOM;
 }
 
 Remoting::IMessage* OOCore::ChannelBase::CreateMessage()
@@ -100,7 +106,9 @@ void OOCore::ChannelBase::GetManager(const guid_t& iid, IObject*& pObject)
 	// Get the object manager
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 	
-	pObject = m_ptrOM->QueryInterface(iid);
+	pObject = 0;
+	if (m_ptrOM)
+		pObject = m_ptrOM->QueryInterface(iid);
 }
 
 guid_t OOCore::ChannelBase::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
@@ -118,6 +126,11 @@ void OOCore::ChannelBase::ReleaseMarshalData(Remoting::IMarshaller*, Remoting::I
 {
 	pMessage->ReadUInt32(L"m_channel_id");
 	pMessage->ReadGuid(L"m_message_oid");
+}
+
+void OOCore::ChannelBase::ReflectMarshal(Remoting::IMessage* pMessage)
+{
+	MarshalInterface(0,pMessage,guid_t::Null(),m_marshal_flags);
 }
 
 void OOCore::Channel::init(UserSession* pSession, uint16_t apt_id, uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
@@ -218,25 +231,6 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	// Return in the same format as we marshal
 	pMessage->WriteUInt32(L"m_channel_id",other_end);
 	pMessage->WriteGuid(L"m_message_oid",m_message_oid);
-}
-
-void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
-{
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
-
-	ChannelBase::init(channel_id,Remoting::Apartment,pOM,message_oid);
-
-	m_ptrApt = ptrApt;
-}
-
-IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
-{
-	return m_ptrApt->apartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);
-}
-
-void OOCore::AptChannel::ReflectMarshal(Remoting::IMessage* pMessage)
-{
-	ChannelBase::MarshalInterface(0,pMessage,guid_t::Null(),Remoting::Apartment);
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ChannelMarshalFactory,"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");

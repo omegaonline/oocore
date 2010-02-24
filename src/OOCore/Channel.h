@@ -27,8 +27,7 @@
 namespace OOCore
 {
 	class UserSession;
-	class Apartment;
-
+	
 	class ChannelBase :
 		public OTL::ObjectBase,
 		public Omega::Remoting::IChannel,
@@ -39,10 +38,7 @@ namespace OOCore
 		
 		virtual void disconnect();
 
-		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager()
-		{
-			return m_ptrOM;
-		}
+		OTL::ObjectPtr<Omega::Remoting::IObjectManager> GetObjectManager();
 
 		BEGIN_INTERFACE_MAP(ChannelBase)
 			INTERFACE_ENTRY(Omega::Remoting::IChannel)
@@ -73,6 +69,7 @@ namespace OOCore
 		virtual Omega::bool_t IsConnected();
 		virtual Omega::guid_t GetReflectUnmarshalFactoryOID();
 		virtual void GetManager(const Omega::guid_t& iid, Omega::IObject*& pObject);
+		virtual void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
 
 	// IMarshal members
 	public:
@@ -85,9 +82,7 @@ namespace OOCore
 		public ChannelBase
 	{
 	public:
-		Channel() : ChannelBase(), 
-			m_pSession(0),
-			m_src_apt_id(0)
+		Channel() : m_pSession(0), m_src_apt_id(0)
 		{}
 
 		void init(UserSession* pSession, Omega::uint16_t apt_id, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
@@ -102,26 +97,6 @@ namespace OOCore
 		Omega::uint16_t                              m_src_apt_id;
 		OTL::ObjectPtr<Omega::Remoting::IMarshaller> m_ptrMarshaller;
 		
-	public:
-		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
-		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);
-	};
-
-	class AptChannel :
-		public ChannelBase
-	{
-	public:
-		AptChannel() : ChannelBase() {}
-
-		void init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
-		
-		BEGIN_INTERFACE_MAP(AptChannel)
-			INTERFACE_ENTRY_CHAIN(ChannelBase)
-		END_INTERFACE_MAP()
-
-	private:
-		OOBase::SmartPtr<Apartment> m_ptrApt;
-
 	public:
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
 		void ReflectMarshal(Omega::Remoting::IMessage* pMessage);

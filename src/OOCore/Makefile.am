@@ -15,6 +15,8 @@ common = \
 	Formatting.h \
 	Formatting.cpp \
 	IPS.h \
+	LoopChannel.h \
+	LoopChannel.cpp \
 	OOCore.cpp \
 	Registry.cpp \
 	RunningObjectTable.cpp \

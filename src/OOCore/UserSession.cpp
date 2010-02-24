@@ -25,6 +25,7 @@
 #include "Activation.h"
 #include "StdObjectManager.h"
 #include "IPS.h"
+#include "LoopChannel.h"
 
 using namespace Omega;
 using namespace OTL;
@@ -1130,6 +1131,8 @@ IObject* OOCore::UserSession::create_channel_i(uint32_t src_channel_id, const gu
 	switch (classify_channel(src_channel_id))
 	{
 	case Remoting::Same:
+		return LoopChannel::create(src_channel_id,message_oid,iid);
+
 	case Remoting::Apartment:
 		return ptrApt->create_apartment(static_cast<uint16_t>(src_channel_id & 0xFFF),message_oid)->QueryInterface(iid);
 

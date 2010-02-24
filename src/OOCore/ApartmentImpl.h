@@ -30,7 +30,24 @@ namespace OOCore
 {
 	struct Message;
 	class UserSession;
-	class AptChannel;
+	class Apartment;
+	
+	class AptChannel :
+		public ChannelBase
+	{
+	public:
+		void init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Omega::Remoting::IObjectManager* pOM, const Omega::guid_t& message_oid);
+		
+		BEGIN_INTERFACE_MAP(AptChannel)
+			INTERFACE_ENTRY_CHAIN(ChannelBase)
+		END_INTERFACE_MAP()
+
+	private:
+		OOBase::SmartPtr<Apartment> m_ptrApt;
+
+	public:
+		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout);
+	};
 
 	class Apartment
 	{

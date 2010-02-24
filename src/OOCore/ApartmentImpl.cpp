@@ -307,3 +307,17 @@ void OOCore::ApartmentImpl::CreateInstance(const string_t& strURI, Activation::F
 {
 	pObject = Omega::CreateInstance(strURI,flags,pOuter,iid);
 }
+
+void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)
+{
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
+	ChannelBase::init(channel_id,Remoting::Apartment,pOM,message_oid);
+
+	m_ptrApt = ptrApt;
+}
+
+IException* OOCore::AptChannel::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
+{
+	return m_ptrApt->apartment_message(static_cast<uint16_t>(m_channel_id & 0xFFF),attribs,pSend,pRecv,timeout);
+}

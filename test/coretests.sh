@@ -3,7 +3,6 @@ cp $srcdir/ooregister.sh ./ooregister
 cp $srcdir/ooregister.bat .
 
 cp $srcdir/CoreTests/TestProcess/testprocess.sh ./CoreTests/TestProcess/testprocess.sh
-cp $srcdir/CoreTests/TestProcess/testprocess.bat ./CoreTests/TestProcess/testprocess.bat
 
 if test -x $srcdir/../bin/Debug/TestLibrary_msvc.dll; then
 	ln -s $srcdir/../bin/Debug/TestLibrary_msvc.dll

@@ -104,7 +104,7 @@ namespace OOCore
 
 	// INoInterfaceException members
 	public:
-		inline Omega::guid_t GetUnsupportedIID()
+		Omega::guid_t GetUnsupportedIID()
 		{
 			return m_iid;
 		}

@@ -250,7 +250,7 @@
 		static const uint32_t method_count = TypeInfo_Holder<d_space::derived >::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \
 		OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
-		inline static const typeinfo_rtti::MethodInfo* method_info() \
+		static const typeinfo_rtti::MethodInfo* method_info() \
 		{ \
 			static const typeinfo_rtti::MethodInfo method_infos[] = \
 			{ \

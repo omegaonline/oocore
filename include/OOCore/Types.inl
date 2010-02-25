@@ -33,19 +33,19 @@
 
 OOCORE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,h));
 
-Omega::string_t::string_t(handle_t* h) :
+inline Omega::string_t::string_t(handle_t* h) :
 	m_handle(h)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
 
-Omega::string_t::string_t() : m_handle(0)
+inline Omega::string_t::string_t() : m_handle(0)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const char*,sz,(in),size_t,len,(in),int,bUTF8));
-Omega::string_t::string_t(const char* sz, bool bUTF8, size_t length) :
+inline Omega::string_t::string_t(const char* sz, bool bUTF8, size_t length) :
 	m_handle(0)
 {
 	if (sz)
@@ -55,13 +55,13 @@ Omega::string_t::string_t(const char* sz, bool bUTF8, size_t length) :
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_addref,1,((in),const void*,s1));
-void Omega::string_t::addref(handle_t* h)
+inline void Omega::string_t::addref(handle_t* h)
 {
 	if (h)
 		OOCore_string_t_addref(h);
 }
 
-Omega::string_t::string_t(const Omega::string_t& s) :
+inline Omega::string_t::string_t(const Omega::string_t& s) :
 	m_handle(s.m_handle)
 {
 	addref(m_handle);
@@ -70,7 +70,7 @@ Omega::string_t::string_t(const Omega::string_t& s) :
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor2,2,((in),const wchar_t*,wsz,(in),size_t,length));
-Omega::string_t::string_t(const wchar_t* wsz, size_t length) :
+inline Omega::string_t::string_t(const wchar_t* wsz, size_t length) :
 	m_handle(0)
 {
 	if (wsz)
@@ -80,19 +80,19 @@ Omega::string_t::string_t(const wchar_t* wsz, size_t length) :
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION_VOID(OOCore_string_t_release,1,((in),void*,h));
-void Omega::string_t::release(handle_t* h)
+inline void Omega::string_t::release(handle_t* h)
 {
 	if (h)
 		OOCore_string_t_release(h);
 }
 
-Omega::string_t::~string_t()
+inline Omega::string_t::~string_t()
 {
 	release(m_handle);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign1,2,((in),void*,h1,(in),const void*,h2));
-Omega::string_t& Omega::string_t::operator = (const string_t& s)
+inline Omega::string_t& Omega::string_t::operator = (const string_t& s)
 {
 	if (this != &s && m_handle != s.m_handle)
 	{
@@ -103,14 +103,14 @@ Omega::string_t& Omega::string_t::operator = (const string_t& s)
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,h1,(in),const wchar_t*,wsz));
-Omega::string_t& Omega::string_t::operator = (const wchar_t* wsz)
+inline Omega::string_t& Omega::string_t::operator = (const wchar_t* wsz)
 {
 	m_handle = static_cast<handle_t*>(OOCore_string_t_assign2(m_handle,wsz));
 	OMEGA_DEBUG_STASH_STRING();
 	return *this;
 }
 
-const wchar_t* Omega::string_t::c_str() const
+inline const wchar_t* Omega::string_t::c_str() const
 {
 	if (!m_handle)
 		return L"";
@@ -119,12 +119,12 @@ const wchar_t* Omega::string_t::c_str() const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_toutf8,3,((in),const void*,h,(in),char*,sz,(in),size_t,size));
-size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
+inline size_t Omega::string_t::ToUTF8(char* sz, size_t size) const
 {
 	return OOCore_string_t_toutf8(m_handle,sz,size);
 }
 
-std::string Omega::string_t::ToUTF8() const
+inline std::string Omega::string_t::ToUTF8() const
 {
 	std::string str;
 	char szBuf[128];
@@ -152,7 +152,7 @@ std::string Omega::string_t::ToUTF8() const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add1,2,((in),void*,h,(in),const void*,h2));
-Omega::string_t& Omega::string_t::operator += (const string_t& s)
+inline Omega::string_t& Omega::string_t::operator += (const string_t& s)
 {
 	if (s.m_handle)
 	{
@@ -163,7 +163,7 @@ Omega::string_t& Omega::string_t::operator += (const string_t& s)
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_add2,2,((in),void*,h,(in),wchar_t,c));
-Omega::string_t& Omega::string_t::operator += (wchar_t c)
+inline Omega::string_t& Omega::string_t::operator += (wchar_t c)
 {
 	m_handle = static_cast<handle_t*>(OOCore_string_t_add2(m_handle,c));
 	OMEGA_DEBUG_STASH_STRING();
@@ -171,7 +171,7 @@ Omega::string_t& Omega::string_t::operator += (wchar_t c)
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,h1,(in),const void*,h2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
-int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool bIgnoreCase) const
+inline int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool bIgnoreCase) const
 {
 	if (m_handle == s.m_handle)
 	{
@@ -189,7 +189,7 @@ int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool 
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp2,5,((in),const void*,h,(in),const wchar_t*,wsz,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
-int Omega::string_t::Compare(const wchar_t* wsz, size_t pos, size_t length, bool bIgnoreCase) const
+inline int Omega::string_t::Compare(const wchar_t* wsz, size_t pos, size_t length, bool bIgnoreCase) const
 {
 	if (!m_handle)
 	{
@@ -205,13 +205,13 @@ int Omega::string_t::Compare(const wchar_t* wsz, size_t pos, size_t length, bool
 	return OOCore_string_t_cmp2(m_handle,wsz,pos,length,(bIgnoreCase ? 1 : 0));
 }
 
-bool Omega::string_t::IsEmpty() const
+inline bool Omega::string_t::IsEmpty() const
 {
 	return (Length() == 0);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_len,1,((in),const void*,h));
-size_t Omega::string_t::Length() const
+inline size_t Omega::string_t::Length() const
 {
 	if (!m_handle)
 		return 0;
@@ -220,7 +220,7 @@ size_t Omega::string_t::Length() const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find1,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),int,d));
-size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
+inline size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
 {
 	if (!m_handle)
 		return string_t::npos;
@@ -229,7 +229,7 @@ size_t Omega::string_t::Find(wchar_t c, size_t pos, bool bIgnoreCase) const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_not,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),int,d));
-size_t Omega::string_t::FindNot(wchar_t c, size_t pos, bool bIgnoreCase) const
+inline size_t Omega::string_t::FindNot(wchar_t c, size_t pos, bool bIgnoreCase) const
 {
 	if (!m_handle)
 		return string_t::npos;
@@ -238,7 +238,7 @@ size_t Omega::string_t::FindNot(wchar_t c, size_t pos, bool bIgnoreCase) const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find2,4,((in),const void*,h1,(in),const void*,h2,(in),size_t,s,(in),int,bIgnoreCase));
-size_t Omega::string_t::Find(const string_t& str, size_t pos, bool bIgnoreCase) const
+inline size_t Omega::string_t::Find(const string_t& str, size_t pos, bool bIgnoreCase) const
 {
 	if (!m_handle || !str.m_handle)
 		return string_t::npos;
@@ -247,7 +247,7 @@ size_t Omega::string_t::Find(const string_t& str, size_t pos, bool bIgnoreCase) 
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_oneof,4,((in),const void*,h1,(in),const void*,h2,(in),size_t,s,(in),int,bIgnoreCase));
-size_t Omega::string_t::FindOneOf(const string_t& str, size_t pos, bool bIgnoreCase) const
+inline size_t Omega::string_t::FindOneOf(const string_t& str, size_t pos, bool bIgnoreCase) const
 {
 	if (!m_handle || !str.m_handle)
 		return string_t::npos;
@@ -256,7 +256,7 @@ size_t Omega::string_t::FindOneOf(const string_t& str, size_t pos, bool bIgnoreC
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_find_notof,4,((in),const void*,h1,(in),const void*,h2,(in),size_t,s,(in),int,bIgnoreCase));
-size_t Omega::string_t::FindNotOf(const string_t& str, size_t pos, bool bIgnoreCase) const
+inline size_t Omega::string_t::FindNotOf(const string_t& str, size_t pos, bool bIgnoreCase) const
 {
 	if (!m_handle || !str.m_handle)
 		return string_t::npos;
@@ -265,7 +265,7 @@ size_t Omega::string_t::FindNotOf(const string_t& str, size_t pos, bool bIgnoreC
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(size_t,OOCore_string_t_rfind,4,((in),const void*,a,(in),wchar_t,b,(in),size_t,c,(in),int,d));
-size_t Omega::string_t::ReverseFind(wchar_t c, size_t pos, bool bIgnoreCase) const
+inline size_t Omega::string_t::ReverseFind(wchar_t c, size_t pos, bool bIgnoreCase) const
 {
 	if (!m_handle)
 		return string_t::npos;
@@ -274,7 +274,7 @@ size_t Omega::string_t::ReverseFind(wchar_t c, size_t pos, bool bIgnoreCase) con
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_left,2,((in),const void*,a,(in),size_t,b));
-Omega::string_t Omega::string_t::Left(size_t length) const
+inline Omega::string_t Omega::string_t::Left(size_t length) const
 {
 	if (length == 0 || !m_handle)
 		return string_t((handle_t*)0);
@@ -283,7 +283,7 @@ Omega::string_t Omega::string_t::Left(size_t length) const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_mid,3,((in),const void*,h,(in),size_t,a,(in),size_t,b));
-Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
+inline Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 {
 	if (length == 0 || !m_handle)
 		return string_t((handle_t*)0);
@@ -292,7 +292,7 @@ Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const void*,a,(in),size_t,b));
-Omega::string_t Omega::string_t::Right(size_t length) const
+inline Omega::string_t Omega::string_t::Right(size_t length) const
 {
 	if (length == 0 || !m_handle)
 		return string_t((handle_t*)0);
@@ -300,7 +300,7 @@ Omega::string_t Omega::string_t::Right(size_t length) const
 	return string_t(static_cast<handle_t*>(OOCore_string_t_right(m_handle,length)));
 }
 
-Omega::string_t& Omega::string_t::Clear()
+inline Omega::string_t& Omega::string_t::Clear()
 {
 	release(m_handle);
 	m_handle = 0;
@@ -311,7 +311,7 @@ Omega::string_t& Omega::string_t::Clear()
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const void*,h));
-Omega::string_t Omega::string_t::ToLower() const
+inline Omega::string_t Omega::string_t::ToLower() const
 {
 	if (!m_handle)
 		return string_t((handle_t*)0);
@@ -320,7 +320,7 @@ Omega::string_t Omega::string_t::ToLower() const
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const void*,h));
-Omega::string_t Omega::string_t::ToUpper() const
+inline Omega::string_t Omega::string_t::ToUpper() const
 {
 	if (!m_handle)
 		return string_t((handle_t*)0);
@@ -328,17 +328,17 @@ Omega::string_t Omega::string_t::ToUpper() const
 	return string_t(static_cast<handle_t*>(OOCore_string_t_toupper(m_handle)));
 }
 
-Omega::string_t Omega::string_t::TrimLeft(wchar_t c) const
+inline Omega::string_t Omega::string_t::TrimLeft(wchar_t c) const
 {
 	return Mid(FindNot(c));
 }
 
-Omega::string_t Omega::string_t::TrimLeft(const string_t& str) const
+inline Omega::string_t Omega::string_t::TrimLeft(const string_t& str) const
 {
 	return Mid(FindNotOf(str));
 }
 
-Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
+inline Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
 {
 	const wchar_t* s = c_str();
 	const wchar_t* p = s + Length()-1;
@@ -348,7 +348,7 @@ Omega::string_t Omega::string_t::TrimRight(wchar_t c) const
 	return Left(p+1-s);
 }
 
-Omega::string_t Omega::string_t::TrimRight(const string_t& str) const
+inline Omega::string_t Omega::string_t::TrimRight(const string_t& str) const
 {
 	const wchar_t* s = c_str();
 	const wchar_t* p = s + Length()-1;
@@ -358,33 +358,33 @@ Omega::string_t Omega::string_t::TrimRight(const string_t& str) const
 	return Left(p+1-s);
 }
 
-Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
+inline Omega::string_t operator + (const Omega::string_t& lhs, const Omega::string_t& rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
 }
 
-Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs)
+inline Omega::string_t operator + (const wchar_t* lhs, const Omega::string_t& rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
 }
 
-Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs)
+inline Omega::string_t operator + (const Omega::string_t& lhs, const wchar_t* rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
 }
 
-Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs)
+inline Omega::string_t operator + (wchar_t lhs, const Omega::string_t& rhs)
 {
 	return (Omega::string_t(&lhs,1) += rhs);
 }
 
-Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs)
+inline Omega::string_t operator + (const Omega::string_t& lhs, wchar_t rhs)
 {
 	return (Omega::string_t(lhs) += rhs);
 }
 
 template <typename T>
-Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs)
+inline Omega::string_t operator % (const Omega::string_t& lhs, const T& rhs)
 {
 	return (Omega::string_t(lhs) %= rhs);
 }
@@ -498,7 +498,7 @@ namespace Omega
 	}
 }
 
-Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
 {
 	if (!strFormat.IsEmpty())
 		throw Formatting::IFormattingException::Create(L"Invalid string_t format string {0}" % strFormat,OMEGA_SOURCE_INFO);
@@ -506,24 +506,24 @@ Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t&
 	return val;
 }
 
-Omega::string_t Omega::Formatting::ToString(const wchar_t* val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(const wchar_t* val, const string_t& strFormat)
 {
 	return ToString(string_t(val),strFormat);
 }
 
-Omega::string_t Omega::Formatting::ToString(bool_t val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(bool_t val, const string_t& strFormat)
 {
 	return OOCore_to_string_bool_t(val,strFormat);
 }
 
 template <typename T>
-Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFormat)
+inline Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFormat)
 {
 	return System::MetaInfo::formatter_t<T>::type::ToString(val,strFormat);
 }
 
 template <typename T>
-Omega::string_t& Omega::string_t::operator %= (T val)
+inline Omega::string_t& Omega::string_t::operator %= (T val)
 {
 	size_t index = 0;
 	void* format;
@@ -540,7 +540,7 @@ Omega::string_t& Omega::string_t::operator %= (T val)
 ////////////////////////////////////////////////////
 // guid_t starts here
 
-int Omega::guid_t::Compare(const guid_t& rhs) const
+inline int Omega::guid_t::Compare(const guid_t& rhs) const
 {
 	if (Data1 != rhs.Data1)
 		return (Data1 < rhs.Data1 ? -1 : 1);
@@ -561,18 +561,18 @@ int Omega::guid_t::Compare(const guid_t& rhs) const
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::string_t,OOCore_guid_t_to_string,2,((in),const Omega::guid_t&,guid,(in),const Omega::string_t&,strFormat));
-Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat) const
+inline Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat) const
 {
 	return OOCore_guid_t_to_string(*this,strFormat);
 }
 
 OOCORE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,wsz,(out),Omega::guid_t&,guid));
-bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
+inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 {
 	return (OOCore_guid_t_from_string(str.c_str(),guid) != 0);
 }
 
-Omega::guid_t Omega::guid_t::FromString(const string_t& str)
+inline Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 {
 	guid_t ret;
 	if (!FromString(str,ret))
@@ -581,7 +581,7 @@ Omega::guid_t Omega::guid_t::FromString(const string_t& str)
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());
-Omega::guid_t Omega::guid_t::Create()
+inline Omega::guid_t Omega::guid_t::Create()
 {
 	return OOCore_guid_t_create();
 }

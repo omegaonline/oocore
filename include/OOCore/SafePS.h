@@ -26,8 +26,8 @@ namespace Omega
 {
 	namespace System
 	{
-		inline bool PinObjectPointer(IObject* pObject);
-		inline void UnpinObjectPointer(IObject* pObject);
+		bool PinObjectPointer(IObject* pObject);
+		void UnpinObjectPointer(IObject* pObject);
 
 		namespace MetaInfo
 		{
@@ -174,13 +174,13 @@ namespace Omega
 			class safe_holder
 			{
 			public:
-				inline IObject* add(const SafeShim* shim, IObject* pObject);
-				inline const SafeShim* add(IObject* pObject, const SafeShim* shim);
+				IObject* add(const SafeShim* shim, IObject* pObject);
+				const SafeShim* add(IObject* pObject, const SafeShim* shim);
 
-				inline const SafeShim* find(IObject* pObject);
+				const SafeShim* find(IObject* pObject);
 
-				inline void remove(IObject* pObject);
-				inline void remove(const SafeShim* shim);
+				void remove(IObject* pObject);
+				void remove(const SafeShim* shim);
 
 			private:
 				Threading::Mutex                   m_lock;
@@ -229,7 +229,7 @@ namespace Omega
 					}
 				}
 
-				inline virtual IObject* QueryInterface(const guid_t& iid);
+				virtual IObject* QueryInterface(const guid_t& iid);
 
 			private:
 				Safe_Proxy_Base(const Safe_Proxy_Base&);
@@ -510,7 +510,7 @@ namespace Omega
 					return create_safe_stub(ptr,iid);
 				}
 
-				inline const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
+				const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid);
 				
 			private:
 				Threading::AtomicRefCount m_refcount;
@@ -696,7 +696,7 @@ namespace Omega
 
 			typedef Threading::Singleton<std::map<guid_t,const qi_rtti*>,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > RTTI_HOLDER;
 
-			inline static const qi_rtti* get_qi_rtti_info(const guid_t& iid)
+			static const qi_rtti* get_qi_rtti_info(const guid_t& iid)
 			{
 				try
 				{
@@ -711,7 +711,7 @@ namespace Omega
 				return 0;
 			}
 
-			inline static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
+			static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
 			{
 				try
 				{

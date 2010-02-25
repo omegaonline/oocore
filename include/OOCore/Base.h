@@ -54,21 +54,21 @@ namespace Omega
 	{
 		virtual uint32_t GetErrorCode() = 0;
 
-		inline static ISystemException* Create(uint32_t errno_val, const string_t& source = L"");
-		inline static ISystemException* Create(const std::exception& e, const string_t& source = L"");
-		inline static ISystemException* Create(const string_t& desc, const string_t& source = L"");
+		static ISystemException* Create(uint32_t errno_val, const string_t& source = L"");
+		static ISystemException* Create(const std::exception& e, const string_t& source = L"");
+		static ISystemException* Create(const string_t& desc, const string_t& source = L"");
 	};
 
 	interface INoInterfaceException : public IException
 	{
 		virtual guid_t GetUnsupportedIID() = 0;
 
-		inline static INoInterfaceException* Create(const guid_t& iid, const string_t& source = L"");
+		static INoInterfaceException* Create(const guid_t& iid, const string_t& source = L"");
 	};
 
 	interface ITimeoutException : public IException
 	{
-		inline static ITimeoutException* Create();
+		static ITimeoutException* Create();
 	};
 
 	namespace TypeInfo

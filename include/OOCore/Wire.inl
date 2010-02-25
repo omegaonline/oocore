@@ -22,7 +22,7 @@
 #ifndef OOCORE_WIRE_INL_INCLUDED_
 #define OOCORE_WIRE_INL_INCLUDED_
 
-Omega::IObject* Omega::System::MetaInfo::wire_holder::add(IObject* pProxy, IObject* pObject)
+inline Omega::IObject* Omega::System::MetaInfo::wire_holder::add(IObject* pProxy, IObject* pObject)
 {
 	try
 	{
@@ -43,7 +43,7 @@ Omega::IObject* Omega::System::MetaInfo::wire_holder::add(IObject* pProxy, IObje
 	}
 }
 
-Omega::IObject* Omega::System::MetaInfo::wire_holder::find(IObject* pProxy)
+inline Omega::IObject* Omega::System::MetaInfo::wire_holder::find(IObject* pProxy)
 {
 	try
 	{
@@ -64,7 +64,7 @@ Omega::IObject* Omega::System::MetaInfo::wire_holder::find(IObject* pProxy)
 	}
 }
 
-void Omega::System::MetaInfo::wire_holder::remove(IObject* pProxy)
+inline void Omega::System::MetaInfo::wire_holder::remove(IObject* pProxy)
 {
 	try
 	{
@@ -77,7 +77,7 @@ void Omega::System::MetaInfo::wire_holder::remove(IObject* pProxy)
 	}
 }
 
-Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::MetaInfo::Wire_Proxy_Base::CreateMessage(const guid_t& iid, uint32_t method_id)
+inline Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::MetaInfo::Wire_Proxy_Base::CreateMessage(const guid_t& iid, uint32_t method_id)
 {
 	auto_iface_ptr<Remoting::IMessage> ptrMessage = m_ptrMarshaller->CreateMessage();
 	bool unpack = false;
@@ -101,7 +101,7 @@ Omega::System::MetaInfo::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System
 	}
 }
 
-void Omega::System::MetaInfo::Wire_Proxy_Base::UnpackHeader(Remoting::IMessage* pMessage)
+inline void Omega::System::MetaInfo::Wire_Proxy_Base::UnpackHeader(Remoting::IMessage* pMessage)
 {
 	pMessage->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 	m_ptrProxy->UnpackKey(pMessage);
@@ -109,7 +109,7 @@ void Omega::System::MetaInfo::Wire_Proxy_Base::UnpackHeader(Remoting::IMessage* 
 	pMessage->ReadUInt32(L"$method_id");
 }
 
-Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Base::QueryInterface(const guid_t& iid)
+inline Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Base::QueryInterface(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(ISafeProxy))
 	{
@@ -137,7 +137,7 @@ Omega::IObject* Omega::System::MetaInfo::Wire_Proxy_Base::QueryInterface(const g
 	}
 }
 
-Omega::IException* Omega::System::MetaInfo::Wire_Proxy_Base::Throw(const guid_t& iid)
+inline Omega::IException* Omega::System::MetaInfo::Wire_Proxy_Base::Throw(const guid_t& iid)
 {
 	// Check the proxy supports the interface
 	if (!m_ptrProxy->RemoteQueryInterface(iid))
@@ -146,7 +146,7 @@ Omega::IException* Omega::System::MetaInfo::Wire_Proxy_Base::Throw(const guid_t&
 	return static_cast<IException*>(create_wire_proxy(m_ptrProxy,iid,OMEGA_GUIDOF(IException)));
 }
 
-Omega::IObject* Omega::System::MetaInfo::create_wire_proxy(Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
+inline Omega::IObject* Omega::System::MetaInfo::create_wire_proxy(Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid)
 {
 	assert(iid != OMEGA_GUIDOF(ISafeProxy));
 	assert(pProxy);
@@ -176,7 +176,7 @@ Omega::IObject* Omega::System::MetaInfo::create_wire_proxy(Remoting::IProxy* pPr
 	return obj;
 }
 
-const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
+inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base::CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const guid_t& iid)
 {
 	// Proxy the incoming params
 	auto_iface_ptr<Remoting::IStubController> ptrController = create_safe_proxy<Remoting::IStubController>(shim_Controller);
@@ -187,7 +187,7 @@ const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::Safe_Stub_Base
 	return create_safe_stub(ptrStub,OMEGA_GUIDOF(Remoting::IStub));
 }
 
-Omega::Remoting::IStub* Omega::System::MetaInfo::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
+inline Omega::Remoting::IStub* Omega::System::MetaInfo::create_wire_stub(Remoting::IStubController* pController, Remoting::IMarshaller* pMarshaller, const guid_t& iid, IObject* pObj)
 {
 	Remoting::IStub* pStub = 0;
 	if (iid == OMEGA_GUIDOF(IObject))
@@ -218,7 +218,7 @@ Omega::Remoting::IStub* Omega::System::MetaInfo::create_wire_stub(Remoting::IStu
 #if !defined(DOXYGEN)
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IMessage*,OOCore_Remoting_CreateMemoryMessage,0,());
-Omega::Remoting::IMessage* Omega::Remoting::CreateMemoryMessage()
+inline Omega::Remoting::IMessage* Omega::Remoting::CreateMemoryMessage()
 {
 	return OOCore_Remoting_CreateMemoryMessage();
 }

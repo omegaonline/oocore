@@ -32,7 +32,7 @@ namespace Omega
 		{
 			virtual void CreateInstance(const string_t& strOID, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject) = 0;
 						
-			inline static IApartment* Create();
+			static IApartment* Create();
 		};
 	}
 }
@@ -47,7 +47,7 @@ OMEGA_DEFINE_INTERFACE
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Apartment::IApartment*,OOCore_IApartment_Create,0,());
-Omega::Apartment::IApartment* Omega::Apartment::IApartment::Create()
+inline Omega::Apartment::IApartment* Omega::Apartment::IApartment::Create()
 {
 	return OOCore_IApartment_Create();
 }

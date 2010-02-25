@@ -881,8 +881,8 @@ namespace Omega
 				virtual const SafeShim* CreateWireStub(const SafeShim* shim_Controller, const SafeShim* shim_Marshaller, const Omega::guid_t& iid) = 0;
 			};
 
-			inline void throw_correct_exception(const SafeShim* except);
-			inline const SafeShim* return_safe_exception(IException* pE);
+			void throw_correct_exception(const SafeShim* except);
+			const SafeShim* return_safe_exception(IException* pE);
 
 			struct IObject_Safe_VTable
 			{
@@ -915,15 +915,15 @@ namespace Omega
 					throw_correct_exception(except);
 			}
 
-			inline IObject* create_safe_proxy(const SafeShim* shim, const guid_t& iid);
+			IObject* create_safe_proxy(const SafeShim* shim, const guid_t& iid);
 			
 			template <typename I>
-			inline I* create_safe_proxy(const SafeShim* shim)
+			I* create_safe_proxy(const SafeShim* shim)
 			{
 				return static_cast<I*>(create_safe_proxy(shim,OMEGA_GUIDOF(I)));
 			}
 
-			inline const SafeShim* create_safe_stub(IObject* pObject, const guid_t& iid);
+			const SafeShim* create_safe_stub(IObject* pObject, const guid_t& iid);
 
 			template <typename I>
 			class iface_safe_type

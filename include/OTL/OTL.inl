@@ -22,27 +22,27 @@
 #ifndef OTL_BASE_INL_INCLUDED_
 #define OTL_BASE_INL_INCLUDED_
 
-bool OTL::ModuleBase::HaveLocks() const
+inline bool OTL::ModuleBase::HaveLocks() const
 {
 	return !m_lockCount.IsZero();
 }
 
-void OTL::ModuleBase::IncLockCount()
+inline void OTL::ModuleBase::IncLockCount()
 {
 	m_lockCount.AddRef();
 }
 
-void OTL::ModuleBase::DecLockCount()
+inline void OTL::ModuleBase::DecLockCount()
 {
 	m_lockCount.Release();
 }
 
-Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
+inline Omega::Threading::Mutex& OTL::ModuleBase::GetLock()
 {
 	return m_csMain;
 }
 
-Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
+inline Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
 {
 	// We ignore any registered flags, and only enforce InProcess creation, because we are a library!
 	if (!(flags & Omega::Activation::InProcess))
@@ -59,7 +59,7 @@ Omega::IObject* OTL::LibraryModule::GetLibraryObject(const Omega::guid_t& oid, O
 	return 0;
 }
 
-void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts)
+inline void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts)
 {
 	Omega::string_t strXML;
 
@@ -103,7 +103,7 @@ void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t b
 	}
 }
 
-void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
+inline void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts)
 {
 	if (strAppName.IsEmpty())
 		return;
@@ -162,7 +162,7 @@ void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_
 	}
 }
 
-void OTL::ProcessModule::RegisterObjectFactories()
+inline void OTL::ProcessModule::RegisterObjectFactories()
 {
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
@@ -174,7 +174,7 @@ void OTL::ProcessModule::RegisterObjectFactories()
 	}
 }
 
-void OTL::ProcessModule::UnregisterObjectFactories()
+inline void OTL::ProcessModule::UnregisterObjectFactories()
 {
 	CreatorEntry* g=getCreatorEntries();
 	for (size_t i=0;g[i].pfnOid!=0;++i)
@@ -184,7 +184,7 @@ void OTL::ProcessModule::UnregisterObjectFactories()
 	}
 }
 
-void OTL::ProcessModule::Run()
+inline void OTL::ProcessModule::Run()
 {
 	RegisterObjectFactories();
 

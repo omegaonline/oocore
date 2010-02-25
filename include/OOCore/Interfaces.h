@@ -28,7 +28,7 @@ namespace Omega
 	{
 		interface IFormattingException : public IException
 		{
-			inline static IFormattingException* Create(const string_t& strMsg, const string_t& strSource, IException* pE = 0);
+			static IFormattingException* Create(const string_t& strMsg, const string_t& strSource, IException* pE = 0);
 		};
 	}
 
@@ -62,11 +62,11 @@ namespace Omega
 		};
 		typedef uint16_t RegisterFlags_t;
 
-		inline uint32_t RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags);
-		inline IObject* GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
-		inline void RevokeObject(uint32_t cookie);
+		uint32_t RegisterObject(const guid_t& oid, IObject* pObject, Activation::Flags_t flags, Activation::RegisterFlags_t reg_flags);
+		IObject* GetRegisteredObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid);
+		void RevokeObject(uint32_t cookie);
 
-		inline guid_t NameToOid(const string_t& strObjectName);
+		guid_t NameToOid(const string_t& strObjectName);
 		
 		interface IOidNotFoundException : public IException
 		{
@@ -77,7 +77,7 @@ namespace Omega
 		{
 			virtual guid_t GetFailingOid() = 0;
 
-			inline static INoAggregationException* Create(const guid_t& oid);
+			static INoAggregationException* Create(const guid_t& oid);
 		};
 
 		interface ILibraryNotFoundException : public IException
@@ -98,7 +98,7 @@ namespace Omega
 			virtual void Revoke(uint32_t cookie) = 0;
 			virtual IObject* GetObject(const guid_t& oid) = 0;
 
-			inline static IRunningObjectTable* GetRunningObjectTable();
+			static IRunningObjectTable* GetRunningObjectTable();
 		};
 	}
 
@@ -141,7 +141,7 @@ namespace Omega
 			virtual void DeleteKey(const string_t& strKey) = 0;
 			virtual void DeleteValue(const string_t& strValue) = 0;
 
-			inline static IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
+			static IKey* OpenKey(const string_t& key, OpenFlags_t flags = OpenExisting);
 		};
 		
 		interface INotFoundException : public IException
@@ -170,7 +170,7 @@ namespace Omega
 			virtual string_t GetKeyName() = 0;
 		};
 
-		inline void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = L"");
+		void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = L"");
 	}
 
 	namespace IO
@@ -189,7 +189,7 @@ namespace Omega
 			virtual void OnError(IException* pE) = 0;
 		};
 
-		inline IStream* OpenStream(const string_t& strEndpoint, IAsyncStreamNotify* pNotify = 0);
+		IStream* OpenStream(const string_t& strEndpoint, IAsyncStreamNotify* pNotify = 0);
 	}
 
 	namespace Net
@@ -408,25 +408,25 @@ OMEGA_DEFINE_INTERFACE
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IRunningObjectTable*,OOCore_Activation_GetRunningObjectTable,0,())
-Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
+inline Omega::Activation::IRunningObjectTable* Omega::Activation::IRunningObjectTable::GetRunningObjectTable()
 {
 	return OOCore_Activation_GetRunningObjectTable();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::INoAggregationException*,OOCore_Activation_INoAggregationException_Create,1,((in),const Omega::guid_t&,oid));
-Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::guid_t& oid)
+inline Omega::Activation::INoAggregationException* Omega::Activation::INoAggregationException::Create(const Omega::guid_t& oid)
 {
 	return OOCore_Activation_INoAggregationException_Create(oid);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::uint32_t,OOCore_Activation_RegisterObject,4,((in),const Omega::guid_t&,oid,(in),Omega::IObject*,pObject,(in),Omega::Activation::Flags_t,flags,(in),Omega::Activation::RegisterFlags_t,reg_flags));
-Omega::uint32_t Omega::Activation::RegisterObject(const Omega::guid_t& oid, Omega::IObject* pObject, Omega::Activation::Flags_t flags, Omega::Activation::RegisterFlags_t reg_flags)
+inline Omega::uint32_t Omega::Activation::RegisterObject(const Omega::guid_t& oid, Omega::IObject* pObject, Omega::Activation::Flags_t flags, Omega::Activation::RegisterFlags_t reg_flags)
 {
 	return OOCore_Activation_RegisterObject(oid,pObject,flags,reg_flags);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in),const Omega::guid_t&,oid,(in),Omega::Activation::Flags_t,flags,(in),const Omega::guid_t&,iid,(out)(iid_is(iid)),Omega::IObject*&,pObject));
-Omega::IObject* Omega::Activation::GetRegisteredObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
+inline Omega::IObject* Omega::Activation::GetRegisteredObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid)
 {
 	Omega::IObject* pObject = 0;
 	OOCore_Activation_GetRegisteredObject(oid,flags,iid,pObject);
@@ -434,31 +434,31 @@ Omega::IObject* Omega::Activation::GetRegisteredObject(const Omega::guid_t& oid,
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Activation_RevokeObject,1,((in),Omega::uint32_t,cookie));
-void Omega::Activation::RevokeObject(Omega::uint32_t cookie)
+inline void Omega::Activation::RevokeObject(Omega::uint32_t cookie)
 {
 	OOCore_Activation_RevokeObject(cookie);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_Activation_NameToOid,1,((in),const Omega::string_t&,strObjectName));
-Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
+inline Omega::guid_t Omega::Activation::NameToOid(const Omega::string_t& strObjectName)
 {
 	return OOCore_Activation_NameToOid(strObjectName);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const Omega::string_t&,strXML,(in),Omega::bool_t,bAdd,(in),const Omega::string_t&,strSubstitutions));
-void Omega::Registry::AddXML(const Omega::string_t& strXML, Omega::bool_t bAdd, const Omega::string_t& strSubstitutions)
+inline void Omega::Registry::AddXML(const Omega::string_t& strXML, Omega::bool_t bAdd, const Omega::string_t& strSubstitutions)
 {
 	OOCore_Registry_AddXML(strXML,bAdd,strSubstitutions);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Registry::IKey*,OOCore_IRegistryKey_OpenKey,2,((in),const Omega::string_t&,key,(in),Omega::Registry::IKey::OpenFlags_t,flags));
-Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
+inline Omega::Registry::IKey* Omega::Registry::IKey::OpenKey(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags)
 {
 	return OOCore_IRegistryKey_OpenKey(key,flags);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),const Omega::string_t&,strEndpoint,(in),Omega::IO::IAsyncStreamNotify*,pNotify));
-Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify)
+inline Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify)
 {
 	return OOCore_IO_OpenStream(strEndpoint,pNotify);
 }

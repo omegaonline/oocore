@@ -100,12 +100,12 @@
 
 namespace Omega
 {
-	inline IException* Initialize(bool bStandalone = false);
-	inline void Uninitialize();
+	IException* Initialize(bool bStandalone = false);
+	void Uninitialize();
 
-	inline IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
-	inline IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
-	inline bool_t HandleRequest(uint32_t timeout = 0);
+	IObject* CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	IObject* CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid);
+	bool_t HandleRequest(uint32_t timeout = 0);
 }
 
 #include "Types.inl"
@@ -121,7 +121,7 @@ namespace Omega
 #if !defined(DOXYGEN)
 
 OOCORE_EXPORTED_FUNCTION(Omega::IException*,OOCore_Omega_Initialize,1,((in),Omega::bool_t,bStandalone))
-Omega::IException* Omega::Initialize(bool bStandalone)
+inline Omega::IException* Omega::Initialize(bool bStandalone)
 {
 #if !defined(OOCORE_INTERNAL)
 	// Check the versions are correct
@@ -133,12 +133,12 @@ Omega::IException* Omega::Initialize(bool bStandalone)
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_Omega_Uninitialize,0,())
-void Omega::Uninitialize()
+inline void Omega::Uninitialize()
 {
 	OOCore_Omega_Uninitialize();
 }
 
-Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+inline Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(static_cast<Activation::IObjectFactory*>(Omega::Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory))));
 	if (!ptrOF)
@@ -150,7 +150,7 @@ Omega::IObject* Omega::CreateLocalInstance(const guid_t& oid, Activation::Flags_
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags));
-Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
+inline Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid)
 {
 	System::MetaInfo::auto_iface_ptr<Activation::IObjectFactory> ptrOF(OOCore_GetObjectFactory(strURI,flags));
 	if (!ptrOF)
@@ -162,7 +162,7 @@ Omega::IObject* Omega::CreateInstance(const string_t& strURI, Activation::Flags_
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Omega_HandleRequest,1,((in),Omega::uint32_t,timeout));
-Omega::bool_t Omega::HandleRequest(uint32_t timeout)
+inline Omega::bool_t Omega::HandleRequest(uint32_t timeout)
 {
 	return OOCore_Omega_HandleRequest(timeout);
 }

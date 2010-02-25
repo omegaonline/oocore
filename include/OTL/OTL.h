@@ -434,10 +434,10 @@ namespace OTL
 	class ModuleBase
 	{
 	public:
-		inline bool HaveLocks() const;
-		inline void IncLockCount();
-		inline void DecLockCount();
-		inline Omega::Threading::Mutex& GetLock();
+		bool HaveLocks() const;
+		void IncLockCount();
+		void DecLockCount();
+		Omega::Threading::Mutex& GetLock();
 		
 		virtual void RegisterObjectFactories()
 		{
@@ -842,8 +842,8 @@ namespace OTL
 			}
 		};
 
-		inline Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
-		inline void RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts);
+		Omega::IObject* GetLibraryObject(const Omega::guid_t& oid, Omega::Activation::Flags_t flags, const Omega::guid_t& iid);
+		void RegisterLibrary(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts);
 
 	protected:
 		LibraryModule()
@@ -853,9 +853,9 @@ namespace OTL
 	class ProcessModule : public ModuleBase
 	{
 	public:
-		inline virtual void RegisterObjectFactories();
-		inline virtual void UnregisterObjectFactories();
-		inline virtual void Run();
+		virtual void RegisterObjectFactories();
+		virtual void UnregisterObjectFactories();
+		virtual void Run();
 
 	protected:
 		template <typename T>
@@ -873,7 +873,7 @@ namespace OTL
 		ProcessModule()
 		{}
 
-		inline virtual void InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
+		virtual void InstallObjectsImpl(Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strAppName, const Omega::string_t& strSubsts);
 	};
 
 	template <typename ROOT>

@@ -33,11 +33,11 @@ namespace Omega
 			class wire_holder
 			{
 			public:
-				inline IObject* add(IObject* pProxy, IObject* pObject);
+				IObject* add(IObject* pProxy, IObject* pObject);
 				
-				inline IObject* find(IObject* pProxy);
+				IObject* find(IObject* pProxy);
 
-				inline void remove(IObject* pProxy);
+				void remove(IObject* pProxy);
 				
 			private:
 				Threading::Mutex            m_lock;
@@ -92,17 +92,17 @@ namespace Omega
 						delete this;
 				}
 
-				inline virtual IObject* QueryInterface(const guid_t& iid);
+				virtual IObject* QueryInterface(const guid_t& iid);
 
 				auto_iface_ptr<Remoting::IMarshaller> GetMarshaller()
 				{
 					return m_ptrMarshaller;
 				}
 
-				inline auto_iface_ptr<Remoting::IMessage> CreateMessage(const guid_t& iid, uint32_t method_id);
-				inline void UnpackHeader(Remoting::IMessage* pMessage);
+				auto_iface_ptr<Remoting::IMessage> CreateMessage(const guid_t& iid, uint32_t method_id);
+				void UnpackHeader(Remoting::IMessage* pMessage);
 
-				inline IException* Throw(const guid_t& iid);
+				IException* Throw(const guid_t& iid);
 
 			private:
 				friend class Wire_Proxy_IObject;

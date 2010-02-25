@@ -58,9 +58,9 @@ namespace Omega
 			virtual MarshalFlags_t SourceType() = 0;
 		};
 
-		inline ICallContext* GetCallContext();
+		ICallContext* GetCallContext();
 
-		inline bool_t IsAlive(IObject* pObject);
+		bool_t IsAlive(IObject* pObject);
 
 		interface IObjectManager : public IObject
 		{
@@ -72,7 +72,7 @@ namespace Omega
 
 		interface IChannelClosedException : public IException
 		{
-			inline static IChannelClosedException* Create();
+			static IChannelClosedException* Create();
 		};
 
 		interface IMarshal : public IObject
@@ -92,7 +92,7 @@ namespace Omega
 			virtual void Send(TypeInfo::MethodAttributes_t attribs, IMessage* pMsg, uint32_t timeout) = 0;
 			virtual void Close() = 0;
 
-			inline static IChannelSink* OpenServerSink(const guid_t& message_oid, IChannelSink* pSink);
+			static IChannelSink* OpenServerSink(const guid_t& message_oid, IChannelSink* pSink);
 		};
 
 		interface IEndpoint : public IObject
@@ -184,25 +184,25 @@ OMEGA_DEFINE_INTERFACE
 )
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelClosedException*,OOCore_Remoting_IChannelClosedException_Create,0,())
-Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create()
+inline Omega::Remoting::IChannelClosedException* Omega::Remoting::IChannelClosedException::Create()
 {
 	return OOCore_Remoting_IChannelClosedException_Create();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())
-Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
+inline Omega::Remoting::ICallContext* Omega::Remoting::GetCallContext()
 {
 	return OOCore_Remoting_GetCallContext();
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_Remoting_IsAlive,1,((in),Omega::IObject*,pObject))
-Omega::bool_t Omega::Remoting::IsAlive(IObject* pObject)
+inline Omega::bool_t Omega::Remoting::IsAlive(IObject* pObject)
 {
 	return OOCore_Remoting_IsAlive(pObject);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::Remoting::IChannelSink*,OOCore_Remoting_OpenServerSink,2,((in),const Omega::guid_t&,message_oid,(in),Omega::Remoting::IChannelSink*,pSink))
-Omega::Remoting::IChannelSink* Omega::Remoting::IChannelSink::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
+inline Omega::Remoting::IChannelSink* Omega::Remoting::IChannelSink::OpenServerSink(const guid_t& message_oid, Remoting::IChannelSink* pSink)
 {
 	return OOCore_Remoting_OpenServerSink(message_oid,pSink);
 }

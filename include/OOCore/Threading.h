@@ -38,11 +38,11 @@ namespace Omega
 		class Mutex
 		{
 		public:
-			inline Mutex();
-			inline ~Mutex();
+			Mutex();
+			~Mutex();
 
-			inline void Acquire();
-			inline void Release();
+			void Acquire();
+			void Release();
 
 		private:
 			Mutex(const Mutex&);
@@ -57,13 +57,13 @@ namespace Omega
 		class ReaderWriterLock
 		{
 		public:
-			inline ReaderWriterLock();
-			inline ~ReaderWriterLock();
+			ReaderWriterLock();
+			~ReaderWriterLock();
 
-			inline void AcquireRead();
-			inline void Acquire();
-			inline void ReleaseRead();
-			inline void Release();
+			void AcquireRead();
+			void Acquire();
+			void ReleaseRead();
+			void Release();
 
 		private:
 			ReaderWriterLock(const ReaderWriterLock&);
@@ -158,12 +158,12 @@ namespace Omega
 		class AtomicRefCount
 		{
 		public:
-			inline AtomicRefCount();
-			inline ~AtomicRefCount();
+			AtomicRefCount();
+			~AtomicRefCount();
 
-			inline bool AddRef();
-			inline bool Release();
-			inline bool IsZero() const;
+			bool AddRef();
+			bool Release();
+			bool IsZero() const;
 
 #ifdef OMEGA_DEBUG
 			size_t m_debug_value;
@@ -180,8 +180,8 @@ namespace Omega
 		class ModuleDestructor
 		{
 		public:
-			inline static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
-			inline static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			static void remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 			
 		private:
 			ModuleDestructor(const ModuleDestructor&);
@@ -191,7 +191,7 @@ namespace Omega
 			{
 			}
 
-			inline ~ModuleDestructor();
+			~ModuleDestructor();
 
 			Mutex                                                   m_lock;
 			std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > m_list;
@@ -207,7 +207,7 @@ namespace Omega
 		class InitialiseDestructor
 		{
 		public:
-			inline static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
+			static void add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param);
 
 		private:
 			struct multi_dctor
@@ -216,7 +216,7 @@ namespace Omega
 				void*                         param;
 			};
 
-			inline static void OMEGA_CALL destruct(void* param);
+			static void OMEGA_CALL destruct(void* param);
 		};
 
 		typedef const System::MetaInfo::SafeShim* (OMEGA_CALL *SingletonCallback)();
@@ -231,8 +231,8 @@ namespace Omega
 		private:
 			static void* s_instance;
 
-			inline static const System::MetaInfo::SafeShim* OMEGA_CALL do_init();
-			inline static void OMEGA_CALL do_term(void*);
+			static const System::MetaInfo::SafeShim* OMEGA_CALL do_init();
+			static void OMEGA_CALL do_term(void*);
 		};
 	}
 

@@ -533,15 +533,7 @@ const wchar_t** get_exes()
 	{
 #if defined(_WIN32)
 		L"TestProcess_msvc.exe",
-	#if defined(__MINGW32__)
-			L"CoreTests\\TestProcess\\testprocess.exe",
-	#elif defined(_MSC_VER)
-		#if defined(_DEBUG)
-				L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
-		#else
-				L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
-		#endif
-	#endif
+		L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
 #else
 		L"CoreTests/TestProcess/testprocess.sh",
 #endif

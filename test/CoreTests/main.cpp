@@ -25,34 +25,6 @@ bool apartment_dll_tests();
 bool net_tests();
 bool interface_tests2();
 
-static void tests(bool bStandalone)
-{
-	if (bStandalone)
-	{
-		RUN_TEST(string_tests);
-		RUN_TEST(string_tests_format);
-		RUN_TEST(string_tests_utf8);
-		RUN_TEST(guid_tests);
-		RUN_TEST(exception_tests);
-		RUN_TEST(otl_tests);
-	}
-
-	RUN_TEST(registry_tests);
-	RUN_TEST(registry_tests_2);
-	RUN_TEST(interface_dll_tests);
-	RUN_TEST(apartment_dll_tests);
-	
-	if (!bStandalone)
-	{
-		RUN_TEST(interface_process_tests);
-	}
-
-	return;
-
-	RUN_TEST(net_tests);
-	RUN_TEST(interface_tests2);
-}
-
 int main(int /*argc*/, char* /*argv*/[])
 {
 	output("OOCore version: %s\n",OOCore::GetVersion());
@@ -60,7 +32,17 @@ int main(int /*argc*/, char* /*argv*/[])
 	output("\nRunning %-40s\n\n","standalone tests");
 	if (init_standalone_tests())
 	{
-		tests(true);
+		RUN_TEST(string_tests);
+		RUN_TEST(string_tests_format);
+		RUN_TEST(string_tests_utf8);
+		RUN_TEST(guid_tests);
+		RUN_TEST(exception_tests);
+		RUN_TEST(otl_tests);
+
+		RUN_TEST(registry_tests);
+		RUN_TEST(registry_tests_2);
+		RUN_TEST(interface_dll_tests);
+		RUN_TEST(apartment_dll_tests);
 
 		Omega::Uninitialize();
 	}
@@ -71,7 +53,10 @@ int main(int /*argc*/, char* /*argv*/[])
 	{
 		output("\n\n");
 
-		tests(false);
+		RUN_TEST(interface_process_tests);
+
+		//RUN_TEST(net_tests);
+		//RUN_TEST(interface_tests2);
 
 		Omega::Uninitialize();
 	}

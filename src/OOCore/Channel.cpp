@@ -52,14 +52,19 @@ void OOCore::ChannelBase::disconnect()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	if (m_ptrOM)
-		m_ptrOM->Shutdown();
-	
+	ObjectPtr<Remoting::IObjectManager> ptrOM = m_ptrOM;
 	m_ptrOM.Release();
+
+	guard.release();
+
+	if (ptrOM)
+		ptrOM->Shutdown();
 }
 
 ObjectPtr<Remoting::IObjectManager> OOCore::ChannelBase::GetObjectManager()
 {
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+
 	return m_ptrOM;
 }
 

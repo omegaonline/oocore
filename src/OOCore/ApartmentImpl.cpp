@@ -65,6 +65,8 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 	{
 		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
+		std::list<ObjectPtr<ObjectImpl<Channel> > > listChannels;
+
 		for (std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.begin();i!=m_mapChannels.end();)
 		{
 			bool bErase = false;
@@ -81,11 +83,18 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 			
 			if (bErase)
 			{
-				i->second->disconnect();
+				listChannels.push_back(i->second);
 				m_mapChannels.erase(i++);
 			}
 			else
 				++i;
+		}
+
+		guard.release();
+
+		for (std::list<ObjectPtr<ObjectImpl<Channel> > >::iterator i=listChannels.begin();i!=listChannels.end();++i)
+		{
+			(*i)->disconnect();
 		}
 	}
 	catch (std::exception&)

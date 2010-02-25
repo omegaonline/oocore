@@ -18,5 +18,4 @@ testprocess_SOURCES = \
 	TestProcess.cpp
 
 EXTRA_DIST = \
-	testprocess.sh \
-	testprocess.bat
+	testprocess.sh

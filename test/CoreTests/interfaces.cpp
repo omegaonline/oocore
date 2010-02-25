@@ -244,6 +244,17 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
+	// Check QI rules (again)
+	OTL::ObjectPtr<Omega::IObject> ptrO1;
+	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+	OTL::ObjectPtr<Omega::IObject> ptrO2;
+	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+
+	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
+
+	ptrO1.Release();
+	ptrO2.Release();
+
 	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();
 
@@ -409,6 +420,17 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
+	// Check QI rules (again)
+	OTL::ObjectPtr<Omega::IObject> ptrO1;
+	ptrO1.Attach(ptrSimpleTest->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+	OTL::ObjectPtr<Omega::IObject> ptrO2;
+	ptrO2.Attach(ptrSimpleTest2->QueryInterface(OMEGA_GUIDOF(Omega::IObject)));
+
+	TEST(static_cast<Omega::IObject*>(ptrO1) == static_cast<Omega::IObject*>(ptrO2));
+
+	ptrO1.Release();
+	ptrO2.Release();
+
 	ptrSimpleTest2.Release();
 	ptrSimpleTest.Release();
 
@@ -512,7 +534,13 @@ const wchar_t** get_exes()
 #if defined(_WIN32)
 		L"TestProcess_msvc.exe",
 	#if defined(__MINGW32__)
-			L"CoreTests\\TestProcess\\testprocess.bat",
+			L"CoreTests\\TestProcess\\testprocess.exe",
+	#elif defined(_MSC_VER)
+		#if defined(_DEBUG)
+				L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
+		#else
+				L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
+		#endif
 	#endif
 #else
 		L"CoreTests/TestProcess/testprocess.sh",

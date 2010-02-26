@@ -29,7 +29,7 @@ namespace Omega
 		bool PinObjectPointer(IObject* pObject);
 		void UnpinObjectPointer(IObject* pObject);
 
-		namespace MetaInfo
+		namespace Internal
 		{
 			template <typename I>
 			class auto_iface_ptr
@@ -832,6 +832,6 @@ namespace Omega
 }
 
 // ISafeProxy has no rtti associated with it...
-OMEGA_SET_GUIDOF(Omega::System::MetaInfo,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}")
+OMEGA_SET_GUIDOF(Omega::System::Internal,ISafeProxy,"{ADFB60D2-3125-4046-9EEB-0CC898E989E8}")
 
 #endif // OOCORE_SAFE_PS_H_INCLUDED_

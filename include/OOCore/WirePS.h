@@ -26,7 +26,7 @@ namespace Omega
 {
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			inline IObject* create_wire_proxy(Remoting::IProxy* pProxy, const guid_t& iid, const guid_t& fallback_iid = OMEGA_GUIDOF(IObject));
 

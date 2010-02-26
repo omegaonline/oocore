@@ -53,17 +53,17 @@ static void print_version()
 	std::cout << std::endl;
 }
 
-typedef Omega::System::MetaInfo::SafeShim* (OMEGA_CALL *pfnRegisterLib)(Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::type bLocal, Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
+typedef Omega::System::Internal::SafeShim* (OMEGA_CALL *pfnRegisterLib)(Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::type bInstall, Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::type bLocal, Omega::System::Internal::marshal_info<const Omega::string_t&>::safe_type::type strSubsts);
 
 static void call_fn(pfnRegisterLib pfn, Omega::bool_t bInstall, Omega::bool_t bLocal, const Omega::string_t& strSubsts)
 {
-	Omega::System::MetaInfo::SafeShim* pSE = pfn(
-		Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
-		Omega::System::MetaInfo::marshal_info<Omega::bool_t>::safe_type::coerce(bLocal),
-		Omega::System::MetaInfo::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
+	Omega::System::Internal::SafeShim* pSE = pfn(
+		Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::coerce(bInstall),
+		Omega::System::Internal::marshal_info<Omega::bool_t>::safe_type::coerce(bLocal),
+		Omega::System::Internal::marshal_info<const Omega::string_t&>::safe_type::coerce(strSubsts));
 
 	if (pSE)
-		Omega::System::MetaInfo::throw_correct_exception(pSE);
+		Omega::System::Internal::throw_correct_exception(pSE);
 }
 
 static bool do_install(bool bInstall, bool bLocal, bool bSilent, const char* lib_path)

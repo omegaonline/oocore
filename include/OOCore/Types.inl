@@ -401,7 +401,7 @@ namespace Omega
 {
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			template <typename T>
 			struct integer_formatter_t
@@ -519,7 +519,7 @@ inline Omega::string_t Omega::Formatting::ToString(bool_t val, const string_t& s
 template <typename T>
 inline Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFormat)
 {
-	return System::MetaInfo::formatter_t<T>::type::ToString(val,strFormat);
+	return System::Internal::formatter_t<T>::type::ToString(val,strFormat);
 }
 
 template <typename T>

@@ -80,7 +80,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 
 	string_t strIID = L"Unknown";
 
-	const Omega::System::MetaInfo::qi_rtti* pRtti = Omega::System::MetaInfo::get_qi_rtti_info(iid);
+	const Omega::System::Internal::qi_rtti* pRtti = Omega::System::Internal::get_qi_rtti_info(iid);
 	if (pRtti && pRtti->pszName)
 		strIID = pRtti->pszName;
 

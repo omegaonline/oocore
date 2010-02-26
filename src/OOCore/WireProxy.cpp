@@ -129,7 +129,7 @@ IObject* OOCore::Proxy::UnmarshalInterface(Remoting::IMessage* pMessage)
 	}
 
 	// Create a wire_proxy...
-	return System::MetaInfo::create_wire_proxy(this,iid);
+	return System::Internal::create_wire_proxy(this,iid);
 }
 
 void OOCore::Proxy::WriteStubInfo(Remoting::IMessage* pMessage, uint32_t method_id)

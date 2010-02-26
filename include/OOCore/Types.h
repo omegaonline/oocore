@@ -28,7 +28,7 @@ namespace Omega
 {
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			struct string_t_safe_type;
 		}
@@ -105,7 +105,7 @@ namespace Omega
 		static void addref(handle_t* h);
 		static void release(handle_t* h);
 
-		friend struct Omega::System::MetaInfo::string_t_safe_type;
+		friend struct Omega::System::Internal::string_t_safe_type;
 
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
@@ -167,7 +167,7 @@ namespace Omega
 
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			template <typename T> struct default_value
 			{

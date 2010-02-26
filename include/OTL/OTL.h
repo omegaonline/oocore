@@ -107,7 +107,7 @@
 #define END_LIBRARY_OBJECT_MAP_NO_REGISTRATION() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
-	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(LibraryModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
 	}
@@ -132,7 +132,7 @@
 #define END_PROCESS_OBJECT_MAP() \
 		{ 0,0,0,0,0,0 } }; return CreatorEntries; } \
 	}; \
-	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
+	OMEGA_PRIVATE_FN_DECL(Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl)*,GetModule)() { return Omega::Threading::Singleton<Module::OMEGA_PRIVATE_TYPE(ProcessModuleImpl),Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance(); } \
 	OMEGA_PRIVATE_FN_DECL(ModuleBase*,GetModuleBase)() { return OMEGA_PRIVATE_FN_CALL(GetModule)(); } \
 	} \
 	}
@@ -674,12 +674,12 @@ namespace OTL
 	template <typename ROOT>
 	class SingletonObjectImpl : public ROOT
 	{
-		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >;
+		friend class Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >;
 
 	public:
 		static SingletonObjectImpl<ROOT>* CreateInstance()
 		{
-			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::MetaInfo::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
+			SingletonObjectImpl<ROOT>* pObject = Omega::Threading::Singleton<SingletonObjectImpl<ROOT>,Omega::Threading::ModuleDestructor<Omega::System::Internal::OMEGA_PRIVATE_TYPE(safe_module)> >::instance();
 			pObject->AddRef();
 			return pObject;
 		}

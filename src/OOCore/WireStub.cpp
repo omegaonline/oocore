@@ -108,19 +108,19 @@ ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 
 Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)
 {
-	ObjectPtr<System::MetaInfo::ISafeProxy> ptrSafeProxy(m_ptrObj);
+	ObjectPtr<System::Internal::ISafeProxy> ptrSafeProxy(m_ptrObj);
 	if (ptrSafeProxy)
 	{
 		// Create the stubs for the controllers
-		System::MetaInfo::auto_safe_shim shim_Controller = System::MetaInfo::create_safe_stub(static_cast<Remoting::IStubController*>(this),OMEGA_GUIDOF(Remoting::IStubController));
-		System::MetaInfo::auto_safe_shim shim_Marshaller = System::MetaInfo::create_safe_stub(static_cast<Remoting::IMarshaller*>(m_pManager),OMEGA_GUIDOF(Remoting::IMarshaller));
+		System::Internal::auto_safe_shim shim_Controller = System::Internal::create_safe_stub(static_cast<Remoting::IStubController*>(this),OMEGA_GUIDOF(Remoting::IStubController));
+		System::Internal::auto_safe_shim shim_Marshaller = System::Internal::create_safe_stub(static_cast<Remoting::IMarshaller*>(m_pManager),OMEGA_GUIDOF(Remoting::IMarshaller));
 
-		System::MetaInfo::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
+		System::Internal::auto_safe_shim wire_stub = ptrSafeProxy->CreateWireStub(shim_Controller,shim_Marshaller,iid);
 
-		return System::MetaInfo::create_safe_proxy<Remoting::IStub>(wire_stub);
+		return System::Internal::create_safe_proxy<Remoting::IStub>(wire_stub);
 	}
 	
-	return System::MetaInfo::create_wire_stub(this,m_pManager,iid,m_ptrObj);	
+	return System::Internal::create_wire_stub(this,m_pManager,iid,m_ptrObj);	
 }
 
 void OOCore::Stub::RemoteRelease()

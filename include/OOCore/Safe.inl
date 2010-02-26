@@ -22,7 +22,7 @@
 #ifndef OOCORE_SAFE_INL_INCLUDED_
 #define OOCORE_SAFE_INL_INCLUDED_
 
-inline Omega::IObject* Omega::System::MetaInfo::safe_holder::add(const SafeShim* shim, IObject* pObject)
+inline Omega::IObject* Omega::System::Internal::safe_holder::add(const SafeShim* shim, IObject* pObject)
 {
 	try
 	{
@@ -46,7 +46,7 @@ inline Omega::IObject* Omega::System::MetaInfo::safe_holder::add(const SafeShim*
 	}
 }
 
-inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::safe_holder::add(IObject* pObject, const Omega::System::MetaInfo::SafeShim* shim)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::add(IObject* pObject, const Omega::System::Internal::SafeShim* shim)
 {
 	try
 	{
@@ -70,7 +70,7 @@ inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::safe_ho
 	}
 }
 
-inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::safe_holder::find(IObject* pObject)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::find(IObject* pObject)
 {
 	try
 	{
@@ -91,7 +91,7 @@ inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::safe_ho
 	}
 }
 
-inline void Omega::System::MetaInfo::safe_holder::remove(IObject* pObject)
+inline void Omega::System::Internal::safe_holder::remove(IObject* pObject)
 {
 	try
 	{
@@ -110,7 +110,7 @@ inline void Omega::System::MetaInfo::safe_holder::remove(IObject* pObject)
 	}
 }
 
-inline void Omega::System::MetaInfo::safe_holder::remove(const SafeShim* shim)
+inline void Omega::System::Internal::safe_holder::remove(const SafeShim* shim)
 {
 	try
 	{
@@ -129,7 +129,7 @@ inline void Omega::System::MetaInfo::safe_holder::remove(const SafeShim* shim)
 	}
 }
 
-inline Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(const guid_t& iid)
+inline Omega::IObject* Omega::System::Internal::Safe_Proxy_Base::QueryInterface(const guid_t& iid)
 {
 	if (iid == OMEGA_GUIDOF(ISafeProxy))
 	{
@@ -151,7 +151,7 @@ inline Omega::IObject* Omega::System::MetaInfo::Safe_Proxy_Base::QueryInterface(
 	return create_safe_proxy(retval,iid);
 }
 
-inline Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim* shim, const guid_t& iid)
+inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim* shim, const guid_t& iid)
 {
 	if (!shim)
 		return 0;
@@ -201,7 +201,7 @@ inline Omega::IObject* Omega::System::MetaInfo::create_safe_proxy(const SafeShim
 	return obj;
 }
 
-inline void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shim)
+inline void Omega::System::Internal::throw_correct_exception(const SafeShim* shim)
 {
 	assert(shim);
 
@@ -211,7 +211,7 @@ inline void Omega::System::MetaInfo::throw_correct_exception(const SafeShim* shi
 	create_safe_proxy<IException>(shim)->Throw();
 }
 
-inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_safe_stub(IObject* pObj, const guid_t& iid)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::create_safe_stub(IObject* pObj, const guid_t& iid)
 {
 	if (!pObj)
 		return 0;
@@ -254,7 +254,7 @@ inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::create_
 	return shim;
 }
 
-inline const Omega::System::MetaInfo::SafeShim* Omega::System::MetaInfo::return_safe_exception(IException* pE)
+inline const Omega::System::Internal::SafeShim* Omega::System::Internal::return_safe_exception(IException* pE)
 {
 	auto_iface_ptr<IException> ptrE(pE);
 	return create_safe_stub(pE,pE->GetThrownIID());

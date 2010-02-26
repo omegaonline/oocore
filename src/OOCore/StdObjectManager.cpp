@@ -52,17 +52,17 @@ namespace SEH
 		}
 #endif
 
-		void DoInvoke2(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
-		int DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
+		void DoInvoke2(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
+		int DoInvoke(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE);
 	}
 
-void OOCore::SEH::DoInvoke2(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
+void OOCore::SEH::DoInvoke2(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 {
 	try
 	{
-		System::MetaInfo::IException_Safe* pSE = pStub->Invoke_Safe(
-			System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsIn),
-			System::MetaInfo::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsOut));
+		System::Internal::IException_Safe* pSE = pStub->Invoke_Safe(
+			System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsIn),
+			System::Internal::marshal_info<Remoting::IMessage*>::safe_type::coerce(pParamsOut));
 
 		if (pSE)
 			throw_correct_exception(pSE);
@@ -73,7 +73,7 @@ void OOCore::SEH::DoInvoke2(System::MetaInfo::IStub_Safe* pStub, Remoting::IMess
 	}
 }
 
-int OOCore::SEH::DoInvoke(System::MetaInfo::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
+int OOCore::SEH::DoInvoke(System::Internal::IStub_Safe* pStub, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut, IException*& pE)
 {
 	int err = 0;
 
@@ -176,19 +176,19 @@ namespace
 	{
 		ObjectPtr<Remoting::IProxy> ptrProxy;
 
-		ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(pObject);
+		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(pObject);
 		if (ptrSProxy)
 		{
-			System::MetaInfo::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
-			if (shim && static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
+			if (shim && static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 			{
 				// Retrieve the underlying wire proxy
-				System::MetaInfo::auto_safe_shim proxy;
-				const System::MetaInfo::SafeShim* pE = static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
+				System::Internal::auto_safe_shim proxy;
+				const System::Internal::SafeShim* pE = static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe(shim,&proxy);
 				if (pE)
-					System::MetaInfo::throw_correct_exception(pE);
+					System::Internal::throw_correct_exception(pE);
 
-				ptrProxy.Attach(System::MetaInfo::create_safe_proxy<Remoting::IProxy>(proxy));
+				ptrProxy.Attach(System::Internal::create_safe_proxy<Remoting::IProxy>(proxy));
 			}
 		}
 
@@ -275,7 +275,7 @@ void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pPara
 	string_t strOID = pParamsIn->ReadString(L"oid");
 	guid_t iid = pParamsIn->ReadGuid(L"iid");
 	Activation::Flags_t act_flags;
-	System::MetaInfo::wire_read(L"flags",pParamsIn,act_flags);
+	System::Internal::wire_read(L"flags",pParamsIn,act_flags);
 
 	// Check our permissions
 	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
@@ -415,7 +415,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 	ptrParamsOut->WriteUInt32(L"$method_id",0);
 	ptrParamsOut->WriteString(L"oid",strOID);
 	ptrParamsOut->WriteGuid(L"iid",iid);
-	System::MetaInfo::wire_write(L"flags",ptrParamsOut,flags);
+	System::Internal::wire_write(L"flags",ptrParamsOut,flags);
 
 	ptrParamsOut->WriteStructEnd(L"ipc_request");
 
@@ -436,7 +436,7 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 		ptrParamsOut->ReadGuid(L"iid");
 
 		Activation::Flags_t f;
-		System::MetaInfo::wire_read(L"flags",ptrParamsOut,f);
+		System::Internal::wire_read(L"flags",ptrParamsOut,f);
 
 		ptrParamsOut->ReadStructEnd(L"ipc_request");
 

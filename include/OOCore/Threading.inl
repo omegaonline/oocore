@@ -232,7 +232,7 @@ inline T* Omega::Threading::Singleton<T,Lifetime>::instance()
 }
 
 template <typename T, typename Lifetime>
-inline const Omega::System::MetaInfo::SafeShim* Omega::Threading::Singleton<T,Lifetime>::do_init()
+inline const Omega::System::Internal::SafeShim* Omega::Threading::Singleton<T,Lifetime>::do_init()
 {
 	try
 	{
@@ -242,11 +242,11 @@ inline const Omega::System::MetaInfo::SafeShim* Omega::Threading::Singleton<T,Li
 	}
 	catch (Omega::IException* pE)
 	{
-		return System::MetaInfo::return_safe_exception(pE);
+		return System::Internal::return_safe_exception(pE);
 	}
 	catch (...)
 	{
-		return System::MetaInfo::return_safe_exception(ISystemException::Create(L"Unhandled exception",L"Omega::Threading::Singleton::constructor()"));
+		return System::Internal::return_safe_exception(ISystemException::Create(L"Unhandled exception",L"Omega::Threading::Singleton::constructor()"));
 	}
 }
 

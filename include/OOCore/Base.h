@@ -135,7 +135,7 @@ namespace Omega
 {
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			template <typename T> struct uid_traits;
 
@@ -170,7 +170,7 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	interface __declspec(uuid(guid)) n_space::type; \
-	namespace Omega { namespace System { namespace MetaInfo { \
+	namespace Omega { namespace System { namespace Internal { \
 	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(__uuidof(n_space::type)); return v; } }; \
 	} } }
 
@@ -182,14 +182,14 @@ namespace Omega
 #else
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
-	namespace Omega { namespace System { namespace MetaInfo { \
+	namespace Omega { namespace System { namespace Internal { \
 	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid) ); return v; } }; \
 	} } }
 
 #endif
 
 /// Return the guid_t value associated with a type
-#define OMEGA_GUIDOF(type)     Omega::System::MetaInfo::uid_traits<type>::GetUID()
+#define OMEGA_GUIDOF(type)     Omega::System::Internal::uid_traits<type>::GetUID()
 
 #if !defined(DOXYGEN)
 

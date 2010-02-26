@@ -86,11 +86,11 @@ bool OOCore::HostedByOOServer()
 		// If the InterProcessService has a proxy, then we are not hosted by OOServer.exe
 		ObjectPtr<IInterProcessService> ptrIPS = OOCore::GetInterProcessService();
 
-		ObjectPtr<System::MetaInfo::ISafeProxy> ptrSProxy(ptrIPS);
+		ObjectPtr<System::Internal::ISafeProxy> ptrSProxy(ptrIPS);
 		if (ptrSProxy)
 		{
-			System::MetaInfo::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
-			if (!shim || !static_cast<const System::MetaInfo::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
+			System::Internal::auto_safe_shim shim = ptrSProxy->GetShim(OMEGA_GUIDOF(IObject));
+			if (!shim || !static_cast<const System::Internal::IObject_Safe_VTable*>(shim->m_vtable)->pfnGetWireProxy_Safe)
 			{
 				bHosted = !ptrIPS->IsStandalone();
 			}

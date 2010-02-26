@@ -38,7 +38,7 @@ namespace
 	public:
 		TypeInfoImpl();
 
-		void init(const guid_t& iid, const wchar_t* pszName, const System::MetaInfo::typeinfo_rtti* type_info);
+		void init(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
 
 		BEGIN_INTERFACE_MAP(TypeInfoImpl)
 			INTERFACE_ENTRY(TypeInfo::ITypeInfo)
@@ -84,8 +84,8 @@ namespace
 	class TIMapImpl
 	{
 	public:
-		void insert(const guid_t& iid, const wchar_t* pszName, const System::MetaInfo::typeinfo_rtti* type_info);
-		void remove(const guid_t& iid, const System::MetaInfo::typeinfo_rtti* type_info);
+		void insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
+		void remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info);
 		
 		TypeInfo::ITypeInfo* get_type_info(const guid_t& iid);
 
@@ -95,7 +95,7 @@ namespace
 		struct ti_t
 		{
 			const wchar_t*                         pszName;
-			const System::MetaInfo::typeinfo_rtti* type_info;
+			const System::Internal::typeinfo_rtti* type_info;
 		};
 
 		std::multimap<guid_t,ti_t> m_ti_map;
@@ -108,7 +108,7 @@ TypeInfoImpl::TypeInfoImpl() :
 {
 }
 
-void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System::MetaInfo::typeinfo_rtti* type_info)
+void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
 {
 	m_iid = iid;
 	m_strName = pszName;
@@ -123,7 +123,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 	// Copy all the members into our own members...
 	try
 	{
-		for (const System::MetaInfo::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)();pmi->pszName!=0;++pmi)
+		for (const System::Internal::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)();pmi->pszName!=0;++pmi)
 		{
 			MethodInfo mi;
 			mi.strName = pmi->pszName,
@@ -131,7 +131,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 			mi.timeout = pmi->timeout,
 			mi.return_type = pmi->return_type;
 
-			for (const System::MetaInfo::typeinfo_rtti::ParamInfo* pi=(*pmi->pfnGetParamInfo)();pi->pszName!=0;++pi)
+			for (const System::Internal::typeinfo_rtti::ParamInfo* pi=(*pmi->pfnGetParamInfo)();pi->pszName!=0;++pi)
 			{
 				ParamInfo p;
 				p.strName = pi->pszName;
@@ -256,7 +256,7 @@ guid_t TypeInfoImpl::GetParamIid(uint32_t method_idx, byte_t param_idx)
 	return mi.params.at(param_idx).iid;
 }
 
-void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::MetaInfo::typeinfo_rtti* type_info)
+void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
 {
 	try
 	{
@@ -272,7 +272,7 @@ void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::
 	}
 }
 
-void TIMapImpl::remove(const guid_t& iid, const System::MetaInfo::typeinfo_rtti* type_info)
+void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info)
 {
 	try
 	{
@@ -321,10 +321,10 @@ TypeInfo::ITypeInfo* OOCore::GetTypeInfo(const guid_t& iid)
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info))
 {
-	TIMap::instance()->insert(iid,pszName,static_cast<const System::MetaInfo::typeinfo_rtti*>(type_info));
+	TIMap::instance()->insert(iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info))
 {
-	TIMap::instance()->remove(iid,static_cast<const System::MetaInfo::typeinfo_rtti*>(type_info));
+	TIMap::instance()->remove(iid,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }

@@ -27,7 +27,7 @@ namespace Omega
 	// Forward declare
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			struct SafeShim;
 		}
@@ -219,7 +219,7 @@ namespace Omega
 			static void OMEGA_CALL destruct(void* param);
 		};
 
-		typedef const System::MetaInfo::SafeShim* (OMEGA_CALL *SingletonCallback)();
+		typedef const System::Internal::SafeShim* (OMEGA_CALL *SingletonCallback)();
 		
 		// Lifetime should be either ModuleDestructor<> or InitialiseDestructor
 		template <typename T, typename Lifetime>
@@ -231,14 +231,14 @@ namespace Omega
 		private:
 			static void* s_instance;
 
-			static const System::MetaInfo::SafeShim* OMEGA_CALL do_init();
+			static const System::Internal::SafeShim* OMEGA_CALL do_init();
 			static void OMEGA_CALL do_term(void*);
 		};
 	}
 
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			// Callback is C ABI safe
 			template <> 

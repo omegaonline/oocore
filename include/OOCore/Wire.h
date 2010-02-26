@@ -154,7 +154,7 @@ namespace Omega
 {
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IMessage)
 			OMEGA_DECLARE_FORWARDS(Omega::Remoting,IStub)

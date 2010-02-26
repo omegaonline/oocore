@@ -208,7 +208,7 @@ namespace
 
 	void DLLManagerImpl::unload_unused()
 	{
-		typedef System::MetaInfo::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::MetaInfo::marshal_info<bool_t&>::safe_type::type result);
+		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
 			
 		try
 		{
@@ -222,11 +222,11 @@ namespace
 					pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
 					if (pfn)
 					{
-						System::MetaInfo::SafeShim* CanUnloadLibrary_Exception = pfn(System::MetaInfo::marshal_info<bool_t&>::safe_type::coerce(erase));
+						System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
 
 						// Ignore exceptions
 						if (CanUnloadLibrary_Exception)
-							System::MetaInfo::release_safe(CanUnloadLibrary_Exception);
+							System::Internal::release_safe(CanUnloadLibrary_Exception);
 					}
 				}
 				catch (IException* pE)
@@ -273,7 +273,7 @@ namespace
 
 IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	typedef System::MetaInfo::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::MetaInfo::marshal_info<const guid_t&>::safe_type::type oid, System::MetaInfo::marshal_info<Activation::Flags_t>::safe_type::type flags, System::MetaInfo::marshal_info<const guid_t&>::safe_type::type iid, System::MetaInfo::marshal_info<IObject*&>::safe_type::type pObject);
+	typedef System::Internal::SafeShim* (OMEGA_CALL *pfnGetLibraryObject)(System::Internal::marshal_info<const guid_t&>::safe_type::type oid, System::Internal::marshal_info<Activation::Flags_t>::safe_type::type flags, System::Internal::marshal_info<const guid_t&>::safe_type::type iid, System::Internal::marshal_info<IObject*&>::safe_type::type pObject);
 	pfnGetLibraryObject pfn = 0;
 	OOBase::SmartPtr<OOBase::DLL> dll;
 	
@@ -288,14 +288,14 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 	}
 
 	IObject* pObj = 0;
-	const System::MetaInfo::SafeShim* GetLibraryObject_Exception = pfn(
-		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(oid)
+	const System::Internal::SafeShim* GetLibraryObject_Exception = pfn(
+		System::Internal::marshal_info<const guid_t&>::safe_type::coerce(oid)
 		,flags,
-		System::MetaInfo::marshal_info<const guid_t&>::safe_type::coerce(iid),
-		System::MetaInfo::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
+		System::Internal::marshal_info<const guid_t&>::safe_type::coerce(iid),
+		System::Internal::marshal_info<IObject*&>::safe_type::coerce(pObj,iid));
 
 	if (GetLibraryObject_Exception)
-		System::MetaInfo::throw_correct_exception(GetLibraryObject_Exception);
+		System::Internal::throw_correct_exception(GetLibraryObject_Exception);
 	
 	return pObj;
 }

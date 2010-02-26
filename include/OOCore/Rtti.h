@@ -26,7 +26,7 @@ namespace Omega
 {
 	namespace System
 	{
-		namespace MetaInfo
+		namespace Internal
 		{
 			template <typename T> struct type_kind
 			{

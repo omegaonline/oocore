@@ -26,7 +26,7 @@ inline bool Omega::System::PinObjectPointer(IObject* pObject)
 {
 	if (pObject)
 	{
-		Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::MetaInfo::ISafeProxy))));
+		Omega::System::Internal::auto_iface_ptr<Omega::System::Internal::ISafeProxy> ptrProxy(static_cast<Omega::System::Internal::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::Internal::ISafeProxy))));
 		if (ptrProxy)
 		{
 			ptrProxy->Pin();
@@ -39,7 +39,7 @@ inline bool Omega::System::PinObjectPointer(IObject* pObject)
 
 inline void Omega::System::UnpinObjectPointer(IObject* pObject)
 {
-	Omega::System::MetaInfo::auto_iface_ptr<Omega::System::MetaInfo::ISafeProxy> ptrProxy(static_cast<Omega::System::MetaInfo::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::MetaInfo::ISafeProxy))));
+	Omega::System::Internal::auto_iface_ptr<Omega::System::Internal::ISafeProxy> ptrProxy(static_cast<Omega::System::Internal::ISafeProxy*>(pObject->QueryInterface(OMEGA_GUIDOF(Omega::System::Internal::ISafeProxy))));
 	if (ptrProxy)
 		ptrProxy->Unpin();
 }
@@ -47,13 +47,13 @@ inline void Omega::System::UnpinObjectPointer(IObject* pObject)
 #if !defined(DOXYGEN)
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info));
-inline void Omega::System::MetaInfo::RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
+inline void Omega::System::Internal::RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info)
 {
 	OOCore_RegisterAutoTypeInfo(iid,pszName,(const void*)type_info);
 }
 
 OOCORE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info));
-inline void Omega::System::MetaInfo::UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info)
+inline void Omega::System::Internal::UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info)
 {
 	OOCore_UnregisterAutoTypeInfo(iid,(const void*)type_info);
 }

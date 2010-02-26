@@ -342,6 +342,11 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 					// It's a call from GetRemoteInstance
 					InvokeGetRemoteInstance(pParamsIn,ptrResponse);
 				}
+				else if (method_id == 1)
+				{
+					// It's a call from GetTypeInfo
+					InvokeGetTypeInfo(pParamsIn,ptrResponse);
+				}
 				else
 					OMEGA_THROW(L"Invalid static function call!");
 			}
@@ -513,10 +518,58 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 
 TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
 {
-	// Send message to the other end
-	void* TODO;
+	ObjectPtr<Remoting::IMessage> ptrParamsOut;
+	ptrParamsOut.Attach(CreateMessage());
 
-	return 0;
+	ptrParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
+
+	ptrParamsOut->WriteUInt32(L"$stub_id",0);
+	ptrParamsOut->WriteUInt32(L"$method_id",1);
+	ptrParamsOut->WriteGuid(L"iid",iid);
+	ptrParamsOut->WriteStructEnd(L"ipc_request");
+
+	Remoting::IMessage* pParamsIn = 0;
+	IException* pERet;
+
+	try
+	{
+		pERet = SendAndReceive(TypeInfo::Synchronous,ptrParamsOut,pParamsIn);
+	}
+	catch (...)
+	{
+		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
+
+		ptrParamsOut->ReadUInt32(L"$stub_id");
+		ptrParamsOut->ReadUInt32(L"$method_id");
+		ptrParamsOut->ReadGuid(L"iid");
+		ptrParamsOut->ReadStructEnd(L"ipc_request");
+
+		throw;
+	}
+
+	if (pERet)
+		pERet->Throw();
+
+	ObjectPtr<Remoting::IMessage> ptrParamsIn;
+	ptrParamsIn.Attach(pParamsIn);
+
+	IObject* pRet = 0;
+	UnmarshalInterface(L"$retval",ptrParamsIn,OMEGA_GUIDOF(TypeInfo::ITypeInfo),pRet);
+
+	return static_cast<TypeInfo::ITypeInfo*>(pRet);
+}
+
+void OOCore::StdObjectManager::InvokeGetTypeInfo(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
+{
+	// Read the iid
+	guid_t iid = pParamsIn->ReadGuid(L"iid");
+	
+	// Get the type info
+	ObjectPtr<TypeInfo::ITypeInfo> ptrTI;
+	ptrTI.Attach(OOCore::GetTypeInfo(iid));
+	
+	// Write it out and return
+	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::ITypeInfo),ptrTI);
 }
 
 void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)

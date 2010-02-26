@@ -77,7 +77,10 @@ void output(const char* sz, ...)
 	vsnprintf(szBuf,sizeof(szBuf),sz,argptr);
 
 	fputs(szBuf,stdout);
+
+#if defined(_MSC_VER)
 	OutputDebugStringA(szBuf);
+#endif
 
 	va_end(argptr);
 

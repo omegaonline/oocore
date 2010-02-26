@@ -52,7 +52,6 @@ namespace
 		void UnmarshalInterface(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
 		Remoting::IMessage* CreateMessage();
 		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0);
-		TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid);
 	};
 }
 
@@ -101,13 +100,6 @@ Remoting::IMessage* LoopMarshaller::CreateMessage()
 IException* LoopMarshaller::SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout)
 {
 	return m_pChannel->SendAndReceive(attribs,pSend,pRecv,timeout);
-}
-
-TypeInfo::ITypeInfo* LoopMarshaller::GetTypeInfo(const guid_t& iid)
-{
-	void* TODO;
-
-	return 0;
 }
 
 IObject* OOCore::LoopChannel::create(uint32_t channel_id, const guid_t& message_oid, const guid_t& iid)

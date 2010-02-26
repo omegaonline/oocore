@@ -68,6 +68,7 @@ namespace Omega
 			virtual IMessage* Invoke(IMessage* pParamsIn, uint32_t timeout) = 0;
 			virtual void Shutdown() = 0;
 			virtual void GetRemoteInstance(const Omega::string_t& strOID, Activation::Flags_t flags, const guid_t& iid, IObject*& pObject) = 0;
+			virtual TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid) = 0;
 		};
 
 		interface IChannelClosedException : public IException
@@ -141,6 +142,7 @@ OMEGA_DEFINE_INTERFACE_LOCAL
 	OMEGA_METHOD(Remoting::IMessage*,Invoke,2,((in),Remoting::IMessage*,pParamsIn,(in),uint32_t,timeout))
 	OMEGA_METHOD_VOID(Shutdown,0,())
 	OMEGA_METHOD_VOID(GetRemoteInstance,4,((in),const string_t&,strOID,(in),Activation::Flags_t,flags,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+	OMEGA_METHOD(TypeInfo::ITypeInfo*,GetTypeInfo,1,((in),const guid_t&,iid))
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

@@ -96,7 +96,6 @@ namespace Omega
 			virtual void ReleaseMarshalData(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual IMessage* CreateMessage() = 0;
 			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
-			virtual TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid) = 0;
 		};
 
 		interface IStub : public IObject
@@ -263,7 +262,6 @@ namespace Omega
 				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
-				OMEGA_METHOD(TypeInfo::ITypeInfo*,GetTypeInfo,1,((in),const guid_t&,iid))
 			)
 			
 			OMEGA_WIRE_DECLARE_WIRE_READWRITE(byte_t,Byte)

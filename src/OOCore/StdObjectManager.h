@@ -89,8 +89,7 @@ namespace OOCore
 		void UnmarshalInterface(const wchar_t* name, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::IObject*& pObject);
 		Omega::Remoting::IMessage* CreateMessage();
 		Omega::IException* SendAndReceive(Omega::TypeInfo::MethodAttributes_t attribs, Omega::Remoting::IMessage* pSend, Omega::Remoting::IMessage*& pRecv, Omega::uint32_t timeout = 0);
-		Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
-		
+				
 	// IStdObjectManager members
 	public:
 		void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags);
@@ -101,6 +100,7 @@ namespace OOCore
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Shutdown();
 		void GetRemoteInstance(const Omega::string_t& strOID, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
 	};
 }
 

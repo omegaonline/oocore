@@ -72,7 +72,7 @@ bool_t OOCore::Proxy::RemoteQueryInterface(const guid_t& iid)
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
 
-	WriteStubInfo(pParamsOut,1);
+	WriteStubInfo(pParamsOut,0);
 
 	pParamsOut->WriteGuid(L"iid",iid);
 	pParamsOut->WriteStructEnd(L"ipc_request");
@@ -99,7 +99,7 @@ IObject* OOCore::Proxy::QueryIObject()
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
 
-	WriteStubInfo(pParamsOut,2);
+	WriteStubInfo(pParamsOut,1);
 
 	pParamsOut->WriteStructEnd(L"ipc_request");
 
@@ -153,7 +153,7 @@ Remoting::IMessage* OOCore::Proxy::CallRemoteStubMarshal(Remoting::IMarshaller* 
 	ObjectPtr<Remoting::IMessage> pParamsOut;
 	pParamsOut.Attach(m_pManager->CreateMessage());
 
-	WriteStubInfo(pParamsOut,3);
+	WriteStubInfo(pParamsOut,2);
 
 	pParamsOut->WriteGuid(L"iid",iid);
 
@@ -194,7 +194,7 @@ void OOCore::Proxy::CallRemoteRelease()
 		ObjectPtr<Remoting::IMessage> pParamsOut;
 		pParamsOut.Attach(m_pManager->CreateMessage());
 
-		WriteStubInfo(pParamsOut,0);
+		WriteStubInfo(pParamsOut,uint32_t(-1));
 
 		pParamsOut->WriteStructEnd(L"ipc_request");
 

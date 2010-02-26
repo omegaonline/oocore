@@ -261,7 +261,7 @@ namespace Omega
 					return Wire_Proxy_Base::CreateMessage(OMEGA_GUIDOF(D),method_id);
 				}
 
-				static const uint32_t MethodCount = 4;
+				static const uint32_t MethodCount = 3;
 
 			// IObject members
 			public:
@@ -357,23 +357,12 @@ namespace Omega
 
 				typedef void (*MethodTableEntry)(Wire_Stub_Base* pThis, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut);
 
-				virtual void Invoke(uint32_t method_id, Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
+				virtual void Invoke(uint32_t /*method_id*/, Remoting::IMessage* /*pParamsIn*/, Remoting::IMessage* /*pParamsOut*/)
 				{
-					static const MethodTableEntry MethodTable[] =
-					{
-						&Release_Wire,
-						&QueryInterface_Wire,
-						&QueryIObject_Wire,
-						&MarshalStub_Wire
-					};
-
-					if (method_id < MethodCount)
-						return MethodTable[method_id](this,pParamsIn,pParamsOut);
-
 					OMEGA_THROW(L"Invoke called with invalid method index");
 				}
 
-				static const uint32_t MethodCount = 4;	// This must match the proxy
+				static const uint32_t MethodCount = 3;	// This must match the proxy
 
 			private:
 				auto_iface_ptr<Remoting::IMarshaller> m_ptrMarshaller;
@@ -411,8 +400,20 @@ namespace Omega
 
 				void Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 				{
-					// Read the method id
-					Invoke(pParamsIn->ReadUInt32(L"$method_id"),pParamsIn,pParamsOut);
+					static const MethodTableEntry MethodTable[] =
+					{
+						&Release_Wire,			// -1 
+						&QueryInterface_Wire,	// 0
+						&QueryIObject_Wire,		// 1
+						&MarshalStub_Wire		// 2
+					};
+					
+					uint32_t method_id = pParamsIn->ReadUInt32(L"$method_id") + 1;
+
+					if (method_id < 4)
+						return MethodTable[method_id](this,pParamsIn,pParamsOut);
+					else
+						Invoke(method_id-1,pParamsIn,pParamsOut);					
 				}			
 				
 				static void Release_Wire(Wire_Stub_Base* pThis, Remoting::IMessage*, Remoting::IMessage*)

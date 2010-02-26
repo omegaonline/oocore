@@ -213,6 +213,8 @@ namespace Omega
 		{
 			virtual std::list<guid_t> EnumInterfaces() = 0;
 		};
+
+		static ITypeInfo* GetTypeInfo(const guid_t& iid, IObject* pObject = 0);
 	}
 }
 
@@ -461,6 +463,12 @@ OOCORE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),const 
 inline Omega::IO::IStream* Omega::IO::OpenStream(const Omega::string_t& strEndpoint, Omega::IO::IAsyncStreamNotify* pNotify)
 {
 	return OOCore_IO_OpenStream(strEndpoint,pNotify);
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::TypeInfo::ITypeInfo*,OOCore_TypeInfo_GetTypeInfo,2,((in),const Omega::guid_t&,iid,(in),Omega::IObject*,pObject));
+inline Omega::TypeInfo::ITypeInfo* Omega::TypeInfo::GetTypeInfo(const Omega::guid_t& iid, Omega::IObject* pObject)
+{
+	return OOCore_TypeInfo_GetTypeInfo(iid,pObject);
 }
 
 #endif // !defined(DOXYGEN)

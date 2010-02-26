@@ -192,7 +192,7 @@ inline Omega::IObject* Omega::System::Internal::create_safe_proxy(const SafeShim
 		if (!rtti)
 			rtti = get_qi_rtti_info(OMEGA_GUIDOF(IObject));
 			
-		obj = (*rtti->pfnCreateSafeProxy)(shim,iid);
+		obj = (*rtti->pfnCreateSafeProxy)(shim);
 	}
 
 	if (!obj)

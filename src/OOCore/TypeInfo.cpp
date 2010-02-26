@@ -26,7 +26,7 @@ using namespace OTL;
 
 namespace OOCore
 {
-	Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
+	TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid);
 }
 
 namespace
@@ -319,12 +319,12 @@ TypeInfo::ITypeInfo* OOCore::GetTypeInfo(const guid_t& iid)
 	return TIMap::instance()->get_type_info(iid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_RegisterAutoTypeInfo,3,((in),const Omega::guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_RegisterAutoTypeInfo,3,((in),const guid_t&,iid,(in),const wchar_t*,pszName,(in),const void*,type_info))
 {
 	TIMap::instance()->insert(iid,pszName,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_UnregisterAutoTypeInfo,2,((in),const Omega::guid_t&,iid,(in),const void*,type_info))
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Internal_UnregisterAutoTypeInfo,2,((in),const guid_t&,iid,(in),const void*,type_info))
 {
 	TIMap::instance()->remove(iid,static_cast<const System::Internal::typeinfo_rtti*>(type_info));
 }

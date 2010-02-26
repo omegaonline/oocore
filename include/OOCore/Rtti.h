@@ -210,8 +210,8 @@ namespace Omega
 				}
 			};
 
-			void RegisterAutoTypeInfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info);
-			void UnregisterAutoTypeInfo(const guid_t& iid, const typeinfo_rtti* type_info);
+			void register_typeinfo(const guid_t& iid, const wchar_t* pszName, const typeinfo_rtti* type_info);
+			void unregister_typeinfo(const guid_t& iid, const typeinfo_rtti* type_info);
 		}
 	}
 }

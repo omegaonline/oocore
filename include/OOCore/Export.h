@@ -46,11 +46,11 @@
 				get_name() \
 			}; \
 			register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
-			RegisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface >::get_type_info()); \
+			register_typeinfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface >::get_type_info()); \
 		} \
 		~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 		{ \
-			UnregisterAutoTypeInfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface >::get_type_info()); \
+			unregister_typeinfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface >::get_type_info()); \
 		} \
 	}; \
 	OMEGA_WEAK_VARIABLE(OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit),OMEGA_CONCAT_R(OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,_RttiInit_),OMEGA_UNIQUE_NAME(iface)));
@@ -690,10 +690,9 @@
 	{ \
 		const vtable_info<n_space::name >::type* deref_vt() { return static_cast<const vtable_info<n_space::name >::type*>(this->m_shim->m_vtable); } \
 	public: \
-		static IObject* bind(const SafeShim* shim, const guid_t& iid) \
+		static IObject* bind(const SafeShim* shim) \
 		{ \
 			Safe_Proxy* pThis; OMEGA_NEW(pThis,Safe_Proxy(shim)); \
-			if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid)) OMEGA_THROW(L"Proxy is not of expected interface!"); \
 			return pThis->QIReturn__proxy__(); \
 		} \
 	protected: \

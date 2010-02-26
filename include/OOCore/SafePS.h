@@ -359,15 +359,10 @@ namespace Omega
 			class Safe_Proxy<IObject,D> : public D, public Safe_Proxy_Base
 			{
 			public:
-				static IObject* bind(const SafeShim* shim, const guid_t& iid)
+				static IObject* bind(const SafeShim* shim)
 				{
 					Safe_Proxy* pThis;
-					OMEGA_NEW(pThis,Safe_Proxy(shim));
-
-					// Check we have something valid
-					if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid))
-						OMEGA_THROW(L"Proxy is not of expected interface!");
-					
+					OMEGA_NEW(pThis,Safe_Proxy(shim));		
 					return pThis->QIReturn__proxy__();
 				}
 
@@ -689,7 +684,7 @@ namespace Omega
 
 			struct qi_rtti
 			{
-				IObject* (*pfnCreateSafeProxy)(const SafeShim* shim, const guid_t& iid);
+				IObject* (*pfnCreateSafeProxy)(const SafeShim* shim);
 				const SafeShim* (*pfnCreateSafeStub)(IObject* pI);
 				const wchar_t* pszName;
 			};
@@ -753,15 +748,10 @@ namespace Omega
 				}
 
 			public:
-				static IObject* bind(const SafeShim* shim, const guid_t& iid)
+				static IObject* bind(const SafeShim* shim)
 				{
 					Safe_Proxy* pThis; 
-					OMEGA_NEW(pThis,Safe_Proxy(shim)); 
-
-					// Check we have something valid
-					if (iid != OMEGA_GUIDOF(IObject) && !pThis->IsDerived__proxy__(iid))
-						OMEGA_THROW(L"Proxy is not of expected interface!");
-
+					OMEGA_NEW(pThis,Safe_Proxy(shim));
 					return pThis->QIReturn__proxy__();
 				}
 

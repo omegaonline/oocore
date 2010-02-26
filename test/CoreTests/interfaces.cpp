@@ -130,6 +130,23 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	ptrO1.Release();
 	ptrO2.Release();
 
+	// Test the type info
+	OTL::ObjectPtr<Omega::TypeInfo::IProvideObjectInfo> ptrPOI = ptrSimpleTest;
+	TEST(ptrPOI);
+
+	// Try to get the first interface
+	std::list<Omega::guid_t> interfaces = ptrPOI->EnumInterfaces();
+	TEST(!interfaces.empty());
+	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+
+	OTL::ObjectPtr<Omega::TypeInfo::ITypeInfo> ptrTI;
+	ptrTI.Attach(Omega::TypeInfo::GetTypeInfo(*interfaces.begin(),ptrSimpleTest));
+	TEST(ptrTI);
+
+	TEST(ptrTI->GetName() == L"Omega::TestSuite::ISimpleTest");
+	TEST(ptrTI->GetIID() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(ptrTI->GetMethodCount() == 25+3);
+
 	return true;
 }
 

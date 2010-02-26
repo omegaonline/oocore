@@ -513,15 +513,10 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 
 TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
 {
-	// Check the auto registered stuff first
-	TypeInfo::ITypeInfo* pRet = OOCore::GetTypeInfo(iid);
-	if (!pRet)
-	{
-		// Ask the other end if it has a clue?
-		void* TODO;
-	}
+	// Send message to the other end
+	void* TODO;
 
-	return pRet;
+	return 0;
 }
 
 void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
@@ -864,6 +859,33 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Remoting_IsAlive,1,((in),IObject*,p
 	}
 
 	return ret;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::ITypeInfo*,OOCore_TypeInfo_GetTypeInfo,2,((in),const guid_t&,iid,(in),IObject*,pObject))
+{
+	TypeInfo::ITypeInfo* pInfo = OOCore::GetTypeInfo(iid);
+	if (!pInfo && pObject)
+	{
+		// See if we have a wire proxy
+		ObjectPtr<Remoting::IProxy> ptrProxy = GetWireProxy(pObject);
+		if (ptrProxy)
+		{
+			// Get the other ends' object manager
+			ObjectPtr<Remoting::IMarshaller> ptrMarshaller;
+			ptrMarshaller.Attach(ptrProxy->GetMarshaller());
+			if (ptrMarshaller)
+			{
+				ObjectPtr<Remoting::IObjectManager> ptrOM = ptrMarshaller;
+				if (ptrOM)
+				{
+					// Ask it for the TypeInfo
+					pInfo = ptrOM->GetTypeInfo(iid);
+				}
+			}
+		}
+	}
+
+	return pInfo;
 }
 
 OMEGA_DEFINE_OID(OOCore,OID_ProxyMarshalFactory,"{69099DD8-A628-458a-861F-009E016DB81B}");

@@ -222,7 +222,7 @@ void OOCore::Channel::ReflectMarshal(Remoting::IMessage* pMessage)
 	{
 		response = m_pSession->send_request(m_src_apt_id,m_channel_id,0,0,Message::synchronous | Message::channel_reflect);
 	}
-	catch (...)
+	catch (Remoting::IChannelClosedException*)
 	{
 		// Disconnect ourselves on failure
 		disconnect();

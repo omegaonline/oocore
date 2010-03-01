@@ -34,7 +34,7 @@ namespace OOCore
 		virtual void MarshalChannel(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags) = 0;
 	};
 
-	Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
+	Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
 }
 
 OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
@@ -80,7 +80,7 @@ namespace OOCore
 		std::map<Omega::uint32_t,OTL::ObjectImpl<Proxy>*>                                                     m_mapProxyIds;
 
 		void InvokeGetRemoteInstance(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
-		void InvokeGetTypeInfo(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
+		void InvokeGetInterfaceInfo(Omega::Remoting::IMessage* pParamsIn, OTL::ObjectPtr<Omega::Remoting::IMessage>& ptrResponse);
 
 		bool CustomMarshalInterface(const wchar_t* pszName, OTL::ObjectPtr<Omega::Remoting::IMarshal>& ptrMarshal, const Omega::guid_t& iid, Omega::Remoting::IMessage* pMessage);
 		
@@ -102,7 +102,7 @@ namespace OOCore
 		Omega::Remoting::IMessage* Invoke(Omega::Remoting::IMessage* pParamsIn, Omega::uint32_t timeout);
 		void Shutdown();
 		void GetRemoteInstance(const Omega::string_t& strOID, Omega::Activation::Flags_t flags, const Omega::guid_t& iid, Omega::IObject*& pObject);
-		Omega::TypeInfo::ITypeInfo* GetTypeInfo(const Omega::guid_t& iid);
+		Omega::TypeInfo::IInterfaceInfo* GetInterfaceInfo(const Omega::guid_t& iid);
 	};
 }
 

@@ -139,13 +139,13 @@ bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest
 	TEST(!interfaces.empty());
 	TEST(interfaces.front() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
 
-	OTL::ObjectPtr<Omega::TypeInfo::ITypeInfo> ptrTI;
-	ptrTI.Attach(Omega::TypeInfo::GetTypeInfo(*interfaces.begin(),ptrSimpleTest));
-	TEST(ptrTI);
+	OTL::ObjectPtr<Omega::TypeInfo::IInterfaceInfo> ptrII;
+	ptrII.Attach(Omega::TypeInfo::GetInterfaceInfo(*interfaces.begin(),ptrSimpleTest));
+	TEST(ptrII);
 
-	TEST(ptrTI->GetName() == L"Omega::TestSuite::ISimpleTest");
-	TEST(ptrTI->GetIID() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
-	TEST(ptrTI->GetMethodCount() == 25+3);
+	TEST(ptrII->GetName() == L"Omega::TestSuite::ISimpleTest");
+	TEST(ptrII->GetIID() == OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest));
+	TEST(ptrII->GetMethodCount() == 25+3);
 
 	return true;
 }

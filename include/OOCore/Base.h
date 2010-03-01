@@ -117,12 +117,12 @@ namespace Omega
 		};
 		typedef byte_t ParamAttributes_t;
 
-		interface ITypeInfo : public IObject
+		interface IInterfaceInfo : public IObject
 		{	
 			virtual string_t GetName() = 0;
 			virtual guid_t GetIID() = 0;
 			virtual uint32_t GetMethodCount() = 0;
-			virtual ITypeInfo* GetBaseType() = 0;
+			virtual IInterfaceInfo* GetBaseType() = 0;
 			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Types_t& return_type) = 0;
 			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Types_t& type, ParamAttributes_t& attribs) = 0;
 			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
@@ -217,7 +217,7 @@ namespace Omega
 
 OMEGA_SET_GUIDOF(Omega, IObject, "{01010101-0101-0101-0101-010101010101}");
 OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
-OMEGA_SET_GUIDOF(Omega::TypeInfo, ITypeInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}");
+OMEGA_SET_GUIDOF(Omega::TypeInfo, IInterfaceInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}");
 
 #if defined(DOXYGEN)
 /// Return the current source filename and line as a string_t

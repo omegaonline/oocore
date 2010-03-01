@@ -344,8 +344,8 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 				}
 				else if (method_id == 1)
 				{
-					// It's a call from GetTypeInfo
-					InvokeGetTypeInfo(pParamsIn,ptrResponse);
+					// It's a call from GetInterfaceInfo
+					InvokeGetInterfaceInfo(pParamsIn,ptrResponse);
 				}
 				else
 					OMEGA_THROW(L"Invalid static function call!");
@@ -516,7 +516,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 	}
 }
 
-TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
+TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_t& iid)
 {
 	ObjectPtr<Remoting::IMessage> ptrParamsOut;
 	ptrParamsOut.Attach(CreateMessage());
@@ -554,22 +554,22 @@ TypeInfo::ITypeInfo* OOCore::StdObjectManager::GetTypeInfo(const guid_t& iid)
 	ptrParamsIn.Attach(pParamsIn);
 
 	IObject* pRet = 0;
-	UnmarshalInterface(L"$retval",ptrParamsIn,OMEGA_GUIDOF(TypeInfo::ITypeInfo),pRet);
+	UnmarshalInterface(L"$retval",ptrParamsIn,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),pRet);
 
-	return static_cast<TypeInfo::ITypeInfo*>(pRet);
+	return static_cast<TypeInfo::IInterfaceInfo*>(pRet);
 }
 
-void OOCore::StdObjectManager::InvokeGetTypeInfo(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
+void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the iid
 	guid_t iid = pParamsIn->ReadGuid(L"iid");
 	
 	// Get the type info
-	ObjectPtr<TypeInfo::ITypeInfo> ptrTI;
-	ptrTI.Attach(OOCore::GetTypeInfo(iid));
+	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
+	ptrII.Attach(OOCore::GetInterfaceInfo(iid));
 	
 	// Write it out and return
-	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::ITypeInfo),ptrTI);
+	MarshalInterface(L"$retval",ptrResponse,OMEGA_GUIDOF(TypeInfo::IInterfaceInfo),ptrII);
 }
 
 void OOCore::StdObjectManager::RemoveProxy(uint32_t proxy_id)
@@ -914,9 +914,9 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(bool_t,OOCore_Remoting_IsAlive,1,((in),IObject*,p
 	return ret;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::ITypeInfo*,OOCore_TypeInfo_GetTypeInfo,2,((in),const guid_t&,iid,(in),IObject*,pObject))
+OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::IInterfaceInfo*,OOCore_TypeInfo_GetInterfaceInfo,2,((in),const guid_t&,iid,(in),IObject*,pObject))
 {
-	TypeInfo::ITypeInfo* pInfo = OOCore::GetTypeInfo(iid);
+	TypeInfo::IInterfaceInfo* pInfo = OOCore::GetInterfaceInfo(iid);
 	if (!pInfo && pObject)
 	{
 		// See if we have a wire proxy
@@ -932,7 +932,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(TypeInfo::ITypeInfo*,OOCore_TypeInfo_GetTypeInfo,
 				if (ptrOM)
 				{
 					// Ask it for the TypeInfo
-					pInfo = ptrOM->GetTypeInfo(iid);
+					pInfo = ptrOM->GetInterfaceInfo(iid);
 				}
 			}
 		}

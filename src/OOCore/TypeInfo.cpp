@@ -26,14 +26,14 @@ using namespace OTL;
 
 namespace OOCore
 {
-	TypeInfo::ITypeInfo* GetTypeInfo(const guid_t& iid);
+	TypeInfo::IInterfaceInfo* GetInterfaceInfo(const guid_t& iid);
 }
 
 namespace
 {
 	class TypeInfoImpl : 
 		public ObjectBase,
-		public TypeInfo::ITypeInfo
+		public TypeInfo::IInterfaceInfo
 	{
 	public:
 		TypeInfoImpl();
@@ -41,7 +41,7 @@ namespace
 		void init(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
 
 		BEGIN_INTERFACE_MAP(TypeInfoImpl)
-			INTERFACE_ENTRY(TypeInfo::ITypeInfo)
+			INTERFACE_ENTRY(TypeInfo::IInterfaceInfo)
 		END_INTERFACE_MAP()
 
 	private:
@@ -63,18 +63,18 @@ namespace
 			std::vector<ParamInfo>       params;
 		};
 
-		std::wstring                   m_strName;
-		guid_t                         m_iid;
-		std::vector<MethodInfo>        m_methods;
-		uint32_t                       m_base_methods;
-		ObjectPtr<TypeInfo::ITypeInfo> m_ptrBase;
+		std::wstring                        m_strName;
+		guid_t                              m_iid;
+		std::vector<MethodInfo>             m_methods;
+		uint32_t                            m_base_methods;
+		ObjectPtr<TypeInfo::IInterfaceInfo> m_ptrBase;
 
-	// ITypeInfo members
+	// IInterfaceInfo members
 	public:
 		virtual string_t GetName();
 		virtual guid_t GetIID();
 		virtual uint32_t GetMethodCount();
-		virtual ITypeInfo* GetBaseType();
+		virtual IInterfaceInfo* GetBaseType();
 		virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type);
 		virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs);
 		virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib);
@@ -87,7 +87,7 @@ namespace
 		void insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info);
 		void remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info);
 		
-		TypeInfo::ITypeInfo* get_type_info(const guid_t& iid);
+		TypeInfo::IInterfaceInfo* get_type_info(const guid_t& iid);
 
 	private:
 		OOBase::RWMutex m_lock;
@@ -170,7 +170,7 @@ uint32_t TypeInfoImpl::GetMethodCount()
 	return static_cast<uint32_t>(m_methods.size() + m_base_methods);
 }
 
-TypeInfo::ITypeInfo* TypeInfoImpl::GetBaseType()
+TypeInfo::IInterfaceInfo* TypeInfoImpl::GetBaseType()
 {
 	return m_ptrBase;
 }
@@ -292,7 +292,7 @@ void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti*
 	}
 }
 
-TypeInfo::ITypeInfo* TIMapImpl::get_type_info(const guid_t& iid)
+TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 {
 	try
 	{
@@ -314,7 +314,7 @@ TypeInfo::ITypeInfo* TIMapImpl::get_type_info(const guid_t& iid)
 	throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 }
 
-TypeInfo::ITypeInfo* OOCore::GetTypeInfo(const guid_t& iid)
+TypeInfo::IInterfaceInfo* OOCore::GetInterfaceInfo(const guid_t& iid)
 {
 	return TIMap::instance()->get_type_info(iid);
 }

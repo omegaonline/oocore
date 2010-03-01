@@ -358,6 +358,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\LoopChannel.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\OOCore.cpp"
 				>
 				<FileConfiguration
@@ -465,6 +469,10 @@
 			</File>
 			<File
 				RelativePath=".\IPS.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LoopChannel.h"
 				>
 			</File>
 			<File

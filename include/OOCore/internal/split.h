@@ -31,12 +31,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-// Preprocessor/split.h
+// split.h
 //
 // Split macros
 //
 
-#include <OOCore/Preprocessor/base.h>
+#include "pre_base.h"
 
 #if !defined(OMEGA_SPLIT_3)
 

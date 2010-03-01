@@ -31,12 +31,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-// Preprocessor/comma.h
+// comma.h
 //
 // Comma macros
 //
 
-#include <OOCore/Preprocessor/base.h>
+#include "pre_base.h"
 
 #if !defined(OMEGA_COMMA_NOT_FIRST)
 

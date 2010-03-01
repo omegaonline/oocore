@@ -31,12 +31,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-// Preprocessor/sequence.h
+// sequence.h
 //
 // Sequence macros
 //
 
-#include <OOCore/Preprocessor/tuple.h>
+#include "tuple.h"
 
 #if !defined(OMEGA_SEQUENCE_SIZEOF)
 

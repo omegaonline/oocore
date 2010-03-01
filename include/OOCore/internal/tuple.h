@@ -31,12 +31,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-// Preprocessor/tuple.h
+// tuple.h
 //
 // Tuple macros
 //
 
-#include <OOCore/Preprocessor/base.h>
+#include "pre_base.h"
 
 #if !defined(OMEGA_TUPLE_FOR_EACH)
 

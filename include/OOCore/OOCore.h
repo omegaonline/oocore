@@ -23,7 +23,7 @@
 #define OOCORE_H_INCLUDED_
 
 //////////////////////////////////////////////
-#include "config-guess.h"
+#include "internal/config-guess.h"
 #include "version.h"
 
 //////////////////////////////////////////////
@@ -87,16 +87,16 @@
 #pragma warning(disable : 4244 4267)
 #endif
 
-#include "Types.h"
-#include "Threading.h"
-#include "Base.h"
-#include "Export.h"
-#include "Rtti.h"
-#include "Safe.h"
-#include "SafePS.h"
-#include "Wire.h"
-#include "WirePS.h"
-#include "Interfaces.h"
+#include "internal/types.h"
+#include "internal/threading.h"
+#include "internal/base.h"
+#include "internal/export.h"
+#include "internal/rtti.h"
+#include "internal/safe.h"
+#include "internal/safe_ps.h"
+#include "internal/wire.h"
+#include "internal/wire_ps.h"
+#include "internal/interfaces.h"
 
 namespace Omega
 {
@@ -108,11 +108,11 @@ namespace Omega
 	bool_t HandleRequest(uint32_t timeout = 0);
 }
 
-#include "Types.inl"
-#include "Threading.inl"
-#include "Rtti.inl"
-#include "Safe.inl"
-#include "Wire.inl"
+#include "internal/types.inl"
+#include "internal/threading.inl"
+#include "internal/rtti.inl"
+#include "internal/safe.inl"
+#include "internal/wire.inl"
 
 #if defined(_MSC_VER) && defined(_Wp64)
 #pragma warning(pop)

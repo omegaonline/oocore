@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;&quot;D:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="&quot;D:\Program Files\Visual Leak Detector\src\Release&quot;"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -545,31 +545,43 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Base.h"
+				RelativePath="..\..\include\OOCore\internal\base.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\BaseTypes.h"
+				RelativePath="..\..\include\OOCore\internal\base_types.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\config-guess.h"
+				RelativePath="..\..\include\OOCore\internal\comma.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\config-msvc.h"
+				RelativePath="..\..\include\OOCore\internal\config-borland.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\config-win32.h"
+				RelativePath="..\..\include\OOCore\internal\config-gcc.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Export.h"
+				RelativePath="..\..\include\OOCore\internal\config-guess.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Interfaces.h"
+				RelativePath="..\..\include\OOCore\internal\config-msvc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\config-win32.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\export.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\interfaces.h"
 				>
 			</File>
 			<File
@@ -577,27 +589,39 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\include\OOCore\internal\pre_base.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\OOCore\Remoting.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Rtti.h"
+				RelativePath="..\..\include\OOCore\internal\repeat.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Rtti.inl"
+				RelativePath="..\..\include\OOCore\internal\rtti.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Safe.h"
+				RelativePath="..\..\include\OOCore\internal\rtti.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Safe.inl"
+				RelativePath="..\..\include\OOCore\internal\safe.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\SafePS.h"
+				RelativePath="..\..\include\OOCore\internal\safe.inl"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\safe_ps.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\sequence.h"
 				>
 			</File>
 			<File
@@ -605,19 +629,27 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Threading.h"
+				RelativePath="..\..\include\OOCore\internal\split.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Threading.inl"
+				RelativePath="..\..\include\OOCore\internal\threading.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Types.h"
+				RelativePath="..\..\include\OOCore\internal\threading.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Types.inl"
+				RelativePath="..\..\include\OOCore\internal\tuple.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\types.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\OOCore\internal\types.inl"
 				>
 			</File>
 			<File
@@ -625,15 +657,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Wire.h"
+				RelativePath="..\..\include\OOCore\internal\wire.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Wire.inl"
+				RelativePath="..\..\include\OOCore\internal\wire.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\WirePS.h"
+				RelativePath="..\..\include\OOCore\internal\wire_ps.h"
 				>
 			</File>
 		</Filter>

@@ -119,13 +119,13 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last because we includes a lot of headers, which might be dangerous!
 
-#include <OOCore/config-guess.h>
+#include <OOCore/internal/config-guess.h>
 #include <OOCore/version.h>
 #include <sqlite3.h>
 
 static int Version()
 {
-std::cout << "OOServer version information:" << std::endl;
+	std::cout << "OOServer version information:" << std::endl;
 #if defined(OMEGA_DEBUG)
 	std::cout << "Version: " << OOCORE_VERSION << " (Debug build)" << std::endl;
 #else

@@ -22,7 +22,7 @@
 #ifndef OMEGA_TYPES_H_INCLUDED_
 #define OMEGA_TYPES_H_INCLUDED_
 
-#include "BaseTypes.h"
+#include "base_types.h"
 
 namespace Omega
 {

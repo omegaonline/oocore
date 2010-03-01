@@ -31,12 +31,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-// Preprocessor/repeat.h
+// repeat.h
 //
 // Repeat macros
 //
 
-#include <OOCore/Preprocessor/base.h>
+#include "pre_base.h"
 
 #if !defined(OMEGA_REPEAT)
 #define OMEGA_REPEAT_1(m)    m(0)

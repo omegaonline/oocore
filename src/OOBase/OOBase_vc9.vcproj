@@ -21,7 +21,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -45,7 +45,6 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
 				WarningLevel="4"
 				DebugInformationFormat="4"
 			/>
@@ -138,7 +137,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)"
+			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			CharacterSet="0"
@@ -167,7 +166,6 @@
 				StringPooling="true"
 				RuntimeLibrary="0"
 				RuntimeTypeInfo="false"
-				UsePrecompiledHeader="0"
 				WarningLevel="4"
 			/>
 			<Tool

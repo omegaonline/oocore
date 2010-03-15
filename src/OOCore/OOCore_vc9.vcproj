@@ -539,134 +539,110 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="OOCore"
+			Name="Omega"
 			>
 			<File
-				RelativePath="..\..\include\OOCore\Apartment.h"
+				RelativePath="..\..\include\Omega\Apartment.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\base.h"
+				RelativePath="..\..\include\Omega\internal\base.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\base_types.h"
+				RelativePath="..\..\include\Omega\internal\base_types.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\comma.h"
+				RelativePath="..\..\include\Omega\internal\config-borland.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\config-borland.h"
+				RelativePath="..\..\include\Omega\internal\config-gcc.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\config-gcc.h"
+				RelativePath="..\..\include\Omega\internal\config-guess.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\config-guess.h"
+				RelativePath="..\..\include\Omega\internal\config-msvc.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\config-msvc.h"
+				RelativePath="..\..\include\Omega\internal\config-win32.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\config-win32.h"
+				RelativePath="..\..\include\Omega\internal\export.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\export.h"
+				RelativePath="..\..\include\Omega\internal\interfaces.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\interfaces.h"
+				RelativePath="..\..\include\Omega\Omega.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\OOCore.h"
+				RelativePath="..\..\include\Omega\Remoting.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\pre_base.h"
+				RelativePath="..\..\include\Omega\internal\rtti.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Remoting.h"
+				RelativePath="..\..\include\Omega\internal\rtti.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\repeat.h"
+				RelativePath="..\..\include\Omega\internal\safe.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\rtti.h"
+				RelativePath="..\..\include\Omega\internal\safe.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\rtti.inl"
+				RelativePath="..\..\include\Omega\internal\safe_ps.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\safe.h"
+				RelativePath="..\..\include\Omega\Service.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\safe.inl"
+				RelativePath="..\..\include\Omega\internal\threading.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\safe_ps.h"
+				RelativePath="..\..\include\Omega\internal\threading.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\sequence.h"
+				RelativePath="..\..\include\Omega\internal\types.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\Service.h"
+				RelativePath="..\..\include\Omega\internal\types.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\split.h"
+				RelativePath="..\..\include\Omega\version.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\threading.h"
+				RelativePath="..\..\include\Omega\internal\wire.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\threading.inl"
+				RelativePath="..\..\include\Omega\internal\wire.inl"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\OOCore\internal\tuple.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\internal\types.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\internal\types.inl"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\version.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\internal\wire.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\internal\wire.inl"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\OOCore\internal\wire_ps.h"
+				RelativePath="..\..\include\Omega\internal\wire_ps.h"
 				>
 			</File>
 		</Filter>

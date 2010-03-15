@@ -24,10 +24,10 @@
 
 #if !defined(DOXYGEN)
 
-#include "sequence.h"
-#include "repeat.h"
-#include "comma.h"
-#include "split.h"
+#include "cpp/sequence.h"
+#include "cpp/repeat.h"
+#include "cpp/comma.h"
+#include "cpp/split.h"
 
 #define OMEGA_UNIQUE_NAME(name) \
 	OMEGA_CONCAT(name,__LINE__)

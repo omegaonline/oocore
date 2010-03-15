@@ -1,4 +1,4 @@
-#include <OOCore/Remoting.h>
+#include <Omega/Remoting.h>
 #include "Test.h"
 
 bool string_tests()

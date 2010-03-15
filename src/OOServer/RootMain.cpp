@@ -119,8 +119,8 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Leave this function last because we includes a lot of headers, which might be dangerous!
 
-#include <OOCore/internal/config-guess.h>
-#include <OOCore/version.h>
+#include <Omega/internal/config-guess.h>
+#include <Omega/version.h>
 #include <sqlite3.h>
 
 static int Version()

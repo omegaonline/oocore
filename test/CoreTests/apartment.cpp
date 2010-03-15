@@ -1,5 +1,5 @@
 #include <OTL/OTL.h>
-#include <OOCore/Apartment.h>
+#include <Omega/Apartment.h>
 #include "interfaces.h"
 
 #if defined(_WIN32)

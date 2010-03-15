@@ -49,7 +49,7 @@
 #include <OTL/Exception.h>
 #include <OTL/Registry.h>
 
-#include <OOCore/Service.h>
+#include <Omega/Service.h>
 
 /////////////////////////////////////////////////
 

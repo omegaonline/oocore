@@ -24,7 +24,7 @@
 
 #include "winnt.h"
 #include "winver.h"
-#include "../../include/OOCore/version.h"
+#include "../../include/Omega/version.h"
 
 /////////////////////////////////////////////////////////////////////////////
 //

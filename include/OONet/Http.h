@@ -22,7 +22,7 @@
 #ifndef OOCORE_HTTP_H_INCLUDED_
 #define OOCORE_HTTP_H_INCLUDED_
 
-#include <OOCore/OOCore.h>
+#include <Omega/Omega.h>
 
 namespace Omega
 {

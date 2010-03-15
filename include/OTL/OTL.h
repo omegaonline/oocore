@@ -22,7 +22,7 @@
 #ifndef OTL_OTL_H_INCLUDED_
 #define OTL_OTL_H_INCLUDED_
 
-#include <OOCore/OOCore.h>
+#include <Omega/Omega.h>
 
 ///////////////////////////////////////////////////////////////////
 // Interface map macros

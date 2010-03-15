@@ -22,7 +22,7 @@
 #ifndef OOCORE_SERVICE_H_INCLUDED_
 #define OOCORE_SERVICE_H_INCLUDED_
 
-#include "OOCore.h"
+#include "Omega.h"
 
 namespace Omega
 {

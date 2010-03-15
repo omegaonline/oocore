@@ -22,7 +22,7 @@
 #ifndef OOCORE_BASE_H_INCLUDED_
 #define OOCORE_BASE_H_INCLUDED_
 
-#include "pre_base.h"
+#include "cpp/pre_base.h"
 
 #if !defined(interface)
 #define interface struct

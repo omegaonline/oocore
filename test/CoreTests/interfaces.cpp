@@ -1,5 +1,5 @@
 #include <OTL/OTL.h>
-#include <OOCore/Remoting.h>
+#include <Omega/Remoting.h>
 #include "interfaces.h"
 
 namespace Omega {

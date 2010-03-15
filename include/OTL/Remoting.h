@@ -24,7 +24,7 @@
 
 // Specialisations of ObjectPtr for remoting
 #include "OTL.h"
-#include <OOCore/Remoting.h>
+#include <Omega/Remoting.h>
 
 namespace OTL
 {

@@ -549,7 +549,10 @@ namespace
 	static BOOL WINAPI control_c(DWORD)
 	{
 		// Just stop!
-		exit(EXIT_FAILURE);
+		if (s_hEvent)
+			SetEvent(s_hEvent);
+
+		return TRUE;
 	}
 }
 
@@ -580,20 +583,35 @@ void User::Manager::wait_for_quit()
 void User::Manager::quit()
 {
 	// Just stop!
-	if (s_hEvent && !SetEvent(s_hEvent))
-		OOBase_CallCriticalFailure(GetLastError());
+	if (s_hEvent)
+		SetEvent(s_hEvent);
 }
 
 #else
 
 void User::Manager::wait_for_quit()
 {
+	// Use libev to wait on the default loop
+	ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
+	if (!pLoop)
+	{
+		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+		return;
+	}
+
+	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
 	void* POSIX_TODO;
+
+	// Let ev loop...
+	ev_loop(pLoop,0);
 }
 
 void User::Manager::quit()
 {
+	// Is this the most sensible thing to do?
 	void* POSIX_TODO;
+
+	raise(SIGTERM);
 }
 
 #endif

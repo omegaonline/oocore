@@ -82,13 +82,6 @@ namespace OOSvrBase
 		virtual bool on_accept(OOBase::Socket* pSocket, int err) = 0;
 	};
 
-	class AsyncAcceptor
-	{
-	public:
-		virtual IOHandler* make_handler() = 0;
-		virtual bool on_accept(IOHandler* handler, AsyncSocket* pSocket, int err) = 0;
-	};
-
 	namespace detail
 	{
 		class ProactorImpl

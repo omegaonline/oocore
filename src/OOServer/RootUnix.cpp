@@ -103,8 +103,19 @@ bool Root::Manager::get_db_directory(std::string& dir)
 
 void Root::Manager::wait_for_quit()
 {
-	// Use libev or just a plain signal handler?
+	// Use libev to wait on the default loop
+	ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
+	if (!pLoop)
+	{
+		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+		return;
+	}
+
+	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
 	void* POSIX_TODO;
+
+	// Let ev loop...
+	ev_loop(pLoop,0);
 }
 
 namespace OOBase

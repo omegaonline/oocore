@@ -532,4 +532,4 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	return pSpawn;
 }
 
-#endif // !ACE_WIN32
+#endif // !HAVE_UNISTD_H

@@ -30,7 +30,8 @@ liboobase_la_SOURCES = \
 	Thread.h \
 	TimeVal.cpp \
 	TimeVal.h \
-	UnixSocket.cpp \
+	PosixSocket.h \
+	PosixSocket.cpp \
 	Win32.cpp \
 	Win32.h \
 	Win32Socket.cpp \

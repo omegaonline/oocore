@@ -30,6 +30,8 @@
 #error Includes have got confused, check Proactor.h
 #endif
 
+#include "Thread.h"
+
 namespace OOSvrBase
 {
 	namespace Ev
@@ -43,6 +45,17 @@ namespace OOSvrBase
 			OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*);
 
 			AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
+
+		private:
+			OOBase::Thread m_worker;
+			ev_loop*       m_pLoop;
+			ev_async       m_stop_async;
+
+			static int worker(void* param);
+			int worker_i();
+
+			static void async_stop(ev_loop* loop, ev_async *watcher, int revents);
+
 		};
 	}
 }

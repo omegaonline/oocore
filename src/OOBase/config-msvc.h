@@ -50,10 +50,9 @@
 #define OMEGA_DEBUG
 #endif
 
-#if defined(_WIN32_WCE)
-	#include "config-wince.h"
-#elif defined(_WIN32)
-	#include "config-win32.h"
+#if defined(_WIN32) || defined(_WIN32_WCE)
+	/* Define to 1 if you have the <windows.h> header file. */
+	#define HAVE_WINDOWS_H 1
 #else
 	#error What else can MSVC compile?
 #endif

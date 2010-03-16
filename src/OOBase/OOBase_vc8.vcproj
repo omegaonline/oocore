@@ -350,10 +350,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\config-win32.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Destructor.h"
 				>
 			</File>

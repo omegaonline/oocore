@@ -38,7 +38,6 @@ liboobase_la_SOURCES = \
 	Win32Socket.h \
 	config-base.h \
 	config-msvc.h \
-	config-win32.h \
 	tr24731.h \
 	tr24731.cpp \
 	utf8.cpp \

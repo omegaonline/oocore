@@ -40,7 +40,7 @@ namespace OOBase
 			virtual size_t recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* timeout = 0);
 			virtual void close();
 
-			HANDLE peek_handle()
+			HANDLE peek_handle() const
 			{
 				return m_hSocket;
 			}

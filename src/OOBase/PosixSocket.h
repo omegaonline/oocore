@@ -36,15 +36,20 @@ namespace OOBase
 		class SocketImpl
 		{
 		public:
-			SocketImpl(int sock_handle);
+			SocketImpl(int fd);
 			virtual ~SocketImpl();
 
 			virtual int send(const void* buf, size_t len, const OOBase::timeval_t* timeout = 0);
 			virtual size_t recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* timeout = 0);
 			virtual void close();
 
+			int get_fd() const
+			{
+				return m_fd;
+			}
+
 		protected:
-			int m_sock_handle;
+			int m_fd;
 		};
 
 		template <class Base>
@@ -53,8 +58,8 @@ namespace OOBase
 			public SocketImpl
 		{
 		public:
-			SocketTempl(int sock_handle) :
-				SocketImpl(sock_handle)
+			SocketTempl(int fd) :
+				SocketImpl(fd)
 			{}
 
 			virtual ~SocketTempl()
@@ -84,8 +89,8 @@ namespace OOBase
 			public SocketTempl<OOBase::Socket>
 		{
 		public:
-			Socket(int sock_handle) :
-				SocketTempl<OOBase::Socket>(sock_handle)
+			Socket(int fd) :
+				SocketTempl<OOBase::Socket>(fd)
 			{}
 		};
 
@@ -93,8 +98,8 @@ namespace OOBase
 			public SocketTempl<OOBase::LocalSocket>
 		{
 		public:
-			LocalSocket(int sock_handle) :
-				SocketTempl<OOBase::LocalSocket>(sock_handle)
+			LocalSocket(int fd) :
+				SocketTempl<OOBase::LocalSocket>(fd)
 			{}
 
 			virtual OOBase::LocalSocket::uid_t get_uid();

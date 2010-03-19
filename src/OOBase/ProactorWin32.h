@@ -48,10 +48,10 @@ namespace OOSvrBase
 			OOBase::AtomicInt<size_t> m_outstanding;
 		};
 
-		class HandleSocket : public OOSvrBase::AsyncSocket
+		class AsyncSocket : public OOSvrBase::AsyncSocket
 		{
 		public:
-			HandleSocket(ProactorImpl* pProactor, HANDLE handle, OOSvrBase::IOHandler* handler);
+			AsyncSocket(ProactorImpl* pProactor, HANDLE handle, IOHandler* handler);
 			int bind();
 					
 			int read(OOBase::Buffer* buffer, size_t len);
@@ -59,7 +59,7 @@ namespace OOSvrBase
 			void close();
 
 		private:
-			virtual ~HandleSocket();
+			virtual ~AsyncSocket();
 
 			bool do_read(DWORD dwToRead);
 			int read_next();
@@ -77,7 +77,7 @@ namespace OOSvrBase
 				OOBase::Buffer* m_buffer;
 				bool            m_is_reading;
 				size_t          m_to_read;
-				HandleSocket*   m_this_ptr;
+				AsyncSocket*    m_this_ptr;
 			};
 
 			struct AsyncRead
@@ -89,7 +89,7 @@ namespace OOSvrBase
 			OOBase::Mutex               m_lock;
 			ProactorImpl*               m_pProactor;
 			OOBase::Win32::SmartHandle  m_handle;
-			OOSvrBase::IOHandler*       m_handler;
+			IOHandler*                  m_handler;
 			Completion                  m_read_complete;
 			Completion                  m_write_complete;
 			std::deque<AsyncRead>       m_async_reads;

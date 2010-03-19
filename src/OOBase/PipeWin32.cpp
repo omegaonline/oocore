@@ -39,18 +39,18 @@ namespace OOSvrBase
 
 			int init(Acceptor* sync_handler);
 			
-			virtual int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
+			int send(const void* /*buf*/, size_t /*len*/, const OOBase::timeval_t* /*timeout*/ = 0)
 			{
 				return ERROR_INVALID_FUNCTION;
 			}
 
-			virtual size_t recv(void* /*buf*/, size_t /*len*/, int* perr, const OOBase::timeval_t* /*timeout*/ = 0)
+			size_t recv(void* /*buf*/, size_t /*len*/, int* perr, const OOBase::timeval_t* /*timeout*/ = 0)
 			{
 				*perr = ERROR_INVALID_FUNCTION;
 				return 0;
 			}
 
-			virtual void close();
+			void close();
 
 			int accept_named_pipe();
 
@@ -116,17 +116,20 @@ void OOSvrBase::Win32::PipeAcceptor::close()
 {
 	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-	m_closed = true;
+	if (!m_closed)
+	{
+		m_closed = true;
 
-	if (m_ov.hEvent)
-		SetEvent(m_ov.hEvent);
+		if (m_ov.hEvent)
+			SetEvent(m_ov.hEvent);
 
-	bool wait = m_hPipe.is_valid();
+		bool wait = m_hPipe.is_valid();
 
-	guard.release();
+		guard.release();
 
-	if (wait)
-		WaitForSingleObject(m_hClosed,INFINITE);
+		if (wait)
+			WaitForSingleObject(m_hClosed,INFINITE);
+	}
 }
 
 int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe()

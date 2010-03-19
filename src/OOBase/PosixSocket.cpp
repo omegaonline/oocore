@@ -29,7 +29,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	/* OpenBSD style:  */
 	uid_t uid;
 	gid_t gid;
-	if (getpeereid(m_sock_handle, &uid, &gid) != 0)
+	if (getpeereid(m_fd, &uid, &gid) != 0)
 	{
 		/* We didn't get a valid credentials struct. */
 		OOBase_CallCriticalFailure(errno);
@@ -42,7 +42,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	ucred peercred;
 	socklen_t so_len = sizeof(peercred);
 
-	if (getsockopt(m_sock_handle, SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
+	if (getsockopt(m_fd, SOL_SOCKET, SO_PEERCRED, &peercred, &so_len) != 0 || so_len != sizeof(peercred))
 	{
 		/* We didn't get a valid credentials struct. */
 		OOBase_CallCriticalFailure(errno);
@@ -53,7 +53,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 #elif defined(HAVE_GETPEERUCRED)
 	/* Solaris > 10 */
 	ucred_t* ucred = NULL; /* must be initialized to NULL */
-	if (getpeerucred(m_sock_handle, &ucred) != 0)
+	if (getpeerucred(m_fd, &ucred) != 0)
 	{
 		OOBase_CallCriticalFailure(errno);
 		return -1;
@@ -77,7 +77,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	* next packet.
 	*/
 	int on = 1;
-	if (setsockopt(m_sock_handle, 0, LOCAL_CREDS, &on, sizeof(on)) != 0)
+	if (setsockopt(m_fd, 0, LOCAL_CREDS, &on, sizeof(on)) != 0)
 	{
 		OOBase_CallCriticalFailure(errno);
 		return -1;
@@ -118,7 +118,7 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 	iov.iov_base = &buf;
 	iov.iov_len = 1;
 
-	if (recvmsg(m_sock_handle, &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
+	if (recvmsg(m_fd, &msg, 0) < 0 || cmsg->cmsg_len < sizeof(cmsgmem) || cmsg->cmsg_type != SCM_CREDS)
 	{
 		OOBase_CallCriticalFailure(errno);
 		return -1;
@@ -135,38 +135,49 @@ OOBase::LocalSocket::uid_t LocalSocket::get_uid()
 
 OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path, int* perr, const timeval_t* wait)
 {
-	int sock_handle;
-	if ((sock_handle = socket(AF_UNIX,SOCK_STREAM,0)) == -1)
+	int fd;
+	if ((fd = socket(AF_UNIX,SOCK_STREAM,0)) == -1)
 	{
 		*perr = errno;
+		return 0;
+	}
+
+	// Add FD_CLOEXEC
+	int oldflags = fcntl(fd,F_GETFD);
+	if (oldflags == -1 ||
+		fnctl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	{
+		*perr = errno;
+		close(fd);
 		return 0;
 	}
 
 	sockaddr_un addr;
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path,path.c_str(),sizeof(addr.sun_path)-1);
-
-	if (connect(sock_handle,(sockaddr*)(&addr),sizeof(addr)) != 0)
+	memset(addr.sun_path,0,sizeof(addr.sun_path));
+	path.copy(addr.sun_path,sizeof(addr.sun_path)-1);
+	
+	if (connect(fd,(sockaddr*)(&addr),sizeof(addr)) != 0)
 	{
 		*perr = errno;
-		::close(sock_handle);
+		::close(fd);
 		return 0;
 	}
 
 	OOBase::POSIX::LocalSocket* pSocket = 0;
-	OOBASE_NEW(pSocket,OOBase::POSIX::LocalSocket(sock_handle));
+	OOBASE_NEW(pSocket,OOBase::POSIX::LocalSocket(fd));
 	if (!pSocket)
 	{
 		*perr = ENOMEM;
-		::close(sock_handle);
+		::close(fd);
 		return 0;
 	}
 
 	return pSocket;
 }
 
-OOBase::POSIX::SocketImpl::SocketImpl(int sock_handle) :
-	m_sock_handle(sock_handle)
+OOBase::POSIX::SocketImpl::SocketImpl(int fd) :
+	m_fd(fd)
 {
 }
 
@@ -177,7 +188,7 @@ OOBase::POSIX::SocketImpl::~SocketImpl()
 
 int OOBase::POSIX::SocketImpl::send(const void* buf, size_t len, const OOBase::timeval_t* /*timeout*/)
 {
-	ssize_t sent = ::send(m_sock_handle,buf,len,0);
+	ssize_t sent = ::send(m_fd,buf,len,0);
 	if (sent == -1)
 		return errno;
 	else
@@ -186,7 +197,7 @@ int OOBase::POSIX::SocketImpl::send(const void* buf, size_t len, const OOBase::t
 
 size_t OOBase::POSIX::SocketImpl::recv(void* buf, size_t len, int* perr, const OOBase::timeval_t* /*timeout*/)
 {
-	ssize_t read = ::recv(m_sock_handle,buf,len,0);
+	ssize_t read = ::recv(m_fd,buf,len,0);
 	if (read != -1)
 		return static_cast<size_t>(read);
 
@@ -196,8 +207,8 @@ size_t OOBase::POSIX::SocketImpl::recv(void* buf, size_t len, int* perr, const O
 
 void OOBase::POSIX::SocketImpl::close()
 {
-	::close(m_sock_handle);
-	m_sock_handle = -1;
+	::close(m_fd);
+	m_fd = -1;
 }
 
 #endif // !defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)

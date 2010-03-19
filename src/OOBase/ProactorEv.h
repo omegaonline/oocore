@@ -30,7 +30,11 @@
 #error Includes have got confused, check Proactor.h
 #endif
 
+#include <queue>
+#include <vector>
+
 #include "Thread.h"
+#include "Condition.h"
 
 namespace OOSvrBase
 {
@@ -46,16 +50,45 @@ namespace OOSvrBase
 
 			AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
 
+			struct io_watcher : public ev_io
+			{
+				void* param;
+				void (*callback)(void*);
+			};
+
+			int add_watcher(io_watcher*& pNew, int fd, int events, void* param, void (*callback)(void*));
+			int start_watcher(io_watcher* watcher);
+			int stop_watcher(io_watcher* watcher);
+			int remove_watcher(io_watcher* watcher);
+
 		private:
-			OOBase::Thread m_worker;
-			ev_loop*       m_pLoop;
-			ev_async       m_stop_async;
+			struct io_info
+			{
+				io_watcher* watcher;
+				int         op; // 0-start,1-stop,2-delete
+			};
+
+			// The following vars all use this lock
+			OOBase::Mutex            m_ev_lock;
+			ev_loop*                 m_pLoop;
+			std::queue<io_watcher*>* m_pIOQueue;
+			bool                     m_bAsyncTriggered;
+						
+			// The following vars all use this lock
+			OOBase::SpinLock    m_lock;
+			bool                m_bStop;
+			std::queue<io_info> m_update_queue;
+
+			// The following vars don't...
+			std::vector<OOBase::SmartPtr<OOBase::Thread> > m_workers;
+			ev_async                                       m_alert;
 
 			static int worker(void* param);
 			int worker_i();
 
-			static void async_stop(ev_loop* loop, ev_async *watcher, int revents);
-
+			static void on_alert(ev_loop*, ev_async* watcher, int);
+			static void on_io(ev_loop*, ev_io* watcher, int events);
+			void on_io_i(io_watcher* watcher, int events);
 		};
 	}
 }

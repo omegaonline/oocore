@@ -54,7 +54,7 @@ namespace OOBase
 				wait2 = *wait;
 			Countdown countdown(&wait2);
 
-			OOBase::Guard<Condition::Mutex> guard(m_lock);
+			Guard<Condition::Mutex> guard(m_lock);
 
 			++m_waiters;
 
@@ -88,7 +88,7 @@ namespace OOBase
 				wait2 = *wait;
 			Countdown countdown(&wait2);
 
-			OOBase::Guard<Condition::Mutex> guard(m_lock);
+			Guard<Condition::Mutex> guard(m_lock);
 
 			++m_waiters;
 

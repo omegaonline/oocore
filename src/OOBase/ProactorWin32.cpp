@@ -65,7 +65,7 @@ OOSvrBase::AsyncSocket* OOSvrBase::Win32::ProactorImpl::attach_socket(IOHandler*
 		*perr = GetLastError();
 		return 0;
 	}
-	
+
 	// Alloc a new async socket
 	AsyncSocket* pSock;
 	OOBASE_NEW(pSock,AsyncSocket(this,hClone,handler));
@@ -129,17 +129,17 @@ int OOSvrBase::Win32::AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
 
 	try
 	{
-		m_async_reads.push_back(read);	
+		m_async_reads.push_back(read);
 	}
 	catch (std::exception&)
 	{
 		read.m_buffer->release();
 		return ERROR_OUTOFMEMORY;
 	}
-	
+
 	if (m_read_complete.m_buffer)
 		return 0;
-	
+
 	return read_next();
 }
 
@@ -181,17 +181,17 @@ int OOSvrBase::Win32::AsyncSocket::write(OOBase::Buffer* buffer)
 
 	try
 	{
-		m_async_writes.push_back(buffer->duplicate());	
+		m_async_writes.push_back(buffer->duplicate());
 	}
 	catch (std::exception&)
 	{
 		buffer->release();
 		return ERROR_OUTOFMEMORY;
 	}
-	
+
 	if (m_write_complete.m_buffer)
 		return 0;
-	
+
 	return write_next();
 }
 
@@ -216,9 +216,9 @@ int OOSvrBase::Win32::AsyncSocket::write_next()
 		// Reset the completion info
 		memset(&m_write_complete.m_ov,0,sizeof(OVERLAPPED));
 		m_write_complete.m_buffer = buffer;
-			
+
 	} while (!do_write());
-	
+
 	return 0;
 }
 
@@ -230,7 +230,7 @@ VOID CALLBACK OOSvrBase::Win32::AsyncSocket::completion_fn(DWORD dwErrorCode, DW
 		this_ptr->handle_read(dwErrorCode,dwNumberOfBytesTransfered);
 	else
 		this_ptr->handle_write(dwErrorCode,dwNumberOfBytesTransfered);
-	
+
 	--this_ptr->m_pProactor->m_outstanding;
 	this_ptr->release();
 }
@@ -259,12 +259,12 @@ bool OOSvrBase::Win32::AsyncSocket::do_read(DWORD dwToRead)
 			if (closed)
 				dwErr = 0;
 
-			if (m_handler && m_read_complete.m_buffer->length())
+			if (m_handler && (m_read_complete.m_buffer->length() != 0 || dwErr != 0))
 				m_handler->on_read(this,m_read_complete.m_buffer,dwErr);
 
 			if (m_handler && closed)
 				m_handler->on_closed(this);
-			
+
 			m_read_complete.m_buffer->release();
 			m_read_complete.m_buffer = 0;
 
@@ -304,8 +304,8 @@ void OOSvrBase::Win32::AsyncSocket::handle_read(DWORD dwErrorCode, DWORD dwNumbe
 		if (closed)
 			dwErrorCode = 0;
 
-		// Call handlers 
-		if (m_handler && m_read_complete.m_buffer->length())
+		// Call handlers
+		if (m_handler && (m_read_complete.m_buffer->length() != 0 || dwErrorCode != 0))
 			m_handler->on_read(this,m_read_complete.m_buffer,dwErrorCode);
 
 		if (m_handler && closed)
@@ -342,12 +342,12 @@ bool OOSvrBase::Win32::AsyncSocket::do_write()
 			if (closed)
 				dwErr = 0;
 
-			if (m_handler)
+			if (m_handler && (dwWritten != 0 || dwErr != 0))
 				m_handler->on_write(this,m_write_complete.m_buffer,dwErr);
 
 			if (m_handler && closed)
 				m_handler->on_closed(this);
-			
+
 			m_write_complete.m_buffer->release();
 			m_write_complete.m_buffer = 0;
 
@@ -367,7 +367,7 @@ void OOSvrBase::Win32::AsyncSocket::handle_write(DWORD dwErrorCode, DWORD dwNumb
 
 	// Update rd_ptr
 	m_write_complete.m_buffer->rd_ptr(dwNumberOfBytesTransfered);
-	
+
 	bool closed = false;
 	if (dwErrorCode == 0 && m_write_complete.m_buffer->length() > 0)
 	{
@@ -384,8 +384,8 @@ void OOSvrBase::Win32::AsyncSocket::handle_write(DWORD dwErrorCode, DWORD dwNumb
 		if (closed)
 			dwErrorCode = 0;
 
-		// Call handlers 
-		if (m_handler)
+		// Call handlers
+		if (m_handler && (dwNumberOfBytesTransfered != 0 || dwErrorCode != 0))
 			m_handler->on_write(this,m_write_complete.m_buffer,dwErrorCode);
 
 		if (m_handler && closed)
@@ -398,7 +398,7 @@ void OOSvrBase::Win32::AsyncSocket::handle_write(DWORD dwErrorCode, DWORD dwNumb
 
 	// Write the next
 	if (!closed)
-		write_next();	
+		write_next();
 }
 
 void OOSvrBase::Win32::AsyncSocket::close()

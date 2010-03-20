@@ -35,6 +35,7 @@
 #include "RootManager.h"
 
 #if defined(HAVE_UNISTD_H)
+bool create_unless_existing_directory(std::string& dir);
 
 bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
 {
@@ -93,25 +94,8 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 
 bool Root::Manager::get_db_directory(std::string& dir)
 {
-	dir= "/var/lib/omegaonline";
-        struct stat st= {0};
-        
-        if( stat(dir.c_str(),&st))
-        {
-            LOG_ERROR_RETURN(("stat(%s) failed: %s",
-                dir.c_str(),
-                OOSvrBase::Logger::format_error(errno).c_str()),false);
-        }
-
-        // added dir present test
-        if (( ! S_ISDIR(st.st_mode) ) && mkdir(dir.c_str(), 
-            S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
-        {
-                LOG_ERROR_RETURN(("mkdir(%s) failed: %s",
-                    dir.c_str(),
-                    OOSvrBase::Logger::format_error(errno).c_str()),false);
-        }
-	return true;
+    dir = "/var/lib/omegaonline" ;
+    return create_unless_existing_directory(dir);
 }
 
 void Root::Manager::wait_for_quit()
@@ -141,6 +125,26 @@ namespace OOBase
 		// Die horribly now!
 		abort();
 	}
+
+
 }
+
+bool create_unless_existing_directory(std::string& dir)
+{
+    struct stat st= {0};
+
+    if(stat(dir.c_str(),&st))
+        LOG_ERROR_RETURN(("stat(%s) failed: %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()),false);
+
+    if(!S_ISDIR(st.st_mode) && ((mkdir(dir.c_str(), 
+                        S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))))
+        LOG_ERROR_RETURN(("mkdir(%s) failed: %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()),false);
+    return true;
+}
+
 
 #endif

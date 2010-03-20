@@ -23,7 +23,7 @@
 
 #if !defined(_WIN32) && defined(HAVE_SYS_SOCKET_H)
 
-OOBase::LocalSocket::uid_t LocalSocket::get_uid()
+OOBase::LocalSocket::uid_t OOBase::POSIX::LocalSocket::get_uid()
 {
 #if defined(HAVE_GETPEEREID)
 	/* OpenBSD style:  */
@@ -145,10 +145,10 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 	// Add FD_CLOEXEC
 	int oldflags = fcntl(fd,F_GETFD);
 	if (oldflags == -1 ||
-		fnctl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+		fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		*perr = errno;
-		close(fd);
+		::close(fd);
 		return 0;
 	}
 
@@ -156,7 +156,7 @@ OOBase::LocalSocket* OOBase::LocalSocket::connect_local(const std::string& path,
 	addr.sun_family = AF_UNIX;
 	memset(addr.sun_path,0,sizeof(addr.sun_path));
 	path.copy(addr.sun_path,sizeof(addr.sun_path)-1);
-	
+
 	if (connect(fd,(sockaddr*)(&addr),sizeof(addr)) != 0)
 	{
 		*perr = errno;

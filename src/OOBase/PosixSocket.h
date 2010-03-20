@@ -28,6 +28,7 @@
 
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/fcntl.h>
 
 namespace OOBase
 {

@@ -35,7 +35,7 @@
 #include "RootManager.h"
 
 #if defined(HAVE_UNISTD_H)
-bool create_unless_existing_directory(std::string& dir);
+bool create_unless_existing_directory(std::string& dir, unsigned int flag);
 
 bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
 {
@@ -95,7 +95,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 bool Root::Manager::get_db_directory(std::string& dir)
 {
     dir = "/var/lib/omegaonline" ;
-    return create_unless_existing_directory(dir);
+    return create_unless_existing_directory(dir,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 }
 
 void Root::Manager::wait_for_quit()
@@ -129,7 +129,7 @@ namespace OOBase
 
 }
 
-bool create_unless_existing_directory(std::string& dir)
+bool create_unless_existing_directory(std::string& dir, unsigned int flag)
 {
     struct stat st= {0};
 
@@ -138,8 +138,7 @@ bool create_unless_existing_directory(std::string& dir)
                     dir.c_str(),
                     OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-    if(!S_ISDIR(st.st_mode) && ((mkdir(dir.c_str(), 
-                        S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))))
+    if(!S_ISDIR(st.st_mode) && ((mkdir(dir.c_str(),flag))))
         LOG_ERROR_RETURN(("mkdir(%s) failed: %s",
                     dir.c_str(),
                     OOSvrBase::Logger::format_error(errno).c_str()),false);

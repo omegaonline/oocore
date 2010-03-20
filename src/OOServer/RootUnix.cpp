@@ -93,11 +93,24 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 
 bool Root::Manager::get_db_directory(std::string& dir)
 {
-	dir = "/var/lib/omegaonline";
+	dir= "/var/lib/omegaonline";
+        struct stat st= {0};
+        
+        if( stat(dir.c_str(),&st))
+        {
+            LOG_ERROR_RETURN(("stat(%s) failed: %s",
+                dir.c_str(),
+                OOSvrBase::Logger::format_error(errno).c_str()),false);
+        }
 
-	if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
-		LOG_ERROR_RETURN(("mkdir(%s) failed: %s",dir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
-
+        // added dir present test
+        if (( ! S_ISDIR(st.st_mode) ) && mkdir(dir.c_str(), 
+            S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
+        {
+                LOG_ERROR_RETURN(("mkdir(%s) failed: %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()),false);
+        }
 	return true;
 }
 

@@ -34,6 +34,10 @@
 #include "OOServer_Root.h"
 #include "RootManager.h"
 
+#if defined(HAVE_EV_H)
+#include <ev.h>
+#endif
+
 #if defined(HAVE_UNISTD_H)
 
 bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
@@ -103,8 +107,15 @@ bool Root::Manager::get_db_directory(std::string& dir)
 
 void Root::Manager::wait_for_quit()
 {
+#if defined(HAVE_EV_H)
+
 	// Use libev to wait on the default loop
-	ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
+#if defined (EVFLAG_SIGNALFD)
+	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
+#else
+	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV);
+#endif
+
 	if (!pLoop)
 	{
 		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
@@ -115,7 +126,11 @@ void Root::Manager::wait_for_quit()
 	void* POSIX_TODO;
 
 	// Let ev loop...
-	ev_loop(pLoop,0);
+	::ev_loop(pLoop,0);
+
+#else
+#error Some kind of signal mechanism?
+#endif
 }
 
 namespace OOBase

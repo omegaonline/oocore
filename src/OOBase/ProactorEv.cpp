@@ -130,6 +130,16 @@ namespace OOSvrBase
 	}
 }
 
+OOSvrBase::Ev::AsyncSocket::~AsyncSocket()
+{
+	try
+	{
+		close();
+	}
+	catch (...)
+	{}
+}
+
 int OOSvrBase::Ev::AsyncSocket::bind(IOHandler* handler, int fd)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
@@ -151,6 +161,34 @@ int OOSvrBase::Ev::AsyncSocket::bind(IOHandler* handler, int fd)
 	return 0;
 }
 
+void OOSvrBase::Ev::AsyncSocket::close()
+{
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	if (m_handler)
+	{
+		m_handler = 0;
+
+		// Empty the queues
+		for (std::deque<AsyncRead>::iterator i=m_async_reads.begin();i!=m_async_reads.end();++i)
+			i->m_buffer->release();
+
+		m_async_reads.clear();
+
+		for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin();i!=m_async_writes.end();++i)
+			(*i)->release();
+
+		m_async_writes.clear();
+
+		::close(m_read_watcher->fd);
+
+		m_proactor->remove_watcher(m_read_watcher);
+		m_read_watcher = 0;
+		m_proactor->remove_watcher(m_write_watcher);
+		m_write_watcher = 0;
+	}
+}
+
 int OOSvrBase::Ev::AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
 {
 	assert(buffer);
@@ -165,6 +203,12 @@ int OOSvrBase::Ev::AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
 	AsyncRead read = { buffer->duplicate(), len };
 
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	if (!m_read_watcher)
+	{
+		read.m_buffer->release();
+		return ENOENT;
+	}
 
 	try
 	{
@@ -267,6 +311,9 @@ int OOSvrBase::Ev::AsyncSocket::write(OOBase::Buffer* buffer)
 		return 0;
 
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	if (!m_write_watcher)
+		return ENOENT;
 
 	try
 	{

@@ -3,7 +3,6 @@ AC_PREREQ(2.61)
 AC_INIT(omegaonline,0.5.0)
 AC_CONFIG_SRCDIR([src/OOCore/OOCore.cpp])
 AC_CONFIG_HEADER([src/OOBase/autoheader_dummy.h src/OOBase/config-autoconf.h])
-# AX_PREFIX_CONFIG_H([src/Common/config-autoconf.h],[OMEGA])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -23,8 +22,10 @@ AC_CONFIG_FILES([
 
 AM_INIT_AUTOMAKE([foreign 1.10 no-define])
 
+# Use the latest short output macro if available
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+# I like maintainer mode
 AM_MAINTAINER_MODE
 
 AC_CANONICAL_HOST
@@ -53,6 +54,7 @@ AC_CHECK_HEADERS([windows.h wchar.h sys/time.h asl.h syslog.h assert.h time.h er
 
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))
+AC_CHECK_LIB([ev],[ev_loop_new],AC_SUBST([EV_LIBS],["-lev"]))
 
 # Check for socket options
 OO_CHECK_SOCKOPT([SO_PEERCRED LOCAL_CREDS])

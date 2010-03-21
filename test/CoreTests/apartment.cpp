@@ -3,9 +3,9 @@
 #include "interfaces.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"ooregister -s"
+#define OOREGISTER L"ooregister -s -c"
 #else
-#define OOREGISTER L"./ooregister -s"
+#define OOREGISTER L"./ooregister -s -c"
 #endif
 
 #include "Test.h"
@@ -37,7 +37,7 @@ static bool do_apt_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	OTL::ObjectPtr<Omega::Apartment::IApartment> ptrApartment;
 	ptrApartment.Attach(Omega::Apartment::IApartment::Create());
 	TEST(ptrApartment);
-	
+
 	// try to create the object asking for TypeInfo::IProvideObjectInfo
 	Omega::IObject* pObject = 0;
 	ptrApartment->CreateInstance(L"Test.Library",Omega::Activation::InProcess,0,OMEGA_GUIDOF(Omega::TestSuite::ISimpleTest),pObject);

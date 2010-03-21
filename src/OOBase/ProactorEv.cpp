@@ -24,11 +24,12 @@
 #if defined(HAVE_EV_H)
 
 #include "ProactorEv.h"
+#include "PosixSocket.h"
 
 /////////////////////////////////////////////////////
 // NOTES:
 //
-// I have typed this whole thing blind... it needs a 
+// I have typed this whole thing blind... it needs a
 // load of checking (it might not even compile)
 //
 // Need to check for try/catch blocks around the stl operations
@@ -44,8 +45,8 @@ namespace OOSvrBase
 		class AsyncSocket : public OOSvrBase::AsyncSocket
 		{
 		public:
-			AsyncSocket(ProactorImpl* pProactor) : 
-				m_proactor(pProactor), 
+			AsyncSocket(ProactorImpl* pProactor) :
+				m_proactor(pProactor),
 				m_read_watcher(0),
 				m_write_watcher(0),
 				m_handler(0),
@@ -69,10 +70,10 @@ namespace OOSvrBase
 				size_t          m_to_read;
 			};
 
-			OOBase::SpinLock            m_lock;
+			OOBase::Mutex               m_lock;
 			ProactorImpl*               m_proactor;
-			io_watcher*                 m_read_watcher;
-			io_watcher*                 m_write_watcher;
+			ProactorImpl::io_watcher*   m_read_watcher;
+			ProactorImpl::io_watcher*   m_write_watcher;
 			IOHandler*                  m_handler;
 			std::deque<AsyncRead>       m_async_reads;
 			std::deque<OOBase::Buffer*> m_async_writes;
@@ -81,7 +82,7 @@ namespace OOSvrBase
 
 			static void on_read(void* param);
 			static void on_write(void* param);
-			
+
 			bool do_read(size_t to_read);
 			int read_next();
 
@@ -93,8 +94,8 @@ namespace OOSvrBase
 		class AcceptSocket : public OOBase::Socket
 		{
 		public:
-			AcceptSocket(ProactorImpl* pProactor) : 
-				m_proactor(pProactor), 
+			AcceptSocket(ProactorImpl* pProactor) :
+				m_proactor(pProactor),
 				m_watcher(0),
 				m_handler(0),
 				m_closing(false)
@@ -114,14 +115,14 @@ namespace OOSvrBase
 			}
 
 			void close();
-			
+
 		private:
-			OOBase::Condition::Mutex m_lock;
-			ProactorImpl*            m_proactor;
-			io_watcher*              m_watcher;
-			Acceptor*                m_handler;
-			OOBase::Condition        m_close_cond;
-			bool                     m_closing;
+			OOBase::Condition::Mutex  m_lock;
+			ProactorImpl*             m_proactor;
+			ProactorImpl::io_watcher* m_watcher;
+			Acceptor*                 m_handler;
+			OOBase::Condition         m_close_cond;
+			bool                      m_closing;
 
 			static void on_accept(void* param);
 			void on_accept_i();
@@ -129,25 +130,63 @@ namespace OOSvrBase
 	}
 }
 
+OOSvrBase::Ev::AsyncSocket::~AsyncSocket()
+{
+	try
+	{
+		close();
+	}
+	catch (...)
+	{}
+}
+
 int OOSvrBase::Ev::AsyncSocket::bind(IOHandler* handler, int fd)
 {
-	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Add our watcher
-	int err = pProactor->add_watcher(m_read_watcher,fd,EV_READ,this,&on_read);
+	int err = m_proactor->add_watcher(m_read_watcher,fd,EV_READ,this,&on_read);
 	if (err != 0)
 		return err;
 
-	int err = pProactor->add_watcher(m_write_watcher,fd,EV_WRITE,this,&on_write);
+	err = m_proactor->add_watcher(m_write_watcher,fd,EV_WRITE,this,&on_write);
 	if (err != 0)
 	{
-		pProactor->remove_watcher(m_read_watcher);
+		m_proactor->remove_watcher(m_read_watcher);
 		return err;
 	}
 
 	m_handler = handler;
-	
+
 	return 0;
+}
+
+void OOSvrBase::Ev::AsyncSocket::close()
+{
+	OOBase::Guard<OOBase::Mutex> guard(m_lock);
+
+	if (m_handler)
+	{
+		m_handler = 0;
+
+		// Empty the queues
+		for (std::deque<AsyncRead>::iterator i=m_async_reads.begin();i!=m_async_reads.end();++i)
+			i->m_buffer->release();
+
+		m_async_reads.clear();
+
+		for (std::deque<OOBase::Buffer*>::iterator i=m_async_writes.begin();i!=m_async_writes.end();++i)
+			(*i)->release();
+
+		m_async_writes.clear();
+
+		::close(m_read_watcher->fd);
+
+		m_proactor->remove_watcher(m_read_watcher);
+		m_read_watcher = 0;
+		m_proactor->remove_watcher(m_write_watcher);
+		m_write_watcher = 0;
+	}
 }
 
 int OOSvrBase::Ev::AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
@@ -165,19 +204,25 @@ int OOSvrBase::Ev::AsyncSocket::read(OOBase::Buffer* buffer, size_t len)
 
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
+	if (!m_read_watcher)
+	{
+		read.m_buffer->release();
+		return ENOENT;
+	}
+
 	try
 	{
-		m_async_reads.push_back(read);	
+		m_async_reads.push_back(read);
 	}
 	catch (std::exception&)
 	{
 		read.m_buffer->release();
 		return ENOMEM;
 	}
-	
+
 	if (m_current_read.m_buffer)
 		return 0;
-	
+
 	return read_next();
 }
 
@@ -223,13 +268,13 @@ bool OOSvrBase::Ev::AsyncSocket::do_read(size_t to_read)
 		{
 			if (errno == EAGAIN)
 				return true;
-			
+
 			err = errno;
 			break;
 		}
 
 		// Update wr_ptr
-		m_read_complete.m_buffer->wr_ptr(static_cast<size_t>(have_read));
+		m_current_read.m_buffer->wr_ptr(static_cast<size_t>(have_read));
 
 		if (m_current_read.m_to_read)
 			m_current_read.m_to_read -= static_cast<size_t>(have_read);
@@ -244,8 +289,8 @@ bool OOSvrBase::Ev::AsyncSocket::do_read(size_t to_read)
 		err = 0;
 	}
 
-	// Call handlers 
-	if (m_handler && m_current_read.m_buffer->length())
+	// Call handlers
+	if (m_handler && (m_current_read.m_buffer->length() || err != 0))
 		m_handler->on_read(this,m_current_read.m_buffer,err);
 
 	if (m_handler && closed)
@@ -267,6 +312,9 @@ int OOSvrBase::Ev::AsyncSocket::write(OOBase::Buffer* buffer)
 
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
+	if (!m_write_watcher)
+		return ENOENT;
+
 	try
 	{
 		m_async_writes.push_back(buffer->duplicate());
@@ -276,10 +324,10 @@ int OOSvrBase::Ev::AsyncSocket::write(OOBase::Buffer* buffer)
 		buffer->release();
 		return ENOMEM;
 	}
-	
+
 	if (m_current_write)
 		return 0;
-	
+
 	return write_next();
 }
 
@@ -299,9 +347,9 @@ int OOSvrBase::Ev::AsyncSocket::write_next()
 		{
 			return ENOMEM;
 		}
-	
+
 	} while (!do_write());
-	
+
 	return m_proactor->start_watcher(m_write_watcher);
 }
 
@@ -310,6 +358,7 @@ bool OOSvrBase::Ev::AsyncSocket::do_write()
 	// Loop writing what we can...
 	size_t to_write = m_current_write->length();
 
+	bool bSent = false;
 	int err = 0;
 	while (to_write > 0)
 	{
@@ -318,7 +367,7 @@ bool OOSvrBase::Ev::AsyncSocket::do_write()
 		{
 			if (errno == EAGAIN)
 				return true;
-			
+
 			err = errno;
 			break;
 		}
@@ -327,6 +376,8 @@ bool OOSvrBase::Ev::AsyncSocket::do_write()
 		m_current_write->rd_ptr(have_sent);
 
 		to_write -= static_cast<size_t>(have_sent);
+
+		bSent = true;
 	}
 
 	// Work out if we are a close or an 'actual' error
@@ -337,8 +388,8 @@ bool OOSvrBase::Ev::AsyncSocket::do_write()
 		err = 0;
 	}
 
-	// Call handlers 
-	if (m_handler)
+	// Call handlers
+	if (m_handler && (bSent || err != 0))
 		m_handler->on_write(this,m_current_write,err);
 
 	if (m_handler && closed)
@@ -348,17 +399,17 @@ bool OOSvrBase::Ev::AsyncSocket::do_write()
 	m_current_write->release();
 	m_current_write = 0;
 
-	return false;	
+	return false;
 }
 
 void OOSvrBase::Ev::AsyncSocket::on_read(void* param)
 {
-	return static_cast<AsyncSocket*>(param)->read_next();
+	static_cast<AsyncSocket*>(param)->read_next();
 }
 
 void OOSvrBase::Ev::AsyncSocket::on_write(void* param)
 {
-	return static_cast<AsyncSocket*>(param)->write_next();
+	static_cast<AsyncSocket*>(param)->write_next();
 }
 
 template <typename SocketType>
@@ -367,19 +418,19 @@ int OOSvrBase::Ev::AcceptSocket<SocketType>::init(Acceptor* handler, int fd)
 	OOBase::Guard<OOBase::Condition::Mutex> guard(m_lock);
 
 	// Add our watcher
-	int err = pProactor->add_watcher(m_watcher,fd,EV_READ,this,&on_accept,0);
+	int err = m_proactor->add_watcher(m_watcher,fd,EV_READ,this,&on_accept);
 	if (err != 0)
 		return err;
 
-	err = pProactor->start_watcher(m_watcher);
+	err = m_proactor->start_watcher(m_watcher);
 	if (err != 0)
 	{
-		pProactor->remove_watcher(m_watcher);
+		m_proactor->remove_watcher(m_watcher);
 		return err;
 	}
 
 	m_handler = handler;
-	
+
 	return 0;
 }
 
@@ -406,13 +457,12 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 		err = errno;
 
 	// Add FD_CLOEXEC
-	int oldflags = fcntl(fd,F_GETFD);
+	int oldflags = fcntl(new_fd,F_GETFD);
 	if (oldflags == -1 ||
-		fnctl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+		fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
-		*perr = errno;
-		close(fd);
-		return 0;
+		err = errno;
+		::close(new_fd);
 	}
 
 	// Prepare socket if okay
@@ -423,9 +473,9 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 		if (!pSocket)
 			err = ENOMEM;
 		else
-			close(new_fd);
+			::close(new_fd);
 	}
-	
+
 	// Call the acceptor if we are not closing...
 	bool again = false;
 	if (err != 0 || !m_closing)
@@ -434,7 +484,7 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::on_accept_i()
 	if (!again)
 	{
 		// close socket - close the watcher...
-		close(m_watcher->fd);
+		::close(m_watcher->fd);
 		m_proactor->remove_watcher(m_watcher);
 		m_watcher = 0;
 	}
@@ -455,14 +505,14 @@ void OOSvrBase::Ev::AcceptSocket<SocketType>::close()
 
 		if (m_watcher)
 			shutdown(m_watcher->fd,SHUT_RDWR);
-		
+
 		// Wait for the watcher to be killed
 		while (m_watcher)
-			m_close_cond.wait(m_close_mutex);
+			m_close_cond.wait(m_lock);
 	}
 }
 
-OOSvrBase::Ev::ProactorImpl::ProactorImpl() : 
+OOSvrBase::Ev::ProactorImpl::ProactorImpl() :
 	m_pLoop(0), m_pIOQueue(0), m_bStop(false)
 {
 	// Create an ev loop
@@ -509,7 +559,7 @@ OOSvrBase::Ev::ProactorImpl::~ProactorImpl()
 	{
 		(*i)->join();
 	}
-	
+
 	// Done with the loop
 	ev_loop_destroy(m_pLoop);
 }
@@ -535,7 +585,7 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 	{
 		// Try to acquire the mutex...
 		guard.acquire();
-		
+
 		// Swap over the IO queue to our local one...
 		m_pIOQueue = &io_queue;
 
@@ -553,7 +603,7 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 				OOBase::Guard<OOBase::SpinLock> guard2(m_lock);
 
 				// Check for add and remove of watchers
-				for (std::queue<io_info>::iterator i=m_update_queue.begin();i!=m_update_queue.end();++i)
+				for (std::deque<io_info>::iterator i=m_update_queue.begin();i!=m_update_queue.end();++i)
 				{
 					if (i->op == 0)
 					{
@@ -578,7 +628,7 @@ int OOSvrBase::Ev::ProactorImpl::worker_i()
 							delete i->watcher;
 						}
 					}
-				}	
+				}
 				m_update_queue.clear();
 
 				// Check for stop...
@@ -611,7 +661,7 @@ int OOSvrBase::Ev::ProactorImpl::add_watcher(io_watcher*& pNew, int fd, int even
 	pNew->data = this;
 	pNew->param = param;
 	pNew->callback = callback;
-	
+
 	return 0;
 }
 
@@ -632,7 +682,7 @@ int OOSvrBase::Ev::ProactorImpl::remove_watcher(io_watcher* watcher)
 	}
 	catch (std::exception&)
 	{
-		return E_NOMEM;
+		return ENOMEM;
 	}
 }
 
@@ -653,7 +703,7 @@ int OOSvrBase::Ev::ProactorImpl::start_watcher(io_watcher* watcher)
 	}
 	catch (std::exception&)
 	{
-		return E_NOMEM;
+		return ENOMEM;
 	}
 }
 
@@ -674,16 +724,16 @@ int OOSvrBase::Ev::ProactorImpl::stop_watcher(io_watcher* watcher)
 	}
 	catch (std::exception&)
 	{
-		return E_NOMEM;
+		return ENOMEM;
 	}
 }
 
-void OOSvrBase::Ev::ProactorImpl::on_alert(ev_loop*, ev_async* w, int)
+void OOSvrBase::Ev::ProactorImpl::on_alert(ev_loop_t*, ev_async* w, int)
 {
 	static_cast<ProactorImpl*>(w->data)->m_bAsyncTriggered = true;
 }
 
-void OOSvrBase::Ev::ProactorImpl::on_io(ev_loop*, ev_io* w, int events)
+void OOSvrBase::Ev::ProactorImpl::on_io(ev_loop_t*, ev_io* w, int events)
 {
 	static_cast<ProactorImpl*>(w->data)->on_io_i(static_cast<io_watcher*>(w),events);
 }
@@ -706,7 +756,7 @@ void OOSvrBase::Ev::ProactorImpl::on_io_i(io_watcher* watcher, int events)
 
 OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*)
 {
-	// path is a UNIX pipe name - e.g. /tmp/ooserverd 
+	// path is a UNIX pipe name - e.g. /tmp/ooserverd
 
 	int fd = socket(PF_UNIX,SOCK_STREAM,0);
 	if (fd == -1)
@@ -718,7 +768,7 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	// Set non-blocking
 	int oldflags = fcntl(fd,F_GETFL);
 	if (oldflags == -1 ||
-		fnctl(fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
+		fcntl(fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
 	{
 		*perr = errno;
 		close(fd);
@@ -728,7 +778,7 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	// Add FD_CLOEXEC
 	oldflags = fcntl(fd,F_GETFD);
 	if (oldflags == -1 ||
-		fnctl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+		fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		*perr = errno;
 		close(fd);
@@ -740,8 +790,8 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	addr.sun_family = AF_UNIX;
 	memset(addr.sun_path,0,sizeof(addr.sun_path));
 	path.copy(addr.sun_path,sizeof(addr.sun_path)-1);
-	
-	if (bind(fd,static_cast<sockaddr*>(&addr),sizeof(addr)) != 0 ||
+
+	if (bind(fd,reinterpret_cast<sockaddr*>(&addr),sizeof(addr)) != 0 ||
 		listen(fd,0) != 0)
 	{
 		*perr = errno;
@@ -750,13 +800,13 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 	}
 
 	// Wrap up in a controlling socket class
-	OOBase::SmartPtr<Ev::AcceptSocket<OOBase::Posix::LocalSocket> > pAccept = 0;
-	OOBASE_NEW(pAccept,Ev::AcceptSocket<OOBase::Posix::LocalSocket>());
+	OOBase::SmartPtr<Ev::AcceptSocket<OOBase::POSIX::LocalSocket> > pAccept = 0;
+	OOBASE_NEW(pAccept,Ev::AcceptSocket<OOBase::POSIX::LocalSocket>(this));
 	if (!pAccept)
 		*perr = ENOMEM;
 	else
-		*perr = pAccept->init(this,handler,fd);
-	
+		*perr = pAccept->init(handler,fd);
+
 	if (*perr != 0)
 	{
 		close(fd);
@@ -785,7 +835,7 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 	// Set non-blocking
 	int oldflags = fcntl(new_fd,F_GETFL);
 	if (oldflags == -1 ||
-		fnctl(new_fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
+		fcntl(new_fd,F_SETFL,oldflags | O_NONBLOCK) == -1)
 	{
 		*perr = errno;
 		close(new_fd);
@@ -795,14 +845,14 @@ OOSvrBase::AsyncSocket* OOSvrBase::Ev::ProactorImpl::attach_socket(IOHandler* ha
 	// Add FD_CLOEXEC
 	oldflags = fcntl(new_fd,F_GETFD);
 	if (oldflags == -1 ||
-		fnctl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+		fcntl(new_fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
 	{
 		*perr = errno;
 		close(new_fd);
 		return 0;
 	}
 
-	
+
 	// Alloc a new async socket
 	AsyncSocket* pSock;
 	OOBASE_NEW(pSock,AsyncSocket(this));

@@ -30,11 +30,16 @@
 #error Includes have got confused, check Proactor.h
 #endif
 
-#include <queue>
+#include <ev.h>
+
+typedef struct ev_loop ev_loop_t;
+
+#include <deque>
 #include <vector>
 
 #include "Thread.h"
 #include "Condition.h"
+#include "SmartPtr.h"
 
 namespace OOSvrBase
 {
@@ -70,14 +75,14 @@ namespace OOSvrBase
 
 			// The following vars all use this lock
 			OOBase::Mutex            m_ev_lock;
-			ev_loop*                 m_pLoop;
-			std::queue<io_watcher*>* m_pIOQueue;
+			ev_loop_t*               m_pLoop;
+			std::deque<io_watcher*>* m_pIOQueue;
 			bool                     m_bAsyncTriggered;
-						
+
 			// The following vars all use this lock
 			OOBase::SpinLock    m_lock;
 			bool                m_bStop;
-			std::queue<io_info> m_update_queue;
+			std::deque<io_info> m_update_queue;
 
 			// The following vars don't...
 			std::vector<OOBase::SmartPtr<OOBase::Thread> > m_workers;
@@ -86,8 +91,8 @@ namespace OOSvrBase
 			static int worker(void* param);
 			int worker_i();
 
-			static void on_alert(ev_loop*, ev_async* watcher, int);
-			static void on_io(ev_loop*, ev_io* watcher, int events);
+			static void on_alert(ev_loop_t*, ev_async* watcher, int);
+			static void on_io(ev_loop_t*, ev_io* watcher, int events);
 			void on_io_i(io_watcher* watcher, int events);
 		};
 	}

@@ -145,11 +145,14 @@ bool string_tests_format()
 		loc_holder lh;
 
 		if (set_locale_helper(1033,"en_US.utf8"))
+		{
 			TEST(Omega::string_t(L"{0:C}") % 12345.6789 == L"$12,345.68");
+		}
 
 		if (set_locale_helper(1031,"de_DE.utf8"))
+		{
 			TEST(Omega::string_t(L"{0:C}") % 12345.678 == L"12.345,68 \x20AC");
-
+		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
@@ -160,7 +163,9 @@ bool string_tests_format()
 		}
 
 		if (set_locale_helper(1036,"fr_FR.utf8"))
+		{
 			TEST(Omega::string_t(L"{0:E}") % 12345.6789 == L"1,234568E+004");
+		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
@@ -169,7 +174,9 @@ bool string_tests_format()
 		}
 
 		if (set_locale_helper(1034,"es_ES.utf8"))
+		{
 			TEST(Omega::string_t(L"{0:F}") % 12345.6789 == L"12345,68");
+		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{
@@ -184,7 +191,9 @@ bool string_tests_format()
 		}
 
 		if (set_locale_helper(1053,"sv_SE.utf8"))
+		{
 			TEST(Omega::string_t(L"{0:N}") % 12345.6789 == L"12\xa0" L"345,68");
+		}
 
 		if (set_locale_helper(1033,"en_US.utf8"))
 		{

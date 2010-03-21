@@ -24,6 +24,10 @@
 #include "InterProcessService.h"
 #include "Channel.h"
 
+#if defined(HAVE_EV_H)
+#include <ev.h>
+#endif
+
 namespace OTL
 {
 	// The following is an expansion of BEGIN_PROCESS_OBJECT_MAP
@@ -420,7 +424,7 @@ void User::Manager::process_user_request(const OOBase::CDRStream& request, Omega
 
 		// Unpack the payload
 		ObjectPtr<Remoting::IMessage> ptrRequest = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",ptrEnvelope);
-		
+
 		// Check timeout
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)
@@ -591,8 +595,12 @@ void User::Manager::quit()
 
 void User::Manager::wait_for_quit()
 {
-	// Use libev to wait on the default loop
-	ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
+		// Use libev to wait on the default loop
+#if defined (EVFLAG_SIGNALFD)
+	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV | EVFLAG_SIGNALFD);
+#else
+	struct ev_loop* pLoop = ev_default_loop(EVFLAG_AUTO | EVFLAG_NOENV);
+#endif
 	if (!pLoop)
 	{
 		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
@@ -603,7 +611,7 @@ void User::Manager::wait_for_quit()
 	void* POSIX_TODO;
 
 	// Let ev loop...
-	ev_loop(pLoop,0);
+	::ev_loop(pLoop,0);
 }
 
 void User::Manager::quit()

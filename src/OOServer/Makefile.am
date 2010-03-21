@@ -56,7 +56,7 @@ bin_PROGRAMS = ooserverd oosvruser
 ooserverd_CPPFLAGS = -I$(top_srcdir)/include
 ooserverd_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 ooserverd_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
-ooserverd_LDFLAGS = $(SQLITE3_LIBS) $(PTHREAD_LIBS)
+ooserverd_LDFLAGS =  $(SQLITE3_LIBS) $(EV_LIBS) $(PTHREAD_LIBS)
 ooserverd_LDADD = liboosvrcmn.la liboosvrdb.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
 
 ooserverd_SOURCES = \
@@ -80,7 +80,7 @@ endif
 oosvruser_CPPFLAGS = -I$(top_srcdir)/include
 oosvruser_CFLAGS = $(PTHREAD_CFLAGS)
 oosvruser_CXXFLAGS = $(PTHREAD_CFLAGS)
-oosvruser_LDFLAGS = $(PTHREAD_LIBS)
+oosvruser_LDFLAGS =  $(EV_LIBS) $(PTHREAD_LIBS)
 oosvruser_LDADD = liboosvrcmn.la ../OOBase/liboosvrbase.la ../OOBase/liboobase.la
 
 if WIN32

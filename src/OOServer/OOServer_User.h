@@ -30,6 +30,7 @@
 #include "../OOBase/CDRStream.h"
 #include "../OOBase/Queue.h"
 #include "../OOBase/Thread.h"
+#include "../OOBase/PosixSocket.h"
 
 //////////////////////////////////////////////
 

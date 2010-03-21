@@ -837,13 +837,11 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		sandbox_uid = uid;
 	}
 
-	// Work out if we are running in unsafe mode
-	Omega::int64_t key = 0;
-	Omega::int64_t v = 0;
-	if (bSandbox && m_registry->open_key(0,key,"System\\Server\\Sandbox",0) == 0)
-		m_registry->get_integer_value(key,"Unsafe",0,v);
-
-	bool bUnsafe = (v == 1);
+	// Create the named pipe
+	std::string strRootPipe;
+	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
+	if (!hPipe.is_valid())
+		return 0;
 
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = 0;
@@ -851,14 +849,13 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	if (!pSpawn32)
 		return 0;
 
-	// Create the named pipe
-	std::string strRootPipe;
-	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
-	if (!hPipe.is_valid())
-	{
-		delete pSpawn32;
-		return 0;
-	}
+	// Work out if we are running in unsafe mode
+	Omega::int64_t key = 0;
+	Omega::int64_t v = 0;
+	if (bSandbox && m_registry->open_key(0,key,"System\\Server\\Sandbox",0) == 0)
+		m_registry->get_integer_value(key,"Unsafe",0,v);
+
+	bool bUnsafe = (v == 1);
 
 	// Spawn the process
 	if (!pSpawn32->Spawn(bUnsafe,uid,strRootPipe,bSandbox))

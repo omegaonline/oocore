@@ -41,6 +41,7 @@
 #include "../OOBase/pw_info.h"
 #include "../OOBase/Queue.h"
 #include "../OOBase/Thread.h"
+#include "../OOBase/PosixSocket.h"
 
 //////////////////////////////////////////////
 

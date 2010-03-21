@@ -205,7 +205,7 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_assign2,2,((in),void*,s
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,s1))
 {
 	assert(s1);
-		
+
 	return static_cast<const StringNode*>(s1)->m_buf;
 }
 
@@ -702,7 +702,9 @@ OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_get_arg,3,((in),size_t,id
 			OMEGA_NEW(pNewNode,StringNode(s->m_buf,s->m_len));
 
 			if (s->m_fs)
+			{
 				OMEGA_NEW(pNewNode->m_fs,StringNode::format_state_t(*s->m_fs));
+			}
 
 			s->Release();
 			s = pNewNode;

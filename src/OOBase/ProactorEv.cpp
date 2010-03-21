@@ -578,13 +578,11 @@ int OOSvrBase::Ev::ProactorImpl::worker(void* param)
 
 int OOSvrBase::Ev::ProactorImpl::worker_i()
 {
-	OOBase::Guard<OOBase::Mutex> guard(m_ev_lock);
 	std::deque<io_watcher*> io_queue;
 
 	for (;;)
 	{
-		// Try to acquire the mutex...
-		guard.acquire();
+		OOBase::Guard<OOBase::Mutex> guard(m_ev_lock);
 
 		// Swap over the IO queue to our local one...
 		m_pIOQueue = &io_queue;

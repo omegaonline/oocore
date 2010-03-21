@@ -35,6 +35,7 @@
 #include "RootManager.h"
 
 #if defined(HAVE_UNISTD_H)
+bool create_unless_existing_directory(std::string& dir, unsigned int flag);
 
 bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
 {
@@ -93,25 +94,8 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 
 bool Root::Manager::get_db_directory(std::string& dir)
 {
-	dir= "/var/lib/omegaonline";
-        struct stat st= {0};
-        
-        if( stat(dir.c_str(),&st))
-        {
-            LOG_ERROR_RETURN(("stat(%s) failed: %s",
-                dir.c_str(),
-                OOSvrBase::Logger::format_error(errno).c_str()),false);
-        }
-
-        // added dir present test
-        if (( ! S_ISDIR(st.st_mode) ) && mkdir(dir.c_str(), 
-            S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
-        {
-                LOG_ERROR_RETURN(("mkdir(%s) failed: %s",
-                    dir.c_str(),
-                    OOSvrBase::Logger::format_error(errno).c_str()),false);
-        }
-	return true;
+    dir = "/var/lib/omegaonline" ;
+    return create_unless_existing_directory(dir,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 }
 
 void Root::Manager::wait_for_quit()
@@ -141,6 +125,52 @@ namespace OOBase
 		// Die horribly now!
 		abort();
 	}
+
+
 }
+
+typedef OOSvrBase::Logger errlog_t; 
+#define ERR_RET(func)\
+    do {             \
+        LOG_ERROR_RETURN(((##func)"%s) failed: %s",     \
+                dir.c_str(),                            \
+                errlog_t::format_error(errno).c_str()), \
+                false) ;                                \
+    }while(0)
+bool create_unless_existing_directory(std::string& dir, mode_t perm,uid_t uid, gid_t gid)
+{
+    struct stat st= {0};
+
+again: 
+    if(stat(dir.c_str(),&st))           ERR_RET("stat");
+
+    /* no directory by that name */
+    if( !S_ISDIR(st.st_mode) )
+    {
+        /* exists but is a file, could remove it ? */
+        if( S_ISREG(st.st_mode) )       ERR_RET("Can't use a file as a directory %s");
+
+        /* doesn't exist, so create and verify */
+        if(mkdir(dir.c_str(),perm))
+            ERR_RET("mkdir");
+        else
+            goto again;
+    }
+
+    /* check owner and group are correct */
+    if( st.st_uid  != uid || st.st_gid  != gid )
+        if (chown(dir.c_str(),uid,gid))
+            ERR_RET("chown");
+        else
+            goto again;
+ 
+    /* check permissions are correct */
+    if( (st.st_mode & perms) != perms)
+        if (chown(dir.c_str(),perms))
+            ERR_RET("chmod");
+
+    return true;
+}
+
 
 #endif

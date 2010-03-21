@@ -67,13 +67,19 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 	}
 
 	// Set the sandbox uid
+	// Set the user name and pwd...
 	Omega::int64_t key = 0;
-	if (m_registry->open_key(0,key,"System\\Server\\Sandbox",0) != 0)
-		LOG_ERROR_RETURN(("Failed to open server registry key: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
-
-	int err = m_registry->set_integer_value(key,"Uid",0,pw->pw_uid);
+	int err = m_registry->create_key(0,key,"System\\Server\\Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
 	if (err != 0)
-		LOG_ERROR_RETURN(("Failed to set sandbox uid in registry: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	err = m_registry->set_description(key,0,"The system configuration key");
+	if (err != 0)
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
+
+	err = m_registry->set_integer_value(key,"Uid",0,pw->pw_uid);
+	if (err != 0)
+		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	return true;
 }
@@ -100,7 +106,12 @@ bool Root::Manager::get_db_directory(std::string& dir)
 	dir = "/var/lib/omegaonline";
 
 	if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
-		LOG_ERROR_RETURN(("mkdir(%s) failed: %s",dir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
+	{
+		if (errno != EEXIST)
+			LOG_ERROR_RETURN(("mkdir(%s) failed: %s",dir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
+	}
+
+	dir += "/";
 
 	return true;
 }

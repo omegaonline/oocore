@@ -343,15 +343,15 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, const std::string& strPipe, bool bSand
         void* POSIX_TODO;
 
 		// Exec the user process
-		char* cmd_line[] =
+		const char* cmd_line[] =
 		{
 		    "./oosvruser", //  argv[0] = Process name
 		    0,             //  argv[1] = Pipe name
 		    0
 		};
-		cmd_line[1] = const_cast<char*>(strPipe.c_str());
+		cmd_line[1] = strPipe.c_str();
 
-		int err = execv("./oosvruser",cmd_line);
+		int err = execv("./oosvruser",(char**)cmd_line);
 
 		LOG_DEBUG(("Child process exiting with code: %d",err));
 

@@ -22,7 +22,7 @@
 #ifndef OOCORE_CDR_MESSAGE_H_INCLUDED_
 #define OOCORE_CDR_MESSAGE_H_INCLUDED_
 
-#include <Omega/Remoting.h>
+#include "../include/Omega/Remoting.h"
 
 namespace OOCore
 {

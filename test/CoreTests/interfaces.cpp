@@ -15,9 +15,9 @@ OMEGA_DEFINE_OID(Omega::TestSuite, OID_TestProcess, "{4BC2E65B-CEE0-40c6-90F2-39
 #include "Test.h"
 
 #if defined(_WIN32)
-#define OOREGISTER L"ooregister -s"
+#define OOREGISTER L"ooregister -s -c"
 #else
-#define OOREGISTER L"./ooregister -s"
+#define OOREGISTER L"./ooregister -s -c"
 #endif
 
 bool interface_tests(OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest)
@@ -320,22 +320,35 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	Omega::string_t strSubsts = L"OBJECT=";
 	strSubsts += L"Test.Library";
 
-	Omega::Registry::AddXML(strXML,true,strSubsts);
-
-	ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
-	TEST(ptrSimpleTest);
-	interface_tests(ptrSimpleTest);
-
-	// Test it has gone
-	Omega::Registry::AddXML(strXML,false);
+	bool bSkip = false;
 	try
 	{
-		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
+		Omega::Registry::AddXML(strXML,true,strSubsts);
 	}
-	catch (Omega::Registry::INotFoundException* pE)
+	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
-		add_success();
+		// We have insufficient permissions to write here
 		pE->Release();
+		bSkip = true;
+	}
+
+	if (!bSkip)
+	{
+		ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
+		TEST(ptrSimpleTest);
+		interface_tests(ptrSimpleTest);
+
+		// Test it has gone
+		Omega::Registry::AddXML(strXML,false);
+		try
+		{
+			ptrSimpleTest = OTL::ObjectPtr<Omega::TestSuite::ISimpleTest>(L"MyLittleTest");
+		}
+		catch (Omega::Registry::INotFoundException* pE)
+		{
+			add_success();
+			pE->Release();
+		}
 	}
 
 	// Try overloading the local only

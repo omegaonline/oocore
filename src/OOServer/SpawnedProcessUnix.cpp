@@ -44,6 +44,7 @@
 
 
 // Will need this!
+#include "posix_utils.h"
 /*
 	char szBuf[64];
 #if defined(OMEGA_DEBUG)
@@ -453,9 +454,9 @@ std::string SpawnedProcessUnix::GetRegistryHive()
 		strDir = pw->pw_dir;
 		strDir += "/.omegaonline";
 	}
-
-	// Have a go at creating it... we catch failure elsewhere
-	mkdir(strDir.c_str(),S_IRWXU | S_IRGRP);
+        
+        if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
+		LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),"");
 
 	return strDir + "/user.regdb";
 }

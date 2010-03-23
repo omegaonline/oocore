@@ -39,6 +39,7 @@
 #endif
 
 #if defined(HAVE_UNISTD_H)
+#include "posix_utils.h"
 
 bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
 {
@@ -103,17 +104,8 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 
 bool Root::Manager::get_db_directory(std::string& dir)
 {
-	dir = "/var/lib/omegaonline";
-
-	if (mkdir(dir.c_str(),S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0)
-	{
-		if (errno != EEXIST)
-			LOG_ERROR_RETURN(("mkdir(%s) failed: %s",dir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
-	}
-
-	dir += "/";
-
-	return true;
+    dir = "/var/lib/omegaonline" ;
+    return create_unless_existing_directory(dir);
 }
 
 void Root::Manager::wait_for_quit()
@@ -144,6 +136,124 @@ void Root::Manager::wait_for_quit()
 #endif
 }
 
+uid_t
+get_directory_user(void)
+{
+    return static_cast<uid_t>(0);
+}
+
+gid_t
+get_directory_group(void)
+{
+    return static_cast<uid_t>(-1);
+}
+
+mode_t
+get_directory_permissions(void)
+{
+    /* mode 755 */
+    return static_cast<mode_t>(
+             S_IRWXU |              /* owner rd-wr-x */
+             S_IRGRP | S_IXGRP |    /* group rd-x    */
+             S_IROTH | S_IXOTH );   /* other rd-x    */
+}
+
+bool create_unless_existing_directory(  std::string& dir, 
+                                        mode_t  mode,
+                                        uid_t   uid,
+                                        gid_t   gid)
+{
+    struct stat st= {0};
+ 
+    int retry=0;
+    const int changes = 3;
+
+again:
+    if(stat(dir.c_str(),&st))
+    {
+        LOG_ERROR(("stat (%s) failed: %s",
+                dir.c_str(),
+                OOSvrBase::Logger::format_error(errno).c_str()));
+        return false;
+    }
+
+    /* no directory by that name */
+    if( !S_ISDIR(st.st_mode) )
+    {
+        /* exists but is a file, could remove it ? */
+        if( S_ISREG(st.st_mode) )                    
+        {
+            LOG_ERROR(("Can't use a file as a directory %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()));
+            return false;
+        }
+        
+        /* doesn't exist, so create and verify */
+        if(mkdir(dir.c_str(),mode))
+        {
+               LOG_ERROR(("mkdir (%s) failed: %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()));
+            return false;
+        }
+        
+
+        /* don't spin for ever */
+        if(++retry > changes)
+        {
+            LOG_ERROR(("Directory creation succeeded but directory %s not present after %d attempts,beats me",
+                dir.c_str(),retry,
+                OOSvrBase::Logger::format_error(errno).c_str()));
+                return false;
+        }
+        goto again;
+    }
+
+    /* check owner and group are correct */
+    if( st.st_uid  != uid || st.st_gid  != gid )
+    {
+        if (chown(dir.c_str(),uid,gid))
+        {       LOG_ERROR(("chmod (%s) failed: %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()));
+            return false;
+        }
+        
+        /* don't spin for ever */
+        if(++retry > changes)
+        {
+            LOG_ERROR(("Directory chown succeeded but directory %s not correct owner after %d attempts,beats me",
+                        dir.c_str(),retry,
+                        OOSvrBase::Logger::format_error(errno).c_str()));
+            return false;
+        }
+        goto again;
+    }
+    /* check permissions are correct */
+    if( (st.st_mode & mode) != mode)
+    {
+        if (chmod(dir.c_str(),mode))
+        {
+            LOG_ERROR(("chmod (%s) failed: %s",
+                    dir.c_str(),
+                    OOSvrBase::Logger::format_error(errno).c_str()));
+            return false;
+        }
+
+        /* don't spin for ever */
+        if(++retry > changes)
+        {
+            LOG_ERROR(("Directory chmod succeeded but directory %s not correct perms after %d attempts,beats me",
+                    dir.c_str(),retry,
+                    OOSvrBase::Logger::format_error(errno).c_str()));
+            return false;
+        }
+        goto again;
+    }
+    return true;
+
+}
 namespace OOBase
 {
 	// This is the critical failure hook
@@ -154,6 +264,7 @@ namespace OOBase
 		// Die horribly now!
 		abort();
 	}
-}
 
+
+}
 #endif

@@ -44,7 +44,7 @@
 
 
 // Will need this!
-bool create_unless_existing_directory(std::string& dir, unsigned int flag);
+#include "posix_utils.h"
 /*
 	char szBuf[64];
 #if defined(OMEGA_DEBUG)

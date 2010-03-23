@@ -157,13 +157,35 @@ bool User::Manager::init(const std::string& strPipe)
 	OOBase::timeval_t wait(20);
 	OOBase::Countdown countdown(&wait);
 
-	// Use a named pipe
 	int err = 0;
+#if defined(_WIN32)
+	// Use a named pipe
 	OOBase::SmartPtr<OOBase::LocalSocket> local_socket = OOBase::LocalSocket::connect_local(strPipe,&err,&wait);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to connect to root pipe: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	countdown.update();
+#else
+	// Use the passed fd
+	int fd = atoi(strPipe.c_str());
+
+	// Add FD_CLOEXEC to fd
+	int oldflags = fcntl(fd,F_GETFD);
+	if (oldflags == -1 ||
+		fcntl(fd,F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	{
+		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+	}
+
+	OOBase::POSIX::LocalSocket* pLocal = 0;
+	OOBASE_NEW(pLocal,OOBase::POSIX::LocalSocket(fd));
+	if (!pLocal)
+	{
+		::close(fd);
+		LOG_ERROR_RETURN(("Out of memory"),false);
+	}
+	OOBase::SmartPtr<OOBase::LocalSocket> local_socket(pLocal);
+#endif
 
 	// Read the sandbox channel
 	Omega::uint32_t sandbox_channel = 0;

@@ -78,7 +78,7 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalSocket::uid_t id, const std::string& strPipe, bool bSandbox);
+		bool Spawn(OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
@@ -91,7 +91,7 @@ namespace
 		pid_t	m_pid;
 
 		bool clean_environment();
-		void close_all_fds();
+		void close_all_fds(int except_fd);
 	};
 
 	static bool y_or_n_p(const char* question)
@@ -199,7 +199,7 @@ bool SpawnedProcessUnix::clean_environment()
 	return true;
 }
 
-void SpawnedProcessUnix::close_all_fds()
+void SpawnedProcessUnix::close_all_fds(int except_fd)
 {
 	int mx = -1;
 
@@ -213,9 +213,11 @@ void SpawnedProcessUnix::close_all_fds()
 #endif
 #endif
 
+	void* POSIX_TODO; // what about getdtablesize()?
+
 	if (mx > 4)
 	{
-		for (int fd_i=STDERR_FILENO+1; fd_i<mx; ++fd_i)
+		for (int fd_i=STDERR_FILENO+1; fd_i<mx && fd_i != except_fd; ++fd_i)
 			close(fd_i);
 	}
 	else
@@ -238,7 +240,7 @@ void SpawnedProcessUnix::close_all_fds()
 		for (dirent* pfile; (pfile = readdir(pdir)); )
 		{
 			int fd;
-			if (!('.' == *pfile->d_name || (((fd = atoi(pfile->d_name)))<0 || fd<STDERR_FILENO+1) ))
+			if (!('.' == *pfile->d_name || (fd = atoi(pfile->d_name))<0 || fd<STDERR_FILENO+1 || fd==except_fd))
 				close(fd);
 		}
 
@@ -246,7 +248,7 @@ void SpawnedProcessUnix::close_all_fds()
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(uid_t uid, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
@@ -332,7 +334,7 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, const std::string& strPipe, bool bSand
 		}
 
 		// Close all open handles - not that we should have any ;)
-		close_all_fds();
+		close_all_fds(pass_fd);
 
         // Clean up environment...
 		if (!clean_environment())
@@ -350,7 +352,10 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, const std::string& strPipe, bool bSand
 		    0,             //  argv[1] = Pipe name
 		    0
 		};
-		cmd_line[1] = strPipe.c_str();
+		std::ostringstream os;
+		os << pass_fd;
+
+		cmd_line[1] = os.str().c_str();
 
 		int err = execv("./oosvruser",(char**)cmd_line);
 
@@ -476,54 +481,52 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		uid = static_cast<uid_t>(sb_uid);
 	}
 
-	// Work out if we are running in unsafe mode
-	Omega::int64_t key = 0;
-	Omega::int64_t v = 0;
-	if (bSandbox && m_registry->open_key(0,key,"System\\Server\\Sandbox",0) == 0)
-		m_registry->get_integer_value(key,"Unsafe",0,v);
+	// Create a pair of sockets
+	int fd[2] = {-1, -1};
+	if (socketpair(PF_UNIX,SOCK_STREAM,0,fd) != 0)
+		LOG_ERROR_RETURN(("socketpair() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
 
-	bool bUnsafe = (v == 1);
+	// Wrap fd[0]
+	OOBase::POSIX::LocalSocket sock(fd[0]);
+
+	// Add FD_CLOEXEC to fd[0]
+	int oldflags = fcntl(fd[0],F_GETFD);
+	if (oldflags == -1 ||
+		fcntl(fd[0],F_SETFD,oldflags | FD_CLOEXEC) == -1)
+	{
+		int err = errno;
+		::close(fd[1]);
+		LOG_ERROR_RETURN(("fcntl() failed: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+	}
 
 	// Alloc a new SpawnedProcess
 	SpawnedProcessUnix* pSpawnUnix = 0;
 	OOBASE_NEW(pSpawnUnix,SpawnedProcessUnix);
 	if (!pSpawnUnix)
-		return 0;
-
-	// Create the named pipe
-	/*OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
-	if (!hPipe.is_valid())
 	{
-		delete pSpawnUnix;
+		::close(fd[1]);
 		return 0;
-	}*/
-
-
-	std::string strRootPipe;
-	int sock_h = -1;
+	}
+	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(uid,strRootPipe,bSandbox))
+	if (!pSpawnUnix->Spawn(uid,fd[1],bSandbox))
 	{
-		delete pSpawnUnix;
+		::close(fd[1]);
 		return 0;
 	}
 
-	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
-
-	// Wait for the connect attempt
-	/*if (!WaitForConnect(hPipe))
-		return 0;*/
+	// Done with fd[1]
+	::close(fd[1]);
 
 	// Bootstrap the user process...
-	//OOBase::LocalSocket sock;
-	channel_id = bootstrap_user(NULL,ptrMC,strPipe);
+	channel_id = bootstrap_user(&sock,ptrMC,strPipe);
 	if (!channel_id)
 		return 0;
 
 	// Create an async socket wrapper
 	int err = 0;
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,NULL);
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,&sock);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 

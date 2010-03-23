@@ -104,7 +104,6 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 
 bool Root::Manager::get_db_directory(std::string& dir)
 {
-<<<<<<< HEAD
     dir = "/var/lib/omegaonline" ;
     return create_unless_existing_directory(dir,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
 =======
@@ -164,14 +163,17 @@ namespace OOBase
 
 }
 
-typedef OOSvrBase::Logger errlog_t; 
+#include "posix_util.h"
+
+
 #define ERR_RET(func)\
     do {             \
         LOG_ERROR_RETURN(((##func)"%s) failed: %s",     \
                 dir.c_str(),                            \
-                errlog_t::format_error(errno).c_str()), \
+                OOSvrBase::Logger::format_error(errno).c_str()), \
                 false) ;                                \
     }while(0)
+
 bool create_unless_existing_directory(std::string& dir, mode_t perm,uid_t uid, gid_t gid)
 {
     struct stat st= {0};

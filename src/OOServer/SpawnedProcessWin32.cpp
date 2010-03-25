@@ -60,7 +60,7 @@ namespace
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
-		std::string GetRegistryHive();
+		bool GetRegistryHive(std::string& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -784,7 +784,7 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-std::string SpawnedProcessWin32::GetRegistryHive()
+bool SpawnedProcessWin32::GetRegistryHive(std::string& strHive)
 {
 	wchar_t szBuf[MAX_PATH] = {0};
 	HRESULT hr;
@@ -801,12 +801,19 @@ std::string SpawnedProcessWin32::GetRegistryHive()
 			if (PathFileExistsW(szBuf2) || CreateDirectoryW(szBuf2,NULL) == 0)
 			{
 				if (PathCombineW(szBuf,szBuf2,L"user.regdb"))
-					return OOBase::to_utf8(szBuf);
+				{
+					strHive = OOBase::to_utf8(szBuf);
+
+					// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
+					void* TODO; 
+
+					return true;
+				}
 			}
 		}
 	}
 
-	return std::string();
+	return false;
 }
 
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC)

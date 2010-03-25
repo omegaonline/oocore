@@ -111,7 +111,7 @@ namespace Db
 		Database();
 		~Database();
 
-		bool open(const char* pszDb);
+		bool open(const char* pszDb, int flags);
 		int exec(const char* pszSQL);
 
 		sqlite3* database();

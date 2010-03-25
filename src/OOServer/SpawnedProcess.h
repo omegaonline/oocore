@@ -44,7 +44,7 @@ namespace Root
 		virtual bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed) = 0;
 		virtual bool Compare(OOBase::LocalSocket::uid_t uid) = 0;
 		virtual bool IsSameUser(OOBase::LocalSocket::uid_t uid) = 0;
-		virtual std::string GetRegistryHive() = 0;
+		virtual bool GetRegistryHive(std::string& strHive) = 0;
 
 	protected:
 		SpawnedProcess() {}

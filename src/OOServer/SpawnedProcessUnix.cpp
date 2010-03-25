@@ -83,7 +83,7 @@ namespace
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
-		std::string GetRegistryHive();
+		bool GetRegistryHive(std::string& strHive);
 
 	private:
 		bool    m_bSandbox;
@@ -410,6 +410,8 @@ bool SpawnedProcessUnix::CheckAccess(const char* pszFName, bool bRead, bool bWri
 	}
 	else
 	{
+		void* POSIX_TODO; // Enumerate all the users groups!
+
 		// Get the suppied user's group see if that is the same as the file's group
 		OOSvrBase::pw_info pw(m_uid);
 		if (!pw)
@@ -440,7 +442,7 @@ bool SpawnedProcessUnix::IsSameUser(uid_t uid)
 	return Compare(uid);
 }
 
-std::string SpawnedProcessUnix::GetRegistryHive()
+bool SpawnedProcessUnix::GetRegistryHive(std::string& strHive)
 {
 	std::string strDir;
 	if (m_bSandbox)
@@ -449,16 +451,21 @@ std::string SpawnedProcessUnix::GetRegistryHive()
 	{
 		OOSvrBase::pw_info pw(m_uid);
 		if (!pw)
-			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),"");
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 		strDir = pw->pw_dir;
 		strDir += "/.omegaonline";
 	}
         
-        if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
-		LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),"");
+	if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
+		LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-	return strDir + "/user.regdb";
+	strHive = strDir + "/user.regdb";
+
+	// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
+	void* TODO; 
+
+	return true;
 }
 
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC)

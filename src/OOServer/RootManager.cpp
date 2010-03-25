@@ -55,13 +55,6 @@ bool Root::Manager::install(const std::map<std::string,std::string>& args)
 	if (!init_database())
 		return false;
 
-	// Add the default keys
-	if (Registry::Hive::init_system_defaults(m_registry.value()) != 0)
-		return false;
-
-	if (Registry::Hive::init_allusers_defaults(m_registry_all_users.value()) != 0)
-		return false;
-
 	// Set up the sandbox user
 	if (!install_sandbox(args))
 		return false;
@@ -150,7 +143,7 @@ bool Root::Manager::init_database()
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!m_registry->open())
+	if (!m_registry->open(SQLITE_OPEN_READWRITE))
 		return false;
 
 	// Create a new all users database
@@ -158,7 +151,7 @@ bool Root::Manager::init_database()
 	if (!m_registry_all_users)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	return m_registry_all_users->open();
+	return m_registry_all_users->open(SQLITE_OPEN_READWRITE);
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
@@ -247,13 +240,15 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 	{
 		bOk = false;
 
-		std::string strDb = process.ptrSpawn->GetRegistryHive();
-		if (!strDb.empty())
+		std::string strHive;
+		if (process.ptrSpawn->GetRegistryHive(strHive))
 		{
 			// Create a new database
-			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strDb,0));
-			if (process.ptrRegistry)
-				bOk = process.ptrRegistry->open();
+			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strHive,0));
+			if (!process.ptrRegistry)
+				LOG_ERROR(("Out of memory"));
+			else
+				bOk = process.ptrRegistry->open(SQLITE_OPEN_READWRITE);
 		}
 	}
 

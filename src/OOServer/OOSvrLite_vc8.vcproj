@@ -28,7 +28,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
@@ -65,7 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="netapi32.lib userenv.lib shlwapi.lib"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
 				GenerateDebugInformation="true"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
@@ -104,7 +104,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -183,7 +183,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -261,7 +261,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"

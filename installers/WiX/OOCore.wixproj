@@ -4,7 +4,7 @@
     <ProductVersion>3.0</ProductVersion>
     <ProjectGuid>{4bf48188-7c69-4b24-8504-f46c668771e8}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>OOSetup</OutputName>
+    <OutputName>OOCore</OutputName>
     <OutputType>Package</OutputType>
     <WixToolPath>$(ProgramFiles)\Windows Installer XML v3\bin\</WixToolPath>
   </PropertyGroup>
@@ -24,13 +24,15 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>..\..\bin\Debug\</OutputPath>
+    <DefineConstants>Debug;Bindir=..\..\bin\Debug\</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>..\..\bin\</OutputPath>
     <SuppressPdbOutput>False</SuppressPdbOutput>
+    <DefineConstants>Bindir=..\..\bin\Debug\</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Core.wxs" />
+    <Compile Include="OOCore.wxs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WiX\v3.0\Wix.targets" />
   <!--

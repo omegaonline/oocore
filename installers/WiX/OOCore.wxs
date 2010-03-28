@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="{28CFA922-1E70-4665-88F5-61F9F553515E}"
+      Name="Omega Online Core"
+      Language="1033"
+      Version="0.5.0"
+      Manufacturer="www.omegaonline.org.uk"
+      UpgradeCode="{DF39C47D-E9EC-4644-93C4-6D649CED5CB8}">
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Media Id="1" Cabinet="OOCore.cab" EmbedCab="yes" />
+
+    <Icon Id="Base_icon" SourceFile="../../src/OOServer/logo.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="Base_icon" />
+    
+    <!-- Define directories -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLDIR" Name="Omega Online" />
+      </Directory>
+      <Directory Id="SystemFolder" />
+    </Directory>
+    
+    <!-- Define file components -->
+    <DirectoryRef Id="SystemFolder">
+      <Component Id="OOCore.dll" Guid="{B1B4620B-D8E4-4709-B368-3FC39E766DDF}" Permanent="yes">
+        <File Source="$(var.Bindir)OOCore.dll" KeyPath="yes" Checksum="yes" />
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="OOServer.exe" Guid="{13EC374D-B4C7-4B4E-8ABF-BF937A1EDECB}">
+        <File Source="$(var.Bindir)OOServer.exe" KeyPath="yes" Checksum="yes" />
+        
+        <!-- Stop and remove the service -->
+        <ServiceControl Id="OOServer_Service_Control"
+                        Name="OOServer"
+                        Stop="both"
+                        Remove="uninstall" />
+        
+        <!-- Install the service -->
+        <ServiceInstall Id="OOServer_Service"
+                        Name="OOServer"
+                        Description="Manages the peer connections for the Omega Online network"
+                        DisplayName="Omega Online Network Gateway"
+                        Type="ownProcess"
+                        Interactive="no"
+                        Vital="yes"
+                        Start="auto"
+                        ErrorControl="ignore" />
+      </Component>
+      <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
+        <File Source="$(var.Bindir)OOSvrUser.exe" KeyPath="yes" Checksum="yes" />
+      </Component>
+    </DirectoryRef>
+    
+    <!-- Define registry components -->
+    <DirectoryRef Id="TARGETDIR" >
+      <Component Id="OOServer_RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}" KeyPath="yes">
+        <RegistryKey Root="HKLM" Key="Software\OmegaOnline\OOServer" Action="createAndRemoveOnUninstall" />
+      </Component>
+    </DirectoryRef>
+    
+    <!-- Group components -->
+    <ComponentGroup Id="OOServer">
+      <ComponentRef Id="OOServer.exe" />
+      <ComponentRef Id="OOSvrUser.exe" />
+      <ComponentRef Id="OOServer_RegKeys" />
+    </ComponentGroup>
+    
+    <!-- Define features -->
+    <Feature Id="Core" Title="Omega Core Components" Level="1" >
+      <ComponentGroupRef Id="OOServer" />
+      <ComponentRef Id="OOCore.dll" />
+    </Feature>
+  </Product>
+</Wix>

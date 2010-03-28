@@ -13,6 +13,14 @@
     <Icon Id="Base_icon" SourceFile="../../src/OOServer/logo.ico"/>
     <Property Id="ARPPRODUCTICON" Value="Base_icon" />
     
+    <!-- Define properties -->
+    <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="_OMEGA_SANDBOX_USER_" >
+      <RegistrySearch Id="OOServer_Sandbox_Uname" Root="HKLM" Key="Software\Omega Online\OOServer\Sandbox" Name="Username" Type="raw" />
+    </Property>
+    <Property Id="OMEGASANDBOXPWD" Admin="yes" Value="4th_(*%LGe895y^$N|2" >
+      <RegistrySearch Id="OOServer_Sandbox_Pwd" Root="HKLM" Key="Software\Omega Online\OOServer\Sandbox" Name="Password" Type="raw" />
+    </Property>
+    
     <!-- Define directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
@@ -55,8 +63,13 @@
     
     <!-- Define registry components -->
     <DirectoryRef Id="TARGETDIR" >
-      <Component Id="OOServer_RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}" KeyPath="yes">
-        <RegistryKey Root="HKLM" Key="Software\OmegaOnline\OOServer" Action="createAndRemoveOnUninstall" />
+      <Component Id="OOServer_RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
+        <RegistryKey Root="HKLM" Key="Software\Omega Online\OOServer" Action="create" >
+          <RegistryKey Key="Sandbox" Action="create" >
+            <RegistryValue Name="Username" Type="string" Value="[OMEGASANDBOXUNAME]" KeyPath="yes" />
+            <RegistryValue Name="Password" Type="string" Value="[OMEGASANDBOXPWD]" />
+          </RegistryKey>
+        </RegistryKey>
       </Component>
     </DirectoryRef>
     

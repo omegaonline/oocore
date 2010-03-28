@@ -196,7 +196,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\include;D:\sqlite3"
+				AdditionalIncludeDirectories="..\..\include;C:\Work\sqlite"
 				PreprocessorDefinitions="HAVE_SQLITE3_AMALGAMATION;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="0"

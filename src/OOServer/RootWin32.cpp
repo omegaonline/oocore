@@ -210,7 +210,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 	{
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Out of memeory"),false);
+		LOG_ERROR_RETURN(("Out of memory"),false);
 	}
 
 	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > pszDName;

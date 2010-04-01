@@ -10,23 +10,23 @@
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
     <Media Id="1" Cabinet="OOCore.cab" EmbedCab="yes" />
 
-    <Icon Id="Base_icon" SourceFile="../../src/OOServer/logo.ico"/>
-    <Property Id="ARPPRODUCTICON" Value="Base_icon" />
+    <Icon Id="Icon" SourceFile="../../src/OOServer/logo.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="Icon" />
     
     <!-- Define properties -->
-    <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="_OMEGA_SANDBOX_USER_" >
-      <RegistrySearch Id="OOServer_Sandbox_Uname" Root="HKLM" Key="Software\Omega Online\OOServer\Sandbox" Name="Username" Type="raw" />
-    </Property>
-    <Property Id="OMEGASANDBOXPWD" Admin="yes" Value="4th_(*%LGe895y^$N|2" >
-      <RegistrySearch Id="OOServer_Sandbox_Pwd" Root="HKLM" Key="Software\Omega Online\OOServer\Sandbox" Name="Password" Type="raw" />
-    </Property>
-    
+    <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="_OMEGA_SANDBOX_USER_" />
+    <Property Id="OMEGASANDBOXPWD" Admin="yes" Value="4th_(*%LGe895y^$N|2" Hidden="yes" />
+    <Property Id="OOServer.AddUser.DoAdd" Value="no" />
+      
     <!-- Define directories -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLDIR" Name="Omega Online" />
       </Directory>
       <Directory Id="SystemFolder" />
+      <Directory Id="CommonAppDataFolder">
+        <Directory Id="COMMONAPPDIR" Name="Omega Online" />
+      </Directory>
     </Directory>
     
     <!-- Define file components -->
@@ -37,16 +37,16 @@
     </DirectoryRef>
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="OOServer.exe" Guid="{13EC374D-B4C7-4B4E-8ABF-BF937A1EDECB}">
-        <File Source="$(var.Bindir)OOServer.exe" KeyPath="yes" Checksum="yes" />
+        <File Source="$(var.Bindir)OOServer.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
         
         <!-- Stop and remove the service -->
-        <ServiceControl Id="OOServer_Service_Control"
+        <ServiceControl Id="OOServer.Service.Control"
                         Name="OOServer"
                         Stop="both"
                         Remove="uninstall" />
         
         <!-- Install the service -->
-        <ServiceInstall Id="OOServer_Service"
+        <ServiceInstall Id="OOServer.Service"
                         Name="OOServer"
                         Description="Manages the peer connections for the Omega Online network"
                         DisplayName="Omega Online Network Gateway"
@@ -57,13 +57,27 @@
                         ErrorControl="ignore" />
       </Component>
       <Component Id="OOSvrUser.exe" Guid="{24DAC083-5F5C-4B84-B5E2-C5028491E45C}">
-        <File Source="$(var.Bindir)OOSvrUser.exe" KeyPath="yes" Checksum="yes" />
+        <File Source="$(var.Bindir)OOSvrUser.exe" KeyPath="yes" Checksum="yes" BindPath="[SystemFolder]" />
+      </Component>
+      
+      <!-- We don't install OOSvrLite.dll - it is designed for hand-held devices only -->
+      
+    </DirectoryRef>
+    <DirectoryRef Id="COMMONAPPDIR">
+      <Component Id="OOServer.system.regdb" Guid="{8B2918F6-80C9-4D50-A514-0460F7D37BD5}">
+        <File Source="$(var.Datadir)system.regdb" KeyPath="yes" />
+      </Component>
+      <Component Id="OOServer.all_users.regdb" Guid="{BD35170C-A657-4E8E-8DAD-C6048C3EA9C3}">
+        <File Source="$(var.Datadir)all_users.regdb" KeyPath="yes" />
+      </Component>
+      <Component Id="OOServer.default_user.regdb" Guid="{2723E66D-E2FC-4659-B49B-3E9E4FAD8012}">
+        <File Source="$(var.Datadir)default_user.regdb" KeyPath="yes" />
       </Component>
     </DirectoryRef>
     
     <!-- Define registry components -->
     <DirectoryRef Id="TARGETDIR" >
-      <Component Id="OOServer_RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
+      <Component Id="OOServer.RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
         <RegistryKey Root="HKLM" Key="Software\Omega Online\OOServer" Action="create" >
           <RegistryKey Key="Sandbox" Action="create" >
             <RegistryValue Name="Username" Type="string" Value="[OMEGASANDBOXUNAME]" KeyPath="yes" />
@@ -73,17 +87,92 @@
       </Component>
     </DirectoryRef>
     
+    <!-- Define custom actions -->
+    <CustomAction Id="OOServer.CheckUser"
+                  Return="check"
+                  Execute="immediate"
+                  BinaryKey="CustomLibrary"
+                  DllEntry="_CheckUser@4" />
+    
+    <CustomAction Id="OOServer.AddUser" 
+                  Return="check" 
+                  Execute="deferred"
+                  BinaryKey="CustomLibrary" 
+                  DllEntry="_AddUser@4"
+                  HideTarget="yes" 
+                  Impersonate="no" />
+    
+    <CustomAction Id="OOServer.AddUser.SetProperty" 
+                  Property="OOServer.AddUser" 
+                  Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
+
+    <CustomAction Id="OOServer.AddUser.Rollback"
+                  Return="ignore"
+                  Execute="rollback"
+                  BinaryKey="CustomLibrary"
+                  DllEntry="_RollbackAddUser@4"
+                  HideTarget="yes"
+                  Impersonate="no" />
+
+    <CustomAction Id="OOServer.AddUser.Rollback.SetProperty"
+                  Property="OOServer.AddUser.Rollback"
+                  Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
+
+    <CustomAction Id="OOServer.UpdateUser"
+                  Return="check"
+                  Execute="deferred"
+                  BinaryKey="CustomLibrary"
+                  DllEntry="_UpdateUser@4"
+                  HideTarget="yes"
+                  Impersonate="no" />
+
+    <CustomAction Id="OOServer.UpdateUser.SetProperty"
+                  Property="OOServer.UpdateUser"
+                  Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
+
+    <CustomAction Id="OOServer.DisableUser"
+                  Return="check"
+                  Execute="deferred"
+                  BinaryKey="CustomLibrary"
+                  DllEntry="_DisableUser@4"
+                  Impersonate="no" />
+    
+    <!-- Define binary -->
+    <Binary Id="CustomLibrary" SourceFile=".\Debug\Custom.dll" />
+
+    <!-- Set execute order -->
+    <InstallExecuteSequence>
+      <Custom Action="OOServer.CheckUser" After="InstallValidate"><![CDATA[NOT REMOVE]]></Custom>
+      
+      <Custom Action="OOServer.AddUser.SetProperty" After="InstallFiles"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="OOServer.AddUser" After="OOServer.AddUser.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="OOServer.AddUser.Rollback.SetProperty" Before="OOServer.AddUser"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
+      <Custom Action="OOServer.AddUser.Rollback" After="OOServer.AddUser.Rollback.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="yes"]]></Custom>
+      
+      <Custom Action="OOServer.UpdateUser.SetProperty" After="InstallFiles"><![CDATA[OOServer.AddUser.DoAdd="update"]]></Custom>
+      <Custom Action="OOServer.UpdateUser" After="OOServer.UpdateUser.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="update"]]></Custom>
+      
+      <Custom Action="OOServer.DisableUser" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
+    </InstallExecuteSequence>
+
     <!-- Group components -->
+    <ComponentGroup Id="OOCore">
+      <ComponentRef Id="OOCore.dll" />
+    </ComponentGroup>
+    
     <ComponentGroup Id="OOServer">
       <ComponentRef Id="OOServer.exe" />
       <ComponentRef Id="OOSvrUser.exe" />
-      <ComponentRef Id="OOServer_RegKeys" />
+      <ComponentRef Id="OOServer.RegKeys" />
+      <ComponentRef Id="OOServer.system.regdb" />
+      <ComponentRef Id="OOServer.all_users.regdb" />
+      <ComponentRef Id="OOServer.default_user.regdb" />
     </ComponentGroup>
     
     <!-- Define features -->
-    <Feature Id="Core" Title="Omega Core Components" Level="1" >
+    <Feature Id="Core" Title="Omega Online base components" Level="1" >
+      <ComponentGroupRef Id="OOCore" />
       <ComponentGroupRef Id="OOServer" />
-      <ComponentRef Id="OOCore.dll" />
     </Feature>
   </Product>
 </Wix>

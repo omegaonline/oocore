@@ -24,12 +24,12 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>..\..\bin\Debug\</OutputPath>
-    <DefineConstants>Debug;Bindir=..\..\bin\Debug\</DefineConstants>
+    <DefineConstants>Debug;Bindir=..\..\bin\Debug\;Datadir=..\..\build\data\</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>..\..\bin\</OutputPath>
     <SuppressPdbOutput>False</SuppressPdbOutput>
-    <DefineConstants>Bindir=..\..\bin\Debug\</DefineConstants>
+    <DefineConstants>Bindir=..\..\bin\;Datadir=..\..\build\data\</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="OOCore.wxs" />

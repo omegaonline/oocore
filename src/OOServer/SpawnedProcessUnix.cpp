@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2007 Rick Taylor
+// Copyright (C) 2007 Rick Taylor, Jamal Natour
 //
 // This file is part of OOServer, the OmegaOnline Server application.
 //
@@ -454,7 +454,7 @@ std::string SpawnedProcessUnix::GetRegistryHive()
 		strDir = pw->pw_dir;
 		strDir += "/.omegaonline";
 	}
-        
+
         if(!create_unless_existing_directory(strDir,S_IRWXU | S_IRGRP ))
 		LOG_ERROR_RETURN(("create_unless_existing_directory(%s) failed: %s",strDir.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),"");
 

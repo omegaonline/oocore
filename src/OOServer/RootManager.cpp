@@ -119,6 +119,10 @@ int Root::Manager::run()
 
 bool Root::Manager::init()
 {
+	// Load the config
+	if (!init_config())
+		return false;
+
 	// Open the root registry
 	if (!init_database())
 		return false;

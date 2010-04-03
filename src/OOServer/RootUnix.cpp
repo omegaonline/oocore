@@ -102,9 +102,43 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 	return true;
 }
 
+bool Root::Manager::init_config()
+{
+	// Load simple config file...
+	try
+	{
+		std::ifstream fs("/etc/omegaonline.conf");
+		while (!fs.eof())
+		{
+			// Read line
+			std::string line;
+			std::getline(fs,line);
+
+			if (!line.empty() && line[0] != '#')
+			{
+				// Read line as 2 strings
+				std::istringstream is(line);
+				std::string key,value;
+				is >> key >> value;
+
+				// Insert into map
+				if (!key.empty())
+					m_config_args[key] = value;
+			}
+		}
+
+		return true;
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+	}
+}
+
 bool Root::Manager::get_db_directory(std::string& dir)
 {
-    dir = "/var/lib/omegaonline" ;
+    dir = "/var/lib/omegaonline";
+
     return create_unless_existing_directory(dir);
 }
 
@@ -158,13 +192,13 @@ get_directory_permissions(void)
              S_IROTH | S_IXOTH );   /* other rd-x    */
 }
 
-bool create_unless_existing_directory(  std::string& dir, 
+bool create_unless_existing_directory(  std::string& dir,
                                         mode_t  mode,
                                         uid_t   uid,
                                         gid_t   gid)
 {
     struct stat st= {0};
- 
+
     int retry=0;
     const int changes = 3;
 
@@ -181,14 +215,14 @@ again:
     if( !S_ISDIR(st.st_mode) )
     {
         /* exists but is a file, could remove it ? */
-        if( S_ISREG(st.st_mode) )                    
+        if( S_ISREG(st.st_mode) )
         {
             LOG_ERROR(("Can't use a file as a directory %s",
                     dir.c_str(),
                     OOSvrBase::Logger::format_error(errno).c_str()));
             return false;
         }
-        
+
         /* doesn't exist, so create and verify */
         if(mkdir(dir.c_str(),mode))
         {
@@ -197,7 +231,7 @@ again:
                     OOSvrBase::Logger::format_error(errno).c_str()));
             return false;
         }
-        
+
 
         /* don't spin for ever */
         if(++retry > changes)
@@ -219,7 +253,7 @@ again:
                     OOSvrBase::Logger::format_error(errno).c_str()));
             return false;
         }
-        
+
         /* don't spin for ever */
         if(++retry > changes)
         {

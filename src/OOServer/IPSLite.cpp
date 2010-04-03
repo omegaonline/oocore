@@ -523,17 +523,23 @@ void RootKey::Init()
 	OMEGA_NEW(m_allusers_hive,::Registry::Hive(this,get_db_dir(true) + "all_users.regdb",::Registry::Hive::write_check));
 	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,get_db_dir(false) + "user.regdb",0));
 
-	if (!m_system_hive->open() || !m_allusers_hive->open() || !m_localuser_hive->open())
+	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
+	{
+		void* TODO; //  Generate a fake...
+		OMEGA_THROW(L"Failed to open system registry database file");
+	}
+
+	if (!m_allusers_hive->open(SQLITE_OPEN_READWRITE) || !m_allusers_hive->open(SQLITE_OPEN_READONLY))
+	{
+		void* TODO; //  Generate a fake...
+		OMEGA_THROW(L"Failed to open all users registry database file");
+	}
+
+	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
+	{
+		void* TODO; //  Copy default_user...
 		OMEGA_THROW(L"Failed to open database files");
-
-	// Add the default keys
-	int err = ::Registry::Hive::init_system_defaults(m_system_hive.value());
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	err = ::Registry::Hive::init_allusers_defaults(m_allusers_hive.value());
-	if (err != 0)
-		OMEGA_THROW(err);
+	}
 
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_system_hive.value(),L"",0);

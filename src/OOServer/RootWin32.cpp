@@ -111,20 +111,15 @@ bool Root::Manager::platform_uninstall()
 	// Get the current service status
 	SERVICE_STATUS ss = {0};
 	DWORD dwBytes = 0;
-	if (!QueryServiceStatusEx(schService,SC_STATUS_PROCESS_INFO,(LPBYTE)&ss,sizeof(ss),&dwBytes))
+	if (QueryServiceStatusEx(schService,SC_STATUS_PROCESS_INFO,(LPBYTE)&ss,sizeof(ss),&dwBytes))
 	{
-		LOG_ERROR(("QueryServiceStatusEx failed: %s",OOBase::Win32::FormatMessage().c_str()));
-		CloseServiceHandle(schSCManager);
-		CloseServiceHandle(schService);
-		return false;
-	}
-
-	if (ss.dwCurrentState != SERVICE_STOPPED)
-	{
-		CloseServiceHandle(schSCManager);
-		CloseServiceHandle(schService);
-		std::cerr << "You must stop the OOServer service before uninstalling." << std::endl;
-		return false;
+		if (ss.dwCurrentState != SERVICE_STOPPED)
+		{
+			CloseServiceHandle(schSCManager);
+			CloseServiceHandle(schService);
+			std::cerr << "You must stop the OOServer service before uninstalling." << std::endl;
+			return false;
+		}
 	}
 
 	if (!DeleteService(schService))
@@ -215,7 +210,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 	{
 		if (bAddedUser)
 			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Out of memeory"),false);
+		LOG_ERROR_RETURN(("Out of memory"),false);
 	}
 
 	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > pszDName;

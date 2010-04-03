@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libltdl include src test
+SUBDIRS = libltdl include src data test
 
 reallyclean: maintainer-clean
 	rm -f config.guess config.h.in* config.sub configure

@@ -127,11 +127,11 @@ Db::Database::~Database()
 	}
 }
 
-bool Db::Database::open(const char* pszDb)
+bool Db::Database::open(const char* pszDb, int flags)
 {
 	assert(!m_db);
 
-	int err = sqlite3_open_v2(pszDb,&m_db,SQLITE_OPEN_FULLMUTEX | SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,0);
+	int err = sqlite3_open_v2(pszDb,&m_db,SQLITE_OPEN_FULLMUTEX | flags /*SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE*/,0);
 	if (err != SQLITE_OK)
 	{
 		if (!m_db)

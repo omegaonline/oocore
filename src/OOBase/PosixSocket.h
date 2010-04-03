@@ -39,12 +39,11 @@
 #include <sys/fcntl.h>
 #endif /* HAVE_SYS_FCNTL_H */
 #else
-    #error "no fnctl decl" __FILE__ __LINE__ __DATE__
+#error No fnctl decl!
 #endif /* (defined(HAVE_UNISTD_H) && (defined(HAVE_SYS_FCNTL_H) || defined(HAVE_FCNTL_H))) */
 
-
+// Autoconf me!
 #include <sys/un.h>
-#include <sys/fcntl.h>
 
 namespace OOBase
 {

@@ -138,7 +138,11 @@
                   Impersonate="no" />
     
     <!-- Define binary -->
-    <Binary Id="CustomLibrary" SourceFile=".\Debug\Custom.dll" />
+    <?ifdef Debug ?>
+      <Binary Id="CustomLibrary" SourceFile=".\bin\Debug\Custom.dll" />
+    <?else?>
+      <Binary Id="CustomLibrary" SourceFile=".\bin\Release\Custom.dll" />
+    <?endif?>
 
     <!-- Set execute order -->
     <InstallExecuteSequence>

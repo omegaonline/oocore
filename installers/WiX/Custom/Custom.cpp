@@ -49,16 +49,61 @@ static UINT ParseUser(MSIHANDLE hInstall, std::wstring& strUName, std::wstring& 
 	return ERROR_SUCCESS;
 }
 
+// 2 = Add, 1 = Update, 0 = No change, -1 = Failure
+static int CheckUName(const std::wstring& strUName)
+{
+	// Check if the user exists, and/or if it does, does it need updating?
+	// Lookup the account SID
+	DWORD dwSidSize = 0;
+	DWORD dwDnSize = 0;
+	SID_NAME_USE use;
+	if (!LookupAccountNameW(NULL,strUName.c_str(),NULL,&dwSidSize,NULL,&dwDnSize,&use))
+	{
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+			return 2;
+	}
+	else if (dwSidSize==0)
+		return -1;
+	
+	PSID pSid = static_cast<PSID>(malloc(dwSidSize));
+	if (!pSid)
+		return -1;
+
+	wchar_t* pszDName = (wchar_t*)malloc(dwDnSize * sizeof(wchar_t));
+	if (!pszDName)
+	{
+		free(pSid);
+		return -1;
+	}
+
+	if (!LookupAccountNameW(NULL,strUName.c_str(),pSid,&dwSidSize,pszDName,&dwDnSize,&use))
+	{
+		free(pSid);
+		free(pszDName);
+		return -1;
+	}
+
+	free(pSid);
+	free(pszDName);
+
+	if (use != SidTypeUser)
+		return 1;
+
+	return 0;
+}
+
 extern "C" UINT __declspec(dllexport) __stdcall CheckUser(MSIHANDLE hInstall)
 {
-	std::wstring all;
-	UINT err = GetProperty(hInstall,L"OMEGASANDBOXUNAME",all);
+	std::wstring strUName;
+	UINT err = GetProperty(hInstall,L"OMEGASANDBOXUNAME",strUName);
 	if (err != ERROR_SUCCESS)
 		return ERROR_INSTALL_FAILURE;
+
+	::MessageBoxW(NULL,strUName.c_str(),L"CheckUser",MB_OK | MB_ICONINFORMATION);
 	
 	bool bDoAdd = true;
 
-	// Check if the user exists, and/or if it does, does it need updating?
+	CheckUName(strUName);
 
 	if (bDoAdd)
 		err = MsiSetPropertyW(hInstall,L"OOServer.AddUser.DoAdd",L"yes");

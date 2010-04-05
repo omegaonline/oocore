@@ -88,7 +88,7 @@ void OOBase::Buffer::release()
 
 OOBase::Buffer::~Buffer()
 {
-	free(m_buffer);
+	priv_free(m_buffer);
 }
 
 const char* OOBase::Buffer::rd_ptr() const

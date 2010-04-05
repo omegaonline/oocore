@@ -41,7 +41,7 @@ OOSvrBase::pw_info::pw_info(uid_t uid) :
 		OOBase_OutOfMemory();
 
 #if defined(HAVE_GETPWUID_R)
-	if (::getpwuid_r(uid,&m_pwd2,m_buffer.value(),m_buf_len,&m_pwd) != 0)
+	if (::getpwuid_r(uid,&m_pwd2,m_buffer,m_buf_len,&m_pwd) != 0)
 		m_pwd = 0;
 #else
 
@@ -68,7 +68,7 @@ OOSvrBase::pw_info::pw_info(const char* uname) :
 		OOBase_OutOfMemory();
 
 #if defined(HAVE_GETPWUID_R)
-	if (::getpwnam_r(uname,&m_pwd2,m_buffer.value(),m_buf_len,&m_pwd) != 0)
+	if (::getpwnam_r(uname,&m_pwd2,m_buffer,m_buf_len,&m_pwd) != 0)
 		m_pwd = 0;
 #else
 

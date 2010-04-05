@@ -88,7 +88,7 @@ namespace OOSvrBase
 
 			void* descriptor()
 			{
-				return m_psd.value();
+				return m_psd;
 			}
 
 		private:

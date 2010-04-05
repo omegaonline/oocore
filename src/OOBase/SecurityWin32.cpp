@@ -30,11 +30,11 @@ OOSvrBase::Win32::sec_descript_t::sec_descript_t() :
 {
 	// Create a new security descriptor
 	m_psd = (PSECURITY_DESCRIPTOR)LocalAlloc(LPTR,SECURITY_DESCRIPTOR_MIN_LENGTH);
-	if (m_psd == NULL)
+	if (!m_psd)
 		OOBase_CallCriticalFailure(GetLastError());
 
 	// Initialize a security descriptor.
-	if (!InitializeSecurityDescriptor((PSECURITY_DESCRIPTOR)m_psd.value(),SECURITY_DESCRIPTOR_REVISION))
+	if (!InitializeSecurityDescriptor((PSECURITY_DESCRIPTOR)m_psd,SECURITY_DESCRIPTOR_REVISION))
 		OOBase_CallCriticalFailure(GetLastError());
 }
 
@@ -55,7 +55,7 @@ DWORD OOSvrBase::Win32::sec_descript_t::SetEntriesInAcl(ULONG cCountOfExplicitEn
 	m_pACL = pACL;
 
 	// Add the ACL to the SD
-	if (!SetSecurityDescriptorDacl((PSECURITY_DESCRIPTOR)m_psd.value(),TRUE,m_pACL.value(),FALSE))
+	if (!SetSecurityDescriptorDacl((PSECURITY_DESCRIPTOR)m_psd,TRUE,m_pACL,FALSE))
 		return GetLastError();
 
 	return ERROR_SUCCESS;
@@ -88,11 +88,11 @@ DWORD OOSvrBase::Win32::GetNameFromToken(HANDLE hToken, std::wstring& strUserNam
 			return ERROR_OUTOFMEMORY;
 	}
 				
-	if (!LookupAccountSidW(NULL,ptrUserInfo->User.Sid,ptrUserName.value(),&dwUNameSize,ptrDomainName.value(),&dwDNameSize,&name_use))
+	if (!LookupAccountSidW(NULL,ptrUserInfo->User.Sid,ptrUserName,&dwUNameSize,ptrDomainName,&dwDNameSize,&name_use))
 		return GetLastError();
 				
-	strUserName = ptrUserName.value();
-	strDomainName = ptrDomainName.value();
+	strUserName = ptrUserName;
+	strDomainName = ptrDomainName;
 		
 	return ERROR_SUCCESS;
 }
@@ -166,7 +166,7 @@ DWORD OOSvrBase::Win32::GetLogonSID(HANDLE hToken, OOBase::SmartPtr<void,OOBase:
 				if (!pSIDLogon)
 					return ERROR_OUTOFMEMORY;
 				
-				if (!CopySid(dwLen,pSIDLogon.value(),ptrGroups->Groups[dwIndex].Sid))
+				if (!CopySid(dwLen,pSIDLogon,ptrGroups->Groups[dwIndex].Sid))
 					return GetLastError();
 					
 				return ERROR_SUCCESS;
@@ -199,7 +199,7 @@ DWORD OOSvrBase::Win32::SetTokenDefaultDACL(HANDLE hToken)
 	ea[0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
+	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 	TOKEN_DEFAULT_DACL def_dacl = {0};
 	dwRes = SetEntriesInAclW(NUM_ACES,ea,ptrDef_dacl->DefaultDacl,&def_dacl.DefaultDacl);

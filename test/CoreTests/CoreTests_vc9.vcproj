@@ -48,7 +48,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;..\..\src;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_VLD_H;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -66,6 +66,8 @@
 				Name="VCLinkerTool"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="1"
 			/>
 			<Tool
 				Name="VCALinkTool"

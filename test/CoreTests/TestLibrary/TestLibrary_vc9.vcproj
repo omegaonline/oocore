@@ -67,6 +67,8 @@
 				OutputFile="$(OutDir)\$(ProjectName)_msvc.dll"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="1"
 				ImportLibrary="$(IntDir)\$(TargetName).lib"
 			/>
 			<Tool

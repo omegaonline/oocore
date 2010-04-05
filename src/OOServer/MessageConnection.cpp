@@ -1156,7 +1156,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 	return ret;
 }
 
-void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>& msg)
+void Root::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)
 {
 	Omega::uint32_t closed_channel_id;
 	msg->m_payload.read(closed_channel_id);
@@ -1188,7 +1188,7 @@ void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>
 	}
 }
 
-void Root::MessageHandler::process_async_function(const OOBase::SmartPtr<Message>& msg)
+void Root::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
 	void (*pfnCall)(void*,OOBase::CDRStream&);
 	msg->m_payload.read(pfnCall);

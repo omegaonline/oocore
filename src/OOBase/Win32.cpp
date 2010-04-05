@@ -649,8 +649,8 @@ namespace
 			(LPSTR)&lpBuf,
 			0,	NULL))
 		{
-			OOBase::SmartPtr<void,OOBase::Win32::LocalAllocDestructor<void> > lpMsgBuf = lpBuf;
-			return std::string((LPCSTR)lpMsgBuf.value());
+			OOBase::SmartPtr<char,OOBase::Win32::LocalAllocDestructor<char> > lpMsgBuf = static_cast<char*>(lpBuf);
+			return std::string((LPCSTR)lpMsgBuf);
 		}
 		else
 		{

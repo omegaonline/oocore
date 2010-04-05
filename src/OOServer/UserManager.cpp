@@ -234,7 +234,7 @@ bool User::Manager::init(const std::string& strPipe)
 	countdown.update();
 
 	// Open the root connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,local_socket.value()));
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,local_socket));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
@@ -331,7 +331,7 @@ bool User::Manager::on_accept(OOBase::Socket* sock)
 		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Attach the connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock)));
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,static_cast<OOBase::LocalSocket*>(sock)));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 

@@ -48,7 +48,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_VLD_H"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="OOCore_precomp.h"
 				WarningLevel="4"
@@ -68,6 +68,8 @@
 				AdditionalDependencies="shlwapi.lib rpcrt4.lib"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
 				GenerateDebugInformation="true"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="1"
 			/>
 			<Tool
 				Name="VCALinkTool"

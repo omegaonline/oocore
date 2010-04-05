@@ -542,15 +542,15 @@ void RootKey::Init()
 	}
 
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_system_hive.value(),L"",0);
+	ptrKey->Init(m_system_hive,L"",0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_allusers_hive.value(),L"\\All Users",0);
+	ptrKey->Init(m_allusers_hive,L"\\All Users",0);
 	m_ptrAllUsersKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_localuser_hive.value(),L"\\Local User",0);
+	ptrKey->Init(m_localuser_hive,L"\\Local User",0);
 	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
 }
 

@@ -222,7 +222,7 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 		LOG_ERROR_RETURN(("Out of memory"),false);
 	}
 
-	if (!LookupAccountNameW(NULL,info.usri2_name,pSid.value(),&dwSidSize,pszDName.value(),&dwDnSize,&use))
+	if (!LookupAccountNameW(NULL,info.usri2_name,pSid,&dwSidSize,pszDName,&dwDnSize,&use))
 	{
 		err = GetLastError();
 		if (bAddedUser)
@@ -254,20 +254,20 @@ bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& arg
 	szName.Length = static_cast<USHORT>(len * sizeof(WCHAR));
 	szName.MaximumLength = static_cast<USHORT>((len+1) * sizeof(WCHAR));
 
-	err2 = LsaAddAccountRights(hPolicy,pSid.value(),&szName,1);
+	err2 = LsaAddAccountRights(hPolicy,pSid,&szName,1);
 	if (err2 == 0)
 	{
 		// Remove all other priviledges
 		LSA_UNICODE_STRING* pRightsList;
 		ULONG ulRightsCount = 0;
-		err2 = LsaEnumerateAccountRights(hPolicy,pSid.value(),&pRightsList,&ulRightsCount);
+		err2 = LsaEnumerateAccountRights(hPolicy,pSid,&pRightsList,&ulRightsCount);
 		if (err2 == 0)
 		{
 			for (ULONG i=0;i<ulRightsCount;i++)
 			{
 				if (wcscmp(pRightsList[i].Buffer,L"SeBatchLogonRight") != 0)
 				{
-					err2 = LsaRemoveAccountRights(hPolicy,pSid.value(),FALSE,&pRightsList[i],1);
+					err2 = LsaRemoveAccountRights(hPolicy,pSid,FALSE,&pRightsList[i],1);
 					if (err2 != 0)
 						break;
 				}
@@ -382,7 +382,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers;
 	}
 	else
 	{
@@ -391,7 +391,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
+		ea[0].Trustee.ptstrName = (LPWSTR)pSIDUsers;
 	}
 
 	// Set full control for Administrators.
@@ -400,7 +400,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDAdmin.value();
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDAdmin;
 
 	PACL pACL = 0;
 	DWORD dwErr = SetEntriesInAclW(NUM_ACES,ea,NULL,&pACL);
@@ -423,6 +423,124 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 		LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
 	return true;
+}
+
+bool Root::Manager::init_config()
+{
+	// Load simple config file... In ASCII!!
+
+	HKEY hKey = 0;
+	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
+	if (lRes == ERROR_FILE_NOT_FOUND)
+		return true;
+	else if (lRes != ERROR_SUCCESS)
+		LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+
+	try
+	{
+		// Loop pulling out registry values
+		for (DWORD dwIndex=0;;++dwIndex)
+		{
+			char valName[16383 + 1];
+			DWORD dwNameLen = 16383 + 1;
+			DWORD dwType = 0;
+			DWORD dwValLen = 0;
+			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
+			if (lRes == ERROR_NO_MORE_ITEMS)
+				break;
+			else if (lRes != ERROR_SUCCESS)
+			{
+				RegCloseKey(hKey);
+				LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+			}
+
+			std::string value,key(valName,dwNameLen);
+
+			if (dwType == REG_DWORD)
+			{
+				DWORD dwVal = 0;
+				LONG dwLen = sizeof(dwVal);
+				lRes = RegQueryValueA(hKey,valName,(LPSTR)&dwVal,&dwLen);
+				if (lRes != ERROR_SUCCESS)
+				{
+					LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+					continue;
+				}
+
+				std::ostringstream os;
+				os << dwVal;
+				value = os.str();
+			}
+			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
+			{
+				OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf(static_cast<char*>(malloc(dwValLen+1)));
+				if (!buf)
+				{
+					LOG_ERROR(("Out of memory"));
+					continue;
+				}
+
+				LONG dwLen = dwValLen;
+				lRes = RegQueryValueA(hKey,valName,buf,&dwLen);
+				if (lRes != ERROR_SUCCESS)
+				{
+					LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+					continue;
+				}
+
+				if (dwType == REG_EXPAND_SZ)
+				{
+					char buf2[1024] = {0};
+					DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1023);
+					if (dwExpLen == 0)
+					{
+						DWORD dwErr = GetLastError();
+						LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+						continue;
+					}
+					else if (dwExpLen <= 1023)
+						value.assign(buf2,dwExpLen);
+					else
+					{
+						OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf3(static_cast<char*>(malloc(dwExpLen+1)));
+						if (!buf)
+						{
+							LOG_ERROR(("Out of memory"));
+							continue;
+						}
+
+						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen+1))
+						{
+							DWORD dwErr = GetLastError();
+							LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+							continue;
+						}
+
+						value.assign(buf3,dwExpLen);
+					}
+				}
+				else
+					value.assign(buf,dwValLen);
+			}
+			else
+			{
+				LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
+				continue;
+			}
+
+			if (!key.empty())
+				m_config_args[key] = value;
+		}
+
+		RegCloseKey(hKey);
+
+		return true;
+	}
+	catch (std::exception& e)
+	{
+		RegCloseKey(hKey);
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+	}
 }
 
 bool Root::Manager::get_db_directory(std::string& dir)

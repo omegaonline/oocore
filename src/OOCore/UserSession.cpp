@@ -216,11 +216,11 @@ std::string OOCore::UserSession::discover_server_port(bool& bStandalone)
 
 	countdown.update();
 
-	local_socket->recv(buf.value(),uLen,&err);
+	local_socket->recv(buf,uLen,&err);
 	if (err)
 		OMEGA_THROW(err);
 
-	return std::string(buf.value());
+	return std::string(buf);
 }
 
 void OOCore::UserSession::term()
@@ -471,7 +471,7 @@ int OOCore::UserSession::run_read_loop()
 				{
 					size_t waiting = i->second->m_usage_count.value();
 
-					OOBase::BoundedQueue<Message*>::Result res = i->second->m_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+					OOBase::BoundedQueue<Message*>::Result res = i->second->m_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 					if (res == OOBase::BoundedQueue<Message*>::success)
 					{
 						msg.detach();
@@ -496,7 +496,7 @@ int OOCore::UserSession::run_read_loop()
 			{
 				size_t waiting = m_usage_count.value();
 
-				OOBase::BoundedQueue<Message*>::Result res = m_default_msg_queue.push(msg.value(),msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
+				OOBase::BoundedQueue<Message*>::Result res = m_default_msg_queue.push(msg,msg->m_deadline==OOBase::timeval_t::MaxTime ? 0 : &msg->m_deadline);
 				if (res == OOBase::BoundedQueue<Message*>::success)
 				{
 					msg.detach();
@@ -576,7 +576,7 @@ bool OOCore::UserSession::pump_requests(const OOBase::timeval_t* wait, bool bOnc
 		}
 
 		// Process the message...
-		process_request(msg.value(),pContext->m_deadline);
+		process_request(msg,pContext->m_deadline);
 
 		// Clear the thread map
 		pContext->m_mapChannelThreads.clear();
@@ -695,7 +695,7 @@ OOBase::CDRStream* OOCore::UserSession::wait_for_response(uint16_t apartment_id,
 					i->second = msg->m_src_thread_id;
 
 					// Process the message...
-					process_request(msg.value(),pContext->m_deadline);
+					process_request(msg,pContext->m_deadline);
 
 					// Restore old context
 					pContext->m_deadline = old_deadline;

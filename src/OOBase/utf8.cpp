@@ -35,12 +35,12 @@ std::wstring OOBase::from_utf8(const char* sz, size_t len)
 	if (!ptrBuf)
 		OOBase_OutOfMemory();
 
-	from_utf8(ptrBuf.value(),actual_len,sz,len);
+	from_utf8(ptrBuf,actual_len,sz,len);
 
 	if (len == size_t(-1))
 		--actual_len;
 
-	return std::wstring(ptrBuf.value(),actual_len);
+	return std::wstring(ptrBuf,actual_len);
 }
 
 std::wstring OOBase::from_native(const char* sz, size_t len)
@@ -55,12 +55,12 @@ std::wstring OOBase::from_native(const char* sz, size_t len)
 	if (!ptrBuf)
 		OOBase_OutOfMemory();
 
-	from_native(ptrBuf.value(),actual_len,sz,len);
+	from_native(ptrBuf,actual_len,sz,len);
 
 	if (len == size_t(-1))
 		--actual_len;
 
-	return std::wstring(ptrBuf.value(),actual_len);
+	return std::wstring(ptrBuf,actual_len);
 }
 
 std::string OOBase::to_utf8(const wchar_t* wsz, size_t len)
@@ -75,12 +75,12 @@ std::string OOBase::to_utf8(const wchar_t* wsz, size_t len)
 	if (!ptrBuf)
 		OOBase_OutOfMemory();
 
-	to_utf8(ptrBuf.value(),actual_len,wsz,len);
+	to_utf8(ptrBuf,actual_len,wsz,len);
 
 	if (len == size_t(-1))
 		--actual_len;
 
-	return std::string(ptrBuf.value(),actual_len);
+	return std::string(ptrBuf,actual_len);
 }
 
 #if defined(_WIN32)

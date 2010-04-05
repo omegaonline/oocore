@@ -68,7 +68,7 @@ int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t
 			return err;
 	}
 
-	Db::Resetter resetter(*m_ptrCheckKey_Stmt);
+	Db::Resetter resetter(*(Db::Statement*)m_ptrCheckKey_Stmt);
 
 	// Bind the key value
 	err = m_ptrCheckKey_Stmt->bind_int64(1,uKey);
@@ -96,7 +96,7 @@ int Registry::Hive::get_key_info(const Omega::int64_t& uParent, Omega::int64_t& 
 			return err;
 	}
 
-	Db::Resetter resetter(*m_ptrGetKeyInfo_Stmt);
+	Db::Resetter resetter(*(Db::Statement*)m_ptrGetKeyInfo_Stmt);
 
 	// Bind the search values
 	err = m_ptrGetKeyInfo_Stmt->bind_string(1,strSubKey);

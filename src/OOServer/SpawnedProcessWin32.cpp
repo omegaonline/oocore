@@ -89,7 +89,7 @@ namespace
 			LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),INVALID_HANDLE_VALUE);
 
 		char* pszSid;
-		if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
+		if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
 		{
 			ssPipe << pszSid;
 			LocalFree(pszSid);
@@ -126,7 +126,7 @@ namespace
 		ea[1].grfInheritance = NO_INHERITANCE;
 		ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 		ea[1].Trustee.TrusteeType = TRUSTEE_IS_USER;
-		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
+		ea[1].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 		OOSvrBase::Win32::sec_descript_t sd;
 		dwRes = sd.SetEntriesInAcl(NUM_ACES,ea,NULL);
@@ -305,7 +305,7 @@ namespace
 			return dwRes;
 
 		wchar_t* pszSid = 0;
-		if (!ConvertSidToStringSidW(ptrSIDLogon.value(),&pszSid))
+		if (!ConvertSidToStringSidW(ptrSIDLogon,&pszSid))
 			return GetLastError();
 
 		strWindowStation = pszSid;
@@ -352,7 +352,7 @@ namespace
 				return dwRes;
 
 			OOSvrBase::Win32::sec_descript_t sd;
-			dwRes = CreateWindowStationSD(ptrProcessUser.value(),ptrSIDLogon.value(),sd);
+			dwRes = CreateWindowStationSD(ptrProcessUser,ptrSIDLogon,sd);
 			if (dwRes != ERROR_SUCCESS)
 				return dwRes;
 
@@ -397,7 +397,7 @@ namespace
 			}
 
 			OOSvrBase::Win32::sec_descript_t sd;
-			dwRes = CreateDesktopSD(ptrProcessUser.value(),ptrSIDLogon.value(),sd);
+			dwRes = CreateDesktopSD(ptrProcessUser,ptrSIDLogon,sd);
 			if (dwRes != ERROR_SUCCESS)
 			{
 				SetProcessWindowStation(hOldWinsta);
@@ -709,14 +709,14 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 
 	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSD = 0;
 	DWORD cbNeeded = 0;
-	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
+	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,0,&cbNeeded) && GetLastError()!=ERROR_INSUFFICIENT_BUFFER)
 		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	pSD = malloc(cbNeeded);
 	if (!pSD)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD.value(),cbNeeded,&cbNeeded))
+	if (!GetFileSecurityW(strFName.c_str(),DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION,(PSECURITY_DESCRIPTOR)pSD,cbNeeded,&cbNeeded))
 		LOG_ERROR_RETURN(("GetFileSecurityW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
 	// Map the generic access rights
@@ -742,7 +742,7 @@ bool SpawnedProcessWin32::CheckAccess(const char* pszFName, bool bRead, bool bWr
 	DWORD dwPrivSetSize = sizeof(privilege_set);
 	DWORD dwAccessGranted = 0;
 	BOOL bAllowedVal = FALSE;
-	BOOL bRes = ::AccessCheck((PSECURITY_DESCRIPTOR)pSD.value(),m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
+	BOOL bRes = ::AccessCheck((PSECURITY_DESCRIPTOR)pSD,m_hToken,dwAccessDesired,&generic,&privilege_set,&dwPrivSetSize,&dwAccessGranted,&bAllowedVal);
 	DWORD err = GetLastError();
 
 	if (!bRes && err != ERROR_SUCCESS)
@@ -885,7 +885,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 	// Create an async socket wrapper
 	int err = 0;
-	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC.value(),&err,&sock);
+	OOSvrBase::AsyncSocket* pAsync = Proactor::instance()->attach_socket(ptrMC,&err,&sock);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
 

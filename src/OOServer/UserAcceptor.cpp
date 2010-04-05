@@ -61,7 +61,7 @@ std::string User::Acceptor::unique_name()
 		LOG_ERROR_RETURN(("GetLogonSID failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),"");
 
 	char* pszSid;
-	if (ConvertSidToStringSidA(ptrSIDLogon.value(),&pszSid))
+	if (ConvertSidToStringSidA(ptrSIDLogon,&pszSid))
 	{
 		ssPipe << pszSid;
 		LocalFree(pszSid);
@@ -143,7 +143,7 @@ bool User::Acceptor::init_security(const std::string& pipe_name)
 	ea[0].grfInheritance = NO_INHERITANCE;
 	ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[0].Trustee.TrusteeType = TRUSTEE_IS_USER;
-	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon.value();
+	ea[0].Trustee.ptstrName = (LPWSTR)ptrSIDLogon;
 
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);

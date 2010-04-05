@@ -312,11 +312,11 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 	if (!buf)
 		LOG_ERROR_RETURN(("Out of memory"),0);
 
-	pSocket->recv(buf.value(),uLen,&err);
+	pSocket->recv(buf,uLen,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
 
-	strPipe = buf.value();
+	strPipe = buf;
 
 	OOBASE_NEW(ptrMC,MessageConnection(this));
 	if (!ptrMC)

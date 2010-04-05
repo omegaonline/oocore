@@ -158,7 +158,7 @@ bool Root::ClientAcceptor::init_security(const std::string& pipe_name)
 	ea[1].grfInheritance = NO_INHERITANCE;
 	ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
 	ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-	ea[1].Trustee.ptstrName = (LPWSTR)pSIDUsers.value();
+	ea[1].Trustee.ptstrName = (LPWSTR)pSIDUsers;
 
 	// Create a new ACL
 	DWORD dwErr = m_sd.SetEntriesInAcl(NUM_ACES,ea,NULL);

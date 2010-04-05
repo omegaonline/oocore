@@ -118,7 +118,7 @@ namespace OOCore
 			Omega::uint32_t len = pMessage->ReadUInt32(L"length");
 			OOBase::SmartPtr<Omega::byte_t,OOBase::ArrayDestructor<Omega::byte_t> > szBuf = 0;
 			OMEGA_NEW(szBuf,Omega::byte_t[len]);
-			pMessage->ReadBytes(L"data",len,szBuf.value());
+			pMessage->ReadBytes(L"data",len,szBuf);
 		}
 
 	// IMessage members

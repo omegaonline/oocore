@@ -56,93 +56,75 @@ namespace OOBase
 		}
 	};
 
-	template <typename T, typename Destructor = DeleteDestructor<T> >
-	class SmartPtr
+	namespace detail
 	{
-		class SmartPtrNode
+		template <typename T, typename Destructor = DeleteDestructor<T> >
+		class SmartPtrImpl
 		{
+			class SmartPtrNode
+			{
+			public:
+				SmartPtrNode(T* data = 0) :
+					m_data(data),
+					m_refcount(1)
+				{}
+
+				void addref()
+				{
+					++m_refcount;
+				}
+
+				void release()
+				{
+					if (--m_refcount == 0)
+						delete this;
+				}
+
+				T* value()
+				{
+					return m_data;
+				}
+
+				const T* value() const
+				{
+					return m_data;
+				}
+
+				T* detach()
+				{
+					T* d = m_data;
+					m_data = 0;
+					return d;
+				}
+
+			private:
+				~SmartPtrNode()
+				{
+					Destructor::destroy(m_data);
+				}
+
+				T*                m_data;
+				AtomicInt<size_t> m_refcount;
+			};
+
 		public:
-			SmartPtrNode(T* data = 0) :
-				m_data(data),
-				m_refcount(1)
-			{}
-
-			void addref()
+			SmartPtrImpl(T* ptr = 0) : m_node(0)
 			{
-				++m_refcount;
+				if (ptr)
+				{
+					OOBASE_NEW(m_node,SmartPtrNode(ptr));
+					if (!m_node)
+						OOBase_OutOfMemory();
+				}
 			}
 
-			void release()
+			SmartPtrImpl(const SmartPtrImpl& rhs) : m_node(rhs.m_node)
 			{
-				if (--m_refcount == 0)
-					delete this;
+				if (m_node)
+					m_node->addref();
 			}
 
-			T* value()
-			{
-				return m_data;
-			}
-
-			const T* value() const
-			{
-				return m_data;
-			}
-
-			T* detach()
-			{
-				T* d = m_data;
-				m_data = 0;
-				return d;
-			}
-
-		private:
-			~SmartPtrNode()
-			{
-				Destructor::destroy(m_data);
-			}
-
-			T*                m_data;
-			AtomicInt<size_t> m_refcount;
-		};
-
-	public:
-		SmartPtr(T* ptr = 0) : m_node(0)
-		{
-			if (ptr)
-			{
-				OOBASE_NEW(m_node,SmartPtrNode(ptr));
-				if (!m_node)
-					OOBase_OutOfMemory();
-			}
-		}
-
-		SmartPtr(const SmartPtr& rhs) : m_node(rhs.m_node)
-		{
-			if (m_node)
-				m_node->addref();
-		}
-
-		SmartPtr& operator = (T* ptr)
-		{
-			if (m_node)
-			{
-				m_node->release();
-				m_node = 0;
-			}
-
-			if (ptr)
-			{
-				OOBASE_NEW(m_node,SmartPtrNode(ptr));
-				if (!m_node)
-					OOBase_OutOfMemory();
-			}
-
-			return *this;
-		}
-
-		SmartPtr& operator = (const SmartPtr& rhs)
-		{
-			if (this != &rhs)
+			SmartPtrImpl& operator = (T* ptr)
 			{
 				if (m_node)
 				{
@@ -150,76 +132,150 @@ namespace OOBase
 					m_node = 0;
 				}
 
-				m_node = rhs.m_node;
+				if (ptr)
+				{
+					OOBASE_NEW(m_node,SmartPtrNode(ptr));
+					if (!m_node)
+						OOBase_OutOfMemory();
+				}
 
-				if (m_node)
-					m_node->addref();
+				return *this;
 			}
+
+			SmartPtrImpl& operator = (const SmartPtrImpl& rhs)
+			{
+				if (this != &rhs)
+				{
+					if (m_node)
+					{
+						m_node->release();
+						m_node = 0;
+					}
+
+					m_node = rhs.m_node;
+
+					if (m_node)
+						m_node->addref();
+				}
+				return *this;
+			}
+
+			~SmartPtrImpl()
+			{
+				if (m_node)
+					m_node->release();
+			}
+
+			T* detach()
+			{
+				T* v = 0;
+				if (m_node)
+				{
+					v = m_node->detach();
+					m_node->release();
+					m_node = 0;
+				}
+				return v;
+			}
+
+			operator T* ()
+			{
+				return value();
+			}
+
+			operator const T* () const
+			{
+				return value();
+			}
+
+		protected:
+			T* value()
+			{
+				return (m_node ? m_node->value() : 0);
+			}
+
+			const T* value() const
+			{
+				return (m_node ? m_node->value() : 0);
+			}
+
+		private:
+			SmartPtrNode* m_node;
+		};
+	}
+
+	template <typename T, typename Destructor = DeleteDestructor<T> >
+	class SmartPtr : public detail::SmartPtrImpl<T,Destructor>
+	{
+		typedef detail::SmartPtrImpl<T,Destructor> baseClass;
+	public:
+		SmartPtr(T* ptr = 0) : baseClass(ptr)
+		{}
+
+		SmartPtr(const SmartPtr& rhs) : baseClass(rhs)
+		{}
+
+		SmartPtr& operator = (T* ptr)
+		{
+			baseClass::operator=(ptr);
 			return *this;
 		}
 
-		~SmartPtr()
+		SmartPtr& operator = (const SmartPtr& rhs)
 		{
-			if (m_node)
-				m_node->release();
-		}
-
-		T* detach()
-		{
-			T* v = 0;
-			if (m_node)
-			{
-				v = m_node->detach();
-				m_node->release();
-				m_node = 0;
-			}
-			return v;
-		}
-
-		operator T* ()
-		{
-			return value();
-		}
-
-		operator const T* () const
-		{
-			return value();
+			if (this != &rhs)
+				baseClass::operator=(rhs);
+			
+			return *this;
 		}
 
 		T* operator ->()
 		{
-			return value();
+			return baseClass::value();
 		}
 
 		const T* operator ->() const
 		{
-			return value();
+			return baseClass::value();
+		}
+	};
+
+	template <typename Destructor>
+	class SmartPtr<void,Destructor> : public detail::SmartPtrImpl<void,Destructor>
+	{
+		typedef detail::SmartPtrImpl<void,Destructor> baseClass;
+	public:
+		SmartPtr(void* ptr = 0) : baseClass(ptr)
+		{}
+
+		SmartPtr(const SmartPtr& rhs) : baseClass(rhs)
+		{}
+
+		SmartPtr& operator = (void* ptr)
+		{
+			baseClass::operator=(ptr);
+			return *this;
+		}
+
+		SmartPtr& operator = (const SmartPtr& rhs)
+		{
+			if (this != &rhs)
+				baseClass::operator=(rhs);
+			
+			return *this;
 		}
 
 		template <typename T2>
 		operator T2* ()
 		{
-			return static_cast<T2*>(value());
+			return static_cast<T2*>(baseClass::value());
 		}
 
 		template <typename T2>
 		operator const T2* () const
 		{
-			return static_cast<const T2*>(value());
+			return static_cast<T2*>(baseClass::value());
 		}
-
-	private:
-		T* value()
-		{
-			return (m_node ? m_node->value() : 0);
-		}
-
-		const T* value() const
-		{
-			return (m_node ? m_node->value() : 0);
-		}
-
-		SmartPtrNode* m_node;
 	};
 }
 

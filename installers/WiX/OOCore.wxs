@@ -14,8 +14,10 @@
     <Property Id="ARPPRODUCTICON" Value="Icon" />
     
     <!-- Define properties -->
-    <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="_OMEGA_SANDBOX_USER_" />
-    <Property Id="OMEGASANDBOXPWD" Admin="yes" Value="4th_(*%LGe895y^$N|2" Hidden="yes" />
+    <Property Id="OMEGASANDBOXUNAME" Admin="yes" Value="default" >
+      <RegistrySearch Id="OMEGASANDBOXUNAME.Search" Type="raw" Root="HKLM" Key="Software\Omega Online\OOServer" Name="sandbox_uname" />
+    </Property>
+    <Property Id="OMEGASANDBOXPWD" Admin="yes" Value="default" Hidden="yes" />
     <Property Id="OOServer.AddUser.DoAdd" Value="no" />
       
     <!-- Define directories -->
@@ -79,10 +81,7 @@
     <DirectoryRef Id="TARGETDIR" >
       <Component Id="OOServer.RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
         <RegistryKey Root="HKLM" Key="Software\Omega Online\OOServer" Action="create" >
-          <RegistryKey Key="Sandbox" Action="create" >
-            <RegistryValue Name="Username" Type="string" Value="[OMEGASANDBOXUNAME]" KeyPath="yes" />
-            <RegistryValue Name="Password" Type="string" Value="[OMEGASANDBOXPWD]" />
-          </RegistryKey>
+          <RegistryValue Name="sandbox_uname" Type="string" Value="[OMEGASANDBOXUNAME]" KeyPath="yes" />
         </RegistryKey>
       </Component>
     </DirectoryRef>
@@ -110,7 +109,7 @@
                   Return="ignore"
                   Execute="rollback"
                   BinaryKey="CustomLibrary"
-                  DllEntry="_RollbackAddUser@4"
+                  DllEntry="_RemoveUser@4"
                   HideTarget="yes"
                   Impersonate="no" />
 
@@ -130,12 +129,17 @@
                   Property="OOServer.UpdateUser"
                   Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
 
-    <CustomAction Id="OOServer.DisableUser"
+    <CustomAction Id="OOServer.RemoveUser"
                   Return="check"
                   Execute="deferred"
                   BinaryKey="CustomLibrary"
-                  DllEntry="_DisableUser@4"
+                  DllEntry="_RemoveUser@4"
+                  HideTarget="yes"
                   Impersonate="no" />
+
+    <CustomAction Id="OOServer.RemoveUser.SetProperty"
+                  Property="OOServer.RemoveUser"
+                  Value="[OMEGASANDBOXUNAME]|[OMEGASANDBOXPWD]" />
     
     <!-- Define binary -->
     <?ifdef Debug ?>
@@ -155,8 +159,9 @@
       
       <Custom Action="OOServer.UpdateUser.SetProperty" After="InstallFiles"><![CDATA[OOServer.AddUser.DoAdd="update"]]></Custom>
       <Custom Action="OOServer.UpdateUser" After="OOServer.UpdateUser.SetProperty"><![CDATA[OOServer.AddUser.DoAdd="update"]]></Custom>
-      
-      <Custom Action="OOServer.DisableUser" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
+
+      <Custom Action="OOServer.RemoveUser.SetProperty" After="InstallFiles"><![CDATA[REMOVE~="ALL"]]></Custom>
+      <Custom Action="OOServer.RemoveUser" After="OOServer.RemoveUser.SetProperty"><![CDATA[REMOVE~="ALL"]]></Custom>
     </InstallExecuteSequence>
 
     <!-- Group components -->

@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <msi.h>
 #include <msiquery.h>
+#include <ntsecapi.h>
+#include <lm.h>
 
 #if defined(_DEBUG)
 #error turn off _DEBUG
@@ -8,6 +10,32 @@
 
 #include <malloc.h>
 #include <string>
+#include <stdarg.h>
+
+static const wchar_t s_szUName[] = L"_OMEGA_SANDBOX_USER_";
+static const wchar_t s_szPwd[] = L"4th_(*%LGe895y^$N|2";
+
+static void InstallMessage(MSIHANDLE hInstall, INSTALLMESSAGE msg_type, const wchar_t* pMsg, UINT vals = 0, ...)
+{
+	PMSIHANDLE hRecord = MsiCreateRecord(1);
+	if (hRecord)
+	{
+		va_list argptr;
+		va_start(argptr,vals);
+
+		// field 0 is the template
+		MsiRecordSetStringW(hRecord, 0, pMsg);
+
+		for (UINT v=0;v<vals;++v)
+		{
+			// field v, to be placed in [v] placeholder
+			MsiRecordSetStringW(hRecord, v, va_arg(argptr,wchar_t*));
+		}
+
+		// send message to running installer
+		MsiProcessMessage(hInstall, msg_type, hRecord);
+	}
+}
 
 static UINT GetProperty(MSIHANDLE hInstall, const wchar_t* prop, std::wstring& val)
 {
@@ -18,14 +46,28 @@ static UINT GetProperty(MSIHANDLE hInstall, const wchar_t* prop, std::wstring& v
 		++dwLen;
 		WCHAR* buf = static_cast<WCHAR*>(malloc(dwLen*sizeof(wchar_t)));
 		if (!buf)
+		{
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Out of memory");
 			return ERROR_INSTALL_FAILURE;
+		}
 
 		err = MsiGetPropertyW(hInstall,prop,buf,&dwLen);
 		if (err == ERROR_SUCCESS)
 			val.assign(buf,dwLen);
+		else
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to access property [1]",1,prop);
 		
 		free(buf);
 	}
+
+	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
+}
+
+static UINT SetProperty(MSIHANDLE hInstall, const wchar_t* prop, const wchar_t* val)
+{
+	UINT err = MsiSetPropertyW(hInstall,prop,val);
+	if (err != ERROR_SUCCESS)
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Failed to set property [1] to [2]",2,prop,val);
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }
@@ -49,95 +91,340 @@ static UINT ParseUser(MSIHANDLE hInstall, std::wstring& strUName, std::wstring& 
 	return ERROR_SUCCESS;
 }
 
+static void BuildUnicodeString(LSA_UNICODE_STRING& strOut, const wchar_t* strIn)
+{
+	strOut.Buffer = const_cast<PWSTR>(strIn);
+	size_t len = wcslen(strOut.Buffer);
+	strOut.Length = static_cast<USHORT>(len * sizeof(wchar_t));
+	strOut.MaximumLength = static_cast<USHORT>((len+1) * sizeof(wchar_t));
+}
+
+static int FindUNameAndPwd(MSIHANDLE hInstall, std::wstring& strUName, std::wstring& strPwd)
+{
+	if (strUName == L"default")
+	{
+		// Default username
+		strUName = s_szUName;
+
+		UINT err = SetProperty(hInstall,L"OMEGASANDBOXUNAME",strUName.c_str());
+		if (err != ERROR_SUCCESS)
+			return err;
+	}
+
+	if (strPwd == L"default")
+	{
+		// Open the local account policy...
+		LSA_HANDLE hPolicy;
+		LSA_OBJECT_ATTRIBUTES oa = {0};
+		NTSTATUS err = LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy);
+		if (err != ERROR_SUCCESS)
+		{
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaOpenPolicy failed");
+			return ERROR_INSTALL_FAILURE;
+		}
+
+		LSA_UNICODE_STRING szKey;
+		BuildUnicodeString(szKey,L"L$OOServer_sandbox_pwd");
+
+		PLSA_UNICODE_STRING pszVal;
+		if (LsaRetrievePrivateData(hPolicy,&szKey,&pszVal) == ERROR_SUCCESS)
+		{
+			strPwd.assign(pszVal->Buffer,pszVal->Length);
+			LsaFreeMemory(pszVal);
+
+			InstallMessage(hInstall,INSTALLMESSAGE_INFO,L"Re-using existing sandbox password");
+		}
+		
+		LsaClose(hPolicy);
+
+		if (strPwd == L"default")
+			strPwd = s_szPwd;
+
+		UINT err2 = SetProperty(hInstall,L"OMEGASANDBOXPWD",strPwd.c_str());
+		if (err2 != ERROR_SUCCESS)
+			return err2;
+	}
+
+	return ERROR_SUCCESS;
+}
+
 // 2 = Add, 1 = Update, 0 = No change, -1 = Failure
-static int CheckUName(const std::wstring& strUName)
+static int CheckUName(MSIHANDLE hInstall, const std::wstring& strUName)
 {
 	// Check if the user exists, and/or if it does, does it need updating?
-	// Lookup the account SID
-	DWORD dwSidSize = 0;
-	DWORD dwDnSize = 0;
-	SID_NAME_USE use;
-	if (!LookupAccountNameW(NULL,strUName.c_str(),NULL,&dwSidSize,NULL,&dwDnSize,&use))
-	{
-		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			return 2;
-	}
-	else if (dwSidSize==0)
-		return -1;
 	
-	PSID pSid = static_cast<PSID>(malloc(dwSidSize));
-	if (!pSid)
-		return -1;
-
-	wchar_t* pszDName = (wchar_t*)malloc(dwDnSize * sizeof(wchar_t));
-	if (!pszDName)
+	// Open the local account policy...
+	LSA_HANDLE hPolicy;
+	LSA_OBJECT_ATTRIBUTES oa = {0};
+	NTSTATUS err = LsaOpenPolicy(NULL,&oa,POLICY_LOOKUP_NAMES,&hPolicy);
+	if (err != ERROR_SUCCESS)
 	{
-		free(pSid);
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT|MB_OK|MB_ICONERROR),L"LsaOpenPolicy failed");
+		return -1;
+	}
+		
+	// Lookup the account SID
+	LSA_UNICODE_STRING szUName;
+	BuildUnicodeString(szUName,strUName.c_str());
+	
+	PLSA_REFERENCED_DOMAIN_LIST pDL = 0;
+	PLSA_TRANSLATED_SID2 pSIDs = 0;
+	err = LsaNtStatusToWinError(LsaLookupNames2(hPolicy,0,1,&szUName,&pDL,&pSIDs));
+	if (err == ERROR_NONE_MAPPED || err == ERROR_TRUSTED_DOMAIN_FAILURE)
+	{
+		LsaClose(hPolicy);
+		return 2;
+	}
+	else if (err != ERROR_SUCCESS)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaLookupNames2 '[1]' failed",1,strUName.c_str());
+		LsaClose(hPolicy);
 		return -1;
 	}
 
-	if (!LookupAccountNameW(NULL,strUName.c_str(),pSid,&dwSidSize,pszDName,&dwDnSize,&use))
+	int ret = -1;	
+	if (pSIDs[0].Use != SidTypeUser)
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_ERROR|MB_OK|MB_ICONERROR),L"Account '[1]' is not a user account",1,strUName.c_str());
+	else
 	{
-		free(pSid);
-		free(pszDName);
-		return -1;
+		// Validate account
+		PLSA_UNICODE_STRING pRightsList;
+		ULONG ulRightsCount = 0;
+		err = LsaEnumerateAccountRights(hPolicy,pSIDs[0].Sid,&pRightsList,&ulRightsCount);
+		if (err != ERROR_SUCCESS)
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaEnumerateAccountRights '[1]' failed",1,strUName.c_str());
+		else
+		{
+			bool bFound = false;
+			for (ULONG i=0;i<ulRightsCount && !bFound;i++)
+			{
+				if (wcscmp(pRightsList[i].Buffer,SE_BATCH_LOGON_NAME) != 0)
+					bFound = true;
+			}
+
+			ret = (bFound ? 0 : 1);
+		}
 	}
 
-	free(pSid);
-	free(pszDName);
+	LsaFreeMemory(pDL);
+	LsaFreeMemory(pSIDs);
+	LsaClose(hPolicy);
 
-	if (use != SidTypeUser)
-		return 1;
-
-	return 0;
+	return ret;
 }
 
 extern "C" UINT __declspec(dllexport) __stdcall CheckUser(MSIHANDLE hInstall)
 {
-	std::wstring strUName;
+	std::wstring strUName,strPwd;
 	UINT err = GetProperty(hInstall,L"OMEGASANDBOXUNAME",strUName);
 	if (err != ERROR_SUCCESS)
 		return ERROR_INSTALL_FAILURE;
 
-	::MessageBoxW(NULL,strUName.c_str(),L"CheckUser",MB_OK | MB_ICONINFORMATION);
-	
-	bool bDoAdd = true;
+	err = GetProperty(hInstall,L"OMEGASANDBOXPWD",strPwd);
+	if (err != ERROR_SUCCESS)
+		return ERROR_INSTALL_FAILURE;
 
-	CheckUName(strUName);
+	err = FindUNameAndPwd(hInstall,strUName,strPwd);
+	if (err != ERROR_SUCCESS)
+		return ERROR_INSTALL_FAILURE;
 
-	if (bDoAdd)
-		err = MsiSetPropertyW(hInstall,L"OOServer.AddUser.DoAdd",L"yes");
+	int ret = CheckUName(hInstall,strUName);
+	switch (ret)
+	{
+	case 2:
+		InstallMessage(hInstall,INSTALLMESSAGE_INFO,L"New local user [1] required",1,strUName.c_str());
+		err = SetProperty(hInstall,L"OOServer.AddUser.DoAdd",L"yes");
+		break;
+
+	case 1:
+		InstallMessage(hInstall,INSTALLMESSAGE_INFO,L"User [1] requires updating to add SeBatchLogonRight privilege",1,strUName.c_str());
+		err = SetProperty(hInstall,L"OOServer.AddUser.DoAdd",L"update");
+		break;
+
+	case 0:
+		InstallMessage(hInstall,INSTALLMESSAGE_INFO,L"User [1] is valid",1,strUName.c_str());
+		break;
+
+	default:
+	case -1:
+		err = ERROR_INSTALL_FAILURE;
+		break;
+	}
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }
 
 extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 {
-	std::wstring strUName,strPwd;
-	UINT err = ParseUser(hInstall,strUName,strPwd);
-	if (err != ERROR_SUCCESS)
-		return err;
+	//::MessageBoxW(NULL,strUName.c_str(),L"AddUser",MB_OK | MB_ICONINFORMATION);
+	DebugBreak();
 
-	::MessageBoxW(NULL,strUName.c_str(),L"Add User",MB_OK | MB_ICONINFORMATION);
-	
-	return ERROR_INSTALL_FAILURE;
-}
-
-extern "C" UINT __declspec(dllexport) __stdcall RollbackAddUser(MSIHANDLE hInstall)
-{
 	std::wstring strUName,strPwd;
-	UINT err = ParseUser(hInstall,strUName,strPwd);
+	if (ParseUser(hInstall,strUName,strPwd) != ERROR_SUCCESS)
+		return ERROR_INSTALL_FAILURE;
+
+	USER_INFO_2	info =
+	{
+		(LPWSTR)strUName.c_str(),  // usri2_name;
+		(LPWSTR)strPwd.c_str(),    // usri2_password;
+		0,                         // usri2_password_age;
+		USER_PRIV_USER,            // usri2_priv;
+		NULL,                      // usri2_home_dir;
+		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_comment;
+		UF_SCRIPT | UF_PASSWD_CANT_CHANGE | UF_DONT_EXPIRE_PASSWD | UF_NORMAL_ACCOUNT, // usri2_flags;
+		NULL,                      // usri2_script_path;
+		0,                         // usri2_auth_flags;
+		L"Omega Online sandbox user account",   // usri2_full_name;
+		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_usr_comment;
+		0,                         // usri2_parms;
+		NULL,                      // usri2_workstations;
+		0,                         // usri2_last_logon;
+		0,                         // usri2_last_logoff;
+		TIMEQ_FOREVER,             // usri2_acct_expires;
+		USER_MAXSTORAGE_UNLIMITED, // usri2_max_storage;
+		0,                         // usri2_units_per_week;
+		NULL,                      // usri2_logon_hours;
+		(DWORD)-1,                 // usri2_bad_pw_count;
+		(DWORD)-1,                 // usri2_num_logons;
+		NULL,                      // usri2_logon_server;
+		0,                         // usri2_country_code;
+		0,                         // usri2_code_page;
+	};
+	if (NetUserAdd(NULL,2,(LPBYTE)&info,NULL) != NERR_Success)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"NetUserAdd failed");
+		return ERROR_INSTALL_FAILURE;
+	}		
+
+	// Open the local account policy...
+	LSA_HANDLE hPolicy;
+	LSA_OBJECT_ATTRIBUTES oa = {0};
+	NTSTATUS err = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
 	if (err != ERROR_SUCCESS)
-		return err;
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaOpenPolicy failed");
+		return ERROR_INSTALL_FAILURE;
+	}
 		
-	::MessageBoxW(NULL,strUName.c_str(),L"Rollback User",MB_OK | MB_ICONINFORMATION);
+	// Lookup the account SID
+	LSA_UNICODE_STRING szUName;
+	BuildUnicodeString(szUName,strUName.c_str());
 	
-	return err;
+	PLSA_REFERENCED_DOMAIN_LIST pDL = 0;
+	PLSA_TRANSLATED_SID2 pSIDs = 0;
+	err = LsaNtStatusToWinError(LsaLookupNames2(hPolicy,0,1,&szUName,&pDL,&pSIDs));
+	if (err != ERROR_SUCCESS)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaLookupNames2 '[1]' failed",1,strUName.c_str());
+		LsaClose(hPolicy);
+		return ERROR_INSTALL_FAILURE;
+	}
+
+	if (pSIDs[0].Use != SidTypeUser)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Account '[1]' is not a user account",1,strUName.c_str());
+		err = ERROR_INSTALL_FAILURE;
+	}
+	else
+	{
+		// Add correct right...
+		LSA_UNICODE_STRING szName;
+		BuildUnicodeString(szName,SE_BATCH_LOGON_NAME);
+		
+		err = LsaAddAccountRights(hPolicy,pSIDs[0].Sid,&szName,1);
+		if (err != ERROR_SUCCESS)
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaAddAccountRights failed");
+		else
+		{
+			// Remove all other priviledges
+			PLSA_UNICODE_STRING pRightsList;
+			ULONG ulRightsCount = 0;
+			err = LsaEnumerateAccountRights(hPolicy,pSIDs[0].Sid,&pRightsList,&ulRightsCount);
+			if (err != ERROR_SUCCESS)
+				InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaEnumerateAccountRights failed");
+			else
+			{
+				for (ULONG i=0;i<ulRightsCount;i++)
+				{
+					if (wcscmp(pRightsList[i].Buffer,SE_BATCH_LOGON_NAME) != 0)
+					{
+						err = LsaRemoveAccountRights(hPolicy,pSIDs[0].Sid,FALSE,&pRightsList[i],1);
+						if (err != ERROR_SUCCESS)
+						{
+							InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaRemoveAccountRights failed");
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	LsaFreeMemory(pDL);
+	LsaFreeMemory(pSIDs);
+	LsaClose(hPolicy);
+
+	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }
 
-extern "C" UINT __declspec(dllexport) __stdcall DisableUser(MSIHANDLE hInstall)
+extern "C" UINT __declspec(dllexport) __stdcall RemoveUser(MSIHANDLE hInstall)
 {
-	::MessageBoxW(NULL,L"",L"Remove User",MB_OK | MB_ICONINFORMATION);
-
+	std::wstring strUName,strPwd;
+	if (ParseUser(hInstall,strUName,strPwd) == ERROR_SUCCESS)
+		NetUserDel(NULL,strUName.c_str());
+		
 	return ERROR_SUCCESS;
+}
+
+extern "C" UINT __declspec(dllexport) __stdcall UpdateUser(MSIHANDLE hInstall)
+{
+	std::wstring strUName,strPwd;
+	if (ParseUser(hInstall,strUName,strPwd) != ERROR_SUCCESS)
+		return ERROR_INSTALL_FAILURE;
+
+	// Open the local account policy...
+	LSA_HANDLE hPolicy;
+	LSA_OBJECT_ATTRIBUTES oa = {0};
+	NTSTATUS err = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
+	if (err != ERROR_SUCCESS)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaOpenPolicy failed");
+		return ERROR_INSTALL_FAILURE;
+	}
+		
+	// Lookup the account SID
+	LSA_UNICODE_STRING szUName;
+	BuildUnicodeString(szUName,strUName.c_str());
+	
+	PLSA_REFERENCED_DOMAIN_LIST pDL = 0;
+	PLSA_TRANSLATED_SID2 pSIDs = 0;
+	err = LsaNtStatusToWinError(LsaLookupNames2(hPolicy,0,1,&szUName,&pDL,&pSIDs));
+	if (err != ERROR_SUCCESS)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaLookupNames2 '[1]' failed",1,strUName.c_str());
+		LsaClose(hPolicy);
+		return ERROR_INSTALL_FAILURE;
+	}
+
+	if (pSIDs[0].Use != SidTypeUser)
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"Account '[1]' is not a user account",1,strUName.c_str());
+		err = ERROR_INSTALL_FAILURE;
+	}
+	else
+	{
+		// Add correct right...
+		LSA_UNICODE_STRING szName;
+		BuildUnicodeString(szName,SE_BATCH_LOGON_NAME);
+		
+		err = LsaAddAccountRights(hPolicy,pSIDs[0].Sid,&szName,1);
+		if (err != ERROR_SUCCESS)
+			InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"LsaAddAccountRights failed");
+	}
+
+	LsaFreeMemory(pDL);
+	LsaFreeMemory(pSIDs);
+	LsaClose(hPolicy);
+
+	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }

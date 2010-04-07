@@ -14,6 +14,7 @@
 
 static const wchar_t s_szUName[] = L"_OMEGA_SANDBOX_USER_";
 static const wchar_t s_szPwd[] = L"4th_(*%LGe895y^$N|2";
+static const wchar_t s_szPwdKey[] = L"L$OOServer_sandbox_pwd";
 
 static void InstallMessage(MSIHANDLE hInstall, INSTALLMESSAGE msg_type, const wchar_t* pMsg, UINT vals = 0, ...)
 {
@@ -124,7 +125,7 @@ static int FindUNameAndPwd(MSIHANDLE hInstall, std::wstring& strUName, std::wstr
 		}
 
 		LSA_UNICODE_STRING szKey;
-		BuildUnicodeString(szKey,L"L$OOServer_sandbox_pwd");
+		BuildUnicodeString(szKey,s_szPwdKey);
 
 		PLSA_UNICODE_STRING pszVal;
 		if (LsaRetrievePrivateData(hPolicy,&szKey,&pszVal) == ERROR_SUCCESS)
@@ -198,7 +199,7 @@ static int CheckUName(MSIHANDLE hInstall, const std::wstring& strUName)
 			bool bFound = false;
 			for (ULONG i=0;i<ulRightsCount && !bFound;i++)
 			{
-				if (wcscmp(pRightsList[i].Buffer,SE_BATCH_LOGON_NAME) != 0)
+				if (wcscmp(pRightsList[i].Buffer,SE_BATCH_LOGON_NAME) == 0)
 					bFound = true;
 			}
 
@@ -256,9 +257,6 @@ extern "C" UINT __declspec(dllexport) __stdcall CheckUser(MSIHANDLE hInstall)
 
 extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 {
-	//::MessageBoxW(NULL,strUName.c_str(),L"AddUser",MB_OK | MB_ICONINFORMATION);
-	DebugBreak();
-
 	std::wstring strUName,strPwd;
 	if (ParseUser(hInstall,strUName,strPwd) != ERROR_SUCCESS)
 		return ERROR_INSTALL_FAILURE;
@@ -294,7 +292,15 @@ extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 	{
 		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"NetUserAdd failed");
 		return ERROR_INSTALL_FAILURE;
-	}		
+	}
+
+	// Add reg key
+	HKEY hKey;
+	if (RegCreateKeyExW(HKEY_LOCAL_MACHINE,L"Software\\Omega Online\\OOServer\\Install",0,NULL,0,KEY_WRITE,NULL,&hKey,NULL) == ERROR_SUCCESS)
+	{
+		RegSetValueExW(hKey,L"added_user",0,REG_SZ,(LPBYTE)strUName.c_str(),(strUName.size()+1)*sizeof(wchar_t));
+		RegCloseKey(hKey);
+	}
 
 	// Open the local account policy...
 	LSA_HANDLE hPolicy;
@@ -362,6 +368,18 @@ extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 
 	LsaFreeMemory(pDL);
 	LsaFreeMemory(pSIDs);
+
+	if (err == ERROR_SUCCESS)
+	{
+		LSA_UNICODE_STRING szKey;
+		BuildUnicodeString(szKey,s_szPwdKey);
+
+		LSA_UNICODE_STRING szVal;
+		BuildUnicodeString(szVal,strPwd.c_str());
+
+		err = LsaNtStatusToWinError(LsaStorePrivateData(hPolicy,&szKey,&szVal));
+	}
+
 	LsaClose(hPolicy);
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
@@ -369,9 +387,40 @@ extern "C" UINT __declspec(dllexport) __stdcall AddUser(MSIHANDLE hInstall)
 
 extern "C" UINT __declspec(dllexport) __stdcall RemoveUser(MSIHANDLE hInstall)
 {
+	// Ignore all errors here... we don't stop...
 	std::wstring strUName,strPwd;
 	if (ParseUser(hInstall,strUName,strPwd) == ERROR_SUCCESS)
-		NetUserDel(NULL,strUName.c_str());
+	{
+		// Check reg key
+		HKEY hKey;
+		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,L"Software\\Omega Online\\OOServer\\Install",0,KEY_READ | KEY_WRITE,&hKey) == ERROR_SUCCESS)
+		{
+			wchar_t szBuf[1024] = {0};
+			DWORD dwLen = 1023;
+			RegQueryValueExW(hKey,L"added_user",NULL,NULL,(LPBYTE)&szBuf,&dwLen);
+			
+			if (strUName == szBuf && NetUserDel(NULL,strUName.c_str()) == NERR_Success)
+			{
+				// Remove added key
+				RegDeleteValueW(hKey,L"added_user");
+
+				// Remove the password
+				LSA_HANDLE hPolicy;
+				LSA_OBJECT_ATTRIBUTES oa = {0};
+				if (LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy) == ERROR_SUCCESS)
+				{
+					LSA_UNICODE_STRING szKey;
+					BuildUnicodeString(szKey,s_szPwdKey);
+
+					LsaStorePrivateData(hPolicy,&szKey,NULL);
+
+					LsaClose(hPolicy);
+				}
+			}
+						
+			RegCloseKey(hKey);
+		}
+	}
 		
 	return ERROR_SUCCESS;
 }
@@ -425,6 +474,16 @@ extern "C" UINT __declspec(dllexport) __stdcall UpdateUser(MSIHANDLE hInstall)
 	LsaFreeMemory(pDL);
 	LsaFreeMemory(pSIDs);
 	LsaClose(hPolicy);
+
+	// Confirm logon is possible...
+	HANDLE hToken;
+	if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
+	{
+		InstallMessage(hInstall,INSTALLMESSAGE(INSTALLMESSAGE_FATALEXIT |MB_OK|MB_ICONERROR),L"User account '[1]' has an invalid password or is unsuitable",1,strUName.c_str());
+		err = ERROR_INSTALL_FAILURE;
+	}
+	else
+		CloseHandle(hToken);
 
 	return (err == ERROR_SUCCESS ? err : ERROR_INSTALL_FAILURE);
 }

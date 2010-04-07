@@ -82,6 +82,7 @@
       <Component Id="OOServer.RegKeys" Guid="{AFADA9A9-6023-43C6-B884-805206F64E9D}">
         <RegistryKey Root="HKLM" Key="Software\Omega Online\OOServer" Action="create" >
           <RegistryValue Name="sandbox_uname" Type="string" Value="[OMEGASANDBOXUNAME]" KeyPath="yes" />
+          <RegistryValue Name="#example" Type="string" Value="OOServer will ignore any entries starting with #" />
         </RegistryKey>
       </Component>
     </DirectoryRef>

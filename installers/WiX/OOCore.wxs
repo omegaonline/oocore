@@ -8,7 +8,7 @@
       UpgradeCode="{DF39C47D-E9EC-4644-93C4-6D649CED5CB8}">
 
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-    <Media Id="1" Cabinet="OOCore.cab" EmbedCab="yes" />
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
 
     <Icon Id="Icon" SourceFile="../../src/OOServer/logo.ico"/>
     <Property Id="ARPPRODUCTICON" Value="Icon" />

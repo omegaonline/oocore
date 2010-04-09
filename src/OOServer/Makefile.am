@@ -5,6 +5,7 @@ noinst_LTLIBRARIES = liboosvrcmn.la liboosvrdb.la
 liboosvrcmn_la_CPPFLAGS = -I@top_srcdir@/include
 liboosvrcmn_la_CFLAGS = $(PTHREAD_CFLAGS)
 liboosvrcmn_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboosvrcmn_la_LDFLAGS = $(PTHREAD_LIBS)
 
 liboosvrcmn_la_SOURCES = \
 	DebuggerWin32.cpp \
@@ -15,6 +16,7 @@ liboosvrcmn_la_SOURCES = \
 liboosvrdb_la_CPPFLAGS = -I@top_srcdir@/include
 liboosvrdb_la_CFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
 liboosvrdb_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(SQLITE3_CFLAGS)
+liboosvrdb_la_LDFLAGS = $(PTHREAD_LIBS)
 
 liboosvrdb_la_SOURCES = \
 	Database.h \

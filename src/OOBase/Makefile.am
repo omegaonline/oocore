@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = liboobase.la liboosvrbase.la
 liboobase_la_CPPFLAGS = -I@top_srcdir@/include
 liboobase_la_CFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
 liboobase_la_CXXFLAGS = $(PTHREAD_CFLAGS) $(LTDLINCL)
+liboobase_la_LDFLAGS = $(PTHREAD_LIBS)
 
 liboobase_la_SOURCES = \
 	Atomic.h \
@@ -46,9 +47,10 @@ liboobase_la_SOURCES = \
 liboosvrbase_la_CPPFLAGS = -I@top_srcdir@/include
 liboosvrbase_la_CFLAGS = $(PTHREAD_CFLAGS)
 liboosvrbase_la_CXXFLAGS = $(PTHREAD_CFLAGS)
+liboosvrbase_la_LDFLAGS = $(PTHREAD_LIBS)
 
 if WIN32
-liboosvrbase_la_LDFLAGS = -lnetapi32 -luserenv -lshlwapi
+liboosvrbase_la_LDFLAGS += -lnetapi32 -luserenv -lshlwapi
 endif
 
 liboosvrbase_la_SOURCES = \

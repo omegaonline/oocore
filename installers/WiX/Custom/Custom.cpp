@@ -1,3 +1,24 @@
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2010 Rick Taylor
+//
+// This file is part of Custom, the Omega Online WiX installer custom action.
+//
+// Custom is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Custom is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Custom.  If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////////
+
 #include <windows.h>
 #include <msi.h>
 #include <msiquery.h>
@@ -130,7 +151,7 @@ static int FindUNameAndPwd(MSIHANDLE hInstall, std::wstring& strUName, std::wstr
 		PLSA_UNICODE_STRING pszVal;
 		if (LsaRetrievePrivateData(hPolicy,&szKey,&pszVal) == ERROR_SUCCESS)
 		{
-			strPwd.assign(pszVal->Buffer,pszVal->Length);
+			strPwd.assign(pszVal->Buffer,pszVal->Length / sizeof(wchar_t));
 			LsaFreeMemory(pszVal);
 
 			InstallMessage(hInstall,INSTALLMESSAGE_INFO,L"Re-using existing sandbox password");

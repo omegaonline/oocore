@@ -1,4 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+///////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2010 Rick Taylor
+//
+// This file is part of OOCore.wxs, the Omega Online WiX installer scripts.
+//
+// OOCore.wxs is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// OOCore.wxs is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with OOCore.wxs.  If not, see <http://www.gnu.org/licenses/>.
+//
+///////////////////////////////////////////////////////////////////////////////////
+-->
+
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="{28CFA922-1E70-4665-88F5-61F9F553515E}"
       Name="Omega Online Core"

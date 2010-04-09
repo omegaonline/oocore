@@ -127,6 +127,9 @@ namespace
 
 	static std::string get_db_dir(bool bSystem)
 	{
+		// This all needs reworking in light of the config file changes
+		void* TODO;
+
 #if defined(_WIN32)
 
 		wchar_t szBuf[MAX_PATH] = {0};
@@ -142,12 +145,9 @@ namespace
 		if (!PathAppendW(szBuf,L"Omega Online"))
 			OMEGA_THROW(string_t(("PathAppendW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
 
-		if (!PathFileExistsW(szBuf))
-		{
-			if (!CreateDirectoryW(szBuf,NULL))
-				OMEGA_THROW(string_t(("CreateDirectoryW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-		}
-
+		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
+			OMEGA_THROW(string_t(("CreateDirectoryW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
+		
 		std::string dir = OOBase::to_utf8(szBuf);
 		if (*dir.rbegin() != '\\')
 			dir += '\\';

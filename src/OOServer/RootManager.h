@@ -52,9 +52,7 @@ namespace Root
 		Manager();
 		virtual ~Manager();
 
-		bool install(const std::map<std::string,std::string>& args);
-		bool uninstall();
-		int run();
+		int run(const std::map<std::string,std::string>& args);
 
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
@@ -63,20 +61,13 @@ namespace Root
 		Manager& operator = (const Manager&);
 
 		// Init and run members
-		bool init();
-		bool get_db_directory(std::string& dir);
-		bool init_config();
+		bool load_config();
 		bool init_database();
-		void wait_for_quit();
+		bool wait_for_quit();
 
+		// Configuration members
 		std::map<std::string,std::string> m_config_args;
-
-		// Installation members
-		bool platform_install(const std::map<std::string,std::string>& args);
-		bool platform_uninstall();
-		bool install_sandbox(const std::map<std::string,std::string>& args);
-		bool uninstall_sandbox();
-		bool secure_file(const std::string& strFilename, bool bPublicRead);
+		bool m_bUnsafeSandbox;
 
 		// I/O members
 		OOBase::RWMutex m_lock;

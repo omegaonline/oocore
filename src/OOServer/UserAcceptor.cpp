@@ -44,7 +44,7 @@ std::string User::Acceptor::unique_name()
 	// Create a new unique pipe
 	std::ostringstream ssPipe;
 	ssPipe.imbue(std::locale::classic());
-	ssPipe.setf(std::ios_base::hex);
+	ssPipe.setf(std::ios_base::hex,std::ios_base::basefield);
 
 #if defined(_WIN32)
 	ssPipe << "OOU";

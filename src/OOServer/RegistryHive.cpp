@@ -231,12 +231,7 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 		// Start a transaction..
 		err = m_db->begin_transaction(ptrTrans);
-		if (err == SQLITE_ERROR)
-		{
-			// This is returned if the database is readonly
-			return EACCES;
-		}
-		else if (err != SQLITE_OK)
+		if (err != SQLITE_OK)
 			return EIO;
 
 		// Mask the access mask
@@ -256,7 +251,9 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 			else
 				err = insert_key(uSubKey,uKey,strSubKey.substr(0,pos),access);
 
-			if (err != SQLITE_DONE)
+			if (err == SQLITE_READONLY)
+				return EACCES;
+			else if (err != SQLITE_DONE)
 				return EIO;
 
 			if (pos == std::string::npos)
@@ -364,12 +361,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 
 	OOBase::SmartPtr<Db::Transaction> ptrTrans;
 	err = m_db->begin_transaction(ptrTrans);
-	if (err == SQLITE_ERROR)
-	{
-		// This is returned if the database is readonly
-		return EACCES;
-	}
-	else if (err != SQLITE_OK)
+	if (err != SQLITE_OK)
 		return EIO;
 
 	err = delete_key_i(uKey,channel_id);

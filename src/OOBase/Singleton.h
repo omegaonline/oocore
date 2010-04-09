@@ -41,12 +41,6 @@ namespace OOBase
 			return s_instance;
 		}
 
-		static void close()
-		{
-			DLLDestructor<DLL>::remove_destructor(&destroy,0);
-			destroy();
-		}
-
 	private:
 		// Prevent creation
 		Singleton();

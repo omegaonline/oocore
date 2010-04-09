@@ -46,304 +46,7 @@
 #define PROTECTED_DACL_SECURITY_INFORMATION	 (0x80000000L)
 #endif
 
-#define SERVICE_NAME L"OOServer"
-
-bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
-{
-	wchar_t szPath[MAX_PATH];
-	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
-		LOG_ERROR_RETURN(("GetModuleFileNameW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	SC_HANDLE schSCManager = OpenSCManagerW(NULL,SERVICES_ACTIVE_DATABASEW,SC_MANAGER_CREATE_SERVICE);
-	if (!schSCManager)
-		LOG_ERROR_RETURN(("OpenSCManagerW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-  	SC_HANDLE schService = CreateServiceW(
-		schSCManager,                // SCManager database
-		SERVICE_NAME,                // name of service
-		L"Omega Online Network Hub", // service name to display
-		SERVICE_ALL_ACCESS,          // desired access
-		SERVICE_WIN32_OWN_PROCESS,   // service type
-		SERVICE_DEMAND_START,        // start type
-		SERVICE_ERROR_NORMAL,        // error control type
-		szPath,                      // path to service's binary
-		NULL,                        // no load ordering group
-		NULL,                        // no tag identifier
-		NULL,                        // no dependencies
-		NULL,                        // LocalSystem account
-		NULL);                       // no password
-
-	DWORD dwErr = GetLastError();
-	if (!schService && dwErr != ERROR_SERVICE_EXISTS)
-		LOG_ERROR(("CreateServiceW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
-
-	CloseServiceHandle(schSCManager);
-
-	if (!schService)
-		return (dwErr == ERROR_SERVICE_EXISTS);
-
-	SERVICE_DESCRIPTIONW sdesc;
-	sdesc.lpDescription = L"Manages the peer connections for the Omega Online network";
-	ChangeServiceConfig2(schService,SERVICE_CONFIG_DESCRIPTION,&sdesc);
-
-	CloseServiceHandle(schService);
-
-	return true;
-}
-
-bool Root::Manager::platform_uninstall()
-{
-	SC_HANDLE schSCManager = OpenSCManagerW(NULL,SERVICES_ACTIVE_DATABASEW,SC_MANAGER_CREATE_SERVICE);
-	if (!schSCManager)
-		LOG_ERROR_RETURN(("OpenSCManagerW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	SC_HANDLE schService = OpenServiceW(schSCManager,SERVICE_NAME,DELETE | SERVICE_QUERY_STATUS);
-	if (!schService)
-	{
-		DWORD err = GetLastError();
-		CloseServiceHandle(schSCManager);
-		if (err == ERROR_SERVICE_DOES_NOT_EXIST)
-			return true;
-
-		LOG_ERROR_RETURN(("OpenServiceW failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
-	}
-
-	// Get the current service status
-	SERVICE_STATUS ss = {0};
-	DWORD dwBytes = 0;
-	if (QueryServiceStatusEx(schService,SC_STATUS_PROCESS_INFO,(LPBYTE)&ss,sizeof(ss),&dwBytes))
-	{
-		if (ss.dwCurrentState != SERVICE_STOPPED)
-		{
-			CloseServiceHandle(schSCManager);
-			CloseServiceHandle(schService);
-			std::cerr << "You must stop the OOServer service before uninstalling." << std::endl;
-			return false;
-		}
-	}
-
-	if (!DeleteService(schService))
-	{
-		LOG_ERROR(("DeleteService failed: %s",OOBase::Win32::FormatMessage().c_str()));
-		CloseServiceHandle(schSCManager);
-		CloseServiceHandle(schService);
-		return false;
-	}
-
-	return true;
-}
-
-bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& args)
-{
-	std::wstring strUName = L"_OMEGA_SANDBOX_USER_";
-	std::wstring strPwd = L"4th_(*%LGe895y^$N|2";
-
-	std::map<std::string,std::string>::const_iterator a = args.find("arg0");
-	if (a != args.end())
-	{
-		strUName = OOBase::from_native(a->second.c_str());
-		a = args.find("arg1");
-		if (a != args.end())
-			strPwd = OOBase::from_native(a->second.c_str());
-	}
-
-	USER_INFO_2	info =
-	{
-		(LPWSTR)strUName.c_str(),  // usri2_name;
-		(LPWSTR)strPwd.c_str(),    // usri2_password;
-		0,                         // usri2_password_age;
-		USER_PRIV_USER,            // usri2_priv;
-		NULL,                      // usri2_home_dir;
-		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_comment;
-		UF_SCRIPT | UF_PASSWD_CANT_CHANGE | UF_DONT_EXPIRE_PASSWD | UF_NORMAL_ACCOUNT, // usri2_flags;
-		NULL,                      // usri2_script_path;
-		0,                         // usri2_auth_flags;
-		L"Omega Online sandbox user account",   // usri2_full_name;
-		L"This account is used by the Omega Online sandbox to control access to system resources", // usri2_usr_comment;
-		0,                         // usri2_parms;
-		NULL,                      // usri2_workstations;
-		0,                         // usri2_last_logon;
-		0,                         // usri2_last_logoff;
-		TIMEQ_FOREVER,             // usri2_acct_expires;
-		USER_MAXSTORAGE_UNLIMITED, // usri2_max_storage;
-		0,                         // usri2_units_per_week;
-		NULL,                      // usri2_logon_hours;
-		(DWORD)-1,                 // usri2_bad_pw_count;
-		(DWORD)-1,                 // usri2_num_logons;
-		NULL,                      // usri2_logon_server;
-		0,                         // usri2_country_code;
-		0,                         // usri2_code_page;
-	};
-	bool bAddedUser = true;
-	NET_API_STATUS err = NetUserAdd(NULL,2,(LPBYTE)&info,NULL);
-	if (err == NERR_UserExists)
-		bAddedUser = false;
-	else if (err != NERR_Success)
-		LOG_ERROR_RETURN(("NetUserAdd failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
-
-	// Now we have to add the SE_BATCH_LOGON_NAME priviledge and remove all the others
-
-	// Lookup the account SID
-	DWORD dwSidSize = 0;
-	DWORD dwDnSize = 0;
-	SID_NAME_USE use;
-	if (!LookupAccountNameW(NULL,info.usri2_name,NULL,&dwSidSize,NULL,&dwDnSize,&use))
-	{
-		err = GetLastError();
-		if (err != ERROR_INSUFFICIENT_BUFFER)
-		{
-			if (bAddedUser)
-				NetUserDel(NULL,info.usri2_name);
-			LOG_ERROR_RETURN(("LookupAccountNameW failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
-		}
-	}
-
-	if (dwSidSize==0)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Added user has invalid SID"),false);
-	}
-
-	OOBase::SmartPtr<void,OOBase::FreeDestructor<void> > pSid = static_cast<PSID>(malloc(dwSidSize));
-	if (!pSid)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Out of memory"),false);
-	}
-
-	OOBase::SmartPtr<wchar_t,OOBase::ArrayDestructor<wchar_t> > pszDName;
-	OOBASE_NEW(pszDName,wchar_t[dwDnSize]);
-	if (!pszDName)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Out of memory"),false);
-	}
-
-	if (!LookupAccountNameW(NULL,info.usri2_name,pSid,&dwSidSize,pszDName,&dwDnSize,&use))
-	{
-		err = GetLastError();
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("LookupAccountNameW failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
-	}
-
-	if (use != SidTypeUser)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Added user has ended up of the wrong type"),false);
-	}
-
-	// Open the local account policy...
-	LSA_HANDLE hPolicy;
-	LSA_OBJECT_ATTRIBUTES oa = {0};
-	NTSTATUS err2 = LsaOpenPolicy(NULL,&oa,POLICY_ALL_ACCESS,&hPolicy);
-	if (err2 != 0)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("LsaOpenPolicy failed: %s",OOBase::Win32::FormatMessage(err2).c_str()),false);
-	}
-
-	LSA_UNICODE_STRING szName;
-	szName.Buffer = L"SeBatchLogonRight";
-	size_t len = wcslen(szName.Buffer);
-	szName.Length = static_cast<USHORT>(len * sizeof(WCHAR));
-	szName.MaximumLength = static_cast<USHORT>((len+1) * sizeof(WCHAR));
-
-	err2 = LsaAddAccountRights(hPolicy,pSid,&szName,1);
-	if (err2 == 0)
-	{
-		// Remove all other priviledges
-		LSA_UNICODE_STRING* pRightsList;
-		ULONG ulRightsCount = 0;
-		err2 = LsaEnumerateAccountRights(hPolicy,pSid,&pRightsList,&ulRightsCount);
-		if (err2 == 0)
-		{
-			for (ULONG i=0;i<ulRightsCount;i++)
-			{
-				if (wcscmp(pRightsList[i].Buffer,L"SeBatchLogonRight") != 0)
-				{
-					err2 = LsaRemoveAccountRights(hPolicy,pSid,FALSE,&pRightsList[i],1);
-					if (err2 != 0)
-						break;
-				}
-			}
-		}
-	}
-
-	// Done with policy handle
-	LsaClose(hPolicy);
-
-	if (err2 != 0)
-	{
-		if (bAddedUser)
-			NetUserDel(NULL,info.usri2_name);
-		LOG_ERROR_RETURN(("Adjusting user priviledges failed: %s",OOBase::Win32::FormatMessage(err2).c_str()),false);
-	}
-
-	// Set the user name and pwd...
-	Omega::int64_t key = 0;
-	int err3 = m_registry->create_key(0,key,"System\\Server\\Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
-	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
-
-	err3 = m_registry->set_description(key,0,"The system configuration key");
-	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
-
-	err3 = m_registry->set_string_value(key,"UserName",0,OOBase::to_utf8(info.usri2_name).c_str());
-	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
-
-	err3 = m_registry->set_string_value(key,"Password",0,OOBase::to_utf8(info.usri2_password).c_str());
-	if (err3 != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err3).c_str()),false);
-
-	if (bAddedUser)
-	{
-		key = 0;
-		err3 = m_registry->create_key(0,key,"System\\Installation",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
-		if (err3 == 0)
-			m_registry->set_integer_value(key,"AddedSandboxUser",0,1);
-	}
-
-	return true;
-}
-
-bool Root::Manager::uninstall_sandbox()
-{
-	if (!init_database())
-		return false;
-
-	Omega::int64_t bUserAdded = 0;
-	Omega::int64_t key = 0;
-	if (m_registry->open_key(0,key,"System\\Installation",0) == 0)
-		m_registry->get_integer_value(key,"AddedSandboxUser",0,bUserAdded);
-
-	if (bUserAdded == 1)
-	{
-		// Get the user name and pwd...
-		key = 0;
-		if (m_registry->open_key(0,key,"System\\Server\\Sandbox",0) != 0)
-			return true;
-
-		std::string strUName;
-		if (m_registry->get_string_value(key,"UserName",0,strUName) == 0)
-		{
-			NET_API_STATUS err = NetUserDel(NULL,OOBase::from_utf8(strUName.c_str()).c_str());
-			if (err != NERR_Success)
-				LOG_ERROR_RETURN(("NetUserDel failed: %s",OOBase::Win32::FormatMessage(err).c_str()),false);
-		}
-	}
-
-	return true;
-}
-
-bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
+/*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
 	std::wstring strFilename = OOBase::from_utf8(strFile.c_str());
 
@@ -377,7 +80,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 	if (bPublicRead)
 	{
 		// Set read access for Users.
-		ea[0].grfAccessPermissions = GENERIC_READ;
+		ea[0].grfAccessPermissions = FILE_GENERIC_READ;
 		ea[0].grfAccessMode = SET_ACCESS;
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
@@ -386,7 +89,7 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 	}
 	else
 	{
-		ea[0].grfAccessPermissions = 0;//GENERIC_READ;
+		ea[0].grfAccessPermissions = 0;//FILE_GENERIC_READ;
 		ea[0].grfAccessMode = REVOKE_ACCESS;
 		ea[0].grfInheritance = NO_INHERITANCE;
 		ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
@@ -423,147 +126,157 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 		LOG_ERROR_RETURN(("SetNamedSecurityInfoW failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
 	return true;
-}
+}*/
 
-bool Root::Manager::init_config()
+bool Root::Manager::load_config()
 {
 	// Load simple config file... In ASCII!!
-
-	HKEY hKey = 0;
-	LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
-	if (lRes == ERROR_FILE_NOT_FOUND)
-		return true;
-	else if (lRes != ERROR_SUCCESS)
-		LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
-
 	try
 	{
-		// Loop pulling out registry values
-		for (DWORD dwIndex=0;;++dwIndex)
+		// Clear current entries
+		m_config_args.clear();
+
+		// Insert platform defaults
+		wchar_t szBuf[MAX_PATH] = {0};
+		HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
+		if FAILED(hr)
+			LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+		if (!PathAppendW(szBuf,L"Omega Online"))
+			LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+
+		if (!PathFileExistsW(szBuf))
+			LOG_ERROR_RETURN(("%s does not exist.",OOBase::to_utf8(szBuf).c_str()),false);
+		
+		std::string dir = OOBase::to_utf8(szBuf).c_str();
+		if (*dir.rbegin() != '\\')
+			dir += '\\';
+
+		m_config_args["regdb_path"] = dir;
+		
+		// Read from registry
+		HKEY hKey = 0;
+		LONG lRes = RegOpenKeyExA(HKEY_LOCAL_MACHINE,"Software\\Omega Online\\OOServer",0,KEY_READ,&hKey);
+		if (lRes == ERROR_FILE_NOT_FOUND)
+			return true;
+		else if (lRes != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("RegOpenKeyExA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
+
+		try
 		{
-			char valName[16383 + 1];
-			DWORD dwNameLen = 16383 + 1;
-			DWORD dwType = 0;
-			DWORD dwValLen = 0;
-			lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
-			if (lRes == ERROR_NO_MORE_ITEMS)
-				break;
-			else if (lRes != ERROR_SUCCESS)
+			// Loop pulling out registry values
+			for (DWORD dwIndex=0;;++dwIndex)
 			{
-				RegCloseKey(hKey);
-				LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
-			}
-
-			std::string value,key(valName,dwNameLen);
-
-			if (dwType == REG_DWORD)
-			{
-				DWORD dwVal = 0;
-				LONG dwLen = sizeof(dwVal);
-				lRes = RegQueryValueA(hKey,valName,(LPSTR)&dwVal,&dwLen);
-				if (lRes != ERROR_SUCCESS)
+				char valName[16383 + 1];
+				DWORD dwNameLen = 16383 + 1;
+				DWORD dwType = 0;
+				DWORD dwValLen = 0;
+				lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,&dwType,NULL,&dwValLen);
+				if (lRes == ERROR_NO_MORE_ITEMS)
+					break;
+				else if (lRes != ERROR_SUCCESS)
 				{
-					LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
-					continue;
+					RegCloseKey(hKey);
+					LOG_ERROR_RETURN(("RegEnumValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()),false);
 				}
 
-				std::ostringstream os;
-				os << dwVal;
-				value = os.str();
-			}
-			else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
-			{
-				OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf(static_cast<char*>(malloc(dwValLen+1)));
-				if (!buf)
-				{
-					LOG_ERROR(("Out of memory"));
+				// Skip anything starting with #
+				if (dwValLen>=1 && valName[0]=='#')
 					continue;
-				}
 
-				LONG dwLen = dwValLen;
-				lRes = RegQueryValueA(hKey,valName,buf,&dwLen);
-				if (lRes != ERROR_SUCCESS)
-				{
-					LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
-					continue;
-				}
+				std::string value,key(valName,dwNameLen);
+				++dwNameLen;
 
-				if (dwType == REG_EXPAND_SZ)
+				if (dwType == REG_DWORD)
 				{
-					char buf2[1024] = {0};
-					DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1023);
-					if (dwExpLen == 0)
+					DWORD dwVal = 0;
+					DWORD dwLen = sizeof(dwVal);
+					lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)&dwVal,&dwLen);
+					if (lRes != ERROR_SUCCESS)
 					{
-						DWORD dwErr = GetLastError();
-						LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+						LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
 						continue;
 					}
-					else if (dwExpLen <= 1023)
-						value.assign(buf2,dwExpLen);
-					else
-					{
-						OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf3(static_cast<char*>(malloc(dwExpLen+1)));
-						if (!buf)
-						{
-							LOG_ERROR(("Out of memory"));
-							continue;
-						}
 
-						if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen+1))
+					std::ostringstream os;
+					os << dwVal;
+					value = os.str();
+				}
+				else if (dwType == REG_SZ || dwType == REG_EXPAND_SZ)
+				{
+					++dwValLen;
+					OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf(static_cast<char*>(malloc(dwValLen)));
+					if (!buf)
+					{
+						LOG_ERROR(("Out of memory"));
+						continue;
+					}
+
+					lRes = RegEnumValueA(hKey,dwIndex,valName,&dwNameLen,NULL,NULL,(LPBYTE)(char*)buf,&dwValLen);
+					if (lRes != ERROR_SUCCESS)
+					{
+						LOG_ERROR(("RegQueryValueA failed: %s",OOBase::Win32::FormatMessage(lRes).c_str()));
+						continue;
+					}
+
+					if (dwType == REG_EXPAND_SZ)
+					{
+						char buf2[1024] = {0};
+						DWORD dwExpLen = ExpandEnvironmentStringsA(buf,buf2,1023);
+						if (dwExpLen == 0)
 						{
 							DWORD dwErr = GetLastError();
 							LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
 							continue;
 						}
+						else if (dwExpLen <= 1023)
+							value.assign(buf2,dwExpLen);
+						else
+						{
+							OOBase::SmartPtr<char,OOBase::FreeDestructor<char> > buf3(static_cast<char*>(malloc(dwExpLen+1)));
+							if (!buf)
+							{
+								LOG_ERROR(("Out of memory"));
+								continue;
+							}
 
-						value.assign(buf3,dwExpLen);
+							if (!ExpandEnvironmentStringsA(buf,buf3,dwExpLen+1))
+							{
+								DWORD dwErr = GetLastError();
+								LOG_ERROR(("ExpandEnvironmentStringsA failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()));
+								continue;
+							}
+
+							value.assign(buf3,dwExpLen);
+						}
 					}
+					else
+						value.assign(buf,dwValLen);
 				}
 				else
-					value.assign(buf,dwValLen);
-			}
-			else
-			{
-				LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
-				continue;
+				{
+					LOG_ERROR(("Registry value %s is of invalid type",key.c_str()));
+					continue;
+				}
+
+				if (!key.empty())
+					m_config_args[key] = value;
 			}
 
-			if (!key.empty())
-				m_config_args[key] = value;
+			RegCloseKey(hKey);
+
+			return true;
 		}
-
-		RegCloseKey(hKey);
-
-		return true;
+		catch (...)
+		{
+			RegCloseKey(hKey);
+			throw;
+		}
 	}
 	catch (std::exception& e)
 	{
-		RegCloseKey(hKey);
 		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
 	}
-}
-
-bool Root::Manager::get_db_directory(std::string& dir)
-{
-	wchar_t szBuf[MAX_PATH] = {0};
-	HRESULT hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-	if FAILED(hr)
-		LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	if (!PathAppendW(szBuf,L"Omega Online"))
-		LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-
-	if (!PathFileExistsW(szBuf))
-	{
-		if (!CreateDirectoryW(szBuf,NULL))
-			LOG_ERROR_RETURN(("CreateDirectoryW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
-	}
-
-	dir = OOBase::to_utf8(szBuf);
-	if (*dir.rbegin() != '\\')
-		dir += '\\';
-
-	return true;
 }
 
 namespace
@@ -666,7 +379,7 @@ namespace
 	}
 }
 
-void Root::Manager::wait_for_quit()
+bool Root::Manager::wait_for_quit()
 {
 	SERVICE_TABLE_ENTRYW ste[] =
 	{
@@ -687,6 +400,7 @@ void Root::Manager::wait_for_quit()
 	}
 
 	// By the time we get here, it's all over
+	return true;
 }
 
 namespace OOBase

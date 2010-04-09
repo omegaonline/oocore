@@ -78,12 +78,12 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
+		bool Spawn(OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox, bool bUnsafe);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
-		bool GetRegistryHive(std::string& strHive);
+		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
 	private:
 		bool    m_bSandbox;
@@ -248,7 +248,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox, bool bUnsafe)
 {
 	m_bSandbox = bSandbox;
 
@@ -257,38 +257,30 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox)
 	uid_t our_uid = getuid();
 	if (our_uid != 0)
 	{
-#if !defined(OMEGA_DEBUG)
-		if (!Manager::unsafe_sandbox())
+		if (!bUnsafe)
 			LOG_ERROR_RETURN(("OOServer must be started as root."),false);
-		else
-#endif
-		if (our_uid == uid)
-			bUnsafeStart = true;
-		else
-		{
-			OOSvrBase::pw_info pw(our_uid);
-			if (!pw)
-				LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
+		
+		OOSvrBase::pw_info pw(our_uid);
+		if (!pw)
+			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-			const char msg[] =
-				"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
-				"Because the 'Unsafe' value is set in the registry, the new user process will be started under the user account '%s'\n\n"
-				"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+		const char msg[] =
+			"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
+			"Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
+			"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
-			char szBuf[1024];
-			snprintf(szBuf,1024,msg,pw->pw_name);
+		char szBuf[1024];
+		snprintf(szBuf,1024,msg,pw->pw_name);
 
-			// Prompt for continue...
-			LOG_WARNING((szBuf));
+		// Prompt for continue...
+		LOG_WARNING((szBuf));
 
-			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
-				return false;
+		if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
+			return false;
 
-			printf("\nYou chose to continue... on your head be it!\n");
+		printf("\nYou chose to continue... on your head be it!\n");
 
-			bUnsafeStart = true;
-
-		}
+		bUnsafeStart = true;
 	}
 
 	pid_t child_id = fork();
@@ -301,16 +293,21 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox)
 	{
 		// We are the child...
 
-		// get our pw_info
-		OOSvrBase::pw_info pw(uid);
-		if (!pw)
-		{
-			LOG_ERROR(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
-			exit(errno);
-		}
+		// This all needs sorting out badly!
+        // We should be spawning the user's shell with -c
+        // Set pwd to user's home dir, etc...
+        void* POSIX_TODO;
 
 		if (!bUnsafeStart)
 		{
+			// get our pw_info
+			OOSvrBase::pw_info pw(uid);
+			if (!pw)
+			{
+				LOG_ERROR(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
+				exit(errno);
+			}
+
 			// Set our gid...
 			if (setgid(pw->pw_gid) != 0)
 			{
@@ -340,12 +337,7 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox)
 		if (!clean_environment())
 			exit(errno);
 
-        // This all needs sorting out badly!
-        // We should be spawning the user's shell with -c
-        // Set pwd to user's home dir, etc...
-        void* POSIX_TODO;
-
-		// Exec the user process
+        // Exec the user process
 		const char* cmd_line[] =
 		{
 		    "./oosvruser", //  argv[0] = Process name
@@ -439,10 +431,14 @@ bool SpawnedProcessUnix::Compare(uid_t uid)
 
 bool SpawnedProcessUnix::IsSameUser(uid_t uid)
 {
+	// The sandbox is a 'unique' user
+	if (m_bSandbox)
+		return false;
+
 	return Compare(uid);
 }
 
-bool SpawnedProcessUnix::GetRegistryHive(std::string& strHive)
+bool SpawnedProcessUnix::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
 {
 	std::string strDir;
 	if (m_bSandbox)
@@ -474,18 +470,22 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
 	if (bSandbox)
 	{
-		// Get the user name and pwd...
-		Omega::int64_t key = 0;
-		int err = m_registry->open_key(0,key,"System\\Server\\Sandbox",0);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to open sandbox registry key: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+		// Get username from config
+		std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
+		if (i == m_config_args.end())
+			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
-		Omega::int64_t sb_uid = -1;
-		err = m_registry->get_integer_value(key,"Uid",0,sb_uid);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+		// Resolve to uid
+		OOSvrBase::pw_info pw(strUName.c_str());
+		if (!pw)
+		{
+			if (errno)
+				LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
+			else
+				LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),(SpawnedProcess*)0);
+		}
 
-		uid = static_cast<uid_t>(sb_uid);
+		uid = pw->pw_uid;
 	}
 
 	// Create a pair of sockets
@@ -512,12 +512,12 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	if (!pSpawnUnix)
 	{
 		::close(fd[1]);
-		return 0;
+		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
 	}
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(uid,fd[1],bSandbox))
+	if (!pSpawnUnix->Spawn(uid,fd[1],bSandbox,m_bUnsafeSandbox))
 	{
 		::close(fd[1]);
 		return 0;

@@ -45,6 +45,7 @@
 #include <sddl.h>
 #include <shlwapi.h>
 #include <shlobj.h>
+#include <ntsecapi.h>
 
 void AttachDebugger(DWORD pid);
 
@@ -60,7 +61,7 @@ namespace
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
-		bool GetRegistryHive(std::string& strHive);
+		bool GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive);
 
 	private:
 		bool                       m_bSandbox;
@@ -199,8 +200,34 @@ namespace
 		return (dwErr == 0);
 	}
 
-	static bool LogonSandboxUser(const std::wstring& strUName, const std::wstring& strPwd, HANDLE& hToken)
+	static bool LogonSandboxUser(const std::wstring& strUName, HANDLE& hToken)
 	{
+		// Open the local account policy...
+		std::wstring strPwd;
+		LSA_HANDLE hPolicy;
+		LSA_OBJECT_ATTRIBUTES oa = {0};
+		DWORD dwErr = LsaNtStatusToWinError(LsaOpenPolicy(NULL,&oa,POLICY_GET_PRIVATE_INFORMATION,&hPolicy));
+		if (dwErr != ERROR_SUCCESS)
+			LOG_ERROR_RETURN(("LsaOpenPolicy failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+
+		LSA_UNICODE_STRING szKey;
+		szKey.Buffer = const_cast<PWSTR>(L"L$OOServer_sandbox_pwd");
+		size_t len = wcslen(szKey.Buffer);
+		szKey.Length = static_cast<USHORT>(len * sizeof(wchar_t));
+		szKey.MaximumLength = static_cast<USHORT>((len+1) * sizeof(wchar_t));
+		
+		PLSA_UNICODE_STRING pszVal;
+		dwErr = LsaNtStatusToWinError(LsaRetrievePrivateData(hPolicy,&szKey,&pszVal));
+		if (dwErr != ERROR_SUCCESS)
+		{
+			LsaClose(hPolicy);
+			LOG_ERROR_RETURN(("LsaRetrievePrivateData failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+		}
+
+		strPwd.assign(pszVal->Buffer,pszVal->Length / sizeof(wchar_t));
+		LsaFreeMemory(pszVal);
+		LsaClose(hPolicy);
+
 		if (!LogonUserW((LPWSTR)strUName.c_str(),NULL,(LPWSTR)strPwd.c_str(),LOGON32_LOGON_BATCH,LOGON32_PROVIDER_DEFAULT,&hToken))
 			LOG_ERROR_RETURN(("LogonUserW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
@@ -208,8 +235,8 @@ namespace
 		OOBase::Win32::SmartHandle tok(hToken);
 
 		// Restrict the Token
-		DWORD dwErr = OOSvrBase::Win32::RestrictToken(hToken);
-		if (dwErr != 0)
+		dwErr = OOSvrBase::Win32::RestrictToken(hToken);
+		if (dwErr != ERROR_SUCCESS)
 			LOG_ERROR_RETURN(("RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
 
 		// This might be needed for retricted tokens...
@@ -656,11 +683,12 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 				std::wstring strUserName;
 				std::wstring strDomainName;
 
-				if (OOSvrBase::Win32::GetNameFromToken(hToken2,strUserName,strDomainName) == ERROR_SUCCESS)
+				dwRes = OOSvrBase::Win32::GetNameFromToken(hToken2,strUserName,strDomainName);
+				if (dwRes == ERROR_SUCCESS)
 				{
 					std::wstring strMsg =
 						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						L"Because the 'Unsafe' value is set in the registry, or a debugger is attached to OOServer, the new user process will be started under the user account '";
+						L"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the new user process will be started under the user account '";
 
 					strMsg += strDomainName;
 					strMsg += L"\\";
@@ -679,11 +707,7 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 							dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 							if (dwRes == ERROR_SUCCESS)
 							{
-								OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
-
-								//CloseHandle(m_hToken);
-								//DuplicateToken(hToken2,SecurityImpersonation,&m_hToken);
-
+								OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
 								bUnsafe = true;
 							}
 						}
@@ -773,6 +797,10 @@ bool SpawnedProcessWin32::Compare(HANDLE hToken)
 
 bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
 {
+	// The sandbox is a 'unique' user
+	if (m_bSandbox)
+		return false;
+
 	OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrUserInfo1 = static_cast<TOKEN_USER*>(OOSvrBase::Win32::GetTokenInfo(hToken,TokenUser));
 	if (!ptrUserInfo1)
 		return false;
@@ -784,60 +812,80 @@ bool SpawnedProcessWin32::IsSameUser(HANDLE hToken)
 	return (EqualSid(ptrUserInfo1->User.Sid,ptrUserInfo2->User.Sid) == TRUE);
 }
 
-bool SpawnedProcessWin32::GetRegistryHive(std::string& strHive)
+bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const std::string& strUsersDir, std::string& strHive)
 {
-	wchar_t szBuf[MAX_PATH] = {0};
-	HRESULT hr;
 	if (m_bSandbox)
-		hr = SHGetFolderPathW(0,CSIDL_COMMON_APPDATA,0,SHGFP_TYPE_DEFAULT,szBuf);
-	else
-		hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
-
-	if SUCCEEDED(hr)
 	{
-		wchar_t szBuf2[MAX_PATH] = {0};
-		if (PathCombineW(szBuf2,szBuf,L"Omega Online"))
+		strHive = strSysDir + "sandbox";
+	}
+	else
+	{
+		if (strUsersDir.empty())
 		{
-			if (PathFileExistsW(szBuf2) || CreateDirectoryW(szBuf2,NULL) == 0)
-			{
-				if (PathCombineW(szBuf,szBuf2,L"user.regdb"))
-				{
-					strHive = OOBase::to_utf8(szBuf);
+			wchar_t szBuf[MAX_PATH] = {0};
+			HRESULT hr = SHGetFolderPathW(0,CSIDL_LOCAL_APPDATA,m_hToken,SHGFP_TYPE_DEFAULT,szBuf);
+			if FAILED(hr)
+				LOG_ERROR_RETURN(("SHGetFolderPathW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
-					// Check hive exists... if it doesn't copy default_user.regdb and chown/chmod correctly
-					void* TODO; 
+			if (!PathAppendW(szBuf,L"Omega Online"))
+				LOG_ERROR_RETURN(("PathAppendW failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
 
-					return true;
-				}
-			}
+			if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
+				LOG_ERROR_RETURN(("CreateDirectoryW %s failed: %s",OOBase::to_utf8(szBuf).c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+			
+			strHive = OOBase::to_utf8(szBuf).c_str();
+			if (*strHive.rbegin() != '\\')
+				strHive += '\\';
+
+			strHive += "user";
+		}
+		else
+		{
+			// Get the names associated with the user SID
+			std::wstring strUserName;
+			std::wstring strDomainName;
+
+			DWORD dwErr = OOSvrBase::Win32::GetNameFromToken(m_hToken,strUserName,strDomainName);
+			if (dwErr != ERROR_SUCCESS)
+				LOG_ERROR_RETURN(("GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwErr).c_str()),false);
+
+			strHive = strUsersDir + OOBase::to_utf8(strUserName.c_str());
+			if (!strDomainName.empty())
+				strHive += "." + OOBase::to_utf8(strDomainName.c_str());
 		}
 	}
 
-	return false;
+	strHive += ".regdb";
+
+	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
+	if (!PathFileExistsW(OOBase::from_utf8(strHive.c_str()).c_str()))
+	{
+		if (!CopyFileW(OOBase::from_utf8((strSysDir + "default_user.regdb").c_str()).c_str(),OOBase::from_utf8(strHive.c_str()).c_str(),TRUE))
+			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+
+		::SetFileAttributesW(OOBase::from_utf8(strHive.c_str()).c_str(),FILE_ATTRIBUTE_NORMAL);
+
+		// Secure the file if (strUsersDir.empty())
+		void* TODO;
+	}
+
+	return true;
 }
 
 OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC)
 {
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
+	
 	OOBase::Win32::SmartHandle sandbox_uid;
 	if (bSandbox)
 	{
-		// Get the user name and pwd...
-		Omega::int64_t key = 0;
-		int err = m_registry->open_key(0,key,"System\\Server\\Sandbox",0);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to open sandbox registry key: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
+		// Get username from config
+		std::map<std::string,std::string>::const_iterator i=m_config_args.find("sandbox_uname");
+		if (i == m_config_args.end())
+			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
-		std::string strUName;
-		std::string strPwd;
-		err = m_registry->get_string_value(key,"UserName",0,strUName);
-		if (err != 0)
-			LOG_ERROR_RETURN(("Failed to read sandbox username from registry: %s",OOSvrBase::Logger::format_error(err).c_str()),(SpawnedProcess*)0);
-
-		m_registry->get_string_value(key,"Password",0,strPwd);
-
-		if (!LogonSandboxUser(OOBase::from_utf8(strUName.c_str()),OOBase::from_utf8(strPwd.c_str()),uid))
+		if (!LogonSandboxUser(OOBase::from_utf8(i->second.c_str()),uid))
 			return 0;
 
 		// Make sure it's closed
@@ -854,25 +902,14 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	SpawnedProcessWin32* pSpawn32 = 0;
 	OOBASE_NEW(pSpawn32,SpawnedProcessWin32);
 	if (!pSpawn32)
-		return 0;
-
-	// Work out if we are running in unsafe mode
-	Omega::int64_t key = 0;
-	Omega::int64_t v = 0;
-	if (bSandbox && m_registry->open_key(0,key,"System\\Server\\Sandbox",0) == 0)
-		m_registry->get_integer_value(key,"Unsafe",0,v);
-
-	bool bUnsafe = (v == 1);
-
-	// Spawn the process
-	if (!pSpawn32->Spawn(bUnsafe,uid,strRootPipe,bSandbox))
-	{
-		delete pSpawn32;
-		return 0;
-	}
+		LOG_ERROR_RETURN(("Out of memory"),(SpawnedProcess*)0);
 
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
+	// Spawn the process
+	if (!pSpawn32->Spawn(m_bUnsafeSandbox,uid,strRootPipe,bSandbox))
+		return 0;
+	
 	// Wait for the connect attempt
 	if (!WaitForConnect(hPipe))
 		return 0;

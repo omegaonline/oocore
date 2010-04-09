@@ -34,63 +34,14 @@
 #include "OOServer_Root.h"
 #include "RootManager.h"
 
+#if defined(HAVE_UNISTD_H)
+#include "posix_utils.h"
+
 #if defined(HAVE_EV_H)
 #include <ev.h>
 #endif
 
-#if defined(HAVE_UNISTD_H)
-#include "posix_utils.h"
-
-bool Root::Manager::platform_install(const std::map<std::string,std::string>& /*args*/)
-{
-	return true;
-}
-
-bool Root::Manager::platform_uninstall()
-{
-	return true;
-}
-
-bool Root::Manager::install_sandbox(const std::map<std::string,std::string>& args)
-{
-	std::string strUName = "omega_sandbox";
-	std::map<std::string,std::string>::const_iterator a = args.find("arg0");
-	if (a != args.end())
-		strUName = a->second;
-
-	OOSvrBase::pw_info pw(strUName.c_str());
-	if (!pw)
-	{
-		if (errno)
-			LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
-		else
-			LOG_ERROR_RETURN(("You must add a user account for 'omega_sandbox' or supply a valid user name on the command line"),false);
-	}
-
-	// Set the sandbox uid
-	// Set the user name and pwd...
-	Omega::int64_t key = 0;
-	int err = m_registry->create_key(0,key,"System\\Server\\Sandbox",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-
-	err = m_registry->set_description(key,0,"The system configuration key");
-	if (err != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-
-	err = m_registry->set_integer_value(key,"Uid",0,pw->pw_uid);
-	if (err != 0)
-		LOG_ERROR_RETURN(("Adding user information to registry failed: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
-
-	return true;
-}
-
-bool Root::Manager::uninstall_sandbox()
-{
-	return true;
-}
-
-bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
+/*bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 {
 	// Make sure the file is owned by root (0)
 	if (chown(strFile.c_str(),0,(gid_t)-1) != 0)
@@ -100,13 +51,20 @@ bool Root::Manager::secure_file(const std::string& strFile, bool bPublicRead)
 		LOG_ERROR_RETURN(("chmod(%s) failed: %s",strFile.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),false);
 
 	return true;
-}
+}*/
 
-bool Root::Manager::init_config()
+bool Root::Manager::load_config()
 {
 	// Load simple config file...
 	try
 	{
+		// Clear current entries
+		m_config_args.clear();
+
+		// Insert platform defaults
+		m_config_args["regdb_path"] = "/var/lib/omegaonline/";
+		m_config_args["users_path"] = m_config_args["regdb_path"] + "users/";
+
 		std::ifstream fs("/etc/omegaonline.conf");
 		while (!fs.eof())
 		{
@@ -133,13 +91,6 @@ bool Root::Manager::init_config()
 	{
 		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
 	}
-}
-
-bool Root::Manager::get_db_directory(std::string& dir)
-{
-    dir = "/var/lib/omegaonline";
-
-    return create_unless_existing_directory(dir);
 }
 
 void Root::Manager::wait_for_quit()

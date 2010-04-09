@@ -123,9 +123,9 @@ namespace Root
 	protected:
 		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 				
-		bool start();
-		void close();
-		void stop();
+		bool start_request_threads();
+		void close_channels();
+		void stop_request_threads();
 
 		Omega::uint32_t register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
 		

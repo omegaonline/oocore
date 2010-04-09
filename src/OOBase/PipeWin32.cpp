@@ -166,8 +166,6 @@ int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe()
 
 	if (dwErr == 0)
 	{
-		++m_pProactor->m_outstanding;
-
 		if (m_hWait)
 			UnregisterWaitEx(m_hWait,NULL);
 
@@ -175,7 +173,6 @@ int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe()
 		{
 			m_hWait = 0;
 			dwErr = GetLastError();
-			--m_pProactor->m_outstanding;
 		}
 	}
 
@@ -187,11 +184,7 @@ int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe()
 
 VOID CALLBACK OOSvrBase::Win32::PipeAcceptor::accept_named_pipe_i(PVOID lpParameter, BOOLEAN /*TimerOrWaitFired*/)
 {
-	PipeAcceptor* pThis = static_cast<PipeAcceptor*>(lpParameter);
-	
-	pThis->do_accept();
-
-	--pThis->m_pProactor->m_outstanding;
+	static_cast<PipeAcceptor*>(lpParameter)->do_accept();
 }
 
 void OOSvrBase::Win32::PipeAcceptor::do_accept()
@@ -241,6 +234,9 @@ void OOSvrBase::Win32::PipeAcceptor::do_accept()
 		if (m_hWait)
 			UnregisterWaitEx(m_hWait,NULL);
 		m_hWait = 0;
+
+		// Set the event because we will not be pending again...
+		SetEvent(m_hClosed);
 	}
 }
 

@@ -100,12 +100,12 @@ namespace
 			OOBase::SmartPtr<char,OOBase::ArrayDestructor<char> > buf = 0;
 			OOBASE_NEW(buf,char[len]);
 
-			int len2 = vsnprintf_s(buf.value(),len,fmt,args);
+			int len2 = vsnprintf_s(buf,len,fmt,args);
 			if (len2 < 0)
 				OOBase_CallCriticalFailure("vsnprintf_s failed");
 
 			if (static_cast<size_t>(len2) < len)
-				return std::string(buf.value(),len2);
+				return std::string(buf,len2);
 
 			len = len2 + 1;
 		}

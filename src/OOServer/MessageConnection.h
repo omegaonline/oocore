@@ -123,9 +123,9 @@ namespace Root
 	protected:
 		io_result::type send_response(Omega::uint32_t seq_no, Omega::uint32_t dest_channel_id, Omega::uint16_t dest_thread_id, const OOBase::CDRStream& response, const OOBase::timeval_t& deadline, Omega::uint32_t attribs);
 				
-		bool start();
-		void close();
-		void stop();
+		bool start_request_threads();
+		void close_channels();
+		void stop_request_threads();
 
 		Omega::uint32_t register_channel(OOBase::SmartPtr<MessageConnection>& ptrMC, Omega::uint32_t channel_id);
 		
@@ -209,8 +209,8 @@ namespace Root
 		io_result::type wait_for_response(OOBase::SmartPtr<OOBase::CDRStream>& response, Omega::uint32_t seq_no, const OOBase::timeval_t* deadline, Omega::uint32_t from_channel_id);
 		io_result::type send_message(Omega::uint16_t flags, Omega::uint32_t seq_no, Omega::uint32_t actual_dest_channel_id, Omega::uint32_t dest_channel_id, const Message& msg);
 
-		void process_channel_close(const OOBase::SmartPtr<Message>& msg);
-		void process_async_function(const OOBase::SmartPtr<Message>& msg);
+		void process_channel_close(OOBase::SmartPtr<Message>& msg);
+		void process_async_function(OOBase::SmartPtr<Message>& msg);
 
 		static void do_route_off(void* pParam, OOBase::CDRStream& input);
 	};

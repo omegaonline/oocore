@@ -1276,7 +1276,7 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
-			ptrKey->SetDescription(dialog.m_strDesc.c_str());
+			ptrKey->SetDescription(dialog.m_strDesc.wc_str());
 
 			SetKeyDescription(m_pTree->GetSelection());
 		}
@@ -1288,11 +1288,11 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 		EditValueDescDlg dialog(this,-1,wxT(""));
 		dialog.m_strName = m_strSelection;
 		dialog.m_strValue = evt.GetLinkInfo().GetTarget();
-		dialog.m_strDesc = ptrKey->GetValueDescription(dialog.m_strValue.c_str()).c_str();
+		dialog.m_strDesc = ptrKey->GetValueDescription(dialog.m_strValue.wc_str()).c_str();
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
-			ptrKey->SetValueDescription(dialog.m_strValue.c_str(),dialog.m_strDesc.c_str());
+			ptrKey->SetValueDescription(dialog.m_strValue.wc_str(),dialog.m_strDesc.wc_str());
 
 			SetValueDescription(dialog.m_strValue,dialog.m_strDesc);
 		}

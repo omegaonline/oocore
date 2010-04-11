@@ -34,48 +34,6 @@
 #include "OOServer_Root.h"
 #include "RegistryHive.h"
 
-int Registry::Hive::init_system_defaults(Hive* pHive)
-{
-	Omega::int64_t key = 0;
-	int err = pHive->create_key(0,key,"System",false,Registry::Hive::never_delete | Registry::Hive::write_check | Registry::Hive::read_check,0);
-	if (err != 0)
-		return err;
-
-	pHive->set_description(key,0,"The system configuration key");
-
-	err = pHive->create_key(0,key,"All Users",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	if (err != 0)
-		return err;
-
-	pHive->set_description(key,0,"A common key for all users");
-
-	key = 0;
-	err = pHive->create_key(0,key,"Local User",false,Registry::Hive::never_delete,0);
-	if (err != 0)
-		return err;
-
-	pHive->set_description(key,0,"A key unique to each user of the local computer");
-	return 0;
-}
-
-int Registry::Hive::init_allusers_defaults(Hive* pHive)
-{
-	Omega::int64_t key = 0;
-	int err = pHive->create_key(0,key,"Applications",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	if (err != 0)
-		return err;
-
-	pHive->set_description(key,0,"Applications store their configuration beneath this key");
-
-	key = 0;
-	err = pHive->create_key(0,key,"Objects",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-	if (err != 0)
-		return err;
-
-	Omega::int64_t subkey = 0;
-	return pHive->create_key(key,subkey,"OIDs",false,Registry::Hive::never_delete | Registry::Hive::write_check,0);
-}
-
 Registry::Hive::Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions) :
 	m_pManager(pManager),
 	m_strdb(strdb),
@@ -83,49 +41,13 @@ Registry::Hive::Hive(Manager* pManager, const std::string& strdb, access_rights_
 {
 }
 
-bool Registry::Hive::open()
+bool Registry::Hive::open(int flags)
 {
 	OOBASE_NEW(m_db,Db::Database());
 	if (!m_db)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!m_db->open(m_strdb.c_str()))
-		return false;
-
-	// Check that the tables we require exist, and create if they don't
-	const char szSQL[] =
-		"BEGIN TRANSACTION; "
-		"CREATE TABLE IF NOT EXISTS RegistryKeys "
-		"("
-			"Id INTEGER PRIMARY KEY AUTOINCREMENT, "
-			"Name TEXT NOT NULL, "
-			"Description TEXT, "
-			"Parent INTEGER NOT NULL, "
-			"Access INTEGER DEFAULT 3, "
-			"UNIQUE(Name,Parent) "
-		");"
-		"CREATE INDEX IF NOT EXISTS idx_RegistryKeys ON RegistryKeys(Parent);"
-		"ANALYZE RegistryKeys;"
-		"CREATE TABLE IF NOT EXISTS RegistryValues "
-		"("
-			"Name TEXT NOT NULL, "
-			"Description TEXT, "
-			"Parent INTEGER NOT NULL, "
-			"Type INTEGER NOT NULL, "
-			"Value,"
-			"UNIQUE(Name,Parent) "
-		");"
-		"CREATE INDEX IF NOT EXISTS idx_RegistryValues ON RegistryValues(Parent);"
-		"CREATE INDEX IF NOT EXISTS idx_RegistryValues2 ON RegistryValues(Name,Parent,Type);"
-		"CREATE TRIGGER IF NOT EXISTS trg_RegistryKeys AFTER DELETE ON RegistryKeys "
-			"BEGIN "
-				" DELETE FROM RegistryValues WHERE Parent = OLD.Id; "
-			"END;"
-		"ANALYZE RegistryValues;"
-		"COMMIT;";
-
-	int err = m_db->exec(szSQL);
-	return (err == SQLITE_OK || err == SQLITE_READONLY);
+	return m_db->open(m_strdb.c_str(),flags);
 }
 
 int Registry::Hive::check_key_exists(const Omega::int64_t& uKey, access_rights_t& access_mask)
@@ -309,12 +231,7 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 		// Start a transaction..
 		err = m_db->begin_transaction(ptrTrans);
-		if (err == SQLITE_ERROR)
-		{
-			// This is returned if the database is readonly
-			return EACCES;
-		}
-		else if (err != SQLITE_OK)
+		if (err != SQLITE_OK)
 			return EIO;
 
 		// Mask the access mask
@@ -334,7 +251,9 @@ int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 			else
 				err = insert_key(uSubKey,uKey,strSubKey.substr(0,pos),access);
 
-			if (err != SQLITE_DONE)
+			if (err == SQLITE_READONLY)
+				return EACCES;
+			else if (err != SQLITE_DONE)
 				return EIO;
 
 			if (pos == std::string::npos)
@@ -442,12 +361,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 
 	OOBase::SmartPtr<Db::Transaction> ptrTrans;
 	err = m_db->begin_transaction(ptrTrans);
-	if (err == SQLITE_ERROR)
-	{
-		// This is returned if the database is readonly
-		return EACCES;
-	}
-	else if (err != SQLITE_OK)
+	if (err != SQLITE_OK)
 		return EIO;
 
 	err = delete_key_i(uKey,channel_id);

@@ -80,7 +80,12 @@ namespace OOBase
 						delete this;
 				}
 
-				T* value() const
+				T* value()
+				{
+					return m_data;
+				}
+
+				const T* value() const
 				{
 					return m_data;
 				}
@@ -161,11 +166,6 @@ namespace OOBase
 					m_node->release();
 			}
 
-			T* value() const
-			{
-				return (m_node ? m_node->value() : 0);
-			}
-
 			T* detach()
 			{
 				T* v = 0;
@@ -178,6 +178,27 @@ namespace OOBase
 				return v;
 			}
 
+			operator T* ()
+			{
+				return value();
+			}
+
+			operator const T* () const
+			{
+				return value();
+			}
+
+		protected:
+			T* value()
+			{
+				return (m_node ? m_node->value() : 0);
+			}
+
+			const T* value() const
+			{
+				return (m_node ? m_node->value() : 0);
+			}
+
 		private:
 			SmartPtrNode* m_node;
 		};
@@ -186,86 +207,74 @@ namespace OOBase
 	template <typename T, typename Destructor = DeleteDestructor<T> >
 	class SmartPtr : public detail::SmartPtrImpl<T,Destructor>
 	{
+		typedef detail::SmartPtrImpl<T,Destructor> baseClass;
 	public:
-		SmartPtr(T* ptr = 0) : detail::SmartPtrImpl<T,Destructor>(ptr)
+		SmartPtr(T* ptr = 0) : baseClass(ptr)
 		{}
 
-		SmartPtr(const SmartPtr& rhs) : detail::SmartPtrImpl<T,Destructor>(rhs)
+		SmartPtr(const SmartPtr& rhs) : baseClass(rhs)
 		{}
 
 		SmartPtr& operator = (T* ptr)
 		{
-			detail::SmartPtrImpl<T,Destructor>::operator = (ptr);
+			baseClass::operator=(ptr);
 			return *this;
 		}
 
 		SmartPtr& operator = (const SmartPtr& rhs)
 		{
 			if (this != &rhs)
-				detail::SmartPtrImpl<T,Destructor>::operator = (rhs);
-
+				baseClass::operator=(rhs);
+			
 			return *this;
 		}
 
-		~SmartPtr()
-		{}
-
-		const T& operator *() const
+		T* operator ->()
 		{
-			return *(this->value());
+			return baseClass::value();
 		}
 
-		T& operator *()
+		const T* operator ->() const
 		{
-			return *(this->value());
-		}
-
-		T* operator ->() const
-		{
-			return this->value();
-		}
-
-		operator const void*() const
-		{
-			return this->value();
+			return baseClass::value();
 		}
 	};
 
 	template <typename Destructor>
 	class SmartPtr<void,Destructor> : public detail::SmartPtrImpl<void,Destructor>
 	{
+		typedef detail::SmartPtrImpl<void,Destructor> baseClass;
 	public:
-		SmartPtr(void* ptr = 0) : detail::SmartPtrImpl<void,Destructor>(ptr)
+		SmartPtr(void* ptr = 0) : baseClass(ptr)
 		{}
 
-		SmartPtr(const SmartPtr& rhs) : detail::SmartPtrImpl<void,Destructor>(rhs)
+		SmartPtr(const SmartPtr& rhs) : baseClass(rhs)
 		{}
 
 		SmartPtr& operator = (void* ptr)
 		{
-			detail::SmartPtrImpl<void,Destructor>::operator = (ptr);
+			baseClass::operator=(ptr);
 			return *this;
 		}
 
 		SmartPtr& operator = (const SmartPtr& rhs)
 		{
 			if (this != &rhs)
-				detail::SmartPtrImpl<void,Destructor>::operator = (rhs);
-
+				baseClass::operator=(rhs);
+			
 			return *this;
 		}
 
-		~SmartPtr()
-		{}
-
-		void* operator ->() const
+		template <typename T2>
+		operator T2* ()
 		{
-			return this->value();
+			return static_cast<T2*>(baseClass::value());
 		}
 
-		operator const void*() const
+		template <typename T2>
+		operator const T2* () const
 		{
-			return this->value();
+			return static_cast<T2*>(baseClass::value());
 		}
 	};
 }

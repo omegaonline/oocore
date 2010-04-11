@@ -337,14 +337,14 @@ Root::MessageHandler::~MessageHandler()
 	{}
 }
 
-bool Root::MessageHandler::start()
+bool Root::MessageHandler::start_request_threads()
 {
 	// Create 2 request threads
 	if (!start_thread())
 		return false;
 	else if (!start_thread())
 	{
-		stop();
+		stop_request_threads();
 		return false;
 	}
 
@@ -940,7 +940,7 @@ void Root::MessageHandler::remove_thread_context(Root::MessageHandler::ThreadCon
 	m_mapThreadContexts.erase(pContext->m_thread_id);
 }
 
-void Root::MessageHandler::close()
+void Root::MessageHandler::close_channels()
 {
 	// Copy all the channels away and then close them
 	try
@@ -981,7 +981,7 @@ void Root::MessageHandler::close()
 	assert(m_mapChannelIds.empty());
 }
 
-void Root::MessageHandler::stop()
+void Root::MessageHandler::stop_request_threads()
 {
 	try
 	{
@@ -1156,7 +1156,7 @@ Root::MessageHandler::io_result::type Root::MessageHandler::wait_for_response(OO
 	return ret;
 }
 
-void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>& msg)
+void Root::MessageHandler::process_channel_close(OOBase::SmartPtr<Message>& msg)
 {
 	Omega::uint32_t closed_channel_id;
 	msg->m_payload.read(closed_channel_id);
@@ -1188,7 +1188,7 @@ void Root::MessageHandler::process_channel_close(const OOBase::SmartPtr<Message>
 	}
 }
 
-void Root::MessageHandler::process_async_function(const OOBase::SmartPtr<Message>& msg)
+void Root::MessageHandler::process_async_function(OOBase::SmartPtr<Message>& msg)
 {
 	void (*pfnCall)(void*,OOBase::CDRStream&);
 	msg->m_payload.read(pfnCall);

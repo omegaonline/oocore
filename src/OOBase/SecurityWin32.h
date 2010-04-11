@@ -61,8 +61,13 @@ CreateRestrictedToken(
     PHANDLE NewTokenHandle
     );
 
+#ifndef DISABLE_MAX_PRIVILEGE
 #define DISABLE_MAX_PRIVILEGE   0x1
+#endif
+
+#ifndef SANDBOX_INERT
 #define SANDBOX_INERT           0x2
+#endif
 
 #else
 // Not available under MinGW
@@ -83,7 +88,7 @@ namespace OOSvrBase
 
 			void* descriptor()
 			{
-				return m_psd.value();
+				return m_psd;
 			}
 
 		private:

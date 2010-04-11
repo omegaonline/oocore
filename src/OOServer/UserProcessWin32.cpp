@@ -63,9 +63,9 @@ namespace
 				OOBASE_NEW(pszBuf,wchar_t[dwLen+1]);
 				if (pszBuf)
 				{
-					hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf.value(),&dwLen);
+					hRes = AssocQueryStringW(flags,ASSOCSTR_COMMAND,pszExt,NULL,pszBuf,&dwLen);
 					if (hRes==S_OK)
-						strRet = pszBuf.value();
+						strRet = pszBuf;
 				}
 			}
 

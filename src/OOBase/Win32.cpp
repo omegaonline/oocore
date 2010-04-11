@@ -649,8 +649,12 @@ namespace
 			(LPSTR)&lpBuf,
 			0,	NULL))
 		{
-			OOBase::SmartPtr<void,OOBase::Win32::LocalAllocDestructor<void> > lpMsgBuf = lpBuf;
-			return std::string((LPCSTR)lpMsgBuf.value());
+			OOBase::SmartPtr<char,OOBase::Win32::LocalAllocDestructor<char> > lpMsgBuf = static_cast<char*>(lpBuf);
+			std::string res((LPCSTR)lpMsgBuf);
+			while (*res.rbegin() == '\r' || *res.rbegin() == '\n')
+				res = res.substr(0,res.size()-1);
+
+			return res;
 		}
 		else
 		{
@@ -662,7 +666,7 @@ namespace
 std::string OOBase::Win32::FormatMessage(DWORD dwErr)
 {
 	std::ostringstream ret;
-	ret.setf(std::ios_base::hex);
+	ret.setf(std::ios_base::hex,std::ios_base::basefield);
 	ret << "(0x" << dwErr << ") ";
 
 	std::string msg;

@@ -28,7 +28,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\include"
+				AdditionalIncludeDirectories="..\..\include;&quot;C:\Program Files\Visual Leak Detector\include&quot;"
 				PreprocessorDefinitions="HAVE_VLD_H"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="&quot;C:\Program Files\Visual Leak Detector\lib&quot;"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -101,7 +101,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -176,7 +176,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -252,7 +252,7 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Configuring project settings..."
-				CommandLine="&quot;$(SolutionDir)msvc_conf.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
+				CommandLine="&quot;$(SolutionDir)msvc_conf_vc8.exe&quot; &quot;$(SolutionPath)&quot; $(ProjectName)"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"

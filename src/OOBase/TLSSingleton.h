@@ -49,13 +49,6 @@ namespace OOBase
 			return static_cast<T*>(inst);
 		}
 
-		static void close()
-		{
-			T* i = instance();
-			TLS::Remove(&s_sentinal);
-			destroy(i);
-		}
-
 	private:
 		// Prevent creation
 		TLSSingleton();

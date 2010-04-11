@@ -44,8 +44,6 @@ namespace OOSvrBase
 
 			virtual OOBase::Socket* accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa);
 			virtual AsyncSocket* attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock);
-
-			OOBase::AtomicInt<size_t> m_outstanding;
 		};
 
 		class AsyncSocket : public OOSvrBase::AsyncSocket

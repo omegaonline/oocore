@@ -39,126 +39,90 @@
 #include "Protocol.h"
 
 Root::Manager::Manager() :
+	m_bUnsafeSandbox(false),
 	m_sandbox_channel(0)
 {
+	// Root channel is fixed
+	set_channel(0x80000000,0x80000000,0x7F000000,0);
 }
 
 Root::Manager::~Manager()
 {
 }
 
-bool Root::Manager::install(const std::map<std::string,std::string>& args)
+int Root::Manager::run(const std::map<std::string,std::string>& args)
 {
-	if (!platform_install(args))
-		return false;
-
-	if (!init_database())
-		return false;
-
-	// Add the default keys
-	if (Registry::Hive::init_system_defaults(m_registry.value()) != 0)
-		return false;
-
-	if (Registry::Hive::init_allusers_defaults(m_registry_all_users.value()) != 0)
-		return false;
-
-	// Set up the sandbox user
-	if (!install_sandbox(args))
-		return false;
-
-	// Now secure the files we will use...
-	std::string dir;
-	if (!get_db_directory(dir))
-		return false;
-
-	if (!secure_file(dir + "system.regdb",false) || !secure_file(dir + "all_users.regdb",true))
-		return false;
-
-	return true;
-}
-
-bool Root::Manager::uninstall()
-{
-	if (!platform_uninstall())
-		return false;
-
-	if (!uninstall_sandbox())
-		return false;
-
-	return true;
-}
-
-int Root::Manager::run()
-{
-	// Start the handler
-	if (!start())
-		return EXIT_FAILURE;
-
-	int res = EXIT_FAILURE;
-	if (init())
+	// Load args
+	m_bUnsafeSandbox = (args.find("unsafe") != args.end());
+	
+	// Loop until we quit
+	for (bool bQuit=false;!bQuit;)
 	{
-		res = EXIT_SUCCESS;
+		// Load the config
+		if (!load_config())
+			return EXIT_FAILURE;
 
-		wait_for_quit();
+		// Open the root registry
+		if (!init_database())
+			return EXIT_FAILURE;
 
-		// Stop accepting new clients
-		m_client_acceptor.stop();
+		// Start the handler
+		if (!start_request_threads())
+			return EXIT_FAILURE;
+		
+		// Just so we can exit cleanly...
+		bool bOk = false;
 
-		// Close all pipes
-		close();
+		// Spawn the sandbox
+		std::string strPipe;
+		m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),0,strPipe);
+		if (m_sandbox_channel)
+		{
+			// Start listening for clients
+			if (m_client_acceptor.start(this))
+			{
+				bOk = true;
+				bQuit = wait_for_quit();
+
+				// Stop accepting new clients
+				m_client_acceptor.stop();
+			}
+
+			// Close all channels
+			close_channels();
+		}
+	
+		// Stop the MessageHandler
+		stop_request_threads();
+
+		if (!bOk)
+			return EXIT_FAILURE;
 	}
 
-	// Close the proactor
-	Proactor::close();
-
-	// Stop the MessageHandler
-	stop();
-
-	return res;
-}
-
-bool Root::Manager::init()
-{
-	// Open the root registry
-	if (!init_database())
-		return false;
-
-	// Setup the handler
-	set_channel(0x80000000,0x80000000,0x7F000000,0);
-
-	// Spawn the sandbox
-	std::string strPipe;
-	m_sandbox_channel = spawn_user(OOBase::LocalSocket::uid_t(-1),0,strPipe);
-	if (!m_sandbox_channel)
-		return false;
-
-	// Start listening for clients
-	if (!m_client_acceptor.start(this))
-		return false;
-
-	return true;
+	return EXIT_SUCCESS;
 }
 
 bool Root::Manager::init_database()
 {
-	std::string dir;
-	if (!get_db_directory(dir))
-		return false;
+	// Get dir from config
+	std::map<std::string,std::string>::const_iterator i=m_config_args.find("regdb_path");
+	if (i == m_config_args.end())
+		LOG_ERROR_RETURN(("Missing 'regdb_path' config setting"),false);
 
 	// Create a new system database
-	OOBASE_NEW(m_registry,Registry::Hive(this,dir + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));
+	OOBASE_NEW(m_registry,Registry::Hive(this,i->second + "system.regdb",Registry::Hive::write_check | Registry::Hive::read_check));
 	if (!m_registry)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	if (!m_registry->open())
+	if (!m_registry->open(SQLITE_OPEN_READWRITE))
 		return false;
 
 	// Create a new all users database
-	OOBASE_NEW(m_registry_all_users,Registry::Hive(this,dir + "all_users.regdb",Registry::Hive::write_check));
+	OOBASE_NEW(m_registry_all_users,Registry::Hive(this,i->second + "all_users.regdb",Registry::Hive::write_check));
 	if (!m_registry_all_users)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	return m_registry_all_users->open();
+	return m_registry_all_users->open(SQLITE_OPEN_READWRITE);
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
@@ -247,13 +211,15 @@ Omega::uint32_t Root::Manager::spawn_user(OOBase::LocalSocket::uid_t uid, OOBase
 	{
 		bOk = false;
 
-		std::string strDb = process.ptrSpawn->GetRegistryHive();
-		if (!strDb.empty())
+		std::string strHive;
+		if (process.ptrSpawn->GetRegistryHive(m_config_args["regdb_path"],m_config_args["users_path"],strHive))
 		{
 			// Create a new database
-			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strDb,0));
-			if (process.ptrRegistry)
-				bOk = process.ptrRegistry->open();
+			OOBASE_NEW(process.ptrRegistry,Registry::Hive(this,strHive,0));
+			if (!process.ptrRegistry)
+				LOG_ERROR(("Out of memory"));
+			else
+				bOk = process.ptrRegistry->open(SQLITE_OPEN_READWRITE);
 		}
 	}
 
@@ -313,11 +279,11 @@ Omega::uint32_t Root::Manager::bootstrap_user(OOBase::Socket* pSocket, OOBase::S
 	if (!buf)
 		LOG_ERROR_RETURN(("Out of memory"),0);
 
-	pSocket->recv(buf.value(),uLen,&err);
+	pSocket->recv(buf,uLen,&err);
 	if (err != 0)
 		LOG_ERROR_RETURN(("Socket::recv failed: %s",OOSvrBase::Logger::format_error(err).c_str()),0);
 
-	strPipe = buf.value();
+	strPipe = buf;
 
 	OOBASE_NEW(ptrMC,MessageConnection(this));
 	if (!ptrMC)

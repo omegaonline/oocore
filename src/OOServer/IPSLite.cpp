@@ -127,6 +127,9 @@ namespace
 
 	static std::string get_db_dir(bool bSystem)
 	{
+		// This all needs reworking in light of the config file changes
+		void* TODO;
+
 #if defined(_WIN32)
 
 		wchar_t szBuf[MAX_PATH] = {0};
@@ -142,12 +145,9 @@ namespace
 		if (!PathAppendW(szBuf,L"Omega Online"))
 			OMEGA_THROW(string_t(("PathAppendW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
 
-		if (!PathFileExistsW(szBuf))
-		{
-			if (!CreateDirectoryW(szBuf,NULL))
-				OMEGA_THROW(string_t(("CreateDirectoryW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
-		}
-
+		if (!PathFileExistsW(szBuf) && !CreateDirectoryW(szBuf,NULL))
+			OMEGA_THROW(string_t(("CreateDirectoryW failed: " + OOBase::Win32::FormatMessage()).c_str(),false));
+		
 		std::string dir = OOBase::to_utf8(szBuf);
 		if (*dir.rbegin() != '\\')
 			dir += '\\';
@@ -523,28 +523,34 @@ void RootKey::Init()
 	OMEGA_NEW(m_allusers_hive,::Registry::Hive(this,get_db_dir(true) + "all_users.regdb",::Registry::Hive::write_check));
 	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,get_db_dir(false) + "user.regdb",0));
 
-	if (!m_system_hive->open() || !m_allusers_hive->open() || !m_localuser_hive->open())
+	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
+	{
+		void* TODO; //  Generate a fake...
+		OMEGA_THROW(L"Failed to open system registry database file");
+	}
+
+	if (!m_allusers_hive->open(SQLITE_OPEN_READWRITE) || !m_allusers_hive->open(SQLITE_OPEN_READONLY))
+	{
+		void* TODO; //  Generate a fake...
+		OMEGA_THROW(L"Failed to open all users registry database file");
+	}
+
+	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
+	{
+		void* TODO; //  Copy default_user...
 		OMEGA_THROW(L"Failed to open database files");
-
-	// Add the default keys
-	int err = ::Registry::Hive::init_system_defaults(m_system_hive.value());
-	if (err != 0)
-		OMEGA_THROW(err);
-
-	err = ::Registry::Hive::init_allusers_defaults(m_allusers_hive.value());
-	if (err != 0)
-		OMEGA_THROW(err);
+	}
 
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_system_hive.value(),L"",0);
+	ptrKey->Init(m_system_hive,L"",0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_allusers_hive.value(),L"\\All Users",0);
+	ptrKey->Init(m_allusers_hive,L"\\All Users",0);
 	m_ptrAllUsersKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_localuser_hive.value(),L"\\Local User",0);
+	ptrKey->Init(m_localuser_hive,L"\\Local User",0);
 	m_ptrLocalUserKey = static_cast<IKey*>(ptrKey);
 }
 

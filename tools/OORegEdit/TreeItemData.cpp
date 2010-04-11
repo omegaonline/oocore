@@ -210,7 +210,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey;
 	Omega::string_t strName;
 
-	size_t c;
+	unsigned int c;
 	for (c = 1;c<100;++c)
 	{
 		strName = wxString::Format(_("New Key #%lu"),c);
@@ -250,7 +250,7 @@ void TreeItemData::NewString(wxListCtrl* pList)
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey;
 	Omega::string_t strName;
 
-	for (size_t c = 1;;++c)
+	for (unsigned int c = 1;;++c)
 	{
 		strName = wxString::Format(_("New Value #%lu"),c);
 		if (!m_ptrKey->IsValue(strName))
@@ -272,7 +272,7 @@ void TreeItemData::NewUInt(wxListCtrl* pList)
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey;
 	Omega::string_t strName;
 
-	for (size_t c = 1;;++c)
+	for (unsigned int c = 1;;++c)
 	{
 		strName = wxString::Format(_("New Value #%lu"),c);
 		if (!m_ptrKey->IsValue(strName))
@@ -295,7 +295,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 	OTL::ObjectPtr<Omega::Registry::IKey> ptrKey;
 	Omega::string_t strName;
 
-	for (size_t c = 1;;++c)
+	for (unsigned int c = 1;;++c)
 	{
 		strName = wxString::Format(_("New Value #%lu"),c);
 		if (!m_ptrKey->IsValue(strName))
@@ -558,5 +558,5 @@ wxString TreeItemData::GetDesc()
 
 wxString TreeItemData::GetValueDesc(const wxString& strVal)
 {
-	return m_ptrKey->GetValueDescription(strVal.c_str()).c_str();
+	return m_ptrKey->GetValueDescription(strVal.wc_str()).c_str();
 }

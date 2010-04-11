@@ -55,10 +55,7 @@ namespace Registry
 
 		Hive(Manager* pManager, const std::string& strdb, access_rights_t default_permissions);
 
-		static int init_system_defaults(Hive* pHive);
-		static int init_allusers_defaults(Hive* pHive);
-
-		bool open();
+		bool open(int flags);
 
 		int open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id);
 		int create_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, access_rights_t access, Omega::uint32_t channel_id);

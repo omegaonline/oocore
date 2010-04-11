@@ -80,17 +80,13 @@ User::Manager::~Manager()
 
 int User::Manager::run(const std::string& strPipe)
 {
-	int ret = USER_MANAGER::instance()->run_i(strPipe);
-
-	USER_MANAGER::close();
-
-	return ret;
+	return USER_MANAGER::instance()->run_i(strPipe);
 }
 
 int User::Manager::run_i(const std::string& strPipe)
 {
 	// Start the handler and init ourselves
-	if (!start())
+	if (!start_request_threads())
 		return EXIT_FAILURE;
 
 	int res = EXIT_FAILURE;
@@ -108,7 +104,7 @@ int User::Manager::run_i(const std::string& strPipe)
 		close_all_remotes();
 
 		// Close the user pipes
-		close();
+		close_channels();
 
 		// Unregister our object factories
 		GetModule()->UnregisterObjectFactories();
@@ -125,10 +121,10 @@ int User::Manager::run_i(const std::string& strPipe)
 	}
 
 	// Close the proactor
-	Proactor::close();
+	//Proactor::close();
 
 	// Stop the MessageHandler
-	stop();
+	stop_request_threads();
 
 	return res;
 }
@@ -234,7 +230,7 @@ bool User::Manager::init(const std::string& strPipe)
 	countdown.update();
 
 	// Open the root connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,local_socket.value()));
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,local_socket));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
@@ -331,7 +327,7 @@ bool User::Manager::on_accept(OOBase::Socket* sock)
 		LOG_ERROR_RETURN(("Failed to write to socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 
 	// Attach the connection
-	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC.value(),&err,static_cast<OOBase::LocalSocket*>(sock)));
+	ptrMC->attach(Proactor::instance()->attach_socket(ptrMC,&err,static_cast<OOBase::LocalSocket*>(sock)));
 	if (err != 0)
 		LOG_ERROR_RETURN(("Failed to attach socket: %s",OOSvrBase::Logger::format_error(err).c_str()),false);
 

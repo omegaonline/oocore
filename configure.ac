@@ -14,6 +14,7 @@ AC_CONFIG_FILES([
 	src/OOCore/Makefile
 	src/OOServer/Makefile
 	src/OORegister/Makefile
+	data/Makefile
 	test/Makefile
 	test/CoreTests/Makefile
 	test/CoreTests/TestLibrary/Makefile
@@ -119,6 +120,7 @@ LTDL_INIT
 
 # Find sqlite3
 OO_LIB_SQLITE3([3.5.0])
+AC_PATH_PROG([SQLITE3],[sqlite3])
 
 # Set the WIN32 conditional in the makefiles if the host is MinGW
 # If the host is Cygwin, error

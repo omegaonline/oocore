@@ -36,18 +36,6 @@ OOSvrBase::Win32::ProactorImpl::ProactorImpl()
 
 OOSvrBase::Win32::ProactorImpl::~ProactorImpl()
 {
-	// Spin while we have outstanding requests...
-	OOBase::timeval_t wait(30);
-	OOBase::Countdown countdown(&wait);
-	while (wait != OOBase::timeval_t::Zero && m_outstanding.value() != 0)
-	{
-		OOBase::sleep(OOBase::timeval_t(0,50000));
-
-		countdown.update();
-	}
-
-	// We should have halted here
-	assert(m_outstanding == 0);
 }
 
 OOSvrBase::AsyncSocket* OOSvrBase::Win32::ProactorImpl::attach_socket(IOHandler* handler, int* perr, OOBase::Socket* sock)
@@ -231,15 +219,13 @@ VOID CALLBACK OOSvrBase::Win32::AsyncSocket::completion_fn(DWORD dwErrorCode, DW
 	else
 		this_ptr->handle_write(dwErrorCode,dwNumberOfBytesTransfered);
 
-	--this_ptr->m_pProactor->m_outstanding;
 	this_ptr->release();
 }
 
 bool OOSvrBase::Win32::AsyncSocket::do_read(DWORD dwToRead)
 {
 	addref();
-	++m_pProactor->m_outstanding;
-
+	
 	if (dwToRead == 0)
 		dwToRead = static_cast<DWORD>(m_read_complete.m_buffer->space());
 
@@ -268,7 +254,6 @@ bool OOSvrBase::Win32::AsyncSocket::do_read(DWORD dwToRead)
 			m_read_complete.m_buffer->release();
 			m_read_complete.m_buffer = 0;
 
-			--m_pProactor->m_outstanding;
 			release();
 
 			return closed;
@@ -324,8 +309,7 @@ void OOSvrBase::Win32::AsyncSocket::handle_read(DWORD dwErrorCode, DWORD dwNumbe
 bool OOSvrBase::Win32::AsyncSocket::do_write()
 {
 	addref();
-	++m_pProactor->m_outstanding;
-
+	
 	DWORD dwWritten = 0;
 	if (!WriteFile(m_handle,m_write_complete.m_buffer->rd_ptr(),static_cast<DWORD>(m_write_complete.m_buffer->length()),&dwWritten,&m_write_complete.m_ov))
 	{
@@ -351,7 +335,6 @@ bool OOSvrBase::Win32::AsyncSocket::do_write()
 			m_write_complete.m_buffer->release();
 			m_write_complete.m_buffer = 0;
 
-			--m_pProactor->m_outstanding;
 			release();
 
 			return closed;

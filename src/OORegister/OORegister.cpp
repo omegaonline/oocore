@@ -22,7 +22,7 @@
 #include "../OOBase/DLL.h"
 #include "../OOBase/CmdArgs.h"
 
-#include <Omega/Omega.h>
+#include "../include/Omega/Omega.h"
 
 #include <iostream>
 

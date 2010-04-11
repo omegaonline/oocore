@@ -52,9 +52,7 @@ namespace Root
 		Manager();
 		virtual ~Manager();
 
-		bool install(const std::map<std::string,std::string>& args);
-		bool uninstall();
-		int run();
+		int run(const std::map<std::string,std::string>& args);
 
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
@@ -63,17 +61,13 @@ namespace Root
 		Manager& operator = (const Manager&);
 
 		// Init and run members
-		bool init();
-		bool get_db_directory(std::string& dir);
+		bool load_config();
 		bool init_database();
-		void wait_for_quit();
-		
-		// Installation members
-		bool platform_install(const std::map<std::string,std::string>& args);
-		bool platform_uninstall();
-		bool install_sandbox(const std::map<std::string,std::string>& args);
-		bool uninstall_sandbox();
-		bool secure_file(const std::string& strFilename, bool bPublicRead);
+		bool wait_for_quit();
+
+		// Configuration members
+		std::map<std::string,std::string> m_config_args;
+		bool m_bUnsafeSandbox;
 
 		// I/O members
 		OOBase::RWMutex m_lock;
@@ -88,7 +82,7 @@ namespace Root
 			OOBase::SmartPtr<Registry::Hive> ptrRegistry;
 		};
 		std::map<Omega::uint32_t,UserProcess> m_mapUserProcesses;
-		
+
 		Omega::uint32_t spawn_user(OOBase::LocalSocket::uid_t uid, OOBase::SmartPtr<Registry::Hive> ptrRegistry, std::string& strPipe);
 		OOBase::SmartPtr<SpawnedProcess> platform_spawn(OOBase::LocalSocket::uid_t uid, std::string& strPipe, Omega::uint32_t& channel_id, OOBase::SmartPtr<MessageConnection>& ptrMC);
 		Omega::uint32_t bootstrap_user(OOBase::Socket* pSocket, OOBase::SmartPtr<MessageConnection>& ptrMC, std::string& strPipe);
@@ -101,7 +95,7 @@ namespace Root
 		// Registry members
 		OOBase::SmartPtr<Registry::Hive> m_registry;
 		OOBase::SmartPtr<Registry::Hive> m_registry_all_users;
-		
+
 		int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask);
 
 		int registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, std::string& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Registry::Hive>& ptrHive);

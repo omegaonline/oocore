@@ -676,42 +676,42 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 		{
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
-				OOBase_CallCriticalFailure(GetLastError());
+				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),false);
+			
+			// Get the names associated with the user SID
+			std::wstring strUserName;
+			std::wstring strDomainName;
+
+			dwRes = OOSvrBase::Win32::GetNameFromToken(hToken2,strUserName,strDomainName);
+			if (dwRes != ERROR_SUCCESS)
+				LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
+
+			std::wstring strMsg =
+				L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
+				L"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the new user process will be started under the user account '";
+
+			strMsg += strDomainName;
+			strMsg += L"\\";
+			strMsg += strUserName;
+			strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+
+			std::wstring strMsg2 = strMsg;
+			strMsg2 += L"\n\nDo you want to allow this?";
+
+			if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
+				dwRes = ERROR_PRIVILEGE_NOT_HELD;
 			else
 			{
-				// Get the names associated with the user SID
-				std::wstring strUserName;
-				std::wstring strDomainName;
+				// Restrict the Token
+				dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
+				if (dwRes != ERROR_SUCCESS)
+					LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-				dwRes = OOSvrBase::Win32::GetNameFromToken(hToken2,strUserName,strDomainName);
+				dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 				if (dwRes == ERROR_SUCCESS)
 				{
-					std::wstring strMsg =
-						L"OOServer is running under a user account that does not have the priviledges required to spawn processes as a different user.\n\n"
-						L"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the new user process will be started under the user account '";
-
-					strMsg += strDomainName;
-					strMsg += L"\\";
-					strMsg += strUserName;
-					strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
-
-					std::wstring strMsg2 = strMsg;
-					strMsg2 += L"\n\nDo you want to allow this?";
-
-					if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) == IDYES)
-					{
-						// Restrict the Token
-						dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
-						if (dwRes == ERROR_SUCCESS)
-						{
-							dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
-							if (dwRes == ERROR_SUCCESS)
-							{
-								OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
-								bUnsafe = true;
-							}
-						}
-					}
+					OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
+					bUnsafe = true;
 				}
 			}
 		}
@@ -886,7 +886,43 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
 		if (!LogonSandboxUser(OOBase::from_utf8(i->second.c_str()),uid))
-			return 0;
+		{
+			if (!m_bUnsafeSandbox)
+				return 0;
+
+			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
+				LOG_ERROR_RETURN(("OpenProcessToken failed: %s",OOBase::Win32::FormatMessage().c_str()),(SpawnedProcess*)0);
+			
+			// Get the names associated with the user SID
+			std::wstring strUserName;
+			std::wstring strDomainName;
+
+			DWORD dwRes = OOSvrBase::Win32::GetNameFromToken(uid,strUserName,strDomainName);
+			if (dwRes != ERROR_SUCCESS)
+				LOG_ERROR_RETURN(("OOSvrBase::Win32::GetNameFromToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
+
+			std::wstring strMsg =
+				L"OOServer is running under a user account that does not have the priviledges required to log-on as the sandbox user.\n\n"
+				L"Because the 'unsafe' mode is set, or a debugger is attached to OOServer, the sandbox process will be started under the user account '";
+
+			strMsg += strDomainName;
+			strMsg += L"\\";
+			strMsg += strUserName;
+			strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+
+			std::wstring strMsg2 = strMsg;
+			strMsg2 += L"\n\nDo you want to allow this?";
+
+			if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
+				return 0;
+
+			// Restrict the Token
+			dwRes = OOSvrBase::Win32::RestrictToken(uid);
+			if (dwRes != ERROR_SUCCESS)
+				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
+			
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
+		}
 
 		// Make sure it's closed
 		sandbox_uid = uid;
@@ -896,7 +932,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	std::string strRootPipe;
 	OOBase::Win32::SmartHandle hPipe(CreatePipe(uid,strRootPipe));
 	if (!hPipe.is_valid())
-		return 0;
+		LOG_ERROR_RETURN(("Failed to create named pipe: %s",OOBase::Win32::FormatMessage().c_str()),(SpawnedProcess*)0);
 
 	// Alloc a new SpawnedProcess
 	SpawnedProcessWin32* pSpawn32 = 0;

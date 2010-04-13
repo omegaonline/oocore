@@ -33,8 +33,8 @@
 
 OOCORE_RAW_EXPORTED_FUNCTION(const wchar_t*,OOCore_string_t_cast,1,((in),const void*,h));
 
-inline Omega::string_t::string_t(handle_t* h) :
-	m_handle(h)
+inline Omega::string_t::string_t(handle_t* h, bool bAddref) :
+	m_handle(bAddref ? addref(h,false) : h)
 {
 	OMEGA_DEBUG_STASH_STRING();
 }
@@ -64,10 +64,8 @@ inline Omega::string_t::handle_t* Omega::string_t::addref(handle_t* h, bool own)
 }
 
 inline Omega::string_t::string_t(const Omega::string_t& s) :
-	m_handle(0)
+	m_handle(addref(s.m_handle,false))
 {
-	m_handle = addref(s.m_handle,false);
-		
 	OMEGA_DEBUG_STASH_STRING();
 }
 
@@ -292,27 +290,27 @@ OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_left,2,((in),const void*,a,(i
 inline Omega::string_t Omega::string_t::Left(size_t length) const
 {
 	if (length == 0 || !m_handle)
-		return string_t((handle_t*)0);
+		return string_t((handle_t*)0,false);
 
-	return string_t(static_cast<handle_t*>(OOCore_string_t_left(m_handle,length)));
+	return string_t(static_cast<handle_t*>(OOCore_string_t_left(m_handle,length)),false);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_mid,3,((in),const void*,h,(in),size_t,a,(in),size_t,b));
 inline Omega::string_t Omega::string_t::Mid(size_t start, size_t length) const
 {
 	if (length == 0 || !m_handle)
-		return string_t((handle_t*)0);
+		return string_t((handle_t*)0,false);
 
-	return string_t(static_cast<handle_t*>(OOCore_string_t_mid(m_handle,start,length)));
+	return string_t(static_cast<handle_t*>(OOCore_string_t_mid(m_handle,start,length)),false);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_right,2,((in),const void*,a,(in),size_t,b));
 inline Omega::string_t Omega::string_t::Right(size_t length) const
 {
 	if (length == 0 || !m_handle)
-		return string_t((handle_t*)0);
+		return string_t((handle_t*)0,false);
 
-	return string_t(static_cast<handle_t*>(OOCore_string_t_right(m_handle,length)));
+	return string_t(static_cast<handle_t*>(OOCore_string_t_right(m_handle,length)),false);
 }
 
 inline Omega::string_t& Omega::string_t::Clear()
@@ -329,18 +327,18 @@ OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_tolower,1,((in),const void*,h
 inline Omega::string_t Omega::string_t::ToLower() const
 {
 	if (!m_handle)
-		return string_t((handle_t*)0);
+		return string_t((handle_t*)0,false);
 
-	return string_t(static_cast<handle_t*>(OOCore_string_t_tolower(m_handle)));
+	return string_t(static_cast<handle_t*>(OOCore_string_t_tolower(m_handle)),false);
 }
 
 OOCORE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t_toupper,1,((in),const void*,h));
 inline Omega::string_t Omega::string_t::ToUpper() const
 {
 	if (!m_handle)
-		return string_t((handle_t*)0);
+		return string_t((handle_t*)0,false);
 
-	return string_t(static_cast<handle_t*>(OOCore_string_t_toupper(m_handle)));
+	return string_t(static_cast<handle_t*>(OOCore_string_t_toupper(m_handle)),false);
 }
 
 inline Omega::string_t Omega::string_t::TrimLeft(wchar_t c) const
@@ -545,11 +543,17 @@ inline Omega::string_t Omega::Formatting::ToString(T val, const string_t& strFor
 template <typename T>
 inline Omega::string_t& Omega::string_t::operator %= (T val)
 {
-	size_t index = 0;
-	void* format;
-	while (OOCore_string_t_get_arg(index++,reinterpret_cast<void**>(&m_handle),&format))
+	for (size_t index = 0;;++index)
 	{
-		string_t strVal = Formatting::ToString(val,string_t(static_cast<handle_t*>(format)));
+		void* format = 0;
+		void* h = m_handle;
+
+		if (!OOCore_string_t_get_arg(index,&h,&format))
+			break;
+		
+		m_handle = static_cast<handle_t*>(h);
+	
+		string_t strVal = Formatting::ToString(val,string_t(static_cast<handle_t*>(format),false));
 		OOCore_string_t_set_arg(m_handle,strVal.m_handle);
 	}
 

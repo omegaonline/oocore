@@ -742,11 +742,11 @@ namespace
 			parts.push_back(string_t(str.c_str(),pos++));
 			size_t pos2 = find_skip_quote(str,pos,L";");
 			if (pos2 == string_t::npos)
-				parts.push_back(string_t(str.c_str()+pos));
+				parts.push_back(string_t(str.c_str()+pos,string_t::npos));
 			else
 			{
 				parts.push_back(string_t(str.c_str()+pos,pos2-pos));
-				parts.push_back(string_t(str.c_str()+pos2+1));
+				parts.push_back(string_t(str.c_str()+pos2+1,string_t::npos));
 			}
 		}
 		return parts.size();
@@ -823,7 +823,7 @@ namespace
 		string_t thousands(thousands_char.c_str(),false);
 #endif
 
-		string_t strFind = L"0#Ee";
+		string_t strFind(L"0#Ee");
 		strFind += decimal[0];
 		strFind += thousands[0];
 

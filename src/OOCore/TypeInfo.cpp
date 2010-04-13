@@ -157,7 +157,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 
 string_t TypeInfoImpl::GetName()
 {
-	return m_strName.c_str();
+	return string_t(m_strName.c_str(),string_t::npos);
 }
 
 guid_t TypeInfoImpl::GetIID()

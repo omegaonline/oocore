@@ -664,6 +664,10 @@ namespace Omega
 				}
 			};
 
+			// std::vector<bool> is badly broken in the C++ standard and shouldn't be used
+			template <>
+			struct stl_safe_type_coll1<std::vector<bool> >;
+						
 			template <typename Coll>
 			struct stl_wire_type_coll1
 			{

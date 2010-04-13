@@ -72,10 +72,10 @@ void OOCore::Xml::XMLSplitAttrs(const wchar_t*& rd_ptr, const wchar_t* pszTerm, 
 		// Find the next whitespace or terminator
 		const wchar_t* p = wcspbrk(rd_ptr,szTerm);
 		if (!p)
-			OMEGA_THROW(L"Incomplete XML text {0}" % string_t(rd_ptr,25));
+			OMEGA_THROW(L"Incomplete XML text {0}" % string_t(rd_ptr,25,false));
 
 		if (p != rd_ptr)
-			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr),attribs);
+			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr,false),attribs);
 
 		rd_ptr = p;
 		
@@ -122,7 +122,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 	++p;
 	size_t len = wcscspn(p,L"/>" XML_WHITESPACE);
 	if (!len)
-		OMEGA_THROW(L"Unterminated XML element: {0}" % string_t(rd_ptr,25));
+		OMEGA_THROW(L"Unterminated XML element: {0}" % string_t(rd_ptr,25,false));
 
 	strName = string_t(p,len);
 	rd_ptr += len+1;
@@ -139,13 +139,13 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		{
 			p = wcspbrk(p,L"'\"/>" XML_WHITESPACE);
 			if (!p)
-				OMEGA_THROW(L"Unterminated XML element: {0}" % string_t(rd_ptr,25));
+				OMEGA_THROW(L"Unterminated XML element: {0}" % string_t(rd_ptr,25,false));
 
 			if (p[0]==L'"' || p[0]==L'\'')
 			{
 				p = wcschr(p+1,p[0]);
 				if (!p)
-					OMEGA_THROW(L"Mismatched quote: {0}" % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Mismatched quote: {0}" % string_t(rd_ptr,25,false));
 				++p;
 				continue;
 			}
@@ -159,7 +159,7 @@ void OOCore::Xml::ParseXMLElement(const wchar_t*& rd_ptr, string_t& strName, boo
 		}
 
 		if (p != rd_ptr)
-			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr),attribs);
+			XMLSplitAttr(string_t(rd_ptr,p - rd_ptr,false),attribs);
 		
 		// Skip the rest of the whitespace
 		p += wcsspn(p,XML_WHITESPACE);
@@ -196,31 +196,31 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 		{
 			if (wcsncmp(p,L"&amp;",5)==0)
 			{
-				strData += string_t(rd_ptr,p - rd_ptr);
+				strData += string_t(rd_ptr,p - rd_ptr,false);
 				strData += L"&";
 				rd_ptr = p + 5;
 			}
 			else if (wcsncmp(p,L"&lt;",4)==0)
 			{
-				strData += string_t(rd_ptr,p - rd_ptr);
+				strData += string_t(rd_ptr,p - rd_ptr,false);
 				strData += L"<";
 				rd_ptr = p + 4;
 			}
 			else if (wcsncmp(p,L"&gt;",4)==0)
 			{
-				strData += string_t(rd_ptr,p - rd_ptr);
+				strData += string_t(rd_ptr,p - rd_ptr,false);
 				strData += L">";
 				rd_ptr = p + 4;
 			}
 			else if (wcsncmp(p,L"&apos;",6)==0)
 			{
-				strData += string_t(rd_ptr,p - rd_ptr);
+				strData += string_t(rd_ptr,p - rd_ptr,false);
 				strData += L"'";
 				rd_ptr = p + 6;
 			}
 			else if (wcsncmp(p,L"&quot;",6)==0)
 			{
-				strData += string_t(rd_ptr,p - rd_ptr);
+				strData += string_t(rd_ptr,p - rd_ptr,false);
 				strData += L"\"";
 				rd_ptr = p + 6;
 			}
@@ -235,7 +235,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			if (p == rd_ptr)
 				break;
 
-			strData += string_t(rd_ptr,p - rd_ptr);
+			strData += string_t(rd_ptr,p - rd_ptr,false);
 			rd_ptr = p;
 
 			// Now we need to skip the extra crap...
@@ -247,7 +247,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			{
 				p = wcsstr(rd_ptr+4,L"-->");
 				if (!p)
-					OMEGA_THROW(L"Unmatched comment open: {0}" % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Unmatched comment open: {0}" % string_t(rd_ptr,25,false));
 
 				rd_ptr = p + 3;				
 				bFoundOne = true;
@@ -258,7 +258,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			{
 				p = wcsstr(rd_ptr+2,L"?>");
 				if (!p)
-					OMEGA_THROW(L"Unmatched processing instruction open: {0}" % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Unmatched processing instruction open: {0}" % string_t(rd_ptr,25,false));
 
 				rd_ptr = p + 2;
 				bFoundOne = true;
@@ -269,7 +269,7 @@ void OOCore::Xml::ParseXMLCharData(const wchar_t*& rd_ptr, string_t& strData)
 			{
 				p = wcsstr(rd_ptr+9,L"]]>");
 				if (!p)
-					OMEGA_THROW(L"Unmatched CDATA open: {0}" % string_t(rd_ptr,25));
+					OMEGA_THROW(L"Unmatched CDATA open: {0}" % string_t(rd_ptr,25,false));
 
 				rd_ptr = p + 3;
 				bFoundOne = true;
@@ -286,14 +286,14 @@ void OOCore::Xml::ParseXMLEndElement(const wchar_t*& rd_ptr, const string_t& str
 	const wchar_t* p = rd_ptr;
 
 	if (wcsncmp(p,L"</",2)!=0 || wcsncmp(p+2,strName.c_str(),strName.Length())!=0)
-		OMEGA_THROW(L"Invalid element end tag: {0}" % string_t(rd_ptr,25));
+		OMEGA_THROW(L"Invalid element end tag: {0}" % string_t(rd_ptr,25,false));
 
 	// Skip whistepace
 	p += strName.Length()+2;
 	p += wcsspn(p,XML_WHITESPACE);
 	
 	if (p[0] != L'>')
-		OMEGA_THROW(L"Invalid element end tag: {0}" % string_t(rd_ptr,25));
+		OMEGA_THROW(L"Invalid element end tag: {0}" % string_t(rd_ptr,25,false));
 	
 	rd_ptr = p+1;
 }
@@ -308,10 +308,10 @@ void OOCore::Xml::ParseXMLNamespaces(const std::map<string_t,string_t>& attribs,
 		}
 		else if (i->first==L"xmlns")
 		{
-			if (namespaces.find(L"") != namespaces.end())
+			if (namespaces.find(string_t()) != namespaces.end())
 				OMEGA_THROW(L"Duplicate undecorated namespace attribute");
 
-			namespaces.insert(std::map<string_t,string_t>::value_type(L"",i->second));
+			namespaces.insert(std::map<string_t,string_t>::value_type(string_t(),i->second));
 		}
 	}
 }

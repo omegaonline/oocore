@@ -58,7 +58,7 @@ namespace OTL
 		ObjectPtr(const wchar_t* key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :
 		  ObjectPtrBase<Omega::Registry::IKey>(0)
 		{
-			Attach(Omega::Registry::IKey::OpenKey(key,flags));
+			Attach(Omega::Registry::IKey::OpenKey(Omega::string_t(key,Omega::string_t::npos),flags));
 		}
 
 		ObjectPtr(const Omega::string_t& key, Omega::Registry::IKey::OpenFlags_t flags = Omega::Registry::IKey::OpenExisting) :

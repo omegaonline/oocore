@@ -54,7 +54,7 @@ void User::InterProcessService::Init(OTL::ObjectPtr<Omega::Remoting::IObjectMana
 	{
 		// Create a local registry impl
 		ObjectPtr<ObjectImpl<Registry::Key> > ptrKey = ObjectImpl<User::Registry::Key>::CreateInstancePtr();
-		ptrKey->Init(m_pManager,L"",0,0);
+		ptrKey->Init(m_pManager,string_t(),0,0);
 
 		m_ptrReg = static_cast<Omega::Registry::IKey*>(ptrKey);
 	}

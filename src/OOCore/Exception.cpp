@@ -36,7 +36,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw OOCore_ISystemException_Create(string_t(msg,false),0);
+		throw OOCore_ISystemException_Create(string_t(msg,false),L"Critical Failure");
 	}
 }
 
@@ -78,11 +78,11 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
-	string_t strIID = L"Unknown";
+	string_t strIID(L"Unknown");
 
 	const Omega::System::Internal::qi_rtti* pRtti = Omega::System::Internal::get_qi_rtti_info(iid);
 	if (pRtti && pRtti->pszName)
-		strIID = pRtti->pszName;
+		strIID = string_t(pRtti->pszName,false);
 
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
 	pExcept->m_strSource = source;

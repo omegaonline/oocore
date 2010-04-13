@@ -213,7 +213,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 	unsigned int c;
 	for (c = 1;c<100;++c)
 	{
-		strName = wxString::Format(_("New Key #%lu"),c);
+		strName = Omega::string_t(wxString::Format(_("New Key #%lu"),c).wc_str(),Omega::string_t::npos);
 		if (!m_ptrKey->IsSubKey(strName))
 		{
 			ptrKey = m_ptrKey.OpenSubKey(strName,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
@@ -252,12 +252,12 @@ void TreeItemData::NewString(wxListCtrl* pList)
 
 	for (unsigned int c = 1;;++c)
 	{
-		strName = wxString::Format(_("New Value #%lu"),c);
+		strName = Omega::string_t(wxString::Format(_("New Value #%lu"),c).wc_str(),Omega::string_t::npos);
 		if (!m_ptrKey->IsValue(strName))
 			break;
 	}
 
-	m_ptrKey->SetStringValue(strName,L"");
+	m_ptrKey->SetStringValue(strName,Omega::string_t());
 
 	long item = pList->InsertItem(-1,wxString(strName.c_str()),4);
 	pList->SetItem(item,1,_("String"));
@@ -274,7 +274,7 @@ void TreeItemData::NewUInt(wxListCtrl* pList)
 
 	for (unsigned int c = 1;;++c)
 	{
-		strName = wxString::Format(_("New Value #%lu"),c);
+		strName = Omega::string_t(wxString::Format(_("New Value #%lu"),c).wc_str(),Omega::string_t::npos);
 		if (!m_ptrKey->IsValue(strName))
 			break;
 	}
@@ -297,7 +297,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 
 	for (unsigned int c = 1;;++c)
 	{
-		strName = wxString::Format(_("New Value #%lu"),c);
+		strName = Omega::string_t(wxString::Format(_("New Value #%lu"),c).wc_str(),Omega::string_t::npos);
 		if (!m_ptrKey->IsValue(strName))
 			break;
 	}
@@ -315,7 +315,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 
 void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 {
-	Omega::string_t strName(pList->GetItemText(item_id));
+	Omega::string_t strName(pList->GetItemText(item_id).wc_str(),true);
 	Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
 
 	if (type == Omega::Registry::String)
@@ -327,7 +327,7 @@ void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
-			m_ptrKey->SetStringValue(strName,Omega::string_t(dialog.m_strValue));
+			m_ptrKey->SetStringValue(strName,Omega::string_t(dialog.m_strValue.wc_str(),Omega::string_t::npos));
 
 			pList->SetItem(item_id,2,dialog.m_strValue);
 		}
@@ -358,7 +358,7 @@ void TreeItemData::Find(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pLi
 	{
 		while ((list_id = pList->GetNextItem(list_id))!=-1)
 		{
-			Omega::string_t strName(pList->GetItemText(list_id));
+			Omega::string_t strName(pList->GetItemText(list_id).wc_str(),true);
 
 			if (MatchValue(strFind,m_ptrKey,strName,bValues,bData,bMatchAll,bIgnoreCase))
 			{
@@ -558,5 +558,5 @@ wxString TreeItemData::GetDesc()
 
 wxString TreeItemData::GetValueDesc(const wxString& strVal)
 {
-	return m_ptrKey->GetValueDescription(strVal.wc_str()).c_str();
+	return m_ptrKey->GetValueDescription(Omega::string_t(strVal.wc_str(),Omega::string_t::npos)).c_str();
 }

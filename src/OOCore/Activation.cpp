@@ -279,7 +279,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 	
 	try
 	{
-		dll = DLLManager::instance()->load_dll(dll_name.c_str());
+		dll = DLLManager::instance()->load_dll(dll_name);
 		pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
 	}
 	catch (IException* pE)

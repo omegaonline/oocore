@@ -8,7 +8,7 @@
 static bool test_values(Omega::Registry::IKey* pKey)
 {
 	// Generate a unique value name
-	Omega::string_t strTestValue = L"TestValue_{0}";
+	Omega::string_t strTestValue(L"TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
@@ -153,7 +153,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	if (!test_values(pKey))
 		return false;
 
-	Omega::string_t strTestKey = L"TestKey_{0}";
+	Omega::string_t strTestKey(L"TestKey_{0}");
 	strTestKey %= GetCurrentProcessId();
 	while (pKey->IsSubKey(strTestKey))
 	{
@@ -189,13 +189,13 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"",Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(Omega::string_t(),Omega::Registry::IKey::Create);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"");
+		TEST(pE->GetName().IsEmpty());
 		pE->Release();
 	}
 	try
@@ -294,7 +294,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	TEST(pKey->IsSubKey(L"All Users"));
 	TEST(pKey->IsSubKey(L"Local User"));
 
-	Omega::string_t strTestValue = L"TestValue_{0}";
+	Omega::string_t strTestValue(L"TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
@@ -374,14 +374,14 @@ bool registry_tests_2()
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\");
 
 	// Generate a unique value name
-	Omega::string_t strTestKey = L"TestKey_{0}";
+	Omega::string_t strTestKey(L"TestKey_{0}");
 	strTestKey %= GetCurrentProcessId();
 	while (ptrKey->IsSubKey(strTestKey))
 	{
 		strTestKey = L"_" + strTestKey;
 	}
 
-	Omega::string_t strXML =
+	Omega::string_t strXML(
 		L"<?xml version=\"1.0\" ?>\r\n"
 		L"<oo:root xmlns:oo=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">\r\n"
 			L"<oo:key name=\"%TESTKEY%\">\r\n"
@@ -394,7 +394,7 @@ bool registry_tests_2()
 					L"<oo:value name=\"TestVal5\" type=\"Integer\" uninstall=\"Keep\">12345</oo:value>\r\n"
 				L"</oo:key>\r\n"
 			L"</oo:key>\r\n"
-		L"</oo:root>\r\n";
+		L"</oo:root>\r\n");
 
 	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=\\" + strTestKey;
 

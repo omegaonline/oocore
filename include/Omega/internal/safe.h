@@ -548,14 +548,14 @@ namespace Omega
 				{
 					type_wrapper(safe_type val) : m_val(string_t_safe_type::coerce(val))
 					{
-						string_t_safe_type::addref(val);
+						string_t_safe_type::addref(val,false);
 					}
 
 					void update(safe_type& dest)
 					{
 						string_t_safe_type::release(dest);
 						dest = string_t_safe_type::coerce(m_val);
-						string_t_safe_type::addref(dest);
+						string_t_safe_type::addref(dest,true);
 					}
 
 					operator string_t&()
@@ -572,7 +572,7 @@ namespace Omega
 				{
 					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::coerce(val))
 					{
-						string_t_safe_type::addref(m_val);
+						string_t_safe_type::addref(m_val,false);
 					}
 
 					~safe_type_wrapper()
@@ -582,7 +582,7 @@ namespace Omega
 
 					void update(string_t& dest)
 					{
-						string_t_safe_type::addref(m_val);
+						string_t_safe_type::addref(m_val,false);
 						dest = string_t_safe_type::coerce(m_val);
 					}
 
@@ -604,7 +604,7 @@ namespace Omega
 				static void* clone(const string_t& s)
 				{
 					void* h = static_cast<void*>(s.m_handle);
-					addref(h);
+					addref(h,false);
 					return h;
 				}
 
@@ -624,9 +624,9 @@ namespace Omega
 					return string_t(static_cast<string_t::handle_t*>(v));
 				}
 
-				static void addref(void* v)
+				static void addref(void*& v, bool own)
 				{
-					string_t::addref(static_cast<string_t::handle_t*>(v));
+					v = string_t::addref(static_cast<string_t::handle_t*>(v),own);
 				}
 
 				static void release(void* v)

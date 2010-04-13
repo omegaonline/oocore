@@ -54,16 +54,16 @@ namespace Omega
 	{
 		virtual uint32_t GetErrorCode() = 0;
 
-		static ISystemException* Create(uint32_t errno_val, const string_t& source = L"");
-		static ISystemException* Create(const std::exception& e, const string_t& source = L"");
-		static ISystemException* Create(const string_t& desc, const string_t& source = L"");
+		static ISystemException* Create(uint32_t errno_val, const string_t& source = string_t());
+		static ISystemException* Create(const std::exception& e, const string_t& source = string_t());
+		static ISystemException* Create(const string_t& desc, const string_t& source = string_t());
 	};
 
 	interface INoInterfaceException : public IException
 	{
 		virtual guid_t GetUnsupportedIID() = 0;
 
-		static INoInterfaceException* Create(const guid_t& iid, const string_t& source = L"");
+		static INoInterfaceException* Create(const guid_t& iid, const string_t& source = string_t());
 	};
 
 	interface ITimeoutException : public IException
@@ -183,7 +183,7 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace Internal { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid) ); return v; } }; \
+	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid)); return v; } }; \
 	} } }
 
 #endif

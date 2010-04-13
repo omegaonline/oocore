@@ -74,8 +74,8 @@ bool string_tests()
 	Omega::string_t s4;
 	TEST(s4 == L"");
 	TEST(s4 == (wchar_t*)0);
-	TEST(s4 == Omega::string_t(L""));
-	TEST(s4 == Omega::string_t("",false));
+	TEST(s4 == L"");
+	TEST(s4 == Omega::string_t());
 
 	TEST(Omega::string_t(L"1111H").TrimLeft(L'1') == L"H");
 	TEST(Omega::string_t(L"1111").TrimLeft(L'1').IsEmpty());

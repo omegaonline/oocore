@@ -170,7 +170,7 @@ namespace Omega
 			virtual string_t GetKeyName() = 0;
 		};
 
-		void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = L"");
+		void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = string_t());
 	}
 
 	namespace IO

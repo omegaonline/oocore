@@ -542,7 +542,7 @@ void RootKey::Init()
 	}
 
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_system_hive,L"",0);
+	ptrKey->Init(m_system_hive,string_t(),0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();

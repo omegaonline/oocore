@@ -546,16 +546,13 @@ namespace Omega
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type val) : m_val(string_t_safe_type::coerce(val))
-					{
-						string_t_safe_type::addref(val,false);
-					}
+					type_wrapper(safe_type val) : m_val(string_t_safe_type::create(val))
+					{ }
 
 					void update(safe_type& dest)
 					{
 						string_t_safe_type::release(dest);
-						dest = string_t_safe_type::coerce(m_val);
-						string_t_safe_type::addref(dest,true);
+						dest = string_t_safe_type::addref(m_val,true);
 					}
 
 					operator string_t&()
@@ -567,13 +564,11 @@ namespace Omega
 					string_t m_val;
 				};
 				friend struct type_wrapper;
-
+				
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::coerce(val))
-					{
-						string_t_safe_type::addref(m_val,false);
-					}
+					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::addref(val,false))
+					{ }
 
 					~safe_type_wrapper()
 					{
@@ -582,8 +577,7 @@ namespace Omega
 
 					void update(string_t& dest)
 					{
-						string_t_safe_type::addref(m_val,false);
-						dest = string_t_safe_type::coerce(m_val);
+						dest = string_t_safe_type::create(m_val);
 					}
 
 					operator safe_type ()
@@ -601,37 +595,30 @@ namespace Omega
 				};
 				friend struct safe_type_wrapper;
 
-				static void* clone(const string_t& s)
+				static safe_type clone(const string_t& s)
 				{
-					void* h = static_cast<void*>(s.m_handle);
-					addref(h,false);
-					return h;
+					return string_t::addref(s.m_handle,true);
 				}
 
-				static string_t clone(void* v)
+				static string_t clone(safe_type v)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v));
+					return string_t(static_cast<string_t::handle_t*>(v),false);
 				}
 
 			private:
-				static void* coerce(const string_t& s)
+				static string_t create(safe_type v)
 				{
-					return static_cast<void*>(s.m_handle);
+					return string_t(static_cast<string_t::handle_t*>(v),true);
 				}
 
-				static string_t coerce(void* v)
+				static safe_type addref(const string_t& val, bool own)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v));
+					return string_t::addref(val.m_handle,own);
 				}
 
-				static void addref(void*& v, bool own)
+				static void release(safe_type val)
 				{
-					v = string_t::addref(static_cast<string_t::handle_t*>(v),own);
-				}
-
-				static void release(void* v)
-				{
-					string_t::release(static_cast<string_t::handle_t*>(v));
+					string_t::release(static_cast<string_t::handle_t*>(val));
 				}
 			};
 

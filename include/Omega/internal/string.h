@@ -103,7 +103,7 @@ namespace Omega
 			int unused;
 		}* m_handle;
 
-		explicit string_t(handle_t*);
+		explicit string_t(handle_t*, bool addref);
 
 		static handle_t* addref(handle_t* h, bool own);
 		static void release(handle_t* h);

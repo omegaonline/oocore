@@ -597,7 +597,7 @@ namespace Omega
 
 				static safe_type clone(const string_t& s)
 				{
-					return string_t::addref(s.m_handle,true);
+					return addref(s,true);
 				}
 
 				static string_t clone(safe_type v)
@@ -613,7 +613,12 @@ namespace Omega
 
 				static safe_type addref(const string_t& val, bool own)
 				{
+					// We only need to take ownership if we are passing out of a dll that isn't OOCore
+				#if !defined(OOCORE_INTERNAL)
 					return string_t::addref(val.m_handle,own);
+				#else
+					return string_t::addref(val.m_handle,false);
+				#endif
 				}
 
 				static void release(safe_type val)

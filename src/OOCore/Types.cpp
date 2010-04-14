@@ -858,8 +858,10 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_guid_t_to_string,2,((in),const gu
 	return string_t(ss.str().c_str(),true);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,sz,(out),guid_t&,result))
+OMEGA_DEFINE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const string_t&,str,(out),guid_t&,result))
 {
+	const wchar_t* sz = str.c_str();
+
 	// Do this manually...
 	result.Data1 = 0;
 	result.Data2 = 0;

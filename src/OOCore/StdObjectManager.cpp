@@ -591,7 +591,7 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 	}
 }
 
-bool OOCore::StdObjectManager::CustomMarshalInterface(const wchar_t* pszName, ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
+bool OOCore::StdObjectManager::CustomMarshalInterface(const string_t& strName, ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
@@ -614,7 +614,7 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(const wchar_t* pszName, Ob
 		++undo_count;
 
 		// Write the struct end
-		pMessage->WriteStructEnd(pszName);
+		pMessage->WriteStructEnd(strName);
 	}
 	catch (...)
 	{
@@ -633,7 +633,7 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(const wchar_t* pszName, Ob
 	return true;
 }
 
-void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
+void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	try
 	{
@@ -641,13 +641,13 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 			throw Remoting::IChannelClosedException::Create();
 
 		// Write a header
-		pMessage->WriteStructStart(pszName,L"$iface_marshal");
+		pMessage->WriteStructStart(strName,L"$iface_marshal");
 
 		// See if object is NULL
 		if (!pObject)
 		{
 			pMessage->WriteByte(L"$marshal_type",0);
-			pMessage->WriteStructEnd(pszName);
+			pMessage->WriteStructEnd(strName);
 			return;
 		}
 
@@ -678,7 +678,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 				ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(pObject->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
 			
 			// See if custom marshalling is possible...
-			if (ptrMarshal && CustomMarshalInterface(pszName,ptrMarshal,iid,pMessage))
+			if (ptrMarshal && CustomMarshalInterface(strName,ptrMarshal,iid,pMessage))
 				return;
 							
 			// Create a new stub and stub id
@@ -706,7 +706,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 
 		ptrStub->MarshalInterface(pMessage,iid);
 
-		pMessage->WriteStructEnd(pszName);
+		pMessage->WriteStructEnd(strName);
 	}
 	catch (std::exception& e)
 	{
@@ -714,7 +714,7 @@ void OOCore::StdObjectManager::MarshalInterface(const wchar_t* pszName, Remoting
 	}
 }
 
-void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject)
+void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject)
 {
 	try
 	{
@@ -722,7 +722,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 			throw Remoting::IChannelClosedException::Create();
 
 		// Read the header
-		pMessage->ReadStructStart(pszName,L"$iface_marshal");
+		pMessage->ReadStructStart(strName,L"$iface_marshal");
 
 		byte_t flag = pMessage->ReadByte(L"$marshal_type");
 		if (flag == 0)
@@ -779,7 +779,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 		else
 			OMEGA_THROW(L"Invalid marshal flag");
 
-		pMessage->ReadStructEnd(pszName);
+		pMessage->ReadStructEnd(strName);
 	}
 	catch (std::exception& e)
 	{
@@ -787,7 +787,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const wchar_t* pszName, Remoti
 	}
 }
 
-void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
+void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
 {
 	try
 	{
@@ -795,7 +795,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 			throw Remoting::IChannelClosedException::Create();
 
 		// Read the header
-		pMessage->ReadStructStart(pszName,L"$iface_marshal");
+		pMessage->ReadStructStart(strName,L"$iface_marshal");
 
 		byte_t flag = pMessage->ReadByte(L"$marshal_type");
 		if (flag == 0)
@@ -850,7 +850,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const wchar_t* pszName, Remoti
 			OMEGA_THROW(L"Invalid marshal flag");
 		}
 
-		pMessage->ReadStructEnd(pszName);
+		pMessage->ReadStructEnd(strName);
 	}
 	catch (std::exception& e)
 	{

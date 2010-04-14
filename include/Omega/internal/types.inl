@@ -590,10 +590,10 @@ inline Omega::string_t Omega::guid_t::ToString(const Omega::string_t& strFormat)
 	return OOCore_guid_t_to_string(*this,strFormat);
 }
 
-OOCORE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const wchar_t*,wsz,(out),Omega::guid_t&,guid));
+OOCORE_EXPORTED_FUNCTION(int,OOCore_guid_t_from_string,2,((in),const Omega::string_t&,str,(out),Omega::guid_t&,guid));
 inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 {
-	return (OOCore_guid_t_from_string(str.c_str(),guid) != 0);
+	return (OOCore_guid_t_from_string(str,guid) != 0);
 }
 
 inline Omega::guid_t Omega::guid_t::FromString(const string_t& str)

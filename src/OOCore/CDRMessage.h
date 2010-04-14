@@ -33,14 +33,14 @@ namespace OOCore
 // Some macros to help
 
 #define OOCORE_DEFINE_MESSAGE_READWRITE(name,r_type,w_type) \
-	r_type OMEGA_CONCAT(Read,name)(const wchar_t*) \
+	r_type OMEGA_CONCAT(Read,name)(const Omega::string_t&) \
 	{ \
 		r_type retval; \
 		if (!m_stream.read(retval)) \
 			OMEGA_THROW(m_stream.last_error()); \
 		return retval; \
 	} \
-	void OMEGA_CONCAT(Read,OMEGA_CONCAT_R(name,s))(const wchar_t*, Omega::uint32_t count, r_type* arr) \
+	void OMEGA_CONCAT(Read,OMEGA_CONCAT_R(name,s))(const Omega::string_t&, Omega::uint32_t count, r_type* arr) \
 	{ \
 		Omega::uint32_t actual = 0; \
 		if (!m_stream.read(actual)) \
@@ -53,12 +53,12 @@ namespace OOCore
 				OMEGA_THROW(m_stream.last_error()); \
 		} \
 	} \
-	void OMEGA_CONCAT(Write,name)(const wchar_t*, w_type val) \
+	void OMEGA_CONCAT(Write,name)(const Omega::string_t&, w_type val) \
 	{ \
 		if (!m_stream.write(val)) \
 			OMEGA_THROW(m_stream.last_error()); \
 	} \
-	void OMEGA_CONCAT(Write,OMEGA_CONCAT_R(name,s))(const wchar_t*, Omega::uint32_t count, const r_type* arr) \
+	void OMEGA_CONCAT(Write,OMEGA_CONCAT_R(name,s))(const Omega::string_t&, Omega::uint32_t count, const r_type* arr) \
 	{ \
 		if (!m_stream.write(count)) \
 			OMEGA_THROW(m_stream.last_error()); \
@@ -133,7 +133,7 @@ namespace OOCore
 		OOCORE_DEFINE_MESSAGE_READWRITE(Float4,Omega::float4_t,Omega::float4_t)
 		OOCORE_DEFINE_MESSAGE_READWRITE(Float8,Omega::float8_t,const Omega::float8_t&)
 
-		Omega::string_t ReadString(const wchar_t*)
+		Omega::string_t ReadString(const Omega::string_t&)
 		{
 			std::string val;
 			if (!m_stream.read(val))
@@ -142,31 +142,31 @@ namespace OOCore
 			return Omega::string_t(val.c_str(),true);
 		}
 
-		Omega::guid_t ReadGuid(const wchar_t*)
+		Omega::guid_t ReadGuid(const Omega::string_t&)
 		{
 			Omega::guid_t g;
-			g.Data1 = ReadUInt32(0);
-			g.Data2 = ReadUInt16(0);
-			g.Data3 = ReadUInt16(0);
-			ReadBytes(0,8,g.Data4);
+			g.Data1 = ReadUInt32(Omega::string_t());
+			g.Data2 = ReadUInt16(Omega::string_t());
+			g.Data3 = ReadUInt16(Omega::string_t());
+			ReadBytes(Omega::string_t(),8,g.Data4);
 			return g;
 		}
 
-		void WriteString(const wchar_t*, const Omega::string_t& val)
+		void WriteString(const Omega::string_t&, const Omega::string_t& val)
 		{
 			if (!m_stream.write(val.ToUTF8()))
 				OMEGA_THROW(m_stream.last_error());
 		}
 
-		void WriteGuid(const wchar_t*, const Omega::guid_t& val)
+		void WriteGuid(const Omega::string_t&, const Omega::guid_t& val)
 		{
-			WriteUInt32(0,val.Data1);
-			WriteUInt16(0,val.Data2);
-			WriteUInt16(0,val.Data3);
-			WriteBytes(0,8,val.Data4);
+			WriteUInt32(Omega::string_t(),val.Data1);
+			WriteUInt16(Omega::string_t(),val.Data2);
+			WriteUInt16(Omega::string_t(),val.Data3);
+			WriteBytes(Omega::string_t(),8,val.Data4);
 		}
 
-		Omega::byte_t ReadByte(const wchar_t*)
+		Omega::byte_t ReadByte(const Omega::string_t&)
 		{
 			Omega::byte_t retval;
 			if (!m_stream.read(retval))
@@ -174,9 +174,9 @@ namespace OOCore
 			return retval;
 		}
 
-		void ReadBytes(const wchar_t*, Omega::uint32_t count, Omega::byte_t* val)
+		void ReadBytes(const Omega::string_t&, Omega::uint32_t count, Omega::byte_t* val)
 		{
-			Omega::uint32_t actual = ReadUInt32(0);
+			Omega::uint32_t actual = ReadUInt32(Omega::string_t());
 			if (actual > count)
 				OMEGA_THROW(L"Over-read on memory message");
 
@@ -185,62 +185,62 @@ namespace OOCore
 				OMEGA_THROW(L"Under-read on memory message");
 		}
 
-		void ReadStrings(const wchar_t*, Omega::uint32_t count, Omega::string_t* arr)
+		void ReadStrings(const Omega::string_t&, Omega::uint32_t count, Omega::string_t* arr)
 		{
-			Omega::uint32_t actual = ReadUInt32(0);
+			Omega::uint32_t actual = ReadUInt32(Omega::string_t());
 			if (actual > count)
 				OMEGA_THROW(L"Over-read on memory message");
 
 			for (Omega::uint32_t i=0;i<actual;++i)
-				arr[i] = ReadString(0);
+				arr[i] = ReadString(Omega::string_t());
 		}
 
-		void ReadGuids(const wchar_t*, Omega::uint32_t count, Omega::guid_t* arr)
+		void ReadGuids(const Omega::string_t&, Omega::uint32_t count, Omega::guid_t* arr)
 		{
-			Omega::uint32_t actual = ReadUInt32(0);
+			Omega::uint32_t actual = ReadUInt32(Omega::string_t());
 			if (actual > count)
 				OMEGA_THROW(L"Over-read on memory message");
 
 			for (Omega::uint32_t i=0;i<actual;++i)
-				arr[i] = ReadGuid(0);
+				arr[i] = ReadGuid(Omega::string_t());
 		}
 
-		void ReadStructStart(const wchar_t*, const wchar_t*)
+		void ReadStructStart(const Omega::string_t&, const Omega::string_t&)
 			{ /* NOP */	}
 
-		void ReadStructEnd(const wchar_t*)
+		void ReadStructEnd(const Omega::string_t&)
 			{ /* NOP */	}
 
-		void WriteByte(const wchar_t*, Omega::byte_t val)
+		void WriteByte(const Omega::string_t&, Omega::byte_t val)
 		{
 			if (!m_stream.write(val))
 				OMEGA_THROW(m_stream.last_error());
 		}
 
-		void WriteBytes(const wchar_t*, Omega::uint32_t count, const Omega::byte_t* val)
+		void WriteBytes(const Omega::string_t&, Omega::uint32_t count, const Omega::byte_t* val)
 		{
-			WriteUInt32(0,count);
+			WriteUInt32(Omega::string_t(),count);
 			m_stream.write_bytes(val,count);
 		}
 
-		void WriteStrings(const wchar_t*, Omega::uint32_t count, const Omega::string_t* arr)
+		void WriteStrings(const Omega::string_t&, Omega::uint32_t count, const Omega::string_t* arr)
 		{
-			WriteUInt32(0,count);
+			WriteUInt32(Omega::string_t(),count);
 			for (Omega::uint32_t i=0;i<count;++i)
-				WriteString(0,arr[i]);
+				WriteString(Omega::string_t(),arr[i]);
 		}
 
-		void WriteGuids(const wchar_t*, Omega::uint32_t count, const Omega::guid_t* arr)
+		void WriteGuids(const Omega::string_t&, Omega::uint32_t count, const Omega::guid_t* arr)
 		{
-			WriteUInt32(0,count);
+			WriteUInt32(Omega::string_t(),count);
 			for (Omega::uint32_t i=0;i<count;++i)
-				WriteGuid(0,arr[i]);
+				WriteGuid(Omega::string_t(),arr[i]);
 		}
 
-		void WriteStructStart(const wchar_t*, const wchar_t*)
+		void WriteStructStart(const Omega::string_t&, const Omega::string_t&)
 			{ /* NOP */	}
 
-		void WriteStructEnd(const wchar_t*)
+		void WriteStructEnd(const Omega::string_t&)
 			{ /* NOP */	}
 	};
 }

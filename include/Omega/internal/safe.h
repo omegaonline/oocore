@@ -617,6 +617,7 @@ namespace Omega
 				#if !defined(OOCORE_INTERNAL)
 					return string_t::addref(val.m_handle,own);
 				#else
+					OMEGA_UNUSED_ARG(own);
 					return string_t::addref(val.m_handle,false);
 				#endif
 				}

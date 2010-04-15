@@ -125,6 +125,9 @@ void OOCore::UserSession::init_i(bool bStandalone)
 		OMEGA_THROW(e);
 	}
 
+	// Remove standalone support eventually...
+	void* TODO;
+
 	ObjectPtr<IInterProcessService> ptrIPS;
 	if (!bStandalone)
 	{

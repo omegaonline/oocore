@@ -128,27 +128,6 @@ namespace
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
-	ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
-	{
-		// Lookup OID
-		string_t strOid = oid.ToString();
-
-		// This needs to use a local cached map, and register for update notifications from the
-		// registry to refresh the map... This will result in a significant speedup.
-		void* TODO;
-
-		// Check Local User first
-		ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
-		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
-			return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
-
-		ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
-		if (ptrOidsKey->IsSubKey(strOid))
-			return ptrOidsKey.OpenSubKey(strOid);
-
-		return ObjectPtr<Registry::IKey>();
-	}
-
 	DLLManagerImpl::DLLManagerImpl()
 	{
 	}
@@ -331,12 +310,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User");
-		if (ptrOidKey->IsSubKey(L"Objects\\" + strCurName))
-			ptrOidKey = ptrOidKey.OpenSubKey(L"Objects\\" + strCurName);
-		else
-			ptrOidKey = ObjectPtr<Registry::IKey>(L"\\All Users\\Objects\\" + strCurName);
-
+		ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
 		if (ptrOidKey->IsValue(L"CurrentVersion"))
 		{
 			strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
@@ -371,7 +345,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey = FindOIDKey(oid);
+			ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				void* TICKET_89; // Surrogates here?!?

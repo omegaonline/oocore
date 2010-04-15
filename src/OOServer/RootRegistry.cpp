@@ -67,22 +67,7 @@ int Root::Manager::registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint
 	if (nType == 0 && uKey == 0)
 	{
 		// Parse strKey
-		if (strSubKey == "Sandbox" || strSubKey.substr(0,15) == "Sandbox\\")
-		{
-			ptrHive = m_registry_sandbox;
-
-			// Set the type and strip the start...
-			if (strSubKey.length() > 15)
-				strSubKey = strSubKey.substr(15);
-			else
-				strSubKey.clear();
-
-			// Sandbox hive
-			ptrHive = m_registry_sandbox;
-
-			nType = 1;
-		}
-		else if (strSubKey == "Local User" || strSubKey.substr(0,11) == "Local User\\")
+		if (strSubKey == "Local User" || strSubKey.substr(0,11) == "Local User\\")
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -263,12 +248,15 @@ void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CD
 {
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
-	if (err == 0)
-		ptrHive->enum_subkeys(uKey,channel_id,response);
-
+	Omega::byte_t nType;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err != 0)
+	{
 		response.write(err);
+		return;
+	}
+
+	ptrHive->enum_subkeys(uKey,channel_id,response);
 }
 
 void Root::Manager::registry_value_type(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)

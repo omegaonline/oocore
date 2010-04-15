@@ -7,7 +7,7 @@ BEGIN TRANSACTION;
 		'The system configuration key',
 		0,7
 	);
-	INSERT INTO RegistryKeys ( Id,Name,Parent,Access) VALUES 
+	INSERT INTO RegistryKeys ( Id,Name,Description,Parent,Access) VALUES 
 	(
 		2,
 		'Local User',

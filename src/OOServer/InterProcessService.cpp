@@ -82,50 +82,16 @@ Activation::IRunningObjectTable* User::InterProcessService::GetRunningObjectTabl
 	return m_ptrROT.AddRef();
 }
 
-namespace
-{
-	static ObjectPtr<Omega::Registry::IKey> FindAppKey(const guid_t& oid)
-	{
-		// Lookup OID
-		string_t strOid = oid.ToString();
-
-		// Find the OID key... Check Local User first
-		ObjectPtr<Omega::Registry::IKey> ptrOidKey;
-		ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
-		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
-			ptrOidKey = ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
-		else
-		{
-			ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
-			if (ptrOidsKey->IsSubKey(strOid))
-				ptrOidKey = ptrOidsKey.OpenSubKey(strOid);
-		}
-
-		if (!ptrOidKey || !ptrOidKey->IsValue(L"Application"))
-			return static_cast<Omega::Registry::IKey*>(0);
-
-		string_t strAppName = ptrOidKey->GetStringValue(L"Application");
-
-		// Find the name of the executable to run...
-		ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User");
-		if (ptrServer->IsSubKey(L"Applications\\" + strAppName + L"\\Activation"))
-			return ptrServer.OpenSubKey(L"Applications\\" + strAppName + L"\\Activation");
-
-		ptrServer = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Applications");
-		if (ptrServer->IsSubKey(strAppName + L"\\Activation"))
-			return ptrServer.OpenSubKey(strAppName + L"\\Activation");
-
-		return static_cast<Omega::Registry::IKey*>(0);
-	}
-}
-
 void User::InterProcessService::LaunchObjectApp(const guid_t& oid, const guid_t& iid, IObject*& pObject)
 {
-	// Lookup OID
-	ObjectPtr<Omega::Registry::IKey> ptrServer = FindAppKey(oid);
-	if (!ptrServer)
-		OMEGA_THROW(ENOENT);
+	// Find the OID key... 
+	ObjectPtr<Omega::Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
+	
+	string_t strAppName = ptrOidKey->GetStringValue(L"Application");
 
+	// Find the name of the executable to run...
+	ObjectPtr<Omega::Registry::IKey> ptrServer(L"\\Local User\\Applications\\" + strAppName + L"\\Activation");
+	
 	string_t strProcess = ptrServer->GetStringValue(L"Path");
 	
 	// The timeout needs to be related to the request timeout...

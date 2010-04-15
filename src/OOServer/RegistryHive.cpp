@@ -385,7 +385,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 	return err;
 }
 
-int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys)
+int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setSubKeys)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -408,7 +408,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 	}
 
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 		return EIO;
 
@@ -431,7 +431,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 			}
 
 			if (!strSubKey.empty())
-				listSubKeys.push_back(strSubKey);
+				setSubKeys.insert(strSubKey);
 		}
 
 	} while (err == SQLITE_ROW);
@@ -470,18 +470,18 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 		}
 	}
 
-	// Write out success first
-	response.write((int)0);
-	if (response.last_error() != 0)
-		return;
-
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 	{
 		response.write((int)EIO);
 		return;
 	}
+
+	// Write out success first
+	response.write((int)0);
+	if (response.last_error() != 0)
+		return;
 
 	do
 	{
@@ -522,7 +522,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	}
 }
 
-int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listValues)
+int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setValues)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -543,7 +543,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 	}
 
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 		return EIO;
 
@@ -554,7 +554,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 		{
 			const char* v = ptrStmt->column_text(0);
 			if (v)
-				listValues.push_back(v);
+				setValues.insert(v);
 		}
 
 	} while (err == SQLITE_ROW);
@@ -591,18 +591,18 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 		}
 	}
 
-	// Write out success first
-	response.write((int)0);
-	if (response.last_error() != 0)
-		return;
-
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 	{
 		response.write((int)EIO);
 		return;
 	}
+
+	// Write out success first
+	response.write((int)0);
+	if (response.last_error() != 0)
+		return;
 
 	do
 	{

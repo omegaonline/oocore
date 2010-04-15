@@ -816,7 +816,7 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 {
 	if (m_bSandbox)
 	{
-		strHive = strSysDir + "sandbox";
+		strHive = strSysDir + "sandbox.regdb";
 	}
 	else
 	{
@@ -853,20 +853,20 @@ bool SpawnedProcessWin32::GetRegistryHive(const std::string& strSysDir, const st
 			if (!strDomainName.empty())
 				strHive += "." + OOBase::to_utf8(strDomainName.c_str());
 		}
-	}
+	
+		strHive += ".regdb";
 
-	strHive += ".regdb";
+		// Now confirm the file exists, and if it doesn't, copy default_user.regdb
+		if (!PathFileExistsW(OOBase::from_utf8(strHive.c_str()).c_str()))
+		{
+			if (!CopyFileW(OOBase::from_utf8((strSysDir + "default_user.regdb").c_str()).c_str(),OOBase::from_utf8(strHive.c_str()).c_str(),TRUE))
+				LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::Win32::FormatMessage().c_str()),false);
 
-	// Now confirm the file exists, and if it doesn't, copy default_user.regdb
-	if (!PathFileExistsW(OOBase::from_utf8(strHive.c_str()).c_str()))
-	{
-		if (!CopyFileW(OOBase::from_utf8((strSysDir + "default_user.regdb").c_str()).c_str(),OOBase::from_utf8(strHive.c_str()).c_str(),TRUE))
-			LOG_ERROR_RETURN(("Failed to copy %s to %s: %s",(strSysDir + "default_user.regdb").c_str(),strHive.c_str(),OOBase::Win32::FormatMessage().c_str()),false);
+			::SetFileAttributesW(OOBase::from_utf8(strHive.c_str()).c_str(),FILE_ATTRIBUTE_NORMAL);
 
-		::SetFileAttributesW(OOBase::from_utf8(strHive.c_str()).c_str(),FILE_ATTRIBUTE_NORMAL);
-
-		// Secure the file if (strUsersDir.empty())
-		void* TODO;
+			// Secure the file if (strUsersDir.empty())
+			void* TODO;
+		}
 	}
 
 	return true;

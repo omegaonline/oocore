@@ -94,7 +94,7 @@ namespace Root
 
 		// Registry members
 		OOBase::SmartPtr<Registry::Hive> m_registry;
-		OOBase::SmartPtr<Registry::Hive> m_registry_all_users;
+		OOBase::SmartPtr<Registry::Hive> m_registry_sandbox;
 
 		int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask);
 

@@ -677,7 +677,7 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Registry::IKey>(L"\\All Users");
+		ptrKey = ObjectPtr<Registry::IKey>(L"\\System");
 		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);

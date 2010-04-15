@@ -93,11 +93,9 @@ namespace
 
 	private:
 		OOBase::SmartPtr< ::Registry::Hive> m_system_hive;
-		OOBase::SmartPtr< ::Registry::Hive> m_allusers_hive;
 		OOBase::SmartPtr< ::Registry::Hive> m_localuser_hive;
 
 		ObjectPtr<IKey> m_ptrSystemKey;
-		ObjectPtr<IKey> m_ptrAllUsersKey;
 		ObjectPtr<IKey> m_ptrLocalUserKey;
 
 		string_t parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKey);
@@ -520,19 +518,12 @@ void HiveKey::DeleteValue(const string_t& strName)
 void RootKey::Init()
 {
 	OMEGA_NEW(m_system_hive,::Registry::Hive(this,get_db_dir(true) + "system.regdb",::Registry::Hive::write_check | ::Registry::Hive::read_check));
-	OMEGA_NEW(m_allusers_hive,::Registry::Hive(this,get_db_dir(true) + "all_users.regdb",::Registry::Hive::write_check));
 	OMEGA_NEW(m_localuser_hive,::Registry::Hive(this,get_db_dir(false) + "user.regdb",0));
 
 	if (!m_system_hive->open(SQLITE_OPEN_READWRITE) || !m_system_hive->open(SQLITE_OPEN_READONLY))
 	{
 		void* TODO; //  Generate a fake...
 		OMEGA_THROW(L"Failed to open system registry database file");
-	}
-
-	if (!m_allusers_hive->open(SQLITE_OPEN_READWRITE) || !m_allusers_hive->open(SQLITE_OPEN_READONLY))
-	{
-		void* TODO; //  Generate a fake...
-		OMEGA_THROW(L"Failed to open all users registry database file");
 	}
 
 	if (!m_localuser_hive->open(SQLITE_OPEN_READWRITE))
@@ -544,10 +535,6 @@ void RootKey::Init()
 	ObjectPtr<ObjectImpl<HiveKey> > ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_system_hive,string_t(),0);
 	m_ptrSystemKey = static_cast<IKey*>(ptrKey);
-
-	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
-	ptrKey->Init(m_allusers_hive,L"\\All Users",0);
-	m_ptrAllUsersKey = static_cast<IKey*>(ptrKey);
 
 	ptrKey = ObjectImpl<HiveKey>::CreateInstancePtr();
 	ptrKey->Init(m_localuser_hive,L"\\Local User",0);
@@ -570,16 +557,6 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 		// Set the type and strip the start...
 		if (strSubKey.Length() > 11)
 			return strSubKey.Mid(11);
-		else
-			return string_t();
-	}
-	else if (strSubKey == L"All Users" || strSubKey.Mid(0,10) == L"All Users\\")
-	{
-		ptrKey = m_ptrAllUsersKey;
-
-		// Set the type and strip the start...
-		if (strSubKey.Length() > 10)
-			return strSubKey.Mid(10);
 		else
 			return string_t();
 	}

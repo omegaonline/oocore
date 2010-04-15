@@ -64,10 +64,25 @@ int Root::Manager::registry_access_check(const std::string& strdb, Omega::uint32
 int Root::Manager::registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, std::string& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Registry::Hive>& ptrHive)
 {
 	int err = 0;
-	if (uKey == 0 && nType == 0)
+	if (nType == 0 && uKey == 0)
 	{
 		// Parse strKey
-		if (strSubKey == "Local User" || strSubKey.substr(0,11) == "Local User\\")
+		if (strSubKey == "Sandbox" || strSubKey.substr(0,15) == "Sandbox\\")
+		{
+			ptrHive = m_registry_sandbox;
+
+			// Set the type and strip the start...
+			if (strSubKey.length() > 15)
+				strSubKey = strSubKey.substr(15);
+			else
+				strSubKey.clear();
+
+			// Sandbox hive
+			ptrHive = m_registry_sandbox;
+
+			nType = 1;
+		}
+		else if (strSubKey == "Local User" || strSubKey.substr(0,11) == "Local User\\")
 		{
 			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
@@ -77,33 +92,33 @@ int Root::Manager::registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint
 				err = EINVAL;
 			else
 			{
-				// Get the registry hive
-				ptrHive = i->second.ptrRegistry;
-
-				// Clear channel id -  not used for user content
-				channel_id = 0;
-
 				// Set the type and strip the start...
 				if (strSubKey.length() > 11)
 					strSubKey = strSubKey.substr(11);
 				else
 					strSubKey.clear();
-				nType = 2;
+
+				if (channel_id == m_sandbox_channel)
+				{
+					// Sandbox hive
+					ptrHive = m_registry_sandbox;
+				
+					nType = 1;
+				}
+				else
+				{
+					// Clear channel id -  not used for user content
+					channel_id = 0;
+
+					// Get the registry hive
+					ptrHive = i->second.ptrRegistry;
+
+					nType = 2;
+				}
 			}
 		}
-		else if (strSubKey == "All Users" || strSubKey.substr(0,10) == "All Users\\")
-		{
-			ptrHive = m_registry_all_users;
-
-			// Set the type and strip the start...
-			if (strSubKey.length() > 10)
-				strSubKey = strSubKey.substr(10);
-			else
-				strSubKey.clear();
-			nType = 1;
-		}
 	}
-
+	
 	return err;
 }
 
@@ -120,7 +135,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 	}
 	else if (nType == 1)
 	{
-		ptrHive = m_registry_all_users;
+		ptrHive = m_registry_sandbox;
 	}
 	else if (nType == 2)
 	{

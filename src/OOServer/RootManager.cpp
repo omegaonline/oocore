@@ -117,12 +117,12 @@ bool Root::Manager::init_database()
 	if (!m_registry->open(SQLITE_OPEN_READWRITE))
 		return false;
 
-	// Create a new all users database
-	OOBASE_NEW(m_registry_all_users,Registry::Hive(this,i->second + "all_users.regdb",Registry::Hive::write_check));
-	if (!m_registry_all_users)
+	// Create a new System database
+	OOBASE_NEW(m_registry_sandbox,Registry::Hive(this,i->second + "sandbox.regdb",Registry::Hive::write_check));
+	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	return m_registry_all_users->open(SQLITE_OPEN_READWRITE);
+	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)

@@ -291,8 +291,9 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 
 static bool test_root_key(Omega::Registry::IKey* pKey)
 {
-	TEST(pKey->IsSubKey(L"All Users"));
+	TEST(pKey->IsSubKey(L"System"));
 	TEST(pKey->IsSubKey(L"Local User"));
+	TEST(pKey->IsSubKey(L"All Users"));
 
 	Omega::string_t strTestValue(L"TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
@@ -322,7 +323,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	}
 
 	// Test the private root keys
-	test_privates(pKey,L"All Users");
+	test_privates(pKey,L"System");
 	test_privates(pKey,L"All Users\\Applications");
 	test_privates(pKey,L"All Users\\Objects");
 	test_privates(pKey,L"All Users\\Objects\\OIDs");
@@ -353,7 +354,7 @@ bool registry_tests()
 	if (!bTest)
 		return false;
 
-	if (!test_key(L"\\All Users"))
+	if (!test_key(L"\\System"))
 		return false;
 
 	if (!test_key(L"\\Local User"))

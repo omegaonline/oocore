@@ -114,7 +114,10 @@ void UserProcessWin32::exec(const std::wstring& strExeName)
 	// Spawn the process
 	PROCESS_INFORMATION pi = {0};
 	if (!CreateProcessW(NULL,const_cast<LPWSTR>(strExeName.c_str()),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi))
-		OMEGA_THROW(GetLastError());
+	{
+		DWORD dwErr = GetLastError();
+		OMEGA_THROW(dwErr);
+	}
 
 #if defined(OMEGA_DEBUG)
 	if (hDebugEvent)

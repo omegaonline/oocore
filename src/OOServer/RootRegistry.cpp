@@ -194,22 +194,11 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 			err = registry_parse_subkey(uKey,channel_id,strSubKey,nType,ptrHive);
 			if (err == 0)
 			{
-				Omega::bool_t bCreate = false;
-				if (!request.read(bCreate))
+				Omega::uint16_t flags = 0;
+				if (!request.read(flags))
 					err = EIO;
 				else
-				{
-					Omega::bool_t bFailIfThere = false;
-					if (!request.read(bFailIfThere))
-						err = EIO;
-					else
-					{
-						if (bCreate)
-							err = ptrHive->create_key(uKey,uSubKey,strSubKey,bFailIfThere,Registry::Hive::inherit_checks,channel_id);
-						else
-							err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
-					}
-				}
+					err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,Registry::Hive::inherit_checks,channel_id);
 			}
 		}
 	}

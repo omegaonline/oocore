@@ -446,7 +446,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	// Set some defaults...
 	try
 	{
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::Create);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::OpenCreate);
 
 		wxPoint pt = GetPosition();
 		ptrKey->SetIntegerValue(L"Top",pt.y);

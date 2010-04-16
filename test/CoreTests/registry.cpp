@@ -163,7 +163,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	Omega::Registry::IKey* pSubKey;
 	try
 	{
-		pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::OpenCreate);
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
@@ -189,7 +189,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	try
 	{
-		pSubKey = pKey->OpenSubKey(Omega::string_t(),Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(Omega::string_t(),Omega::Registry::IKey::OpenCreate);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
@@ -200,7 +200,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	}
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::OpenCreate);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
@@ -216,7 +216,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	try
 	{
-		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
+		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::CreateNew);
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)

@@ -44,6 +44,7 @@ endif
 
 oosvrlite_la_SOURCES = \
 	OOServer_Lite.h \
+	MirrorKey.inl \
 	RegistryCmn.h \
 	IPSLite.h \
 	IPSLite.cpp \
@@ -97,6 +98,7 @@ oosvruser_SOURCES = \
 	Channel.cpp \
 	InterProcessService.h \
 	InterProcessService.cpp \
+	MirrorKey.inl \
 	RegistryCmn.h \
 	UserAcceptor.h \
 	UserAcceptor.cpp \

@@ -149,7 +149,7 @@ bool TreeItemData::RenameValue(const Omega::string_t& strFrom, const Omega::stri
 
 void TreeItemData::RenameKey(const Omega::string_t& strFrom, const Omega::string_t& strTo, TreeItemData* pItem)
 {
-	OTL::ObjectPtr<Omega::Registry::IKey> ptrNewKey = m_ptrKey.OpenSubKey(strTo,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
+	OTL::ObjectPtr<Omega::Registry::IKey> ptrNewKey = m_ptrKey.OpenSubKey(strTo,Omega::Registry::IKey::CreateNew);
 
 	CopyKey(pItem->m_ptrKey,ptrNewKey);
 
@@ -199,7 +199,7 @@ void TreeItemData::CopyKey(OTL::ObjectPtr<Omega::Registry::IKey>& ptrOldKey, OTL
 	for (std::set<Omega::string_t>::const_iterator i=values.begin();i!=values.end();++i)
 	{
 		OTL::ObjectPtr<Omega::Registry::IKey> ptrOldSub = ptrOldKey.OpenSubKey(*i,Omega::Registry::IKey::OpenExisting);
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey.OpenSubKey(*i,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrNewSub = ptrNewKey.OpenSubKey(*i,Omega::Registry::IKey::CreateNew);
 
 		CopyKey(ptrOldSub,ptrNewSub);
 	}
@@ -216,7 +216,7 @@ void TreeItemData::NewKey(wxTreeCtrl* pTree, const wxTreeItemId& id)
 		strName = Omega::string_t(wxString::Format(_("New Key #%lu"),c).wc_str(),Omega::string_t::npos);
 		if (!m_ptrKey->IsSubKey(strName))
 		{
-			ptrKey = m_ptrKey.OpenSubKey(strName,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
+			ptrKey = m_ptrKey.OpenSubKey(strName,Omega::Registry::IKey::CreateNew);
 			break;
 		}
 	}
@@ -315,7 +315,7 @@ void TreeItemData::NewBinary(wxListCtrl* pList)
 
 void TreeItemData::Modify(wxListCtrl* pList, long item_id)
 {
-	Omega::string_t strName(pList->GetItemText(item_id).wc_str(),true);
+	Omega::string_t strName(pList->GetItemText(item_id).wc_str(),Omega::string_t::npos,true);
 	Omega::Registry::ValueType_t type = m_ptrKey->GetValueType(strName);
 
 	if (type == Omega::Registry::String)
@@ -358,7 +358,7 @@ void TreeItemData::Find(wxTreeCtrl* pTree, wxTreeItemId tree_id, wxListCtrl* pLi
 	{
 		while ((list_id = pList->GetNextItem(list_id))!=-1)
 		{
-			Omega::string_t strName(pList->GetItemText(list_id).wc_str(),true);
+			Omega::string_t strName(pList->GetItemText(list_id).wc_str(),Omega::string_t::npos,true);
 
 			if (MatchValue(strFind,m_ptrKey,strName,bValues,bData,bMatchAll,bIgnoreCase))
 			{

@@ -195,6 +195,44 @@ namespace Registry
 			throw static_cast<IAccessDeniedException*>(pRE);
 		}
 	};
+
+	class MirrorKey : 
+		public ObjectBase,
+		public IKey
+	{
+	public:
+		void Init(const string_t& strKey, IKey* pLocal, IKey* pSystem);
+		
+		BEGIN_INTERFACE_MAP(MirrorKey)
+			INTERFACE_ENTRY(IKey)
+		END_INTERFACE_MAP()
+
+	private:
+		string_t        m_strKey;
+		ObjectPtr<IKey> m_ptrLocal;
+		ObjectPtr<IKey> m_ptrSystem;
+		
+	// IRegistry members
+	public:
+		bool_t IsSubKey(const string_t& strSubKey);
+		bool_t IsValue(const string_t& strName);
+		string_t GetStringValue(const string_t& strName);
+		int64_t GetIntegerValue(const string_t& strName);
+		void GetBinaryValue(const string_t& strName, uint32_t& cbLen, byte_t* pBuffer);
+		void SetStringValue(const string_t& strName, const string_t& strValue);
+		void SetIntegerValue(const string_t& strName, const int64_t& uValue);
+		void SetBinaryValue(const string_t& strName, uint32_t cbLen, const byte_t* val);
+		string_t GetDescription();
+		string_t GetValueDescription(const string_t& strName);
+		void SetDescription(const string_t& strValue);
+		void SetValueDescription(const string_t& strName, const string_t& strValue);
+		ValueType_t GetValueType(const string_t& strName);
+		IKey* OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags = OpenExisting);
+		std::set<string_t> EnumSubKeys();
+		std::set<string_t> EnumValues();
+		void DeleteKey(const string_t& strSubKey);
+		void DeleteValue(const string_t& strName);	
+	};
 }
 
 #endif // OOSERVER_REGISTRY_CMN_H_INCLUDED_

@@ -117,8 +117,8 @@ namespace Omega
 			enum OpenFlags
 			{
 				OpenExisting = 0,
-				Create = 1,
-				FailIfThere = 2
+				OpenCreate = 1,
+				CreateNew = 2
 			};
 			typedef uint16_t OpenFlags_t;
 

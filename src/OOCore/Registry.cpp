@@ -120,9 +120,9 @@ namespace
 		if (bAdd)
 		{
 			if (ptrKey)
-				return ptrKey.OpenSubKey(strName,Registry::IKey::Create);
+				return ptrKey.OpenSubKey(strName,Registry::IKey::OpenCreate);
 			else
-				return ObjectPtr<Registry::IKey>(strName,Registry::IKey::Create);
+				return ObjectPtr<Registry::IKey>(strName,Registry::IKey::OpenCreate);
 		}
 		else
 		{

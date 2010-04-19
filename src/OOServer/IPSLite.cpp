@@ -560,13 +560,13 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 
 		// Set the type and strip the start...
 		if (strSubKey.Length() > 10)
-			strMirror = strSubKey.Mid(10);
+			strMirror = strSubKey.Mid(11);
 		
 		ObjectPtr<IKey> ptrMirror;
 		try
 		{
 			// All Users
-			ptrMirror = ObjectPtr<IKey>(L"\\All Users" + strMirror);
+			ptrMirror = ObjectPtr<IKey>(L"\\All Users");
 		}
 		catch (Omega::Registry::INotFoundException* pE)
 		{
@@ -575,11 +575,8 @@ string_t RootKey::parse_subkey(const string_t& strSubKey, ObjectPtr<IKey>& ptrKe
 		}
 
 		ObjectPtr<ObjectImpl<User::Registry::MirrorKey> > ptrNew = ObjectImpl<User::Registry::MirrorKey>::CreateInstancePtr();
-		ptrNew->Init(L"\\" + strSubKey,m_ptrLocalUserKey,ptrMirror);
+		ptrNew->Init(L"\\Local User",m_ptrLocalUserKey,ptrMirror);
 		ptrKey.Attach(ptrNew.AddRef());
-
-		if (!strMirror.IsEmpty())
-			strMirror = strMirror.Mid(1);
 
 		return strMirror;
 	}

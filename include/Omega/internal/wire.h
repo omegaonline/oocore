@@ -673,6 +673,10 @@ namespace Omega
 			{
 				typedef Coll type;
 
+				static void init(Coll&)
+				{
+				}
+
 				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
 					pMessage->ReadStructStart(strName,L"$collection_type_1");
@@ -699,6 +703,16 @@ namespace Omega
 					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
 						marshal_info<typename Coll::value_type>::wire_type::write((string_t(L"item{0}") % idx),pMarshaller,pMessage,*i);
 					pMessage->WriteStructEnd(strName);
+				}
+
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				{
+					pMessage->ReadStructStart(strName,L"$collection_type_1");
+					pMessage->ReadUInt32(L"count");
+					size_t idx = 0;
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+						marshal_info<typename Coll::value_type>::wire_type::unpack((string_t(L"item{0}") % idx),pMarshaller,pMessage,*i);
+					pMessage->ReadStructEnd(strName);
 				}
 			};
 
@@ -869,6 +883,10 @@ namespace Omega
 			{
 				typedef Coll type;
 
+				static void init(Coll& val)
+				{
+				}
+
 				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
 					pMessage->ReadStructStart(strName,L"$collection_type_2");
@@ -902,6 +920,19 @@ namespace Omega
 						marshal_info<typename Coll::mapped_type>::wire_type::write((string_t(L"item{0}") % idx),pMarshaller,pMessage,i->second);
 					}
 					pMessage->WriteStructEnd(strName);
+				}
+
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				{
+					pMessage->ReadStructStart(strName,L"$collection_type_2");
+					pMessage->ReadUInt32(L"count");
+					size_t idx = 0;
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+					{
+						marshal_info<typename Coll::key_type>::wire_type::unpack((string_t(L"key{0}") % idx),pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::unpack((string_t(L"item{0}") % idx),pMarshaller,pMessage,i->second);
+					}
+					pMessage->ReadStructEnd(strName);
 				}
 			};
 

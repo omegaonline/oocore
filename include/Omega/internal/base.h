@@ -73,9 +73,8 @@ namespace Omega
 
 	namespace TypeInfo
 	{
-		enum Types
+		enum Type
 		{
-			typeUnknown = 0xFF,
 			typeVoid = 0,
 			typeBool,
 			typeByte,
@@ -89,14 +88,24 @@ namespace Omega
 			typeFloat8,
 			typeString,
 			typeGuid,
-			typeObject,
-
-			typeMask = typeUnknown,
-			typeConst = 0x100,
-			typeArray = 0x200,
-			typeReference = 0x400,
+			typeObject
 		};
-		typedef uint32_t Types_t;
+		enum Modifier
+		{
+			// type modifiers imply a 'next' entry in TypeDetail_t
+			modifierConst = 0x10,
+			modifierPointer,
+			modifierReference,
+
+			// STL collection types
+			modifierList = 0x18,
+			modifierSet,
+			modifierMap = 0x20,
+			modifierMultimap
+		};
+		typedef byte_t Type_t;
+
+		typedef std::vector<Type_t> TypeDetail_t;
 
 		enum MethodAttributes
 		{
@@ -123,10 +132,9 @@ namespace Omega
 			virtual guid_t GetIID() = 0;
 			virtual uint32_t GetMethodCount() = 0;
 			virtual IInterfaceInfo* GetBaseType() = 0;
-			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Types_t& return_type) = 0;
-			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Types_t& type, ParamAttributes_t& attribs) = 0;
+			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeDetail_t& return_type) = 0;
+			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeDetail_t& type, ParamAttributes_t& attribs) = 0;
 			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
-			virtual guid_t GetParamIid(uint32_t method_idx, byte_t param_idx) = 0;
 		};
 	}
 }
@@ -217,7 +225,6 @@ namespace Omega
 
 OMEGA_SET_GUIDOF(Omega, IObject, "{01010101-0101-0101-0101-010101010101}");
 OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
-OMEGA_SET_GUIDOF(Omega::TypeInfo, IInterfaceInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}");
 
 #if defined(DOXYGEN)
 /// Return the current source filename and line as a string_t

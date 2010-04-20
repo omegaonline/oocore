@@ -568,20 +568,6 @@ namespace Omega
 				OMEGA_METHOD(string_t,GetSource,0,())
 			)
 
-			OMEGA_DEFINE_INTERNAL_INTERFACE_PART2
-			(
-				Omega::TypeInfo, IInterfaceInfo,
-
-				OMEGA_METHOD(string_t,GetName,0,())
-				OMEGA_METHOD(guid_t,GetIID,0,())
-				OMEGA_METHOD(Omega::TypeInfo::IInterfaceInfo*,GetBaseType,0,())
-				OMEGA_METHOD(uint32_t,GetMethodCount,0,())
-				OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),TypeInfo::Types_t&,return_type))
-				OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),TypeInfo::Types_t&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
-				OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
-				OMEGA_METHOD(guid_t,GetParamIid,2,((in),uint32_t,method_idx,(in),byte_t,param_idx))
-			)
-
 			OMEGA_QI_MAGIC(Omega::Remoting,IMessage)
 			OMEGA_QI_MAGIC(Omega::Remoting,IStub)
 			OMEGA_QI_MAGIC(Omega::Remoting,IStubController)

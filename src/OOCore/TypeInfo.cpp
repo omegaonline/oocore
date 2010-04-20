@@ -47,38 +47,38 @@ namespace
 	private:
 		struct ParamInfo
 		{
-			std::string                 strName;
-			TypeInfo::Types_t           type;
+			string_t                    strName;
+			TypeInfo::TypeDetail_t      type;
 			TypeInfo::ParamAttributes_t attribs;
-			std::string                 strRef;
-			guid_t                      iid;
+			string_t                    strRef;
 		};
 
 		struct MethodInfo
 		{
-			std::string                  strName;
+			string_t                     strName;
 			TypeInfo::MethodAttributes_t attribs;
 			uint32_t                     timeout;
-			TypeInfo::Types_t            return_type;
+			TypeInfo::TypeDetail_t       return_type;
 			std::vector<ParamInfo>       params;
 		};
 
-		std::wstring                        m_strName;
+		string_t                            m_strName;
 		guid_t                              m_iid;
 		std::vector<MethodInfo>             m_methods;
 		uint32_t                            m_base_methods;
 		ObjectPtr<TypeInfo::IInterfaceInfo> m_ptrBase;
 
+		void BuildTypeDetail(TypeInfo::TypeDetail_t& td, const System::Internal::type_holder* th) const;
+
 	// IInterfaceInfo members
 	public:
-		virtual string_t GetName();
-		virtual guid_t GetIID();
-		virtual uint32_t GetMethodCount();
-		virtual IInterfaceInfo* GetBaseType();
-		virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type);
-		virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs);
-		virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib);
-		virtual guid_t GetParamIid(uint32_t method_idx, byte_t param_idx);
+		string_t GetName();
+		guid_t GetIID();
+		uint32_t GetMethodCount();
+		IInterfaceInfo* GetBaseType();
+		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::TypeDetail_t& return_type);
+		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::TypeDetail_t& type, TypeInfo::ParamAttributes_t& attribs);
+		byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib);
 	};
 
 	class TIMapImpl
@@ -111,53 +111,43 @@ TypeInfoImpl::TypeInfoImpl() :
 void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
 {
 	m_iid = iid;
-	m_strName = pszName;
-
+	m_strName = string_t(pszName,string_t::npos);
+	
 	// Init the base class
 	if (type_info->base_type)
 	{
 		m_ptrBase.Attach(TIMap::instance()->get_type_info(*type_info->base_type));
 		m_base_methods = m_ptrBase->GetMethodCount();
 	}
-
-	// Copy all the members into our own members...
-	try
+	
+	// Copy all the members into our own members... This is so the underlying pointers can be unloaded with their Dll
+	for (const System::Internal::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)();pmi->pszName!=0;++pmi)
 	{
-		for (const System::Internal::typeinfo_rtti::MethodInfo* pmi=(*type_info->pfnGetMethodInfo)();pmi->pszName!=0;++pmi)
+		MethodInfo mi;
+		mi.strName = string_t(pmi->pszName,string_t::npos);
+		mi.attribs = pmi->attribs;
+		mi.timeout = pmi->timeout;
+
+		BuildTypeDetail(mi.return_type,pmi->return_type);
+
+		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)();ppi->pszName!=0;++ppi)
 		{
-			MethodInfo mi;
-			mi.strName = pmi->pszName,
-			mi.attribs = pmi->attribs,
-			mi.timeout = pmi->timeout,
-			mi.return_type = pmi->return_type;
+			ParamInfo pi;
+			pi.strName = string_t(ppi->pszName,string_t::npos);
+			pi.attribs = ppi->attribs;
+			pi.strRef = string_t(ppi->attrib_ref,string_t::npos);
+			BuildTypeDetail(pi.type,ppi->type);
 
-			for (const System::Internal::typeinfo_rtti::ParamInfo* pi=(*pmi->pfnGetParamInfo)();pi->pszName!=0;++pi)
-			{
-				ParamInfo p;
-				p.strName = pi->pszName;
-				p.attribs = pi->attribs;
-				p.type = pi->type;
-				p.strRef = pi->attrib_ref;
-				if (pi->iid)
-					p.iid = *pi->iid;
-				else
-					p.iid = guid_t::Null();
-
-				mi.params.push_back(p);
-			}
-
-			m_methods.push_back(mi);
+			mi.params.push_back(pi);
 		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+
+		m_methods.push_back(mi);
 	}
 }
 
 string_t TypeInfoImpl::GetName()
 {
-	return string_t(m_strName.c_str(),string_t::npos);
+	return m_strName;
 }
 
 guid_t TypeInfoImpl::GetIID()
@@ -175,7 +165,7 @@ TypeInfo::IInterfaceInfo* TypeInfoImpl::GetBaseType()
 	return m_ptrBase;
 }
 
-void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::Types_t& return_type)
+void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::TypeDetail_t& return_type)
 {
 	if (method_idx < m_base_methods)
 		return m_ptrBase->GetMethodInfo(method_idx,strName,attribs,timeout,param_count,return_type);
@@ -192,7 +182,7 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 	return_type = mi.return_type;
 }
 
-void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::Types_t& type, TypeInfo::ParamAttributes_t& attribs)
+void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::TypeDetail_t& type, TypeInfo::ParamAttributes_t& attribs)
 {
 	if (method_idx < m_base_methods)
 		return m_ptrBase->GetParamInfo(method_idx,param_idx,strName,type,attribs);
@@ -240,77 +230,76 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 	OMEGA_THROW(L"GetAttributeRef failed to find reference parameter");
 }
 
-guid_t TypeInfoImpl::GetParamIid(uint32_t method_idx, byte_t param_idx)
+void TypeInfoImpl::BuildTypeDetail(TypeInfo::TypeDetail_t& td, const System::Internal::type_holder* th) const
 {
-	if (method_idx < m_base_methods)
-		return m_ptrBase->GetParamIid(method_idx,param_idx);
+	td.push_back(th->type);
+	
+	if (th->type == TypeInfo::typeObject)
+	{
+		guid_t iid(*(const guid_base_t*)(th->next));
 
-	if (method_idx >= GetMethodCount())
-		OMEGA_THROW(L"GetParamIid requesting invalid method index");
+		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data1 & 0xFF000000) >> 24));
+		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data1 & 0x00FF0000) >> 16));
+		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data1 & 0x0000FF00) >> 8));
+		td.push_back(static_cast<TypeInfo::Type_t>(iid.Data1 & 0x000000FF));
+		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data2 & 0xFF00) >> 8));
+		td.push_back(static_cast<TypeInfo::Type_t>(iid.Data2 & 0x00FF));
+		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data3 & 0xFF00) >> 8));
+		td.push_back(static_cast<TypeInfo::Type_t>(iid.Data3 & 0x00FF));
+		td.push_back(iid.Data4[0]);
+		td.push_back(iid.Data4[1]);
+		td.push_back(iid.Data4[2]);
+		td.push_back(iid.Data4[3]);
+		td.push_back(iid.Data4[4]);
+		td.push_back(iid.Data4[5]);
+		td.push_back(iid.Data4[6]);
+		td.push_back(iid.Data4[7]);
+	}
+	else if (th->next)
+		BuildTypeDetail(td,th->next);
 
-	const MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
-
-	if (param_idx >= mi.params.size())
-		OMEGA_THROW(L"GetParamIid requesting invalid param index");
-
-	return mi.params.at(param_idx).iid;
+	if (th->type == TypeInfo::modifierMap ||
+		th->type == TypeInfo::modifierMultimap)
+	{
+		// Add second part immediately after first part
+		BuildTypeDetail(td,(++th)->next);
+	}
 }
 
 void TIMapImpl::insert(const guid_t& iid, const wchar_t* pszName, const System::Internal::typeinfo_rtti* type_info)
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		ti_t ti = { pszName, type_info };
+	ti_t ti = { pszName, type_info };
 
-		m_ti_map.insert(std::multimap<guid_t,ti_t>::value_type(iid,ti));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	m_ti_map.insert(std::multimap<guid_t,ti_t>::value_type(iid,ti));
 }
 
 void TIMapImpl::remove(const guid_t& iid, const System::Internal::typeinfo_rtti* type_info)
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid);i!=m_ti_map.end() && i->first==iid;)
-		{
-			if (i->second.type_info == type_info)
-				m_ti_map.erase(i++);
-			else
-				++i;
-		}
-	}
-	catch (std::exception& e)
+	for (std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid);i!=m_ti_map.end() && i->first==iid;)
 	{
-		OMEGA_THROW(e);
+		if (i->second.type_info == type_info)
+			m_ti_map.erase(i++);
+		else
+			++i;
 	}
 }
 
 TypeInfo::IInterfaceInfo* TIMapImpl::get_type_info(const guid_t& iid)
 {
-	try
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-		std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid);
-		if (i != m_ti_map.end())
-		{
-			ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstancePtr();
-			ptrTI->init(iid,i->second.pszName,i->second.type_info);
-			return ptrTI.AddRef();
-		}
-	}
-	catch (std::exception& e)
+	std::multimap<guid_t,ti_t>::iterator i=m_ti_map.find(iid);
+	if (i != m_ti_map.end())
 	{
-		OMEGA_THROW(e);
+		ObjectPtr<ObjectImpl<TypeInfoImpl> > ptrTI = ObjectImpl<TypeInfoImpl>::CreateInstancePtr();
+		ptrTI->init(iid,i->second.pszName,i->second.type_info);
+		return ptrTI.AddRef();
 	}
-
+	
 	throw INoInterfaceException::Create(iid,OMEGA_SOURCE_INFO);
 }
 

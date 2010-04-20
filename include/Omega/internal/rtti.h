@@ -27,127 +27,238 @@ namespace Omega
 	namespace System
 	{
 		namespace Internal
-		{
-			template <typename T> struct type_kind
+		{	
+			struct type_holder
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeUnknown;
+				TypeInfo::Type_t   type;
+				const type_holder* next;
 			};
+
+			template <typename T> struct type_kind;
 
 			template <typename T> struct type_kind<T*>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeArray | type_kind<T>::type;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierPointer, type_kind<T>::type() };
+					return &t;
+				}
 			};
 
 			template <typename T> struct type_kind<T&>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeReference | type_kind<T>::type;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierReference, type_kind<T>::type() };
+					return &t;
+				}
 			};
 
 			template <typename T> struct type_kind<const T>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeConst | type_kind<T>::type;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierConst, type_kind<T>::type() };
+					return &t;
+				}
+			};
+
+			template <typename T> struct type_kind<std::list<T> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierList, type_kind<T>::type() };
+					return &t;
+				}
+			};
+
+			template <typename T> struct type_kind<std::set<T> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierSet, type_kind<T>::type() };
+					return &t;
+				}
+			};
+
+			template <typename T1, typename T2> struct type_kind<std::map<T1,T2> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t[2] = 
+					{
+						{ TypeInfo::modifierMap, type_kind<T1>::type() },
+						{ TypeInfo::modifierMap, type_kind<T2>::type() }
+					};
+					return t;
+				}
+			};
+
+			template <typename T1, typename T2> struct type_kind<std::multimap<T1,T2> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t[2] = 
+					{
+						{ TypeInfo::modifierMultimap, type_kind<T1>::type() },
+						{ TypeInfo::modifierMultimap, type_kind<T2>::type() }
+					};
+					return t;
+				}
 			};
 
 			template <> struct type_kind<void>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeVoid;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeVoid, 0 };
+					return &t;
+				}
+			};
+
+			template <> struct type_kind<TypeInfo::TypeDetail_t>
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { 127, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<bool_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeBool;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeBool, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<byte_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeByte;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeByte, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<int16_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeInt16;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeInt16, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<uint16_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeUInt16;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeUInt16, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<int32_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeInt32;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeInt32, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<uint32_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeUInt32;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeUInt32, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<int64_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeInt64;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeInt64, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<uint64_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeUInt64;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeUInt64, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<float4_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeFloat4;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeFloat4, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<float8_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeFloat8;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeFloat8, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<string_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeString;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeString, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<guid_t>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeGuid;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeGuid, 0 };
+					return &t;
+				}
 			};
 
 			template <> struct type_kind<IObject*>
 			{
-				static const TypeInfo::Types_t type = TypeInfo::typeObject;
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeObject, (const type_holder*)(&OMEGA_GUIDOF(IObject)) };
+					return &t;
+				}
 			};
 
 			struct typeinfo_rtti
 			{
-				template <bool E, typename I>
-				struct has_guid_t
-				{
-					static const guid_base_t* guid() { return &OMEGA_GUIDOF(I); }
-				};
-
-				template <typename I>
-				struct has_guid_t<false,I>
-				{
-					static const guid_base_t* guid() { return 0; }
-				};
-
 				struct ParamInfo
 				{
-					const char*                 pszName;
-					TypeInfo::Types_t           type;
+					const wchar_t*              pszName;
+					const type_holder*          type;
 					TypeInfo::ParamAttributes_t attribs;
-					const char*                 attrib_ref;
-					const guid_base_t*          iid;
+					const wchar_t*              attrib_ref;
 				};
 
 				struct MethodInfo
 				{
-					const char*                  pszName;
+					const wchar_t*               pszName;
 					TypeInfo::MethodAttributes_t attribs;
 					uint32_t                     timeout;
 					byte_t                       param_count;
-					TypeInfo::Types_t            return_type;
+					const type_holder*           return_type;
 					const ParamInfo* (*pfnGetParamInfo)();
 				};
 
@@ -157,10 +268,10 @@ namespace Omega
 			};
 
 			template <typename I>
-			class TypeInfo_Holder;
+			class typeinfo_holder;
 
 			template <>
-			class TypeInfo_Holder<IObject>
+			class typeinfo_holder<IObject>
 			{
 			public:
 				static const typeinfo_rtti* get_type_info()
@@ -176,7 +287,7 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ 0, 0, 0, "", 0 }
+						{ 0, 0, 0, L"" }
 					};
 					return pi;
 				}
@@ -184,7 +295,7 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ 0, 0, 0, "", 0 }
+						{ 0, 0, 0, L"" }
 					};
 					return pi;
 				}
@@ -192,8 +303,8 @@ namespace Omega
 				{
 					static const typeinfo_rtti::ParamInfo pi[] =
 					{
-						{ "iid", TypeInfo::typeGuid | TypeInfo::typeConst | TypeInfo::typeReference, TypeInfo::attrIn, "", 0 },
-						{ 0, 0, 0, "", 0 }
+						{ L"iid", type_kind<const guid_t&>::type(), TypeInfo::attrIn, L"" },
+						{ 0, 0, 0, L"" }
 					};
 					return pi;
 				}
@@ -201,9 +312,9 @@ namespace Omega
 				{
 					static const typeinfo_rtti::MethodInfo methods[] =
 					{
-						{ "AddRef", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, &AddRef_params },
-						{ "Release", TypeInfo::Synchronous, 0, 0, TypeInfo::typeVoid, &Release_params },
-						{ "QueryInterface", TypeInfo::Synchronous, 0, 1, TypeInfo::typeObject, &QueryInterface_params },
+						{ L"AddRef", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &AddRef_params },
+						{ L"Release", TypeInfo::Synchronous, 0, 0, type_kind<void>::type(), &Release_params },
+						{ L"QueryInterface", TypeInfo::Synchronous, 0, 1, type_kind<IObject*>::type(), &QueryInterface_params },
 						{ 0, 0, 0, 0, 0 }
 					};
 					return methods;

@@ -220,6 +220,19 @@ namespace Omega
 
 #if !defined(DOXYGEN)
 
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::TypeInfo, IInterfaceInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}",
+
+	OMEGA_METHOD(string_t,GetName,0,())
+	OMEGA_METHOD(guid_t,GetIID,0,())
+	OMEGA_METHOD(Omega::TypeInfo::IInterfaceInfo*,GetBaseType,0,())
+	OMEGA_METHOD(uint32_t,GetMethodCount,0,())				
+	OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),TypeInfo::TypeDetail_t&,return_type))
+	OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),TypeInfo::TypeDetail_t&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
+	OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
+)
+
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Formatting, IFormattingException, Omega, IException, "{EBCD8903-5C9B-4d48-BC3B-0427A4E294C4}",

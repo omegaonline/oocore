@@ -719,8 +719,7 @@ namespace Omega
 			};
 
 			OMEGA_DECLARE_FORWARDS(Omega,IException)
-			OMEGA_DECLARE_FORWARDS(Omega::TypeInfo,IInterfaceInfo)
-
+			
 			OMEGA_DEFINE_INTERNAL_INTERFACE_NOPROXY
 			(
 				Omega, IException,
@@ -793,23 +792,8 @@ namespace Omega
 				)
 			};
 
-			OMEGA_DEFINE_INTERNAL_INTERFACE
-			(
-				Omega::TypeInfo, IInterfaceInfo,
-
-				OMEGA_METHOD(string_t,GetName,0,())
-				OMEGA_METHOD(guid_t,GetIID,0,())
-				OMEGA_METHOD(Omega::TypeInfo::IInterfaceInfo*,GetBaseType,0,())
-				OMEGA_METHOD(uint32_t,GetMethodCount,0,())				
-				OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),TypeInfo::Types_t&,return_type))
-				OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),TypeInfo::Types_t&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
-				OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
-				OMEGA_METHOD(guid_t,GetParamIid,2,((in),uint32_t,method_idx,(in),byte_t,param_idx))
-			)
-
 			OMEGA_QI_MAGIC(Omega,IObject)
 			OMEGA_QI_MAGIC(Omega,IException)
-			OMEGA_QI_MAGIC(Omega::TypeInfo,IInterfaceInfo)
 		}
 	}
 }

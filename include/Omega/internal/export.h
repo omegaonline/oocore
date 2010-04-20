@@ -46,11 +46,11 @@
 				get_name() \
 			}; \
 			register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
-			register_typeinfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface >::get_type_info()); \
+			register_typeinfo(OMEGA_GUIDOF(n_space::iface),get_name(),typeinfo_holder<n_space::iface >::get_type_info()); \
 		} \
 		~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 		{ \
-			unregister_typeinfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface >::get_type_info()); \
+			unregister_typeinfo(OMEGA_GUIDOF(n_space::iface),typeinfo_holder<n_space::iface >::get_type_info()); \
 		} \
 	}; \
 	OMEGA_WEAK_VARIABLE(OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit),OMEGA_CONCAT_R(OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,_RttiInit_),OMEGA_UNIQUE_NAME(iface)));
@@ -155,7 +155,11 @@
 	}; \
 	template <> struct type_kind<n_space::name*> \
 	{ \
-		static const TypeInfo::Types_t type = TypeInfo::typeObject; \
+		static const type_holder* type() \
+		{ \
+			static const type_holder t = { TypeInfo::typeObject, (const type_holder*)(&OMEGA_GUIDOF(n_space::name)) }; \
+			return &t; \
+		} \
 	};
 
 #define OMEGA_DECLARE_SAFE(unique,methods,n_space,name,d_space,derived) \
@@ -181,11 +185,11 @@
 	OMEGA_CONCAT(OMEGA_DECLARE_TYPE_,meta) d
 
 // Add extra meta info types here
-#define OMEGA_DECLARE_TYPE_ATTR_in(t,name)        ""
-#define OMEGA_DECLARE_TYPE_ATTR_in_out(t,name)    ""
-#define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       ""
-#define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_STRINGIZE(iid) OMEGA_DECLARE_TYPE_ATTR_II
-#define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_STRINGIZE(size) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_in(t,name)        L""
+#define OMEGA_DECLARE_TYPE_ATTR_in_out(t,name)    L""
+#define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       L""
+#define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(iid)) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(size)) OMEGA_DECLARE_TYPE_ATTR_II
 #define OMEGA_DECLARE_TYPE_ATTR_II(t,name)
 
 #define OMEGA_DECLARE_TYPE_PARAM_III(index,meta,d) \
@@ -193,10 +197,9 @@
 
 #define OMEGA_DECLARE_TYPE_PARAM_I(meta,t,name) \
 	{ \
-		OMEGA_STRINGIZE(name),type_kind<t >::type, \
+		OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),type_kind<t >::type(), \
 		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_II,meta,(t,name)), \
-		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_III,meta,(t,name)), \
-		typeinfo_rtti::has_guid_t<type_kind<t >::type==TypeInfo::typeObject,t >::guid() \
+		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_III,meta,(t,name)) \
 	},
 
 #define OMEGA_DECLARE_TYPE_PARAM(index,params,d) \
@@ -205,7 +208,7 @@
 #define OMEGA_DECLARE_TYPE_PARAMS(param_count,params) \
 	static const typeinfo_rtti::ParamInfo pi[] = { \
 		OMEGA_TUPLE_FOR_EACH(param_count,OMEGA_DECLARE_TYPE_PARAM,OMEGA_SPLIT_3(param_count,params),0) \
-		{ 0, 0, 0, "", 0 } }; \
+		{ 0, 0, 0, L"" } }; \
 	return pi;
 
 #define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
@@ -224,13 +227,13 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD_PARAM,methods,0)
 
 #define OMEGA_DECLARE_TYPE_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	{ OMEGA_STRINGIZE(name),attribs,timeout,param_count,TypeInfo::typeVoid
+	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),attribs,timeout,param_count,type_kind<void>::type()
 
 #define OMEGA_DECLARE_TYPE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	{ OMEGA_STRINGIZE(name),attribs,timeout,param_count,type_kind<ret_type >::type
+	{ OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),attribs,timeout,param_count,type_kind<ret_type >::type()
 
 #define OMEGA_DECLARE_TYPE_DECLARED_NO_METHODS() \
-	{ "",0,0,0,0
+	{ L"",0,0,0,0
 
 #define OMEGA_DECLARE_TYPE_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_,method) ,&OMEGA_CONCAT_R(method_param_,index) },
@@ -239,7 +242,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD,methods,0)
 
 #define OMEGA_DECLARE_TYPE(n_space,name,methods,d_space,derived) \
-	template <> class TypeInfo_Holder<n_space::name > \
+	template <> class typeinfo_holder<n_space::name > \
 	{ \
 	public: \
 		static const typeinfo_rtti* get_type_info() \
@@ -247,7 +250,7 @@
 			static const typeinfo_rtti ti = { &method_info, method_count, &OMEGA_GUIDOF(d_space::derived) }; \
 			return &ti; \
 		}; \
-		static const uint32_t method_count = TypeInfo_Holder<d_space::derived >::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
+		static const uint32_t method_count = OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \
 		OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
 		static const typeinfo_rtti::MethodInfo* method_info() \

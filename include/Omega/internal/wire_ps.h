@@ -498,14 +498,7 @@ namespace Omega
 
 			inline static void register_wire_rtti_info(const guid_t& iid, const wire_rtti* pRtti)
 			{
-				try
-				{
-					WIRE_RTTI_HOLDER::instance()->insert(std::map<guid_t,const wire_rtti*>::value_type(iid,pRtti));
-				}
-				catch (std::exception& e)
-				{
-					OMEGA_THROW(e);
-				}
+				WIRE_RTTI_HOLDER::instance()->insert(std::map<guid_t,const wire_rtti*>::value_type(iid,pRtti));
 			}
 
 			OMEGA_WIRE_MAGIC(Omega,IObject)

@@ -53,128 +53,107 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 	// But any other condition will result in a very easy way to achieve priviledge escalation
 	// You have been warned!
 
-	try
+	void* TICKET_99;
+
+	uint32_t src_id = 0;
+	ObjectPtr<Remoting::ICallContext> ptrCC;
+	ptrCC.Attach(Remoting::GetCallContext());
+	if (ptrCC != 0)
+		src_id = ptrCC->SourceId();
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Create a new cookie
+	Info info;
+	info.m_oid = oid;
+	info.m_ptrObject = pObject;
+	info.m_source = src_id;
+	uint32_t nCookie = m_nNextCookie++;
+	while (nCookie==0 && m_mapObjectsByCookie.find(nCookie) != m_mapObjectsByCookie.end())
 	{
-		void* TICKET_99;
-
-		uint32_t src_id = 0;
-		ObjectPtr<Remoting::ICallContext> ptrCC;
-		ptrCC.Attach(Remoting::GetCallContext());
-		if (ptrCC != 0)
-			src_id = ptrCC->SourceId();
-
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		// Create a new cookie
-		Info info;
-		info.m_oid = oid;
-		info.m_ptrObject = pObject;
-		info.m_source = src_id;
-		uint32_t nCookie = m_nNextCookie++;
-		while (nCookie==0 && m_mapObjectsByCookie.find(nCookie) != m_mapObjectsByCookie.end())
-		{
-			nCookie = m_nNextCookie++;
-		}
-
-		std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
-		assert(p.second);
-			
-		m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
-
-		LOG_DEBUG(("Registered object %ls as cookie %lu",oid.ToString().c_str(),nCookie));
-			
-		return nCookie;
+		nCookie = m_nNextCookie++;
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+
+	std::pair<std::map<uint32_t,Info>::iterator,bool> p = m_mapObjectsByCookie.insert(std::map<uint32_t,Info>::value_type(nCookie,info));
+	assert(p.second);
+		
+	m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
+
+	LOG_DEBUG(("Registered object %ls as cookie %lu",oid.ToString().c_str(),nCookie));
+		
+	return nCookie;
 }
 
 void User::RunningObjectTable::Revoke(uint32_t cookie)
 {
-	try
+	uint32_t src_id = 0;
+	ObjectPtr<Remoting::ICallContext> ptrCC;
+	ptrCC.Attach(Remoting::GetCallContext());
+	if (ptrCC != 0)
+		src_id = ptrCC->SourceId();
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
+	if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
 	{
-		uint32_t src_id = 0;
-		ObjectPtr<Remoting::ICallContext> ptrCC;
-		ptrCC.Attach(Remoting::GetCallContext());
-		if (ptrCC != 0)
-			src_id = ptrCC->SourceId();
-
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		std::map<uint32_t,Info>::iterator i = m_mapObjectsByCookie.find(cookie);
-		if (i != m_mapObjectsByCookie.end() && i->second.m_source == src_id)
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid);j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid;++j)
 		{
-			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapObjectsByOid.find(i->second.m_oid);j!=m_mapObjectsByOid.end() && j->first==i->second.m_oid;++j)
+			if (j->second->first == cookie)
 			{
-				if (j->second->first == cookie)
-				{
-					m_mapObjectsByOid.erase(j);
-					break;
-				}
+				m_mapObjectsByOid.erase(j);
+				break;
 			}
-
-			LOG_DEBUG(("Revoked object %ls (cookie %lu)",i->second.m_oid.ToString().c_str(),cookie));
-
-			m_mapObjectsByCookie.erase(i);
 		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+
+		LOG_DEBUG(("Revoked object %ls (cookie %lu)",i->second.m_oid.ToString().c_str(),cookie));
+
+		m_mapObjectsByCookie.erase(i);
 	}
 }
 
 IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 {
-	try
+	ObjectPtr<IObject> ptrRet;
+	std::list<uint32_t> listDeadEntries;
 	{
-		ObjectPtr<IObject> ptrRet;
-		std::list<uint32_t> listDeadEntries;
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapObjectsByOid.find(oid);i!=m_mapObjectsByOid.end() && i->first==oid;++i)
+		{
+			if (Remoting::IsAlive(i->second->second.m_ptrObject))
+				ptrRet = i->second->second.m_ptrObject;
+			else
 			{
-				if (Remoting::IsAlive(i->second->second.m_ptrObject))
-					ptrRet = i->second->second.m_ptrObject;
-				else
-				{
-					listDeadEntries.push_back(i->second->first);
-					LOG_DEBUG(("Dropping dead object %ls (cookie %lu)",oid.ToString().c_str(),i->second->first));
-				}	
-			}
+				listDeadEntries.push_back(i->second->first);
+				LOG_DEBUG(("Dropping dead object %ls (cookie %lu)",oid.ToString().c_str(),i->second->first));
+			}	
 		}
+	}
 
-		if (!listDeadEntries.empty())
+	if (!listDeadEntries.empty())
+	{
+		// We found at least one dead proxy
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+		for (std::list<uint32_t>::iterator i=listDeadEntries.begin();i!=listDeadEntries.end();++i)
 		{
-			// We found at least one dead proxy
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-			for (std::list<uint32_t>::iterator i=listDeadEntries.begin();i!=listDeadEntries.end();++i)
+			std::map<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*i);
+			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator k=m_mapObjectsByOid.find(j->second.m_oid);k!=m_mapObjectsByOid.end() && k->first==j->second.m_oid;++k)
 			{
-				std::map<uint32_t,Info>::iterator j = m_mapObjectsByCookie.find(*i);
-				for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator k=m_mapObjectsByOid.find(j->second.m_oid);k!=m_mapObjectsByOid.end() && k->first==j->second.m_oid;++k)
+				if (k->second->first == *i)
 				{
-					if (k->second->first == *i)
-					{
-						m_mapObjectsByOid.erase(k);
-						break;
-					}
+					m_mapObjectsByOid.erase(k);
+					break;
 				}
-				m_mapObjectsByCookie.erase(j);
 			}
+			m_mapObjectsByCookie.erase(j);
 		}
-
-		if (ptrRet != 0)
-			return ptrRet.AddRef();
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
 	}
 
+	if (ptrRet != 0)
+		return ptrRet.AddRef();
+	
 	if (m_ptrROT != 0)
 	{
 		// Route to global rot

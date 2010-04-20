@@ -708,14 +708,7 @@ namespace Omega
 
 			static void register_rtti_info(const guid_t& iid, const qi_rtti* pRtti)
 			{
-				try
-				{
-					RTTI_HOLDER::instance()->insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
-				}
-				catch (std::exception& e)
-				{
-					OMEGA_THROW(e);
-				}
+				RTTI_HOLDER::instance()->insert(std::map<guid_t,const qi_rtti*>::value_type(iid,pRtti));
 			}
 
 			template <typename I> struct vtable_info;

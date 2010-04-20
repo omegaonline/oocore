@@ -655,27 +655,19 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> sub_keys;
-		
-	try
+	std::set<Omega::string_t> sub_keys;	
+	for (;;)
 	{
-		for (;;)
-		{
-			std::string strName;
-			if (!response->read(strName))
-				OMEGA_THROW(response->last_error());
+		std::string strName;
+		if (!response->read(strName))
+			OMEGA_THROW(response->last_error());
 
-			if (strName.empty())
-				break;
+		if (strName.empty())
+			break;
 
-			sub_keys.insert(string_t(strName.c_str(),true));
-		}		
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
+		sub_keys.insert(string_t(strName.c_str(),true));
+	}		
+	
 	return sub_keys;
 }
 
@@ -703,27 +695,19 @@ std::set<Omega::string_t> Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> values;
-		
-	try
+	std::set<Omega::string_t> values;	
+	for (;;)
 	{
-		for (;;)
-		{
-			std::string strName;
-			if (!response->read(strName))
-				OMEGA_THROW(response->last_error());
+		std::string strName;
+		if (!response->read(strName))
+			OMEGA_THROW(response->last_error());
 
-			if (strName.empty())
-				break;
+		if (strName.empty())
+			break;
 
-			values.insert(string_t(strName.c_str(),true));
-		}		
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
+		values.insert(string_t(strName.c_str(),true));
+	}		
+	
 	return values;
 }
 

@@ -114,16 +114,11 @@ void OOCore::UserSession::init_i(bool bStandalone)
 	OOBase::SmartPtr<Apartment> ptrZeroApt;
 	OMEGA_NEW(ptrZeroApt,Apartment(this,0));
 
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,ptrZeroApt));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(0,ptrZeroApt));
+	
+	guard.release();
 
 	// Remove standalone support eventually...
 	void* TODO;
@@ -272,25 +267,18 @@ void OOCore::UserSession::close_singletons()
 
 void OOCore::UserSession::close_singletons_i()
 {
-	try
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	// Copy the list so we can delete outside the lock
+	std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_listUninitCalls);
+
+	m_listUninitCalls.clear();
+
+	guard.release();
+
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
 	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		// Copy the list so we can delete outside the lock
-		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_listUninitCalls);
-
-		m_listUninitCalls.clear();
-
-		guard.release();
-
-		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
-		{
-			(*(i->first))(i->second);
-		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+		(*(i->first))(i->second);
 	}
 }
 
@@ -301,16 +289,9 @@ void OOCore::UserSession::add_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), v
 
 void OOCore::UserSession::add_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		m_listUninitCalls.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	m_listUninitCalls.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
 }
 
 void OOCore::UserSession::remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
@@ -320,22 +301,15 @@ void OOCore::UserSession::remove_uninit_call(void (OMEGA_CALL *pfn_dctor)(void*)
 
 void OOCore::UserSession::remove_uninit_call_i(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=m_listUninitCalls.begin();i!=m_listUninitCalls.end();++i)
-		{
-			if (i->first == pfn_dctor && i->second == param)
-			{
-				m_listUninitCalls.erase(i);
-				break;
-			}
-		}
-	}
-	catch (std::exception& e)
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=m_listUninitCalls.begin();i!=m_listUninitCalls.end();++i)
 	{
-		OMEGA_THROW(e);
+		if (i->first == pfn_dctor && i->second == param)
+		{
+			m_listUninitCalls.erase(i);
+			break;
+		}
 	}
 }
 
@@ -797,17 +771,10 @@ OOBase::CDRStream* OOCore::UserSession::send_request(uint16_t src_apartment_id, 
 		ThreadContext* pContext = ThreadContext::instance();
 
 		// Determine dest_thread_id
-		try
-		{
-			std::map<uint32_t,uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
-			if (i != pContext->m_mapChannelThreads.end())
-				dest_thread_id = i->second;
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-
+		std::map<uint32_t,uint16_t>::const_iterator i=pContext->m_mapChannelThreads.find(dest_channel_id);
+		if (i != pContext->m_mapChannelThreads.end())
+			dest_thread_id = i->second;
+		
 		src_thread_id = pContext->m_thread_id;
 		deadline = pContext->m_deadline;
 
@@ -1004,33 +971,19 @@ Apartment::IApartment* OOCore::UserSession::create_apartment_i()
 
 		// Select a new apartment id
 		uint16_t apt_id;
-		try
+		do
 		{
-			do
-			{
-				apt_id = ++m_next_apartment;
-				if (apt_id > 0xFFF)
-					apt_id = m_next_apartment = 1;
+			apt_id = ++m_next_apartment;
+			if (apt_id > 0xFFF)
+				apt_id = m_next_apartment = 1;
 
-			} while (m_mapApartments.find(apt_id) != m_mapApartments.end());
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-
+		} while (m_mapApartments.find(apt_id) != m_mapApartments.end());
+		
 		// Create the new object
 		OMEGA_NEW(ptrApt,Apartment(this,apt_id));
 
 		// Add it to the map
-		try
-		{
-			m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(apt_id,ptrApt));
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+		m_mapApartments.insert(std::map<uint16_t,OOBase::SmartPtr<Apartment> >::value_type(apt_id,ptrApt));
 	}
 
 	// Now a new OM for the new apartment connecting to the zero apt

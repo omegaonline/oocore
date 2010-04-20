@@ -85,63 +85,47 @@ inline void Omega::Threading::ReaderWriterLock::Release()
 template <typename DLL>
 inline void Omega::Threading::ModuleDestructor<DLL>::add_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	try
-	{
-		ModuleDestructor& inst = instance();
-		Guard<Mutex> guard(inst.m_lock);
-		inst.m_list.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	ModuleDestructor& inst = instance();
+	Guard<Mutex> guard(inst.m_lock);
+	inst.m_list.push_front(std::pair<void (OMEGA_CALL*)(void*),void*>(pfn_dctor,param));
 }
 
 template <typename DLL>
 inline void Omega::Threading::ModuleDestructor<DLL>::remove_destructor(void (OMEGA_CALL *pfn_dctor)(void*), void* param)
 {
-	try
-	{
-		ModuleDestructor& inst = instance();
-		Guard<Mutex> guard(inst.m_lock);
+	ModuleDestructor& inst = instance();
+	Guard<Mutex> guard(inst.m_lock);
 
-		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=inst.m_list.begin();i!=inst.m_list.end();++i)
-		{
-			if (i->first == pfn_dctor && i->second == param)
-			{
-				inst.m_list.erase(i);
-				break;
-			}
-		}
-	}
-	catch (std::exception& e)
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=inst.m_list.begin();i!=inst.m_list.end();++i)
 	{
-		OMEGA_THROW(e);
+		if (i->first == pfn_dctor && i->second == param)
+		{
+			inst.m_list.erase(i);
+			break;
+		}
 	}
 }
 
 template <typename DLL>
 inline Omega::Threading::ModuleDestructor<DLL>::~ModuleDestructor()
 {
-	try
+	Guard<Mutex> guard(m_lock);
+
+	// Copy the list outside the lock
+	std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_list);
+
+	m_list.clear();
+
+	guard.Release();
+
+	for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
 	{
-		Guard<Mutex> guard(m_lock);
-
-		// Copy the list outside the lock
-		std::list<std::pair<void (OMEGA_CALL*)(void*),void*> > list(m_list);
-
-		m_list.clear();
-
-		guard.Release();
-	
-		for (std::list<std::pair<void (OMEGA_CALL*)(void*),void*> >::iterator i=list.begin();i!=list.end();++i)
+		try
 		{
 			(*(i->first))(i->second);
 		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+		catch (...)
+		{ }
 	}
 }
 

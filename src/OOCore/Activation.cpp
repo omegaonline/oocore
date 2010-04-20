@@ -150,17 +150,10 @@ namespace
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 		// See if we have it already
-		try
-		{
-			std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
-			if (i != m_dll_map.end())
-				return i->second;
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-
+		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
+		if (i != m_dll_map.end())
+			return i->second;
+		
 		// Try to unload any unused dlls
 		unload_unused();
 
@@ -173,15 +166,8 @@ namespace
 			OMEGA_THROW(err);
 
 		// Add to the map
-		try
-		{
-			m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-
+		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
+		
 		return dll;
 	}
 
@@ -189,42 +175,34 @@ namespace
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
 			
-		try
-		{
-			OOBase::Guard<OOBase::Mutex> guard(m_lock);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-			for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		{
+			bool_t erase = false;
+			try
 			{
-				bool_t erase = false;
-				try
+				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
+				if (pfn)
 				{
-					pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
-					if (pfn)
-					{
-						System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
+					System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
 
-						// Ignore exceptions
-						if (CanUnloadLibrary_Exception)
-							System::Internal::release_safe(CanUnloadLibrary_Exception);
-					}
-				}
-				catch (IException* pE)
-				{
 					// Ignore exceptions
-					pE->Release();
+					if (CanUnloadLibrary_Exception)
+						System::Internal::release_safe(CanUnloadLibrary_Exception);
 				}
-
-				if (erase)
-					m_dll_map.erase(i++);
-				else
-					++i;
 			}
+			catch (IException* pE)
+			{
+				// Ignore exceptions
+				pE->Release();
+			}
+
+			if (erase)
+				m_dll_map.erase(i++);
+			else
+				++i;
 		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-		
 	}
 
 	void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)

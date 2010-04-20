@@ -24,57 +24,37 @@
 
 inline Omega::IObject* Omega::System::Internal::wire_holder::add(IObject* pProxy, IObject* pObject)
 {
-	try
-	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
+	Threading::Guard<Threading::Mutex> guard(m_lock);
 
-		std::pair<std::map<IObject*,IObject*>::iterator,bool> p = m_map.insert(std::map<IObject*,IObject*>::value_type(pProxy,pObject));
-		if (!p.second)
-		{
-			p.first->second->AddRef();
-			return p.first->second;
-		}
-							
-		return 0;
-	}
-	catch (std::exception& e)
+	std::pair<std::map<IObject*,IObject*>::iterator,bool> p = m_map.insert(std::map<IObject*,IObject*>::value_type(pProxy,pObject));
+	if (!p.second)
 	{
-		OMEGA_THROW(e);
+		p.first->second->AddRef();
+		return p.first->second;
 	}
+						
+	return 0;
 }
 
 inline Omega::IObject* Omega::System::Internal::wire_holder::find(IObject* pProxy)
 {
-	try
-	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
+	Threading::Guard<Threading::Mutex> guard(m_lock);
 
-		std::map<IObject*,IObject*>::const_iterator i=m_map.find(pProxy);
-		if (i != m_map.end())
-		{
-			i->second->AddRef();
-			return i->second;
-		}
-		
-		return 0;
-	}
-	catch (std::exception& e)
+	std::map<IObject*,IObject*>::const_iterator i=m_map.find(pProxy);
+	if (i != m_map.end())
 	{
-		OMEGA_THROW(e);
+		i->second->AddRef();
+		return i->second;
 	}
+	
+	return 0;
 }
 
 inline void Omega::System::Internal::wire_holder::remove(IObject* pProxy)
 {
-	try
-	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
-		m_map.erase(pProxy);
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	Threading::Guard<Threading::Mutex> guard(m_lock);
+	
+	m_map.erase(pProxy);
 }
 
 inline Omega::System::Internal::auto_iface_ptr<Omega::Remoting::IMessage> Omega::System::Internal::Wire_Proxy_Base::CreateMessage(const guid_t& iid, uint32_t method_id)

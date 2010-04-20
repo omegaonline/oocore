@@ -743,16 +743,6 @@ Remoting::IChannel* User::Manager::open_remote_channel_i(const string_t& strEndp
 
 		return ptrChannel.AddRef();
 	}
-	catch (std::exception& e)
-	{
-		// Clean out the maps
-		m_mapRemoteChannelIds.erase(channel_id);
-		m_mapRemoteChannels.erase(strCanon);
-
-		ptrRemoteChannel->Close();
-
-		OMEGA_THROW(e);
-	}
 	catch (...)
 	{
 		// Clean out the maps
@@ -789,7 +779,9 @@ void User::Manager::close_all_remotes()
 		pE->Release();
 	}
 	catch (...)
-	{}
+	{
+		LOG_ERROR(("Unexpected exception thrown"));
+	}
 
 	// Now spin, waiting for all the channels to close...
 	OOBase::timeval_t wait(30);
@@ -885,15 +877,6 @@ Remoting::IChannelSink* User::Manager::open_server_sink_i(const guid_t& message_
 		m_mapRemoteChannelIds.insert(std::map<uint32_t,RemoteChannelEntry>::value_type(channel_id,channel));
 
 		return ptrRemoteChannel.AddRef();
-	}
-	catch (std::exception& e)
-	{
-		// Clean out the maps
-		m_mapRemoteChannelIds.erase(channel_id);
-
-		ptrRemoteChannel->Close();
-
-		OMEGA_THROW(e);
 	}
 	catch (...)
 	{

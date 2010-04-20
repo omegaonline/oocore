@@ -197,16 +197,9 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 
 		return nCookie;
 	}
-	catch (std::exception& e)
-	{
-		if (rot_cookie && ptrROT)
-			ptrROT->Revoke(rot_cookie);
-
-		OMEGA_THROW(e);
-	}
 	catch (...)
 	{
-		if (rot_cookie)
+		if (rot_cookie && ptrROT)
 			ptrROT->Revoke(rot_cookie);
 
 		throw;
@@ -215,66 +208,52 @@ uint32_t OOCore::ServiceManager::RegisterObject(const guid_t& oid, IObject* pObj
 
 IObject* OOCore::ServiceManager::GetObject(const guid_t& oid, Activation::Flags_t flags, const guid_t& iid)
 {
-	try
+	// Remove any flags we don't care about...
+	flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
+
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
 	{
-		// Remove any flags we don't care about...
-		flags &= (Activation::RemoteActivation | Activation::InProcess | Activation::OutOfProcess);
-
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator i=m_mapServicesByOid.find(oid);i!=m_mapServicesByOid.end() && i->first==oid;++i)
-		{
-			if ((i->second->second.m_flags & flags) == i->second->second.m_flags)
-				return i->second->second.m_ptrObject->QueryInterface(iid);
-		}
-
-		// No, didn't find it
-		return 0;
+		if ((i->second->second.m_flags & flags) == i->second->second.m_flags)
+			return i->second->second.m_ptrObject->QueryInterface(iid);
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+
+	// No, didn't find it
+	return 0;
 }
 
 void OOCore::ServiceManager::RevokeObject(uint32_t cookie)
 {
-	try
+	uint32_t rot_cookie = 0;
+
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
+	if (i != m_mapServicesByCookie.end())
 	{
-		uint32_t rot_cookie = 0;
+		rot_cookie = i->second.m_rot_cookie;
 
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		std::map<uint32_t,Info>::iterator i = m_mapServicesByCookie.find(cookie);
-		if (i != m_mapServicesByCookie.end())
+		for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid);j!=m_mapServicesByOid.end() && j->first==i->second.m_oid;++j)
 		{
-			rot_cookie = i->second.m_rot_cookie;
-
-			for (std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::iterator j=m_mapServicesByOid.find(i->second.m_oid);j!=m_mapServicesByOid.end() && j->first==i->second.m_oid;++j)
+			if (j->second->first == cookie)
 			{
-				if (j->second->first == cookie)
-				{
-					m_mapServicesByOid.erase(j);
-					break;
-				}
-			}
-			m_mapServicesByCookie.erase(i);
-			
-			guard.release();
-
-			if (rot_cookie)
-			{
-				// Revoke from ROT
-				ObjectPtr<Activation::IRunningObjectTable> ptrROT;
-				ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
-
-				if (ptrROT)
-					ptrROT->Revoke(rot_cookie);
+				m_mapServicesByOid.erase(j);
+				break;
 			}
 		}
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
+		m_mapServicesByCookie.erase(i);
+		
+		guard.release();
+
+		if (rot_cookie)
+		{
+			// Revoke from ROT
+			ObjectPtr<Activation::IRunningObjectTable> ptrROT;
+			ptrROT.Attach(Activation::IRunningObjectTable::GetRunningObjectTable());
+
+			if (ptrROT)
+				ptrROT->Revoke(rot_cookie);
+		}
 	}
 }

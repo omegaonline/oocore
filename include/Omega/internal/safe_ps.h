@@ -686,7 +686,6 @@ namespace Omega
 			{
 				IObject* (*pfnCreateSafeProxy)(const SafeShim* shim);
 				const SafeShim* (*pfnCreateSafeStub)(IObject* pI);
-				const wchar_t* pszName;
 			};
 
 			typedef Threading::Singleton<std::map<guid_t,const qi_rtti*>,Threading::ModuleDestructor<OMEGA_PRIVATE_TYPE(safe_module)> > RTTI_HOLDER;

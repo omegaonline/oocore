@@ -71,6 +71,7 @@ int main(int argc, char* argv[])
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
 	cmd_args.add_option("unsafe",0);
+	cmd_args.add_option("batch",0);
 
 	// Parse command line
 	std::map<std::string,std::string> args;

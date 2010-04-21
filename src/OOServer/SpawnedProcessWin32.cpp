@@ -57,7 +57,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool Spawn(int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
@@ -662,14 +662,14 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (nUnsafe || IsDebuggerPresent()))
 		{
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -697,11 +697,12 @@ bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& 
 			std::wstring strMsg2 = strMsg;
 			strMsg2 += L"\n\nDo you want to allow this?";
 
-			if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
+			if (nUnsafe != 2 && MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
 				dwRes = ERROR_PRIVILEGE_NOT_HELD;
 			else
 			{
-				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+				if (nUnsafe != 2)
+					OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
 				
 				// Restrict the Token
 				dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
@@ -872,8 +873,16 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 {
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
-	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
-	
+
+	int nUnsafe = 0;
+	if (m_cmd_args.find("unsafe") != m_cmd_args.end())
+	{
+		if (m_cmd_args.find("batch") != m_cmd_args.end())
+			nUnsafe = 2;
+		else
+			nUnsafe = 1;
+	}
+		
 	OOBase::Win32::SmartHandle sandbox_uid;
 	if (bSandbox)
 	{
@@ -884,7 +893,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 		if (!LogonSandboxUser(OOBase::from_utf8(i->second.c_str()),uid))
 		{
-			if (!bUnsafe)
+			if (!nUnsafe)
 				return 0;
 
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
@@ -909,13 +918,16 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
 
-			std::wstring strMsg2 = strMsg;
-			strMsg2 += L"\n\nDo you want to allow this?";
+			if (nUnsafe != 2)
+			{
+				std::wstring strMsg2 = strMsg;
+				strMsg2 += L"\n\nDo you want to allow this?";
 
-			if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
-				return 0;
+				if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
+					return 0;
 
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+			}
 
 			// Restrict the Token
 			dwRes = OOSvrBase::Win32::RestrictToken(uid);
@@ -942,7 +954,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	if (!pSpawn32->Spawn(bUnsafe,uid,strRootPipe,bSandbox))
+	if (!pSpawn32->Spawn(nUnsafe,uid,strRootPipe,bSandbox))
 		return 0;
 	
 	// Wait for the connect attempt

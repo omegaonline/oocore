@@ -66,14 +66,11 @@ int main(int argc, char* argv[])
 	// Start the logger
 	OOSvrBase::Logger::open("OOServer");
 
-	// The one and only Root::Manager instance
-	Root::Manager root_manager;
-
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
-	cmd_args.add_option("help",'h',"help");
-	cmd_args.add_option("version",'v',"version");
-	cmd_args.add_option("unsafe",0,"unsafe");
+	cmd_args.add_option("help",'h');
+	cmd_args.add_option("version",'v');
+	cmd_args.add_option("unsafe",0);
 
 	// Parse command line
 	std::map<std::string,std::string> args;
@@ -85,9 +82,9 @@ int main(int argc, char* argv[])
 
 	if (args.find("version") != args.end())
 		return Version();
-	
-	// Run the RootManager
-	return root_manager.run(args);
+
+	// Run the one and only Root::Manager instance
+	return Root::Manager(args).run();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

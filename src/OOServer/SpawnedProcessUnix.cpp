@@ -78,7 +78,7 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox, bool bUnsafe);
+		bool Spawn(bool bUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
@@ -248,7 +248,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox, bool bUnsafe)
+bool SpawnedProcessUnix::Spawn(bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
@@ -517,7 +517,8 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(uid,fd[1],bSandbox,m_bUnsafeSandbox))
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
+	if (!pSpawnUnix->Spawn(bUnsafe,uid,fd[1],bSandbox))
 	{
 		::close(fd[1]);
 		return 0;

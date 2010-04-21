@@ -57,7 +57,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(bool& bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
@@ -662,17 +662,14 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
-	bool bAskUnsafe = bUnsafe;
-	bUnsafe = false;
-
 	m_bSandbox = bSandbox;
 
 	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
-		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bAskUnsafe || IsDebuggerPresent()))
+		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (bUnsafe || IsDebuggerPresent()))
 		{
 			OOBase::Win32::SmartHandle hToken2;
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&hToken2))
@@ -709,10 +706,7 @@ bool SpawnedProcessWin32::Spawn(bool& bUnsafe, HANDLE hToken, const std::string&
 
 				dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
 				if (dwRes == ERROR_SUCCESS)
-				{
 					OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
-					bUnsafe = true;
-				}
 			}
 		}
 
@@ -876,6 +870,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 {
 	// Stash the sandbox flag because we adjust uid...
 	bool bSandbox = (uid == OOBase::LocalSocket::uid_t(-1));
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
 	
 	OOBase::Win32::SmartHandle sandbox_uid;
 	if (bSandbox)
@@ -887,7 +882,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 
 		if (!LogonSandboxUser(OOBase::from_utf8(i->second.c_str()),uid))
 		{
-			if (!m_bUnsafeSandbox)
+			if (!bUnsafe)
 				return 0;
 
 			if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY | TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY,&uid))
@@ -943,7 +938,7 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	if (!pSpawn32->Spawn(m_bUnsafeSandbox,uid,strRootPipe,bSandbox))
+	if (!pSpawn32->Spawn(bUnsafe,uid,strRootPipe,bSandbox))
 		return 0;
 	
 	// Wait for the connect attempt

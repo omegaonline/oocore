@@ -49,10 +49,10 @@ namespace Root
 		public Registry::Manager
 	{
 	public:
-		Manager();
+		Manager(const std::map<std::string,std::string>& args);
 		virtual ~Manager();
 
-		int run(const std::map<std::string,std::string>& args);
+		int run();
 
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
@@ -66,9 +66,9 @@ namespace Root
 		bool wait_for_quit();
 
 		// Configuration members
+		std::map<std::string,std::string> m_cmd_args;
 		std::map<std::string,std::string> m_config_args;
-		bool m_bUnsafeSandbox;
-
+		
 		// I/O members
 		OOBase::RWMutex m_lock;
 		Omega::uint32_t m_sandbox_channel;

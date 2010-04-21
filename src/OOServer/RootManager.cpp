@@ -38,8 +38,8 @@
 #include "SpawnedProcess.h"
 #include "Protocol.h"
 
-Root::Manager::Manager() :
-	m_bUnsafeSandbox(false),
+Root::Manager::Manager(const std::map<std::string,std::string>& args) :
+	m_cmd_args(args),
 	m_sandbox_channel(0)
 {
 	// Root channel is fixed
@@ -50,11 +50,8 @@ Root::Manager::~Manager()
 {
 }
 
-int Root::Manager::run(const std::map<std::string,std::string>& args)
+int Root::Manager::run()
 {
-	// Load args
-	m_bUnsafeSandbox = (args.find("unsafe") != args.end());
-	
 	// Loop until we quit
 	for (bool bQuit=false;!bQuit;)
 	{

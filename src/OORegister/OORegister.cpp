@@ -133,12 +133,12 @@ int main(int argc, char* argv[])
 {
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
-	cmd_args.add_option("install",'i',"install");
-	cmd_args.add_option("uninstall",'u',"uninstall");
-	cmd_args.add_option("help",'h',"help");
-	cmd_args.add_option("silent",'s',"silent");
-	cmd_args.add_option("current",'c',"current");
-	cmd_args.add_option("version",'v',"version");
+	cmd_args.add_option("install",'i');
+	cmd_args.add_option("uninstall",'u');
+	cmd_args.add_option("help",'h');
+	cmd_args.add_option("silent",'s');
+	cmd_args.add_option("current",'c');
+	cmd_args.add_option("version",'v');
 
 	// Parse command line
 	std::map<std::string,std::string> args;

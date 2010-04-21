@@ -199,10 +199,10 @@ namespace
 		std::string msg = string_printf(fmt,args);
 
 	#if !defined(OMEGA_DEBUG)
-		const char* arrBufs[2] = { msg.c_str(), 0 };
-
 		if (m_hLog && priority != OOSvrBase::Logger::Debug)
 		{
+			const char* arrBufs[2] = { msg.c_str(), 0 };
+
 			PSID psid = NULL;
 			OOBase::Win32::SmartHandle hProcessToken;
 			OOBase::SmartPtr<TOKEN_USER,OOBase::FreeDestructor<TOKEN_USER> > ptrSIDProcess;
@@ -216,11 +216,14 @@ namespace
 
 			ReportEventA(m_hLog,wType,0,0,psid,1,0,arrBufs,NULL);
 		}
-
-		OutputDebugStringA(msg.c_str());
-		OutputDebugStringA("\n");
 	#endif
 
+		if (priority == OOSvrBase::Logger::Debug)
+		{
+			OutputDebugStringA(msg.c_str());
+			OutputDebugStringA("\n");
+		}
+	
 		FILE* out_file = stdout;
 		switch (priority)
 		{
@@ -238,6 +241,7 @@ namespace
 		}
 		fputs(msg.c_str(),out_file);
 		fputs("\n",out_file);
+		fflush(out_file);
 	}
 
 #endif // _WIN32
@@ -294,11 +298,12 @@ namespace
 			break;
 
 		default:
-			break;
+			return;
 		}
 
 		fputs(string_printf(fmt,args).c_str(),out_file);
 		fputs("\n",out_file);
+		fflush(out_file);
 	}
 
 #endif // HAVE_SYSLOG_H

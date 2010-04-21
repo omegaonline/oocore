@@ -692,6 +692,8 @@ bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& 
 			strMsg += strUserName;
 			strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
+
 			std::wstring strMsg2 = strMsg;
 			strMsg2 += L"\n\nDo you want to allow this?";
 
@@ -699,14 +701,14 @@ bool SpawnedProcessWin32::Spawn(bool bUnsafe, HANDLE hToken, const std::string& 
 				dwRes = ERROR_PRIVILEGE_NOT_HELD;
 			else
 			{
+				OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+				
 				// Restrict the Token
 				dwRes = OOSvrBase::Win32::RestrictToken(hToken2);
 				if (dwRes != ERROR_SUCCESS)
 					LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
 				dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
-				if (dwRes == ERROR_SUCCESS)
-					OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
 			}
 		}
 
@@ -905,18 +907,20 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 			strMsg += strUserName;
 			strMsg += L"'\n\nThis is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls",strMsg.c_str());
+
 			std::wstring strMsg2 = strMsg;
 			strMsg2 += L"\n\nDo you want to allow this?";
 
 			if (MessageBoxW(NULL,strMsg2.c_str(),L"OOServer - Important security warning",MB_ICONEXCLAMATION | MB_YESNO | MB_SERVICE_NOTIFICATION | MB_DEFAULT_DESKTOP_ONLY | MB_DEFBUTTON2) != IDYES)
 				return 0;
 
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+
 			// Restrict the Token
 			dwRes = OOSvrBase::Win32::RestrictToken(uid);
 			if (dwRes != ERROR_SUCCESS)
 				LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),(SpawnedProcess*)0);
-			
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"%ls\n",strMsg.c_str());
 		}
 
 		// Make sure it's closed

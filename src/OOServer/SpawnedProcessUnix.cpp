@@ -264,21 +264,17 @@ bool SpawnedProcessUnix::Spawn(bool bUnsafe, uid_t uid, int pass_fd, bool bSandb
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-		const char msg[] =
+		// Prompt for continue...
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
 			"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
 			"Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
-			"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
-
-		char szBuf[1024];
-		snprintf(szBuf,1024,msg,pw->pw_name);
-
-		// Prompt for continue...
-		LOG_WARNING((szBuf));
+			"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.",
+			pw->pw_name);
 
 		if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
 			return false;
 
-		printf("\nYou chose to continue... on your head be it!\n");
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
 
 		bUnsafeStart = true;
 	}

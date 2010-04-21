@@ -57,6 +57,8 @@ static int Help()
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help (-h)      Display this help text" << std::endl;
 	std::cout << "  --version (-v)   Display version information" << std::endl;
+	std::cout << std::endl;
+	std::cout << "  --conf-file (-f) <file_path> Use the specified configuration file" << std::endl;
 	
 	return EXIT_SUCCESS;
 }
@@ -70,6 +72,7 @@ int main(int argc, char* argv[])
 	OOSvrBase::CmdArgs cmd_args;
 	cmd_args.add_option("help",'h');
 	cmd_args.add_option("version",'v');
+	cmd_args.add_option("conf-file",'f',true);
 	cmd_args.add_option("unsafe",0);
 	cmd_args.add_option("batch",0);
 

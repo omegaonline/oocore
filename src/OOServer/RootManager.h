@@ -62,6 +62,7 @@ namespace Root
 
 		// Init and run members
 		bool load_config();
+		bool load_config_file(const std::string& strFile);
 		bool init_database();
 		bool wait_for_quit();
 

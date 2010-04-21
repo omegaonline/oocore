@@ -130,7 +130,6 @@
 
 bool Root::Manager::load_config()
 {
-	// Load simple config file... In ASCII!!
 	try
 	{
 		// Clear current entries
@@ -153,6 +152,10 @@ bool Root::Manager::load_config()
 			dir += '\\';
 
 		m_config_args["regdb_path"] = dir;
+
+		std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("conf-file");
+		if (f != m_cmd_args.end())
+			return load_config_file(f->second);
 		
 		// Read from registry
 		HKEY hKey = 0;

@@ -474,17 +474,22 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		if (i == m_config_args.end())
 			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
-		// Resolve to uid
-		OOSvrBase::pw_info pw(strUName.c_str());
-		if (!pw)
+		if (i->second.empty())
+			uid = getuid();
+		else
 		{
-			if (errno)
-				LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
-			else
-				LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),(SpawnedProcess*)0);
-		}
+			// Resolve to uid
+			OOSvrBase::pw_info pw(i->second.c_str());
+			if (!pw)
+			{
+				if (errno)
+					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
+				else
+					LOG_ERROR_RETURN(("There is no account for the user '%s'",i->second.c_str()),(SpawnedProcess*)0);
+			}
 
-		uid = pw->pw_uid;
+			uid = pw->pw_uid;
+		}
 	}
 
 	// Create a pair of sockets

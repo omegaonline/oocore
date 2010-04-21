@@ -122,6 +122,47 @@ bool Root::Manager::init_database()
 	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
 }
 
+bool Root::Manager::load_config_file(const std::string& strFile)
+{
+	// Load simple config file...
+	try
+	{
+		std::ifstream fs(strFile.c_str());
+		while (!fs.eof())
+		{
+			// Read line
+			std::string line;
+			std::getline(fs,line);
+
+			if (!line.empty() && line[0] != '#')
+			{
+				// Read line as key=value
+				std::string key,value;
+				size_t pos = line.find('=');
+				if (pos == std::string::npos)
+				{
+					key = line;
+					value = "true";
+				}
+				else
+				{
+					key = line.substr(0,pos);
+					value = line.substr(pos+1);
+				}
+
+				// Insert into map
+				m_config_args[key] = value;
+			}
+		}
+
+		return true;
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+	}
+}
+
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
 {
 	// Don't route to null channels

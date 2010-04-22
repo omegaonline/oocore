@@ -4,7 +4,7 @@ SUBDIRS = . TestLibrary TestProcess
 
 check_PROGRAMS = coretests
 
-coretests_CPPFLAGS = -I$(top_srcdir)/include
+coretests_CPPFLAGS = -I$(top_srcdir)/include -DBUILD_DIR=$(abs_builddir) -DTOP_SRC_DIR=$(abs_top_srcdir)
 coretests_CFLAGS = $(PTHREAD_CFLAGS)
 coretests_CXXFLAGS = $(PTHREAD_CFLAGS)
 coretests_LDFLAGS = $(PTHREAD_LIBS)
@@ -25,7 +25,9 @@ coretests_SOURCES = \
 	registry.cpp \
 	strings.cpp \
 	Test.h
-
+	
 EXTRA_DIST = \
+	test.conf \
+	coretests.sh \
 	UTF-16-test.txt \
 	UTF-8-test.txt

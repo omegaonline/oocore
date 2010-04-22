@@ -253,7 +253,7 @@ bool string_tests_utf8()
 		FILE* pInUTF8 = fopen("../test/CoreTests/UTF-8-test.txt","rb");
 	#endif
 #else
-	FILE* pInUTF8 = fopen("UTF-8-test.txt","rb");
+	FILE* pInUTF8 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/CoreTests/UTF-8-test.txt","rb");
 #endif
 
 	if (!pInUTF8)
@@ -282,7 +282,7 @@ bool string_tests_utf8()
 		FILE* pInUTF16 = fopen("../test/CoreTests/UTF-16-test.txt","rb");
 	#endif
 #else
-	FILE* pInUTF16 = fopen("UTF-16-test.txt","rb");
+	FILE* pInUTF16 = fopen(OMEGA_STRINGIZE(TOP_SRC_DIR) "/test/CoreTests/UTF-16-test.txt","rb");
 #endif
 
 	if (!pInUTF16)

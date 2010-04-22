@@ -521,17 +521,17 @@ const wchar_t** get_dlls()
 {
 	static const wchar_t* dlls[] =
 	{
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 		L"TestLibrary_msvc.dll",
-	#if defined(__MINGW32__)
-			L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
-	#elif defined(_MSC_VER)
-		#if defined(_DEBUG)
-				L"..\\..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
-		#else
-				L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
-		#endif
+	#if defined(_DEBUG)
+			L"..\\..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
+	#else
+			L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
 	#endif
+#elif defined(__MINGW32__)
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestLibrary_msvc.dll",
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestLibrary_msvc.dll",
+		L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
 #else
 		L"CoreTests/TestLibrary/testlibrary",
 #endif
@@ -561,15 +561,19 @@ const wchar_t** get_exes()
 {
 	static const wchar_t* exes[] =
 	{
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 		L"TestProcess_msvc.exe",
-	#if defined(_DEBUG) || defined(__MINGW32__)
+	#if defined(_DEBUG)
 			L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
 	#else
 			L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
 	#endif
+#elif defined(__MINGW32__)
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestProcess_msvc.exe",
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestProcess_msvc.exe",
+		OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/TestProcess/testprocess.exe",
 #else
-		L"CoreTests/TestProcess/testprocess",
+		OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/TestProcess/testprocess",
 #endif
 		0
 	};

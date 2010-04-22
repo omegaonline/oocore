@@ -52,7 +52,7 @@ namespace OOSvrBase
 
 			void close();
 
-			int accept_named_pipe();
+			int accept_named_pipe(bool bExclusive);
 
 		private:
 			ProactorImpl*              m_pProactor;
@@ -132,13 +132,15 @@ void OOSvrBase::Win32::PipeAcceptor::close()
 	}
 }
 
-int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe()
+int OOSvrBase::Win32::PipeAcceptor::accept_named_pipe(bool bExclusive)
 {
-	m_hPipe = CreateNamedPipeA(m_pipe_name.c_str(),
-		PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
-		PIPE_TYPE_BYTE |
-		PIPE_READMODE_BYTE |
-		PIPE_WAIT,
+	DWORD dwOpenMode = PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED;
+
+	if (bExclusive)
+		dwOpenMode |= FILE_FLAG_FIRST_PIPE_INSTANCE;
+
+	m_hPipe = CreateNamedPipeA(m_pipe_name.c_str(),dwOpenMode,
+		PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
 		PIPE_UNLIMITED_INSTANCES,
 		0,
 		0,
@@ -224,7 +226,7 @@ void OOSvrBase::Win32::PipeAcceptor::do_accept()
 	// Submit another accept if we want
 	if (again)
 	{
-		dwErr = accept_named_pipe();
+		dwErr = accept_named_pipe(false);
 		if (dwErr != 0)
 			m_sync_handler->on_accept(0,dwErr);
 	}
@@ -252,7 +254,7 @@ OOBase::Socket* OOSvrBase::Win32::ProactorImpl::accept_local(Acceptor* handler, 
 	{
 		*perr = pAcceptor->init(handler);
 		if (*perr == 0)
-			*perr = pAcceptor->accept_named_pipe();
+			*perr = pAcceptor->accept_named_pipe(true);
 	}
 
 	if (*perr != 0)

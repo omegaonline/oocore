@@ -63,11 +63,29 @@ namespace Omega
 				}
 			};
 
+			template <typename T> struct type_kind<std::vector<T> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierSTLVector, type_kind<T>::type() };
+					return &t;
+				}
+			};
+
+			template <typename T> struct type_kind<std::deque<T> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierSTLDeque, type_kind<T>::type() };
+					return &t;
+				}
+			};
+
 			template <typename T> struct type_kind<std::list<T> >
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierList, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::modifierSTLList, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -76,7 +94,16 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierSet, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::modifierSTLSet, type_kind<T>::type() };
+					return &t;
+				}
+			};
+
+			template <typename T> struct type_kind<std::multiset<T> >
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::modifierSTLMultiset, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -87,8 +114,8 @@ namespace Omega
 				{
 					static const type_holder t[2] = 
 					{
-						{ TypeInfo::modifierMap, type_kind<T1>::type() },
-						{ TypeInfo::modifierMap, type_kind<T2>::type() }
+						{ TypeInfo::modifierSTLMap, type_kind<T1>::type() },
+						{ TypeInfo::modifierSTLMap, type_kind<T2>::type() }
 					};
 					return t;
 				}
@@ -100,8 +127,8 @@ namespace Omega
 				{
 					static const type_holder t[2] = 
 					{
-						{ TypeInfo::modifierMultimap, type_kind<T1>::type() },
-						{ TypeInfo::modifierMultimap, type_kind<T2>::type() }
+						{ TypeInfo::modifierSTLMultimap, type_kind<T1>::type() },
+						{ TypeInfo::modifierSTLMultimap, type_kind<T2>::type() }
 					};
 					return t;
 				}
@@ -112,15 +139,6 @@ namespace Omega
 				static const type_holder* type()
 				{
 					static const type_holder t = { TypeInfo::typeVoid, 0 };
-					return &t;
-				}
-			};
-
-			template <> struct type_kind<TypeInfo::TypeDetail_t>
-			{
-				static const type_holder* type()
-				{
-					static const type_holder t = { 127, 0 };
 					return &t;
 				}
 			};

@@ -47,19 +47,19 @@ namespace
 	private:
 		struct ParamInfo
 		{
-			string_t                    strName;
-			TypeInfo::TypeDetail_t      type;
-			TypeInfo::ParamAttributes_t attribs;
-			string_t                    strRef;
+			string_t                      strName;
+			ObjectPtr<Remoting::IMessage> type;
+			TypeInfo::ParamAttributes_t   attribs;
+			string_t                      strRef;
 		};
 
 		struct MethodInfo
 		{
-			string_t                     strName;
-			TypeInfo::MethodAttributes_t attribs;
-			uint32_t                     timeout;
-			TypeInfo::TypeDetail_t       return_type;
-			std::vector<ParamInfo>       params;
+			string_t                      strName;
+			TypeInfo::MethodAttributes_t  attribs;
+			uint32_t                      timeout;
+			ObjectPtr<Remoting::IMessage> return_type;
+			std::vector<ParamInfo>        params;
 		};
 
 		string_t                            m_strName;
@@ -68,7 +68,7 @@ namespace
 		uint32_t                            m_base_methods;
 		ObjectPtr<TypeInfo::IInterfaceInfo> m_ptrBase;
 
-		void BuildTypeDetail(TypeInfo::TypeDetail_t& td, const System::Internal::type_holder* th) const;
+		void BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const System::Internal::type_holder* th) const;
 
 	// IInterfaceInfo members
 	public:
@@ -76,8 +76,8 @@ namespace
 		guid_t GetIID();
 		uint32_t GetMethodCount();
 		IInterfaceInfo* GetBaseType();
-		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::TypeDetail_t& return_type);
-		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::TypeDetail_t& type, TypeInfo::ParamAttributes_t& attribs);
+		void GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Remoting::IMessage*& return_type);
+		void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Remoting::IMessage*& type, TypeInfo::ParamAttributes_t& attribs);
 		byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib);
 	};
 
@@ -127,7 +127,7 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 		mi.strName = string_t(pmi->pszName,string_t::npos);
 		mi.attribs = pmi->attribs;
 		mi.timeout = pmi->timeout;
-
+		mi.return_type.Attach(Remoting::CreateMemoryMessage());
 		BuildTypeDetail(mi.return_type,pmi->return_type);
 
 		for (const System::Internal::typeinfo_rtti::ParamInfo* ppi=(*pmi->pfnGetParamInfo)();ppi->pszName!=0;++ppi)
@@ -136,6 +136,8 @@ void TypeInfoImpl::init(const guid_t& iid, const wchar_t* pszName, const System:
 			pi.strName = string_t(ppi->pszName,string_t::npos);
 			pi.attribs = ppi->attribs;
 			pi.strRef = string_t(ppi->attrib_ref,string_t::npos);
+			pi.type.Attach(Remoting::CreateMemoryMessage());
+
 			BuildTypeDetail(pi.type,ppi->type);
 
 			mi.params.push_back(pi);
@@ -165,7 +167,7 @@ TypeInfo::IInterfaceInfo* TypeInfoImpl::GetBaseType()
 	return m_ptrBase;
 }
 
-void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeInfo::TypeDetail_t& return_type)
+void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInfo::MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Remoting::IMessage*& return_type)
 {
 	if (method_idx < m_base_methods)
 		return m_ptrBase->GetMethodInfo(method_idx,strName,attribs,timeout,param_count,return_type);
@@ -173,16 +175,16 @@ void TypeInfoImpl::GetMethodInfo(uint32_t method_idx, string_t& strName, TypeInf
 	if (method_idx >= GetMethodCount())
 		OMEGA_THROW(L"GetMethodInfo requesting invalid method index");
 
-	const MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
+	MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
 
 	strName = string_t(mi.strName.c_str(),true);
 	attribs = mi.attribs;
 	timeout = mi.timeout;
 	param_count = static_cast<byte_t>(mi.params.size());
-	return_type = mi.return_type;
+	return_type = mi.return_type.AddRef();
 }
 
-void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeInfo::TypeDetail_t& type, TypeInfo::ParamAttributes_t& attribs)
+void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Remoting::IMessage*& type, TypeInfo::ParamAttributes_t& attribs)
 {
 	if (method_idx < m_base_methods)
 		return m_ptrBase->GetParamInfo(method_idx,param_idx,strName,type,attribs);
@@ -190,16 +192,17 @@ void TypeInfoImpl::GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t&
 	if (method_idx >= GetMethodCount())
 		OMEGA_THROW(L"GetParamInfo requesting invalid method index");
 
-	const MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
+	MethodInfo& mi = m_methods.at(method_idx - m_base_methods);
 
 	if (param_idx >= mi.params.size())
 		OMEGA_THROW(L"GetParamInfo requesting invalid param index");
 
-	const ParamInfo& pi = mi.params.at(param_idx);
+	ParamInfo& pi = mi.params.at(param_idx);
 
 	strName = string_t(pi.strName.c_str(),true);
 	type = pi.type;
 	attribs = pi.attribs;
+	type = pi.type.AddRef();
 }
 
 byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, TypeInfo::ParamAttributes_t attrib)
@@ -230,36 +233,29 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 	OMEGA_THROW(L"GetAttributeRef failed to find reference parameter");
 }
 
-void TypeInfoImpl::BuildTypeDetail(TypeInfo::TypeDetail_t& td, const System::Internal::type_holder* th) const
+void TypeInfoImpl::BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const System::Internal::type_holder* th) const
 {
-	td.push_back(th->type);
+	td->WriteByte(string_t(),th->type);
 	
 	if (th->type == TypeInfo::typeObject)
 	{
-		guid_t iid(*(const guid_base_t*)(th->next));
+		td->WriteGuid(string_t(),*(const guid_base_t*)(th->next));
 
-		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data1 & 0xFF000000) >> 24));
-		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data1 & 0x00FF0000) >> 16));
-		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data1 & 0x0000FF00) >> 8));
-		td.push_back(static_cast<TypeInfo::Type_t>(iid.Data1 & 0x000000FF));
-		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data2 & 0xFF00) >> 8));
-		td.push_back(static_cast<TypeInfo::Type_t>(iid.Data2 & 0x00FF));
-		td.push_back(static_cast<TypeInfo::Type_t>((iid.Data3 & 0xFF00) >> 8));
-		td.push_back(static_cast<TypeInfo::Type_t>(iid.Data3 & 0x00FF));
-		td.push_back(iid.Data4[0]);
-		td.push_back(iid.Data4[1]);
-		td.push_back(iid.Data4[2]);
-		td.push_back(iid.Data4[3]);
-		td.push_back(iid.Data4[4]);
-		td.push_back(iid.Data4[5]);
-		td.push_back(iid.Data4[6]);
-		td.push_back(iid.Data4[7]);
+		// Add terminating void if not already written...
+		td->WriteByte(string_t(),TypeInfo::typeVoid);
 	}
 	else if (th->next)
+	{
 		BuildTypeDetail(td,th->next);
+	}
+	else
+	{
+		// Add terminating void if not already written...
+		td->WriteByte(string_t(),TypeInfo::typeVoid);
+	}
 
-	if (th->type == TypeInfo::modifierMap ||
-		th->type == TypeInfo::modifierMultimap)
+	if (th->type == TypeInfo::modifierSTLMap ||
+		th->type == TypeInfo::modifierSTLMultimap)
 	{
 		// Add second part immediately after first part
 		BuildTypeDetail(td,(++th)->next);

@@ -92,20 +92,20 @@ namespace Omega
 		};
 		enum Modifier
 		{
-			// type modifiers imply a 'next' entry in TypeDetail_t
 			modifierConst = 0x10,
 			modifierPointer,
 			modifierReference,
 
 			// STL collection types
-			modifierList = 0x18,
-			modifierSet,
-			modifierMap = 0x20,
-			modifierMultimap
+			modifierSTLVector = 0x18,
+			modifierSTLDeque,
+			modifierSTLList,
+			modifierSTLSet,
+			modifierSTLMultiset,
+			modifierSTLMap = 0x20,
+			modifierSTLMultimap
 		};
 		typedef byte_t Type_t;
-
-		typedef std::vector<Type_t> TypeDetail_t;
 
 		enum MethodAttributes
 		{
@@ -125,17 +125,6 @@ namespace Omega
 			attrSize_is = 8
 		};
 		typedef byte_t ParamAttributes_t;
-
-		interface IInterfaceInfo : public IObject
-		{	
-			virtual string_t GetName() = 0;
-			virtual guid_t GetIID() = 0;
-			virtual uint32_t GetMethodCount() = 0;
-			virtual IInterfaceInfo* GetBaseType() = 0;
-			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, TypeDetail_t& return_type) = 0;
-			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, TypeDetail_t& type, ParamAttributes_t& attribs) = 0;
-			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
-		};
 	}
 }
 

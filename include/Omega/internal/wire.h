@@ -936,18 +936,7 @@ namespace Omega
 				}
 			};
 
-			template <typename V>
-			struct custom_safe_type<std::list<V> >
-			{
-				typedef stl_safe_type_coll1<std::list<V> > impl;
-			};
-			
-			template <typename V>
-			struct custom_wire_type<std::list<V> >
-			{
-				typedef stl_wire_type_coll1<std::list<V> > impl;
-			};
-			
+			// We could probably do something clever with SFINAE here...
 			template <typename V>
 			struct custom_safe_type<std::vector<V> >
 			{
@@ -961,6 +950,30 @@ namespace Omega
 			};
 
 			template <typename V>
+			struct custom_safe_type<std::deque<V> >
+			{
+				typedef stl_safe_type_coll1<std::deque<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_wire_type<std::deque<V> >
+			{
+				typedef stl_wire_type_coll1<std::deque<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_safe_type<std::list<V> >
+			{
+				typedef stl_safe_type_coll1<std::list<V> > impl;
+			};
+			
+			template <typename V>
+			struct custom_wire_type<std::list<V> >
+			{
+				typedef stl_wire_type_coll1<std::list<V> > impl;
+			};
+			
+			template <typename V>
 			struct custom_safe_type<std::set<V> >
 			{
 				typedef stl_safe_type_coll1<std::set<V> > impl;
@@ -970,6 +983,18 @@ namespace Omega
 			struct custom_wire_type<std::set<V> >
 			{
 				typedef stl_wire_type_coll1<std::set<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_safe_type<std::multiset<V> >
+			{
+				typedef stl_safe_type_coll1<std::multiset<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_wire_type<std::multiset<V> >
+			{
+				typedef stl_wire_type_coll1<std::multiset<V> > impl;
 			};
 
 			template <typename K, typename V>

@@ -57,7 +57,7 @@ namespace
 		SpawnedProcessWin32();
 		virtual ~SpawnedProcessWin32();
 
-		bool Spawn(int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		bool Spawn(const std::wstring& strAppPath, int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
 		bool IsSameUser(OOBase::LocalSocket::uid_t uid);
@@ -69,7 +69,7 @@ namespace
 		OOBase::Win32::SmartHandle m_hProcess;
 		HANDLE                     m_hProfile;
 
-		DWORD SpawnFromToken(HANDLE hToken, const std::string& strPipe, bool bSandbox);
+		DWORD SpawnFromToken(std::wstring strAppPath, HANDLE hToken, const std::string& strPipe, bool bSandbox);
 	};
 }
 
@@ -481,26 +481,49 @@ SpawnedProcessWin32::~SpawnedProcessWin32()
 		UnloadUserProfile(m_hToken,m_hProfile);
 }
 
-DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strPipe, bool bSandbox)
+DWORD SpawnedProcessWin32::SpawnFromToken(std::wstring strAppPath, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
-	// Get our module name
 	wchar_t szPath[MAX_PATH];
-	if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
-		return GetLastError();
+	std::wstring strCurDir;
 
-	// Strip off our name, and add OOSvrUser.exe
-	if (!PathRemoveFileSpecW(szPath))
-		return GetLastError();
+	if (strAppPath.empty())
+	{
+		// Get our module name
+		if (!GetModuleFileNameW(NULL,szPath,MAX_PATH))
+			return GetLastError();
 
-	std::wstring strCurDir = szPath;
+		// Strip off our name, and add OOSvrUser.exe
+		if (!PathRemoveFileSpecW(szPath))
+			return GetLastError();
 
-	if (!PathAppendW(szPath,L"OOSvrUser.exe"))
-		return GetLastError();
-	
-	std::wstring strAppName = szPath;
+		strCurDir = szPath;
+
+		if (!PathAppendW(szPath,L"OOSvrUser.exe"))
+			return GetLastError();
+		
+		strAppPath = szPath;
+	}
+	else
+	{
+		if (strAppPath.size() > 4 && strAppPath.substr(strAppPath.size()-4) != L".exe")
+			strAppPath += L".exe";
+
+		memcpy(szPath,strAppPath.data(),strAppPath.size()*sizeof(wchar_t));
+
+		// Strip off our name
+		if (!PathRemoveFileSpecW(szPath))
+			return GetLastError();
+
+		strCurDir = szPath;
+
+		// Restore path contents
+		memcpy(szPath,strAppPath.data(),strAppPath.size()*sizeof(wchar_t));
+
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPath.c_str());
+	}
 
 	PathQuoteSpacesW(szPath);
-	
+
 	std::wstring strCmdLine = szPath;
 	strCmdLine += L" " + OOBase::from_native(strPipe.c_str());
 
@@ -560,7 +583,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strP
 
 		dwFlags |= CREATE_NEW_CONSOLE;
 
-		strTitle = szPath;
+		strTitle = strAppPath;
 
 		// Get the names associated with the user SID
         std::wstring strUserName;
@@ -600,7 +623,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strP
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,strAppName.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,strCurDir.c_str(),&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,strAppPath.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,/*strCurDir.c_str()*/ NULL,&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)
@@ -674,11 +697,11 @@ Cleanup:
 	return dwRes;
 }
 
-bool SpawnedProcessWin32::Spawn(int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
+bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, int nUnsafe, HANDLE hToken, const std::string& strPipe, bool bSandbox)
 {
 	m_bSandbox = bSandbox;
 
-	DWORD dwRes = SpawnFromToken(hToken,strPipe,bSandbox);
+	DWORD dwRes = SpawnFromToken(strAppPath,hToken,strPipe,bSandbox);
 	if (dwRes != ERROR_SUCCESS)
 	{
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD && (nUnsafe || IsDebuggerPresent()))
@@ -721,7 +744,7 @@ bool SpawnedProcessWin32::Spawn(int nUnsafe, HANDLE hToken, const std::string& s
 				if (dwRes != ERROR_SUCCESS)
 					LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
-				dwRes = SpawnFromToken(hToken2,strPipe,bSandbox);
+				dwRes = SpawnFromToken(strAppPath,hToken2,strPipe,bSandbox);
 			}
 		}
 
@@ -966,7 +989,12 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawn32;
 
 	// Spawn the process
-	if (!pSpawn32->Spawn(nUnsafe,uid,strRootPipe,bSandbox))
+	std::wstring strAppName;
+	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");
+	if (a != m_config_args.end())
+		strAppName = OOBase::from_utf8(a->second.c_str());
+
+	if (!pSpawn32->Spawn(strAppName,nUnsafe,uid,strRootPipe,bSandbox))
 		return 0;
 	
 	// Wait for the connect attempt

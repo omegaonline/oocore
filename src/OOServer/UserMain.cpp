@@ -54,8 +54,12 @@ int main(int argc, char* argv[])
 
 #endif
 
+	std::map<std::string,std::string>::const_iterator i=args.find("port");
+	if (i == args.end() || i->second.empty())
+		LOG_ERROR_RETURN(("Missing port argument"),EXIT_FAILURE);
+
 	// Run the UserManager
-	return User::Manager::run(args["port"]);
+	return User::Manager::run(i->second);
 }
 
 namespace OOBase

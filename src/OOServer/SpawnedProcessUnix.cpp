@@ -78,7 +78,7 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(int nUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
+		bool Spawn(const std::wstring& strAppPath, int nUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
@@ -248,8 +248,10 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(int nUnsafe, uid_t uid, int pass_fd, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, int nUnsafe, uid_t uid, int pass_fd, bool bSandbox)
 {
+	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPath.c_str());
+
 	m_bSandbox = bSandbox;
 
 	// Check our uid
@@ -531,7 +533,12 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	}
 	if (nUnsafe)
 
-	if (!pSpawnUnix->Spawn(nUnsafe,uid,fd[1],bSandbox))
+	std::wstring strAppName;
+	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");
+	if (a != m_config_args.end())
+		strAppName = OOBase::from_utf8(a->second.c_str());
+
+	if (!pSpawnUnix->Spawn(strAppName,nUnsafe,uid,fd[1],bSandbox))
 	{
 		::close(fd[1]);
 		return 0;

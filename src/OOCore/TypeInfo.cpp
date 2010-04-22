@@ -235,14 +235,14 @@ byte_t TypeInfoImpl::GetAttributeRef(uint32_t method_idx, byte_t param_idx, Type
 
 void TypeInfoImpl::BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const System::Internal::type_holder* th) const
 {
-	td->WriteByte(string_t(),th->type);
+	td->WriteByte(L"type",th->type);
 	
 	if (th->type == TypeInfo::typeObject)
 	{
-		td->WriteGuid(string_t(),*(const guid_base_t*)(th->next));
+		td->WriteGuid(L"iid",*(const guid_base_t*)(th->next));
 
 		// Add terminating void if not already written...
-		td->WriteByte(string_t(),TypeInfo::typeVoid);
+		td->WriteByte(L"type",TypeInfo::typeVoid);
 	}
 	else if (th->next)
 	{
@@ -251,7 +251,7 @@ void TypeInfoImpl::BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const Syst
 	else
 	{
 		// Add terminating void if not already written...
-		td->WriteByte(string_t(),TypeInfo::typeVoid);
+		td->WriteByte(L"type",TypeInfo::typeVoid);
 	}
 
 	if (th->type == TypeInfo::modifierSTLMap ||

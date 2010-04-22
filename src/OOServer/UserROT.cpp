@@ -79,8 +79,6 @@ uint32_t User::RunningObjectTable::Register(const guid_t& oid, IObject* pObject)
 		
 	m_mapObjectsByOid.insert(std::multimap<guid_t,std::map<uint32_t,Info>::iterator>::value_type(oid,p.first));
 
-	LOG_DEBUG(("Registered object %ls as cookie %lu",oid.ToString().c_str(),nCookie));
-		
 	return nCookie;
 }
 
@@ -106,8 +104,6 @@ void User::RunningObjectTable::Revoke(uint32_t cookie)
 			}
 		}
 
-		LOG_DEBUG(("Revoked object %ls (cookie %lu)",i->second.m_oid.ToString().c_str(),cookie));
-
 		m_mapObjectsByCookie.erase(i);
 	}
 }
@@ -124,10 +120,7 @@ IObject* User::RunningObjectTable::GetObject(const guid_t& oid)
 			if (Remoting::IsAlive(i->second->second.m_ptrObject))
 				ptrRet = i->second->second.m_ptrObject;
 			else
-			{
-				listDeadEntries.push_back(i->second->first);
-				LOG_DEBUG(("Dropping dead object %ls (cookie %lu)",oid.ToString().c_str(),i->second->first));
-			}	
+				listDeadEntries.push_back(i->second->first);	
 		}
 	}
 

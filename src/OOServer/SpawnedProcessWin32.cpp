@@ -492,13 +492,25 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strP
 	if (!PathRemoveFileSpecW(szPath))
 		return GetLastError();
 
+	std::wstring strCurDir = szPath;
+
 	if (!PathAppendW(szPath,L"OOSvrUser.exe"))
 		return GetLastError();
+	
+	std::wstring strAppName = szPath;
 
-	std::wstring strCmdLine = L"\"";
-	strCmdLine += szPath;
-	strCmdLine += L"\" ";
-	strCmdLine += OOBase::from_native(strPipe.c_str());
+	PathQuoteSpacesW(szPath);
+	
+	std::wstring strCmdLine = szPath;
+	strCmdLine += L" " + OOBase::from_native(strPipe.c_str());
+
+	OOBase::SmartPtr<wchar_t> ptrCmdLine = 0;
+	OOBASE_NEW(ptrCmdLine,wchar_t[strCmdLine.size()+1]);
+	if (!ptrCmdLine)
+		return ERROR_OUTOFMEMORY;
+
+	memcpy(ptrCmdLine,strCmdLine.data(),strCmdLine.size()*sizeof(wchar_t));
+	ptrCmdLine[strCmdLine.size()] = L'\0';
 
 	// Forward declare these because of goto's
 	STARTUPINFOW startup_info = {0};
@@ -588,7 +600,7 @@ DWORD SpawnedProcessWin32::SpawnFromToken(HANDLE hToken, const std::string& strP
 
 	// Actually create the process!
 	PROCESS_INFORMATION process_info;
-	if (!CreateProcessAsUserW(hPriToken,NULL,(wchar_t*)strCmdLine.c_str(),NULL,NULL,FALSE,dwFlags,lpEnv,NULL,&startup_info,&process_info))
+	if (!CreateProcessAsUserW(hPriToken,strAppName.c_str(),ptrCmdLine,NULL,NULL,FALSE,dwFlags,lpEnv,strCurDir.c_str(),&startup_info,&process_info))
 	{
 		dwRes = GetLastError();
 		if (dwRes == ERROR_PRIVILEGE_NOT_HELD)

@@ -93,7 +93,7 @@ bool Root::Manager::load_config()
 	}
 }
 
-void Root::Manager::wait_for_quit()
+bool Root::Manager::wait_for_quit()
 {
 #if defined(HAVE_EV_H)
 
@@ -105,16 +105,15 @@ void Root::Manager::wait_for_quit()
 #endif
 
 	if (!pLoop)
-	{
-		LOG_ERROR(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()));
-		return;
-	}
+		LOG_ERROR_RETURN(("ev_default_loop failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),true);
 
 	// Add watchers for SIG_KILL, SIG_HUP, SIG_CHILD etc...
 	void* POSIX_TODO;
 
 	// Let ev loop...
 	::ev_loop(pLoop,0);
+
+	return true;
 
 #else
 #error Some kind of signal mechanism?

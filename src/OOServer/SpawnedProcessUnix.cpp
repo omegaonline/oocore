@@ -110,13 +110,13 @@ namespace
 			while (c != '\n' && c != EOF)
 				c = fgetc(stdin);
 
-			if (answer == 'y')
+			if (answer == 'Y')
 				return true;
 			else if (answer == 'n')
 				return false;
 
 			// Invalid answer
-			fputs("Please answer y or n:",stdout);
+			fputs("Please answer Y or n:",stdout);
 		}
 	}
 }
@@ -259,15 +259,15 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox, bool bUnsa
 	{
 		if (!bUnsafe)
 			LOG_ERROR_RETURN(("OOServer must be started as root."),false);
-		
+
 		OOSvrBase::pw_info pw(our_uid);
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-		const char msg[] =
+		const char msg[] = "\n"
 			"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
 			"Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
-			"This is a security risk, and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
 
 		char szBuf[1024];
 		snprintf(szBuf,1024,msg,pw->pw_name);
@@ -275,7 +275,7 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox, bool bUnsa
 		// Prompt for continue...
 		LOG_WARNING((szBuf));
 
-		if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
+		if (!y_or_n_p("\nDo you want to allow this? [Y/n]:"))
 			return false;
 
 		printf("\nYou chose to continue... on your head be it!\n");
@@ -476,13 +476,13 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
 		// Resolve to uid
-		OOSvrBase::pw_info pw(strUName.c_str());
+		OOSvrBase::pw_info pw(i->second.c_str());
 		if (!pw)
 		{
 			if (errno)
-				LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",strUName.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
+				LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
 			else
-				LOG_ERROR_RETURN(("There is no account for the user '%s'",strUName.c_str()),(SpawnedProcess*)0);
+				LOG_ERROR_RETURN(("There is no account for the user '%s'",i->second.c_str()),(SpawnedProcess*)0);
 		}
 
 		uid = pw->pw_uid;

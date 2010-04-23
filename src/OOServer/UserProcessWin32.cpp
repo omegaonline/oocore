@@ -108,13 +108,24 @@ void UserProcessWin32::exec(const std::wstring& strExeName)
 
 #endif // OMEGA_DEBUG
 
+	OOBase::SmartPtr<wchar_t> ptrCmdLine = 0;
+	OOBASE_NEW(ptrCmdLine,wchar_t[strExeName.size()+1]);
+	if (!ptrCmdLine)
+		OMEGA_THROW(ERROR_OUTOFMEMORY);
+
+	memcpy(ptrCmdLine,strExeName.data(),strExeName.size()*sizeof(wchar_t));
+	ptrCmdLine[strExeName.size()] = L'\0';
+
 	STARTUPINFOW si = {0};
 	si.cb = sizeof(STARTUPINFOW);
 
 	// Spawn the process
 	PROCESS_INFORMATION pi = {0};
-	if (!CreateProcessW(NULL,const_cast<LPWSTR>(strExeName.c_str()),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi))
-		OMEGA_THROW(GetLastError());
+	if (!CreateProcessW(NULL,ptrCmdLine,NULL,NULL,FALSE,0,NULL,NULL,&si,&pi))
+	{
+		DWORD dwErr = GetLastError();
+		OMEGA_THROW(dwErr);
+	}
 
 #if defined(OMEGA_DEBUG)
 	if (hDebugEvent)

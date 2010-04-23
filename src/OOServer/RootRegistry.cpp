@@ -61,52 +61,6 @@ int Root::Manager::registry_access_check(const std::string& strdb, Omega::uint32
 		return 0;
 }
 
-int Root::Manager::registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, std::string& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Registry::Hive>& ptrHive)
-{
-	int err = 0;
-	if (uKey == 0 && nType == 0)
-	{
-		// Parse strKey
-		if (strSubKey == "Local User" || strSubKey.substr(0,11) == "Local User\\")
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
-
-			// Find the process info
-			std::map<Omega::uint32_t,UserProcess>::iterator i = m_mapUserProcesses.find(channel_id);
-			if (i == m_mapUserProcesses.end())
-				err = EINVAL;
-			else
-			{
-				// Get the registry hive
-				ptrHive = i->second.ptrRegistry;
-
-				// Clear channel id -  not used for user content
-				channel_id = 0;
-
-				// Set the type and strip the start...
-				if (strSubKey.length() > 11)
-					strSubKey = strSubKey.substr(11);
-				else
-					strSubKey.clear();
-				nType = 2;
-			}
-		}
-		else if (strSubKey == "All Users" || strSubKey.substr(0,10) == "All Users\\")
-		{
-			ptrHive = m_registry_all_users;
-
-			// Set the type and strip the start...
-			if (strSubKey.length() > 10)
-				strSubKey = strSubKey.substr(10);
-			else
-				strSubKey.clear();
-			nType = 1;
-		}
-	}
-
-	return err;
-}
-
 int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType)
 {
 	// Read uKey && nType
@@ -120,7 +74,7 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 	}
 	else if (nType == 1)
 	{
-		ptrHive = m_registry_all_users;
+		ptrHive = m_registry_sandbox;
 	}
 	else if (nType == 2)
 	{
@@ -146,6 +100,46 @@ int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRSt
 	return 0;
 }
 
+void Root::Manager::registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& /*request*/, OOBase::CDRStream& response)
+{
+	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+
+	// Find the process info
+	int local_type = 0;
+	int err = 0;
+	std::string strName;
+	Omega::int64_t uKey;
+
+	std::map<Omega::uint32_t,UserProcess>::iterator i = m_mapUserProcesses.find(channel_id);
+	if (i == m_mapUserProcesses.end())
+		err = EINVAL;
+	else
+	{
+		if (channel_id == m_sandbox_channel)
+		{
+			// Sandbox hive
+			local_type = 1;
+			strName = "Sandbox";
+		}
+		else
+		{
+			// Get the registry hive
+			local_type = 2;
+			strName = "All Users";
+		}
+
+		err = m_registry->open_key(0,uKey,strName,channel_id);
+	}
+
+	response.write(err);
+	if (err == 0 && response.last_error() == 0)
+	{
+		response.write(local_type);
+		response.write(uKey);
+		response.write("\\" + strName);
+	}
+}
+
 int Root::Manager::registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey)
 {
 	Omega::byte_t nType;
@@ -165,12 +159,8 @@ void Root::Manager::registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRS
 			err = EIO;
 		else
 		{
-			err = registry_parse_subkey(uKey,channel_id,strSubKey,nType,ptrHive);
-			if (err == 0)
-			{
-				Omega::int64_t uSubKey;
-				err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
-			}
+			Omega::int64_t uSubKey;
+			err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
 		}
 	}
 
@@ -191,26 +181,11 @@ void Root::Manager::registry_create_key(Omega::uint32_t channel_id, OOBase::CDRS
 			err = EIO;
 		else
 		{
-			err = registry_parse_subkey(uKey,channel_id,strSubKey,nType,ptrHive);
-			if (err == 0)
-			{
-				Omega::bool_t bCreate = false;
-				if (!request.read(bCreate))
-					err = EIO;
-				else
-				{
-					Omega::bool_t bFailIfThere = false;
-					if (!request.read(bFailIfThere))
-						err = EIO;
-					else
-					{
-						if (bCreate)
-							err = ptrHive->create_key(uKey,uSubKey,strSubKey,bFailIfThere,Registry::Hive::inherit_checks,channel_id);
-						else
-							err = ptrHive->open_key(uKey,uSubKey,strSubKey,channel_id);
-					}
-				}
-			}
+			Omega::uint16_t flags = 0;
+			if (!request.read(flags))
+				err = EIO;
+			else
+				err = ptrHive->create_key(uKey,uSubKey,strSubKey,flags,Registry::Hive::inherit_checks,channel_id);
 		}
 	}
 
@@ -234,11 +209,7 @@ void Root::Manager::registry_delete_key(Omega::uint32_t channel_id, OOBase::CDRS
 		if (!request.read(strSubKey))
 			err = EIO;
 		else
-		{
-			err = registry_parse_subkey(uKey,channel_id,strSubKey,nType,ptrHive);
-			if (err == 0)
-				err = ptrHive->delete_key(uKey,strSubKey,channel_id);
-		}
+			err = ptrHive->delete_key(uKey,strSubKey,channel_id);
 	}
 
 	response.write(err);
@@ -248,12 +219,15 @@ void Root::Manager::registry_enum_subkeys(Omega::uint32_t channel_id, OOBase::CD
 {
 	OOBase::SmartPtr<Registry::Hive> ptrHive;
 	Omega::int64_t uKey;
-	int err = registry_open_hive(channel_id,request,ptrHive,uKey);
-	if (err == 0)
-		ptrHive->enum_subkeys(uKey,channel_id,response);
-
+	Omega::byte_t nType;
+	int err = registry_open_hive(channel_id,request,ptrHive,uKey,nType);
 	if (err != 0)
+	{
 		response.write(err);
+		return;
+	}
+
+	ptrHive->enum_subkeys(uKey,channel_id,response);
 }
 
 void Root::Manager::registry_value_type(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response)

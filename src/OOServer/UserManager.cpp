@@ -407,6 +407,7 @@ void User::Manager::process_root_request(OOBase::CDRStream& request, Omega::uint
 	OOBase::CDRStream response;
 	switch (op_code)
 	{
+	case 0:
 	default:
 		response.write((int)EINVAL);
 		LOG_ERROR(("Bad request op_code: %u",op_code));
@@ -504,34 +505,27 @@ ObjectPtr<ObjectImpl<User::Channel> > User::Manager::create_channel_i(Omega::uin
 {
 	assert(classify_channel(src_channel_id) > 1);
 
-	try
+	// Lookup existing..
 	{
-		// Lookup existing..
-		{
-			OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-			std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
-			if (i != m_mapChannels.end())
-				return i->second;
-		}
-
-		// Create a new channel
-		ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
-		ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
-
-		// And add to the map
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
-
-		std::pair<std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
-		if (!p.second)
-			ptrChannel = p.first->second;
-
-		return ptrChannel;
+		std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+		if (i != m_mapChannels.end())
+			return i->second;
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+
+	// Create a new channel
+	ObjectPtr<ObjectImpl<Channel> > ptrChannel = ObjectImpl<Channel>::CreateInstancePtr();
+	ptrChannel->init(this,src_channel_id,classify_channel(src_channel_id),message_oid);
+
+	// And add to the map
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+
+	std::pair<std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<Omega::uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
+	if (!p.second)
+		ptrChannel = p.first->second;
+
+	return ptrChannel;
 }
 
 OOBase::SmartPtr<OOBase::CDRStream> User::Manager::sendrecv_root(const OOBase::CDRStream& request, TypeInfo::MethodAttributes_t attribs)

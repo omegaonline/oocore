@@ -99,7 +99,7 @@ namespace
 					break;
 				}
 				
-				strRes2 += string_t(p1,p2 - p1) + i->second;
+				strRes2 += string_t(p1,p2 - p1,false) + i->second;
 				p1 = p2 + i->first.Length();
 			}
 
@@ -120,9 +120,9 @@ namespace
 		if (bAdd)
 		{
 			if (ptrKey)
-				return ptrKey.OpenSubKey(strName,Registry::IKey::Create);
+				return ptrKey.OpenSubKey(strName,Registry::IKey::OpenCreate);
 			else
-				return ObjectPtr<Registry::IKey>(strName,Registry::IKey::Create);
+				return ObjectPtr<Registry::IKey>(strName,Registry::IKey::OpenCreate);
 		}
 		else
 		{
@@ -358,7 +358,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 		if (!p)
 			break;
 		
-		string_t strName = L"%" + string_t(rd_ptr,p - rd_ptr) + L"%";
+		string_t strName = L"%" + string_t(rd_ptr,p - rd_ptr,false) + L"%";
 		
 		if (p[0] != L'=' && p[0] != L';')
 			p += wcsspn(p,L" ");
@@ -373,7 +373,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 		if (p)
 			strVal = string_t(rd_ptr,p - rd_ptr);
 		else
-			strVal = rd_ptr;
+			strVal = string_t(rd_ptr,string_t::npos);
 		
 		mapSubsts.insert(std::map<string_t,string_t>::value_type(strName,strVal));
 

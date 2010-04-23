@@ -99,7 +99,7 @@ public:
 
 	Omega::string_t Hello()
 	{
-		return L"Hello!";
+		return Omega::string_t(L"Hello!");
 	}
 
 	void Throw(Omega::uint32_t err)
@@ -109,7 +109,7 @@ public:
 
 	Omega::string_t WhereAmI()
 	{
-		return L"Inner";
+		return Omega::string_t(L"Inner");
 	}
 
 	Omega::uint32_t ListUInt32_Count(const std::list<Omega::uint32_t>& list)

@@ -78,7 +78,7 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox, bool bUnsafe);
+		bool Spawn(const std::wstring& strAppPath, int nUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
@@ -248,8 +248,10 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox, bool bUnsafe)
+bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, int nUnsafe, uid_t uid, int pass_fd, bool bSandbox)
 {
+	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPath.c_str());
+
 	m_bSandbox = bSandbox;
 
 	// Check our uid
@@ -257,28 +259,27 @@ bool SpawnedProcessUnix::Spawn(uid_t uid, int pass_fd, bool bSandbox, bool bUnsa
 	uid_t our_uid = getuid();
 	if (our_uid != 0)
 	{
-		if (!bUnsafe)
+		if (!nUnsafe)
 			LOG_ERROR_RETURN(("OOServer must be started as root."),false);
 
 		OOSvrBase::pw_info pw(our_uid);
 		if (!pw)
 			LOG_ERROR_RETURN(("getpwuid() failed: %s",OOSvrBase::Logger::format_error(errno).c_str()),false);
 
-		const char msg[] = "\n"
+		// Prompt for continue...
+		OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,
 			"ooserverd is running under a user account that does not have the priviledges required to fork and setuid as a different user.\n\n"
 			"Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
-			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.";
+			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.",
+			pw->pw_name);
 
-		char szBuf[1024];
-		snprintf(szBuf,1024,msg,pw->pw_name);
+		if (nUnsafe != 2)
+		{
+			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
+				return false;
 
-		// Prompt for continue...
-		LOG_WARNING((szBuf));
-
-		if (!y_or_n_p("\nDo you want to allow this? [Y/n]:"))
-			return false;
-
-		printf("\nYou chose to continue... on your head be it!\n");
+			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
+		}
 
 		bUnsafeStart = true;
 	}
@@ -475,17 +476,22 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		if (i == m_config_args.end())
 			LOG_ERROR_RETURN(("Missing 'sandbox_uname' config setting"),(SpawnedProcess*)0);
 
-		// Resolve to uid
-		OOSvrBase::pw_info pw(i->second.c_str());
-		if (!pw)
+		if (i->second.empty())
+			uid = getuid();
+		else
 		{
-			if (errno)
-				LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
-			else
-				LOG_ERROR_RETURN(("There is no account for the user '%s'",i->second.c_str()),(SpawnedProcess*)0);
-		}
+			// Resolve to uid
+			OOSvrBase::pw_info pw(i->second.c_str());
+			if (!pw)
+			{
+				if (errno)
+					LOG_ERROR_RETURN(("getpwnam(%s) failed: %s",i->second.c_str(),OOSvrBase::Logger::format_error(errno).c_str()),(SpawnedProcess*)0);
+				else
+					LOG_ERROR_RETURN(("There is no account for the user '%s'",i->second.c_str()),(SpawnedProcess*)0);
+			}
 
-		uid = pw->pw_uid;
+			uid = pw->pw_uid;
+		}
 	}
 
 	// Create a pair of sockets
@@ -517,7 +523,22 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	if (!pSpawnUnix->Spawn(uid,fd[1],bSandbox,m_bUnsafeSandbox))
+	int nUnsafe = 0;
+	if (m_cmd_args.find("unsafe") != m_cmd_args.end())
+	{
+		if (m_cmd_args.find("batch") != m_cmd_args.end())
+			nUnsafe = 2;
+		else
+			nUnsafe = 1;
+	}
+	if (nUnsafe)
+
+	std::wstring strAppName;
+	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");
+	if (a != m_config_args.end())
+		strAppName = OOBase::from_utf8(a->second.c_str());
+
+	if (!pSpawnUnix->Spawn(strAppName,nUnsafe,uid,fd[1],bSandbox))
 	{
 		::close(fd[1]);
 		return 0;

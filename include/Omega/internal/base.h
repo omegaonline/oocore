@@ -54,16 +54,16 @@ namespace Omega
 	{
 		virtual uint32_t GetErrorCode() = 0;
 
-		static ISystemException* Create(uint32_t errno_val, const string_t& source = L"");
-		static ISystemException* Create(const std::exception& e, const string_t& source = L"");
-		static ISystemException* Create(const string_t& desc, const string_t& source = L"");
+		static ISystemException* Create(uint32_t errno_val, const string_t& source = string_t());
+		static ISystemException* Create(const std::exception& e, const string_t& source = string_t());
+		static ISystemException* Create(const string_t& desc, const string_t& source = string_t());
 	};
 
 	interface INoInterfaceException : public IException
 	{
 		virtual guid_t GetUnsupportedIID() = 0;
 
-		static INoInterfaceException* Create(const guid_t& iid, const string_t& source = L"");
+		static INoInterfaceException* Create(const guid_t& iid, const string_t& source = string_t());
 	};
 
 	interface ITimeoutException : public IException
@@ -73,9 +73,8 @@ namespace Omega
 
 	namespace TypeInfo
 	{
-		enum Types
+		enum Type
 		{
-			typeUnknown = 0xFF,
 			typeVoid = 0,
 			typeBool,
 			typeByte,
@@ -89,14 +88,24 @@ namespace Omega
 			typeFloat8,
 			typeString,
 			typeGuid,
-			typeObject,
-
-			typeMask = typeUnknown,
-			typeConst = 0x100,
-			typeArray = 0x200,
-			typeReference = 0x400,
+			typeObject
 		};
-		typedef uint32_t Types_t;
+		enum Modifier
+		{
+			modifierConst = 0x10,
+			modifierPointer,
+			modifierReference,
+
+			// STL collection types
+			modifierSTLVector = 0x18,
+			modifierSTLDeque,
+			modifierSTLList,
+			modifierSTLSet,
+			modifierSTLMultiset,
+			modifierSTLMap = 0x20,
+			modifierSTLMultimap
+		};
+		typedef byte_t Type_t;
 
 		enum MethodAttributes
 		{
@@ -116,18 +125,6 @@ namespace Omega
 			attrSize_is = 8
 		};
 		typedef byte_t ParamAttributes_t;
-
-		interface IInterfaceInfo : public IObject
-		{	
-			virtual string_t GetName() = 0;
-			virtual guid_t GetIID() = 0;
-			virtual uint32_t GetMethodCount() = 0;
-			virtual IInterfaceInfo* GetBaseType() = 0;
-			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Types_t& return_type) = 0;
-			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Types_t& type, ParamAttributes_t& attribs) = 0;
-			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
-			virtual guid_t GetParamIid(uint32_t method_idx, byte_t param_idx) = 0;
-		};
 	}
 }
 
@@ -183,7 +180,7 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace Internal { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid) ); return v; } }; \
+	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid)); return v; } }; \
 	} } }
 
 #endif
@@ -217,7 +214,6 @@ namespace Omega
 
 OMEGA_SET_GUIDOF(Omega, IObject, "{01010101-0101-0101-0101-010101010101}");
 OMEGA_SET_GUIDOF(Omega, IException, "{4847BE7D-A467-447c-9B04-2FE5A4576293}");
-OMEGA_SET_GUIDOF(Omega::TypeInfo, IInterfaceInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}");
 
 #if defined(DOXYGEN)
 /// Return the current source filename and line as a string_t

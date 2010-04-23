@@ -28,72 +28,72 @@ namespace Omega
 	{
 		interface IMessage : public IObject
 		{
-			virtual bool_t ReadBoolean(const wchar_t* pszName) = 0;
-			virtual byte_t ReadByte(const wchar_t* pszName) = 0;
-			virtual int16_t ReadInt16(const wchar_t* pszName) = 0;
-			virtual uint16_t ReadUInt16(const wchar_t* pszName) = 0;
-			virtual int32_t ReadInt32(const wchar_t* pszName) = 0;
-			virtual uint32_t ReadUInt32(const wchar_t* pszName) = 0;
-			virtual int64_t ReadInt64(const wchar_t* pszName) = 0;
-			virtual uint64_t ReadUInt64(const wchar_t* pszName) = 0;
-			virtual float4_t ReadFloat4(const wchar_t* pszName) = 0;
-			virtual float8_t ReadFloat8(const wchar_t* pszName) = 0;
-			virtual string_t ReadString(const wchar_t* pszName) = 0;
-			virtual guid_t ReadGuid(const wchar_t* pszName) = 0;
+			virtual bool_t ReadBoolean(const string_t& strName) = 0;
+			virtual byte_t ReadByte(const string_t& strName) = 0;
+			virtual int16_t ReadInt16(const string_t& strName) = 0;
+			virtual uint16_t ReadUInt16(const string_t& strName) = 0;
+			virtual int32_t ReadInt32(const string_t& strName) = 0;
+			virtual uint32_t ReadUInt32(const string_t& strName) = 0;
+			virtual int64_t ReadInt64(const string_t& strName) = 0;
+			virtual uint64_t ReadUInt64(const string_t& strName) = 0;
+			virtual float4_t ReadFloat4(const string_t& strName) = 0;
+			virtual float8_t ReadFloat8(const string_t& strName) = 0;
+			virtual string_t ReadString(const string_t& strName) = 0;
+			virtual guid_t ReadGuid(const string_t& strName) = 0;
 
-			virtual void ReadBooleans(const wchar_t* pszName, uint32_t count, bool_t* arr) = 0;
-			virtual void ReadBytes(const wchar_t* pszName, uint32_t count, byte_t* arr) = 0;
-			virtual void ReadInt16s(const wchar_t* pszName, uint32_t count, int16_t* arr) = 0;
-			virtual void ReadUInt16s(const wchar_t* pszName, uint32_t count, uint16_t* arr) = 0;
-			virtual void ReadInt32s(const wchar_t* pszName, uint32_t count, int32_t* arr) = 0;
-			virtual void ReadUInt32s(const wchar_t* pszName, uint32_t count, uint32_t* arr) = 0;
-			virtual void ReadInt64s(const wchar_t* pszName, uint32_t count, int64_t* arr) = 0;
-			virtual void ReadUInt64s(const wchar_t* pszName, uint32_t count, uint64_t* arr) = 0;
-			virtual void ReadFloat4s(const wchar_t* pszName, uint32_t count, float4_t* arr) = 0;
-			virtual void ReadFloat8s(const wchar_t* pszName, uint32_t count, float8_t* arr) = 0;
-			virtual void ReadStrings(const wchar_t* pszName, uint32_t count, string_t* arr) = 0;
-			virtual void ReadGuids(const wchar_t* pszName, uint32_t count, guid_t* arr) = 0;
+			virtual void ReadBooleans(const string_t& strName, uint32_t count, bool_t* arr) = 0;
+			virtual void ReadBytes(const string_t& strName, uint32_t count, byte_t* arr) = 0;
+			virtual void ReadInt16s(const string_t& strName, uint32_t count, int16_t* arr) = 0;
+			virtual void ReadUInt16s(const string_t& strName, uint32_t count, uint16_t* arr) = 0;
+			virtual void ReadInt32s(const string_t& strName, uint32_t count, int32_t* arr) = 0;
+			virtual void ReadUInt32s(const string_t& strName, uint32_t count, uint32_t* arr) = 0;
+			virtual void ReadInt64s(const string_t& strName, uint32_t count, int64_t* arr) = 0;
+			virtual void ReadUInt64s(const string_t& strName, uint32_t count, uint64_t* arr) = 0;
+			virtual void ReadFloat4s(const string_t& strName, uint32_t count, float4_t* arr) = 0;
+			virtual void ReadFloat8s(const string_t& strName, uint32_t count, float8_t* arr) = 0;
+			virtual void ReadStrings(const string_t& strName, uint32_t count, string_t* arr) = 0;
+			virtual void ReadGuids(const string_t& strName, uint32_t count, guid_t* arr) = 0;
 
-			virtual void ReadStructStart(const wchar_t* pszName, const wchar_t* pszType) = 0;
-			virtual void ReadStructEnd(const wchar_t* pszName) = 0;
+			virtual void ReadStructStart(const string_t& strName, const string_t& strType) = 0;
+			virtual void ReadStructEnd(const string_t& strName) = 0;
 
-			virtual void WriteBoolean(const wchar_t* pszName, bool_t val) = 0;
-			virtual void WriteByte(const wchar_t* pszName, byte_t val) = 0;
-			virtual void WriteInt16(const wchar_t* pszName, int16_t val) = 0;
-			virtual void WriteUInt16(const wchar_t* pszName, uint16_t val) = 0;
-			virtual void WriteInt32(const wchar_t* pszName, int32_t val) = 0;
-			virtual void WriteUInt32(const wchar_t* pszName, uint32_t val) = 0;
-			virtual void WriteInt64(const wchar_t* pszName, const int64_t& val) = 0;
-			virtual void WriteUInt64(const wchar_t* pszName, const uint64_t& val) = 0;
-			virtual void WriteFloat4(const wchar_t* pszName, float4_t val) = 0;
-			virtual void WriteFloat8(const wchar_t* pszName, const float8_t& val) = 0;
-			virtual void WriteString(const wchar_t* pszName, const string_t& val) = 0;
-			virtual void WriteGuid(const wchar_t* pszName, const guid_t& val) = 0;
+			virtual void WriteBoolean(const string_t& strName, bool_t val) = 0;
+			virtual void WriteByte(const string_t& strName, byte_t val) = 0;
+			virtual void WriteInt16(const string_t& strName, int16_t val) = 0;
+			virtual void WriteUInt16(const string_t& strName, uint16_t val) = 0;
+			virtual void WriteInt32(const string_t& strName, int32_t val) = 0;
+			virtual void WriteUInt32(const string_t& strName, uint32_t val) = 0;
+			virtual void WriteInt64(const string_t& strName, const int64_t& val) = 0;
+			virtual void WriteUInt64(const string_t& strName, const uint64_t& val) = 0;
+			virtual void WriteFloat4(const string_t& strName, float4_t val) = 0;
+			virtual void WriteFloat8(const string_t& strName, const float8_t& val) = 0;
+			virtual void WriteString(const string_t& strName, const string_t& val) = 0;
+			virtual void WriteGuid(const string_t& strName, const guid_t& val) = 0;
 
-			virtual void WriteBooleans(const wchar_t* pszName, uint32_t count, const bool_t* arr) = 0;
-			virtual void WriteBytes(const wchar_t* pszName, uint32_t count, const byte_t* arr) = 0;
-			virtual void WriteInt16s(const wchar_t* pszName, uint32_t count, const int16_t* arr) = 0;
-			virtual void WriteUInt16s(const wchar_t* pszName, uint32_t count, const uint16_t* arr) = 0;
-			virtual void WriteInt32s(const wchar_t* pszName, uint32_t count, const int32_t* arr) = 0;
-			virtual void WriteUInt32s(const wchar_t* pszName, uint32_t count, const uint32_t* arr) = 0;
-			virtual void WriteInt64s(const wchar_t* pszName, uint32_t count, const int64_t* arr) = 0;
-			virtual void WriteUInt64s(const wchar_t* pszName, uint32_t count, const uint64_t* arr) = 0;
-			virtual void WriteFloat4s(const wchar_t* pszName, uint32_t count, const float4_t* arr) = 0;
-			virtual void WriteFloat8s(const wchar_t* pszName, uint32_t count, const float8_t* arr) = 0;
-			virtual void WriteStrings(const wchar_t* pszName, uint32_t count, const string_t* arr) = 0;
-			virtual void WriteGuids(const wchar_t* pszName, uint32_t count, const guid_t* arr) = 0;
+			virtual void WriteBooleans(const string_t& strName, uint32_t count, const bool_t* arr) = 0;
+			virtual void WriteBytes(const string_t& strName, uint32_t count, const byte_t* arr) = 0;
+			virtual void WriteInt16s(const string_t& strName, uint32_t count, const int16_t* arr) = 0;
+			virtual void WriteUInt16s(const string_t& strName, uint32_t count, const uint16_t* arr) = 0;
+			virtual void WriteInt32s(const string_t& strName, uint32_t count, const int32_t* arr) = 0;
+			virtual void WriteUInt32s(const string_t& strName, uint32_t count, const uint32_t* arr) = 0;
+			virtual void WriteInt64s(const string_t& strName, uint32_t count, const int64_t* arr) = 0;
+			virtual void WriteUInt64s(const string_t& strName, uint32_t count, const uint64_t* arr) = 0;
+			virtual void WriteFloat4s(const string_t& strName, uint32_t count, const float4_t* arr) = 0;
+			virtual void WriteFloat8s(const string_t& strName, uint32_t count, const float8_t* arr) = 0;
+			virtual void WriteStrings(const string_t& strName, uint32_t count, const string_t* arr) = 0;
+			virtual void WriteGuids(const string_t& strName, uint32_t count, const guid_t* arr) = 0;
 			
-			virtual void WriteStructStart(const wchar_t* pszName, const wchar_t* pszType) = 0;
-			virtual void WriteStructEnd(const wchar_t* pszName) = 0;
+			virtual void WriteStructStart(const string_t& strName, const string_t& strType) = 0;
+			virtual void WriteStructEnd(const string_t& strName) = 0;
 		};
 
 		inline IMessage* CreateMemoryMessage();
 	
 		interface IMarshaller : public IObject
 		{
-			virtual void MarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
-			virtual void UnmarshalInterface(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
-			virtual void ReleaseMarshalData(const wchar_t* pszName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
+			virtual void MarshalInterface(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
+			virtual void UnmarshalInterface(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject*& pObject) = 0;
+			virtual void ReleaseMarshalData(const string_t& strName, IMessage* pMessage, const guid_t& iid, IObject* pObject) = 0;
 			virtual IMessage* CreateMessage() = 0;
 			virtual IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, IMessage* pSend, IMessage*& pRecv, uint32_t timeout = 0) = 0;
 		};
@@ -132,21 +132,21 @@ OMEGA_SET_GUIDOF(Omega::Remoting, IProxy, "{0D4BE871-5AD0-497b-A018-EDEA8C17255B
 OMEGA_SET_GUIDOF(Omega::Remoting, IMarshaller, "{1C288214-61CD-4bb9-B44D-21813DCB0017}")
 
 #define OMEGA_WIRE_DECLARE_WIRE_READWRITE(T_type,fn_type) \
-	inline void wire_read(const wchar_t* pszName, Remoting::IMessage* pMessage, T_type& val) \
+	inline void wire_read(const string_t& strName, Remoting::IMessage* pMessage, T_type& val) \
 	{ \
-		val = pMessage->OMEGA_CONCAT(Read,fn_type)(pszName); \
+		val = pMessage->OMEGA_CONCAT(Read,fn_type)(strName); \
 	} \
-	inline void wire_read(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, T_type* pVals, uint32_t count) \
+	inline void wire_read(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, T_type* pVals, uint32_t count) \
 	{ \
-		pMessage->OMEGA_CONCAT(Read,OMEGA_CONCAT_R(fn_type,s))(pszName,count,pVals); \
+		pMessage->OMEGA_CONCAT(Read,OMEGA_CONCAT_R(fn_type,s))(strName,count,pVals); \
 	} \
-	inline void wire_write(const wchar_t* pszName, Remoting::IMessage* pMessage, optimal_param<T_type>::type val) \
+	inline void wire_write(const string_t& strName, Remoting::IMessage* pMessage, optimal_param<T_type>::type val) \
 	{ \
-		pMessage->OMEGA_CONCAT(Write,fn_type)(pszName,val); \
+		pMessage->OMEGA_CONCAT(Write,fn_type)(strName,val); \
 	} \
-	inline void wire_write(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, const T_type* pVals, uint32_t count) \
+	inline void wire_write(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, const T_type* pVals, uint32_t count) \
 	{ \
-		pMessage->OMEGA_CONCAT(Write,OMEGA_CONCAT_R(fn_type,s))(pszName,count,pVals); \
+		pMessage->OMEGA_CONCAT(Write,OMEGA_CONCAT_R(fn_type,s))(strName,count,pVals); \
 	}
 
 namespace Omega
@@ -165,63 +165,63 @@ namespace Omega
 			(
 				Omega::Remoting, IMessage,
 
-				OMEGA_METHOD(bool_t,ReadBoolean,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(byte_t,ReadByte,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(int16_t,ReadInt16,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(uint16_t,ReadUInt16,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(int32_t,ReadInt32,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(uint32_t,ReadUInt32,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(int64_t,ReadInt64,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(uint64_t,ReadUInt64,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(float4_t,ReadFloat4,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(float8_t,ReadFloat8,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(string_t,ReadString,1,((in),const wchar_t*,pszName))
-				OMEGA_METHOD(guid_t,ReadGuid,1,((in),const wchar_t*,pszName))
+				OMEGA_METHOD(bool_t,ReadBoolean,1,((in),const string_t&,strName))
+				OMEGA_METHOD(byte_t,ReadByte,1,((in),const string_t&,strName))
+				OMEGA_METHOD(int16_t,ReadInt16,1,((in),const string_t&,strName))
+				OMEGA_METHOD(uint16_t,ReadUInt16,1,((in),const string_t&,strName))
+				OMEGA_METHOD(int32_t,ReadInt32,1,((in),const string_t&,strName))
+				OMEGA_METHOD(uint32_t,ReadUInt32,1,((in),const string_t&,strName))
+				OMEGA_METHOD(int64_t,ReadInt64,1,((in),const string_t&,strName))
+				OMEGA_METHOD(uint64_t,ReadUInt64,1,((in),const string_t&,strName))
+				OMEGA_METHOD(float4_t,ReadFloat4,1,((in),const string_t&,strName))
+				OMEGA_METHOD(float8_t,ReadFloat8,1,((in),const string_t&,strName))
+				OMEGA_METHOD(string_t,ReadString,1,((in),const string_t&,strName))
+				OMEGA_METHOD(guid_t,ReadGuid,1,((in),const string_t&,strName))
 
-				OMEGA_METHOD_VOID(ReadBooleans,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),bool_t*,arr))
-				OMEGA_METHOD_VOID(ReadBytes,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),byte_t*,arr))
-				OMEGA_METHOD_VOID(ReadInt16s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),int16_t*,arr))
-				OMEGA_METHOD_VOID(ReadUInt16s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),uint16_t*,arr))
-				OMEGA_METHOD_VOID(ReadInt32s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),int32_t*,arr))
-				OMEGA_METHOD_VOID(ReadUInt32s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),uint32_t*,arr))
-				OMEGA_METHOD_VOID(ReadInt64s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),int64_t*,arr))
-				OMEGA_METHOD_VOID(ReadUInt64s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),uint64_t*,arr))
-				OMEGA_METHOD_VOID(ReadFloat4s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),float4_t*,arr))
-				OMEGA_METHOD_VOID(ReadFloat8s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),float8_t*,arr))
-				OMEGA_METHOD_VOID(ReadStrings,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),string_t*,arr))
-				OMEGA_METHOD_VOID(ReadGuids,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),guid_t*,arr))
+				OMEGA_METHOD_VOID(ReadBooleans,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),bool_t*,arr))
+				OMEGA_METHOD_VOID(ReadBytes,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),byte_t*,arr))
+				OMEGA_METHOD_VOID(ReadInt16s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),int16_t*,arr))
+				OMEGA_METHOD_VOID(ReadUInt16s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),uint16_t*,arr))
+				OMEGA_METHOD_VOID(ReadInt32s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),int32_t*,arr))
+				OMEGA_METHOD_VOID(ReadUInt32s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),uint32_t*,arr))
+				OMEGA_METHOD_VOID(ReadInt64s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),int64_t*,arr))
+				OMEGA_METHOD_VOID(ReadUInt64s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),uint64_t*,arr))
+				OMEGA_METHOD_VOID(ReadFloat4s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),float4_t*,arr))
+				OMEGA_METHOD_VOID(ReadFloat8s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),float8_t*,arr))
+				OMEGA_METHOD_VOID(ReadStrings,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),string_t*,arr))
+				OMEGA_METHOD_VOID(ReadGuids,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),guid_t*,arr))
 
-				OMEGA_METHOD_VOID(ReadStructStart,2,((in),const wchar_t*,pszName,(in),const wchar_t*,pszType))
-				OMEGA_METHOD_VOID(ReadStructEnd,1,((in),const wchar_t*,pszName))
+				OMEGA_METHOD_VOID(ReadStructStart,2,((in),const string_t&,strName,(in),const string_t&,strType))
+				OMEGA_METHOD_VOID(ReadStructEnd,1,((in),const string_t&,strName))
 
-				OMEGA_METHOD_VOID(WriteBoolean,2,((in),const wchar_t*,pszName,(in),bool_t,val))
-				OMEGA_METHOD_VOID(WriteByte,2,((in),const wchar_t*,pszName,(in),byte_t,val))
-				OMEGA_METHOD_VOID(WriteInt16,2,((in),const wchar_t*,pszName,(in),int16_t,val))
-				OMEGA_METHOD_VOID(WriteUInt16,2,((in),const wchar_t*,pszName,(in),uint16_t,val))
-				OMEGA_METHOD_VOID(WriteInt32,2,((in),const wchar_t*,pszName,(in),int32_t,val))
-				OMEGA_METHOD_VOID(WriteUInt32,2,((in),const wchar_t*,pszName,(in),uint32_t,val))
-				OMEGA_METHOD_VOID(WriteInt64,2,((in),const wchar_t*,pszName,(in),const int64_t&,val))
-				OMEGA_METHOD_VOID(WriteUInt64,2,((in),const wchar_t*,pszName,(in),const uint64_t&,val))
-				OMEGA_METHOD_VOID(WriteFloat4,2,((in),const wchar_t*,pszName,(in),float4_t,val))
-				OMEGA_METHOD_VOID(WriteFloat8,2,((in),const wchar_t*,pszName,(in),const float8_t&,val))
-				OMEGA_METHOD_VOID(WriteString,2,((in),const wchar_t*,pszName,(in),const string_t&,val))
-				OMEGA_METHOD_VOID(WriteGuid,2,((in),const wchar_t*,pszName,(in),const guid_t&,val))
+				OMEGA_METHOD_VOID(WriteBoolean,2,((in),const string_t&,strName,(in),bool_t,val))
+				OMEGA_METHOD_VOID(WriteByte,2,((in),const string_t&,strName,(in),byte_t,val))
+				OMEGA_METHOD_VOID(WriteInt16,2,((in),const string_t&,strName,(in),int16_t,val))
+				OMEGA_METHOD_VOID(WriteUInt16,2,((in),const string_t&,strName,(in),uint16_t,val))
+				OMEGA_METHOD_VOID(WriteInt32,2,((in),const string_t&,strName,(in),int32_t,val))
+				OMEGA_METHOD_VOID(WriteUInt32,2,((in),const string_t&,strName,(in),uint32_t,val))
+				OMEGA_METHOD_VOID(WriteInt64,2,((in),const string_t&,strName,(in),const int64_t&,val))
+				OMEGA_METHOD_VOID(WriteUInt64,2,((in),const string_t&,strName,(in),const uint64_t&,val))
+				OMEGA_METHOD_VOID(WriteFloat4,2,((in),const string_t&,strName,(in),float4_t,val))
+				OMEGA_METHOD_VOID(WriteFloat8,2,((in),const string_t&,strName,(in),const float8_t&,val))
+				OMEGA_METHOD_VOID(WriteString,2,((in),const string_t&,strName,(in),const string_t&,val))
+				OMEGA_METHOD_VOID(WriteGuid,2,((in),const string_t&,strName,(in),const guid_t&,val))
 
-				OMEGA_METHOD_VOID(WriteBooleans,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const bool_t*,arr))
-				OMEGA_METHOD_VOID(WriteBytes,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const byte_t*,arr))
-				OMEGA_METHOD_VOID(WriteInt16s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const int16_t*,arr))
-				OMEGA_METHOD_VOID(WriteUInt16s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const uint16_t*,arr))
-				OMEGA_METHOD_VOID(WriteInt32s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const int32_t*,arr))
-				OMEGA_METHOD_VOID(WriteUInt32s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const uint32_t*,arr))
-				OMEGA_METHOD_VOID(WriteInt64s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const int64_t*,arr))
-				OMEGA_METHOD_VOID(WriteUInt64s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const uint64_t*,arr))
-				OMEGA_METHOD_VOID(WriteFloat4s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const float4_t*,arr))
-				OMEGA_METHOD_VOID(WriteFloat8s,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const float8_t*,arr))
-				OMEGA_METHOD_VOID(WriteStrings,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const string_t*,arr))
-				OMEGA_METHOD_VOID(WriteGuids,3,((in),const wchar_t*,pszName,(in),uint32_t,count,(in)(size_is(count)),const guid_t*,arr))
+				OMEGA_METHOD_VOID(WriteBooleans,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const bool_t*,arr))
+				OMEGA_METHOD_VOID(WriteBytes,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const byte_t*,arr))
+				OMEGA_METHOD_VOID(WriteInt16s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const int16_t*,arr))
+				OMEGA_METHOD_VOID(WriteUInt16s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const uint16_t*,arr))
+				OMEGA_METHOD_VOID(WriteInt32s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const int32_t*,arr))
+				OMEGA_METHOD_VOID(WriteUInt32s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const uint32_t*,arr))
+				OMEGA_METHOD_VOID(WriteInt64s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const int64_t*,arr))
+				OMEGA_METHOD_VOID(WriteUInt64s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const uint64_t*,arr))
+				OMEGA_METHOD_VOID(WriteFloat4s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const float4_t*,arr))
+				OMEGA_METHOD_VOID(WriteFloat8s,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const float8_t*,arr))
+				OMEGA_METHOD_VOID(WriteStrings,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const string_t*,arr))
+				OMEGA_METHOD_VOID(WriteGuids,3,((in),const string_t&,strName,(in),uint32_t,count,(in)(size_is(count)),const guid_t*,arr))
 
-				OMEGA_METHOD_VOID(WriteStructStart,2,((in),const wchar_t*,pszName,(in),const wchar_t*,pszType))
-				OMEGA_METHOD_VOID(WriteStructEnd,1,((in),const wchar_t*,pszName))
+				OMEGA_METHOD_VOID(WriteStructStart,2,((in),const string_t&,strName,(in),const string_t&,strType))
+				OMEGA_METHOD_VOID(WriteStructEnd,1,((in),const string_t&,strName))
 			)
 
 			OMEGA_DEFINE_INTERNAL_INTERFACE
@@ -257,9 +257,9 @@ namespace Omega
 			(
 				Omega::Remoting, IMarshaller,
 
-				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
-				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
-				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const wchar_t*,pszName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
+				OMEGA_METHOD_VOID(MarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
+				OMEGA_METHOD_VOID(UnmarshalInterface,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
+				OMEGA_METHOD_VOID(ReleaseMarshalData,4,((in),const string_t&,strName,(in),Remoting::IMessage*,pMessage,(in),const guid_t&,iid,(in),IObject*,pObject))
 				OMEGA_METHOD(Remoting::IMessage*,CreateMessage,0,())
 				OMEGA_METHOD(IException*,SendAndReceive,4,((in),TypeInfo::MethodAttributes_t,attribs,(in),Remoting::IMessage*,pSend,(out),Remoting::IMessage*&,pRecv,(in),uint32_t,timeout))
 			)
@@ -285,21 +285,21 @@ namespace Omega
 				static void init(type&)
 				{ }
 
-				static void read(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, type& val)
+				static void read(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, type& val)
 				{
-					wire_read(pszName,pMessage,val);
+					wire_read(strName,pMessage,val);
 				}
 
-				static void write(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void write(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
-					wire_write(pszName,pMessage,val);
+					wire_write(strName,pMessage,val);
 				}
 
-				static void unpack(const wchar_t* pszName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type)
+				static void unpack(const string_t& strName, Remoting::IMarshaller*, Remoting::IMessage* pMessage, typename optimal_param<T>::type)
 				{
 					// Just read the value back, moving the read pointer correctly
 					type val = default_value<type>::value();
-					wire_read(pszName,pMessage,val);
+					wire_read(strName,pMessage,val);
 				}
 
 				static void no_op(bool)
@@ -344,66 +344,66 @@ namespace Omega
 				}
 
 				template <typename S>
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
+				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
 
-					wire_read(pszName,pManager,pMessage,pVals,static_cast<uint32_t>(count));
+					wire_read(strName,pManager,pMessage,pVals,static_cast<uint32_t>(count));
 				}
 
 				template <typename S>
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, S count)
+				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
 
-					wire_write(pszName,pManager,pMessage,pVals,static_cast<uint32_t>(count));
+					wire_write(strName,pManager,pMessage,pVals,static_cast<uint32_t>(count));
 				}
 
 				template <typename S>
-				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
 
-					wire_read(pszName,pManager,pMessage,pVals,static_cast<uint32_t>(count));
+					wire_read(strName,pManager,pMessage,pVals,static_cast<uint32_t>(count));
 				}
 
 				template <typename S>
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, S count)
+				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
 
 					val.init(static_cast<uint32_t>(count));
-					wire_read(pszName,pManager,pMessage,val.m_pVals,static_cast<uint32_t>(count));
+					wire_read(strName,pManager,pMessage,val.m_pVals,static_cast<uint32_t>(count));
 				}
 
 				template <typename S>
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
+				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
 
 					// Only write back what we have room for...
 					if (count > val.m_alloc_count)
-						wire_write(pszName,pManager,pMessage,val.m_pVals,val.m_alloc_count);
+						wire_write(strName,pManager,pMessage,val.m_pVals,val.m_alloc_count);
 					else
-						wire_write(pszName,pManager,pMessage,val.m_pVals,static_cast<uint32_t>(count));
+						wire_write(strName,pManager,pMessage,val.m_pVals,static_cast<uint32_t>(count));
 				}
 
 				template <typename S>
-				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, S count)
 				{
 					if (count > (uint32_t)-1 / sizeof(T))
 						OMEGA_THROW(L"Attempt to marshal too many array items");
 
 					// Only read back what we have written...
 					if (count > val.m_alloc_count)
-						wire_read(pszName,pManager,pMessage,val.m_pVals,val.m_alloc_count);
+						wire_read(strName,pManager,pMessage,val.m_pVals,val.m_alloc_count);
 					else
-						wire_read(pszName,pManager,pMessage,val.m_pVals,static_cast<uint32_t>(count));
+						wire_read(strName,pManager,pMessage,val.m_pVals,static_cast<uint32_t>(count));
 				}				
 
 				template <typename S>
@@ -428,34 +428,34 @@ namespace Omega
 					impl::init(val,iid);
 				}
 
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val)
+				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val)
 				{
-					impl::read(pszName,pManager,pMessage,val);
+					impl::read(strName,pManager,pMessage,val);
 				}
 
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val, const guid_t& iid)
+				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, raw_type& val, const guid_t& iid)
 				{
-					impl::read(pszName,pManager,pMessage,val,iid);
+					impl::read(strName,pManager,pMessage,val,iid);
 				}
 
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
-					impl::write(pszName,pManager,pMessage,val);
+					impl::write(strName,pManager,pMessage,val);
 				}
 
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
+				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
 				{
-					impl::write(pszName,pManager,pMessage,val,iid);
+					impl::write(strName,pManager,pMessage,val,iid);
 				}
 
-				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val)
 				{
-					impl::unpack(pszName,pManager,pMessage,val);
+					impl::unpack(strName,pManager,pMessage,val);
 				}
 
-				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, typename optimal_param<T>::type val, const guid_t& iid)
 				{
-					impl::unpack(pszName,pManager,pMessage,val,iid);
+					impl::unpack(strName,pManager,pMessage,val,iid);
 				}
 
 				static void no_op(bool)
@@ -494,21 +494,21 @@ namespace Omega
 				static void init(type&, const guid_t& = OMEGA_GUIDOF(I))
 				{ }
 
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I*& pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
 					IObject* p = 0;
-					pManager->UnmarshalInterface(pszName,pMessage,iid,p);
+					pManager->UnmarshalInterface(strName,pMessage,iid,p);
 					pI = static_cast<I*>(p);
 				}
 
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
-					pManager->MarshalInterface(pszName,pMessage,iid,pI);
+					pManager->MarshalInterface(strName,pMessage,iid,pI);
 				}
 
-				static void unpack(const wchar_t* pszName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, I* pI, const guid_t& iid = OMEGA_GUIDOF(I))
 				{
-					pManager->ReleaseMarshalData(pszName,pMessage,iid,pI);
+					pManager->ReleaseMarshalData(strName,pMessage,iid,pI);
 				}
 			};
 
@@ -530,7 +530,7 @@ namespace Omega
 							if (msg)
 							{
 								size_t count = 0;
-								wire_read(0,msg,count);
+								wire_read(string_t(),msg,count);
 							
 								for (size_t i=0;i<count;++i)
 								{
@@ -553,7 +553,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,m_val.size());
+							wire_write(string_t(),msg,m_val.size());
 							for (typename Coll::reverse_iterator i=m_val.rbegin();i!=m_val.rend();++i)
 								write(msg,static_cast<typename impl::type>(impl::clone(*i)));
 							
@@ -580,7 +580,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,val.size());
+							wire_write(string_t(),msg,val.size());
 							for (typename Coll::const_reverse_iterator i=val.rbegin();i!=val.rend();++i)
 								write(msg,static_cast<typename impl::type>(impl::coerce(*i)));
 
@@ -604,7 +604,7 @@ namespace Omega
 							if (msg)
 							{
 								size_t count = 0;
-								wire_read(0,msg,count);
+								wire_read(string_t(),msg,count);
 							
 								for (size_t i=0;i<count;++i)
 								{
@@ -633,13 +633,13 @@ namespace Omega
 				template <typename T>
 				static void read(Remoting::IMessage* msg, T& val)
 				{
-					wire_read(0,msg,val);
+					wire_read(string_t(),msg,val);
 				}
 
 				static void read(Remoting::IMessage* msg, guid_base_t& val)
 				{
 					guid_t g;
-					wire_read(0,msg,g);
+					wire_read(string_t(),msg,g);
 					val = g;
 				}
 
@@ -647,54 +647,72 @@ namespace Omega
 				static void read(Remoting::IMessage* msg, T*& pval)
 				{
 					uintptr_t ptr = 0;
-					wire_read(0,msg,ptr);
+					wire_read(string_t(),msg,ptr);
 					pval = reinterpret_cast<T*>(ptr);
 				}
 
 				template <typename T>
 				static void write(Remoting::IMessage* msg, T val)
 				{
-					wire_write(0,msg,val);
+					wire_write(string_t(),msg,val);
 				}
 
 				template <typename T>
 				static void write(Remoting::IMessage* msg, T* pval)
 				{
-					wire_write(0,msg,reinterpret_cast<uintptr_t>(pval));
+					wire_write(string_t(),msg,reinterpret_cast<uintptr_t>(pval));
 				}
 			};
 
+			// std::vector<bool> is badly broken in the C++ standard and shouldn't be used
+			template <>
+			struct stl_safe_type_coll1<std::vector<bool> >;
+						
 			template <typename Coll>
 			struct stl_wire_type_coll1
 			{
 				typedef Coll type;
 
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				static void init(Coll&)
 				{
-					pMessage->ReadStructStart(pszName,L"$collection_type_1");
+				}
+
+				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				{
+					pMessage->ReadStructStart(strName,L"$collection_type_1");
 					uint32_t count = pMessage->ReadUInt32(L"count");
 					for (uint32_t c = 0;c<count;++c)
 					{
 						typename Coll::value_type v_val = default_value<typename Coll::value_type>::value();
-						marshal_info<typename Coll::value_type>::wire_type::read((string_t(L"item{0}") % c).c_str(),pMarshaller,pMessage,v_val);
+						marshal_info<typename Coll::value_type>::wire_type::read((string_t(L"item{0}") % c),pMarshaller,pMessage,v_val);
 						val.insert(val.end(),v_val);
 					}
-					pMessage->ReadStructEnd(pszName);
+					pMessage->ReadStructEnd(strName);
 				}
 
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					if (val.size() > (uint32_t)-1 / sizeof(typename Coll::value_type))
 						OMEGA_THROW(L"Attempt to marshal too many collection items");
 
 					uint32_t count = static_cast<uint32_t>(val.size());
 
-					pMessage->WriteStructStart(pszName,L"$collection_type_1");
+					pMessage->WriteStructStart(strName,L"$collection_type_1");
 					pMessage->WriteUInt32(L"count",count);
 					size_t idx = 0;
 					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
-						marshal_info<typename Coll::value_type>::wire_type::write((string_t(L"item{0}") % idx).c_str(),pMarshaller,pMessage,*i);
-					pMessage->WriteStructEnd(pszName);
+						marshal_info<typename Coll::value_type>::wire_type::write((string_t(L"item{0}") % idx),pMarshaller,pMessage,*i);
+					pMessage->WriteStructEnd(strName);
+				}
+
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				{
+					pMessage->ReadStructStart(strName,L"$collection_type_1");
+					pMessage->ReadUInt32(L"count");
+					size_t idx = 0;
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+						marshal_info<typename Coll::value_type>::wire_type::unpack((string_t(L"item{0}") % idx),pMarshaller,pMessage,*i);
+					pMessage->ReadStructEnd(strName);
 				}
 			};
 
@@ -716,7 +734,7 @@ namespace Omega
 							if (msg)
 							{
 								size_t count = 0;
-								wire_read(0,msg,count);
+								wire_read(string_t(),msg,count);
 							
 								for (size_t i=0;i<count;++i)
 								{
@@ -741,7 +759,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,m_val.size());
+							wire_write(string_t(),msg,m_val.size());
 							for (typename Coll::reverse_iterator i=m_val.rbegin();i!=m_val.rend();++i)
 							{
 								write(msg,key_impl::clone(i->first));
@@ -771,7 +789,7 @@ namespace Omega
 						{
 							auto_iface_ptr<Remoting::IMessage> msg = Remoting::CreateMemoryMessage();
 
-							wire_write(0,msg,val.size());
+							wire_write(string_t(),msg,val.size());
 							for (typename Coll::const_reverse_iterator i=val.rbegin();i!=val.rend();++i)
 							{
 								write(msg,static_cast<typename key_impl::type>(key_impl::coerce(i->first)));
@@ -798,7 +816,7 @@ namespace Omega
 							if (msg)
 							{
 								size_t count = 0;
-								wire_read(0,msg,count);
+								wire_read(string_t(),msg,count);
 							
 								for (size_t i=0;i<count;++i)
 								{
@@ -829,13 +847,13 @@ namespace Omega
 				template <typename T>
 				static void read(Remoting::IMessage* msg, T& val)
 				{
-					wire_read(0,msg,val);
+					wire_read(string_t(),msg,val);
 				}
 
 				static void read(Remoting::IMessage* msg, guid_base_t& val)
 				{
 					guid_t g;
-					wire_read(0,msg,g);
+					wire_read(string_t(),msg,g);
 					val = g;
 				}
 
@@ -843,20 +861,20 @@ namespace Omega
 				static void read(Remoting::IMessage* msg, T*& pval)
 				{
 					uintptr_t ptr = 0;
-					wire_read(0,msg,ptr);
+					wire_read(string_t(),msg,ptr);
 					pval = reinterpret_cast<T*>(ptr);
 				}
 
 				template <typename T>
 				static void write(Remoting::IMessage* msg, T val)
 				{
-					wire_write(0,msg,val);
+					wire_write(string_t(),msg,val);
 				}
 
 				template <typename T>
 				static void write(Remoting::IMessage* msg, T* pval)
 				{
-					wire_write(0,msg,reinterpret_cast<uintptr_t>(pval));
+					wire_write(string_t(),msg,reinterpret_cast<uintptr_t>(pval));
 				}
 			};
 
@@ -865,40 +883,82 @@ namespace Omega
 			{
 				typedef Coll type;
 
-				static void read(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				static void init(Coll& val)
 				{
-					pMessage->ReadStructStart(pszName,L"$collection_type_2");
+				}
+
+				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
+				{
+					pMessage->ReadStructStart(strName,L"$collection_type_2");
 					uint32_t count = pMessage->ReadUInt32(L"count");
 					for (uint32_t c = 0;c<count;++c)
 					{
 						typename Coll::key_type v_k = default_value<typename Coll::key_type>::value();
-						marshal_info<typename Coll::key_type>::wire_type::read((string_t(L"key{0}") % c).c_str(),pMarshaller,pMessage,v_k);
+						marshal_info<typename Coll::key_type>::wire_type::read((string_t(L"key{0}") % c),pMarshaller,pMessage,v_k);
 
 						typename Coll::mapped_type v_m = default_value<typename Coll::mapped_type>::value();
-						marshal_info<typename Coll::mapped_type>::wire_type::read((string_t(L"item{0}") % c).c_str(),pMarshaller,pMessage,v_m);
+						marshal_info<typename Coll::mapped_type>::wire_type::read((string_t(L"item{0}") % c),pMarshaller,pMessage,v_m);
 
 						val.insert(val.end(),typename Coll::value_type(v_k,v_m));
 					}
-					pMessage->ReadStructEnd(pszName);
+					pMessage->ReadStructEnd(strName);
 				}
 
-				static void write(const wchar_t* pszName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
 					if (val.size() > (uint32_t)-1 / sizeof(typename Coll::value_type))
 						OMEGA_THROW(L"Attempt to marshal too many collection items");
 
 					uint32_t count = static_cast<uint32_t>(val.size());
 
-					pMessage->WriteStructStart(pszName,L"$collection_type_2");
+					pMessage->WriteStructStart(strName,L"$collection_type_2");
 					pMessage->WriteUInt32(L"count",count);
 					size_t idx = 0;
 					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
 					{
-						marshal_info<typename Coll::key_type>::wire_type::write((string_t(L"key{0}") % idx).c_str(),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::write((string_t(L"item{0}") % idx).c_str(),pMarshaller,pMessage,i->second);
+						marshal_info<typename Coll::key_type>::wire_type::write((string_t(L"key{0}") % idx),pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::write((string_t(L"item{0}") % idx),pMarshaller,pMessage,i->second);
 					}
-					pMessage->WriteStructEnd(pszName);
+					pMessage->WriteStructEnd(strName);
 				}
+
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
+				{
+					pMessage->ReadStructStart(strName,L"$collection_type_2");
+					pMessage->ReadUInt32(L"count");
+					size_t idx = 0;
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+					{
+						marshal_info<typename Coll::key_type>::wire_type::unpack((string_t(L"key{0}") % idx),pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::unpack((string_t(L"item{0}") % idx),pMarshaller,pMessage,i->second);
+					}
+					pMessage->ReadStructEnd(strName);
+				}
+			};
+
+			// We could probably do something clever with SFINAE here...
+			template <typename V>
+			struct custom_safe_type<std::vector<V> >
+			{
+				typedef stl_safe_type_coll1<std::vector<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_wire_type<std::vector<V> >
+			{
+				typedef stl_wire_type_coll1<std::vector<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_safe_type<std::deque<V> >
+			{
+				typedef stl_safe_type_coll1<std::deque<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_wire_type<std::deque<V> >
+			{
+				typedef stl_wire_type_coll1<std::deque<V> > impl;
 			};
 
 			template <typename V>
@@ -914,18 +974,6 @@ namespace Omega
 			};
 			
 			template <typename V>
-			struct custom_safe_type<std::vector<V> >
-			{
-				typedef stl_safe_type_coll1<std::vector<V> > impl;
-			};
-
-			template <typename V>
-			struct custom_wire_type<std::vector<V> >
-			{
-				typedef stl_wire_type_coll1<std::vector<V> > impl;
-			};
-
-			template <typename V>
 			struct custom_safe_type<std::set<V> >
 			{
 				typedef stl_safe_type_coll1<std::set<V> > impl;
@@ -935,6 +983,18 @@ namespace Omega
 			struct custom_wire_type<std::set<V> >
 			{
 				typedef stl_wire_type_coll1<std::set<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_safe_type<std::multiset<V> >
+			{
+				typedef stl_safe_type_coll1<std::multiset<V> > impl;
+			};
+
+			template <typename V>
+			struct custom_wire_type<std::multiset<V> >
+			{
+				typedef stl_wire_type_coll1<std::multiset<V> > impl;
 			};
 
 			template <typename K, typename V>

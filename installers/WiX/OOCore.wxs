@@ -91,19 +91,13 @@
     </DirectoryRef>
     <DirectoryRef Id="COMMONAPPDIR">
       <Component Id="OOServer.system.regdb" Guid="{8B2918F6-80C9-4D50-A514-0460F7D37BD5}">
-        <File Source="$(var.Datadir)system.regdb" KeyPath="yes">
-          <Permission User="Administrators" GenericRead="yes" GenericWrite="yes" />
-        </File>
+        <File Source="$(var.Datadir)system.regdb" KeyPath="yes" />
       </Component>
       <Component Id="OOServer.default_user.regdb" Guid="{2723E66D-E2FC-4659-B49B-3E9E4FAD8012}">
-        <File Source="$(var.Datadir)default_user.regdb" KeyPath="yes" >
-          <Permission User="Administrators" GenericRead="yes" GenericWrite="yes" />
-        </File>
+        <File Source="$(var.Datadir)default_user.regdb" KeyPath="yes" />
       </Component>
-      <Component Id="OOServer.all_users.regdb" Guid="{BD35170C-A657-4E8E-8DAD-C6048C3EA9C3}">
-        <File Source="$(var.Datadir)all_users.regdb" KeyPath="yes" >
-          <Permission User="Everyone" GenericRead="yes" GenericWrite="yes" />
-        </File>
+      <Component Id="OOServer.sandbox.regdb" Guid="{BD35170C-A657-4E8E-8DAD-C6048C3EA9C3}">
+        <File Source="$(var.Datadir)sandbox.regdb" KeyPath="yes" />
       </Component>
     </DirectoryRef>
     
@@ -205,7 +199,7 @@
       <ComponentRef Id="OOSvrUser.exe" />
       <ComponentRef Id="OOServer.RegKeys" />
       <ComponentRef Id="OOServer.system.regdb" />
-      <ComponentRef Id="OOServer.all_users.regdb" />
+      <ComponentRef Id="OOServer.sandbox.regdb" />
       <ComponentRef Id="OOServer.default_user.regdb" />
     </ComponentGroup>
     

@@ -6,12 +6,12 @@
 	$(SQLITE3) $@ < $<
 	
 localstate_DATA = \
-	all_users.regdb \
+	sandbox.regdb \
 	default_user.regdb \
 	system.regdb
 	
 EXTRA_DIST = \
 	common.sql \
-	all_users.sql \
+	sandbox.sql \
 	default_user.sql \
 	system.sql

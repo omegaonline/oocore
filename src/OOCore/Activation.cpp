@@ -128,27 +128,6 @@ namespace
 	};
 	typedef Threading::Singleton<DLLManagerImpl,Threading::InitialiseDestructor<OOCore::DLL> > DLLManager;
 
-	ObjectPtr<Omega::Registry::IKey> FindOIDKey(const guid_t& oid)
-	{
-		// Lookup OID
-		string_t strOid = oid.ToString();
-
-		// This needs to use a local cached map, and register for update notifications from the
-		// registry to refresh the map... This will result in a significant speedup.
-		void* TODO;
-
-		// Check Local User first
-		ObjectPtr<Omega::Registry::IKey> ptrOidsKey(L"\\Local User");
-		if (ptrOidsKey->IsSubKey(L"Objects\\OIDs\\" + strOid))
-			return ptrOidsKey.OpenSubKey(L"Objects\\OIDs\\" + strOid);
-
-		ptrOidsKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users\\Objects\\OIDs");
-		if (ptrOidsKey->IsSubKey(strOid))
-			return ptrOidsKey.OpenSubKey(strOid);
-
-		return ObjectPtr<Registry::IKey>();
-	}
-
 	DLLManagerImpl::DLLManagerImpl()
 	{
 	}
@@ -171,17 +150,10 @@ namespace
 		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 		// See if we have it already
-		try
-		{
-			std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
-			if (i != m_dll_map.end())
-				return i->second;
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-
+		std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.find(name);
+		if (i != m_dll_map.end())
+			return i->second;
+		
 		// Try to unload any unused dlls
 		unload_unused();
 
@@ -194,15 +166,8 @@ namespace
 			OMEGA_THROW(err);
 
 		// Add to the map
-		try
-		{
-			m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-
+		m_dll_map.insert(std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::value_type(name,dll));
+		
 		return dll;
 	}
 
@@ -210,42 +175,34 @@ namespace
 	{
 		typedef System::Internal::SafeShim* (OMEGA_CALL *pfnCanUnloadLibrary)(System::Internal::marshal_info<bool_t&>::safe_type::type result);
 			
-		try
-		{
-			OOBase::Guard<OOBase::Mutex> guard(m_lock);
+		OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-			for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		for (std::map<string_t,OOBase::SmartPtr<OOBase::DLL> >::iterator i=m_dll_map.begin();i!=m_dll_map.end();)
+		{
+			bool_t erase = false;
+			try
 			{
-				bool_t erase = false;
-				try
+				pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
+				if (pfn)
 				{
-					pfnCanUnloadLibrary pfn = (pfnCanUnloadLibrary)(i->second->symbol("Omega_CanUnloadLibrary_Safe"));
-					if (pfn)
-					{
-						System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
+					System::Internal::SafeShim* CanUnloadLibrary_Exception = pfn(System::Internal::marshal_info<bool_t&>::safe_type::coerce(erase));
 
-						// Ignore exceptions
-						if (CanUnloadLibrary_Exception)
-							System::Internal::release_safe(CanUnloadLibrary_Exception);
-					}
-				}
-				catch (IException* pE)
-				{
 					// Ignore exceptions
-					pE->Release();
+					if (CanUnloadLibrary_Exception)
+						System::Internal::release_safe(CanUnloadLibrary_Exception);
 				}
-
-				if (erase)
-					m_dll_map.erase(i++);
-				else
-					++i;
 			}
+			catch (IException* pE)
+			{
+				// Ignore exceptions
+				pE->Release();
+			}
+
+			if (erase)
+				m_dll_map.erase(i++);
+			else
+				++i;
 		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
-		
 	}
 
 	void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)
@@ -279,7 +236,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 	
 	try
 	{
-		dll = DLLManager::instance()->load_dll(dll_name.c_str());
+		dll = DLLManager::instance()->load_dll(dll_name);
 		pfn = (pfnGetLibraryObject)dll->symbol("Omega_GetLibraryObject_Safe");
 	}
 	catch (IException* pE)
@@ -331,12 +288,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User");
-		if (ptrOidKey->IsSubKey(L"Objects\\" + strCurName))
-			ptrOidKey = ptrOidKey.OpenSubKey(L"Objects\\" + strCurName);
-		else
-			ptrOidKey = ObjectPtr<Registry::IKey>(L"\\All Users\\Objects\\" + strCurName);
-
+		ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
 		if (ptrOidKey->IsValue(L"CurrentVersion"))
 		{
 			strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
@@ -371,7 +323,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 		if ((flags & Activation::InProcess) && !(flags & Activation::DontLaunch))
 		{
 			// Use the registry
-			ObjectPtr<Registry::IKey> ptrOidKey = FindOIDKey(oid);
+			ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\OIDs\\" + oid.ToString());
 			if (ptrOidKey && ptrOidKey->IsValue(L"Library"))
 			{
 				void* TICKET_89; // Surrogates here?!?

@@ -72,11 +72,13 @@
 // Include STL components
 
 #include <limits>
-#include <set>
-#include <list>
-#include <map>
-#include <vector>
 #include <string>
+
+#include <vector>
+#include <deque>
+#include <list>
+#include <set>
+#include <map>
 
 // End of STL includes
 //////////////////////////////////////////////

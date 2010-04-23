@@ -21,7 +21,7 @@ AC_CONFIG_FILES([
 	test/CoreTests/TestProcess/Makefile
 ])
 
-AM_INIT_AUTOMAKE([foreign 1.10 no-define])
+AM_INIT_AUTOMAKE([foreign 1.10 no-define color-tests])
 
 # Use the latest short output macro if available
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -51,7 +51,7 @@ OO_C_BUILTINS
 OO_NEW_NOTHROW
 
 # Check for the headers we use
-AC_CHECK_HEADERS([windows.h wchar.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h ev.h fcntl.h sys/fcntl.h ])
+AC_CHECK_HEADERS([windows.h wchar.h sys/time.h asl.h syslog.h assert.h time.h errno.h sys/socket.h uuid/uuid.h pwd.h unistd.h ev.h fcntl.h sys/fcntl.h sys/un.h ])
 
 # Add the correct libs to LIBS
 AC_CHECK_LIB([uuid],[uuid_generate],AC_SUBST([UUID_LIBS],["-luuid"]))

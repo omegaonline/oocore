@@ -26,6 +26,11 @@
 using namespace Omega;
 using namespace OTL;
 
+namespace OOCore
+{
+	TypeInfo::IInterfaceInfo* GetInterfaceInfo(const guid_t& iid);
+}
+
 OMEGA_DEFINE_OID(OOCore,OID_SystemExceptionMarshalFactory, "{35F2702C-0A1B-4962-A012-F6BBBF4B0732}");
 OMEGA_DEFINE_OID(OOCore,OID_NoInterfaceExceptionMarshalFactory, "{1E127359-1542-4329-8E30-FED8FF810960}");
 OMEGA_DEFINE_OID(OOCore,OID_TimeoutExceptionMarshalFactory, "{8FA37F2C-8252-437e-9C54-F07C13152E94}");
@@ -36,7 +41,7 @@ namespace OOBase
 	// This is the critical failure hook
 	void CriticalFailure(const char* msg)
 	{
-		throw OOCore_ISystemException_Create(string_t(msg,false),0);
+		throw OOCore_ISystemException_Create(string_t(msg,false),L"Critical Failure");
 	}
 }
 
@@ -78,11 +83,12 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(INoInterfaceException*,OOCore_INoInterfaceExcepti
 {
 	ObjectImpl<OOCore::NoInterfaceException>* pExcept = ObjectImpl<OOCore::NoInterfaceException>::CreateInstance();
 
-	string_t strIID = L"Unknown";
+	string_t strIID(L"Unknown");
 
-	const Omega::System::Internal::qi_rtti* pRtti = Omega::System::Internal::get_qi_rtti_info(iid);
-	if (pRtti && pRtti->pszName)
-		strIID = pRtti->pszName;
+	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
+	ptrII.Attach(OOCore::GetInterfaceInfo(iid));
+	if (ptrII)
+		strIID = ptrII->GetName();
 
 	pExcept->m_strDesc = L"Object does not support the requested interface: " + strIID;
 	pExcept->m_strSource = source;

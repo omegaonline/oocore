@@ -21,16 +21,18 @@
 
 #include "CmdArgs.h"
 
-bool OOSvrBase::CmdArgs::add_option(const char* id, char short_opt, const char* long_opt, bool has_value)
+bool OOSvrBase::CmdArgs::add_option(const char* id, char short_opt, bool has_value, const char* long_opt)
 {
 	assert(id);
-	assert(short_opt || long_opt);
 	assert(m_map_args.find(id) == m_map_args.end());
 
 	Option opt;
 	opt.m_short_opt = short_opt;
 	if (long_opt)
 		opt.m_long_opt = long_opt;
+	else
+		opt.m_long_opt = id;
+
 	opt.m_has_value = has_value;
 
 	try

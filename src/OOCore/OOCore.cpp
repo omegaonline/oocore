@@ -123,7 +123,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::IO::IStream*,OOCore_IO_OpenStream,2,((in),
 
 	if (strHandler.IsEmpty())
 	{
-		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\All Users");
+		ptrKey = ObjectPtr<Omega::Registry::IKey>(L"\\System");
 		if (ptrKey->IsSubKey(L"Networking\\Protocols\\" + strProtocol))
 		{
 			ptrKey = ptrKey.OpenSubKey(L"Networking\\Protocols\\" + strProtocol);

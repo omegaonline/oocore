@@ -47,9 +47,9 @@ namespace
 
 	// IMarshaller members
 	public:
-		void MarshalInterface(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
-		void ReleaseMarshalData(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
-		void UnmarshalInterface(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
+		void MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
+		void ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject);
+		void UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject);
 		Remoting::IMessage* CreateMessage();
 		IException* SendAndReceive(TypeInfo::MethodAttributes_t attribs, Remoting::IMessage* pSend, Remoting::IMessage*& pRecv, uint32_t timeout = 0);
 	};
@@ -63,33 +63,33 @@ void LoopMarshaller::init(OOCore::LoopChannel* pChannel)
 	m_pChannel = pChannel;
 }
 
-void LoopMarshaller::MarshalInterface(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
+void LoopMarshaller::MarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
-	pMessage->WriteStructStart(name,L"$loop_marshal");
+	pMessage->WriteStructStart(strName,L"$loop_marshal");
 	pMessage->WriteUInt64(L"ptr64",reinterpret_cast<uint64_t>(pObject));
-	pMessage->WriteStructEnd(name);
+	pMessage->WriteStructEnd(strName);
 
 	// Make sure we AddRef()
 	pObject->AddRef();
 }
 
-void LoopMarshaller::ReleaseMarshalData(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
+void LoopMarshaller::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject* pObject)
 {
 	// Make sure we Release()
 	pObject->Release();
 
-	pMessage->ReadStructStart(name,L"$loop_marshal");
+	pMessage->ReadStructStart(strName,L"$loop_marshal");
 	pMessage->ReadUInt64(L"ptr64");
-	pMessage->ReadStructEnd(name);
+	pMessage->ReadStructEnd(strName);
 }
 
-void LoopMarshaller::UnmarshalInterface(const wchar_t* name, Remoting::IMessage* pMessage, const guid_t&, IObject*& pObject)
+void LoopMarshaller::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t&, IObject*& pObject)
 {
-	pMessage->ReadStructStart(name,L"$loop_marshal");
+	pMessage->ReadStructStart(strName,L"$loop_marshal");
 
 	pObject = reinterpret_cast<IObject*>(pMessage->ReadUInt64(L"ptr64"));
 
-	pMessage->ReadStructEnd(name);
+	pMessage->ReadStructEnd(strName);
 }
 
 Remoting::IMessage* LoopMarshaller::CreateMessage()

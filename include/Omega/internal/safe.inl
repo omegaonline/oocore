@@ -24,108 +24,73 @@
 
 inline Omega::IObject* Omega::System::Internal::safe_holder::add(const SafeShim* shim, IObject* pObject)
 {
-	try
+	Threading::Guard<Threading::Mutex> guard(m_lock);
+
+	std::pair<std::map<const SafeShim*,IObject*>::iterator,bool> p1 = m_shim_map.insert(std::map<const SafeShim*,IObject*>::value_type(shim,pObject));
+	if (!p1.second)
 	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
-
-		std::pair<std::map<const SafeShim*,IObject*>::iterator,bool> p1 = m_shim_map.insert(std::map<const SafeShim*,IObject*>::value_type(shim,pObject));
-		if (!p1.second)
-		{
-			p1.first->second->AddRef();
-			return p1.first->second;
-		}
-
-		std::pair<std::map<IObject*,const SafeShim*>::iterator,bool> p2 = m_obj_map.insert(std::map<IObject*,const SafeShim*>::value_type(pObject,shim));
-		assert(p2.second);
-
-		return 0;
+		p1.first->second->AddRef();
+		return p1.first->second;
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+
+	std::pair<std::map<IObject*,const SafeShim*>::iterator,bool> p2 = m_obj_map.insert(std::map<IObject*,const SafeShim*>::value_type(pObject,shim));
+	assert(p2.second);
+
+	return 0;
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::add(IObject* pObject, const Omega::System::Internal::SafeShim* shim)
 {
-	try
+	Threading::Guard<Threading::Mutex> guard(m_lock);
+
+	std::pair<std::map<IObject*,const SafeShim*>::iterator,bool> p1 = m_obj_map.insert(std::map<IObject*,const SafeShim*>::value_type(pObject,shim));
+	if (!p1.second)
 	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
-
-		std::pair<std::map<IObject*,const SafeShim*>::iterator,bool> p1 = m_obj_map.insert(std::map<IObject*,const SafeShim*>::value_type(pObject,shim));
-		if (!p1.second)
-		{
-			addref_safe(p1.first->second);
-			return p1.first->second;
-		}
-
-		std::pair<std::map<const SafeShim*,IObject*>::iterator,bool> p2 = m_shim_map.insert(std::map<const SafeShim*,IObject*>::value_type(shim,pObject));
-		assert(p2.second);
-
-		return 0;
+		addref_safe(p1.first->second);
+		return p1.first->second;
 	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+
+	std::pair<std::map<const SafeShim*,IObject*>::iterator,bool> p2 = m_shim_map.insert(std::map<const SafeShim*,IObject*>::value_type(shim,pObject));
+	assert(p2.second);
+
+	return 0;
 }
 
 inline const Omega::System::Internal::SafeShim* Omega::System::Internal::safe_holder::find(IObject* pObject)
 {
-	try
-	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
+	Threading::Guard<Threading::Mutex> guard(m_lock);
 
-		std::map<IObject*,const SafeShim*>::const_iterator i=m_obj_map.find(pObject);
-		if (i != m_obj_map.end())
-		{
-			addref_safe(i->second);
-			return i->second;
-		}
-
-		return 0;
-	}
-	catch (std::exception& e)
+	std::map<IObject*,const SafeShim*>::const_iterator i=m_obj_map.find(pObject);
+	if (i != m_obj_map.end())
 	{
-		OMEGA_THROW(e);
+		addref_safe(i->second);
+		return i->second;
 	}
+
+	return 0;
 }
 
 inline void Omega::System::Internal::safe_holder::remove(IObject* pObject)
 {
-	try
-	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
+	Threading::Guard<Threading::Mutex> guard(m_lock);
 
-		std::map<IObject*,const SafeShim*>::iterator i=m_obj_map.find(pObject);
-		if (i != m_obj_map.end())
-		{
-			m_shim_map.erase(i->second);
-			m_obj_map.erase(i);
-		}			
-	}
-	catch (std::exception& e)
+	std::map<IObject*,const SafeShim*>::iterator i=m_obj_map.find(pObject);
+	if (i != m_obj_map.end())
 	{
-		OMEGA_THROW(e);
+		m_shim_map.erase(i->second);
+		m_obj_map.erase(i);
 	}
 }
 
 inline void Omega::System::Internal::safe_holder::remove(const SafeShim* shim)
 {
-	try
-	{
-		Threading::Guard<Threading::Mutex> guard(m_lock);
+	Threading::Guard<Threading::Mutex> guard(m_lock);
 
-		std::map<const SafeShim*,IObject*>::iterator i=m_shim_map.find(shim);
-		if (i != m_shim_map.end())
-		{
-			m_obj_map.erase(i->second);
-			m_shim_map.erase(i);
-		}
-	}
-	catch (std::exception& e)
+	std::map<const SafeShim*,IObject*>::iterator i=m_shim_map.find(shim);
+	if (i != m_shim_map.end())
 	{
-		OMEGA_THROW(e);
+		m_obj_map.erase(i->second);
+		m_shim_map.erase(i);
 	}
 }
 

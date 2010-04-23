@@ -55,42 +55,21 @@
 
 bool Root::Manager::load_config()
 {
-	// Load simple config file...
-	try
-	{
-		// Clear current entries
-		m_config_args.clear();
+	// Clear current entries
+	m_config_args.clear();
 
-		// Insert platform defaults
-		m_config_args["regdb_path"] = "/var/lib/omegaonline/";
-		m_config_args["users_path"] = m_config_args["regdb_path"] + "users/";
+	// Insert platform defaults
+	m_config_args["regdb_path"] = "/var/lib/omegaonline/";
+	m_config_args["users_path"] = m_config_args["regdb_path"] + "users/";
 
-		std::ifstream fs("/etc/omegaonline.conf");
-		while (!fs.eof())
-		{
-			// Read line
-			std::string line;
-			std::getline(fs,line);
+	// Determine conf file
+	std::string strFile("/etc/omegaonline.conf");
 
-			if (!line.empty() && line[0] != '#')
-			{
-				// Read line as 2 strings
-				std::istringstream is(line);
-				std::string key,value;
-				is >> key >> value;
-
-				// Insert into map
-				if (!key.empty())
-					m_config_args[key] = value;
-			}
-		}
-
-		return true;
-	}
-	catch (std::exception& e)
-	{
-		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
-	}
+	std::map<std::string,std::string>::const_iterator f = m_cmd_args.find("conf-file");
+	if (f != m_cmd_args.end())
+		strFile = f->second;		
+		
+	return load_config_file(strFile);
 }
 
 bool Root::Manager::wait_for_quit()

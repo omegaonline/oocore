@@ -8,7 +8,7 @@
 static bool test_values(Omega::Registry::IKey* pKey)
 {
 	// Generate a unique value name
-	Omega::string_t strTestValue = L"TestValue_{0}";
+	Omega::string_t strTestValue(L"TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
@@ -153,7 +153,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	if (!test_values(pKey))
 		return false;
 
-	Omega::string_t strTestKey = L"TestKey_{0}";
+	Omega::string_t strTestKey(L"TestKey_{0}");
 	strTestKey %= GetCurrentProcessId();
 	while (pKey->IsSubKey(strTestKey))
 	{
@@ -163,7 +163,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 	Omega::Registry::IKey* pSubKey;
 	try
 	{
-		pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::OpenCreate);
 	}
 	catch (Omega::Registry::IAccessDeniedException* pE)
 	{
@@ -189,18 +189,18 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"",Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(Omega::string_t(),Omega::Registry::IKey::OpenCreate);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IBadNameException* pE)
 	{
-		TEST(pE->GetName() == L"");
+		TEST(pE->GetName().IsEmpty());
 		pE->Release();
 	}
 	try
 	{
-		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::Create);
+		pSubKey = pKey->OpenSubKey(L"\\",Omega::Registry::IKey::OpenCreate);
 		pSubKey->Release();
 		TEST_FAIL("No exception thrown!");
 	}
@@ -216,7 +216,7 @@ static bool test_key2(Omega::Registry::IKey* pKey, const Omega::string_t& strKey
 
 	try
 	{
-		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::Create | Omega::Registry::IKey::FailIfThere);
+		pKey->OpenSubKey(strTestKey,Omega::Registry::IKey::CreateNew);
 		TEST_FAIL("No exception thrown!");
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
@@ -291,10 +291,11 @@ static bool test_privates(Omega::Registry::IKey* pKey, const Omega::string_t& st
 
 static bool test_root_key(Omega::Registry::IKey* pKey)
 {
-	TEST(pKey->IsSubKey(L"All Users"));
+	TEST(pKey->IsSubKey(L"System"));
 	TEST(pKey->IsSubKey(L"Local User"));
+	TEST(pKey->IsSubKey(L"All Users"));
 
-	Omega::string_t strTestValue = L"TestValue_{0}";
+	Omega::string_t strTestValue(L"TestValue_{0}");
 	strTestValue %= GetCurrentProcessId();
 	while (pKey->IsValue(strTestValue))
 	{
@@ -322,7 +323,7 @@ static bool test_root_key(Omega::Registry::IKey* pKey)
 	}
 
 	// Test the private root keys
-	test_privates(pKey,L"All Users");
+	test_privates(pKey,L"System");
 	test_privates(pKey,L"All Users\\Applications");
 	test_privates(pKey,L"All Users\\Objects");
 	test_privates(pKey,L"All Users\\Objects\\OIDs");
@@ -353,7 +354,7 @@ bool registry_tests()
 	if (!bTest)
 		return false;
 
-	if (!test_key(L"\\All Users"))
+	if (!test_key(L"\\System"))
 		return false;
 
 	if (!test_key(L"\\Local User"))
@@ -374,14 +375,14 @@ bool registry_tests_2()
 	ptrKey = OTL::ObjectPtr<Omega::Registry::IKey>(L"\\");
 
 	// Generate a unique value name
-	Omega::string_t strTestKey = L"TestKey_{0}";
+	Omega::string_t strTestKey(L"TestKey_{0}");
 	strTestKey %= GetCurrentProcessId();
 	while (ptrKey->IsSubKey(strTestKey))
 	{
 		strTestKey = L"_" + strTestKey;
 	}
 
-	Omega::string_t strXML =
+	Omega::string_t strXML(
 		L"<?xml version=\"1.0\" ?>\r\n"
 		L"<oo:root xmlns:oo=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">\r\n"
 			L"<oo:key name=\"%TESTKEY%\">\r\n"
@@ -394,7 +395,7 @@ bool registry_tests_2()
 					L"<oo:value name=\"TestVal5\" type=\"Integer\" uninstall=\"Keep\">12345</oo:value>\r\n"
 				L"</oo:key>\r\n"
 			L"</oo:key>\r\n"
-		L"</oo:root>\r\n";
+		L"</oo:root>\r\n");
 
 	Omega::string_t strSubsts = L"  MODULE  =My Module;  TESTKEY=\\" + strTestKey;
 

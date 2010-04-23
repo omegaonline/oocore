@@ -54,7 +54,7 @@ void OOCore::Apartment::close()
 		}
 		m_mapApartments.clear();
 	}
-	catch (std::exception&)
+	catch (...)
 	{}
 }
 
@@ -97,7 +97,7 @@ void OOCore::Apartment::process_channel_close(uint32_t closed_channel_id)
 			(*i)->disconnect();
 		}
 	}
-	catch (std::exception&)
+	catch (...)
 	{}
 }
 
@@ -105,15 +105,8 @@ bool OOCore::Apartment::is_channel_open(uint32_t channel_id)
 {
 	OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
 
-	try
-	{
-		std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(channel_id);
-		return (i != m_mapChannels.end());
-	}
-	catch (std::exception&)
-	{
-		return false;
-	}
+	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(channel_id);
+	return (i != m_mapChannels.end());
 }
 
 ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t src_channel_id)
@@ -126,18 +119,13 @@ ObjectPtr<Remoting::IObjectManager> OOCore::Apartment::get_channel_om(uint32_t s
 ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32_t src_channel_id, const guid_t& message_oid)
 {
 	// Lookup existing..
-	try
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-		std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
-		if (i != m_mapChannels.end())
-			return i->second;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator i=m_mapChannels.find(src_channel_id);
+	if (i != m_mapChannels.end())
+		return i->second;
+	
+	read_guard.release();
 
 	// Create a new OM
 	ObjectPtr<ObjectImpl<StdObjectManager> > ptrOM = ObjectImpl<StdObjectManager>::CreateInstancePtr();
@@ -147,19 +135,12 @@ ObjectPtr<ObjectImpl<OOCore::Channel> > OOCore::Apartment::create_channel(uint32
 	ptrChannel->init(m_pSession,m_id,src_channel_id,ptrOM,message_oid);
 
 	// And add to the map
-	try
-	{
-		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+	OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-		std::pair<std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
-		if (!p.second)
-			ptrChannel = p.first->second;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
+	std::pair<std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::iterator,bool> p = m_mapChannels.insert(std::map<uint32_t,ObjectPtr<ObjectImpl<Channel> > >::value_type(src_channel_id,ptrChannel));
+	if (!p.second)
+		ptrChannel = p.first->second;
+	
 	return ptrChannel;
 }
 
@@ -226,18 +207,14 @@ ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(u
 {
 	// Lookup existing..
 	ObjectPtr<ObjectImpl<AptChannel> > ptrChannel;
-	try
-	{
-		OOBase::ReadGuard<OOBase::RWMutex> guard(m_lock);
+	
+	OOBase::ReadGuard<OOBase::RWMutex> read_guard(m_lock);
 
-		std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.find(apartment_id);
-		if (i != m_mapApartments.end())
-			ptrChannel = i->second;
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
+	std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator i=m_mapApartments.find(apartment_id);
+	if (i != m_mapApartments.end())
+		ptrChannel = i->second;
+	
+	read_guard.release();
 
 	if (!ptrChannel)
 	{
@@ -249,18 +226,11 @@ ObjectPtr<ObjectImpl<OOCore::AptChannel> > OOCore::Apartment::create_apartment(u
 		ptrChannel->init(m_pSession->get_apartment(apartment_id),m_id | m_pSession->get_channel_id(),ptrOM,message_oid);
 
 		// And add to the map
-		try
-		{
-			OOBase::Guard<OOBase::RWMutex> guard(m_lock);
+		OOBase::Guard<OOBase::RWMutex> guard(m_lock);
 
-			std::pair<std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator,bool> p = m_mapApartments.insert(std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::value_type(apartment_id,ptrChannel));
-			if (!p.second)
-				ptrChannel = p.first->second;
-		}
-		catch (std::exception& e)
-		{
-			OMEGA_THROW(e);
-		}
+		std::pair<std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::iterator,bool> p = m_mapApartments.insert(std::map<uint16_t,OTL::ObjectPtr<OTL::ObjectImpl<AptChannel> > >::value_type(apartment_id,ptrChannel));
+		if (!p.second)
+			ptrChannel = p.first->second;
 	}
 
 	return ptrChannel;

@@ -49,10 +49,10 @@ namespace Root
 		public Registry::Manager
 	{
 	public:
-		Manager();
+		Manager(const std::map<std::string,std::string>& args);
 		virtual ~Manager();
 
-		int run(const std::map<std::string,std::string>& args);
+		int run();
 
 		std::string get_user_pipe(OOBase::LocalSocket::uid_t uid);
 
@@ -62,13 +62,14 @@ namespace Root
 
 		// Init and run members
 		bool load_config();
+		bool load_config_file(const std::string& strFile);
 		bool init_database();
 		bool wait_for_quit();
 
 		// Configuration members
+		std::map<std::string,std::string> m_cmd_args;
 		std::map<std::string,std::string> m_config_args;
-		bool m_bUnsafeSandbox;
-
+		
 		// I/O members
 		OOBase::RWMutex m_lock;
 		Omega::uint32_t m_sandbox_channel;
@@ -94,11 +95,10 @@ namespace Root
 
 		// Registry members
 		OOBase::SmartPtr<Registry::Hive> m_registry;
-		OOBase::SmartPtr<Registry::Hive> m_registry_all_users;
+		OOBase::SmartPtr<Registry::Hive> m_registry_sandbox;
 
 		int registry_access_check(const std::string& strdb, Omega::uint32_t channel_id, Registry::Hive::access_rights_t access_mask);
 
-		int registry_parse_subkey(const Omega::int64_t& uKey, Omega::uint32_t& channel_id, std::string& strSubKey, Omega::byte_t& nType, OOBase::SmartPtr<Registry::Hive>& ptrHive);
 		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey);
 		int registry_open_hive(Omega::uint32_t& channel_id, OOBase::CDRStream& request, OOBase::SmartPtr<Registry::Hive>& ptrHive, Omega::int64_t& uKey, Omega::byte_t& nType);
 		void registry_key_exists(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
@@ -118,6 +118,7 @@ namespace Root
 		void registry_get_value_description(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_enum_values(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 		void registry_delete_value(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
+		void registry_open_mirror_key(Omega::uint32_t channel_id, OOBase::CDRStream& request, OOBase::CDRStream& response);
 	};
 }
 

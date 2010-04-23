@@ -75,7 +75,7 @@ inline void OTL::LibraryModule::RegisterLibrary(Omega::bool_t bInstall, Omega::b
 
 		if (g[i].pszName != 0)
 		{
-			Omega::string_t strName = g[i].pszName;
+			Omega::string_t strName(g[i].pszName,Omega::string_t::npos);
 
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"
@@ -134,7 +134,7 @@ inline void OTL::ProcessModule::InstallObjectsImpl(Omega::bool_t bInstall, Omega
 
 		if (g[i].pszName != 0)
 		{
-			Omega::string_t strName = g[i].pszName;
+			Omega::string_t strName(g[i].pszName,Omega::string_t::npos);
 
 			strXML +=
 					L"<key name=\"" + strName + L"\" uninstall=\"Remove\">"

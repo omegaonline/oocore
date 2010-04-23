@@ -46,6 +46,8 @@ namespace User
 			Omega::byte_t   m_type;
 
 			int GetValueType_i(const Omega::string_t& strName, Omega::Registry::ValueType_t& vtype);
+			Omega::Registry::IKey* ParseSubKey(Omega::string_t& strSubKey);
+			OTL::ObjectPtr<OTL::ObjectImpl<Key> > OpenSubKey_i(const Omega::string_t& strSubKey, Omega::Registry::IKey::OpenFlags_t flags);
 
 		// IRegistry members
 		public:

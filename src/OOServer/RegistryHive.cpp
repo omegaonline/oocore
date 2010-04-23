@@ -122,6 +122,14 @@ int Registry::Hive::find_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 {
 	// Lock must be held first...
 
+	// Check for root key
+	if (uParent==0 && strSubKey.empty())
+	{
+		access_mask = static_cast<access_rights_t>(Hive::never_delete | m_default_permissions);
+		uKey = 0;
+		return 0;
+	}
+
 	// Check if the key still exists
 	int err = check_key_exists(uParent,access_mask);
 	if (err == SQLITE_DONE)
@@ -188,12 +196,6 @@ int Registry::Hive::insert_key(const Omega::int64_t& uParent, Omega::int64_t& uK
 
 int Registry::Hive::open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint32_t channel_id)
 {
-	if (uParent==0 && strSubKey.empty())
-	{
-		uKey = 0;
-		return 0;
-	}
-
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Find the key
@@ -201,79 +203,70 @@ int Registry::Hive::open_key(const Omega::int64_t& uParent, Omega::int64_t& uKey
 	return find_key(uParent,uKey,strSubKey,access_mask,channel_id);
 }
 
-int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, bool bFailIfThere, access_rights_t access, Omega::uint32_t channel_id)
+int Registry::Hive::create_key(const Omega::int64_t& uParent, Omega::int64_t& uKey, std::string strSubKey, Omega::uint16_t flags, access_rights_t access, Omega::uint32_t channel_id)
 {
-	if (uParent==0 && strSubKey.empty())
-	{
-		uKey = 0;
-		return bFailIfThere ? EEXIST : 0;
-	}
-
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
 	// Check if the key still exists
 	access_rights_t access_mask;
 	int err = find_key(uParent,uKey,strSubKey,access_mask,channel_id);
-	if (err != 0 && err != ENOENT)
+
+	if (flags == 0 /*OpenExisting*/)
+		return err;
+	
+	if (flags == 1 /*OpenCreate*/ && err != ENOENT)
 		return err;
 
+	if (flags == 2 /*CreateNew*/ && err != ENOENT)
+		return (err == 0 ? EEXIST : err);
+
+	// Start inserting
 	OOBase::SmartPtr<Db::Transaction> ptrTrans;
-	if (err == ENOENT)
+	
+	// Need to add more...
+	if (access_mask & Hive::write_check)
 	{
-		// Need to add more...
-		if (access_mask & Hive::write_check)
-		{
-			// Write not allowed - check access!
-			int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
-			if (acc != 0)
-				return acc;
-		}
+		// Write not allowed - check access!
+		int acc = m_pManager->registry_access_check(m_strdb,channel_id,access_mask);
+		if (acc != 0)
+			return acc;
+	}
 
-		// Start a transaction..
-		err = m_db->begin_transaction(ptrTrans);
-		if (err != SQLITE_OK)
+	// Mask the access mask
+	if (access & Hive::inherit_checks)
+	{
+		// Remove the inherit flag and the never_delete flag
+		access = (access_mask & ~(Hive::inherit_checks | Hive::never_delete));
+	}
+
+	// Start a transaction..
+	if (m_db->begin_transaction(ptrTrans) != SQLITE_OK)
+		return EIO;
+
+	// Drill down creating keys...
+	Omega::int64_t uSubKey = uKey;
+	for (;;)
+	{
+		size_t pos = strSubKey.find('\\');
+		if (pos == std::string::npos)
+			err = insert_key(uSubKey,uKey,strSubKey,access);
+		else
+			err = insert_key(uSubKey,uKey,strSubKey.substr(0,pos),access);
+
+		if (err == SQLITE_READONLY)
+			return EACCES;
+		else if (err != SQLITE_DONE)
 			return EIO;
 
-		// Mask the access mask
-		if (access & Hive::inherit_checks)
-		{
-			// Remove the inherit flag and the never_delete flag
-			access = (access_mask & ~(Hive::inherit_checks | Hive::never_delete));
-		}
+		if (pos == std::string::npos)
+			break;
 
-		// Drill down creating keys...
-		Omega::int64_t uSubKey = uKey;
-		for (;;)
-		{
-			size_t pos = strSubKey.find('\\');
-			if (pos == std::string::npos)
-				err = insert_key(uSubKey,uKey,strSubKey,access);
-			else
-				err = insert_key(uSubKey,uKey,strSubKey.substr(0,pos),access);
-
-			if (err == SQLITE_READONLY)
-				return EACCES;
-			else if (err != SQLITE_DONE)
-				return EIO;
-
-			if (pos == std::string::npos)
-				break;
-
-			strSubKey = strSubKey.substr(pos+1);
-			uSubKey = uKey;
-		}
+		strSubKey = strSubKey.substr(pos+1);
+		uSubKey = uKey;
 	}
-	else if (bFailIfThere)
-	{
-		return EEXIST;
-	}
-
-	if (ptrTrans)
-	{
-		err = ptrTrans->commit();
-		if (err != SQLITE_OK)
-			return EIO;
-	}
+	
+	if (ptrTrans->commit() != SQLITE_OK)
+		return EIO;
 
 	return 0;
 }
@@ -305,8 +298,7 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	}
 
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey);
-	if (err != SQLITE_OK)
+	if (m_db->prepare_statement(ptrStmt,"SELECT Id FROM RegistryKeys WHERE Parent = %lld;",uKey) != SQLITE_OK)
 		return EIO;
 
 	// Recurse down
@@ -333,12 +325,10 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 	if (bFound)
 	{
 		// Do the delete
-		err = m_db->prepare_statement(ptrStmt,"DELETE FROM RegistryKeys WHERE Parent = %lld;",uKey);
-		if (err != SQLITE_OK)
+		if (m_db->prepare_statement(ptrStmt,"DELETE FROM RegistryKeys WHERE Parent = %lld;",uKey) != SQLITE_OK)
 			return EIO;
 
-		err = ptrStmt->step();
-		if (err != SQLITE_DONE)
+		if (ptrStmt->step() != SQLITE_DONE)
 			return EIO;
 	}
 
@@ -347,12 +337,9 @@ int Registry::Hive::delete_key_i(const Omega::int64_t& uKey, Omega::uint32_t cha
 
 int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSubKey, Omega::uint32_t channel_id)
 {
-	if (uParent==0 && strSubKey.empty())
-		return EACCES;
-
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
-	// Check if the key still exists
+	// Get the start key
 	Omega::int64_t uKey = 0;
 	access_rights_t access_mask;
 	int err = find_key(uParent,uKey,strSubKey,access_mask,channel_id);
@@ -360,8 +347,7 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 		return err;
 
 	OOBase::SmartPtr<Db::Transaction> ptrTrans;
-	err = m_db->begin_transaction(ptrTrans);
-	if (err != SQLITE_OK)
+	if (m_db->begin_transaction(ptrTrans) != SQLITE_OK)
 		return EIO;
 
 	err = delete_key_i(uKey,channel_id);
@@ -373,19 +359,17 @@ int Registry::Hive::delete_key(const Omega::int64_t& uParent, std::string strSub
 		if (err != SQLITE_OK)
 			return EIO;
 
-		err = ptrStmt->step();
-		if (err != SQLITE_DONE)
+		if (ptrStmt->step() != SQLITE_DONE)
 			return EIO;
 
-		err = ptrTrans->commit();
-		if (err != SQLITE_OK)
+		if (ptrTrans->commit() != SQLITE_OK)
 			return EIO;
 	}
 
 	return err;
 }
 
-int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listSubKeys)
+int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setSubKeys)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -408,7 +392,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 	}
 
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 		return EIO;
 
@@ -431,7 +415,7 @@ int Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t cha
 			}
 
 			if (!strSubKey.empty())
-				listSubKeys.push_back(strSubKey);
+				setSubKeys.insert(strSubKey);
 		}
 
 	} while (err == SQLITE_ROW);
@@ -470,18 +454,18 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 		}
 	}
 
-	// Write out success first
-	response.write((int)0);
-	if (response.last_error() != 0)
-		return;
-
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name, Access FROM RegistryKeys WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 	{
 		response.write((int)EIO);
 		return;
 	}
+
+	// Write out success first
+	response.write((int)0);
+	if (response.last_error() != 0)
+		return;
 
 	do
 	{
@@ -522,7 +506,7 @@ void Registry::Hive::enum_subkeys(const Omega::int64_t& uKey, Omega::uint32_t ch
 	}
 }
 
-int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::list<std::string>& listValues)
+int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t channel_id, std::set<std::string>& setValues)
 {
 	OOBase::Guard<OOBase::Mutex> guard(m_lock);
 
@@ -543,7 +527,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 	}
 
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 		return EIO;
 
@@ -554,7 +538,7 @@ int Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t chan
 		{
 			const char* v = ptrStmt->column_text(0);
 			if (v)
-				listValues.push_back(v);
+				setValues.insert(v);
 		}
 
 	} while (err == SQLITE_ROW);
@@ -591,18 +575,18 @@ void Registry::Hive::enum_values(const Omega::int64_t& uKey, Omega::uint32_t cha
 		}
 	}
 
-	// Write out success first
-	response.write((int)0);
-	if (response.last_error() != 0)
-		return;
-
 	OOBase::SmartPtr<Db::Statement> ptrStmt;
-	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld;",uKey);
+	err = m_db->prepare_statement(ptrStmt,"SELECT Name FROM RegistryValues WHERE Parent = %lld ORDER BY Name;",uKey);
 	if (err != SQLITE_OK)
 	{
 		response.write((int)EIO);
 		return;
 	}
+
+	// Write out success first
+	response.write((int)0);
+	if (response.last_error() != 0)
+		return;
 
 	do
 	{

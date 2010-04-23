@@ -102,6 +102,20 @@ namespace Omega
 		};
 	}
 
+	namespace TypeInfo
+	{
+		interface IInterfaceInfo : public IObject
+		{	
+			virtual string_t GetName() = 0;
+			virtual guid_t GetIID() = 0;
+			virtual uint32_t GetMethodCount() = 0;
+			virtual IInterfaceInfo* GetBaseType() = 0;
+			virtual void GetMethodInfo(uint32_t method_idx, string_t& strName, MethodAttributes_t& attribs, uint32_t& timeout, byte_t& param_count, Remoting::IMessage*& return_type) = 0;
+			virtual void GetParamInfo(uint32_t method_idx, byte_t param_idx, string_t& strName, Remoting::IMessage*& type, ParamAttributes_t& attribs) = 0;
+			virtual byte_t GetAttributeRef(uint32_t method_idx, byte_t param_idx, ParamAttributes_t attrib) = 0;
+		};
+	}
+
 	namespace Registry
 	{
 		enum ValueType
@@ -117,8 +131,8 @@ namespace Omega
 			enum OpenFlags
 			{
 				OpenExisting = 0,
-				Create = 1,
-				FailIfThere = 2
+				OpenCreate = 1,
+				CreateNew = 2
 			};
 			typedef uint16_t OpenFlags_t;
 
@@ -170,7 +184,7 @@ namespace Omega
 			virtual string_t GetKeyName() = 0;
 		};
 
-		void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = L"");
+		void AddXML(const string_t& strXML, bool_t bAdd = true, const string_t& strSubstitutions = string_t());
 	}
 
 	namespace IO
@@ -219,6 +233,19 @@ namespace Omega
 }
 
 #if !defined(DOXYGEN)
+
+OMEGA_DEFINE_INTERFACE
+(
+	Omega::TypeInfo, IInterfaceInfo, "{13EC66A0-D266-4682-9A47-6E2F178C40BD}",
+
+	OMEGA_METHOD(string_t,GetName,0,())
+	OMEGA_METHOD(guid_t,GetIID,0,())
+	OMEGA_METHOD(Omega::TypeInfo::IInterfaceInfo*,GetBaseType,0,())
+	OMEGA_METHOD(uint32_t,GetMethodCount,0,())				
+	OMEGA_METHOD_VOID(GetMethodInfo,6,((in),uint32_t,method_idx,(out),string_t&,strName,(out),TypeInfo::MethodAttributes_t&,attribs,(out),uint32_t&,timeout,(out),byte_t&,param_count,(out),Remoting::IMessage*&,return_type))
+	OMEGA_METHOD_VOID(GetParamInfo,5,((in),uint32_t,method_idx,(in),byte_t,param_idx,(out),string_t&,strName,(out),Remoting::IMessage*&,type,(out),TypeInfo::ParamAttributes_t&,attribs))
+	OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
+)
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (

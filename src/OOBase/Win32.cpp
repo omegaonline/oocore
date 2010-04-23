@@ -669,7 +669,6 @@ std::string OOBase::Win32::FormatMessage(DWORD dwErr)
 	ret.setf(std::ios_base::hex,std::ios_base::basefield);
 	ret << "(0x" << dwErr << ") ";
 
-	std::string msg;
 	if (!(dwErr & 0xC0000000))
 		ret << format_msg(dwErr,NULL);
 	else

@@ -45,7 +45,8 @@ namespace Root
 		SetDescription,
 		SetValueDescription,
 		EnumValues,
-		DeleteValue
+		DeleteValue,
+		OpenMirrorKey
 	};
 	typedef Omega::uint16_t RootOpCode_t;
 }

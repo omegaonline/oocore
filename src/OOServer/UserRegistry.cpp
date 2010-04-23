@@ -49,6 +49,20 @@ bool_t Key::IsSubKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::IsSubKey");
 
+	if (m_key == 0 && m_type == 0)
+	{
+		string_t strSub = strSubKey;
+		ObjectPtr<IKey> ptrKey;
+		ptrKey.Attach(ParseSubKey(strSub));
+		if (ptrKey)
+		{
+			if (strSub.IsEmpty())
+				return true;
+			else
+				return ptrKey->IsSubKey(strSub);
+		}
+	}
+	
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::KeyExists));
 	request.write(m_key);
@@ -239,7 +253,7 @@ int64_t Key::GetIntegerValue(const string_t& strName)
 		ValueType_t vtype;
 		err = GetValueType_i(strName,vtype);
 		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetIntegerValue");
 	}
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetIntegerValue");
@@ -282,7 +296,7 @@ void Key::GetBinaryValue(const Omega::string_t& strName, Omega::uint32_t& cbLen,
 		ValueType_t vtype;
 		err = GetValueType_i(strName,vtype);
 		if (err == 0)
-			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetStringValue");
+			WrongValueTypeException::Throw(strName,vtype,L"Omega::Registry::IRegistry::GetBinaryValue");
 	}
 	else if (err==EACCES)
 		AccessDeniedException::Throw(m_strKey,L"Omega::Registry::IRegistry::GetBinaryValue");
@@ -508,13 +522,84 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::OpenSubKey");
 
+	if (m_key == 0 && m_type == 0)
+	{
+		string_t strSub = strSubKey;
+		ObjectPtr<IKey> ptrKey;
+		ptrKey.Attach(ParseSubKey(strSub));
+		if (ptrKey)
+		{
+			if (strSub.IsEmpty())
+				return ptrKey.AddRef();
+			else
+				return ptrKey->OpenSubKey(strSub,flags);
+		}
+	}
+	
+	ObjectPtr<ObjectImpl<Key> > ptrRet = OpenSubKey_i(strSubKey,flags);
+	return ptrRet.AddRef();
+}
+
+IKey* Key::ParseSubKey(string_t& strSubKey)
+{
+	// See if we need a mirror key
+	if (m_key == 0 && m_type == 0 && (strSubKey == L"Local User" || strSubKey.Left(11) == L"Local User\\"))
+	{
+		// Local user, strip the start...
+		if (strSubKey.Length() > 10)
+			strSubKey = strSubKey.Mid(11);
+		else
+			strSubKey.Clear();
+
+		OOBase::CDRStream request;
+		request.write(static_cast<Root::RootOpCode_t>(Root::OpenMirrorKey));
+		if (request.last_error() != 0)
+			OMEGA_THROW(request.last_error());
+
+		OOBase::SmartPtr<OOBase::CDRStream> response(m_pManager->sendrecv_root(request,TypeInfo::Synchronous));
+		if (!response)
+			OMEGA_THROW(L"No response from root");
+		
+		int err = 0;
+		if (!response->read(err))
+			OMEGA_THROW(response->last_error());
+		
+		if (err != 0)
+			OMEGA_THROW(err);
+
+		Omega::byte_t local_type = 255;
+		Omega::int64_t mirror_key = 0;
+		std::string strName;
+
+		if (!response->read(local_type) ||
+			!response->read(mirror_key) ||
+			!response->read(strName))
+		{
+			OMEGA_THROW(response->last_error());
+		}
+
+		ObjectPtr<ObjectImpl<Key> > ptrLocal = ObjectImpl<Key>::CreateInstancePtr();
+		ptrLocal->Init(m_pManager,L"\\Local User",0,local_type);
+
+		ObjectPtr<ObjectImpl<Key> > ptrMirror = ObjectImpl<Key>::CreateInstancePtr();
+		ptrMirror->Init(m_pManager,string_t(strName.c_str(),true),mirror_key,0);
+
+		ObjectPtr<ObjectImpl<MirrorKey> > ptrNew = ObjectImpl<MirrorKey>::CreateInstancePtr();
+		ptrNew->Init(L"\\Local User",ptrLocal,ptrMirror);
+		return ptrNew.AddRef();
+	}
+	
+	return 0;
+}
+
+ObjectPtr<ObjectImpl<Key> > Key::OpenSubKey_i(const string_t& strSubKey, IKey::OpenFlags_t flags)
+{
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::CreateKey));
 	request.write(m_key);
 	request.write(m_type);
 	request.write(strSubKey.ToUTF8().c_str());
-	request.write((flags & IKey::Create) ? true : false);
-	request.write((flags & IKey::FailIfThere) ? true : false);
+	request.write(flags);
 	if (request.last_error() != 0)
 		OMEGA_THROW(request.last_error());
 
@@ -538,14 +623,12 @@ IKey* Key::OpenSubKey(const string_t& strSubKey, IKey::OpenFlags_t flags)
 	Omega::int64_t key = 0;
 	Omega::byte_t type = 255;
 	if (!response->read(key) || !response->read(type))
-		OMEGA_THROW(response->last_error());	
-	
+		OMEGA_THROW(response->last_error());
+
 	// By the time we get here then we have successfully opened or created the key...
 	ObjectPtr<ObjectImpl<Key> > ptrNew = ObjectImpl<Key>::CreateInstancePtr();
-
 	ptrNew->Init(m_pManager,m_strKey + L"\\" + strSubKey,key,type);
-
-	return ptrNew.AddRef();
+	return ptrNew;
 }
 
 std::set<Omega::string_t> Key::EnumSubKeys()
@@ -572,27 +655,19 @@ std::set<Omega::string_t> Key::EnumSubKeys()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> sub_keys;
-		
-	try
+	std::set<Omega::string_t> sub_keys;	
+	for (;;)
 	{
-		for (;;)
-		{
-			std::string strName;
-			if (!response->read(strName))
-				OMEGA_THROW(response->last_error());
+		std::string strName;
+		if (!response->read(strName))
+			OMEGA_THROW(response->last_error());
 
-			if (strName.empty())
-				break;
+		if (strName.empty())
+			break;
 
-			sub_keys.insert(string_t(strName.c_str(),true));
-		}		
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
+		sub_keys.insert(string_t(strName.c_str(),true));
+	}		
+	
 	return sub_keys;
 }
 
@@ -620,33 +695,39 @@ std::set<Omega::string_t> Key::EnumValues()
 	else if (err != 0)
 		OMEGA_THROW(err);
 
-	std::set<Omega::string_t> values;
-		
-	try
+	std::set<Omega::string_t> values;	
+	for (;;)
 	{
-		for (;;)
-		{
-			std::string strName;
-			if (!response->read(strName))
-				OMEGA_THROW(response->last_error());
+		std::string strName;
+		if (!response->read(strName))
+			OMEGA_THROW(response->last_error());
 
-			if (strName.empty())
-				break;
+		if (strName.empty())
+			break;
 
-			values.insert(string_t(strName.c_str(),true));
-		}		
-	}
-	catch (std::exception& e)
-	{
-		OMEGA_THROW(e);
-	}
-
+		values.insert(string_t(strName.c_str(),true));
+	}		
+	
 	return values;
 }
 
 void Key::DeleteKey(const string_t& strSubKey)
 {
 	BadNameException::ValidateSubKey(strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
+
+	if (m_key == 0 && m_type == 0)
+	{
+		string_t strSub = strSubKey;
+		ObjectPtr<IKey> ptrKey;
+		ptrKey.Attach(ParseSubKey(strSub));
+		if (ptrKey)
+		{
+			if (strSub.IsEmpty())
+				AccessDeniedException::Throw(m_strKey + L"\\" + strSubKey,L"Omega::Registry::IRegistry::DeleteKey");
+			
+			return ptrKey->DeleteKey(strSub);
+		}
+	}
 
 	OOBase::CDRStream request;
 	request.write(static_cast<Root::RootOpCode_t>(Root::DeleteKey));
@@ -699,3 +780,5 @@ void Key::DeleteValue(const string_t& strName)
 	else if (err != 0)
 		OMEGA_THROW(err);
 }
+
+#include "MirrorKey.inl"

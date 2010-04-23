@@ -446,7 +446,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 	// Set some defaults...
 	try
 	{
-		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::Create);
+		OTL::ObjectPtr<Omega::Registry::IKey> ptrKey(L"\\Local User\\Applications\\OORegEdit\\Layout",Omega::Registry::IKey::OpenCreate);
 
 		wxPoint pt = GetPosition();
 		ptrKey->SetIntegerValue(L"Top",pt.y);
@@ -469,7 +469,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		ptrKey->SetIntegerValue(L"MatchAll",m_bMatchAll ? 1 : 0);
 		ptrKey->SetIntegerValue(L"IgnoreCase",m_bIgnoreCase? 1 : 0);
 
-		ptrKey->SetStringValue(L"Selection",Omega::string_t(m_strSelection));
+		ptrKey->SetStringValue(L"Selection",Omega::string_t(m_strSelection.wc_str(),Omega::string_t::npos));
 
 		size_t nFiles = m_fileHistory.GetCount();
 		ptrKey->SetIntegerValue(L"Favourites",nFiles);
@@ -478,7 +478,7 @@ void MainFrame::OnClose(wxCloseEvent& WXUNUSED(evt))
 		{
 			wxString strName = m_fileHistory.GetHistoryFile(nFiles-1);
 
-			Omega::string_t strVal = m_mapMRU[strName] + L"\\" + Omega::string_t(strName);
+			Omega::string_t strVal = m_mapMRU[strName] + L"\\" + strName.wc_str();
 
 			ptrKey->SetStringValue(Omega::string_t(L"Favourite{0}") % (nFiles-1),strVal);
 		}
@@ -645,7 +645,7 @@ void MainFrame::OnTreeEndLabel(wxTreeEvent& evt)
 	SetCursor(*wxHOURGLASS_CURSOR);
 	try
 	{
-		pItem->RenameKey(Omega::string_t(strOld),Omega::string_t(evt.GetLabel()),(TreeItemData*)m_pTree->GetItemData(evt.GetItem()));
+		pItem->RenameKey(Omega::string_t(strOld.wc_str(),Omega::string_t::npos),Omega::string_t(evt.GetLabel().wc_str(),Omega::string_t::npos),(TreeItemData*)m_pTree->GetItemData(evt.GetItem()));
 	}
 	catch (Omega::Registry::IAlreadyExistsException* pE)
 	{
@@ -708,7 +708,7 @@ void MainFrame::OnListEndLabel(wxListEvent& evt)
 
 	try
 	{
-		if (!pItem->RenameValue(Omega::string_t(strOld),Omega::string_t(evt.GetLabel())))
+		if (!pItem->RenameValue(Omega::string_t(strOld.wc_str(),Omega::string_t::npos),Omega::string_t(evt.GetLabel().wc_str(),Omega::string_t::npos)))
 		{
 			wxMessageBox(wxString::Format(_("Cannot rename %s: The specified value name already exists. Type another name and try again."),strOld.c_str()),_("Error Renaming Value"),wxOK|wxICON_ERROR,this);
 			evt.Veto();
@@ -769,7 +769,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 			{
 				try
 				{
-					pItem->DeleteKey(Omega::string_t(m_pTree->GetItemText(sel_id)));
+					pItem->DeleteKey(Omega::string_t(m_pTree->GetItemText(sel_id).wc_str(),Omega::string_t::npos));
 					m_pTree->Delete(sel_id);
 				}
 				catch (Omega::Registry::IAccessDeniedException* pE)
@@ -811,7 +811,7 @@ void MainFrame::OnDelete(wxCommandEvent& WXUNUSED(evt))
 					long item;
 					while ((item=m_pList->GetNextItem(-1,wxLIST_NEXT_ALL,wxLIST_STATE_SELECTED)) != -1)
 					{
-						pItem->DeleteValue(Omega::string_t(m_pList->GetItemText(item)));
+						pItem->DeleteValue(Omega::string_t(m_pList->GetItemText(item).wc_str(),Omega::string_t::npos));
 						m_pList->DeleteItem(item);
 					}
 				}
@@ -1058,7 +1058,7 @@ void MainFrame::OnFindNext(wxCommandEvent& WXUNUSED(evt))
 
 	SetCursor(*wxHOURGLASS_CURSOR);
 
-	pItem->Find(m_pTree,tree_id,m_pList,m_pList->GetNextItem(-1,wxLIST_NEXT_ALL,wxLIST_STATE_FOCUSED),Omega::string_t(m_strFind),m_bKeys,m_bValues,m_bData,m_bMatchAll,m_bIgnoreCase);
+	pItem->Find(m_pTree,tree_id,m_pList,m_pList->GetNextItem(-1,wxLIST_NEXT_ALL,wxLIST_STATE_FOCUSED),Omega::string_t(m_strFind.wc_str(),Omega::string_t::npos),m_bKeys,m_bValues,m_bData,m_bMatchAll,m_bIgnoreCase);
 
 	SetCursor(*wxSTANDARD_CURSOR);
 }
@@ -1233,7 +1233,7 @@ void MainFrame::OnAddFav(wxCommandEvent& /*evt*/)
 
 	if (dialog.ShowModal() == wxID_OK)
 	{
-		m_mapMRU.insert(std::map<wxString,Omega::string_t>::value_type(dialog.m_strName,Omega::string_t(m_strSelection)));
+		m_mapMRU.insert(std::map<wxString,Omega::string_t>::value_type(dialog.m_strName,Omega::string_t(m_strSelection.wc_str(),Omega::string_t::npos)));
 		m_fileHistory.AddFileToHistory(dialog.m_strName);
 	}
 }
@@ -1276,7 +1276,7 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
-			ptrKey->SetDescription(dialog.m_strDesc.wc_str());
+			ptrKey->SetDescription(Omega::string_t(dialog.m_strDesc.wc_str(),Omega::string_t::npos));
 
 			SetKeyDescription(m_pTree->GetSelection());
 		}
@@ -1288,11 +1288,11 @@ void MainFrame::OnDescEdit(wxHtmlLinkEvent& evt)
 		EditValueDescDlg dialog(this,-1,wxT(""));
 		dialog.m_strName = m_strSelection;
 		dialog.m_strValue = evt.GetLinkInfo().GetTarget();
-		dialog.m_strDesc = ptrKey->GetValueDescription(dialog.m_strValue.wc_str()).c_str();
+		dialog.m_strDesc = ptrKey->GetValueDescription(Omega::string_t(dialog.m_strValue.wc_str(),Omega::string_t::npos)).c_str();
 
 		if (dialog.ShowModal() == wxID_OK)
 		{
-			ptrKey->SetValueDescription(dialog.m_strValue.wc_str(),dialog.m_strDesc.wc_str());
+			ptrKey->SetValueDescription(Omega::string_t(dialog.m_strValue.wc_str(),Omega::string_t::npos),Omega::string_t(dialog.m_strDesc.wc_str(),Omega::string_t::npos));
 
 			SetValueDescription(dialog.m_strValue,dialog.m_strDesc);
 		}

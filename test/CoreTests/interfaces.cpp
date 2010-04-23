@@ -200,7 +200,7 @@ namespace
 
 		Omega::string_t WhereAmI()
 		{
-			return L"Outer";
+			return Omega::string_t(L"Outer");
 		}
 
 	private:
@@ -222,7 +222,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 
 	// Register the library
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -307,7 +307,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	interface_tests(ptrSimpleTest);
 
 	// Test redirecting the registration
-	Omega::string_t strXML =
+	Omega::string_t strXML(
 		L"<?xml version=\"1.0\" ?>"
 		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
 			L"<key name=\"\\All Users\\Objects\">"
@@ -315,9 +315,9 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
 				L"</key>"
 			L"</key>"
-		L"</root>";
+		L"</root>");
 
-	Omega::string_t strSubsts = L"OBJECT=";
+	Omega::string_t strSubsts(L"OBJECT=");
 	strSubsts += L"Test.Library";
 
 	bool bSkip = false;
@@ -352,7 +352,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 	}
 
 	// Try overloading the local only
-	strXML =
+	strXML = Omega::string_t(
 		L"<?xml version=\"1.0\" ?>"
 		L"<root xmlns=\"http://www.omegaonline.org.uk/schemas/registry.xsd\">"
 			L"<key name=\"\\Local User\\Objects\">"
@@ -360,7 +360,7 @@ static bool do_local_library_test(const wchar_t* pszLibName, bool& bSkipped)
 					L"<value name=\"CurrentVersion\">%OBJECT%</value>"
 				L"</key>"
 			L"</key>"
-		L"</root>";
+		L"</root>");
 
 	Omega::Registry::AddXML(strXML,true,strSubsts);
 
@@ -411,7 +411,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	output("  %-45ls ",pszModulePath);
 
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),0) != 0)
+	if (access(Omega::string_t(pszModulePath,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -420,7 +420,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 #endif
 
 	bSkipped = false;
-	if (system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) != 0)
+	if (system((Omega::string_t(pszModulePath,Omega::string_t::npos) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) != 0)
 	{
 		add_failure(L"Registration failed\n");
 		return false;
@@ -501,7 +501,7 @@ static bool do_local_process_test(const wchar_t* pszModulePath, bool& bSkipped)
 	}
 
 	// Test unregistering
-	TEST(system((Omega::string_t(pszModulePath) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
+	TEST(system((Omega::string_t(pszModulePath,Omega::string_t::npos) +  L" -u MODULE_PATH=" + pszModulePath).ToUTF8().c_str()) == 0);
 
 	// Check its gone
 	try
@@ -521,17 +521,17 @@ const wchar_t** get_dlls()
 {
 	static const wchar_t* dlls[] =
 	{
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 		L"TestLibrary_msvc.dll",
-	#if defined(__MINGW32__)
-			L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
-	#elif defined(_MSC_VER)
-		#if defined(_DEBUG)
-				L"..\\..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
-		#else
-				L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
-		#endif
+	#if defined(_DEBUG)
+			L"..\\..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
+	#else
+			L"..\\build\\test\\CoreTests\\TestLibrary\\.libs\\TestLibrary.dll",
 	#endif
+#elif defined(__MINGW32__)
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestLibrary_msvc.dll",
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestLibrary_msvc.dll",
+		L"CoreTests/TestLibrary/.libs/TestLibrary.dll",
 #else
 		L"CoreTests/TestLibrary/testlibrary",
 #endif
@@ -561,19 +561,19 @@ const wchar_t** get_exes()
 {
 	static const wchar_t* exes[] =
 	{
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 		L"TestProcess_msvc.exe",
-	#if defined(__MINGW32__)
-			L"CoreTests\\TestProcess\\.libs\\testprocess.exe",
-	#elif defined(_MSC_VER)
-		#if defined(_DEBUG)
-				L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
-		#else
-				L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
-		#endif
+	#if defined(_DEBUG)
+			L"..\\..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
+	#else
+			L"..\\build\\test\\CoreTests\\TestProcess\\testprocess.exe",
 	#endif
+#elif defined(__MINGW32__)
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/TestProcess_msvc.exe",
+		OMEGA_WIDEN_STRINGIZE(TOP_SRC_DIR) L"/bin/Debug/TestProcess_msvc.exe",
+		OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/TestProcess/testprocess.exe",
 #else
-		L"CoreTests/TestProcess/testprocess",
+		OMEGA_WIDEN_STRINGIZE(BUILD_DIR) L"/TestProcess/testprocess",
 #endif
 		0
 	};
@@ -605,7 +605,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 
 	// Register the library
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszLibName).ToUTF8().c_str(),0) != 0)
+	if (access(Omega::string_t(pszLibName,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -620,7 +620,7 @@ static bool do_library_test(const wchar_t* pszLibName, const wchar_t* pszEndpoin
 		return false;
 	}
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Library@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 
@@ -632,7 +632,7 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 	output("  %-45ls ",pszModulePath);
 
 #if defined(_WIN32)
-	if (access(Omega::string_t(pszModulePath).ToUTF8().c_str(),0) != 0)
+	if (access(Omega::string_t(pszModulePath,Omega::string_t::npos).ToUTF8().c_str(),0) != 0)
 	{
 		output("[Missing]\n");
 		bSkipped = true;
@@ -640,9 +640,9 @@ static bool do_process_test(const wchar_t* pszModulePath, const wchar_t* pszEndp
 	}
 #endif
 
-	system((Omega::string_t(pszModulePath) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
+	system((Omega::string_t(pszModulePath,Omega::string_t::npos) + L" -i MODULE_PATH=" + pszModulePath).ToUTF8().c_str());
 
-	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint));
+	OTL::ObjectPtr<Omega::TestSuite::ISimpleTest> ptrSimpleTest(L"Test.Process@" + Omega::string_t(pszEndpoint,Omega::string_t::npos));
 	TEST(ptrSimpleTest);
 	interface_tests(ptrSimpleTest);
 

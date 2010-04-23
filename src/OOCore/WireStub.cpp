@@ -70,40 +70,33 @@ void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pPa
 
 ObjectPtr<Remoting::IStub> OOCore::Stub::FindStub(const guid_t& iid)
 {
-	try
-	{
-		OOBase::Guard<OOBase::SpinLock> guard(m_lock);
+	OOBase::Guard<OOBase::SpinLock> guard(m_lock);
 
-		// See if we have a stub for this interface already...
-		std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator i=m_iid_map.find(iid);
-		if (i != m_iid_map.end())
-			return i->second;
-			
-		// See if any known interface supports the new interface
-		ObjectPtr<Remoting::IStub> ptrStub;
-		for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
-		{
-			if (i->second && i->second->SupportsInterface(iid))
-			{
-				ptrStub = i->second;
-				break;
-			}
-		}
-	
-		if (!ptrStub)
-			ptrStub.Attach(CreateStub(iid));
-			
-		// Now add it...
-		std::pair<std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<Remoting::IStub> >::value_type(iid,ptrStub));
-		if (!p.second)
-			ptrStub = p.first->second;
-				
-		return ptrStub;
-	}
-	catch (std::exception& e)
+	// See if we have a stub for this interface already...
+	std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator i=m_iid_map.find(iid);
+	if (i != m_iid_map.end())
+		return i->second;
+		
+	// See if any known interface supports the new interface
+	ObjectPtr<Remoting::IStub> ptrStub;
+	for (i=m_iid_map.begin();i!=m_iid_map.end();++i)
 	{
-		OMEGA_THROW(e);
+		if (i->second && i->second->SupportsInterface(iid))
+		{
+			ptrStub = i->second;
+			break;
+		}
 	}
+
+	if (!ptrStub)
+		ptrStub.Attach(CreateStub(iid));
+		
+	// Now add it...
+	std::pair<std::map<const guid_t,ObjectPtr<Remoting::IStub> >::iterator,bool> p=m_iid_map.insert(std::map<const guid_t,ObjectPtr<Remoting::IStub> >::value_type(iid,ptrStub));
+	if (!p.second)
+		ptrStub = p.first->second;
+			
+	return ptrStub;
 }
 
 Remoting::IStub* OOCore::Stub::CreateStub(const guid_t& iid)

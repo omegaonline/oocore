@@ -273,7 +273,7 @@ namespace OTL
 		{ }
 
 		ObjectPtr(const wchar_t* name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :
-		  ObjectPtrBase<OBJECT>(name,flags,pOuter)
+		  ObjectPtrBase<OBJECT>(Omega::string_t(name,Omega::string_t::npos),flags,pOuter)
 		{ }
 
 		ObjectPtr(const Omega::string_t& name, Omega::Activation::Flags_t flags = Omega::Activation::Any, Omega::IObject* pOuter = 0) :

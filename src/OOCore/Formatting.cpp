@@ -136,11 +136,17 @@ namespace
 
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SMONDECIMALSEP,decimal_point,sizeof(decimal_point)))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		char grouping_buf[128] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SMONGROUPING,grouping_buf,sizeof(grouping_buf)))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		// Build a crt style grouping
 		char grouping_trans[128] = {0};
@@ -162,7 +168,10 @@ namespace
 
 		char thousands_sep[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SMONTHOUSANDSEP,thousands_sep,sizeof(thousands_sep)))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 #else
 		const char* decimal_point = ".";
 		const char* grouping = "\x03\x00";
@@ -213,20 +222,32 @@ namespace
 		{
 			DWORD val = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_INEGSEPBYSPACE | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 			sep_by_space = (val == 1);
 
 			if (!GetLocaleInfoA(lcid,LOCALE_INEGSYMPRECEDES | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 			cs_precedes = (val == 1);
 
 			if (!GetLocaleInfoA(lcid,LOCALE_INEGSIGNPOSN | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 			posn = static_cast<int>(val);
 
 			char sign_symbol[6];
 			if (!GetLocaleInfoA(lcid,LOCALE_SNEGATIVESIGN,sign_symbol,sizeof(sign_symbol)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 
 			sign = sign_symbol;
 		}
@@ -234,27 +255,42 @@ namespace
 		{
 			DWORD val = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSEPBYSPACE | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 			sep_by_space = (val == 1);
 
 			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSYMPRECEDES | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 			cs_precedes = (val == 1);
 
 			if (!GetLocaleInfoA(lcid,LOCALE_IPOSSIGNPOSN | LOCALE_RETURN_NUMBER,(LPSTR)&val,sizeof(val)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 			posn = static_cast<int>(val);
 
 			char sign_symbol[6];
 			if (!GetLocaleInfoA(lcid,LOCALE_SPOSITIVESIGN,sign_symbol,sizeof(sign_symbol)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 
 			sign = sign_symbol;
 		}
 
 		char currency_buf[8];
 		if (!GetLocaleInfoA(lcid,LOCALE_SCURRENCY,currency_buf,sizeof(currency)))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		currency = currency_buf;
 
@@ -328,7 +364,10 @@ namespace
 
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,sizeof(decimal_point)))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		char thousands_sep[5] = {0};
 		char trans_grouping[128] = {0};
@@ -338,7 +377,10 @@ namespace
 		{
 			char grouping_buf[128] = {0};
 			if (!GetLocaleInfoA(lcid,LOCALE_SGROUPING,grouping_buf,sizeof(grouping_buf)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 
 			// Build a crt style grouping
 
@@ -358,7 +400,10 @@ namespace
 			trans_grouping[g+1] = CHAR_MAX;
 
 			if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_sep,sizeof(thousands_sep)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 		}
 #else
 		const char* decimal_point = ".";
@@ -450,7 +495,10 @@ namespace
 
 			DWORD v = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 
 			precision = static_cast<int>(v);
 #else
@@ -480,7 +528,10 @@ namespace
 
 			DWORD v = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 
 			precision = static_cast<int>(v);
 #else
@@ -571,7 +622,10 @@ namespace
 
 			DWORD v = 0;
 			if (!GetLocaleInfoA(lcid,LOCALE_IDIGITS | LOCALE_RETURN_NUMBER,(LPSTR)&v,sizeof(v)))
-				OMEGA_THROW(GetLastError());
+			{
+				DWORD dwErr = GetLastError();
+				OMEGA_THROW(dwErr);
+			}
 
 			precision = static_cast<int>(v);
 #else
@@ -742,11 +796,11 @@ namespace
 			parts.push_back(string_t(str.c_str(),pos++));
 			size_t pos2 = find_skip_quote(str,pos,L";");
 			if (pos2 == string_t::npos)
-				parts.push_back(string_t(str.c_str()+pos));
+				parts.push_back(string_t(str.c_str()+pos,string_t::npos));
 			else
 			{
 				parts.push_back(string_t(str.c_str()+pos,pos2-pos));
-				parts.push_back(string_t(str.c_str()+pos2+1));
+				parts.push_back(string_t(str.c_str()+pos2+1,string_t::npos));
 			}
 		}
 		return parts.size();
@@ -797,14 +851,20 @@ namespace
 
 		char decimal_point[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_SDECIMAL,decimal_point,5))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		std::string decimal_char(decimal_point);
 		string_t decimal(decimal_point,false);
 
 		char thousands_sep[5] = {0};
 		if (!GetLocaleInfoA(lcid,LOCALE_STHOUSAND,thousands_sep,5))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		std::string thousands_char(thousands_sep);
 		string_t thousands(thousands_sep,false);
@@ -823,7 +883,7 @@ namespace
 		string_t thousands(thousands_char.c_str(),false);
 #endif
 
-		string_t strFind = L"0#Ee";
+		string_t strFind(L"0#Ee");
 		strFind += decimal[0];
 		strFind += thousands[0];
 
@@ -1271,18 +1331,27 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 
 	char buffer[256] = {0};
 	if (!GetLocaleInfoA(lcid,LOCALE_SENGLANGUAGE,buffer,255))
-		OMEGA_THROW(GetLastError());
+	{
+		DWORD dwErr = GetLastError();
+		OMEGA_THROW(dwErr);
+	}
 
 	std::string str = buffer;
 
 	if (!GetLocaleInfoA(lcid,LOCALE_SENGCOUNTRY,buffer,255))
-		OMEGA_THROW(GetLastError());
+	{
+		DWORD dwErr = GetLastError();
+		OMEGA_THROW(dwErr);
+	}
 
 	str += "_";
 	str += buffer;
 
 	if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTANSICODEPAGE,buffer,255))
-		OMEGA_THROW(GetLastError());
+	{
+		DWORD dwErr = GetLastError();
+		OMEGA_THROW(dwErr);
+	}
 
 	if (strcmp(buffer,"0") != 0)
 	{
@@ -1292,7 +1361,10 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 	else
 	{
 		if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTCODEPAGE,buffer,255))
-			OMEGA_THROW(GetLastError());
+		{
+			DWORD dwErr = GetLastError();
+			OMEGA_THROW(dwErr);
+		}
 
 		if (strcmp(buffer,"1") != 0)
 		{

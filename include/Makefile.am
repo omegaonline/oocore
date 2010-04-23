@@ -20,6 +20,7 @@ nobase_include_HEADERS = \
 	Omega/internal/safe.h \
 	Omega/internal/safe_ps.h \
 	Omega/internal/safe.inl \
+	Omega/internal/string.h \
 	Omega/internal/threading.h \
 	Omega/internal/threading.inl \
 	Omega/internal/types.h \

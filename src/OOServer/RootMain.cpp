@@ -57,6 +57,8 @@ static int Help()
 	std::cout << "Options:" << std::endl;
 	std::cout << "  --help (-h)      Display this help text" << std::endl;
 	std::cout << "  --version (-v)   Display version information" << std::endl;
+	std::cout << std::endl;
+	std::cout << "  --conf-file (-f) <file_path> Use the specified configuration file" << std::endl;
 	
 	return EXIT_SUCCESS;
 }
@@ -66,14 +68,13 @@ int main(int argc, char* argv[])
 	// Start the logger
 	OOSvrBase::Logger::open("OOServer");
 
-	// The one and only Root::Manager instance
-	Root::Manager root_manager;
-
 	// Set up the command line args
 	OOSvrBase::CmdArgs cmd_args;
-	cmd_args.add_option("help",'h',"help");
-	cmd_args.add_option("version",'v',"version");
-	cmd_args.add_option("unsafe",0,"unsafe");
+	cmd_args.add_option("help",'h');
+	cmd_args.add_option("version",'v');
+	cmd_args.add_option("conf-file",'f',true);
+	cmd_args.add_option("unsafe",0);
+	cmd_args.add_option("batch",0);
 
 	// Parse command line
 	std::map<std::string,std::string> args;
@@ -85,9 +86,9 @@ int main(int argc, char* argv[])
 
 	if (args.find("version") != args.end())
 		return Version();
-	
-	// Run the RootManager
-	return root_manager.run(args);
+
+	// Run the one and only Root::Manager instance
+	return Root::Manager(args).run();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////

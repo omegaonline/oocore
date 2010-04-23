@@ -38,8 +38,8 @@
 #include "SpawnedProcess.h"
 #include "Protocol.h"
 
-Root::Manager::Manager() :
-	m_bUnsafeSandbox(false),
+Root::Manager::Manager(const std::map<std::string,std::string>& args) :
+	m_cmd_args(args),
 	m_sandbox_channel(0)
 {
 	// Root channel is fixed
@@ -50,11 +50,8 @@ Root::Manager::~Manager()
 {
 }
 
-int Root::Manager::run(const std::map<std::string,std::string>& args)
+int Root::Manager::run()
 {
-	// Load args
-	m_bUnsafeSandbox = (args.find("unsafe") != args.end());
-	
 	// Loop until we quit
 	for (bool bQuit=false;!bQuit;)
 	{
@@ -117,12 +114,53 @@ bool Root::Manager::init_database()
 	if (!m_registry->open(SQLITE_OPEN_READWRITE))
 		return false;
 
-	// Create a new all users database
-	OOBASE_NEW(m_registry_all_users,Registry::Hive(this,i->second + "all_users.regdb",Registry::Hive::write_check));
-	if (!m_registry_all_users)
+	// Create a new System database
+	OOBASE_NEW(m_registry_sandbox,Registry::Hive(this,i->second + "sandbox.regdb",Registry::Hive::write_check));
+	if (!m_registry_sandbox)
 		LOG_ERROR_RETURN(("Out of memory"),false);
 
-	return m_registry_all_users->open(SQLITE_OPEN_READWRITE);
+	return m_registry_sandbox->open(SQLITE_OPEN_READWRITE);
+}
+
+bool Root::Manager::load_config_file(const std::string& strFile)
+{
+	// Load simple config file...
+	try
+	{
+		std::ifstream fs(strFile.c_str());
+		while (!fs.eof())
+		{
+			// Read line
+			std::string line;
+			std::getline(fs,line);
+
+			if (!line.empty() && line[0] != '#')
+			{
+				// Read line as key=value
+				std::string key,value;
+				size_t pos = line.find('=');
+				if (pos == std::string::npos)
+				{
+					key = line;
+					value = "true";
+				}
+				else
+				{
+					key = line.substr(0,pos);
+					value = line.substr(pos+1);
+				}
+
+				// Insert into map
+				m_config_args[key] = value;
+			}
+		}
+
+		return true;
+	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR_RETURN(("std::exception thrown %s",e.what()),false);
+	}
 }
 
 bool Root::Manager::can_route(Omega::uint32_t src_channel, Omega::uint32_t dest_channel)
@@ -380,6 +418,10 @@ void Root::Manager::process_request(OOBase::CDRStream& request, Omega::uint32_t 
 
 	case DeleteValue:
 		registry_delete_value(src_channel_id,request,response);
+		break;
+
+	case OpenMirrorKey:
+		registry_open_mirror_key(src_channel_id,request,response);
 		break;
 
 	default:

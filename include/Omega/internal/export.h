@@ -36,21 +36,19 @@
 	class OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit) \
 	{ \
 	public: \
-		static const wchar_t* get_name() { return OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(n_space::iface)); } \
 		OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 		{ \
 			static const qi_rtti s_rtti = \
 			{ \
 				&Safe_Proxy<n_space::iface,n_space::iface >::bind, \
-				&Safe_Stub<n_space::iface >::create, \
-				get_name() \
+				&Safe_Stub<n_space::iface >::create \
 			}; \
 			register_rtti_info(OMEGA_GUIDOF(n_space::iface),&s_rtti); \
-			register_typeinfo(OMEGA_GUIDOF(n_space::iface),get_name(),TypeInfo_Holder<n_space::iface >::get_type_info()); \
+			register_typeinfo(OMEGA_GUIDOF(n_space::iface),OMEGA_WIDEN_STRINGIZE(n_space::iface),typeinfo_holder<n_space::iface >::get_type_info()); \
 		} \
 		~OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit)() \
 		{ \
-			unregister_typeinfo(OMEGA_GUIDOF(n_space::iface),TypeInfo_Holder<n_space::iface >::get_type_info()); \
+			unregister_typeinfo(OMEGA_GUIDOF(n_space::iface),typeinfo_holder<n_space::iface >::get_type_info()); \
 		} \
 	}; \
 	OMEGA_WEAK_VARIABLE(OMEGA_CONCAT_R(OMEGA_UNIQUE_NAME(iface),_RttiInit),OMEGA_CONCAT_R(OMEGA_CONCAT(OMEGA_MODULE_PRIVATE_NAME,_RttiInit_),OMEGA_UNIQUE_NAME(iface)));
@@ -155,7 +153,11 @@
 	}; \
 	template <> struct type_kind<n_space::name*> \
 	{ \
-		static const TypeInfo::Types_t type = TypeInfo::typeObject; \
+		static const type_holder* type() \
+		{ \
+			static const type_holder t = { TypeInfo::typeObject, (const type_holder*)(&OMEGA_GUIDOF(n_space::name)) }; \
+			return &t; \
+		} \
 	};
 
 #define OMEGA_DECLARE_SAFE(unique,methods,n_space,name,d_space,derived) \
@@ -181,11 +183,11 @@
 	OMEGA_CONCAT(OMEGA_DECLARE_TYPE_,meta) d
 
 // Add extra meta info types here
-#define OMEGA_DECLARE_TYPE_ATTR_in(t,name)        ""
-#define OMEGA_DECLARE_TYPE_ATTR_in_out(t,name)    ""
-#define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       ""
-#define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_STRINGIZE(iid) OMEGA_DECLARE_TYPE_ATTR_II
-#define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_STRINGIZE(size) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_in(t,name)        L""
+#define OMEGA_DECLARE_TYPE_ATTR_in_out(t,name)    L""
+#define OMEGA_DECLARE_TYPE_ATTR_out(t,name)       L""
+#define OMEGA_DECLARE_TYPE_ATTR_iid_is(iid)       OMEGA_WIDEN_STRINGIZE(iid) OMEGA_DECLARE_TYPE_ATTR_II
+#define OMEGA_DECLARE_TYPE_ATTR_size_is(size)     OMEGA_WIDEN_STRINGIZE(size) OMEGA_DECLARE_TYPE_ATTR_II
 #define OMEGA_DECLARE_TYPE_ATTR_II(t,name)
 
 #define OMEGA_DECLARE_TYPE_PARAM_III(index,meta,d) \
@@ -193,10 +195,9 @@
 
 #define OMEGA_DECLARE_TYPE_PARAM_I(meta,t,name) \
 	{ \
-		OMEGA_STRINGIZE(name),type_kind<t >::type, \
+		OMEGA_WIDEN_STRINGIZE(name),type_kind<t >::type(), \
 		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_II,meta,(t,name)), \
-		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_III,meta,(t,name)), \
-		typeinfo_rtti::has_guid_t<type_kind<t >::type==TypeInfo::typeObject,t >::guid() \
+		OMEGA_SEQUENCE_FOR_EACH_R2(OMEGA_DECLARE_TYPE_PARAM_III,meta,(t,name)) \
 	},
 
 #define OMEGA_DECLARE_TYPE_PARAM(index,params,d) \
@@ -205,7 +206,7 @@
 #define OMEGA_DECLARE_TYPE_PARAMS(param_count,params) \
 	static const typeinfo_rtti::ParamInfo pi[] = { \
 		OMEGA_TUPLE_FOR_EACH(param_count,OMEGA_DECLARE_TYPE_PARAM,OMEGA_SPLIT_3(param_count,params),0) \
-		{ 0, 0, 0, "", 0 } }; \
+		{ 0, 0, 0, L"" } }; \
 	return pi;
 
 #define OMEGA_DECLARE_TYPE_PARAM_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
@@ -224,13 +225,13 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD_PARAM,methods,0)
 
 #define OMEGA_DECLARE_TYPE_DECLARED_METHOD_VOID(attribs,timeout,name,param_count,params) \
-	{ OMEGA_STRINGIZE(name),attribs,timeout,param_count,TypeInfo::typeVoid
+	{ OMEGA_WIDEN_STRINGIZE(name),attribs,timeout,param_count,type_kind<void>::type()
 
 #define OMEGA_DECLARE_TYPE_DECLARED_METHOD(attribs,timeout,ret_type,name,param_count,params) \
-	{ OMEGA_STRINGIZE(name),attribs,timeout,param_count,type_kind<ret_type >::type
+	{ OMEGA_WIDEN_STRINGIZE(name),attribs,timeout,param_count,type_kind<ret_type >::type()
 
 #define OMEGA_DECLARE_TYPE_DECLARED_NO_METHODS() \
-	{ "",0,0,0,0
+	{ L"",0,0,0,0
 
 #define OMEGA_DECLARE_TYPE_METHOD(index,method,d) \
 	OMEGA_CONCAT_R(OMEGA_DECLARE_TYPE_,method) ,&OMEGA_CONCAT_R(method_param_,index) },
@@ -239,7 +240,7 @@
 	OMEGA_SEQUENCE_FOR_EACH_R(OMEGA_DECLARE_TYPE_METHOD,methods,0)
 
 #define OMEGA_DECLARE_TYPE(n_space,name,methods,d_space,derived) \
-	template <> class TypeInfo_Holder<n_space::name > \
+	template <> class typeinfo_holder<n_space::name > \
 	{ \
 	public: \
 		static const typeinfo_rtti* get_type_info() \
@@ -247,7 +248,7 @@
 			static const typeinfo_rtti ti = { &method_info, method_count, &OMEGA_GUIDOF(d_space::derived) }; \
 			return &ti; \
 		}; \
-		static const uint32_t method_count = TypeInfo_Holder<d_space::derived >::method_count + OMEGA_SEQUENCE_SIZEOF(methods); \
+		static const uint32_t method_count = OMEGA_SEQUENCE_SIZEOF(methods); \
 	private: \
 		OMEGA_DECLARE_TYPE_METHOD_PARAMS(methods) \
 		static const typeinfo_rtti::MethodInfo* method_info() \
@@ -280,7 +281,7 @@
 	{ \
 		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { deref_shim(OMEGA_CONCAT(name,_shim))->name( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
-		catch (std::exception& OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); } \
+		catch (std::exception& OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_exception),OMEGA_WIDEN_STRINGIZE(name))); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
 	}
@@ -291,7 +292,7 @@
 		const SafeShim* OMEGA_CONCAT(name,_except) = 0; \
 		try { static_cast<ret_type&>(marshal_info<ret_type&>::safe_type::coerce(OMEGA_CONCAT(name,_RetVal))) = \
 			deref_shim(OMEGA_CONCAT(name,_shim))->name( OMEGA_DEFINE_PARAMS_SAFE_STUB_VOID(param_count,params) ); } \
-		catch (std::exception& OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); } \
+		catch (std::exception& OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_exception),OMEGA_WIDEN_STRINGIZE(name))); } \
 		catch (IException* OMEGA_CONCAT(name,_exception)) { OMEGA_CONCAT(name,_except) = return_safe_exception(OMEGA_CONCAT(name,_exception)); } \
 		return OMEGA_CONCAT(name,_except); \
 	}
@@ -330,8 +331,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_DECLARE_PARAM_WIRE_STUB,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
@@ -354,8 +355,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_WRITE_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_STUB_PARAM_out(t,name)       write(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_STUB_PARAM_II
 #define OMEGA_WIRE_WRITE_STUB_PARAM_II(t,name)
@@ -377,8 +378,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_II(t,name)
@@ -559,8 +560,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_READ_PROXY_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
+#define OMEGA_WIRE_READ_PROXY_PARAM_out(t,name)       read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_PROXY_PARAM_II
 #define OMEGA_WIRE_READ_PROXY_PARAM_II(t,name)
@@ -581,8 +582,8 @@
 	OMEGA_TUPLE_FOR_EACH(count,OMEGA_READ_PARAM_WIRE_PROXY,OMEGA_SPLIT_3(count,params),0)
 
 // Add extra meta info types here
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in(t,name)        write(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_WRITE_PROXY_PARAM_in_out(t,name)    write(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_out(t,name)       no_op(false
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_WRITE_PROXY_PARAM_II
 #define OMEGA_WIRE_WRITE_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_WRITE_PROXY_PARAM_II
@@ -605,8 +606,8 @@
 
 // Add extra meta info types here
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_in(t,name)        no_op(false
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_II(t,name)
@@ -862,7 +863,7 @@
 		} \
 		catch (std::exception& OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
@@ -870,7 +871,7 @@
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 	} \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
@@ -886,7 +887,7 @@
 		} \
 		catch (std::exception& OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
@@ -894,7 +895,7 @@
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 	} \
 	ret_type OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
@@ -910,7 +911,7 @@
 		} \
 		catch (std::exception& OMEGA_CONCAT(name,_Exception)) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception),OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception)) \
 		{ \
@@ -918,7 +919,7 @@
 		} \
 		catch (...) \
 		{ \
-			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			return Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 	} \
 	void OMEGA_CONCAT(name,_Impl)(OMEGA_DECLARE_PARAMS_VOID(param_count,params))
@@ -933,7 +934,7 @@
 		} \
 		catch (std::exception& OMEGA_CONCAT(name,_Exception2)) \
 		{ \
-			*OMEGA_CONCAT(name,_Exception) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception2),OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			*OMEGA_CONCAT(name,_Exception) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(OMEGA_CONCAT(name,_Exception2),OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 		catch (Omega::IException* OMEGA_CONCAT(name,_Exception2)) \
 		{ \
@@ -941,7 +942,7 @@
 		} \
 		catch (...) \
 		{ \
-			*OMEGA_CONCAT(name,_Exception) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRING(OMEGA_STRINGIZE(name)))); \
+			*OMEGA_CONCAT(name,_Exception) = Omega::System::Internal::return_safe_exception(Omega::ISystemException::Create(L"Unhandled exception",OMEGA_WIDEN_STRINGIZE(name))); \
 		} \
 		return Omega::System::Internal::default_value<ret_type>::value(); \
 	} \

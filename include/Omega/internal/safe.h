@@ -546,16 +546,13 @@ namespace Omega
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type val) : m_val(string_t_safe_type::coerce(val))
-					{
-						string_t_safe_type::addref(val);
-					}
+					type_wrapper(safe_type val) : m_val(string_t_safe_type::create(val))
+					{ }
 
 					void update(safe_type& dest)
 					{
 						string_t_safe_type::release(dest);
-						dest = string_t_safe_type::coerce(m_val);
-						string_t_safe_type::addref(dest);
+						dest = string_t_safe_type::addref(m_val,true);
 					}
 
 					operator string_t&()
@@ -567,13 +564,11 @@ namespace Omega
 					string_t m_val;
 				};
 				friend struct type_wrapper;
-
+				
 				struct safe_type_wrapper
 				{
-					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::coerce(val))
-					{
-						string_t_safe_type::addref(m_val);
-					}
+					safe_type_wrapper(const string_t& val) : m_val(string_t_safe_type::addref(val,false))
+					{ }
 
 					~safe_type_wrapper()
 					{
@@ -582,8 +577,7 @@ namespace Omega
 
 					void update(string_t& dest)
 					{
-						string_t_safe_type::addref(m_val);
-						dest = string_t_safe_type::coerce(m_val);
+						dest = string_t_safe_type::create(m_val);
 					}
 
 					operator safe_type ()
@@ -601,37 +595,36 @@ namespace Omega
 				};
 				friend struct safe_type_wrapper;
 
-				static void* clone(const string_t& s)
+				static safe_type clone(const string_t& s)
 				{
-					void* h = static_cast<void*>(s.m_handle);
-					addref(h);
-					return h;
+					return addref(s,true);
 				}
 
-				static string_t clone(void* v)
+				static string_t clone(safe_type v)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v));
+					return string_t(static_cast<string_t::handle_t*>(v),false);
 				}
 
 			private:
-				static void* coerce(const string_t& s)
+				static string_t create(safe_type v)
 				{
-					return static_cast<void*>(s.m_handle);
+					return string_t(static_cast<string_t::handle_t*>(v),true);
 				}
 
-				static string_t coerce(void* v)
+				static safe_type addref(const string_t& val, bool own)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v));
+					// We only need to take ownership if we are passing out of a dll that isn't OOCore
+				#if !defined(OOCORE_INTERNAL)
+					return string_t::addref(val.m_handle,own);
+				#else
+					OMEGA_UNUSED_ARG(own);
+					return string_t::addref(val.m_handle,false);
+				#endif
 				}
 
-				static void addref(void* v)
+				static void release(safe_type val)
 				{
-					string_t::addref(static_cast<string_t::handle_t*>(v));
-				}
-
-				static void release(void* v)
-				{
-					string_t::release(static_cast<string_t::handle_t*>(v));
+					string_t::release(static_cast<string_t::handle_t*>(val));
 				}
 			};
 

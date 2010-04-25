@@ -745,6 +745,14 @@ bool SpawnedProcessWin32::Spawn(const std::wstring& strAppPath, int nUnsafe, HAN
 					LOG_ERROR_RETURN(("OOSvrBase::Win32::RestrictToken failed: %s",OOBase::Win32::FormatMessage(dwRes).c_str()),false);
 
 				dwRes = SpawnFromToken(strAppPath,hToken2,strPipe,bSandbox);
+				if (dwRes == ERROR_SUCCESS)
+				{
+					// Stash our original token as the process token
+					CloseHandle(m_hToken);
+					
+					// Duplicate the impersonated token...
+					DuplicateToken(hToken,SecurityImpersonation,&m_hToken);
+				}
 			}
 		}
 

@@ -501,7 +501,7 @@ int OOCore::UserSession::run_read_loop()
 	}
 
 	// Stop the message queue
-	m_default_msg_queue.pulse();
+	m_default_msg_queue.close();
 
 	return err;
 }

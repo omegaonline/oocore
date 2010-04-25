@@ -531,7 +531,6 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 		else
 			nUnsafe = 1;
 	}
-	if (nUnsafe)
 
 	std::wstring strAppName;
 	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");

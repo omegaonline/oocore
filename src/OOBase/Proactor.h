@@ -29,7 +29,7 @@
 #if !defined(_WIN32)
 typedef struct
 {
-	int unused;
+	mode_t mode;
 } SECURITY_ATTRIBUTES;
 #endif
 

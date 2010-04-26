@@ -752,7 +752,7 @@ void OOSvrBase::Ev::ProactorImpl::on_io_i(io_watcher* watcher, int events)
 	}
 }
 
-OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES*)
+OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, const std::string& path, int* perr, SECURITY_ATTRIBUTES* psa)
 {
 	// path is a UNIX pipe name - e.g. /tmp/ooserverd
 
@@ -783,14 +783,37 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 		return 0;
 	}
 
-	// Bind and listen...
+	// Compose filename
 	sockaddr_un addr;
 	addr.sun_family = AF_UNIX;
 	memset(addr.sun_path,0,sizeof(addr.sun_path));
 	path.copy(addr.sun_path,sizeof(addr.sun_path)-1);
 
-	if (bind(fd,reinterpret_cast<sockaddr*>(&addr),sizeof(addr)) != 0 ||
-		listen(fd,0) != 0)
+	// Unlink any existing inode
+	unlink(path.c_str());
+
+	// Bind...
+	if (bind(fd,reinterpret_cast<sockaddr*>(&addr),sizeof(addr)) != 0)
+	{
+		*perr = errno;
+		close(fd);
+		return 0;
+	}
+
+	// Chmod
+	mode_t mode = 0777;
+	if (psa)
+		mode = psa->mode;
+
+	if (chmod(path.c_str(),mode) != 0)
+	{
+		*perr = errno;
+		close(fd);
+		return 0;
+	}
+
+	// Listen...
+	if (listen(fd,0) != 0)
 	{
 		*perr = errno;
 		close(fd);
@@ -799,7 +822,7 @@ OOBase::Socket* OOSvrBase::Ev::ProactorImpl::accept_local(Acceptor* handler, con
 
 	// Wrap up in a controlling socket class
 	OOBase::SmartPtr<Ev::AcceptSocket<OOBase::POSIX::LocalSocket> > pAccept = 0;
-	OOBASE_NEW(pAccept,Ev::AcceptSocket<OOBase::POSIX::LocalSocket>(this));
+	OOBASE_NEW(pAccept,Ev::AcceptSocket<OOBase::POSIX::LocalSocket>(this,path));
 	if (!pAccept)
 		*perr = ENOMEM;
 	else

@@ -37,8 +37,11 @@
 
 #if defined(_WIN32)
 	#include <io.h>
-	#include <fcntl.h>
 #endif // _WIN32
+
+#if defined(HAVE_FCNTL_H)
+	#include <fcntl.h>
+#endif // HAVE_FCNTL_H
 
 #if defined(HAVE_ASL_H)
 	#include <asl.h>

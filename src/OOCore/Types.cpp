@@ -21,6 +21,10 @@
 
 #include "OOCore_precomp.h"
 
+#if defined(HAVE_UUID_UUID_H)
+#include <uuid/uuid.h>
+#endif
+
 using namespace Omega;
 
 namespace

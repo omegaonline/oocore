@@ -371,7 +371,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Registry_AddXML,3,((in),const string_
 
 		string_t strVal;
 		if (p)
-			strVal = string_t(rd_ptr,p - rd_ptr);
+			strVal = string_t(rd_ptr,static_cast<size_t>(p - rd_ptr));
 		else
 			strVal = string_t(rd_ptr,string_t::npos);
 		

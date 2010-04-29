@@ -3,6 +3,25 @@
 
 bool any_tests()
 {
+	TEST(Omega::any_t(Omega::bool_t(false)).GetType() == Omega::TypeInfo::typeBool);
+	TEST(Omega::any_t(Omega::byte_t(1)).GetType() == Omega::TypeInfo::typeByte);
+	TEST(Omega::any_t(Omega::int16_t(2)).GetType() == Omega::TypeInfo::typeInt16);
+	TEST(Omega::any_t(Omega::uint16_t(3)).GetType() == Omega::TypeInfo::typeUInt16);
+	TEST(Omega::any_t(Omega::int32_t(4)).GetType() == Omega::TypeInfo::typeInt32);
+	TEST(Omega::any_t(Omega::uint32_t(5)).GetType() == Omega::TypeInfo::typeUInt32);
+	TEST(Omega::any_t(Omega::int64_t(6)).GetType() == Omega::TypeInfo::typeInt64);
+	TEST(Omega::any_t(Omega::uint64_t(7)).GetType() == Omega::TypeInfo::typeUInt64);
+	TEST(Omega::any_t(Omega::float4_t(8.0)).GetType() == Omega::TypeInfo::typeFloat4);
+	TEST(Omega::any_t(Omega::float8_t(0.9)).GetType() == Omega::TypeInfo::typeFloat8);
+	
+	TEST(Omega::any_t(Omega::guid_t::Null()).GetType() == Omega::TypeInfo::typeGuid);
+
+	TEST(Omega::any_t(Omega::string_t(L"Blah")).GetType() == Omega::TypeInfo::typeString);
+	TEST(Omega::any_t(L"Blah").GetType() == Omega::TypeInfo::typeString);
+	TEST(Omega::any_t(L"").GetType() == Omega::TypeInfo::typeString);
+	TEST(Omega::any_t(L"Blah",4).GetType() == Omega::TypeInfo::typeString);
+	TEST(Omega::any_t("Blah",false).GetType() == Omega::TypeInfo::typeString);
+
 	// any_cast<T> tests constructor + any_t::operator T()
 	{
 		Omega::byte_t v = 23;

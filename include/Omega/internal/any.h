@@ -41,10 +41,7 @@ namespace Omega
 
 		// String constructors
 		any_t(const string_t& val);
-		template <size_t S> 
-		any_t(const wchar_t (&arr)[S], bool copy = false);
-		any_t(const wchar_t (&arr)[1]);
-		any_t(const wchar_t* wsz, size_t length, bool copy = true);
+		any_t(const wchar_t* wsz, size_t length = string_t::npos, bool copy = true);
 		any_t(const char* sz, bool bUTF8, size_t length = string_t::npos);
 
 		template <typename I>

@@ -91,10 +91,30 @@ inline Omega::any_t::any_t(const guid_t& val) :
 		u.pgVal = 0;
 }
 
+inline Omega::any_t::any_t(const string_t& val) :
+	m_type(TypeInfo::typeString)
+{
+	u.pstrVal = string_t::addref(val.m_handle,false);
+}
+
+inline Omega::any_t::any_t(const wchar_t* wsz, size_t length, bool copy) :
+	m_type(TypeInfo::typeString)
+{
+	u.pstrVal = string_t::addref(string_t(wsz,length,copy).m_handle,false);	
+}
+
+inline Omega::any_t::any_t(const char* sz, bool bUTF8, size_t length) :
+	m_type(TypeInfo::typeString)
+{
+	u.pstrVal = string_t::addref(string_t(sz,bUTF8,length).m_handle,false);
+}
+
 inline Omega::any_t::~any_t()
 {
 	if (m_type == TypeInfo::typeGuid)
 		delete u.pgVal;
+	else if (m_type == TypeInfo::typeString)
+		string_t::release(static_cast<string_t::handle_t*>(u.pstrVal));
 }
 
 // Helper templates

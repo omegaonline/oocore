@@ -77,7 +77,7 @@ namespace
 		SpawnedProcessUnix();
 		virtual ~SpawnedProcessUnix();
 
-		bool Spawn(const std::wstring& strAppPath, int nUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
+		bool Spawn(const std::wstring& strAppPath, bool bUnsafe, OOBase::LocalSocket::uid_t id, int pass_fd, bool bSandbox);
 
 		bool CheckAccess(const char* pszFName, bool bRead, bool bWrite, bool& bAllowed);
 		bool Compare(OOBase::LocalSocket::uid_t uid);
@@ -247,7 +247,7 @@ void SpawnedProcessUnix::close_all_fds(int except_fd)
 	}
 }
 
-bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, int nUnsafe, uid_t uid, int pass_fd, bool bSandbox)
+bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid_t uid, int pass_fd, bool bSandbox)
 {
 	OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"Using user_host: %ls",strAppPath.c_str());
 
@@ -258,7 +258,7 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, int nUnsafe, uid_
 	uid_t our_uid = getuid();
 	if (our_uid != 0)
 	{
-		if (!nUnsafe)
+		if (!bUnsafe)
 			LOG_ERROR_RETURN(("OOServer must be started as root."),false);
 
 		OOSvrBase::pw_info pw(our_uid);
@@ -271,14 +271,6 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, int nUnsafe, uid_
 			"Because the 'unsafe' mode is set the new user process will be started under the user account '%s'\n\n"
 			"This is a security risk and should only be allowed for debugging purposes, and only then if you really know what you are doing.",
 			pw->pw_name);
-
-		if (nUnsafe != 2)
-		{
-			if (!y_or_n_p("\n\nDo you want to allow this? [y/n]:"))
-				return false;
-
-			OOSvrBase::Logger::log(OOSvrBase::Logger::Warning,"You chose to continue... on your head be it!");
-		}
 
 		bUnsafeStart = true;
 	}
@@ -522,21 +514,14 @@ OOBase::SmartPtr<Root::SpawnedProcess> Root::Manager::platform_spawn(OOBase::Loc
 	OOBase::SmartPtr<Root::SpawnedProcess> pSpawn = pSpawnUnix;
 
 	// Spawn the process
-	int nUnsafe = 0;
-	if (m_cmd_args.find("unsafe") != m_cmd_args.end())
-	{
-		if (m_cmd_args.find("batch") != m_cmd_args.end())
-			nUnsafe = 2;
-		else
-			nUnsafe = 1;
-	}
-
+	bool bUnsafe = (m_cmd_args.find("unsafe") != m_cmd_args.end());
+	
 	std::wstring strAppName;
 	std::map<std::string,std::string>::const_iterator a = m_config_args.find("user_host");
 	if (a != m_config_args.end())
 		strAppName = OOBase::from_utf8(a->second.c_str());
 
-	if (!pSpawnUnix->Spawn(strAppName,nUnsafe,uid,fd[1],bSandbox))
+	if (!pSpawnUnix->Spawn(strAppName,bUnsafe,uid,fd[1],bSandbox))
 	{
 		::close(fd[1]);
 		return 0;

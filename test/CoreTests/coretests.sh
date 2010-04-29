@@ -5,7 +5,7 @@ ln -s -f $srcdir/ooregister.bat .
 cd ../src/OOCore
 ln -s -f ../$srcdir/CoreTests/test.conf .
 echo Starting OOServer...
-../OOServer/ooserverd --unsafe --batch -f test.conf &
+../OOServer/ooserverd --unsafe -f test.conf &
 child=$!
 sleep 3s
 cd ../../test

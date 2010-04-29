@@ -237,7 +237,7 @@ void TypeInfoImpl::BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const Syst
 {
 	td->WriteByte(L"type",th->type);
 	
-	if (th->type == TypeInfo::typeObject)
+	if (th->type == TypeInfo::typeObjectPtr)
 	{
 		td->WriteGuid(L"iid",*(const guid_base_t*)(th->next));
 

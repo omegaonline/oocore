@@ -74,14 +74,6 @@
 
 #if defined(_WIN32)
 	#include "config-win32.h"
-
-	// These play havoc with gcc's stl
-	#if defined(min)
-		#undef min
-	#endif
-	#if defined(max)
-		#undef max
-	#endif
 #endif
 
 #include <errno.h>

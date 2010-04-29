@@ -1,6 +1,7 @@
 SUBDIRS = CoreTests
 
-TESTS = $(srcdir)/CoreTests/coretests.sh
+TESTS = \
+	$(srcdir)/CoreTests/coretests.sh
 
 EXTRA_DIST = \
 	ooregister.sh \

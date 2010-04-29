@@ -6,6 +6,8 @@ nobase_include_HEADERS = \
 	Omega/internal/cpp/sequence.h \
 	Omega/internal/cpp/split.h \
 	Omega/internal/cpp/tuple.h \
+	Omega/internal/any.h \
+	Omega/internal/any.inl \
 	Omega/internal/base.h \
 	Omega/internal/base_types.h \
 	Omega/internal/config-borland.h \

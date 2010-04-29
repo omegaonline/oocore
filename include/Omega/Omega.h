@@ -73,6 +73,7 @@
 
 #include <limits>
 #include <string>
+#include <cmath>
 
 #include <vector>
 #include <deque>
@@ -94,6 +95,7 @@
 #include "internal/base.h"
 #include "internal/export.h"
 #include "internal/rtti.h"
+#include "internal/any.h"
 #include "internal/safe.h"
 #include "internal/safe_ps.h"
 #include "internal/wire.h"
@@ -111,6 +113,7 @@ namespace Omega
 }
 
 #include "internal/types.inl"
+#include "internal/any.inl"
 #include "internal/threading.inl"
 #include "internal/rtti.inl"
 #include "internal/safe.inl"

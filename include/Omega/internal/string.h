@@ -24,6 +24,9 @@
 
 namespace Omega
 {
+	// Forward declare friend types
+	class any_t;
+
 	namespace System
 	{
 		namespace Internal
@@ -109,6 +112,7 @@ namespace Omega
 		static void release(handle_t* h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
+		friend class Omega::any_t;
 
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
@@ -117,12 +121,12 @@ namespace Omega
 
 	namespace Formatting
 	{
-		string_t ToString(const string_t& val, const string_t&);
-		string_t ToString(const wchar_t* val, const string_t&);
-		string_t ToString(bool_t val, const string_t& strFormat);
+		string_t ToString(const string_t& val, const string_t& = string_t());
+		string_t ToString(const wchar_t* val, const string_t& = string_t());
+		string_t ToString(bool_t val, const string_t& strFormat = string_t());
 
 		template <typename T>
-		string_t ToString(T val, const string_t& strFormat);
+		string_t ToString(T val, const string_t& strFormat = string_t());
 	}
 }
 

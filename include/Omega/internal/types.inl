@@ -424,7 +424,7 @@ namespace Omega
 			template <typename T>
 			struct integer_formatter_t
 			{
-				static string_t ToString(T val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat = string_t())
 				{
 					return OOCore_to_string_int_t(val,strFormat,sizeof(T));
 				}
@@ -433,7 +433,7 @@ namespace Omega
 			template <typename T>
 			struct unsigned_integer_formatter_t
 			{
-				static string_t ToString(T val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat = string_t())
 				{
 					return OOCore_to_string_uint_t(val,strFormat,sizeof(T));
 				}
@@ -442,7 +442,7 @@ namespace Omega
 			template <typename T>
 			struct float_formatter_t
 			{
-				static string_t ToString(T val, const string_t& strFormat)
+				static string_t ToString(T val, const string_t& strFormat = string_t())
 				{
 					return OOCore_to_string_float_t(val,strFormat,sizeof(T));
 				}
@@ -451,7 +451,7 @@ namespace Omega
 			template <>
 			struct float_formatter_t<float4_t>
 			{
-				static string_t ToString(float4_t val, const string_t& strFormat)
+				static string_t ToString(float4_t val, const string_t& strFormat = string_t())
 				{
 					static const float4_t nan = std::numeric_limits<float4_t>::signaling_NaN();
 					if (*reinterpret_cast<const uint32_t*>(&val) == *reinterpret_cast<const uint32_t*>(&nan))
@@ -464,7 +464,7 @@ namespace Omega
 			template <typename T>
 			struct to_string_member_formatter_t
 			{
-				static string_t ToString(const T& val, const string_t& strFormat)
+				static string_t ToString(const T& val, const string_t& strFormat = string_t())
 				{
 					return val.ToString(strFormat);	
 				}

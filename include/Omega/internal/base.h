@@ -88,7 +88,7 @@ namespace Omega
 			typeFloat8,
 			typeString,
 			typeGuid,
-			typeObject
+			typeObjectPtr
 		};
 		enum Modifier
 		{

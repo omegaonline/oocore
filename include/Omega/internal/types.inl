@@ -183,6 +183,14 @@ inline Omega::string_t& Omega::string_t::operator += (wchar_t c)
 	return *this;
 }
 
+inline int Omega::string_t::Compare(const string_t& s) const
+{
+	if (&s == this)
+		return 0;
+
+	return Compare(s,0,string_t::npos,false);
+}
+
 OOCORE_RAW_EXPORTED_FUNCTION(int,OOCore_string_t_cmp1,5,((in),const void*,h1,(in),const void*,h2,(in),size_t,pos,(in),size_t,length,(in),int,bIgnoreCase));
 inline int Omega::string_t::Compare(const string_t& s, size_t pos, size_t length, bool bIgnoreCase) const
 {

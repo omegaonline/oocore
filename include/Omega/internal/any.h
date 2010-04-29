@@ -52,6 +52,11 @@ namespace Omega
 
 		~any_t();
 
+		template <typename T> bool operator == (T v) const { return Equal(v); }
+		template <typename T> bool operator != (T v) const { return !Equal(v); }
+		
+		bool Equal(const any_t& rhs) const;
+				
 		TypeInfo::Type GetType() const
 		{
 			return m_type;
@@ -82,6 +87,9 @@ namespace Omega
 		operator T() const;
 
 	private:
+		void swap(const any_t& rhs);
+		void clear();
+
 		struct obj_holder_base
 		{
 			virtual ~obj_holder_base() {}

@@ -22,6 +22,71 @@
 #ifndef OMEGA_ANY_INL_INCLUDED_
 #define OMEGA_ANY_INL_INCLUDED_
 
+inline Omega::any_t::any_t(const any_t& rhs)
+{
+	swap(rhs);
+}
+
+inline void Omega::any_t::swap(const any_t& rhs)
+{
+	m_type = rhs.m_type;
+
+	switch (rhs.m_type)
+	{
+	case TypeInfo::typeBool:
+		u.bVal = rhs.u.bVal;
+		break;
+	case TypeInfo::typeByte:
+		u.byVal = rhs.u.byVal;
+		break;
+	case TypeInfo::typeInt16:
+		u.i16Val = rhs.u.i16Val;
+		break;
+	case TypeInfo::typeUInt16:
+		u.ui16Val = rhs.u.ui16Val;
+		break;
+	case TypeInfo::typeInt32:
+		u.i32Val = rhs.u.i32Val;
+		break;
+	case TypeInfo::typeUInt32:
+		u.ui32Val = rhs.u.ui32Val;
+		break;
+	case TypeInfo::typeInt64:
+		u.i64Val = rhs.u.i64Val;
+		break;
+	case TypeInfo::typeUInt64:
+		u.ui64Val = rhs.u.ui64Val;
+		break;
+	case TypeInfo::typeFloat4:
+		u.fl4Val = rhs.u.fl4Val;
+		break;
+	case TypeInfo::typeFloat8:
+		u.fl8Val = rhs.u.fl8Val;
+		break;
+	case TypeInfo::typeString:
+		u.pstrVal = string_t::addref(static_cast<string_t::handle_t*>(rhs.u.pstrVal),false);
+		break;
+	case TypeInfo::typeGuid:
+		OMEGA_NEW(u.pgVal,guid_t(*rhs.u.pgVal));
+		break;
+
+	case TypeInfo::typeObjectPtr:
+	default:
+		// Never going to happen ;)
+		OMEGA_THROW(L"Invalid any_t type!");
+	}
+}
+
+inline Omega::any_t& Omega::any_t::operator = (const any_t& rhs)
+{
+	if (this != &rhs)
+	{
+		clear();
+		swap(rhs);
+	}
+	return *this;
+}
+
 inline Omega::any_t::any_t(bool_t val) :
 	m_type(TypeInfo::typeBool)
 {
@@ -111,10 +176,61 @@ inline Omega::any_t::any_t(const char* sz, bool bUTF8, size_t length) :
 
 inline Omega::any_t::~any_t()
 {
+	try
+	{
+		clear();
+	}
+	catch (...)
+	{}
+}
+
+inline void Omega::any_t::clear()
+{
 	if (m_type == TypeInfo::typeGuid)
 		delete u.pgVal;
 	else if (m_type == TypeInfo::typeString)
 		string_t::release(static_cast<string_t::handle_t*>(u.pstrVal));
+}
+
+inline bool Omega::any_t::Equal(const any_t& rhs) const
+{
+	if (&rhs == this)
+		return true;
+
+	if (rhs.m_type != m_type)
+		return false;
+	
+	switch (m_type)
+	{
+	case TypeInfo::typeBool:
+		return (u.bVal == rhs.u.bVal);
+	case TypeInfo::typeByte:
+		return (u.byVal == rhs.u.byVal);
+	case TypeInfo::typeInt16:
+		return (u.i16Val == rhs.u.i16Val);
+	case TypeInfo::typeUInt16:
+		return (u.ui16Val == rhs.u.ui16Val);
+	case TypeInfo::typeInt32:
+		return (u.i32Val == rhs.u.i32Val);
+	case TypeInfo::typeUInt32:
+		return (u.ui32Val == rhs.u.ui32Val);
+	case TypeInfo::typeInt64:
+		return (u.i64Val == rhs.u.i64Val);
+	case TypeInfo::typeUInt64:
+		return (u.ui64Val == rhs.u.ui64Val);
+	case TypeInfo::typeFloat4:
+		return (u.fl4Val == rhs.u.fl4Val);
+	case TypeInfo::typeFloat8:
+		return (u.fl8Val == rhs.u.fl8Val);
+	case TypeInfo::typeString:
+		return (string_t(static_cast<string_t::handle_t*>(u.pstrVal),true) == string_t(static_cast<string_t::handle_t*>(rhs.u.pstrVal),true));
+	case TypeInfo::typeGuid:
+		return (u.pgVal ? *u.pgVal : guid_t::Null()) == (rhs.u.pgVal ? *rhs.u.pgVal : guid_t::Null());
+	//case TypeInfo::typeObjectPtr:
+	default:
+		// Never going to happen ;)
+		return false;
+	}
 }
 
 // Helper templates

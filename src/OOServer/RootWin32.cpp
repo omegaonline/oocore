@@ -202,6 +202,7 @@ bool Root::Manager::load_config()
 					}
 
 					std::ostringstream os;
+					os.imbue(std::locale::classic());
 					os << dwVal;
 					value = os.str();
 				}

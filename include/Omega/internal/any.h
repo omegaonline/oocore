@@ -52,11 +52,11 @@ namespace Omega
 
 		~any_t();
 
-		template <typename T> bool operator == (T v) const { return Equal(v); }
-		template <typename T> bool operator != (T v) const { return !Equal(v); }
+		// Comparison operators
+		template <typename T> bool operator == (T v) const { return equal(v); }
+		template <typename T> bool operator != (T v) const { return !equal(v); }
+		bool operator !() const;
 		
-		bool Equal(const any_t& rhs) const;
-				
 		TypeInfo::Type GetType() const
 		{
 			return m_type;
@@ -74,7 +74,6 @@ namespace Omega
 		// Attempt the cast, but don't throw
 		template <typename T>
 		CastResult_t Coerce(T& val) const;
-
 		CastResult_t Coerce(bool_t& v) const;
 		CastResult_t Coerce(guid_t& v) const;
 		CastResult_t Coerce(string_t& v) const;
@@ -83,13 +82,24 @@ namespace Omega
 		CastResult_t Coerce(I*& val, const guid_t& iid = OMEGA_GUIDOF(I));
 
 		// Perform a cast, and throw on failure (includes loss of precision, etc...)
-		template <typename T>
-		operator T() const;
-
+		template <typename T> operator T() const;
+		template <typename T> operator T&();
+				
+		// Explicit reference accessors
+		bool_t& GetBoolValue();
+		byte_t& GetByteValue();
+		int16_t& GetInt16Value();
+		uint16_t& GetUInt16Value();
+		int32_t& GetInt32Value();
+		uint32_t& GetUInt32Value();
+		int64_t& GetInt64Value();
+		uint64_t& GetUInt64Value();
+		float4_t& GetFloat4Value();
+		float8_t& GetFloat8Value();
+		guid_t& GetGuidValue();
+		string_t& GetStringValue();
+						
 	private:
-		void swap(const any_t& rhs);
-		void clear();
-
 		struct obj_holder_base
 		{
 			virtual ~obj_holder_base() {}
@@ -149,24 +159,31 @@ namespace Omega
 			float4_t         fl4Val;
 			float8_t         fl8Val;
 			guid_t*          pgVal;
-			void*            pstrVal;
+			string_t*        pstrVal;
 			obj_holder_base* pobjVal;
 		} u;
 
 		// Helpers
-		template <typename T1, typename T2>
-		static CastResult_t bounds_check(typename System::Internal::optimal_param<T2>::type v);
+		void swap(const any_t& rhs);
+		void clear();
+		bool equal(const any_t& rhs) const;
 	};
 
 	template <typename T>
 	inline static T any_cast(const any_t& val)
 	{
-		return static_cast<T>(val);
+		return val;
+	}
+
+	template <typename T>
+	inline static T any_cast(any_t& val)
+	{
+		return val;
 	}
 
 	interface ICastException : public IException
 	{
-		static ICastException* Create(const any_t& value, any_t::CastResult_t reason, TypeInfo::Type_t typeDest);
+		static ICastException* Create(const any_t& value, any_t::CastResult_t reason, const System::Internal::type_holder* typeDest);
 	};
 }
 

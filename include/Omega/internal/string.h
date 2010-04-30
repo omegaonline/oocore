@@ -25,8 +25,6 @@
 namespace Omega
 {
 	// Forward declare friend types
-	class any_t;
-
 	namespace System
 	{
 		namespace Internal
@@ -113,8 +111,7 @@ namespace Omega
 		static void release(handle_t* h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
-		friend class Omega::any_t;
-
+		
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
 #endif

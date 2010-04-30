@@ -9,6 +9,7 @@ bool string_tests()
 
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
+	TEST(!s1);
 
 	s1 = sz1;
 	TEST(!s1.IsEmpty());

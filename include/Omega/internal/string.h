@@ -74,6 +74,8 @@ namespace Omega
 		int Compare(const wchar_t* wsz, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
 		
 		bool IsEmpty() const;
+		bool operator !() const { return IsEmpty(); }
+
 		size_t Length() const;
 		string_t& Clear();
 

@@ -461,6 +461,7 @@ namespace Omega
 			{
 				static string_t ToString(float4_t val, const string_t& strFormat = string_t())
 				{
+					// NAN does not compare successfully to any other number including itself!
 					static const float4_t nan = std::numeric_limits<float4_t>::signaling_NaN();
 					if (*reinterpret_cast<const uint32_t*>(&val) == *reinterpret_cast<const uint32_t*>(&nan))
 						return OOCore_to_string_float_t(std::numeric_limits<float8_t>::signaling_NaN(),strFormat,sizeof(float4_t));
@@ -508,7 +509,6 @@ namespace Omega
 				typedef typename formatter_t<T*>::type type;
 			};
 
-			// Don't pass pointers
 			template <typename T> 
 			struct formatter_t<const T*>
 			{

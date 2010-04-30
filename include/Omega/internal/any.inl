@@ -192,7 +192,7 @@ inline bool Omega::any_t::operator !() const
 	if (m_type == TypeInfo::typeString)
 		return u.pstrVal->IsEmpty();
 
-	return equal(any_t(false));
+	return equal(false);
 }
 
 inline bool Omega::any_t::equal(const any_t& rhs) const
@@ -235,6 +235,11 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 		return false;
 	}
 }
+
+// string_t::ToNumber<T> uses helpers defined in this file
+OOCORE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcstoll,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
+OOCORE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstoull,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
+OOCORE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_wcstod,2,((in),const Omega::string_t&,str,(out),size_t&,end_pos));
 
 // Helper templates
 namespace Omega
@@ -391,6 +396,78 @@ namespace Omega
 					return int_conv<To,From>::cast(to,from);
 				}
 			};
+
+			template <typename T>
+			struct integer_scanner_t
+			{
+				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
+				{
+					size_t end_pos = string_t::npos;
+					int64_t v = OOCore_wcstoll(val,end_pos,10);
+					if (end_pos != string_t::npos)
+						return any_t::castOverflow;
+
+					return converter<T,int64_t>::cast(ret,v);
+				}
+			};
+
+			template <typename T>
+			struct unsigned_integer_scanner_t
+			{
+				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
+				{
+					size_t end_pos = string_t::npos;
+					uint64_t v = OOCore_wcstoull(val,end_pos,10);
+					if (end_pos != string_t::npos)
+						return any_t::castOverflow;
+
+					return converter<T,uint64_t>::cast(ret,v);
+				}
+			};
+
+			template <typename T>
+			struct float_scanner_t
+			{
+				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
+				{
+					size_t end_pos = string_t::npos;
+					float8_t v = OOCore_wcstod(val,end_pos);
+					if (end_pos != string_t::npos)
+						return any_t::castOverflow;
+
+					return converter<T,float8_t>::cast(ret,v);
+				}
+			};
+
+			// Typename T is not a 'number'
+			template <typename T>
+			struct invalid_scanner_t;
+
+			template <typename T>
+			struct scanner_t
+			{
+				typedef typename if_else_t<std::numeric_limits<T>::is_specialized,
+					typename if_else_t<std::numeric_limits<T>::is_integer,
+						typename if_else_t<std::numeric_limits<T>::is_signed,integer_scanner_t<T>,unsigned_integer_scanner_t<T> >::result,
+						float_scanner_t<T>
+					>::result,
+					invalid_scanner_t<T>
+				>::result type;
+			};
+
+			template <typename T> 
+			struct scanner_t<const T>
+			{
+				typedef typename scanner_t<T>::type type;
+			};
+
+			// Don't pass pointers or refs
+			template <typename T> struct scanner_t<T*>;
+			template <typename T> struct scanner_t<T&>;
+			template <typename T, size_t S> struct scanner_t<T[S]>;
+
+			// Long doubles are not compiler agnostic...
+			template <> struct scanner_t<long double>;
 		}
 	}
 }
@@ -431,25 +508,8 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 	case TypeInfo::typeFloat8:
 		return System::Internal::converter<T,float8_t>::cast(v,u.fl8Val);
 	case TypeInfo::typeString:
-		/*if (std::numeric_limits<T>::is_integer)
-		{
-			wchar_t* end_ptr = 0;
-			uint64_t val = OOCore::wcstou64(u.pstrVal->c_str(),&end_ptr);
-			return System::Internal::converter<T,uint64_t>::cast(v,val);
-		}
-		else
-		{
-			wchar_t* end_ptr = 0;
-			float8_t val = OOCore::wcstod(u.pstrVal->c_str(),&end_ptr);
-			return System::Internal::converter<T,float8_t>::cast(v,val);
-		}
-		}*/
-		{
-			// Add a ToFloat8,ToInt64,ToUInt64 to string_t
-			void* TODO;
-		}
-		return any_t::castUnrelated;
-
+		return System::Internal::scanner_t<T>::type::ToNumber(v,*u.pstrVal);
+				
 	//case TypeInfo::typeObjectPtr:
 
 	case TypeInfo::typeGuid:
@@ -847,6 +907,32 @@ inline Omega::string_t& Omega::any_t::GetStringValue()
 		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<string_t&>::type());
 
 	return *u.pstrVal;
+}
+
+// string_t::ToNumber<T> uses helpers defined in this file
+template <typename T>
+inline T Omega::string_t::ToNumber() const
+{
+	T ret = System::Internal::default_value<T>::value();
+	any_t::CastResult_t r = System::Internal::scanner_t<T>::type::ToNumber(ret,*this);
+	if (r != any_t::castValid)
+		throw ICastException::Create(any_t(*this),r,System::Internal::type_kind<T>::type());
+	return ret;
+}
+
+inline Omega::int64_t Omega::string_t::wcstoll(const string_t& str, size_t& end_pos, unsigned int base)
+{
+	return OOCore_wcstoll(str,end_pos,base);
+}
+
+inline Omega::uint64_t Omega::string_t::wcstoull(const string_t& str, size_t& end_pos, unsigned int base)
+{
+	return OOCore_wcstoull(str,end_pos,base);
+}
+
+inline Omega::float8_t Omega::string_t::wcstod(const string_t& str, size_t& end_pos)
+{
+	return OOCore_wcstod(str,end_pos);
 }
 
 inline Omega::ICastException* Omega::ICastException::Create(const any_t& /*value*/, any_t::CastResult_t /*reason*/, const System::Internal::type_holder* /*typeDest*/)

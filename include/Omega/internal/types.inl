@@ -606,7 +606,7 @@ inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 
 inline Omega::guid_t::guid_t(const string_t& str)
 {
-	if (OOCore_guid_t_from_string(str,*this) != 0)
+	if (!guid_t::FromString(str,*this))
 		throw Formatting::IFormattingException::Create(L"{0} is not a guid_t string representation" % str,OMEGA_SOURCE_INFO);
 }
 

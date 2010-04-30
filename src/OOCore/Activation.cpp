@@ -295,7 +295,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 			continue;
 		}
 
-		return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));
+		return guid_t(ptrOidKey->GetStringValue(L"OID"));
 	}
 }
 

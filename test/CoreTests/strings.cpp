@@ -340,7 +340,7 @@ bool guid_tests()
 
 	const wchar_t sz[] = L"{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
-	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
+	Omega::guid_t guid2(sz);
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
 
@@ -365,7 +365,7 @@ bool guid_tests()
 	TEST(bTest);
 
 	// Check to see if we can export OID's properly
-	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t::FromString(L"{63EB243E-6AE3-43bd-B073-764E096775F8}"));
+	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t(L"{63EB243E-6AE3-43bd-B073-764E096775F8}"));
 
 	// Check whether OMEGA_GUIDOF works...
 	TEST(OMEGA_GUIDOF(Omega::IObject) == OMEGA_GUIDOF(Omega::IObject*));

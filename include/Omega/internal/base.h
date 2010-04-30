@@ -180,7 +180,7 @@ namespace Omega
 
 #define OMEGA_SET_GUIDOF(n_space, type, guid) \
 	namespace Omega { namespace System { namespace Internal { \
-	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v = guid_t::FromString(OMEGA_WIDEN_STRING(guid)); return v; } }; \
+	template<> struct uid_traits<n_space::type> { static const guid_t& GetUID() { static const guid_t v(OMEGA_WIDEN_STRING(guid)); return v; } }; \
 	} } }
 
 #endif
@@ -197,7 +197,7 @@ namespace Omega
 	extern "C" OMEGA_IMPORT const Omega::guid_t name;
 
 #define OMEGA_DEFINE_OID(n_space, name, guid) \
-	extern "C" const Omega::guid_t n_space::name = Omega::guid_t::FromString(OMEGA_WIDEN_STRING(guid));
+	extern "C" const Omega::guid_t n_space::name(OMEGA_WIDEN_STRING(guid));
 
 #else // DOXYGEN
 

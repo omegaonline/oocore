@@ -206,8 +206,7 @@ void User::Channel::GetManager(const guid_t& iid, IObject*& pObject)
 guid_t User::Channel::GetUnmarshalFactoryOID(const guid_t&, Remoting::MarshalFlags_t)
 {
 	// This must match OOCore::OID_ChannelMarshalFactory
-	static const guid_t oid = guid_t::FromString(L"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
-	return oid;
+	return guid_t(L"{7E662CBB-12AF-4773-8B03-A1A82F7EBEF0}");
 }
 
 void User::Channel::MarshalInterface(Remoting::IMarshaller*, Remoting::IMessage* pMessage, const guid_t&, Remoting::MarshalFlags_t)

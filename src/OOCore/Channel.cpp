@@ -245,7 +245,7 @@ void OOCore::ChannelMarshalFactory::UnmarshalInterface(Remoting::IMarshaller* pM
 	if (OOCore::HostedByOOServer())
 	{
 		// This must match OOServer::User::OID_ChannelMarshalFactory
-		static const guid_t oid = guid_t::FromString(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
+		static const guid_t oid(L"{1A7672C5-8478-4e5a-9D8B-D5D019E25D15}");
 		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess | Activation::DontLaunch);
 
 		// If we have a pointer by now then we are actually running in the OOServer.exe,

@@ -604,12 +604,10 @@ inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 	return (OOCore_guid_t_from_string(str,guid) != 0);
 }
 
-inline Omega::guid_t Omega::guid_t::FromString(const string_t& str)
+inline Omega::guid_t::guid_t(const string_t& str)
 {
-	guid_t ret;
-	if (!FromString(str,ret))
+	if (OOCore_guid_t_from_string(str,*this) != 0)
 		throw Formatting::IFormattingException::Create(L"{0} is not a guid_t string representation" % str,OMEGA_SOURCE_INFO);
-	return ret;
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());

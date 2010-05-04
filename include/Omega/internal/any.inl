@@ -190,7 +190,7 @@ inline void Omega::any_t::clear()
 inline bool Omega::any_t::operator !() const
 {
 	if (m_type == TypeInfo::typeString)
-		return u.pstrVal->IsEmpty();
+		return u.pstrVal->operator !();
 
 	return equal(false);
 }

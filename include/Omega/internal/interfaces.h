@@ -28,7 +28,7 @@ namespace Omega
 	{
 		interface IFormattingException : public IException
 		{
-			static IFormattingException* Create(const string_t& strMsg, const string_t& strSource, IException* pE = 0);
+			static IFormattingException* Create(const string_t& strMsg);
 		};
 	}
 

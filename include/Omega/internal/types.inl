@@ -527,7 +527,7 @@ namespace Omega
 inline Omega::string_t Omega::Formatting::ToString(const string_t& val, const string_t& strFormat)
 {
 	if (!strFormat.IsEmpty())
-		throw Formatting::IFormattingException::Create(L"Invalid string_t format string {0}" % strFormat,OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"Invalid string_t format string: {0}" % strFormat);
 	
 	return val;
 }
@@ -607,7 +607,7 @@ inline bool Omega::guid_t::FromString(const string_t& str, Omega::guid_t& guid)
 inline Omega::guid_t::guid_t(const string_t& str)
 {
 	if (!guid_t::FromString(str,*this))
-		throw Formatting::IFormattingException::Create(L"{0} is not a guid_t string representation" % str,OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"{0} is not an Omega::guid_t string representation" % str);
 }
 
 OOCORE_EXPORTED_FUNCTION(Omega::guid_t,OOCore_guid_t_create,0,());

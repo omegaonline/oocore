@@ -1181,12 +1181,10 @@ namespace
 	}
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,3,((in),const Omega::string_t&,msg,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,1,((in),const Omega::string_t&,msg))
 {
 	ObjectImpl<FormattingException>* pNew = ObjectImpl<FormattingException>::CreateInstance();
 	pNew->m_strDesc = msg;
-	pNew->m_strSource = source;
-	pNew->m_ptrCause = pCause;
 	return static_cast<Formatting::IFormattingException*>(pNew);
 }
 
@@ -1262,18 +1260,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_float_t,3,((in),float8_
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,val,(in),const string_t&,strFormat))
 {
+	// These need internationalisation...
 	if (strFormat.IsEmpty())
-	{
-		std::ostringstream ss;
-		ss.setf(std::ios_base::boolalpha);
-		ss << val;
-
-		return string_t(ss.str().c_str(),false);
-	}
-
+		return (val ? string_t(L"true") : string_t(L"false"));
+	
 	std::vector<string_t> parts;
 	if (parse_custom(strFormat,parts) != 2)
-		throw Formatting::IFormattingException::Create(L"Invalid bool_t format string {0}" % strFormat,OMEGA_SOURCE_INFO);
+		throw Formatting::IFormattingException::Create(L"Invalid Omega::bool_t format string: {0}" % strFormat);
 
 	return val ? parts[0] : parts[1];
 }
@@ -1325,71 +1318,44 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 {
 	static_assert(sizeof(::wcstod(0,0)) == sizeof(float8_t),"Non-standard wcstod");
 
-#if defined(_WIN32)
-	// Sync the crt locale with the Win32 one
-	LCID lcid = GetThreadLocale();
+	return ::wcstod(sz,const_cast<wchar_t**>(&endptr));
+}
 
-	char buffer[256] = {0};
-	if (!GetLocaleInfoA(lcid,LOCALE_SENGLANGUAGE,buffer,255))
-	{
-		DWORD dwErr = GetLastError();
-		OMEGA_THROW(dwErr);
-	}
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcstoll,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+{
+	const wchar_t* start = str.c_str();
+	const wchar_t* end = start;
+	int64_t v = OOCore::wcsto64(start,end,base);
+	
+	end_pos = static_cast<size_t>(end - start);
+	if (end_pos >= str.Length())
+		end_pos = string_t::npos;
 
-	std::string str = buffer;
+	return v;
+}
 
-	if (!GetLocaleInfoA(lcid,LOCALE_SENGCOUNTRY,buffer,255))
-	{
-		DWORD dwErr = GetLastError();
-		OMEGA_THROW(dwErr);
-	}
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstoull,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+{
+	const wchar_t* start = str.c_str();
+	const wchar_t* end = start;
+	uint64_t v = OOCore::wcstou64(start,end,base);
+	
+	end_pos = static_cast<size_t>(end - start);
+	if (end_pos >= str.Length())
+		end_pos = string_t::npos;
 
-	str += "_";
-	str += buffer;
+	return v;
+}
 
-	if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTANSICODEPAGE,buffer,255))
-	{
-		DWORD dwErr = GetLastError();
-		OMEGA_THROW(dwErr);
-	}
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_wcstod,2,((in),const Omega::string_t&,str,(out),size_t&,end_pos))
+{
+	const wchar_t* start = str.c_str();
+	const wchar_t* end = start;
+	float8_t v = OOCore::wcstod(start,end);
+	
+	end_pos = static_cast<size_t>(end - start);
+	if (end_pos >= str.Length())
+		end_pos = string_t::npos;
 
-	if (strcmp(buffer,"0") != 0)
-	{
-		str += ".";
-		str += buffer;
-	}
-	else
-	{
-		if (!GetLocaleInfoA(lcid,LOCALE_IDEFAULTCODEPAGE,buffer,255))
-		{
-			DWORD dwErr = GetLastError();
-			OMEGA_THROW(dwErr);
-		}
-
-		if (strcmp(buffer,"1") != 0)
-		{
-			str += ".";
-			str += buffer;
-		}
-	}
-
-	std::string prev_locale = setlocale(LC_NUMERIC,str.c_str());
-#endif
-
-	try
-	{
-		double ret = ::wcstod(sz,const_cast<wchar_t**>(&endptr));
-
-#if defined(_WIN32)
-		setlocale(LC_NUMERIC,prev_locale.c_str());
-#endif
-		return ret;
-	}
-	catch (...)
-	{
-#if defined(_WIN32)
-		setlocale(LC_NUMERIC,prev_locale.c_str());
-#endif
-		throw;
-	}
+	return v;
 }

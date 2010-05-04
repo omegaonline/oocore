@@ -104,8 +104,8 @@ namespace Omega
 		template <typename T>
 		T ToNumber() const;
 
-		static int64_t wcstoll(const string_t& str, size_t& end_pos, unsigned int base);
-		static uint64_t wcstoull(const string_t& str, size_t& end_pos, unsigned int base);
+		static int64_t wcsto64(const string_t& str, size_t& end_pos, unsigned int base);
+		static uint64_t wcstou64(const string_t& str, size_t& end_pos, unsigned int base);
 		static float8_t wcstod(const string_t& str, size_t& end_pos);
 		
 	private:

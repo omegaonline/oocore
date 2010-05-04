@@ -237,8 +237,8 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 }
 
 // string_t::ToNumber<T> uses helpers defined in this file
-OOCORE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcstoll,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
-OOCORE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstoull,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
+OOCORE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcsto64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
+OOCORE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstou64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base));
 OOCORE_EXPORTED_FUNCTION(Omega::float8_t,OOCore_wcstod,2,((in),const Omega::string_t&,str,(out),size_t&,end_pos));
 
 // Helper templates
@@ -403,7 +403,7 @@ namespace Omega
 				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
 				{
 					size_t end_pos = string_t::npos;
-					int64_t v = OOCore_wcstoll(val,end_pos,10);
+					int64_t v = OOCore_wcsto64(val,end_pos,10);
 					if (end_pos != string_t::npos)
 						return any_t::castOverflow;
 
@@ -417,7 +417,7 @@ namespace Omega
 				static any_t::CastResult_t ToNumber(T& ret, const string_t& val)
 				{
 					size_t end_pos = string_t::npos;
-					uint64_t v = OOCore_wcstoull(val,end_pos,10);
+					uint64_t v = OOCore_wcstou64(val,end_pos,10);
 					if (end_pos != string_t::npos)
 						return any_t::castOverflow;
 
@@ -920,14 +920,14 @@ inline T Omega::string_t::ToNumber() const
 	return ret;
 }
 
-inline Omega::int64_t Omega::string_t::wcstoll(const string_t& str, size_t& end_pos, unsigned int base)
+inline Omega::int64_t Omega::string_t::wcsto64(const string_t& str, size_t& end_pos, unsigned int base)
 {
-	return OOCore_wcstoll(str,end_pos,base);
+	return OOCore_wcsto64(str,end_pos,base);
 }
 
-inline Omega::uint64_t Omega::string_t::wcstoull(const string_t& str, size_t& end_pos, unsigned int base)
+inline Omega::uint64_t Omega::string_t::wcstou64(const string_t& str, size_t& end_pos, unsigned int base)
 {
-	return OOCore_wcstoull(str,end_pos,base);
+	return OOCore_wcstou64(str,end_pos,base);
 }
 
 inline Omega::float8_t Omega::string_t::wcstod(const string_t& str, size_t& end_pos)

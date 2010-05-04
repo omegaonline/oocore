@@ -1270,6 +1270,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(string_t,OOCore_to_string_bool_t,2,((in),bool_t,v
 
 	return val ? parts[0] : parts[1];
 }
+
 int32_t OOCore::wcsto32(const wchar_t* sz, wchar_t const*& endptr, unsigned int base)
 {
 	static_assert(sizeof(::wcstol(0,0,0)) == sizeof(int32_t),"Non-standard wcstol");
@@ -1321,7 +1322,7 @@ float8_t OOCore::wcstod(const wchar_t* sz, wchar_t const*& endptr)
 	return ::wcstod(sz,const_cast<wchar_t**>(&endptr));
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcstoll,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcsto64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;
@@ -1334,7 +1335,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::int64_t,OOCore_wcstoll,3,((in),const Omega
 	return v;
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstoull,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::uint64_t,OOCore_wcstou64,3,((in),const Omega::string_t&,str,(out),size_t&,end_pos,(in),unsigned int,base))
 {
 	const wchar_t* start = str.c_str();
 	const wchar_t* end = start;

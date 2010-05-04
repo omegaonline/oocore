@@ -939,3 +939,13 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 
 #endif
 }
+
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs))
+{
+	return false;
+}
+
+OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const any_t&,value,(in),any_t::CastResult_t,reason,(in),const System::Internal::type_holder*,typeDest))
+{
+	OMEGA_THROW(L"BUM!");
+}

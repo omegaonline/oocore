@@ -192,8 +192,210 @@ inline bool Omega::any_t::operator !() const
 	if (m_type == TypeInfo::typeString)
 		return u.pstrVal->operator !();
 
-	return equal(false);
+	return equal(any_t(false));
 }
+
+namespace Omega
+{
+	namespace System
+	{
+		namespace Internal
+		{
+			// Internal helper that must be public... do not use
+			void throw_cast_exception(const any_t& value, any_t::CastResult_t reason, const type_holder* typeDest);
+
+			struct any_t_safe_type
+			{
+				struct safe_type
+				{
+					TypeInfo::Type_t type;
+					union discrim
+					{
+						// Stock types
+						byte_t           byVal;
+						int16_t          i16Val;
+						uint16_t         ui16Val;
+						int32_t          i32Val;
+						uint32_t         ui32Val;
+						int64_t          i64Val;
+						uint64_t         ui64Val;
+						float4_t         fl4Val;
+						float8_t         fl8Val;
+						
+						// Custom safe types
+						custom_safe_type<bool_t>::safe_type bVal;
+						string_t_safe_type::safe_type       pstrVal;
+						guid_base_t                         gVal;
+						//obj_holder_base* pobjVal;
+					} u;
+				};
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type val) : m_val(static_cast<const any_t&>(any_t_safe_type::create(val,true)))
+					{ }
+
+					void update(safe_type& dest)
+					{
+						any_t_safe_type::release(dest);
+						dest = any_t_safe_type::addref(m_val);
+					}
+
+					operator any_t&()
+					{
+						return m_val;
+					}
+
+				private:
+					any_t m_val;
+				};
+				friend struct type_wrapper;
+				
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(const any_t& val) : m_val(any_t_safe_type::addref(val))
+					{ }
+
+					~safe_type_wrapper()
+					{
+						any_t_safe_type::release(m_val);
+					}
+
+					void update(any_t& dest)
+					{
+						dest = any_t_safe_type::create(m_val,true);
+					}
+
+					operator safe_type ()
+					{
+						return m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
+				private:
+					safe_type m_val;
+				};
+				friend struct safe_type_wrapper;
+
+				static safe_type clone(const any_t& s)
+				{
+					return addref(s);
+				}
+
+				static any_t clone(safe_type v)
+				{
+					return static_cast<const any_t&>(create(v,false));
+				}
+
+			private:
+				static any_t create(safe_type v, bool addref)
+				{
+					switch (v.type)
+					{
+					case TypeInfo::typeBool:
+						return static_cast<bool_t>(v.u.bVal != 0);
+					case TypeInfo::typeByte:
+						return v.u.byVal;
+					case TypeInfo::typeInt16:
+						return v.u.i16Val;
+					case TypeInfo::typeUInt16:
+						return v.u.ui16Val;
+					case TypeInfo::typeInt32:
+						return v.u.i32Val;
+					case TypeInfo::typeUInt32:
+						return v.u.ui32Val;
+					case TypeInfo::typeInt64:
+						return v.u.i64Val;
+					case TypeInfo::typeUInt64:
+						return v.u.ui64Val;
+					case TypeInfo::typeFloat4:
+						return v.u.fl4Val;
+					case TypeInfo::typeFloat8:
+						return v.u.fl8Val;
+					case TypeInfo::typeString:
+						return string_t_safe_type::create(v.u.pstrVal,addref);
+					case TypeInfo::typeGuid:
+						return guid_t(v.u.gVal);
+
+					case TypeInfo::typeObjectPtr:
+					default:
+						// Never going to happen ;)
+						OMEGA_THROW(L"Invalid any_t type!");
+					}					
+				}
+
+				static safe_type addref(const any_t& val)
+				{
+					safe_type ret;
+					ret.type = static_cast<TypeInfo::Type_t>(val.m_type);
+					switch (val.m_type)
+					{
+					case TypeInfo::typeBool:
+						ret.u.bVal = (val.u.bVal ? 1 : 0);
+						break;
+					case TypeInfo::typeByte:
+						ret.u.byVal = val.u.byVal;
+						break;
+					case TypeInfo::typeInt16:
+						ret.u.i16Val = val.u.i16Val;
+						break;
+					case TypeInfo::typeUInt16:
+						ret.u.ui16Val = val.u.ui16Val;
+						break;
+					case TypeInfo::typeInt32:
+						ret.u.i32Val = val.u.i32Val;
+						break;
+					case TypeInfo::typeUInt32:
+						ret.u.ui32Val = val.u.ui32Val;
+						break;
+					case TypeInfo::typeInt64:
+						ret.u.i64Val = val.u.i64Val;
+						break;
+					case TypeInfo::typeUInt64:
+						ret.u.ui64Val = val.u.ui64Val;
+						break;
+					case TypeInfo::typeFloat4:
+						ret.u.fl4Val = val.u.fl4Val;
+						break;
+					case TypeInfo::typeFloat8:
+						ret.u.fl8Val = val.u.fl8Val;
+						break;
+					case TypeInfo::typeString:
+						ret.u.pstrVal = string_t_safe_type::addref(*val.u.pstrVal,true);
+						break;
+					case TypeInfo::typeGuid:
+						ret.u.gVal = (val.u.pgVal ? guid_t::Null() : *val.u.pgVal);
+						break;
+
+					case TypeInfo::typeObjectPtr:
+					default:
+						// Never going to happen ;)
+						OMEGA_THROW(L"Invalid any_t type!");
+					}
+					return ret;
+				}
+
+				static void release(safe_type val)
+				{
+					if (val.type == TypeInfo::typeString)
+						string_t_safe_type::release(val.u.pstrVal);
+				}
+			};
+
+			template <>
+			struct custom_safe_type<any_t>
+			{
+				typedef struct any_t_safe_type impl;
+			};
+		}
+	}
+}
+
+OOCORE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs));
 
 inline bool Omega::any_t::equal(const any_t& rhs) const
 {
@@ -201,7 +403,7 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 		return true;
 
 	if (rhs.m_type != m_type)
-		return false;
+		return OOCore_any_t_equal(*this,rhs);
 	
 	switch (m_type)
 	{
@@ -514,7 +716,6 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 
 	case TypeInfo::typeGuid:
 	default:
-		// Never going to happen ;)
 		return any_t::castUnrelated;
 	}
 }
@@ -667,7 +868,7 @@ namespace Omega
 					C v = System::Internal::default_value<C>::value();
 					Omega::any_t::CastResult_t r = a.Coerce(v);
 					if (r != any_t::castValid)
-						throw ICastException::Create(a,r,System::Internal::type_kind<C>::type());
+						throw_cast_exception(a,r,System::Internal::type_kind<C>::type());
 
 					return v;
 				}
@@ -681,7 +882,21 @@ namespace Omega
 					const C v = System::Internal::default_value<const C>::value();
 					Omega::any_t::CastResult_t r = a.Coerce(v);
 					if (r != any_t::castValid)
-						throw ICastException::Create(a,r,System::Internal::type_kind<const C>::type());
+						throw_cast_exception(a,r,System::Internal::type_kind<const C>::type());
+
+					return v;
+				}
+			};
+
+			template <typename C> 
+			struct cast_helper<const C&>
+			{ 
+				static const C& cast(const any_t& a)
+				{
+					const C& v = System::Internal::default_value<C>::value();
+					Omega::any_t::CastResult_t r = a.Coerce(v);
+					if (r != any_t::castValid)
+						throw_cast_exception(a,r,System::Internal::type_kind<const C&>::type());
 
 					return v;
 				}
@@ -813,7 +1028,7 @@ inline Omega::any_t::operator T&()
 inline Omega::bool_t& Omega::any_t::GetBoolValue()
 {
 	if (m_type != TypeInfo::typeBool)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<bool_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<bool_t&>::type());
 
 	return u.bVal;
 }
@@ -821,7 +1036,7 @@ inline Omega::bool_t& Omega::any_t::GetBoolValue()
 inline Omega::byte_t& Omega::any_t::GetByteValue()
 {
 	if (m_type != TypeInfo::typeByte)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<byte_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<byte_t&>::type());
 
 	return u.byVal;
 }
@@ -829,7 +1044,7 @@ inline Omega::byte_t& Omega::any_t::GetByteValue()
 inline Omega::int16_t& Omega::any_t::GetInt16Value()
 {
 	if (m_type != TypeInfo::typeInt16)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<int16_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<int16_t&>::type());
 
 	return u.i16Val;
 }
@@ -837,7 +1052,7 @@ inline Omega::int16_t& Omega::any_t::GetInt16Value()
 inline Omega::uint16_t& Omega::any_t::GetUInt16Value()
 {
 	if (m_type != TypeInfo::typeUInt16)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<uint16_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<uint16_t&>::type());
 
 	return u.ui16Val;
 }
@@ -845,7 +1060,7 @@ inline Omega::uint16_t& Omega::any_t::GetUInt16Value()
 inline Omega::int32_t& Omega::any_t::GetInt32Value()
 {
 	if (m_type != TypeInfo::typeInt32)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<int32_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<int32_t&>::type());
 
 	return u.i32Val;
 }
@@ -853,7 +1068,7 @@ inline Omega::int32_t& Omega::any_t::GetInt32Value()
 inline Omega::uint32_t& Omega::any_t::GetUInt32Value()
 {
 	if (m_type != TypeInfo::typeUInt32)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<uint32_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<uint32_t&>::type());
 
 	return u.ui32Val;
 }
@@ -861,7 +1076,7 @@ inline Omega::uint32_t& Omega::any_t::GetUInt32Value()
 inline Omega::int64_t& Omega::any_t::GetInt64Value()
 {
 	if (m_type != TypeInfo::typeInt64)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<int64_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<int64_t&>::type());
 
 	return u.i64Val;
 }
@@ -869,7 +1084,7 @@ inline Omega::int64_t& Omega::any_t::GetInt64Value()
 inline Omega::uint64_t& Omega::any_t::GetUInt64Value()
 {
 	if (m_type != TypeInfo::typeUInt64)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<uint64_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<uint64_t&>::type());
 
 	return u.ui64Val;
 }
@@ -877,7 +1092,7 @@ inline Omega::uint64_t& Omega::any_t::GetUInt64Value()
 inline Omega::float4_t& Omega::any_t::GetFloat4Value()
 {
 	if (m_type != TypeInfo::typeFloat4)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<float4_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<float4_t&>::type());
 
 	return u.fl4Val;
 }
@@ -885,7 +1100,7 @@ inline Omega::float4_t& Omega::any_t::GetFloat4Value()
 inline Omega::float8_t& Omega::any_t::GetFloat8Value()
 {
 	if (m_type != TypeInfo::typeFloat8)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<float8_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<float8_t&>::type());
 
 	return u.fl8Val;
 }
@@ -893,7 +1108,7 @@ inline Omega::float8_t& Omega::any_t::GetFloat8Value()
 inline Omega::guid_t& Omega::any_t::GetGuidValue()
 {
 	if (m_type != TypeInfo::typeGuid)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<guid_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<guid_t&>::type());
 
 	if (!u.pgVal)
 		OMEGA_NEW(u.pgVal,guid_t(guid_t::Null()));
@@ -904,7 +1119,7 @@ inline Omega::guid_t& Omega::any_t::GetGuidValue()
 inline Omega::string_t& Omega::any_t::GetStringValue()
 {
 	if (m_type != TypeInfo::typeString)
-		throw ICastException::Create(*this,any_t::castUnrelated,System::Internal::type_kind<string_t&>::type());
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<string_t&>::type());
 
 	return *u.pstrVal;
 }
@@ -916,7 +1131,7 @@ inline T Omega::string_t::ToNumber() const
 	T ret = System::Internal::default_value<T>::value();
 	any_t::CastResult_t r = System::Internal::scanner_t<T>::type::ToNumber(ret,*this);
 	if (r != any_t::castValid)
-		throw ICastException::Create(any_t(*this),r,System::Internal::type_kind<T>::type());
+		System::Internal::throw_cast_exception(any_t(*this),r,System::Internal::type_kind<T>::type());
 	return ret;
 }
 
@@ -935,10 +1150,30 @@ inline Omega::float8_t Omega::string_t::wcstod(const string_t& str, size_t& end_
 	return OOCore_wcstod(str,end_pos);
 }
 
-inline Omega::ICastException* Omega::ICastException::Create(const any_t& /*value*/, any_t::CastResult_t /*reason*/, const System::Internal::type_holder* /*typeDest*/)
+namespace Omega
 {
-	// Make this an internal function that walks the type info correctly
-	OMEGA_THROW(L"Cast exception... TODO!");
+	namespace System
+	{
+		namespace Internal
+		{
+			// type_holder is safe across DLL boundaries...
+			template <> 
+			struct is_c_abi<type_holder> 
+			{ 
+				enum 
+				{ 
+					result = 1 
+				}; 
+			};
+		}
+	}
+}
+
+OOCORE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const Omega::any_t&,value,(in),Omega::any_t::CastResult_t,reason,(in),const Omega::System::Internal::type_holder*,typeDest));
+
+inline void Omega::System::Internal::throw_cast_exception(const any_t& value, any_t::CastResult_t reason, const type_holder* typeDest)
+{
+	OOCore_ICastException_Throw(value,reason,typeDest);
 }
 
 #endif // OMEGA_ANY_INL_INCLUDED_

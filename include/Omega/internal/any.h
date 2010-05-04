@@ -24,6 +24,15 @@
 
 namespace Omega
 {
+	// Forward declare friend types
+	namespace System
+	{
+		namespace Internal
+		{
+			struct any_t_safe_type;
+		}
+	}
+
 	class any_t
 	{
 	public:
@@ -84,6 +93,10 @@ namespace Omega
 		// Perform a cast, and throw on failure (includes loss of precision, etc...)
 		template <typename T> operator T() const;
 		template <typename T> operator T&();
+
+		// gcc gets baffled without these...
+		operator const any_t&() const { return *this; }
+		operator any_t&() { return *this; }
 				
 		// Explicit reference accessors
 		bool_t& GetBoolValue();
@@ -98,8 +111,10 @@ namespace Omega
 		float8_t& GetFloat8Value();
 		guid_t& GetGuidValue();
 		string_t& GetStringValue();
-						
+				
 	private:
+		friend struct Omega::System::Internal::any_t_safe_type;
+
 		struct obj_holder_base
 		{
 			virtual ~obj_holder_base() {}
@@ -183,7 +198,6 @@ namespace Omega
 
 	interface ICastException : public IException
 	{
-		static ICastException* Create(const any_t& value, any_t::CastResult_t reason, const System::Internal::type_holder* typeDest);
 	};
 }
 

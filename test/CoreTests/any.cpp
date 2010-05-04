@@ -262,5 +262,18 @@ bool any_tests()
 		TEST(Omega::any_cast<Omega::string_t>(v) == L"23");
 	}
 
+	// Now test the random comparisons
+	Omega::any_t(100) == L"100";
+
+	// Test some cast exceptions
+	try
+	{
+		Omega::any_cast<int>(1.1f);
+	}
+	catch (Omega::ICastException* pE)
+	{
+		TEST(pE->GetDescription() == L"Hello");
+	}
+
 	return true;
 }

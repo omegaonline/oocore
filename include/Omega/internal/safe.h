@@ -546,7 +546,7 @@ namespace Omega
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type val) : m_val(string_t_safe_type::create(val))
+					type_wrapper(safe_type val) : m_val(string_t_safe_type::create(val,true))
 					{ }
 
 					void update(safe_type& dest)
@@ -577,7 +577,7 @@ namespace Omega
 
 					void update(string_t& dest)
 					{
-						dest = string_t_safe_type::create(m_val);
+						dest = string_t_safe_type::create(m_val,true);
 					}
 
 					operator safe_type ()
@@ -602,13 +602,12 @@ namespace Omega
 
 				static string_t clone(safe_type v)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v),false);
+					return create(v,false);
 				}
 
-			private:
-				static string_t create(safe_type v)
+				static string_t create(safe_type v, bool addref)
 				{
-					return string_t(static_cast<string_t::handle_t*>(v),true);
+					return string_t(static_cast<string_t::handle_t*>(v),addref);
 				}
 
 				static safe_type addref(const string_t& val, bool own)

@@ -73,7 +73,7 @@ inline void Omega::any_t::swap(const any_t& rhs)
 	case TypeInfo::typeVoid:
 		break;
 	
-	case TypeInfo::typeObjectPtr:
+	case TypeInfo::typeObject:
 
 	case TypeInfo::typeAny:
 	default:
@@ -323,7 +323,7 @@ namespace Omega
 						return string_t_safe_type::create(v.u.pstrVal,addref);
 					case TypeInfo::typeGuid:
 						return guid_t(v.u.gVal);
-					case TypeInfo::typeObjectPtr:
+					case TypeInfo::typeObject:
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");
@@ -375,7 +375,7 @@ namespace Omega
 						ret.u.gVal = (val.u.pgVal ? guid_t::Null() : *val.u.pgVal);
 						break;
 
-					case TypeInfo::typeObjectPtr:
+					case TypeInfo::typeObject:
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");
@@ -437,7 +437,7 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 		return (u.pgVal ? *u.pgVal : guid_t::Null()) == (rhs.u.pgVal ? *rhs.u.pgVal : guid_t::Null());
 	case TypeInfo::typeString:
 		return (*u.pstrVal == *rhs.u.pstrVal);
-	//case TypeInfo::typeObjectPtr:
+	//case TypeInfo::typeObject:
 	default:
 		// Never going to happen ;)
 		return false;
@@ -685,7 +685,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 {
 	// Check for pointers/refs/STL etc
 	const System::Internal::type_holder* other_type = System::Internal::type_kind<T>::type();
-	if (other_type->next && other_type->type != TypeInfo::typeObjectPtr)
+	if (other_type->next && other_type->type != TypeInfo::typeObject)
 		return any_t::castUnrelated;
 
 	switch (m_type)
@@ -714,7 +714,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 	case TypeInfo::typeString:
 		return System::Internal::scanner_t<T>::type::ToNumber(v,*u.pstrVal);
 				
-	//case TypeInfo::typeObjectPtr:
+	//case TypeInfo::typeObject:
 
 	case TypeInfo::typeVoid:
 	case TypeInfo::typeGuid:
@@ -783,7 +783,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v) const
 		v = *u.pstrVal;
 		break;
 
-	//case TypeInfo::typeObjectPtr:
+	//case TypeInfo::typeObject:
 		// QI for something and let that throw...
 
 	case TypeInfo::typeVoid:
@@ -844,7 +844,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 		}
 		break;
 
-	//case TypeInfo::typeObjectPtr:
+	//case TypeInfo::typeObject:
 		// Test for null
 
 	case TypeInfo::typeVoid:
@@ -1179,5 +1179,18 @@ inline void Omega::System::Internal::throw_cast_exception(const any_t& value, an
 {
 	OOCore_ICastException_Throw(value,reason,typeDest);
 }
+
+#if !defined(DOXYGEN)
+
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
+(
+	Omega, ICastException, Omega, IException, "{F79A88F6-B2C4-490F-A11D-7D9B3894BD5D}",
+
+	OMEGA_METHOD(any_t,GetValue,0,())
+	OMEGA_METHOD(any_t::CastResult_t,GetReason,0,())
+	OMEGA_METHOD(Remoting::IMessage*,GetDestinationType,0,())
+)
+
+#endif // !defined(DOXYGEN)
 
 #endif // OMEGA_ANY_INL_INCLUDED_

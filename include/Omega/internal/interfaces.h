@@ -24,6 +24,13 @@
 
 namespace Omega
 {
+	interface ICastException : public IException
+	{
+		virtual any_t GetValue() = 0;
+		virtual any_t::CastResult_t GetReason() = 0;
+		virtual Remoting::IMessage* GetDestinationType() = 0;
+	};
+
 	namespace Formatting
 	{
 		interface IFormattingException : public IException

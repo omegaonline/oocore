@@ -140,6 +140,16 @@ namespace
 		else
 			return std::wstring(width-str.size(),L' ') + str;
 	}
+
+	template <typename T>
+	bool any_compare(const any_t& lhs, const any_t& rhs)
+	{
+		T v1,v2;
+		if (lhs.Coerce(v1) != any_t::castValid || rhs.Coerce(v2) != any_t::castValid)
+			return false;
+
+		return (v1 == v2);
+	}
 }
 
 OMEGA_DEFINE_RAW_EXPORTED_FUNCTION(void*,OOCore_string_t__ctor1,3,((in),const char*,sz,(in),size_t,len,(in),int,bUTF8))
@@ -940,19 +950,6 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 #endif
 }
 
-namespace
-{
-	template <typename T>
-	bool any_compare(const any_t& lhs, const any_t& rhs)
-	{
-		T v1,v2;
-		if (lhs.Coerce(v1) != any_t::castValid || rhs.Coerce(v2) != any_t::castValid)
-			return false;
-
-		return (v1 == v2);
-	}
-}
-
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs))
 {
 	// void comparison
@@ -984,9 +981,4 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Om
 
 	// Try comparing as int64_t
 	return any_compare<int64_t>(lhs,rhs);
-}
-
-OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const any_t&,value,(in),any_t::CastResult_t,reason,(in),const System::Internal::type_holder*,typeDest))
-{
-	OMEGA_THROW(L"BUM!");
 }

@@ -268,7 +268,8 @@ bool any_tests()
 	}
 
 	// Now test the random comparisons
-	Omega::any_t(100) == L"100";
+	TEST(Omega::any_t(100) == L"100");
+	TEST(Omega::any_t(L"100") == 100.0);
 
 	// Test some cast exceptions
 	try
@@ -277,7 +278,9 @@ bool any_tests()
 	}
 	catch (Omega::ICastException* pE)
 	{
-		TEST(pE->GetDescription() == L"Hello");
+		TEST(pE->GetValue() == Omega::any_t(1.1f));
+		TEST(pE->GetReason() == Omega::any_t::castPrecisionLoss);
+		pE->Release();
 	}
 
 	return true;

@@ -251,11 +251,11 @@ namespace Omega
 				}
 			};
 
-			template <> struct type_kind<IObject*>
+			template <> struct type_kind<IObject>
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::typeObjectPtr, (const type_holder*)(&OMEGA_GUIDOF(IObject)) };
+					static const type_holder t = { TypeInfo::typeObject, (const type_holder*)(&OMEGA_GUIDOF(IObject)) };
 					return &t;
 				}
 			};

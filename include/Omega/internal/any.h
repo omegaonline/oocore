@@ -192,10 +192,6 @@ namespace Omega
 		return val.cast<T>();
 	}
 
-	interface ICastException : public IException
-	{
-	};
-
 	namespace System
 	{
 		namespace Internal

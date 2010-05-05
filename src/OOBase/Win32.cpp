@@ -35,8 +35,11 @@ namespace
 
 		static Win32Thunk& instance()
 		{
-			static Win32Thunk s_instance;
-			return s_instance;
+			static INIT_ONCE key = {0};
+			if (!impl_InitOnceExecuteOnce(&key,&init,0,0))
+				OOBase_CallCriticalFailure(GetLastError());
+
+			return *s_instance;
 		}
 
 		typedef BOOL (__stdcall *pfn_InitOnceExecuteOnce)(INIT_ONCE* InitOnce, PINIT_ONCE_FN InitFn, void* Parameter, void** Context);
@@ -85,7 +88,18 @@ namespace
 
 	private:
 		void init_low_frag_heap();
+
+		static Win32Thunk* s_instance;
+
+		static BOOL __stdcall init(INIT_ONCE*,void*,void**)
+		{
+			static Win32Thunk inst;
+			s_instance = &inst;
+			return TRUE;
+		}
 	};
+
+	Win32Thunk* Win32Thunk::s_instance = 0;
 	
 	Win32Thunk::Win32Thunk() :
 		m_hKernel32(0)

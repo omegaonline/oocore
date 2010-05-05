@@ -23,6 +23,7 @@
 #define OOBASE_DESTRUCTOR_H_INCLUDED_
 
 #include "Mutex.h"
+#include "Once.h"
 
 #include <list>
 
@@ -95,10 +96,23 @@ namespace OOBase
 
 		static DLLDestructor& instance()
 		{
-			static DLLDestructor inst;
-			return inst;
+			static Once::once_t key = ONCE_T_INIT;
+			Once::Run(&key,init);
+
+			return *s_instance;
 		}
+
+		static void init()
+		{
+			static DLLDestructor inst;
+			s_instance = &inst;
+		}
+
+		static DLLDestructor* s_instance;
 	};
+
+	template <typename DLL>
+	DLLDestructor<DLL>* DLLDestructor<DLL>::s_instance = 0;
 }
 
 #endif // OOBASE_DESTRUCTOR_H_INCLUDED_

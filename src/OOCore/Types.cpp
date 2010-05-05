@@ -940,9 +940,50 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_guid_t_create,0,())
 #endif
 }
 
+namespace
+{
+	template <typename T>
+	bool any_compare(const any_t& lhs, const any_t& rhs)
+	{
+		T v1,v2;
+		if (lhs.Coerce(v1) != any_t::castValid || rhs.Coerce(v2) != any_t::castValid)
+			return false;
+
+		return (v1 == v2);
+	}
+}
+
 OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::bool_t,OOCore_any_t_equal,2,((in),const Omega::any_t&,lhs,(in),const Omega::any_t&,rhs))
 {
-	return false;
+	// void comparison
+	if (lhs.GetType() == TypeInfo::typeVoid || rhs.GetType() == TypeInfo::typeVoid)
+		return (lhs.GetType() == rhs.GetType());
+	
+	// guid_t comparison
+	if (lhs.GetType() == TypeInfo::typeGuid || rhs.GetType() == TypeInfo::typeGuid)
+		return any_compare<guid_t>(lhs,rhs);
+	
+	// string_t comparison
+	if (lhs.GetType() == TypeInfo::typeString || rhs.GetType() == TypeInfo::typeString)
+		return any_compare<string_t>(lhs,rhs);
+
+	// bool_t comparison
+	if (lhs.GetType() == TypeInfo::typeBool || rhs.GetType() == TypeInfo::typeBool)
+		return any_compare<bool_t>(lhs,rhs);
+
+	// floatX_t comparison
+	if (lhs.GetType() == TypeInfo::typeFloat8 || rhs.GetType() == TypeInfo::typeFloat8 ||
+		lhs.GetType() == TypeInfo::typeFloat4 || rhs.GetType() == TypeInfo::typeFloat4)
+	{
+		return any_compare<float8_t>(lhs,rhs);
+	}
+
+	// uint64_t comparison - everything else fits in int64_t
+	if (lhs.GetType() == TypeInfo::typeUInt64 || rhs.GetType() == TypeInfo::typeUInt64)
+		return any_compare<uint64_t>(lhs,rhs);
+
+	// Try comparing as int64_t
+	return any_compare<int64_t>(lhs,rhs);
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_ICastException_Throw,3,((in),const any_t&,value,(in),any_t::CastResult_t,reason,(in),const System::Internal::type_holder*,typeDest))

@@ -70,9 +70,13 @@ inline void Omega::any_t::swap(const any_t& rhs)
 		OMEGA_NEW(u.pgVal,guid_t(*rhs.u.pgVal));
 		break;
 
+	case TypeInfo::typeVoid:
+		break;
+	
 	case TypeInfo::typeObjectPtr:
+
+	case TypeInfo::typeAny:
 	default:
-		// Never going to happen ;)
 		OMEGA_THROW(L"Invalid any_t type!");
 	}
 }
@@ -85,6 +89,11 @@ inline Omega::any_t& Omega::any_t::operator = (const any_t& rhs)
 		swap(rhs);
 	}
 	return *this;
+}
+
+inline Omega::any_t::any_t() :
+	m_type(TypeInfo::typeVoid)
+{
 }
 
 inline Omega::any_t::any_t(bool_t val) :
@@ -185,14 +194,6 @@ inline void Omega::any_t::clear()
 		delete u.pgVal;
 	else if (m_type == TypeInfo::typeString)
 		delete u.pstrVal;
-}
-
-inline bool Omega::any_t::operator !() const
-{
-	if (m_type == TypeInfo::typeString)
-		return u.pstrVal->operator !();
-
-	return equal(any_t(false));
 }
 
 namespace Omega
@@ -296,6 +297,8 @@ namespace Omega
 				{
 					switch (v.type)
 					{
+					case TypeInfo::typeVoid:
+						return any_t();
 					case TypeInfo::typeBool:
 						return static_cast<bool_t>(v.u.bVal != 0);
 					case TypeInfo::typeByte:
@@ -320,7 +323,6 @@ namespace Omega
 						return string_t_safe_type::create(v.u.pstrVal,addref);
 					case TypeInfo::typeGuid:
 						return guid_t(v.u.gVal);
-
 					case TypeInfo::typeObjectPtr:
 					default:
 						// Never going to happen ;)
@@ -334,6 +336,8 @@ namespace Omega
 					ret.type = static_cast<TypeInfo::Type_t>(val.m_type);
 					switch (val.m_type)
 					{
+					case TypeInfo::typeVoid:
+						break;
 					case TypeInfo::typeBool:
 						ret.u.bVal = (val.u.bVal ? 1 : 0);
 						break;
@@ -407,6 +411,8 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 	
 	switch (m_type)
 	{
+	case TypeInfo::typeVoid:
+		return true;
 	case TypeInfo::typeBool:
 		return (u.bVal == rhs.u.bVal);
 	case TypeInfo::typeByte:
@@ -682,10 +688,6 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 	if (other_type->next && other_type->type != TypeInfo::typeObjectPtr)
 		return any_t::castUnrelated;
 
-	// Check for wierd stuff...
-	if (!std::numeric_limits<T>::is_specialized)
-		return any_t::castUnrelated;
-
 	switch (m_type)
 	{
 	case TypeInfo::typeBool:
@@ -714,6 +716,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 				
 	//case TypeInfo::typeObjectPtr:
 
+	case TypeInfo::typeVoid:
 	case TypeInfo::typeGuid:
 	default:
 		return any_t::castUnrelated;
@@ -783,6 +786,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v) const
 	//case TypeInfo::typeObjectPtr:
 		// QI for something and let that throw...
 
+	case TypeInfo::typeVoid:
 	default: 
 		// Never going to happen ;)
 		return any_t::castUnrelated;
@@ -825,9 +829,6 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 	case TypeInfo::typeFloat8:
 		v = (u.fl8Val ? true : false);
 		break;
-	case TypeInfo::typeGuid:
-		v = (u.pgVal ? *u.pgVal != guid_t::Null() : false);
-		break;
 	case TypeInfo::typeString:
 		{
 			string_t t(L"{0}");
@@ -846,6 +847,9 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 	//case TypeInfo::typeObjectPtr:
 		// Test for null
 
+	case TypeInfo::typeVoid:
+	case TypeInfo::typeGuid:
+		// Always invalid
 	default: 
 		// Never going to happen ;)
 		return any_t::castUnrelated;

@@ -36,7 +36,8 @@ namespace Omega
 	class any_t
 	{
 	public:
-		any_t(bool_t val = false);
+		any_t();
+		any_t(bool_t val);
 		any_t(byte_t val);
 		any_t(int16_t val);
 		any_t(uint16_t val);
@@ -64,8 +65,7 @@ namespace Omega
 		// Comparison operators
 		template <typename T> bool operator == (T v) const { return equal(v); }
 		template <typename T> bool operator != (T v) const { return !equal(v); }
-		bool operator !() const;
-		
+				
 		TypeInfo::Type GetType() const
 		{
 			return m_type;
@@ -199,6 +199,21 @@ namespace Omega
 	interface ICastException : public IException
 	{
 	};
+
+	namespace System
+	{
+		namespace Internal
+		{
+			template <> struct type_kind<any_t>
+			{
+				static const type_holder* type()
+				{
+					static const type_holder t = { TypeInfo::typeAny, 0 };
+					return &t;
+				}
+			};
+		}
+	}
 }
 
 #endif // OMEGA_ANY_H_INCLUDED_

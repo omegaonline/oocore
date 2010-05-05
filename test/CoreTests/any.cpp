@@ -3,7 +3,7 @@
 
 bool any_tests()
 {
-	TEST(Omega::any_t().GetType() == Omega::TypeInfo::typeBool);
+	TEST(Omega::any_t().GetType() == Omega::TypeInfo::typeVoid);
 	TEST(Omega::any_t(Omega::bool_t(false)).GetType() == Omega::TypeInfo::typeBool);
 	TEST(Omega::any_t(Omega::byte_t(1)).GetType() == Omega::TypeInfo::typeByte);
 	TEST(Omega::any_t(Omega::int16_t(2)).GetType() == Omega::TypeInfo::typeInt16);
@@ -32,6 +32,11 @@ bool any_tests()
 
 		a3 = a1;
 		TEST(a2 == a2);
+	}
+
+	{
+		TEST(Omega::any_t() == Omega::any_t());
+		TEST(Omega::any_t(false) != Omega::any_t());
 	}
 
 	// any_cast<T> tests constructor + any_t::operator T()
@@ -244,7 +249,7 @@ bool any_tests()
 		Omega::any_t a(v);
 		static_cast<Omega::bool_t&>(a) = true;
 		TEST(a == true);
-		TEST(a);
+		TEST(a != false);
 	}
 
 	{

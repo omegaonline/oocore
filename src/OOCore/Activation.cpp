@@ -55,13 +55,14 @@ namespace
 		public ExceptionImpl<Omega::Activation::IOidNotFoundException>
 	{
 	public:
-		guid_t m_oid;
-
 		static void Throw(const guid_t& Oid, const string_t& strFn, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(OidNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
 		END_INTERFACE_MAP()
+
+	private:
+		guid_t m_oid;
 
 	// Activation::IOidNotFoundException members
 	public:

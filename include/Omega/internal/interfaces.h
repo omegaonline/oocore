@@ -265,25 +265,24 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
-	// Methods
 	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega, ISystemException, Omega, IException, "{A0E1EEDB-BA00-4078-B67B-D990D43D5E7C}",
 
 	OMEGA_METHOD(uint32_t,GetErrorCode,0,())
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega, INoInterfaceException, Omega, IException, "{68778245-9EA7-49f7-9EF4-D5D742E781D5}",
 
 	OMEGA_METHOD(guid_t,GetUnsupportedIID,0,())
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega, ITimeoutException, Omega, IException, "{63E8BFDE-D7AA-4675-B628-A1579B5AD8C7}",
 

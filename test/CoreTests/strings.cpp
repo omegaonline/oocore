@@ -88,6 +88,8 @@ bool string_tests()
 	TEST(Omega::string_t(L"H123321").TrimRight(L"123") == L"H");
 	TEST(Omega::string_t(L"123321").TrimRight(L"123").IsEmpty());
 
+	TEST(Omega::string_t(L"Hell") + L'o' == L"Hello");
+
 	return true;
 }
 

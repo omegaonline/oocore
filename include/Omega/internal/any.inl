@@ -233,7 +233,7 @@ namespace Omega
 
 				struct type_wrapper
 				{
-					type_wrapper(safe_type val) : m_val(static_cast<const any_t&>(any_t_safe_type::create(val,true)))
+					type_wrapper(safe_type val) : m_val(any_t_safe_type::create(val,true))
 					{ }
 
 					void update(safe_type& dest)
@@ -289,7 +289,7 @@ namespace Omega
 
 				static any_t clone(safe_type v)
 				{
-					return static_cast<const any_t&>(create(v,false));
+					return create(v,false);
 				}
 
 			private:
@@ -1018,15 +1018,15 @@ namespace Omega
 }
 
 template <typename T>
-inline Omega::any_t::operator T() const
+inline T Omega::any_t::cast() const
 {
 	return System::Internal::cast_helper<T>::cast(*this);
 }
 
 template <typename T>
-inline Omega::any_t::operator T&()
+inline T Omega::any_t::cast()
 {
-	return System::Internal::cast_helper<T&>::cast(*this);
+	return System::Internal::cast_helper<T>::cast(*this);
 }
 
 inline Omega::bool_t& Omega::any_t::GetBoolValue()

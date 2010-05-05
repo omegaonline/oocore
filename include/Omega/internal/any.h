@@ -91,13 +91,9 @@ namespace Omega
 		CastResult_t Coerce(I*& val, const guid_t& iid = OMEGA_GUIDOF(I));
 
 		// Perform a cast, and throw on failure (includes loss of precision, etc...)
-		template <typename T> operator T() const;
-		template <typename T> operator T&();
+		template <typename T> T cast() const;
+		template <typename T> T cast();
 
-		// gcc gets baffled without these...
-		operator const any_t&() const { return *this; }
-		operator any_t&() { return *this; }
-				
 		// Explicit reference accessors
 		bool_t& GetBoolValue();
 		byte_t& GetByteValue();
@@ -187,13 +183,13 @@ namespace Omega
 	template <typename T>
 	inline static T any_cast(const any_t& val)
 	{
-		return val;
+		return val.cast<T>();
 	}
 
 	template <typename T>
 	inline static T any_cast(any_t& val)
 	{
-		return val;
+		return val.cast<T>();
 	}
 
 	interface ICastException : public IException

@@ -44,8 +44,8 @@ void OOCore::Stub::MarshalInterface(Remoting::IMessage* pMessage, const guid_t& 
 	// Make sure we can support the outgoing interface...
 	assert(FindStub(iid) != 0);
 	
-	pMessage->WriteUInt32(L"id",m_stub_id);
-	pMessage->WriteGuid(L"iid",iid);
+	pMessage->WriteValue(L"id",m_stub_id);
+	pMessage->WriteValue(L"iid",iid);
 	
 	++m_marshal_count;
 }
@@ -55,13 +55,13 @@ void OOCore::Stub::ReleaseMarshalData(Remoting::IMessage* pMessage, const guid_t
 	// Deref safely
 	RemoteRelease();
 
-	pMessage->ReadUInt32(L"id");
-	pMessage->ReadGuid(L"iid");
+	pMessage->ReadValue(L"id");
+	pMessage->ReadValue(L"iid");
 }
 
 void OOCore::Stub::Invoke(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	ObjectPtr<Remoting::IStub> ptrStub = FindStub(pParamsIn->ReadGuid(L"$iid"));
+	ObjectPtr<Remoting::IStub> ptrStub = FindStub(pParamsIn->ReadValue(L"$iid").cast<guid_t>());
 	if (!ptrStub)
 		OMEGA_THROW(L"Invoke on unsupported interface");
 
@@ -133,7 +133,7 @@ bool_t OOCore::Stub::RemoteQueryInterface(const guid_t& iid)
 
 void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage* pParamsOut)
 {
-	guid_t iid = pParamsIn->ReadGuid(L"iid");
+	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
 	
 	// Unmarshal the channel
 	ObjectPtr<Remoting::IChannel> ptrChannel = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(m_pManager)).UnmarshalInterface<Remoting::IChannel>(L"m_ptrChannel",pParamsIn);
@@ -147,12 +147,12 @@ void OOCore::Stub::MarshalStub(Remoting::IMessage* pParamsIn, Remoting::IMessage
 	// Reflect the channel
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	ptrMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
-	ptrMessage->WriteByte(L"$marshal_type",2);
-	ptrMessage->WriteGuid(L"$oid",ptrChannel->GetReflectUnmarshalFactoryOID());
+	ptrMessage->WriteValue(L"$marshal_type",byte_t(2));
+	ptrMessage->WriteValue(L"$oid",ptrChannel->GetReflectUnmarshalFactoryOID());
 	
 	ptrChannel->ReflectMarshal(ptrMessage);
 	
-	ptrMessage->WriteStructEnd(L"m_ptrChannel");
+	ptrMessage->WriteStructEnd();
 	
 	// Get the channel's IMarshaller
 	ObjectPtr<Remoting::IMarshaller> ptrMarshaller = ptrChannel.GetManager<Remoting::IMarshaller>();

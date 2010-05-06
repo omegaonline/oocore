@@ -67,13 +67,15 @@ inline void Omega::any_t::swap(const any_t& rhs)
 		OMEGA_NEW(u.pstrVal,string_t(*rhs.u.pstrVal));
 		break;
 	case TypeInfo::typeGuid:
-		OMEGA_NEW(u.pgVal,guid_t(*rhs.u.pgVal));
+		u.pgVal = 0;
+		if (rhs.u.pgVal)
+			OMEGA_NEW(u.pgVal,guid_t(*rhs.u.pgVal));
 		break;
 
 	case TypeInfo::typeVoid:
 		break;
 	
-	case TypeInfo::typeObject:
+	case TypeInfo::typeObjectPtr:
 
 	case TypeInfo::typeAny:
 	default:
@@ -234,7 +236,7 @@ inline bool Omega::any_t::equal(const any_t& rhs) const
 		return (u.pgVal ? *u.pgVal : guid_t::Null()) == (rhs.u.pgVal ? *rhs.u.pgVal : guid_t::Null());
 	case TypeInfo::typeString:
 		return (*u.pstrVal == *rhs.u.pstrVal);
-	//case TypeInfo::typeObject:
+	//case TypeInfo::typeObjectPtr:
 	default:
 		// Never going to happen ;)
 		return false;
@@ -485,7 +487,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 {
 	// Check for pointers/refs/STL etc
 	const System::Internal::type_holder* other_type = System::Internal::type_kind<T>::type();
-	if (other_type->next && other_type->type != TypeInfo::typeObject)
+	if (other_type->next && other_type->type != TypeInfo::typeObjectPtr)
 		return any_t::castUnrelated;
 
 	switch (m_type)
@@ -514,7 +516,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(T& v) const
 	case TypeInfo::typeString:
 		return System::Internal::scanner_t<T>::type::ToNumber(v,*u.pstrVal);
 				
-	//case TypeInfo::typeObject:
+	//case TypeInfo::typeObjectPtr:
 
 	case TypeInfo::typeVoid:
 	case TypeInfo::typeGuid:
@@ -583,7 +585,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v) const
 		v = *u.pstrVal;
 		break;
 
-	//case TypeInfo::typeObject:
+	//case TypeInfo::typeObjectPtr:
 		// QI for something and let that throw...
 
 	case TypeInfo::typeVoid:
@@ -644,7 +646,7 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 		}
 		break;
 
-	//case TypeInfo::typeObject:
+	//case TypeInfo::typeObjectPtr:
 		// Test for null
 
 	case TypeInfo::typeVoid:
@@ -813,6 +815,114 @@ namespace Omega
 					return a.GetStringValue(); 
 				} 
 			};
+
+			template <> 
+			struct cast_helper<const bool_t&> 
+			{ 
+				static const bool_t& cast(const any_t& a) 
+				{ 
+					return a.GetBoolValue(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const byte_t&> 
+			{ 
+				static const byte_t& cast(const any_t& a) 
+				{ 
+					return a.GetByteValue(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const int16_t&> 
+			{ 
+				static const int16_t& cast(const any_t& a) 
+				{ 
+					return a.GetInt16Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const uint16_t&> 
+			{ 
+				static const uint16_t& cast(const any_t& a) 
+				{ 
+					return a.GetUInt16Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const int32_t&> 
+			{ 
+				static const int32_t& cast(const any_t& a) 
+				{ 
+					return a.GetInt32Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const uint32_t&> 
+			{ 
+				static const uint32_t& cast(const any_t& a) 
+				{ 
+					return a.GetUInt32Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const int64_t&> 
+			{ 
+				static const int64_t& cast(const any_t& a) 
+				{ 
+					return a.GetInt64Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const uint64_t&> 
+			{ 
+				static const uint64_t& cast(const any_t& a) 
+				{ 
+					return a.GetUInt64Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const float4_t&> 
+			{ 
+				static const float4_t& cast(const any_t& a) 
+				{ 
+					return a.GetFloat4Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const float8_t&> 
+			{ 
+				static const float8_t& cast(const any_t& a) 
+				{ 
+					return a.GetFloat8Value(); 
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const guid_t&> 
+			{ 
+				static const guid_t& cast(const any_t& a) 
+				{ 
+					return a.GetGuidValue();
+				} 
+			};
+			
+			template <> 
+			struct cast_helper<const string_t&> 
+			{ 
+				static const string_t& cast(const any_t& a) 
+				{ 
+					return a.GetStringValue(); 
+				} 
+			};
 		}
 	}
 }
@@ -924,6 +1034,102 @@ inline Omega::string_t& Omega::any_t::GetStringValue()
 {
 	if (m_type != TypeInfo::typeString)
 		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<string_t&>::type());
+
+	return *u.pstrVal;
+}
+
+inline const Omega::bool_t& Omega::any_t::GetBoolValue() const
+{
+	if (m_type != TypeInfo::typeBool)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const bool_t&>::type());
+
+	return u.bVal;
+}
+
+inline const Omega::byte_t& Omega::any_t::GetByteValue() const
+{
+	if (m_type != TypeInfo::typeByte)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const byte_t&>::type());
+
+	return u.byVal;
+}
+
+inline const Omega::int16_t& Omega::any_t::GetInt16Value() const
+{
+	if (m_type != TypeInfo::typeInt16)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const int16_t&>::type());
+
+	return u.i16Val;
+}
+
+inline const Omega::uint16_t& Omega::any_t::GetUInt16Value() const
+{
+	if (m_type != TypeInfo::typeUInt16)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const uint16_t&>::type());
+
+	return u.ui16Val;
+}
+
+inline const Omega::int32_t& Omega::any_t::GetInt32Value() const
+{
+	if (m_type != TypeInfo::typeInt32)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const int32_t&>::type());
+
+	return u.i32Val;
+}
+
+inline const Omega::uint32_t& Omega::any_t::GetUInt32Value() const
+{
+	if (m_type != TypeInfo::typeUInt32)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const uint32_t&>::type());
+
+	return u.ui32Val;
+}
+
+inline const Omega::int64_t& Omega::any_t::GetInt64Value() const
+{
+	if (m_type != TypeInfo::typeInt64)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const int64_t&>::type());
+
+	return u.i64Val;
+}
+
+inline const Omega::uint64_t& Omega::any_t::GetUInt64Value() const
+{
+	if (m_type != TypeInfo::typeUInt64)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const uint64_t&>::type());
+
+	return u.ui64Val;
+}
+
+inline const Omega::float4_t& Omega::any_t::GetFloat4Value() const
+{
+	if (m_type != TypeInfo::typeFloat4)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const float4_t&>::type());
+
+	return u.fl4Val;
+}
+
+inline const Omega::float8_t& Omega::any_t::GetFloat8Value() const
+{
+	if (m_type != TypeInfo::typeFloat8)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const float8_t&>::type());
+
+	return u.fl8Val;
+}
+
+inline const Omega::guid_t& Omega::any_t::GetGuidValue() const
+{
+	if (m_type != TypeInfo::typeGuid)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const guid_t&>::type());
+
+	return (u.pgVal ? *u.pgVal : guid_t::Null());
+}
+
+inline const Omega::string_t& Omega::any_t::GetStringValue() const
+{
+	if (m_type != TypeInfo::typeString)
+		System::Internal::throw_cast_exception(*this,any_t::castUnrelated,System::Internal::type_kind<const string_t&>::type());
 
 	return *u.pstrVal;
 }

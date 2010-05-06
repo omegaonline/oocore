@@ -272,11 +272,10 @@ void OOCore::StdObjectManager::Shutdown()
 void OOCore::StdObjectManager::InvokeGetRemoteInstance(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the oid, iid and flags
-	string_t strOID = pParamsIn->ReadString(L"oid");
-	guid_t iid = pParamsIn->ReadGuid(L"iid");
-	Activation::Flags_t act_flags;
-	System::Internal::wire_read(L"flags",pParamsIn,act_flags);
-
+	string_t strOID = pParamsIn->ReadValue(L"oid").cast<string_t>();
+	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
+	Activation::Flags_t act_flags = pParamsIn->ReadValue(L"flags").cast<Activation::Flags_t>();
+	
 	// Check our permissions
 	if (m_ptrChannel->GetMarshalFlags() == Remoting::RemoteMachine)
 		act_flags |= Activation::RemoteActivation;
@@ -325,7 +324,7 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 
 		// Assume we succeed
 		ptrResponse->WriteStructStart(L"ipc_response",L"$ipc_response_type");
-		ptrResponse->WriteBoolean(L"$throw",false);
+		ptrResponse->WriteValue(L"$throw",false);
 
 		try
 		{
@@ -333,10 +332,10 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			pParamsIn->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 
 			// Read the stub id
-			uint32_t stub_id = pParamsIn->ReadUInt32(L"$stub_id");
+			uint32_t stub_id = pParamsIn->ReadValue(L"$stub_id").cast<uint32_t>();
 			if (stub_id == 0)
 			{
-				uint32_t method_id = pParamsIn->ReadUInt32(L"$method_id");
+				uint32_t method_id = pParamsIn->ReadValue(L"$method_id").cast<uint32_t>();
 				if (method_id == 0)
 				{
 					// It's a call from GetRemoteInstance
@@ -385,14 +384,14 @@ Remoting::IMessage* OOCore::StdObjectManager::Invoke(Remoting::IMessage* pParams
 			ptrResponse.Attach(m_ptrChannel->CreateMessage());
 			ptrResponse->WriteStructStart(L"ipc_response",L"$ipc_response_type");
 
-			ptrResponse->WriteBoolean(L"$throw",true);
+			ptrResponse->WriteValue(L"$throw",true);
 
 			// Write the exception onto the wire
 			MarshalInterface(L"exception",ptrResponse,pE->GetThrownIID(),pE);
 		}
 
 		// Close the struct block
-		ptrResponse->WriteStructEnd(L"ipc_response");
+		ptrResponse->WriteStructEnd();
 
 		// Restore context
 		*pCC = old_context;
@@ -416,13 +415,13 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 
 	ptrParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
-	ptrParamsOut->WriteUInt32(L"$stub_id",0);
-	ptrParamsOut->WriteUInt32(L"$method_id",0);
-	ptrParamsOut->WriteString(L"oid",strOID);
-	ptrParamsOut->WriteGuid(L"iid",iid);
-	System::Internal::wire_write(L"flags",ptrParamsOut,flags);
+	ptrParamsOut->WriteValue(L"$stub_id",uint32_t(0));
+	ptrParamsOut->WriteValue(L"$method_id",uint32_t(0));
+	ptrParamsOut->WriteValue(L"oid",strOID);
+	ptrParamsOut->WriteValue(L"iid",iid);
+	ptrParamsOut->WriteValue(L"flags",flags);
 
-	ptrParamsOut->WriteStructEnd(L"ipc_request");
+	ptrParamsOut->WriteStructEnd();
 
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pERet;
@@ -435,15 +434,12 @@ void OOCore::StdObjectManager::GetRemoteInstance(const string_t& strOID, Activat
 	{
 		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 
-		ptrParamsOut->ReadUInt32(L"$stub_id");
-		ptrParamsOut->ReadUInt32(L"$method_id");
-		ptrParamsOut->ReadGuid(L"oid");
-		ptrParamsOut->ReadGuid(L"iid");
-
-		Activation::Flags_t f;
-		System::Internal::wire_read(L"flags",ptrParamsOut,f);
-
-		ptrParamsOut->ReadStructEnd(L"ipc_request");
+		ptrParamsOut->ReadValue(L"$stub_id");
+		ptrParamsOut->ReadValue(L"$method_id");
+		ptrParamsOut->ReadValue(L"oid");
+		ptrParamsOut->ReadValue(L"iid");
+		ptrParamsOut->ReadValue(L"flags");
+		ptrParamsOut->ReadStructEnd();
 
 		throw;
 	}
@@ -496,7 +492,7 @@ IException* OOCore::StdObjectManager::SendAndReceive(TypeInfo::MethodAttributes_
 			ptrRecv->ReadStructStart(L"ipc_response",L"$ipc_response_type");
 
 			// Read exception status
-			if (ptrRecv->ReadBoolean(L"$throw"))
+			if (ptrRecv->ReadValue(L"$throw").cast<bool_t>())
 			{
 				// Unmarshal the exception
 				ObjectPtr<IException> ptrE = ObjectPtr<Remoting::IMarshaller>(static_cast<Remoting::IMarshaller*>(this)).UnmarshalInterface<IException>(L"exception",ptrRecv);
@@ -523,10 +519,10 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 
 	ptrParamsOut->WriteStructStart(L"ipc_request",L"$ipc_request_type");
 
-	ptrParamsOut->WriteUInt32(L"$stub_id",0);
-	ptrParamsOut->WriteUInt32(L"$method_id",1);
-	ptrParamsOut->WriteGuid(L"iid",iid);
-	ptrParamsOut->WriteStructEnd(L"ipc_request");
+	ptrParamsOut->WriteValue(L"$stub_id",uint32_t(0));
+	ptrParamsOut->WriteValue(L"$method_id",uint32_t(1));
+	ptrParamsOut->WriteValue(L"iid",iid);
+	ptrParamsOut->WriteStructEnd();
 
 	Remoting::IMessage* pParamsIn = 0;
 	IException* pERet;
@@ -539,10 +535,10 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 	{
 		ptrParamsOut->ReadStructStart(L"ipc_request",L"$ipc_request_type");
 
-		ptrParamsOut->ReadUInt32(L"$stub_id");
-		ptrParamsOut->ReadUInt32(L"$method_id");
-		ptrParamsOut->ReadGuid(L"iid");
-		ptrParamsOut->ReadStructEnd(L"ipc_request");
+		ptrParamsOut->ReadValue(L"$stub_id");
+		ptrParamsOut->ReadValue(L"$method_id");
+		ptrParamsOut->ReadValue(L"iid");
+		ptrParamsOut->ReadStructEnd();
 
 		throw;
 	}
@@ -562,7 +558,7 @@ TypeInfo::IInterfaceInfo* OOCore::StdObjectManager::GetInterfaceInfo(const guid_
 void OOCore::StdObjectManager::InvokeGetInterfaceInfo(Remoting::IMessage* pParamsIn, ObjectPtr<Remoting::IMessage>& ptrResponse)
 {
 	// Read the iid
-	guid_t iid = pParamsIn->ReadGuid(L"iid");
+	guid_t iid = pParamsIn->ReadValue(L"iid").cast<guid_t>();
 	
 	// Get the type info
 	ObjectPtr<TypeInfo::IInterfaceInfo> ptrII;
@@ -591,7 +587,7 @@ void OOCore::StdObjectManager::RemoveStub(uint32_t stub_id)
 	}
 }
 
-bool OOCore::StdObjectManager::CustomMarshalInterface(const string_t& strName, ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
+bool OOCore::StdObjectManager::CustomMarshalInterface(ObjectPtr<Remoting::IMarshal>& ptrMarshal, const guid_t& iid, Remoting::IMessage* pMessage)
 {
 	Remoting::MarshalFlags_t marshal_flags = m_ptrChannel->GetMarshalFlags();
 
@@ -603,10 +599,10 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(const string_t& strName, O
 	try
 	{
 		// Write the marshalling oid
-		pMessage->WriteByte(L"$marshal_type",2);
+		pMessage->WriteValue(L"$marshal_type",byte_t(2));
 		++undo_count;
 
-		pMessage->WriteGuid(L"$oid",oid);
+		pMessage->WriteValue(L"$oid",oid);
 		++undo_count;
 
 		// Let the custom handle marshalling...
@@ -614,15 +610,15 @@ bool OOCore::StdObjectManager::CustomMarshalInterface(const string_t& strName, O
 		++undo_count;
 
 		// Write the struct end
-		pMessage->WriteStructEnd(strName);
+		pMessage->WriteStructEnd();
 	}
 	catch (...)
 	{
 		if (undo_count > 0)
-			pMessage->ReadByte(L"$marshal_type");
+			pMessage->ReadValue(L"$marshal_type");
 
 		if (undo_count > 1)
-			pMessage->ReadGuid(L"$oid");
+			pMessage->ReadValue(L"$oid");
 
 		if (undo_count > 2)
 			ptrMarshal->ReleaseMarshalData(this,pMessage,iid,marshal_flags);
@@ -644,8 +640,8 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 	// See if object is NULL
 	if (!pObject)
 	{
-		pMessage->WriteByte(L"$marshal_type",0);
-		pMessage->WriteStructEnd(strName);
+		pMessage->WriteValue(L"$marshal_type",byte_t(0));
+		pMessage->WriteStructEnd();
 		return;
 	}
 
@@ -676,7 +672,7 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 			ptrMarshal.Attach(static_cast<Remoting::IMarshal*>(pObject->QueryInterface(OMEGA_GUIDOF(Remoting::IMarshal))));
 		
 		// See if custom marshalling is possible...
-		if (ptrMarshal && CustomMarshalInterface(strName,ptrMarshal,iid,pMessage))
+		if (ptrMarshal && CustomMarshalInterface(ptrMarshal,iid,pMessage))
 			return;
 						
 		// Create a new stub and stub id
@@ -700,11 +696,11 @@ void OOCore::StdObjectManager::MarshalInterface(const string_t& strName, Remotin
 	}
 
 	// Write out the data
-	pMessage->WriteByte(L"$marshal_type",1);
+	pMessage->WriteValue(L"$marshal_type",byte_t(1));
 
 	ptrStub->MarshalInterface(pMessage,iid);
 
-	pMessage->WriteStructEnd(strName);
+	pMessage->WriteStructEnd();
 }
 
 void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject*& pObject)
@@ -715,7 +711,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 	// Read the header
 	pMessage->ReadStructStart(strName,L"$iface_marshal");
 
-	byte_t flag = pMessage->ReadByte(L"$marshal_type");
+	byte_t flag = pMessage->ReadValue(L"$marshal_type").cast<byte_t>();
 	if (flag == 0)
 	{
 		// NOP
@@ -723,7 +719,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 	}
 	else if (flag == 1)
 	{
-		uint32_t proxy_id = pMessage->ReadUInt32(L"id");
+		uint32_t proxy_id = pMessage->ReadValue(L"id").cast<uint32_t>();
 
 		// See if we have a proxy already...
 		ObjectPtr<ObjectImpl<Proxy> > ptrProxy;
@@ -758,7 +754,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 	}
 	else if (flag == 2)
 	{
-		guid_t oid = pMessage->ReadGuid(L"$oid");
+		guid_t oid = pMessage->ReadValue(L"$oid").cast<guid_t>();
 
 		// Create an instance of Oid
 		ObjectPtr<Remoting::IMarshalFactory> ptrMarshalFactory(oid,Activation::InProcess);
@@ -770,7 +766,7 @@ void OOCore::StdObjectManager::UnmarshalInterface(const string_t& strName, Remot
 	else
 		OMEGA_THROW(L"Invalid marshal flag");
 
-	pMessage->ReadStructEnd(strName);
+	pMessage->ReadStructEnd();
 }
 
 void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remoting::IMessage* pMessage, const guid_t& iid, IObject* pObject)
@@ -781,7 +777,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 	// Read the header
 	pMessage->ReadStructStart(strName,L"$iface_marshal");
 
-	byte_t flag = pMessage->ReadByte(L"$marshal_type");
+	byte_t flag = pMessage->ReadValue(L"$marshal_type").cast<byte_t>();
 	if (flag == 0)
 	{
 		/* NOP */
@@ -789,7 +785,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 	else if (flag == 1)
 	{
 		// Skip the stub id
-		pMessage->ReadUInt32(L"id");
+		pMessage->ReadValue(L"id");
 
 		IObject* pObj = pObject->QueryInterface(OMEGA_GUIDOF(IObject));
 		ObjectPtr<IObject> ptrObj;
@@ -815,7 +811,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 	else if (flag == 2)
 	{
 		// Skip the guid...
-		guid_t oid = pMessage->ReadGuid(L"oid");
+		pMessage->ReadValue(L"oid");
 
 		// See if pObject does custom marshalling...
 		ObjectPtr<Remoting::IMarshal> ptrMarshal(pObject);
@@ -830,7 +826,7 @@ void OOCore::StdObjectManager::ReleaseMarshalData(const string_t& strName, Remot
 		OMEGA_THROW(L"Invalid marshal flag");
 	}
 
-	pMessage->ReadStructEnd(strName);
+	pMessage->ReadStructEnd();
 }
 
 void OOCore::StdObjectManager::DoMarshalChannel(Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pParamsOut)
@@ -852,17 +848,17 @@ void OOCore::StdObjectManager::MarshalChannel(Remoting::IMarshaller* pMarshaller
 
 	// The following format is the same as IObjectManager::UnmarshalInterface...
 	pMessage->WriteStructStart(L"m_ptrChannel",L"$iface_marshal");
-	pMessage->WriteByte(L"$marshal_type",2);
+	pMessage->WriteValue(L"$marshal_type",byte_t(2));
 
 	guid_t oid = ptrMarshal->GetUnmarshalFactoryOID(OMEGA_GUIDOF(Remoting::IChannel),flags);
 	if (oid == guid_t::Null())
 		OMEGA_THROW(L"Channels must support custom marshalling if they support reflection");
 
-	pMessage->WriteGuid(L"$oid",oid);
+	pMessage->WriteValue(L"$oid",oid);
 
 	ptrMarshal->MarshalInterface(pMarshaller,pMessage,OMEGA_GUIDOF(Remoting::IChannel),flags);
 
-	pMessage->WriteStructEnd(L"m_ptrChannel");
+	pMessage->WriteStructEnd();
 }
 
 OMEGA_DEFINE_EXPORTED_FUNCTION(Remoting::ICallContext*,OOCore_Remoting_GetCallContext,0,())

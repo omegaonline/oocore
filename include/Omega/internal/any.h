@@ -107,6 +107,19 @@ namespace Omega
 		float8_t& GetFloat8Value();
 		guid_t& GetGuidValue();
 		string_t& GetStringValue();
+
+		const bool_t& GetBoolValue() const;
+		const byte_t& GetByteValue() const;
+		const int16_t& GetInt16Value() const;
+		const uint16_t& GetUInt16Value() const;
+		const int32_t& GetInt32Value() const;
+		const uint32_t& GetUInt32Value() const;
+		const int64_t& GetInt64Value() const;
+		const uint64_t& GetUInt64Value() const;
+		const float4_t& GetFloat4Value() const;
+		const float8_t& GetFloat8Value() const;
+		const guid_t& GetGuidValue() const;
+		const string_t& GetStringValue() const;
 				
 	private:
 		friend struct Omega::System::Internal::any_t_safe_type;

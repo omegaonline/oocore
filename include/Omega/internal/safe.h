@@ -871,7 +871,7 @@ namespace Omega
 						return string_t_safe_type::create(v.u.pstrVal,addref);
 					case TypeInfo::typeGuid:
 						return guid_t(v.u.gVal);
-					case TypeInfo::typeObject:
+					case TypeInfo::typeObjectPtr:
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");
@@ -920,10 +920,10 @@ namespace Omega
 						ret.u.pstrVal = string_t_safe_type::addref(*val.u.pstrVal,true);
 						break;
 					case TypeInfo::typeGuid:
-						ret.u.gVal = (val.u.pgVal ? guid_t::Null() : *val.u.pgVal);
+						ret.u.gVal = (val.u.pgVal ? *val.u.pgVal : guid_t::Null());
 						break;
 
-					case TypeInfo::typeObject:
+					case TypeInfo::typeObjectPtr:
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");
@@ -962,7 +962,7 @@ namespace Omega
 			template <> struct is_message_type<float8_t> { enum { result = 1 }; };
 			template <> struct is_message_type<string_t> { enum { result = 1 }; };
 			template <> struct is_message_type<guid_t> { enum { result = 1 }; };
-
+			
 			template <typename T> struct is_message_type<const T>
 			{
 				enum { result = is_message_type<T>::result };

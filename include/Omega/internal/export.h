@@ -151,11 +151,19 @@
 	{ \
 		typedef iface_wire_type<n_space::name > impl; \
 	}; \
-	template <> struct type_kind<n_space::name> \
+	template <> struct type_kind<n_space::name*> \
 	{ \
 		static const type_holder* type() \
 		{ \
-			static const type_holder t = { TypeInfo::typeObject, (const type_holder*)(&OMEGA_GUIDOF(n_space::name)) }; \
+			static const type_holder t = { TypeInfo::typeObjectPtr, (const type_holder*)(&OMEGA_GUIDOF(n_space::name)) }; \
+			return &t; \
+		} \
+	}; \
+	template <> struct type_kind<const n_space::name*> \
+	{ \
+		static const type_holder* type() \
+		{ \
+			static const type_holder t = { TypeInfo::modifierConst, type_kind<n_space::name*>::type() }; \
 			return &t; \
 		} \
 	};
@@ -333,7 +341,7 @@
 // Add extra meta info types here
 #define OMEGA_WIRE_READ_STUB_PARAM_in(t,name)        read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_in_out(t,name)    read(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsIn__wire__,name
-#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(name
+#define OMEGA_WIRE_READ_STUB_PARAM_out(t,name)       init(ptrMarshaller__wire__,name
 #define OMEGA_WIRE_READ_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_READ_STUB_PARAM_II
 #define OMEGA_WIRE_READ_STUB_PARAM_II(t,name)
@@ -381,7 +389,7 @@
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_STUB_PARAM_II
-#define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_STUB_PARAM_II
+#define OMEGA_WIRE_UNPACK_STUB_PARAM_size_is(size)     OMEGA_WIRE_UNPACK_STUB_PARAM_II
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_II(t,name)
 
 #define OMEGA_WIRE_UNPACK_STUB_PARAM_I(index,meta,d) \
@@ -609,7 +617,7 @@
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_in_out(t,name)    unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_out(t,name)       unpack(OMEGA_WIDEN_STRINGIZE(name),ptrMarshaller__wire__,pParamsOut__wire__,name
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_iid_is(iid)       ,iid OMEGA_WIRE_UNPACK_PROXY_PARAM_II
-#define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     ,size OMEGA_WIRE_UNPACK_PROXY_PARAM_II
+#define OMEGA_WIRE_UNPACK_PROXY_PARAM_size_is(size)     OMEGA_WIRE_UNPACK_PROXY_PARAM_II
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_II(t,name)
 
 #define OMEGA_WIRE_UNPACK_PROXY_PARAM_I(index,meta,d) \
@@ -638,7 +646,7 @@
 		try \
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-			pParamsOut__wire__->WriteStructEnd(L"ipc_request"); \
+			pParamsOut__wire__->WriteStructEnd(); \
 			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,timeout); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \
@@ -661,7 +669,7 @@
 		try \
 		{ \
 			OMEGA_WRITE_PARAMS_WIRE_PROXY(param_count,params) \
-			pParamsOut__wire__->WriteStructEnd(L"ipc_request"); \
+			pParamsOut__wire__->WriteStructEnd(); \
 			OMEGA_CONCAT(name,_Exception) = ptrMarshaller__wire__->SendAndReceive(attribs,pParamsOut__wire__,pParamsIn__wire__,timeout); \
 		} catch (...) { \
 			this->UnpackHeader(pParamsOut__wire__); \

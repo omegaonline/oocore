@@ -152,7 +152,7 @@ void User::RemoteChannel::send_away(const OOBase::CDRStream& msg, Omega::uint32_
 					ptrPayload = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 
 				// Write the channel id
-				ptrPayload->WriteUInt32(L"channel_id",channel_id);
+				ptrPayload->WriteValue(L"channel_id",channel_id);
 			}
 			else
 				OMEGA_THROW(L"Invalid system message");
@@ -194,8 +194,8 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 
 	// Write the mesage struct
 	ptrMessage->WriteStructStart(L"message",L"$rpc_msg");
-	ptrMessage->WriteUInt32(L"src_channel_id",src_channel_id);
-	ptrMessage->WriteUInt32(L"dest_channel_id",dest_channel_id);
+	ptrMessage->WriteValue(L"src_channel_id",src_channel_id);
+	ptrMessage->WriteValue(L"dest_channel_id",dest_channel_id);
 	
 	// Fiddle with remote deadline value...
 	int64_t secs = 0;
@@ -205,13 +205,13 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 		secs = deadline.tv_sec();
 		usecs = deadline.tv_usec();
 	}
-	ptrMessage->WriteInt64(L"deadline_secs",secs);
-	ptrMessage->WriteInt32(L"deadline_usecs",usecs);
-	ptrMessage->WriteUInt32(L"attribs",attribs);
-	ptrMessage->WriteUInt16(L"dest_thread_id",dest_thread_id);
-	ptrMessage->WriteUInt16(L"src_thread_id",src_thread_id);
-	ptrMessage->WriteUInt16(L"flags",flags);
-	ptrMessage->WriteUInt32(L"seq_no",seq_no);
+	ptrMessage->WriteValue(L"deadline_secs",secs);
+	ptrMessage->WriteValue(L"deadline_usecs",usecs);
+	ptrMessage->WriteValue(L"attribs",attribs);
+	ptrMessage->WriteValue(L"dest_thread_id",dest_thread_id);
+	ptrMessage->WriteValue(L"src_thread_id",src_thread_id);
+	ptrMessage->WriteValue(L"flags",flags);
+	ptrMessage->WriteValue(L"seq_no",seq_no);
 
 	// Get the source channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(src_channel_id);
@@ -225,7 +225,7 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 
 	try
 	{
-		ptrMessage->WriteStructEnd(L"message");
+		ptrMessage->WriteStructEnd();
 
 		uint32_t timeout = 0;
 		if (deadline != OOBase::timeval_t::MaxTime)
@@ -245,15 +245,15 @@ void User::RemoteChannel::send_away_i(Remoting::IMessage* pPayload, Omega::uint3
 	catch (...)
 	{
 		ptrMessage->ReadStructStart(L"message",L"$rpc_msg");
-		ptrMessage->ReadUInt32(L"src_channel_id");
-		ptrMessage->ReadUInt32(L"dest_channel_id");
-		ptrMessage->ReadInt64(L"deadline_secs");
-		ptrMessage->ReadInt32(L"deadline_usecs");
-		ptrMessage->ReadUInt32(L"attribs");
-		ptrMessage->ReadUInt16(L"dest_thread_id");
-		ptrMessage->ReadUInt16(L"src_thread_id");
-		ptrMessage->ReadUInt16(L"flags");
-		ptrMessage->ReadUInt32(L"seq_no");
+		ptrMessage->ReadValue(L"src_channel_id");
+		ptrMessage->ReadValue(L"dest_channel_id");
+		ptrMessage->ReadValue(L"deadline_secs");
+		ptrMessage->ReadValue(L"deadline_usecs");
+		ptrMessage->ReadValue(L"attribs");
+		ptrMessage->ReadValue(L"dest_thread_id");
+		ptrMessage->ReadValue(L"src_thread_id");
+		ptrMessage->ReadValue(L"flags");
+		ptrMessage->ReadValue(L"seq_no");
 		ptrMarshaller->ReleaseMarshalData(L"payload",ptrMessage,OMEGA_GUIDOF(Remoting::IMessage),pPayload);
 		throw;
 	}
@@ -351,11 +351,11 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 	// Unpack parameters
 	pMsg->ReadStructStart(L"message",L"$rpc_msg");
-	uint32_t src_channel_id = pMsg->ReadUInt32(L"src_channel_id");
-	uint32_t dest_channel_id = pMsg->ReadUInt32(L"dest_channel_id");
-	int64_t secs = pMsg->ReadInt64(L"deadline_secs");
-	int32_t usecs = pMsg->ReadInt32(L"deadline_usecs");
-	uint32_t ex_attribs = pMsg->ReadUInt32(L"attribs");
+	uint32_t src_channel_id = pMsg->ReadValue(L"src_channel_id").cast<uint32_t>();
+	uint32_t dest_channel_id = pMsg->ReadValue(L"dest_channel_id").cast<uint32_t>();
+	int64_t secs = pMsg->ReadValue(L"deadline_secs").cast<int64_t>();
+	int32_t usecs = pMsg->ReadValue(L"deadline_usecs").cast<int32_t>();
+	uint32_t ex_attribs = pMsg->ReadValue(L"attribs").cast<uint32_t>();
 
 	OOBase::timeval_t deadline = OOBase::timeval_t::MaxTime;
 	if (secs != 0 && usecs != 0)
@@ -369,11 +369,10 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	}
 
 	// Fiddle with remote deadline value...
-
-	uint16_t dest_thread_id = pMsg->ReadUInt16(L"dest_thread_id");
-	uint16_t src_thread_id = pMsg->ReadUInt16(L"src_thread_id");
-	uint16_t flags = pMsg->ReadUInt16(L"flags");
-	uint32_t seq_no = pMsg->ReadUInt32(L"seq_no");
+	uint16_t dest_thread_id = pMsg->ReadValue(L"dest_thread_id").cast<uint16_t>();
+	uint16_t src_thread_id = pMsg->ReadValue(L"src_thread_id").cast<uint16_t>();
+	uint16_t flags = pMsg->ReadValue(L"flags").cast<uint16_t>();
+	uint32_t seq_no = pMsg->ReadValue(L"seq_no").cast<uint32_t>();
 
 	// Get the dest channel OM
 	ObjectPtr<Remoting::IObjectManager> ptrOM = create_object_manager(dest_channel_id);
@@ -386,7 +385,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 	// Unmarshal payload
 	ObjectPtr<Remoting::IMessage> ptrPayload = ptrMarshaller.UnmarshalInterface<Remoting::IMessage>(L"payload",pMsg);
 
-	pMsg->ReadStructEnd(L"message");
+	pMsg->ReadStructEnd();
 	
 	if (!dest_channel_id)
 	{
@@ -399,7 +398,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 
 				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_close)
 				{
-					uint32_t channel_id = ptrPayload->ReadUInt32(L"channel_id");
+					uint32_t channel_id = ptrPayload->ReadValue(L"channel_id").cast<uint32_t>();
 
 					m_pManager->channel_closed(channel_id | m_channel_id,0);
 
@@ -414,7 +413,7 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 						ptrResult = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 					
 					// Send back the src_channel_id
-					ptrResult->WriteUInt32(L"channel_id",src_channel_id | m_channel_id);
+					ptrResult->WriteValue(L"channel_id",src_channel_id | m_channel_id);
 
 					out_attribs = Root::Message_t::synchronous | Root::Message_t::channel_reflect;
 				}
@@ -488,10 +487,10 @@ void User::RemoteChannel::Send(TypeInfo::MethodAttributes_t, Remoting::IMessage*
 				if ((ex_attribs & Root::Message_t::system_message) == Root::Message_t::channel_reflect)
 				{
 					// Unpack the channel_id
-					uint32_t ch = ptrPayload->ReadUInt32(L"channel_id");
+					uint32_t ch = ptrPayload->ReadValue(L"channel_id").cast<uint32_t>();
 					
 					// Repack in the right format
-					ptrOutput->WriteUInt32(L"channel_id",ch);
+					ptrOutput->WriteValue(L"channel_id",ch);
 				}
 				else
 					OMEGA_THROW(L"Invalid system message");
@@ -608,7 +607,7 @@ void User::RemoteChannel::do_channel_closed_i(uint32_t channel_id)
 			ptrMsg = ObjectPtr<Remoting::IMessage>(m_message_oid,Activation::InProcess);
 		
 		// Send back the src_channel_id
-		ptrMsg->WriteUInt32(L"channel_id",i->second);
+		ptrMsg->WriteValue(L"channel_id",i->second);
 
 		guard.release();
 
@@ -780,7 +779,7 @@ void User::Manager::close_all_remotes()
 	}
 	catch (...)
 	{
-		LOG_ERROR(("Unexpected exception thrown"));
+		LOG_ERROR(("Unrecognised exception thrown"));
 	}
 
 	// Now spin, waiting for all the channels to close...

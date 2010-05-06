@@ -41,19 +41,19 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_errno = pMessage->ReadUInt32(L"m_errno");
+			m_errno = pMessage->ReadValue(L"m_errno").cast<Omega::uint32_t>();
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteUInt32(L"m_errno",m_errno);
+			pMessage->WriteValue(L"m_errno",m_errno);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			pMessage->ReadUInt32(L"m_errno");
+			pMessage->ReadValue(L"m_errno");
 		}
 
 	// ISystemException memebers
@@ -87,19 +87,19 @@ namespace OOCore
 		virtual void UnmarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::UnmarshalInterface(pMarshaller,pMessage,flags);
-			m_iid = pMessage->ReadGuid(L"m_iid");
+			m_iid = pMessage->ReadValue(L"m_iid").cast<Omega::guid_t>();
 		}
 
 		virtual void MarshalInterface(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::MarshalInterface(pMarshaller,pMessage,iid,flags);
-			pMessage->WriteGuid(L"m_iid",m_iid);
+			pMessage->WriteValue(L"m_iid",m_iid);
 		}
 
 		virtual void ReleaseMarshalData(Omega::Remoting::IMarshaller* pMarshaller, Omega::Remoting::IMessage* pMessage, const Omega::guid_t& iid, Omega::Remoting::MarshalFlags_t flags)
 		{
 			baseClass::ReleaseMarshalData(pMarshaller,pMessage,iid,flags);
-			Omega::guid_t g = pMessage->ReadGuid(L"m_iid");
+			pMessage->ReadValue(L"m_iid");
 		}
 
 	// INoInterfaceException members

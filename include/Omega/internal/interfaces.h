@@ -198,15 +198,15 @@ namespace Omega
 	{
 		interface IStream : public IObject
 		{
-			virtual void ReadBytes(uint64_t& cbBytes, byte_t* val) = 0;
-			virtual void WriteBytes(const uint64_t& cbBytes, const byte_t* val) = 0;
+			virtual void ReadBytes(uint32_t& cbBytes, byte_t* val) = 0;
+			virtual void WriteBytes(const uint32_t& cbBytes, const byte_t* val) = 0;
 		};
 
 		interface IAsyncStreamNotify : public IObject
 		{
 			virtual void OnOpened() = 0;
-			virtual void OnRead(const uint64_t& cbBytes, const byte_t* pData) = 0;
-			virtual void OnWritten(const uint64_t& cbBytes) = 0;
+			virtual void OnRead(uint32_t cbBytes, const byte_t* pData) = 0;
+			virtual void OnWritten(uint32_t cbBytes) = 0;
 			virtual void OnError(IException* pE) = 0;
 		};
 
@@ -254,7 +254,7 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
+OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega, ICastException, Omega, IException, "{F79A88F6-B2C4-490F-A11D-7D9B3894BD5D}",
 
@@ -411,8 +411,8 @@ OMEGA_DEFINE_INTERFACE
 	Omega::IO, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}",
 
 	// Methods
-	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint64_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
-	OMEGA_METHOD_VOID(WriteBytes,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
+	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
+	OMEGA_METHOD_VOID(WriteBytes,2,((in),const uint32_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -421,8 +421,8 @@ OMEGA_DEFINE_INTERFACE
 	
 	// Methods
 	OMEGA_METHOD_VOID(OnOpened,0,())
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnWritten,1,((in),const uint64_t&,cbBytes))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnWritten,1,((in),uint32_t,cbBytes))
 	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnError,1,((in),IException*,pE))
 )
 

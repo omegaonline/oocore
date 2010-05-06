@@ -135,14 +135,14 @@ namespace
 
 	void BuildTypeDetail(ObjectPtr<Remoting::IMessage>& td, const System::Internal::type_holder* th)
 	{
-		td->WriteByte(L"type",th->type);
+		td->WriteValue(L"type",th->type);
 		
-		if (th->type == TypeInfo::typeObject)
+		if (th->type == TypeInfo::typeObjectPtr)
 		{
-			td->WriteGuid(L"iid",*(const guid_base_t*)(th->next));
+			td->WriteValue(L"iid",guid_t(*(const guid_base_t*)(th->next)));
 
 			// Add terminating void if not already written...
-			td->WriteByte(L"type",TypeInfo::typeVoid);
+			td->WriteValue(L"type",TypeInfo::Type_t(TypeInfo::typeVoid));
 		}
 		else if (th->next)
 		{
@@ -151,7 +151,7 @@ namespace
 		else
 		{
 			// Add terminating void if not already written...
-			td->WriteByte(L"type",TypeInfo::typeVoid);
+			td->WriteValue(L"type",TypeInfo::Type_t(TypeInfo::typeVoid));
 		}
 
 		if (th->type == TypeInfo::modifierSTLMap ||
@@ -165,7 +165,7 @@ namespace
 	string_t BuildTypeString(const System::Internal::type_holder* th)
 	{
 		string_t strNext;
-		if (th->type != TypeInfo::typeObject && th->next)
+		if (th->type != TypeInfo::typeObjectPtr && th->next)
 			strNext = BuildTypeString(th->next);
 
 		switch (th->type)
@@ -212,15 +212,18 @@ namespace
 		case TypeInfo::typeAny:
 			return string_t(L"Omega::any_t");
 
-		case TypeInfo::typeObject:
+		case TypeInfo::typeObjectPtr:
 			{
 				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF;
 				ptrIF.Attach(OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next)));
-				return ptrIF->GetName();
+				return ptrIF->GetName() + L"*";
 			}
 
 		case TypeInfo::modifierConst:
-			return strNext + L" const";
+			if (th->next->type == TypeInfo::typeObjectPtr)
+				return strNext.Left(strNext.Length()-1) + L" const*";
+			else
+				return strNext + L" const";
 			
 		case TypeInfo::modifierPointer:
 			return strNext + L'*';
@@ -502,7 +505,7 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 		strSource = L"Omega::guid_t";
 		break;
 
-	case TypeInfo::typeObject:
+	case TypeInfo::typeObjectPtr:
 		
 	default:
 		OMEGA_THROW(L"Invalid any_t");

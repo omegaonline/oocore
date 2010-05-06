@@ -89,7 +89,7 @@ namespace Omega
 			typeString,
 			typeGuid,
 			typeAny,
-			typeObject
+			typeObjectPtr
 		};
 		enum Modifier
 		{

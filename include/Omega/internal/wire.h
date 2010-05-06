@@ -414,6 +414,7 @@ namespace Omega
 			template <typename T> 
 			struct custom_wire_type_wrapper
 			{
+				// If this line fails then you are attempting to marshal an unsupported type...
 				typedef typename custom_wire_type<typename remove_const<T>::type>::impl impl;
 				typedef typename impl::type type;
 				typedef typename remove_const<T>::type raw_type;

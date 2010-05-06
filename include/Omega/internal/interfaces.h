@@ -254,6 +254,15 @@ OMEGA_DEFINE_INTERFACE
 	OMEGA_METHOD(byte_t,GetAttributeRef,3,((in),uint32_t,method_idx,(in),byte_t,param_idx,(in),TypeInfo::ParamAttributes_t,attrib))
 )
 
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
+(
+	Omega, ICastException, Omega, IException, "{F79A88F6-B2C4-490F-A11D-7D9B3894BD5D}",
+
+	OMEGA_METHOD(any_t,GetValue,0,())
+	OMEGA_METHOD(any_t::CastResult_t,GetReason,0,())
+	OMEGA_METHOD(Remoting::IMessage*,GetDestinationType,0,())
+)
+
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
 	Omega::Formatting, IFormattingException, Omega, IException, "{EBCD8903-5C9B-4d48-BC3B-0427A4E294C4}",

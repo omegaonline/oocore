@@ -753,6 +753,197 @@ namespace Omega
 				}
 			};
 
+			struct any_t_safe_type
+			{
+				struct safe_type
+				{
+					TypeInfo::Type_t type;
+					union discrim
+					{
+						// Stock types
+						byte_t           byVal;
+						int16_t          i16Val;
+						uint16_t         ui16Val;
+						int32_t          i32Val;
+						uint32_t         ui32Val;
+						int64_t          i64Val;
+						uint64_t         ui64Val;
+						float4_t         fl4Val;
+						float8_t         fl8Val;
+						
+						// Custom safe types
+						custom_safe_type<bool_t>::safe_type bVal;
+						string_t_safe_type::safe_type       pstrVal;
+						guid_base_t                         gVal;
+						//obj_holder_base* pobjVal;
+					} u;
+				};
+
+				struct type_wrapper
+				{
+					type_wrapper(safe_type val) : m_val(any_t_safe_type::create(val,true))
+					{ }
+
+					void update(safe_type& dest)
+					{
+						any_t_safe_type::release(dest);
+						dest = any_t_safe_type::addref(m_val);
+					}
+
+					operator any_t&()
+					{
+						return m_val;
+					}
+
+				private:
+					any_t m_val;
+				};
+				friend struct type_wrapper;
+				
+				struct safe_type_wrapper
+				{
+					safe_type_wrapper(const any_t& val) : m_val(any_t_safe_type::addref(val))
+					{ }
+
+					~safe_type_wrapper()
+					{
+						any_t_safe_type::release(m_val);
+					}
+
+					void update(any_t& dest)
+					{
+						dest = any_t_safe_type::create(m_val,true);
+					}
+
+					operator safe_type ()
+					{
+						return m_val;
+					}
+
+					safe_type* operator & ()
+					{
+						return &m_val;
+					}
+
+				private:
+					safe_type m_val;
+				};
+				friend struct safe_type_wrapper;
+
+				static safe_type clone(const any_t& s)
+				{
+					return addref(s);
+				}
+
+				static any_t clone(safe_type v)
+				{
+					return create(v,false);
+				}
+
+			private:
+				static any_t create(safe_type v, bool addref)
+				{
+					switch (v.type)
+					{
+					case TypeInfo::typeVoid:
+						return any_t();
+					case TypeInfo::typeBool:
+						return static_cast<bool_t>(v.u.bVal != 0);
+					case TypeInfo::typeByte:
+						return v.u.byVal;
+					case TypeInfo::typeInt16:
+						return v.u.i16Val;
+					case TypeInfo::typeUInt16:
+						return v.u.ui16Val;
+					case TypeInfo::typeInt32:
+						return v.u.i32Val;
+					case TypeInfo::typeUInt32:
+						return v.u.ui32Val;
+					case TypeInfo::typeInt64:
+						return v.u.i64Val;
+					case TypeInfo::typeUInt64:
+						return v.u.ui64Val;
+					case TypeInfo::typeFloat4:
+						return v.u.fl4Val;
+					case TypeInfo::typeFloat8:
+						return v.u.fl8Val;
+					case TypeInfo::typeString:
+						return string_t_safe_type::create(v.u.pstrVal,addref);
+					case TypeInfo::typeGuid:
+						return guid_t(v.u.gVal);
+					case TypeInfo::typeObject:
+					default:
+						// Never going to happen ;)
+						OMEGA_THROW(L"Invalid any_t type!");
+					}					
+				}
+
+				static safe_type addref(const any_t& val)
+				{
+					safe_type ret;
+					ret.type = static_cast<TypeInfo::Type_t>(val.m_type);
+					switch (val.m_type)
+					{
+					case TypeInfo::typeVoid:
+						break;
+					case TypeInfo::typeBool:
+						ret.u.bVal = (val.u.bVal ? 1 : 0);
+						break;
+					case TypeInfo::typeByte:
+						ret.u.byVal = val.u.byVal;
+						break;
+					case TypeInfo::typeInt16:
+						ret.u.i16Val = val.u.i16Val;
+						break;
+					case TypeInfo::typeUInt16:
+						ret.u.ui16Val = val.u.ui16Val;
+						break;
+					case TypeInfo::typeInt32:
+						ret.u.i32Val = val.u.i32Val;
+						break;
+					case TypeInfo::typeUInt32:
+						ret.u.ui32Val = val.u.ui32Val;
+						break;
+					case TypeInfo::typeInt64:
+						ret.u.i64Val = val.u.i64Val;
+						break;
+					case TypeInfo::typeUInt64:
+						ret.u.ui64Val = val.u.ui64Val;
+						break;
+					case TypeInfo::typeFloat4:
+						ret.u.fl4Val = val.u.fl4Val;
+						break;
+					case TypeInfo::typeFloat8:
+						ret.u.fl8Val = val.u.fl8Val;
+						break;
+					case TypeInfo::typeString:
+						ret.u.pstrVal = string_t_safe_type::addref(*val.u.pstrVal,true);
+						break;
+					case TypeInfo::typeGuid:
+						ret.u.gVal = (val.u.pgVal ? guid_t::Null() : *val.u.pgVal);
+						break;
+
+					case TypeInfo::typeObject:
+					default:
+						// Never going to happen ;)
+						OMEGA_THROW(L"Invalid any_t type!");
+					}
+					return ret;
+				}
+
+				static void release(safe_type val)
+				{
+					if (val.type == TypeInfo::typeString)
+						string_t_safe_type::release(val.u.pstrVal);
+				}
+			};
+
+			template <>
+			struct custom_safe_type<any_t>
+			{
+				typedef struct any_t_safe_type impl;
+			};
+
 			template <typename T> struct is_message_type
 			{
 				enum { result = 0 };

@@ -130,12 +130,11 @@ namespace Registry
 			return m_strName;
 		}
 
-		static void Throw(const string_t& name, const string_t& strSource, IException* pE = 0)
+		static void Throw(const string_t& name, const string_t& strSource)
 		{
 			ObjectImpl<NotFoundException>* pRE = ObjectImpl<NotFoundException>::CreateInstance();
 			pRE->m_strName = name;
 			pRE->m_strSource = strSource;
-			pRE->m_ptrCause = pE;
 			pRE->m_strDesc = L"'{0}' not found.";
 			pRE->m_strDesc %= name;
 			throw static_cast<INotFoundException*>(pRE);

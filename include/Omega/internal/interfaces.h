@@ -77,7 +77,7 @@ namespace Omega
 		
 		interface IOidNotFoundException : public IException
 		{
-			virtual guid_t GetMissingOid() = 0;
+			virtual any_t GetMissingOid() = 0;
 		};
 		
 		interface INoAggregationException : public IException
@@ -303,7 +303,7 @@ OMEGA_DEFINE_INTERFACE_DERIVED
 	Omega::Activation, IOidNotFoundException, Omega, IException, "{162BBEBD-770B-4925-A8E7-48DEC7224ABE}",
 
 	// Methods
-	OMEGA_METHOD(guid_t,GetMissingOid,0,())
+	OMEGA_METHOD(any_t,GetMissingOid,0,())
 )
 
 OMEGA_DEFINE_INTERFACE_DERIVED

@@ -97,7 +97,7 @@ namespace OOCore
 
 	// IApartment members
 	public:
-		void CreateInstance(const Omega::string_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
+		void CreateInstance(const Omega::any_t& oid, Omega::Activation::Flags_t flags, Omega::IObject* pOuter, const Omega::guid_t& iid, Omega::IObject*& pObject);
 	};
 }
 

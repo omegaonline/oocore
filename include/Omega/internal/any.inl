@@ -534,45 +534,45 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(guid_t& v) const
 	return any_t::castUnrelated;
 }
 
-inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v) const
+inline Omega::any_t::CastResult_t Omega::any_t::Coerce(string_t& v, const string_t& strFormat) const
 {
 	switch (m_type)
 	{
 	case TypeInfo::typeBool:
-		v = Formatting::ToString(u.bVal);
+		v = Formatting::ToString(u.bVal,strFormat);
 		break;
 	case TypeInfo::typeByte:
-		v = Formatting::ToString(u.byVal);
+		v = Formatting::ToString(u.byVal,strFormat);
 		break;
 	case TypeInfo::typeInt16:
-		v = Formatting::ToString(u.i16Val);
+		v = Formatting::ToString(u.i16Val,strFormat);
 		break;
 	case TypeInfo::typeUInt16:
-		v = Formatting::ToString(u.ui16Val);
+		v = Formatting::ToString(u.ui16Val,strFormat);
 		break;
 	case TypeInfo::typeInt32:
-		v = Formatting::ToString(u.i32Val);
+		v = Formatting::ToString(u.i32Val,strFormat);
 		break;
 	case TypeInfo::typeUInt32:
-		v = Formatting::ToString(u.ui32Val);
+		v = Formatting::ToString(u.ui32Val,strFormat);
 		break;
 	case TypeInfo::typeInt64:
-		v = Formatting::ToString(u.i64Val);
+		v = Formatting::ToString(u.i64Val,strFormat);
 		break;
 	case TypeInfo::typeUInt64:
-		v = Formatting::ToString(u.ui64Val);
+		v = Formatting::ToString(u.ui64Val,strFormat);
 		break;
 	case TypeInfo::typeFloat4:
-		v = Formatting::ToString(u.fl4Val,L"R");
+		v = Formatting::ToString(u.fl4Val,strFormat.IsEmpty() ? L"R" : strFormat);
 		break;
 	case TypeInfo::typeFloat8:
-		v = Formatting::ToString(u.fl8Val,L"R");
+		v = Formatting::ToString(u.fl8Val,strFormat.IsEmpty() ? L"R" : strFormat);
 		break;
 	case TypeInfo::typeGuid:
 		if (u.pgVal)
-			v = u.pgVal->ToString();
+			v = u.pgVal->ToString(strFormat);
 		else
-			v = guid_t::Null().ToString();
+			v = guid_t::Null().ToString(strFormat);
 		break;
 	case TypeInfo::typeString:
 		v = *u.pstrVal;
@@ -645,6 +645,16 @@ inline Omega::any_t::CastResult_t Omega::any_t::Coerce(bool_t& v) const
 	}
 
 	return any_t::castValid;
+}
+
+inline Omega::string_t Omega::any_t::ToString(const any_t& val, const string_t& strFormat) const
+{
+	string_t v;
+	any_t::CastResult_t r = val.Coerce(v,strFormat);
+	if (r != any_t::castValid)
+		System::Internal::throw_cast_exception(val,r,System::Internal::type_kind<string_t>::type());
+
+	return v;
 }
 
 namespace Omega

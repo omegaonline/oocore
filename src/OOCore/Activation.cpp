@@ -55,18 +55,18 @@ namespace
 		public ExceptionImpl<Omega::Activation::IOidNotFoundException>
 	{
 	public:
-		static void Throw(const guid_t& Oid, const string_t& strFn, IException* pE = 0);
+		static void Throw(const any_t& oid, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(OidNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
 		END_INTERFACE_MAP()
 
 	private:
-		guid_t m_oid;
+		any_t m_oid;
 
 	// Activation::IOidNotFoundException members
 	public:
-		guid_t GetMissingOid()
+		any_t GetMissingOid()
 		{
 			return m_oid;
 		}
@@ -94,7 +94,7 @@ namespace
 		public ExceptionImpl<Activation::ILibraryNotFoundException>
 	{
 	public:
-		static void Throw(const string_t& strName, const string_t& strFn, IException* pE = 0);
+		static void Throw(const string_t& strName, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(LibraryNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::ILibraryNotFoundException>)
@@ -206,24 +206,22 @@ namespace
 		}
 	}
 
-	void OidNotFoundException::Throw(const guid_t& oid, const string_t& strFn, IException* pE)
+	void OidNotFoundException::Throw(const any_t& oid, IException* pE)
 	{
 		ObjectImpl<OidNotFoundException>* pNew = ObjectImpl<OidNotFoundException>::CreateInstance();
 		pNew->m_strDesc = L"The identified object could not be found: {0}";
 		pNew->m_strDesc %= oid;
-		pNew->m_strSource = strFn;
-		pNew->m_ptrCause = pE;
+		pNew->m_ptrCause.Attach(pE);
 		pNew->m_oid = oid;
 		throw static_cast<IOidNotFoundException*>(pNew);
 	}
 
-	void LibraryNotFoundException::Throw(const string_t& strName, const string_t& strFn, IException* pE)
+	void LibraryNotFoundException::Throw(const string_t& strName, IException* pE)
 	{
 		ObjectImpl<LibraryNotFoundException>* pRE = ObjectImpl<LibraryNotFoundException>::CreateInstance();
-		pRE->m_ptrCause = pE;
+		pRE->m_ptrCause.Attach(pE);
 		pRE->m_strDesc = L"Dynamic library '{0}' not found or malformed.";
 		pRE->m_strDesc %= strName;
-		pRE->m_strSource = strFn;
 		pRE->m_dll_name = strName;
 		throw static_cast<ILibraryNotFoundException*>(pRE);
 	}
@@ -242,7 +240,7 @@ IObject* OOCore::ServiceManager::LoadLibraryObject(const string_t& dll_name, con
 	}
 	catch (IException* pE)
 	{
-		LibraryNotFoundException::Throw(dll_name,L"Omega::Activation::GetRegisteredObject",pE);
+		LibraryNotFoundException::Throw(dll_name,pE);
 	}
 
 	IObject* pObj = 0;
@@ -289,14 +287,21 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 	string_t strCurName = strObjectName;
 	for (;;)
 	{
-		ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
-		if (ptrOidKey->IsValue(L"CurrentVersion"))
+		try
 		{
-			strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
-			continue;
-		}
+			ObjectPtr<Registry::IKey> ptrOidKey(L"\\Local User\\Objects\\" + strCurName);
+			if (ptrOidKey->IsValue(L"CurrentVersion"))
+			{
+				strCurName = ptrOidKey->GetStringValue(L"CurrentVersion");
+				continue;
+			}
 
-		return guid_t(ptrOidKey->GetStringValue(L"OID"));
+			return guid_t(ptrOidKey->GetStringValue(L"OID"));
+		}
+		catch (IException* pE)
+		{
+			OidNotFoundException::Throw(strCurName,pE);
+		}
 	}
 }
 
@@ -366,37 +371,38 @@ OMEGA_DEFINE_EXPORTED_FUNCTION_VOID(OOCore_Activation_GetRegisteredObject,4,((in
 	}
 	catch (IException* pE)
 	{
-		ObjectPtr<IException> ptrE;
-		ptrE.Attach(pE);
-
-		OidNotFoundException::Throw(oid,L"Omega::Activation::GetRegisteredObject",ptrE);
+		OidNotFoundException::Throw(oid,pE);
 	}
 
-	OidNotFoundException::Throw(oid,L"Omega::Activation::GetRegisteredObject");
+	OidNotFoundException::Throw(oid);
 }
 
-OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::string_t&,strURI,(in),Omega::Activation::Flags_t,flags))
+OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObjectFactory,2,((in),const Omega::any_t&,oid,(in),Omega::Activation::Flags_t,flags))
 {
 	// First try to determine the protocol...
-	string_t strObject = strURI;
+	guid_t oid_guid;
+	if (oid.Coerce(oid_guid) == any_t::castValid)
+		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid_guid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+	
+	string_t strObject = oid.cast<string_t>();
 	string_t strEndpoint;
-	size_t pos = strURI.Find(L'@');
+	size_t pos = strObject.Find(L'@');
 	if (pos != string_t::npos)
 	{
-		strObject = strURI.Left(pos);
-		strEndpoint = strURI.Mid(pos+1).ToLower();
+		strEndpoint = strObject.Mid(pos+1).ToLower();
+		strObject = strObject.Left(pos);
+		
 		if (strEndpoint == L"local")
 			strEndpoint.Clear();
 	}
-
+	
 	if (strEndpoint.IsEmpty())
 	{
 		// Do a quick registry lookup
-		guid_t oid;
-		if (!guid_t::FromString(strObject,oid))
-			oid = Omega::Activation::NameToOid(strObject);
+		if (!guid_t::FromString(strObject,oid_guid))
+			oid_guid = Omega::Activation::NameToOid(strObject);
 
-		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
+		return static_cast<Activation::IObjectFactory*>(Activation::GetRegisteredObject(oid_guid,flags,OMEGA_GUIDOF(Activation::IObjectFactory)));
 	}
 	else
 	{
@@ -415,11 +421,8 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(Omega::Activation::IObjectFactory*,OOCore_GetObje
 		ptrOM->GetRemoteInstance(strObject,flags,OMEGA_GUIDOF(Activation::IObjectFactory),pOF);
 		
 		if (!pOF)
-		{
-			void* TODO; // Throw some kind of exception
-			OMEGA_THROW(L"Failed to create object factory");
-		}
-
+			OidNotFoundException::Throw(oid);
+			
 		return static_cast<Activation::IObjectFactory*>(pOF);
 	}
 }

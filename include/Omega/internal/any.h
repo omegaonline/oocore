@@ -82,7 +82,7 @@ namespace Omega
 		CastResult_t Coerce(T& val) const;
 		CastResult_t Coerce(bool_t& v) const;
 		CastResult_t Coerce(guid_t& v) const;
-		CastResult_t Coerce(string_t& v) const;
+		CastResult_t Coerce(string_t& v, const string_t& strFormat = string_t()) const;
 
 		// Perform a cast, and throw on failure (includes loss of precision, etc...)
 		template <typename T> T cast() const;
@@ -108,6 +108,8 @@ namespace Omega
 		const float8_t& GetFloat8Value() const;
 		const guid_t& GetGuidValue() const;
 		const string_t& GetStringValue() const;
+
+		string_t ToString(const any_t& val, const string_t& strFormat = string_t()) const;
 				
 	private:
 		friend struct Omega::System::Internal::any_t_safe_type;

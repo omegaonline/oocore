@@ -415,6 +415,7 @@ namespace OOBase
 		OOSvrBase::Logger::log(OOSvrBase::Logger::Error,msg);
 
 		// Die horribly now!
+		abort();
 		TerminateProcess(GetCurrentProcess(),EXIT_FAILURE);
 	}
 }

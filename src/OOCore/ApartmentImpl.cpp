@@ -282,9 +282,9 @@ OOCore::ApartmentImpl::~ApartmentImpl()
 		UserSession::remove_apartment(m_id);
 }
 
-void OOCore::ApartmentImpl::CreateInstance(const string_t& strURI, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
+void OOCore::ApartmentImpl::CreateInstance(const any_t& oid, Activation::Flags_t flags, IObject* pOuter, const guid_t& iid, IObject*& pObject)
 {
-	pObject = Omega::CreateInstance(strURI,flags,pOuter,iid);
+	pObject = Omega::CreateInstance(oid,flags,pOuter,iid);
 }
 
 void OOCore::AptChannel::init(OOBase::SmartPtr<Apartment> ptrApt, Omega::uint32_t channel_id, Remoting::IObjectManager* pOM, const guid_t& message_oid)

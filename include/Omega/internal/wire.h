@@ -40,7 +40,7 @@ namespace Omega
 			virtual void WriteStructStart(const string_t& strName, const string_t& strType) = 0;
 			virtual void WriteStructEnd() = 0;
 
-			virtual void ReadArrayStart(const string_t& strName, uint32_t& count) = 0;
+			virtual uint32_t ReadArrayStart(const string_t& strName) = 0;
 			virtual void ReadArrayEnd() = 0;
 
 			virtual void WriteArrayStart(const string_t& strName, uint32_t count) = 0;
@@ -119,7 +119,7 @@ namespace Omega
 				OMEGA_METHOD_VOID(WriteStructStart,2,((in),const string_t&,strName,(in),const string_t&,strType))
 				OMEGA_METHOD_VOID(WriteStructEnd,0,())
 
-				OMEGA_METHOD_VOID(ReadArrayStart,2,((in),const string_t&,strName,(out),uint32_t&,count))
+				OMEGA_METHOD(uint32_t,ReadArrayStart,1,((in),const string_t&,strName))
 				OMEGA_METHOD_VOID(ReadArrayEnd,0,())
 
 				OMEGA_METHOD_VOID(WriteArrayStart,2,((in),const string_t&,strName,(in),uint32_t,count))
@@ -236,17 +236,15 @@ namespace Omega
 
 				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, T* pVals, size_t count)
 				{
-					if (count > (uint32_t)-1 / sizeof(T))
-						OMEGA_THROW(L"Attempt to marshal too many array items");
-
-					uint32_t count2 = 0;
-					pMessage->ReadArrayStart(strName,count2);
-
-					assert(count2 == static_cast<uint32_t>(count));
+					uint32_t count2 = pMessage->ReadArrayStart(strName);
+					
+					// Stop overflow
+					if (count2 > count)
+						count2 = count;
 
 					if (pVals)
 					{
-						for (uint32_t c=0;c<count2;++c)
+						for (uint32_t c=0;c<count;++c)
 							marshal_info<T>::wire_type::read(string_t(),pManager,pMessage,pVals[c]);
 					}
 
@@ -263,37 +261,39 @@ namespace Omega
 					pMessage->WriteArrayEnd();
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals)
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const T* pVals, size_t count)
 				{
-					uint32_t count = 0;
-					pMessage->ReadArrayStart(strName,count);
+					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
-					for (uint32_t c=0;c<count;++c)
+					assert(count == count2);
+					
+					// Stop overflow
+					if (count2 > count)
+						count2 = count;
+
+					for (uint32_t c=0;c<count2;++c)
 						marshal_info<T>::wire_type::unpack(string_t(),pManager,pMessage,pVals[c]);
 
 					pMessage->ReadArrayEnd();
 				}
 
-				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, size_t count)
+				static void read(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, type& val, size_t)
 				{
-					uint32_t count2 = 0;
-					pMessage->ReadArrayStart(strName,count2);
+					uint32_t count = pMessage->ReadArrayStart(strName);
 
-					assert(count2 == static_cast<uint32_t>(count));
+					val.init(pManager,count);
 
-					val.init(pManager,count2);
-
-					for (uint32_t c=0;c<count2;++c)
+					for (uint32_t c=0;c<count;++c)
 						marshal_info<T>::wire_type::read(string_t(),pManager,pMessage,val.m_pVals[c]);
 
 					pMessage->ReadArrayEnd();
 				}
 
-				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val)
+				static void write(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, size_t count)
 				{
 					// Only write out what we have allocated...
-					//if (count > val.m_alloc_count)
-					size_t	count = val.m_alloc_count;
+					if (count > val.m_alloc_count)
+						count = val.m_alloc_count;
 
 					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(count));
 
@@ -303,12 +303,17 @@ namespace Omega
 					pMessage->WriteArrayEnd();
 				}
 
-				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val)
+				static void unpack(const string_t& strName, Remoting::IMarshaller* pManager, Remoting::IMessage* pMessage, const type& val, size_t count)
 				{
-					uint32_t count = 0;
-					pMessage->ReadArrayStart(strName,count);
+					uint32_t count2 = pMessage->ReadArrayStart(strName);
 
-					for (uint32_t c=0;c<count;++c)
+					assert(count == count2);
+
+					// Stop overflow
+					if (count2 > val.m_alloc_count)
+						count2 = val.m_alloc_count;
+
+					for (uint32_t c=0;c<count2;++c)
 						marshal_info<T>::wire_type::unpack(string_t(),pManager,pMessage,val.m_pVals[c]);
 
 					pMessage->ReadArrayEnd();
@@ -585,40 +590,36 @@ namespace Omega
 
 				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
-					pMessage->ReadStructStart(strName,L"$collection_type_1");
-					uint32_t count = pMessage->ReadValue(L"count").template cast<uint32_t>();
+					uint32_t count = pMessage->ReadArrayStart(strName);
 					for (uint32_t c = 0;c<count;++c)
 					{
 						typename Coll::value_type v_val = default_value<typename Coll::value_type>::value();
-						marshal_info<typename Coll::value_type>::wire_type::read((string_t(L"item{0}") % c),pMarshaller,pMessage,v_val);
+						marshal_info<typename Coll::value_type>::wire_type::read(string_t(),pMarshaller,pMessage,v_val);
 						val.insert(val.end(),v_val);
 					}
-					pMessage->ReadStructEnd();
+					pMessage->ReadArrayEnd();
 				}
 
 				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
-					if (val.size() > (uint32_t)-1 / sizeof(typename Coll::value_type))
-						OMEGA_THROW(L"Attempt to marshal too many collection items");
+					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(val.size()));
+					
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
+						marshal_info<typename Coll::value_type>::wire_type::write(string_t(),pMarshaller,pMessage,*i);
 
-					uint32_t count = static_cast<uint32_t>(val.size());
-
-					pMessage->WriteStructStart(strName,L"$collection_type_1");
-					pMessage->WriteValue(L"count",count);
-					size_t idx = 0;
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
-						marshal_info<typename Coll::value_type>::wire_type::write((string_t(L"item{0}") % idx),pMarshaller,pMessage,*i);
 					pMessage->WriteStructEnd();
 				}
 
 				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
-					pMessage->ReadStructStart(strName,L"$collection_type_1");
-					pMessage->ReadValue(L"count");
-					size_t idx = 0;
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
-						marshal_info<typename Coll::value_type>::wire_type::unpack((string_t(L"item{0}") % idx),pMarshaller,pMessage,*i);
-					pMessage->ReadStructEnd();
+					uint32_t count = pMessage->ReadArrayStart(strName);
+
+					assert(count == val.size());
+
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
+						marshal_info<typename Coll::value_type>::wire_type::unpack(string_t(),pMarshaller,pMessage,*i);
+
+					pMessage->ReadArrayEnd();
 				}
 			};
 
@@ -793,50 +794,56 @@ namespace Omega
 
 				static void read(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, Coll& val)
 				{
-					pMessage->ReadStructStart(strName,L"$collection_type_2");
-					uint32_t count = pMessage->ReadValue(L"count").template cast<uint32_t>();
+					uint32_t count = pMessage->ReadArrayStart(strName);
 					for (uint32_t c = 0;c<count;++c)
 					{
+						pMessage->ReadStructStart(string_t(),L"$pair");
+
 						typename Coll::key_type v_k = default_value<typename Coll::key_type>::value();
-						marshal_info<typename Coll::key_type>::wire_type::read((string_t(L"key{0}") % c),pMarshaller,pMessage,v_k);
+						marshal_info<typename Coll::key_type>::wire_type::read(L"first",pMarshaller,pMessage,v_k);
 
 						typename Coll::mapped_type v_m = default_value<typename Coll::mapped_type>::value();
-						marshal_info<typename Coll::mapped_type>::wire_type::read((string_t(L"item{0}") % c),pMarshaller,pMessage,v_m);
+						marshal_info<typename Coll::mapped_type>::wire_type::read(L"second",pMarshaller,pMessage,v_m);
 
 						val.insert(val.end(),typename Coll::value_type(v_k,v_m));
+
+						pMessage->ReadStructEnd();
 					}
-					pMessage->ReadStructEnd();
+					pMessage->ReadArrayEnd();
 				}
 
 				static void write(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
-					if (val.size() > (uint32_t)-1 / sizeof(typename Coll::value_type))
-						OMEGA_THROW(L"Attempt to marshal too many collection items");
+					pMessage->WriteArrayStart(strName,any_cast<uint32_t>(val.size()));
 
-					uint32_t count = static_cast<uint32_t>(val.size());
-
-					pMessage->WriteStructStart(strName,L"$collection_type_2");
-					pMessage->WriteValue(L"count",count);
-					size_t idx = 0;
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
 					{
-						marshal_info<typename Coll::key_type>::wire_type::write((string_t(L"key{0}") % idx),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::write((string_t(L"item{0}") % idx),pMarshaller,pMessage,i->second);
+						pMessage->WriteStructStart(string_t(),L"$pair");
+
+						marshal_info<typename Coll::key_type>::wire_type::write(L"first",pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::write(L"second",pMarshaller,pMessage,i->second);
+
+						pMessage->WriteStructEnd();
 					}
-					pMessage->WriteStructEnd();
+					pMessage->WriteArrayEnd();
 				}
 
 				static void unpack(const string_t& strName, Remoting::IMarshaller* pMarshaller, Remoting::IMessage* pMessage, const Coll& val)
 				{
-					pMessage->ReadStructStart(strName,L"$collection_type_2");
-					pMessage->ReadValue(L"count");
-					size_t idx = 0;
-					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i,++idx)
+					uint32_t count = pMessage->ReadArrayStart(strName);
+
+					assert(count == val.size());
+
+					for (typename Coll::const_iterator i=val.begin();i!=val.end();++i)
 					{
-						marshal_info<typename Coll::key_type>::wire_type::unpack((string_t(L"key{0}") % idx),pMarshaller,pMessage,i->first);
-						marshal_info<typename Coll::mapped_type>::wire_type::unpack((string_t(L"item{0}") % idx),pMarshaller,pMessage,i->second);
+						pMessage->ReadStructStart(string_t(),L"$pair");
+
+						marshal_info<typename Coll::key_type>::wire_type::unpack(L"first",pMarshaller,pMessage,i->first);
+						marshal_info<typename Coll::mapped_type>::wire_type::unpack(L"second",pMarshaller,pMessage,i->second);
+
+						pMessage->ReadStructEnd();
 					}
-					pMessage->ReadStructEnd();
+					pMessage->ReadArrayEnd();
 				}
 			};
 

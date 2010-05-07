@@ -241,9 +241,9 @@ namespace OOCore
 		void WriteStructEnd()
 			{ /* NOP */	}
 
-		void ReadArrayStart(const Omega::string_t&, Omega::uint32_t& count)
+		Omega::uint32_t ReadArrayStart(const Omega::string_t&)
 		{
-			count = read<Omega::uint32_t>();
+			return read<Omega::uint32_t>();
 		}
 
 		void ReadArrayEnd()

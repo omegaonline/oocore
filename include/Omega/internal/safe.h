@@ -775,7 +775,6 @@ namespace Omega
 						custom_safe_type<bool_t>::safe_type bVal;
 						string_t_safe_type::safe_type       pstrVal;
 						guid_base_t                         gVal;
-						//obj_holder_base* pobjVal;
 					} u;
 				};
 
@@ -871,7 +870,6 @@ namespace Omega
 						return string_t_safe_type::create(v.u.pstrVal,addref);
 					case TypeInfo::typeGuid:
 						return guid_t(v.u.gVal);
-					case TypeInfo::typeObjectPtr:
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");
@@ -923,7 +921,6 @@ namespace Omega
 						ret.u.gVal = (val.u.pgVal ? *val.u.pgVal : guid_t::Null());
 						break;
 
-					case TypeInfo::typeObjectPtr:
 					default:
 						// Never going to happen ;)
 						OMEGA_THROW(L"Invalid any_t type!");

@@ -137,7 +137,7 @@ namespace
 	{
 		td->WriteValue(L"type",th->type);
 		
-		if (th->type == TypeInfo::typeObjectPtr)
+		if (th->type == TypeInfo::typeObject)
 		{
 			td->WriteValue(L"iid",guid_t(*(const guid_base_t*)(th->next)));
 
@@ -154,8 +154,8 @@ namespace
 			td->WriteValue(L"type",TypeInfo::Type_t(TypeInfo::typeVoid));
 		}
 
-		if (th->type == TypeInfo::modifierSTLMap ||
-			th->type == TypeInfo::modifierSTLMultimap)
+		if (th->type == TypeInfo::typeSTLMap ||
+			th->type == TypeInfo::typeSTLMultimap)
 		{
 			// Add second part immediately after first part
 			BuildTypeDetail(td,th[1].next);
@@ -165,7 +165,7 @@ namespace
 	string_t BuildTypeString(const System::Internal::type_holder* th)
 	{
 		string_t strNext;
-		if (th->type != TypeInfo::typeObjectPtr && th->next)
+		if (th->type != TypeInfo::typeObject && th->next)
 			strNext = BuildTypeString(th->next);
 
 		switch (th->type)
@@ -212,58 +212,53 @@ namespace
 		case TypeInfo::typeAny:
 			return string_t(L"Omega::any_t");
 
-		case TypeInfo::typeObjectPtr:
+		case TypeInfo::typeObject:
 			{
 				ObjectPtr<TypeInfo::IInterfaceInfo> ptrIF;
 				ptrIF.Attach(OOCore::GetInterfaceInfo(*(const guid_base_t*)(th->next)));
-				return ptrIF->GetName() + L"*";
+				return ptrIF->GetName();
+			}
+
+		case TypeInfo::typeSTLVector:
+			return L"std::vector<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+
+		case TypeInfo::typeSTLDeque:
+			return L"std::deque<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+
+		case TypeInfo::typeSTLList:
+			return L"std::list<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+
+		case TypeInfo::typeSTLSet:
+			return L"std::set<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+
+		case TypeInfo::typeSTLMultiset:
+			return L"std::multiset<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
+
+		case TypeInfo::typeSTLMap:
+			{
+				string_t strNext2 = BuildTypeString(th[1].next);
+				return L"std::map<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
+			}
+			
+		case TypeInfo::typeSTLMultimap:
+			{
+				string_t strNext2 = BuildTypeString(th[1].next);
+				return L"std::multimap<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
 			}
 
 		case TypeInfo::modifierConst:
-			if (th->next->type == TypeInfo::typeObjectPtr)
-				return strNext.Left(strNext.Length()-1) + L" const*";
-			else
-				return strNext + L" const";
+			return strNext + L" const";
 			
 		case TypeInfo::modifierPointer:
 			return strNext + L'*';
 
 		case TypeInfo::modifierReference:
 			return strNext + L'&';
-
-		case TypeInfo::modifierSTLVector:
-			return L"std::vector<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
-
-		case TypeInfo::modifierSTLDeque:
-			return L"std::deque<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
-
-		case TypeInfo::modifierSTLList:
-			return L"std::list<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
-
-		case TypeInfo::modifierSTLSet:
-			return L"std::set<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
-
-		case TypeInfo::modifierSTLMultiset:
-			return L"std::multiset<" + strNext + (strNext.Right(1)==L">" ? L" >" : L">");
-
-		case TypeInfo::modifierSTLMap:
-			{
-				string_t strNext2 = BuildTypeString(th[1].next);
-				return L"std::map<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
-			}
-			
-		case TypeInfo::modifierSTLMultimap:
-			{
-				string_t strNext2 = BuildTypeString(th[1].next);
-				return L"std::multimap<" + strNext + L',' + strNext2 + (strNext2.Right(1)==L">" ? L" >" : L">");
-			}
 			
 		default:
-			assert(false);
-			OMEGA_THROW(L"Bad type_holder type!");
+			return string_t(L"Invalid type code: {0}") % th->type;
 		}
 	}
-
 }
 
 TypeInfoImpl::TypeInfoImpl() :
@@ -505,8 +500,6 @@ void CastException::Throw(const any_t& value, any_t::CastResult_t reason, const 
 		strSource = L"Omega::guid_t";
 		break;
 
-	case TypeInfo::typeObjectPtr:
-		
 	default:
 		OMEGA_THROW(L"Invalid any_t");
 	}

@@ -151,19 +151,11 @@
 	{ \
 		typedef iface_wire_type<n_space::name > impl; \
 	}; \
-	template <> struct type_kind<n_space::name*> \
+	template <> struct type_kind<n_space::name> \
 	{ \
 		static const type_holder* type() \
 		{ \
-			static const type_holder t = { TypeInfo::typeObjectPtr, (const type_holder*)(&OMEGA_GUIDOF(n_space::name)) }; \
-			return &t; \
-		} \
-	}; \
-	template <> struct type_kind<const n_space::name*> \
-	{ \
-		static const type_holder* type() \
-		{ \
-			static const type_holder t = { TypeInfo::modifierConst, type_kind<n_space::name*>::type() }; \
+			static const type_holder t = { TypeInfo::typeObject, (const type_holder*)(&OMEGA_GUIDOF(n_space::name)) }; \
 			return &t; \
 		} \
 	};

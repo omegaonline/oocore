@@ -123,7 +123,7 @@ namespace OOCore
 		Omega::any_t ReadValue(const Omega::string_t&)
 		{
 			Omega::TypeInfo::Type_t type = read<Omega::TypeInfo::Type_t>();
-			switch (type)
+			switch (static_cast<Omega::TypeInfo::Type>(type))
 			{
 			case Omega::TypeInfo::typeBool:
 				return read<Omega::bool_t>();
@@ -165,8 +165,9 @@ namespace OOCore
 					}
 				}
 						
-			case Omega::TypeInfo::typeObjectPtr:
 			case Omega::TypeInfo::typeVoid:			
+				return Omega::any_t();
+
 			default:
 				OMEGA_THROW(L"Invalid any_t type");
 			}
@@ -177,7 +178,7 @@ namespace OOCore
 			Omega::TypeInfo::Type_t type = static_cast<Omega::TypeInfo::Type_t>(value.GetType());
 			write(type);
 
-			switch (type)
+			switch (value.GetType())
 			{
 			case Omega::TypeInfo::typeBool:
 				return write(value.cast<Omega::bool_t>());
@@ -220,8 +221,9 @@ namespace OOCore
 				}
 				break;
 						
-			case Omega::TypeInfo::typeObjectPtr:
-			case Omega::TypeInfo::typeVoid:			
+			case Omega::TypeInfo::typeVoid:	
+				return;
+
 			default:
 				OMEGA_THROW(L"Invalid any_t type");
 			}

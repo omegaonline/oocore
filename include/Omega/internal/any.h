@@ -54,9 +54,6 @@ namespace Omega
 		any_t(const wchar_t* wsz, size_t length = string_t::npos, bool copy = true);
 		any_t(const char* sz, bool bUTF8, size_t length = string_t::npos);
 
-		template <typename I>
-		any_t(I* pObj, const guid_t& iid = OMEGA_GUIDOF(I));
-
 		any_t(const any_t& rhs);
 		any_t& operator = (const any_t& rhs);
 
@@ -87,9 +84,6 @@ namespace Omega
 		CastResult_t Coerce(guid_t& v) const;
 		CastResult_t Coerce(string_t& v) const;
 
-		template <typename I>
-		CastResult_t Coerce(I*& val, const guid_t& iid = OMEGA_GUIDOF(I));
-
 		// Perform a cast, and throw on failure (includes loss of precision, etc...)
 		template <typename T> T cast() const;
 		template <typename T> T cast();
@@ -108,66 +102,15 @@ namespace Omega
 		guid_t& GetGuidValue();
 		string_t& GetStringValue();
 
-		const bool_t& GetBoolValue() const;
-		const byte_t& GetByteValue() const;
-		const int16_t& GetInt16Value() const;
-		const uint16_t& GetUInt16Value() const;
-		const int32_t& GetInt32Value() const;
-		const uint32_t& GetUInt32Value() const;
+		// Explicit const reference accessors
 		const int64_t& GetInt64Value() const;
 		const uint64_t& GetUInt64Value() const;
-		const float4_t& GetFloat4Value() const;
 		const float8_t& GetFloat8Value() const;
 		const guid_t& GetGuidValue() const;
 		const string_t& GetStringValue() const;
 				
 	private:
 		friend struct Omega::System::Internal::any_t_safe_type;
-
-		struct obj_holder_base
-		{
-			virtual ~obj_holder_base() {}
-
-			virtual const guid_t& get_iid() const = 0;
-			virtual IObject* get_base_obj() const = 0;
-
-			template <typename I>
-			I* get_obj() const
-			{
-				return static_cast<I*>(get_base_obj());
-			}
-
-		private:
-			obj_holder_base& operator = (const obj_holder_base&);
-			obj_holder_base(const obj_holder_base&);
-		};
-
-		template <typename I>
-		struct obj_holder : public obj_holder_base
-		{
-			obj_holder(I* pObj) : m_pObj(pObj)
-			{
-				if (m_pObj) m_pObj->AddRef();
-			}
-
-			virtual ~obj_holder()
-			{
-				if (m_pObj) m_pObj->Release();
-			}
-
-			virtual const guid_t& get_iid() const
-			{
-				return OMEGA_GUIDOF(I);
-			}
-
-			virtual IObject* get_base_obj() const
-			{
-				return m_pObj;
-			}
-
-		private:
-			mutable I* m_pObj;
-		};
 
 		TypeInfo::Type m_type;
 		union tagDisc
@@ -184,7 +127,6 @@ namespace Omega
 			float8_t         fl8Val;
 			guid_t*          pgVal;
 			string_t*        pstrVal;
-			obj_holder_base* pobjVal;
 		} u;
 
 		// Helpers

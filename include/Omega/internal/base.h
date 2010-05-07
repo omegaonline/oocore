@@ -73,6 +73,7 @@ namespace Omega
 
 	namespace TypeInfo
 	{
+		// These are the types supported aby Omega::any_t
 		enum Type
 		{
 			typeVoid = 0,
@@ -87,25 +88,32 @@ namespace Omega
 			typeFloat4,
 			typeFloat8,
 			typeString,
-			typeGuid,
-			typeAny,
-			typeObjectPtr
+			typeGuid
 		};
-		enum Modifier
+
+		// These are base types supported by marshalling
+		enum ExType
 		{
-			modifierConst = 0x10,
-			modifierPointer,
-			modifierReference,
+			typeAny = 0x10,
+			typeObject,
 
 			// STL collection types
-			modifierSTLVector = 0x18,
-			modifierSTLDeque,
-			modifierSTLList,
-			modifierSTLSet,
-			modifierSTLMultiset,
-			modifierSTLMap = 0x20,
-			modifierSTLMultimap
+			typeSTLVector = 0x20,
+			typeSTLDeque,
+			typeSTLList,
+			typeSTLSet,
+			typeSTLMultiset,
+			typeSTLMap = 0x28,
+			typeSTLMultimap
 		};
+		
+		enum Modifier
+		{
+			modifierConst = 0x80,
+			modifierPointer,
+			modifierReference
+		};
+
 		typedef byte_t Type_t;
 
 		enum MethodAttributes

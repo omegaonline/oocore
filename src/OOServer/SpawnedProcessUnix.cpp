@@ -337,6 +337,7 @@ bool SpawnedProcessUnix::Spawn(const std::wstring& strAppPath, bool bUnsafe, uid
 		    0
 		};
 		std::ostringstream os;
+		os.imbue(std::locale::classic());
 		os << pass_fd;
 
 		cmd_line[1] = os.str().c_str();

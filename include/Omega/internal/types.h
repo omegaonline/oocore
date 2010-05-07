@@ -42,11 +42,10 @@ namespace Omega
 
 	struct guid_t : public guid_base_t
 	{
-		guid_t()
+		guid_t(const guid_base_t& rhs = guid_t::Null()) : guid_base_t(rhs)
 		{}
 
-		guid_t(const guid_base_t& rhs) : guid_base_t(rhs)
-		{}
+		guid_t(const string_t& str);
 
 		bool operator == (const guid_t& rhs) const { return Compare(rhs) == 0; }
 		bool operator != (const guid_t& rhs) const { return Compare(rhs) != 0; }
@@ -59,8 +58,7 @@ namespace Omega
 		static guid_t Create();
 
 		static bool FromString(const string_t& str, guid_t& guid);
-		static guid_t FromString(const string_t& str);
-
+		
 		static const guid_t& Null()
 		{
 			static const guid_base_t sbNull = {0,0,0,{0,0,0,0,0,0,0,0}};

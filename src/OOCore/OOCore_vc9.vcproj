@@ -532,6 +532,14 @@
 			Name="Omega"
 			>
 			<File
+				RelativePath="..\..\include\Omega\internal\any.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\include\Omega\internal\any.inl"
+				>
+			</File>
+			<File
 				RelativePath="..\..\include\Omega\Apartment.h"
 				>
 			</File>

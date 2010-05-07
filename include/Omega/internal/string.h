@@ -24,6 +24,7 @@
 
 namespace Omega
 {
+	// Forward declare friend types
 	namespace System
 	{
 		namespace Internal
@@ -68,10 +69,13 @@ namespace Omega
 		template <typename T> bool operator > (T v) const { return Compare(v) > 0; }
 		template <typename T> bool operator >= (T v) const { return Compare(v) >= 0; }
 
-		int Compare(const string_t& s, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
+		int Compare(const string_t& s) const;
+		int Compare(const string_t& s, size_t pos, size_t length = npos, bool bIgnoreCase = false) const;
 		int Compare(const wchar_t* wsz, size_t pos = 0, size_t length = npos, bool bIgnoreCase = false) const;
 		
 		bool IsEmpty() const;
+		bool operator !() const { return IsEmpty(); }
+
 		size_t Length() const;
 		string_t& Clear();
 
@@ -96,6 +100,13 @@ namespace Omega
 		
 		template <typename T>
 		string_t& operator %= (T val);
+
+		template <typename T>
+		T ToNumber() const;
+
+		static int64_t wcsto64(const string_t& str, size_t& end_pos, unsigned int base);
+		static uint64_t wcstou64(const string_t& str, size_t& end_pos, unsigned int base);
+		static float8_t wcstod(const string_t& str, size_t& end_pos);
 		
 	private:
 		struct handle_t
@@ -109,7 +120,7 @@ namespace Omega
 		static void release(handle_t* h);
 
 		friend struct Omega::System::Internal::string_t_safe_type;
-
+		
 #ifdef OMEGA_DEBUG
 		const wchar_t* m_debug_value;
 #endif
@@ -117,12 +128,12 @@ namespace Omega
 
 	namespace Formatting
 	{
-		string_t ToString(const string_t& val, const string_t&);
-		string_t ToString(const wchar_t* val, const string_t&);
-		string_t ToString(bool_t val, const string_t& strFormat);
+		string_t ToString(const string_t& val, const string_t& = string_t());
+		string_t ToString(const wchar_t* val, const string_t& = string_t());
+		string_t ToString(bool_t val, const string_t& strFormat = string_t());
 
 		template <typename T>
-		string_t ToString(T val, const string_t& strFormat);
+		string_t ToString(T val, const string_t& strFormat = string_t());
 	}
 }
 

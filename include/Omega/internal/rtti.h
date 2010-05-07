@@ -67,7 +67,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierSTLVector, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::typeSTLVector, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -76,7 +76,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierSTLDeque, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::typeSTLDeque, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -85,7 +85,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierSTLList, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::typeSTLList, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -94,7 +94,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierSTLSet, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::typeSTLSet, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -103,7 +103,7 @@ namespace Omega
 			{
 				static const type_holder* type()
 				{
-					static const type_holder t = { TypeInfo::modifierSTLMultiset, type_kind<T>::type() };
+					static const type_holder t = { TypeInfo::typeSTLMultiset, type_kind<T>::type() };
 					return &t;
 				}
 			};
@@ -114,8 +114,8 @@ namespace Omega
 				{
 					static const type_holder t[2] = 
 					{
-						{ TypeInfo::modifierSTLMap, type_kind<T1>::type() },
-						{ TypeInfo::modifierSTLMap, type_kind<T2>::type() }
+						{ TypeInfo::typeSTLMap, type_kind<T1>::type() },
+						{ TypeInfo::typeSTLMap, type_kind<T2>::type() }
 					};
 					return t;
 				}
@@ -127,8 +127,8 @@ namespace Omega
 				{
 					static const type_holder t[2] = 
 					{
-						{ TypeInfo::modifierSTLMultimap, type_kind<T1>::type() },
-						{ TypeInfo::modifierSTLMultimap, type_kind<T2>::type() }
+						{ TypeInfo::typeSTLMultimap, type_kind<T1>::type() },
+						{ TypeInfo::typeSTLMultimap, type_kind<T2>::type() }
 					};
 					return t;
 				}
@@ -251,7 +251,7 @@ namespace Omega
 				}
 			};
 
-			template <> struct type_kind<IObject*>
+			template <> struct type_kind<IObject>
 			{
 				static const type_holder* type()
 				{

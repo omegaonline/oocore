@@ -55,13 +55,14 @@ namespace
 		public ExceptionImpl<Omega::Activation::IOidNotFoundException>
 	{
 	public:
-		guid_t m_oid;
-
 		static void Throw(const guid_t& Oid, const string_t& strFn, IException* pE = 0);
 
 		BEGIN_INTERFACE_MAP(OidNotFoundException)
 			INTERFACE_ENTRY_CHAIN(ExceptionImpl<Activation::IOidNotFoundException>)
 		END_INTERFACE_MAP()
+
+	private:
+		guid_t m_oid;
 
 	// Activation::IOidNotFoundException members
 	public:
@@ -295,7 +296,7 @@ OMEGA_DEFINE_EXPORTED_FUNCTION(guid_t,OOCore_Activation_NameToOid,1,((in),const 
 			continue;
 		}
 
-		return guid_t::FromString(ptrOidKey->GetStringValue(L"OID"));
+		return guid_t(ptrOidKey->GetStringValue(L"OID"));
 	}
 }
 

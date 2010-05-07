@@ -24,11 +24,18 @@
 
 namespace Omega
 {
+	interface ICastException : public IException
+	{
+		virtual any_t GetValue() = 0;
+		virtual any_t::CastResult_t GetReason() = 0;
+		virtual Remoting::IMessage* GetDestinationType() = 0;
+	};
+
 	namespace Formatting
 	{
 		interface IFormattingException : public IException
 		{
-			static IFormattingException* Create(const string_t& strMsg, const string_t& strSource, IException* pE = 0);
+			static IFormattingException* Create(const string_t& strMsg);
 		};
 	}
 
@@ -191,15 +198,15 @@ namespace Omega
 	{
 		interface IStream : public IObject
 		{
-			virtual void ReadBytes(uint64_t& cbBytes, byte_t* val) = 0;
-			virtual void WriteBytes(const uint64_t& cbBytes, const byte_t* val) = 0;
+			virtual void ReadBytes(uint32_t& cbBytes, byte_t* val) = 0;
+			virtual void WriteBytes(const uint32_t& cbBytes, const byte_t* val) = 0;
 		};
 
 		interface IAsyncStreamNotify : public IObject
 		{
 			virtual void OnOpened() = 0;
-			virtual void OnRead(const uint64_t& cbBytes, const byte_t* pData) = 0;
-			virtual void OnWritten(const uint64_t& cbBytes) = 0;
+			virtual void OnRead(uint32_t cbBytes, const byte_t* pData) = 0;
+			virtual void OnWritten(uint32_t cbBytes) = 0;
 			virtual void OnError(IException* pE) = 0;
 		};
 
@@ -249,6 +256,15 @@ OMEGA_DEFINE_INTERFACE
 
 OMEGA_DEFINE_INTERFACE_DERIVED
 (
+	Omega, ICastException, Omega, IException, "{F79A88F6-B2C4-490F-A11D-7D9B3894BD5D}",
+
+	OMEGA_METHOD(any_t,GetValue,0,())
+	OMEGA_METHOD(any_t::CastResult_t,GetReason,0,())
+	OMEGA_METHOD(Remoting::IMessage*,GetDestinationType,0,())
+)
+
+OMEGA_DEFINE_INTERFACE_DERIVED
+(
 	Omega::Formatting, IFormattingException, Omega, IException, "{EBCD8903-5C9B-4d48-BC3B-0427A4E294C4}",
 
 	OMEGA_NO_METHODS()
@@ -258,25 +274,24 @@ OMEGA_DEFINE_INTERFACE
 (
 	Omega::Activation, IObjectFactory, "{1BE2A9DF-A7CF-445e-8A06-C02256C4A460}",
 
-	// Methods
 	OMEGA_METHOD_VOID(CreateInstance,3,((in),IObject*,pOuter,(in),const guid_t&,iid,(out)(iid_is(iid)),IObject*&,pObject))
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega, ISystemException, Omega, IException, "{A0E1EEDB-BA00-4078-B67B-D990D43D5E7C}",
 
 	OMEGA_METHOD(uint32_t,GetErrorCode,0,())
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega, INoInterfaceException, Omega, IException, "{68778245-9EA7-49f7-9EF4-D5D742E781D5}",
 
 	OMEGA_METHOD(guid_t,GetUnsupportedIID,0,())
 )
 
-OMEGA_DEFINE_INTERFACE_DERIVED
+OMEGA_DEFINE_INTERFACE_DERIVED_LOCAL
 (
 	Omega, ITimeoutException, Omega, IException, "{63E8BFDE-D7AA-4675-B628-A1579B5AD8C7}",
 
@@ -396,8 +411,8 @@ OMEGA_DEFINE_INTERFACE
 	Omega::IO, IStream, "{D1072F9B-3E7C-4724-9246-46DC111AE69F}",
 
 	// Methods
-	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint64_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
-	OMEGA_METHOD_VOID(WriteBytes,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
+	OMEGA_METHOD_VOID(ReadBytes,2,((in_out),uint32_t&,cbBytes,(out)(size_is(cbBytes)),byte_t*,val))
+	OMEGA_METHOD_VOID(WriteBytes,2,((in),const uint32_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,val))
 )
 
 OMEGA_DEFINE_INTERFACE
@@ -406,8 +421,8 @@ OMEGA_DEFINE_INTERFACE
 	
 	// Methods
 	OMEGA_METHOD_VOID(OnOpened,0,())
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),const uint64_t&,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
-	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnWritten,1,((in),const uint64_t&,cbBytes))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnRead,2,((in),uint32_t,cbBytes,(in)(size_is(cbBytes)),const byte_t*,pData))
+	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnWritten,1,((in),uint32_t,cbBytes))
 	OMEGA_METHOD_EX_VOID(Asynchronous,0,OnError,1,((in),IException*,pE))
 )
 

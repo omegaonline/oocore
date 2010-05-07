@@ -9,6 +9,7 @@ bool string_tests()
 
 	Omega::string_t s1;
 	TEST(s1.IsEmpty());
+	TEST(!s1);
 
 	s1 = sz1;
 	TEST(!s1.IsEmpty());
@@ -86,6 +87,8 @@ bool string_tests()
 	TEST(Omega::string_t(L"1111").TrimRight(L'1').IsEmpty());
 	TEST(Omega::string_t(L"H123321").TrimRight(L"123") == L"H");
 	TEST(Omega::string_t(L"123321").TrimRight(L"123").IsEmpty());
+
+	TEST(Omega::string_t(L"Hell") + L'o' == L"Hello");
 
 	return true;
 }
@@ -340,7 +343,7 @@ bool guid_tests()
 
 	const wchar_t sz[] = L"{BCB02DAE-998A-4fc1-AB91-39290C237A37}";
 
-	Omega::guid_t guid2 = Omega::guid_t::FromString(sz);
+	Omega::guid_t guid2(sz);
 	TEST(guid2 != guid);
 	TEST(guid2 != Omega::guid_t::Null());
 
@@ -365,7 +368,7 @@ bool guid_tests()
 	TEST(bTest);
 
 	// Check to see if we can export OID's properly
-	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t::FromString(L"{63EB243E-6AE3-43bd-B073-764E096775F8}"));
+	TEST(Omega::Remoting::OID_StdObjectManager == Omega::guid_t(L"{63EB243E-6AE3-43bd-B073-764E096775F8}"));
 
 	// Check whether OMEGA_GUIDOF works...
 	TEST(OMEGA_GUIDOF(Omega::IObject) == OMEGA_GUIDOF(Omega::IObject*));

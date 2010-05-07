@@ -15,6 +15,7 @@ bool string_tests();
 bool string_tests_format();
 bool string_tests_utf8();
 bool guid_tests();
+bool any_tests();
 bool exception_tests();
 bool otl_tests();
 bool registry_tests();
@@ -29,15 +30,20 @@ int main(int /*argc*/, char* /*argv*/[])
 {
 	output("OOCore version: %s\n",OOCore::GetVersion());
 
-	output("\nRunning %-40s\n\n","standalone tests");
+	output("\nRunning general tests\n\n");
+
+	RUN_TEST(string_tests);
+	RUN_TEST(string_tests_format);
+	RUN_TEST(string_tests_utf8);
+	RUN_TEST(guid_tests);
+	RUN_TEST(any_tests);
+	RUN_TEST(exception_tests);
+	RUN_TEST(otl_tests);
+
+	output("\nRunning %-40s","standalone tests");
 	if (init_standalone_tests())
 	{
-		RUN_TEST(string_tests);
-		RUN_TEST(string_tests_format);
-		RUN_TEST(string_tests_utf8);
-		RUN_TEST(guid_tests);
-		RUN_TEST(exception_tests);
-		RUN_TEST(otl_tests);
+		output("\n\n");
 
 		RUN_TEST(registry_tests);
 		RUN_TEST(registry_tests_2);

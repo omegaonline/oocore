@@ -87,10 +87,10 @@ inline Omega::ITimeoutException* Omega::ITimeoutException::Create()
 	return OOCore_ITimeoutException_Create();
 }
 
-OOCORE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,3,((in),const Omega::string_t&,msg,(in),const Omega::string_t&,source,(in),Omega::IException*,pCause))
-inline Omega::Formatting::IFormattingException* Omega::Formatting::IFormattingException::Create(const string_t& strMsg, const string_t& strSource, IException* pE)
+OOCORE_EXPORTED_FUNCTION(Omega::Formatting::IFormattingException*,OOCore_IFormattingException_Create,1,((in),const Omega::string_t&,msg))
+inline Omega::Formatting::IFormattingException* Omega::Formatting::IFormattingException::Create(const string_t& strMsg)
 {
-	return OOCore_IFormattingException_Create(strMsg,strSource,pE);
+	return OOCore_IFormattingException_Create(strMsg);
 }
 
 #endif // !defined(DOXYGEN)
